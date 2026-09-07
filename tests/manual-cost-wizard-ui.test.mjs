@@ -72,9 +72,10 @@ test('manual wizard manages focus, keyboard escape and visible errors', () => {
 
 test('manual wizard has responsive purpose-built styling', () => {
   assert.match(styles, /\.manualCostWizardModal\s*\{[^}]*width:\s*min\(1120px, 100%\) !important/);
-  assert.match(styles, /\.manualCostWizardModal\s*\{[^}]*max-height:\s*min\(94dvh, 880px\)/);
+  assert.match(styles, /\.manualCostWizardModal\s*\{[^}]*max-height:\s*min\(calc\(var\(--website-visible-height, 100dvh\) \* 0\.94\), 880px\)/);
   assert.match(styles, /\.manualCostWizardModal \.manualCostInvoiceGrid\s*\{[^}]*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.manualCostReviewWide dd\s*\{[^}]*white-space:\s*normal/);
   assert.match(styles, /@media \(max-width: 900px\)[\s\S]*?\.manualCostWizardModal \.manualCostInvoiceGrid\s*\{[^}]*grid-template-columns:\s*1fr/);
   assert.match(styles, /\.manualCostWizardModal \.manualCostWizardFooter\s*\{[^}]*justify-content:\s*space-between/);
 });
+

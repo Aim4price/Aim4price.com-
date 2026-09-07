@@ -1,0 +1,367 @@
+{
+  "base_commit": "3ea0aad532878e5fc6cda1df6b4465d1ef892dde",
+  "baseline_full_suite": {
+    "tests": 1136,
+    "passed": 1077,
+    "failed": 59
+  },
+  "branch_full_suite": {
+    "tests": 1137,
+    "passed": 1082,
+    "failed": 55
+  },
+  "new_failures": [],
+  "failures_reproduced_on_baseline": [
+    "Owner and Field Manager access selectors avoid browser-native menus",
+    "Access pages focus one user and mute the remaining cards",
+    "All app access cards use a larger Manage target and bottom Close action",
+    "the main Document Vault remains owner-only",
+    "direct finance, accounting value and document writes require owner permission",
+    "accounting manage modals keep a fixed blur layer, inner scrolling and one-line option copy",
+    "Get Estimate remains inside the client workspace and saves to its active or shared register",
+    "shared Fuel and Cost Ledgers reuse owner controls with register-scoped writes and reports",
+    "accountant Manage keeps one disposal entry and concise one-line option copy",
+    "owner disposal uses a compact choice-card layout and short delete subtitle",
+    "schema preserves the selected branding as a Marketplace advert snapshot",
+    "Middleman navigation, app access and Marketplace stay focused without paid Dealer tools",
+    "ledger completion never implicitly updates fuel usage",
+    "owner Cost Ledger parses asset quick-add entry and returns only that flow",
+    "combined register creation always chooses a real owning register",
+    "umbrella creation is register-wide while member controls target the physical asset",
+    "umbrella drag auto-scroll and asset discovery cover long registers and saved details",
+    "maintenance PDF and Excel builders accept PostgreSQL Date timestamps",
+    "asset quick actions use a subtle boxed rail outside the asset card",
+    "managed selection shares all selected assets with the master and records grouped context",
+    "notification clients keep capture approval as a generic navigation link",
+    "introduces the expansion consistently on core public pages",
+    "links the Home hero logo to About Us",
+    "Dealer desktop keeps Leads, Maintenance and Client Costs without a Clients workspace",
+    "Dealer App notifications reuse the Owner App notification experience",
+    "Dealer Maintenance summaries apply filters and focus the open asset",
+    "Owner Asset Register and Discovery use the same focused-card pattern",
+    "Dealer staff access focuses one managed login at a time",
+    "Dealer page requests deduplicate auth work and load independent data together",
+    "Dealer App Leads keeps every mobile action clear and reachable",
+    "Dealer App Maintenance and Dealer desktop dialogs keep their own rules",
+    "Dealer Leads and Maintenance keep search, service details and desktop actions concise",
+    "Dealer Account staff role controls use a fully custom shared dropdown",
+    "Dealer Account staff roles use a polished green badge",
+    "both dealer workspaces show the Manage action and open the correct cost page",
+    "dealer lead management exposes QR and Photos in both dealer surfaces",
+    "My Leads exposes the owner-style maintenance report and schedule creation action",
+    "Tracking uses the same proposed schedule helper text as My Leads",
+    "empty shared assets stay in My Leads until approved maintenance exists",
+    "disapproved schedules remain dealer-only and disappear from owner notifications",
+    "owner tracking settings include the new schedule permission and clear sharing copy",
+    "upcoming work is collapsed by default and remains outside maintenance history",
+    "history separates information, timeline and records into individual modal screens",
+    "maintenance actions use the Aim4price Manage icon and clear report wording",
+    "Dealer Staff roles preserve the agreed tool visibility",
+    "Dealer Staff records store and return an explicit role",
+    "dealer registers use meaningful titles without decorative pills or combined-register controls",
+    "client register picker uses the owner modal controls without an Open pill",
+    "the owner share modal includes licence renewals and selected eligible assets",
+    "scheduled Owner maintenance uses the standard fuel-style location modal",
+    "Petrol station flow captures GPS, fuel details and a receipt-backed cost",
+    "desktop Update Asset offers the same compact usage choices and defaults property to N/A",
+    "disposal keeps the duplicate warning but removes the normal orange disclaimer",
+    "service completion can be saved when an asset has no captured usage",
+    "Owner and Field Manager show service success before returning to Maintenance"
+  ],
+  "browser_matrix": [
+    {
+      "name": "home",
+      "width": 1440,
+      "scale": 0.9895833333333334,
+      "elements": 6
+    },
+    {
+      "name": "home",
+      "width": 1920,
+      "scale": 1.2,
+      "elements": 6
+    },
+    {
+      "name": "home",
+      "width": 1600,
+      "scale": 1.1006944444444444,
+      "elements": 6
+    },
+    {
+      "name": "home",
+      "width": 1366,
+      "scale": 0.9381944444444444,
+      "elements": 6
+    },
+    {
+      "name": "home",
+      "width": 1280,
+      "scale": 0.8784722222222222,
+      "elements": 6
+    },
+    {
+      "name": "home",
+      "width": 1024,
+      "scale": 0.7006944444444444,
+      "elements": 6
+    },
+    {
+      "name": "home",
+      "width": 768,
+      "scale": 0.5229166666666667,
+      "elements": 6
+    },
+    {
+      "name": "home",
+      "width": 430,
+      "scale": 0.2881944444444444,
+      "elements": 6
+    },
+    {
+      "name": "estimate",
+      "width": 1440,
+      "scale": 0.9895833333333334,
+      "elements": 4
+    },
+    {
+      "name": "estimate",
+      "width": 1920,
+      "scale": 1.2,
+      "elements": 4
+    },
+    {
+      "name": "estimate",
+      "width": 1600,
+      "scale": 1.1006944444444444,
+      "elements": 4
+    },
+    {
+      "name": "estimate",
+      "width": 1366,
+      "scale": 0.9381944444444444,
+      "elements": 4
+    },
+    {
+      "name": "estimate",
+      "width": 1280,
+      "scale": 0.8784722222222222,
+      "elements": 4
+    },
+    {
+      "name": "estimate",
+      "width": 1024,
+      "scale": 0.7006944444444444,
+      "elements": 4
+    },
+    {
+      "name": "estimate",
+      "width": 768,
+      "scale": 0.5229166666666667,
+      "elements": 4
+    },
+    {
+      "name": "estimate",
+      "width": 430,
+      "scale": 0.2881944444444444,
+      "elements": 4
+    },
+    {
+      "name": "register",
+      "width": 1440,
+      "scale": 0.9895833333333334,
+      "elements": 10
+    },
+    {
+      "name": "register",
+      "width": 1920,
+      "scale": 1.2,
+      "elements": 10
+    },
+    {
+      "name": "register",
+      "width": 1600,
+      "scale": 1.1006944444444444,
+      "elements": 10
+    },
+    {
+      "name": "register",
+      "width": 1366,
+      "scale": 0.9381944444444444,
+      "elements": 10
+    },
+    {
+      "name": "register",
+      "width": 1280,
+      "scale": 0.8784722222222222,
+      "elements": 10
+    },
+    {
+      "name": "register",
+      "width": 1024,
+      "scale": 0.7006944444444444,
+      "elements": 10
+    },
+    {
+      "name": "register",
+      "width": 768,
+      "scale": 0.5229166666666667,
+      "elements": 10
+    },
+    {
+      "name": "register",
+      "width": 430,
+      "scale": 0.2881944444444444,
+      "elements": 10
+    },
+    {
+      "name": "marketplace",
+      "width": 1440,
+      "scale": 0.9895833333333334,
+      "elements": 4
+    },
+    {
+      "name": "marketplace",
+      "width": 1920,
+      "scale": 1.2,
+      "elements": 4
+    },
+    {
+      "name": "marketplace",
+      "width": 1600,
+      "scale": 1.1006944444444444,
+      "elements": 4
+    },
+    {
+      "name": "marketplace",
+      "width": 1366,
+      "scale": 0.9381944444444444,
+      "elements": 4
+    },
+    {
+      "name": "marketplace",
+      "width": 1280,
+      "scale": 0.8784722222222222,
+      "elements": 4
+    },
+    {
+      "name": "marketplace",
+      "width": 1024,
+      "scale": 0.7006944444444444,
+      "elements": 4
+    },
+    {
+      "name": "marketplace",
+      "width": 768,
+      "scale": 0.5229166666666667,
+      "elements": 4
+    },
+    {
+      "name": "marketplace",
+      "width": 430,
+      "scale": 0.2881944444444444,
+      "elements": 4
+    },
+    {
+      "name": "fuel",
+      "width": 1440,
+      "scale": 0.9895833333333334,
+      "elements": 5
+    },
+    {
+      "name": "fuel",
+      "width": 1920,
+      "scale": 1.2,
+      "elements": 5
+    },
+    {
+      "name": "fuel",
+      "width": 1600,
+      "scale": 1.1006944444444444,
+      "elements": 5
+    },
+    {
+      "name": "fuel",
+      "width": 1366,
+      "scale": 0.9381944444444444,
+      "elements": 5
+    },
+    {
+      "name": "fuel",
+      "width": 1280,
+      "scale": 0.8784722222222222,
+      "elements": 5
+    },
+    {
+      "name": "fuel",
+      "width": 1024,
+      "scale": 0.7006944444444444,
+      "elements": 5
+    },
+    {
+      "name": "fuel",
+      "width": 768,
+      "scale": 0.5229166666666667,
+      "elements": 5
+    },
+    {
+      "name": "fuel",
+      "width": 430,
+      "scale": 0.2881944444444444,
+      "elements": 5
+    },
+    {
+      "name": "account",
+      "width": 1440,
+      "scale": 0.9895833333333334,
+      "elements": 5
+    },
+    {
+      "name": "account",
+      "width": 1920,
+      "scale": 1.2,
+      "elements": 5
+    },
+    {
+      "name": "account",
+      "width": 1600,
+      "scale": 1.1006944444444444,
+      "elements": 5
+    },
+    {
+      "name": "account",
+      "width": 1366,
+      "scale": 0.9381944444444444,
+      "elements": 5
+    },
+    {
+      "name": "account",
+      "width": 1280,
+      "scale": 0.8784722222222222,
+      "elements": 5
+    },
+    {
+      "name": "account",
+      "width": 1024,
+      "scale": 0.7006944444444444,
+      "elements": 5
+    },
+    {
+      "name": "account",
+      "width": 768,
+      "scale": 0.5229166666666667,
+      "elements": 5
+    },
+    {
+      "name": "account",
+      "width": 430,
+      "scale": 0.2881944444444444,
+      "elements": 5
+    }
+  ],
+  "native_login_screenshot_pixel_parity": {
+    "owner-app": true,
+    "dealer": true,
+    "field-manager": true
+  },
+  "production_build": "passed in clean checkout with identical app/components/lib sources and placeholder PG configuration; no database integration exercised"
+}

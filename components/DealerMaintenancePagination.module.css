@@ -17,8 +17,9 @@
 }
 
 @media (max-width: 760px) {
-  .paginationShell {
+  :global(:where(html:not(:has([data-website-canvas])))) .paginationShell {
     padding-top: 0 !important;
     padding-bottom: 2.5rem !important;
   }
 }
+

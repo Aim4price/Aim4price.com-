@@ -1,0 +1,977 @@
+/* Canonical website styles for controls also used by the dedicated apps. */
+
+@keyframes dealerSpin {
+  to { transform: rotate(360deg); }
+}
+
+.dealerHidden {
+  display: none !important;
+}
+
+.dealerValuationSurface,
+.dealerLeadsSurface,
+.dealerMarketplaceSurface,
+.dealerDiscoverySurface {
+  background: transparent !important;
+  font-family: inherit !important;
+}
+
+.dealerValuationSurface {
+  min-height: auto !important;
+  padding-bottom: 0 !important;
+}
+
+.dealerValuationSurface > [class*='container'] {
+  width: min(calc(100% - 16px), 780px) !important;
+  padding-top: 12px !important;
+}
+
+.dealerValuationSurface [class*='wizardCard'] {
+  border-color: rgba(37, 71, 51, 0.12) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.085) !important;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] {
+  gap: 10px !important;
+}
+
+.dealerValuationSurface [class*='stepTitle'],
+.dealerDiscoverySurface [class*='heroPanel'] h1,
+.dealerLeadsSurface [class*='leadsHeroTitleBlock'] h1 {
+  color: var(--dealer-ink) !important;
+  font-size: clamp(1.75rem, calc(var(--website-design-vw) * 7.8), 2.35rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.05em !important;
+  line-height: 1.06 !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.dealerValuationSurface [class*='stepText'],
+.dealerValuationSurface [class*='equipmentPickerHint'],
+.dealerValuationSurface [class*='currentHint'],
+.dealerValuationSurface [class*='choiceCardNote'],
+.dealerValuationSurface [class*='detailsModalText'] {
+  color: var(--dealer-muted) !important;
+  font-size: 0.9rem !important;
+  font-weight: 620 !important;
+  line-height: 1.48 !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.dealerValuationSurface [class*='equipmentStageIntro'] {
+  gap: 6px !important;
+}
+
+.dealerValuationSurface [class*='equipmentPickerCard'],
+.dealerValuationSurface [class*='currentCard'] {
+  border-color: rgba(37, 71, 51, 0.12) !important;
+  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.06) !important;
+}
+
+.dealerValuationSurface [class*='equipmentDropdownMenu'],
+.dealerValuationSurface [class*='specDropdownMenu'] {
+  max-height: min(17rem, calc(var(--website-design-vh) * 42)) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dealerValuationSurface [class*='equipmentDropdownOption'],
+.dealerValuationSurface [class*='specDropdownOption'] {
+  min-height: 48px !important;
+  font-size: 0.92rem !important;
+  line-height: 1.32 !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'] {
+  min-height: 0 !important;
+}
+
+.dealerValuationSurface [class*='preEstimateDisclaimer'] {
+  color: var(--dealer-muted) !important;
+  font-size: 0.82rem !important;
+  line-height: 1.46 !important;
+}
+
+.dealerDiscoverySurface [class*='heroPanel'] {
+  min-height: 0 !important;
+  padding-block: 14px !important;
+}
+
+.dealerDiscoverySurface [class*='searchBox'] input,
+.dealerLeadsSurface [class*='searchInput'],
+.dealerMarketplaceSurface input,
+.dealerMarketplaceSurface select,
+.dealerMarketplaceSurface textarea {
+  font-size: 1rem !important;
+}
+
+.dealerDiscoverySurface [class*='dealerAssetMeta'],
+.dealerDiscoverySurface [class*='dealerAssetProvince'],
+.dealerLeadsSurface [class*='clientKicker'],
+.dealerMarketplaceSurface [class*='cardMeta'],
+.dealerMarketplaceSurface [class*='cardLocation'] {
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+.dealerDiscoverySurface {
+  min-height: auto !important;
+  width: min(calc(100% - 24px), 560px) !important;
+  padding-top: 8px !important;
+  padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
+}
+
+.dealerDiscoverySurface [class*='heroPanel'] {
+  min-height: 76px !important;
+  border-radius: 22px !important;
+  padding: 16px 18px !important;
+}
+
+.dealerDiscoverySurface [class*='heroPanel'] h1 {
+  font-size: clamp(1.75rem, calc(var(--website-design-vw) * 7), 2.35rem) !important;
+}
+
+.dealerDiscoverySurface [class*='controlsPanel'] {
+  margin-top: 0 !important;
+}
+
+.dealerDiscoverySurface [class*='toolbar'] {
+  gap: 10px !important;
+}
+
+.dealerDiscoverySurface [class*='discoveryOverviewOpenButton'],
+.dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:hover,
+.dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:focus,
+.dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:active {
+  border: 1.5px solid #6fc596 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
+  color: #0a543d !important;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1) !important;
+}
+
+.dealerLeadsSurface {
+  min-height: auto !important;
+  padding: 0 !important;
+}
+
+.dealerLeadsSurface > [class*='shell'] {
+  width: min(calc(100% - 16px), 940px) !important;
+  padding-top: 12px !important;
+}
+
+.dealerLeadsSurface [class*='registerPanel'] {
+  margin-top: 0 !important;
+  border-color: rgba(37, 71, 51, 0.12) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.075) !important;
+}
+
+.dealerLeadsSurface [class*='leadsRegisterHeader'] {
+  margin-bottom: 10px !important;
+}
+
+.dealerLeadsSurface [class*='leadsHeroTitleBlock'] h1 {
+  color: var(--dealer-ink) !important;
+  font-size: clamp(1.75rem, calc(var(--website-design-vw) * 7), 2.35rem) !important;
+  font-weight: 900 !important;
+}
+
+.dealerMarketplaceSurface {
+  min-height: auto !important;
+  padding-bottom: 0 !important;
+}
+
+.marketplaceDealerToolbar {
+  width: min(calc(100% - 16px), 860px);
+  display: grid;
+  gap: 9px;
+  margin: 12px auto;
+}
+
+.marketplaceModeTabs {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  border: 1px solid var(--dealer-line);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 6px;
+  box-shadow: 0 10px 26px rgba(18, 53, 45, 0.065);
+}
+
+.marketplaceQuickActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+}
+
+.marketplaceQuickSearch {
+  position: relative;
+  min-width: 0;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--dealer-line);
+  border-radius: 15px;
+  background: #ffffff;
+  padding: 0 52px 0 44px;
+  box-shadow: 0 8px 20px rgba(18, 53, 45, 0.055);
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.marketplaceQuickSearch:focus-within {
+  border-color: rgba(37, 71, 51, 0.58);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1), 0 10px 24px rgba(18, 53, 45, 0.08);
+}
+
+.marketplaceQuickSearch > span {
+  position: absolute;
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  color: var(--dealer-green);
+}
+
+.marketplaceQuickSearch input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dealer-ink);
+  font-size: 1rem;
+  font-weight: 720;
+  outline: none;
+}
+
+.marketplaceQuickSearch > button {
+  position: absolute;
+  right: 3px;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: var(--dealer-green-soft);
+  color: var(--dealer-green);
+}
+
+.marketplaceQuickSearch > button svg {
+  width: 17px;
+  height: 17px;
+}
+
+.marketplaceFilterButton,
+.marketplaceCreateButton,
+.marketplaceCloseFilters {
+  min-height: 50px;
+  border-radius: 15px;
+  padding: 0 16px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.marketplaceFilterButton {
+  display: none;
+}
+
+.marketplaceFilterButton,
+.marketplaceCloseFilters {
+  border: 1px solid var(--dealer-line);
+  background: #ffffff;
+  color: var(--dealer-green);
+}
+
+.marketplaceCreateButton {
+  border: 1px solid var(--dealer-green);
+  background: var(--dealer-green);
+  color: #ffffff;
+}
+
+.marketplaceCloseFilters {
+  display: none;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.marketplaceLoadStatus {
+  width: min(calc(100% - 16px), 860px);
+  margin: 0 auto 10px;
+  border: 1px solid rgba(37, 71, 51, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--dealer-muted);
+  padding: 11px 13px;
+  font-size: 0.76rem;
+  font-weight: 720;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.marketplaceLoadStatusError {
+  border-color: rgba(143, 105, 29, 0.18);
+  background: #fff8e8;
+  color: #785719;
+}
+
+.editListingOverlay {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  background: rgba(8, 29, 23, 0.58);
+  padding:
+    max(14px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(14px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+  backdrop-filter: blur(9px);
+}
+
+.editListingModal {
+  width: min(100%, 650px);
+  max-height: calc(calc(var(--website-visible-height) * 1) - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-y: auto;
+  border: 1px solid rgba(37, 71, 51, 0.13);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(8, 29, 23, 0.3);
+}
+
+.editListingHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.editListingHeader > div {
+  min-width: 0;
+}
+
+.editListingHeader span {
+  color: #2b6b54;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.editListingHeader h2 {
+  margin: 5px 0 0;
+  color: var(--dealer-ink);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw) * 5), 1.8rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.editListingHeader button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  border: 1px solid var(--dealer-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--dealer-green);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.editListingField > span {
+  color: var(--dealer-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.editListingActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.editListingActions button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dealer-green);
+  border-radius: 13px;
+  background: var(--dealer-green);
+  color: #ffffff;
+  padding: 0 15px;
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.editListingActions button:first-child {
+  border-color: var(--dealer-line);
+  background: #ffffff;
+  color: var(--dealer-green);
+}
+
+.editListingModal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editListingHeader {
+  flex: 0 0 auto;
+  padding: 18px;
+  border-bottom: 1px solid rgba(37, 71, 51, 0.09);
+}
+
+.editListingBody {
+  display: grid;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.editListingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.editListingField {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.editListingField input,
+.editListingField textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid rgba(37, 71, 51, 0.2);
+  border-radius: 13px;
+  background: #fbfdfb;
+  color: var(--dealer-ink);
+  padding: 11px 12px;
+  font: 700 1rem Montserrat, Arial, sans-serif;
+  outline: none;
+}
+
+.editListingField input {
+  min-height: 48px;
+}
+
+.editListingField input:focus,
+.editListingField textarea:focus {
+  border-color: rgba(37, 71, 51, 0.6);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1);
+}
+
+.editListingError {
+  margin: 0;
+  border-radius: 13px;
+  background: #fff1f1;
+  color: #8d3030;
+  padding: 11px 12px;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.editListingActions {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 14px 16px max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(37, 71, 51, 0.09);
+  background: #ffffff;
+}
+
+.editListingSave {
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+}
+
+.marketplaceModeTabs button {
+  min-height: 46px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--dealer-muted);
+  padding: 0 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.marketplaceModeTabs .marketplaceModeActive {
+  background: var(--dealer-green);
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(37, 71, 51, 0.2);
+}
+
+.marketplaceModeTabs button:focus-visible,
+.marketplaceQuickSearch > button:focus-visible,
+.marketplaceFilterButton:focus-visible,
+.marketplaceCreateButton:focus-visible,
+.marketplaceCloseFilters:focus-visible,
+.editListingHeader button:focus-visible,
+.editListingActions button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.13), 0 10px 24px rgba(18, 53, 45, 0.09);
+}
+.dealerValuationSurface [class*='wizardHeader'] > [class*='stepper'] {
+  gap: 6px !important;
+}
+
+.dealerValuationSurface [class*='stepperItem'] {
+  justify-content: center !important;
+  padding-inline: 6px !important;
+  text-align: center;
+}
+
+.dealerValuationSurface [class*='selectedSummaryPill'] {
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='selectedSummaryPill'][data-selection-status='pending'] {
+  border: 1px dashed rgba(37, 71, 51, 0.28) !important;
+  background: #ffffff !important;
+  color: var(--dealer-muted) !important;
+  box-shadow: none !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'] {
+  justify-items: center !important;
+  padding: 18px 56px !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard']::after,
+.dealerValuationSurface [class*='pathChoiceCard'][class*='choiceCardActive']::after {
+  top: 50% !important;
+  right: 17px !important;
+  transform: translateY(-50%) !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'] :is(strong, [class*='choiceCardNote']) {
+  max-width: 100% !important;
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='inlineOptionButton'],
+.dealerValuationSurface [class*='conditionChoiceButton'] {
+  padding-inline: 36px !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='choiceCard'][aria-pressed]:not([class*='pathChoiceCard']) {
+  justify-items: center !important;
+  min-height: 104px !important;
+  padding: 16px 44px !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='choiceCard'][aria-pressed]:not([class*='pathChoiceCard']) :is(strong, [class*='choiceCardNote']) {
+  max-width: 100% !important;
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='choiceCard'][aria-pressed='true']:not([class*='pathChoiceCard'])::after {
+  top: 12px !important;
+  right: 12px !important;
+}
+
+.dealerValuationSurface [class*='specStepAction'] {
+  align-self: center !important;
+  justify-self: end !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] {
+  display: grid !important;
+  grid-template-columns: minmax(128px, 0.72fr) minmax(210px, 1fr) !important;
+  align-items: stretch !important;
+  gap: 10px 12px !important;
+  padding: 14px !important;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] > [data-valuation-action] {
+  width: 100% !important;
+  min-width: 0 !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] > [data-valuation-action='back'] {
+  grid-column: 1;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] > [data-valuation-action='next'] {
+  grid-column: 2;
+}
+
+.dealerValuationSurface [class*='wizardFooter'][data-has-disclaimer='true'] > [data-valuation-disclaimer] {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  margin: 0 !important;
+  padding: 10px 12px;
+  border: 1px solid rgba(37, 71, 51, 0.1);
+  border-radius: 12px;
+  background: #f4f8f5;
+  text-align: center;
+}
+
+.dealerValuationSurface [class*='wizardFooter'][data-has-disclaimer='true'] > [data-valuation-action] {
+  grid-row: 2;
+}
+
+.dealerValuationSurface [class*='wizardFooterSingle'] {
+  grid-template-columns: 1fr !important;
+}
+
+.dealerValuationSurface [class*='wizardFooterSingle'] > [data-valuation-action='back'] {
+  grid-column: 1;
+  width: min(100%, 260px) !important;
+  justify-self: center;
+}
+
+.dealerValuationSurface [class*='primaryButton'],
+.dealerValuationSurface [class*='secondaryButton'],
+.dealerValuationSurface [class*='assetButton'],
+.dealerValuationSurface [class*='resultFinalActionsButtons'] > button,
+.dealerValuationSurface [class*='detailsModalActions'] > button,
+.dealerValuationSurface [class*='finalSaveActions'] > button,
+.dealerValuationSurface [class*='marketplacePublishActions'] > button {
+  justify-content: center !important;
+  text-align: center !important;
+}
+.dealerValuationSurface [class*='wizardHeader'] {
+  border-bottom-color: rgba(37, 71, 51, 0.1) !important;
+  background: linear-gradient(180deg, #f7faf8 0%, #eef5f0 100%) !important;
+}
+
+.dealerValuationSurface [class*='wizardHeader'] > [class*='stepper'] {
+  width: 100%;
+}
+
+.dealerValuationSurface [class*='stepperItem'] {
+  flex: 1 1 0;
+}
+
+.dealerValuationSurface [class*='stepperBullet'] {
+  width: 34px !important;
+  height: 34px !important;
+  font-size: 0.78rem !important;
+  border-width: 2px !important;
+}
+
+.dealerValuationSurface [class*='stepperBulletActive'],
+.dealerValuationSurface [class*='stepperBulletComplete'] {
+  border-color: var(--dealer-green) !important;
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 5px rgba(37, 71, 51, 0.1) !important;
+}
+
+.dealerValuationSurface [class*='selectedSummaryPill'] {
+  border-color: rgba(37, 71, 51, 0.22) !important;
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 18px rgba(37, 71, 51, 0.14) !important;
+}
+
+.dealerValuationSurface [class*='equipmentDropdownTrigger'] {
+  min-height: 60px !important;
+  border-radius: 16px !important;
+  font-size: 1rem !important;
+}
+
+.dealerValuationSurface [class*='equipmentDropdownTrigger'][data-selected='true'] {
+  border-color: rgba(37, 71, 51, 0.48) !important;
+  background: linear-gradient(180deg, #f7fbf8 0%, #e7f1eb 100%) !important;
+  color: var(--dealer-green-dark) !important;
+  box-shadow:
+    0 12px 26px rgba(37, 71, 51, 0.09),
+    inset 4px 0 0 var(--dealer-green) !important;
+}
+
+.dealerValuationSurface [class*='equipmentDropdownOption'] {
+  position: relative;
+  min-height: 56px !important;
+  padding: 11px 14px !important;
+  border-radius: 13px !important;
+  font-size: 0.96rem !important;
+}
+
+.dealerValuationSurface [class*='equipmentDropdownOptionActive'] {
+  border-color: var(--dealer-green) !important;
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 22px rgba(37, 71, 51, 0.17) !important;
+}
+
+.dealerValuationSurface [class*='equipmentDropdownOptionActive'] :is(span, strong, small) {
+  color: #ffffff !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'] {
+  min-height: 112px !important;
+  padding: 18px 58px 18px 18px !important;
+  border-width: 2px !important;
+  border-radius: 18px !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'][class*='choiceCardActive'] {
+  border-color: var(--dealer-green) !important;
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 14px 30px rgba(37, 71, 51, 0.2),
+    0 0 0 4px rgba(37, 71, 51, 0.1) !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'][class*='choiceCardActive'] :is(strong, [class*='choiceCardNote']) {
+  color: #ffffff !important;
+}
+
+.dealerValuationSurface [class*='choiceCardActive']::after {
+  content: none !important;
+  display: none !important;
+}
+
+.dealerValuationSurface [class*='inlineOptionButton'],
+.dealerValuationSurface [class*='conditionChoiceButton'] {
+  position: relative;
+  min-height: 58px !important;
+  padding: 10px 42px 10px 12px !important;
+  border-width: 2px !important;
+  border-radius: 15px !important;
+  font-size: 0.94rem !important;
+}
+
+.dealerValuationSurface [class*='inlineOptionButtonActive'],
+.dealerValuationSurface [class*='conditionChoiceButtonActive'] {
+  border-color: var(--dealer-green) !important;
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 12px 24px rgba(37, 71, 51, 0.18),
+    0 0 0 4px rgba(37, 71, 51, 0.08) !important;
+}
+
+.dealerValuationSurface [class*='inlineOptionButtonActive']::after,
+.dealerValuationSurface [class*='conditionChoiceButtonActive']::after,
+.dealerValuationSurface [class*='equipmentDropdownOptionActive']::after {
+  content: none !important;
+  display: none !important;
+}
+
+.dealerValuationSurface [class*='choiceCard'][aria-pressed='true']:not([class*='pathChoiceCard']) {
+  border-color: var(--dealer-green) !important;
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 12px 26px rgba(37, 71, 51, 0.2),
+    0 0 0 4px rgba(37, 71, 51, 0.1) !important;
+}
+
+.dealerValuationSurface [class*='choiceCard'][aria-pressed='true']:not([class*='pathChoiceCard']) :is(strong, [class*='choiceCardNote']) {
+  color: #ffffff !important;
+}
+
+.dealerValuationSurface [class*='specStepCard'] {
+  border-width: 2px !important;
+}
+
+.dealerValuationSurface [class*='specStepCardActive'] {
+  border-color: rgba(37, 71, 51, 0.34) !important;
+  background: #ffffff !important;
+}
+
+.dealerValuationSurface [class*='specStepCardComplete'] {
+  border-color: rgba(37, 71, 51, 0.3) !important;
+  background: linear-gradient(180deg, #f2f8f4 0%, #e7f1eb 100%) !important;
+}
+
+.dealerValuationSurface [class*='specStepCardComplete'] [class*='specStepAction'] {
+  border-color: rgba(37, 71, 51, 0.2) !important;
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+}
+
+.dealerValuationSurface [class*='primaryButton'],
+.dealerValuationSurface [class*='secondaryButton'],
+.dealerValuationSurface [class*='assetButton'] {
+  min-height: 56px !important;
+  border-radius: 15px !important;
+  padding-inline: 20px !important;
+  font-size: 0.94rem !important;
+}
+
+.dealerValuationSurface [class*='primaryButton'],
+.dealerValuationSurface [class*='assetButton'] {
+  border: 1px solid var(--dealer-green) !important;
+  background: var(--dealer-green) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18) !important;
+}
+
+.dealerValuationSurface [class*='primaryButton']:hover:not(:disabled),
+.dealerValuationSurface [class*='assetButton']:hover:not(:disabled) {
+  border-color: var(--dealer-green-dark) !important;
+  background: var(--dealer-green-dark) !important;
+}
+
+.dealerValuationSurface [class*='wizardFooter'] > [class*='primaryButton'] {
+  min-width: 220px;
+}
+
+.dealerValuationSurface [class*='detailsModalActions'] > button,
+.dealerValuationSurface [class*='finalSaveActions'] > button,
+.dealerValuationSurface [class*='marketplacePublishActions'] > button {
+  flex: 1 1 0;
+}
+
+.dealerValuationSurface [class*='resultFinalActionsButtons'] {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+.dealerValuationSurface [class*='resultFinalActionsButtons'] > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 56px !important;
+  border-radius: 15px !important;
+}
+
+.dealerValuationSurface :is(button, [role='button']):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.14), 0 10px 24px rgba(18, 53, 45, 0.1) !important;
+}
+.dealerCompactModalHeader {
+  min-height: 82px;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  justify-items: center !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+}
+
+.dealerCompactModalHeader > div {
+  width: 100%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.dealerValuationSurface [class*='currentEyebrow'] {
+  min-height: 28px !important;
+  padding-inline: 12px !important;
+  border-radius: 999px !important;
+  font-size: 0.68rem !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.1em !important;
+  line-height: 1 !important;
+}
+
+.dealerCompactModalHeader [class*='currentEyebrow'],
+.dealerCompactModalHeader [class*='saveModalClose'] {
+  align-self: center !important;
+  justify-self: center !important;
+}
+
+.dealerCompactModalHeader [class*='saveModalClose'] {
+  width: 44px !important;
+  height: 44px !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  font-size: 1.15rem !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'] {
+  min-height: 116px !important;
+  padding-inline: 58px !important;
+  justify-items: center !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='pathChoiceCard'] :is(strong, [class*='choiceCardNote']) {
+  width: 100%;
+  margin-inline: auto !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='inlineOptionButton'],
+.dealerValuationSurface [class*='conditionChoiceButton'] {
+  min-height: 64px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px 42px !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='inlineOptionRow'] > [class*='inlineOptionButton']:last-child:nth-child(odd),
+.dealerValuationSurface [class*='conditionButtonGrid'] > [class*='conditionChoiceButton']:last-child:nth-child(odd) {
+  grid-column: 1 / -1 !important;
+}
+
+.dealerValuationSurface [class*='unknownAnswerButton'] {
+  width: 100% !important;
+  min-height: 66px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 14px 24px !important;
+  font-size: 1rem !important;
+  line-height: 1.22 !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='resultFinalActionsButtons'] > button {
+  min-height: 62px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1rem !important;
+  text-align: center !important;
+}
+.module .dealerMarketplaceSurface [class*='modalOverlay'] {
+  overflow: hidden !important;
+}
+
+.module .dealerMarketplaceSurface [class*='listingModal'] {
+  overflow: hidden !important;
+}
+
+.module .dealerMarketplaceSurface [class*='modalDetails'] {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scroll-padding-bottom: max(2rem, calc(1rem + env(safe-area-inset-bottom)));
+  padding-bottom: max(2rem, calc(1rem + env(safe-area-inset-bottom))) !important;
+  -webkit-overflow-scrolling: touch;
+}
+.dealerDiscoverySurface {
+    width: min(calc(100% - 48px), 760px) !important;
+  }

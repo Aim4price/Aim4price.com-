@@ -77,14 +77,14 @@ test('advert removal mirrors the Asset Register confirmation and four-step dispo
   assert.ok(wizardSource.indexOf('styles.wizardBody') < wizardSource.indexOf('styles.wizardActions'));
   assert.match(wizardSource, /styles\.wizardActions[\s\S]*?className=\{styles\.primaryButton\}[\s\S]*?Save outcome & remove advert/);
 
-  assert.match(styles, /\.confirmDialog\s*\{[^}]*width:\s*min\(96vw, 58rem\)/);
-  assert.match(styles, /\.confirmDialog\s*\{[^}]*padding:\s*clamp\(1\.75rem, 2\.55vw, 2\.35rem\)/);
+  assert.match(styles, /\.confirmDialog\s*\{[^}]*width:\s*min\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 96\), 58rem\)/);
+  assert.match(styles, /\.confirmDialog\s*\{[^}]*padding:\s*clamp\(1\.75rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.55\), 2\.35rem\)/);
   assert.match(styles, /\.confirmContent\s*\{[^}]*gap:\s*1\.15rem/);
   assert.match(styles, /\.confirmContent h2\s*\{[^}]*padding:[^;]*1\.1rem[^;]*;[^}]*border-bottom:/);
   assert.match(styles, /\.confirmCloseButton\s*\{[^}]*position:\s*absolute;[^}]*width:\s*3rem/);
   assert.match(styles, /\.confirmActions\s*\{[^}]*justify-content:\s*flex-end;[^}]*gap:\s*0\.75rem/);
-  assert.match(styles, /\.dialog\s*\{[^}]*width:\s*min\(52rem, calc\(100vw - 2rem\)\)/);
-  assert.match(styles, /\.dialog\s*\{[^}]*max-height:\s*min\(90dvh, 52rem\);[^}]*display:\s*flex;[^}]*flex-direction:\s*column/);
+  assert.match(styles, /\.dialog\s*\{[^}]*width:\s*min\(52rem, calc\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 100\) - 2rem\)\)/);
+  assert.match(styles, /\.dialog\s*\{[^}]*max-height:\s*min\((?:calc\(var\(--website-design-vh(?:, 1dvh)?\) \* 90\)|calc\(var\(--website-visible-height(?:, 100dvh)?\) \* 0\.9\)), 52rem\);[^}]*display:\s*flex;[^}]*flex-direction:\s*column/);
   assert.match(styles, /\.wizardActions\s*\{[^}]*position:\s*sticky;[^}]*bottom:\s*-1\.4rem;[^}]*padding:\s*0\.85rem 0 0/);
   assert.match(styles, /\.progress\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.reasonGrid\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
@@ -165,3 +165,4 @@ test('Owner App sends listing removal through the guided Marketplace manager', a
   assert.match(ownerAssetDetail, /href=\{`\/marketplace\?listing=\$\{encodeURIComponent\(draft\.id\)\}&manage=1`\}/);
   assert.match(ownerAssetDetail, />Manage or remove advert<\/Link>/);
 });
+

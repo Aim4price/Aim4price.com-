@@ -1,6 +1,8 @@
 'use client';
 
-import { createPortal } from 'react-dom';
+import { websiteLogicalRect, websiteVisibleViewport } from '../../lib/website-canvas';
+
+import { createPortal } from '../../components/WebsitePortal';
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import styles from './friendly-select.module.css';
 
@@ -46,13 +48,13 @@ export default function FriendlySelect<T extends string>({
       const button = buttonRef.current;
       if (!button) return;
 
-      const rect = button.getBoundingClientRect();
+      const rect = websiteLogicalRect(button.getBoundingClientRect());
       const edge = 12;
       const gap = 8;
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-      const viewportTop = window.visualViewport?.offsetTop ?? 0;
-      const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
+      const viewportHeight = websiteVisibleViewport().height;
+      const viewportWidth = websiteVisibleViewport().width;
+      const viewportTop = websiteVisibleViewport().top;
+      const viewportLeft = websiteVisibleViewport().left;
       const width = Math.min(Math.max(rect.width, 260), viewportWidth - edge * 2);
       const estimatedHeight = Math.min(320, Math.max(110, options.length * 72 + 12));
       const below = viewportTop + viewportHeight - rect.bottom - edge - gap;
@@ -88,6 +90,7 @@ export default function FriendlySelect<T extends string>({
     document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', positionMenu);
+    window.addEventListener('aim4price:canvas-geometry', positionMenu);
     window.addEventListener('scroll', positionMenu, true);
     window.visualViewport?.addEventListener('resize', positionMenu);
     window.visualViewport?.addEventListener('scroll', positionMenu);
@@ -96,6 +99,7 @@ export default function FriendlySelect<T extends string>({
       document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('resize', positionMenu);
+      window.removeEventListener('aim4price:canvas-geometry', positionMenu);
       window.removeEventListener('scroll', positionMenu, true);
       window.visualViewport?.removeEventListener('resize', positionMenu);
       window.visualViewport?.removeEventListener('scroll', positionMenu);

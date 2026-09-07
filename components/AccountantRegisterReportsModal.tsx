@@ -96,8 +96,8 @@ export default function AccountantRegisterReportsModal({ shareId, registerName, 
   }
 
   return (
-    <div className={`${styles.modalOverlay} ${workspaceClass(workspaceStyles.modalOverlay)}`}>
-      <div className={styles.modalBackdrop} onClick={onClose}/>
+    <div className={`${styles.modalOverlay} ${workspaceClass(workspaceStyles.modalOverlay)}`} data-website-overlay>
+      <div className={styles.modalBackdrop} data-website-overlay onClick={onClose}/>
       <section className={`${styles.optionsModal} ${workspaceClass(workspaceStyles.modal)}`} role="dialog" aria-modal="true" aria-labelledby="accountant-register-reports-title">
         <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${workspaceClass(workspaceStyles.modalHeader)}`}>
           <div className={styles.modalHeaderText}><h3 id="accountant-register-reports-title">Download reports</h3><p>{registerName}</p></div>
@@ -143,3 +143,4 @@ export default function AccountantRegisterReportsModal({ shareId, registerName, 
     </div>
   );
 }
+

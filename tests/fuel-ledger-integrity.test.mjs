@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -71,7 +72,7 @@ test('Fuel Ledger actions match Cost Ledger sizing and keep search below the but
   );
   assert.match(parityStyles, /width: 100%/);
   assert.match(parityStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
-  assert.match(parityStyles, /min-height: clamp\(3\.62rem, 4\.45vw, 4\.08rem\)/);
+  assert.match(parityStyles, /min-height: clamp\(3\.62rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 4\.45\), 4\.08rem\)/);
   assert.match(parityStyles, /min-height: 3\.75rem/);
 });
 
@@ -90,10 +91,9 @@ test('fuel slip choice modals use compact action cards without forced desktop wr
   assert.doesNotMatch(choicesMarkup, /<br\s*\/?\s*>/);
   assert.match(choicesStyles, /width: min\(100%, 1120px\)/);
   assert.match(choicesStyles, /grid-template-columns: 4\.1rem minmax\(0, 1fr\) 1\.75rem/);
-  assert.match(choicesStyles, /@media \(min-width: 1180px\)/);
+  assertNoWebsiteReflow(choicesStyles);
   assert.match(choicesStyles, /white-space: nowrap/);
-  assert.match(choicesStyles, /@media \(max-width: 900px\)/);
-  assert.match(choicesStyles, /grid-template-columns: 1fr/);
+  assert.doesNotMatch(choicesStyles, /grid-template-columns: 1fr/);
 });
 
 test('fuel exclusions support multi-select review without an included status pill', () => {
@@ -212,3 +212,4 @@ test('fuel-slip usage updates are explicit, monotonic and stale valuation only a
   assert.match(saveFuelSlip, /when \$6::boolean and \$3::numeric is not null\s+then greatest\(coalesce\(hours, \$3::numeric\), \$3::numeric\)/);
   assert.match(saveFuelSlip, /const nextSpecs = usageAdvanced && assetHasSavedValuation\s+\? markFuelAssetValuationNeedsUpdate/);
 });
+

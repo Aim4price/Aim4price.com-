@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal } from './WebsitePortal';
 import assetStyles from '../app/asset-register/page.module.css';
 import leadStyles from '../app/leads/page.module.css';
 import { workspaceStyles } from './WorkspacePrimitives';
@@ -108,9 +108,9 @@ export default function LeadPhotoViewerModal({
 
   return createPortal(
     <div
-      className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay} ${leadStyles.leadPhotoModalOverlay} ${leadStyles.assetPhotoModalOverlay}`}
+      className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay} ${leadStyles.leadPhotoModalOverlay} ${leadStyles.assetPhotoModalOverlay}`} data-website-overlay
     >
-      <div className={assetStyles.modalBackdrop} onClick={onClose} />
+      <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose} />
 
       <div
         className={`${leadStyles.leadPhotoModal} ${leadStyles.assetPhotoModal}`}
@@ -190,3 +190,4 @@ export default function LeadPhotoViewerModal({
     document.body,
   );
 }
+

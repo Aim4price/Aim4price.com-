@@ -162,7 +162,7 @@
 }
 
 .modal {
-  width: min(100%, 500px);
+  width: min(var(--website-dialog-reference-width, 100%), 500px);
   padding: 26px;
   border: 1px solid rgba(27, 105, 76, 0.18);
   border-radius: 22px;
@@ -274,32 +274,32 @@
 }
 
 @media (max-width: 640px) {
-  .row {
+  :global(:where(html:not(:has([data-website-canvas])))) .row {
     grid-template-columns: auto minmax(0, 1fr);
     padding: 13px 15px;
   }
 
-  .timing {
+  :global(:where(html:not(:has([data-website-canvas])))) .timing {
     grid-column: 2;
     align-items: flex-start;
     text-align: left;
   }
 
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     grid-column: 2;
     justify-self: start;
   }
 
-  .modal {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal {
     padding: 22px 18px;
   }
 
-  .modalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalActions {
     flex-direction: column-reverse;
   }
 
-  .keepButton,
-  .confirmRetractButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .keepButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .confirmRetractButton {
     width: 100%;
   }
 }
@@ -310,3 +310,4 @@
     transition: none;
   }
 }
+

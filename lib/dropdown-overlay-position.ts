@@ -30,6 +30,7 @@ type DropdownOverlayGeometryOptions = {
   position: Pick<DropdownOverlayPosition, 'left' | 'top' | 'width' | 'maxHeight'> | null;
   fallbackMaxHeight: number;
   viewportGutter?: number;
+  maximumWidth?: number;
   visible?: boolean;
 };
 
@@ -39,6 +40,7 @@ export function applyDropdownOverlayGeometry(
     position,
     fallbackMaxHeight,
     viewportGutter = 12,
+    maximumWidth,
     visible = position !== null,
   }: DropdownOverlayGeometryOptions,
 ): void {
@@ -55,7 +57,7 @@ export function applyDropdownOverlayGeometry(
     ['bottom', 'auto'],
     ['width', `${width}px`],
     ['min-width', `${width}px`],
-    ['max-width', `calc(100dvw - ${viewportGutter * 2}px)`],
+    ['max-width', maximumWidth === undefined ? `calc(100dvw - ${viewportGutter * 2}px)` : `${Math.max(1, maximumWidth)}px`],
     ['max-height', `${maxHeight}px`],
     ['margin', '0'],
     ['overflow-x', 'hidden'],
@@ -129,3 +131,4 @@ export function calculateDropdownOverlayPosition({
     placement: openAbove ? 'top' : 'bottom',
   };
 }
+

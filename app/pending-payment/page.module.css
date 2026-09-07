@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh) * 100);
   color: var(--text-strong);
   background:
     radial-gradient(circle at 12% 8%, rgba(31, 108, 83, 0.07) 0, transparent 28rem),
@@ -10,13 +10,13 @@
 .shell {
   width: var(--shell-narrow-width);
   margin: 0 auto;
-  padding: clamp(2rem, 5vw, 4.5rem) 0 clamp(3rem, 6vw, 5.25rem);
+  padding: clamp(2rem, calc(var(--website-design-vw) * 5), 4.5rem) 0 clamp(3rem, calc(var(--website-design-vw) * 6), 5.25rem);
 }
 
 .panel {
   position: relative;
   overflow: hidden;
-  padding: clamp(1.15rem, 2.6vw, 1.9rem);
+  padding: clamp(1.15rem, calc(var(--website-design-vw) * 2.6), 1.9rem);
   border: 1px solid rgba(18, 45, 37, 0.08);
   border-radius: 1.32rem;
   background:
@@ -42,14 +42,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(14.5rem, 18.5rem);
   align-items: center;
-  gap: clamp(1.1rem, 3vw, 2rem);
+  gap: clamp(1.1rem, calc(var(--website-design-vw) * 3), 2rem);
 }
 
 .copyBlock {
   min-width: 0;
   display: grid;
-  gap: clamp(0.66rem, 1.15vw, 0.88rem);
-  padding: clamp(0.05rem, 0.8vw, 0.35rem);
+  gap: clamp(0.66rem, calc(var(--website-design-vw) * 1.15), 0.88rem);
+  padding: clamp(0.05rem, calc(var(--website-design-vw) * 0.8), 0.35rem);
 }
 
 .stateLabel {
@@ -68,7 +68,7 @@
   max-width: 36rem;
   margin: 0;
   color: #16362c;
-  font-size: clamp(1.9rem, 3.35vw, 2.9rem);
+  font-size: clamp(1.9rem, calc(var(--website-design-vw) * 3.35), 2.9rem);
   line-height: 1.08;
   letter-spacing: -0.038em;
   font-weight: 830;
@@ -79,7 +79,7 @@
   max-width: 36rem;
   margin: 0;
   color: #60716a;
-  font-size: clamp(0.96rem, 1.05vw, 1.03rem);
+  font-size: clamp(0.96rem, calc(var(--website-design-vw) * 1.05), 1.03rem);
   line-height: 1.62;
   letter-spacing: -0.004em;
   text-wrap: balance;
@@ -90,7 +90,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.68rem;
-  margin-top: clamp(0.18rem, 0.8vw, 0.45rem);
+  margin-top: clamp(0.18rem, calc(var(--website-design-vw) * 0.8), 0.45rem);
 }
 
 .primaryButton,
@@ -182,7 +182,7 @@
   width: 100%;
   max-width: 18.5rem;
   gap: 0.7rem;
-  padding: clamp(0.86rem, 1.35vw, 1.02rem);
+  padding: clamp(0.86rem, calc(var(--website-design-vw) * 1.35), 1.02rem);
   border: 1px solid rgba(18, 45, 37, 0.085);
   border-radius: 1rem;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(246, 249, 248, 0.96) 100%);
@@ -210,7 +210,7 @@
 .summaryRow strong {
   min-width: 0;
   color: #17362c;
-  font-size: clamp(0.96rem, 1.2vw, 1.08rem);
+  font-size: clamp(0.96rem, calc(var(--website-design-vw) * 1.2), 1.08rem);
   line-height: 1.28;
   font-weight: 760;
   overflow-wrap: anywhere;
@@ -235,9 +235,9 @@
 
 .modalCard {
   display: grid;
-  width: min(calc(100vw - 2rem), 32.25rem);
-  gap: clamp(0.86rem, 1.45vw, 1.04rem);
-  padding: clamp(1.08rem, 2.1vw, 1.38rem);
+  width: min(calc(calc(var(--website-design-vw) * 100) - 2rem), 32.25rem);
+  gap: clamp(0.86rem, calc(var(--website-design-vw) * 1.45), 1.04rem);
+  padding: clamp(1.08rem, calc(var(--website-design-vw) * 2.1), 1.38rem);
   border: 1px solid rgba(18, 45, 37, 0.08);
   border-radius: 1.16rem;
   background:
@@ -266,7 +266,7 @@
 .modalHeader h2 {
   margin: 0;
   color: #17362c;
-  font-size: clamp(1.38rem, 2.1vw, 1.68rem);
+  font-size: clamp(1.38rem, calc(var(--website-design-vw) * 2.1), 1.68rem);
   line-height: 1.1;
   letter-spacing: -0.035em;
   font-weight: 830;
@@ -408,81 +408,3 @@
   background: rgba(247, 250, 249, 0.86);
 }
 
-@media (max-width: 860px) {
-  .contentGrid {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
-
-  .summaryCard {
-    justify-self: stretch;
-    align-self: start;
-    width: 100%;
-    max-width: none;
-  }
-}
-
-@media (max-width: 560px) {
-  .shell {
-    padding-top: 1.1rem;
-  }
-
-  .panel {
-    padding: 0.96rem;
-    border-radius: 1.12rem;
-  }
-
-  .copyBlock {
-    gap: 0.72rem;
-    padding: 0;
-  }
-
-  .title {
-    font-size: clamp(1.72rem, 8.4vw, 2.16rem);
-    line-height: 1.1;
-    letter-spacing: -0.035em;
-  }
-
-  .text {
-    font-size: 0.96rem;
-    line-height: 1.58;
-  }
-
-  .actions,
-  .contactActions,
-  .contactDetails {
-    grid-template-columns: 1fr;
-  }
-
-  .actions {
-    display: grid;
-    gap: 0.62rem;
-  }
-
-  .primaryButton,
-  .secondaryButton {
-    width: 100%;
-  }
-
-  .modalBackdrop {
-    padding: 0.82rem;
-  }
-
-  .modalCard {
-    gap: 0.82rem;
-    padding: 1rem;
-    border-radius: 1.08rem;
-  }
-
-  .modalHeader {
-    gap: 0.72rem;
-  }
-
-  .modalHeader h2 {
-    font-size: 1.34rem;
-  }
-
-  .contactAction {
-    min-height: 2.72rem;
-  }
-}

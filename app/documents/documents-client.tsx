@@ -1385,7 +1385,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       </div>
 
       {modalMode && !showAssetPicker ? (
-        <div className={`${styles.modalBackdrop} ${modalMode === 'upload' ? wizardStyles.overlay : ''}`} onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
+        <div className={`${styles.modalBackdrop} ${modalMode === 'upload' ? wizardStyles.overlay : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
           <section ref={modalRef} className={`${styles.modal} ${modalMode === 'upload' ? wizardStyles.dialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
@@ -1659,7 +1659,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
       {showAssetPicker ? (
         <div
-          className={`${styles.modalBackdrop} ${styles.assetPickerBackdrop}`}
+          className={`${styles.modalBackdrop} ${styles.assetPickerBackdrop}`} data-website-overlay
           onMouseDown={(event) => { if (event.target === event.currentTarget) closeAssetPickerModal(false); }}
         >
           <section
@@ -1746,7 +1746,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       ) : null}
 
       {showFilters ? (
-        <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget) setShowFilters(false); }}>
+        <div className={styles.modalBackdrop} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) setShowFilters(false); }}>
           <section ref={filterModalRef} className={styles.filterModal} role="dialog" aria-modal="true" aria-labelledby="document-filter-title">
             <header className={`${styles.modalHeader} ${styles.compactModalHeader}`}>
               <div>
@@ -1794,7 +1794,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       ) : null}
 
       {documentPendingDelete ? (
-        <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget && !busyRef.current) setDocumentPendingDelete(null); }}>
+        <div className={styles.modalBackdrop} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget && !busyRef.current) setDocumentPendingDelete(null); }}>
           <section ref={deleteModalRef} className={styles.confirmationModal} role="dialog" aria-modal="true" aria-labelledby="document-delete-title">
             <header className={`${styles.modalHeader} ${styles.compactModalHeader}`}>
               <div>
@@ -1854,3 +1854,4 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     </div>
   );
 }
+

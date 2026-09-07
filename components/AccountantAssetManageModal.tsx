@@ -482,8 +482,8 @@ export default function AccountantAssetManageModal({
   const financeHasAgreement = finance.financeStatus === 'yes' || finance.financeStatus === 'paid';
 
   return (
-    <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay} ${styles.accountantManageOverlay}`}>
-      <div className={`${styles.modalBackdrop} ${styles.accountantManageBackdrop}`} onClick={busy ? undefined : onClose} />
+    <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay} ${styles.accountantManageOverlay}`} data-website-overlay>
+      <div className={`${styles.modalBackdrop} ${styles.accountantManageBackdrop}`} data-website-overlay onClick={busy ? undefined : onClose} />
       <section className={`${styles.optionsModal} ${styles.accountantManageModal} ${view === 'menu' ? styles.ownerCommandModal : ''} ${view === 'finance' ? styles.accountantFinanceModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="accountant-asset-manage-title">
         <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
           <div className={styles.modalHeaderText}>
@@ -687,3 +687,4 @@ export default function AccountantAssetManageModal({
     </div>
   );
 }
+

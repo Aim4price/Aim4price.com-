@@ -76,7 +76,7 @@
 }
 
 .trackerManageModal {
-  width: min(100%, 960px) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 960px) !important;
 }
 
 .trackerManageBody {
@@ -116,7 +116,7 @@
 }
 
 .trackerDeleteModal {
-  width: min(calc(100vw - 2rem), 46rem) !important;
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 46rem) !important;
 }
 
 .proposalCard {
@@ -184,7 +184,7 @@
   margin: 0;
   color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.3rem, 2vw, 1.6rem);
+  font-size: clamp(1.3rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem);
   font-weight: 850;
   line-height: 1.08;
   letter-spacing: -0.04em;
@@ -879,7 +879,7 @@
   left: 0;
   right: 0;
   z-index: 50;
-  max-height: min(13rem, calc(100dvh - 12rem));
+  max-height: min(13rem, calc(calc(var(--website-design-vh, 1dvh) * 100) - 12rem));
 }
 
 .historyDateField {
@@ -929,8 +929,8 @@
 }
 
 .historyModal.historyModal {
-  width: min(calc(100vw - 2rem), 72rem) !important;
-  max-height: calc(100dvh - 2rem) !important;
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 72rem) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -938,7 +938,7 @@
 }
 
 .historyChoiceModal.historyChoiceModal {
-  width: min(calc(100vw - 2rem), 60rem) !important;
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 60rem) !important;
 }
 
 .historyChoiceModal .historyModalBody {
@@ -950,7 +950,7 @@
 }
 
 .historyChoiceModal .historyModalHeader h3 {
-  font-size: clamp(2rem, 3vw, 2.45rem) !important;
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.45rem) !important;
 }
 
 .historyChoiceModal .historyModalHeader p {
@@ -983,7 +983,7 @@
 }
 
 .historyProgress {
-  width: min(11rem, 42vw);
+  width: min(11rem, calc(var(--website-design-vw, 1vw) * 42));
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.38rem;
@@ -1589,8 +1589,8 @@
 }
 
 .trackerFilterModal.trackerFilterModal {
-  width: min(calc(100vw - 2rem), 48rem) !important;
-  max-height: calc(100dvh - 2rem) !important;
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 48rem) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem) !important;
   overflow: visible !important;
 }
 
@@ -1710,182 +1710,182 @@
 }
 
 @media (max-width: 900px) {
-  .trackerAssetBody.trackerAssetBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackerAssetBody.trackerAssetBody {
     grid-template-columns: 1fr;
   }
 
-  .assetOverview {
+  :global(:where(html:not(:has([data-website-canvas])))) .assetOverview {
     grid-template-columns: 1fr;
   }
 
-  .historyToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .historyTimelineFilters {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyTimelineFilters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .maintenanceSearchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .maintenanceSearchField {
     grid-column: 1 / -1;
   }
 
-  .historyClearButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyClearButton {
     width: 100%;
   }
 
-  .statGrid,
-  .recordGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .statGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .recordGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .trackerPage .trackerOpenButton.trackerOpenButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackerPage .trackerOpenButton.trackerOpenButton {
     width: 100%;
     min-width: 0 !important;
   }
 }
 
 @media (max-width: 760px) {
-  .historyModal.historyModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyModal.historyModal {
     width: calc(100vw - 1rem) !important;
     max-height: calc(100dvh - 1rem) !important;
   }
 
-  .historyModalHeader.historyModalHeader,
-  .historyModalBody.historyModalBody,
-  .historyModalFooter.historyModalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyModalHeader.historyModalHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .historyModalBody.historyModalBody,
+  :global(:where(html:not(:has([data-website-canvas])))) .historyModalFooter.historyModalFooter {
     padding-right: 1rem !important;
     padding-left: 1rem !important;
   }
 
-  .historyTypeTabs,
-  .historyDateRange {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyTypeTabs,
+  :global(:where(html:not(:has([data-website-canvas])))) .historyDateRange {
     grid-template-columns: 1fr;
   }
 
-  .historyDateRange {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyDateRange {
     padding-top: 0.75rem;
   }
 
-  .historyDateRange .historyDateField {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyDateRange .historyDateField {
     padding-top: 0;
   }
 
-  .historyResultsHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyResultsHeader {
     align-items: center;
   }
 
-  .historyModalFooter > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyModalFooter > button {
     width: 100%;
   }
 
-  .trackerFilterForm.trackerFilterForm {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackerFilterForm.trackerFilterForm {
     grid-template-columns: 1fr !important;
     padding: 1.15rem 1.2rem 1.3rem !important;
   }
 
-  .trackerFilterActions.trackerFilterActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackerFilterActions.trackerFilterActions {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     padding: 0.95rem 1.2rem 1.15rem !important;
   }
 
-  .trackerFilterActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackerFilterActions > button {
     width: 100%;
     min-width: 0 !important;
   }
 }
 
 @media (max-width: 680px) {
-  .expandedBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .expandedBody {
     padding: 0.7rem;
   }
 
-  .photoPanel,
-  .statGrid,
-  .recordGrid,
-  .problemMetaGrid,
-  .actionRow,
-  .correctionGrid,
-  .reportFilters {
+  :global(:where(html:not(:has([data-website-canvas])))) .photoPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .statGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .recordGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .problemMetaGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .actionRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .correctionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportFilters {
     grid-template-columns: 1fr;
   }
 
-  .historyToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyToolbar {
     grid-template-columns: 1fr;
   }
 
-  .historyTimelineFilters {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyTimelineFilters {
     grid-template-columns: 1fr;
   }
 
-  .historyStep {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyStep {
     padding: 0.85rem;
   }
 
-  .historyTypeTabs button {
+  :global(:where(html:not(:has([data-website-canvas])))) .historyTypeTabs button {
     min-height: 4.8rem;
   }
 
-  .maintenanceSearchField {
+  :global(:where(html:not(:has([data-website-canvas])))) .maintenanceSearchField {
     grid-column: auto;
   }
 
-  .photoPanel img:first-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .photoPanel img:first-child {
     grid-column: auto;
   }
 
-  .section > header,
-  .section > summary,
-  .recordCard > header {
+  :global(:where(html:not(:has([data-website-canvas])))) .section > header,
+  :global(:where(html:not(:has([data-website-canvas])))) .section > summary,
+  :global(:where(html:not(:has([data-website-canvas])))) .recordCard > header {
     align-items: flex-start;
   }
 
-  .section > summary {
+  :global(:where(html:not(:has([data-website-canvas])))) .section > summary {
     min-height: 4.75rem;
     gap: 0.7rem;
     padding: 0.85rem 0.9rem;
   }
 
-  .section > summary > strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .section > summary > strong {
     min-width: 3.35rem;
     min-height: 2.3rem;
     padding-inline: 0.58rem;
   }
 
-  .problemList,
-  .recordList {
+  :global(:where(html:not(:has([data-website-canvas])))) .problemList,
+  :global(:where(html:not(:has([data-website-canvas])))) .recordList {
     padding: 0.72rem;
   }
 
-  .recordCard > header {
+  :global(:where(html:not(:has([data-website-canvas])))) .recordCard > header {
     padding: 0.82rem 0.85rem;
   }
 
-  .section .recordGrid > div:last-child:nth-child(odd) {
+  :global(:where(html:not(:has([data-website-canvas])))) .section .recordGrid > div:last-child:nth-child(odd) {
     grid-column: auto;
   }
 
-  .trackerHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackerHeaderActions {
     display: flex !important;
     flex-wrap: nowrap !important;
   }
 
-  .trackerHeaderActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackerHeaderActions > button {
     width: auto;
     min-width: 0 !important;
     padding-inline: 0.58rem !important;
     font-size: 0.78rem !important;
   }
 
-  .maintenanceViewHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .maintenanceViewHeader {
     padding: 0.9rem;
   }
 
-  .maintenanceSearchRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .maintenanceSearchRow {
     padding: 0.75rem 0.8rem;
   }
 
-  .maintenanceRecordSections {
+  :global(:where(html:not(:has([data-website-canvas])))) .maintenanceRecordSections {
     padding: 0 0.8rem 0.8rem;
   }
 }
@@ -1990,26 +1990,26 @@
 }
 
 @media (max-width: 640px) {
-  .dealerApp .summaryFilterButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .summaryFilterButton {
     min-height: 6.8rem !important;
     padding: 0.75rem 0.65rem !important;
     border-radius: 0.95rem !important;
   }
 
-  .dealerApp .summaryFilterButton [class*='heroSummaryTitle'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .summaryFilterButton [class*='heroSummaryTitle'] {
     font-size: 0.72rem !important;
     line-height: 1.15 !important;
   }
 
-  .dealerApp .summaryFilterButton [class*='heroSummaryValue'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .summaryFilterButton [class*='heroSummaryValue'] {
     font-size: 1.75rem !important;
   }
 
-  .dealerApp .summaryFilterButton [class*='heroSummaryFooter'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .summaryFilterButton [class*='heroSummaryFooter'] {
     display: none !important;
   }
 
-  .trackerCardMuted {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackerCardMuted {
     opacity: 0.22;
     filter: blur(1.4px);
   }
@@ -2034,7 +2034,7 @@
   width: 100%;
   max-width: 100%;
   margin-inline: auto !important;
-  font-size: clamp(1.8rem, 9vw, 2.45rem) !important;
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 9), 2.45rem) !important;
   line-height: 1 !important;
   text-align: center !important;
   white-space: nowrap;
@@ -2065,9 +2065,9 @@
 }
 
 .dealerDesktop .trackerManageModal.trackerManageModal {
-  width: min(60rem, calc(100vw - 3rem)) !important;
+  width: min(60rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 3rem)) !important;
   max-width: 60rem !important;
-  max-height: calc(100dvh - 3rem) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 3rem) !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr);
   padding: 0 !important;
@@ -2106,10 +2106,10 @@
 }
 
 .dealerApp .trackerManageModal.trackerManageModal {
-  width: min(68rem, calc(100vw - 1rem)) !important;
+  width: min(68rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 1rem)) !important;
   max-width: 68rem !important;
-  height: min(50rem, calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
-  max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  height: min(50rem, calc(calc(var(--website-design-vh, 1dvh) * 100) - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr);
   padding: 0 !important;
@@ -2152,7 +2152,7 @@
 }
 
 @media (max-width: 760px) {
-  .dealerApp .trackerManageOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageOverlay {
     padding:
       max(0.35rem, env(safe-area-inset-top))
       max(0.35rem, env(safe-area-inset-right))
@@ -2160,22 +2160,22 @@
       max(0.35rem, env(safe-area-inset-left)) !important;
   }
 
-  .dealerApp .trackerManageModal.trackerManageModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal {
     width: calc(100vw - 0.7rem) !important;
     height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     max-height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     border-radius: 1.35rem !important;
   }
 
-  .dealerApp .trackerManageModal [class*='optionsModalHeader'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal [class*='optionsModalHeader'] {
     padding: 1.1rem 4.3rem 1rem 1.1rem !important;
   }
 
-  .dealerApp .trackerManageBody.trackerManageBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageBody.trackerManageBody {
     padding: 0.9rem !important;
   }
 
-  .dealerApp .trackerManageModal [class*='optionsGrid'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal [class*='optionsGrid'] {
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 0.9rem !important;
   }
@@ -2183,7 +2183,7 @@
 
 /* Dealer App-only maintenance refinements. Keep the Dealer Desktop surface unchanged. */
 .dealerApp .trackerFilterModal.trackerFilterModal {
-  width: min(calc(100vw - 1rem), 30rem) !important;
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 1rem), 30rem) !important;
   overflow: hidden !important;
   border-radius: 1.35rem !important;
 }
@@ -2202,7 +2202,7 @@
 .dealerApp .trackerFilterForm.trackerFilterForm {
   grid-template-columns: minmax(0, 1fr) !important;
   gap: 0.85rem !important;
-  max-height: min(63dvh, 38rem);
+  max-height: min(calc(var(--website-design-vh, 1dvh) * 63), 38rem);
   overflow-y: auto;
   padding: 1rem 1.2rem 1.2rem !important;
   background: #f7faf8;
@@ -2269,7 +2269,7 @@
 }
 
 .dealerApp .historyChoiceModal.historyChoiceModal {
-  width: min(calc(100vw - 1rem), 30rem) !important;
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 1rem), 30rem) !important;
 }
 
 .dealerApp .historyTypeTabs {
@@ -2386,37 +2386,37 @@
 }
 
 @media (max-width: 640px) {
-  .dealerApp .summaryFilterButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .summaryFilterButton {
     min-height: 5.7rem !important;
   }
 
-  .dealerApp .historyChoiceModal .historyModalHeader h3 {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyChoiceModal .historyModalHeader h3 {
     font-size: 1.85rem !important;
   }
 
-  .dealerApp .historyChoiceModal .historyModalHeader p {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyChoiceModal .historyModalHeader p {
     font-size: 0.9rem !important;
   }
 }
 
 @media (max-width: 380px) {
-  .dealerApp .historyModalHeader.historyModalHeader,
-  .dealerApp .historyModalBody.historyModalBody,
-  .dealerApp .historyModalFooter.historyModalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyModalHeader.historyModalHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyModalBody.historyModalBody,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyModalFooter.historyModalFooter {
     padding-right: 0.85rem !important;
     padding-left: 0.85rem !important;
   }
 
-  .dealerApp .historyRecordsStep {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyRecordsStep {
     padding: 0.75rem;
   }
 
-  .dealerApp .historyTimelineMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyTimelineMeta {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.35rem;
   }
 
-  .dealerApp .historyTimelineMeta time {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .historyTimelineMeta time {
     text-align: left;
   }
 }
@@ -2445,7 +2445,7 @@
   gap: 0.75rem;
   border: 1px solid rgba(37, 132, 94, 0.22);
   border-radius: 1.65rem;
-  padding: clamp(1.7rem, 6vw, 2.4rem);
+  padding: clamp(1.7rem, calc(var(--website-design-vw, 1vw) * 6), 2.4rem);
   background:
     radial-gradient(circle at 50% 0%, rgba(111, 197, 150, 0.16), transparent 42%),
     #ffffff;
@@ -2478,7 +2478,7 @@
   margin: 0;
   color: #12352d;
   font-family: var(--font-heading, "Montserrat"), ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(2rem, 7vw, 2.75rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 7), 2.75rem);
   font-weight: 900;
   letter-spacing: -0.05em;
   line-height: 1;
@@ -2518,13 +2518,13 @@
 /* === Dealer asset management matches the owner command centre === */
 .dealerDesktop .trackerManageModal.trackerManageModal,
 .dealerApp .trackerManageModal.trackerManageModal {
-  width: min(97vw, 84rem) !important;
+  width: min(calc(var(--website-design-vw, 1vw) * 97), 84rem) !important;
   max-width: 84rem !important;
   height: auto !important;
-  max-height: min(95dvh, 60rem) !important;
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.95), 60rem) !important;
   display: flex !important;
   flex-direction: column !important;
-  padding: clamp(1.35rem, 2.15vw, 1.75rem) !important;
+  padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.15), 1.75rem) !important;
   overflow: hidden !important;
 }
 
@@ -2540,7 +2540,7 @@
 .dealerApp .trackerManageModal.trackerManageModal [class*='modalHeaderText'] h3 {
   max-width: 100% !important;
   margin: 0 !important;
-  font-size: clamp(2.05rem, 3.25vw, 2.8rem) !important;
+  font-size: clamp(2.05rem, calc(var(--website-design-vw, 1vw) * 3.25), 2.8rem) !important;
   line-height: 1.04 !important;
   letter-spacing: -0.05em !important;
   overflow-wrap: anywhere;
@@ -2591,9 +2591,17 @@
   line-height: 1.42 !important;
 }
 
+:global(:where([data-website-canvas])) .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionActionButton'] small,
+  :global(:where([data-website-canvas])) .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] small {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+  }
+
 @media (min-width: 901px) {
-  .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionActionButton'] small,
-  .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] small {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionActionButton'] small,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] small {
     overflow: visible !important;
     text-overflow: clip !important;
     white-space: nowrap !important;
@@ -2602,26 +2610,26 @@
 }
 
 @media (min-width: 701px) and (max-width: 1180px) {
-  .dealerDesktop .trackerManageModal.trackerManageModal,
-  .dealerApp .trackerManageModal.trackerManageModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktop .trackerManageModal.trackerManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal {
     width: min(97vw, 68rem) !important;
     max-width: 68rem !important;
   }
 
-  .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionsGrid'],
-  .dealerApp .trackerManageModal.trackerManageModal [class*='optionsGrid'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionsGrid'],
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal [class*='optionsGrid'] {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 700px) {
-  .dealerDesktop .trackerManageOverlay,
-  .dealerApp .trackerManageOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktop .trackerManageOverlay,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageOverlay {
     padding: 0.5rem !important;
   }
 
-  .dealerDesktop .trackerManageModal.trackerManageModal,
-  .dealerApp .trackerManageModal.trackerManageModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktop .trackerManageModal.trackerManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal {
     width: calc(100vw - 1rem) !important;
     max-width: none !important;
     height: auto !important;
@@ -2629,19 +2637,20 @@
     border-radius: 1.35rem !important;
   }
 
-  .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionsGrid'],
-  .dealerApp .trackerManageModal.trackerManageModal [class*='optionsGrid'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionsGrid'],
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal [class*='optionsGrid'] {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionActionButton'],
-  .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionActionButton'],
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] {
     min-height: 5.8rem !important;
   }
 
-  .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionActionButton'] small,
-  .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] small {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktop .trackerManageModal.trackerManageModal [class*='optionActionButton'] small,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] small {
     white-space: normal !important;
     overflow-wrap: anywhere !important;
   }
 }
+

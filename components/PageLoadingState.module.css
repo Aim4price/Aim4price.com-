@@ -1,8 +1,8 @@
 .screen {
-  min-height: min(68vh, 44rem);
+  min-height: min(calc(var(--website-design-vh, 1vh) * 68), 44rem);
   display: grid;
   place-items: center;
-  padding: clamp(1.5rem, 5vw, 4rem) 1rem;
+  padding: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 5), 4rem) 1rem;
   color: #153c31;
   background:
     radial-gradient(circle at 18% 10%, rgba(34, 151, 109, 0.09), transparent 24rem),
@@ -62,3 +62,4 @@
     animation-duration: 1.8s;
   }
 }
+

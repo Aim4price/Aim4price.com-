@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #142f28;
   background:
     radial-gradient(circle at 8% 8%, rgba(31, 108, 83, 0.08), transparent 28rem),
@@ -911,67 +911,67 @@
 
 .receiptGrid strong {
   color: #176047;
-  font-size: clamp(1rem, 2.2vw, 1.25rem);
+  font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.25rem);
   font-weight: 900;
   letter-spacing: 0.035em;
   overflow-wrap: anywhere;
 }
 
 @media (max-width: 760px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     width: min(100% - 1rem, 1220px);
   }
 
-  .claimForm {
+  :global(:where(html:not(:has([data-website-canvas])))) .claimForm {
     grid-template-columns: 1fr;
   }
 
-  .transferGuide {
+  :global(:where(html:not(:has([data-website-canvas])))) .transferGuide {
     align-items: flex-start;
   }
 
-  .transferCard dl {
+  :global(:where(html:not(:has([data-website-canvas])))) .transferCard dl {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
-  .transferProgress.transferProgress {
+  :global(:where(html:not(:has([data-website-canvas])))) .transferProgress.transferProgress {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .footerOnlyAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .footerOnlyAction {
     grid-column: 1 / -1;
   }
 }
 
 @media (max-width: 560px) {
-  .backButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .backButton {
     width: 100%;
   }
 
-  .transferGuide {
+  :global(:where(html:not(:has([data-website-canvas])))) .transferGuide {
     grid-template-columns: 1fr;
   }
 
-  .guideIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .guideIcon {
     width: 3rem;
     height: 3rem;
   }
 
-  .outgoingHeading,
-  .transferTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .outgoingHeading,
+  :global(:where(html:not(:has([data-website-canvas])))) .transferTitle {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .cardActions,
-  .receiptGrid,
-  .cancelDetails {
+  :global(:where(html:not(:has([data-website-canvas])))) .cardActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .receiptGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .cancelDetails {
     grid-template-columns: 1fr;
   }
 
-  .claimResult {
+  :global(:where(html:not(:has([data-website-canvas])))) .claimResult {
     padding: 0.95rem;
   }
 }

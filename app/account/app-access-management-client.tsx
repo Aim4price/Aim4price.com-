@@ -470,7 +470,7 @@ function AppAccessModal({
   if (!open) return null;
 
   return (
-    <div className={styles.modalOverlay}>
+    <div className={styles.modalOverlay} data-website-overlay>
       <button
         type="button"
         className={styles.modalBackdrop}

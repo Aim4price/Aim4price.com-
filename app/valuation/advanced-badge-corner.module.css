@@ -10,9 +10,3 @@
   right: -1rem !important;
 }
 
-@media (max-width: 720px) {
-  .scope :global([class*="estimateModeAdvancedCard"]) :global([class*="sectorCardTopRow"]) {
-    top: -0.8rem !important;
-    right: -0.8rem !important;
-  }
-}

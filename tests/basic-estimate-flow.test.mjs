@@ -310,7 +310,7 @@ test('Basic replacement VAT selector preserves an ex-VAT valuation basis and rem
 
   assert.match(valuationStyles, /\.replacementVatToggle/);
   assert.match(valuationStyles, /\.replacementVatToggle button\.replacementVatToggleActive/);
-  assert.match(valuationStyles, /\.replacementSliderReadout strong[^\{]*\{[\s\S]*?font-size: clamp\(1\.6rem, 2\.2vw, 2\.2rem\);[\s\S]*?white-space: nowrap;/);
+  assert.match(valuationStyles, /\.replacementSliderReadout strong[^\{]*\{[\s\S]*?font-size: clamp\(1\.6rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.2\), 2\.2rem\);[\s\S]*?white-space: nowrap;/);
 });
 
 test('the final result renderer and save destinations remain shared with the existing valuation flow', () => {
@@ -321,3 +321,4 @@ test('the final result renderer and save destinations remain shared with the exi
   assert.match(client, /Marketplace/);
   assert.match(client, /downloadValuationPdf/);
 });
+

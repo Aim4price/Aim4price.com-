@@ -1,0 +1,386 @@
+/* Canonical website styles for controls also used by the dedicated apps. */
+
+@keyframes fieldManagerSpin {
+  to { transform: rotate(360deg); }
+}
+
+.mobilePrimaryButton {
+  min-height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 18px;
+  padding: 0 18px;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.mobilePrimaryButton {
+  width: 100%;
+  border: 1px solid #254733;
+  background: #254733;
+  color: #fff;
+  box-shadow: 0 16px 30px rgba(37, 71, 51, 0.24);
+}
+
+.mobilePrimaryButton:hover:not(:disabled) {
+  border-color: #1d3929;
+  background: #1d3929;
+}
+
+.mobilePrimaryButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 16px 30px rgba(35, 104, 81, 0.18);
+}
+
+.mobilePrimaryButton:active {
+  transform: translateY(1px);
+}
+
+.mobilePrimaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.64;
+  transform: none;
+  box-shadow: none;
+}
+
+.overviewOpenButton {
+  border: 1.5px solid #6fc596;
+  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
+  color: #0a543d;
+  font-weight: 800;
+}
+
+.overviewOpenButton:hover:not(:disabled) {
+  border-color: #43ad73;
+  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%);
+}
+
+.overviewIntro {
+  padding: 8px 3px 16px;
+}
+
+.overviewIntro > span {
+  display: block;
+  color: #236851;
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.overviewIntro h1 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.9rem, calc(var(--website-design-vw) * 8), 2.45rem);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.04;
+}
+
+.overviewIntro p {
+  margin: 8px 0 0;
+  color: rgba(18, 53, 45, 0.64);
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.overviewSearch {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.96);
+  color: rgba(18, 53, 45, 0.56);
+  padding: 0 16px;
+  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.overviewSearch:focus-within {
+  border-color: rgba(35, 104, 81, 0.42);
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1), 0 12px 28px rgba(18, 53, 45, 0.07);
+}
+
+.overviewSearch svg {
+  width: 22px;
+  height: 22px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.overviewSearch input {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #12352d;
+  padding: 0;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 720;
+}
+
+.overviewSearch input::placeholder {
+  color: rgba(18, 53, 45, 0.48);
+  opacity: 1;
+}
+
+.overviewSectionHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 3px 10px;
+}
+
+.overviewSectionHeading h2 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.2rem, calc(var(--website-design-vw) * 5), 1.42rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.overviewSectionHeading > span {
+  min-width: 29px;
+  min-height: 29px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(18, 53, 45, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.84);
+  color: rgba(18, 53, 45, 0.68);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.overviewList {
+  display: grid;
+  gap: 12px;
+}
+
+.overviewCard {
+  min-width: 0;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 16px;
+  box-shadow: 0 16px 38px rgba(18, 53, 45, 0.09);
+}
+
+.overviewCard.overviewRecurringCard {
+  border-color: rgba(193, 123, 51, 0.46);
+  background:
+    radial-gradient(circle at 0 0, rgba(230, 148, 61, 0.1), transparent 42%),
+    linear-gradient(180deg, #fffdf9 0%, #fff8ee 100%);
+  box-shadow: 0 16px 38px rgba(182, 111, 38, 0.13);
+}
+
+.overviewCard.overviewCardNeedsAttention {
+  border-color: rgba(162, 48, 48, 0.2);
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  box-shadow: 0 16px 38px rgba(162, 48, 48, 0.1);
+}
+
+.overviewCard.overviewCardDueSoon {
+  border-color: rgba(161, 105, 16, 0.22);
+  background: linear-gradient(180deg, #fffdf8 0%, #fff6e5 100%);
+  box-shadow: 0 16px 38px rgba(161, 105, 16, 0.1);
+}
+
+.overviewCardLabels {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.overviewType {
+  display: inline-flex;
+  align-items: center;
+  min-height: 27px;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.07em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.overviewType {
+  background: rgba(35, 104, 81, 0.09);
+  color: #1d5b46;
+}
+
+.overviewType.overviewRecurringType {
+  border: 1px solid rgba(193, 123, 51, 0.22);
+  background: #fff0dc;
+  color: #8b4f12;
+}
+
+.overviewCard h3 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.16rem, calc(var(--website-design-vw) * 4.8), 1.38rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+}
+
+.overviewOpenButton {
+  min-height: 50px;
+  margin-top: 15px;
+  border-radius: 15px;
+  font-size: 0.96rem;
+  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1);
+}
+
+.overviewCardActions .overviewOpenButton {
+  margin-top: 0;
+}
+
+.overviewCard {
+  border-color: rgba(18, 53, 45, 0.12);
+  background: #ffffff;
+  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.07);
+}
+
+.overviewIntro {
+  gap: 6px;
+  padding: 8px 3px 14px;
+  text-align: left;
+}
+
+.overviewIntro h1 {
+  font-size: clamp(1.76rem, calc(var(--website-design-vw) * 8), 2.2rem);
+  font-weight: 850;
+  line-height: 1.06;
+  letter-spacing: -0.04em;
+}
+
+.overviewIntro p {
+  font-size: 0.88rem;
+  line-height: 1.42;
+}
+
+.overviewCard {
+  border-radius: 20px;
+  padding: 15px;
+}
+
+.overviewCard h3 {
+  font-size: clamp(1.08rem, calc(var(--website-design-vw) * 4.8), 1.28rem);
+}
+.mobilePrimaryButton {
+    min-height: 56px;
+    font-size: 0.96rem;
+  }
+.overviewList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+.overviewCard:only-child {
+    grid-column: 1 / -1;
+  }
+.overviewType {
+    font-size: 0.76rem;
+  }
+.overviewOpenButton {
+    min-height: 56px;
+    font-size: 0.96rem;
+  }
+
+.overviewPage .overviewIntro {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 8px 3px 16px;
+  text-align: left;
+}
+
+.overviewPage .overviewIntro h1 {
+  font-size: clamp(1.9rem, calc(var(--website-design-vw) * 8), 2.45rem);
+  font-weight: 900;
+  line-height: 1.04;
+}
+
+.overviewPage .overviewIntro p {
+  margin-top: 0;
+  font-size: 0.94rem;
+  font-weight: 650;
+}
+
+.overviewPage .overviewSearch {
+  width: 100%;
+  min-width: 0;
+  min-height: 54px;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 11px;
+  border-radius: 17px;
+  padding-inline: 16px;
+  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+}
+
+.overviewPage .overviewSearch input {
+  min-width: 0;
+  min-height: 52px;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.overviewPage .overviewSearch input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.overviewSearch button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 11px;
+  background: rgba(18, 53, 45, 0.08);
+  color: #12352d;
+  padding: 0;
+  font: inherit;
+  font-size: 1.12rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.overviewSearch button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12);
+}
+
+.overviewPage .overviewSectionHeading {
+  padding: 0 3px 10px;
+}
+
+.overviewPage .overviewCardLabels {
+  row-gap: 8px;
+}
+
+.overviewPage .overviewCard h3 {
+  font-size: clamp(1.16rem, calc(var(--website-design-vw) * 4.8), 1.38rem);
+  font-weight: 800;
+}

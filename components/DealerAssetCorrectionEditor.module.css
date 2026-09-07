@@ -103,8 +103,8 @@
 }
 
 .modal {
-  width: min(620px, 100%);
-  max-height: min(760px, calc(100vh - 40px));
+  width: min(620px, var(--website-dialog-reference-width, 100%));
+  max-height: min(760px, calc(calc(var(--website-visible-height, 100vh) * 1) - 40px));
   overflow: hidden;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -174,7 +174,7 @@
 .modalHeader h2 {
   margin: 0.35rem 0 0;
   color: #10352b;
-  font-size: clamp(1.38rem, 4vw, 1.85rem);
+  font-size: clamp(1.38rem, calc(var(--website-design-vw, 1vw) * 4), 1.85rem);
   font-weight: 900;
   line-height: 1.08;
   letter-spacing: -0.04em;
@@ -375,38 +375,38 @@
 }
 
 @media (max-width: 620px) {
-  .overlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .overlay {
     align-items: end;
     padding: 10px;
   }
 
-  .modal {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal {
     max-height: calc(100vh - 20px);
     border-radius: 1.45rem;
   }
 
-  .modalHeader,
-  .modalBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .modalBody {
     padding-left: 18px;
     padding-right: 18px;
   }
 
-  .modalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalFooter {
     padding: 14px 18px 18px;
   }
 
-  .modalTitleGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalTitleGroup {
     grid-template-columns: 2.75rem minmax(0, 1fr);
     gap: 0.78rem;
   }
 
-  .modalIconShell {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalIconShell {
     width: 2.75rem;
     height: 2.75rem;
     border-radius: 0.9rem;
   }
 
-  .modalTitleIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalTitleIcon {
     width: 1.25rem !important;
     height: 1.25rem !important;
   }
@@ -419,3 +419,4 @@
   flex: 1 1 auto;
   display: block;
 }
+

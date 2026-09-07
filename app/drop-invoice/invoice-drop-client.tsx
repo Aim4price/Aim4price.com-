@@ -513,7 +513,7 @@ export default function InvoiceDropClient() {
 
       {isModalOpen ? (
         <div
-          className={styles.modalBackdrop}
+          className={styles.modalBackdrop} data-website-overlay
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) closeModal();
           }}
@@ -913,4 +913,5 @@ export default function InvoiceDropClient() {
     </>
   );
 }
+
 

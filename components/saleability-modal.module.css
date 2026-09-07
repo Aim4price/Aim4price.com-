@@ -5,20 +5,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 3vh, 2rem);
+  padding: clamp(1rem, calc(var(--website-design-vh, 1vh) * 3), 2rem);
   background: rgba(14, 22, 32, 0.44);
   backdrop-filter: blur(14px) saturate(0.9);
 }
 
 .modal {
   position: relative;
-  width: min(1080px, 100%);
-  max-height: min(88vh, calc(100dvh - 2rem));
+  width: min(1080px, var(--website-dialog-reference-width, 100%));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.88), calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem));
   display: flex;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  padding: clamp(1.45rem, 2.2vw, 2rem);
+  padding: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
   border: 1px solid rgba(216, 226, 236, 0.98);
   border-radius: 2rem;
   background:
@@ -52,7 +52,7 @@
 .header h2 {
   margin: 0;
   color: #0f3329;
-  font-size: clamp(1.72rem, 2.5vw, 2.18rem);
+  font-size: clamp(1.72rem, calc(var(--website-design-vw, 1vw) * 2.5), 2.18rem);
   font-weight: 760;
   line-height: 1.04;
   letter-spacing: -0.052em;
@@ -379,7 +379,7 @@
 
 .resultHero > strong {
   color: #0e3228;
-  font-size: clamp(2.15rem, 4vw, 3.15rem);
+  font-size: clamp(2.15rem, calc(var(--website-design-vw, 1vw) * 4), 3.15rem);
   font-weight: 880;
   line-height: 0.96;
   letter-spacing: -0.065em;
@@ -435,7 +435,7 @@
 
 .askingPrice strong {
   color: #0e3228;
-  font-size: clamp(2.15rem, 4vw, 3.15rem);
+  font-size: clamp(2.15rem, calc(var(--website-design-vw, 1vw) * 4), 3.15rem);
   font-weight: 880;
   line-height: 0.96;
   letter-spacing: -0.065em;
@@ -499,96 +499,97 @@
 }
 
 @media (max-width: 900px) {
-  .header p {
+  :global(:where(html:not(:has([data-website-canvas])))) .header p {
     white-space: normal;
   }
 
-  .resultMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultMeta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 700px) {
-  .backdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .backdrop {
     align-items: end;
     padding: 0;
   }
 
-  .modal {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal {
     width: 100%;
     max-height: 96dvh;
     padding: 1rem;
     border-radius: 1.42rem 1.42rem 0 0;
   }
 
-  .header {
+  :global(:where(html:not(:has([data-website-canvas])))) .header {
     gap: 0.8rem;
     margin-bottom: 0.8rem;
     padding-bottom: 0.8rem;
   }
 
-  .header h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .header h2 {
     font-size: clamp(1.4rem, 7vw, 1.76rem);
   }
 
-  .header p {
+  :global(:where(html:not(:has([data-website-canvas])))) .header p {
     font-size: 0.88rem;
     line-height: 1.42;
   }
 
-  .close {
+  :global(:where(html:not(:has([data-website-canvas])))) .close {
     width: 2.8rem;
     min-width: 2.8rem;
     min-height: 2.8rem;
   }
 
-  .body {
+  :global(:where(html:not(:has([data-website-canvas])))) .body {
     padding-right: 0.55rem;
   }
 
-  .baselineStrip {
+  :global(:where(html:not(:has([data-website-canvas])))) .baselineStrip {
     grid-template-columns: 1fr;
     padding: 0.65rem;
   }
 
-  .settingsCard,
-  .pricePlan {
+  :global(:where(html:not(:has([data-website-canvas])))) .settingsCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .pricePlan {
     padding: 0.9rem;
   }
 
-  .choiceGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     grid-template-columns: 1fr;
   }
 
-  .actions > * {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions > * {
     grid-column: 1;
   }
 
-  .resultMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultMeta {
     grid-template-columns: 1fr;
   }
 
-  .resultHero > strong,
-  .askingPrice strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultHero > strong,
+  :global(:where(html:not(:has([data-website-canvas])))) .askingPrice strong {
     font-size: 2.15rem;
   }
 
-  .resultRows > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultRows > div {
     display: grid;
     gap: 0.2rem;
   }
 
-  .resultRows strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultRows strong {
     text-align: left;
   }
 }
 
 @media (max-width: 430px) {
-  .choiceGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceGrid {
     grid-template-columns: 1fr;
   }
 }
+

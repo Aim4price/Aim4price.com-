@@ -1,156 +1,8 @@
-.root {
-  min-width: 0;
-  width: 100%;
-}
+.root { min-width: 0; width: 100%; }
 
-.root :global([data-aim4price-site-zoom-host='true']) {
-  min-width: 0;
-  max-width: 100%;
-}
+.viewport { width: 100%; min-width: 0; flex: 1 0 auto; }
 
-.root :global([data-aim4price-site-zoom-host='true'][data-aim4price-site-zoom-mode='workspace']) {
-  overflow-x: auto !important;
-  overflow-y: visible;
-  overscroll-behavior-x: contain;
-  scrollbar-gutter: stable;
-}
-
-.root :global([data-aim4price-site-zoom-host='true'][data-aim4price-site-zoom-mode='viewport']) {
-  /* Home's cinematic hero depends on window.scrollY and viewport-relative
-     position: sticky. Never make its page host an overflow ancestor. */
-  max-width: none;
-  overflow: visible !important;
-  overscroll-behavior-x: auto;
-  scrollbar-gutter: auto;
-}
-
-.root :global([data-aim4price-site-zoom-host='true'] > [data-aim4price-app-header='true'] ~ *) {
-  zoom: var(--aim4price-site-workspace-zoom, 1);
-}
-
-/*
- * One continuous desktop Home composition.
- *
- * The Home stylesheet still carries historical 1240/1360/759 tuning from the
- * earlier responsive experiments. Those rules created visible 1px cliffs when
- * a viewport crossed their endpoints. Rather than adding another layout tier,
- * the stable site shell normalises the properties that actually changed the
- * composition. From 1181px upward the same desktop grid now breathes through
- * clamp()/vw/vh relationships; only the genuine tablet/short-screen boundary
- * below this media query is allowed to recompose the Home.
- */
-@media (min-width: 1181px) and (min-height: 640px) {
-  .root :global(
-    [data-aim4price-site-zoom-host='true']
-      section[data-story-mode]
-      div:has(> aside[aria-label='What Aim4price helps you do'])
-  ) {
-    --hero-working-inset: clamp(0px, calc((100% - 1240px) / 2), 60px) !important;
-    grid-template-columns:
-      minmax(clamp(27rem, 31vw, 31rem), 1fr)
-      minmax(clamp(34rem, 43vw, 39rem), 49.5rem) !important;
-    gap: clamp(3rem, 4.5vw, 6rem) !important;
-    padding-block: clamp(1rem, 3.5vh, 3rem) !important;
-  }
-
-  .root :global(
-    [data-aim4price-site-zoom-host='true']
-      section[data-story-mode]
-      div:has(> aside[aria-label='What Aim4price helps you do'])
-      > div:has(> div[data-active-question])
-  ) {
-    width: min(
-      45.5rem,
-      calc(100% + clamp(5rem, 5vw, 7rem)),
-      calc((100dvh - 5.75rem) * 1.25)
-    ) !important;
-    justify-self: end !important;
-  }
-
-  .root :global(
-    [data-aim4price-site-zoom-host='true']
-      section[data-story-mode]
-      aside[aria-label='What Aim4price helps you do']
-  ) {
-    --feature-copy-inset: clamp(4.75rem, calc(12rem - 4vw), 7.75rem) !important;
-    width: min(100%, clamp(27rem, 27vw, 31rem)) !important;
-    min-height: clamp(18rem, 36vh, 22rem) !important;
-  }
-
-  .root :global(
-    [data-aim4price-site-zoom-host='true']
-      section[data-story-mode]
-      aside[aria-label='What Aim4price helps you do']
-      > div[data-active]
-      > h2
-  ) {
-    margin-top: clamp(1rem, 1.5vh, 1.15rem) !important;
-    font-size: clamp(2.4rem, min(3.45vw, 5.4vh), 4rem) !important;
-  }
-
-  .root :global(
-    [data-aim4price-site-zoom-host='true']
-      section[data-story-mode]
-      aside[aria-label='What Aim4price helps you do']
-      > div[data-active]
-      > p
-  ) {
-    margin-top: clamp(1rem, 1.45vh, 1.1rem) !important;
-    line-height: 1.58 !important;
-  }
-}
-
-/*
- * Keep the page-size control as a genuinely separate header tool. The control
- * is portaled as a sibling of the existing action rail, so the rail retains
- * its own rounded boundary instead of visually swallowing the zoom buttons.
- */
-@media (min-width: 901px) {
-  .root :global(
-    [data-aim4price-app-header='true']
-      > div
-      > div:last-child:has(> [data-site-workspace-zoom-controls])
-      > :first-child
-  ) {
-    width: max-content !important;
-    flex: 0 0 auto !important;
-  }
-
-  /* The old 12.25rem account wrapper plus a content-box 100% button made
-     Manage visibly overrun its rail. Keep the wrapper compact and make the
-     button include its padding inside that width. */
-  .root :global(
-    [data-aim4price-app-header='true']
-      div:has(> [aria-label='Open manage menu'])
-  ) {
-    width: 10.25rem !important;
-    min-width: 10.25rem !important;
-    flex: 0 0 10.25rem !important;
-  }
-
-  .root :global(
-    [data-aim4price-app-header='true']
-      [aria-label='Open manage menu']
-  ) {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    padding-left: 0.86rem !important;
-    padding-right: 0.94rem !important;
-    gap: 0.62rem !important;
-  }
-
-  /* The circular account logo carries more visual weight than the text.
-     Add a small optical spacer only after the logo so “Manage” no longer
-     feels attached to it, without widening the gap before the menu mark. */
-  .root :global(
-    [data-aim4price-app-header='true']
-      [aria-label='Open manage menu']
-      > span:first-child
-  ) {
-    margin-right: 0.18rem;
-  }
-}
+.canvas { margin-inline: auto; position: relative; }
 
 .controls {
   position: relative;
@@ -268,6 +120,33 @@
   opacity: 0.28;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .zoomButton,
+  .zoomButton::after,
+  .zoomValue {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .zoomButton:focus-visible,
+  .zoomValue:focus-visible {
+    outline: 2px solid CanvasText;
+  }
+}
+
+/* Oversized canonical dialogs stay reachable by scrolling rather than reflowing. */
+.canvas :global([data-website-overlay]) {
+  min-height: 0;
+  overflow: auto;
+  align-items: safe center;
+  justify-content: safe center;
+  justify-items: safe center;
+}
+
+
+
 .controlsIntro {
   animation: pageZoomControlIntro 760ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
 }
@@ -278,7 +157,7 @@
   right: -0.1rem;
   z-index: 5;
   width: max-content;
-  max-width: min(15rem, calc(100vw - 1.5rem));
+  max-width: 15rem;
   padding: 0.55rem 0.72rem;
   border-radius: 0.72rem;
   color: #ffffff;
@@ -332,105 +211,14 @@
     transform: translateY(0) scale(1);
   }
 }
+@media (prefers-reduced-motion: reduce) { .controlsIntro, .introNote { animation: none; transition: none; } }
+@media (forced-colors: active) { .introNote { border: 1px solid CanvasText; } }
 
-@media (min-width: 901px) and (max-width: 1180px) {
-  .root :global(
-    [data-aim4price-app-header='true']
-      div:has(> [aria-label='Open manage menu'])
-  ) {
-    width: 9.75rem !important;
-    min-width: 9.75rem !important;
-    flex-basis: 9.75rem !important;
-  }
-}
+.canvas :global([data-website-overlay] > [role="dialog"]),
+.canvas :global([data-website-overlay] > [role="alertdialog"]) { flex-shrink: 0; }
 
-@media (max-width: 1180px) {
-  .controls {
-    min-width: 5.05rem;
-    min-height: 2.85rem;
-    margin-left: 0.58rem;
-    gap: 0.02rem;
-  }
-
-  .zoomButton {
-    width: 1.46rem;
-    min-width: 1.46rem;
-    height: 2.28rem;
-  }
-
-  .zoomValue {
-    min-width: 2.22rem;
-    min-height: 2.28rem;
-    font-size: 0.7rem;
-  }
-}
-
-@media (max-width: 900px) {
-  .controls {
-    min-width: 4.9rem;
-    min-height: 2.9rem;
-    margin-left: 0.36rem;
-    gap: 0;
-  }
-
-  .zoomButton {
-    width: 1.42rem;
-    min-width: 1.42rem;
-    height: 2.26rem;
-    font-size: 1.03rem;
-  }
-
-  .zoomValue {
-    min-width: 2.12rem;
-    min-height: 2.26rem;
-    padding-inline: 0.04rem;
-    font-size: 0.66rem;
-  }
-}
-
-@media (max-width: 720px) {
-  .controls {
-    min-width: 2.9rem;
-    min-height: 2.75rem;
-    margin-left: 0.24rem;
-    gap: 0.02rem;
-  }
-
-  .zoomButton {
-    width: 1.42rem;
-    min-width: 1.42rem;
-    height: 2.26rem;
-  }
-
-  .zoomValue {
-    display: none;
-  }
-
-  .introNote {
-    right: 0;
-    max-width: min(13.5rem, calc(100vw - 1rem));
-    font-size: 0.69rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .controlsIntro,
-  .introNote,
-  .zoomButton,
-  .zoomButton::after,
-  .zoomValue {
-    animation: none;
-    transition: none;
-  }
-}
-
-@media (forced-colors: active) {
-  .zoomButton:focus-visible,
-  .zoomValue:focus-visible {
-    outline: 2px solid CanvasText;
-  }
-
-  .introNote {
-    border: 1px solid CanvasText;
-  }
+/* Scrolling a wide dialog must not scroll its dim/blur layer out of view. */
+.canvas :global([data-website-overlay] > [data-website-overlay]:empty) {
+  position: fixed;
+  inset: 0;
 }

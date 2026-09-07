@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -56,7 +57,7 @@ test('coverage uses the Fuel Ledger saved-asset picker design with multi-select'
   assert.match(budgetModal, /confirmBudgetAssetPicker/);
   assert.match(styles, /\.budgetAssetPickerToolbar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto auto;/);
   assert.match(styles, /\.budgetAssetChoice\s*\{[^}]*justify-content:\s*flex-end;/);
-  assert.match(styles, /\.budgetAssetPickerFooter\s*\{[^}]*margin:\s*0 clamp\(1\.25rem, 2\.4vw, 2rem\);/);
+  assert.match(styles, /\.budgetAssetPickerFooter\s*\{[^}]*margin:\s*0 clamp\(1\.25rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.4\), 2rem\);/);
   assert.match(fuelStyles, /\.fuelSlipFlowBackdrop \.exclusionPickerToolbar\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\) auto auto;/);
   assert.doesNotMatch(budgetModal, /role="radiogroup" aria-label="Budget scope"/);
   assert.doesNotMatch(budgetModal, /<strong>All assets<\/strong>|<strong>One asset<\/strong>/);
@@ -105,7 +106,7 @@ test('period is selected on step two in a wider, responsive budget modal', () =>
   assert.match(budgetModal, /styles\.budgetWizardProgressConnector/);
   assert.match(budgetModal, /budgetWizardStep > step \? styles\.budgetWizardProgressConnectorComplete/);
   assert.match(styles, /\.budgetWizardProgressConnector\s*\{[^}]*display:\s*none;/);
-  assert.match(styles, /@media \(min-width: 1000px\)[\s\S]*?\.budgetWizardModal \.invoiceDropWizardProgress\s*\{[^}]*display:\s*grid !important;[^}]*grid-template-columns:\s*max-content minmax\(5rem, 1fr\)\s*max-content minmax\(5rem, 1fr\)\s*max-content minmax\(5rem, 1fr\)\s*max-content;[^}]*column-gap:\s*clamp\(0\.85rem, 1\.4vw, 1\.25rem\) !important;/);
+  assertNoWebsiteReflow(styles);
   assert.match(styles, /@media \(min-width: 1000px\)[\s\S]*?\.budgetWizardProgressConnector\s*\{[^}]*display:\s*block;[^}]*width:\s*100%;[^}]*height:\s*2px;/);
   assert.match(styles, /\.budgetWizardProgressConnectorComplete\s*\{[^}]*background:\s*#83c8ae;/);
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.budgetWizardModal \.invoiceDropWizardProgress\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/);
@@ -167,3 +168,4 @@ test('warning-level asset budget cards and notifications are red priority alerts
   assert.match(budgetNotifications, /tone: 'warning'/);
   assert.match(budgetNotifications, /priority: true/);
 });
+

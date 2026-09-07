@@ -64,7 +64,7 @@ test('the background is responsive, interaction-safe, and uses the Aim4price pal
   assert.match(styles, /overflow:\s*clip/);
   assert.match(styles, /@supports not \(overflow: clip\)/);
   assert.match(styles, /flex:\s*1 0 auto/);
-  assert.match(styles, /min-height:\s*100dvh/);
+  assert.match(styles, /min-height:\s*(?:calc\(var\(--website-design-vh(?:, 1dvh)?\) \* 100\)|calc\(var\(--website-visible-height(?:, 100dvh)?\) \* 1\))/);
   assert.match(styles, /env\(safe-area-inset-/);
   assert.match(styles, /@media \(max-width: 600px\)/);
   assert.match(styles, /stroke-width:\s*1\.25/);
@@ -73,3 +73,4 @@ test('the background is responsive, interaction-safe, and uses the Aim4price pal
   assert.match(styles, /\.mintCircle\s*{[^}]*opacity:\s*0\.13/s);
   assert.match(styles, /--aim4price-card-shadow:\s*0 10px 30px rgba\(13, 62, 49, 0\.08\)/);
 });
+

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEventHandler, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, WebsiteCanvasContext } from './WebsitePortal';
+import { useContext } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -1045,6 +1046,7 @@ export default function AppHeader({
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
+  const isCanonicalWebsite = useContext(WebsiteCanvasContext);
   const [usesCompactHeader, setUsesCompactHeader] = useState(false);
   const navWindowSize = usesCompactHeader
     ? navItems.length
@@ -1100,13 +1102,17 @@ export default function AppHeader({
   const hasNotificationPages = displayNotificationCount > NOTIFICATIONS_PER_PAGE;
 
   useEffect(() => {
+    if (isCanonicalWebsite) {
+      setUsesCompactHeader(false);
+      return;
+    }
     const mediaQuery = window.matchMedia('(max-width: 760px)');
     const syncCompactHeader = () => setUsesCompactHeader(mediaQuery.matches);
 
     syncCompactHeader();
     mediaQuery.addEventListener('change', syncCompactHeader);
     return () => mediaQuery.removeEventListener('change', syncCompactHeader);
-  }, []);
+  }, [isCanonicalWebsite]);
 
   useEffect(() => {
     setNotificationPage((current) => Math.min(current, notificationPageCount));
@@ -2133,7 +2139,7 @@ export default function AppHeader({
     mobileMenuOpen && canUseNotificationPortal
       ? createPortal(
           <div
-            className={styles.mobileMenuBackdrop}
+            className={styles.mobileMenuBackdrop} data-website-overlay
             role="presentation"
             onPointerDown={(event) => {
               if (event.target === event.currentTarget) {
@@ -2151,7 +2157,7 @@ export default function AppHeader({
     notificationOpen && canUseNotificationPortal
       ? createPortal(
           <div
-            className={styles.notificationModalBackdrop}
+            className={styles.notificationModalBackdrop} data-website-overlay
             role="presentation"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
@@ -2327,7 +2333,7 @@ export default function AppHeader({
     canUseNotificationPortal && (activeAssetDiscoveryEnquiry || notificationDetailError || notificationDetailOutcome)
       ? createPortal(
           <div
-            className={styles.notificationDetailBackdrop}
+            className={styles.notificationDetailBackdrop} data-website-overlay
             role="presentation"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
@@ -2396,7 +2402,7 @@ export default function AppHeader({
     leaveAccountOpen && canUseNotificationPortal
       ? createPortal(
           <div
-            className={styles.notificationDetailBackdrop}
+            className={styles.notificationDetailBackdrop} data-website-overlay
             role="presentation"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) setLeaveAccountOpen(false);
@@ -2672,3 +2678,4 @@ export default function AppHeader({
     </>
   );
 }
+

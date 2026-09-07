@@ -221,7 +221,7 @@ export default function CaptureRequestDecisionModal({
   const isInvoice = capture?.requestType !== 'fuel_slip';
 
   return (
-    <div className={baseStyles.overlay} role="presentation">
+    <div className={baseStyles.overlay} data-website-overlay role="presentation">
       <button
         type="button"
         className={baseStyles.backdrop}
@@ -357,3 +357,4 @@ export default function CaptureRequestDecisionModal({
     </div>
   );
 }
+

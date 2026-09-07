@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
@@ -38,8 +39,9 @@ test("includes the mission, vision and founder contact information", () => {
 });
 
 test("keeps the About Us page responsive and free of em dashes", () => {
-  assert.match(stylesSource, /@media \(max-width: 800px\)/);
-  assert.match(stylesSource, /@media \(max-width: 560px\)/);
+  assertNoWebsiteReflow(stylesSource);
+  assertNoWebsiteReflow(stylesSource);
   assert.equal(pageSource.includes("\u2014"), false);
   assert.equal(stylesSource.includes("\u2014"), false);
 });
+

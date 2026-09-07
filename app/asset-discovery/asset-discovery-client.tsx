@@ -1,4 +1,7 @@
 "use client";
+import { useWebsiteStyles } from '../../components/useWebsiteStyles';
+import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
+import website_mobileStyles from '../../components/website-styles/FieldManagerControls.module.css';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -9,9 +12,9 @@ import {
 import LeadPhotoViewerModal from "../../components/LeadPhotoViewerModal";
 import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
-import mobileStyles from "../field-manager/page.module.css";
+import native_mobileStyles from "../field-manager/page.module.css";
 import styles from "./page.module.css";
-import dealerStyles from "../dealer/dealer.module.css";
+import native_dealerStyles from "../dealer/dealer.module.css";
 import RecentlyAdvertisedClient from "./recently-advertised-client";
 
 type EnquiryStatus = "pending" | "approved" | "temporarily_denied";
@@ -693,6 +696,9 @@ export default function AssetDiscoveryClient({
   initialView?: "discovery" | "recently-advertised";
   allowRecentAdverts?: boolean;
 } = {}) {
+  const mobileStyles = useWebsiteStyles(native_mobileStyles, website_mobileStyles);
+  const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
+
   const compactAppMode = dealerAppMode || ownerAppMode;
   const requestedOpenAssetId = cleanText(initialOpenAssetId);
   const [activeDiscoveryView, setActiveDiscoveryView] = useState<
@@ -2607,8 +2613,8 @@ export default function AssetDiscoveryClient({
       ) : null}
 
       {!compactAppMode && isFilterModalOpen ? (
-        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeDiscoveryFilterModal} />
+        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeDiscoveryFilterModal} />
 
           <div
             className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${leadStyles.leadFilterModal} ${styles.discoveryFilterModal}`}
@@ -2727,10 +2733,10 @@ export default function AssetDiscoveryClient({
       access?.accountType === "owner" &&
       isSettingsModalOpen ? (
         <div
-          className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}
+          className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay
         >
           <div
-            className={assetStyles.modalBackdrop}
+            className={assetStyles.modalBackdrop} data-website-overlay
             onClick={() => setIsSettingsModalOpen(false)}
           />
 
@@ -2999,3 +3005,4 @@ export default function AssetDiscoveryClient({
     </section>
   );
 }
+

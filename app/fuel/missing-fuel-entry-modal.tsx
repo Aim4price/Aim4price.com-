@@ -276,7 +276,7 @@ export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMis
   }, [onClose]);
 
   return (
-    <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-labelledby="manage-storage-choice-title">
+    <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="manage-storage-choice-title">
       <div className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.manageStorageChoiceModal}`}>
         <div className={styles.modalHeader}>
           <div><h2 id="manage-storage-choice-title">{storage.name}</h2><p>Choose what you need to manage.</p></div>
@@ -503,7 +503,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
   );
 
   return (
-    <div className={`${styles.fuelSlipFlowBackdrop} ${styles.desktopMissingEntryModal}`} role="dialog" aria-modal="true" aria-labelledby="missing-fuel-title">
+    <div className={`${styles.fuelSlipFlowBackdrop} ${styles.desktopMissingEntryModal}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="missing-fuel-title">
       <div className={`${styles.missingEntryModal} ${saved ? styles.missingEntrySuccessModal : ''}`}>
         <header className={styles.missingEntryHeader}>
           <div><h2 id="missing-fuel-title">Back Track Fuel</h2><p>{selectedAsset?.title ?? 'Choose an asset'}</p></div>
@@ -676,7 +676,7 @@ export function ReconcileFuelBalanceModal({ storage, accountantShareId, accounta
   }
 
   return (
-    <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-labelledby="reconcile-fuel-title">
+    <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="reconcile-fuel-title">
       <div className={styles.reconcileBalanceModal}>
         <header className={styles.missingEntryHeader}><div><span className={styles.missingEntryEyebrow}>Physical reconciliation</span><h2 id="reconcile-fuel-title">Reconcile Balance</h2><p>{storage.name}</p></div><button type="button" className={styles.closeButton} onClick={onClose} disabled={isSaving} aria-label="Close reconciliation"><CloseIcon /></button></header>
         <div className={styles.missingEntryScrollBody}>
@@ -696,3 +696,4 @@ export function ReconcileFuelBalanceModal({ storage, accountantShareId, accounta
     </div>
   );
 }
+

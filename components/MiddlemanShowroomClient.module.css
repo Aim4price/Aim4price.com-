@@ -16,14 +16,14 @@
 .publicPage button, .publicPage input, .publicPage select { font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif; }
 
 .managerPage {
-  min-height: calc(100vh - 7rem);
-  padding: clamp(1rem, 2vw, 2rem);
+  min-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 7rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 2rem);
   background:
     radial-gradient(circle at 95% 2%, rgba(243,182,64,.12), transparent 27rem),
     radial-gradient(circle at 4% 12%, rgba(22,95,73,.06), transparent 30rem),
     #f4f8f6;
 }
-.managerPageMobile { min-height: 100dvh; padding: 1rem; }
+.managerPageMobile { min-height: calc(var(--website-design-vh, 1dvh) * 100); padding: 1rem; }
 .managerHero, .managerGrid { width: min(1460px, 100%); margin-inline: auto; }
 
 .managerHero {
@@ -31,10 +31,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: clamp(1.5rem, 3.5vw, 3.75rem);
+  gap: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 3.5), 3.75rem);
   overflow: hidden;
   min-height: 0;
-  padding: clamp(1.4rem, 2.4vw, 2.15rem);
+  padding: clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.15rem);
   border: 1px solid #d6e4de;
   border-radius: 22px;
   background: rgba(255,255,255,.97);
@@ -57,7 +57,7 @@
   max-width: 790px;
   margin: 0 0 .65rem;
   font-family: 'Montserrat', sans-serif;
-  font-size: clamp(2rem, 2.75vw, 3rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 2.75), 3rem);
   font-weight: 850;
   line-height: 1.06;
   letter-spacing: -.048em;
@@ -100,13 +100,13 @@
   align-self: start;
   border: 1px solid #d6e4de;
   border-radius: 20px;
-  padding: clamp(1.15rem, 1.7vw, 1.55rem);
+  padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.55rem);
   background: #fff;
   box-shadow: 0 16px 45px rgba(23,54,44,.06);
 }
 .sectionHeading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; padding-bottom: .9rem; border-bottom: 1px solid #e6eeea; }
 .sectionHeading > div { min-width: 0; }
-.sectionHeading h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem, 1.7vw, 1.48rem); font-weight: 850; line-height: 1.15; letter-spacing: -.032em; }
+.sectionHeading h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.48rem); font-weight: 850; line-height: 1.15; letter-spacing: -.032em; }
 .sectionHeading p { margin: .38rem 0 0; color: #6d817a; font-size: .76rem; line-height: 1.45; }
 .statusText, .stockCount { flex: 0 0 auto; color: #687a74; font-size: .7rem; font-weight: 800; line-height: 1.2; letter-spacing: 0; }
 .statusLive { color: #147047; }
@@ -196,14 +196,14 @@
 .rating { flex: 0 0 auto; border-radius: 999px; padding: .34rem .52rem; color: #fff; font-family: 'Montserrat', sans-serif; font-size: .59rem; font-weight: 800; line-height: 1; letter-spacing: 0; }
 .rating_low { background: #f0782c; } .rating_great { background: #239b50; } .rating_fair { background: #208aa0; } .rating_high { background: #df4c44; } .rating_none { background: #74847e; }
 
-.emptyStock { display: grid; align-content: center; justify-items: center; min-height: 340px; padding: clamp(2rem,4vw,3.25rem) 1.2rem; border: 1px dashed #cbded6; border-radius: 18px; background: #fcfefd; text-align: center; }
-.emptyStock h3 { max-width: 520px; margin: 0 0 .4rem; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem,2vw,1.45rem); font-weight: 850; letter-spacing: -.025em; }
+.emptyStock { display: grid; align-content: center; justify-items: center; min-height: 340px; padding: clamp(2rem,calc(var(--website-design-vw, 1vw) * 4),3.25rem) 1.2rem; border: 1px dashed #cbded6; border-radius: 18px; background: #fcfefd; text-align: center; }
+.emptyStock h3 { max-width: 520px; margin: 0 0 .4rem; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem,calc(var(--website-design-vw, 1vw) * 2),1.45rem); font-weight: 850; letter-spacing: -.025em; }
 .emptyStock p { max-width: 520px; margin: 0 0 1.25rem; color: #6d8079; font-size: .82rem; line-height: 1.6; }
 
 .listingManagerBackdrop { position: fixed; inset: 0; z-index: 145; display: grid; place-items: center; padding: 1rem; background: rgba(7,25,20,.62); backdrop-filter: blur(10px); }
-.listingManagerDialog { width: min(700px,100%); max-height: calc(100dvh - 2rem); overflow-y: auto; border: 1px solid #d5e3dd; border-radius: 28px; padding: 0; color: var(--ink); background: #fff; box-shadow: 0 30px 84px rgba(7,27,21,.28); outline: none; }
+.listingManagerDialog { width: min(700px,var(--website-dialog-reference-width, 100%)); max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem); overflow-y: auto; border: 1px solid #d5e3dd; border-radius: 28px; padding: 0; color: var(--ink); background: #fff; box-shadow: 0 30px 84px rgba(7,27,21,.28); outline: none; }
 .listingManagerHeader { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 1rem; padding: 1.5rem 1.6rem 1.2rem; border-bottom: 1px solid #e2ebe7; }
-.listingManagerHeader h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.55rem,3vw,1.8rem); font-weight: 850; letter-spacing: -.035em; }
+.listingManagerHeader h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.55rem,calc(var(--website-design-vw, 1vw) * 3),1.8rem); font-weight: 850; letter-spacing: -.035em; }
 .listingManagerHeader p { margin: .45rem 0 0; color: #687c74; font-size: .82rem; line-height: 1.5; }
 .listingManagerClose { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid #c8dfeb; border-radius: 999px; padding: 0; color: #28647f; background: #e9f5fb; box-shadow: 0 7px 18px rgba(40,100,127,.1); cursor: pointer; transition: transform .16s ease, border-color .16s ease, background .16s ease; }
 .listingManagerClose:hover { transform: translateY(-1px); border-color: #9dc7da; background: #ddf0f9; }
@@ -231,7 +231,7 @@
 .listingManagerClose:focus-visible, .listingManagerActions > a:focus-visible, .listingManagerActions > button:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
 
 .deleteBackdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 1rem; background: rgba(7,25,20,.7); backdrop-filter: blur(8px); }
-.deleteDialog { display: grid; justify-items: center; width: min(500px,100%); border: 1px solid #efc3bd; border-radius: 20px; padding: 1.5rem; background: #fffafa; box-shadow: 0 28px 80px rgba(12,34,27,.24); text-align: center; }
+.deleteDialog { display: grid; justify-items: center; width: min(500px,var(--website-dialog-reference-width, 100%)); border: 1px solid #efc3bd; border-radius: 20px; padding: 1.5rem; background: #fffafa; box-shadow: 0 28px 80px rgba(12,34,27,.24); text-align: center; }
 .deleteIcon { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 14px; color: #fff; background: #ba3c32; font-family: 'Montserrat', sans-serif; font-size: 1.3rem; font-weight: 900; }
 .deleteDialog h2 { margin: .95rem 0 .4rem; color: #72261f; font-family: 'Montserrat', sans-serif; font-size: 1.38rem; font-weight: 850; letter-spacing: -.035em; }
 .deleteDialog p { margin: 0; color: #73635f; font-size: .79rem; line-height: 1.6; }
@@ -243,28 +243,28 @@
 .deleteConfirmButton { min-height: 3rem; border: 0; border-radius: 11px; padding: 0 .95rem; color: #fff; background: #a8322a; font-family: 'Montserrat', sans-serif; font-size: .7rem; font-weight: 800; cursor: pointer; }
 .deleteConfirmButton:disabled { opacity: .45; cursor: not-allowed; }
 
-.publicPage { min-height: 100vh; background: #fff; }
+.publicPage { min-height: calc(var(--website-design-vh, 1vh) * 100); background: #fff; }
 .publicTopbar { border-bottom: 1px solid var(--line); background: #fff; }
-.publicTopbarInner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(1720px,100%); min-height: 4.25rem; margin-inline: auto; padding: 0 clamp(1.2rem,4.5vw,4.5rem); }
+.publicTopbarInner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(1720px,100%); min-height: 4.25rem; margin-inline: auto; padding: 0 clamp(1.2rem,calc(var(--website-design-vw, 1vw) * 4.5),4.5rem); }
 .aim4priceMark { display: inline-flex; align-items: center; text-decoration: none; }
 .aim4priceMark img { display: block; width: auto; height: 1.95rem; object-fit: contain; }
 .publicTopbarAction { display: inline-flex; align-items: center; justify-content: center; min-height: 2.65rem; border: 1px solid #cddbd5; border-radius: 10px; padding: 0 1rem; color: var(--green); background: #fff; font-size: .72rem; font-weight: 800; text-decoration: none; transition: border-color .16s ease, background .16s ease; }
 .publicTopbarAction:hover { border-color: #a9c7bb; background: #f4f9f7; }
 .publicTopbarAction:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
 
-.publicHero { padding: clamp(.85rem,1.6vw,1.5rem); background: #f4f8f6; }
-.publicHeroInner { width: min(1560px,100%); margin-inline: auto; border: 1px solid #d6e4de; border-radius: 20px; padding: clamp(1.25rem,2vw,2rem); background: #fff; box-shadow: 0 14px 38px rgba(23,54,44,.05); }
-.publicHeroMain { display: grid; grid-template-columns: minmax(0,1fr) minmax(27rem,.62fr); align-items: center; gap: clamp(1.25rem,2.4vw,2.4rem); }
-.profileIdentity { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: clamp(.9rem,1.5vw,1.25rem); min-width: 0; }
-.profileIdentity > img, .profileIdentity > span { display: grid; place-items: center; width: clamp(82px,6vw,96px); height: clamp(82px,6vw,96px); border: 1px solid #d8e5df; border-radius: 15px; padding: .55rem; object-fit: contain; color: var(--green); background: #fff; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 850; }
+.publicHero { padding: clamp(.85rem,calc(var(--website-design-vw, 1vw) * 1.6),1.5rem); background: #f4f8f6; }
+.publicHeroInner { width: min(1560px,100%); margin-inline: auto; border: 1px solid #d6e4de; border-radius: 20px; padding: clamp(1.25rem,calc(var(--website-design-vw, 1vw) * 2),2rem); background: #fff; box-shadow: 0 14px 38px rgba(23,54,44,.05); }
+.publicHeroMain { display: grid; grid-template-columns: minmax(0,1fr) minmax(27rem,.62fr); align-items: center; gap: clamp(1.25rem,calc(var(--website-design-vw, 1vw) * 2.4),2.4rem); }
+.profileIdentity { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: clamp(.9rem,calc(var(--website-design-vw, 1vw) * 1.5),1.25rem); min-width: 0; }
+.profileIdentity > img, .profileIdentity > span { display: grid; place-items: center; width: clamp(82px,calc(var(--website-design-vw, 1vw) * 6),96px); height: clamp(82px,calc(var(--website-design-vw, 1vw) * 6),96px); border: 1px solid #d8e5df; border-radius: 15px; padding: .55rem; object-fit: contain; color: var(--green); background: #fff; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; font-weight: 850; }
 .profileIdentity > div { min-width: 0; }
-.profileIdentity h1 { max-width: 820px; margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.9rem,2.8vw,2.85rem); font-weight: 850; line-height: 1.03; letter-spacing: -.047em; overflow-wrap: anywhere; }
+.profileIdentity h1 { max-width: 820px; margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.9rem,calc(var(--website-design-vw, 1vw) * 2.8),2.85rem); font-weight: 850; line-height: 1.03; letter-spacing: -.047em; overflow-wrap: anywhere; }
 .publicAdvertSummary { margin: .35rem 0 0; color: var(--green); font-size: .78rem; font-weight: 800; }
 .publicBio { max-width: 700px; margin: .45rem 0 0; color: #5f746c; font-size: .8rem; line-height: 1.5; white-space: pre-line; }
 .publicTrustLine { max-width: 700px; margin: .45rem 0 0; color: #50675f; font-size: .78rem; font-weight: 600; line-height: 1.5; }
 .publicContactActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .6rem; width: 100%; max-width: 39rem; }
 .publicContactActions a { flex: 1 1 10.5rem; width: auto; max-width: 13rem; min-width: 0; min-height: 3rem; padding-inline: 1rem; text-align: center; }
-.publicBusinessDetails { display: grid; grid-template-columns: repeat(auto-fit,minmax(14rem,1fr)); gap: clamp(.85rem,1.8vw,1.6rem); margin-top: clamp(.9rem,1.4vw,1.15rem); border-top: 1px solid #e2ebe7; padding-top: .9rem; }
+.publicBusinessDetails { display: grid; grid-template-columns: repeat(auto-fit,minmax(14rem,1fr)); gap: clamp(.85rem,calc(var(--website-design-vw, 1vw) * 1.8),1.6rem); margin-top: clamp(.9rem,calc(var(--website-design-vw, 1vw) * 1.4),1.15rem); border-top: 1px solid #e2ebe7; padding-top: .9rem; }
 .publicBusinessDetails > * { display: grid; grid-template-columns: 1.8rem minmax(0,1fr); align-items: center; gap: .65rem; min-width: 0; color: inherit; text-decoration: none; }
 .publicBusinessDetails svg { width: 1.55rem; height: 1.55rem; fill: none; stroke: #285d4d; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; }
 .publicBusinessDetailCopy { display: grid; gap: .22rem; min-width: 0; }
@@ -275,13 +275,13 @@
 .publicBusinessDetails a:focus-visible { border-radius: 4px; outline: 3px solid rgba(243,182,64,.55); outline-offset: 3px; }
 
 .marketplaceInventory { border-top: 0; background: #fff; }
-.inventoryIntro { width: min(1560px,100%); margin-inline: auto; padding: clamp(1.15rem,1.7vw,1.5rem) clamp(1rem,2vw,2rem) .75rem; }
+.inventoryIntro { width: min(1560px,100%); margin-inline: auto; padding: clamp(1.15rem,calc(var(--website-design-vw, 1vw) * 1.7),1.5rem) clamp(1rem,calc(var(--website-design-vw, 1vw) * 2),2rem) .75rem; }
 .inventoryIntro > div { min-width: 0; }
-.inventoryIntro h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.4rem,2.25vw,1.9rem); font-weight: 850; line-height: 1.1; letter-spacing: -.04em; }
+.inventoryIntro h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.4rem,calc(var(--website-design-vw, 1vw) * 2.25),1.9rem); font-weight: 850; line-height: 1.1; letter-spacing: -.04em; }
 .inventoryIntro p { max-width: 800px; margin: .35rem 0 0; color: #657970; font-size: .76rem; line-height: 1.5; }
 
 .publicFooter { border-top: 1px solid #dce6e2; color: var(--ink); background: #fff; }
-.publicFooterInner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(1720px,100%); margin-inline: auto; padding: 1.6rem clamp(1.2rem,4.5vw,4.5rem); }
+.publicFooterInner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(1720px,100%); margin-inline: auto; padding: 1.6rem clamp(1.2rem,calc(var(--website-design-vw, 1vw) * 4.5),4.5rem); }
 .publicFooterInner > div { display: grid; gap: .3rem; }
 .publicFooter strong { font-family: 'Montserrat', sans-serif; font-size: .78rem; font-weight: 800; }
 .publicFooter span { color: #687c74; font-size: .68rem; }
@@ -290,96 +290,97 @@
 .publicFooter a:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
 
 @media (max-width: 1060px) {
-  .managerHero { align-items: flex-start; flex-direction: column; }
-  .managerGrid { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerHero { align-items: flex-start; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerGrid { grid-template-columns: 1fr; }
 }
 
 @media (min-width: 1061px) and (max-width: 1280px) {
-  .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); }
-  .showroomLogoActions { grid-column: 2; justify-content: flex-start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .showroomLogoActions { grid-column: 2; justify-content: flex-start; }
 }
 
 @media (max-width: 620px) {
-  .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); }
-  .showroomLogoActions { grid-column: 2; justify-content: flex-start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .showroomLogoActions { grid-column: 2; justify-content: flex-start; }
 }
 
 @media (max-width: 1100px) {
-  .publicHeroMain { grid-template-columns: minmax(0,1fr); align-items: flex-start; }
-  .publicContactActions { justify-content: flex-start; max-width: 42rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicHeroMain { grid-template-columns: minmax(0,1fr); align-items: flex-start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicContactActions { justify-content: flex-start; max-width: 42rem; }
 }
 
 @media (max-width: 760px) {
-  .managerPage, .managerPageMobile { padding: .75rem; }
-  .managerHero { gap: 1.35rem; border-radius: 18px; padding: 1.3rem; }
-  .managerHero::after { display: none; }
-  .managerHero h1 { font-size: clamp(1.8rem,9vw,2.35rem); }
-  .managerHero p { font-size: .88rem; }
-  .heroActions, .heroActions a { width: 100%; }
-  .managerGrid { gap: .75rem; margin-top: .75rem; }
-  .stockCard { order: -1; }
-  .settingsCard, .stockCard { border-radius: 18px; padding: 1rem; }
-  .sectionHeading { align-items: flex-start; }
-  .sectionHeading p { display: none; }
-  .advertDesignField { align-items: stretch; flex-direction: column; }
-  .advertDesignButton { width: 100%; }
-  .slugField { grid-template-columns: minmax(0,1fr) auto; }
-  .slugPrefix { grid-column: 1/-1; padding: .72rem .85rem 0; }
-  .slugField input { padding: 0 .85rem; }
-  .managerListing { grid-template-columns: 88px minmax(0,1fr); align-items: flex-start; gap: .75rem; }
-  .managerListing > img { width: 88px; height: 80px; }
-  .listingActions { grid-column: 1/-1; grid-template-columns: 1fr; }
-  .listingTitleRow { align-items: flex-start; flex-direction: column; gap: .35rem; }
-  .listingTitleRow > strong { width: 100%; white-space: normal; }
-  .dangerZone { align-items: stretch; flex-direction: column; }
-  .dangerZone button { width: 100%; }
-  .publicTopbarInner { min-height: 4.2rem; padding-inline: 1rem; }
-  .aim4priceMark img { height: 1.85rem; }
-  .publicTopbarAction { min-height: 2.45rem; padding-inline: .8rem; font-size: .67rem; }
-  .publicHero { padding: .65rem; }
-  .publicHeroInner { border-radius: 18px; padding: 1rem; }
-  .profileIdentity { align-items: flex-start; }
-  .profileIdentity > img, .profileIdentity > span { width: 68px; height: 68px; border-radius: 13px; }
-  .profileIdentity h1 { font-size: clamp(1.65rem,8vw,2.25rem); }
-  .publicContactActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
-  .publicContactActions a { width: 100%; max-width: none; min-width: 0; padding-inline: .8rem; text-align: center; }
-  .publicContactActions .whatsappButton { grid-column: 1/-1; }
-  .publicBusinessDetails { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
-  .inventoryIntro { width: 100%; padding: .9rem 1rem .55rem; }
-  .publicFooterInner { align-items: stretch; flex-direction: column; }
-  .publicFooter a { text-align: center; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerPage, :global(:where(html:not(:has([data-website-canvas])))) .managerPageMobile { padding: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerHero { gap: 1.35rem; border-radius: 18px; padding: 1.3rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerHero::after { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerHero h1 { font-size: clamp(1.8rem,9vw,2.35rem); }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerHero p { font-size: .88rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .heroActions, :global(:where(html:not(:has([data-website-canvas])))) .heroActions a { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerGrid { gap: .75rem; margin-top: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stockCard { order: -1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .settingsCard, :global(:where(html:not(:has([data-website-canvas])))) .stockCard { border-radius: 18px; padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { align-items: flex-start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading p { display: none; }
+  :global(:where(html:not(:has([data-website-canvas])))) .advertDesignField { align-items: stretch; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .advertDesignButton { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .slugField { grid-template-columns: minmax(0,1fr) auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .slugPrefix { grid-column: 1/-1; padding: .72rem .85rem 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .slugField input { padding: 0 .85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerListing { grid-template-columns: 88px minmax(0,1fr); align-items: flex-start; gap: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .managerListing > img { width: 88px; height: 80px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingActions { grid-column: 1/-1; grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingTitleRow { align-items: flex-start; flex-direction: column; gap: .35rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingTitleRow > strong { width: 100%; white-space: normal; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dangerZone { align-items: stretch; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dangerZone button { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicTopbarInner { min-height: 4.2rem; padding-inline: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .aim4priceMark img { height: 1.85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicTopbarAction { min-height: 2.45rem; padding-inline: .8rem; font-size: .67rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicHero { padding: .65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicHeroInner { border-radius: 18px; padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .profileIdentity { align-items: flex-start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .profileIdentity > img, :global(:where(html:not(:has([data-website-canvas])))) .profileIdentity > span { width: 68px; height: 68px; border-radius: 13px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .profileIdentity h1 { font-size: clamp(1.65rem,8vw,2.25rem); }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicContactActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicContactActions a { width: 100%; max-width: none; min-width: 0; padding-inline: .8rem; text-align: center; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicContactActions .whatsappButton { grid-column: 1/-1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicBusinessDetails { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .inventoryIntro { width: 100%; padding: .9rem 1rem .55rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicFooterInner { align-items: stretch; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicFooter a { text-align: center; }
 }
 
 @media (max-width: 560px) {
-  .profileIdentity { grid-template-columns: 68px minmax(0,1fr); gap: .85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .profileIdentity { grid-template-columns: 68px minmax(0,1fr); gap: .85rem; }
 }
 
 @media (max-width: 420px) {
-  .publicBusinessDetails { grid-template-columns: minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicBusinessDetails { grid-template-columns: minmax(0,1fr); }
 }
 
 @media (max-width: 340px) {
-  .publicContactActions { grid-template-columns: minmax(0,1fr); }
-  .publicContactActions .whatsappButton { grid-column: auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicContactActions { grid-template-columns: minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .publicContactActions .whatsappButton { grid-column: auto; }
 }
 
 @media (max-width: 480px) {
-  .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); padding: .85rem; }
-  .showroomLogoActions { grid-column: 1/-1; width: 100%; }
-  .showroomLogoButton { width: 100%; min-height: 2.75rem; }
-  .settingsActions { display: grid; grid-template-columns: 1fr; }
-  .listingManagerBackdrop { align-items: end; padding: .5rem 0 0; }
-  .listingManagerDialog { max-height: calc(100dvh - .5rem); border-right: 0; border-bottom: 0; border-left: 0; border-radius: 24px 24px 0 0; padding: 0; }
-  .listingManagerHeader { padding: 1.2rem 1rem 1rem; }
-  .listingManagerSummary { padding: .9rem 1rem; }
-  .listingManagerActions { padding: 1rem 1rem max(1rem,env(safe-area-inset-bottom)); }
-  .listingManagerActions > a, .listingManagerActions > button { grid-template-columns: 2.55rem minmax(0,1fr) 1.15rem; min-height: 5rem; padding-inline: .8rem; }
-  .listingManagerActionIcon { width: 2.55rem; height: 2.55rem; }
-  .listingManagerSummary { grid-template-columns: 4.5rem minmax(0,1fr); }
-  .listingManagerSummary img { width: 4.5rem; height: 3.5rem; }
-  .deleteDialog > div:last-child { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); padding: .85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .showroomLogoActions { grid-column: 1/-1; width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .showroomLogoButton { width: 100%; min-height: 2.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .settingsActions { display: grid; grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerBackdrop { align-items: end; padding: .5rem 0 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerDialog { max-height: calc(100dvh - .5rem); border-right: 0; border-bottom: 0; border-left: 0; border-radius: 24px 24px 0 0; padding: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerHeader { padding: 1.2rem 1rem 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerSummary { padding: .9rem 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions { padding: 1rem 1rem max(1rem,env(safe-area-inset-bottom)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > a, :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > button { grid-template-columns: 2.55rem minmax(0,1fr) 1.15rem; min-height: 5rem; padding-inline: .8rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActionIcon { width: 2.55rem; height: 2.55rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerSummary { grid-template-columns: 4.5rem minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerSummary img { width: 4.5rem; height: 3.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteDialog > div:last-child { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .managerPage *, .publicPage * { scroll-behavior: auto !important; transition: none !important; }
 }
+

@@ -380,7 +380,7 @@ export default function AssetDocumentUploadModal({
 
   return (
     <div
-      className={styles.backdrop}
+      className={styles.backdrop} data-website-overlay
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !busyRef.current) onClose();
       }}
@@ -540,4 +540,5 @@ export default function AssetDocumentUploadModal({
     </div>
   );
 }
+
 

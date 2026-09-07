@@ -509,7 +509,7 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.match(managerCss, /\.publicPage\s*\{[^}]*background:\s*#fff/);
   assert.match(managerCss, /\.publicHeroInner\s*\{[^}]*width:\s*min\(1560px,100%\)[^}]*background:\s*#fff/);
   assert.match(managerCss, /\.publicHeroMain\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\) minmax\(27rem,\.62fr\)/);
-  assert.match(managerCss, /\.profileIdentity h1\s*\{[^}]*font-size:\s*clamp\(1\.9rem,2\.8vw,2\.85rem\)/);
+  assert.match(managerCss, /\.profileIdentity h1\s*\{[^}]*font-size:\s*clamp\(1\.9rem,calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.8\),2\.85rem\)/);
   assert.match(managerCss, /\.publicContactActions\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap/);
   assert.match(managerCss, /\.publicBusinessDetails > \*\s*\{[^}]*grid-template-columns:\s*1\.8rem minmax\(0,1fr\)/);
   assert.match(managerCss, /\.publicBusinessDetails svg\s*\{[^}]*stroke:\s*#285d4d/);
@@ -582,7 +582,7 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.doesNotMatch(managerCss, /\.emptyStockIllustration|\.emptyStockMachine/);
   assert.match(managerCss, /\.emptyStock\s*\{[^}]*align-content:\s*center/);
   assert.doesNotMatch(managerCss, /\.statusPill\s*\{/);
-  assert.doesNotMatch(managerCss, /\.managerHero\s*\{[^}]*min-height:\s*clamp\(16\.5rem,\s*23vw,\s*20rem\)/);
+  assert.doesNotMatch(managerCss, /\.managerHero\s*\{[^}]*min-height:\s*clamp\(16\.5rem,\s*calc\(var\(--website-design-vw(?:, 1vw)?\) \* 23\),\s*20rem\)/);
   assert.match(manager, /target="_blank" rel="noreferrer">Open public showroom/);
   assert.match(managerCss, /@media \(max-width: 760px\)[\s\S]*?\.stockCard\s*\{[^}]*order:\s*-1/);
   assert.match(managerCss, /@media \(max-width: 760px\)[\s\S]*?\.listingActions\s*\{[^}]*grid-template-columns:\s*1fr/);
@@ -990,3 +990,4 @@ test('Marketplace only applies Brand Kits to dealer listings', async () => {
   assert.match(database, /updateValues\.push\(brandKit \? JSON\.stringify\(toAdBrandSnapshot\(brandKit\)\) : null\)/);
   assert.match(database, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
 });
+

@@ -5,8 +5,8 @@
   --studio-green-dark: #104737;
   --studio-pale: #edf6f2;
   --studio-line: #d6e4de;
-  min-height: 100vh;
-  padding: 108px clamp(18px, 4vw, 64px) 80px;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
+  padding: 108px clamp(18px, calc(var(--website-design-vw, 1vw) * 4), 64px) 80px;
   background:
     radial-gradient(circle at 95% 2%, rgba(243, 182, 64, .12), transparent 27rem),
     radial-gradient(circle at 4% 12%, rgba(22, 95, 73, .06), transparent 30rem),
@@ -40,9 +40,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 28px;
-  min-height: clamp(190px, 16vw, 240px);
+  min-height: clamp(190px, calc(var(--website-design-vw, 1vw) * 16), 240px);
   margin-bottom: 24px;
-  padding: clamp(30px, 4vw, 54px);
+  padding: clamp(30px, calc(var(--website-design-vw, 1vw) * 4), 54px);
   border: 1px solid var(--studio-line);
   border-radius: 24px;
   color: var(--studio-ink);
@@ -83,7 +83,7 @@
   letter-spacing: -0.045em;
 }
 
-.hero h1 { max-width: 900px; font-size: clamp(2rem, 3.4vw, 3.35rem); line-height: 1.05; }
+.hero h1 { max-width: 900px; font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3.4), 3.35rem); line-height: 1.05; }
 .hero p { max-width: 790px; margin: 14px 0 0; color: var(--studio-muted); font-size: 1rem; line-height: 1.7; }
 
 .notice {
@@ -109,7 +109,7 @@
   box-shadow: 0 16px 42px rgba(23,54,44,.055);
 }
 
-.libraryPanel { margin-bottom: 20px; padding: clamp(19px, 2.2vw, 27px); }
+.libraryPanel { margin-bottom: 20px; padding: clamp(19px, calc(var(--website-design-vw, 1vw) * 2.2), 27px); }
 
 .sectionHeader,
 .editorHeader,
@@ -123,7 +123,7 @@
 
 .sectionHeader { margin-bottom: 18px; }
 .sectionHeader h2,
-.editorHeader h2 { font-size: clamp(1.4rem, 1.9vw, 1.7rem); letter-spacing: -.032em; }
+.editorHeader h2 { font-size: clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.7rem); letter-spacing: -.032em; }
 .sectionHeader p,
 .editorHeader p { margin: 7px 0 0; color: var(--studio-muted); font-size: .9rem; line-height: 1.6; }
 
@@ -224,7 +224,7 @@
 
 .stepContent { min-height: 480px; padding: 24px 25px 22px; }
 .stepIntro { margin-bottom: 21px; }
-.stepIntro h2 { max-width: 680px; font-size: clamp(1.45rem, 1.85vw, 1.8rem); line-height: 1.12; letter-spacing: -.032em; }
+.stepIntro h2 { max-width: 680px; font-size: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 1.85), 1.8rem); line-height: 1.12; letter-spacing: -.032em; }
 .stepIntro p { margin: 9px 0 0; color: #71857e; font-size: .9rem; line-height: 1.6; }
 .stepFieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .stepFieldset:disabled { opacity: .7; }
@@ -494,10 +494,10 @@
 .adPhoto::before { content: ""; width: 44%; aspect-ratio: 1.55; border: 4px solid currentColor; border-radius: 4px; opacity: .42; transform: skew(-8deg); }
 .adPhoto span { position: absolute; top: 8px; left: 8px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; color: #fff; background: rgba(15,56,45,.66); font: 850 .6rem var(--font-heading, "Montserrat", sans-serif); }
 .adInfo { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; justify-content: center; gap: 10px; min-width: 0; padding: 20px; background: var(--brand-primary); }
-.adTitle { font: 900 clamp(.82rem, 1.7vw, 1.25rem)/1.03 var(--font-heading, "Montserrat", sans-serif); }
+.adTitle { font: 900 clamp(.82rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.25rem)/1.03 var(--font-heading, "Montserrat", sans-serif); }
 .adDetails,
-.adContact { color: rgba(255,255,255,.78); font-size: clamp(.5rem, .8vw, .7rem); }
-.adPrice { margin-top: 3px; border-radius: 9px; padding: 10px 12px; color: var(--brand-secondary); background: var(--brand-accent); font: 900 clamp(.92rem, 2vw, 1.45rem) var(--font-heading, "Montserrat", sans-serif); white-space: nowrap; }
+.adContact { color: rgba(255,255,255,.78); font-size: clamp(.5rem, calc(var(--website-design-vw, 1vw) * 0.8), .7rem); }
+.adPrice { margin-top: 3px; border-radius: 9px; padding: 10px 12px; color: var(--brand-secondary); background: var(--brand-accent); font: 900 clamp(.92rem, calc(var(--website-design-vw, 1vw) * 2), 1.45rem) var(--font-heading, "Montserrat", sans-serif); white-space: nowrap; }
 .adPrice small { font-size: .45em; }
 .aimFooter { position: absolute; right: 12px; bottom: 8px; color: rgba(255,255,255,.67); font-size: .42rem; }
 
@@ -508,7 +508,7 @@
 .adPreview.templatePhotoFirst .adBrand,
 .adPreview.templateClassic .adBrand,
 .adPreview.templateMinimal .adBrand { grid-column: 2; }
-.adPreview.templatePriceFocus .adPrice { order: -1; padding-block: 14px; font-size: clamp(1.1rem, 2.4vw, 1.7rem); }
+.adPreview.templatePriceFocus .adPrice { order: -1; padding-block: 14px; font-size: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.7rem); }
 .adPreview.templatePhotoFirst { grid-template-columns: 70% 30%; }
 .adPreview.templatePhotoFirst .adInfo { padding: 14px; }
 .adPreview.templateClassic { border: 7px solid var(--brand-primary); border-radius: 8px; }
@@ -539,26 +539,26 @@
 .previewNote strong { color: #325d50; font: 850 .82rem "Montserrat", sans-serif; }
 
 @media (max-width: 1180px) {
-  .kitGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .workspace { grid-template-columns: 1fr; }
-  .previewPanel { position: static; grid-row: auto; }
-  .stepContent { min-height: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .workspace { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .previewPanel { position: static; grid-row: auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent { min-height: 0; }
 }
 
 @media (max-width: 760px) {
-  .page { padding-inline: 12px; padding-bottom: 42px; }
-  .dealerPage { padding-top: 18px; }
-  .middlemanPage { padding-top: 10px; }
-  .hero { align-items: flex-start; flex-direction: column; min-height: 0; padding: 30px 24px; }
-  .sectionHeader,
-  .editorHeader { align-items: stretch; flex-direction: column; }
-  .sectionHeader .primaryButton,
-  .editorHeader .ghostButton { width: 100%; }
-  .fieldGrid,
-  .styleGrid,
-  .reviewGrid,
-  .templateGrid { grid-template-columns: 1fr; }
-  .kitGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .page { padding-inline: 12px; padding-bottom: 42px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerPage { padding-top: 18px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .middlemanPage { padding-top: 10px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .hero { align-items: flex-start; flex-direction: column; min-height: 0; padding: 30px 24px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .editorHeader { align-items: stretch; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeader .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .editorHeader .ghostButton { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .fieldGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .styleGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .reviewGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .templateGrid { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitGrid {
     grid-auto-flow: column;
     grid-auto-columns: minmax(280px, 86vw);
     grid-template-columns: none;
@@ -566,53 +566,54 @@
     padding: 3px 3px 14px;
     scroll-snap-type: x mandatory;
   }
-  .kitCard { scroll-snap-align: start; }
-  .stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0 7px; }
-  .stepButton { flex-direction: column; justify-content: center; gap: 4px; min-height: 58px; padding: 8px 3px 5px; text-align: center; }
-  .stepButton > span:first-child { width: 24px; height: 24px; }
-  .stepButton > span:last-child { display: grid; }
-  .stepButton strong { font-size: .74rem; }
-  .stepContent { padding: 22px 19px 19px; }
-  .editorHeader,
-  .actions { padding-inline: 20px; }
-  .logoField { grid-template-columns: 1fr; align-items: stretch; }
-  .logoControls { align-items: stretch; flex-direction: column; }
-  .logoPreviewCard { width: 100%; height: 112px; }
-  .logoButtons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .logoButtons > :only-child { grid-column: 1 / -1; }
-  .logoUpload,
-  .logoRemove { min-width: 0; width: 100%; }
-  .actions { align-items: stretch; flex-direction: column; }
-  .actions > div { justify-content: flex-end; }
-  .actions > div:last-child { display: grid; grid-template-columns: 1fr; }
-  .actions > div:last-child > * { width: 100%; min-height: 48px; }
-  .previewPanel { padding: 16px; }
-  .previewPhotoHeader { align-items: stretch; flex-direction: column; }
-  .previewPhotoHeader > div:last-child { justify-content: flex-start; }
-  .adCanvasPreview { border-radius: 12px; }
-  .adPreview { grid-template-columns: 56% 44%; }
-  .adInfo { gap: 6px; padding: 11px; }
-  .adBrand { padding: 9px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitCard { scroll-snap-align: start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepper { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0 7px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepButton { flex-direction: column; justify-content: center; gap: 4px; min-height: 58px; padding: 8px 3px 5px; text-align: center; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepButton > span:first-child { width: 24px; height: 24px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepButton > span:last-child { display: grid; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepButton strong { font-size: .74rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent { padding: 22px 19px 19px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .editorHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .actions { padding-inline: 20px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .logoField { grid-template-columns: 1fr; align-items: stretch; }
+  :global(:where(html:not(:has([data-website-canvas])))) .logoControls { align-items: stretch; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .logoPreviewCard { width: 100%; height: 112px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .logoButtons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .logoButtons > :only-child { grid-column: 1 / -1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .logoUpload,
+  :global(:where(html:not(:has([data-website-canvas])))) .logoRemove { min-width: 0; width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions { align-items: stretch; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions > div { justify-content: flex-end; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions > div:last-child { display: grid; grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions > div:last-child > * { width: 100%; min-height: 48px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .previewPanel { padding: 16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .previewPhotoHeader { align-items: stretch; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .previewPhotoHeader > div:last-child { justify-content: flex-start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .adCanvasPreview { border-radius: 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview { grid-template-columns: 56% 44%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .adInfo { gap: 6px; padding: 11px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .adBrand { padding: 9px; }
 }
 
 @media (max-width: 470px) {
-  .previewHeading { align-items: flex-start; flex-direction: column; }
-  .previewPhotoTray { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .kitGrid { grid-auto-columns: minmax(260px, 88vw); }
-  .kitCardActions { display: grid; grid-template-columns: 1fr 1fr; }
-  .kitCardActions button { width: 100%; min-height: 44px; }
-  .kitCardActions .iconDangerButton:last-child { grid-column: 1 / -1; }
-  .adPreview { aspect-ratio: 1 / 1; grid-template-columns: 1fr; grid-template-rows: 44% 48px 1fr; }
-  .adPreview .adPhotos,
-  .adPreview.templateMinimal .adPhotos { grid-column: 1; grid-row: 1; }
-  .adPreview .adBrand,
-  .adPreview.templateMinimal .adBrand,
-  .adPreview.templateDuoSplit .adBrand,
-  .adPreview.templateGalleryThree .adBrand,
-  .adPreview.templateCatalogueGrid .adBrand { grid-column: 1; grid-row: 2; }
-  .adPreview .adInfo,
-  .adPreview.templateMinimal .adInfo,
-  .adPreview.templateDuoSplit .adInfo,
-  .adPreview.templateGalleryThree .adInfo,
-  .adPreview.templateCatalogueGrid .adInfo { grid-column: 1; grid-row: 3; }
+  :global(:where(html:not(:has([data-website-canvas])))) .previewHeading { align-items: flex-start; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .previewPhotoTray { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitGrid { grid-auto-columns: minmax(260px, 88vw); }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitCardActions { display: grid; grid-template-columns: 1fr 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitCardActions button { width: 100%; min-height: 44px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .kitCardActions .iconDangerButton:last-child { grid-column: 1 / -1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview { aspect-ratio: 1 / 1; grid-template-columns: 1fr; grid-template-rows: 44% 48px 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview .adPhotos,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateMinimal .adPhotos { grid-column: 1; grid-row: 1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview .adBrand,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateMinimal .adBrand,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateDuoSplit .adBrand,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateGalleryThree .adBrand,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateCatalogueGrid .adBrand { grid-column: 1; grid-row: 2; }
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview .adInfo,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateMinimal .adInfo,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateDuoSplit .adInfo,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateGalleryThree .adInfo,
+  :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateCatalogueGrid .adInfo { grid-column: 1; grid-row: 3; }
 }
+

@@ -96,7 +96,7 @@ export default function FuelLocationModal({
   }, [captureLocation]);
 
   return (
-    <div className={styles.backdrop} role="dialog" aria-modal="true" aria-labelledby="fuel-location-title">
+    <div className={styles.backdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-location-title">
       <section className={`${styles.card} ${locationState === 'error' ? styles.cardError : ''}`}>
         <div className={styles.header}>
           <div className={styles.icon} aria-hidden="true">
@@ -145,3 +145,4 @@ export default function FuelLocationModal({
     </div>
   );
 }
+

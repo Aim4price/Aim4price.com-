@@ -3847,7 +3847,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'exclusions' ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
+        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
           <div className={`${styles.assetModal} ${styles.exclusionsModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
@@ -4006,7 +4006,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-menu' ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Fuel slips">
+        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel slips">
           <div
             className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipMenuModal}`}
             data-fuel-slip-choice-modal="menu"
@@ -4053,7 +4053,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.fuelSlipManagerBackdrop}`}>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.fuelSlipManagerBackdrop}`} data-website-overlay>
           <div
             className={`${styles.fuelSlipManagerModal} ${wizardStyles.dialog}`}
             role="dialog"
@@ -4412,7 +4412,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen ? (
-        <div className={styles.fuelSlipSubModalBackdrop}>
+        <div className={styles.fuelSlipSubModalBackdrop} data-website-overlay>
           <div className={`${styles.fuelSlipFilterModal} ${styles.fuelSlipManagerFilterModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-filter-title" aria-describedby="fuel-slip-filter-description">
             <div className={styles.modalHeader}>
               <div>
@@ -4478,7 +4478,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen ? (
-        <div className={styles.fuelSlipSubModalBackdrop}>
+        <div className={styles.fuelSlipSubModalBackdrop} data-website-overlay>
           <div className={styles.fuelSlipFilterModal} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title">
             <div className={styles.modalHeader}>
               <div>
@@ -4561,7 +4561,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && historyFuelSlip ? (
-        <div className={styles.fuelSlipSubModalBackdrop}>
+        <div className={styles.fuelSlipSubModalBackdrop} data-website-overlay>
           <div className={`${styles.fuelSlipFilterModal} ${styles.fuelHistoryModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-history-title">
             <div className={styles.modalHeader}>
               <div>
@@ -4595,7 +4595,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && deleteCandidateFuelSlip ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay}`}>
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay}`} data-website-overlay>
           <div className={styles.deleteConfirmModal} ref={fuelSlipManagerChildDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title" aria-describedby="fuel-slip-delete-copy">
             <button
               type="button"
@@ -4636,7 +4636,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'source-choice' ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Add fuel slip">
+        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Add fuel slip">
           <div
             className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipAddModal}`}
             data-fuel-slip-choice-modal="add"
@@ -4685,7 +4685,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && (fuelSlipFlow === 'target-manual' || fuelSlipFlow === 'target-automatic') ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label={fuelSlipTargetPickerTitle}>
+        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label={fuelSlipTargetPickerTitle}>
           <div className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
@@ -4758,7 +4758,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'upload' ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
+        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
           <div className={`${styles.formModal} ${styles.costUploadModal}`}>
             <div className={styles.modalHeader}>
               <div>
@@ -4793,7 +4793,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'manual-form' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`}>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`} data-website-overlay>
           <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manual-title">
             <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
@@ -4831,7 +4831,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'review' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`}>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`} data-website-overlay>
           <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipReviewFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-review-title">
             <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
@@ -4894,7 +4894,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'create-storage' || modalMode === 'edit-storage' ? (
-        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+        <div className={styles.modalOverlay} data-website-overlay role="dialog" aria-modal="true">
           <form className={styles.modalCard} onSubmit={handleStorageSubmit}>
             <div className={styles.modalHeader}>
               <div>
@@ -4953,7 +4953,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'pin' && selectedStorage ? (
-        <div className={styles.modalOverlay} role="dialog" aria-modal="true">
+        <div className={styles.modalOverlay} data-website-overlay role="dialog" aria-modal="true">
           <form className={styles.modalCardSmall} onSubmit={handlePinSubmit}>
             <div className={styles.modalHeader}>
               <div>
@@ -4974,7 +4974,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'qr' && selectedStorage ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} onClick={closeModal} />
 
           <div className={`${styles.modalCard} ${styles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="fuel-qr-title">
@@ -5029,7 +5029,7 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'report' ? (
-        <div className={styles.modalOverlay} role="dialog" aria-modal="true" aria-labelledby="fuel-report-title">
+        <div className={styles.modalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-report-title">
           <div className={`${styles.modalCard} ${styles.exportModal}`}>
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
@@ -5132,7 +5132,7 @@ export default function FuelClient({
       ) : null}
 
       {deleteCandidateStorage ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} role="alertdialog" aria-modal="true" aria-labelledby="delete-fuel-title" aria-describedby="delete-fuel-copy">
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} data-website-overlay role="alertdialog" aria-modal="true" aria-labelledby="delete-fuel-title" aria-describedby="delete-fuel-copy">
           <div className={styles.deleteConfirmModal}>
             <button
               type="button"
@@ -5177,3 +5177,4 @@ export default function FuelClient({
     </>
   );
 }
+

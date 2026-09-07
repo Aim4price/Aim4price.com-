@@ -1,5 +1,5 @@
 .scope {
-  min-height: 100dvh;
+  min-height: calc(var(--website-design-vh) * 100);
 }
 
 /* Keep the signup wizard roomy horizontally, but trim the vertical stack so a
@@ -28,7 +28,7 @@
 }
 
 .scope :global(main:has(form [name="accountType"]) #auth-heading) {
-  font-size: clamp(2.1rem, 3.25vw, 2.55rem);
+  font-size: clamp(2.1rem, calc(var(--website-design-vw) * 3.25), 2.55rem);
   line-height: 1;
   letter-spacing: -0.047em;
 }
@@ -282,50 +282,3 @@
   background: #087553;
 }
 
-@media (max-width: 720px) {
-  .scope :global(main:has(form [name="accountType"]) > div) {
-    width: calc(100% - 1rem);
-    padding-top: 0.75rem;
-    padding-bottom: 1.5rem;
-  }
-
-  .scope :global(main:has(form [name="accountType"]) section[aria-labelledby="auth-heading"]) {
-    gap: 0.82rem;
-    padding: 1rem;
-  }
-
-  .scope :global(main:has(form [name="accountType"]) #auth-heading) {
-    font-size: clamp(1.9rem, 8vw, 2.35rem);
-  }
-
-  .scope :global(ol[aria-label="Account setup progress"] > li > span) {
-    width: 2.45rem;
-    height: 2.45rem;
-  }
-
-  .scope :global(section[aria-labelledby^="signup-step-"]) {
-    padding: 1rem;
-  }
-
-  .scope :global(section[aria-labelledby^="signup-step-"] > div:last-child) {
-    gap: 0.82rem;
-  }
-
-  .scope :global(form:has([name="accountType"]) > div:last-child) {
-    margin-top: 0.9rem;
-  }
-}
-
-@media (max-width: 420px) {
-  .scope :global(main:has(form [name="accountType"]) section[aria-labelledby="auth-heading"]) {
-    padding: 0.9rem;
-  }
-
-  .scope :global(section[aria-labelledby^="signup-step-"]) {
-    padding: 0.9rem;
-  }
-
-  .scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"]) {
-    padding-left: 0.85rem;
-  }
-}

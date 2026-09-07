@@ -1,5 +1,5 @@
 .screen {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh) * 100);
   min-width: 0;
 }
 
@@ -147,7 +147,7 @@
   margin: 0.28rem 0 0;
   color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
+  font-size: clamp(1.42rem, calc(var(--website-design-vw) * 1.9), 1.72rem);
   font-weight: 850;
   line-height: 1.12;
   letter-spacing: -0.04em;
@@ -377,7 +377,7 @@
   margin: 0;
   color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw) * 3.5), 3rem);
   font-weight: 900;
   line-height: 1.02;
   letter-spacing: -0.055em;
@@ -411,7 +411,7 @@
 
 .recordsPanel {
   margin-top: 1rem;
-  padding: clamp(1rem, 2vw, 1.35rem);
+  padding: clamp(1rem, calc(var(--website-design-vw) * 2), 1.35rem);
   border: 1px solid rgba(198, 216, 223, 0.98);
   border-radius: 1.45rem;
   background: rgba(255, 255, 255, 0.96);
@@ -437,7 +437,7 @@
   margin: 0;
   color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.4rem, 2vw, 1.75rem);
+  font-size: clamp(1.4rem, calc(var(--website-design-vw) * 2), 1.75rem);
   font-weight: 850;
   letter-spacing: -0.04em;
 }
@@ -549,30 +549,3 @@
   white-space: pre-wrap;
 }
 
-@media (max-width: 900px) {
-  .filterGroup { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .assetCard { grid-template-columns: 9rem minmax(0, 1fr); }
-  .assetPhoto { min-height: 12rem; }
-  .detailStats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (max-width: 700px) {
-  .detailPage { width: min(calc(100% - 1rem), 48rem); }
-  .assetCard { grid-template-columns: 1fr; }
-  .assetPhoto { min-height: 11.5rem; max-height: 15rem; }
-  .assetHeading { align-items: flex-start; flex-direction: column; }
-  .assetStats,
-  .recordStats { grid-template-columns: 1fr; }
-  .assetFooter { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
-  .detailHero { grid-template-columns: 1fr; }
-  .detailPhoto { height: 13.5rem; }
-  .recordsHeader { flex-direction: column; }
-  .correctionActions { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 480px) {
-  .filterGroup { grid-template-columns: 1fr; }
-  .detailStats { grid-template-columns: 1fr; }
-  .detailKickerRow,
-  .recordHeading { align-items: flex-start; flex-direction: column; }
-}

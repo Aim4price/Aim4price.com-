@@ -1,12 +1,12 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh) * 100);
   background:
     radial-gradient(circle at 50% 8%, rgba(38, 121, 89, 0.08), transparent 34rem),
     #f7faf8;
 }
 
 .shell {
-  padding-bottom: clamp(2rem, 5vw, 4rem);
+  padding-bottom: clamp(2rem, calc(var(--website-design-vw) * 5), 4rem);
 }
 
 .backLink {
@@ -56,7 +56,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: clamp(1.35rem, 2.8vw, 2rem);
+  padding: clamp(1.35rem, calc(var(--website-design-vw) * 2.8), 2rem);
   border-bottom: 1px solid rgba(18, 83, 63, 0.1);
   background:
     radial-gradient(circle at 0 0, rgba(214, 150, 56, 0.14), transparent 42%),
@@ -82,7 +82,7 @@
   max-width: 56rem;
   margin: 0;
   color: #103c30;
-  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  font-size: clamp(1.55rem, calc(var(--website-design-vw) * 3), 2.35rem);
   font-weight: 880;
   letter-spacing: -0.04em;
   line-height: 1.08;
@@ -152,13 +152,13 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.1rem;
-  padding: clamp(1.2rem, 2.6vw, 1.8rem);
+  padding: clamp(1.2rem, calc(var(--website-design-vw) * 2.6), 1.8rem);
 }
 
 .contactPanel,
 .messagePanel {
   min-width: 0;
-  padding: clamp(1.05rem, 2.2vw, 1.4rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 2.2), 1.4rem);
   border: 1px solid rgba(18, 83, 63, 0.13);
   border-radius: 1.15rem;
   background: #ffffff;
@@ -342,54 +342,9 @@
   gap: 0.3rem;
 }
 
-@media (max-width: 820px) {
-  .contentGrid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .requestHeader {
-    display: grid;
-    gap: 1rem;
-  }
-
-  .statusPill {
-    justify-self: start;
-  }
-
-  .requestMeta {
-    grid-template-columns: 1fr;
-  }
-
-  .requestMeta > div {
-    min-height: 0;
-    border-right: 0;
-    border-bottom: 1px solid rgba(18, 83, 63, 0.1);
-  }
-
-  .requestMeta > div:last-child {
-    border-bottom: 0;
-  }
-
-  .contentGrid {
-    padding: 0.85rem;
-  }
-
-  .contactDetails,
-  .contactActions {
-    grid-template-columns: 1fr;
-  }
-
-  .contactDetails > div:first-child,
-  .primaryAction:first-child:last-child,
-  .contactActions > :last-child:nth-child(odd) {
-    grid-column: auto;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .backLink {
     transition: none;
   }
 }
+

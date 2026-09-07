@@ -267,7 +267,7 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
       </section>
 
       <button className={`${styles.allStepsToggle} ${showAllSteps ? styles.allStepsToggleOpen : ''}`} type="button" onClick={() => setShowAllSteps((current) => !current)} aria-expanded={showAllSteps} aria-controls="insurance-step-menu"><span className={styles.stepsIcon} aria-hidden="true">☷</span><span>{showAllSteps ? 'Close steps' : 'View all steps'}</span><strong>{currentStepIndex + 1}/{WORKFLOW_STEPS.length}</strong></button>
-      {showAllSteps ? <><button className={styles.stepMenuBackdrop} type="button" aria-label="Close step menu" onClick={() => setShowAllSteps(false)} /><aside className={styles.stepMenuPanel} id="insurance-step-menu" aria-label="Insurance review steps">
+      {showAllSteps ? <><button className={styles.stepMenuBackdrop} data-website-overlay type="button" aria-label="Close step menu" onClick={() => setShowAllSteps(false)} /><aside className={styles.stepMenuPanel} id="insurance-step-menu" aria-label="Insurance review steps">
         <header><div><span>Insurance review</span><h2>All steps</h2><p>Select a step to open it. Your saved work will remain in place.</p></div><button type="button" onClick={() => setShowAllSteps(false)} aria-label="Close step menu">×</button></header>
         <nav className={styles.stepper}>
           {WORKFLOW_STEPS.map((entry, index) => {
@@ -377,3 +377,4 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
     </section>
   </main>;
 }
+

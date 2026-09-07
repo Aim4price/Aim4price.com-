@@ -203,7 +203,7 @@ export default function DealerCostDecisionModal({
     : [];
 
   return (
-    <div className={styles.overlay} role="presentation">
+    <div className={styles.overlay} data-website-overlay role="presentation">
       <button
         type="button"
         className={styles.backdrop}
@@ -391,3 +391,4 @@ export default function DealerCostDecisionModal({
     </div>
   );
 }
+

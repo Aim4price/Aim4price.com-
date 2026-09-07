@@ -349,40 +349,41 @@
 }
 
 @media (max-width: 720px) {
-  .permissions {
+  :global(:where(html:not(:has([data-website-canvas])))) .permissions {
     grid-template-columns: 1fr;
   }
 
-  .card > header {
+  :global(:where(html:not(:has([data-website-canvas])))) .card > header {
     align-items: flex-start;
   }
 
-  .card > footer {
+  :global(:where(html:not(:has([data-website-canvas])))) .card > footer {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     display: grid;
     grid-template-columns: 1fr;
     width: 100%;
   }
 
-  .card button {
+  :global(:where(html:not(:has([data-website-canvas])))) .card button {
     width: 100%;
   }
 
-  .dealerChoice {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerChoice {
     grid-template-columns: 2.85rem minmax(0, 1fr) auto;
     gap: 0.72rem;
   }
 
-  .dealerChoiceInitial {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerChoiceInitial {
     width: 2.85rem;
     height: 2.85rem;
   }
 
-  .dealerChoice .activeStatus {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerChoice .activeStatus {
     display: none;
   }
 }
+

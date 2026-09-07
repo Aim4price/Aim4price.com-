@@ -1,4 +1,6 @@
 "use client";
+import { useWebsiteStyles } from '../../components/useWebsiteStyles';
+import website_mobileStyles from '../../components/website-styles/FieldManagerControls.module.css';
 
 import DropdownOverlay from "../../components/DropdownOverlay";
 import {
@@ -11,7 +13,7 @@ import {
 import { workspaceStyles } from "../../components/WorkspacePrimitives";
 import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
-import mobileStyles from "../field-manager/page.module.css";
+import native_mobileStyles from "../field-manager/page.module.css";
 import styles from "./page.module.css";
 
 type RecentAdvertStatus = "available" | "sold" | "ended";
@@ -483,6 +485,8 @@ export default function RecentlyAdvertisedClient({
 }: {
   compactAppMode?: boolean;
 }) {
+  const mobileStyles = useWebsiteStyles(native_mobileStyles, website_mobileStyles);
+
   const [adverts, setAdverts] = useState<RecentAdvert[]>([]);
   const [typeOptions, setTypeOptions] = useState<FilterOption[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<FilterOption[]>([]);
@@ -1263,8 +1267,8 @@ export default function RecentlyAdvertisedClient({
       ) : null}
 
       {filterOpen ? (
-        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeFilterModal} />
+        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeFilterModal} />
           <div
             ref={filterDialogRef}
             id="recent-advert-filter-dialog"
@@ -1332,8 +1336,8 @@ export default function RecentlyAdvertisedClient({
       ) : null}
 
       {sourcingRequest ? (
-        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={() => setSourcingRequest(null)} />
+        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setSourcingRequest(null)} />
           <div
             ref={sourcingDialogRef}
             className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.recentAdvertContactModal}`}
@@ -1388,3 +1392,4 @@ export default function RecentlyAdvertisedClient({
     </div>
   );
 }
+

@@ -51,7 +51,7 @@
   --action-blue-border-hover: #558fc6;
 
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh) * 100);
   background: linear-gradient(180deg, #f5f8f8 0%, #edf3f4 100%);
 }
 
@@ -84,7 +84,7 @@
 
 .ledgerPanel {
   display: grid;
-  gap: clamp(1.05rem, 1.35vw, 1.25rem);
+  gap: clamp(1.05rem, calc(var(--website-design-vw) * 1.35), 1.25rem);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -96,7 +96,7 @@
   display: grid;
   grid-template-columns: 1fr;
   align-items: stretch;
-  gap: clamp(0.85rem, 1.15vw, 1.08rem);
+  gap: clamp(0.85rem, calc(var(--website-design-vw) * 1.15), 1.08rem);
 }
 
 .pageTitleBlock {
@@ -107,14 +107,14 @@
 
 .pageTitleBlock h1 {
   width: 100%;
-  min-height: clamp(5.1rem, 7vw, 6.1rem);
+  min-height: clamp(5.1rem, calc(var(--website-design-vw) * 7), 6.1rem);
   display: flex;
   align-items: center;
   justify-content: flex-start;
   margin: 0;
-  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem);
+  padding: clamp(1.15rem, calc(var(--website-design-vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw) * 2.6), 2rem);
   border: 1.5px solid rgba(193, 211, 218, 0.98);
-  border-radius: clamp(1.25rem, 2vw, 1.7rem);
+  border-radius: clamp(1.25rem, calc(var(--website-design-vw) * 2), 1.7rem);
   background:
     radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
@@ -124,7 +124,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
   color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
+  font-size: clamp(2.35rem, calc(var(--website-design-vw) * 4.15), 3.55rem);
   font-weight: 900;
   line-height: 0.98;
   letter-spacing: -0.062em;
@@ -140,7 +140,7 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
   justify-content: stretch;
-  gap: clamp(0.7rem, 1vw, 0.95rem);
+  gap: clamp(0.7rem, calc(var(--website-design-vw) * 1), 0.95rem);
   margin: 0;
   padding: 0;
   border: 0;
@@ -155,7 +155,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   justify-content: end;
-  gap: clamp(0.62rem, 0.9vw, 0.82rem);
+  gap: clamp(0.62rem, calc(var(--website-design-vw) * 0.9), 0.82rem);
 }
 
 .primaryButton,
@@ -266,10 +266,10 @@
 
 .topActions .topActionButton {
   width: 100%;
-  min-height: clamp(3.25rem, 3.8vw, 3.72rem);
-  padding-inline: clamp(1rem, 1.55vw, 1.32rem);
-  border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
-  font-size: clamp(0.96rem, 1.08vw, 1.04rem);
+  min-height: clamp(3.25rem, calc(var(--website-design-vw) * 3.8), 3.72rem);
+  padding-inline: clamp(1rem, calc(var(--website-design-vw) * 1.55), 1.32rem);
+  border-radius: clamp(0.95rem, calc(var(--website-design-vw) * 1.35), 1.14rem);
+  font-size: clamp(0.96rem, calc(var(--website-design-vw) * 1.08), 1.04rem);
   font-weight: 860;
 }
 
@@ -319,7 +319,7 @@
 .summaryGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
-  gap: clamp(1rem, 1.35vw, 1.18rem);
+  gap: clamp(1rem, calc(var(--website-design-vw) * 1.35), 1.18rem);
   align-items: stretch;
 }
 
@@ -355,7 +355,7 @@
 .summaryCard strong {
   align-self: center;
   color: #073b30;
-  font-size: clamp(2.15rem, 3.2vw, 3.05rem);
+  font-size: clamp(2.15rem, calc(var(--website-design-vw) * 3.2), 3.05rem);
   font-weight: 900;
   line-height: 0.98;
   letter-spacing: -0.065em;
@@ -378,7 +378,7 @@
 .toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: clamp(0.9rem, 1.2vw, 1.1rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.2), 1.1rem);
   align-items: center;
 }
 
@@ -454,15 +454,15 @@
 
 .storageList {
   display: grid;
-  gap: clamp(1rem, 1.28vw, 1.18rem);
+  gap: clamp(1rem, calc(var(--website-design-vw) * 1.28), 1.18rem);
 }
 
 .storageCard {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(350px, 525px);
   align-items: center;
-  gap: clamp(0.95rem, 1.45vw, 1.35rem);
-  padding: clamp(1.05rem, 1.42vw, 1.32rem) clamp(1.3rem, 2.15vw, 1.75rem);
+  gap: clamp(0.95rem, calc(var(--website-design-vw) * 1.45), 1.35rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 1.42), 1.32rem) clamp(1.3rem, calc(var(--website-design-vw) * 2.15), 1.75rem);
   border: 1px solid rgba(198, 216, 223, 0.98);
   border-radius: 1.55rem;
   background:
@@ -572,10 +572,10 @@
 
 .storageInfo {
   min-width: 0;
-  min-height: clamp(6.85rem, 7.7vw, 7.55rem);
+  min-height: clamp(6.85rem, calc(var(--website-design-vw) * 7.7), 7.55rem);
   display: grid;
   align-content: center;
-  gap: clamp(0.78rem, 1vw, 0.95rem);
+  gap: clamp(0.78rem, calc(var(--website-design-vw) * 1), 0.95rem);
 }
 
 .storageHeadingRow {
@@ -583,7 +583,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: clamp(0.9rem, 1.6vw, 1.35rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.6), 1.35rem);
 }
 
 .storageTitleBlock {
@@ -595,7 +595,7 @@
 .storageTitleBlock h2 {
   margin: 0;
   color: #073b30;
-  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
+  font-size: clamp(1.42rem, calc(var(--website-design-vw) * 1.9), 1.72rem);
   font-weight: 760;
   line-height: 1.08;
   letter-spacing: -0.032em;
@@ -689,7 +689,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   justify-content: end;
-  gap: clamp(0.62rem, 0.86vw, 0.78rem);
+  gap: clamp(0.62rem, calc(var(--website-design-vw) * 0.86), 0.78rem);
 }
 
 .unitButton {
@@ -794,11 +794,11 @@
 .modalCard,
 .modalCardSmall {
   width: min(100%, 920px);
-  max-height: min(92vh, 780px);
+  max-height: min(calc(var(--website-visible-height) * 0.92), 780px);
   overflow: auto;
   display: grid;
   gap: 0.95rem;
-  padding: clamp(1.05rem, 2vw, 1.45rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 2), 1.45rem);
   border: 1px solid rgba(216, 226, 236, 0.98);
   border-radius: 1.7rem;
   background: #ffffff;
@@ -828,7 +828,7 @@
 .modalHeader h2 {
   margin: 0;
   color: #10352b;
-  font-size: clamp(1.7rem, 2.5vw, 2.18rem);
+  font-size: clamp(1.7rem, calc(var(--website-design-vw) * 2.5), 2.18rem);
   font-weight: 760;
   line-height: 1.05;
   letter-spacing: -0.052em;
@@ -1313,9 +1313,9 @@
 
 .deleteConfirmModal {
   position: relative;
-  width: min(96vw, 54rem);
+  width: min(calc(var(--website-design-vw) * 96), 54rem);
   display: block;
-  padding: clamp(1.55rem, 2.4vw, 2.1rem);
+  padding: clamp(1.55rem, calc(var(--website-design-vw) * 2.4), 2.1rem);
   border: 1px solid rgba(203, 218, 230, 0.98);
   border-radius: 1.8rem;
   background: rgba(255, 255, 255, 0.98);
@@ -1333,7 +1333,7 @@
   padding: 0 3.6rem 1.1rem 0;
   border-bottom: 1px solid rgba(211, 224, 234, 0.98);
   color: #0c382f;
-  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw) * 3), 2.25rem);
   font-weight: 760;
   line-height: 1.02;
   letter-spacing: -0.05em;
@@ -1421,8 +1421,8 @@
 
 .deleteConfirmCloseButton {
   position: absolute;
-  top: clamp(1rem, 1.6vw, 1.25rem);
-  right: clamp(1rem, 1.6vw, 1.25rem);
+  top: clamp(1rem, calc(var(--website-design-vw) * 1.6), 1.25rem);
+  right: clamp(1rem, calc(var(--website-design-vw) * 1.6), 1.25rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1443,349 +1443,6 @@
   opacity: 0.58;
 }
 
-@media (max-width: 1180px) {
-  .summaryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .summaryCardFeatured {
-    grid-column: 1 / -1;
-  }
-
-  .storageCard {
-    grid-template-columns: 1fr;
-    align-items: stretch;
-  }
-
-  .storageInfo {
-    min-height: 0;
-    align-content: center;
-  }
-
-  .storageHeaderAside {
-    justify-self: stretch;
-    justify-items: start;
-  }
-
-  .unitActions {
-    max-width: 42rem;
-    justify-self: start;
-  }
-}
-
-@media (max-width: 960px) {
-  .toolbar,
-  .topActions {
-    grid-template-columns: 1fr;
-  }
-
-  .toolbarPrimaryButton,
-  .topActionButtons {
-    width: 100%;
-  }
-
-  .formGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .storageNameField,
-  .locationLabelField,
-  .fullField {
-    grid-column: 1 / -1;
-  }
-}
-
-@media (max-width: 760px) {
-  .shell {
-    width: min(calc(100% - 1rem), 1320px);
-    padding: 1rem 0 3rem;
-  }
-
-  .pageTitleBlock h1 {
-    min-height: 4.35rem;
-    padding: 1rem 1.05rem;
-    border-radius: 1.15rem;
-    font-size: clamp(1.72rem, 8.2vw, 2.2rem);
-    letter-spacing: -0.045em;
-  }
-
-  .topActions,
-  .summaryGrid,
-  .formGrid,
-  .unitActions {
-    grid-template-columns: 1fr;
-  }
-
-  .summaryCardFeatured {
-    grid-column: auto;
-  }
-
-  .summaryCard {
-    min-height: 8.4rem;
-    border-radius: 1.18rem;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-  }
-
-  .summaryCard strong {
-    font-size: 2.1rem;
-  }
-
-  .summaryCard small {
-    min-height: 2.6rem;
-  }
-
-  .storageCard {
-    padding: 1.05rem;
-    border-radius: 1.25rem;
-  }
-
-  .storageWarningNote {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
-
-  .clearDipstickButton {
-    width: 100%;
-  }
-
-  .storageHeadingRow {
-    grid-template-columns: 1fr;
-    gap: 0.55rem;
-  }
-
-
-  .storageDetails {
-    display: grid;
-    gap: 0.35rem;
-  }
-
-  .storageDetails span:not(:last-child)::after {
-    content: '';
-    margin: 0;
-  }
-
-  .progressMeta {
-    display: grid;
-    gap: 0.25rem;
-  }
-
-  .modalActions,
-  .fuelModalFooter,
-  .deleteConfirmActions {
-    justify-content: stretch;
-  }
-
-  .fuelModalFooter {
-    flex-direction: column;
-    flex-wrap: nowrap;
-  }
-
-  .modalActions > *,
-  .fuelModalFooter > *,
-  .deleteConfirmActions > * {
-    flex: 1 1 100%;
-  }
-
-  .fuelModalCancelButton,
-  .fuelModalPrimaryButton {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .storageNameField,
-  .locationLabelField,
-  .fullField {
-    grid-column: auto;
-  }
-
-  .modalCard,
-  .modalCardSmall,
-  .deleteConfirmModal {
-    width: min(100%, calc(100vw - 1.25rem));
-    padding: 1.15rem;
-    border-radius: 1.4rem;
-  }
-
-  .deleteConfirmActions {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .deleteConfirmActions .secondaryButton,
-  .deleteConfirmActions .deleteConfirmButton {
-    width: 100%;
-  }
-
-  .deleteConfirmCloseButton {
-    top: 0.85rem;
-    right: 0.85rem;
-    width: 2.65rem;
-    height: 2.65rem;
-  }
-
-  .deleteConfirmContent h3 {
-    padding-right: 3rem;
-  }
-}
-
-
-@media (max-width: 760px) {
-  .page {
-    min-height: 100svh;
-    padding-bottom: calc(5.75rem + env(safe-area-inset-bottom));
-  }
-
-  .shell {
-    width: 100%;
-    padding: 0.75rem 0.7rem 2.5rem;
-  }
-
-  .notice {
-    margin-bottom: 0.75rem;
-    padding: 0.82rem 0.9rem;
-    border-radius: 0.95rem;
-    font-size: 0.9rem;
-  }
-
-  .ledgerPanel {
-    gap: 0.75rem;
-  }
-
-  .panelHeader {
-    gap: 0.65rem;
-  }
-
-  .pageTitleBlock h1 {
-    min-height: 3.8rem;
-    padding: 0.78rem 0.9rem;
-    border-radius: 1rem;
-    font-size: clamp(1.4rem, 7.4vw, 2.05rem);
-    line-height: 0.98;
-  }
-
-  .topActions {
-    gap: 0.55rem;
-    padding: 0;
-    border-radius: 0;
-  }
-
-  .topActionButtons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
-  }
-
-  .topActions .topActionButton {
-    min-height: 3.18rem;
-    border-radius: 0.95rem;
-    font-size: 0.95rem;
-  }
-
-  .storageList {
-    gap: 0.75rem;
-  }
-
-  .storageCard {
-    gap: 0.88rem;
-    padding: 0.95rem;
-    border-radius: 1.1rem;
-  }
-
-  .storageTitleBlock h2 {
-    font-size: clamp(1.25rem, 6vw, 1.48rem);
-    font-weight: 740;
-    letter-spacing: -0.026em;
-  }
-
-  .storageHeadingRow {
-    grid-template-columns: 1fr;
-    gap: 0.55rem;
-  }
-
-  .storageDetails {
-    gap: 0.28rem;
-    font-size: 0.92rem;
-  }
-
-
-  .storageHeaderAside {
-    width: 100%;
-    min-width: 0;
-    gap: 0.7rem;
-  }
-
-
-  .unitActions {
-    gap: 0.55rem;
-  }
-
-  .unitButton {
-    min-height: 3.2rem;
-    height: 3.2rem;
-    border-radius: 0.9rem;
-    font-size: 0.92rem;
-  }
-
-  .modalOverlay {
-    align-items: end;
-    place-items: end center;
-    padding: 0;
-  }
-
-  .modalCard,
-  .modalCardSmall,
-  .deleteConfirmModal {
-    width: 100%;
-    max-height: min(92dvh, 720px);
-    padding: 1rem;
-    border-radius: 1.35rem 1.35rem 0 0;
-  }
-
-  .modalHeader h2 {
-    font-size: clamp(1.55rem, 7.4vw, 2rem);
-  }
-
-  .formGrid input,
-  .formGrid select,
-  .formGrid textarea,
-  .formGridSingle input,
-  .formGridSingle select,
-  .pinField input {
-    min-height: 3.35rem;
-    font-size: 16px;
-  }
-
-  .modalActions {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.65rem;
-  }
-
-  .modalActions > button,
-  .modalCancelAction,
-  .modalPrimaryAction,
-  .modalSubmitButton,
-  .modalActions .modalSubmitButton {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .mobileQuickActions {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 90;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.55rem;
-    padding: 0.7rem max(0.78rem, env(safe-area-inset-left)) calc(0.7rem + env(safe-area-inset-bottom)) max(0.78rem, env(safe-area-inset-right));
-    border-top: 1px solid rgba(199, 214, 226, 0.98);
-    background: rgba(255, 255, 255, 0.94);
-    box-shadow: 0 -16px 35px rgba(16, 36, 40, 0.11);
-    backdrop-filter: blur(14px);
-  }
-}
-
 /* === Fuel report modal: asset-register style export flow === */
 .modalHeaderText {
   min-width: 0;
@@ -1800,7 +1457,7 @@
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
-  padding: clamp(1.5rem, 2.35vw, 1.95rem) !important;
+  padding: clamp(1.5rem, calc(var(--website-design-vw) * 2.35), 1.95rem) !important;
   border-radius: 2rem !important;
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 34%),
@@ -1822,7 +1479,7 @@
 .exportModalHeader h2 {
   margin: 0 !important;
   color: #0f3329 !important;
-  font-size: clamp(1.86rem, 2.65vw, 2.38rem) !important;
+  font-size: clamp(1.86rem, calc(var(--website-design-vw) * 2.65), 2.38rem) !important;
   font-weight: 760 !important;
   line-height: 1.03 !important;
   letter-spacing: -0.052em !important;
@@ -2274,12 +1931,10 @@
 }
 
 /* === Fuel delete modal: match Asset Register delete confirmation === */
-@media (min-width: 761px) {
-  .deleteConfirmModal {
-    width: min(96vw, 58rem) !important;
-    padding: clamp(1.75rem, 2.55vw, 2.35rem) !important;
+.deleteConfirmModal {
+    width: min(calc(var(--website-design-vw) * 96), 58rem) !important;
+    padding: clamp(1.75rem, calc(var(--website-design-vw) * 2.55), 2.35rem) !important;
   }
-}
 
 .deleteConfirmActions .secondaryButton {
   border: 1px solid rgba(197, 214, 228, 0.98) !important;
@@ -2308,63 +1963,13 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
 }
 
-@media (max-width: 900px) {
-  .exportModal {
-    width: min(100%, calc(100vw - 1rem)) !important;
-    max-height: min(88vh, calc(100dvh - 1rem)) !important;
-    overflow: hidden !important;
-    padding: 1rem !important;
-    border-radius: 1.35rem !important;
-  }
-
-  .exportModalScrollBody {
-    overflow-y: auto !important;
-    padding-right: 0.58rem !important;
-    margin-right: -0.2rem !important;
-  }
-
-  .exportChoices,
-  .reportFilterBox {
-    grid-template-columns: 1fr !important;
-  }
-
-  .exportOption {
-    min-height: auto !important;
-    padding: 1rem !important;
-    border-radius: 1.12rem !important;
-  }
-
-  .exportActions {
-    flex-direction: column !important;
-    align-items: stretch !important;
-  }
-
-  .exportActions > button,
-  .exportActions .primaryButton,
-  .exportActions .secondaryButton {
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-}
-
-@media (max-width: 760px) {
-  .exportModalHeader h2 {
-    font-size: 1.58rem !important;
-  }
-
-
-  .deleteConfirmActions .deleteConfirmButton {
-    min-width: 0 !important;
-  }
-}
-
 /* === Fuel storage QR modal: matches Asset Register QR flow === */
 .subModalOverlay {
   z-index: 175;
   place-items: center;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 3vh, 2rem);
+  padding: clamp(1rem, calc(var(--website-design-vh) * 3), 2rem);
   overflow-y: auto;
   background: transparent;
   backdrop-filter: none;
@@ -2415,13 +2020,13 @@
 .qrModal {
   position: relative !important;
   z-index: 1;
-  width: min(100%, 860px) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 860px) !important;
   max-height: none !important;
   overflow: visible !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
-  padding: clamp(1.35rem, 2vw, 1.7rem) !important;
+  padding: clamp(1.35rem, calc(var(--website-design-vw) * 2), 1.7rem) !important;
   border-radius: 1.95rem !important;
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 36%),
@@ -2447,7 +2052,7 @@
 .qrModalHeader h3 {
   margin: 0 !important;
   color: #0f3329;
-  font-size: clamp(1.55rem, 2.35vw, 1.98rem) !important;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw) * 2.35), 1.98rem) !important;
   font-weight: 760 !important;
   line-height: 1.04 !important;
   letter-spacing: -0.047em !important;
@@ -2585,7 +2190,7 @@
 
 .qrPrimaryActionButton > span {
   color: #10352b !important;
-  font-size: clamp(1.14rem, 2vw, 1.48rem) !important;
+  font-size: clamp(1.14rem, calc(var(--website-design-vw) * 2), 1.48rem) !important;
   font-weight: 900 !important;
   line-height: 1.05 !important;
   letter-spacing: -0.04em !important;
@@ -2605,41 +2210,6 @@
 .qrPrimaryActionButton.qrCopiedButton > .buttonIcon,
 .qrPrimaryActionButton.qrCopiedButton > span {
   color: #ffffff !important;
-}
-
-@media (max-width: 760px) {
-  .subModalOverlay {
-    place-items: center !important;
-    align-items: center !important;
-    justify-content: center !important;
-    padding: 0.5rem !important;
-  }
-
-  .qrModal {
-    width: min(100%, calc(100vw - 1rem)) !important;
-    max-height: min(88vh, calc(100dvh - 1rem)) !important;
-    overflow: hidden !important;
-    padding: 1rem !important;
-    border-radius: 1.35rem !important;
-  }
-
-  .qrModalScrollBody {
-    overflow-y: auto !important;
-    padding-right: 0.55rem !important;
-    margin-right: -0.2rem !important;
-  }
-
-  .qrModalBody {
-    grid-template-columns: 1fr !important;
-  }
-
-  .qrPrimaryActionsCard {
-    grid-template-rows: none !important;
-  }
-
-  .qrPrimaryActionButton {
-    min-height: 4.8rem !important;
-  }
 }
 
 .modalScrollBody {
@@ -2691,114 +2261,6 @@
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 960px) {
-  .topActions,
-  .topActionButtons,
-  .panelHeader,
-  .storageHeaderAside,
-  .formGrid,
-  .exportChoices,
-  .exportActions,
-  .deleteConfirmActions,
-  .modalActions,
-  .fuelModalFooter,
-  .unitActions {
-    grid-template-columns: 1fr !important;
-    display: grid !important;
-    width: 100%;
-  }
-
-  .topActionButtons > *,
-  .exportActions > *,
-  .deleteConfirmActions > *,
-  .modalActions > *,
-  .fuelModalFooter > *,
-  .unitActions > * {
-    width: 100%;
-  }
-}
-
-@media (max-width: 760px) {
-  .shell {
-    width: min(calc(100% - 1rem), 48rem) !important;
-    padding-top: 0.95rem;
-  }
-
-  .ledgerPanel,
-  .storageCard,
-  .modalCard,
-  .exportModal,
-  .qrModal,
-  .deleteConfirmModal {
-    border-radius: 1.2rem !important;
-  }
-
-  .pageTitleBlock h1 {
-    font-size: clamp(1.85rem, 9vw, 2.45rem) !important;
-  }
-
-  .storageCard {
-    padding: 0.9rem !important;
-  }
-
-  .storageHeadingRow,
-  .storageDetails,
-  .storageProgressBlock,
-  .reportFilterBox {
-    grid-template-columns: 1fr !important;
-  }
-
-  .primaryButton,
-  .secondaryButton,
-  .topActionButton,
-  .topAddButton,
-  .topReportButton,
-  .mobileQuickButton,
-  .fuelModalPrimaryButton,
-  .fuelModalCancelButton,
-  .exportPrimaryButton,
-  .exportSecondaryButton,
-  .qrPrimaryActionButton,
-  .deleteConfirmButton,
-  .deleteUnitButton,
-  .changePinButton,
-  .clearDipstickButton {
-    width: 100%;
-    min-height: var(--tap-target-min, 44px) !important;
-  }
-
-  .modalOverlay,
-  .modalBackdrop,
-  .subModalOverlay,
-  .confirmDeleteOverlay {
-    align-items: center !important;
-    padding: 0.75rem !important;
-    overflow: hidden !important;
-  }
-
-  .modalCard,
-  .modalCardSmall,
-  .exportModal,
-  .qrModal,
-  .deleteConfirmModal {
-    width: min(100%, 48rem) !important;
-    max-height: calc(100dvh - 1.5rem) !important;
-    overflow: hidden !important;
-  }
-
-  .modalScrollBody,
-  .exportModalScrollBody,
-  .qrModalScrollBody,
-  .exportModalBody,
-  .qrModalBody,
-  .deleteConfirmContent {
-    max-height: calc(100dvh - 10rem) !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
 
 /* Fuel Slip capture */
 .topActionButtons {
@@ -2821,7 +2283,7 @@
 .fuelSlipPanel {
   display: grid;
   gap: 0.85rem;
-  padding: clamp(1rem, 1.4vw, 1.2rem);
+  padding: clamp(1rem, calc(var(--website-design-vw) * 1.4), 1.2rem);
   border: 1px solid rgba(202, 214, 225, 0.96);
   border-radius: 1.35rem;
   background: linear-gradient(180deg, #ffffff 0%, #f7fbfc 100%);
@@ -2840,7 +2302,7 @@
 .fuelSlipPanelHeader h2 {
   margin: 0.18rem 0 0;
   color: #10352b;
-  font-size: clamp(1.3rem, 1.8vw, 1.7rem);
+  font-size: clamp(1.3rem, calc(var(--website-design-vw) * 1.8), 1.7rem);
   font-weight: 850;
   letter-spacing: -0.04em;
 }
@@ -2979,7 +2441,7 @@
 
 .fuelSlipModal {
   width: min(100%, 1120px);
-  max-height: min(94vh, 860px);
+  max-height: min(calc(var(--website-visible-height) * 0.94), 860px);
 }
 
 .fuelSlipSteps {
@@ -3099,37 +2561,6 @@
   line-height: 1.4;
 }
 
-@media (max-width: 960px) {
-  .topActionButtons {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .fuelSlipCard {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipAmountBlock {
-    justify-items: start;
-    text-align: left;
-  }
-}
-
-@media (max-width: 760px) {
-  .topActionButtons,
-  .fuelSlipModeGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipPanelHeader {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .fuelSlipHeaderButton {
-    width: 100%;
-  }
-}
-
 /* === Fuel Slip OCR modal flow: aligned to My Invoices / Cost Ledger === */
 .fuelSlipFlowBackdrop {
   --line: #e5ebf1;
@@ -3150,7 +2581,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 3vw, 2rem);
+  padding: clamp(1rem, calc(var(--website-design-vw) * 3), 2rem);
   background: rgba(12, 22, 25, 0.44);
   backdrop-filter: blur(10px);
   overflow: hidden;
@@ -3160,10 +2591,10 @@
 .fuelSlipFlowBackdrop .formModal,
 .fuelSlipFlowBackdrop .downloadModal {
   width: min(100%, 1120px);
-  max-height: min(90vh, calc(100dvh - 2.5rem));
+  max-height: min(calc(var(--website-visible-height) * 0.9), calc(calc(var(--website-visible-height) * 1) - 2.5rem));
   overflow: hidden;
   border: 1px solid rgba(207, 224, 234, 0.95);
-  border-radius: clamp(1.45rem, 2.2vw, 2rem);
+  border-radius: clamp(1.45rem, calc(var(--website-design-vw) * 2.2), 2rem);
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 34%),
     linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
@@ -3178,7 +2609,7 @@
 }
 
 .fuelSlipFlowBackdrop .formModal {
-  width: min(100%, 1060px);
+  width: min(var(--website-dialog-reference-width, 100%), 1060px);
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
@@ -3194,7 +2625,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: clamp(1.25rem, 2.2vw, 1.75rem) clamp(1.25rem, 2.4vw, 2rem) 0;
+  padding: clamp(1.25rem, calc(var(--website-design-vw) * 2.2), 1.75rem) clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 0;
   border-bottom: 0;
 }
 
@@ -3207,7 +2638,7 @@
 .fuelSlipFlowBackdrop .modalHeader h2 {
   margin: 0;
   color: var(--brand-dark);
-  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw) * 3), 2.55rem);
   font-weight: 760;
   line-height: 1.02;
   letter-spacing: -0.052em;
@@ -3241,7 +2672,7 @@
 
 .fuelSlipFlowBackdrop .modalDivider {
   height: 1px;
-  margin: 1.15rem clamp(1.25rem, 2.4vw, 2rem);
+  margin: 1.15rem clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem);
   background: var(--line);
 }
 
@@ -3255,7 +2686,7 @@
   display: grid;
   align-content: start;
   gap: 1rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 1rem;
 }
 
 .fuelSlipFlowBackdrop .assetList {
@@ -3269,7 +2700,7 @@
   display: grid;
   align-content: start;
   gap: 0.75rem;
-  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  margin: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem);
   padding: 0 0.6rem 0 0;
 }
 
@@ -3300,7 +2731,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.8rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 1rem;
 }
 
 .fuelSlipFlowBackdrop .pickerToolbar input,
@@ -3389,7 +2820,7 @@
 .fuelSlipFlowBackdrop .uploadPanel {
   display: grid;
   gap: 1rem;
-  padding: clamp(1rem, 2vw, 1.35rem);
+  padding: clamp(1rem, calc(var(--website-design-vw) * 2), 1.35rem);
   border: 1px solid rgba(221, 229, 237, 0.96);
   border-radius: 1.35rem;
   background:
@@ -3708,7 +3139,7 @@
   display: grid;
   grid-template-rows: auto auto auto;
   gap: 1.12rem;
-  padding: clamp(1.5rem, 2.35vw, 1.95rem);
+  padding: clamp(1.5rem, calc(var(--website-design-vw) * 2.35), 1.95rem);
   border-radius: 2rem;
 }
 
@@ -3722,7 +3153,7 @@
 
 .fuelSlipFlowBackdrop .sourceChoiceModal .modalHeader h2 {
   color: #0f3329;
-  font-size: clamp(1.86rem, 2.65vw, 2.38rem);
+  font-size: clamp(1.86rem, calc(var(--website-design-vw) * 2.65), 2.38rem);
   font-weight: 760;
   line-height: 1.03;
   letter-spacing: -0.052em;
@@ -3850,11 +3281,11 @@
 .fuelSlipFlowBackdrop .costFormModal,
 .fuelSlipFlowBackdrop .costUploadModal {
   width: min(100%, 1120px);
-  max-height: min(92vh, calc(100dvh - 1rem));
+  max-height: min(calc(var(--website-visible-height) * 0.92), calc(calc(var(--website-visible-height) * 1) - 1rem));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0;
-  padding: clamp(1.35rem, 2.2vw, 1.85rem);
+  padding: clamp(1.35rem, calc(var(--website-design-vw) * 2.2), 1.85rem);
   border-radius: 2rem;
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
@@ -3879,7 +3310,7 @@
 .fuelSlipFlowBackdrop .costFormModal .modalHeader h2,
 .fuelSlipFlowBackdrop .costUploadModal .modalHeader h2 {
   color: #0f3329;
-  font-size: clamp(1.85rem, 2.45vw, 2.35rem);
+  font-size: clamp(1.85rem, calc(var(--website-design-vw) * 2.45), 2.35rem);
   font-weight: 720;
   line-height: 1.04;
   letter-spacing: -0.04em;
@@ -3933,8 +3364,8 @@
 }
 
 .fuelSlipFlowBackdrop .assetModal .modalFooter {
-  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
-  padding-bottom: clamp(1.25rem, 2.2vw, 1.75rem);
+  margin: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem);
+  padding-bottom: clamp(1.25rem, calc(var(--website-design-vw) * 2.2), 1.75rem);
 }
 
 .fuelSlipFlowBackdrop .costFormModal .modalFooter .primaryButton,
@@ -3958,7 +3389,7 @@
 
 .fuelSlipFlowBackdrop .costUploadModal .uploadPanel {
   gap: 1rem;
-  padding: clamp(1.2rem, 2vw, 1.55rem);
+  padding: clamp(1.2rem, calc(var(--website-design-vw) * 2), 1.55rem);
   border-radius: 1.48rem;
 }
 
@@ -3967,7 +3398,7 @@
   padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--line);
   color: #10352b;
-  font-size: clamp(1.38rem, 1.85vw, 1.68rem);
+  font-size: clamp(1.38rem, calc(var(--website-design-vw) * 1.85), 1.68rem);
   font-weight: 720;
   letter-spacing: -0.028em;
   line-height: 1.15;
@@ -4078,87 +3509,24 @@
   text-align: center;
 }
 
-@media (max-width: 900px) {
-  .fuelSlipFlowBackdrop {
-    padding: 0.5rem;
-  }
-
-  .fuelSlipFlowBackdrop .sourceChoiceModal,
-  .fuelSlipFlowBackdrop .costFormModal,
-  .fuelSlipFlowBackdrop .costUploadModal,
-  .fuelSlipFlowBackdrop .assetModal {
-    width: min(100%, calc(100vw - 1rem));
-    max-height: min(92vh, calc(100dvh - 1rem));
-    padding: 1.08rem;
-    border-radius: 1.35rem;
-  }
-
-  .fuelSlipFlowBackdrop .assetModal {
-    padding: 0;
-  }
-
-  .fuelSlipFlowBackdrop .costUploadModal {
-    overflow: hidden;
-  }
-
-  .fuelSlipFlowBackdrop .sourceChoiceGrid,
-  .fuelSlipFlowBackdrop .formGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipFlowBackdrop .assetRow {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipFlowBackdrop .assetValue {
-    justify-items: start;
-    text-align: left;
-  }
-
-  .fuelSlipFlowBackdrop .costFormModal .modalFooter,
-  .fuelSlipFlowBackdrop .costUploadModal .modalFooter,
-  .fuelSlipFlowBackdrop .assetModal .modalFooter,
-  .fuelSlipFlowBackdrop .sourceChoiceModal .modalFooter {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .fuelSlipFlowBackdrop .modalFooter .primaryButton,
-  .fuelSlipFlowBackdrop .modalFooter .secondaryButton {
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-@media (max-width: 520px) {
-  .fuelSlipFlowBackdrop .costUploadModal .uploadBox,
-  .fuelSlipFlowBackdrop .pickerToolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipFlowBackdrop .costUploadModal .uploadBox {
-    max-width: 100%;
-  }
-}
-
 /* Fuel Ledger work-use exclusions and preserved history */
 .topActions {
-  gap: clamp(1.05rem, 1.45vw, 1.35rem);
+  gap: clamp(1.05rem, calc(var(--website-design-vw) * 1.45), 1.35rem);
 }
 
 .topActionButtons {
   width: 100%;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: clamp(0.78rem, 1.35vw, 1.25rem);
+  gap: clamp(0.78rem, calc(var(--website-design-vw) * 1.35), 1.25rem);
 }
 
 .topActions .topActionButton {
   position: relative;
   min-width: 0;
-  min-height: clamp(3.62rem, 4.45vw, 4.08rem);
-  padding: 0 clamp(1rem, 1.8vw, 1.45rem);
-  border-radius: clamp(1rem, 1.45vw, 1.22rem);
-  font-size: clamp(0.98rem, 1.15vw, 1.08rem);
+  min-height: clamp(3.62rem, calc(var(--website-design-vw) * 4.45), 4.08rem);
+  padding: 0 clamp(1rem, calc(var(--website-design-vw) * 1.8), 1.45rem);
+  border-radius: clamp(1rem, calc(var(--website-design-vw) * 1.45), 1.22rem);
+  font-size: clamp(0.98rem, calc(var(--website-design-vw) * 1.15), 1.08rem);
   font-weight: 860;
   letter-spacing: -0.015em;
 }
@@ -4246,7 +3614,7 @@
 }
 
 .exclusionNotice {
-  margin: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  margin: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 1rem;
   padding: 0.85rem 1rem;
   border: 1px solid currentColor;
   border-radius: 1rem;
@@ -4257,8 +3625,8 @@
 .exclusionEditor {
   display: grid;
   gap: 1.2rem;
-  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
-  padding: clamp(1.1rem, 2vw, 1.5rem);
+  margin: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem);
+  padding: clamp(1.1rem, calc(var(--website-design-vw) * 2), 1.5rem);
   border: 1px solid #dce5ec;
   border-radius: 1.3rem;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
@@ -4277,7 +3645,7 @@
 
 .exclusionEditorHeading h3 {
   color: #10382f;
-  font-size: clamp(1.25rem, 2vw, 1.55rem);
+  font-size: clamp(1.25rem, calc(var(--website-design-vw) * 2), 1.55rem);
 }
 
 .exclusionEditorHeading p,
@@ -4291,7 +3659,7 @@
 .exclusionSelectedAssets {
   display: grid;
   gap: 0.55rem;
-  max-height: min(28vh, 14rem);
+  max-height: min(calc(var(--website-design-vh) * 28), 14rem);
   padding: 0.7rem;
   border: 1px solid #dce7e2;
   border-radius: 1rem;
@@ -4375,14 +3743,14 @@
 }
 
 .fuelHistoryModal {
-  width: min(100%, 46rem);
+  width: min(var(--website-dialog-reference-width, 100%), 46rem);
 }
 
 .fuelHistoryList {
   display: grid;
   gap: 0.75rem;
-  max-height: min(55vh, 34rem);
-  padding: 1rem clamp(1.25rem, 2.4vw, 2rem);
+  max-height: min(calc(var(--website-design-vh) * 55), 34rem);
+  padding: 1rem clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem);
   overflow-y: auto;
 }
 
@@ -4417,57 +3785,6 @@
   margin: 0;
 }
 
-@media (max-width: 960px) {
-  .topActionButtons {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .exclusionSelectionCount {
-    width: 100%;
-    margin-right: 0;
-    text-align: center;
-  }
-}
-
-@media (max-width: 760px) {
-  .topActionButtons {
-    grid-template-columns: 1fr !important;
-  }
-
-  .mobileQuickActions {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .mobileQuickButton {
-    font-size: 0.73rem;
-    padding-inline: 0.25rem;
-  }
-
-  .exclusionEditor {
-    margin-inline: 1rem;
-  }
-
-  .fuelSlipFlowBackdrop .exclusionPickerToolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelHistoryRow > div {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.2rem;
-  }
-}
-
-@media (max-width: 520px) {
-  .fuelSlipReviewStepProgress {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipReviewStepItem {
-    justify-content: flex-start;
-  }
-}
-
 .fuelSlipCostFormModal {
   /* CSS-module marker for the fuel slip manual/review Cost Ledger form shell. */
 }
@@ -4475,13 +3792,13 @@
 
 /* Fuel slip manager */
 .fuelSlipManagerModal {
-  width: min(100%, 84rem);
-  max-height: min(92vh, calc(100dvh - 2rem));
-  min-height: min(48rem, calc(100dvh - 2rem));
+  width: min(var(--website-dialog-reference-width, 100%), 84rem);
+  max-height: min(calc(var(--website-visible-height) * 0.92), calc(calc(var(--website-visible-height) * 1) - 2rem));
+  min-height: min(48rem, calc(calc(var(--website-visible-height) * 1) - 2rem));
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
   border: 1px solid rgba(207, 219, 229, 0.98);
-  border-radius: clamp(1.35rem, 2.1vw, 1.8rem);
+  border-radius: clamp(1.35rem, calc(var(--website-design-vw) * 2.1), 1.8rem);
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(247, 251, 252, 0.98) 100%);
@@ -4496,7 +3813,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.2rem;
-  padding: clamp(1.35rem, 2.4vw, 2rem) clamp(1.25rem, 2.4vw, 2rem) 0;
+  padding: clamp(1.35rem, calc(var(--website-design-vw) * 2.4), 2rem) clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 0;
 }
 
 .fuelSlipManagerHeader > div {
@@ -4506,7 +3823,7 @@
 .fuelSlipManagerHeader h2 {
   margin: 0;
   color: #10352b;
-  font-size: clamp(1.85rem, 3vw, 2.55rem);
+  font-size: clamp(1.85rem, calc(var(--website-design-vw) * 3), 2.55rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.055em;
@@ -4524,8 +3841,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(0.78rem, 1.15vw, 1rem);
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  gap: clamp(0.78rem, calc(var(--website-design-vw) * 1.15), 1rem);
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 1rem;
   min-width: 0;
 }
 
@@ -4538,7 +3855,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(8.9rem, auto));
   align-items: stretch;
-  gap: clamp(0.62rem, 0.9vw, 0.82rem);
+  gap: clamp(0.62rem, calc(var(--website-design-vw) * 0.9), 0.82rem);
   min-width: 0;
 }
 
@@ -4631,7 +3948,7 @@
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   gap: 0.85rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) clamp(1.25rem, 2.4vw, 2rem);
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem);
   overflow: hidden;
 }
 
@@ -4673,7 +3990,7 @@
   min-width: 0;
   display: grid;
   gap: 0.9rem;
-  padding: clamp(1rem, 1.45vw, 1.25rem);
+  padding: clamp(1rem, calc(var(--website-design-vw) * 1.45), 1.25rem);
   border: 1px solid rgba(207, 219, 229, 0.98);
   border-radius: 1.35rem;
   background:
@@ -4701,7 +4018,7 @@
 .fuelSlipManagerTitle {
   margin: 0;
   color: #073b30;
-  font-size: clamp(1.25rem, 1.85vw, 1.65rem);
+  font-size: clamp(1.25rem, calc(var(--website-design-vw) * 1.85), 1.65rem);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -0.045em;
@@ -4907,10 +4224,10 @@
 }
 
 .fuelSlipFilterModal {
-  width: min(100%, 58rem);
+  width: min(var(--website-dialog-reference-width, 100%), 58rem);
   display: grid;
   border: 1px solid rgba(207, 219, 229, 0.98);
-  border-radius: clamp(1.35rem, 2.1vw, 1.8rem);
+  border-radius: clamp(1.35rem, calc(var(--website-design-vw) * 2.1), 1.8rem);
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(247, 251, 252, 0.99) 100%);
@@ -4925,13 +4242,13 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.2rem;
-  padding: clamp(1.35rem, 2.4vw, 2rem) clamp(1.25rem, 2.4vw, 2rem) 0;
+  padding: clamp(1.35rem, calc(var(--website-design-vw) * 2.4), 2rem) clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 0;
 }
 
 .fuelSlipFilterModal .modalHeader h2 {
   margin: 0;
   color: #10352b;
-  font-size: clamp(1.85rem, 3vw, 2.5rem);
+  font-size: clamp(1.85rem, calc(var(--website-design-vw) * 3), 2.5rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.055em;
@@ -4947,7 +4264,7 @@
 
 .fuelSlipFilterModal .modalDivider {
   height: 1px;
-  margin: 1.15rem clamp(1.25rem, 2.4vw, 2rem);
+  margin: 1.15rem clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem);
   background: var(--line);
 }
 
@@ -4955,7 +4272,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1.2rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 1.2rem;
 }
 
 .filterField {
@@ -5062,7 +4379,7 @@
   right: 0;
   left: 0;
   z-index: 240;
-  max-height: min(18rem, 44vh);
+  max-height: min(18rem, calc(var(--website-design-vh) * 44));
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.35rem;
@@ -5188,7 +4505,7 @@
 }
 
 .fuelSlipDownloadError {
-  margin: -0.2rem clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  margin: -0.2rem clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 1rem;
   padding: 0.72rem 0.85rem;
   border: 1px solid rgba(220, 73, 73, 0.42);
   border-radius: 0.9rem;
@@ -5204,7 +4521,7 @@
   justify-content: flex-end;
   align-items: center;
   gap: 0.72rem;
-  padding: 1rem clamp(1.25rem, 2.4vw, 2rem) clamp(1.25rem, 2.4vw, 2rem);
+  padding: 1rem clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem);
   border-top: 1px solid rgba(216, 226, 236, 0.88);
 }
 
@@ -5218,7 +4535,7 @@
 }
 
 .fuelSlipDeleteModal {
-  width: min(96vw, 58rem);
+  width: min(calc(var(--website-design-vw) * 96), 58rem);
   border-color: rgba(205, 72, 54, 0.5);
   background:
     radial-gradient(circle at top left, rgba(205, 72, 54, 0.09), transparent 36%),
@@ -5232,7 +4549,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1.2rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw) * 2.4), 2rem) 1.2rem;
 }
 
 .fuelSlipDeleteSummary span {
@@ -5268,82 +4585,10 @@
   border-color: rgba(116, 36, 23, 0.88) !important;
 }
 
-@media (max-width: 1100px) {
-  .fuelSlipManagerToolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipManagerToolbarButtons {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .fuelSlipManagerDetailGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .fuelSlipManagerRowFooter {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .fuelSlipManagerRowActions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-}
-
-@media (max-width: 720px) {
-  .fuelSlipManagerModal,
-  .fuelSlipFilterModal {
-    width: min(100%, calc(100vw - 1rem));
-    max-height: min(92vh, calc(100dvh - 1rem));
-    border-radius: 1.35rem;
-  }
-
-  .fuelSlipManagerModal {
-    min-height: 0;
-  }
-
-  .fuelSlipManagerToolbarButtons,
-  .fuelSlipFilterGrid,
-  .fuelSlipManagerDetailGrid,
-  .fuelSlipDeleteSummary {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipManagerRowTop {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .fuelSlipManagerStatusBadge {
-    width: fit-content;
-  }
-
-  .fuelSlipManagerToolbarButton,
-  .fuelSlipManagerOpenButton,
-  .fuelSlipManagerReviewButton,
-  .fuelSlipManagerDeleteButton,
-  .fuelSlipFilterModal .modalFooter .primaryButton,
-  .fuelSlipFilterModal .modalFooter .secondaryButton {
-    width: 100%;
-  }
-
-  .fuelSlipManagerRowActions {
-    justify-content: stretch;
-  }
-
-  .fuelSlipManagerPaginationRow,
-  .fuelSlipFilterModal .modalFooter {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-}
-
 /* Fuel slip choices share one compact, readable modal pattern. */
 .fuelSlipFlowBackdrop .fuelSlipChoiceModal {
   width: min(100%, 1120px);
-  max-height: min(90vh, calc(100dvh - 2rem));
+  max-height: min(calc(var(--website-visible-height) * 0.9), calc(calc(var(--website-visible-height) * 1) - 2rem));
   grid-template-rows: auto auto auto;
   gap: 0;
   overflow-x: hidden;
@@ -5393,7 +4638,7 @@
   max-width: none;
   margin: 0;
   color: #5f7186;
-  font-size: clamp(0.96rem, 1.3vw, 1.02rem);
+  font-size: clamp(0.96rem, calc(var(--website-design-vw) * 1.3), 1.02rem);
   font-weight: 620;
   line-height: 1.42;
   text-align: left;
@@ -5546,86 +4791,11 @@
   display: none;
 }
 
-@media (min-width: 1180px) {
-  .fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader p,
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .modalHeader p,
   .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock strong,
   .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock small {
     white-space: nowrap;
   }
-}
-
-@media (max-width: 900px) {
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal,
-  .fuelSlipFlowBackdrop .fuelSlipMenuModal {
-    width: min(100%, calc(100vw - 1rem));
-    max-height: min(92vh, calc(100dvh - 1rem));
-    padding: 0;
-    border-radius: 1.35rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .modalHeader {
-    padding: 1.2rem 1.25rem 1rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .modalHeader h2 {
-    font-size: clamp(1.34rem, 6.8vw, 1.68rem);
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .modalHeader p {
-    max-width: 100%;
-    font-size: 0.95rem;
-    line-height: 1.42;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .sourceChoiceGrid {
-    grid-template-columns: 1fr;
-    padding: 1rem 1.25rem 1.2rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .modalFooter {
-    padding: 0.9rem 1.25rem;
-  }
-}
-
-@media (max-width: 560px) {
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .modalHeader {
-    align-items: flex-start;
-    gap: 0.85rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .fuelSlipChoiceOption {
-    min-height: 5.6rem;
-    grid-template-columns: 3.35rem minmax(0, 1fr) 1.6rem;
-    gap: 0.72rem;
-    padding: 0.78rem 0.82rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceGraphic {
-    width: 3.35rem;
-    min-width: 3.35rem;
-    height: 3.35rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceGraphic svg {
-    width: 1.62rem;
-    height: 1.62rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock strong {
-    font-size: 1rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipChoiceModal .choiceTitleBlock small {
-    font-size: 0.85rem;
-    line-height: 1.32;
-  }
-
-  .fuelSlipChoiceArrow {
-    width: 1.6rem;
-    min-width: 1.6rem;
-    height: 1.6rem;
-  }
-}
 
 
 /* Fuel Slip Manager final button styling overrides.
@@ -5652,7 +4822,7 @@
 .fuelSlipManagerModal button.fuelSlipManagerToolbarButton {
   height: 3.55rem;
   min-height: 3.55rem;
-  padding-inline: clamp(1rem, 1.2vw, 1.18rem);
+  padding-inline: clamp(1rem, calc(var(--website-design-vw) * 1.2), 1.18rem);
   border-radius: 1rem;
 }
 
@@ -5817,20 +4987,18 @@
   outline-offset: 3px;
 }
 
-@media (min-width: 721px) {
-  .fuelSlipManagerModal .fuelSlipManagerToolbarButtons {
+.fuelSlipManagerModal .fuelSlipManagerToolbarButtons {
     grid-template-columns: repeat(3, max-content);
     justify-content: end;
   }
 
-  .fuelSlipManagerModal button.fuelSlipManagerToolbarButton {
+.fuelSlipManagerModal button.fuelSlipManagerToolbarButton {
     min-width: 10.4rem;
   }
 
-  .fuelSlipManagerModal button.fuelSlipManagerDownloadButton {
+.fuelSlipManagerModal button.fuelSlipManagerDownloadButton {
     min-width: 11.7rem;
   }
-}
 
 /* Fuel slip required-field validation and final manager colour overrides. */
 .fuelSlipFlowBackdrop .fuelSlipValidationNotice {
@@ -6007,7 +5175,7 @@
 /* Fuel slip delete confirmation: final destructive overrides. */
 .fuelSlipFilterModal.fuelSlipDeleteModal {
   position: relative;
-  width: min(96vw, 58rem);
+  width: min(calc(var(--website-design-vw) * 96), 58rem);
   border-color: rgba(205, 72, 54, 0.54) !important;
   background:
     radial-gradient(circle at top left, rgba(205, 72, 54, 0.1), transparent 38%),
@@ -6022,8 +5190,8 @@
   content: '';
   position: absolute;
   top: 0;
-  right: clamp(1.35rem, 2.1vw, 1.8rem);
-  left: clamp(1.35rem, 2.1vw, 1.8rem);
+  right: clamp(1.35rem, calc(var(--website-design-vw) * 2.1), 1.8rem);
+  left: clamp(1.35rem, calc(var(--website-design-vw) * 2.1), 1.8rem);
   height: 0.38rem;
   border-radius: 0 0 999px 999px;
   background: linear-gradient(90deg, #b43a2b 0%, #e05743 52%, #8f281c 100%);
@@ -6120,12 +5288,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 1) !important;
 }
 
-@media (max-width: 720px) {
-  .fuelSlipManagerEditButton {
-    width: 100%;
-  }
-}
-
 /* Fuel slip delete confirmation: mirror the Asset Register standard white delete modal. */
 .fuelSlipDeleteOverlay {
   z-index: 240 !important;
@@ -6135,14 +5297,14 @@
 
 .fuelSlipDeleteOverlay .deleteConfirmModal {
   position: relative !important;
-  width: min(96vw, 54rem) !important;
+  width: min(calc(var(--website-design-vw) * 96), 54rem) !important;
   display: block !important;
   grid-template-columns: unset !important;
   align-items: unset !important;
   gap: 0 !important;
-  max-width: 100% !important;
+  max-width: var(--website-dialog-reference-width, 100%) !important;
   min-width: 0 !important;
-  padding: clamp(1.55rem, 2.4vw, 2.1rem) !important;
+  padding: clamp(1.55rem, calc(var(--website-design-vw) * 2.4), 2.1rem) !important;
   border: 1px solid rgba(203, 218, 230, 0.98) !important;
   border-radius: 1.8rem !important;
   background: rgba(255, 255, 255, 0.98) !important;
@@ -6162,7 +5324,7 @@
   padding: 0 3.6rem 1.1rem 0 !important;
   border-bottom: 1px solid rgba(211, 224, 234, 0.98) !important;
   color: #0c382f !important;
-  font-size: clamp(1.65rem, 3vw, 2.25rem) !important;
+  font-size: clamp(1.65rem, calc(var(--website-design-vw) * 3), 2.25rem) !important;
   font-weight: 760 !important;
   line-height: 1.02 !important;
   letter-spacing: -0.05em !important;
@@ -6266,8 +5428,8 @@
 
 .fuelSlipDeleteOverlay .deleteConfirmCloseButton {
   position: absolute !important;
-  top: clamp(1rem, 1.6vw, 1.25rem) !important;
-  right: clamp(1rem, 1.6vw, 1.25rem) !important;
+  top: clamp(1rem, calc(var(--website-design-vw) * 1.6), 1.25rem) !important;
+  right: clamp(1rem, calc(var(--website-design-vw) * 1.6), 1.25rem) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -6286,41 +5448,6 @@
 .fuelSlipDeleteOverlay .deleteConfirmCloseButton:disabled {
   cursor: not-allowed !important;
   opacity: 0.58 !important;
-}
-
-@media (max-width: 760px) {
-  .fuelSlipDeleteOverlay .deleteConfirmModal {
-    width: min(100%, calc(100vw - 1.25rem)) !important;
-    padding: 1.15rem !important;
-    border-radius: 1.4rem !important;
-  }
-
-  .fuelSlipDeleteOverlay .deleteConfirmContent {
-    max-height: calc(100dvh - 10rem) !important;
-    overflow-y: auto !important;
-  }
-
-  .fuelSlipDeleteOverlay .deleteConfirmContent h3 {
-    padding-right: 3rem !important;
-  }
-
-  .fuelSlipDeleteOverlay .deleteConfirmActions {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    width: 100% !important;
-  }
-
-  .fuelSlipDeleteOverlay .deleteConfirmActions .secondaryButton,
-  .fuelSlipDeleteOverlay .deleteConfirmActions .deleteConfirmButton {
-    width: 100% !important;
-  }
-
-  .fuelSlipDeleteOverlay .deleteConfirmCloseButton {
-    top: 0.85rem !important;
-    right: 0.85rem !important;
-    width: 2.65rem !important;
-    height: 2.65rem !important;
-  }
 }
 
 /* Neutralise the old fuel-slip delete tint if the legacy class is reused anywhere. */
@@ -6532,19 +5659,9 @@
   margin-top: 0;
 }
 
-@media (max-width: 900px) {
-  .fuelSlipFlowBackdrop .fuelSlipReviewFormModal .modalHeader {
-    padding-bottom: 0.9rem;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipReviewFormModal .fuelSlipReviewStepProgress {
-    margin: 0.85rem 0;
-  }
-}
-
 /* Desktop owner Back Track flow and tank reconciliation */
 .fuelSlipFlowBackdrop .manageStorageChoiceModal {
-  width: min(820px, calc(100vw - 32px));
+  width: min(820px, calc(calc(var(--website-design-vw) * 100) - 32px));
   gap: 0;
   padding: 0;
   overflow: hidden;
@@ -6679,8 +5796,8 @@
 
 .missingEntryModal,
 .reconcileBalanceModal {
-  width: min(1120px, calc(100vw - 40px));
-  max-height: min(880px, calc(100dvh - 40px));
+  width: min(1120px, calc(calc(var(--website-design-vw) * 100) - 40px));
+  max-height: min(880px, calc(calc(var(--website-visible-height) * 1) - 40px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -6691,13 +5808,13 @@
 }
 
 .missingEntryModal {
-  height: min(820px, calc(100dvh - 40px));
+  height: min(820px, calc(calc(var(--website-design-vh) * 100) - 40px));
 }
 
 .missingEntrySuccessModal {
-  width: min(640px, calc(100vw - 40px));
+  width: min(640px, calc(calc(var(--website-design-vw) * 100) - 40px));
   height: auto;
-  max-height: calc(100dvh - 40px);
+  max-height: calc(calc(var(--website-visible-height) * 1) - 40px);
 }
 
 .missingEntrySuccessModal .missingEntryHeader {
@@ -6712,7 +5829,7 @@
 }
 
 .reconcileBalanceModal {
-  width: min(760px, calc(100vw - 40px));
+  width: min(760px, calc(calc(var(--website-design-vw) * 100) - 40px));
 }
 
 .missingEntryHeader {
@@ -6729,7 +5846,7 @@
 .missingEntryHeader h2 {
   margin: 3px 0 0;
   color: #073f34;
-  font-size: clamp(1.55rem, 2.4vw, 2.2rem);
+  font-size: clamp(1.55rem, calc(var(--website-design-vw) * 2.4), 2.2rem);
   font-weight: 820;
   line-height: 1.08;
   letter-spacing: -0.035em;
@@ -6860,7 +5977,7 @@
 }
 
 .fuelSlipFlowBackdrop .missingEntryModal .backtrackAssetList {
-  max-height: min(27rem, 48dvh);
+  max-height: min(27rem, calc(var(--website-visible-height) * 0.48));
   margin: 0;
 }
 
@@ -7391,87 +6508,6 @@
   margin-bottom: 6px;
 }
 
-@media (max-width: 900px) {
-  .balanceTreatmentGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .balanceTreatmentGrid button {
-    min-height: auto;
-  }
-
-  .missingFormGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .fullWidthField {
-    grid-column: auto;
-  }
-
-  .missingTimeHeader {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .missingInlineCheck {
-    width: 100%;
-    align-self: stretch;
-    justify-content: flex-start;
-    margin-left: 0;
-  }
-}
-
-@media (max-width: 700px) {
-  .desktopMissingEntryChoice {
-    display: none !important;
-  }
-
-  .manageStorageChoiceModal .sourceChoiceGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .desktopMissingEntryModal {
-    display: none !important;
-  }
-
-  .missingEntryModal,
-  .reconcileBalanceModal {
-    width: calc(100vw - 18px);
-    max-height: calc(100vh - 18px);
-    border-radius: 20px;
-  }
-
-  .missingEntryHeader,
-  .missingEntryScrollBody,
-  .missingEntryFooter {
-    padding-left: 18px;
-    padding-right: 18px;
-  }
-
-  .balanceDeductionPreview,
-  .balanceDeductionError {
-    grid-template-columns: 1fr;
-  }
-
-  .missingEntryFooter {
-    flex-direction: column-reverse;
-  }
-
-  .missingEntryFooterSecondary {
-    width: 100%;
-    flex-direction: column-reverse;
-  }
-
-  .reconcileBalanceButton {
-    display: none !important;
-  }
-
-  .missingEntryFooter button {
-    width: 100%;
-  }
-}
-
 /* Back Track Fuel and reconciliation primary buttons use the Aim4price dark green. */
 .fuelSlipFlowBackdrop .missingEntryModal button.backtrackPrimaryButton,
 .fuelSlipFlowBackdrop .reconcileBalanceModal button.backtrackPrimaryButton {
@@ -7502,8 +6538,8 @@
 
 /* Fuel-slip wizard parity and high-volume manager */
 .fuelSlipFlowBackdrop .fuelSlipWizardModal {
-  width: min(1120px, 100%) !important;
-  max-height: min(880px, calc(100dvh - 48px)) !important;
+  width: min(1120px, var(--website-dialog-reference-width, 100%)) !important;
+  max-height: min(880px, calc(calc(var(--website-visible-height) * 1) - 48px)) !important;
 }
 
 .fuelSlipWizardProgress {
@@ -7544,10 +6580,10 @@
 .fuelSlipManagerModal.fuelSlipManagerModal {
   --fuel-slip-manager-columns:
     7.2rem minmax(15rem, 1.5fr) minmax(9rem, 0.9fr) 6.6rem 7.8rem 9.2rem 6.5rem;
-  width: min(1320px, 100%) !important;
+  width: min(1320px, var(--website-dialog-reference-width, 100%)) !important;
   height: auto !important;
   min-height: 0 !important;
-  max-height: min(880px, calc(100dvh - 48px)) !important;
+  max-height: min(880px, calc(calc(var(--website-visible-height) * 1) - 48px)) !important;
 }
 
 .fuelSlipManagerModal.fuelSlipManagerModal .fuelSlipManagerBody {
@@ -8171,222 +7207,6 @@
   font-weight: 800;
 }
 
-@media (max-width: 1160px) {
-  .fuelSlipManagerModal.fuelSlipManagerModal {
-    --fuel-slip-manager-columns:
-      6.8rem minmax(12rem, 1.4fr) minmax(7.5rem, 0.8fr) 5.8rem 7rem 7.8rem 5.8rem;
-  }
-
-  .fuelSlipManagerTableHeader,
-  .fuelSlipManagerRowMain {
-    gap: 10px;
-  }
-
-  .fuelSlipManagerExpanded {
-    gap: 14px;
-  }
-
-  .fuelSlipManagerExpanded .fuelSlipManagerRowActions {
-    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-  }
-}
-
-@media (max-width: 1120px) {
-  .fuelSlipManagerModal.fuelSlipManagerModal {
-    width: min(760px, 100%) !important;
-  }
-
-  .fuelSlipManagerModal.fuelSlipManagerModal .fuelSlipManagerBody {
-    gap: 14px !important;
-    padding: 18px 20px 22px !important;
-  }
-
-  .fuelSlipManagerToolbar {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipManagerModal .fuelSlipManagerToolbarButtons {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .fuelSlipManagerModal button.fuelSlipManagerToolbarButton {
-    width: 100% !important;
-  }
-
-  .fuelSlipManagerTableHeader {
-    display: none;
-  }
-
-  .fuelSlipManagerPanel {
-    grid-template-rows: auto minmax(0, 1fr) auto;
-  }
-
-  .fuelSlipManagerRow {
-    margin: 10px;
-    border: 1px solid #dce8e3;
-    border-radius: 16px;
-  }
-
-  .fuelSlipManagerRow:last-child {
-    border-bottom: 1px solid #dce8e3;
-  }
-
-  .fuelSlipManagerRowMain {
-    min-height: 0;
-    grid-template-columns: minmax(0, 1fr) minmax(7rem, auto);
-    grid-template-areas:
-      "identity status"
-      "date details"
-      "fuel litres"
-      "amount amount";
-    gap: 10px 14px;
-    padding: 14px;
-  }
-
-  .fuelSlipManagerDate {
-    grid-area: date;
-  }
-
-  .fuelSlipManagerIdentity {
-    grid-area: identity;
-  }
-
-  .fuelSlipManagerRowMain > .fuelSlipManagerMetric:nth-of-type(3) {
-    grid-area: fuel;
-  }
-
-  .fuelSlipManagerRowMain > .fuelSlipManagerMetric:nth-of-type(4) {
-    grid-area: litres;
-  }
-
-  .fuelSlipManagerAmount {
-    grid-area: amount;
-  }
-
-  .fuelSlipManagerRowMain .fuelSlipManagerStatusBadge {
-    grid-area: status;
-    justify-self: end;
-  }
-
-  .fuelSlipManagerExpandButton {
-    grid-area: details;
-    align-self: end;
-    justify-self: end;
-  }
-
-  .fuelSlipManagerSecondaryGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 720px) {
-  .fuelSlipManagerBackdrop {
-    align-items: flex-end;
-    padding: 0;
-  }
-
-  .fuelSlipFlowBackdrop .fuelSlipWizardModal {
-    width: 100% !important;
-    max-height: 94dvh !important;
-    border-radius: 24px 24px 0 0 !important;
-  }
-
-  .fuelSlipWizardProgress {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .fuelSlipManagerModal.fuelSlipManagerModal {
-    width: 100% !important;
-    height: 94dvh !important;
-    max-height: 94dvh !important;
-    border-radius: 24px 24px 0 0 !important;
-  }
-
-  .fuelSlipManagerModal.fuelSlipManagerModal .fuelSlipManagerBody {
-    flex: 1 1 auto;
-    padding: 14px 14px max(18px, env(safe-area-inset-bottom)) !important;
-  }
-
-  .fuelSlipManagerPanel {
-    max-height: none;
-  }
-
-  .fuelSlipManagerContextChips > button,
-  .fuelSlipManagerContextBar > button {
-    min-height: 42px;
-  }
-
-  .fuelSlipManagerSummary {
-    align-items: stretch;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .fuelSlipManagerTotals {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .fuelSlipManagerTotals > span {
-    min-width: 0;
-  }
-
-  .fuelSlipManagerExpanded .fuelSlipManagerRowActions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .fuelSlipManagerModal .fuelSlipManagerExpanded .fuelSlipManagerRowActions button,
-  .fuelSlipManagerModal .fuelSlipManagerExpanded .fuelSlipManagerRowActions a {
-    width: 100% !important;
-  }
-
-  .fuelSlipManagerPaginationRow {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .fuelSlipManagerPaginationStatus {
-    grid-column: 1 / -1;
-    grid-row: 1;
-  }
-}
-
-@media (max-width: 480px) {
-  .fuelSlipManagerModal .fuelSlipManagerToolbarButtons {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .fuelSlipManagerModal button.fuelSlipManagerToolbarButton {
-    min-height: 52px !important;
-    gap: 8px;
-    padding: 0 14px !important;
-    font-size: 0.9rem !important;
-  }
-
-  .fuelSlipManagerRowMain {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .fuelSlipManagerExpanded .fuelSlipManagerRowActions,
-  .fuelSlipManagerSecondaryGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipManagerPanel {
-    min-height: 10rem;
-  }
-
-  .fuelSlipManagerPaginationButton:first-child,
-  .fuelSlipManagerPaginationButton:last-child {
-    display: none;
-  }
-
-  .fuelSlipManagerPaginationRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .fuelSlipManagerRow,
   .fuelSlipManagerExpandButton,
@@ -8399,12 +7219,12 @@
 
 /* Keep the manager filter in the same modal family as the Cost Ledger filter. */
 .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal {
-  width: min(100%, 960px);
+  width: min(var(--website-dialog-reference-width, 100%), 960px);
   max-height: none;
   display: grid;
   grid-template-rows: auto auto auto;
   gap: 1.12rem;
-  padding: clamp(1.5rem, 2.35vw, 1.95rem);
+  padding: clamp(1.5rem, calc(var(--website-design-vw) * 2.35), 1.95rem);
   overflow: visible;
   border-radius: 2rem;
 }
@@ -8426,7 +7246,7 @@
 .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalHeader h2 {
   margin: 0;
   color: #0f3329;
-  font-size: clamp(1.86rem, 2.65vw, 2.38rem);
+  font-size: clamp(1.86rem, calc(var(--website-design-vw) * 2.65), 2.38rem);
   font-weight: 760;
   line-height: 1.03;
   letter-spacing: -0.052em;
@@ -8498,42 +7318,3 @@
   min-width: 13.5rem;
 }
 
-@media (max-width: 900px) {
-  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal {
-    width: min(100%, calc(100vw - 1rem));
-    max-height: min(88vh, calc(100dvh - 1rem));
-    padding: 1rem;
-    overflow-y: auto;
-    border-radius: 1.35rem;
-  }
-
-  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalHeader {
-    padding-bottom: 1rem;
-  }
-
-  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalHeader h2 {
-    font-size: 1.58rem;
-  }
-
-  .fuelSlipManagerFilterModal .fuelSlipFilterGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter .primaryButton,
-  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter .secondaryButton {
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-@media (max-height: 640px) and (min-width: 901px) {
-  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal {
-    max-height: calc(100dvh - 1rem);
-    overflow-y: auto;
-  }
-}

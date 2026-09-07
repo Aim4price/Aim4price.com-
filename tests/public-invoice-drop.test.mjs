@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -68,11 +69,11 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(styles, /background-image: url\('\/brand\/invoice-drop-hero\.webp'\)/);
   assert.doesNotMatch(styles, /\.heroEyebrow|\.heroPrimaryButton|\.modalEyebrow/);
   assert.match(styles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(16rem, 19rem\)/);
-  assert.match(styles, /\.heroTitle \{[\s\S]*?max-width: 56rem;[\s\S]*?font-size: clamp\(3\.8rem, 4\.9vw, 5\.25rem\);[\s\S]*?line-height: 0\.96;[\s\S]*?letter-spacing: -0\.055em;[\s\S]*?font-weight: 800;/);
-  assert.match(styles, /\.heroText \{[\s\S]*?max-width: 53rem;[\s\S]*?font-size: clamp\(1\.12rem, 1\.3vw, 1\.28rem\);[\s\S]*?line-height: 1\.55;[\s\S]*?letter-spacing: -0\.005em;/);
-  assert.match(styles, /\.modalDialog \{[\s\S]*?--modal-gutter: clamp\(1\.25rem, 2\.5vw, 1\.75rem\);[\s\S]*?max-height: min\(92dvh, 56rem\)/);
+  assert.match(styles, /\.heroTitle \{[\s\S]*?max-width: 56rem;[\s\S]*?font-size: clamp\(3\.8rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 4\.9\), 5\.25rem\);[\s\S]*?line-height: 0\.96;[\s\S]*?letter-spacing: -0\.055em;[\s\S]*?font-weight: 800;/);
+  assert.match(styles, /\.heroText \{[\s\S]*?max-width: 53rem;[\s\S]*?font-size: clamp\(1\.12rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 1\.3\), 1\.28rem\);[\s\S]*?line-height: 1\.55;[\s\S]*?letter-spacing: -0\.005em;/);
+  assert.match(styles, /\.modalDialog \{[\s\S]*?--modal-gutter: clamp\(1\.25rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.5\), 1\.75rem\);[\s\S]*?max-height: min\((?:calc\(var\(--website-design-vh(?:, 1dvh)?\) \* 92\)|calc\(var\(--website-visible-height(?:, 100dvh)?\) \* 0\.92\)), 56rem\)/);
   assert.match(styles, /\.wizardProgress \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /@media \(max-width: 720px\)/);
+  assertNoWebsiteReflow(styles);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
 
@@ -286,3 +287,4 @@ test('public route privately auto-links unique serial, VIN or owner-scoped broad
   assert.match(captureStore, /usageMetric:/);
   assert.doesNotMatch(searchRoute, /ownerUserId|assetId|assets:/);
 });
+

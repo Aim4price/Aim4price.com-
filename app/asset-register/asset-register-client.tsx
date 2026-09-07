@@ -1,7 +1,9 @@
 'use client';
 
+import { websiteLogicalRect, websiteVisibleViewport, currentWebsiteScale, WEBSITE_DESIGN_WIDTH } from '../../lib/website-canvas';
+
 import Link from 'next/link';
-import { createPortal } from 'react-dom';
+import { createPortal } from '../../components/WebsitePortal';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent as ReactDragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import DropdownOverlay from '../../components/DropdownOverlay';
 import AppHeader from '../../components/AppHeader';
@@ -292,8 +294,10 @@ const COMBINED_REGISTER_ID = '__combined_asset_registers__';
 
 function getRegisterSummaryCardsPerView(): number {
   if (typeof window === 'undefined') return REGISTER_SUMMARY_VISIBLE_CARD_COUNT;
-  if (window.innerWidth <= 760) return 1;
-  if (window.innerWidth <= 1180) return 2;
+  // Native callers retain their own viewport; the website always shows its desktop cards.
+  const width = document.querySelector('[data-website-canvas]') ? WEBSITE_DESIGN_WIDTH : window.innerWidth;
+  if (width <= 760) return 1;
+  if (width <= 1180) return 2;
   return REGISTER_SUMMARY_VISIBLE_CARD_COUNT;
 }
 
@@ -2481,11 +2485,11 @@ function ModalSelect<T extends string>({
         return;
       }
 
-      const rect = button.getBoundingClientRect();
-      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
-      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
-      const viewportLeft = window.visualViewport?.offsetLeft ?? 0;
-      const viewportTop = window.visualViewport?.offsetTop ?? 0;
+      const rect = websiteLogicalRect(button.getBoundingClientRect());
+      const viewportWidth = websiteVisibleViewport().width;
+      const viewportHeight = websiteVisibleViewport().height;
+      const viewportLeft = websiteVisibleViewport().left;
+      const viewportTop = websiteVisibleViewport().top;
       const gap = 8;
       const edgeGap = 12;
       const availableWidth = Math.max(160, viewportWidth - edgeGap * 2);
@@ -2508,12 +2512,14 @@ function ModalSelect<T extends string>({
 
     updatePortalPosition();
     window.addEventListener('resize', updatePortalPosition);
+    window.addEventListener('aim4price:canvas-geometry', updatePortalPosition);
     window.addEventListener('scroll', updatePortalPosition, true);
     window.visualViewport?.addEventListener('resize', updatePortalPosition);
     window.visualViewport?.addEventListener('scroll', updatePortalPosition);
 
     return () => {
       window.removeEventListener('resize', updatePortalPosition);
+      window.removeEventListener('aim4price:canvas-geometry', updatePortalPosition);
       window.removeEventListener('scroll', updatePortalPosition, true);
       window.visualViewport?.removeEventListener('resize', updatePortalPosition);
       window.visualViewport?.removeEventListener('scroll', updatePortalPosition);
@@ -8955,7 +8961,7 @@ export default function AssetRegisterClient({
         }
 
         const bounds = L.latLngBounds([]);
-        const useCompactQuotePopup = window.innerWidth <= 620;
+        const useCompactQuotePopup = !document.querySelector('[data-website-canvas]') && window.innerWidth <= 620;
 
         quotePartnersWithCoordinates.forEach((partner) => {
           const lat = Number(partner.latitude);
@@ -9981,7 +9987,7 @@ export default function AssetRegisterClient({
 
       if (card) {
         const bounds = card.getBoundingClientRect();
-        if (bounds.bottom <= 96 || bounds.top >= window.innerHeight) {
+        if (bounds.bottom <= 96 * currentWebsiteScale() || bounds.top >= window.innerHeight) {
           card.scrollIntoView({ block: 'nearest', inline: 'nearest' });
         }
       } else {
@@ -12406,7 +12412,7 @@ export default function AssetRegisterClient({
       if (!card) return;
 
       const bounds = card.getBoundingClientRect();
-      if (bounds.bottom <= 96 || bounds.top >= window.innerHeight) {
+      if (bounds.bottom <= 96 * currentWebsiteScale() || bounds.top >= window.innerHeight) {
         card.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       }
     });
@@ -16040,8 +16046,8 @@ export default function AssetRegisterClient({
           </div>
 
           {isAssetFilterOpen ? (
-            <div className={`${styles.modalOverlay} ${styles.assetFilterModalOverlay}`}>
-              <div className={styles.modalBackdrop} onClick={() => setIsAssetFilterOpen(false)} />
+            <div className={`${styles.modalOverlay} ${styles.assetFilterModalOverlay}`} data-website-overlay>
+              <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsAssetFilterOpen(false)} />
 
               <div
                 id="asset-register-filter-modal"
@@ -16116,8 +16122,8 @@ export default function AssetRegisterClient({
           ) : null}
 
           {isChangeRegisterModalOpen ? (
-            <div className={`${styles.modalOverlay} ${styles.changeRegisterModalOverlay}`}>
-              <div className={styles.modalBackdrop} onClick={closeChangeRegisterModal} />
+            <div className={`${styles.modalOverlay} ${styles.changeRegisterModalOverlay}`} data-website-overlay>
+              <div className={styles.modalBackdrop} data-website-overlay onClick={closeChangeRegisterModal} />
 
               <div
                 className={`${styles.modalCard} ${styles.changeRegisterModal}`}
@@ -16223,8 +16229,8 @@ export default function AssetRegisterClient({
           ) : null}
 
           {assetRegisterMoveAsset ? (
-            <div className={styles.modalOverlay}>
-              <div className={styles.modalBackdrop} onClick={closeAssetRegisterMoveManager} />
+            <div className={styles.modalOverlay} data-website-overlay>
+              <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetRegisterMoveManager} />
 
               <div
                 className={`${styles.modalCard} ${styles.assetRegisterMoveModal}`}
@@ -17861,8 +17867,8 @@ export default function AssetRegisterClient({
       </section>
 
       {photoViewerAsset && photoViewerPhoto ? (
-        <div className={`${styles.modalOverlay} ${styles.photoViewerOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closePhotoViewer} />
+        <div className={`${styles.modalOverlay} ${styles.photoViewerOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closePhotoViewer} />
 
           <div
             className={styles.photoViewerModal}
@@ -17918,8 +17924,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isRegisterShareModalOpen ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeRegisterShareModal} />
+        <div className={styles.modalOverlay} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeRegisterShareModal} />
 
           <div
             className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
@@ -18043,8 +18049,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isSummaryModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.summaryModalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeSummaryModal} />
+        <div className={`${styles.modalOverlay} ${styles.summaryModalOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeSummaryModal} />
 
           <div
             ref={summaryDialogRef}
@@ -18167,8 +18173,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAddAssetDestinationModalOpen ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeAddAssetDestinationModal} />
+        <div className={styles.modalOverlay} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAddAssetDestinationModal} />
 
           <div
             className={`${styles.modalCard} ${styles.addAssetDestinationModal}`}
@@ -18219,8 +18225,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAddChoiceModalOpen ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeAddAssetChoiceModal} />
+        <div className={styles.modalOverlay} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAddAssetChoiceModal} />
 
           <div
             className={`${styles.modalCard} ${styles.addAssetChoiceModal}`}
@@ -18264,8 +18270,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAcquisitionChoiceOpen ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={() => setIsAcquisitionChoiceOpen(false)} />
+        <div className={styles.modalOverlay} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsAcquisitionChoiceOpen(false)} />
           <div className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.newAcquisitionChoiceModal}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
             <div className={`${styles.modalHeader} ${styles.newAcquisitionChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
@@ -18324,8 +18330,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAssetModalOpen ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={() => { if (!isAssetAutosaveBusy) closeAssetModal(); }} />
+        <div className={styles.modalOverlay} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) closeAssetModal(); }} />
 
           <div
             className={`${styles.modalCard} ${styles.assetFormModal} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
@@ -19627,8 +19633,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAssetSettingsModalOpen && editingAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.assetSettingsOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeAssetSettingsModal} />
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetSettingsModal} />
 
           <div
             className={`${styles.modalCard} ${styles.assetSettingsModal} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''} ${isManageMapLocationFlow ? styles.assetSettingsMapEntryModal : ''}`}
@@ -20088,8 +20094,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {pendingUsageOverride && editingAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={cancelAim4priceUsageOverrideConfirmation} />
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={cancelAim4priceUsageOverrideConfirmation} />
 
           <div
             className={`${styles.modalCard} ${styles.assetSettingsConfirmModal}`}
@@ -20131,8 +20137,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isManualConversionConfirmOpen && editingAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={() => setIsManualConversionConfirmOpen(false)} />
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsManualConversionConfirmOpen(false)} />
 
           <div
             className={`${styles.modalCard} ${styles.assetSettingsConfirmModal}`}
@@ -20175,8 +20181,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isQuoteModalOpen ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
+        <div className={styles.modalOverlay} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetQuoteModal} />
 
           <div
             className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${!selectedQuoteOption && assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
@@ -20477,7 +20483,7 @@ export default function AssetRegisterClient({
                   </div>
 
                   {quoteLeadStep && selectedQuoteOption && selectedQuotePartner ? (
-                    <div className={styles.assetQuoteStepOverlay}>
+                    <div className={styles.assetQuoteStepOverlay} data-website-overlay>
                       <button
                         type="button"
                         className={styles.assetQuoteStepBackdrop}
@@ -20795,8 +20801,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {quoteAsset && isQuoteTrackingSettingsOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.quoteTrackingSettingsOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={cancelQuoteTrackingSettings} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.quoteTrackingSettingsOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={cancelQuoteTrackingSettings} />
 
           <div
             className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal} ${styles.quoteTrackingSettingsModal}`}
@@ -20852,8 +20858,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {replacementPriceRevaluePrompt ? (
-        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeReplacementPriceRevaluePrompt} />
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeReplacementPriceRevaluePrompt} />
 
           <div
             className={`${styles.modalCard} ${styles.assetSettingsConfirmModal}`}
@@ -20896,8 +20902,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {accountantNoteAsset && isAccountantWorkspace ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeAccountantNoteModal} />
+        <div className={styles.modalOverlay} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAccountantNoteModal} />
 
           <div
             className={`${styles.modalCard} ${styles.sharedNoteModal} ${styles.accountantNoteModal}`}
@@ -20966,8 +20972,8 @@ export default function AssetRegisterClient({
           />
         ) : null
       ) : activeAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeActionDialog} />
+        <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionDialog} />
 
           <div className={`${styles.optionsModal} ${styles.ownerCommandModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
@@ -21131,8 +21137,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {activeAsset && ownerAssetCommandPanel ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.ownerCommandChoiceOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={() => setOwnerAssetCommandPanel(null)} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.ownerCommandChoiceOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => setOwnerAssetCommandPanel(null)} />
 
           <div
             className={`${styles.modalCard} ${styles.ownerCommandChoiceModal}`}
@@ -21201,8 +21207,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {activeAsset && isDealerTrackingSettingsOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={() => setIsDealerTrackingSettingsOpen(false)} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsDealerTrackingSettingsOpen(false)} />
 
           <div className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal}`} role="dialog" aria-modal="true" aria-labelledby="dealer-tracking-settings-title">
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
@@ -21245,8 +21251,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {activeAsset && isPricingModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closePricingDialog} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closePricingDialog} />
 
           <div className={`${styles.modalCard} ${styles.pricingModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-pricing-title">
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader}`}>
@@ -21319,8 +21325,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {pricingPreview ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.pricingPreviewOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closePricingPreviewDialog} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.pricingPreviewOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closePricingPreviewDialog} />
 
           <div className={`${styles.modalCard} ${styles.pricingResultModal}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
             <div className={`${styles.modalHeader} ${styles.pricingResultHeader}`}>
@@ -21555,8 +21561,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {reportAsset && isAssetReportModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeAssetReportDialog} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetReportDialog} />
 
           <div
             className={`${styles.modalCard} ${styles.assetReportModal} ${assetReportStep !== 'options' ? styles.assetFuelReportModal : ''}`}
@@ -21853,8 +21859,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {deleteCandidateAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeDeleteConfirmDialog} />
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeDeleteConfirmDialog} />
 
           <div
             className={styles.deleteConfirmModal}
@@ -21905,8 +21911,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {bulkFinanceAssetPickerOpen && editingAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.bulkFinancePickerOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={() => setBulkFinanceAssetPickerOpen(false)} />
+        <div className={`${styles.modalOverlay} ${styles.bulkFinancePickerOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => setBulkFinanceAssetPickerOpen(false)} />
           <div className={`${styles.modalCard} ${styles.exportModal} ${styles.exportAssetPickerModal} ${styles.bulkFinanceAssetPickerModal}`} role="dialog" aria-modal="true" aria-labelledby="bulk-finance-assets-title">
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
@@ -21968,7 +21974,7 @@ export default function AssetRegisterClient({
 
       {disposalCandidateAsset ? (
         <div
-          className={groupModalStyles.backdrop}
+          className={groupModalStyles.backdrop} data-website-overlay
           role="presentation"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && !busyDeleteId) setDisposalCandidateAsset(null);
@@ -22104,8 +22110,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {assetTransferReceipt ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={() => setAssetTransferReceipt(null)} />
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => setAssetTransferReceipt(null)} />
           <section className={`${styles.modalCard} ${styles.assetTransferReceiptModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-transfer-receipt-title">
             <div className={`${styles.modalHeader} ${styles.assetTransferReceiptHeader}`}>
               <div className={styles.modalHeaderText}>
@@ -22135,8 +22141,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isExportModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.exportModalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeExportModal} />
+        <div className={`${styles.modalOverlay} ${styles.exportModalOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeExportModal} />
 
           <div
             className={`${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : ''}`}
@@ -22376,8 +22382,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {marketplaceAsset && marketplaceDraft ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeMarketplaceModal} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeMarketplaceModal} />
 
           <div className={`${styles.modalCard} ${styles.marketplaceModal}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
             <div className={`${styles.modalHeader} ${styles.marketplaceModalHeader}`}>
@@ -22588,8 +22594,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {activeAsset && isQrModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={closeQrDialog} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeQrDialog} />
 
           <div className={`${styles.modalCard} ${styles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-qr-title">
             <div className={`${styles.modalHeader} ${styles.qrModalHeader}`}>
@@ -22643,8 +22649,8 @@ export default function AssetRegisterClient({
       ) : null}
 
       {projectionAsset ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeProjectionModal} />
+        <div className={styles.modalOverlay} data-website-overlay>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeProjectionModal} />
 
           <div className={`${styles.modalCard} ${styles.projectionModal}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
@@ -22863,3 +22869,4 @@ export default function AssetRegisterClient({
     </main>
   );
 }
+

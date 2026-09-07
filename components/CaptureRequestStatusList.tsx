@@ -168,7 +168,7 @@ export default function CaptureRequestStatusList({
       ) : <p className={styles.empty}>{emptyLabel}</p>}
 
       {retractCandidate ? (
-        <div className={styles.modalBackdrop} role="presentation" onMouseDown={closeRetractConfirmation}>
+        <div className={styles.modalBackdrop} data-website-overlay role="presentation" onMouseDown={closeRetractConfirmation}>
           <section
             className={styles.modal}
             role="dialog"
@@ -213,3 +213,4 @@ export default function CaptureRequestStatusList({
     </section>
   );
 }
+

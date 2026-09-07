@@ -1,8 +1,10 @@
 'use client';
 
-import { createPortal } from 'react-dom';
+import { createPortal, WebsiteCanvasContext } from './WebsitePortal';
+import { websiteLogicalRect, websiteVisibleViewport } from '../lib/website-canvas';
 import {
   useCallback,
+  useContext,
   useLayoutEffect,
   useRef,
   useState,
@@ -83,6 +85,8 @@ export default function DropdownOverlay({
   children,
   ...attributes
 }: DropdownOverlayProps) {
+  const isWebsite = useContext(WebsiteCanvasContext);
+  const [menuElement, setMenuElement] = useState<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const fallbackAnchorRef = useRef<HTMLElement | null>(null);
   const animationFrameRef = useRef<number | null>(null);
@@ -90,6 +94,7 @@ export default function DropdownOverlay({
 
   const attachMenuRef = useCallback((menu: HTMLDivElement | null) => {
     menuRef.current = menu;
+    setMenuElement(menu);
     if (!menu) return;
 
     applyDropdownOverlayGeometry(menu.style, {
@@ -105,12 +110,12 @@ export default function DropdownOverlay({
     const anchor = anchorRef?.current ?? fallbackAnchorRef.current;
     if (!menu || !anchor || !anchor.isConnected) return;
 
-    const anchorRect = anchor.getBoundingClientRect();
-    const visualViewport = window.visualViewport;
-    const viewportLeft = visualViewport?.offsetLeft ?? 0;
-    const viewportTop = visualViewport?.offsetTop ?? 0;
-    const viewportWidth = visualViewport?.width ?? window.innerWidth;
-    const viewportHeight = visualViewport?.height ?? window.innerHeight;
+    const anchorRect = websiteLogicalRect(anchor.getBoundingClientRect());
+    const visualViewport = websiteVisibleViewport();
+    const viewportLeft = visualViewport.left;
+    const viewportTop = visualViewport.top;
+    const viewportWidth = visualViewport.width;
+    const viewportHeight = visualViewport.height;
     const maximumWidth = Math.max(1, viewportWidth - (VIEWPORT_GUTTER * 2));
     const measurementWidth = Math.min(
       maximumWidth,
@@ -124,6 +129,7 @@ export default function DropdownOverlay({
         maxHeight,
       },
       fallbackMaxHeight: maxHeight,
+      maximumWidth: isWebsite ? maximumWidth : undefined,
       viewportGutter: VIEWPORT_GUTTER,
       visible: false,
     });
@@ -144,6 +150,7 @@ export default function DropdownOverlay({
         maxHeight,
       },
       fallbackMaxHeight: maxHeight,
+      maximumWidth: isWebsite ? maximumWidth : undefined,
       viewportGutter: VIEWPORT_GUTTER,
       visible: false,
     });
@@ -167,10 +174,11 @@ export default function DropdownOverlay({
     applyDropdownOverlayGeometry(menu.style, {
       position: next,
       fallbackMaxHeight: maxHeight,
+      maximumWidth: isWebsite ? maximumWidth : undefined,
       viewportGutter: VIEWPORT_GUTTER,
     });
     setPosition((current) => (samePosition(current, next) ? current : next));
-  }, [anchorRef, gap, matchAnchorWidth, maxHeight, minimumWidth]);
+  }, [anchorRef, gap, isWebsite, matchAnchorWidth, maxHeight, minimumWidth]);
 
   const schedulePositionUpdate = useCallback(() => {
     if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
@@ -193,6 +201,7 @@ export default function DropdownOverlay({
     if (anchor) resizeObserver?.observe(anchor);
 
     window.addEventListener('resize', schedulePositionUpdate);
+    window.addEventListener('aim4price:canvas-geometry', schedulePositionUpdate);
     window.addEventListener('scroll', schedulePositionUpdate, true);
     window.visualViewport?.addEventListener('resize', schedulePositionUpdate);
     window.visualViewport?.addEventListener('scroll', schedulePositionUpdate);
@@ -200,12 +209,13 @@ export default function DropdownOverlay({
     return () => {
       resizeObserver?.disconnect();
       window.removeEventListener('resize', schedulePositionUpdate);
+      window.removeEventListener('aim4price:canvas-geometry', schedulePositionUpdate);
       window.removeEventListener('scroll', schedulePositionUpdate, true);
       window.visualViewport?.removeEventListener('resize', schedulePositionUpdate);
       window.visualViewport?.removeEventListener('scroll', schedulePositionUpdate);
       if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [anchorRef, id, schedulePositionUpdate, updatePosition]);
+  }, [anchorRef, id, menuElement, schedulePositionUpdate, updatePosition]);
 
   if (typeof document === 'undefined') return null;
 
@@ -243,3 +253,4 @@ export default function DropdownOverlay({
     document.body,
   );
 }
+

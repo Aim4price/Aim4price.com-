@@ -1518,8 +1518,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       </section>
 
       {deleteTrackingTarget ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay} ${workspaceStyles.modalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeDeleteTrackingModal} />
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeDeleteTrackingModal} />
           <div
             className={`${assetStyles.deleteConfirmModal} ${workspaceStyles.modal} ${leadStyles.leadDeleteModal} ${styles.trackerDeleteModal}`}
             role="alertdialog"
@@ -1574,8 +1574,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       ) : null}
 
       {historyAsset ? (
-        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay} ${styles.historyModalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeHistory} />
+        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay} ${styles.historyModalOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeHistory} />
           <section
             className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.historyModal} ${historyModalStep < 3 ? styles.historyChoiceModal : ''}`}
             role="dialog"
@@ -1805,8 +1805,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       ) : null}
 
       {managedAsset ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${workspaceStyles.modalOverlay} ${styles.trackerManageOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={() => setManagedAccessId(null)} />
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${workspaceStyles.modalOverlay} ${styles.trackerManageOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setManagedAccessId(null)} />
           <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${workspaceStyles.modal} ${leadStyles.leadManageModal} ${styles.trackerManageModal}`} role="dialog" aria-modal="true" aria-labelledby="tracking-manage-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${workspaceStyles.modalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
@@ -1939,8 +1939,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       ) : null}
 
       {filterOpen ? (
-        <div className={assetStyles.modalOverlay}>
-          <div className={assetStyles.modalBackdrop} onClick={() => setFilterOpen(false)} />
+        <div className={assetStyles.modalOverlay} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setFilterOpen(false)} />
           <div className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${leadStyles.leadFilterModal} ${styles.trackerFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="tracker-filter-title">
             <div className={`${assetStyles.modalHeader} ${leadStyles.leadFilterHeader} ${styles.trackerFilterHeader}`}>
               <div>
@@ -2018,7 +2018,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       ) : null}
 
       {serviceSuccess ? (
-        <div className={styles.serviceSuccessOverlay} role="dialog" aria-modal="true" aria-labelledby="dealer-service-success-title">
+        <div className={styles.serviceSuccessOverlay} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-service-success-title">
           <section className={styles.serviceSuccessCard} role="status" aria-live="polite">
             <span className={styles.serviceSuccessIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
@@ -2103,4 +2103,5 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     </main>
   );
 }
+
 

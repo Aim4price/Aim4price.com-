@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh) * 100);
   color: #203e35;
 }
 
@@ -10,7 +10,7 @@
 }
 
 .heroSection {
-  padding: clamp(1.25rem, 2.8vw, 2.5rem) 0 clamp(3.5rem, 6vw, 6rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw) * 2.8), 2.5rem) 0 clamp(3.5rem, calc(var(--website-design-vw) * 6), 6rem);
 }
 
 .heroPanel {
@@ -18,12 +18,12 @@
   display: grid;
   grid-template-columns: minmax(0, 1.18fr) minmax(19rem, 0.72fr);
   align-items: stretch;
-  gap: clamp(2.2rem, 4vw, 4.5rem);
+  gap: clamp(2.2rem, calc(var(--website-design-vw) * 4), 4.5rem);
   min-height: 39rem;
   overflow: hidden;
-  padding: clamp(2.25rem, 4.4vw, 4.8rem);
+  padding: clamp(2.25rem, calc(var(--website-design-vw) * 4.4), 4.8rem);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: clamp(1.8rem, 3vw, 2.8rem);
+  border-radius: clamp(1.8rem, calc(var(--website-design-vw) * 3), 2.8rem);
   color: #ffffff;
   background:
     radial-gradient(
@@ -102,7 +102,7 @@
 .heroTitle {
   margin: 1.15rem 0 0;
   max-width: 44rem;
-  font-size: clamp(3.2rem, 5.2vw, 5.65rem);
+  font-size: clamp(3.2rem, calc(var(--website-design-vw) * 5.2), 5.65rem);
   line-height: 0.94;
   letter-spacing: -0.064em;
   font-weight: 820;
@@ -122,7 +122,7 @@
   max-width: 42rem;
   margin: 1.65rem 0 0;
   color: rgba(234, 246, 241, 0.8);
-  font-size: clamp(0.98rem, 1.2vw, 1.13rem);
+  font-size: clamp(0.98rem, calc(var(--website-design-vw) * 1.2), 1.13rem);
   line-height: 1.68;
 }
 
@@ -267,7 +267,7 @@
 
 .directionSection,
 .valueSection {
-  padding-bottom: clamp(4.5rem, 7vw, 7rem);
+  padding-bottom: clamp(4.5rem, calc(var(--website-design-vw) * 7), 7rem);
 }
 
 .directionIntro {
@@ -290,7 +290,7 @@
 .valueHeading h2,
 .contactCopy h2 {
   margin: 0;
-  font-size: clamp(2.25rem, 3.7vw, 3.9rem);
+  font-size: clamp(2.25rem, calc(var(--website-design-vw) * 3.7), 3.9rem);
   line-height: 1.02;
   letter-spacing: -0.052em;
   font-weight: 820;
@@ -316,7 +316,7 @@
   position: relative;
   min-height: 25rem;
   overflow: hidden;
-  padding: clamp(1.7rem, 3vw, 3rem);
+  padding: clamp(1.7rem, calc(var(--website-design-vw) * 3), 3rem);
   border: 1px solid rgba(22, 77, 61, 0.1);
   border-radius: 1.75rem;
   background: rgba(255, 255, 255, 0.84);
@@ -343,7 +343,7 @@
   top: 1.55rem;
   right: 1.7rem;
   color: rgba(30, 104, 80, 0.14);
-  font-size: clamp(3.5rem, 6vw, 6rem);
+  font-size: clamp(3.5rem, calc(var(--website-design-vw) * 6), 6rem);
   line-height: 1;
   font-weight: 850;
   letter-spacing: -0.07em;
@@ -367,7 +367,7 @@
   max-width: 29rem;
   margin: 4.4rem 0 0;
   color: #183f33;
-  font-size: clamp(1.8rem, 2.6vw, 2.55rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw) * 2.6), 2.55rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
   font-weight: 820;
@@ -451,7 +451,7 @@
   position: relative;
   overflow: hidden;
   margin-top: 1rem;
-  padding: clamp(2rem, 4vw, 4.25rem);
+  padding: clamp(2rem, calc(var(--website-design-vw) * 4), 4.25rem);
   border: 1px solid rgba(22, 77, 61, 0.09);
   border-radius: 1.75rem;
   background:
@@ -475,7 +475,7 @@
   margin: 1rem 0 0;
   max-width: 66rem;
   color: #173f33;
-  font-size: clamp(2.25rem, 4.2vw, 4.45rem);
+  font-size: clamp(2.25rem, calc(var(--website-design-vw) * 4.2), 4.45rem);
   line-height: 1.03;
   letter-spacing: -0.052em;
   font-weight: 820;
@@ -487,7 +487,7 @@
 }
 
 .contactSection {
-  padding-bottom: clamp(2rem, 4vw, 4rem);
+  padding-bottom: clamp(2rem, calc(var(--website-design-vw) * 4), 4rem);
 }
 
 .contactPanel {
@@ -495,7 +495,7 @@
   grid-template-columns: minmax(0, 1.15fr) minmax(19rem, 0.85fr);
   align-items: center;
   gap: 2rem 4rem;
-  padding: clamp(2rem, 4vw, 4rem);
+  padding: clamp(2rem, calc(var(--website-design-vw) * 4), 4rem);
   border-radius: 1.85rem;
   color: #ffffff;
   background: linear-gradient(135deg, #164d3d 0%, #0c3429 100%);
@@ -539,7 +539,7 @@
   grid-column: 1 / -1;
   margin: 0;
   padding: 0.45rem 0.55rem 0.9rem;
-  font-size: clamp(1rem, 1.25vw, 1.12rem);
+  font-size: clamp(1rem, calc(var(--website-design-vw) * 1.25), 1.12rem);
   letter-spacing: -0.015em;
 }
 
@@ -618,152 +618,6 @@
   stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-@media (max-width: 980px) {
-  .heroPanel {
-    grid-template-columns: minmax(0, 1.08fr) minmax(17rem, 0.92fr);
-    gap: 2rem;
-  }
-
-  .heroTitle {
-    font-size: clamp(3rem, 6vw, 4.5rem);
-  }
-
-  .directionIntro,
-  .valueHeading {
-    gap: 1rem 2.5rem;
-  }
-}
-
-@media (max-width: 800px) {
-  .heroPanel,
-  .directionIntro,
-  .valueHeading,
-  .contactPanel {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .heroPanel {
-    min-height: 0;
-  }
-
-  .heroCopy {
-    max-width: 100%;
-  }
-
-  .portraitColumn {
-    justify-content: start;
-  }
-
-  .portraitFrame {
-    width: min(100%, 31rem);
-    aspect-ratio: 5 / 4;
-  }
-
-  .portrait {
-    object-position: center 31%;
-  }
-
-  .founderCard {
-    right: 1rem;
-    bottom: 1rem;
-    left: 1rem;
-  }
-
-  .directionIntro .sectionEyebrow {
-    grid-column: auto;
-  }
-
-  .directionGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .directionCard {
-    min-height: 0;
-  }
-
-  .valueHeading {
-    align-items: start;
-  }
-
-  .valueGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 560px) {
-  .heroSection {
-    padding-top: 0.75rem;
-  }
-
-  .heroPanel {
-    padding: 1.35rem;
-    border-radius: 1.55rem;
-  }
-
-  .heroTitle {
-    font-size: clamp(2.6rem, 12vw, 3.65rem);
-  }
-
-  .heroActions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
-
-  .primaryAction,
-  .secondaryAction {
-    min-width: 0;
-    padding-inline: 0.6rem;
-    font-size: 0.76rem;
-    white-space: nowrap;
-  }
-
-  .portraitFrame {
-    aspect-ratio: 4 / 5;
-  }
-
-  .directionIntro h2,
-  .valueHeading h2,
-  .contactCopy h2 {
-    font-size: clamp(2rem, 10vw, 2.75rem);
-  }
-
-  .directionCard,
-  .beliefPanel,
-  .contactPanel {
-    padding: 1.35rem;
-    border-radius: 1.45rem;
-  }
-
-  .directionCard h3 {
-    margin-top: 3.8rem;
-  }
-
-  .valueGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .valueCard {
-    min-height: 0;
-  }
-
-  .beliefStatement {
-    font-size: clamp(2rem, 9.5vw, 2.8rem);
-  }
-
-  .contactDetails {
-    padding: 0.65rem;
-  }
-
-  .heroContactDetails {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .heroContactDetails .contactName {
-    grid-column: auto;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

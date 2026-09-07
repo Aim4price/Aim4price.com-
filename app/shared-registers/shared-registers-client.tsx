@@ -103,7 +103,7 @@ export default function SharedRegistersClient({ initialItems }: Props) {
       </section>
 
       {deleteTarget ? (
-        <div className={styles.modalBackdrop} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !deleting) setDeleteTarget(null); }}>
+        <div className={styles.modalBackdrop} data-website-overlay role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !deleting) setDeleteTarget(null); }}>
           <section className={styles.deleteModal} role="dialog" aria-modal="true" aria-labelledby="delete-register-title">
             <div className={styles.deleteIcon}><DeleteIcon /></div>
             <h2 id="delete-register-title">Delete shared register?</h2>
@@ -118,3 +118,4 @@ export default function SharedRegistersClient({ initialItems }: Props) {
     </main>
   );
 }
+

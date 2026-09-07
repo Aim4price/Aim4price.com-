@@ -19,8 +19,8 @@
 }
 
 .dialog {
-  width: min(52rem, calc(100vw - 2rem));
-  max-height: min(90dvh, 52rem);
+  width: min(52rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.9), 52rem);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -35,10 +35,10 @@
 
 .confirmDialog {
   position: relative;
-  width: min(96vw, 58rem);
+  width: min(calc(var(--website-design-vw, 1vw) * 96), 58rem);
   display: block;
   flex: none;
-  padding: clamp(1.75rem, 2.55vw, 2.35rem);
+  padding: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 2.55), 2.35rem);
 }
 
 .dialog button,
@@ -61,7 +61,7 @@
 .header h2 {
   margin: 0;
   color: #0f3329;
-  font-size: clamp(1.55rem, 2.35vw, 1.98rem);
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.35), 1.98rem);
   font-weight: 760;
   line-height: 1.04;
   letter-spacing: -0.047em;
@@ -134,7 +134,7 @@
   padding: 0 3.4rem 1.1rem 0;
   border-bottom: 1px solid rgba(211, 224, 234, 0.98);
   color: #0c382f;
-  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.25rem);
   font-weight: 760;
   line-height: 1.02;
   letter-spacing: -0.05em;
@@ -156,8 +156,8 @@
 
 .confirmCloseButton {
   position: absolute;
-  top: clamp(1rem, 1.6vw, 1.25rem);
-  right: clamp(1rem, 1.6vw, 1.25rem);
+  top: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.25rem);
+  right: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.25rem);
   width: 3rem;
   min-width: 3rem;
   height: 3rem;
@@ -650,7 +650,7 @@
 }
 
 @media (max-width: 720px) {
-  .backdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .backdrop {
     place-items: center;
     padding:
       max(0.625rem, env(safe-area-inset-top))
@@ -659,69 +659,69 @@
       max(0.625rem, env(safe-area-inset-left));
   }
 
-  .dialog {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog {
     width: min(52rem, calc(100vw - 1.25rem));
     max-height: calc(100dvh - 1.25rem);
     border-radius: 1.4rem;
   }
 
-  .confirmDialog {
+  :global(:where(html:not(:has([data-website-canvas])))) .confirmDialog {
     width: min(100%, calc(100vw - 1.25rem));
     padding: 1.15rem;
   }
 
-  .header,
-  .body {
+  :global(:where(html:not(:has([data-website-canvas])))) .header,
+  :global(:where(html:not(:has([data-website-canvas])))) .body {
     padding-right: 1rem;
     padding-left: 1rem;
   }
 
-  .header h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .header h2 {
     padding-right: 0.25rem;
   }
 
-  .reasonGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .reasonGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .detailsGrid,
-  .summary {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .summary {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .noteField {
+  :global(:where(html:not(:has([data-website-canvas])))) .noteField {
     grid-column: auto;
   }
 
-  .step {
+  :global(:where(html:not(:has([data-website-canvas])))) .step {
     min-height: 22rem;
   }
 
-  .progress li > small {
+  :global(:where(html:not(:has([data-website-canvas])))) .progress li > small {
     font-size: 0.58rem;
   }
 
-  .wizardActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardActions {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
   }
 
-  .wizardActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardActions > button {
     width: 100%;
     min-width: 0;
   }
 
-  .confirmActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .confirmActions {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .confirmActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .confirmActions > button {
     width: 100%;
   }
 
-  .confirmCloseButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .confirmCloseButton {
     top: 0.85rem;
     right: 0.85rem;
     width: 2.65rem;
@@ -729,18 +729,18 @@
     height: 2.65rem;
   }
 
-  .confirmContent h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .confirmContent h2 {
     padding-right: 3rem;
   }
 }
 
 @media (max-width: 420px) {
-  .reasonGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .reasonGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .wizardActions > button,
-  .confirmActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardActions > button,
+  :global(:where(html:not(:has([data-website-canvas])))) .confirmActions > button {
     padding-inline: 0.75rem;
   }
 }
@@ -754,3 +754,4 @@
     transition: none;
   }
 }
+

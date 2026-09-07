@@ -99,22 +99,6 @@
   width: 100%;
 }
 
-@media (max-width: 960px) {
-  .workspaceFocused .createCard {
-    display: none;
-  }
-}
-
-@media (max-width: 620px) {
-  .mutedCard {
-    display: none;
-  }
-
-  .focusedCard {
-    transform: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .createCard,
   .managerCard,

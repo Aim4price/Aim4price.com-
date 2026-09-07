@@ -69,7 +69,7 @@ test('review preserves the full recurring-cost payload before save', () => {
 
 test('recurring wizard has responsive, purpose-built field and review styling', () => {
   assert.match(styles, /\.recurringWizardModal\s*\{[^}]*width:\s*min\(100%, 940px\)/);
-  assert.match(styles, /\.recurringWizardModal\s*\{[^}]*max-height:\s*min\(94dvh, 880px\)/);
+  assert.match(styles, /\.recurringWizardModal\s*\{[^}]*max-height:\s*min\((?:calc\(var\(--website-design-vh(?:, 1dvh)?\) \* 94\)|calc\(var\(--website-visible-height(?:, 100dvh)?\) \* 0\.94\)), 880px\)/);
   assert.match(styles, /\.recurringWizardModal \.invoiceDropCodeHeader\s*\{[^}]*padding:\s*1\.3rem 1\.65rem 1rem/);
   assert.match(styles, /\.recurringDetailsGrid,[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.recurringDetailsGrid,[\s\S]*?column-gap:\s*1\.15rem/);
@@ -80,3 +80,4 @@ test('recurring wizard has responsive, purpose-built field and review styling', 
   assert.match(styles, /@media \(max-width: 620px\)[\s\S]*?\.recurringFrequencyControl\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.recurringReviewNotice\s*\{/);
 });
+
