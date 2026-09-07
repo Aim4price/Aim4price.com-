@@ -3486,8 +3486,7 @@
   transition-delay: 90ms, 90ms, 90ms, 0s;
 }
 
-.heroSection[data-story-step='brand'] .storyHeroLogo,
-.heroSection[data-story-step='promise'] .storyHeroLogo {
+.heroSection[data-story-step='brand'] .storyHeroLogo {
   opacity: 1;
   visibility: visible;
   filter: blur(0);
@@ -3495,6 +3494,7 @@
   transition-delay: 100ms, 100ms, 100ms, 0s;
 }
 
+.heroSection[data-story-step='promise'] .assetStageMotion,
 .heroSection[data-story-mode='preview'] .assetStageMotion,
 .heroSection[data-story-mode='features'] .assetStageMotion {
   opacity: 1;
@@ -3794,3 +3794,55 @@
     gap: 0.85rem;
   }
 }
+
+/* Compact sample register uses the same outer card and modal as the asset previews. */
+.registerPreview {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto 3.4rem auto auto minmax(0, 1fr);
+  line-height: 1.2;
+  gap: 0.4rem;
+  color: #0b493a;
+}
+.registerPreviewTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #bfd4dc;
+  border-radius: 0.65rem;
+  background: linear-gradient(110deg, #edf6f2, #fff);
+}
+.registerPreviewTitle h2 { margin: 0; font-size: 1.12rem; font-weight: 900; letter-spacing: -0.035em; }
+.registerPreviewToolbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
+.registerPreviewToolbar span { padding: 0.35rem; text-align: center; font-size: 0.48rem; font-weight: 800; border: 1px solid #94cdb5; border-radius: 0.45rem; background: #f5fcf8; }
+.registerPreviewToolbar span:first-child { border-color: #e6a373; color: #844614; background: #fff6ed; }
+.registerPreviewToolbar span:nth-child(2) { border-color: #a5c8e7; color: #174465; background: #f0f7ff; }
+.registerPreviewToolbar span:last-child { background: #12654e; color: white; }
+.registerPreviewStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.registerPreviewStats > div { display: flex; flex-direction: column; justify-content: space-between; padding: 0.3rem 0.65rem; border: 1px solid #bfd4dc; border-radius: 0.6rem; background: #f6fafb; }
+.registerPreviewStats > div:first-child { border-color: #93cfb4; background: #f2faf6; }
+.registerPreviewStats small { font-size: 0.36rem; font-weight: 700; color: #617584; }
+.registerPreviewStats strong { font-size: 1rem; font-weight: 900; white-space: nowrap; }
+.registerPreviewStats span { border-top: 1px solid #cee0e4; padding-top: 0.35rem; font-size: 0.34rem; text-align: center; }
+.registerPreviewTabs { display: grid; grid-template-columns: 1fr 1fr; padding: 0.22rem; border: 1px solid #c8ded5; border-radius: 0.5rem; font-size: 0.46rem; }
+.registerPreviewTabs > * { padding: 0.35rem; }
+.registerPreviewTabs strong { border: 1px solid #b8dece; border-radius: 0.4rem; background: #eff8f4; }
+.registerPreviewSearch { display: grid; grid-template-columns: 1fr auto auto auto; gap: 0.35rem; font-size: 0.4rem; align-items: center; }
+.registerPreviewSearch > * { padding: 0.4rem 0.55rem; border: 1px solid #bfd4dc; border-radius: 0.45rem; background: white; }
+.registerPreviewSearch strong { background: #12654e; color: white; }
+.registerPreviewGroup { display: flex; min-height: 0; flex-direction: column; border: 1px solid #9fd7c0; border-radius: 0.65rem; background: #f6fbf8; }
+.registerPreviewGroup > header { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.6rem; border-bottom: 1px solid #c8ded5; }
+.registerPreviewGroup > header strong { display: block; font-size: 0.63rem; }
+.registerPreviewGroup > header > div:last-child { text-align: right; }
+.registerPreviewGroup > header > div:last-child strong { font-size: 0.46rem; }
+.registerPreviewGroup small { display: block; font-size: 0.35rem; color: #617584; }
+.registerPreviewAssets { display: grid; flex: 1; min-height: 0; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 0.35rem; padding: 0.4rem 0.5rem 0.4rem 1.3rem; }
+.registerPreviewRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; padding: 0.2rem 0.5rem; border: 1px solid #bfd4dc; border-radius: 0.55rem; background: #fff; }
+.registerPreviewRow h3 { margin: 0; font-size: 0.65rem; letter-spacing: -0.025em; }
+.registerPreviewRow p { margin: 0.18rem 0; font-size: 0.34rem; color: #617584; white-space: nowrap; }
+.registerPreviewRow > div > strong { display: block; font-size: 0.37rem; }
+.registerPreviewRow > div:last-child { text-align: right; }
+.registerPreviewRow > div:last-child > strong { font-size: 0.7rem; font-weight: 900; }
+.registerPreviewRow span { display: block; margin-top: 0.28rem; font-size: 0.34rem; color: #245f50; }

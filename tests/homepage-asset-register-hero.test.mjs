@@ -116,7 +116,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\),[\s\S]*?\)/);
   assert.match(hero, /if \(nextIndex !== storyStepRef\.current\) updateStoryStep\(nextIndex\)/);
   assert.match(hero, /if \(shouldClaimControl\) \{[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsManuallyControlled\(true\);[\s\S]*?setIsPaused\(false\);[\s\S]*?setIsAutoplaying\(false\)/);
-  assert.match(hero, /const handleScroll = \(\) => scheduleStorySync\(true\)/);
+  assert.match(hero, /const handleScroll = \(\) => \{[\s\S]*?data-home-preview-dialog[\s\S]*?scheduleStorySync\(true\)/);
   assert.match(hero, /window\.addEventListener\('resize', handleResize\)/);
   assert.match(hero, /window\.addEventListener\('pageshow', handlePageShow\)/);
   assert.match(hero, /if \(window\.scrollY > 4\) scheduleStorySync\(true\)/);
@@ -212,10 +212,15 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(preview, /aria-selected=\{isActive\}/);
   assert.match(preview, /aria-controls="home-asset-preview"/);
   assert.match(preview, /tabIndex=\{isActive \? 0 : -1\}/);
-  assert.match(preview, /role="tabpanel"/);
+  assert.match(preview, /role=\{showRegister \? 'region' : 'tabpanel'\}/);
+  assert.match(hero, /showRegister=\{storyStepIndex < FEATURE_START_INDEX\}/);
+  assert.match(hero, /onOpenRegister=\{claimManualControl\}/);
+  assert.match(preview, /case 'register':[\s\S]*?<RegisterPreview \/>/);
+  assert.match(preview, /TEST BUSINESS PTY LTD/);
+  assert.match(preview, /Register value[\s\S]*?R 11 450 567/);
   assert.match(preview, /tabIndex=\{0\}/);
   assert.match(preview, /className=\{styles\.assetHeroStage\}[\s\S]*?data-active-question=\{activeQuestion\}/);
-  assert.match(preview, /aria-labelledby=\{\`home-asset-question-/);
+  assert.match(preview, /aria-labelledby=\{showRegister \? 'home-register-preview-label' : `home-asset-question-/);
   assert.match(preview, /aria-label=\{question\.label\}/);
   assert.match(preview, /assetQuestionBubble} aria-hidden="true"/);
   assert.match(preview, /assetQuestionBubble[\s\S]*?question\.icon/);
@@ -390,7 +395,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /\.featureNarrativeLayer \{[\s\S]*?filter: blur\(12px\);[\s\S]*?opacity 700ms[\s\S]*?filter 700ms/);
 
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.heroBrandCopy,[\s\S]*?\.heroSection\[data-story-step='preview'\] \.heroPromiseCopy \{[\s\S]*?filter: blur\(0\)/);
-  assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.storyHeroLogo,[\s\S]*?\.heroSection\[data-story-step='promise'\] \.storyHeroLogo \{[\s\S]*?filter: blur\(0\)[\s\S]*?scale\(1\)/);
+  assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.storyHeroLogo \{[\s\S]*?filter: blur\(0\)[\s\S]*?scale\(1\)/);
   assert.match(storyHeroStyles, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.65rem, calc\(var\(--website-design-vw\) \* 2\.95\), 2\.95rem\);[\s\S]*?line-height: 1\.01/);
   assert.match(storyHeroStyles, /\.heroPromiseText \{[\s\S]*?max-width: 33\.5rem;[\s\S]*?margin-top: 1\.85rem;[\s\S]*?line-height: 1\.6/);
   assert.match(styles, /\.heroStory \.heroActions \{[\s\S]*?gap: 1rem;[\s\S]*?margin-top: 1\.85rem/);
@@ -433,4 +438,5 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl \{[\s\S]*?border: 1px solid CanvasText/);
 });
+
 
