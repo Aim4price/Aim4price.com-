@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from '../components/WebsitePortal';
 import styles from './page.module.css';
 
 export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
@@ -97,7 +98,20 @@ export default function HomeAssetPreview({
   onInteraction,
 }: HomeAssetPreviewProps) {
   const [feedback, setFeedback] = useState('');
+  const [openedQuestion, setOpenedQuestion] = useState<QuestionKey | null>(null);
+  const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const closePreview = useCallback(() => {
+    setOpenedQuestion(null);
+    openButtonRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  const openPreview = () => {
+    // Claim manual control so the story stays on the card being inspected.
+    onQuestionChange(activeQuestion, QUESTIONS.findIndex(({ key }) => key === activeQuestion));
+    setOpenedQuestion(activeQuestion);
+  };
 
   const selectQuestion = (index: number, moveFocus = false) => {
     const question = QUESTIONS[index];
@@ -184,7 +198,24 @@ export default function HomeAssetPreview({
         <div key={activeQuestion} className={styles.assetPreviewState}>
           <PreviewContent activeQuestion={activeQuestion} />
         </div>
+        <button
+          ref={openButtonRef}
+          type="button"
+          className={styles.assetPreviewOpen}
+          aria-label={`Open preview: ${QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}`}
+          aria-haspopup="dialog"
+          onClick={openPreview}
+        >
+          <span>Click to open ↗</span>
+        </button>
       </article>
+
+      {openedQuestion !== null && typeof document !== 'undefined'
+        ? createPortal(
+          <ExpandedPreview activeQuestion={openedQuestion} onClose={closePreview} />,
+          document.body,
+        )
+        : null}
 
       <p className={styles.assetActiveQuestion}>
         <span className={styles.assetActiveQuestionMain}>
@@ -212,6 +243,59 @@ export default function HomeAssetPreview({
         {feedback}
       </span>
     </div>
+  );
+}
+
+function ExpandedPreview({ activeQuestion, onClose }: {
+  activeQuestion: QuestionKey;
+  onClose: () => void;
+}) {
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+
+  const dismiss = () => {
+    dialogRef.current?.close();
+    onClose();
+  };
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const previousOverflow = document.body.style.overflow;
+    dialog.showModal();
+    document.body.style.overflow = 'hidden';
+    return () => {
+      dialog.close();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      className={styles.assetPreviewDialog}
+      aria-labelledby="home-expanded-preview-title"
+      onCancel={(event) => { event.preventDefault(); dismiss(); }}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (event.clientX < rect.left || event.clientX > rect.right ||
+            event.clientY < rect.top || event.clientY > rect.bottom) dismiss();
+      }}
+    >
+      <header className={styles.assetPreviewDialogHeader}>
+        <h2 id="home-expanded-preview-title">
+          {QUESTIONS.find(({ key }) => key === activeQuestion)?.label}
+        </h2>
+        <button type="button" onClick={dismiss} autoFocus aria-label="Close preview">
+          Close <span aria-hidden="true">×</span>
+        </button>
+      </header>
+      <div className={styles.assetPreviewDialogBody}>
+        <div className={styles.assetPreviewExpandedContent}>
+          <PreviewContent activeQuestion={activeQuestion} />
+        </div>
+      </div>
+    </dialog>
   );
 }
 
