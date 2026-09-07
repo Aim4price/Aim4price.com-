@@ -261,11 +261,36 @@ function ExpandedPreview({ activeQuestion, onClose }: {
     const dialog = dialogRef.current;
     if (!dialog) return;
     const previousOverflow = document.body.style.overflow;
+    const previousRootOverflow = document.documentElement.style.overflow;
     dialog.showModal();
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    // Fit the complete composition, including the header, within the visible
+    // viewport. Measuring rendered geometry also accounts for website zoom.
+    const fitPreview = () => {
+      dialog.style.zoom = '1';
+      const rect = dialog.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const width = viewport?.width ?? window.innerWidth;
+      const height = viewport?.height ?? window.innerHeight;
+      if (!rect.width || !rect.height) return;
+      const scale = Math.min(1, Math.max(1, width - 32) / rect.width,
+        Math.max(1, height - 32) / rect.height);
+      dialog.style.zoom = String(scale);
+    };
+
+    fitPreview();
+    window.addEventListener('resize', fitPreview);
+    window.addEventListener('aim4price:canvas-geometry', fitPreview);
+    window.visualViewport?.addEventListener('resize', fitPreview);
     return () => {
+      window.removeEventListener('resize', fitPreview);
+      window.removeEventListener('aim4price:canvas-geometry', fitPreview);
+      window.visualViewport?.removeEventListener('resize', fitPreview);
       dialog.close();
       document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousRootOverflow;
     };
   }, []);
 
