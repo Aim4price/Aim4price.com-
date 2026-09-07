@@ -1859,7 +1859,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     sectorKey: family.sectorKey,
     year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
-    usageAmount: toNumber(input.usageAmount),
+    usageAmount: basicRecord ? null : toNumber(input.usageAmount),
     lifeWorkedPercent,
     usageMetricType: family.usageMetricType,
     valuationMode: family.valuationMode,
@@ -1891,7 +1891,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const valuationLowExVat = selectedCalculation.valuationLowExVat;
   const valuationMidExVat = selectedCalculation.valuationMidExVat;
   const valuationHighExVat = selectedCalculation.valuationHighExVat;
-  const usageAmountUsed = toNumber(input.usageAmount);
+  const usageAmountUsed = basicRecord ? null : toNumber(input.usageAmount);
   const selectedLifeWorkedPercent = selectedCalculation.lifeWorkedPercent;
   const usesPercentageBasis =
     selectedCalculation.depreciationMethodUsed === 'percentage_depreciation' ||
@@ -2049,7 +2049,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     specsJson,
     year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
-    usageAmount: toNumber(input.usageAmount),
+    usageAmount: basicRecord ? null : toNumber(input.usageAmount),
     condition: normalizeCondition(input.condition),
     replacementPriceBand: replacementBand,
     replacementPriceMinExVat,

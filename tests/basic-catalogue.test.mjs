@@ -95,6 +95,7 @@ test('catalogue calculation keeps manual prices, optional models and server-sour
   assert.equal(result.specsJson.basic_catalogue.minimumExVat, 100000);
   assert.equal(result.specsJson.catalog_model_id, undefined);
   assert.equal(result.typedModelName, null);
+  assert.equal(result.usageAmount, null);
   assert.equal(result.maxLifetimeHours, null);
   assert.equal(result.estimatedHours, null);
   assert.equal(result.lifeWorkedPercent, 40);
