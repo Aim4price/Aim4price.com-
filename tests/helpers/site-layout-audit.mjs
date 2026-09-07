@@ -3,12 +3,17 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { isNativeWorkspace } from '../../lib/website-canvas.ts';
 const require = createRequire(import.meta.url);
 export const postcss = require('postcss');
 export const typescript = require('typescript');
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const read = (file) => readFile(path.join(root, file), 'utf8');
+// Existing workflows run Node 20, which cannot import TypeScript directly.
+const canvasJavaScript = typescript.transpileModule(await read('lib/website-canvas.ts'), {
+  compilerOptions: { module: typescript.ModuleKind.ESNext, target: typescript.ScriptTarget.ES2022 },
+}).outputText;
+export const websiteCanvas = await import(`data:text/javascript;base64,${Buffer.from(canvasJavaScript).toString('base64')}`);
+const { isNativeWorkspace } = websiteCanvas;
 export async function sourceFiles(directory) {
   const result = [];
   for (const entry of await readdir(path.join(root, directory), { withFileTypes: true })) {

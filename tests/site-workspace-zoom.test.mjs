@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { access } from 'node:fs/promises';
-import { WEBSITE_DESIGN_WIDTH, calculateWebsiteScale, clampManualWebsiteScale, parseWebsitePreference, isNativeWorkspace } from '../lib/website-canvas.ts';
+import { websiteCanvas } from './helpers/site-layout-audit.mjs';
+const { WEBSITE_DESIGN_WIDTH, calculateWebsiteScale, clampManualWebsiteScale, parseWebsitePreference, isNativeWorkspace } = websiteCanvas;
 import { read, root, websiteStylesheets, assertNoWebsiteReflow, postcss } from './helpers/site-layout-audit.mjs';
 
 test('one canonical width drives continuous downscaling and capped upscaling', () => {

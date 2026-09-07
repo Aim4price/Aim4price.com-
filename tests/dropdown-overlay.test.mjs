@@ -308,7 +308,7 @@ test('report, modal, maintenance, fuel, invoice, and document dropdowns are migr
 
 
 test('rendered anchor coordinates convert once into the website logical coordinate system', async () => {
-  const { websiteLogicalRect, websiteVisibleViewport } = await import('../lib/website-canvas.ts');
+  const { websiteLogicalRect, websiteVisibleViewport } = (await import('./helpers/site-layout-audit.mjs')).websiteCanvas;
   const originalDocument = globalThis.document, originalWindow = globalThis.window;
   try {
     for (const scale of [.15, 430 / 1440, .7, 1, 1.2, 1.5]) {

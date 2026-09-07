@@ -1,5 +1,6 @@
 import { assertNoWebsiteReflow, typescript } from './helpers/site-layout-audit.mjs';
-import { WEBSITE_DESIGN_WIDTH } from '../lib/website-canvas.ts';
+import { websiteCanvas } from './helpers/site-layout-audit.mjs';
+const { WEBSITE_DESIGN_WIDTH } = websiteCanvas;
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
