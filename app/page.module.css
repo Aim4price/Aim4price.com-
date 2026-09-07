@@ -1367,6 +1367,112 @@
   animation: none;
 }
 
+.assetPreviewOpen {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  border: 0;
+  border-radius: inherit;
+  padding: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+
+.assetPreviewOpen span {
+  position: absolute;
+  right: 0.7rem;
+  bottom: 0.5rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.5rem;
+  color: #fff;
+  background: #07543f;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  opacity: 0;
+}
+
+.assetPreviewOpen:hover span,
+.assetPreviewOpen:focus-visible span {
+  opacity: 1;
+}
+
+.assetPreviewOpen:focus-visible {
+  outline: 3px solid #10976a;
+  outline-offset: -4px;
+}
+
+.assetPreviewDialog {
+  width: 68rem;
+  max-width: calc(100% - 2rem);
+  max-height: calc(100% - 2rem);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid #97cdb5;
+  border-radius: 1.25rem;
+  color: #17362c;
+  background: #f9fcfa;
+  box-shadow: 0 24px 80px #073b3040;
+}
+
+.assetPreviewDialog::backdrop {
+  background: #062e24b3;
+  backdrop-filter: blur(6px);
+}
+
+.assetPreviewDialogHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #c7d8d0;
+  background: #f9fcfa;
+}
+
+.assetPreviewDialogHeader h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.assetPreviewDialogHeader button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #97cdb5;
+  border-radius: 0.75rem;
+  color: #07543f;
+  background: #fff;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.assetPreviewDialogBody {
+  padding: 1.25rem;
+  overflow: auto;
+}
+
+.assetPreviewExpandedContent {
+  display: flex;
+  flex-direction: column;
+  height: 25rem;
+  min-width: 40rem;
+  zoom: 1.5;
+}
+
+.assetPreviewExpandedContent .previewClose {
+  display: none;
+}
+
 .previewEyebrow {
   display: block;
   color: #1b8061;
