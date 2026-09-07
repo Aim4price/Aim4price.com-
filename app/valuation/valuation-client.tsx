@@ -5136,7 +5136,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
       if (step === 3) {
         if (!basicSpecLevel) {
-          setMessage('Choose Entry, Standard or Premium.');
+          setMessage('Choose Entry, Standard or Quality.');
           return;
         }
         setStep(4);
