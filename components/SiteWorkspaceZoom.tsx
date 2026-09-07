@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   WEBSITE_DESIGN_WIDTH, WEBSITE_DESIGN_HEIGHT, WEBSITE_MIN_MANUAL_SCALE,
   WEBSITE_MAX_MANUAL_SCALE, WEBSITE_SCALE_STEP, WEBSITE_PREFERENCE_KEY,
-  WEBSITE_OVERLAY_ROOT_ID, calculateWebsiteScale, clampManualWebsiteScale,
+  WEBSITE_OVERLAY_ROOT_ID, calculateWebsiteScale, stepWebsiteScale,
   isNativeWorkspace, parseWebsitePreference, type WebsitePreference,
 } from '../lib/website-canvas';
 import styles from './SiteWorkspaceZoom.module.css';
@@ -68,6 +68,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     const syncViewport = () => {
       const height = window.visualViewport?.height ?? window.innerHeight;
       canvasRef.current?.style.setProperty('--website-visible-height', `${height / scale}px`);
+      canvasRef.current?.style.setProperty('--website-visible-width', `${document.documentElement.clientWidth / scale}px`);
       syncCanvasOrigin();
       syncOverlayWidths();
       window.dispatchEvent(new Event('aim4price:canvas-geometry'));
@@ -90,8 +91,8 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     const bindControls = () => {
       syncOverlayWidths();
       const header = canvas.querySelector('a[aria-label="Go to Aim4price home"]')?.closest('header');
-      const actions = header?.firstElementChild?.lastElementChild;
-      setControlHost(actions instanceof HTMLElement ? actions : null);
+      const zoomHost = header?.querySelector('[data-website-zoom-host]');
+      setControlHost(zoomHost instanceof HTMLElement ? zoomHost : null);
     };
     bindControls();
     const observer = new MutationObserver(bindControls);
@@ -101,8 +102,11 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
 
   const changeScale = useCallback((delta: number) => {
     setShowIntro(false);
-    setPreference({ mode: 'manual', scale: clampManualWebsiteScale(scale + delta) });
-  }, [scale]);
+    setPreference((current) => ({
+      mode: 'manual',
+      scale: stepWebsiteScale(current.mode === 'manual' ? current.scale : automaticScale, delta),
+    }));
+  }, [automaticScale]);
 
   useEffect(() => {
     setShowIntro(false);
@@ -162,3 +166,4 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     </div>
   </WebsiteCanvasContext.Provider>;
 }
+

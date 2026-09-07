@@ -2451,6 +2451,8 @@ export default function AppHeader({
             />
           </Link>
 
+          <div className={styles.zoomHost} data-website-zoom-host />
+
           <nav
             className={`${styles.nav} ${usesCompactHeader ? styles.navCompact : ''}`}
             aria-label="Primary navigation"
@@ -2678,4 +2680,5 @@ export default function AppHeader({
     </>
   );
 }
+
 

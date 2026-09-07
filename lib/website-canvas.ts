@@ -4,7 +4,7 @@ export const WEBSITE_DESIGN_HEIGHT = 900;
 export const WEBSITE_AUTO_MAX_SCALE = 1.2;
 export const WEBSITE_MIN_MANUAL_SCALE = 0.15;
 export const WEBSITE_MAX_MANUAL_SCALE = 1.5;
-export const WEBSITE_SCALE_STEP = 0.1;
+export const WEBSITE_SCALE_STEP = 0.01;
 export const WEBSITE_PREFERENCE_KEY = 'aim4price.website-canvas.v2';
 export const WEBSITE_OVERLAY_ROOT_ID = 'aim4price-website-overlays';
 
@@ -21,6 +21,11 @@ export function calculateWebsiteScale(availableWidth: number): number {
 
 export function clampManualWebsiteScale(scale: number): number {
   return Math.min(WEBSITE_MAX_MANUAL_SCALE, Math.max(WEBSITE_MIN_MANUAL_SCALE, Number.isFinite(scale) ? scale : 1));
+}
+
+/** Step from the displayed percentage, avoiding fractional Auto values and float drift. */
+export function stepWebsiteScale(scale: number, delta: number): number {
+  return clampManualWebsiteScale((Math.round(scale * 100) + Math.round(delta * 100)) / 100);
 }
 
 export type WebsitePreference = { mode: 'auto' } | { mode: 'manual'; scale: number };
@@ -66,3 +71,4 @@ export function websiteVisibleViewport() {
     height: (viewport?.height ?? window.innerHeight) / scale,
   };
 }
+

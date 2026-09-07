@@ -13,7 +13,7 @@
   flex: 0 0 auto;
   min-width: 5.35rem;
   min-height: 3.28rem;
-  margin-left: 0.9rem;
+  margin-left: 0;
   gap: 0.03rem;
   color: #153b31;
   font-family: inherit;
@@ -222,3 +222,4 @@
   position: fixed;
   inset: 0;
 }
+

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { access } from 'node:fs/promises';
 import { websiteCanvas } from './helpers/site-layout-audit.mjs';
-const { WEBSITE_DESIGN_WIDTH, calculateWebsiteScale, clampManualWebsiteScale, parseWebsitePreference, isNativeWorkspace } = websiteCanvas;
+const { WEBSITE_SCALE_STEP, stepWebsiteScale, WEBSITE_DESIGN_WIDTH, calculateWebsiteScale, clampManualWebsiteScale, parseWebsitePreference, isNativeWorkspace } = websiteCanvas;
 import { read, root, websiteStylesheets, assertNoWebsiteReflow, postcss } from './helpers/site-layout-audit.mjs';
 
 test('one canonical width drives continuous downscaling and capped upscaling', () => {
@@ -20,7 +20,7 @@ test('manual preferences use a clean versioned contract and retain the current a
   const starting = calculateWebsiteScale(430);
   assert.equal(clampManualWebsiteScale(starting + .1), starting + .1);
   const host = await read('components/SiteWorkspaceZoom.tsx');
-  assert.match(host, /scale \+ delta/);
+  assert.match(host, /stepWebsiteScale\(current.mode === 'manual' \? current.scale : automaticScale, delta\)/);
   assert.match(host, /localStorage\.setItem\(WEBSITE_PREFERENCE_KEY, JSON\.stringify\(preference\)\)/);
   assert.match(host, /setPreference\(\{ mode: 'auto' \}\)/);
   assert.doesNotMatch(host, /workspace-zoom\.v1|workspace-zoom-mode\.v1/);
@@ -97,4 +97,15 @@ test('website visual viewport units resolve through canonical variables', async 
       assert.fail(`${file}: ${selector} ${declaration.prop} uses physical viewport sizing: ${declaration.value}`);
     });
   }
+});
+
+
+test('zoom moves by one displayed percentage point without drift and stops at limits', () => {
+  assert.equal(WEBSITE_SCALE_STEP, .01);
+  for (let percentage = 15; percentage <= 150; percentage++) {
+    assert.equal(stepWebsiteScale(percentage / 100, WEBSITE_SCALE_STEP), Math.min(150, percentage + 1) / 100);
+    assert.equal(stepWebsiteScale(percentage / 100, -WEBSITE_SCALE_STEP), Math.max(15, percentage - 1) / 100);
+  }
+  assert.equal(stepWebsiteScale(calculateWebsiteScale(1530), WEBSITE_SCALE_STEP), 1.07);
+  assert.equal(stepWebsiteScale(calculateWebsiteScale(1530), -WEBSITE_SCALE_STEP), 1.05);
 });
