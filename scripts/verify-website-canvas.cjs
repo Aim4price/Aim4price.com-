@@ -58,7 +58,8 @@ async function check(browser, url) {
         items.push({selector,text:element.tagName,className:element.className, rounding:Math.max(2, [...element.querySelectorAll('*')].filter(child=>parseFloat(getComputedStyle(child).borderLeftWidth)>0).length*2), width:r.width/scale,height:r.height/scale,font:parseFloat(s.fontSize),display:s.display});
       }
       const header=canvas.querySelector('header:has(a[aria-label="Go to Aim4price home"])'),nav=header?.querySelector('nav'),actions=header?.firstElementChild?.lastElementChild,plus=header?.querySelector('[aria-label="Zoom in"]');
-      const headerFits=!nav||!actions||!plus||(nav.getBoundingClientRect().right<=actions.getBoundingClientRect().left+1&&plus.getBoundingClientRect().right<=origin.right+1);
+      const zoomHost=header?.querySelector('[data-website-zoom-host]'),brand=header?.querySelector('a[aria-label="Go to Aim4price home"]');
+      const headerFits=!nav||!actions||!plus||(!!zoomHost&&!!brand&&brand.getBoundingClientRect().right<=zoomHost.getBoundingClientRect().left+1&&zoomHost.getBoundingClientRect().right<=nav.getBoundingClientRect().left+1&&nav.getBoundingClientRect().right<=actions.getBoundingClientRect().left+1&&actions.getBoundingClientRect().right<=origin.right+1);
       return {headerFits,scale,width:origin.width/scale,scroll:document.documentElement.scrollWidth,viewport:innerWidth,items};
     });
   }
@@ -134,7 +135,7 @@ async function check(browser, url) {
   const autoModalWidth=await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>parseFloat(getComputedStyle(e).width));
   await page.screenshot({path:path.join(output,'register-modal-auto-430.png')});
   await page.click('[aria-label="Close add asset options"]');
-  for(let i=0;i<14;i++) await page.$eval('[aria-label="Zoom in"]',e=>e.click());
+  for(let i=0;i<150;i++) await page.$eval('[aria-label="Zoom in"]',e=>e.click());
   await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]').dataset.websiteScale)===1.5);
   await openAssetChoice();
   const safety=await page.$eval('[aria-labelledby="add-asset-choice-title"]',dialog=>{
@@ -201,3 +202,4 @@ async function main() {
   }
 }
 main().catch(error=>{console.error(error);process.exitCode=1});
+

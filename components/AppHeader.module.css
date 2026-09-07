@@ -4453,7 +4453,7 @@
 }
 
 :global(:where([data-website-canvas])) .brandWorkingColumn {
-    transform: translateX(clamp(0px, calc((100cqi - 1240px) / 2), 60px));
+    transform: none;
   }
 
 @media (min-width: 1241px) {
@@ -4462,10 +4462,7 @@
   }
 }
 
-:global(:where([data-website-canvas])) .inner:has(.accountButton) {
-  position: relative;
-  left: -1rem;
-}
+
 
 :global(:where([data-website-canvas])) .accountButton > span:first-child {
   margin-right: 0.18rem;
@@ -4480,4 +4477,19 @@
 
 :global(:where([data-website-canvas])) .actions { min-width: max-content; }
 
-:global(:where([data-website-canvas])) .inner { grid-template-columns: minmax(0, 1fr) auto max-content; }
+/* One website header geometry, regardless of route or account state. */
+.zoomHost { display: none; }
+
+:global(:where([data-website-canvas])) .zoomHost {
+  display: flex;
+  align-items: center;
+}
+
+:global(:where([data-website-canvas])) .inner {
+  width: 1280px;
+  grid-template-columns: auto auto minmax(0, 1fr) max-content;
+  gap: 1.5rem;
+  min-height: 5.75rem;
+}
+
+

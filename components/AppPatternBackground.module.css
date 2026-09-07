@@ -8,7 +8,7 @@
   min-height: calc(var(--website-design-vh, 1dvh) * 100);
   overflow: clip;
   isolation: isolate;
-  background:
+  --pattern-background:
     radial-gradient(
       circle at top left,
       rgba(169, 220, 196, 0.12),
@@ -20,6 +20,7 @@
       transparent 30%
     ),
     linear-gradient(180deg, #fafdfb 0%, #f7faf8 45%, #f1f7f3 100%);
+  background: var(--pattern-background);
 }
 
 .decoration {
@@ -164,8 +165,26 @@
   }
 }
 
-:global(:where([data-website-canvas])) .decoration {
-  inset: 0 auto auto var(--website-canvas-left, 0px);
-  width: var(--website-design-width);
-  height: var(--website-design-height);
+/* The page keeps its canonical width; the artwork fills the physical viewport. */
+:global(:where([data-website-canvas])) .background {
+  overflow: visible;
+  background: transparent;
+  min-height: var(--website-visible-height, 900px);
 }
+
+:global(:where([data-website-canvas])) .background::before,
+:global(:where([data-website-canvas])) .decoration {
+  position: fixed;
+  inset: 0 auto auto 0;
+  width: var(--website-visible-width, 1440px);
+  height: var(--website-visible-height, 900px);
+  pointer-events: none;
+}
+
+:global(:where([data-website-canvas])) .background::before {
+  content: '';
+  z-index: 0;
+  background: var(--pattern-background);
+}
+
+
