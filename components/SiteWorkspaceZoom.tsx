@@ -68,7 +68,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     const syncViewport = () => {
       const height = window.visualViewport?.height ?? window.innerHeight;
       canvasRef.current?.style.setProperty('--website-visible-height', `${height / scale}px`);
-      canvasRef.current?.style.setProperty('--website-visible-width', `${document.documentElement.clientWidth / scale}px`);
+      canvasRef.current?.style.setProperty('--website-visible-width', `${document.documentElement.getBoundingClientRect().width / scale}px`);
       syncCanvasOrigin();
       syncOverlayWidths();
       window.dispatchEvent(new Event('aim4price:canvas-geometry'));

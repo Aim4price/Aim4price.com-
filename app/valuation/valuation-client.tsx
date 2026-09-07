@@ -2066,7 +2066,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         : '';
   const shouldSaveGenericModelCandidate = genericModelMode === 'manual' && !selectedBrandIsUnknown && Boolean(normalizeText(typedModelName));
   const selectedUsageSector = selectedFamily?.basicCatalogue ? null : selectedSector;
-  const selectedBasicUsageProfile = selectedFamily?.basicCatalogue?.usageProfile;
   const selectedUsageDisplayUnit = getUsageDisplayUnit(selectedUsageSector, selectedFamily?.usageMetricType);
   const selectedUsageFieldLabel = getUsageFieldLabel(selectedUsageSector, selectedFamily?.usageMetricType);
   const selectedUsageSentenceLabel = getUsageSentenceLabel(selectedUsageSector, selectedFamily?.usageMetricType);
@@ -7206,14 +7205,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </button>
           </div>
 
-          {selectedBasicUsageProfile ? (
-            <p className={styles.detailsModalText}>
-              Basic useful-life guide: {selectedBasicUsageProfile.expectedLifetime.toLocaleString('en-ZA')} {selectedBasicUsageProfile.lifetimeUnit}.
-              {' '}This is a rounded planning assumption; actual life varies with use and maintenance.
-              {selectedBasicUsageProfile.lifetimeUnit === 'years' ? ' Use it as context when estimating percentage worked.' : ' If the reading is unknown, you can estimate percentage worked.'}
-            </p>
-          ) : null}
-
           {usageModalMode === 'hours' && showHoursInput ? (
             <>
               <label className={`${styles.field} ${styles.modalInputField}`}>
@@ -8498,7 +8489,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     };
     const confidenceText = getConfidenceLabel(resultState, confidenceContext);
     const confidenceNote = getConfidenceNote(resultState, confidenceContext);
-    const resultHeroTone = confidenceText.toLowerCase().includes('high')
+    const resultHeroTone = basicEstimateActive || confidenceText.toLowerCase().includes('high')
       ? styles.resultHeroHigh
       : confidenceText.toLowerCase().includes('medium')
         ? styles.resultHeroMedium
@@ -8568,7 +8559,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <section className={`${styles.resultHero} ${resultHeroTone}`}>
             <div className={styles.resultHeroTopline}>
               <span className={styles.resultKicker}>{isSalvageEstimate ? 'Indicative salvage estimate' : appliedDealerAssessment ? 'Detailed estimate' : 'Aim4price estimate'}</span>
-              <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span>
+              {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
             </div>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
@@ -8595,7 +8586,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
             <p className={styles.resultMachineTitle}>{machineTitle}</p>
             <p className={styles.resultConfidenceNote}>{vatDefaultNote}</p>
-            <p className={styles.resultConfidenceNote}>{confidenceNote}</p>
+            {!basicEstimateActive ? <p className={styles.resultConfidenceNote}>{confidenceNote}</p> : null}
             {isSalvageEstimate && salvagePercent !== null ? (
               <div className={styles.salvageNotice}>
                 Depreciation reached the indicative salvage range. The average salvage reference for this replacement-price level is {formatPrecisePercent(salvagePercent)}% ({money(salvageValueExVat)}).
