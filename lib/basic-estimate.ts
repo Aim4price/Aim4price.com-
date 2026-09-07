@@ -44,7 +44,7 @@ export const BASIC_SPECIFICATION_LEVELS: Array<{
 }> = [
   { key: 'entry', label: 'Entry', description: 'Lower-cost / simpler specification.' },
   { key: 'standard', label: 'Standard', description: 'Typical mainstream specification.' },
-  { key: 'premium', label: 'Premium', description: 'Higher specification / premium asset.' },
+  { key: 'premium', label: 'Quality', description: 'Higher specification / quality asset.' },
 ];
 
 function normalizeText(value: unknown): string {
@@ -120,7 +120,7 @@ function buildGuideFromBands(
  * Estimate must not infer a family range by combining brand/model bands. Tier-
  * labelled family bands are preferred. Where a family only has a broad family
  * range, the range is split into deliberately overlapping windows so Entry /
- * Standard / Premium position the user without claiming exact model precision.
+ * Standard / Quality position the user without claiming exact model precision.
  */
 export function resolveBasicReplacementGuide(
   inputBands: BasicReplacementBandInput[],
