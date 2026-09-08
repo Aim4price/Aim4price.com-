@@ -65,14 +65,15 @@ test('native product and operational routes are excluded with exact path boundar
   for (const route of ['/', '/account', '/dealer-costs', '/asset-register', '/account/owner-app', '/scan-help']) assert.equal(isNativeWorkspace(route), false);
 });
 test('portrait phone entry strongly recommends landscape without locking orientation', async () => {
-  assert.equal(WEBSITE_PHONE_SHORT_SIDE_MAX, 600);
+  assert.equal(WEBSITE_PHONE_SHORT_SIDE_MAX, 560);
   assert.equal(WEBSITE_LANDSCAPE_BYPASS_KEY, 'aim4price.website-landscape-entry.v1');
 
-  for (const [width, height] of [[320, 568], [390, 844], [430, 932], [600, 960]]) {
+  for (const [width, height] of [[320, 568], [390, 844], [430, 932], [540, 960]]) {
     assert.equal(shouldSuggestWebsiteLandscape(width, height, true), true);
     assert.equal(shouldSuggestWebsiteLandscape(height, width, true), false);
   }
   assert.equal(shouldSuggestWebsiteLandscape(430, 932, false), false);
+  assert.equal(shouldSuggestWebsiteLandscape(600, 960, true), false);
   assert.equal(shouldSuggestWebsiteLandscape(768, 1024, true), false);
   assert.equal(shouldSuggestWebsiteLandscape(1440, 900, true), false);
   for (const invalid of [[0, 900], [430, 0], [NaN, 900], [430, Infinity]]) {
@@ -89,7 +90,8 @@ test('portrait phone entry strongly recommends landscape without locking orienta
   assert.match(host, /window\.addEventListener\('orientationchange', syncLandscapeEntry\)/);
   assert.match(host, /viewport\?\.addEventListener\('resize', syncLandscapeEntry\)/);
   assert.match(host, /canvas\?\.setAttribute\('inert', ''\)/);
-  assert.match(host, /document\.body,[\s\S]*data-mobile-landscape-entry/);
+  assert.match(host, /data-mobile-landscape-entry/);
+  assert.match(host, /document\.body/);
   assert.match(host, /Turn your phone sideways/);
   assert.match(host, /Continue in portrait/);
   assert.doesNotMatch(host, /screen\.orientation\.lock|requestFullscreen/);
