@@ -37,6 +37,11 @@ export type BasicFamilyExtra = {
   label: string;
 };
 
+/** Basic is deliberately ballpark: level guides use clean R10k anchors. */
+export const BASIC_REPLACEMENT_GUIDE_ROUNDING = 10_000;
+/** Once positioned, the replacement-price slider always fine-tunes by R5k. */
+export const BASIC_REPLACEMENT_SLIDER_STEP = 5_000;
+
 export const BASIC_SPECIFICATION_LEVELS: Array<{
   key: BasicSpecificationLevel;
   label: string;
@@ -47,21 +52,16 @@ export const BASIC_SPECIFICATION_LEVELS: Array<{
   { key: 'premium', label: 'Quality', description: 'Higher specification / quality asset.' },
 ];
 
+export function roundBasicReplacementGuideValue(value: number): number {
+  return Math.round(value / BASIC_REPLACEMENT_GUIDE_ROUNDING) * BASIC_REPLACEMENT_GUIDE_ROUNDING;
+}
+
+function roundPositiveGuideValue(value: number): number {
+  return Math.max(BASIC_REPLACEMENT_GUIDE_ROUNDING, roundBasicReplacementGuideValue(value));
+}
+
 function normalizeText(value: unknown): string {
   return String(value ?? '').trim().toLowerCase();
-}
-
-function roundToGuideStep(value: number, step: number): number {
-  return Math.max(step, Math.round(value / step) * step);
-}
-
-function chooseMoneyStep(maxValue: number): number {
-  if (maxValue >= 10_000_000) return 100_000;
-  if (maxValue >= 2_000_000) return 50_000;
-  if (maxValue >= 500_000) return 25_000;
-  if (maxValue >= 100_000) return 10_000;
-  if (maxValue >= 25_000) return 5_000;
-  return 1_000;
 }
 
 function levelTokens(level: BasicSpecificationLevel): string[] {
@@ -99,16 +99,18 @@ function buildGuideFromBands(
   const rawMax = Math.max(...bands.map((band) => band.replacementMaxExVat));
   if (!Number.isFinite(rawMin) || !Number.isFinite(rawMax) || rawMin <= 0 || rawMax <= rawMin) return null;
 
-  const sliderStep = chooseMoneyStep(rawMax);
-  const minExVat = roundToGuideStep(rawMin, sliderStep);
-  const maxExVat = Math.max(minExVat + sliderStep, roundToGuideStep(rawMax, sliderStep));
-  const suggestedExVat = roundToGuideStep((minExVat + maxExVat) / 2, sliderStep);
+  const minExVat = roundPositiveGuideValue(rawMin);
+  const maxExVat = Math.max(
+    minExVat + BASIC_REPLACEMENT_GUIDE_ROUNDING,
+    roundPositiveGuideValue(rawMax),
+  );
+  const suggestedExVat = roundPositiveGuideValue((minExVat + maxExVat) / 2);
 
   return {
     minExVat,
     maxExVat,
     suggestedExVat: Math.min(maxExVat, Math.max(minExVat, suggestedExVat)),
-    sliderStep,
+    sliderStep: BASIC_REPLACEMENT_SLIDER_STEP,
     source,
     sourceBandIds: bands.map((band) => band.id),
   };
@@ -121,6 +123,8 @@ function buildGuideFromBands(
  * labelled family bands are preferred. Where a family only has a broad family
  * range, the range is split into deliberately overlapping windows so Entry /
  * Standard / Quality position the user without claiming exact model precision.
+ * Every level anchor is rounded to the nearest R10,000; the user can then move
+ * through the replacement-price slider in R5,000 increments.
  */
 export function resolveBasicReplacementGuide(
   inputBands: BasicReplacementBandInput[],
@@ -146,16 +150,18 @@ export function resolveBasicReplacementGuide(
     premium: [0.55, 1, 0.75],
   };
   const [lowRatio, highRatio, suggestedRatio] = bounds[level];
-  const step = familyGuide.sliderStep;
-  const minExVat = roundToGuideStep(familyGuide.minExVat + span * lowRatio, step);
-  const maxExVat = Math.max(minExVat + step, roundToGuideStep(familyGuide.minExVat + span * highRatio, step));
-  const suggestedExVat = roundToGuideStep(familyGuide.minExVat + span * suggestedRatio, step);
+  const minExVat = roundPositiveGuideValue(familyGuide.minExVat + span * lowRatio);
+  const maxExVat = Math.max(
+    minExVat + BASIC_REPLACEMENT_GUIDE_ROUNDING,
+    roundPositiveGuideValue(familyGuide.minExVat + span * highRatio),
+  );
+  const suggestedExVat = roundPositiveGuideValue(familyGuide.minExVat + span * suggestedRatio);
 
   return {
     minExVat,
     maxExVat,
     suggestedExVat: Math.min(maxExVat, Math.max(minExVat, suggestedExVat)),
-    sliderStep: step,
+    sliderStep: BASIC_REPLACEMENT_SLIDER_STEP,
     source: 'family',
     sourceBandIds: familyGuide.sourceBandIds,
   };
@@ -226,4 +232,3 @@ export function getBasicFamilyExtra(familyKey?: string | null, familyLabel?: str
 
   return null;
 }
-
