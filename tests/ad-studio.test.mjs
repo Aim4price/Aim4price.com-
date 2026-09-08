@@ -84,7 +84,7 @@ test('schema preserves the selected branding as a Marketplace advert snapshot', 
   assert.match(marketplaceDatabase, /toAdBrandSnapshot\(brandKit\)/);
   assert.match(marketplaceDatabase, /input\.allowBrandKit/);
   assert.match(marketplaceDatabase, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
-  assert.match(marketplaceDatabase, /normalizeAdBrandSnapshot\(pick\(row, \['marketplace_ad_brand'\]\)/);
+  assert.match(marketplaceDatabase, /normalizeAdBrandSnapshot\(\s*pick\(row, \['marketplace_ad_brand'\]\)/);
 });
 
 test('valuation Create Advert publishes in the background and downloads the matching JPEG', async () => {
@@ -916,7 +916,7 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   assert.doesNotMatch(middlemanHeader, /Leads|Discovery/);
   assert.match(dealerHome, /'showroom', 'marketplace'/);
   assert.doesNotMatch(dealerMarketplace, /isMiddlemanAccountSubtype/);
-  assert.match(account, /isMiddlemanAccount \? 'Middleman app access' : 'Manage Dealer App staff'/);
+  assert.match(account, /isMiddlemanAccount \? ['"]Middleman app access['"] : ['"]Manage Dealer App staff['"]/);
   assert.match(accessPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
   assert.match(accessClient, /Middleman App Access/);
   assert.match(accessClient, /change passwords or remove a login/);
