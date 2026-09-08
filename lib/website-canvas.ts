@@ -7,7 +7,7 @@ export const WEBSITE_MAX_MANUAL_SCALE = 1.5;
 export const WEBSITE_SCALE_STEP = 0.01;
 export const WEBSITE_PREFERENCE_KEY = 'aim4price.website-canvas.v2';
 export const WEBSITE_OVERLAY_ROOT_ID = 'aim4price-website-overlays';
-export const WEBSITE_PHONE_SHORT_SIDE_MAX = 600;
+export const WEBSITE_PHONE_SHORT_SIDE_MAX = 560;
 export const WEBSITE_LANDSCAPE_BYPASS_KEY = 'aim4price.website-landscape-entry.v1';
 
 const NATIVE_ROUTE_PREFIXES = ['/owner-app', '/dealer', '/field-manager', '/admin', '/scan', '/fuel-scan'];
