@@ -99,6 +99,7 @@ test('Get Estimate mounts an in-memory photo picker and routes the existing PDF 
 
   assert.match(enhancedRoute, /POST as renderBaseValuationReport/);
   assert.match(enhancedRoute, /enhanceEstimateReportHtml\(baseHtml, rawPayload\)/);
+  assert.match(config, /beforeFiles:\s*\[/);
   assert.match(config, /source:\s*['"]\/api\/valuation\/report['"]/);
   assert.match(config, /destination:\s*['"]\/api\/valuation\/report-enhanced['"]/);
 });
