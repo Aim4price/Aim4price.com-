@@ -6,6 +6,14 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/valuation/report',
+        destination: '/api/valuation/report-enhanced',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
