@@ -3796,6 +3796,10 @@
 }
 
 /* Preserve the reference register's proportions inside every preview size. */
+.assetPreviewCard:has(.registerPreviewFrame) {
+  margin-inline: 3rem;
+}
+
 .registerPreviewFrame { display: grid; place-items: center; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
 .registerPreviewFrame > div { position: relative; }
 .registerPreview { position: absolute; top: 0; width: 744px; height: 780px; transform-origin: top left; display: grid; grid-template-rows: 66px 36px 133px 49px 34px 1fr; row-gap: 11px; color: #0b493a; font-size: 10px; line-height: 1.2; }
