@@ -1,4 +1,10 @@
-import type { BasicReplacementGuide, BasicSpecificationLevel } from './basic-estimate';
+import {
+  BASIC_REPLACEMENT_GUIDE_ROUNDING,
+  BASIC_REPLACEMENT_SLIDER_STEP,
+  roundBasicReplacementGuideValue,
+  type BasicReplacementGuide,
+  type BasicSpecificationLevel,
+} from './basic-estimate';
 import type { BasicUsageProfile } from './basic-usage-profiles';
 
 export type BasicCatalogueIdentity = {
@@ -14,7 +20,12 @@ export type BasicCatalogueIdentity = {
   usageProfile?: BasicUsageProfile;
 };
 
-/** Equal thirds of the interval, including the researched minimum and maximum. */
+/**
+ * Split the researched family interval into Entry / Standard / Quality thirds,
+ * then deliberately round the public guide anchors to the nearest R10,000.
+ * The three rounded windows still share boundaries, while the replacement-price
+ * slider fine-tunes within the selected window in R5,000 increments.
+ */
 export function resolveCatalogueGuide(
   catalogue: Pick<BasicCatalogueIdentity, 'minimumExVat' | 'maximumExVat'>,
   level: BasicSpecificationLevel,
@@ -26,16 +37,43 @@ export function resolveCatalogueGuide(
   if (level !== 'entry' && level !== 'standard' && level !== 'premium') {
     throw new Error('Choose Entry, Standard or Quality.');
   }
+
+  const rawSpan = max - min;
+  const roundedMin = Math.max(0, roundBasicReplacementGuideValue(min));
+  const roundedMax = Math.max(
+    roundedMin + BASIC_REPLACEMENT_GUIDE_ROUNDING * 3,
+    roundBasicReplacementGuideValue(max),
+  );
+
+  const firstBreak = Math.min(
+    roundedMax - BASIC_REPLACEMENT_GUIDE_ROUNDING * 2,
+    Math.max(
+      roundedMin + BASIC_REPLACEMENT_GUIDE_ROUNDING,
+      roundBasicReplacementGuideValue(min + rawSpan / 3),
+    ),
+  );
+  const secondBreak = Math.min(
+    roundedMax - BASIC_REPLACEMENT_GUIDE_ROUNDING,
+    Math.max(
+      firstBreak + BASIC_REPLACEMENT_GUIDE_ROUNDING,
+      roundBasicReplacementGuideValue(min + rawSpan * 2 / 3),
+    ),
+  );
+
+  const boundaries = [roundedMin, firstBreak, secondBreak, roundedMax] as const;
   const index = { entry: 0, standard: 1, premium: 2 }[level];
-  const span = max - min;
-  const lower = min + span * index / 3;
-  const upper = index === 2 ? max : min + span * (index + 1) / 3;
-  const step = span >= 3_000_000 ? 50_000 : span >= 300_000 ? 5_000 : span >= 30_000 ? 1_000 : 100;
+  const lower = boundaries[index];
+  const upper = boundaries[index + 1];
+  const suggestedExVat = Math.min(
+    upper,
+    Math.max(lower, roundBasicReplacementGuideValue((lower + upper) / 2)),
+  );
+
   return {
     minExVat: lower,
     maxExVat: upper,
-    suggestedExVat: Math.min(upper, Math.max(lower, Math.round((lower + upper) / 2 / step) * step)),
-    sliderStep: step,
+    suggestedExVat,
+    sliderStep: BASIC_REPLACEMENT_SLIDER_STEP,
     source: 'family',
     sourceBandIds: [],
   };
