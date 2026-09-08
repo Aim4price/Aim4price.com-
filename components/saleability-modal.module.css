@@ -18,7 +18,7 @@
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  padding: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
+  padding: 1.5rem;
   border: 1px solid rgba(216, 226, 236, 0.98);
   border-radius: 2rem;
   background:
@@ -37,9 +37,9 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.15rem;
-  margin: 0 0 1.08rem;
-  padding: 0 0 1rem;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.88);
+  margin: 0 0 0.8rem;
+  padding: 0;
+  border-bottom: 0;
 }
 
 .header > div {
@@ -138,7 +138,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.7rem;
-  padding: 0.75rem;
+  padding: 0.65rem 0;
   border: 1px solid rgba(216, 226, 236, 0.96);
   border-radius: 1.15rem;
   background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
@@ -149,8 +149,8 @@
   display: grid;
   align-content: center;
   gap: 0.24rem;
-  padding: 0.82rem 0.85rem;
-  border: 1px solid rgba(218, 228, 236, 0.88);
+  padding: 0.4rem 0.85rem;
+  border: 0;
   border-radius: 0.95rem;
   background: #ffffff;
 }
@@ -161,8 +161,8 @@
   color: #6e7f91;
   font-size: 0.72rem;
   font-weight: 900;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .baselineStrip strong {
@@ -195,6 +195,37 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
+.settingsCard {
+  padding: 0.25rem 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  gap: 0.65rem;
+}
+
+.progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.progress span {
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.7rem;
+  background: #edf3f0;
+  color: #526a60;
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.progress [aria-current='step'] {
+  background: #15583f;
+  color: #fff;
+}
+
 .stepIntro,
 .planHeader {
   display: grid;
@@ -223,12 +254,12 @@
 .question {
   min-width: 0;
   display: grid;
-  gap: 0.7rem;
+  gap: 0.5rem;
   margin: 0;
-  padding: 0.8rem;
-  border: 1px solid rgba(203, 221, 212, 0.96);
+  padding: 0;
+  border: 0;
   border-radius: 1rem;
-  background: linear-gradient(180deg, #fbfefc 0%, #f1f8f4 100%);
+  background: none;
 }
 
 .question legend {
@@ -245,14 +276,14 @@
 .choiceGrid {
   clear: both;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
   gap: 0.48rem;
 }
 
 .choice,
 .choiceActive {
   min-width: 0;
-  min-height: 3.65rem;
+  min-height: 3rem;
   display: grid;
   place-content: center;
   gap: 0.2rem;
@@ -294,6 +325,7 @@
   font-size: 0.82rem;
   font-weight: 850;
   line-height: 1.18;
+  white-space: nowrap;
 }
 
 .choice small,
@@ -312,7 +344,8 @@
   display: grid;
   grid-template-columns: minmax(8rem, 0.32fr) minmax(0, 1fr);
   gap: 0.65rem;
-  margin-top: 0.05rem;
+  flex: 0 0 auto;
+  margin-top: 1rem;
 }
 
 .actions > :only-child {
@@ -593,3 +626,23 @@
   }
 }
 
+
+
+:global(html:has([data-website-canvas])) .header h2,
+:global(html:has([data-website-canvas])) .question legend,
+:global(html:has([data-website-canvas])) .stepIntro p,
+:global(html:has([data-website-canvas])) .baselineStrip strong,
+:global(html:has([data-website-canvas])) .valuationReminder {
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceGrid {
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .progress span {
+    padding: 0.55rem 0.3rem;
+    font-size: 0.75rem;
+    text-align: center;
+  }
+}

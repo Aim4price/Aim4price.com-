@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   calculateGeneralSaleability,
   calculateRefinedSaleability,
@@ -28,7 +28,7 @@ type Choice<T extends string> = { value: T; label: string; help?: string };
 const SALE_AREA_OPTIONS: Choice<SaleabilityRefinementAnswers['saleArea']>[] = [
   { value: 'local', label: 'Near me' },
   { value: 'province', label: 'My province' },
-  { value: 'south_africa', label: 'Anywhere in South Africa' },
+  { value: 'south_africa', label: 'South Africa' },
 ];
 const AVAILABLE_OPTIONS: Choice<SaleabilityRefinementAnswers['similarAssetsAvailable']>[] = [
   { value: 'none', label: 'Almost none' },
@@ -51,8 +51,8 @@ const DEMAND_OPTIONS: Choice<SaleabilityRefinementAnswers['currentDemand']>[] = 
   { value: 'unknown', label: 'I’m not sure' },
 ];
 const FAMILIARITY_OPTIONS: Choice<SaleabilityRefinementAnswers['modelFamiliarity']>[] = [
-  { value: 'common', label: 'Common and well known' },
-  { value: 'less_common', label: 'Less common, but recognised' },
+  { value: 'common', label: 'Well known' },
+  { value: 'less_common', label: 'Less common' },
   { value: 'rare', label: 'Rare or specialised' },
   { value: 'unknown', label: 'I’m not sure' },
 ];
@@ -64,9 +64,9 @@ const TIMELINE_OPTIONS: Choice<SaleabilityRefinementAnswers['desiredTimeline']>[
   { value: 'flexible', label: 'No hurry' },
 ];
 const PRIORITY_OPTIONS: Choice<SaleabilityRefinementAnswers['sellingPriority']>[] = [
-  { value: 'best_price', label: 'Best price', help: 'I can wait longer.' },
-  { value: 'balanced', label: 'Balanced', help: 'A fair price in a fair time.' },
-  { value: 'fast_cashflow', label: 'Fast cashflow', help: 'Selling sooner matters most.' },
+  { value: 'best_price', label: 'Best price' },
+  { value: 'balanced', label: 'Balanced' },
+  { value: 'fast_cashflow', label: 'Fast cashflow' },
 ];
 
 function formatMoney(value: number): string {
@@ -129,6 +129,7 @@ export default function SaleabilityModal({
   input,
   storageKey,
 }: SaleabilityModalProps) {
+  const bodyRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<1 | 2 | 'result'>(1);
   const [answers, setAnswers] = useState<Partial<SaleabilityRefinementAnswers>>({});
   const general = useMemo(() => calculateGeneralSaleability(input), [input]);
@@ -189,6 +190,11 @@ export default function SaleabilityModal({
     }
   }, [assetTitle, open, plan, step, valuationExVat]);
 
+  useEffect(() => {
+    if (!open) return;
+    bodyRef.current?.scrollTo({ top: 0 });
+  }, [open, step]);
+
   if (!open) return null;
 
   function update<K extends keyof SaleabilityRefinementAnswers>(key: K, value: SaleabilityRefinementAnswers[K]) {
@@ -218,17 +224,22 @@ export default function SaleabilityModal({
         <header className={styles.header}>
           <div>
             <h2 id="saleability-title">{assetTitle}</h2>
-            <p>Refine Saleability using simple buyer, demand and timing choices. Your Aim4price valuation stays unchanged.</p>
+            <p>Refine your selling plan. Your Aim4price valuation stays unchanged.</p>
           </div>
           <button type="button" className={styles.close} onClick={onClose} aria-label="Close Saleability">×</button>
         </header>
 
-        <div className={styles.body}>
+        <nav className={styles.progress} aria-label="Saleability progress">
+          <span aria-current={step === 1 ? 'step' : undefined}>1 · Buyers</span>
+          <span aria-current={step === 2 ? 'step' : undefined}>2 · Selling goal</span>
+          <span aria-current={step === 'result' ? 'step' : undefined}>3 · Your plan</span>
+        </nav>
+        <div ref={bodyRef} className={styles.body}>
           <div className={styles.baselineStrip}>
             <div>
               <span>Current saved value</span>
               <strong>{formatMoney(valuationExVat)}</strong>
-              <small>Excl. VAT · this value does not change here</small>
+              <small>Excl. VAT · unchanged</small>
             </div>
             <div>
               <span>General Saleability</span>
@@ -236,7 +247,7 @@ export default function SaleabilityModal({
               <small>{general.gradeLabel}</small>
             </div>
             <div>
-              <span>Natural selling window</span>
+              <span>Selling window</span>
               <strong>{general.naturalSellingWindow}</strong>
               <small>{general.confidence} confidence</small>
             </div>
@@ -246,7 +257,7 @@ export default function SaleabilityModal({
             <section className={styles.settingsCard}>
               <div className={styles.stepIntro}>
                 <h3>Buyer settings</h3>
-                <p>Step 1 of 2 · Choose the closest answer. “I’m not sure” is completely fine.</p>
+                <p>Choose the closest answer, or “I’m not sure”.</p>
               </div>
               <ChoiceQuestion
                 label="Where are you willing to sell it?"
@@ -266,17 +277,14 @@ export default function SaleabilityModal({
                 options={BUYER_OPTIONS}
                 onChange={(value) => update('realisticBuyerPool', value)}
               />
-              <div className={styles.actions}>
-                <button type="button" className={styles.primary} disabled={!firstStepComplete} onClick={() => setStep(2)}>Continue</button>
-              </div>
             </section>
           ) : null}
 
           {step === 2 ? (
             <section className={styles.settingsCard}>
               <div className={styles.stepIntro}>
-                <h3>Market and selling settings</h3>
-                <p>Step 2 of 2 · These choices create a selling plan. They never change the Aim4price valuation.</p>
+                <h3>Market and selling goal</h3>
+                <p>Choose the demand, timing and price that suit you.</p>
               </div>
               <ChoiceQuestion
                 label="What is demand like right now?"
@@ -302,10 +310,6 @@ export default function SaleabilityModal({
                 options={PRIORITY_OPTIONS}
                 onChange={(value) => update('sellingPriority', value)}
               />
-              <div className={styles.actions}>
-                <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Back</button>
-                <button type="button" className={styles.primary} disabled={!secondStepComplete} onClick={calculate}>Calculate Saleability</button>
-              </div>
             </section>
           ) : null}
 
@@ -314,7 +318,7 @@ export default function SaleabilityModal({
               <section className={styles.resultHero} aria-live="polite">
                 <span>Refined Saleability</span>
                 <strong>{plan.refinedScore} / 100</strong>
-                <p>Grade {plan.grade} · {plan.gradeLabel}. Asset quality and current market information are combined below.</p>
+                <p>Grade {plan.grade} · {plan.gradeLabel}</p>
 
                 <div className={styles.resultMeta}>
                   <div>
@@ -330,7 +334,7 @@ export default function SaleabilityModal({
                     <strong>{plan.grade} · {plan.gradeLabel}</strong>
                   </div>
                   <div>
-                    <span>Natural selling window</span>
+                    <span>Selling window</span>
                     <strong>{plan.naturalSellingWindow}</strong>
                   </div>
                 </div>
@@ -339,7 +343,7 @@ export default function SaleabilityModal({
               <section className={styles.pricePlan}>
                 <div className={styles.planHeader}>
                   <h3>Selling plan for your goal</h3>
-                  <p>Pricing guidance based on the answers above.</p>
+                  <p>Based on your buyer and selling choices.</p>
                 </div>
                 <div className={styles.askingPrice}>
                   <small>Recommended asking price</small>
@@ -353,16 +357,31 @@ export default function SaleabilityModal({
               </section>
 
               <p className={styles.valuationReminder}>
-                The Aim4price valuation remains <strong>{formatMoney(valuationExVat)} excl. VAT</strong>. The figures above are selling-price guidance only.
+                Valuation: <strong>{formatMoney(valuationExVat)} excl. VAT</strong> · selling-price guidance only.
               </p>
-              <div className={styles.actions}>
-                <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Change answers</button>
-                <button type="button" className={styles.primary} onClick={onClose}>Done</button>
-              </div>
             </div>
           ) : null}
         </div>
+        <footer className={styles.actions}>
+          {step === 1 ? (
+            <>
+              <button type="button" className={styles.secondary} onClick={onClose}>Cancel</button>
+              <button type="button" className={styles.primary} disabled={!firstStepComplete} onClick={() => setStep(2)}>Continue</button>
+            </>
+          ) : step === 2 ? (
+            <>
+              <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Back</button>
+              <button type="button" className={styles.primary} disabled={!secondStepComplete} onClick={calculate}>Calculate Saleability</button>
+            </>
+          ) : (
+            <>
+              <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Change answers</button>
+              <button type="button" className={styles.primary} onClick={onClose}>Done</button>
+            </>
+          )}
+        </footer>
       </section>
     </div>
   );
 }
+

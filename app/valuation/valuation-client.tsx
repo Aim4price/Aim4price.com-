@@ -9128,7 +9128,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <h2 id="replacement-notice-title">Ready for your estimate?</h2>
             </div>
             <p id="replacement-notice-description" className={styles.replacementNoticeIntro}>
-              We will calculate an indicative estimate using the details you provided. You can review the result on the next screen and go back to change your details if needed.
+              Review your estimate next. You can go back and change your details.
             </p>
             <div className={styles.replacementNoticeActions}>
               <button
@@ -9151,7 +9151,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </button>
             </div>
             <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
-              Aim4price provides an indicative estimate only. It is not a certified valuation, inspection, or guaranteed price.
+              Indicative estimate only — not a certified valuation, inspection or guaranteed price.
             </small>
           </section>
         </div>
@@ -9719,5 +9719,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+
 
 
