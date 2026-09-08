@@ -221,7 +221,10 @@ export default function ValuationFlowPolish() {
         lockDocumentScroll();
 
         if (!familyModalOpenRef.current) {
-          returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : nextPicker.trigger;
+          const activeElement = document.activeElement;
+          returnFocusRef.current = activeElement instanceof HTMLElement && !nextPicker.card.contains(activeElement)
+            ? activeElement
+            : nextPicker.trigger;
           familyModalOpenRef.current = true;
           setFamilyTypeLabel(nextPicker.typeLabel);
           setFamilySearch(nextPicker.searchInput.value);
