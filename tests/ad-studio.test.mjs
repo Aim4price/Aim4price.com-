@@ -128,7 +128,7 @@ test('valuation advert photos support file drop, drag reorder and accessible ord
   assert.match(valuation, /Drag them into order, or use the arrows\. The first photo becomes the main image\./);
   assert.match(valuation, /aria-label="Move photo earlier"/);
   assert.match(valuation, /aria-label="Move photo later"/);
-  assert.match(valuation, /for \(const photo of marketplacePhotoFiles\)[\s\S]*?formData\.append\('files', photo\.file\)/);
+  assert.match(valuation, /for \(const photo of marketplacePhotoFiles\)[\s\S]*?compressReportPhoto\(photo\.file\)[\s\S]*?formData\.append\('files', blob,/);
   assert.match(valuation, /const marketplacePhotoFilesRef = useRef<MarketplacePendingPhoto\[]>\(\[\]\)/);
   assert.match(valuation, /useEffect\(\(\) => \{\s*marketplacePhotoFilesRef\.current = marketplacePhotoFiles;\s*}, \[marketplacePhotoFiles\]\)/);
   assert.match(valuation, /useEffect\(\(\) => \(\) => \{\s*marketplacePhotoFilesRef\.current\.forEach\(\(photo\) => URL\.revokeObjectURL\(photo\.previewUrl\)\);\s*}, \[\]\)/);
@@ -990,4 +990,5 @@ test('Marketplace only applies Brand Kits to dealer listings', async () => {
   assert.match(database, /updateValues\.push\(brandKit \? JSON\.stringify\(toAdBrandSnapshot\(brandKit\)\) : null\)/);
   assert.match(database, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
 });
+
 

@@ -457,8 +457,15 @@ async function loadImage(source: string): Promise<HTMLImageElement | null> {
     const image = new Image();
     image.decoding = 'async';
     if (!source.startsWith('data:') && !source.startsWith('blob:')) image.crossOrigin = 'anonymous';
-    image.onload = () => resolve(image);
-    image.onerror = () => resolve(null);
+    const timeout = setTimeout(() => finish(null), 15_000);
+    function finish(result: HTMLImageElement | null) {
+      clearTimeout(timeout);
+      image.onload = null;
+      image.onerror = null;
+      resolve(result);
+    }
+    image.onload = () => finish(image);
+    image.onerror = () => finish(null);
     image.src = source;
   });
 }
@@ -922,6 +929,7 @@ async function renderAim4priceStandardCanvas(
   context: CanvasRenderingContext2D,
   content: MarketplaceAdContent,
   includeImages: boolean,
+  requireImages = false,
 ): Promise<void> {
   const sources = includeImages ? content.imageUrls.slice(0, 4) : [];
   const [aim4priceLogo, aim4priceWatermark, ...images] = await Promise.all([
@@ -929,6 +937,10 @@ async function renderAim4priceStandardCanvas(
     loadImage(AIM4PRICE_STANDARD_WATERMARK_SRC),
     ...sources.map((source) => isGenericEquipmentPlaceholder(source) ? Promise.resolve(null) : loadImage(source)),
   ]);
+  if (requireImages && sources.some((source, index) => !isGenericEquipmentPlaceholder(source) && !images[index])) {
+    throw new Error('An advert photo could not be loaded. Please retry the JPEG download.');
+  }
+
   const width = MARKETPLACE_AD_WIDTH;
   const height = MARKETPLACE_AD_HEIGHT;
   const frame: Rect = { x: 36, y: 36, width: width - 72, height: height - 72 };
@@ -1170,7 +1182,7 @@ function photoRects(templateId: AdTemplateId, photoRect: Rect): Rect[] {
 export async function renderMarketplaceAdCanvas(
   canvas: HTMLCanvasElement,
   content: MarketplaceAdContent,
-  options: { useBestPhotoFit?: boolean; includeImages?: boolean } = {},
+  options: { useBestPhotoFit?: boolean; includeImages?: boolean; requireImages?: boolean } = {},
 ): Promise<AdTemplateId> {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas is unavailable.');
@@ -1181,7 +1193,7 @@ export async function renderMarketplaceAdCanvas(
   if (typeof document !== 'undefined' && 'fonts' in document) await document.fonts.ready.catch(() => undefined);
 
   if (content.design === 'aim4price-marketplace') {
-    await renderAim4priceStandardCanvas(context, content, options.includeImages !== false);
+    await renderAim4priceStandardCanvas(context, content, options.includeImages !== false, options.requireImages);
     return 'showcase';
   }
 
@@ -1195,6 +1207,10 @@ export async function renderMarketplaceAdCanvas(
     loadImage(content.brand.logoUrl),
     ...sources.map((source) => isGenericEquipmentPlaceholder(source) ? Promise.resolve(null) : loadImage(source)),
   ]);
+
+  if (options.requireImages && sources.some((source, index) => !isGenericEquipmentPlaceholder(source) && !images[index])) {
+    throw new Error('An advert photo could not be loaded. Please retry the JPEG download.');
+  }
 
   const width = MARKETPLACE_AD_WIDTH;
   const height = MARKETPLACE_AD_HEIGHT;
@@ -1297,16 +1313,11 @@ export async function createMarketplaceAdJpeg(
 ): Promise<{ blob: Blob; templateId: AdTemplateId }> {
   if (typeof document === 'undefined') throw new Error('JPEG export is only available in the browser.');
   const content = marketplaceListingToAdContent(listing, options);
-  for (const includeImages of [true, false]) {
-    const canvas = document.createElement('canvas');
-    try {
-      const templateId = await renderMarketplaceAdCanvas(canvas, content, { includeImages, useBestPhotoFit: true });
-      return { blob: await canvasBlob(canvas), templateId };
-    } catch (error) {
-      if (!includeImages) throw error;
-    }
-  }
-  throw new Error('JPEG export failed.');
+  const canvas = document.createElement('canvas');
+  const templateId = await renderMarketplaceAdCanvas(canvas, content, {
+    includeImages: true, useBestPhotoFit: true, requireImages: true,
+  });
+  return { blob: await canvasBlob(canvas), templateId };
 }
 
 export function downloadMarketplaceAd(blob: Blob, filename: string) {
@@ -1327,3 +1338,4 @@ export function marketplaceAdFilename(title: string): string {
     .replace(/^-+|-+$/g, '') || 'aim4price-advert';
   return `${safe}-aim4price-ad.jpg`;
 }
+

@@ -14492,3 +14492,23 @@
 .replacementNoticeActions button {
   white-space: nowrap;
 }
+
+
+.identityProgress {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  white-space: nowrap;
+}
+.identitySpinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: identitySpin 650ms linear infinite;
+}
+@keyframes identitySpin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .identitySpinner { animation: none; }
+}
