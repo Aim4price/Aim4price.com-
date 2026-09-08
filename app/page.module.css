@@ -3795,54 +3795,68 @@
   }
 }
 
-/* Compact sample register uses the same outer card and modal as the asset previews. */
-.registerPreview {
-  display: grid;
-  height: 100%;
-  min-height: 0;
-  grid-template-rows: auto auto 3.4rem auto auto minmax(0, 1fr);
-  line-height: 1.2;
-  gap: 0.4rem;
-  color: #0b493a;
-}
-.registerPreviewTitle {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.45rem 0.7rem;
-  border: 1px solid #bfd4dc;
-  border-radius: 0.65rem;
-  background: linear-gradient(110deg, #edf6f2, #fff);
-}
-.registerPreviewTitle h2 { margin: 0; font-size: 1.12rem; font-weight: 900; letter-spacing: -0.035em; }
-.registerPreviewToolbar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-.registerPreviewToolbar span { padding: 0.35rem; text-align: center; font-size: 0.48rem; font-weight: 800; border: 1px solid #94cdb5; border-radius: 0.45rem; background: #f5fcf8; }
-.registerPreviewToolbar span:first-child { border-color: #e6a373; color: #844614; background: #fff6ed; }
-.registerPreviewToolbar span:nth-child(2) { border-color: #a5c8e7; color: #174465; background: #f0f7ff; }
-.registerPreviewToolbar span:last-child { background: #12654e; color: white; }
-.registerPreviewStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
-.registerPreviewStats > div { display: flex; flex-direction: column; justify-content: space-between; padding: 0.3rem 0.65rem; border: 1px solid #bfd4dc; border-radius: 0.6rem; background: #f6fafb; }
-.registerPreviewStats > div:first-child { border-color: #93cfb4; background: #f2faf6; }
-.registerPreviewStats small { font-size: 0.36rem; font-weight: 700; color: #617584; }
-.registerPreviewStats strong { font-size: 1rem; font-weight: 900; white-space: nowrap; }
-.registerPreviewStats span { border-top: 1px solid #cee0e4; padding-top: 0.35rem; font-size: 0.34rem; text-align: center; }
-.registerPreviewTabs { display: grid; grid-template-columns: 1fr 1fr; padding: 0.22rem; border: 1px solid #c8ded5; border-radius: 0.5rem; font-size: 0.46rem; }
-.registerPreviewTabs > * { padding: 0.35rem; }
-.registerPreviewTabs strong { border: 1px solid #b8dece; border-radius: 0.4rem; background: #eff8f4; }
-.registerPreviewSearch { display: grid; grid-template-columns: 1fr auto auto auto; gap: 0.35rem; font-size: 0.4rem; align-items: center; }
-.registerPreviewSearch > * { padding: 0.4rem 0.55rem; border: 1px solid #bfd4dc; border-radius: 0.45rem; background: white; }
-.registerPreviewSearch strong { background: #12654e; color: white; }
-.registerPreviewGroup { display: flex; min-height: 0; flex-direction: column; border: 1px solid #9fd7c0; border-radius: 0.65rem; background: #f6fbf8; }
-.registerPreviewGroup > header { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.6rem; border-bottom: 1px solid #c8ded5; }
-.registerPreviewGroup > header strong { display: block; font-size: 0.63rem; }
-.registerPreviewGroup > header > div:last-child { text-align: right; }
-.registerPreviewGroup > header > div:last-child strong { font-size: 0.46rem; }
-.registerPreviewGroup small { display: block; font-size: 0.35rem; color: #617584; }
-.registerPreviewAssets { display: grid; flex: 1; min-height: 0; grid-template-rows: repeat(3, minmax(0, 1fr)); gap: 0.35rem; padding: 0.4rem 0.5rem 0.4rem 1.3rem; }
-.registerPreviewRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; padding: 0.2rem 0.5rem; border: 1px solid #bfd4dc; border-radius: 0.55rem; background: #fff; }
-.registerPreviewRow h3 { margin: 0; font-size: 0.65rem; letter-spacing: -0.025em; }
-.registerPreviewRow p { margin: 0.18rem 0; font-size: 0.34rem; color: #617584; white-space: nowrap; }
-.registerPreviewRow > div > strong { display: block; font-size: 0.37rem; }
-.registerPreviewRow > div:last-child { text-align: right; }
-.registerPreviewRow > div:last-child > strong { font-size: 0.7rem; font-weight: 900; }
-.registerPreviewRow span { display: block; margin-top: 0.28rem; font-size: 0.34rem; color: #245f50; }
+/* Preserve the reference register's proportions inside every preview size. */
+.registerPreviewFrame { display: grid; place-items: center; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+.registerPreviewFrame > div { position: relative; }
+.registerPreview { position: absolute; top: 0; width: 744px; height: 780px; transform-origin: top left; display: grid; grid-template-rows: 66px 36px 133px 49px 34px 1fr; row-gap: 11px; color: #0b493a; font-size: 10px; line-height: 1.2; }
+.registerPreview * { box-sizing: border-box; }
+.registerPreview svg { width: 12px; height: 12px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.registerPreviewTitle { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border: 1px solid #bfd4dc; border-radius: 16px; background: linear-gradient(110deg,#edf5f2,#fff); box-shadow: 0 8px 18px #1b56440d; }
+.registerPreviewTitle h2 { margin: 0; font-size: 34px; line-height: 1.1; font-weight: 900; letter-spacing: -1.1px; }
+.registerTransfer { position: relative; display: grid; place-items: center; width: 35px; height: 35px; border: 1px solid #b6cfd8; border-radius: 50%; background: #fff; box-shadow: 0 5px 12px #173d3010; }
+.registerTransfer b { position: absolute; top: -5px; right: -5px; display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid #ffc9c9; border-radius: 50%; font-size: 7px; color: #d94444; background: #fff4f4; }
+.registerPreviewToolbar { display: grid; grid-template-columns: repeat(4,1fr); gap: 11px; }
+.registerPreviewToolbar > span, .registerActions > span, .registerPreviewSearch > span { display: flex; align-items: center; justify-content: center; gap: 5px; border: 1px solid #bfd4dc; border-radius: 11px; background: #fff; font-weight: 800; }
+.registerPreview [data-tone='share'] { border-color: #e77d36; color: #85430d; background: #fff6ed; box-shadow: 0 6px 12px #b56a1710; }
+.registerPreview [data-tone='details'] { border-color: #78b9ee; color: #163d62; background: linear-gradient(#fff,#edf6ff); }
+.registerPreview [data-tone='manage'] { border-color: #64ca98; color: #07583f; background: linear-gradient(#fff,#effaf4); }
+.registerPreview [data-tone='primary'] { border-color: #17845e; color: #fff; background: linear-gradient(#20745c,#08533f); box-shadow: 0 6px 12px #1656401a; }
+.registerPreviewStats { position: relative; display: grid; grid-template-columns: repeat(3,1fr); gap: 11px; }
+.registerPreviewStats > div { display: grid; grid-template-rows: 21px 51px 1fr; min-width: 0; padding: 13px 16px 6px; border: 1px solid #bfd4dc; border-radius: 15px; background: linear-gradient(#fafcfd,#f3f7f8); }
+.registerPreviewStats > div:first-of-type { border-color: #8cd0b4; background: linear-gradient(#fbfefd,#eef8f4); }
+.registerPreviewStats > div > small { font-size: 8px; font-weight: 800; color: #607788; }
+.registerPreviewStats > div > strong { display: flex; align-items: center; gap: 2px; font-size: 24px; letter-spacing: -0.65px; font-weight: 900; white-space: nowrap; }
+.registerPreviewStats strong small { align-self: center; padding-top: 9px; font-size: 9px; letter-spacing: 0; color: #607788; }
+.registerStatFooter { border-top: 1px solid #cbdfe7; padding-top: 8px; font-size: 8px; font-weight: 700; color: #607788; text-align: center; white-space: nowrap; }
+.registerVat { display: grid; grid-template-columns: 1fr 1fr; align-items: center; height: 28px; padding: 3px; border: 1px solid #95c9b7; border-radius: 8px; background: white; }
+.registerVat b { display: grid; place-items: center; align-self: stretch; border-radius: 5px; background: linear-gradient(#178663,#006143); color: #fff; box-shadow: 0 2px 5px #0a49394d; }
+.registerPrevious, .registerNext { position: absolute; top: 54px; font-size: 22px; color: #557f73; }
+.registerPrevious { left: -9px; opacity: 0.2; }.registerNext { right: -12px; }
+.registerPreviewTabs { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; padding: 4px; border: 1px solid #cddfd6; border-radius: 13px; background: white; box-shadow: 0 8px 16px #1e57420a; }
+.registerPreviewTabs > div { display: flex; align-items: center; gap: 8px; padding: 3px 8px; border: 1px solid transparent; border-radius: 10px; }
+.registerPreviewTabs [data-selected='true'] { border-color: #b5ddcc; background: #f4fbf7; }
+.registerPreviewTabs i, .registerGroupIdentity > i { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid #cde8dc; border-radius: 8px; background: #eff8f4; color: #438c77; }
+.registerPreviewTabs strong { display: block; font-size: 10px; }
+.registerPreviewTabs small { display: block; font-size: 8px; color: #738c8a; }
+.registerPreviewTabs b { margin-left: auto; color: #77998c; }
+.registerPreviewSearch { display: grid; grid-template-columns: 1fr 97px 119px 97px; gap: 9px; }
+.registerPreviewSearch > span { color: #284354; font-size: 9px; border-radius: 10px; box-shadow: 0 3px 8px #15493108; }
+.registerPreviewSearch > span:first-child { justify-content: flex-start; padding-left: 10px; font-weight: 600; }
+.registerPreviewSearch > span:first-child > svg { color: #859bad; }
+.registerPreviewSearch i { display: grid; place-items: center; margin-left: auto; width: 29px; height: 28px; border-left: 1px solid #c6dbe5; }
+.registerPreviewSearch i svg { width: 10px; height: 10px; }
+.registerPreviewGroup { display: flex; flex-direction: column; min-height: 0; border: 1px solid #97d6bd; border-radius: 15px; background: linear-gradient(110deg,#eff8f4,#fafdfb); }
+.registerPreviewGroup > header { display: flex; align-items: center; justify-content: space-between; height: 86px; flex-shrink: 0; padding: 10px 13px; border-bottom: 1px solid #c8e2d8; }
+.registerGroupIdentity { display: flex; align-items: center; gap: 10px; }
+.registerGroupIdentity > i { width: 29px; height: 29px; color: #04795a; border-color: #a0d9c3; }.registerGroupIdentity svg { width: 19px; height: 19px; }
+.registerGroupIdentity strong { display: block; font-size: 15px; font-weight: 850; }
+.registerGroupIdentity small { display: block; margin-top: 3px; font-size: 8px; color: #56766b; font-weight: 700; }
+.registerGroupAside { text-align: right; }.registerGroupAside > strong { display: block; font-size: 11px; }.registerGroupAside > small { display: block; margin-top: 2px; font-size: 7px; font-weight: 800; color: #678276; }
+.registerActions { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; width: 300px; height: 32px; margin-top: 8px; }
+.registerActions > span { font-size: 9px; border-radius: 10px; }
+.registerActions svg { width: 11px; height: 11px; }
+.registerPreviewAssets { position: relative; display: grid; grid-template-rows: repeat(3,1fr); min-height: 0; flex: 1; gap: 10px; padding: 8px 31px 10px 44px; }
+.registerPreviewAssets::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 50px; width: 1px; background: #82cdb4; }
+.registerPreviewRow { position: relative; display: grid; grid-template-columns: 24px 1fr; align-items: start; gap: 8px; padding: 10px 10px 8px; min-height: 0; border: 1px solid #bfd5de; border-radius: 16px; background: linear-gradient(#fff,#f6faf9); box-shadow: 0 7px 13px #1c564509; }
+.registerPreviewRow::before { content: ''; position: absolute; width: 14px; height: 1px; left: -25px; top: 46%; background: #82cdb4; }
+.registerRowFlags { display: grid; gap: 3px; padding: 3px; border: 1px solid #d6e4e7; border-radius: 7px; background: #fff; }
+.registerRowFlags > span { display: grid; place-items: center; width: 18px; height: 18px; border: 1px solid #d7e8e8; border-radius: 4px; color: #5c8a7a; }.registerRowFlags > span:last-child { color: #197658; border-color: #9ad3bf; background: #e7f8f1; }
+.registerRowFlags svg { width: 12px; height: 12px; }
+.registerRowIdentity h3 { margin: 2px 0 7px; font-size: 16px; line-height: 1; font-weight: 850; letter-spacing: -0.5px; }
+.registerRowIdentity p { margin: 0 0 6px; font-size: 9px; color: #647c8e; font-weight: 750; }
+.registerRowIdentity > strong, .registerRowIdentity > small { display: block; font-size: 9px; line-height: 1.35; color: #365568; font-weight: 800; }.registerRowIdentity > small { color: #6c8495; }
+.registerRowAside { position: absolute; right: 12px; top: 12px; text-align: right; }
+.registerRowAside > strong { display: block; font-size: 16px; font-weight: 900; letter-spacing: -0.5px; }
+.registerRowAside > small { display: block; font-size: 8px; color: #607888; font-weight: 800; }
+.registerRowAside .registerActions { width: 283px; margin-top: 8px; }
+.registerRowChevron { position: absolute; right: -8px; top: 8px; font-size: 23px; color: #577d70; }

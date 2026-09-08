@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from '../components/WebsitePortal';
 import styles from './page.module.css';
 
@@ -227,15 +227,15 @@ export default function HomeAssetPreview({
       <p id="home-register-preview-label" className={styles.assetActiveQuestion}>
         <span className={styles.assetActiveQuestionMain}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            {QUESTIONS[activeIndex]?.icon ?? QUESTIONS[0].icon}
+            {showRegister ? QUESTIONS[0].icon : QUESTIONS[activeIndex]?.icon ?? QUESTIONS[0].icon}
           </svg>
-          <span>{showRegister ? 'Asset Register' : QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}</span>
+          <span>{showRegister ? QUESTIONS[0].label : QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}</span>
         </span>
-        <span className={styles.assetStoryProgress} aria-hidden="true" style={showRegister ? { visibility: 'hidden' } : undefined}>
+        <span className={styles.assetStoryProgress} aria-hidden="true">
           {QUESTIONS.map((question, index) => (
             <span
               key={question.key}
-              className={index === activeIndex ? styles.assetStoryProgressActive : undefined}
+              className={index === (showRegister ? 0 : activeIndex) ? styles.assetStoryProgressActive : undefined}
             />
           ))}
         </span>
@@ -350,37 +350,96 @@ function PreviewContent({ activeQuestion }: { activeQuestion: PreviewKey }) {
   }
 }
 
-function RegisterPreview() {
-  const assets = [
-    { name: '2023 Toyota Hilux Single Cab', year: '2023', usage: '113 677 km', value: 'R 237 150' },
-    { name: '2013 Toyota Hilux 2.5 4x4', year: '2013', usage: '328 242 km', value: 'R 122 400' },
-    { name: '2023 Toyota Hilux Single Cab', year: '2023', usage: '140 825 km', value: 'R 256 275' },
-  ];
+function RegisterIcon({ name }: { name: string }) {
+  const paths: Record<string, ReactNode> = {
+    share: <><circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="m8 11 8-5M8 13l8 5"/></>,
+    summary: <><path d="M4 5h16M4 12h16M4 19h16M8 3v18"/></>,
+    filter: <><path d="M4 6h16M7 12h10M10 18h4"/><circle cx="8" cy="6" r="1"/><circle cx="15" cy="12" r="1"/></>,
+    download: <path d="M12 3v12m-4-4 4 4 4-4M5 17v4h14v-4"/>,
+    transfer: <path d="M5 7h14l-4-4M19 17H5l4 4M19 7l-4 4M5 17l4-4"/>,
+    umbrella: <><path d="M3 12a9 9 0 0 1 18 0c-3-3-6 0-9 0s-6-3-9 0ZM12 3v15a3 3 0 0 0 6 0M8 11c0-5 1-8 4-8s4 3 4 8"/></>,
+    overview: <><path d="M4 4h14M4 9h10M4 14h7"/><rect x="2" y="2" width="19" height="20" rx="4"/><circle cx="16" cy="16" r="2"/></>,
+    assets: <><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></>,
+    search: <><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></>,
+    refresh: <><path d="M20 8a8 8 0 1 0 0 8M20 3v5h-5"/></>,
+    details: <><circle cx="12" cy="12" r="9"/><path d="m8 10 4 4 4-4"/></>,
+    flag: <path d="M6 21V3h12l-2 4 2 4H6"/>,
+    plus: <path d="M12 4v16M4 12h16"/>,
+    close: <path d="m6 6 12 12M6 18 18 6"/>,
+  };
+  return <svg viewBox="0 0 24 24" aria-hidden="true">{paths[name] ?? paths.assets}</svg>;
+}
 
+function RegisterActions({ expanded = false }: { expanded?: boolean }) {
+  return <div className={styles.registerActions} aria-hidden="true">
+    <span data-tone="share"><RegisterIcon name="share"/>Share</span>
+    <span data-tone="details"><RegisterIcon name="details"/>{expanded ? 'Hide details' : 'View details'}</span>
+    <span data-tone="manage"><svg viewBox="0 0 24 24" aria-hidden="true">{QUESTIONS[3].icon}</svg>Manage</span>
+  </div>;
+}
+
+function RegisterPreview() {
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(0);
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const fit = () => setScale(Math.min(frame.clientWidth / 768, frame.clientHeight / 780));
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
+
+  const assets = [
+    { name: '2023 Toyota Hilux Single Cab', year: '2023', usage: '113 677 km', value: 'R 237 150', updated: '01 Sept 2026' },
+    { name: '2013 Toyota Hilux 2.5 4x4', year: '2013', usage: '328 242 km', value: 'R 122 400', updated: '26 Aug 2026' },
+    { name: '2023 Toyota Hilux Single Cab', year: '2023', usage: '140 825 km', value: 'R 256 275', updated: '26 Aug 2026' },
+  ];
   return (
-    <div className={styles.registerPreview}>
-      <header className={styles.registerPreviewTitle}><h2>TEST BUSINESS PTY LTD</h2><span>⇄</span></header>
-      <div className={styles.registerPreviewToolbar} aria-hidden="true">
-        <span>Share</span><span>Summary</span><span>Filters</span><span>↓ Download</span>
-      </div>
-      <div className={styles.registerPreviewStats}>
-        <div><small>Register value</small><strong>R 11 450 567 <small>+ VAT</small></strong><span>Excl. VAT　 |　 Incl. VAT</span></div>
-        <div><small>Aim4price valued equipment</small><strong>58</strong></div>
-        <div><small>Total assets</small><strong>101</strong><span>1 umbrella · 9 grouped assets shown</span></div>
-      </div>
-      <div className={styles.registerPreviewTabs} aria-hidden="true"><span>▤　Overview</span><strong>▦　Assets　✓</strong></div>
-      <div className={styles.registerPreviewSearch} aria-hidden="true"><span>⌕　Toyota Hilux</span><span>Refresh</span><span>Create Umbrella</span><strong>+ Add Asset</strong></div>
-      <section className={styles.registerPreviewGroup}>
-        <header><div><strong>Vehicles</strong><small>9 grouped assets · Every asset counted · Combined umbrella</small></div><div><strong>Counted value R 3 305 000</strong><small>Excl. VAT</small></div></header>
-        <div className={styles.registerPreviewAssets}>
-          {assets.map((asset, index) => (
-            <article key={index} className={styles.registerPreviewRow}>
-              <div><h3>{asset.name}</h3><p>Year Model: {asset.year} · Usage: {asset.usage} · Condition: Good</p><small><b>Aim4price value</b> · Updated 01 Sept 2026</small></div>
-              <div><strong>{asset.value}</strong><small>Excl. VAT</small><span aria-hidden="true">Share　　View details　　Manage</span></div>
-            </article>
-          ))}
+    <div ref={frameRef} className={styles.registerPreviewFrame}>
+      <div style={{ width: 768 * scale, height: 780 * scale }}>
+        <div className={styles.registerPreview} style={{ transform: `scale(${scale})`, left: 12 * scale }}>
+          <header className={styles.registerPreviewTitle}>
+            <h2>TEST BUSINESS PTY LTD</h2>
+            <span className={styles.registerTransfer} aria-hidden="true"><RegisterIcon name="transfer"/><b>15</b></span>
+          </header>
+          <div className={styles.registerPreviewToolbar} aria-hidden="true">
+            <span data-tone="share"><RegisterIcon name="share"/>Share</span><span data-tone="details"><RegisterIcon name="summary"/>Summary</span><span data-tone="manage"><RegisterIcon name="filter"/>Filters</span><span data-tone="primary"><RegisterIcon name="download"/>Download</span>
+          </div>
+          <div className={styles.registerPreviewStats}>
+            <span className={styles.registerPrevious} aria-hidden="true">‹</span>
+            <div><small>Register value</small><strong>R 11 450 567<small>+ VAT</small></strong><div className={styles.registerStatFooter}><div className={styles.registerVat}><b>Excl. VAT</b><span>Incl. VAT</span></div></div></div>
+            <div><small>Aim4price valued equipment</small><strong>58</strong><div className={styles.registerStatFooter}/></div>
+            <div><small>Total assets</small><strong>101</strong><div className={styles.registerStatFooter}>1 umbrella always shown　No standalone assets</div></div>
+            <span className={styles.registerNext} aria-hidden="true">›</span>
+          </div>
+          <div className={styles.registerPreviewTabs} aria-hidden="true">
+            <div><i><RegisterIcon name="overview"/></i><span><strong>Overview</strong><small>Checking updates...</small></span><b>›</b></div>
+            <div data-selected="true"><i><RegisterIcon name="assets"/></i><span><strong>Assets</strong><small>Loading register...</small></span><b>✓</b></div>
+          </div>
+          <div className={styles.registerPreviewSearch} aria-hidden="true">
+            <span><RegisterIcon name="search"/>Toyota Hilux<i><RegisterIcon name="close"/></i></span>
+            <span><RegisterIcon name="refresh"/>Refresh</span><span><RegisterIcon name="umbrella"/>Create Umbrella</span><span data-tone="primary"><RegisterIcon name="plus"/>Add Asset</span>
+          </div>
+          <section className={styles.registerPreviewGroup}>
+            <header>
+              <div className={styles.registerGroupIdentity}><i><RegisterIcon name="umbrella"/></i><div><strong>Vehicles</strong><small>9 grouped assets · Every asset counted · Combined umbrella</small></div></div>
+              <div className={styles.registerGroupAside}><strong>Counted value R 3 305 000</strong><small>Excl. VAT</small><RegisterActions expanded/></div>
+            </header>
+            <div className={styles.registerPreviewAssets}>
+              {assets.map((asset, index) => (
+                <article key={index} className={styles.registerPreviewRow}>
+                  <div className={styles.registerRowFlags} aria-hidden="true"><span><RegisterIcon name="flag"/></span><span><RegisterIcon name="transfer"/></span><span><RegisterIcon name="umbrella"/></span></div>
+                  <div className={styles.registerRowIdentity}><h3>{asset.name}</h3><p>Year Model: {asset.year} · Usage: {asset.usage} · Condition: Good</p><strong>Aim4price value</strong><small>Updated {asset.updated}</small></div>
+                  <div className={styles.registerRowAside}><strong>{asset.value}</strong><small>Excl. VAT</small><RegisterActions/></div>
+                  <span className={styles.registerRowChevron} aria-hidden="true">›</span>
+                </article>
+              ))}
+            </div>
+          </section>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

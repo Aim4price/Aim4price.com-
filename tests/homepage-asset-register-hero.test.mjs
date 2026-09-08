@@ -217,6 +217,16 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /onOpenRegister=\{claimManualControl\}/);
   assert.match(preview, /case 'register':[\s\S]*?<RegisterPreview \/>/);
   assert.match(preview, /TEST BUSINESS PTY LTD/);
+  assert.match(preview, /showRegister \? QUESTIONS\[0\]\.label/);
+  assert.match(preview, /index === \(showRegister \? 0 : activeIndex\)/);
+  assert.doesNotMatch(preview, /visibility: 'hidden'/);
+  assert.match(preview, /function RegisterActions/);
+  assert.match(preview, /registerVat/);
+  assert.match(preview, /registerRowFlags/);
+  assert.match(preview, /<RegisterActions expanded\/>/);
+  assert.match(preview, /Updated \{asset.updated\}/);
+  assert.match(preview, /observer.disconnect\(\)/);
+
   assert.match(preview, /Register value[\s\S]*?R 11 450 567/);
   assert.match(preview, /tabIndex=\{0\}/);
   assert.match(preview, /className=\{styles\.assetHeroStage\}[\s\S]*?data-active-question=\{activeQuestion\}/);
