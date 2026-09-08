@@ -2,10 +2,12 @@
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { BASIC_REPLACEMENT_SLIDER_STEP } from '../../lib/basic-estimate';
 import styles from './valuation-flow-polish.module.css';
 
 const WIZARD_CARD_ID = 'valuation-wizard-card';
 const FAMILY_SEARCH_LABEL = /^Search (equipment type|vehicle type)$/i;
+const REPLACEMENT_SLIDER_LABEL = /Slide to replacement price/i;
 const FAMILY_MODAL_TITLE_ID = 'valuation-family-modal-title';
 const FAMILY_MODAL_DESCRIPTION_ID = 'valuation-family-modal-description';
 
@@ -45,6 +47,16 @@ function findFamilyPicker(): FamilyPickerNodes | null {
   }
 
   return null;
+}
+
+function findReplacementPriceSlider(): HTMLInputElement | null {
+  const wizard = document.getElementById(WIZARD_CARD_ID);
+  if (!wizard) return null;
+
+  return Array.from(wizard.querySelectorAll<HTMLInputElement>('input[type="range"]')).find((input) => {
+    const label = input.closest('label');
+    return Boolean(label && REPLACEMENT_SLIDER_LABEL.test(label.textContent ?? ''));
+  }) ?? null;
 }
 
 function focusableElements(container: HTMLElement): HTMLElement[] {
@@ -104,6 +116,8 @@ export default function ValuationFlowPolish() {
   useLayoutEffect(() => {
     let guardedWizard: HTMLElement | null = null;
     let originalScrollIntoView: HTMLElement['scrollIntoView'] | null = null;
+    let guardedReplacementSlider: HTMLInputElement | null = null;
+    let originalReplacementStep = '';
     let previousHtmlOverflow = '';
     let previousBodyOverflow = '';
     let scrollLocked = false;
@@ -140,6 +154,28 @@ export default function ValuationFlowPolish() {
       guardedWizard = wizard;
       originalScrollIntoView = wizard.scrollIntoView;
       wizard.scrollIntoView = () => undefined;
+    };
+
+    const restoreReplacementSlider = () => {
+      if (guardedReplacementSlider?.isConnected) {
+        guardedReplacementSlider.step = originalReplacementStep;
+        guardedReplacementSlider.removeAttribute('data-basic-replacement-slider-step');
+      }
+      guardedReplacementSlider = null;
+      originalReplacementStep = '';
+    };
+
+    const syncReplacementSliderStep = () => {
+      const slider = findReplacementPriceSlider();
+      if (slider === guardedReplacementSlider) return;
+
+      restoreReplacementSlider();
+      if (!slider) return;
+
+      guardedReplacementSlider = slider;
+      originalReplacementStep = slider.step;
+      slider.step = String(BASIC_REPLACEMENT_SLIDER_STEP);
+      slider.setAttribute('data-basic-replacement-slider-step', String(BASIC_REPLACEMENT_SLIDER_STEP));
     };
 
     const clearPickerPresentation = (picker: FamilyPickerNodes | null) => {
@@ -196,6 +232,7 @@ export default function ValuationFlowPolish() {
 
     const syncFamilyPicker = () => {
       guardWizardScroll();
+      syncReplacementSliderStep();
 
       const nextPicker = findFamilyPicker();
       if (pickerRef.current?.card !== nextPicker?.card) {
@@ -286,6 +323,7 @@ export default function ValuationFlowPolish() {
       clearPickerPresentation(pickerRef.current);
       pickerRef.current = null;
       optionButtonsRef.current = new Map();
+      restoreReplacementSlider();
       restoreWizardGuard();
     };
   }, []);
