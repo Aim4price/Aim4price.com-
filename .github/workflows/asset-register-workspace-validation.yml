@@ -46,6 +46,8 @@ jobs:
           npm run test:owner-app-operations
           npm run test:dealer-fast-loading
           npm run test:app-umbrella-access
+      - name: Production bundle validation
+        run: npm run build
       - name: Browser scale, interaction and mobile isolation checks
         run: node scripts/verify-website-canvas.cjs
       - name: Save browser evidence
