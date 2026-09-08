@@ -1,17 +1,27 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './valuation-flow-polish.module.css';
 
 const WIZARD_CARD_ID = 'valuation-wizard-card';
 const FAMILY_SEARCH_LABEL = /^Search (equipment type|vehicle type)$/i;
+const FAMILY_MODAL_TITLE_ID = 'valuation-family-modal-title';
+const FAMILY_MODAL_DESCRIPTION_ID = 'valuation-family-modal-description';
 
 type FamilyPickerNodes = {
   card: HTMLElement;
   searchInput: HTMLInputElement;
   trigger: HTMLButtonElement;
   typeLabel: string;
+};
+
+type FamilyOption = {
+  id: string;
+  label: string;
+  meta: string;
+  selected: boolean;
+  searchText: string;
 };
 
 function findFamilyPicker(): FamilyPickerNodes | null {
@@ -43,11 +53,53 @@ function focusableElements(container: HTMLElement): HTMLElement[] {
   )).filter((element) => element.getClientRects().length > 0);
 }
 
+function optionLabelParts(button: HTMLButtonElement): { label: string; meta: string } {
+  const content = button.querySelector<HTMLElement>(':scope > span') ?? button.querySelector<HTMLElement>('span');
+  const metaNode = content?.querySelector<HTMLElement>('small') ?? null;
+  const metaRaw = metaNode?.textContent?.trim() ?? '';
+  const meta = metaRaw.replace(/^·\s*/, '').trim();
+  const directLabel = content
+    ? Array.from(content.childNodes)
+        .filter((node) => node.nodeType === Node.TEXT_NODE)
+        .map((node) => node.textContent?.trim() ?? '')
+        .filter(Boolean)
+        .join(' ')
+        .trim()
+    : '';
+  const fallback = (content?.textContent ?? button.textContent ?? '').replace(metaRaw, '').replace(/\s+/g, ' ').trim();
+  return { label: directLabel || fallback || 'Unnamed family', meta };
+}
+
+function sameOptions(left: FamilyOption[], right: FamilyOption[]): boolean {
+  if (left.length !== right.length) return false;
+  return left.every((option, index) => {
+    const candidate = right[index];
+    return Boolean(candidate)
+      && option.id === candidate.id
+      && option.label === candidate.label
+      && option.meta === candidate.meta
+      && option.selected === candidate.selected;
+  });
+}
+
 export default function ValuationFlowPolish() {
   const [familyModalOpen, setFamilyModalOpen] = useState(false);
+  const [familyOptions, setFamilyOptions] = useState<FamilyOption[]>([]);
+  const [familySearch, setFamilySearch] = useState('');
+  const [familyTypeLabel, setFamilyTypeLabel] = useState('equipment type');
   const [overlayHost, setOverlayHost] = useState<HTMLElement | null>(null);
   const pickerRef = useRef<FamilyPickerNodes | null>(null);
+  const optionButtonsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
   const familyModalOpenRef = useRef(false);
+  const modalRef = useRef<HTMLElement | null>(null);
+  const modalSearchRef = useRef<HTMLInputElement | null>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+
+  const visibleFamilyOptions = useMemo(() => {
+    const terms = familySearch.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) return familyOptions;
+    return familyOptions.filter((option) => terms.every((term) => option.searchText.includes(term)));
+  }, [familyOptions, familySearch]);
 
   useLayoutEffect(() => {
     let guardedWizard: HTMLElement | null = null;
@@ -55,7 +107,6 @@ export default function ValuationFlowPolish() {
     let previousHtmlOverflow = '';
     let previousBodyOverflow = '';
     let scrollLocked = false;
-    let focusFrame = 0;
 
     const lockDocumentScroll = () => {
       if (scrollLocked) return;
@@ -74,9 +125,7 @@ export default function ValuationFlowPolish() {
     };
 
     const restoreWizardGuard = () => {
-      if (guardedWizard && originalScrollIntoView) {
-        guardedWizard.scrollIntoView = originalScrollIntoView;
-      }
+      if (guardedWizard && originalScrollIntoView) guardedWizard.scrollIntoView = originalScrollIntoView;
       guardedWizard = null;
       originalScrollIntoView = null;
     };
@@ -97,6 +146,7 @@ export default function ValuationFlowPolish() {
       if (!picker) return;
       picker.card.classList.remove(styles.familyPicker);
       picker.card.removeAttribute('data-valuation-family-picker');
+      picker.card.removeAttribute('data-valuation-family-source-open');
       picker.card.removeAttribute('data-valuation-family-modal');
       picker.card.removeAttribute('data-valuation-family-title');
       picker.card.removeAttribute('role');
@@ -104,7 +154,44 @@ export default function ValuationFlowPolish() {
       picker.card.removeAttribute('aria-label');
       picker.card.removeAttribute('tabindex');
       picker.trigger.removeAttribute('data-valuation-family-close');
-      picker.trigger.removeAttribute('aria-label');
+      if (picker.trigger.getAttribute('aria-label') === 'Close family selector') picker.trigger.removeAttribute('aria-label');
+    };
+
+    const captureFamilyOptions = (picker: FamilyPickerNodes) => {
+      const buttons = Array.from(picker.card.querySelectorAll<HTMLButtonElement>('button')).filter((button) =>
+        button !== picker.trigger
+        && !button.disabled
+        && Boolean(button.querySelector('span')),
+      );
+      const buttonMap = new Map<string, HTMLButtonElement>();
+      const options = buttons.map((button, index) => {
+        const { label, meta } = optionLabelParts(button);
+        const id = `family-option-${index}`;
+        buttonMap.set(id, button);
+        return {
+          id,
+          label,
+          meta,
+          selected: button.className.includes('equipmentDropdownOptionActive') || button.getAttribute('aria-pressed') === 'true',
+          searchText: `${label} ${meta}`.toLowerCase(),
+        } satisfies FamilyOption;
+      });
+
+      optionButtonsRef.current = buttonMap;
+      setFamilyOptions((current) => sameOptions(current, options) ? current : options);
+    };
+
+    const closePortalState = () => {
+      if (!familyModalOpenRef.current) return;
+      familyModalOpenRef.current = false;
+      setFamilyModalOpen(false);
+      optionButtonsRef.current = new Map();
+      setFamilyOptions([]);
+      window.requestAnimationFrame(() => {
+        const target = returnFocusRef.current;
+        if (target?.isConnected) target.focus({ preventScroll: true });
+        returnFocusRef.current = null;
+      });
     };
 
     const syncFamilyPicker = () => {
@@ -119,10 +206,7 @@ export default function ValuationFlowPolish() {
       }
 
       if (!nextPicker) {
-        if (familyModalOpenRef.current) {
-          familyModalOpenRef.current = false;
-          setFamilyModalOpen(false);
-        }
+        closePortalState();
         unlockDocumentScroll();
         return;
       }
@@ -132,41 +216,23 @@ export default function ValuationFlowPolish() {
       const isOpen = nextPicker.trigger.getAttribute('aria-expanded') === 'true';
 
       if (isOpen) {
-        const modalTitle = `Choose ${nextPicker.typeLabel}`;
-        nextPicker.card.setAttribute('data-valuation-family-modal', 'true');
-        nextPicker.card.setAttribute('data-valuation-family-title', modalTitle);
-        nextPicker.card.setAttribute('role', 'dialog');
-        nextPicker.card.setAttribute('aria-modal', 'true');
-        nextPicker.card.setAttribute('aria-label', modalTitle);
-        nextPicker.card.setAttribute('tabindex', '-1');
-        nextPicker.trigger.setAttribute('data-valuation-family-close', 'true');
-        nextPicker.trigger.setAttribute('aria-label', 'Close family selector');
+        nextPicker.card.setAttribute('data-valuation-family-source-open', 'true');
+        captureFamilyOptions(nextPicker);
         lockDocumentScroll();
 
         if (!familyModalOpenRef.current) {
+          returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : nextPicker.trigger;
           familyModalOpenRef.current = true;
+          setFamilyTypeLabel(nextPicker.typeLabel);
+          setFamilySearch(nextPicker.searchInput.value);
           setFamilyModalOpen(true);
-          window.cancelAnimationFrame(focusFrame);
-          focusFrame = window.requestAnimationFrame(() => {
-            pickerRef.current?.searchInput.focus({ preventScroll: true });
-            pickerRef.current?.searchInput.select();
-          });
+        } else {
+          setFamilyTypeLabel(nextPicker.typeLabel);
         }
       } else {
-        nextPicker.card.removeAttribute('data-valuation-family-modal');
-        nextPicker.card.removeAttribute('data-valuation-family-title');
-        nextPicker.card.removeAttribute('role');
-        nextPicker.card.removeAttribute('aria-modal');
-        nextPicker.card.removeAttribute('aria-label');
-        nextPicker.card.removeAttribute('tabindex');
-        nextPicker.trigger.removeAttribute('data-valuation-family-close');
-        nextPicker.trigger.removeAttribute('aria-label');
+        nextPicker.card.removeAttribute('data-valuation-family-source-open');
+        closePortalState();
         unlockDocumentScroll();
-
-        if (familyModalOpenRef.current) {
-          familyModalOpenRef.current = false;
-          setFamilyModalOpen(false);
-        }
       }
     };
 
@@ -181,12 +247,14 @@ export default function ValuationFlowPolish() {
       }
 
       if (event.key !== 'Tab') return;
-      const focusable = focusableElements(picker.card);
+      const modal = modalRef.current;
+      if (!modal) return;
+      const focusable = focusableElements(modal);
       if (!focusable.length) return;
 
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && (document.activeElement === first || !picker.card.contains(document.activeElement))) {
+      if (event.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
         event.preventDefault();
         last.focus({ preventScroll: true });
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -211,13 +279,22 @@ export default function ValuationFlowPolish() {
     return () => {
       observer.disconnect();
       document.removeEventListener('keydown', handleKeyDown);
-      window.cancelAnimationFrame(focusFrame);
       unlockDocumentScroll();
       clearPickerPresentation(pickerRef.current);
       pickerRef.current = null;
+      optionButtonsRef.current = new Map();
       restoreWizardGuard();
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!familyModalOpen) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      modalSearchRef.current?.focus({ preventScroll: true });
+      modalSearchRef.current?.select();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [familyModalOpen]);
 
   const closeFamilyModal = () => {
     const picker = pickerRef.current;
@@ -225,15 +302,100 @@ export default function ValuationFlowPolish() {
     picker.trigger.click();
   };
 
+  const selectFamilyOption = (optionId: string) => {
+    optionButtonsRef.current.get(optionId)?.click();
+  };
+
   if (!familyModalOpen || !overlayHost) return null;
 
+  const modalTitle = `Choose ${familyTypeLabel}`;
+  const itemLabel = familyTypeLabel.toLowerCase().includes('vehicle') ? 'vehicle types' : 'equipment types';
+
   return createPortal(
-    <button
-      type="button"
-      className={styles.familyBackdrop}
-      aria-label="Close family selector"
-      onClick={closeFamilyModal}
-    />,
+    <div className={styles.familyOverlay} data-website-overlay data-valuation-family-modal-root="true">
+      <button
+        type="button"
+        className={styles.familyBackdrop}
+        aria-label="Close family selector"
+        onClick={closeFamilyModal}
+      />
+
+      <section
+        ref={modalRef}
+        className={styles.familyModal}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={FAMILY_MODAL_TITLE_ID}
+        aria-describedby={FAMILY_MODAL_DESCRIPTION_ID}
+      >
+        <header className={styles.familyModalHeader}>
+          <div className={styles.familyModalHeading}>
+            <span className={styles.familyModalKicker}>Aim4price catalogue</span>
+            <h2 id={FAMILY_MODAL_TITLE_ID}>{modalTitle}</h2>
+            <p id={FAMILY_MODAL_DESCRIPTION_ID}>Search or browse the available {itemLabel}.</p>
+          </div>
+          <button
+            type="button"
+            className={styles.familyModalClose}
+            onClick={closeFamilyModal}
+            aria-label="Close family selector"
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+
+        <div className={styles.familySearchRow}>
+          <label className={styles.familySearchField}>
+            <span className={styles.srOnly}>Search {familyTypeLabel}</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="m20 20-4.35-4.35m1.35-5.15a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z" />
+            </svg>
+            <input
+              ref={modalSearchRef}
+              type="search"
+              value={familySearch}
+              onChange={(event) => setFamilySearch(event.target.value)}
+              placeholder={`Search ${familyTypeLabel}`}
+              autoComplete="off"
+            />
+            {familySearch ? (
+              <button type="button" onClick={() => setFamilySearch('')} aria-label="Clear family search">×</button>
+            ) : null}
+          </label>
+          <span className={styles.familyResultCount} aria-live="polite">
+            {visibleFamilyOptions.length} {visibleFamilyOptions.length === 1 ? 'result' : 'results'}
+          </span>
+        </div>
+
+        <div className={styles.familyOptionsViewport}>
+          {visibleFamilyOptions.length ? (
+            <div className={styles.familyOptionsGrid}>
+              {visibleFamilyOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`${styles.familyOption} ${option.selected ? styles.familyOptionSelected : ''}`}
+                  aria-pressed={option.selected}
+                  onClick={() => selectFamilyOption(option.id)}
+                >
+                  <span className={styles.familyOptionCopy}>
+                    <strong>{option.label}</strong>
+                    {option.meta ? <small>{option.meta}</small> : null}
+                  </span>
+                  <span className={styles.familyOptionArrow} aria-hidden="true">→</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.familyEmptyState} role="status">
+              <strong>No matching {familyTypeLabel}</strong>
+              <span>Try a broader search or clear the search field.</span>
+              {familySearch ? <button type="button" onClick={() => setFamilySearch('')}>Clear search</button> : null}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>,
     overlayHost,
   );
 }
