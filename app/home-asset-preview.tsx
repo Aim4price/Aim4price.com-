@@ -477,7 +477,7 @@ function AssetCardPreview() {
               Hide details
             </span>
             <span className={styles.assetManageAction}>
-              <MiniGlyph type="maintenance" />
+              <svg viewBox="0 0 24 24" aria-hidden="true">{QUESTIONS[3].icon}</svg>
               Manage
             </span>
           </div>
@@ -502,11 +502,18 @@ function AssetCardPreview() {
         </div>
 
         <div className={styles.assetDetailsPanel}>
-          <AssetDetail label="Year" value="2023" />
-          <AssetDetail label="Usage" value="113 677 km" />
-          <AssetDetail label="Condition" value="Good" />
-          <AssetDetail label="Licensed" value="✓" status />
-          <AssetDetail label="Mapped" value="✓" status />
+          <div className={styles.assetIdentityColumn}>
+            <AssetDetail label="Serial" value="SKB 5" />
+            <AssetDetail label="Year" value="2023" />
+            <AssetDetail label="Usage" value="113 677 km" />
+            <AssetDetail label="Condition" value="Good" />
+          </div>
+          <div className={styles.assetStatusColumn}>
+            <AssetDetail label="Financed" value="✓" status />
+            <AssetDetail label="Insured" value="✓" status />
+            <AssetDetail label="Licensed" value="✓" status />
+            <AssetDetail label="Mapped" value="✓" status />
+          </div>
 
           <div className={styles.assetReplacementRow}>
             <span>Replacement price</span>
@@ -766,7 +773,7 @@ function AttentionPreview() {
               View details
             </span>
             <span className={styles.assetManageAction}>
-              <MiniGlyph type="maintenance" />
+              <svg viewBox="0 0 24 24" aria-hidden="true">{QUESTIONS[3].icon}</svg>
               Manage
             </span>
           </div>
