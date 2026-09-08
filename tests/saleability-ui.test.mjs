@@ -85,7 +85,7 @@ test('the questions use plain selectable answers and preserve the valuation boun
   assert.doesNotMatch(modal, /Compared with usual/);
   assert.doesNotMatch(modal, />More than 10</);
   assert.doesNotMatch(modal, /<select/);
-  assert.match(modal, /this value does not change here/);
+  assert.match(modal, /Excl. VAT · unchanged/);
   assert.match(modal, /selling-price guidance only/);
   assert.doesNotMatch(modal, /Outlook/i);
 });
@@ -114,3 +114,4 @@ test('valuation inputs needed by saved assets are retained without a database mi
   assert.match(revaluation, /resolveAdvancedAssumptionsForRevaluation/);
   assert.match(revaluation, /\.\.\.\(saved \?\? \{\}\),[\s\S]*\.\.\.requested/);
 });
+

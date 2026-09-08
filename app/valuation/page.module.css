@@ -12422,7 +12422,7 @@
   display: block;
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(168, 51, 43, 0.2);
+  border-top: 0;
   color: #6d4b47;
   font-size: 0.75rem;
   line-height: 1.4;
@@ -14478,4 +14478,17 @@
 /* Let the shared website pattern show through every Get Estimate step. */
 :global(:where([data-website-canvas])) .page {
   background: transparent;
+}
+
+
+/* Keep the estimate confirmation copy on clean single lines on the website canvas. */
+:global(html:has([data-website-canvas])) .replacementNoticeModal {
+  width: min(820px, var(--website-dialog-reference-width, 100%));
+}
+
+:global(html:has([data-website-canvas])) .replacementNoticeModal h2,
+:global(html:has([data-website-canvas])) .replacementNoticeIntro,
+:global(html:has([data-website-canvas])) .replacementNoticeDisclaimer,
+.replacementNoticeActions button {
+  white-space: nowrap;
 }
