@@ -3864,3 +3864,73 @@
 .registerRowAside > small { display: block; font-size: 8px; color: #607888; font-weight: 800; }
 .registerRowAside .registerActions { width: 283px; margin-top: 8px; }
 .registerRowChevron { position: absolute; right: -8px; top: 8px; font-size: 23px; color: #577d70; }
+
+/* Opening frame: a shared rightward inset and a visible invitation to scroll. */
+@media (prefers-reduced-motion: no-preference) {
+  .heroBrandCopy,
+  .storyHeroLogo {
+    left: 3rem;
+  }
+
+  .heroSection[data-story-step='brand'] .storyHeroLogoImage {
+    animation: openingLogoFloat 3.8s ease-in-out infinite;
+  }
+
+  .heroSection[data-story-step='brand'] .storyHeroLogo::before {
+    animation: openingHaloBreathe 3.8s ease-in-out infinite;
+  }
+
+  .storyScrollCue svg {
+    animation: openingScrollNudge 1.8s ease-in-out infinite;
+  }
+}
+
+.storyScrollCue {
+  position: absolute;
+  z-index: 8;
+  bottom: 1.1rem;
+  left: calc(50% + 3rem);
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  padding: 0;
+  border: 1px solid #8ecfb5;
+  border-radius: 50%;
+  color: #087553;
+  background: #eff9f4;
+  box-shadow: 0 0.5rem 1.5rem rgba(8, 75, 57, 0.1);
+  cursor: pointer;
+}
+
+.storyScrollCue:hover {
+  background: #dff3e9;
+  border-color: #087553;
+}
+
+.storyScrollCue:focus-visible {
+  outline: 3px solid #168b64;
+  outline-offset: 4px;
+}
+
+.heroSection[data-motion-paused='true'] .storyHeroLogoImage,
+.heroSection[data-motion-paused='true'] .storyHeroLogo::before,
+.heroSection[data-motion-paused='true'] .storyScrollCue svg {
+  animation-play-state: paused;
+}
+
+@keyframes openingLogoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-0.5rem); }
+}
+
+@keyframes openingHaloBreathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1.08); opacity: 0.75; }
+  50% { transform: translate(-50%, -50%) scale(1.18); opacity: 1; }
+}
+
+@keyframes openingScrollNudge {
+  0%, 100% { transform: translateY(-3px); }
+  50% { transform: translateY(3px); }
+}
