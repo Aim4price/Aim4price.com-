@@ -487,6 +487,14 @@ export default function HomeHeroExperience() {
                 </Link>
               </div>
 
+              {isDesktopStory && storyStep === 'brand' && isAutoplaying &&
+                !isPaused && !isManuallyControlled && !hasAutoplayFinished &&
+                isHeroVisible && isPageVisible ? (
+                <div className={styles.openingProgress} role="img" aria-label="Opening animation progressing to the next section">
+                  <span style={{ animationDuration: `${STORY_DURATIONS.brand}ms` }} />
+                </div>
+              ) : null}
+
               {isDesktopStory && storyStep === 'brand' ? (
                 <button
                   type="button"
