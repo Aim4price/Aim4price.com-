@@ -7,6 +7,8 @@ on:
       - "components/**"
       - "lib/website-canvas.ts"
       - "lib/dropdown-overlay-position.ts"
+      - "lib/estimate-report-enhancement.ts"
+      - "next.config.mjs"
       - "tests/**"
       - "scripts/verify-website-canvas.cjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
@@ -32,7 +34,9 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - name: Canonical layout, overlays and native boundaries
-        run: node --experimental-strip-types --test tests/site-workspace-zoom.test.mjs tests/responsive-foundation.test.mjs tests/desktop-site-viewport.test.mjs tests/dropdown-overlay.test.mjs tests/compact-desktop-continuity.test.mjs tests/homepage-asset-register-hero.test.mjs
+        run: node --experimental-strip-types --test tests/site-workspace-zoom.test.mjs tests/responsive-foundation.test.mjs tests/desktop-site-viewport.test.mjs tests/dropdown-overlay.test.mjs tests/compact-desktop-continuity.test.mjs tests/homepage-asset-register-hero.test.mjs tests/estimate-report-enhancement.test.mjs
+      - name: Approved report design contract
+        run: npm run test:report-design
       - name: Shared workflow regression tests
         run: |
           npm run test:asset-card-ui
@@ -42,6 +46,24 @@ jobs:
           npm run test:owner-app-operations
           npm run test:dealer-fast-loading
           npm run test:app-umbrella-access
+      - name: Production bundle validation
+        shell: bash
+        run: |
+          set +e
+          npm run build 2>&1 | tee /tmp/website-build.log
+          build_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$build_status" -eq 0 ]; then exit 0; fi
+          # CI does not have deployment database credentials. Accept only the
+          # repository's known post-compilation page-data stop; compile, type
+          # and bundle failures remain fatal.
+          if grep -Fq "✓ Compiled successfully" /tmp/website-build.log \
+            && grep -Fq "Database connection variables are missing" /tmp/website-build.log \
+            && grep -Fq "Failed to collect page data for /api/dealer/session" /tmp/website-build.log; then
+            echo "Bundle compiled; page-data collection requires deployment database credentials."
+            exit 0
+          fi
+          exit "$build_status"
       - name: Browser scale, interaction and mobile isolation checks
         run: node scripts/verify-website-canvas.cjs
       - name: Save browser evidence
