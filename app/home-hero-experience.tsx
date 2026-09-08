@@ -389,7 +389,16 @@ export default function HomeHeroExperience() {
                   aria-hidden="true"
                 >
                   <p className={styles.heroBrandTitle}>
-                    <span>Aim4price.com</span>
+                    <span>
+                      Aim4price.com
+                      <i className={styles.openingProgress} aria-hidden="true">
+                        {isDesktopStory && storyStep === 'brand' && isAutoplaying &&
+                          !isPaused && !isManuallyControlled && !hasAutoplayFinished &&
+                          isHeroVisible && isPageVisible ? (
+                          <b style={{ animationDuration: `${STORY_DURATIONS.brand}ms` }} />
+                        ) : null}
+                      </i>
+                    </span>
                     <span>Asset Management Software</span>
                     <span>built for South Africa.</span>
                   </p>
@@ -486,14 +495,6 @@ export default function HomeHeroExperience() {
                   Get a Free Estimate
                 </Link>
               </div>
-
-              {isDesktopStory && storyStep === 'brand' && isAutoplaying &&
-                !isPaused && !isManuallyControlled && !hasAutoplayFinished &&
-                isHeroVisible && isPageVisible ? (
-                <div className={styles.openingProgress} role="img" aria-label="Opening animation progressing to the next section">
-                  <span style={{ animationDuration: `${STORY_DURATIONS.brand}ms` }} />
-                </div>
-              ) : null}
 
               {isDesktopStory && storyStep === 'brand' ? (
                 <button

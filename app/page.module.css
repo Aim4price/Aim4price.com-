@@ -3243,15 +3243,7 @@
   margin-top: 0.1em;
 }
 
-.heroBrandTitle span:first-child::after {
-  content: '';
-  display: block;
-  width: clamp(3rem, calc(var(--website-design-vw) * 4), 4rem);
-  height: 2px;
-  margin-top: 0.28em;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #1ba677 0%, rgba(27, 166, 119, 0.32) 100%);
-}
+
 
 .heroPromiseTitle {
   font-size: clamp(3.2rem, calc(var(--website-design-vw) * 3.55), 3.55rem);
@@ -3936,20 +3928,22 @@
 }
 
 /* Opening progress uses the same duration and restart conditions as the tour. */
-.openingProgress {
-  position: absolute;
-  z-index: 8;
-  bottom: 5.25rem;
-  left: calc(50% + 3rem);
-  width: 7rem;
-  height: 3px;
-  transform: translateX(-50%);
+/* Keep the original brand underline's size and spacing. */
+.heroBrandTitle .openingProgress {
+  display: block;
+  width: clamp(3rem, calc(var(--website-design-vw) * 4), 4rem);
+  height: 2px;
+  margin-top: 0.28em;
   overflow: hidden;
   border-radius: 999px;
+  background: linear-gradient(90deg, #1ba677 0%, rgba(27, 166, 119, 0.32) 100%);
+}
+
+.openingProgress:has(> b) {
   background: #cce7da;
 }
 
-.openingProgress > span {
+.openingProgress > b {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -3965,7 +3959,7 @@
 
 /* Identity and status columns mirror the register, without a documents panel. */
 .heroStory .assetPreviewCard:has(.assetDetailsPanel) {
-  right: 0.75rem;
+  right: 2rem;
 }
 
 .assetPreviewBody:has(.assetDetailsPanel) {
@@ -4011,6 +4005,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .openingProgress { display: none; }
-  .openingProgress > span { animation: none; }
+  .openingProgress > b { animation: none; }
 }
