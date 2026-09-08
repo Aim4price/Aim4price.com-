@@ -391,13 +391,13 @@ export default function HomeHeroExperience() {
                   <p className={styles.heroBrandTitle}>
                     <span>
                       Aim4price.com
-                      <i className={styles.openingProgress} aria-hidden="true">
+                      <span className={styles.openingProgress} aria-hidden="true">
                         {isDesktopStory && storyStep === 'brand' && isAutoplaying &&
                           !isPaused && !isManuallyControlled && !hasAutoplayFinished &&
                           isHeroVisible && isPageVisible ? (
-                          <b style={{ animationDuration: `${STORY_DURATIONS.brand}ms` }} />
+                          <span className={styles.openingProgressFill} style={{ animationDuration: `${STORY_DURATIONS.brand}ms` }} />
                         ) : null}
-                      </i>
+                      </span>
                     </span>
                     <span>Asset Management Software</span>
                     <span>built for South Africa.</span>
