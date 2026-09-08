@@ -72,7 +72,7 @@ test('the Home hero keeps reliable playback without a mobile-only video asset', 
   assert.match(styleSource, /\.heroVideoPlay\s*\{[^}]*display:\s*inline-flex/s);
 });
 
-test('Get Estimate keeps the website viewport stable and presents family results as an accessible modal', async () => {
+test('Get Estimate keeps the website viewport stable and presents family results in a portal above its backdrop', async () => {
   const [pageSource, polishSource, polishStyles] = await Promise.all([
     readFile(valuationPagePath, 'utf8'),
     readFile(valuationPolishPath, 'utf8'),
@@ -84,13 +84,14 @@ test('Get Estimate keeps the website viewport stable and presents family results
   assert.match(polishSource, /originalScrollIntoView = wizard\.scrollIntoView;[\s\S]*?wizard\.scrollIntoView = \(\) => undefined/);
   assert.doesNotMatch(polishSource, /Element\.prototype\.scrollIntoView|HTMLElement\.prototype\.scrollIntoView/);
   assert.match(polishSource, /FAMILY_SEARCH_LABEL = \/\^Search \(equipment type\|vehicle type\)\$\/i/);
-  assert.match(polishSource, /data-valuation-family-modal/);
-  assert.match(polishSource, /setAttribute\('role', 'dialog'\)/);
-  assert.match(polishSource, /setAttribute\('aria-modal', 'true'\)/);
+  assert.match(polishSource, /createPortal\([\s\S]*?data-valuation-family-modal-root="true"/);
+  assert.match(polishSource, /className=\{styles\.familyModal\}[\s\S]*?role="dialog"[\s\S]*?aria-modal="true"/);
   assert.match(polishSource, /event\.key === 'Escape'/);
-  assert.match(polishSource, /focus\(\{ preventScroll: true \}\)/);
-  assert.match(polishStyles, /\.familyBackdrop\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*0;/);
-  assert.match(polishStyles, /data-valuation-family-modal='true'[\s\S]*?position:\s*fixed\s*!important/);
+  assert.match(polishSource, /modalSearchRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(polishStyles, /\.familyOverlay\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*2147482500;/);
+  assert.match(polishStyles, /\.familyBackdrop\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*0;/);
+  assert.match(polishStyles, /\.familyModal\s*\{[\s\S]*?position:\s*relative;[\s\S]*?z-index:\s*1;/);
+  assert.doesNotMatch(polishStyles, /\.familyPicker[^}]*position:\s*fixed/);
   assert.match(polishStyles, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(polishStyles, /@media\s*\([^)]*(?:max-width|min-width|orientation)/);
 });
