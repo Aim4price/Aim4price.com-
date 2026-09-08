@@ -7,6 +7,8 @@ on:
       - "components/**"
       - "lib/website-canvas.ts"
       - "lib/dropdown-overlay-position.ts"
+      - "lib/estimate-report-enhancement.ts"
+      - "next.config.mjs"
       - "tests/**"
       - "scripts/verify-website-canvas.cjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
@@ -32,7 +34,9 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - name: Canonical layout, overlays and native boundaries
-        run: node --experimental-strip-types --test tests/site-workspace-zoom.test.mjs tests/responsive-foundation.test.mjs tests/desktop-site-viewport.test.mjs tests/dropdown-overlay.test.mjs tests/compact-desktop-continuity.test.mjs tests/homepage-asset-register-hero.test.mjs
+        run: node --experimental-strip-types --test tests/site-workspace-zoom.test.mjs tests/responsive-foundation.test.mjs tests/desktop-site-viewport.test.mjs tests/dropdown-overlay.test.mjs tests/compact-desktop-continuity.test.mjs tests/homepage-asset-register-hero.test.mjs tests/estimate-report-enhancement.test.mjs
+      - name: Approved report design contract
+        run: npm run test:report-design
       - name: Shared workflow regression tests
         run: |
           npm run test:asset-card-ui
