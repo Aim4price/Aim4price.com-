@@ -3,13 +3,14 @@ import { authorizeFieldManagerScanAccess, authorizeOwnerAppScanAccess, authorize
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_PHOTOS,
-  MAX_ASSET_REGISTER_UPLOAD_BYTES,
   createAssetRegisterUpload,
 } from '../../../../lib/asset-register-uploads';
 import { normalizePublicAssetCode } from '../../../../lib/scan-assets';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const MAX_MOBILE_SCAN_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 type PreparedUploadFile = {
   file: File;
@@ -35,9 +36,9 @@ function validateImageFile(file: File): PreparedUploadFile | { error: string; st
     return { error: 'One of the files is empty.', status: 400 };
   }
 
-  if (file.size > MAX_ASSET_REGISTER_UPLOAD_BYTES) {
+  if (file.size > MAX_MOBILE_SCAN_UPLOAD_BYTES) {
     return {
-      error: `Each image must be ${Math.round(MAX_ASSET_REGISTER_UPLOAD_BYTES / (1024 * 1024))} MB or smaller.`,
+      error: `Each image must be ${Math.round(MAX_MOBILE_SCAN_UPLOAD_BYTES / (1024 * 1024))} MB or smaller.`,
       status: 400,
     };
   }
@@ -105,9 +106,9 @@ export async function POST(request: NextRequest) {
     byteSize: number;
   }> = [];
 
-  // A scan can contain twelve 5 MB images. Process only two at a time so a
-  // verified Bucket PUT/read-back does not hold every file buffer and network
-  // request in memory simultaneously on the Hobby service.
+  // Mobile clients normally compress scan photos before upload. Keep batches
+  // small so fallback originals of up to 25 MB do not create concurrent
+  // Bucket PUT/read-back spikes on the Hobby service.
   for (let offset = 0; offset < preparedFiles.length; offset += 2) {
     const batch = await Promise.all(
       preparedFiles.slice(offset, offset + 2).map(async ({ file }) => {
