@@ -6,7 +6,7 @@ import { POST as renderBaseValuationReport } from '../report/route';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function readPayload(request: NextRequest): Promise<unknown> {
+async function readPayload(request: Request): Promise<unknown> {
   const contentType = request.headers.get('content-type')?.toLowerCase() ?? '';
 
   if (contentType.includes('application/json')) {
