@@ -14440,16 +14440,16 @@
   height: 5px;
 }
 
-.conditionProgressiveModal .conditionQuestionCard {
+.conditionOptionsModal .conditionQuestionCard {
   padding: 0.72rem 0.85rem;
   border-radius: 14px;
 }
 
-.conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOptions {
+.conditionOptionsModal .conditionQuestionCard .dealerAssessmentOptions {
   gap: 0.65rem;
 }
 
-.conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOption {
+.conditionOptionsModal .conditionQuestionCard .dealerAssessmentOption {
   min-height: 64px;
   padding: 0.7rem 0.48rem;
   border-radius: 14px;
@@ -14469,7 +14469,7 @@
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .conditionProgressiveModal .conditionQuestionProgressTop strong,
-  :global(:where(html:not(:has([data-website-canvas])))) .conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionOptionsModal .conditionQuestionCard .dealerAssessmentOption {
     white-space: normal;
   }
 }

@@ -7624,28 +7624,29 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <div className={styles.conditionModalBody}>
               {!advancedCondition ? (
-                <div className={styles.basicConditionOptionGrid}>
-                  {conditionOptions.map((option) => {
-                    const selected = conditionStepComplete && !detailedAssessmentOpen && condition === option.key;
-                    return (
-                      <button
-                        key={option.key}
-                        type="button"
-                        className={`${styles.conditionChoiceButton} ${selected ? styles.conditionChoiceButtonActive : ''}`}
-                        aria-pressed={selected}
-                        onClick={() => {
-                          clearDetailedAssessment(false);
-                          setCondition(option.key);
-                          setConditionStepComplete(true);
-                          setMessage('');
-                          resetResult();
-                        }}
-                      >
-                        {compactAppMode ? <span className={styles.conditionChoiceIndicator} aria-hidden="true">{selected ? '✓' : ''}</span> : null}
-                        <span className={styles.conditionChoiceLabel}>{option.label}</span>
-                      </button>
-                    );
-                  })}
+                <div className={styles.conditionQuestionCard}>
+                  <div className={styles.dealerAssessmentOptions}>
+                    {conditionOptions.map((option) => {
+                      const selected = conditionStepComplete && !detailedAssessmentOpen && condition === option.key;
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          className={`${styles.dealerAssessmentOption} ${selected ? styles.dealerAssessmentOptionActive : ''}`}
+                          aria-pressed={selected}
+                          onClick={() => {
+                            clearDetailedAssessment(false);
+                            setCondition(option.key);
+                            setConditionStepComplete(true);
+                            setMessage('');
+                            resetResult();
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className={styles.conditionQuestionFlow}>
