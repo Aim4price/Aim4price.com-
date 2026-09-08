@@ -224,7 +224,7 @@ export default function SaleabilityModal({
         <header className={styles.header}>
           <div>
             <h2 id="saleability-title">{assetTitle}</h2>
-            <p>Refine your selling plan. Your Aim4price valuation stays unchanged.</p>
+            <p>Build your selling plan.</p>
           </div>
           <button type="button" className={styles.close} onClick={onClose} aria-label="Close Saleability">×</button>
         </header>
@@ -235,44 +235,26 @@ export default function SaleabilityModal({
           <span aria-current={step === 'result' ? 'step' : undefined}>3 · Your plan</span>
         </nav>
         <div ref={bodyRef} className={styles.body}>
-          <div className={styles.baselineStrip}>
-            <div>
-              <span>Current saved value</span>
-              <strong>{formatMoney(valuationExVat)}</strong>
-              <small>Excl. VAT · unchanged</small>
-            </div>
-            <div>
-              <span>General Saleability</span>
-              <strong>{general.score} / 100 · Grade {general.grade}</strong>
-              <small>{general.gradeLabel}</small>
-            </div>
-            <div>
-              <span>Selling window</span>
-              <strong>{general.naturalSellingWindow}</strong>
-              <small>{general.confidence} confidence</small>
-            </div>
-          </div>
-
           {step === 1 ? (
             <section className={styles.settingsCard}>
               <div className={styles.stepIntro}>
-                <h3>Buyer settings</h3>
-                <p>Choose the closest answer, or “I’m not sure”.</p>
+                <h3>Buyers</h3>
+                <p>Choose an answer, or “I’m not sure”.</p>
               </div>
               <ChoiceQuestion
-                label="Where are you willing to sell it?"
+                label="Where will you sell?"
                 value={answers.saleArea}
                 options={SALE_AREA_OPTIONS}
                 onChange={(value) => update('saleArea', value)}
               />
               <ChoiceQuestion
-                label="How many similar assets can buyers choose from?"
+                label="How many similar assets are for sale?"
                 value={answers.similarAssetsAvailable}
                 options={AVAILABLE_OPTIONS}
                 onChange={(value) => update('similarAssetsAvailable', value)}
               />
               <ChoiceQuestion
-                label="How many people would realistically buy it?"
+                label="How many likely buyers?"
                 value={answers.realisticBuyerPool}
                 options={BUYER_OPTIONS}
                 onChange={(value) => update('realisticBuyerPool', value)}
@@ -283,23 +265,22 @@ export default function SaleabilityModal({
           {step === 2 ? (
             <section className={styles.settingsCard}>
               <div className={styles.stepIntro}>
-                <h3>Market and selling goal</h3>
-                <p>Choose the demand, timing and price that suit you.</p>
+                <h3>Selling goal</h3>
               </div>
               <ChoiceQuestion
-                label="What is demand like right now?"
+                label="Current demand?"
                 value={answers.currentDemand}
                 options={DEMAND_OPTIONS}
                 onChange={(value) => update('currentDemand', value)}
               />
               <ChoiceQuestion
-                label="How easy is this make or model for buyers to recognise?"
+                label="How well known is the model?"
                 value={answers.modelFamiliarity}
                 options={FAMILIARITY_OPTIONS}
                 onChange={(value) => update('modelFamiliarity', value)}
               />
               <ChoiceQuestion
-                label="How quickly would you like to sell?"
+                label="When would you like to sell?"
                 value={answers.desiredTimeline}
                 options={TIMELINE_OPTIONS}
                 onChange={(value) => update('desiredTimeline', value)}
@@ -342,8 +323,7 @@ export default function SaleabilityModal({
 
               <section className={styles.pricePlan}>
                 <div className={styles.planHeader}>
-                  <h3>Selling plan for your goal</h3>
-                  <p>Based on your buyer and selling choices.</p>
+                  <h3>Your selling plan</h3>
                 </div>
                 <div className={styles.askingPrice}>
                   <small>Recommended asking price</small>
@@ -352,7 +332,7 @@ export default function SaleabilityModal({
                 </div>
                 <div className={styles.resultRows}>
                   <div><span>Likely selling range</span><strong>{formatMoney(plan.likelySellingRangeLowExVat)} – {formatMoney(plan.likelySellingRangeHighExVat)}</strong></div>
-                  <div><span>Likely timing with this plan</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
+                  <div><span>Expected timing</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
                 </div>
               </section>
 
@@ -384,4 +364,5 @@ export default function SaleabilityModal({
     </div>
   );
 }
+
 

@@ -5184,7 +5184,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           setPreparingIdentity(false);
           setStep(3);
           scrollWizardToStart();
-        }, 500);
+        }, 1000);
         return;
       }
 
@@ -9762,6 +9762,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+
 
 
 
