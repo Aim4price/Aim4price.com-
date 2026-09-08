@@ -1,5 +1,6 @@
 import { redirectAdminToAdmin } from "../../lib/account-access";
 import ValuationClient from "./valuation-client";
+import ValuationFlowPolish from "./ValuationFlowPolish";
 import badgeStyles from "./advanced-badge-corner.module.css";
 
 export const runtime = "nodejs";
@@ -10,6 +11,7 @@ export default async function ValuationPage() {
 
   return (
     <div className={badgeStyles.scope}>
+      <ValuationFlowPolish />
       <ValuationClient />
     </div>
   );
