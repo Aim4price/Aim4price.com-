@@ -68,6 +68,7 @@ import {
   getGuestValuationCount,
   incrementGuestValuationCount,
 } from '../../lib/guest-valuation-limit';
+import { compressReportPhoto, getEstimatePhotoFiles } from '../../lib/estimate-photo-handoff';
 import type { AdBrandKit } from '../../lib/ad-studio';
 import type { MarketplaceListing } from '../../lib/marketplace';
 import {
@@ -1920,6 +1921,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [isDownloadingPublishedAdvert, setIsDownloadingPublishedAdvert] = useState(false);
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
   const [completionToastVisible, setCompletionToastVisible] = useState(false);
+  const [preparingIdentity, setPreparingIdentity] = useState(false);
+  const identityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (identityTimerRef.current) clearTimeout(identityTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (step === 2) return;
+    if (identityTimerRef.current) clearTimeout(identityTimerRef.current);
+    identityTimerRef.current = null;
+    setPreparingIdentity(false);
+  }, [step]);
+
   const marketplacePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const marketplacePhotoFilesRef = useRef<MarketplacePendingPhoto[]>([]);
   const replacementNoticeDialogRef = useRef<HTMLElement | null>(null);
@@ -4745,6 +4760,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setFinalSaveIntent(null);
       setFinalSaveError('');
       setMarketplacePublishError('');
+      clearMarketplacePhotoFiles();
+      setMarketplacePhotoFiles(getEstimatePhotoFiles().slice(0, MAX_MARKETPLACE_PHOTOS).map((file) => ({
+        id: createMarketplacePhotoId(), file, previewUrl: URL.createObjectURL(file),
+      })));
       setMarketplaceDraft(buildDefaultMarketplaceDraft());
     }
   }
@@ -4919,13 +4938,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     } : current);
   }
 
-  async function uploadMarketplacePhotos(): Promise<string[]> {
-    if (!marketplacePhotoFiles.length) return [];
+  async function uploadMarketplacePhotos(): Promise<{ urls: string[]; jpegPhotos: string[] }> {
+    if (!marketplacePhotoFiles.length) return { urls: [], jpegPhotos: [] };
 
     const formData = new FormData();
     formData.append('uploadType', 'photo');
+    const jpegPhotos: string[] = [];
     for (const photo of marketplacePhotoFiles) {
-      formData.append('files', photo.file);
+      const prepared = await compressReportPhoto(photo.file);
+      const blob = await fetch(prepared).then((response) => response.blob());
+      formData.append('files', blob, `${photo.file.name.replace(/\.[^.]+$/, '')}.jpg`);
+      jpegPhotos.push(prepared);
     }
 
     const uploadUrl = isAccountantClientWorkspace
@@ -4942,9 +4965,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       throw new Error(data.error ?? 'Failed to upload marketplace photos.');
     }
 
-    return (data.uploads ?? [])
+    const urls = (data.uploads ?? [])
       .map((upload) => String(upload.url ?? upload.href ?? upload.path ?? '').trim())
       .filter(Boolean);
+    if (urls.length !== marketplacePhotoFiles.length) {
+      throw new Error('Some photos were not uploaded. Please retry before publishing.');
+    }
+    return { urls, jpegPhotos };
   }
 
   async function publishEstimateToMarketplace(event: FormEvent<HTMLFormElement>) {
@@ -4996,7 +5023,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMarketplacePublishError('');
 
     try {
-      const photoUrls = await uploadMarketplacePhotos();
+      const { urls: photoUrls, jpegPhotos } = await uploadMarketplacePhotos();
       let assetId = savedMarketplaceAssetId;
 
       if (!assetId) {
@@ -5044,12 +5071,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       }
 
       const listingReference = published.listing.id ?? published.listing.sourceAssetId ?? published.assetId ?? assetId;
-      const downloadStatus = await downloadPublishedAdvert(published.listing);
+      const jpegListing = jpegPhotos.length ? {
+        ...published.listing,
+        imageUrls: jpegPhotos,
+        imageSrc: jpegPhotos[0],
+      } : published.listing;
+      const downloadStatus = await downloadPublishedAdvert(jpegListing);
       clearMarketplacePhotoFiles();
       setMarketplaceDraft(null);
       setSavedMarketplaceAssetId(null);
       setPublishedAdvertDownload({
-        listing: published.listing,
+        listing: jpegListing,
         listingReference: String(listingReference),
         status: downloadStatus,
         message: downloadStatus === 'downloaded'
@@ -5125,6 +5157,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function handleNext() {
+    if (identityTimerRef.current) return;
     setMessage('');
 
     if (basicEstimateActive) {
@@ -5145,8 +5178,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         }
         setBrandSlug(UNKNOWN_BRAND_SLUG);
         setGenericModelMode(normalizeText(typedModelName) ? 'manual' : 'unknown');
-        setStep(3);
-        scrollWizardToStart();
+        setPreparingIdentity(true);
+        identityTimerRef.current = setTimeout(() => {
+          identityTimerRef.current = null;
+          setPreparingIdentity(false);
+          setStep(3);
+          scrollWizardToStart();
+        }, 500);
         return;
       }
 
@@ -5635,6 +5673,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function handleBack() {
+    if (identityTimerRef.current) {
+      clearTimeout(identityTimerRef.current);
+      identityTimerRef.current = null;
+      setPreparingIdentity(false);
+    }
     setMessage('');
 
     if (basicEstimateActive) {
@@ -9079,7 +9122,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 className={styles.secondaryButton}
                 data-valuation-action="back"
                 onClick={handleBack}
-                disabled={valuationLoading || saveLoading}
+                disabled={preparingIdentity || valuationLoading || saveLoading}
               >
                 Back
               </button>
@@ -9100,11 +9143,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   data-valuation-action="next"
                   onClick={handleNext}
                   disabled={
-                    valuationLoading
+                    preparingIdentity || valuationLoading
                     || (!basicEstimateActive && step === 2 && (isMotorSector(selectedSector) ? motorCanonicalLoading : brandsLoading || !selectedBrand))
                   }
                 >
-                  {valuationLoading ? 'Calculating...' : basicEstimateActive ? step === 5 ? 'Get Estimate' : 'Continue' : step === 4 ? 'Get Estimate' : 'Continue'}
+                  {preparingIdentity ? <span className={styles.identityProgress} role="status"><span className={styles.identitySpinner} aria-hidden="true" />Preparing next step…</span> : valuationLoading ? 'Calculating...' : basicEstimateActive ? step === 5 ? 'Get Estimate' : 'Continue' : step === 4 ? 'Get Estimate' : 'Continue'}
                 </button>
               )}
             </div>
@@ -9719,6 +9762,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+
 
 
 

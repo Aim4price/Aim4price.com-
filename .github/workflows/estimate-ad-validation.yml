@@ -1,0 +1,35 @@
+name: Estimate photos and advert validation
+
+on:
+  pull_request:
+    paths:
+      - 'app/valuation/**'
+      - 'lib/estimate-photo-handoff.ts'
+      - 'lib/marketplace-ad-renderer.ts'
+      - 'tests/estimate-ad-handoff.test.mjs'
+      - 'tests/estimate-report-enhancement.test.mjs'
+      - 'tests/ad-studio*.test.mjs'
+      - '.github/workflows/estimate-ad-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: estimate-ad-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Photo handoff, PDF and JPEG regression tests
+        run: node --experimental-strip-types --test tests/estimate-ad-handoff.test.mjs tests/estimate-report-enhancement.test.mjs tests/ad-studio.test.mjs tests/ad-studio-renderer.test.mjs
+      - run: npm run typecheck

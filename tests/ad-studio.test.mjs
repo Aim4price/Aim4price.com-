@@ -84,7 +84,7 @@ test('schema preserves the selected branding as a Marketplace advert snapshot', 
   assert.match(marketplaceDatabase, /toAdBrandSnapshot\(brandKit\)/);
   assert.match(marketplaceDatabase, /input\.allowBrandKit/);
   assert.match(marketplaceDatabase, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
-  assert.match(marketplaceDatabase, /normalizeAdBrandSnapshot\(pick\(row, \['marketplace_ad_brand'\]\)/);
+  assert.match(marketplaceDatabase, /normalizeAdBrandSnapshot\(\s*pick\(row, \['marketplace_ad_brand'\]\)/);
 });
 
 test('valuation Create Advert publishes in the background and downloads the matching JPEG', async () => {
@@ -128,7 +128,7 @@ test('valuation advert photos support file drop, drag reorder and accessible ord
   assert.match(valuation, /Drag them into order, or use the arrows\. The first photo becomes the main image\./);
   assert.match(valuation, /aria-label="Move photo earlier"/);
   assert.match(valuation, /aria-label="Move photo later"/);
-  assert.match(valuation, /for \(const photo of marketplacePhotoFiles\)[\s\S]*?formData\.append\('files', photo\.file\)/);
+  assert.match(valuation, /for \(const photo of marketplacePhotoFiles\)[\s\S]*?compressReportPhoto\(photo\.file\)[\s\S]*?formData\.append\('files', blob,/);
   assert.match(valuation, /const marketplacePhotoFilesRef = useRef<MarketplacePendingPhoto\[]>\(\[\]\)/);
   assert.match(valuation, /useEffect\(\(\) => \{\s*marketplacePhotoFilesRef\.current = marketplacePhotoFiles;\s*}, \[marketplacePhotoFiles\]\)/);
   assert.match(valuation, /useEffect\(\(\) => \(\) => \{\s*marketplacePhotoFilesRef\.current\.forEach\(\(photo\) => URL\.revokeObjectURL\(photo\.previewUrl\)\);\s*}, \[\]\)/);
@@ -916,7 +916,7 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   assert.doesNotMatch(middlemanHeader, /Leads|Discovery/);
   assert.match(dealerHome, /'showroom', 'marketplace'/);
   assert.doesNotMatch(dealerMarketplace, /isMiddlemanAccountSubtype/);
-  assert.match(account, /isMiddlemanAccount \? 'Middleman app access' : 'Manage Dealer App staff'/);
+  assert.match(account, /isMiddlemanAccount \? ['"]Middleman app access['"] : ['"]Manage Dealer App staff['"]/);
   assert.match(accessPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
   assert.match(accessClient, /Middleman App Access/);
   assert.match(accessClient, /change passwords or remove a login/);
@@ -990,4 +990,5 @@ test('Marketplace only applies Brand Kits to dealer listings', async () => {
   assert.match(database, /updateValues\.push\(brandKit \? JSON\.stringify\(toAdBrandSnapshot\(brandKit\)\) : null\)/);
   assert.match(database, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
 });
+
 

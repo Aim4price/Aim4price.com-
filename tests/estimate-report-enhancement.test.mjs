@@ -81,20 +81,21 @@ test('temporary report photos are appended as a branded second page without crop
 });
 
 test('Get Estimate mounts an in-memory photo picker and routes the existing PDF action through the enhancer', async () => {
-  const [page, picker, enhancedRoute, config] = await Promise.all([
+  const [page, picker, enhancedRoute, config, photoPreparation] = await Promise.all([
     read('app/valuation/page.tsx'),
     read('app/valuation/EstimateReportPhotos.tsx'),
     read('app/api/valuation/report-enhanced/route.ts'),
     read('next.config.mjs'),
+    read('lib/estimate-photo-handoff.ts'),
   ]);
 
   assert.match(page, /<EstimateReportPhotos\s*\/>/);
   assert.match(picker, /\[data-result-action="download-pdf"\]/);
   assert.match(picker, /payload\.reportPhotos = reportPhotos/);
-  assert.match(picker, /canvas\.toDataURL\('image\/jpeg'/);
+  assert.match(photoPreparation, /canvas\.toDataURL\('image\/jpeg'/);
   assert.match(picker, /MAX_SOURCE_PHOTO_BYTES = 20 \* 1024 \* 1024/);
-  assert.match(picker, /this estimate only/);
-  assert.match(picker, /not saved to the Asset Register/);
+  assert.match(picker, /used in your PDF and Create Ad/);
+  assert.match(picker, /saved only when you publish/);
   assert.doesNotMatch(picker, /localStorage|sessionStorage/);
 
   assert.match(enhancedRoute, /POST as renderBaseValuationReport/);
@@ -103,3 +104,4 @@ test('Get Estimate mounts an in-memory photo picker and routes the existing PDF 
   assert.match(config, /source:\s*['"]\/api\/valuation\/report['"]/);
   assert.match(config, /destination:\s*['"]\/api\/valuation\/report-enhanced['"]/);
 });
+

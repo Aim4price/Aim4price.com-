@@ -415,3 +415,14 @@ test('mid-tone custom colours choose the higher-contrast text colour', async () 
     assert.ok(priceCalls.every((call) => call.fillStyle === '#10251f'));
   });
 });
+
+
+test('JPEG rendering refuses missing equipment photos instead of silently substituting placeholders', async () => {
+  const { renderMarketplaceAdCanvas } = await loadRenderer();
+  await withFakeImages({}, async () => {
+    for (const design of ['saved-brand', 'aim4price-marketplace']) {
+      const content = { ...contentFor('showcase'), design };
+      await assert.rejects(renderMarketplaceAdCanvas(createTraceCanvas().canvas, content, { requireImages: true }), /photo could not be loaded/);
+    }
+  });
+});
