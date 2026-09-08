@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import {
+  createSaleabilityPdfPlanSnapshot,
+  formatSaleabilityPdfPrice,
+  parseSaleabilityPdfPlanSnapshot,
+  saleabilityPdfPlanMatchesEstimate,
+} from '../lib/saleability-pdf.ts';
 
 const rootLayoutPath = new URL('../app/layout.tsx', import.meta.url);
 const homePagePath = new URL('../app/page.tsx', import.meta.url);
@@ -99,6 +105,27 @@ test('Get Estimate keeps the website viewport stable, uses R5k replacement slide
   assert.doesNotMatch(polishStyles, /@media\s*\([^)]*(?:max-width|min-width|orientation)/);
 });
 
+test('Estimate PDF Saleability price only follows a matching refined plan', async () => {
+  const polishSource = await readFile(valuationPolishPath, 'utf8');
+  const snapshot = createSaleabilityPdfPlanSnapshot({
+    assetTitle: 'New Holland TT4.90 4WD Open Station',
+    valuationExVat: 327_133,
+    saleabilityPriceExVat: 315_000,
+  });
+
+  assert.ok(snapshot);
+  assert.deepEqual(parseSaleabilityPdfPlanSnapshot(JSON.stringify(snapshot)), snapshot);
+  assert.equal(saleabilityPdfPlanMatchesEstimate(snapshot, 'New Holland TT4.90 4WD Open Station', 327_133), true);
+  assert.equal(saleabilityPdfPlanMatchesEstimate(snapshot, 'Another tractor', 327_133), false);
+  assert.equal(saleabilityPdfPlanMatchesEstimate(snapshot, snapshot.assetTitle, 327_500), false);
+  assert.equal(formatSaleabilityPdfPrice(snapshot.saleabilityPriceExVat), 'R 315 000 excl. VAT');
+
+  assert.match(polishSource, /actionPath !== '\/api\/valuation\/report'/);
+  assert.match(polishSource, /saleabilityPdfPlanMatchesEstimate\(snapshot, payload\.machineTitle, payload\.selectedValueExVat\)/);
+  assert.match(polishSource, /label: 'Saleability price'/);
+  assert.match(polishSource, /HTMLFormElement\.prototype\.submit = submitWithSaleabilityPrice/);
+  assert.match(polishSource, /HTMLFormElement\.prototype\.submit === submitWithSaleabilityPrice/);
+});
 
 test('operational viewports preserve their former inherited settings', async () => {
   for (const route of ['admin', 'scan', 'fuel-scan']) {
