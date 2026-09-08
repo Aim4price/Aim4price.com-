@@ -45,7 +45,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
 
   assert.match(hero, /^'use client';/);
   assert.match(hero, /Aim4price\.com asset management software built for South Africa/);
-  assert.match(hero, /<span>\s*Aim4price\.com\s*<i className=\{styles\.openingProgress\}/);
+  assert.match(hero, /<span>\s*Aim4price\.com\s*<span className=\{styles\.openingProgress\}/);
   assert.match(hero, /<span>Asset Management Software<\/span>/);
   assert.match(hero, /<span>built for South Africa\.<\/span>/);
   assert.match(hero, /Know what you have\./);
@@ -394,7 +394,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
   assert.doesNotMatch(storyHeroStyles, /\.heroStory \.heroMedia \.shell \{[^}]*100rem/s);
   assert.match(storyHeroStyles, /\.storyCopyLayer \{[\s\S]*?filter: blur\(14px\);[\s\S]*?opacity 820ms[\s\S]*?filter 820ms[\s\S]*?transform 820ms/);
-  assert.match(storyHeroStyles, /\.heroBrandTitle span,[\s\S]*?\.heroPromiseTitle span \{[\s\S]*?white-space: nowrap/);
+  assert.match(storyHeroStyles, /\.heroBrandTitle > span,[\s\S]*?\.heroPromiseTitle span \{[\s\S]*?white-space: nowrap/);
   assert.match(storyHeroStyles, /\.heroBrandTitle \.openingProgress \{[\s\S]*?height: 2px[\s\S]*?linear-gradient\(90deg, #1ba677/);
   assert.match(storyHeroStyles, /\.storyHeroLogo \{[\s\S]*?filter: blur\(14px\);[\s\S]*?opacity 850ms[\s\S]*?filter 850ms/);
   assert.match(storyHeroStyles, /\.storyHeroLogo::before \{[\s\S]*?border-radius: 50%/);
