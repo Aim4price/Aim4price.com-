@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import {
+  createSaleabilityPdfPlanSnapshot,
+  formatSaleabilityPdfPrice,
+  parseSaleabilityPdfPlanSnapshot,
+  saleabilityPdfPlanMatchesEstimate,
+} from '../lib/saleability-pdf.ts';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
 const valuationClient = read('app/valuation/valuation-client.tsx');
+const valuationPolish = read('app/valuation/ValuationFlowPolish.tsx');
 const reportRoute = read('app/api/valuation/report/route.ts');
 const ownerAsset = read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx');
 const assetRegister = read('app/asset-register/asset-register-client.tsx');
@@ -22,6 +29,30 @@ test('the estimate result and standard PDF include General Saleability', () => {
   assert.match(valuationClient, /saleabilityRows:/);
   assert.match(reportRoute, /<h2>Saleability<\/h2>/);
   assert.match(reportRoute, /payload\.saleabilityRows/);
+});
+
+test('the refined Saleability asking price is carried into the estimate PDF without changing valuation', () => {
+  const snapshot = createSaleabilityPdfPlanSnapshot({
+    assetTitle: 'New Holland TT4.90 4WD Open Station',
+    valuationExVat: 327_133,
+    saleabilityPriceExVat: 315_000,
+  });
+  assert.ok(snapshot);
+  assert.deepEqual(parseSaleabilityPdfPlanSnapshot(JSON.stringify(snapshot)), snapshot);
+  assert.equal(saleabilityPdfPlanMatchesEstimate(snapshot, ' New Holland TT4.90 4WD Open Station ', 327_133), true);
+  assert.equal(saleabilityPdfPlanMatchesEstimate(snapshot, 'Different asset', 327_133), false);
+  assert.equal(saleabilityPdfPlanMatchesEstimate(snapshot, snapshot.assetTitle, 330_000), false);
+  assert.equal(formatSaleabilityPdfPrice(315_000), 'R 315 000 excl. VAT');
+
+  assert.match(modal, /step !== 'result' \|\| !plan/);
+  assert.match(modal, /saleabilityPriceExVat: plan\.recommendedAskingPriceExVat/);
+  assert.match(modal, /sessionStorage\.setItem\(SALEABILITY_PDF_PLAN_SESSION_KEY/);
+  assert.match(valuationPolish, /enrichEstimatePdfFormWithSaleabilityPrice/);
+  assert.match(valuationPolish, /actionPath !== '\/api\/valuation\/report'/);
+  assert.match(valuationPolish, /label: 'Saleability price'/);
+  assert.match(valuationPolish, /formatSaleabilityPdfPrice\(snapshot\.saleabilityPriceExVat\)/);
+  assert.match(valuationPolish, /saleabilityPdfPlanMatchesEstimate\(snapshot, payload\.machineTitle, payload\.selectedValueExVat\)/);
+  assert.match(valuationPolish, /HTMLFormElement\.prototype\.submit = submitWithSaleabilityPrice/);
 });
 
 test('Manage Pricing opens the same Saleability calculator', () => {
