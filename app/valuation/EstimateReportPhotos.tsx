@@ -8,10 +8,10 @@ import styles from './estimate-report-photos.module.css';
 
 const MAX_SOURCE_PHOTO_BYTES = 20 * 1024 * 1024;
 const REPORT_PHOTO_LONG_EDGE = 1400;
-const REPORT_PHOTO_FALLBACK_LONG_EDGE = 1100;
+const REPORT_PHOTO_FALLBACK_LONG_EDGE = 1000;
 const REPORT_PHOTO_QUALITY = 0.82;
-const REPORT_PHOTO_FALLBACK_QUALITY = 0.72;
-const REPORT_PHOTO_SOFT_DATA_URL_LIMIT = 1_850_000;
+const REPORT_PHOTO_FALLBACK_QUALITY = 0.7;
+const REPORT_PHOTO_SOFT_DATA_URL_LIMIT = 950_000;
 const PDF_ACTION_SELECTOR = '[data-result-action="download-pdf"]';
 
 type ReportPhoto = {
