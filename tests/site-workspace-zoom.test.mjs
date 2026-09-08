@@ -2,7 +2,18 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { access } from 'node:fs/promises';
 import { websiteCanvas } from './helpers/site-layout-audit.mjs';
-const { WEBSITE_SCALE_STEP, stepWebsiteScale, WEBSITE_DESIGN_WIDTH, calculateWebsiteScale, clampManualWebsiteScale, parseWebsitePreference, isNativeWorkspace } = websiteCanvas;
+const {
+  WEBSITE_SCALE_STEP,
+  WEBSITE_PHONE_SHORT_SIDE_MAX,
+  WEBSITE_LANDSCAPE_BYPASS_KEY,
+  stepWebsiteScale,
+  WEBSITE_DESIGN_WIDTH,
+  calculateWebsiteScale,
+  clampManualWebsiteScale,
+  parseWebsitePreference,
+  isNativeWorkspace,
+  shouldSuggestWebsiteLandscape,
+} = websiteCanvas;
 import { read, root, websiteStylesheets, assertNoWebsiteReflow, postcss } from './helpers/site-layout-audit.mjs';
 
 test('one canonical width drives continuous downscaling and capped upscaling', () => {
@@ -52,6 +63,38 @@ test('native product and operational routes are excluded with exact path boundar
     assert.equal(isNativeWorkspace(`${prefix}/nested/page`), true);
   }
   for (const route of ['/', '/account', '/dealer-costs', '/asset-register', '/account/owner-app', '/scan-help']) assert.equal(isNativeWorkspace(route), false);
+});
+test('portrait phone entry strongly recommends landscape without locking orientation', async () => {
+  assert.equal(WEBSITE_PHONE_SHORT_SIDE_MAX, 600);
+  assert.equal(WEBSITE_LANDSCAPE_BYPASS_KEY, 'aim4price.website-landscape-entry.v1');
+
+  for (const [width, height] of [[320, 568], [390, 844], [430, 932], [600, 960]]) {
+    assert.equal(shouldSuggestWebsiteLandscape(width, height, true), true);
+    assert.equal(shouldSuggestWebsiteLandscape(height, width, true), false);
+  }
+  assert.equal(shouldSuggestWebsiteLandscape(430, 932, false), false);
+  assert.equal(shouldSuggestWebsiteLandscape(768, 1024, true), false);
+  assert.equal(shouldSuggestWebsiteLandscape(1440, 900, true), false);
+  for (const invalid of [[0, 900], [430, 0], [NaN, 900], [430, Infinity]]) {
+    assert.equal(shouldSuggestWebsiteLandscape(invalid[0], invalid[1], true), false);
+  }
+
+  const [host, css] = await Promise.all([
+    read('components/SiteWorkspaceZoom.tsx'),
+    read('components/SiteWorkspaceZoom.module.css'),
+  ]);
+  assert.match(host, /matchMedia\('\(hover: none\) and \(pointer: coarse\)'\)/);
+  assert.match(host, /sessionStorage\.getItem\(WEBSITE_LANDSCAPE_BYPASS_KEY\) === 'portrait'/);
+  assert.match(host, /sessionStorage\.setItem\(WEBSITE_LANDSCAPE_BYPASS_KEY, 'portrait'\)/);
+  assert.match(host, /window\.addEventListener\('orientationchange', syncLandscapeEntry\)/);
+  assert.match(host, /viewport\?\.addEventListener\('resize', syncLandscapeEntry\)/);
+  assert.match(host, /canvas\?\.setAttribute\('inert', ''\)/);
+  assert.match(host, /document\.body,[\s\S]*data-mobile-landscape-entry/);
+  assert.match(host, /Turn your phone sideways/);
+  assert.match(host, /Continue in portrait/);
+  assert.doesNotMatch(host, /screen\.orientation\.lock|requestFullscreen/);
+  assert.match(css, /\.landscapeGate\s*\{[\s\S]*position:\s*fixed;[\s\S]*inset:\s*0;/);
+  assert.match(css, /prefers-reduced-motion:[\s]*reduce[\s\S]*\.landscapePhone/);
 });
 test('all website stylesheet imports are guarded against viewport-driven reflow', async () => {
   const stylesheets = await websiteStylesheets();
