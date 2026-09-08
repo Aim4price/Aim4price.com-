@@ -1,13 +1,15 @@
 'use client';
 
+import Image from 'next/image';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import {
   WEBSITE_DESIGN_WIDTH, WEBSITE_DESIGN_HEIGHT, WEBSITE_MIN_MANUAL_SCALE,
   WEBSITE_MAX_MANUAL_SCALE, WEBSITE_SCALE_STEP, WEBSITE_PREFERENCE_KEY,
-  WEBSITE_OVERLAY_ROOT_ID, calculateWebsiteScale, stepWebsiteScale,
-  isNativeWorkspace, parseWebsitePreference, type WebsitePreference,
+  WEBSITE_OVERLAY_ROOT_ID, WEBSITE_LANDSCAPE_BYPASS_KEY, calculateWebsiteScale,
+  stepWebsiteScale, isNativeWorkspace, parseWebsitePreference, shouldSuggestWebsiteLandscape,
+  type WebsitePreference,
 } from '../lib/website-canvas';
 import styles from './SiteWorkspaceZoom.module.css';
 import { WebsiteCanvasContext } from './WebsitePortal';
@@ -28,6 +30,8 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
   const pathname = usePathname() || '/';
   const native = isNativeWorkspace(pathname);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const landscapeDialogRef = useRef<HTMLElement>(null);
+  const landscapeBypassRef = useRef(false);
   const syncOverlayWidths = useCallback(() => {
     canvasRef.current?.querySelectorAll<HTMLElement>('[data-website-overlay]').forEach((overlay) => {
       const style = getComputedStyle(overlay);
@@ -40,6 +44,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
   const [loaded, setLoaded] = useState(false);
   const [controlHost, setControlHost] = useState<HTMLElement | null>(null);
   const [showIntro, setShowIntro] = useState(false);
+  const [showLandscapeEntry, setShowLandscapeEntry] = useState(false);
   const scale = preference.mode === 'manual' ? preference.scale : automaticScale;
 
   useLayoutEffect(() => {
@@ -52,6 +57,59 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     window.addEventListener('resize', syncAutomaticScale);
     return () => window.removeEventListener('resize', syncAutomaticScale);
   }, [native]);
+
+  useLayoutEffect(() => {
+    if (native) {
+      setShowLandscapeEntry(false);
+      return;
+    }
+
+    try { landscapeBypassRef.current = sessionStorage.getItem(WEBSITE_LANDSCAPE_BYPASS_KEY) === 'portrait'; }
+    catch { landscapeBypassRef.current = false; }
+
+    const coarsePointer = window.matchMedia('(hover: none) and (pointer: coarse)');
+    const viewport = window.visualViewport;
+    const syncLandscapeEntry = () => {
+      const width = viewport?.width ?? window.innerWidth;
+      const height = viewport?.height ?? window.innerHeight;
+      setShowLandscapeEntry(!landscapeBypassRef.current && shouldSuggestWebsiteLandscape(width, height, coarsePointer.matches));
+    };
+
+    syncLandscapeEntry();
+    window.addEventListener('resize', syncLandscapeEntry);
+    window.addEventListener('orientationchange', syncLandscapeEntry);
+    viewport?.addEventListener('resize', syncLandscapeEntry);
+    if ('addEventListener' in coarsePointer) coarsePointer.addEventListener('change', syncLandscapeEntry);
+    else coarsePointer.addListener(syncLandscapeEntry);
+
+    return () => {
+      window.removeEventListener('resize', syncLandscapeEntry);
+      window.removeEventListener('orientationchange', syncLandscapeEntry);
+      viewport?.removeEventListener('resize', syncLandscapeEntry);
+      if ('removeEventListener' in coarsePointer) coarsePointer.removeEventListener('change', syncLandscapeEntry);
+      else coarsePointer.removeListener(syncLandscapeEntry);
+    };
+  }, [native]);
+
+  useEffect(() => {
+    if (!showLandscapeEntry || native) return;
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const canvas = canvasRef.current;
+
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    canvas?.setAttribute('inert', '');
+    landscapeDialogRef.current?.focus({ preventScroll: true });
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      canvas?.removeAttribute('inert');
+    };
+  }, [native, showLandscapeEntry]);
 
   useEffect(() => {
     if (native || !loaded) return;
@@ -108,6 +166,13 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     }));
   }, [automaticScale]);
 
+  const continueInPortrait = useCallback(() => {
+    landscapeBypassRef.current = true;
+    setShowLandscapeEntry(false);
+    try { sessionStorage.setItem(WEBSITE_LANDSCAPE_BYPASS_KEY, 'portrait'); }
+    catch { /* The escape hatch remains available even when storage is blocked. */ }
+  }, []);
+
   useEffect(() => {
     setShowIntro(false);
     if (native || pathname !== '/' || !controlHost || !loaded) return;
@@ -153,6 +218,57 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     </div>
   );
 
+  const landscapeEntry = showLandscapeEntry && typeof document !== 'undefined' ? createPortal(
+    <section
+      ref={landscapeDialogRef}
+      className={styles.landscapeGate}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="aim4price-landscape-title"
+      aria-describedby="aim4price-landscape-description"
+      tabIndex={-1}
+      data-mobile-landscape-entry
+    >
+      <div className={styles.landscapeBackdropPattern} aria-hidden="true" />
+      <div className={styles.landscapePanel}>
+        <Image
+          src="/brand/aim4price-mark-black.png"
+          alt="Aim4price"
+          width={660}
+          height={515}
+          priority
+          className={styles.landscapeLogo}
+        />
+        <p className={styles.landscapeKicker}>Full Aim4price workspace</p>
+        <h2 id="aim4price-landscape-title" className={styles.landscapeTitle}>Turn your phone sideways</h2>
+        <p id="aim4price-landscape-description" className={styles.landscapeDescription}>
+          Aim4price is designed to give you more working space in landscape. Rotate your phone and the site will open automatically.
+        </p>
+
+        <div className={styles.landscapeRotateStage} aria-hidden="true">
+          <svg className={styles.landscapeRotateArrow} viewBox="0 0 180 118" focusable="false">
+            <path d="M46 82C49 43 84 24 118 34C134 39 145 50 151 64" />
+            <path d="M139 58L152 66L158 51" />
+          </svg>
+          <div className={styles.landscapePhone}>
+            <span className={styles.landscapePhoneSpeaker} />
+            <span className={styles.landscapePhoneScreen}>
+              <span />
+              <span />
+              <span />
+            </span>
+          </div>
+        </div>
+
+        <p className={styles.landscapeInstruction}>Rotate to continue</p>
+        <button type="button" className={styles.portraitBypass} onClick={continueInPortrait}>
+          Continue in portrait
+        </button>
+      </div>
+    </section>,
+    document.body,
+  ) : null;
+
   return <WebsiteCanvasContext.Provider value={true}>
     <div className={styles.viewport} data-website-viewport>
       <div ref={canvasRef} className={styles.canvas} style={canvasStyle}
@@ -164,6 +280,6 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
         {controlHost ? createPortal(controls, controlHost) : null}
       </div>
     </div>
+    {landscapeEntry}
   </WebsiteCanvasContext.Provider>;
 }
-
