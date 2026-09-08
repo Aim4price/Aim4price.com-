@@ -95,6 +95,7 @@ export default function ValuationFlowPolish() {
 
     const clearPickerPresentation = (picker: FamilyPickerNodes | null) => {
       if (!picker) return;
+      picker.card.classList.remove(styles.familyPicker);
       picker.card.removeAttribute('data-valuation-family-picker');
       picker.card.removeAttribute('data-valuation-family-modal');
       picker.card.removeAttribute('data-valuation-family-title');
@@ -126,6 +127,7 @@ export default function ValuationFlowPolish() {
         return;
       }
 
+      nextPicker.card.classList.add(styles.familyPicker);
       nextPicker.card.setAttribute('data-valuation-family-picker', 'true');
       const isOpen = nextPicker.trigger.getAttribute('aria-expanded') === 'true';
 
