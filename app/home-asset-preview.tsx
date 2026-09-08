@@ -384,7 +384,7 @@ function RegisterPreview() {
   useLayoutEffect(() => {
     const frame = frameRef.current;
     if (!frame) return;
-    const fit = () => setScale(Math.min(frame.clientWidth / 768, frame.clientHeight / 780));
+    const fit = () => setScale(Math.min(frame.clientWidth / 768, frame.clientHeight / 676));
     fit();
     const observer = new ResizeObserver(fit);
     observer.observe(frame);
@@ -394,11 +394,10 @@ function RegisterPreview() {
   const assets = [
     { name: '2023 Toyota Hilux Single Cab', year: '2023', usage: '113 677 km', value: 'R 237 150', updated: '01 Sept 2026' },
     { name: '2013 Toyota Hilux 2.5 4x4', year: '2013', usage: '328 242 km', value: 'R 122 400', updated: '26 Aug 2026' },
-    { name: '2023 Toyota Hilux Single Cab', year: '2023', usage: '140 825 km', value: 'R 256 275', updated: '26 Aug 2026' },
   ];
   return (
     <div ref={frameRef} className={styles.registerPreviewFrame}>
-      <div style={{ width: 768 * scale, height: 780 * scale }}>
+      <div style={{ width: 768 * scale, height: 676 * scale }}>
         <div className={styles.registerPreview} style={{ transform: `scale(${scale})`, left: 12 * scale }}>
           <header className={styles.registerPreviewTitle}>
             <h2>TEST BUSINESS PTY LTD</h2>
