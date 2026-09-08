@@ -3802,7 +3802,7 @@
 
 .registerPreviewFrame { display: grid; place-items: center; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
 .registerPreviewFrame > div { position: relative; }
-.registerPreview { position: absolute; top: 0; width: 744px; height: 780px; transform-origin: top left; display: grid; grid-template-rows: 66px 36px 133px 49px 34px 1fr; row-gap: 11px; color: #0b493a; font-size: 10px; line-height: 1.2; }
+.registerPreview { position: absolute; top: 0; width: 744px; height: 676px; transform-origin: top left; display: grid; grid-template-rows: 66px 36px 133px 49px 34px 1fr; row-gap: 11px; color: #0b493a; font-size: 10px; line-height: 1.2; }
 .registerPreview * { box-sizing: border-box; }
 .registerPreview svg { width: 12px; height: 12px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .registerPreviewTitle { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border: 1px solid #bfd4dc; border-radius: 16px; background: linear-gradient(110deg,#edf5f2,#fff); box-shadow: 0 8px 18px #1b56440d; }
@@ -3849,7 +3849,7 @@
 .registerActions { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; width: 300px; height: 32px; margin-top: 8px; }
 .registerActions > span { font-size: 9px; border-radius: 10px; }
 .registerActions svg { width: 11px; height: 11px; }
-.registerPreviewAssets { position: relative; display: grid; grid-template-rows: repeat(3,1fr); min-height: 0; flex: 1; gap: 10px; padding: 8px 31px 10px 44px; }
+.registerPreviewAssets { position: relative; display: grid; grid-template-rows: repeat(2,1fr); min-height: 0; flex: 1; gap: 10px; padding: 8px 31px 10px 44px; }
 .registerPreviewAssets::before { content: ''; position: absolute; left: 20px; top: 0; bottom: 50px; width: 1px; background: #82cdb4; }
 .registerPreviewRow { position: relative; display: grid; grid-template-columns: 24px 1fr; align-items: start; gap: 8px; padding: 10px 10px 8px; min-height: 0; border: 1px solid #bfd5de; border-radius: 16px; background: linear-gradient(#fff,#f6faf9); box-shadow: 0 7px 13px #1c564509; }
 .registerPreviewRow::before { content: ''; position: absolute; width: 14px; height: 1px; left: -25px; top: 46%; background: #82cdb4; }
