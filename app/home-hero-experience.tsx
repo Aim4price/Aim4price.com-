@@ -329,6 +329,21 @@ export default function HomeHeroExperience() {
     claimManualControl();
   };
 
+  const handleScrollCue = () => {
+    const section = sectionRef.current;
+    const sticky = stickyRef.current;
+    if (!section || !sticky) return;
+
+    claimManualControl();
+    const stickyTop = (parseFloat(getComputedStyle(sticky).top) || 0) * currentWebsiteScale();
+    const trackStart = window.scrollY + section.getBoundingClientRect().top - stickyTop;
+    const travel = Math.max(1, section.getBoundingClientRect().height - sticky.getBoundingClientRect().height);
+    window.scrollTo({
+      top: Math.max(0, trackStart + travel * (1.25 / HERO_STORY_STEPS.length)),
+      behavior: 'smooth',
+    });
+  };
+
   const handleStoryFocus = (event: FocusEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (target.closest('[data-story-pause-control]')) return;
@@ -346,6 +361,7 @@ export default function HomeHeroExperience() {
       className={styles.heroSection}
       aria-labelledby="home-hero-title"
       data-story-step={storyStep}
+      data-motion-paused={isPaused ? 'true' : 'false'}
       data-story-mode={storyMode}
       data-active-question={activeQuestion}
       data-autoplay={
@@ -470,6 +486,19 @@ export default function HomeHeroExperience() {
                   Get a Free Estimate
                 </Link>
               </div>
+
+              {isDesktopStory && storyStep === 'brand' ? (
+                <button
+                  type="button"
+                  className={styles.storyScrollCue}
+                  aria-label="Scroll down to explore Aim4price"
+                  onClick={handleScrollCue}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 4v15m-6-6 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              ) : null}
 
               {isDesktopStory &&
                 !isManuallyControlled &&
