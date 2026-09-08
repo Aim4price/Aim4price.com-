@@ -3958,11 +3958,6 @@
 }
 
 /* Identity and status columns mirror the register, without a documents panel. */
-.heroStory .assetPreviewCard:has(.assetDetailsPanel) {
-  /* Retain half of the original 2.5rem widening. */
-  right: calc(3.25rem - 1.25rem);
-}
-
 .assetPreviewBody:has(.assetDetailsPanel) {
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr);
 }
