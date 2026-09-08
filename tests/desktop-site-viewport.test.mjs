@@ -72,7 +72,7 @@ test('the Home hero keeps reliable playback without a mobile-only video asset', 
   assert.match(styleSource, /\.heroVideoPlay\s*\{[^}]*display:\s*inline-flex/s);
 });
 
-test('Get Estimate keeps the website viewport stable and presents family results in a portal above its backdrop', async () => {
+test('Get Estimate keeps the website viewport stable, uses R5k replacement slider steps and presents family results above the backdrop', async () => {
   const [pageSource, polishSource, polishStyles] = await Promise.all([
     readFile(valuationPagePath, 'utf8'),
     readFile(valuationPolishPath, 'utf8'),
@@ -84,6 +84,9 @@ test('Get Estimate keeps the website viewport stable and presents family results
   assert.match(polishSource, /originalScrollIntoView = wizard\.scrollIntoView;[\s\S]*?wizard\.scrollIntoView = \(\) => undefined/);
   assert.doesNotMatch(polishSource, /Element\.prototype\.scrollIntoView|HTMLElement\.prototype\.scrollIntoView/);
   assert.match(polishSource, /FAMILY_SEARCH_LABEL = \/\^Search \(equipment type\|vehicle type\)\$\/i/);
+  assert.match(polishSource, /REPLACEMENT_SLIDER_LABEL = \/Slide to replacement price\/i/);
+  assert.match(polishSource, /slider\.step = String\(BASIC_REPLACEMENT_SLIDER_STEP\)/);
+  assert.match(polishSource, /data-basic-replacement-slider-step/);
   assert.match(polishSource, /createPortal\([\s\S]*?data-valuation-family-modal-root="true"/);
   assert.match(polishSource, /className=\{styles\.familyModal\}[\s\S]*?role="dialog"[\s\S]*?aria-modal="true"/);
   assert.match(polishSource, /event\.key === 'Escape'/);
