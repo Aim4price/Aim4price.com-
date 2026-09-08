@@ -67,12 +67,12 @@ test('Manage Pricing opens the same Saleability calculator', () => {
 
 test('the questions use plain selectable answers and preserve the valuation boundary', () => {
   for (const wording of [
-    'Where are you willing to sell it?',
-    'How many similar assets can buyers choose from?',
-    'How many people would realistically buy it?',
-    'What is demand like right now?',
-    'How easy is this make or model for buyers to recognise?',
-    'How quickly would you like to sell?',
+    'Where will you sell?',
+    'How many similar assets are for sale?',
+    'How many likely buyers?',
+    'Current demand?',
+    'How well known is the model?',
+    'When would you like to sell?',
     'What matters most?',
   ]) {
     assert.match(modal, new RegExp(wording.replace(/[?]/g, '\\?')));
@@ -85,7 +85,7 @@ test('the questions use plain selectable answers and preserve the valuation boun
   assert.doesNotMatch(modal, /Compared with usual/);
   assert.doesNotMatch(modal, />More than 10</);
   assert.doesNotMatch(modal, /<select/);
-  assert.match(modal, /Excl. VAT · unchanged/);
+  assert.match(modal, /Valuation: <strong>\{formatMoney\(valuationExVat\)\} excl\. VAT<\/strong>/);
   assert.match(modal, /selling-price guidance only/);
   assert.doesNotMatch(modal, /Outlook/i);
 });
@@ -98,7 +98,7 @@ test('Saleability layouts preserve the estimate hierarchy and use the available 
   assert.match(modalStyles, /@media \(max-width: 900px\)[\s\S]*?\.header p\s*\{\s*white-space:\s*normal;/);
   assert.match(modal, /<h2 id="saleability-title">\{assetTitle\}<\/h2>/);
   assert.doesNotMatch(modal, /<span>Saleability<\/span>/);
-  assert.match(modal, /styles\.baselineStrip/);
+  assert.doesNotMatch(modal, /styles\.baselineStrip/);
   assert.match(modal, /styles\.settingsCard/);
   assert.match(modal, /styles\.resultHero/);
   assert.match(modalStyles, /\.baselineStrip\s*\{[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/);
@@ -114,4 +114,5 @@ test('valuation inputs needed by saved assets are retained without a database mi
   assert.match(revaluation, /resolveAdvancedAssumptionsForRevaluation/);
   assert.match(revaluation, /\.\.\.\(saved \?\? \{\}\),[\s\S]*\.\.\.requested/);
 });
+
 

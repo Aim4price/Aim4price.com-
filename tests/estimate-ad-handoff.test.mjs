@@ -25,7 +25,7 @@ test('Brand and Model show a brief busy state before progressing and ignore dupl
     normalizeText: s => s.trim(), unlistedBrandName: 'Kubota', typedModelName: 'M7',
     setBrandSlug() {}, UNKNOWN_BRAND_SLUG: 'unknown', setGenericModelMode() {},
     setPreparingIdentity: value => busy.push(value), setStep: value => steps.push(value),
-    scrollWizardToStart() {}, setTimeout: (callback, delay) => { assert.equal(delay, 500); callbacks.push(callback); return 1; },
+    scrollWizardToStart() {}, setTimeout: (callback, delay) => { assert.equal(delay, 1000); callbacks.push(callback); return 1; },
   });
   next(); next();
   assert.deepEqual(busy, [true]);
@@ -80,3 +80,4 @@ test('publishing stores server URLs but exports and retries with the exact local
   assert.equal(downloads[0].imageSrc, 'data:one');
   assert.deepEqual(receipts[0].listing, downloads[0]);
 });
+
