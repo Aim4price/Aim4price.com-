@@ -6,6 +6,10 @@ import { createRequire } from 'node:module';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { resolveCatalogueGuide } from '../lib/basic-catalogue-guide.ts';
+import {
+  BASIC_REPLACEMENT_GUIDE_ROUNDING,
+  BASIC_REPLACEMENT_SLIDER_STEP,
+} from '../lib/basic-estimate.ts';
 import { BASIC_USAGE_FAMILIES, getBasicUsageProfile } from '../lib/basic-usage-profiles.ts';
 
 const release = 'basic_ballpark_20260907_v1';
@@ -70,15 +74,26 @@ function input(overrides = {}) {
     ...overrides };
 }
 
-test('thirds cover the whole interval without gaps or changing the researched endpoints', () => {
+test('Entry, Standard and Quality share clean R10k guide boundaries and a R5k slider step', () => {
   for (const [min, max] of [[100000, 750000], [0, 150000], [25000, 1200000], [9000000, 22000000]]) {
     const guides = ['entry', 'standard', 'premium'].map((level) => resolveCatalogueGuide({ minimumExVat: min, maximumExVat: max }, level));
-    assert.equal(guides[0].minExVat, min);
-    assert.equal(guides[2].maxExVat, max);
+    const expectedMin = Math.max(0, Math.round(min / BASIC_REPLACEMENT_GUIDE_ROUNDING) * BASIC_REPLACEMENT_GUIDE_ROUNDING);
+    const expectedMax = Math.max(
+      expectedMin + BASIC_REPLACEMENT_GUIDE_ROUNDING * 3,
+      Math.round(max / BASIC_REPLACEMENT_GUIDE_ROUNDING) * BASIC_REPLACEMENT_GUIDE_ROUNDING,
+    );
+
+    assert.equal(guides[0].minExVat, expectedMin);
+    assert.equal(guides[2].maxExVat, expectedMax);
     assert.equal(guides[0].maxExVat, guides[1].minExVat);
     assert.equal(guides[1].maxExVat, guides[2].minExVat);
+
     for (const guide of guides) {
-      assert.ok(Math.abs(guide.maxExVat - guide.minExVat - (max - min) / 3) < 1e-8);
+      assert.ok(guide.maxExVat > guide.minExVat);
+      assert.equal(guide.minExVat % BASIC_REPLACEMENT_GUIDE_ROUNDING, 0);
+      assert.equal(guide.maxExVat % BASIC_REPLACEMENT_GUIDE_ROUNDING, 0);
+      assert.equal(guide.suggestedExVat % BASIC_REPLACEMENT_GUIDE_ROUNDING, 0);
+      assert.equal(guide.sliderStep, BASIC_REPLACEMENT_SLIDER_STEP);
       assert.ok(guide.suggestedExVat >= guide.minExVat && guide.suggestedExVat <= guide.maxExVat);
     }
   }
