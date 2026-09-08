@@ -137,8 +137,8 @@ export function calculateOlderPassengerCarMarketability(input: {
   const yearModel = Number.isInteger(input.yearModel) ? Math.round(input.yearModel) : baseYear;
   const age = Math.max(0, baseYear - yearModel);
   const appliesToVehicle = sectorKey === 'motor'
-    && familyKey === 'cars_suvs'
-    && OLDER_PASSENGER_CAR_BODY_TYPES.has(bodyType);
+    && ((familyKey === 'cars_suvs' && OLDER_PASSENGER_CAR_BODY_TYPES.has(bodyType))
+      || ['sedan_fastback', 'hatchback', 'station_wagon'].includes(familyKey));
   const yearsAfterThreshold = Math.max(0, age - OLDER_PASSENGER_CAR_AGE_THRESHOLD);
 
   if (!appliesToVehicle || input.yearModelUnknown || yearsAfterThreshold === 0) {

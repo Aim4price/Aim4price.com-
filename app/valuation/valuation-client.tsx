@@ -780,17 +780,6 @@ const MOTOR_SUBTYPE_CONFIG: Record<string, MotorSubtypeConfig> = {
   },
 };
 
-const MOTOR_VAT_INCLUDED_DEFAULT_FAMILIES = new Set([
-  'cars_suvs',
-  'bakkies_ldvs',
-  'light_commercial_vehicles',
-  'motorcycles',
-  'quadbikes',
-  'side_by_sides',
-]);
-
-const MOTOR_VAT_EXCLUDED_DEFAULT_FAMILIES = new Set(['trucks', 'trailers', 'buses']);
-
 function sentenceCase(value: string): string {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 }
@@ -930,19 +919,12 @@ function getDefaultVatDisplayMode(
   sectorKey?: SectorKey | null,
   familyKey?: string | null,
 ): VatDisplayMode {
-  if (sectorKey !== 'motor') return 'excl';
-  if (familyKey && MOTOR_VAT_INCLUDED_DEFAULT_FAMILIES.has(familyKey)) return 'incl';
-  if (familyKey && MOTOR_VAT_EXCLUDED_DEFAULT_FAMILIES.has(familyKey)) return 'excl';
-  return 'excl';
+  return sectorKey === 'motor' ? 'incl' : 'excl';
 }
 
 function getVatDefaultNote(sectorKey?: SectorKey | null, familyKey?: string | null): string {
   if (sectorKey !== 'motor') return 'Aim4price stores replacement prices excluding VAT. Use the toggle to view the estimate either excluding or including VAT.';
-  if (getDefaultVatDisplayMode(sectorKey, familyKey) === 'incl') {
-    return 'Default view for cars, bakkies, light vehicles, motorcycles, quadbikes and side-by-sides is VAT included. Stored replacement prices remain VAT excluded.';
-  }
-
-  return 'Default view for trucks, buses and trailers is VAT excluded. Use the toggle if you need a VAT included view.';
+  return 'Motor estimates default to VAT included. Stored replacement prices remain VAT excluded.';
 }
 
 function isUnknownBrandSlug(value: unknown): boolean {
@@ -1052,6 +1034,34 @@ function parseMoneyInput(value: unknown): number | null {
 function formatMoneyInput(value: unknown): string {
   const numeric = parseMoneyInput(value);
   return numeric === null ? '' : Math.round(numeric).toLocaleString('en-ZA');
+}
+
+// Keep decimal input editable and use ordinary spaces on every keystroke.
+function formatReplacementPriceInput(value: unknown): string {
+  const cleaned = String(value ?? '').replace(/[^0-9.]/g, '');
+  const [whole, ...fraction] = cleaned.split('.');
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return fraction.length ? `${grouped}.${fraction.join('').slice(0, 2)}` : grouped;
+}
+
+function handleReplacementPriceInput(
+  event: ChangeEvent<HTMLInputElement>,
+  setValue: (value: string) => void,
+) {
+  const input = event.currentTarget;
+  const position = input.selectionStart ?? input.value.length;
+  const charactersBefore = input.value.slice(0, position).replace(/[^0-9.]/g, '').length;
+  const formatted = formatReplacementPriceInput(input.value);
+  setValue(formatted);
+  let cursor = 0;
+  let count = 0;
+  while (cursor < formatted.length && count < charactersBefore) {
+    if (/[0-9.]/.test(formatted[cursor])) count += 1;
+    cursor += 1;
+  }
+  requestAnimationFrame(() => {
+    if (document.activeElement === input) input.setSelectionRange(cursor, cursor);
+  });
 }
 
 function normalizeAccountType(value: unknown): string {
@@ -6156,9 +6166,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <input
               type="text"
               inputMode="decimal"
-              value={basicReplacementPrice}
+              value={formatReplacementPriceInput(basicReplacementPrice)}
               onChange={(event) => {
-                setBasicReplacementPrice(event.target.value);
+                handleReplacementPriceInput(event, setBasicReplacementPrice);
                 setMessage('');
                 resetResult();
               }}
@@ -8811,8 +8821,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         <input
                           type="text"
                           inputMode="decimal"
-                          value={userReplacementPrice}
-                          onChange={(event) => setUserReplacementPrice(event.target.value)}
+                          value={formatReplacementPriceInput(userReplacementPrice)}
+                          onChange={(event) => handleReplacementPriceInput(event, setUserReplacementPrice)}
                           placeholder="e.g. 1 100 000"
                         />
                         <small className={styles.replacementFieldHint}>Current: {moneyExVat(getCurrentResultReplacementPriceExVat())}</small>
@@ -9382,8 +9392,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <input
                     type="text"
                     inputMode="decimal"
-                    value={userReplacementPrice}
-                    onChange={(event) => setUserReplacementPrice(event.target.value)}
+                    value={formatReplacementPriceInput(userReplacementPrice)}
+                    onChange={(event) => handleReplacementPriceInput(event, setUserReplacementPrice)}
                     placeholder={finalSaveReplacementPrice ? String(Math.round(finalSaveReplacementPrice)) : 'Enter replacement price'}
                   />
                 </div>

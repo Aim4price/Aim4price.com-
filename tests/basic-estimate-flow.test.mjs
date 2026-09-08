@@ -259,7 +259,7 @@ test('Basic catalogue sliders use researched bounds and retain the legacy fallba
   assert.match(replacementBlock, /: 5_000_000/);
   assert.match(replacementBlock, /step=\{catalogueGuide \? 'any' : replacementSliderStep\}/);
   assert.match(replacementBlock, /− \{money\(replacementSliderStep\)\}/);
-  assert.match(replacementBlock, /value=\{basicReplacementPrice\}/);
+  assert.match(replacementBlock, /value=\{formatReplacementPriceInput\(basicReplacementPrice\)\}/);
 });
 
 test('Basic replacement slider keeps zero stable and preserves manual values above the temporary slider ceiling', () => {
