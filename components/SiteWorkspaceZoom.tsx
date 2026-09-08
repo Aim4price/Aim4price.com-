@@ -79,15 +79,13 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     window.addEventListener('resize', syncLandscapeEntry);
     window.addEventListener('orientationchange', syncLandscapeEntry);
     viewport?.addEventListener('resize', syncLandscapeEntry);
-    if ('addEventListener' in coarsePointer) coarsePointer.addEventListener('change', syncLandscapeEntry);
-    else coarsePointer.addListener(syncLandscapeEntry);
+    coarsePointer.addEventListener('change', syncLandscapeEntry);
 
     return () => {
       window.removeEventListener('resize', syncLandscapeEntry);
       window.removeEventListener('orientationchange', syncLandscapeEntry);
       viewport?.removeEventListener('resize', syncLandscapeEntry);
-      if ('removeEventListener' in coarsePointer) coarsePointer.removeEventListener('change', syncLandscapeEntry);
-      else coarsePointer.removeListener(syncLandscapeEntry);
+      coarsePointer.removeEventListener('change', syncLandscapeEntry);
     };
   }, [native]);
 
