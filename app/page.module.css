@@ -3254,7 +3254,7 @@
 }
 
 .heroPromiseTitle {
-  font-size: clamp(2.65rem, calc(var(--website-design-vw) * 2.95), 2.95rem);
+  font-size: clamp(3.2rem, calc(var(--website-design-vw) * 3.55), 3.55rem);
   line-height: 1.01;
   letter-spacing: -0.054em;
 }
@@ -3267,7 +3267,7 @@
   max-width: 33.5rem;
   margin-top: 1.85rem;
   color: #52645d;
-  font-size: clamp(1rem, calc(var(--website-design-vw) * 1.06), 1.12rem);
+  font-size: clamp(1.2rem, calc(var(--website-design-vw) * 1.27), 1.34rem);
   line-height: 1.6;
   letter-spacing: -0.012em;
   text-wrap: pretty;

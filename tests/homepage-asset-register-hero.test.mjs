@@ -406,7 +406,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
 
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.heroBrandCopy,[\s\S]*?\.heroSection\[data-story-step='preview'\] \.heroPromiseCopy \{[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.storyHeroLogo \{[\s\S]*?filter: blur\(0\)[\s\S]*?scale\(1\)/);
-  assert.match(storyHeroStyles, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.65rem, calc\(var\(--website-design-vw\) \* 2\.95\), 2\.95rem\);[\s\S]*?line-height: 1\.01/);
+  assert.match(storyHeroStyles, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(3\.2rem, calc\(var\(--website-design-vw\) \* 3\.55\), 3\.55rem\);[\s\S]*?line-height: 1\.01/);
   assert.match(storyHeroStyles, /\.heroPromiseText \{[\s\S]*?max-width: 33\.5rem;[\s\S]*?margin-top: 1\.85rem;[\s\S]*?line-height: 1\.6/);
   assert.match(styles, /\.heroStory \.heroActions \{[\s\S]*?gap: 1rem;[\s\S]*?margin-top: 1\.85rem/);
   assert.doesNotMatch(storyHeroStyles, /data-autoplay-finished='true'[^{]*\.storyHeroLogo/);
