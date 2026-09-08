@@ -432,6 +432,18 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(desktopStoryStyles, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: calc\(-4\.25rem \+ var\(--asset-preview-center-inset\)\);[\s\S]*?bottom: auto/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard,[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
 
+  const fontSizeFor = (selector) => {
+    let start = styles.indexOf(`${selector} {`);
+    while (start !== -1) {
+      const size = styles.slice(start, styles.indexOf('}', start)).match(/font-size: ([^;]+);/)?.[1];
+      if (size) return size;
+      start = styles.indexOf(`${selector} {`, start + 1);
+    }
+    assert.fail(`Missing font size for ${selector}`);
+  };
+  assert.equal(fontSizeFor('.featureNarrativeLayer h2'), fontSizeFor('.heroPromiseTitle'));
+  assert.equal(fontSizeFor('.featureNarrativeLayer > p:last-child'), fontSizeFor('.heroPromiseText'));
+
   assertNoWebsiteReflow(storyHeroStyles);
   assert.doesNotMatch(storyHeroStyles, /@media[^\{]*(?:width|height)\s*:/);
 
