@@ -1,10 +1,4 @@
-import {
-  BASIC_REPLACEMENT_GUIDE_ROUNDING,
-  BASIC_REPLACEMENT_SLIDER_STEP,
-  roundBasicReplacementGuideValue,
-  type BasicReplacementGuide,
-  type BasicSpecificationLevel,
-} from './basic-estimate';
+import type { BasicReplacementGuide, BasicSpecificationLevel } from './basic-estimate';
 import type { BasicUsageProfile } from './basic-usage-profiles';
 
 export type BasicCatalogueIdentity = {
@@ -19,6 +13,17 @@ export type BasicCatalogueIdentity = {
   confidence: string;
   usageProfile?: BasicUsageProfile;
 };
+
+// Keep these values aligned with the Basic replacement guide contract in
+// basic-estimate.ts. This module intentionally keeps the runtime constants local
+// because the repository's direct Node TypeScript tests cannot resolve a new
+// extensionless runtime import here; the behaviour is cross-checked in tests.
+const BASIC_CATALOGUE_GUIDE_ROUNDING = 10_000;
+const BASIC_CATALOGUE_SLIDER_STEP = 5_000;
+
+function roundCatalogueGuideValue(value: number): number {
+  return Math.round(value / BASIC_CATALOGUE_GUIDE_ROUNDING) * BASIC_CATALOGUE_GUIDE_ROUNDING;
+}
 
 /**
  * Split the researched family interval into Entry / Standard / Quality thirds,
@@ -39,24 +44,24 @@ export function resolveCatalogueGuide(
   }
 
   const rawSpan = max - min;
-  const roundedMin = Math.max(0, roundBasicReplacementGuideValue(min));
+  const roundedMin = Math.max(0, roundCatalogueGuideValue(min));
   const roundedMax = Math.max(
-    roundedMin + BASIC_REPLACEMENT_GUIDE_ROUNDING * 3,
-    roundBasicReplacementGuideValue(max),
+    roundedMin + BASIC_CATALOGUE_GUIDE_ROUNDING * 3,
+    roundCatalogueGuideValue(max),
   );
 
   const firstBreak = Math.min(
-    roundedMax - BASIC_REPLACEMENT_GUIDE_ROUNDING * 2,
+    roundedMax - BASIC_CATALOGUE_GUIDE_ROUNDING * 2,
     Math.max(
-      roundedMin + BASIC_REPLACEMENT_GUIDE_ROUNDING,
-      roundBasicReplacementGuideValue(min + rawSpan / 3),
+      roundedMin + BASIC_CATALOGUE_GUIDE_ROUNDING,
+      roundCatalogueGuideValue(min + rawSpan / 3),
     ),
   );
   const secondBreak = Math.min(
-    roundedMax - BASIC_REPLACEMENT_GUIDE_ROUNDING,
+    roundedMax - BASIC_CATALOGUE_GUIDE_ROUNDING,
     Math.max(
-      firstBreak + BASIC_REPLACEMENT_GUIDE_ROUNDING,
-      roundBasicReplacementGuideValue(min + rawSpan * 2 / 3),
+      firstBreak + BASIC_CATALOGUE_GUIDE_ROUNDING,
+      roundCatalogueGuideValue(min + rawSpan * 2 / 3),
     ),
   );
 
@@ -66,14 +71,14 @@ export function resolveCatalogueGuide(
   const upper = boundaries[index + 1];
   const suggestedExVat = Math.min(
     upper,
-    Math.max(lower, roundBasicReplacementGuideValue((lower + upper) / 2)),
+    Math.max(lower, roundCatalogueGuideValue((lower + upper) / 2)),
   );
 
   return {
     minExVat: lower,
     maxExVat: upper,
     suggestedExVat,
-    sliderStep: BASIC_REPLACEMENT_SLIDER_STEP,
+    sliderStep: BASIC_CATALOGUE_SLIDER_STEP,
     source: 'family',
     sourceBandIds: [],
   };
