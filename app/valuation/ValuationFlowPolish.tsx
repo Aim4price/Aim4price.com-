@@ -3,6 +3,12 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BASIC_REPLACEMENT_SLIDER_STEP } from '../../lib/basic-estimate';
+import {
+  SALEABILITY_PDF_PLAN_SESSION_KEY,
+  formatSaleabilityPdfPrice,
+  parseSaleabilityPdfPlanSnapshot,
+  saleabilityPdfPlanMatchesEstimate,
+} from '../../lib/saleability-pdf';
 import styles from './valuation-flow-polish.module.css';
 
 const WIZARD_CARD_ID = 'valuation-wizard-card';
@@ -94,6 +100,49 @@ function sameOptions(left: FamilyOption[], right: FamilyOption[]): boolean {
   });
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function enrichEstimatePdfFormWithSaleabilityPrice(form: HTMLFormElement): void {
+  try {
+    const actionPath = new URL(form.action, window.location.href).pathname;
+    if (actionPath !== '/api/valuation/report') return;
+
+    const payloadInput = form.querySelector<HTMLInputElement>('input[name="payload"]');
+    if (!payloadInput?.value) return;
+
+    const payload = JSON.parse(payloadInput.value) as unknown;
+    if (!isRecord(payload)) return;
+
+    const snapshot = parseSaleabilityPdfPlanSnapshot(
+      window.sessionStorage.getItem(SALEABILITY_PDF_PLAN_SESSION_KEY),
+    );
+    if (!snapshot || !saleabilityPdfPlanMatchesEstimate(snapshot, payload.machineTitle, payload.selectedValueExVat)) return;
+
+    const rows = Array.isArray(payload.saleabilityRows) ? [...payload.saleabilityRows] : [];
+    const withoutExistingPrice = rows.filter((row) => {
+      if (!isRecord(row)) return true;
+      return !/^Saleability price$/i.test(String(row.label ?? '').trim());
+    });
+    const priceRow = {
+      label: 'Saleability price',
+      value: formatSaleabilityPdfPrice(snapshot.saleabilityPriceExVat),
+    };
+    const gradeIndex = withoutExistingPrice.findIndex((row) =>
+      isRecord(row) && /^Grade$/i.test(String(row.label ?? '').trim()),
+    );
+
+    if (gradeIndex >= 0) withoutExistingPrice.splice(gradeIndex + 1, 0, priceRow);
+    else withoutExistingPrice.unshift(priceRow);
+
+    payload.saleabilityRows = withoutExistingPrice;
+    payloadInput.value = JSON.stringify(payload);
+  } catch {
+    // PDF download must remain available even if browser storage is unavailable or stale.
+  }
+}
+
 export default function ValuationFlowPolish() {
   const [familyModalOpen, setFamilyModalOpen] = useState(false);
   const [familyOptions, setFamilyOptions] = useState<FamilyOption[]>([]);
@@ -112,6 +161,21 @@ export default function ValuationFlowPolish() {
     if (!terms.length) return familyOptions;
     return familyOptions.filter((option) => terms.every((term) => option.searchText.includes(term)));
   }, [familyOptions, familySearch]);
+
+  useLayoutEffect(() => {
+    const originalSubmit = HTMLFormElement.prototype.submit;
+    const submitWithSaleabilityPrice = function submitWithSaleabilityPrice(this: HTMLFormElement) {
+      enrichEstimatePdfFormWithSaleabilityPrice(this);
+      return originalSubmit.call(this);
+    };
+
+    HTMLFormElement.prototype.submit = submitWithSaleabilityPrice;
+    return () => {
+      if (HTMLFormElement.prototype.submit === submitWithSaleabilityPrice) {
+        HTMLFormElement.prototype.submit = originalSubmit;
+      }
+    };
+  }, []);
 
   useLayoutEffect(() => {
     let guardedWizard: HTMLElement | null = null;
