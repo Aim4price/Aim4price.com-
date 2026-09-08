@@ -8,6 +8,10 @@ import {
   type SaleabilityPlan,
   type SaleabilityRefinementAnswers,
 } from '../lib/saleability';
+import {
+  SALEABILITY_PDF_PLAN_SESSION_KEY,
+  createSaleabilityPdfPlanSnapshot,
+} from '../lib/saleability-pdf';
 import styles from './saleability-modal.module.css';
 
 type SaleabilityModalProps = {
@@ -167,6 +171,23 @@ export default function SaleabilityModal({
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [onClose, open, storageKey]);
+
+  useEffect(() => {
+    if (!open || step !== 'result' || !plan) return;
+
+    const snapshot = createSaleabilityPdfPlanSnapshot({
+      assetTitle,
+      valuationExVat,
+      saleabilityPriceExVat: plan.recommendedAskingPriceExVat,
+    });
+    if (!snapshot) return;
+
+    try {
+      window.sessionStorage.setItem(SALEABILITY_PDF_PLAN_SESSION_KEY, JSON.stringify(snapshot));
+    } catch {
+      // PDF enrichment is optional; Saleability itself remains fully usable.
+    }
+  }, [assetTitle, open, plan, step, valuationExVat]);
 
   if (!open) return null;
 
@@ -345,4 +366,3 @@ export default function SaleabilityModal({
     </div>
   );
 }
-
