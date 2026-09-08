@@ -429,3 +429,17 @@ test('valuation flow supports accessible back-step navigation and concise action
   assert.match(valuationStyles, /August 2026 — valuation experience polish/);
 });
 
+
+
+test('Basic passenger family aliases match Advanced marketability at every age', () => {
+  for (const [familyKey, bodyType] of [['sedan_fastback', 'sedan'], ['hatchback', 'hatchback'], ['station_wagon', 'station_wagon']]) {
+    for (const age of [0, 15, 16, 20, 30]) {
+      const common = { sectorKey: 'motor', baseYear: 2026, yearModel: 2026 - age };
+      assert.deepEqual(calculateOlderPassengerCarMarketability({ ...common, familyKey }),
+        calculateOlderPassengerCarMarketability({ ...common, familyKey: 'cars_suvs', bodyType }));
+    }
+  }
+  for (const familyKey of ['suv_crossover', 'coupe', 'trucks', 'double_cab_bakkie']) {
+    assert.equal(calculateOlderPassengerCarMarketability({ sectorKey: 'motor', familyKey, baseYear: 2026, yearModel: 2000 }).factor, 1);
+  }
+});

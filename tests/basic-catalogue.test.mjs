@@ -311,3 +311,41 @@ test('saved motor hours and future projections keep hours and the selected lifet
   const r = await h.runGenericValuation(input({ sectorKey: 'motor', familyKey: 'heavy_flatdeck_trailer' }));
   assert.equal(h.isPercentProjection({ asset: { kind: 'vehicle', specsJson: r.specsJson }, row: {}, valuationInput: {}, valuationOutput: r }), true);
 });
+
+
+test('sedan tiers keep rounded VAT-inclusive guides independent of exotic catalogue extremes', () => {
+  const catalogue = { familyKey: 'sedan_fastback', minimumExVat: 180000, maximumExVat: 20000000 };
+  for (const [level, low, high] of [['entry', 200000, 400000], ['standard', 400000, 900000], ['premium', 900000, 2500000]]) {
+    const guide = resolveCatalogueGuide(catalogue, level);
+    assert.equal(Math.round(guide.minExVat * 1.15), low);
+    assert.equal(Math.round(guide.maxExVat * 1.15), high);
+    assert.equal(Math.round(guide.suggestedExVat * 1.15), (low + high) / 2);
+    assert.equal(Math.round(guide.sliderStep * 1.15), 5000);
+  }
+});
+
+test('all Motor families default to VAT included and replacement inputs group editable numbers', () => {
+  const helpers = loadActualFunctions('app/valuation/valuation-client.tsx', ['getDefaultVatDisplayMode', 'formatReplacementPriceInput']);
+  for (const family of ['sedan_fastback', 'cars_suvs', 'trucks', 'trailers', 'buses', null]) {
+    assert.equal(helpers.getDefaultVatDisplayMode('motor', family), 'incl');
+  }
+  for (const sector of ['agricultural', 'industrial', 'construction', null]) assert.equal(helpers.getDefaultVatDisplayMode(sector), 'excl');
+  for (const [raw, expected] of [['10000', '10 000'], ['1000000', '1 000 000'], ['10 000.50', '10 000.50'], ['10000.', '10 000.'], ['', ''], ['0', '0']]) {
+    assert.equal(helpers.formatReplacementPriceInput(raw), expected);
+  }
+});
+
+test('Basic passenger cars apply the Advanced age adjustment and preserve manual overrides', async () => {
+  process.env.AIM4PRICE_BASIC_CATALOGUE_RELEASE = release;
+  for (const familyKey of ['sedan_fastback', 'hatchback', 'station_wagon']) {
+    const h = harness({ sectorKey: 'motor', familyKey });
+    const request = input({ sectorKey: 'motor', familyKey, year: new Date().getFullYear() - 20, usageAmount: 100000, lifeWorkedPercent: null, userReplacementPriceExVat: 3000000 });
+    const result = await h.runGenericValuation(request);
+    const calculation = result.userReplacementCalculation;
+    assert.ok(calculation, 'manual calculation is retained');
+    assert.equal(result.replacementPriceUsedExVat, 3000000);
+    assert.ok(Math.abs(calculation.marketabilityFactor - Math.pow(0.945, 5)) < 1e-12);
+    const unknown = await h.runGenericValuation({ ...request, yearModelUnknown: true });
+    assert.equal(unknown.userReplacementCalculation.marketabilityFactor, 1);
+  }
+});

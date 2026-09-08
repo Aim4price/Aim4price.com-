@@ -32,7 +32,7 @@ function roundCatalogueGuideValue(value: number): number {
  * slider fine-tunes within the selected window in R5,000 increments.
  */
 export function resolveCatalogueGuide(
-  catalogue: Pick<BasicCatalogueIdentity, 'minimumExVat' | 'maximumExVat'>,
+  catalogue: Pick<BasicCatalogueIdentity, 'minimumExVat' | 'maximumExVat'> & Partial<Pick<BasicCatalogueIdentity, 'familyKey'>>,
   level: BasicSpecificationLevel,
 ): BasicReplacementGuide {
   const { minimumExVat: min, maximumExVat: max } = catalogue;
@@ -41,6 +41,22 @@ export function resolveCatalogueGuide(
   }
   if (level !== 'entry' && level !== 'standard' && level !== 'premium') {
     throw new Error('Choose Entry, Standard or Quality.');
+  }
+
+  // Sedan entry/mainstream prices cannot be inferred as thirds of a family
+  // interval containing exotic luxury cars. These are adjustable ballpark
+  // guides, defined VAT-inclusive to keep the default Motor display rounded.
+  if (catalogue.familyKey === 'sedan_fastback') {
+    const ranges = { entry: [200_000, 400_000], standard: [400_000, 900_000], premium: [900_000, 2_500_000] } as const;
+    const [lower, upper] = ranges[level];
+    return {
+      minExVat: lower / 1.15,
+      maxExVat: upper / 1.15,
+      suggestedExVat: ((lower + upper) / 2) / 1.15,
+      sliderStep: 5_000 / 1.15,
+      source: 'tier',
+      sourceBandIds: [],
+    };
   }
 
   const rawSpan = max - min;

@@ -1854,8 +1854,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
         specsJson,
       });
 
-  const replacementPriceMinExVat = basicCatalogue?.minimumExVat ?? replacementBand?.replacementMinExVat ?? null;
-  const replacementPriceMaxExVat = basicCatalogue?.maximumExVat ?? replacementBand?.replacementMaxExVat ?? null;
+  const replacementPriceMinExVat = basicGuide?.source === 'tier' ? basicGuide.minExVat : basicCatalogue?.minimumExVat ?? replacementBand?.replacementMinExVat ?? null;
+  const replacementPriceMaxExVat = basicGuide?.source === 'tier' ? basicGuide.maxExVat : basicCatalogue?.maximumExVat ?? replacementBand?.replacementMaxExVat ?? null;
   const matrixMid = motorPricingRow ? getMotorReplacementMid(motorPricingRow) : null;
   const bandMid = basicGuide?.suggestedExVat ?? matrixMid ?? (
     replacementPriceMinExVat !== null && replacementPriceMaxExVat !== null
