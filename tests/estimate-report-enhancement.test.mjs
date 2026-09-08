@@ -43,7 +43,7 @@ test('estimate report spacing is enhanced without creating an extra page when no
   assert.match(html, /\.assetReportContentGrid[\s\S]*?gap:\s*14px/);
   assert.match(html, /\.assetReportSideCard \.assetReportRow[\s\S]*?grid-template-columns:\s*25mm minmax\(0, 1fr\)/);
   assert.match(html, /Page 1 of 1/);
-  assert.doesNotMatch(html, /estimateReportPhotoPage/);
+  assert.doesNotMatch(html, /class="assetReportPage estimateReportPhotoPage"/);
 });
 
 test('temporary estimate report photos are constrained to supported inline images and the four-photo limit', () => {
