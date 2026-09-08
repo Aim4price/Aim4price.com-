@@ -3400,22 +3400,22 @@
 .featureNarrativeLayer h2 {
   max-width: 29rem;
   color: #084b39;
-  line-height: 0.98;
+  line-height: 1.08;
   font-weight: 900;
   letter-spacing: -0.058em;
   text-wrap: balance;
   margin-top: 1rem;
-  font-size: 48.6px;
+  font-size: clamp(3.2rem, calc(var(--website-design-vw) * 3.55), 3.55rem);
 }
 
 .featureNarrativeLayer > p:last-child {
   max-width: 28rem;
   color: #566a62;
-  font-size: clamp(1rem, calc(var(--website-design-vw) * 1.14), 1.16rem);
+  font-size: clamp(1.2rem, calc(var(--website-design-vw) * 1.27), 1.34rem);
   letter-spacing: -0.012em;
   text-wrap: pretty;
   margin-top: 1rem;
-  line-height: 1.58;
+  line-height: 1.6;
 }
 
 .featureNarrativeCount {
