@@ -3934,3 +3934,83 @@
   0%, 100% { transform: translateY(-3px); }
   50% { transform: translateY(3px); }
 }
+
+/* Opening progress uses the same duration and restart conditions as the tour. */
+.openingProgress {
+  position: absolute;
+  z-index: 8;
+  bottom: 5.25rem;
+  left: calc(50% + 3rem);
+  width: 7rem;
+  height: 3px;
+  transform: translateX(-50%);
+  overflow: hidden;
+  border-radius: 999px;
+  background: #cce7da;
+}
+
+.openingProgress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #168b64;
+  transform-origin: left;
+  animation: openingProgressFill linear both;
+}
+
+@keyframes openingProgressFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Identity and status columns mirror the register, without a documents panel. */
+.heroStory .assetPreviewCard:has(.assetDetailsPanel) {
+  right: 0.75rem;
+}
+
+.assetPreviewBody:has(.assetDetailsPanel) {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr);
+}
+
+.assetDetailsPanel {
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 4fr) minmax(2.6rem, 1fr);
+  gap: 0.45rem;
+}
+
+.assetIdentityColumn,
+.assetStatusColumn {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.assetIdentityColumn .assetDetailRow {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.2fr);
+}
+
+.assetStatusColumn .assetDetailRow {
+  grid-template-columns: minmax(0, 1fr) 2.1rem;
+}
+
+.assetDetailsPanel .assetDetailRow > span,
+.assetDetailsPanel .assetDetailRow > strong {
+  padding-inline: 0.35rem;
+}
+
+.assetStatusColumn .assetStatusValue {
+  justify-content: center;
+  color: #fff !important;
+  background: linear-gradient(135deg, #20c96a, #0da64f);
+  font-size: 1.5rem !important;
+}
+
+.assetDetailsPanel .assetReplacementRow {
+  grid-column: 1 / -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .openingProgress { display: none; }
+  .openingProgress > span { animation: none; }
+}
