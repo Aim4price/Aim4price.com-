@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
-  MAX_ASSET_REGISTER_UPLOAD_BYTES,
   createAssetRegisterUpload,
 } from '../../../../../lib/asset-register-uploads';
 import { fieldManagerCan } from '../../../../../lib/field-manager';
@@ -9,6 +8,8 @@ import { requireActiveFieldManagerSession } from '../../../../../lib/field-manag
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const MAX_MOBILE_PHOTO_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 type FormFile = File & {
   size: number;
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Upload a JPG, PNG or WEBP fuel slip photo.' }, { status: 400 });
   }
 
-  if (!file.size || file.size > MAX_ASSET_REGISTER_UPLOAD_BYTES) {
+  if (!file.size || file.size > MAX_MOBILE_PHOTO_UPLOAD_BYTES) {
     return NextResponse.json({ ok: false, error: 'The fuel slip photo is empty or too large.' }, { status: 400 });
   }
 
