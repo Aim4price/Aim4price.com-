@@ -2542,43 +2542,68 @@
   min-width: 0;
   box-sizing: border-box;
   display: grid;
-  gap: 13px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
   margin: 0 auto;
   padding: 0;
 }
 
 .homeLaunchCard {
-  position: relative;
   width: 100%;
+  min-width: 0;
   min-height: 72px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: clamp(12px, 4vw, 20px);
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.12);
-  border-radius: 17px;
+  border: 1px solid #d2e2da;
+  border-radius: 16px;
   background: #ffffff;
   color: var(--dealer-ink);
-  padding: 15px 44px;
-  box-shadow: var(--aim4price-card-shadow, 0 10px 30px rgba(13, 62, 49, 0.08));
-  text-align: center;
+  padding: 14px 20px;
+  box-shadow: 0 4px 14px rgba(18, 53, 45, 0.045);
+  text-align: left;
   text-decoration: none;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .homeLaunchCard strong {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   color: var(--dealer-ink);
-  font-size: clamp(1.28rem, 5.2vw, 1.5rem);
-  font-weight: 800;
+  font-size: clamp(1rem, 4.4vw, 1.25rem);
+  font-weight: 750;
   letter-spacing: -0.025em;
-  line-height: 1.1;
-  text-align: center;
+  line-height: 1.3;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.homeLaunchIcon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  color: #285443;
+}
+
+.homeLaunchEnd {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.homeLaunchChevron {
+  width: 16px;
+  height: 20px;
+  flex: 0 0 16px;
+  color: #7c9e8b;
 }
 
 .homeLaunchCard:hover {
-  border-color: rgba(35, 104, 81, 0.3);
-  box-shadow: 0 16px 30px rgba(35, 104, 81, 0.14);
+  border-color: #9cbeab;
+  box-shadow: 0 6px 18px rgba(18, 53, 45, 0.075);
   transform: translateY(-1px);
 }
 
@@ -2587,25 +2612,23 @@
 }
 
 .homeLaunchCard:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 16px 30px rgba(35, 104, 81, 0.18);
+  outline: 3px solid #43836a;
+  outline-offset: 3px;
 }
 
 .homeLaunchBadge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
   min-width: 25px;
   min-height: 25px;
   display: grid;
   place-items: center;
   box-sizing: border-box;
+  border: 1px solid #efd2d2;
   border-radius: 999px;
-  background: #e02424;
-  color: #ffffff;
+  background: #fcecec;
+  color: #963838;
   padding-inline: 7px;
   font-size: 0.66rem;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -2618,8 +2641,7 @@
   }
 
   .homeLaunchCard {
-    border-radius: 22px;
-    padding: 14px 40px;
+    padding-inline: 14px;
   }
 }
 
@@ -2668,24 +2690,10 @@
   }
 
   .homeLauncher {
-    width: min(100%, 760px);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    width: min(100%, 480px);
+    gap: 12px;
   }
 
-  .homeLaunchCard {
-    min-height: 96px;
-    border-radius: 21px;
-    padding: 20px 52px;
-  }
-
-  .homeLaunchCard strong {
-    font-size: 1.38rem;
-  }
-
-  .homeLaunchCard:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
 }
 
 /* Dealer notifications intentionally reuse the Owner App notification surface.
