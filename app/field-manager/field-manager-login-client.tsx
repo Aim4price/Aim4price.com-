@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
 import AppLoginWelcome from '../../components/AppLoginWelcome';
-import styles from './page.module.css';
+import styles from '../dealer/dealer.module.css';
 
 type InstallPlatform = 'ios' | 'other';
 type InstallView = 'checking' | 'install' | 'login';
@@ -172,7 +172,7 @@ export default function FieldManagerLoginClient() {
 
   if (welcome) {
     return (
-      <main className={`${styles.mobilePage} ${styles.installPage}`}>
+      <main className={styles.loginPage}>
         <AppLoginWelcome {...welcome} />
       </main>
     );
@@ -180,7 +180,7 @@ export default function FieldManagerLoginClient() {
 
   if (installView === 'checking') {
     return (
-      <main className={`${styles.mobilePage} ${styles.installPage}`}>
+      <main className={styles.loginPage}>
         <section className={styles.installLoadingCard} aria-live="polite">
           <span className={styles.loadingSpinner} aria-hidden="true" />
           <strong>Opening Farm Manager App…</strong>
@@ -193,7 +193,7 @@ export default function FieldManagerLoginClient() {
     const showInstructions = installOutcome === 'instructions';
 
     return (
-      <main className={`${styles.mobilePage} ${styles.installPage}`}>
+      <main className={styles.loginPage}>
         <section className={styles.installCard} aria-labelledby="field-manager-install-title">
           <header className={styles.installHeader}>
             <Image
@@ -249,69 +249,77 @@ export default function FieldManagerLoginClient() {
   }
 
   return (
-    <main className={styles.mobilePage}>
-      <section className={styles.loginShell}>
-        <section className={styles.loginCard}>
-          <div className={`${styles.loginHeader} ${styles.loginHeaderCompact}`}>
-            <Image
-              className={styles.loginLogo}
-              src="/icon.png"
-              alt="Aim4price Farm Manager App"
-              width={76}
-              height={76}
-              priority
+    <main className={styles.loginPage}>
+      <section className={styles.loginCard} aria-labelledby="field-manager-login-title">
+        <header className={styles.loginHeader}>
+          <Image
+            className={styles.loginLogo}
+            src="/icon.png"
+            alt="Aim4price Farm Manager App"
+            width={76}
+            height={76}
+            priority
+          />
+          <span className={styles.loginEyebrow}>Aim4price Farm Manager App</span>
+          <h1 id="field-manager-login-title">Sign In</h1>
+          <p className={styles.loginIntro}>
+            Manage assets, maintenance and fuel in one place.
+          </p>
+        </header>
+
+        {notice ? <p className={styles.error} role="alert">{notice}</p> : null}
+
+        <form className={styles.loginForm} onSubmit={handleSubmit} aria-busy={isSubmitting}>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel} htmlFor="field-manager-login-username">App username</label>
+            <input
+              id="field-manager-login-username"
+              name="username"
+              disabled={isSubmitting}
+              required
+              spellCheck={false}
+              value={username}
+              onChange={(event) => setUsername(normalizeUsername(event.target.value))}
+              placeholder="kuyler@vasbyt"
+              autoComplete="username"
+              inputMode="text"
+              autoCapitalize="none"
+              autoCorrect="off"
             />
-            <span className={styles.loginEyebrow}>Aim4price Farm Manager App</span>
-            <h2>Sign in</h2>
-            <p className={styles.loginSubheading}>
-              Manage assets, maintenance and fuel in one place.
-            </p>
           </div>
 
-          {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
-
-          <form className={styles.loginForm} onSubmit={handleSubmit}>
-            <label className={styles.mobileField}>
-              <span>App username</span>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel} htmlFor="field-manager-login-password">Password</label>
+            <div className={styles.inputWrap}>
               <input
-                value={username}
-                onChange={(event) => setUsername(normalizeUsername(event.target.value))}
-                placeholder="kuyler@vasbyt"
-                autoComplete="username"
-                inputMode="text"
-                autoCapitalize="none"
-                autoCorrect="off"
+                id="field-manager-login-password"
+                name="password"
+                className={styles.passwordInput}
+                disabled={isSubmitting}
+                required
+                type={isPasswordVisible ? 'text' : 'password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Password"
+                autoComplete="current-password"
               />
-            </label>
-
-            <div className={styles.mobileField}>
-              <label htmlFor="field-manager-login-password">Password</label>
-              <div className={styles.mobilePasswordInputWrap}>
-                <input
-                  id="field-manager-login-password"
-                  type={isPasswordVisible ? 'text' : 'password'}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Password"
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className={styles.mobilePasswordToggleButton}
-                  onClick={() => setIsPasswordVisible((current) => !current)}
-                  aria-label={isPasswordVisible ? 'Hide Field Manager password' : 'Show Field Manager password'}
-                  aria-pressed={isPasswordVisible}
-                >
-                  {isPasswordVisible ? 'Hide' : 'Show'}
-                </button>
-              </div>
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                disabled={isSubmitting}
+                onClick={() => setIsPasswordVisible((current) => !current)}
+                aria-label={isPasswordVisible ? 'Hide Field Manager password' : 'Show Field Manager password'}
+                aria-pressed={isPasswordVisible}
+              >
+                {isPasswordVisible ? 'Hide' : 'Show'}
+              </button>
             </div>
+          </div>
 
-            <button type="submit" className={styles.mobilePrimaryButton} disabled={isSubmitting}>
-              {isSubmitting ? 'Opening…' : 'Login to Field Manager'}
-            </button>
-          </form>
-        </section>
+          <button type="submit" className={styles.primary} disabled={isSubmitting}>
+            {isSubmitting ? 'Opening Field Manager…' : 'Sign in'}
+          </button>
+        </form>
       </section>
     </main>
   );
