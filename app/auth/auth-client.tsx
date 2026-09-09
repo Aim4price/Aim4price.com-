@@ -1171,11 +1171,6 @@ export default function AuthClient() {
                                 }))
                               }
                             />
-                            {signupForm.accountType === "middleman" ? (
-                              <small className={styles.selectionHelp}>
-                                Free workspace for valuation-backed adverts and your public showroom.
-                              </small>
-                            ) : null}
                           </div>
 
                           {signupForm.accountType !== "owner" && signupForm.accountType !== "middleman" ? (
