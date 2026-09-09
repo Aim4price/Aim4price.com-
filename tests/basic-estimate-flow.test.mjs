@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { resolveCatalogueGuide } from '../lib/basic-catalogue-guide.ts';
 
 import {
   BASIC_SPECIFICATION_LEVELS,
@@ -263,12 +264,12 @@ test('Basic catalogue sliders use researched bounds and retain the legacy fallba
 });
 
 test('Basic replacement slider keeps zero stable and preserves manual values above the temporary slider ceiling', () => {
-  assert.match(client, /step !== 5 \|\| !basicReplacementGuide \|\| String\(basicReplacementPrice\)\.trim\(\)/);
+  assert.match(client, /step !== 5 \|\| !basicReplacementGuide \|\| basicReplacementPrice !== null/);
   const replacementStart = client.indexOf('function renderBasicReplacementStep()');
   const replacementBlock = client.slice(replacementStart, replacementStart + 18000);
   assert.match(replacementBlock, /parsedReplacementInput >= 0/);
   assert.match(replacementBlock, /const selectedReplacementPrice = hasReplacementSliderInput[\s\S]*?\? parsedReplacementInput[\s\S]*?: replacementSliderDefault/);
-  assert.match(replacementBlock, /<strong>\{money\(selectedReplacementPrice\)\}<\/strong>/);
+  assert.match(replacementBlock, /<strong>\{basicReplacementPrice !== null && !hasReplacementSliderInput \? '—' : money\(selectedReplacementPrice\)\}<\/strong>/);
   assert.match(replacementBlock, /value=\{sliderValue\}/);
 });
 
@@ -313,3 +314,70 @@ test('the final result renderer and save destinations remain shared with the exi
 });
 
 
+
+
+// Execute the actual initialization callback to cover the clear-and-retype regression.
+test('replacement initialization leaves deliberately cleared and edited prices alone', () => {
+  const guard = client.indexOf('if (!basicEstimateActive || step !== 5 || !basicReplacementGuide || basicReplacementPrice !== null)');
+  assert.ok(guard > 0);
+  const callback = client.slice(guard, client.indexOf('}, [basicEstimateActive', guard));
+  for (const initial of [null, '', '0', '12', '125000', '9000000']) {
+    let price = initial;
+    let vat = 'incl';
+    const dependencies = {
+      basicEstimateActive: true, step: 5,
+      basicReplacementGuide: { suggestedExVat: 850000 },
+      basicReplacementPrice: price, selectedSector: 'agricultural', selectedFamily: {},
+      getDefaultVatDisplayMode: () => 'excl',
+      getVatDisplayValue: (value) => value,
+      setBasicReplacementVatMode: (value) => { vat = value; },
+      setBasicReplacementPrice: (value) => { price = value; },
+    };
+    new Function(...Object.keys(dependencies), callback)(...Object.values(dependencies));
+    assert.equal(price, initial === null ? '850000' : initial);
+    assert.equal(vat, initial === null ? 'excl' : 'incl');
+  }
+});
+
+test('specification shortcut updates all three ranges and preserves the VAT basis', () => {
+  const start = client.indexOf('function applyReplacementSpecification(level: BasicSpecificationLevel) {');
+  const end = client.indexOf('function renderBasicReplacementStep()', start);
+  assert.ok(start > 0 && end > start);
+  const source = client.slice(start, end);
+  const body = source.slice(source.indexOf('{') + 1, source.lastIndexOf('}'));
+  const catalogue = { minimumExVat: 100000, maximumExVat: 1000000 };
+  for (const mode of ['excl', 'incl']) {
+    for (const level of ['entry', 'standard', 'premium']) {
+      let selected = level === 'entry' ? 'standard' : 'entry';
+      let price = '123456';
+      let resets = 0;
+      let closes = 0;
+      const dependencies = {
+        level, basicSpecLevel: selected, selectedFamily: { basicCatalogue: catalogue },
+        resolveCatalogueGuide, resolveBasicReplacementGuide, basicReplacementBands: [],
+        basicReplacementVatMode: mode,
+        getVatDisplayValue: (value, vat) => value * (vat === 'incl' ? 1.15 : 1),
+        setBasicSpecLevel: (value) => { selected = value; },
+        setBasicReplacementPrice: (value) => { price = value; },
+        setMessage: () => {}, resetResult: () => { resets++; },
+        specificationDialogRef: { current: { close: () => { closes++; } } },
+      };
+      const run = () => new Function(...Object.keys(dependencies), body)(...Object.values(dependencies));
+      run();
+      const guide = resolveCatalogueGuide(catalogue, selected);
+      const index = ['entry', 'standard', 'premium'].indexOf(level);
+      assert.equal(guide.minExVat, 100000 + index * 300000);
+      assert.equal(guide.maxExVat, 400000 + index * 300000);
+      assert.equal(price, String(Math.round(guide.suggestedExVat * (mode === 'incl' ? 1.15 : 1))));
+      assert.equal(selected, level);
+      assert.equal(resets, 1);
+      assert.equal(closes, 1);
+      dependencies.basicSpecLevel = level;
+      price = '234567';
+      run();
+      assert.equal(price, '234567', 'reselecting the current tier preserves a manual price');
+      assert.equal(resets, 1);
+      assert.equal(closes, 2);
+    }
+  }
+});
