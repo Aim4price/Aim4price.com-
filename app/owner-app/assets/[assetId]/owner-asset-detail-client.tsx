@@ -340,6 +340,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   section?: OwnerAssetManageSection;
   pricingMode?: OwnerAssetPricingMode;
 }) {
+  const managePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const manageDocumentInputRef = useRef<HTMLInputElement | null>(null);
   const [draft, setDraft] = useState<Asset | null>(null);
   const [registers, setRegisters] = useState<Register[]>([]);
   const [registerName, setRegisterName] = useState('');
@@ -1229,7 +1231,6 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             <h1><BalancedHeadingText text={draft.title} /></h1>
             {manageMeta ? <p>{manageMeta}</p> : null}
           </div>
-          <Link href={`/owner-app/assets/${encodeURIComponent(assetId)}/details`} prefetch={false}>View details <span aria-hidden="true">›</span></Link>
         </section>
 
         <section className={styles.manageSection} aria-label="Asset management options">
@@ -1241,6 +1242,40 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
                 <section className={`${styles.manageGroup} ${group.id === 'removal' ? styles.manageGroupDanger : ''}`} key={group.id}>
                   <h2>{group.title}</h2>
                   <div className={styles.manageList}>
+                    {group.id === 'asset' && availableManageSections.some((item) => item.id === 'media') ? (
+                      <>
+                        <input
+                          ref={managePhotoInputRef}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          multiple
+                          hidden
+                          disabled={Boolean(actionBusy)}
+                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                            void uploadFiles('photo', event.target.files);
+                            event.target.value = '';
+                          }}
+                        />
+                        <input
+                          ref={manageDocumentInputRef}
+                          type="file"
+                          hidden
+                          disabled={Boolean(actionBusy)}
+                          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                            void uploadFiles('document', event.target.files);
+                            event.target.value = '';
+                          }}
+                        />
+                        <button type="button" className={styles.manageButton} disabled={Boolean(actionBusy)} onClick={() => managePhotoInputRef.current?.click()}>
+                          <span className={styles.manageButtonCopy}><strong>{actionBusy === 'upload-photo' ? 'Adding photos…' : 'Add photos'}</strong></span>
+                          <span className={styles.manageButtonArrow} aria-hidden="true">+</span>
+                        </button>
+                        <button type="button" className={styles.manageButton} disabled={Boolean(actionBusy)} onClick={() => manageDocumentInputRef.current?.click()}>
+                          <span className={styles.manageButtonCopy}><strong>{actionBusy === 'upload-document' ? 'Adding document…' : 'Add document'}</strong></span>
+                          <span className={styles.manageButtonArrow} aria-hidden="true">+</span>
+                        </button>
+                      </>
+                    ) : null}
                     {groupItems.map((item) => (
                       <Link
                         key={item.id}
