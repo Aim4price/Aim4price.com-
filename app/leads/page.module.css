@@ -1507,6 +1507,12 @@
   }
 }
 
+/* Maintenance pagination also uses this class on a div outside its main.
+   Both layers must reveal the shared website pattern. */
+:global([data-website-canvas]) .leadsPage {
+  background: transparent !important;
+}
+
 /* === Owner Account-aligned dealership workspace === */
 .leadsPage {
   --owner-green: #254733;
