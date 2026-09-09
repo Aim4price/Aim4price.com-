@@ -218,7 +218,7 @@ export default function DealerLoginClient({ hasAccountSession = false, middleman
           <header className={styles.installHeader}>
             <Image
               className={styles.installLogo}
-              src={middlemanMode ? "/middleman-icon-512.png?v=1" : "/icon.png"}
+              src="/icon.png"
               alt={`Aim4price ${appName}`}
               width={92}
               height={92}
@@ -274,7 +274,7 @@ export default function DealerLoginClient({ hasAccountSession = false, middleman
         <header className={styles.loginHeader}>
           <Image
             className={styles.loginLogo}
-            src={middlemanMode ? "/middleman-icon-512.png?v=1" : "/icon.png"}
+            src="/icon.png"
             alt={`Aim4price ${appName}`}
             width={76}
             height={76}
