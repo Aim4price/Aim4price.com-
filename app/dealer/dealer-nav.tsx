@@ -10,12 +10,16 @@ type DealerNavProps = {
   backHref?: string;
   backLabel?: string;
   showBack?: boolean;
+  onBack?: () => void;
+  backDisabled?: boolean;
 };
 
 export default function DealerNav({
   backHref = '/dealer',
   backLabel = 'Home',
   showBack,
+  onBack,
+  backDisabled = false,
 }: DealerNavProps) {
   const pathname = usePathname();
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -44,7 +48,7 @@ export default function DealerNav({
     ? `${styles.navLeadsSurface} ${styles.navUnifiedSurface}`
     : '';
 
-  if (pathname === '/dealer/login') return null;
+  if (pathname === '/dealer/login' || (pathname === '/dealer/valuation' && !onBack)) return null;
 
   async function signOut() {
     if (isSigningOut) return;
@@ -66,14 +70,20 @@ export default function DealerNav({
 
   return (
     <header
-      className={`${styles.nav} ${navLayoutClass} ${workspaceSurfaceClass}`}
+      className={`${styles.nav} ${navLayoutClass} ${workspaceSurfaceClass} ${onBack ? styles.estimateNav : ''}`}
       aria-label="Dealer App navigation"
     >
       {resolvedShowBack ? (
         <>
-          <Link className={styles.navButton} href={resolvedBackHref} prefetch={false} aria-label={resolvedBackLabel}>
-            <span>{resolvedBackLabel}</span>
-          </Link>
+          {onBack ? (
+            <button type="button" className={styles.navButton} onClick={onBack} disabled={backDisabled}>
+              {resolvedBackLabel}
+            </button>
+          ) : (
+            <Link className={styles.navButton} href={resolvedBackHref} prefetch={false} aria-label={resolvedBackLabel}>
+              <span>{resolvedBackLabel}</span>
+            </Link>
+          )}
           {!backIsHome ? (
             <Link className={`${styles.signOut} ${styles.homeButton}`} href="/dealer" prefetch={false} aria-label="Dealer App home">
               Home
