@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
+import AppHomeIcon, { AppHomeChevron } from '../../components/AppHomeIcon';
+import launcherStyles from '../../components/AppHomeLauncher.module.css';
 import styles from './page.module.css';
 
 type FieldManagerSession = {
@@ -160,10 +162,10 @@ export default function FieldManagerHomeClient() {
 
         {!isLoading && hasManagerAccess ? (
           <section className={styles.homeCard} aria-label="Field Manager actions">
-            <div className={styles.homeActionGrid}>
+            <div className={`${styles.homeActionGrid} ${launcherStyles.list}`}>
               <button
                 type="button"
-                className={styles.homeActionCard}
+                className={`${styles.homeActionCard} ${launcherStyles.card}`}
                 aria-label={
                   notificationCount && notificationCount > 0
                     ? `Notifications, ${notificationCount} unread`
@@ -171,17 +173,21 @@ export default function FieldManagerHomeClient() {
                 }
                 onClick={() => window.location.assign('/field-manager/notifications')}
               >
+                <AppHomeIcon name="notifications" />
                 <strong>Notifications</strong>
-                {notificationCount && notificationCount > 0 ? (
-                  <span className={styles.homeActionBadge} aria-hidden="true">
-                    {notificationCount > 99 ? '99+' : notificationCount}
-                  </span>
-                ) : null}
+                <span className={launcherStyles.end}>
+                  {notificationCount && notificationCount > 0 ? (
+                    <span className={`${styles.homeActionBadge} ${launcherStyles.badge}`} aria-hidden="true">
+                      {notificationCount > 99 ? '99+' : notificationCount}
+                    </span>
+                  ) : null}
+                  <AppHomeChevron />
+                </span>
               </button>
 
               <button
                 type="button"
-                className={styles.homeActionCard}
+                className={`${styles.homeActionCard} ${launcherStyles.card}`}
                 aria-label={
                   overviewCount && overviewCount > 0
                     ? `Overview, ${overviewCount} ${overviewCount === 1 ? 'item' : 'items'}`
@@ -189,28 +195,36 @@ export default function FieldManagerHomeClient() {
                 }
                 onClick={() => window.location.assign('/field-manager/overview')}
               >
+                <AppHomeIcon name="overview" />
                 <strong>Overview</strong>
-                {overviewCount && overviewCount > 0 ? (
-                  <span className={styles.homeActionBadge} aria-hidden="true">
-                    {overviewCount > 99 ? '99+' : overviewCount}
-                  </span>
-                ) : null}
+                <span className={launcherStyles.end}>
+                  {overviewCount && overviewCount > 0 ? (
+                    <span className={`${styles.homeActionBadge} ${launcherStyles.badge}`} aria-hidden="true">
+                      {overviewCount > 99 ? '99+' : overviewCount}
+                    </span>
+                  ) : null}
+                  <AppHomeChevron />
+                </span>
               </button>
 
               <button
                 type="button"
-                className={styles.homeActionCard}
+                className={`${styles.homeActionCard} ${launcherStyles.card}`}
                 onClick={() => window.location.assign('/field-manager/assets')}
               >
+                <AppHomeIcon name="operations" />
                 <strong>Maintenance</strong>
+                <AppHomeChevron />
               </button>
 
               <button
                 type="button"
-                className={styles.homeActionCard}
+                className={`${styles.homeActionCard} ${launcherStyles.card}`}
                 onClick={() => window.location.assign('/field-manager/diesel')}
               >
+                <AppHomeIcon name="fuel" />
                 <strong>Fuel</strong>
+                <AppHomeChevron />
               </button>
             </div>
           </section>
