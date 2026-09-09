@@ -1052,3 +1052,35 @@ test('Ad Studio API denies unauthenticated, inactive, non-dealer and restricted 
     assert.equal(databaseCalls, 0);
   }
 });
+
+test('Middleman installs with its own identity and blue icon set', async () => {
+  const { GET } = await loadTypeScriptModule('app/dealer/manifest.webmanifest/route.ts', {
+    'next/server': { NextResponse: { json: (value) => value } },
+  });
+  const middleman = GET(new Request('https://example.com/dealer/manifest.webmanifest?app=middleman'));
+  const dealer = GET(new Request('https://example.com/dealer/manifest.webmanifest'));
+  assert.notEqual(middleman.id, dealer.id);
+  assert.equal(middleman.short_name, 'Middleman');
+  assert.equal(middleman.theme_color, '#1877F2');
+  assert.match(middleman.start_url, /app=middleman/);
+  assert.equal(dealer.short_name, 'Dealer');
+  assert.equal(dealer.theme_color, '#103f34');
+  for (const icon of middleman.icons) {
+    const bytes = await readFile(new URL('../public/' + icon.src.split('/').pop().split('?')[0], import.meta.url));
+    assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+    assert.equal(bytes.readUInt32BE(16), Number(icon.sizes.split('x')[0]));
+  }
+});
+
+test('Middleman shares Dealer launcher styling with its five tools and install handoff', async () => {
+  const home = await read('app/dealer/page.tsx');
+  assert.match(home, /\['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]/);
+  assert.doesNotMatch(home, /<header className=\{styles.middlemanHomeIntro\}/);
+  assert.match(home, /styles.homeLauncher/);
+  const access = await read('app/account/app-access-management-client.tsx');
+  assert.match(access, /loginPath: '\/dealer\/login\?app=middleman'/);
+  assert.match(access, /qrApp: 'middleman'/);
+  const qr = await read('app/api/account/app-access-qr/route.ts');
+  assert.match(qr, /middleman: '\/dealer\/login\?app=middleman&source=qr&install=1'/);
+});
+

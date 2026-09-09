@@ -53,6 +53,7 @@ export default function DealerNav({
   async function signOut() {
     if (isSigningOut) return;
     setIsSigningOut(true);
+    const middlemanMode = document.querySelector<HTMLLinkElement>('link[rel="manifest"]')?.href.includes('app=middleman');
 
     await Promise.allSettled([
       fetch('/api/dealer/logout', { method: 'POST', credentials: 'include' }),
@@ -65,7 +66,7 @@ export default function DealerNav({
     ]);
 
     clearCachedHeaderSession();
-    window.location.replace('/dealer/login');
+    window.location.replace(middlemanMode ? '/dealer/login?app=middleman' : '/dealer/login');
   }
 
   return (
@@ -103,3 +104,4 @@ export default function DealerNav({
     </header>
   );
 }
+

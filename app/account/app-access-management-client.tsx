@@ -17,7 +17,7 @@ import baseStyles from './dealer-app/page.module.css';
 import styles from './app-access-management.module.css';
 
 type DirectoryKind = 'dealer' | 'owner' | 'field';
-type AppQrKind = DirectoryKind;
+type AppQrKind = DirectoryKind | 'middleman';
 type ActiveFlow = 'new' | 'manage' | null;
 type NoticeTone = 'success' | 'error';
 type DealerStaffRole = 'owner' | 'sales' | 'parts' | 'technician';
@@ -1485,6 +1485,8 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
 export function DealerAppAccessManagement({ middlemanMode = false }: { middlemanMode?: boolean }) {
   const middlemanConfig = useMemo<Partial<DirectoryConfig> | undefined>(() => middlemanMode ? {
     title: 'Middleman App Access',
+    loginPath: '/dealer/login?app=middleman',
+    qrApp: 'middleman',
     description: 'Create and manage secure logins for your Middleman workspace.',
     newDescription: 'Create a Middleman App login.',
     manageDescription: 'Edit access, change passwords or remove a login.',
@@ -1515,3 +1517,4 @@ export function OwnerAppAccessManagement() {
 export function FieldManagerAppAccessManagement() {
   return <AppAccessManagement kind="field" />;
 }
+
