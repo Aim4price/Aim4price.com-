@@ -338,7 +338,6 @@ function buildNavItems(
   if (accountType === 'dealer') {
     if (isMiddlemanAccountSubtype(accountSubtype)) {
       return [
-        { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
         { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
         { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
         { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },

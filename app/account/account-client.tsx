@@ -1372,10 +1372,10 @@ export default function AccountClient({
     .trim()
     .toLowerCase();
   const isOwnerAccount = normalizedAccountType === "owner";
-  const isAssetRegisterAccount = isOwnerAccount || normalizedAccountType === "dealer";
   const isDealerAccount = normalizedAccountType === "dealer";
   const isMiddlemanAccount =
     isDealerAccount && isMiddlemanAccountSubtype(profile?.accountSubtype);
+  const isAssetRegisterAccount = isOwnerAccount || (isDealerAccount && !isMiddlemanAccount);
   const isPartnerAccount = !isOwnerAccount && !isMiddlemanAccount;
   const showScanPinControls = !isLoading && isOwnerAccount;
   const showPartnerDirectory = !isLoading && isPartnerAccount;
