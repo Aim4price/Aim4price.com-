@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export function GET(request?: Request) {
-  const middleman = new URL(request?.url || 'https://www.aim4price.com/dealer/manifest.webmanifest').searchParams.get('app') === 'middleman';
+export function GET(request: Request) {
+  const middleman = new URL(request.url).searchParams.get('app') === 'middleman';
   return NextResponse.json(
     {
       id: middleman ? '/apps/aim4price-middleman' : '/apps/aim4price-dealer',
