@@ -1298,15 +1298,21 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   {isOpen ? (
                     <div className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.trackerExpandedCard}`}>
                       <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader} ${styles.trackerExpandedHeader}`}>
-                        <div className={assetStyles.assetTitleBlock}>
+                        <div className={`${assetStyles.assetTitleBlock} ${styles.trackerAssetIdentity}`}>
                           <h2>{asset.assetTitle}</h2>
-                          <p>{trackingAssetMeta(asset)}</p>
+                          {dealerAppMode ? (
+                            <dl className={styles.trackerAssetFacts}>
+                              <div><dt>Year</dt><dd>{asset.yearModel ?? 'Not recorded'}</dd></div>
+                              <div><dt>Usage</dt><dd>{formatUsage(asset.currentUsage, asset.usageMetric)}</dd></div>
+                              <div><dt>Condition</dt><dd>{asset.condition || 'Not recorded'}</dd></div>
+                            </dl>
+                          ) : <p>{trackingAssetMeta(asset)}</p>}
                           <div className={assetStyles.assetMetaRow}><span className={assetStyles.assetSavedDateLabel}>Tracking shared by {asset.grantedByName || 'the asset owner'}</span></div>
                         </div>
                         <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside} ${styles.trackerExpandedAside}`}>
                           <div className={`${assetStyles.valueBlock} ${leadStyles.leadValueBlock} ${styles.trackerStatusValue}`}>
                             <strong>{asset.statusLabel}</strong>
-                            <span>Maintenance status</span>
+                            {!dealerAppMode ? <span>Maintenance status</span> : null}
                           </div>
 
                           <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${styles.trackerHeaderActions}`}>
@@ -2108,5 +2114,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     </main>
   );
 }
+
 
 
