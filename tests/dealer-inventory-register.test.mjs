@@ -48,9 +48,9 @@ const [
   read('app/api/asset-issue-notes/[eventId]/route.ts'),
 ]);
 
-test('dealer inventory reuses the complete Asset Register instead of a second implementation', () => {
-  assert.match(dealerHome, /label: 'Asset Register'/);
-  assert.match(dealerHome, /href: '\/dealer\/inventory'/);
+test('dealer inventory is absent from the app launcher while desktop retains the complete register', () => {
+  assert.doesNotMatch(dealerHome, /label: 'Asset Register'/);
+  assert.doesNotMatch(dealerHome, /href: '\/dealer\/inventory'/);
   assert.match(inventoryPage, /AssetRegisterClient/);
   assert.match(inventoryPage, /showAppHeader=\{false\}/);
   assert.match(inventoryPage, /Your own stock and trade-ins stay separate from the Asset Registers you manage for clients/);
