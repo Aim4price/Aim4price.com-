@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type AppQrKind = 'dealer' | 'owner' | 'field';
+type AppQrKind = 'middleman' | 'dealer' | 'owner' | 'field';
 
 const APP_INSTALL_PATHS: Record<AppQrKind, string> = {
   dealer: '/dealer/login?source=qr&install=1',
+  middleman: '/dealer/login?app=middleman&source=qr&install=1',
   owner: '/owner-app/login?source=qr&install=1',
   field: '/field-manager/login?source=qr&install=1',
 };
@@ -15,7 +16,7 @@ const QR_PROVIDER_ORIGIN = 'https://api.qrserver.com';
 const MAX_QR_BYTES = 750_000;
 
 function isAppQrKind(value: string): value is AppQrKind {
-  return value === 'dealer' || value === 'owner' || value === 'field';
+  return value === 'middleman' || value === 'dealer' || value === 'owner' || value === 'field';
 }
 
 function normalizeOriginCandidate(value?: string | null): string | null {
@@ -123,3 +124,4 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeout);
   }
 }
+

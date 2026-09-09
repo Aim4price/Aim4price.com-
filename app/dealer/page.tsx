@@ -130,8 +130,11 @@ export default async function DealerHome() {
     { label: 'Discover Assets', href: '/dealer/discovery', capability: 'discovery' },
     { label: 'Marketplace', href: '/dealer/marketplace', capability: 'marketplace' },
   ];
-  const middlemanCapabilities = new Set<DealerAppCapability>(['valuation', 'ad_studio', 'showroom', 'marketplace']);
-  const tools = allTools.filter((tool) =>
+  const middlemanCapabilities = new Set<DealerAppCapability>(['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom']);
+  const orderedTools = middlemanMode
+    ? [...middlemanCapabilities].flatMap((capability) => allTools.filter((tool) => tool.capability === capability))
+    : allTools;
+  const tools = orderedTools.filter((tool) =>
     dealerRoleCan(role, tool.capability)
     && (!middlemanMode || middlemanCapabilities.has(tool.capability)),
   );
@@ -139,13 +142,6 @@ export default async function DealerHome() {
   return (
     <main className={`${styles.shell} ${styles.homeShell}`}>
       <div className={styles.homeContent}>
-        {middlemanMode ? (
-          <header className={styles.middlemanHomeIntro}>
-            <span>Middleman workspace</span>
-            <h1>Value it. Advertise it. Move it.</h1>
-            <p>Create professional machinery adverts from your phone and share one valuation-backed showroom.</p>
-          </header>
-        ) : null}
         <nav className={styles.homeLauncher} aria-label={middlemanMode ? 'Middleman tools' : 'Dealer tools'}>
           {tools.map((tool) => <ToolCard key={tool.href} tool={tool} />)}
         </nav>
@@ -153,3 +149,4 @@ export default async function DealerHome() {
     </main>
   );
 }
+

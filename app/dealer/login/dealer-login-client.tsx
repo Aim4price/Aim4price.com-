@@ -44,7 +44,8 @@ function isStandaloneMode(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches || navigatorWithStandalone.standalone === true;
 }
 
-export default function DealerLoginClient({ hasAccountSession = false }: { hasAccountSession?: boolean }) {
+export default function DealerLoginClient({ hasAccountSession = false, middlemanMode = false }: { hasAccountSession?: boolean; middlemanMode?: boolean }) {
+  const appName = middlemanMode ? 'Middleman App' : 'Dealer App';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -155,7 +156,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
 
     const cleanUsername = normalizeUsername(username);
     if (cleanUsername.length < 3 || !password) {
-      setError('Enter your Dealer App username and password.');
+      setError(`Enter your ${appName} username and password.`);
       return;
     }
 
@@ -202,7 +203,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
       <main className={styles.loginPage}>
         <section className={styles.installLoadingCard} aria-live="polite">
           <span className={styles.loadingSpinner} aria-hidden="true" />
-          <strong>Opening Dealer App…</strong>
+          <strong>Opening {appName}…</strong>
         </section>
       </main>
     );
@@ -217,13 +218,13 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
           <header className={styles.installHeader}>
             <Image
               className={styles.installLogo}
-              src="/icon.png"
-              alt="Aim4price Dealer App"
+              src={middlemanMode ? "/middleman-icon-512.png?v=1" : "/icon.png"}
+              alt={`Aim4price ${appName}`}
               width={92}
               height={92}
               priority
             />
-            <span className={styles.loginEyebrow}>Aim4price Dealer App</span>
+            <span className={styles.loginEyebrow}>Aim4price {appName}</span>
             <h1 id="dealer-install-title">Do you have the app?</h1>
           </header>
 
@@ -273,13 +274,13 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
         <header className={styles.loginHeader}>
           <Image
             className={styles.loginLogo}
-            src="/icon.png"
-            alt="Aim4price Dealer App"
+            src={middlemanMode ? "/middleman-icon-512.png?v=1" : "/icon.png"}
+            alt={`Aim4price ${appName}`}
             width={76}
             height={76}
             priority
           />
-          <span className={styles.loginEyebrow}>Aim4price Dealer App</span>
+          <span className={styles.loginEyebrow}>Aim4price {appName}</span>
           <h1 id="dealer-login-title">Sign In</h1>
           <p className={styles.loginIntro}>
             Use the username and password supplied by your dealership.
@@ -289,7 +290,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
         {accountSessionActive ? (
           <div className={styles.loginForm} aria-busy={busy}>
             <p className={styles.sessionNotice} role="status">
-              An Aim4price account is already open in this browser. Switch deliberately before entering a Dealer App staff login.
+              An Aim4price account is already open in this browser. Switch deliberately before entering a {appName} staff login.
             </p>
 
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
@@ -349,7 +350,7 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
 
             <button type="submit" className={styles.primary} disabled={busy}>
-              {busy ? 'Opening Dealer App…' : 'Sign in'}
+              {busy ? `Opening ${appName}…` : 'Sign in'}
             </button>
           </form>
         )}
@@ -358,3 +359,4 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
     </main>
   );
 }
+

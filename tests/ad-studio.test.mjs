@@ -330,8 +330,8 @@ test('middlemen have a focused phone-first workspace and a supported account sub
   assert.match(subtype, /equipment-middleman/);
   assert.match(profile, /equipment-middleman/);
   assert.match(migration, /equipment-middleman/);
-  assert.match(dealerHome, /Middleman workspace/);
-  assert.match(dealerHome, /Value it\. Advertise it\. Move it\./);
+  assert.match(dealerHome, /Middleman tools/);
+  assert.doesNotMatch(dealerHome, /<header className=\{styles.middlemanHomeIntro\}/);
   assert.match(dealerHome, /middlemanCapabilities/);
   assert.match(header, /MIDDLEMAN_ACCOUNT_MENU_ITEMS/);
   assert.match(header, /My Showroom/);
@@ -402,7 +402,7 @@ test('owner and dealer showrooms reuse the seller-scoped Marketplace experience'
   assert.match(manager, /Hosted on Aim4price\.com/);
   assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
-  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
+  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]\)/);
   const dealerTools = dealerHome.match(/const allTools: DealerHomeTool\[\] = \[[\s\S]*?\n  \];/)?.[0];
   assert.ok(dealerTools, 'Dealer App launcher tools must be defined');
   assert.doesNotMatch(dealerTools, /capability: '(?:inventory|client_costs)'/);
@@ -915,7 +915,7 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   assert.match(middlemanHeader, /Marketplace/);
   assert.doesNotMatch(middlemanHeader, /label: 'Account'/);
   assert.doesNotMatch(middlemanHeader, /Leads|Discovery/);
-  assert.match(dealerHome, /'showroom', 'marketplace'/);
+  assert.match(dealerHome, /'discovery', 'marketplace', 'ad_studio', 'showroom'/);
   assert.doesNotMatch(dealerMarketplace, /isMiddlemanAccountSubtype/);
   assert.match(account, /isMiddlemanAccount \? ['"]Middleman app access['"] : ['"]Manage Dealer App staff['"]/);
   assert.match(accessPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
@@ -1052,3 +1052,35 @@ test('Ad Studio API denies unauthenticated, inactive, non-dealer and restricted 
     assert.equal(databaseCalls, 0);
   }
 });
+
+test('Middleman installs with its own identity and blue icon set', async () => {
+  const { GET } = await loadTypeScriptModule('app/dealer/manifest.webmanifest/route.ts', {
+    'next/server': { NextResponse: { json: (value) => value } },
+  });
+  const middleman = GET(new Request('https://example.com/dealer/manifest.webmanifest?app=middleman'));
+  const dealer = GET(new Request('https://example.com/dealer/manifest.webmanifest'));
+  assert.notEqual(middleman.id, dealer.id);
+  assert.equal(middleman.short_name, 'Middleman');
+  assert.equal(middleman.theme_color, '#1877F2');
+  assert.match(middleman.start_url, /app=middleman/);
+  assert.equal(dealer.short_name, 'Dealer');
+  assert.equal(dealer.theme_color, '#103f34');
+  for (const icon of middleman.icons) {
+    const bytes = await readFile(new URL('../public/' + icon.src.split('/').pop().split('?')[0], import.meta.url));
+    assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+    assert.equal(bytes.readUInt32BE(16), Number(icon.sizes.split('x')[0]));
+  }
+});
+
+test('Middleman shares Dealer launcher styling with its five tools and install handoff', async () => {
+  const home = await read('app/dealer/page.tsx');
+  assert.match(home, /\['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]/);
+  assert.doesNotMatch(home, /<header className=\{styles.middlemanHomeIntro\}/);
+  assert.match(home, /styles.homeLauncher/);
+  const access = await read('app/account/app-access-management-client.tsx');
+  assert.match(access, /loginPath: '\/dealer\/login\?app=middleman'/);
+  assert.match(access, /qrApp: 'middleman'/);
+  const qr = await read('app/api/account/app-access-qr/route.ts');
+  assert.match(qr, /middleman: '\/dealer\/login\?app=middleman&source=qr&install=1'/);
+});
+
