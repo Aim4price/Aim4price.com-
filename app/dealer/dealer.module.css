@@ -3632,3 +3632,35 @@
   background: #edf6f0 !important;
   color: #164d38 !important;
 }
+
+/* Center specification tiers independently of the selection indicator. */
+.dealerValuationSurface [class*='basicLevelGrid'] [class*='basicLevelCard'] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-items: center !important;
+  align-content: center !important;
+  padding: 16px 36px !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='basicLevelGrid'] [class*='basicLevelCard'] > :is(strong, span) {
+  width: 100% !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
+  justify-self: center !important;
+  text-align: center !important;
+}
+
+/* Keep the actions and safe-area spacing without a separate white panel. */
+.dealerValuationSurface [class*='wizardFooter'],
+.dealerValuationSurface [class*='detailsModalActions'],
+.dealerValuationSurface [class*='specModalStickyActions'],
+.dealerValuationSurface [class*='finalSaveActions'],
+.dealerValuationSurface [class*='marketplaceIntroActions'],
+.dealerValuationSurface [class*='marketplacePublishActions'],
+.dealerValuationSurface [class*='replacementNoticeActions'] {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
