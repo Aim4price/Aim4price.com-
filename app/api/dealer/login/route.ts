@@ -37,7 +37,8 @@ function genericError(status = 401) {
 }
 
 export async function POST(request: NextRequest) {
-  const realm = await currentAppRealm() ?? 'dealer';
+  const realm = await currentAppRealm();
+  if (realm !== 'dealer' && realm !== 'middleman') return genericError();
   if (await getDealerAppSession()) {
     return NextResponse.json(
       { ok: false, error: 'Sign out of the current Dealer App user before switching staff logins.' },
@@ -116,4 +117,5 @@ export async function POST(request: NextRequest) {
   );
   return response;
 }
+
 

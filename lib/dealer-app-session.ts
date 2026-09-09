@@ -142,7 +142,8 @@ export type DealerAppSession = {
 
 export async function getDealerAppSession(): Promise<DealerAppSession | null> {
   const cookieStore = await cookies();
-  const realm = await currentAppRealm() ?? 'dealer';
+  const realm = await currentAppRealm();
+  if (realm !== 'dealer' && realm !== 'middleman') return null;
   const token = realm === 'middleman' ? cookieStore.get(MIDDLEMAN_APP_COOKIE)?.value
     : cookieStore.get(DEALER_APP_COOKIE)?.value || cookieStore.get(DEALER_APP_LEGACY_COOKIE)?.value;
   const payload = token ? parse(token) : null;
