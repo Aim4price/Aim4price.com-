@@ -482,7 +482,7 @@
 }
 .dealerChoiceOverlay .modal {
   width: min(560px, 100%);
-  max-height: calc(100dvh - 32px);
+  max-height: calc(var(--website-visible-height, 100dvh) - 32px);
   border: 1px solid #d5e2df;
   border-radius: 24px;
 }
