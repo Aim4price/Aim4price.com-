@@ -115,7 +115,7 @@ test("the staged flow preserves signup account and activation rules", async () =
   assert.match(source, /accountType: signupForm\.accountType === "middleman" \? "dealer"/);
   assert.match(source, /signupForm\.accountType !== "owner" &&\s*signupForm\.accountType !== "middleman" &&\s*signupForm\.directoryParticipation/);
   assert.match(source, /signupForm\.accountType === "middleman" \? "\/my-showroom"/);
-  assert.match(source, /Free workspace for valuation-backed adverts and your public showroom/);
+  assert.doesNotMatch(source, /Free workspace for valuation-backed adverts and your public showroom/);
   assert.match(source, /awaiting payment\/admin approval/);
 });
 
