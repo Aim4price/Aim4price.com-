@@ -1035,7 +1035,7 @@ export default function RecentlyAdvertisedClient({
                 <span className={styles.discoveryLocationPill}>{clean(advert.province) || "Location not saved"}</span>
               </div>
               <h2 className={styles.recentAdvertCardTitle} title={advert.title}>{advert.title}</h2>
-              <p className={styles.dealerAssetMeta}>{advertMeta(advert)}</p>
+              <p className={styles.dealerAssetMeta}>{advertMeta(advert).split(" · ").map((detail, index) => <span key={index}>{detail}</span>)}</p>
               <p className={styles.recentAdvertByline}>
                 <span>{dateLabel(advert.publishedAtIso)}</span>
                 <strong
