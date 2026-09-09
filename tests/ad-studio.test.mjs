@@ -56,7 +56,7 @@ test('schema accepts every supported Ad Studio template', async () => {
   }
 });
 
-test('Brand Kits are dealer-only and only dealer owners may edit company kits', async () => {
+test('Brand Kits are dealer-only and editing follows the Ad Studio capability', async () => {
   const [route, database, capability] = await Promise.all([
     read('app/api/ad-studio/brand-kits/route.ts'),
     read('lib/ad-studio-db.ts'),
@@ -65,8 +65,8 @@ test('Brand Kits are dealer-only and only dealer owners may edit company kits', 
 
   assert.match(route, /profile\.accountType !== 'dealer'/);
   assert.doesNotMatch(route, /profile\.accountType !== 'owner'/);
-  assert.match(route, /canManage: !dealerSession \|\| dealerSession\.role === 'owner'/);
-  assert.match(route, /Only the Dealer Owner can change company Brand Kits/);
+  assert.match(route, /canManage: !dealerSession \|\| dealerRoleCan\(dealerSession\.role, 'ad_studio'\)/);
+  assert.match(route, /Your Dealer login does not have permission to change company Brand Kits/);
   assert.match(database, /where user_id = \$1/);
   assert.match(database, /pg_advisory_xact_lock/);
   assert.match(capability, /'ad_studio'/);
@@ -660,10 +660,10 @@ test('private showroom exposes advert design only when the server grants Brand K
   assert.match(myShowroomPage, /advertDesign=\{profile\.accountType === 'dealer' \? 'saved-brand' : 'aim4price-marketplace'\}/);
   assert.match(myShowroomPage, /advertDesignHref=\{profile\.accountType === 'dealer' \? '\/ad-studio' : null\}/);
   assert.match(dealerShowroomPage, /advertDesign="saved-brand"/);
-  assert.match(dealerShowroomPage, /advertDesignHref=\{!dealerAppSession \|\| dealerAppSession\.role === 'owner' \? '\/dealer\/ad-studio' : null\}/);
+  assert.match(dealerShowroomPage, /advertDesignHref=\{!dealerAppSession \|\| dealerRoleCan\(dealerAppSession\.role, 'ad_studio'\) \? '\/dealer\/ad-studio' : null\}/);
   assert.match(desktopAdStudioPage, /profile\.accountType !== 'dealer'/);
   assert.match(brandKitRoute, /profile\.accountType !== 'dealer'/);
-  assert.match(brandKitRoute, /canManage: !dealerSession \|\| dealerSession\.role === 'owner'/);
+  assert.match(brandKitRoute, /canManage: !dealerSession \|\| dealerRoleCan\(dealerSession\.role, 'ad_studio'\)/);
   assert.doesNotMatch(ownerNav, /ad-studio/i);
 });
 
@@ -990,4 +990,65 @@ test('Marketplace only applies Brand Kits to dealer listings', async () => {
   assert.match(database, /if \(input\.allowBrandKit && requestedBrandKitId && !brandKit\)/);
   assert.match(database, /updateValues\.push\(brandKit \? JSON\.stringify\(toAdBrandSnapshot\(brandKit\)\) : null\)/);
   assert.match(database, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
+});
+
+test('Ad Studio API lets Owner/Manager and Sales manage their dealer brand kits', async () => {
+  const { dealerRoleCan } = await loadTypeScriptModule('lib/dealer-app-access.ts');
+  for (const role of [null, 'owner', 'sales']) {
+    const calls = [];
+    const route = await loadTypeScriptModule('app/api/ad-studio/brand-kits/route.ts', {
+      'next/server': { NextResponse: { json: (body, options) => ({ body, status: options?.status ?? 200 }) } },
+      '../../../../lib/auth-session': { getServerSession: async () => ({ user: { id: 'dealer-a' } }) },
+      '../../../../lib/dealer-app-session': { getDealerAppSession: async () => role ? { role, dealerUserId: 'dealer-a' } : null },
+      '../../../../lib/dealer-app-access': { dealerRoleCan },
+      '../../../../lib/account-profile': { getAccountProfile: async () => ({ accountType: 'dealer', accountStatus: 'active' }) },
+      '../../../../lib/ad-studio-db': {
+        listAdBrandKits: async (userId) => { calls.push(['list', userId]); return []; },
+        saveAdBrandKit: async (userId, input) => { calls.push(['save', userId, input]); return { id: input.id ?? 'new-kit', ...input }; },
+        deleteAdBrandKit: async (userId, id) => { calls.push(['delete', userId, id]); },
+      },
+    });
+    const response = await route.GET();
+    assert.equal(response.status, 200, role ?? 'main dealer');
+    assert.equal(response.body.canManage, true, role ?? 'main dealer');
+    // Client-supplied account identifiers must never select the company to write to.
+    for (const input of [
+      { name: 'New style', userId: 'dealer-b' },
+      { id: 'existing-kit', name: 'Edited style', userId: 'dealer-b' },
+      { id: 'existing-kit', name: 'Default style', isDefault: true, userId: 'dealer-b' },
+    ]) {
+      assert.equal((await route.PUT({ json: async () => input })).status, 200, role ?? 'main dealer');
+    }
+    assert.equal((await route.DELETE({ nextUrl: new URL('https://example.com/api/ad-studio/brand-kits?brandKitId=existing-kit') })).status, 200);
+    assert.equal(calls.length, 5);
+    assert.ok(calls.every((call) => call[1] === 'dealer-a'));
+    assert.deepEqual(calls.at(-1), ['delete', 'dealer-a', 'existing-kit']);
+  }
+});
+
+test('Ad Studio API denies unauthenticated, inactive, non-dealer and restricted staff access', async () => {
+  const { dealerRoleCan } = await loadTypeScriptModule('lib/dealer-app-access.ts');
+  for (const scenario of [
+    { signedIn: false },
+    { role: 'parts' },
+    { role: 'technician' },
+    { role: 'sales', accountStatus: 'inactive' },
+    { accountType: 'owner' },
+  ]) {
+    let databaseCalls = 0;
+    const unexpectedDatabaseCall = async () => { databaseCalls += 1; return []; };
+    const route = await loadTypeScriptModule('app/api/ad-studio/brand-kits/route.ts', {
+      'next/server': { NextResponse: { json: (body, options) => ({ body, status: options?.status ?? 200 }) } },
+      '../../../../lib/auth-session': { getServerSession: async () => scenario.signedIn === false ? null : { user: { id: 'dealer-a' } } },
+      '../../../../lib/dealer-app-session': { getDealerAppSession: async () => scenario.role ? { role: scenario.role } : null },
+      '../../../../lib/dealer-app-access': { dealerRoleCan },
+      '../../../../lib/account-profile': { getAccountProfile: async () => ({ accountType: scenario.accountType ?? 'dealer', accountStatus: scenario.accountStatus ?? 'active' }) },
+      '../../../../lib/ad-studio-db': { listAdBrandKits: unexpectedDatabaseCall, saveAdBrandKit: unexpectedDatabaseCall, deleteAdBrandKit: unexpectedDatabaseCall },
+    });
+    const request = { json: async () => ({ name: 'Blocked' }), nextUrl: new URL('https://example.com/?brandKitId=blocked') };
+    assert.equal((await route.GET()).status, 403);
+    assert.equal((await route.PUT(request)).status, 403);
+    assert.equal((await route.DELETE(request)).status, 403);
+    assert.equal(databaseCalls, 0);
+  }
 });
