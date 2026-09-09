@@ -18,10 +18,7 @@
 .managerPage {
   min-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 7rem);
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 2rem);
-  background:
-    radial-gradient(circle at 95% 2%, rgba(243,182,64,.12), transparent 27rem),
-    radial-gradient(circle at 4% 12%, rgba(22,95,73,.06), transparent 30rem),
-    #f4f8f6;
+  background: transparent;
 }
 .managerPageMobile { min-height: calc(var(--website-design-vh, 1dvh) * 100); padding: 1rem; }
 .managerHero, .managerGrid { width: min(1460px, 100%); margin-inline: auto; }

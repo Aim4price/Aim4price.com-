@@ -7,10 +7,7 @@
   --studio-line: #d6e4de;
   min-height: calc(var(--website-design-vh, 1vh) * 100);
   padding: 108px clamp(18px, calc(var(--website-design-vw, 1vw) * 4), 64px) 80px;
-  background:
-    radial-gradient(circle at 95% 2%, rgba(243, 182, 64, .12), transparent 27rem),
-    radial-gradient(circle at 4% 12%, rgba(22, 95, 73, .06), transparent 30rem),
-    #f4f8f6;
+  background: transparent;
   color: var(--studio-ink);
   font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }

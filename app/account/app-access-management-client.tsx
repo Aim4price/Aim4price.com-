@@ -1016,10 +1016,6 @@ function AppAccessManagement({ kind, configOverride }: {
         <InlineNotice notice={notice} />
         {renderAccountNameSetup()}
         {accountName ? <section className={`${baseStyles.card} ${styles.surface}`}>
-          <div className={styles.surfaceHeader}>
-            <h3>Login details</h3>
-            <p>Enter the required details.</p>
-          </div>
           <form className={baseStyles.form} onSubmit={createRecord}>
             <label className={baseStyles.field}>
               <span>{config.displayNameLabel}</span>
