@@ -37,7 +37,7 @@ export default async function DealerShowroomPage() {
         initialListings={listings}
         dealerAppMode
         advertDesign="saved-brand"
-        advertDesignHref={!dealerAppSession || dealerAppSession.role === 'owner' ? '/dealer/ad-studio' : null}
+        advertDesignHref={!dealerAppSession || dealerRoleCan(dealerAppSession.role, 'ad_studio') ? '/dealer/ad-studio' : null}
       />
     </div>
   );

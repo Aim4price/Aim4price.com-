@@ -619,7 +619,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       {error ? <div className={`${styles.notice} ${styles.error}`} role="alert">{error}</div> : null}
       {feedback ? <div className={`${styles.notice} ${styles.success}`} role="status">{feedback}</div> : null}
       {!canManage && !loading ? (
-        <div className={styles.notice}>You can review and use the company brand kits. Only the Dealer Owner can change them.</div>
+        <div className={styles.notice}>Your Dealer login does not have permission to edit advert styles.</div>
       ) : null}
 
       {!loading ? (

@@ -32,7 +32,7 @@ async function resolveAccess() {
   return {
     userId: session.user.id,
     profile,
-    canManage: !dealerSession || dealerSession.role === 'owner',
+    canManage: !dealerSession || dealerRoleCan(dealerSession.role, 'ad_studio'),
   };
 }
 
@@ -70,7 +70,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Ad Studio is not available for this account.' }, { status: 403 });
   }
   if (!access.canManage) {
-    return NextResponse.json({ ok: false, error: 'Only the Dealer Owner can change company Brand Kits.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Your Dealer login does not have permission to change company Brand Kits.' }, { status: 403 });
   }
 
   const body = (await request.json().catch(() => null)) as SaveAdBrandKitInput | null;
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Ad Studio is not available for this account.' }, { status: 403 });
   }
   if (!access.canManage) {
-    return NextResponse.json({ ok: false, error: 'Only the Dealer Owner can remove company Brand Kits.' }, { status: 403 });
+    return NextResponse.json({ ok: false, error: 'Your Dealer login does not have permission to remove company Brand Kits.' }, { status: 403 });
   }
 
   const brandKitId = String(request.nextUrl.searchParams.get('brandKitId') ?? '').trim();
