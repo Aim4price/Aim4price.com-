@@ -54,14 +54,16 @@ test('every app access page exposes an allowlisted QR install handoff', async ()
     read('app/dealer/login/page.tsx'),
   ]);
 
+  assert.match(shared, /loginPath: '\/middleman\/login',[\s\S]*?qrApp: 'middleman'/);
   assert.match(shared, /loginPath: '\/dealer\/login',[\s\S]*?qrApp: 'dealer'/);
   assert.match(shared, /loginPath: '\/owner-app\/login',[\s\S]*?qrApp: 'owner'/);
   assert.match(shared, /loginPath: '\/field-manager\/login',[\s\S]*?qrApp: 'field'/);
-  assert.match(shared, /src=\{`\/api\/account\/app-access-qr\?app=\$\{config\.qrApp\}`\}/);
+  assert.match(shared, /src=\{`\/api\/account\/app-access-qr\?app=\$\{config\.qrApp\}&v=\$\{encodeURIComponent\(config\.loginPath\)\}`\}/);
   assert.match(shared, /Scan to open or install app/);
   assert.match(shared, /source=qr&install=1/);
   assert.match(shared, /onError=\{\(\) => setImageFailed\(true\)\}/);
 
+  assert.match(route, /middleman: '\/middleman\/login\?source=qr&install=1'/);
   assert.match(route, /dealer: '\/dealer\/login\?source=qr&install=1'/);
   assert.match(route, /owner: '\/owner-app\/login\?source=qr&install=1'/);
   assert.match(route, /field: '\/field-manager\/login\?source=qr&install=1'/);
