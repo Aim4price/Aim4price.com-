@@ -1,6 +1,7 @@
 .dealerOverviewPage.dealerOverviewPage {
   box-sizing: border-box;
-  padding-top: calc(78px + env(safe-area-inset-top));
+  padding-top: 0;
+  background: transparent;
 }
 
 .dealerOverviewRole {
@@ -172,7 +173,7 @@
 
 @media (max-width: 390px) {
   .dealerOverviewPage.dealerOverviewPage {
-    padding-top: calc(72px + env(safe-area-inset-top));
+    padding-top: 0;
   }
 
   .dealerAssignmentFields {
@@ -190,4 +191,9 @@
   .dealerOverviewActionsThree.dealerOverviewActionsThree > button:last-child {
     grid-column: 1 / -1;
   }
+}
+
+/* The navigation already supplies top safe-area padding and the section gap. */
+.dealerOverviewPage > section {
+  padding-top: 0;
 }

@@ -384,3 +384,9 @@
   .managerPage *, .publicPage * { scroll-behavior: auto !important; transition: none !important; }
 }
 
+
+/* Let the shared Dealer App background continue around the cards. */
+.managerPage.managerPageMobile {
+  padding-top: 0;
+  background: transparent;
+}
