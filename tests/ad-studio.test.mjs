@@ -321,7 +321,7 @@ test('middlemen have a focused phone-first workspace and a supported account sub
   const [profile, subtype, dealerHome, header, migration, css] = await Promise.all([
     read('lib/account-profile.ts'),
     read('lib/middleman-account.ts'),
-    read('app/dealer/page.tsx'),
+    read('app/middleman/page.tsx'),
     read('components/AppHeader.tsx'),
     read('database/migrations/74-middleman-account-subtype.sql'),
     read('app/dealer/dealer.module.css'),
@@ -375,7 +375,7 @@ test('owner and dealer showrooms reuse the seller-scoped Marketplace experience'
     read('components/MiddlemanShowroomClient.tsx'),
     read('app/marketplace/marketplace-client.tsx'),
     read('lib/marketplace-db.ts'),
-    read('app/dealer/page.tsx'),
+    read('app/middleman/page.tsx'),
     read('components/AppHeader.tsx'),
   ]);
 
@@ -899,7 +899,7 @@ test('the global footer yields to the dedicated public showroom footer', async (
 test('Middleman navigation, app access and Marketplace stay focused without paid Dealer tools', async () => {
   const [header, dealerHome, dealerMarketplace, account, accessPage, accessClient, leadsPage, discoveryPage] = await Promise.all([
     read('components/AppHeader.tsx'),
-    read('app/dealer/page.tsx'),
+    read('app/middleman/page.tsx'),
     read('app/dealer/marketplace/page.tsx'),
     read('app/account/account-client.tsx'),
     read('app/account/dealer-app/page.tsx'),
@@ -1057,12 +1057,17 @@ test('Middleman installs with its own identity and blue icon set', async () => {
   const { GET } = await loadTypeScriptModule('app/dealer/manifest.webmanifest/route.ts', {
     'next/server': { NextResponse: { json: (value) => value } },
   });
-  const middleman = GET(new Request('https://example.com/dealer/manifest.webmanifest?app=middleman'));
+  const { GET: middlemanGET } = await loadTypeScriptModule('app/middleman/manifest.webmanifest/route.ts', {
+    'next/server': { NextResponse: { json: (value) => value } },
+  });
+  const middleman = middlemanGET(new Request('https://example.com/middleman/manifest.webmanifest'));
+  assert.equal(middleman.scope, '/middleman');
+  assert.equal(GET(new Request('https://example.com/dealer/manifest.webmanifest?app=middleman')).short_name, 'Dealer');
   const dealer = GET(new Request('https://example.com/dealer/manifest.webmanifest'));
   assert.notEqual(middleman.id, dealer.id);
   assert.equal(middleman.short_name, 'Middleman');
   assert.equal(middleman.theme_color, '#1877F2');
-  assert.match(middleman.start_url, /app=middleman/);
+  assert.match(middleman.start_url, /^\/middleman\/login/);
   assert.equal(dealer.short_name, 'Dealer');
   assert.equal(dealer.theme_color, '#103f34');
   for (const icon of middleman.icons) {
@@ -1073,14 +1078,15 @@ test('Middleman installs with its own identity and blue icon set', async () => {
 });
 
 test('Middleman shares Dealer launcher styling with its five tools and install handoff', async () => {
-  const home = await read('app/dealer/page.tsx');
+  const home = await read('app/middleman/page.tsx');
   assert.match(home, /\['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]/);
   assert.doesNotMatch(home, /<header className=\{styles.middlemanHomeIntro\}/);
   assert.match(home, /styles.homeLauncher/);
   const access = await read('app/account/app-access-management-client.tsx');
-  assert.match(access, /loginPath: '\/dealer\/login\?app=middleman'/);
+  assert.match(access, /loginPath: '\/middleman\/login'/);
   assert.match(access, /qrApp: 'middleman'/);
   const qr = await read('app/api/account/app-access-qr/route.ts');
-  assert.match(qr, /middleman: '\/dealer\/login\?app=middleman&source=qr&install=1'/);
+  assert.match(qr, /middleman: '\/middleman\/login\?source=qr&install=1'/);
 });
+
 

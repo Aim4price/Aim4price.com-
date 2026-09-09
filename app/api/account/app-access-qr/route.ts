@@ -7,7 +7,7 @@ type AppQrKind = 'middleman' | 'dealer' | 'owner' | 'field';
 
 const APP_INSTALL_PATHS: Record<AppQrKind, string> = {
   dealer: '/dealer/login?source=qr&install=1',
-  middleman: '/dealer/login?app=middleman&source=qr&install=1',
+  middleman: '/middleman/login?source=qr&install=1',
   owner: '/owner-app/login?source=qr&install=1',
   field: '/field-manager/login?source=qr&install=1',
 };
@@ -124,4 +124,5 @@ export async function GET(request: NextRequest) {
     clearTimeout(timeout);
   }
 }
+
 

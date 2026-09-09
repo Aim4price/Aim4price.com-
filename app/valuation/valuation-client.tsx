@@ -1,4 +1,5 @@
 'use client';
+import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import DealerNav from '../dealer/dealer-nav';
 import OwnerAppNav from '../owner-app/owner-app-nav';
 
@@ -1790,12 +1791,13 @@ function normalizeReportEmail(value: unknown): string {
 }
 
 export default function ValuationClient({ dealerAppMode = false, ownerAppMode = false, ownerAppBackHref = '/owner-app' }: { dealerAppMode?: boolean; ownerAppMode?: boolean; ownerAppBackHref?: string } = {}) {
+  const dealerAppRoot = useDealerAppRoot();
   const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
 
   const router = useRouter();
   const compactAppMode = dealerAppMode || ownerAppMode;
-  const appHomePath = ownerAppMode ? '/owner-app' : dealerAppMode ? '/dealer' : '/';
-  const marketplacePath = ownerAppMode ? '/owner-app/marketplace' : dealerAppMode ? '/dealer/marketplace' : '/marketplace';
+  const appHomePath = ownerAppMode ? '/owner-app' : dealerAppMode ? dealerAppRoot : '/';
+  const marketplacePath = ownerAppMode ? '/owner-app/marketplace' : dealerAppMode ? `${dealerAppRoot}/marketplace` : '/marketplace';
   const [step, setStep] = useState<Step>(1);
   const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
   const [estimateExperience, setEstimateExperience] = useState<EstimateExperience>('');
@@ -9627,7 +9629,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       {adBrandKits.length
                         ? 'Your saved logo, colours, wording and contact details will be applied.'
                         : 'No Brand Kit yet. The Aim4price standard layout will be used.'}
-                      {' '}<a href={dealerAppMode ? '/dealer/ad-studio' : '/ad-studio'}>Open Ad Studio</a>
+                      {' '}<a href={dealerAppMode ? `${dealerAppRoot}/ad-studio` : '/ad-studio'}>Open Ad Studio</a>
                     </small>
                   </label>
                 ) : (
@@ -9854,4 +9856,5 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+
 

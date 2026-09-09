@@ -1485,7 +1485,7 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
 export function DealerAppAccessManagement({ middlemanMode = false }: { middlemanMode?: boolean }) {
   const middlemanConfig = useMemo<Partial<DirectoryConfig> | undefined>(() => middlemanMode ? {
     title: 'Middleman App Access',
-    loginPath: '/dealer/login?app=middleman',
+    loginPath: '/middleman/login',
     qrApp: 'middleman',
     description: 'Create and manage secure logins for your Middleman workspace.',
     newDescription: 'Create a Middleman App login.',
@@ -1517,4 +1517,5 @@ export function OwnerAppAccessManagement() {
 export function FieldManagerAppAccessManagement() {
   return <AppAccessManagement kind="field" />;
 }
+
 

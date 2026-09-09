@@ -1,3 +1,6 @@
+import { currentAppRealm } from '../../../../lib/app-realm-server';
+import { isMiddlemanAccountSubtype } from '../../../../lib/middleman-account';
+import { MIDDLEMAN_APP_COOKIE } from '../../../../lib/dealer-app-session';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
@@ -56,12 +59,14 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const realm = await currentAppRealm() ?? 'dealer';
   const session = await getDealerAppSession();
   if (!session) {
     return NextResponse.json({ ok: false, error: 'You must sign in.' }, { status: 401 });
   }
 
   const token = createDealerAppToken({
+    realm,
     staffId: session.staffId,
     dealerUserId: session.dealerUserId,
     displayName: session.displayName,
@@ -73,11 +78,12 @@ export async function POST(request: NextRequest) {
     ok: true,
     session: staffSessionPayload(session),
   });
-  response.cookies.set(DEALER_APP_COOKIE, token, dealerAppCookieOptions(request.url));
-  response.cookies.set(
+  response.cookies.set(realm === 'middleman' ? MIDDLEMAN_APP_COOKIE : DEALER_APP_COOKIE, token, dealerAppCookieOptions(request.url));
+  if (realm === 'dealer') response.cookies.set(
     DEALER_APP_LEGACY_COOKIE,
     '',
     dealerAppLegacyCookieOptions(),
   );
   return response;
 }
+

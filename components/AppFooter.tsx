@@ -150,6 +150,7 @@ export default function AppFooter() {
     pathname?.startsWith('/field-manager') ||
     pathname?.startsWith('/scan') ||
     pathname?.startsWith('/dealer') ||
+    pathname?.startsWith('/middleman') ||
     pathname?.startsWith('/showroom/') ||
     pathname?.startsWith('/account/dealer-app') ||
     pathname?.startsWith('/account/owner-app') ||
@@ -251,3 +252,4 @@ export default function AppFooter() {
     </footer>
   );
 }
+

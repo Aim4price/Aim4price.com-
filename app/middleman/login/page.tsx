@@ -3,7 +3,7 @@ import { middlemanAppMetadata } from '../../../lib/middleman-app-metadata';
 import { redirect } from 'next/navigation';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { getAnyServerSession, getServerSession } from '../../../lib/auth-session';
-import DealerLoginClient from './dealer-login-client';
+import DealerLoginClient from '../../dealer/login/dealer-login-client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,7 +18,7 @@ function isInstallHandoff(searchParams?: DealerLoginPageProps['searchParams']): 
 }
 
 export default async function DealerLoginPage({ searchParams }: DealerLoginPageProps) {
-  const middlemanMode = false;
+  const middlemanMode = true;
   const forceInstallHandoff = isInstallHandoff(searchParams);
   const accountSession = await getAnyServerSession();
 
@@ -30,14 +30,14 @@ export default async function DealerLoginPage({ searchParams }: DealerLoginPageP
     });
 
     if (profile.accountType === 'dealer' && profile.accountStatus === 'active' && !forceInstallHandoff) {
-      redirect('/dealer');
+      redirect('/middleman');
     }
 
     return <DealerLoginClient hasAccountSession middlemanMode={middlemanMode} />;
   }
 
   const dealerSession = await getServerSession({ allowDealerApp: true });
-  if (dealerSession?.user?.id && !forceInstallHandoff) redirect('/dealer');
+  if (dealerSession?.user?.id && !forceInstallHandoff) redirect('/middleman');
 
   return <DealerLoginClient middlemanMode={middlemanMode} />;
 }

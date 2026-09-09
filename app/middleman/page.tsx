@@ -8,7 +8,7 @@ import { listDealerMaintenanceNotificationsForViewer } from '../../lib/dealer-ma
 import { listDealerTrackedAssets } from '../../lib/dealer-maintenance-tracker';
 import { listAssetLeadsForUser } from '../../lib/partner-access';
 import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
-import styles from './dealer.module.css';
+import styles from '../dealer/dealer.module.css';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,7 +59,7 @@ function ToolCard({ tool }: { tool: DealerHomeTool }) {
 
 export default async function DealerHome() {
   const session = await getServerSession({ allowDealerApp: true });
-  if (!session?.user?.id) redirect('/dealer/login');
+  if (!session?.user?.id) redirect('/middleman/login');
 
   const [profile, dealerAppSession] = await Promise.all([
     getAccountProfile({
@@ -71,64 +71,43 @@ export default async function DealerHome() {
   ]);
 
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
-    redirect('/dealer/login');
+    redirect('/middleman/login');
   }
 
-  const activeStaffId = isDealerAppSession(session) ? session.dealerApp.staffId : null;
-  const [maintenanceNotifications, leads, trackedAssets] = await Promise.all([
-    listDealerMaintenanceNotificationsForViewer({
-      dealerUserId: session.user.id,
-      viewerKey: activeStaffId
-        ? `dealer-staff:${activeStaffId}`
-        : `account:${session.user.id}`,
-      staffId: activeStaffId,
-    }).catch(() => []),
-    listAssetLeadsForUser(session.user.id).catch(() => []),
-    listDealerTrackedAssets(session.user.id).catch(() => []),
-  ]);
-
-  const unreadMaintenanceCount = maintenanceNotifications.filter((notification) => !notification.isRead).length;
-  const newLeadCount = leads.filter(
-    (lead) => lead.partnerUserId === session.user.id && lead.status === 'sent' && !lead.viewedAtIso,
-  ).length;
-  const attentionCount = trackedAssets.filter((asset) => ATTENTION_STATUSES.has(asset.status)).length;
-  const openProblemCount = trackedAssets.reduce(
-    (total, asset) => total + asset.loggedProblems.filter((problem) => !problem.notedAtIso).length,
-    0,
-  );
+  const openProblemCount = 0, unreadMaintenanceCount = 0, newLeadCount = 0, attentionCount = 0;
   const role = dealerAppSession?.role ?? 'owner';
-  const middlemanMode = false;
+  const middlemanMode = true;
 
   const allTools: DealerHomeTool[] = [
     {
       label: 'Overview',
-      href: '/dealer/overview',
+      href: '/middleman/overview',
       capability: 'overview',
       count: openProblemCount,
     },
     {
       label: 'Notifications',
-      href: '/dealer/notifications',
+      href: '/middleman/notifications',
       capability: 'notifications',
       count: unreadMaintenanceCount,
     },
     {
       label: 'Leads',
-      href: '/dealer/leads',
+      href: '/middleman/leads',
       capability: 'leads',
       count: newLeadCount,
     },
     {
       label: 'Maintenance',
-      href: '/dealer/maintenance',
+      href: '/middleman/maintenance',
       capability: 'maintenance',
       count: attentionCount,
     },
-    { label: 'Get Estimate', href: '/dealer/valuation', capability: 'valuation' },
-    { label: 'Ad Studio', href: '/dealer/ad-studio', capability: 'ad_studio' },
-    { label: 'My Showroom', href: '/dealer/showroom', capability: 'showroom' },
-    { label: 'Discover Assets', href: '/dealer/discovery', capability: 'discovery' },
-    { label: 'Marketplace', href: '/dealer/marketplace', capability: 'marketplace' },
+    { label: 'Get Estimate', href: '/middleman/valuation', capability: 'valuation' },
+    { label: 'Ad Studio', href: '/middleman/ad-studio', capability: 'ad_studio' },
+    { label: 'My Showroom', href: '/middleman/showroom', capability: 'showroom' },
+    { label: 'Discover Assets', href: '/middleman/discovery', capability: 'discovery' },
+    { label: 'Marketplace', href: '/middleman/marketplace', capability: 'marketplace' },
   ];
   const middlemanCapabilities = new Set<DealerAppCapability>(['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom']);
   const orderedTools = middlemanMode

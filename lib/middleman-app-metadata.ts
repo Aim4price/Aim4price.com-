@@ -4,7 +4,7 @@ export const middlemanAppMetadata: Metadata = {
   applicationName: 'Aim4price Middleman App',
   title: 'Aim4price Middleman',
   description: 'Get estimates, discover assets, browse Marketplace and manage adverts and your showroom.',
-  manifest: '/dealer/manifest.webmanifest?app=middleman&v=1',
+  manifest: '/middleman/manifest.webmanifest?v=2',
   icons: {
     icon: [
       { url: '/middleman-icon-192.png?v=1', sizes: '192x192', type: 'image/png' },
@@ -14,3 +14,4 @@ export const middlemanAppMetadata: Metadata = {
   },
   appleWebApp: { capable: true, title: 'Middleman', statusBarStyle: 'default' },
 };
+

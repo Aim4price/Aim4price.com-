@@ -1,4 +1,5 @@
 'use client';
+import { useDealerAppRoot } from '../lib/use-dealer-app-root';
 
 import Link from 'next/link';
 import {
@@ -264,6 +265,7 @@ function createPreviewPhotoId(): string {
 }
 
 export default function AdStudioClient({ dealerAppMode = false, middlemanMode = false }: AdStudioClientProps) {
+  const dealerAppRoot = useDealerAppRoot();
   const [kits, setKits] = useState<AdBrandKit[]>([]);
   const [draft, setDraft] = useState<EditableBrandKit>(EMPTY_KIT);
   const [profileDefaults, setProfileDefaults] = useState<ProfileDefaults>({});
@@ -922,7 +924,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                   <button className={styles.primaryButton} type="button" onClick={() => moveToStep((activeStep + 1) as StudioStep)}>Continue<StudioIcon name="next" /></button>
                 ) : (
                   <>
-                    {draft.id ? <Link className={styles.secondaryButton} href={dealerAppMode ? '/dealer/valuation' : '/valuation'}>Start a valuation<StudioIcon name="next" /></Link> : null}
+                    {draft.id ? <Link className={styles.secondaryButton} href={dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation'}>Start a valuation<StudioIcon name="next" /></Link> : null}
                     {canManage ? <button className={styles.primaryButton} type="submit" disabled={saving}><StudioIcon name="check" />{saving ? 'Saving…' : 'Save brand kit'}</button> : null}
                   </>
                 )}
@@ -1014,3 +1016,4 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     </div>
   );
 }
+

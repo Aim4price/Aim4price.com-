@@ -1,4 +1,5 @@
 'use client';
+import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 
@@ -2139,6 +2140,7 @@ export default function MarketplaceClient({
   dealerAppMode = false,
   ownerAppMode = false,
 }: MarketplaceClientProps & { dealerAppMode?: boolean; ownerAppMode?: boolean }) {
+  const dealerAppRoot = useDealerAppRoot();
   const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
 
   const initialSearch = [initialFilters.brand, initialFilters.model]
@@ -2150,7 +2152,7 @@ export default function MarketplaceClient({
   const isDealerAccount = normalizedAccountType === 'dealer';
   const compactAppMode = dealerAppMode || ownerAppMode;
   const canExposeSellerContact = isSignedIn || exposeSellerContact;
-  const valuationPath = ownerAppMode ? '/owner-app/valuation' : dealerAppMode ? '/dealer/valuation' : '/valuation';
+  const valuationPath = ownerAppMode ? '/owner-app/valuation' : dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation';
 
   const [query, setQuery] = useState(initialSearch);
   const [items, setItems] = useState<MarketplaceListing[]>(initialListings ?? seedMarketplaceListings);
@@ -4063,4 +4065,5 @@ export default function MarketplaceClient({
     </main>
   );
 }
+
 

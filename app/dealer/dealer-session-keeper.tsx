@@ -1,11 +1,13 @@
 'use client';
 
+import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import { useEffect } from 'react';
 
 const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const MIN_REFRESH_GAP_MS = 5 * 60 * 1000;
 
 export default function DealerSessionKeeper() {
+  const appRoot = useDealerAppRoot();
   useEffect(() => {
     let lastRefreshAttempt = 0;
     let refreshInFlight = false;
@@ -23,7 +25,7 @@ export default function DealerSessionKeeper() {
       lastRefreshAttempt = now;
       refreshInFlight = true;
       try {
-        await fetch('/api/dealer/session', {
+        await fetch(`/api${appRoot}/session`, {
           method: 'POST',
           credentials: 'include',
           cache: 'no-store',
@@ -49,7 +51,8 @@ export default function DealerSessionKeeper() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('online', handleVisibilityChange);
     };
-  }, []);
+  }, [appRoot]);
 
   return null;
 }
+
