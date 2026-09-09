@@ -52,6 +52,21 @@
   background-image: none !important;
 }
 
+/* Account workspaces can render their main inside an additional route wrapper.
+   Keep those page surfaces on the same pattern as top-level website pages. */
+:global(:where([data-website-canvas])) .content :global(main) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Register and Leads reuse a page with horizontal clipping for its carousel.
+   A page containing the shared header must allow its surface to reach beyond
+   the canonical canvas when zoomed out. Carousels keep their own clipping. */
+:global(:where([data-website-canvas])) .content > :global(:has(> header)),
+:global(:where([data-website-canvas])) .content :global(main:has(> header)) {
+  overflow: visible;
+}
+
 @supports not (overflow: clip) {
   .background {
     overflow: hidden;
@@ -186,5 +201,4 @@
   z-index: 0;
   background: var(--pattern-background);
 }
-
 
