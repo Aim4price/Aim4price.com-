@@ -1292,14 +1292,14 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   </div>
 
                   {isOpen ? (
-                    <div className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded}`}>
-                      <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
+                    <div className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.trackerExpandedCard}`}>
+                      <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader} ${styles.trackerExpandedHeader}`}>
                         <div className={assetStyles.assetTitleBlock}>
                           <h2>{asset.assetTitle}</h2>
                           <p>{trackingAssetMeta(asset)}</p>
                           <div className={assetStyles.assetMetaRow}><span className={assetStyles.assetSavedDateLabel}>Tracking shared by {asset.grantedByName || 'the asset owner'}</span></div>
                         </div>
-                        <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside}`}>
+                        <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside} ${styles.trackerExpandedAside}`}>
                           <div className={`${assetStyles.valueBlock} ${leadStyles.leadValueBlock} ${styles.trackerStatusValue}`}>
                             <strong>{asset.statusLabel}</strong>
                             <span>Maintenance status</span>
@@ -2034,6 +2034,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       {serviceTarget ? (
         <DesktopServiceModal
           askScheduleLink
+          dealerAppMode={dealerAppMode}
           record={{
             ...serviceTarget.record,
             assetTitle: serviceTarget.asset.assetTitle,

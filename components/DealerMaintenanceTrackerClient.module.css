@@ -2654,3 +2654,86 @@
   }
 }
 
+
+/* Dealer app: give the expanded asset and its actions their own space. */
+.dealerApp .trackerExpandedCard.trackerExpandedCard {
+  padding: 1.1rem !important;
+}
+.dealerApp .trackerExpandedHeader.trackerExpandedHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 1.25rem !important;
+  padding-bottom: 1.25rem;
+}
+.dealerApp .trackerExpandedAside.trackerExpandedAside {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  gap: 1rem !important;
+  align-items: start;
+  justify-items: stretch !important;
+}
+.dealerApp .trackerStatusValue {
+  text-align: left !important;
+  justify-self: start;
+}
+.dealerApp .trackerHeaderActions.trackerHeaderActions {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)) !important;
+  width: 100% !important;
+  gap: .85rem !important;
+}
+.dealerApp .trackerHeaderActions.trackerHeaderActions > button {
+  width: 100% !important;
+  min-height: 3.25rem !important;
+  min-width: 0 !important;
+  max-width: none;
+  margin: 0;
+  padding: .75rem !important;
+  white-space: nowrap;
+}
+.dealerApp .trackerAssetBody.trackerAssetBody {
+  gap: 1.25rem !important;
+}
+.dealerApp .trackerSections {
+  gap: 1rem !important;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  padding-bottom: .5rem;
+}
+.dealerApp .trackerSectionsIntro {
+  gap: .6rem;
+  padding: 0 .15rem .4rem;
+}
+.dealerApp .section > summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: .9rem;
+  padding: 1.1rem !important;
+}
+.dealerApp .section > summary > div {
+  gap: .55rem;
+}
+.dealerApp .section > summary h3 {
+  line-height: 1.35;
+}
+.dealerApp .section > summary small {
+  line-height: 1.5;
+}
+.dealerApp .section > summary > strong {
+  min-width: 2.75rem;
+  min-height: 2.5rem;
+  gap: .35rem;
+  padding: .4rem;
+  border-radius: .75rem;
+}
+@media (max-width: 480px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .section > summary {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .section > summary > strong {
+    justify-self: start;
+  }
+}
+
