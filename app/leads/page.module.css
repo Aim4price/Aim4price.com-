@@ -5686,10 +5686,12 @@
 
 
 /* Expanded Dealer App leads use the full card width for Close. */
-.dealerAppLeads .clientActionRow .closeLeadButton {
-  grid-column: 1 / -1;
+.dealerAppLeads .clientActionRow .closeLeadButton,
+.dealerAppLeads .clientActionRow .trackingCloseButton,
+.dealerAppLeads .trackingLeadActionsOpen .deleteLeadButton {
+  grid-column: 1 / -1 !important;
   flex: 1 1 100%;
-  width: 100%;
+  width: 100% !important;
   max-width: none;
   min-width: 0 !important;
   box-sizing: border-box;
