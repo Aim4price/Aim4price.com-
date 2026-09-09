@@ -1090,3 +1090,73 @@ test('Middleman shares Dealer launcher styling with its five tools and install h
 });
 
 
+
+test('installed Ad Studio routes keep Middleman and Dealer sessions separate without a referrer', async () => {
+  const { requestAppRealm } = await loadTypeScriptModule('lib/app-realm.ts');
+  const { isMiddlemanAccountSubtype } = await loadTypeScriptModule('lib/middleman-account.ts');
+  const crypto = await import('node:crypto');
+  let realm;
+  let role = 'sales';
+  const jar = new Map();
+  const profile = (id) => ({
+    accountType: 'dealer', accountStatus: 'active',
+    accountSubtype: id === 'middleman' ? 'equipment-middleman' : 'equipment-dealer',
+  });
+  const sessions = await loadTypeScriptModule('lib/dealer-app-session.ts', {
+    'node:crypto': crypto,
+    'next/headers': { cookies: async () => ({ get: (name) => jar.has(name) ? { value: jar.get(name) } : undefined }) },
+    './app-realm-server': { currentAppRealm: async () => realm },
+    './middleman-account': { isMiddlemanAccountSubtype },
+    './dealer-app': {
+      getDealerStaffById: async (id) => ({ is_active: true, dealer_user_id: id, session_version: 1, staff_role: role, display_name: id, username: id }),
+      normalizeDealerStaffRole: (value) => value,
+    },
+    './account-profile': { getAccountProfile: async ({ id }) => profile(id) },
+  });
+  const calls = [];
+  const shared = await loadTypeScriptModule('app/api/ad-studio/brand-kits/route.ts', {
+    'next/server': { NextResponse: { json: (body, init) => ({ status: init?.status ?? 200, body }) } },
+    '../../../../lib/account-profile': { getAccountProfile: async ({ id }) => profile(id) },
+    '../../../../lib/auth-session': { getServerSession: async () => {
+      const session = await sessions.getDealerAppSession();
+      return session ? { user: { id: session.dealerUserId } } : null;
+    } },
+    '../../../../lib/dealer-app-session': sessions,
+    '../../../../lib/dealer-app-access': await loadTypeScriptModule('lib/dealer-app-access.ts'),
+    '../../../../lib/ad-studio-db': {
+      listAdBrandKits: async (id) => { calls.push(id); return []; },
+      saveAdBrandKit: async (id) => { calls.push(id); return { id: 'kit' }; },
+      deleteAdBrandKit: async (id) => { calls.push(id); },
+    },
+  });
+  for (role of ['owner', 'sales']) {
+    for (const app of ['dealer', 'middleman']) {
+      jar.set(app === 'dealer' ? sessions.DEALER_APP_COOKIE : sessions.MIDDLEMAN_APP_COOKIE,
+        sessions.createDealerAppToken({ realm: app, staffId: app, dealerUserId: app, displayName: app, username: app, version: 1, role }));
+    }
+    for (const app of ['dealer', 'middleman']) {
+      const endpoint = new URL('https://www.aim4price.com/api/' + app + '/ad-studio/brand-kits');
+      realm = requestAppRealm(endpoint, null);
+      assert.equal(realm, app);
+      assert.equal(requestAppRealm(endpoint, 'https://www.aim4price.com/' + (app === 'dealer' ? 'middleman' : 'dealer')), app);
+      const route = await loadTypeScriptModule('app/api/' + app + '/ad-studio/brand-kits/route.ts', {
+        '../../../ad-studio/brand-kits/route': shared,
+      });
+      calls.length = 0;
+      assert.equal((await route.GET()).status, 200);
+      assert.equal((await route.PUT({ json: async () => ({ name: 'Style' }) })).status, 200);
+      endpoint.searchParams.set('brandKitId', 'kit');
+      assert.equal((await route.DELETE({ nextUrl: endpoint })).status, 200);
+      assert.deepEqual(calls, [app, app, app]);
+    }
+  }
+  realm = 'middleman';
+  jar.delete(sessions.MIDDLEMAN_APP_COOKIE);
+  assert.equal((await shared.GET()).status, 403);
+  assert.equal((await shared.PUT({ json: async () => ({}) })).status, 403);
+  assert.equal((await shared.DELETE({})).status, 403);
+  assert.equal(requestAppRealm(new URL('https://www.aim4price.com/api/dealer/staff'), null), null);
+  const client = await read('components/AdStudioClient.tsx');
+  assert.match(client, /dealerAppMode \? `\/api\$\{dealerAppRoot\}\/ad-studio\/brand-kits`/);
+  assert.doesNotMatch(client, /fetch\(['"]\/api\/ad-studio\/brand-kits/);
+});
