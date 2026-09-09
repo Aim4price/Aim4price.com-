@@ -1,4 +1,5 @@
 'use client';
+import { resolveAssetUsage } from '../../lib/asset-usage';
 
 import { websiteLogicalRect, websiteVisibleViewport, currentWebsiteScale, WEBSITE_DESIGN_WIDTH } from '../../lib/website-canvas';
 
@@ -3052,6 +3053,7 @@ function isPercentUsageModeValue(value: unknown): boolean {
 }
 
 function assetUsesPercentUsage(asset: RegisterAsset): boolean {
+  if (resolveAssetUsage(asset).metric === 'percentage') return true;
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
   const percent = getAssetLifeWorkedPercent(asset);
   const hours = Number(asset.hours);
@@ -22869,4 +22871,5 @@ export default function AssetRegisterClient({
     </main>
   );
 }
+
 

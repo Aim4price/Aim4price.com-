@@ -1,3 +1,4 @@
+import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from './db';
 import { ensureAccountProfileColumns } from './account-profile';
 import { calculateMarketplaceDealRating, type MarketplaceListing } from './marketplace';
@@ -631,10 +632,11 @@ function buildMarketplaceListingTitle(row: MarketplaceAssetRow, fallbackTitle?: 
     asText(fallbackTitle) ||
     asText(pick(row, ['title', 'name', 'asset_name'])) ||
     `${brandName} ${modelName}`.trim() ||
-    familyLabelFromAssetKind(readAssetKind(row)) ||
     'Aim4price listing';
 
-  return baseTitle.replace(/\s+/g, ' ').trim();
+  return assetDisplayTitle({ title: baseTitle, modelName,
+    familyLabel: pick(row, ['equipment_family_label', 'family_label']),
+    specsJson: pickJsonObject(row.specs_json) });
 }
 
 
@@ -1178,3 +1180,4 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     exposeContact: true,
   });
 }
+

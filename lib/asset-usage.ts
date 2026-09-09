@@ -211,6 +211,14 @@ export function resolveAssetUsage(input: AssetUsageInput): ResolvedAssetUsage {
     return { value: percent, metric: 'percentage' };
   }
 
+  // Older advanced estimates saved a placeholder meter alongside their family
+  // wear-class metadata. That family uses percentage, even when usageBasis was
+  // incorrectly persisted as reading. Basic estimates retain their chosen basis.
+  const legacyPercentageFamily = !specs.basic_catalogue_release && [
+    specs.usageMetricType, specs.usage_metric_type,
+  ].some((value) => basisFromValue(value)?.basis === 'percentage');
+  if (legacyPercentageFamily) return { value: percent, metric: 'percentage' };
+
   if (explicitBasis?.basis === 'reading') {
     return { value: reading, metric };
   }
@@ -254,3 +262,4 @@ export function formatResolvedAssetUsage(
   if (usage.metric === 'percentage') return `${value}%`;
   return `${value} ${usage.metric}`;
 }
+

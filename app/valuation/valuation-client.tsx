@@ -4160,7 +4160,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     return [
       getDisplayBrandName(result.brand, result.specsJson),
-      result.typedModelName || result.family.label,
+      result.typedModelName || 'Unknown model',
       result.yearModelUnknown || result.specsJson.year_model_unknown ? null : result.year,
       usageLabel,
       conditionLabel(result.condition),
@@ -4193,7 +4193,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const genericModelNameForResult = genericResult?.typedModelName || getGenericModelSubmitName(selectedGenericModel) || normalizeText(typedModelName);
     const genericBrandNameForPdf = getDisplayBrandName(genericResult?.brand ?? selectedBrand, genericResult?.specsJson, unlistedBrandName);
     const machineTitle = isGeneric
-      ? `${genericBrandNameForPdf} ${genericModelNameForResult || genericResult?.family.label || selectedFamily?.familyLabel || ''}`.trim()
+      ? `${genericBrandNameForPdf} ${genericModelNameForResult || 'Unknown model'}`.trim()
       : `${exactModel?.brandName ?? selectedBrand?.name ?? ''} ${exactModel?.modelName ?? ''}`.trim();
     const resultCondition: ConditionKey = isGeneric ? genericResult?.condition ?? condition : condition;
     const resultYear = isGeneric ? genericResult?.year ?? calculationYear : calculationYear;
@@ -9854,3 +9854,4 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+
