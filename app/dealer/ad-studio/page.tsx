@@ -27,7 +27,7 @@ export default async function DealerAdStudioPage() {
   if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'ad_studio')) redirect('/dealer');
 
   return (
-    <div className={styles.module}>
+    <div className={`${styles.module} ${styles.compactWorkspace}`}>
       <AdStudioClient
         dealerAppMode
         middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)}

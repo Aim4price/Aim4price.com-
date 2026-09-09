@@ -31,7 +31,7 @@ export default async function DealerShowroomPage() {
     exposeContact: true,
   });
   return (
-    <div className={styles.module}>
+    <div className={`${styles.module} ${styles.compactWorkspace}`}>
       <MiddlemanShowroomManager
         initialShowroom={showroom}
         initialListings={listings}

@@ -617,3 +617,9 @@
   :global(:where(html:not(:has([data-website-canvas])))) .adPreview.templateCatalogueGrid .adInfo { grid-column: 1; grid-row: 3; }
 }
 
+
+/* Let the shared Dealer App background continue around the cards. */
+.page.dealerPage {
+  padding-top: 0;
+  background: transparent;
+}

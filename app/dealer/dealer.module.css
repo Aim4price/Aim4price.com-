@@ -3700,3 +3700,8 @@
   max-height: none;
   line-height: inherit;
 }
+
+/* These workspaces follow the in-flow Dealer navigation. */
+.module.compactWorkspace {
+  padding-top: 0;
+}
