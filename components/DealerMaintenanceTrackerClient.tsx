@@ -1245,7 +1245,11 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
           </div>
 
           <div className={`${leadStyles.leadResultSummary} ${leadStyles.leadResultSummaryDealer}`}>
-            <span>Showing</span><strong>{filteredCards.length}</strong><span>of {maintenanceCards.length} maintenance cards across {assets.length} tracked asset{assets.length === 1 ? '' : 's'}</span>
+            {dealerAppMode ? (
+              <span className={styles.resultCount}>Showing <strong>{filteredCards.length}</strong> of {maintenanceCards.length}</span>
+            ) : (
+              <><span>Showing</span><strong>{filteredCards.length}</strong><span>of {maintenanceCards.length} maintenance cards across {assets.length} tracked asset{assets.length === 1 ? '' : 's'}</span></>
+            )}
           </div>
 
           {!filteredCards.length ? <div className={`${assetStyles.emptyState} ${workspaceStyles.emptyState}`}>{assets.length ? 'No maintenance cards match this search or filter.' : 'No tracked assets yet. Assets appear here after an owner or Field Manager enables dealer maintenance tracking.'}</div> : null}

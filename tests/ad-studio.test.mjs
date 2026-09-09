@@ -405,7 +405,11 @@ test('owner and dealer showrooms reuse the seller-scoped Marketplace experience'
   assert.match(manager, /Hosted on Aim4price\.com/);
   assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
-  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['inventory', 'valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
+  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
+  const dealerTools = dealerHome.match(/const allTools: DealerHomeTool\[\] = \[[\s\S]*?\n  \];/)?.[0];
+  assert.ok(dealerTools, 'Dealer App launcher tools must be defined');
+  assert.doesNotMatch(dealerTools, /capability: '(?:inventory|client_costs)'/);
+  assert.doesNotMatch(dealerTools, /href: '\/dealer\/(?:inventory|costs)'/);
   assert.match(header, /href: '\/my-showroom', label: 'My Showroom', accountTypes: \['dealer'\]/);
 });
 

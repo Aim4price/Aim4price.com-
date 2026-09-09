@@ -22,7 +22,7 @@ export default async function DealerMarketplacePage() {
   });
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
   return (
-    <div className={styles.module}>
+    <div className={`${styles.module} ${styles.compactWorkspace}`}>
       <MarketplaceClient
         isSignedIn
         accountType="dealer"

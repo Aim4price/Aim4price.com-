@@ -3705,3 +3705,21 @@
 .module.compactWorkspace {
   padding-top: 0;
 }
+
+/* Keep estimate navigation available when the wizard scrolls to a new step. */
+.estimateNav.estimateNav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.estimateNav .navButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
+.dealerValuationSurface:has(.estimateNav) [class*='wizardCard'] {
+  scroll-margin-top: calc(90px + env(safe-area-inset-top));
+}

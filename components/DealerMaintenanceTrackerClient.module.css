@@ -2737,3 +2737,7 @@
   }
 }
 
+.resultCount {
+  white-space: nowrap;
+}
+
