@@ -3907,17 +3907,23 @@ export default function LeadsClient({
 
                     {isLeadOpen ? (
                       <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''} ${assetStyles.assetCardExpanded}`}>
-                        <div className={`${assetStyles.assetHeader} ${styles.leadAssetHeader}`}>
-                          <div className={assetStyles.assetTitleBlock}>
+                        <div className={`${assetStyles.assetHeader} ${styles.leadAssetHeader} ${styles.expandedLeadHeader}`}>
+                          <div className={`${assetStyles.assetTitleBlock} ${styles.expandedLeadIdentity}`}>
                             <h2>{assetTitle(lead)}</h2>
-                            <p>{leadAssetMeta(lead)}</p>
+                            {dealerAppMode && !isFullRegisterLead(lead) ? (
+                              <dl className={styles.expandedLeadFacts}>
+                                <div><dt>{asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year built' : 'Year'}</dt><dd>{lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not recorded'}</dd></div>
+                                <div><dt>Usage</dt><dd>{assetUsageValue(lead) === '—' ? 'Not recorded' : assetUsageValue(lead)}</dd></div>
+                                <div><dt>Condition</dt><dd>{asText(lead.assetSnapshot.condition) ? conditionLabel(asText(lead.assetSnapshot.condition)) : 'Not recorded'}</dd></div>
+                              </dl>
+                            ) : <p>{leadAssetMeta(lead)}</p>}
                             <div className={assetStyles.assetMetaRow}>
                               <span className={assetStyles.assetValueMethodLabel}>{licensingWorkspaceMode ? 'Licence renewal' : isFullRegisterLead(lead) ? 'Register' : `${methodLabel(lead.assetSnapshot.selectedMethod)} value`}</span>
                               <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
                             </div>
                           </div>
 
-                          <div className={`${assetStyles.assetHeaderAside} ${styles.leadAssetHeaderAside}`}>
+                          <div className={`${assetStyles.assetHeaderAside} ${styles.leadAssetHeaderAside} ${styles.expandedLeadAside}`}>
                             {!licensingWorkspaceMode ? (
                               <div className={`${assetStyles.valueBlock} ${styles.leadValueBlock}`}>
                                 <strong>{formatCurrency(assetValue(lead))}</strong>
@@ -4899,4 +4905,3 @@ export default function LeadsClient({
     </main>
   );
 }
-

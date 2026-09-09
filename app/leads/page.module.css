@@ -5606,3 +5606,81 @@
   }
 }
 
+
+/* Dealer App expanded leads follow the full-width maintenance header layout. */
+.dealerAppLeads .expandedLeadHeader.expandedLeadHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 1.25rem !important;
+  padding-bottom: 1.25rem;
+}
+.dealerAppLeads .expandedLeadIdentity.expandedLeadIdentity {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100%;
+  min-width: 0;
+  gap: .85rem;
+}
+.dealerAppLeads .expandedLeadIdentity h2 {
+  font-size: 1.3rem;
+  line-height: 1.3;
+  letter-spacing: -.02em;
+  overflow-wrap: break-word;
+}
+.dealerAppLeads .expandedLeadFacts {
+  display: grid;
+  gap: .55rem;
+  margin: 0;
+}
+.dealerAppLeads .expandedLeadFacts > div {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: .75rem;
+  align-items: baseline;
+  font-size: .9rem;
+  line-height: 1.45;
+}
+.dealerAppLeads .expandedLeadFacts dt {
+  color: #60746c;
+  font-weight: 600;
+}
+.dealerAppLeads .expandedLeadFacts dd {
+  margin: 0;
+  color: #173f35;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+.dealerAppLeads .expandedLeadAside.expandedLeadAside {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  gap: 1rem !important;
+  justify-items: stretch !important;
+}
+.dealerAppLeads .expandedLeadAside .leadValueBlock {
+  justify-items: start !important;
+  text-align: left !important;
+}
+.dealerAppLeads .expandedLeadAside .leadAssetHeaderActions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  width: 100% !important;
+  gap: .85rem !important;
+}
+.dealerAppLeads .expandedLeadAside .leadAssetHeaderActions > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none;
+  min-height: 3.25rem !important;
+  padding: .75rem !important;
+  margin: 0;
+  white-space: nowrap;
+}
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .expandedLeadAside .leadAssetHeaderActions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
