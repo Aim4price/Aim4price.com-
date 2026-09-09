@@ -45,6 +45,7 @@ function isStandaloneMode(): boolean {
 }
 
 export default function DealerLoginClient({ hasAccountSession = false, middlemanMode = false }: { hasAccountSession?: boolean; middlemanMode?: boolean }) {
+  const appRoot = middlemanMode ? '/middleman' : '/dealer';
   const appName = middlemanMode ? 'Middleman App' : 'Dealer App';
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -66,8 +67,8 @@ export default function DealerLoginClient({ hasAccountSession = false, middleman
 
     if ('serviceWorker' in window.navigator) {
       void window.navigator.serviceWorker
-        .register('/dealer-sw.js', {
-          scope: '/dealer',
+        .register(middlemanMode ? '/middleman-sw.js' : '/dealer-sw.js', {
+          scope: appRoot,
           updateViaCache: 'none',
         })
         .catch(() => {
@@ -164,7 +165,7 @@ export default function DealerLoginClient({ hasAccountSession = false, middleman
     setError('');
 
     try {
-      const response = await fetch('/api/dealer/login', {
+      const response = await fetch(`/api${appRoot}/login`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -181,7 +182,7 @@ export default function DealerLoginClient({ hasAccountSession = false, middleman
         throw new Error(payload?.error || 'Unable to sign in.');
       }
 
-      const redirectTo = payload.redirectTo || '/dealer';
+      const redirectTo = payload.redirectTo || appRoot;
       setWelcome({
         displayName: payload.welcome?.displayName || cleanUsername,
         companyName: payload.welcome?.companyName || 'Aim4price',
@@ -359,4 +360,5 @@ export default function DealerLoginClient({ hasAccountSession = false, middleman
     </main>
   );
 }
+
 

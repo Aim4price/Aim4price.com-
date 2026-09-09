@@ -1,3 +1,5 @@
+import { currentAppRealm } from './app-realm-server';
+import { isMiddlemanAccountSubtype } from './middleman-account';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { getAccountProfile } from './account-profile';
@@ -7,6 +9,7 @@ import {
   type DealerStaffRole,
 } from './dealer-app';
 
+export const MIDDLEMAN_APP_COOKIE = 'aim4price_middleman_app_v1';
 export const DEALER_APP_COOKIE = 'aim4price_dealer_app_v2';
 export const DEALER_APP_LEGACY_COOKIE = 'aim4price_dealer_app';
 export const DEALER_APP_MAX_AGE = 60 * 60 * 24 * 30;
@@ -26,6 +29,7 @@ type Payload = {
   role?: DealerStaffRole;
   version: number;
   exp: number;
+  realm?: 'dealer' | 'middleman';
 };
 
 type NewPayload = Omit<Payload, 'exp' | 'role'> & { role: DealerStaffRole };
@@ -138,10 +142,11 @@ export type DealerAppSession = {
 
 export async function getDealerAppSession(): Promise<DealerAppSession | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(DEALER_APP_COOKIE)?.value
-    || cookieStore.get(DEALER_APP_LEGACY_COOKIE)?.value;
+  const realm = await currentAppRealm() ?? 'dealer';
+  const token = realm === 'middleman' ? cookieStore.get(MIDDLEMAN_APP_COOKIE)?.value
+    : cookieStore.get(DEALER_APP_COOKIE)?.value || cookieStore.get(DEALER_APP_LEGACY_COOKIE)?.value;
   const payload = token ? parse(token) : null;
-  if (!payload) return null;
+  if (!payload || (payload.realm ?? 'dealer') !== realm) return null;
 
   const row = await getDealerStaffById(payload.staffId);
   if (
@@ -162,6 +167,7 @@ export async function getDealerAppSession(): Promise<DealerAppSession | null> {
     email: null,
   });
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
+  if (isMiddlemanAccountSubtype(profile.accountSubtype) !== (realm === 'middleman')) return null;
 
   return {
     kind: 'dealer-staff',
@@ -173,3 +179,4 @@ export async function getDealerAppSession(): Promise<DealerAppSession | null> {
     version: payload.version,
   };
 }
+

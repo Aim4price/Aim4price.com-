@@ -1,3 +1,4 @@
+import { currentAppRealm } from './app-realm-server';
 import { cookies, headers } from "next/headers";
 import { isAim4priceAdminEmail } from "./account-constants";
 import { isAccountActive, markAccountLastActive } from "./account-profile";
@@ -269,12 +270,17 @@ async function markRealUserActivity(session: NonNullServerSession): Promise<void
 }
 
 export async function getAnyServerSession(): Promise<ServerSession> {
+  if (await currentAppRealm()) return null;
   return readAuthSession();
 }
 
 export async function getServerSession(
   options: SessionOptions = {},
 ): Promise<EffectiveServerSession> {
+  // Installed apps use only their own staff cookie, never a website or sibling app login.
+  if (await currentAppRealm()) {
+    return options.allowDealerApp ? await readDealerAppSupportSession() : null;
+  }
   const session = options.authSession ?? await readAuthSession();
 
   if (!session?.user?.id) {
@@ -312,3 +318,4 @@ export async function getServerSession(
   await markRealUserActivity(session);
   return session;
 }
+

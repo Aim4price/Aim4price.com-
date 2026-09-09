@@ -41,7 +41,7 @@
     "test:invoice-drop": "node --experimental-strip-types --test tests/public-invoice-drop.test.mjs",
     "test:capture-queue": "node --test tests/admin-capture-queue.test.mjs tests/admin-capture-usage-update.test.mjs tests/capture-requests.security.test.mjs tests/capture-finalization.test.mjs tests/capture-lifecycle-cleanup.test.mjs",
     "capture:purge": "node scripts/purge-assisted-capture-files.mjs",
-    "test:ad-studio": "node --test tests/ad-studio.test.mjs tests/ad-studio-renderer.test.mjs",
+    "test:ad-studio": "node --test tests/ad-studio.test.mjs tests/ad-studio-renderer.test.mjs tests/separate-app-sessions.test.mjs",
     "test:report-design": "node --experimental-strip-types --test tests/report-design-lock.test.mjs tests/report-opening-lock.test.mjs tests/canonical-report-pdf.test.mjs tests/report-export-correctness.test.mjs",
     "test:valuation-rules": "node --experimental-strip-types --test tests/valuation-rules.test.mjs",
     "test:saleability": "node --experimental-strip-types --test tests/shared-valuation.test.mjs tests/saleability.test.mjs tests/saleability-ui.test.mjs tests/valuation-rules.test.mjs tests/asset-register-projection-controls.test.mjs tests/mobile-valuation-flow.test.mjs",
@@ -68,4 +68,5 @@
     "typescript": "5.6.2"
   }
 }
+
 

@@ -1,4 +1,5 @@
 'use client';
+import { useDealerAppRoot } from '../lib/use-dealer-app-root';
 
 import Link from 'next/link';
 import { type DragEvent, useEffect, useRef, useState } from 'react';
@@ -166,6 +167,7 @@ export function MiddlemanShowroomManager({
   advertDesign = 'aim4price-marketplace',
   advertDesignHref = null,
 }: ManagerProps) {
+  const dealerAppRoot = useDealerAppRoot();
   const [showroom, setShowroom] = useState(initialShowroom);
   const [listings, setListings] = useState(initialListings);
   const [slug, setSlug] = useState(initialShowroom.slug);
@@ -186,7 +188,7 @@ export function MiddlemanShowroomManager({
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const manageDialogRef = useRef<HTMLElement | null>(null);
   const manageTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const valuationHref = dealerAppMode ? '/dealer/valuation' : '/valuation';
+  const valuationHref = dealerAppMode ? `${dealerAppRoot}/valuation` : '/valuation';
   const usesSavedBrandDesign = advertDesign === 'saved-brand';
   const logoPreviewUrl = showroomLogoUrl || showroom.inheritedLogoUrl;
   const hasUnsavedShowroomChanges = slug !== showroom.slug
@@ -363,7 +365,7 @@ export function MiddlemanShowroomManager({
       });
       const data = await response.json() as { ok?: boolean; deletedAdvertCount?: number; error?: string };
       if (!response.ok || !data.ok) throw new Error(data.error || 'Failed to delete your showroom.');
-      window.location.assign(dealerAppMode ? '/dealer' : '/account');
+      window.location.assign(dealerAppMode ? dealerAppRoot : '/account');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to delete your showroom.');
       setDeletingShowroom(false);
@@ -652,7 +654,7 @@ export function MiddlemanShowroomManager({
                 <Link
                   className={styles.listingManagerPrimary}
                   href={dealerAppMode
-                    ? `/dealer/marketplace?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`
+                    ? `${dealerAppRoot}/marketplace?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`
                     : `/asset-register?assetId=${encodeURIComponent(manageListingTarget.sourceAssetId)}&action=marketplace-edit`}
                 >
                   <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
@@ -684,7 +686,7 @@ export function MiddlemanShowroomManager({
                 <ShowroomManageActionArrow direction="down" />
               </button>
               <Link
-                href={`${dealerAppMode ? '/dealer/marketplace' : '/marketplace'}?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`}
+                href={`${dealerAppMode ? `${dealerAppRoot}/marketplace` : '/marketplace'}?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`}
               >
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span>
                 <span className={styles.listingManagerActionCopy}><strong>Open in Marketplace</strong><small>View the advert and continue managing it in Marketplace.</small></span>
@@ -828,4 +830,5 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
     </div>
   );
 }
+
 

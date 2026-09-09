@@ -4,15 +4,15 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export function GET(request: Request) {
-  const middleman = false;
+  const middleman = true;
   return NextResponse.json(
     {
       id: middleman ? '/apps/aim4price-middleman' : '/apps/aim4price-dealer',
       name: middleman ? 'Aim4price Middleman App' : 'Aim4price Dealer App',
       short_name: middleman ? 'Middleman' : 'Dealer',
       description: middleman ? 'Estimates, discovery, Marketplace, Ad Studio and showroom.' : 'Simple mobile access to leads, maintenance, discovery, estimates and Marketplace.',
-      start_url: middleman ? '/dealer/login?app=middleman&source=middleman-app' : '/dealer/login?source=dealer-app',
-      scope: '/dealer',
+      start_url: middleman ? '/middleman/login?source=middleman-app' : '/dealer/login?source=dealer-app',
+      scope: '/middleman',
       display: 'standalone',
       orientation: 'any',
       background_color: middleman ? '#1877F2' : '#103f34',

@@ -1,10 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
-import { getServerSession } from '../../lib/auth-session';
-import { getAccountProfile } from '../../lib/account-profile';
-import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
-import { middlemanAppMetadata } from '../../lib/middleman-app-metadata';
 import DealerNav from './dealer-nav';
 import DealerSessionKeeper from './dealer-session-keeper';
 import styles from './dealer.module.css';
@@ -28,14 +24,7 @@ const dealerMetadata: Metadata = {
   },
 };
 
-export async function generateMetadata(): Promise<Metadata> {
-  const session = await getServerSession({ allowDealerApp: true });
-  if (session?.user?.id) {
-    const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
-    if (isMiddlemanAccountSubtype(profile.accountSubtype)) return middlemanAppMetadata;
-  }
-  return dealerMetadata;
-}
+export const metadata = dealerMetadata;
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -56,5 +45,6 @@ export default function DealerLayout({ children }: { children: ReactNode }) {
     </>
   );
 }
+
 
 
