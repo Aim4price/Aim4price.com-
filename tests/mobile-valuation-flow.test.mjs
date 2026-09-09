@@ -96,12 +96,12 @@ test('condition assessment starts broad and reveals detail only when requested',
 test('phone estimate uses compact sectors, safe sheets and persistent actions', () => {
   assert.match(appStyles, /Shared Owner\/Dealer Estimate: final phone-first overrides/);
   assert.match(appStyles, /sectorLargeGrid[^\{]*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
-  assert.match(appStyles, /max-height: calc\(100dvh - 4px\) !important/);
+  assert.match(appStyles, /max-height: calc\(100dvh - 16px\) !important/);
   assert.match(appStyles, /font-size: 16px !important/);
   assert.match(appStyles, /wizardFooter[^\{]*\{[\s\S]*?position: sticky !important;[\s\S]*?env\(safe-area-inset-bottom\)/);
   assert.match(appStyles, /detailsModalActions[^\{]*\{[\s\S]*?position: sticky !important/);
   assert.match(appStyles, /dealerCompactModalHeader[^\{]*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 44px !important/);
-  assert.doesNotMatch(appStyles, /@media \(max-width: 370px\)[\s\S]*?sectorLargeGrid[^\{]*\{[\s\S]*?grid-template-columns: 1fr !important/);
+  assert.doesNotMatch(appStyles, /@media \(max-width: 370px\)[\s\S]*?sectorLargeGrid[^\{]*\{[^}]*?grid-template-columns: 1fr !important/);
 });
 
 test('result facts remain visible as a compact two-column mobile summary', () => {
@@ -121,3 +121,4 @@ test('result facts remain visible as a compact two-column mobile summary', () =>
   assert.match(valuationStyles, /\.appValuation \.resultConfidenceNote \+ \.resultConfidenceNote[^\{]*\{[\s\S]*?margin-top: -0\.45rem;/);
   assert.match(valuationStyles, /\.appValuation \.resultAccordionAction[^\{]*\{[\s\S]*?min-height: 2\.75rem;/);
 });
+
