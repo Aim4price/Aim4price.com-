@@ -14538,7 +14538,7 @@
 
 .specificationModal {
   width: min(680px, calc(100% - 32px));
-  max-height: calc(100dvh - 32px);
+  max-height: calc(var(--website-visible-height, 100dvh) - 32px);
   box-sizing: border-box;
   margin: auto;
   padding: 24px;
