@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import ValuationClient from '../../valuation/valuation-client';
 import { ownerAppCan, requireOwnerAppPageAccess } from '../../../lib/owner-app-access';
-import OwnerAppNav from '../owner-app-nav';
 import styles from '../owner-app.module.css';
 
 export const runtime = 'nodejs';
@@ -14,11 +13,7 @@ export default async function OwnerAppValuationPage({ searchParams }: { searchPa
   const returnToAddAsset = from === 'assets';
   return (
     <div className={styles.module}>
-      <OwnerAppNav
-        backHref={returnToAddAsset ? '/owner-app/assets/add' : '/owner-app'}
-        backLabel={returnToAddAsset ? 'Add Asset' : 'Home'}
-      />
-      <ValuationClient ownerAppMode />
+      <ValuationClient ownerAppMode ownerAppBackHref={returnToAddAsset ? '/owner-app/assets/add' : '/owner-app'} />
     </div>
   );
 }

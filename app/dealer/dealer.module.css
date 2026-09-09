@@ -3782,3 +3782,33 @@
 .estimateNav.estimateNav {
   background: transparent;
 }
+
+/* Back and Home share the complete row, including on phones. */
+.navPair.navPair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.navPair.navPair > :is(.navButton, .signOut) {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* The app-exclusive marker is a gold crown, without a text badge. */
+.dealerValuationSurface [class*='estimateModeGrid'] [class*='exclusiveCrown']:not(svg) {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #d4a62a !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+.dealerValuationSurface [class*='estimateModeGrid'] [class*='exclusiveCrown'] svg {
+  display: block !important;
+  width: 26px !important;
+  height: 26px !important;
+  color: #d4a62a !important;
+}

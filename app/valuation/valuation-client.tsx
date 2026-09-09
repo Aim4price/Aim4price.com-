@@ -1,5 +1,6 @@
 'use client';
 import DealerNav from '../dealer/dealer-nav';
+import OwnerAppNav from '../owner-app/owner-app-nav';
 
 import { resolveCatalogueGuide, type BasicCatalogueIdentity } from '../../lib/basic-catalogue-guide';
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
@@ -1788,7 +1789,7 @@ function normalizeReportEmail(value: unknown): string {
   return cleaned && cleaned.includes('@') ? cleaned : '';
 }
 
-export default function ValuationClient({ dealerAppMode = false, ownerAppMode = false }: { dealerAppMode?: boolean; ownerAppMode?: boolean } = {}) {
+export default function ValuationClient({ dealerAppMode = false, ownerAppMode = false, ownerAppBackHref = '/owner-app' }: { dealerAppMode?: boolean; ownerAppMode?: boolean; ownerAppBackHref?: string } = {}) {
   const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
 
   const router = useRouter();
@@ -5717,7 +5718,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         return;
       }
 
-      router.push(appHomePath);
+      router.push(ownerAppMode ? ownerAppBackHref : appHomePath);
       return;
     }
     if (isMotorSector(selectedSector) && step === 4) {
@@ -5854,11 +5855,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             >
               <span className={styles.sectorBigCardContent}>
                 <span className={styles.sectorCardTopRow}>
-                  <span className={styles.exclusiveBadge}>
+                  <span className={`${styles.exclusiveBadge} ${compactAppMode ? styles.exclusiveCrown : ''}`} role={compactAppMode ? 'img' : undefined} aria-label={compactAppMode ? 'Aim4price Exclusive' : undefined} title="Aim4price Exclusive">
                     <svg className={styles.exclusiveBadgeIcon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path fill="currentColor" d="M3 6.75 7.5 11 12 4l4.5 7L21 6.75 19.4 18H4.6L3 6.75Zm2.2 12.75h13.6V21H5.2v-1.5Z" />
                     </svg>
-                    <span>{compactAppMode ? 'Exclusive' : 'Aim4price Exclusive'}</span>
+                    {!compactAppMode ? <span>Aim4price Exclusive</span> : null}
                   </span>
                 </span>
                 <span className={styles.sectorLabelWrap}>
@@ -9147,6 +9148,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           backDisabled={preparingIdentity || valuationLoading || saveLoading}
         />
       ) : null}
+      {ownerAppMode ? (
+        <OwnerAppNav
+          backLabel="Back"
+          backAction={handleBack}
+          backDisabled={preparingIdentity || valuationLoading || saveLoading}
+          className={styles.appEstimateNav}
+        />
+      ) : null}
       {!compactAppMode ? <AppHeader active="valuation" /> : null}
       {completionToastVisible ? (
         <div className={styles.completionToast} role="status" aria-live="polite">
@@ -9845,8 +9854,3 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
-
-
-
-
-

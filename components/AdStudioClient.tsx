@@ -8,7 +8,6 @@ import {
   useState,
   type ChangeEvent,
   type CSSProperties,
-  type DragEvent,
   type FormEvent,
 } from 'react';
 import {
@@ -275,8 +274,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   const [error, setError] = useState('');
   const [activeStep, setActiveStep] = useState<StudioStep>(1);
   const [previewPhotos, setPreviewPhotos] = useState<PreviewPhoto[]>([]);
-  const [logoDragActive, setLogoDragActive] = useState(false);
-  const [previewDropActive, setPreviewDropActive] = useState(false);
   const [draggedPreviewPhotoId, setDraggedPreviewPhotoId] = useState('');
   const editorRef = useRef<HTMLFormElement | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -452,16 +449,10 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     event.target.value = '';
   }
 
-  function handleLogoDrop(event: DragEvent<HTMLDivElement>) {
-    event.preventDefault();
-    setLogoDragActive(false);
-    applyLogoFile(Array.from(event.dataTransfer.files)[0]);
-  }
-
   function addPreviewPhotos(files: File[]) {
     const imageFiles = files.filter((file) => SUPPORTED_PREVIEW_IMAGE_TYPES.has(file.type));
     if (!imageFiles.length) {
-      setError('Drop PNG, JPEG or WebP photos into the preview.');
+      setError('Choose PNG, JPEG or WebP photos for the preview.');
       return;
     }
 
@@ -495,12 +486,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   function handlePreviewPhotoChange(event: ChangeEvent<HTMLInputElement>) {
     addPreviewPhotos(Array.from(event.target.files ?? []));
     event.target.value = '';
-  }
-
-  function handlePreviewPhotoDrop(event: DragEvent<HTMLElement>) {
-    event.preventDefault();
-    setPreviewDropActive(false);
-    if (event.dataTransfer.files.length) addPreviewPhotos(Array.from(event.dataTransfer.files));
   }
 
   function removePreviewPhoto(photoId: string) {
@@ -757,61 +742,22 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                       <div className={styles.logoCopy}>
                         <div>
                           <strong>Your logo</strong>
-                          <span>Your logo appears in a dedicated white space without cropping. Choose a PNG, JPEG or WebP file up to 2 MB. Transparent logos work best; without one, we use your business name.</span>
+                          <span>PNG, JPEG or WebP · Up to 2 MB</span>
                         </div>
                       </div>
                       <div className={styles.logoControls}>
-                        <div
-                          className={`${styles.logoPreviewCard} ${draft.logoUrl ? styles.logoPreviewReady : ''} ${logoDragActive ? styles.logoPreviewDragging : ''}`}
-                          onClick={() => {
-                            if (canManage && !saving) logoInputRef.current?.click();
-                          }}
-                          onKeyDown={(event) => {
-                            if (canManage && !saving && (event.key === 'Enter' || event.key === ' ')) {
-                              event.preventDefault();
-                              logoInputRef.current?.click();
-                            }
-                          }}
-                          onDragEnter={(event) => {
-                            if (!canManage || saving) return;
-                            event.preventDefault();
-                            setLogoDragActive(true);
-                          }}
-                          onDragOver={(event) => {
-                            if (!canManage || saving) return;
-                            event.preventDefault();
-                            event.dataTransfer.dropEffect = 'copy';
-                            setLogoDragActive(true);
-                          }}
-                          onDragLeave={(event) => {
-                            if (!canManage || saving) return;
-                            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setLogoDragActive(false);
-                          }}
-                          onDrop={handleLogoDrop}
-                          role="button"
-                          tabIndex={canManage && !saving ? 0 : -1}
-                          aria-disabled={!canManage || saving}
-                          aria-label={draft.logoUrl ? 'Replace logo by choosing or dropping an image' : 'Choose or drop a logo image'}
-                        >
-                          {draft.logoUrl ? (
-                            <>
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={draft.logoUrl} alt={`${draft.businessName || 'Business'} logo preview`} />
-                              <small className={styles.logoDropHint}>Drop to replace</small>
-                            </>
-                          ) : (
-                            <span className={styles.logoPreviewEmpty}>
-                              <StudioIcon name="image" />
-                              <small>Drop logo here</small>
-                            </span>
-                          )}
-                        </div>
+                        {draft.logoUrl ? (
+                          <div className={`${styles.logoPreviewCard} ${styles.logoPreviewReady}`}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={draft.logoUrl} alt={`${draft.businessName || 'Business'} logo preview`} />
+                          </div>
+                        ) : null}
                         <div className={styles.logoButtons}>
-                          <label className={styles.logoUpload}>
+                          <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={handleLogo} />
+                          <button className={styles.logoUpload} type="button" onClick={() => logoInputRef.current?.click()}>
                             <StudioIcon name="image" />
-                            <span>{draft.logoUrl ? 'Replace logo' : 'Choose logo'}</span>
-                            <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogo} />
-                          </label>
+                            <span>{draft.logoUrl ? 'Replace logo' : 'Add logo'}</span>
+                          </button>
                           {draft.logoUrl ? (
                             <button className={styles.logoRemove} type="button" onClick={() => update('logoUrl', '')}>
                               <StudioIcon name="delete" />Remove
@@ -990,24 +936,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <strong>Advert preview</strong>
               </div>
             </div>
-            <div
-              className={`${styles.previewPhotoLab} ${previewDropActive ? styles.previewPhotoLabActive : ''}`}
-              onDragEnter={(event) => {
-                event.preventDefault();
-                if (event.dataTransfer.types.includes('Files')) setPreviewDropActive(true);
-              }}
-              onDragOver={(event) => {
-                event.preventDefault();
-                if (event.dataTransfer.types.includes('Files')) {
-                  event.dataTransfer.dropEffect = 'copy';
-                  setPreviewDropActive(true);
-                }
-              }}
-              onDragLeave={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPreviewDropActive(false);
-              }}
-              onDrop={handlePreviewPhotoDrop}
-            >
+            <div className={styles.previewPhotoLab}>
               <input
                 ref={previewPhotoInputRef}
                 type="file"
@@ -1019,11 +948,11 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               <div className={styles.previewPhotoHeader}>
                 <div>
                   <strong>Preview with your photos</strong>
-                  <span>Add up to four photos. Drag them to change the order. Preview photos are not saved.</span>
+                  <span>Up to four photos · Preview only</span>
                 </div>
                 <div>
                   <button type="button" onClick={() => previewPhotoInputRef.current?.click()}>
-                    <StudioIcon name="plus" />{previewPhotos.length ? 'Add photos' : 'Choose photos'}
+                    <StudioIcon name="image" />Upload photos
                   </button>
                   {previewPhotos.length ? <button type="button" onClick={clearPreviewPhotos}>Clear</button> : null}
                 </div>
@@ -1066,12 +995,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     </article>
                   ))}
                 </div>
-              ) : (
-                <button className={styles.previewPhotoEmpty} type="button" onClick={() => previewPhotoInputRef.current?.click()}>
-                  <StudioIcon name="image" />
-                  <span><strong>Drop photos here</strong><small>Or choose photos from your device.</small></span>
-                </button>
-              )}
+              ) : null}
             </div>
             <canvas
               ref={previewCanvasRef}
