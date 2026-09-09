@@ -3723,3 +3723,54 @@
 .dealerValuationSurface:has(.estimateNav) [class*='wizardCard'] {
   scroll-margin-top: calc(90px + env(safe-area-inset-top));
 }
+
+/* Use the Owner App's border-box control dimensions and responsive gutters. */
+.navButton,
+.signOut {
+  box-sizing: border-box;
+}
+
+@media (max-width: 599px) {
+  .nav {
+    width: min(calc(100% - 28px), 560px);
+    padding-bottom: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .nav {
+    width: min(calc(100% - 20px), 560px);
+  }
+}
+
+@media (min-width: 600px) and (max-width: 960px) {
+  .nav {
+    width: min(calc(100% - clamp(32px, 6vw, 48px)), 900px);
+  }
+
+  .navPair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .navPair .navButton,
+  .navPair .signOut {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+/* Clear nested route shells while keeping cards and dialogs readable. */
+@media (max-width: 360px) {
+  .nav {
+    width: min(calc(100% - 16px), 560px);
+  }
+}
+
+.module.module,
+.shell.shell,
+.loginPage.loginPage,
+.notificationOwnerPage.notificationOwnerPage,
+.estimateNav.estimateNav {
+  background: transparent;
+}

@@ -202,3 +202,13 @@
   background: var(--pattern-background);
 }
 
+
+/* App routes reuse nested workspaces. Let the shared artwork show through
+   their page surfaces on phones and tablets as it does on the desktop canvas. */
+.content :global([data-app-shell]),
+.content :global([data-app-shell] > main),
+.content :global([data-app-shell] > div),
+.content :global([data-app-shell] main) {
+  background-color: transparent !important;
+  background-image: none !important;
+}

@@ -36,7 +36,7 @@ export default function DealerLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <DealerSessionKeeper />
-      <div className={styles.dealerLayout}>
+      <div className={styles.dealerLayout} data-app-shell="dealer">
         <DealerNav />
         <div className={styles.patternPageContent}>{children}</div>
       </div>

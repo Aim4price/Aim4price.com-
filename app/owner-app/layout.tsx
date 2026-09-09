@@ -25,6 +25,6 @@ export const viewport: Viewport = {
 };
 
 export default function OwnerAppLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <div data-app-shell="owner" style={{ display: 'contents' }}>{children}</div>;
 }
 
