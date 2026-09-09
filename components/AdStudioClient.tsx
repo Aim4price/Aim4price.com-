@@ -266,6 +266,7 @@ function createPreviewPhotoId(): string {
 
 export default function AdStudioClient({ dealerAppMode = false, middlemanMode = false }: AdStudioClientProps) {
   const dealerAppRoot = useDealerAppRoot();
+  const brandKitsEndpoint = dealerAppMode ? `/api${dealerAppRoot}/ad-studio/brand-kits` : '/api/ad-studio/brand-kits';
   const [kits, setKits] = useState<AdBrandKit[]>([]);
   const [draft, setDraft] = useState<EditableBrandKit>(EMPTY_KIT);
   const [profileDefaults, setProfileDefaults] = useState<ProfileDefaults>({});
@@ -361,7 +362,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     setError('');
 
     try {
-      const response = await fetch('/api/ad-studio/brand-kits', { cache: 'no-store' });
+      const response = await fetch(brandKitsEndpoint, { cache: 'no-store' });
       const payload = (await response.json().catch(() => null)) as BrandKitResponse | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Brand kits could not be loaded.');
 
@@ -383,7 +384,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
 
   useEffect(() => {
     void loadBrandKits();
-  }, []);
+  }, [brandKitsEndpoint]);
 
   function update<K extends keyof EditableBrandKit>(key: K, value: EditableBrandKit[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -542,7 +543,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     setFeedback('');
 
     try {
-      const response = await fetch('/api/ad-studio/brand-kits', {
+      const response = await fetch(brandKitsEndpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(draft),
@@ -566,7 +567,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     setError('');
     setFeedback('');
     try {
-      const response = await fetch(`/api/ad-studio/brand-kits?brandKitId=${encodeURIComponent(target.id)}`, {
+      const response = await fetch(`${brandKitsEndpoint}?brandKitId=${encodeURIComponent(target.id)}`, {
         method: 'DELETE',
       });
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
@@ -587,7 +588,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     setFeedback('');
 
     try {
-      const response = await fetch('/api/ad-studio/brand-kits', {
+      const response = await fetch(brandKitsEndpoint, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...editableKit(kit), isDefault: true }),

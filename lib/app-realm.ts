@@ -8,7 +8,7 @@ export function appRealmForPath(path: string): AppRealm | null {
 }
 
 export function requestAppRealm(url: URL, referer: string | null): AppRealm | null {
-  const authApi = url.pathname.match(/^\/api\/(dealer|middleman)\/(login|logout|session)$/);
+  const authApi = url.pathname.match(/^\/api\/(dealer|middleman)\/(login|logout|session|ad-studio\/brand-kits)$/);
   if (authApi) return authApi[1] as AppRealm;
   const direct = appRealmForPath(url.pathname);
   if (direct) return direct;
