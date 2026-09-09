@@ -2544,7 +2544,7 @@ export default function AssetDiscoveryClient({
                     </div>
                     <h2>{dealerAssetDisplayName(asset)}</h2>
                     <p className={styles.dealerAssetMeta}>
-                      {licensingDiscovery ? licenceRenewalAssetMeta(asset) : dealerAssetMeta(asset)}
+                      {(licensingDiscovery ? licenceRenewalAssetMeta(asset) : dealerAssetMeta(asset)).split(" • ").map((detail, index) => <span key={index}>{detail}</span>)}
                     </p>
                   </div>
 
@@ -2870,7 +2870,7 @@ export default function AssetDiscoveryClient({
 
       {privateDiscoveryAccess && activeEnquiry ? (
         <div
-          className={`${workspaceStyles.modalOverlay} ${styles.contactOverlay}`}
+          className={`${workspaceStyles.modalOverlay} ${styles.contactOverlay} ${compactAppMode ? styles.discoveryAppOverlay : ""}`}
           onMouseDown={() => setActiveEnquiry(null)}
         >
           <section

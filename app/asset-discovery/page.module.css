@@ -3390,3 +3390,150 @@
   }
 }
 
+
+/* App Discovery: a single readable column, including tablet layouts. */
+.compactAppSurface.compactAppSurface .discoveryLeadAssetBody > * {
+  grid-column: 1 !important;
+  grid-row: auto !important;
+  order: 0 !important;
+  min-width: 0;
+}
+.compactAppSurface.compactAppSurface .discoverySectionHeading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .5rem;
+  justify-items: start;
+}
+.compactAppSurface.compactAppSurface .cardStack,
+.compactAppSurface.compactAppSurface .discoveryViewSwitch,
+.compactAppSurface.compactAppSurface .discoveryViewSwitchButtons,
+.compactAppSurface.compactAppSurface .discoveryFilterRow,
+.compactAppSurface.compactAppSurface .assetCardHeader,
+.compactAppSurface.compactAppSurface .compactExpandedTop,
+.compactAppSurface.compactAppSurface .discoveryDetailsGrid,
+.compactAppSurface.compactAppSurface .discoveryInlineContact,
+.compactAppSurface.compactAppSurface .recentAdvertFilterFields,
+.compactAppSurface.compactAppSurface .recentAdvertContactActions,
+.discoveryAppOverlay .contactGrid,
+.discoveryAppOverlay .contactActions {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 1rem !important;
+}
+.compactAppSurface.compactAppSurface .discoveryCardLabels,
+.compactAppSurface.compactAppSurface .dealerAssetMeta,
+.compactAppSurface.compactAppSurface .recentAdvertByline,
+.compactAppSurface.compactAppSurface .assetActionRow {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: .6rem;
+}
+.compactAppSurface .discoveryCardLabels > * {
+  align-self: flex-start;
+  max-width: 100%;
+  white-space: normal;
+}
+.compactAppSurface .assetIdentity h2 {
+  line-height: 1.35;
+  margin-block: .85rem .65rem;
+  overflow-wrap: anywhere;
+}
+.compactAppSurface .discoveryViewSwitchCopy span,
+.compactAppSurface .dealerAssetMeta,
+.compactAppSurface .recentAdvertByline {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+.compactAppSurface.compactAppSurface .discoveryDetailGroup {
+  grid-column: 1 !important;
+  gap: 0 !important;
+  width: 100%;
+}
+.compactAppSurface.compactAppSurface .discoveryDetailRow {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  gap: .55rem !important;
+  padding: 1rem !important;
+}
+.compactAppSurface.compactAppSurface .discoveryDetailRow > span,
+.compactAppSurface.compactAppSurface .discoveryDetailRow > strong,
+.compactAppSurface.compactAppSurface .discoveryInlineContact span,
+.compactAppSurface.compactAppSurface .discoveryInlineContact strong {
+  grid-column: 1 !important;
+  grid-row: auto !important;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  text-overflow: clip !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+.compactAppSurface.compactAppSurface .discoveryDetailRow > span {
+  font-size: .72rem !important;
+  line-height: 1.4;
+}
+.compactAppSurface.compactAppSurface .discoveryDetailRow > strong {
+  font-size: .95rem !important;
+  line-height: 1.5;
+}
+.compactAppSurface .discoveryAccessNote {
+  gap: .6rem;
+  padding: 1rem;
+  line-height: 1.5;
+}
+.compactAppSurface.compactAppSurface .assetActionRow > *,
+.compactAppSurface.compactAppSurface .compactExpandedTop > button,
+.compactAppSurface.compactAppSurface .compactExpandedTop > a,
+.compactAppSurface.compactAppSurface .discoveryExpandedFooter > button,
+.compactAppSurface.compactAppSurface .discoveryViewSwitchButtons > button,
+.compactAppSurface.compactAppSurface .recentAdvertFilterActions > *,
+.compactAppSurface.compactAppSurface .recentAdvertContactActions > *,
+.discoveryAppOverlay .contactActions > * {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 48px !important;
+  margin: 0 !important;
+  padding: .8rem 1rem !important;
+  border-radius: 14px !important;
+  text-align: center;
+  justify-content: center;
+}
+.compactAppSurface.compactAppSurface .recentAdvertFilterActions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .85rem;
+}
+.compactAppSurface.compactAppSurface .primaryButton,
+.compactAppSurface.compactAppSurface .discoveryOverviewOpenButton,
+.compactAppSurface.compactAppSurface .discoveryViewSwitchActive,
+.discoveryAppOverlay .contactPrimaryAction {
+  color: #165740 !important;
+  border: 1px solid #9ed4b9 !important;
+  background: linear-gradient(180deg, #f5fcf8 0%, #dcf2e5 100%) !important;
+  box-shadow: 0 4px 10px rgba(32, 106, 74, .07) !important;
+}
+.compactAppSurface.compactAppSurface .primaryButton:hover:not(:disabled),
+.compactAppSurface.compactAppSurface .discoveryOverviewOpenButton:hover:not(:disabled),
+.compactAppSurface.compactAppSurface .discoveryViewSwitchActive:hover {
+  background: #d2ecdd !important;
+}
+.compactAppSurface.compactAppSurface .discoveryCloseButton,
+.compactAppSurface.compactAppSurface .discoveryCloseDetailsButton,
+.compactAppSurface.compactAppSurface .retractEnquiryButton,
+.discoveryAppOverlay .contactCloseButton {
+  color: #913d43 !important;
+  border: 1px solid #e9b5b8 !important;
+  background: linear-gradient(180deg, #fffafa 0%, #fbe4e6 100%) !important;
+  box-shadow: 0 4px 10px rgba(145, 61, 67, .06) !important;
+}
+.compactAppSurface.compactAppSurface .discoveryCloseButton:hover:not(:disabled),
+.compactAppSurface.compactAppSurface .discoveryCloseDetailsButton:hover:not(:disabled) {
+  background: #f6dadd !important;
+}
