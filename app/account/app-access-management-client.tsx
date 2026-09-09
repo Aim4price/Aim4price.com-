@@ -689,7 +689,7 @@ function AppAccessManagement({ kind, configOverride }: {
 
   function renderAccountNameSetup() {
     if (accountName) return null;
-    return <section className={`${baseStyles.card} ${styles.surface}`}>
+    return <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
       <div className={styles.surfaceHeader}>
         <h3>Business login name</h3>
         <p>Choose once for all your apps. Existing logins will keep working.</p>

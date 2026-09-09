@@ -686,6 +686,10 @@
   box-shadow: none !important;
 }
 
+.businessLoginSetup {
+  margin-bottom: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2), 2rem);
+}
+
 .surfaceHeader {
   padding-bottom: 0.95rem;
   border-bottom: 1px solid rgba(18, 72, 54, 0.09);
