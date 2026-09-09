@@ -9,6 +9,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from 'react';
+import { accountAppUsername } from '../../lib/app-login-name';
 import AppHeader from '../../components/AppHeader';
 import FriendlySelect, { type FriendlySelectOption } from './friendly-select';
 import refinementStyles from './access-page-refinements.module.css';
@@ -523,7 +524,7 @@ function AccessLauncher({
   onCopy: () => void;
   onShare: () => void;
 }) {
-  const streamlinedLauncher = config.qrApp === 'owner' || config.qrApp === 'field';
+  const streamlinedLauncher = true;
 
   return (
     <section className={styles.launcher} aria-labelledby="app-access-title">
@@ -648,6 +649,72 @@ function AppAccessManagement({ kind, configOverride }: {
   const [createUsernameError, setCreateUsernameError] = useState('');
   const [editUsernameErrors, setEditUsernameErrors] = useState<Record<string, string>>({});
   const [loginLink, setLoginLink] = useState(config.loginPath);
+  const [accountName, setAccountName] = useState<string | null>(null);
+  const [accountNameDraft, setAccountNameDraft] = useState('');
+  const [namespaceBusy, setNamespaceBusy] = useState(true);
+  const [namespaceError, setNamespaceError] = useState('');
+
+  async function loadAccountName() {
+    setNamespaceBusy(true);
+    setNamespaceError('');
+    try {
+      const response = await fetch('/api/account/app-login-name', { credentials: 'include', cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Could not load the business login name.');
+      setAccountName(payload.accountName);
+      setAccountNameDraft(payload.accountName || payload.suggestedName);
+    } catch (error) {
+      setNamespaceError(error instanceof Error ? error.message : 'Could not load the business login name.');
+    } finally { setNamespaceBusy(false); }
+  }
+
+  useEffect(() => { void loadAccountName(); }, []);
+
+  async function confirmAccountName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setNamespaceBusy(true);
+    setNamespaceError('');
+    try {
+      const response = await fetch('/api/account/app-login-name', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountName: accountNameDraft }),
+      });
+      const payload = await response.json();
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Could not confirm the business login name.');
+      setAccountName(payload.accountName);
+    } catch (error) {
+      setNamespaceError(error instanceof Error ? error.message : 'Could not confirm the business login name.');
+    } finally { setNamespaceBusy(false); }
+  }
+
+  function renderAccountNameSetup() {
+    if (accountName) return null;
+    return <section className={`${baseStyles.card} ${styles.surface}`}>
+      <div className={styles.surfaceHeader}>
+        <h3>Business login name</h3>
+        <p>Choose once for all your apps. Existing logins will keep working.</p>
+      </div>
+      <form className={baseStyles.form} onSubmit={confirmAccountName}>
+        <label className={baseStyles.field}>
+          <span>Business name for logins</span>
+          <input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
+            autoCapitalize="none" autoComplete="off" minLength={3} maxLength={32} required disabled={namespaceBusy} />
+          <small>Example: kuyler@{accountNameDraft || 'vasbyt'}. This stays the same if your business name changes.</small>
+        </label>
+        {namespaceError ? <p role="alert" className={baseStyles.fieldError}>{namespaceError}</p> : null}
+        <button type="submit" className={baseStyles.primaryButton} disabled={namespaceBusy}>
+          {namespaceBusy ? 'Loading…' : 'Confirm business login name'}
+        </button>
+        {namespaceError ? <button type="button" className={styles.emptyAction} onClick={() => void loadAccountName()}>Reload</button> : null}
+      </form>
+    </section>;
+  }
+
+  function usernamePreview(value: string) {
+    if (!accountName) return 'Confirm your business login name before renaming this login.';
+    try { return accountAppUsername(value, accountName); }
+    catch { return `Use a name followed by @${accountName}.`; }
+  }
 
   const selectedRecord = useMemo(
     () => records.find((record) => record.id === selectedId) ?? null,
@@ -691,7 +758,7 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   function closeFlow() {
-    if (creating || busyId || deletingId) return;
+    if (creating || busyId || deletingId || namespaceBusy) return;
     setActiveFlow(null);
     setSelectedId(null);
   }
@@ -705,7 +772,14 @@ function AppAccessManagement({ kind, configOverride }: {
 
   async function createRecord(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const username = normalizeUsername(draft.username);
+    let username: string;
+    try {
+      if (!accountName) throw new Error('Confirm your business login name first.');
+      username = accountAppUsername(draft.username, accountName);
+    } catch (error) {
+      setCreateUsernameError(error instanceof Error ? error.message : 'Enter an app username.');
+      return;
+    }
     if (!draft.displayName.trim()) {
       setNotice({ tone: 'error', message: `Enter the ${config.displayNameLabel.toLowerCase()}.` });
       return;
@@ -936,11 +1010,12 @@ function AppAccessManagement({ kind, configOverride }: {
         open={activeFlow === 'new'}
         title={`New ${config.itemLabel}`}
         description="Enter the login details."
-        closeDisabled={creating}
+        closeDisabled={creating || namespaceBusy}
         onClose={closeFlow}
       >
         <InlineNotice notice={notice} />
-        <section className={`${baseStyles.card} ${styles.surface}`}>
+        {renderAccountNameSetup()}
+        {accountName ? <section className={`${baseStyles.card} ${styles.surface}`}>
           <div className={styles.surfaceHeader}>
             <h3>Login details</h3>
             <p>Enter the required details.</p>
@@ -956,18 +1031,20 @@ function AppAccessManagement({ kind, configOverride }: {
               />
             </label>
             <label className={baseStyles.field}>
-              <span>Username</span>
+              <span>App username</span>
               <input
                 value={draft.username}
                 onChange={(event) => {
                   setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }));
                   setCreateUsernameError('');
                 }}
-                placeholder={config.usernamePlaceholder}
+                placeholder="kuyler"
+                maxLength={32}
                 autoCapitalize="none"
                 autoComplete="off"
                 aria-invalid={Boolean(createUsernameError)}
               />
+              <small className={styles.usernamePreview}>{usernamePreview(draft.username || 'kuyler')}</small>
               {createUsernameError ? <small className={baseStyles.fieldError} role="alert">{createUsernameError}</small> : null}
             </label>
             {renderRoleSelect(draft.role, (role) => setDraft((current) => ({ ...current, role })))}
@@ -993,7 +1070,7 @@ function AppAccessManagement({ kind, configOverride }: {
               {creating ? 'Creating…' : 'Create login'}
             </button>
           </form>
-        </section>
+        </section> : null}
       </AppAccessModal>
 
       <AppAccessModal
@@ -1001,10 +1078,11 @@ function AppAccessManagement({ kind, configOverride }: {
         title={selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
         description={selectedRecord ? 'Edit this login.' : 'Choose a login to manage.'}
         wide
-        closeDisabled={Boolean(busyId || deletingId)}
+        closeDisabled={Boolean(busyId || deletingId || namespaceBusy)}
         onClose={closeFlow}
       >
         <InlineNotice notice={notice} />
+        {renderAccountNameSetup()}
         {!selectedRecord ? (
           <section className={`${baseStyles.card} ${styles.surface}`}>
             <div className={styles.directoryHeader}>
@@ -1054,7 +1132,7 @@ function AppAccessManagement({ kind, configOverride }: {
                     <input value={selectedEdit.displayName} onChange={(event) => updateEditDraft(selectedRecord.id, { displayName: event.target.value })} />
                   </label>
                   <label className={baseStyles.compactField}>
-                    <span>Username</span>
+                    <span>App username</span>
                     <input
                       value={selectedEdit.username}
                       onChange={(event) => {
@@ -1063,8 +1141,15 @@ function AppAccessManagement({ kind, configOverride }: {
                       }}
                       aria-invalid={Boolean(editUsernameErrors[selectedRecord.id])}
                     />
+                    <small className={styles.usernamePreview}>{selectedEdit.username === selectedRecord.username
+                      ? `Current login: ${selectedRecord.username}` : `New login: ${usernamePreview(selectedEdit.username)}`}</small>
                     {editUsernameErrors[selectedRecord.id] ? <small className={baseStyles.fieldError} role="alert">{editUsernameErrors[selectedRecord.id]}</small> : null}
                   </label>
+                  {accountName && !selectedRecord.username.endsWith(`@${accountName}`) ? (
+                    <button type="button" className={styles.emptyAction} onClick={() => updateEditDraft(selectedRecord.id, {
+                      username: `${selectedRecord.username.split('@')[0]}@${accountName}`,
+                    })}>Use business username</button>
+                  ) : null}
                   {renderRoleSelect(selectedEdit.role, (role) => updateEditDraft(selectedRecord.id, { role }))}
                   <div className={baseStyles.compactField}>
                     <label className={baseStyles.fieldLabel} htmlFor={`${kind}-password-${selectedRecord.id}`}>New {config.passwordLabel.toLowerCase()}</label>

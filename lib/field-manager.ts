@@ -1,3 +1,5 @@
+import { resolveAccountAppUsername, withUniqueAppUsername } from './app-login-namespace';
+import { normalizeAppLogin } from './app-login-name';
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { ensureAssetRegisterTables } from "./asset-registers";
@@ -719,12 +721,13 @@ export async function createFieldManager(
   input: CreateFieldManagerInput,
 ): Promise<FieldManagerRecord> {
   await ensureFieldManagerTables();
-  const db = getDb();
   const normalized = validateFieldManagerCore(input);
+  normalized.username = await resolveAccountAppUsername(ownerUserId, input.username);
+  normalized.usernameNormalized = normalized.username;
   const passwordHash = await hashFieldManagerPassword(normalized.password);
 
   try {
-    const result = await db.query<FieldManagerRow>(
+    const result = await withUniqueAppUsername(normalized.username, 'field', null, undefined, (writeDb) => writeDb.query<FieldManagerRow>(
       `
         insert into public.field_managers (
           owner_user_id,
@@ -759,7 +762,7 @@ export async function createFieldManager(
         normalized.usernameNormalized,
         passwordHash,
       ],
-    );
+    ));
 
     const row = result.rows[0];
     if (!row) throw new Error("Failed to create Field Manager login.");
@@ -788,11 +791,20 @@ export async function updateFieldManager(
   await ensureFieldManagerTables();
   const db = getDb();
   const normalized = normalizeUpdateInput(input);
+  const current = await db.query<{ username_normalized: string }>(
+    'select username_normalized from public.field_managers where id = $1::uuid and owner_user_id = $2', [managerId, ownerUserId],
+  );
+  if (!current.rows[0]) throw new Error('Field Manager login was not found.');
+  const previous = current.rows[0].username_normalized;
+  if (normalized.username !== undefined) {
+    normalized.username = await resolveAccountAppUsername(ownerUserId, input.username, previous);
+    normalized.usernameNormalized = normalized.username;
+  }
   const passwordHash = normalized.password
     ? await hashFieldManagerPassword(normalized.password)
     : null;
   try {
-    const result = await db.query<FieldManagerRow>(
+    const result = await withUniqueAppUsername(normalized.username ?? previous, 'field', managerId, previous, (writeDb) => writeDb.query<FieldManagerRow>(
       `
         update public.field_managers
         set
@@ -802,7 +814,7 @@ export async function updateFieldManager(
           password_hash = coalesce($6::text, password_hash),
           is_active = coalesce($7::boolean, is_active),
           session_version = session_version + case
-            when $6::text is not null or ($7::boolean is not null and $7::boolean is distinct from is_active) then 1
+            when ($4::text is not null and $4::text is distinct from username_normalized) or $6::text is not null or ($7::boolean is not null and $7::boolean is distinct from is_active) then 1
             else 0
           end,
           failed_login_attempts = case when $6::text is not null then 0 else failed_login_attempts end,
@@ -834,7 +846,7 @@ export async function updateFieldManager(
         passwordHash,
         typeof normalized.isActive === "boolean" ? normalized.isActive : null,
       ],
-    );
+    ));
 
     const row = result.rows[0];
     if (!row) throw new Error("Field Manager login was not found.");
@@ -1039,7 +1051,7 @@ export async function getFieldManagerByUsername(
 ): Promise<FieldManagerPrivateRecord | null> {
   await ensureFieldManagerTables();
   const db = getDb();
-  const usernameNormalized = normalizeFieldManagerUsername(username);
+  const usernameNormalized = normalizeAppLogin(username);
 
   if (!usernameNormalized) {
     return null;

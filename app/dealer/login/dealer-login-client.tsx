@@ -29,12 +29,7 @@ type LoginWelcome = {
 };
 
 function normalizeUsername(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[^a-z0-9._@-]/g, '')
-    .slice(0, 80);
+  return value.trim().toLowerCase();
 }
 
 function detectPlatform(): InstallPlatform {
@@ -306,13 +301,13 @@ export default function DealerLoginClient({ hasAccountSession = false }: { hasAc
         ) : (
           <form className={styles.loginForm} onSubmit={submit} aria-busy={busy}>
             <div className={styles.field}>
-              <label className={styles.fieldLabel} htmlFor="dealer-staff-username">Username</label>
+              <label className={styles.fieldLabel} htmlFor="dealer-staff-username">App username</label>
               <input
                 id="dealer-staff-username"
                 name="username"
                 value={username}
                 onChange={(event) => setUsername(normalizeUsername(event.target.value))}
-                placeholder="dealer.user"
+                placeholder="kuyler@vasbyt"
                 autoComplete="username"
                 inputMode="text"
                 autoCapitalize="none"

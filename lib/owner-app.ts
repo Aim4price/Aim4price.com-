@@ -1,3 +1,5 @@
+import { resolveAccountAppUsername, withUniqueAppUsername } from './app-login-namespace';
+import { normalizeAppLogin } from './app-login-name';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { getDb } from './db';
@@ -333,19 +335,19 @@ export async function createOwnerAppUser(
 ): Promise<OwnerAppUserRecord> {
   await ensureOwnerAppTables();
   const displayName = cleanText(input.displayName).replace(/\s+/g, ' ').slice(0, 120);
-  const username = normalizeOwnerAppUsername(input.username);
+  const username = await resolveAccountAppUsername(parentOwnerUserId, input.username);
   const password = validatePasscode(input.password);
   const accessRole = normalizeOwnerAppAccessRole(input.accessRole);
   if (!displayName) throw new Error('Enter the user display name.');
   if (username.length < 3) throw new Error('Username must be at least 3 characters.');
 
   try {
-    const result = await getDb().query<OwnerAppUserRow>(
+    const result = await withUniqueAppUsername(username, 'owner', null, undefined, async (db) => db.query<OwnerAppUserRow>(
       `insert into public.owner_app_users (
         parent_owner_user_id, display_name, username, username_normalized, password_hash, is_active, access_role
       ) values ($1, $2, $3, $3, $4, true, $5) returning *`,
       [parentOwnerUserId, displayName, username, await hashOwnerAppPassword(password), accessRole],
-    );
+    ));
     return mapOwnerAppUser(result.rows[0]);
   } catch (error: any) {
     if (error?.code === '23505') throw new Error('That username is already in use.');
@@ -370,7 +372,7 @@ export async function updateOwnerAppUser(
     ? cleanText(input.displayName).replace(/\s+/g, ' ').slice(0, 120)
     : row.display_name;
   const username = Object.hasOwn(input, 'username')
-    ? normalizeOwnerAppUsername(input.username)
+    ? await resolveAccountAppUsername(parentOwnerUserId, input.username, row.username_normalized)
     : row.username_normalized;
   const passwordChanged = Object.hasOwn(input, 'password') && cleanText(input.password).length > 0;
   const isActive = Object.hasOwn(input, 'isActive') ? Boolean(input.isActive) : row.is_active;
@@ -380,10 +382,10 @@ export async function updateOwnerAppUser(
   const passwordHash = passwordChanged
     ? await hashOwnerAppPassword(validatePasscode(input.password))
     : row.password_hash;
-  const mustRevoke = passwordChanged || isActive !== row.is_active || accessRole !== normalizeOwnerAppAccessRole(row.access_role);
+  const mustRevoke = username !== row.username_normalized || passwordChanged || isActive !== row.is_active || accessRole !== normalizeOwnerAppAccessRole(row.access_role);
 
   try {
-    const result = await getDb().query<OwnerAppUserRow>(
+    const result = await withUniqueAppUsername(username, 'owner', id, row.username_normalized, (db) => db.query<OwnerAppUserRow>(
       `update public.owner_app_users set
         display_name = $3,
         username = $4,
@@ -396,7 +398,7 @@ export async function updateOwnerAppUser(
       where id = $1::uuid and parent_owner_user_id = $2
       returning *`,
       [id, parentOwnerUserId, displayName, username, passwordHash, isActive, accessRole, mustRevoke ? 1 : 0],
-    );
+    ));
     if (accessRole === 'admin') {
       await Promise.all([
         getDb().query(
@@ -429,7 +431,7 @@ export async function findOwnerAppUserForLogin(username: string): Promise<OwnerA
   await ensureOwnerAppTables();
   const result = await getDb().query<OwnerAppUserRow>(
     'select * from public.owner_app_users where username_normalized = $1 limit 1',
-    [normalizeOwnerAppUsername(username)],
+    [normalizeAppLogin(username)],
   );
   return result.rows[0] ?? null;
 }

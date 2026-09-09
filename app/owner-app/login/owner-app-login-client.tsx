@@ -14,8 +14,8 @@ type BeforeInstallPromptEvent = Event & {
 type StandaloneNavigator = Navigator & { standalone?: boolean };
 type LoginWelcome = { displayName: string; companyName: string; logoUrl: string };
 
-function normalizeUsername(value: string) {
-  return value.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9._@-]/g, '').slice(0, 80);
+function normalizeUsername(value: string): string {
+  return value.trim().toLowerCase();
 }
 
 function isIos() {
@@ -141,7 +141,7 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
           </div>
         ) : (
           <form className={styles.loginForm} onSubmit={submit}>
-            <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-username">Username</label><input id="owner-app-username" value={username} onChange={(event) => setUsername(normalizeUsername(event.target.value))} placeholder="owner.user" autoComplete="username" autoCapitalize="none" disabled={busy} required /></div>
+            <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-username">App username</label><input id="owner-app-username" value={username} onChange={(event) => setUsername(normalizeUsername(event.target.value))} placeholder="kuyler@vasbyt" autoComplete="username" autoCapitalize="none" disabled={busy} required /></div>
             <div className={styles.field}><label className={styles.fieldLabel} htmlFor="owner-app-password">Passcode</label><span className={styles.inputWrap}><input id="owner-app-password" className={styles.passwordInput} type={showPassword ? 'text' : 'password'} value={password} onChange={(event) => setPassword(event.target.value.slice(0, 64))} placeholder="Enter passcode" minLength={4} maxLength={64} autoComplete="current-password" disabled={busy} required /><button type="button" className={styles.passwordToggle} onClick={() => setShowPassword((current) => !current)} disabled={busy}>{showPassword ? 'Hide' : 'Show'}</button></span></div>
             {error ? <p className={styles.error}>{error}</p> : null}
             <button type="submit" className={styles.primary} disabled={busy}>{busy ? 'Opening Aim4price Owner…' : 'Sign in'}</button>

@@ -1,3 +1,5 @@
+import { resolveAccountAppUsername, withUniqueAppUsername } from './app-login-namespace';
+import { normalizeAppLogin } from './app-login-name';
 import { promisify } from 'node:util';
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { getDb } from './db';
@@ -100,14 +102,14 @@ export async function listDealerStaff(dealerUserId: string) {
 export async function createDealerStaff(dealerUserId: string, input: Record<string, unknown>) {
   await ensureDealerStaffRoleStorage();
   const displayName = text(input.displayName).replace(/\s+/g, ' ').slice(0, 120);
-  const username = normalizeDealerUsername(input.username);
+  const username = await resolveAccountAppUsername(dealerUserId, input.username);
   const role = requiredDealerStaffRole(input.role);
   const password = validatePassword(input.password);
   if (!displayName) throw new Error('Enter the staff display name.');
   if (username.length < 3) throw new Error('Username must be at least 3 characters.');
   try {
-    const r = await getDb().query<Row>(`insert into dealer_app_staff(dealer_user_id,display_name,username,username_normalized,password_hash,staff_role,is_active)
-      values($1,$2,$3,$4,$5,$6,true) returning *`, [dealerUserId, displayName, username, username, await hashPassword(password), role]);
+    const r = await withUniqueAppUsername(username, 'dealer', null, undefined, async (db) => db.query<Row>(`insert into dealer_app_staff(dealer_user_id,display_name,username,username_normalized,password_hash,staff_role,is_active)
+      values($1,$2,$3,$4,$5,$6,true) returning *`, [dealerUserId, displayName, username, username, await hashPassword(password), role]));
     return map(r.rows[0]);
   } catch (e: any) { if (e?.code === '23505') throw new Error('That username is already in use.'); throw e; }
 }
@@ -117,18 +119,18 @@ export async function updateDealerStaff(dealerUserId: string, id: string, input:
   if (!current.rows[0]) throw new Error('Staff login not found.');
   const row = current.rows[0];
   const displayName = Object.hasOwn(input,'displayName') ? text(input.displayName).replace(/\s+/g,' ').slice(0,120) : row.display_name;
-  const username = Object.hasOwn(input,'username') ? normalizeDealerUsername(input.username) : row.username_normalized;
+  const username = Object.hasOwn(input,'username') ? await resolveAccountAppUsername(dealerUserId, input.username, row.username_normalized) : row.username_normalized;
   const role = Object.hasOwn(input,'role') ? requiredDealerStaffRole(input.role) : normalizeDealerStaffRole(row.staff_role);
   if (!displayName) throw new Error('Enter the staff display name.');
   if (username.length < 3) throw new Error('Username must be at least 3 characters.');
   const passwordChanged = Object.hasOwn(input,'password') && text(input.password).length > 0;
   const passwordHash = passwordChanged ? await hashPassword(validatePassword(input.password)) : row.password_hash;
   const active = Object.hasOwn(input,'isActive') ? Boolean(input.isActive) : row.is_active;
-  const bump = passwordChanged || active !== row.is_active || role !== normalizeDealerStaffRole(row.staff_role);
+  const bump = username !== row.username_normalized || passwordChanged || active !== row.is_active || role !== normalizeDealerStaffRole(row.staff_role);
   try {
-    const r = await getDb().query<Row>(`update dealer_app_staff set display_name=$3, username=$4, username_normalized=$4,
+    const r = await withUniqueAppUsername(username, 'dealer', id, row.username_normalized, (db) => db.query<Row>(`update dealer_app_staff set display_name=$3, username=$4, username_normalized=$4,
       password_hash=$5, is_active=$6, staff_role=$7, session_version=session_version+$8, updated_at=now()
-      where id=$1 and dealer_user_id=$2 returning *`, [id,dealerUserId,displayName,username,passwordHash,active,role,bump?1:0]);
+      where id=$1 and dealer_user_id=$2 returning *`, [id,dealerUserId,displayName,username,passwordHash,active,role,bump?1:0]));
     return map(r.rows[0]);
   } catch (e: any) { if (e?.code === '23505') throw new Error('That username is already in use.'); throw e; }
 }
@@ -139,7 +141,7 @@ export async function deleteDealerStaff(dealerUserId: string, id: string) {
 }
 export async function findDealerStaffForLogin(username: string) {
   await ensureDealerStaffRoleStorage();
-  const r = await getDb().query<Row>(`select * from dealer_app_staff where username_normalized=$1 limit 1`, [normalizeDealerUsername(username)]);
+  const r = await getDb().query<Row>(`select * from dealer_app_staff where username_normalized=$1 limit 1`, [normalizeAppLogin(username)]);
   return r.rows[0] ?? null;
 }
 export async function getDealerStaffById(id: string) {
