@@ -1,6 +1,7 @@
 'use client';
 
 import { currentWebsiteScale } from '../lib/website-canvas';
+import { attachHomeStorySwipe } from '../lib/home-story-swipe';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -314,6 +315,36 @@ export default function HomeHeroExperience() {
 
     return () => window.removeEventListener('resize', measureAssetShift);
   }, [isDesktopStory, storyStepIndex]);
+
+  useEffect(() => {
+    const sticky = stickyRef.current;
+    if (!sticky) return undefined;
+
+    return attachHomeStorySwipe(sticky, (direction) => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const nextIndex = Math.max(
+        isDesktopStory ? 0 : FEATURE_START_INDEX,
+        clampStoryIndex(storyStepRef.current + direction),
+      );
+      autoplayFinishedRef.current = true;
+      setHasAutoplayFinished(true);
+      claimManualControl();
+      updateStoryStep(nextIndex);
+
+      if (!isDesktopStory) return;
+      // Keep native vertical scrolling aligned with the selected card. Use the
+      // middle of its scroll interval to avoid rounding into a neighbouring step.
+      const sectionRect = section.getBoundingClientRect();
+      const stickyTop = (parseFloat(getComputedStyle(sticky).top) || 0) * currentWebsiteScale();
+      const trackStart = window.scrollY + sectionRect.top - stickyTop;
+      const travel = Math.max(1, sectionRect.height - sticky.getBoundingClientRect().height);
+      window.scrollTo({
+        top: Math.max(0, trackStart + travel * ((nextIndex + 0.5) / HERO_STORY_STEPS.length)),
+        behavior: 'instant',
+      });
+    });
+  }, [claimManualControl, isDesktopStory, updateStoryStep]);
 
   const handleQuestionChange = (question: QuestionKey, index: number) => {
     claimManualControl();

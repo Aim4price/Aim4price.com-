@@ -7,6 +7,9 @@ on:
       - 'components/AppPatternBackground*'
       - 'components/SiteWorkspaceZoom*'
       - 'lib/website-canvas.ts'
+      - 'app/home-hero-experience.tsx'
+      - 'lib/home-story-swipe.ts'
+      - 'tests/home-story-swipe.test.mjs'
       - 'tests/site-workspace-zoom.test.mjs'
       - 'scripts/verify-website-canvas.cjs'
       - '.github/workflows/website-header-zoom-validation.yml'
@@ -32,6 +35,8 @@ jobs:
       - run: npm ci
       - name: Website layout regressions
         run: node --test tests/site-workspace-zoom.test.mjs tests/header-manage-layout.test.mjs
+      - name: Homepage swipe regressions
+        run: node --experimental-strip-types --test tests/home-story-swipe.test.mjs tests/homepage-asset-register-hero.test.mjs
       - run: npm run typecheck
       - name: Production bundle validation
         shell: bash
@@ -49,4 +54,5 @@ jobs:
             exit 0
           fi
           exit "$build_status"
+
 
