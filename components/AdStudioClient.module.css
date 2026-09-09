@@ -394,7 +394,7 @@
   gap: 10px;
   margin-bottom: 14px;
   padding: 12px;
-  border: 1px dashed #b8cec5;
+  border: 1px solid #dce8e3;
   border-radius: 15px;
   background: #f7fbf9;
   transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
@@ -622,4 +622,57 @@
 .page.dealerPage {
   padding-top: 0;
   background: transparent;
+}
+
+/* One centered upload action per image type, with previews only after selection. */
+.logoField.logoField {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  text-align: center;
+}
+.logoCopy.logoCopy {
+  justify-content: center;
+}
+.logoControls.logoControls {
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+.logoPreviewCard.logoPreviewCard {
+  width: min(100%, 240px);
+  height: 112px;
+  cursor: default;
+}
+.logoButtons.logoButtons {
+  width: min(100%, 320px);
+  grid-template-columns: minmax(0, 1fr);
+}
+.logoButtons > :is(.logoUpload, .logoRemove) {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+}
+.previewPhotoHeader.previewPhotoHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: stretch;
+  justify-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.previewPhotoHeader.previewPhotoHeader > div:last-child {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 320px);
+}
+.previewPhotoHeader.previewPhotoHeader button {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  border-radius: 12px;
+  font-size: 0.85rem;
+}
+.logoUpload:focus-visible {
+  outline: 3px solid #43836a;
+  outline-offset: 3px;
 }

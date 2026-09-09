@@ -2005,27 +2005,27 @@
 }
 
 .discoveryCardLabels > span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 27px;
-  box-sizing: border-box;
-  border-radius: 999px;
-  padding: 5px 9px;
-  font-size: 0.66rem;
-  font-weight: 950;
-  letter-spacing: 0.055em;
-  line-height: 1;
-  text-transform: uppercase;
+  display: block;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: none;
+  overflow-wrap: anywhere;
 }
 
-.discoveryLocationPill {
-  max-width: 62%;
-  overflow: hidden;
-  border: 1px solid rgba(18, 53, 45, 0.1);
-  color: rgba(18, 53, 45, 0.68);
-  background: #f7faf8;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.discoveryTypeLabel {
+  color: #285443;
+}
+
+.discoveryLocationLabel {
+  color: #64746a;
 }
 
 .compactAppSurface .assetIdentity h2 {
@@ -3536,4 +3536,9 @@
 .compactAppSurface.compactAppSurface .discoveryCloseButton:hover:not(:disabled),
 .compactAppSurface.compactAppSurface .discoveryCloseDetailsButton:hover:not(:disabled) {
   background: #f6dadd !important;
+}
+
+/* Plain, compact metadata above each app Discovery asset name. */
+.compactAppSurface.compactAppSurface .discoveryCardLabels {
+  gap: 3px;
 }

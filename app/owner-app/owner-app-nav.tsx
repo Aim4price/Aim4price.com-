@@ -5,11 +5,13 @@ import { useState } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './owner-app.module.css';
 
-export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', backLabel = 'Home', backAction }: {
+export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', backLabel = 'Home', backAction, backDisabled = false, className = '' }: {
   showBack?: boolean;
   backHref?: string;
   backLabel?: string;
   backAction?: () => void;
+  backDisabled?: boolean;
+  className?: string;
 }) {
   const [signingOut, setSigningOut] = useState(false);
   const backIsHome = showBack && !backAction && backHref === '/owner-app' && backLabel === 'Home';
@@ -31,11 +33,11 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
   }
 
   return (
-    <header className={`${styles.assetsHeader} ${headerLayoutClass}`} aria-label="Aim4price Owner account controls">
+    <header className={`${styles.assetsHeader} ${headerLayoutClass} ${className}`} aria-label="Aim4price Owner account controls">
       {showBack ? (
         <>
           {backAction ? (
-            <button type="button" className={styles.navButton} onClick={backAction} aria-label={backLabel}>
+            <button type="button" className={styles.navButton} onClick={backAction} disabled={backDisabled} aria-label={backLabel}>
               <span>{backLabel}</span>
             </button>
           ) : (

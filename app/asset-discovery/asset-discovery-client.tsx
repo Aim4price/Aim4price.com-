@@ -2535,10 +2535,10 @@ export default function AssetDiscoveryClient({
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={styles.assetIdentity}>
                     <div className={`${mobileStyles.overviewCardLabels} ${styles.discoveryCardLabels}`}>
-                      <span className={mobileStyles.overviewType}>
+                      <span className={styles.discoveryTypeLabel}>
                         {cleanText(asset.type) || "Asset"}
                       </span>
-                      <span className={styles.discoveryLocationPill}>
+                      <span className={styles.discoveryLocationLabel}>
                         {cleanText(asset.province) || "Location not saved"}
                       </span>
                     </div>
@@ -3005,4 +3005,3 @@ export default function AssetDiscoveryClient({
     </section>
   );
 }
-

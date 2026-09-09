@@ -14638,3 +14638,16 @@
     min-height: 80px;
   }
 }
+
+.exclusiveCrown {
+  color: #d4a62a;
+}
+.appEstimateNav.appEstimateNav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding-top: max(12px, env(safe-area-inset-top));
+}
+.appValuation:has(.appEstimateNav) .wizardCard {
+  scroll-margin-top: calc(90px + env(safe-area-inset-top));
+}

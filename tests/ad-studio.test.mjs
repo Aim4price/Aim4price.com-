@@ -188,34 +188,31 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.doesNotMatch(marketplace, /JPEG_AD_LOGO_SRC|JPEG_AD_WATERMARK_SRC|CREATED WITH/);
 });
 
-test('Ad Studio supports logo drop and local-only sample photo ordering', async () => {
+test('Ad Studio uses centered upload buttons and local-only sample photo ordering', async () => {
   const [client, css] = await Promise.all([
     read('components/AdStudioClient.tsx'),
     read('components/AdStudioClient.module.css'),
   ]);
 
-  assert.match(client, /type DragEvent/);
+  assert.doesNotMatch(client, /handleLogoDrop|handlePreviewPhotoDrop|Drop logo here|Drop photos here/);
   assert.match(client, /const SUPPORTED_PREVIEW_IMAGE_TYPES = new Set\(\['image\/jpeg', 'image\/png', 'image\/webp'\]\)/);
   assert.match(client, /function applyLogoFile/);
   assert.match(client, /if \(!file \|\| !canManage \|\| saving\) return/);
   assert.match(client, /if \(!SUPPORTED_PREVIEW_IMAGE_TYPES\.has\(file\.type\)\)/);
-  assert.match(client, /function handleLogoDrop/);
-  assert.match(client, /onDrop=\{handleLogoDrop\}/);
-  assert.match(client, /role="button"/);
-  assert.match(client, /tabIndex=\{canManage && !saving \? 0 : -1\}/);
-  assert.match(client, /aria-disabled=\{!canManage \|\| saving\}/);
-  assert.match(client, /aria-label=\{draft\.logoUrl \?/);
+  assert.match(client, /<button className=\{styles\.logoUpload\} type="button" onClick=\{\(\) => logoInputRef\.current\?\.click\(\)\}/);
+  assert.match(client, /draft\.logoUrl \? 'Replace logo' : 'Add logo'/);
+  assert.match(client, /<fieldset className=\{styles\.stepFieldset\} disabled=\{!canManage \|\| saving\}/);
+  assert.match(client, /onClick=\{\(\) => previewPhotoInputRef\.current\?\.click\(\)\}/);
+  assert.match(client, /Upload photos/);
   assert.match(client, /const MAX_PREVIEW_PHOTOS = 4/);
   assert.match(client, /const MAX_PREVIEW_PHOTO_BYTES = 10_000_000/);
   assert.match(client, /const imageFiles = files\.filter\(\(file\) => SUPPORTED_PREVIEW_IMAGE_TYPES\.has\(file\.type\)\)/);
   assert.equal(client.match(/accept="image\/png,image\/jpeg,image\/webp"/g)?.length, 2);
-  assert.match(client, /function handlePreviewPhotoDrop/);
-  assert.match(client, /onDrop=\{handlePreviewPhotoDrop\}/);
   assert.match(client, /function reorderPreviewPhoto/);
   assert.match(client, /function movePreviewPhoto/);
   assert.match(client, /event\.dataTransfer\.setData\('text\/plain', photo\.id\)/);
   assert.match(client, /aria-label="Sample advert photo order"/);
-  assert.match(client, /(?:Add|Drop) up to four (?:sample )?photos[^<}`]*(?:drag|reorder)/i);
+  assert.match(client, /Up to four photos/);
   assert.match(client, /(?:not saved|preview only|never saved)/i);
   assert.match(client, /URL\.revokeObjectURL\(photo\.previewUrl\)/);
   assert.match(client, /body: JSON\.stringify\(draft\)/);
@@ -223,8 +220,8 @@ test('Ad Studio supports logo drop and local-only sample photo ordering', async 
   assert.match(client, /let active = true;\s*const renderCanvas = document\.createElement\('canvas'\)/);
   assert.match(client, /renderMarketplaceAdCanvas\(renderCanvas, previewContent,[\s\S]*?\.then\(\(\) => \{\s*if \(!active\) return;[\s\S]*?context\.drawImage\(renderCanvas/);
   assert.match(client, /return \(\) => \{\s*active = false;\s*};/);
-  assert.match(css, /\.logoPreviewDragging/);
-  assert.match(css, /\.previewPhotoLabActive/);
+  assert.match(css, /\.logoControls\.logoControls \{[^}]*align-items: center/);
+  assert.match(css, /\.previewPhotoHeader\.previewPhotoHeader \{[^}]*justify-items: center/);
   assert.match(css, /\.previewPhotoDragging/);
 });
 
@@ -994,5 +991,3 @@ test('Marketplace only applies Brand Kits to dealer listings', async () => {
   assert.match(database, /updateValues\.push\(brandKit \? JSON\.stringify\(toAdBrandSnapshot\(brandKit\)\) : null\)/);
   assert.match(database, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
 });
-
-
