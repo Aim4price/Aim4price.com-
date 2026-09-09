@@ -2779,7 +2779,7 @@
   }
 
   .dealerValuationSurface > [class*='container'] {
-    width: calc(100% - 8px) !important;
+    width: calc(100% - 24px) !important;
     padding-top: 6px !important;
   }
 
@@ -2789,7 +2789,7 @@
     z-index: 35;
     display: grid !important;
     gap: 6px !important;
-    padding: 8px 10px !important;
+    padding: 12px !important;
     box-shadow: 0 8px 20px rgba(18, 53, 45, 0.07) !important;
   }
 
@@ -2859,7 +2859,7 @@
   }
 
   .dealerValuationSurface [class*='stepContent'] {
-    padding: 13px 11px 16px !important;
+    padding: 20px 16px !important;
   }
 
   .dealerValuationSurface [class*='sectorLargeGrid'] {
@@ -2954,10 +2954,10 @@
 
   .dealerValuationSurface [class*='specStepCard'] {
     grid-template-columns: 40px minmax(0, 1fr) !important;
-    column-gap: 10px !important;
-    row-gap: 5px !important;
-    min-height: 68px !important;
-    padding: 12px !important;
+    column-gap: 12px !important;
+    row-gap: 6px !important;
+    min-height: 80px !important;
+    padding: 14px !important;
   }
 
   .dealerValuationSurface [class*='specStepCard'] > [class*='specStepNumber'] {
@@ -3163,9 +3163,10 @@
   .dealerValuationSurface [class*='detailsModal']:not([class*='Overlay']):not([class*='Backdrop']):not([class*='Header']):not([class*='Title']):not([class*='Text']):not([class*='Actions']) {
     width: 100% !important;
     max-width: 100% !important;
-    max-height: calc(100dvh - 4px) !important;
+    max-height: calc(100dvh - 16px) !important;
     overflow-y: auto !important;
-    padding: 14px 14px max(14px, env(safe-area-inset-bottom)) !important;
+    gap: 16px !important;
+    padding: 16px 16px max(16px, env(safe-area-inset-bottom)) !important;
     border-radius: 20px 20px 0 0 !important;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -3173,7 +3174,7 @@
 
   .dealerValuationSurface [class*='detailsModalHeader'] {
     position: sticky !important;
-    top: -14px;
+    top: -16px;
     z-index: 4;
     padding: 14px 0 8px !important;
     background: rgba(255, 255, 255, 0.97) !important;
@@ -3198,11 +3199,13 @@
 
   .dealerValuationSurface [class*='detailsModalActions'] {
     position: sticky !important;
-    bottom: calc(-14px - env(safe-area-inset-bottom));
+    bottom: -16px;
     z-index: 4;
     display: grid !important;
     grid-template-columns: minmax(104px, 0.72fr) minmax(0, 1.28fr) !important;
-    padding: 10px 0 max(14px, env(safe-area-inset-bottom)) !important;
+    gap: 10px !important;
+    margin-top: 0 !important;
+    padding: 12px 0 max(16px, env(safe-area-inset-bottom)) !important;
     background: rgba(250, 252, 251, 0.98) !important;
     box-shadow: 0 -8px 20px rgba(18, 53, 45, 0.07) !important;
   }
@@ -3223,7 +3226,7 @@
     display: grid !important;
     grid-template-columns: minmax(104px, 0.72fr) minmax(0, 1.28fr) !important;
     gap: 9px !important;
-    padding: 10px 11px max(11px, env(safe-area-inset-bottom)) !important;
+    padding: 12px 16px max(12px, env(safe-area-inset-bottom)) !important;
     background: rgba(250, 252, 251, 0.97) !important;
     box-shadow: 0 -10px 24px rgba(18, 53, 45, 0.08) !important;
     backdrop-filter: blur(12px);
@@ -3271,5 +3274,249 @@
 
   .dealerValuationSurface [class*='sectorLabel'] {
     font-size: 1rem !important;
+  }
+}
+
+/* Estimate presentation shared by the Owner and Dealer apps only.
+   Keep these rules beside the app theme overrides: the website has its own CSS. */
+.dealerValuationSurface [class*='stepTitle'] {
+  font-size: clamp(1.5rem, 5.8vw, 1.9rem) !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.035em !important;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+}
+
+.dealerValuationSurface [class*='stepText'] {
+  margin-top: 8px !important;
+  font-size: 0.9rem !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+}
+
+.dealerValuationSurface [class*='selectedSummaryPill'] {
+  min-height: 28px !important;
+  max-width: 100% !important;
+  padding: 6px 10px !important;
+  border: 1px solid #d7e7de !important;
+  border-radius: 8px !important;
+  background: #edf5f0 !important;
+  color: #285443 !important;
+  font-size: 0.75rem !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  box-shadow: none !important;
+}
+
+.dealerValuationSurface [class*='equipmentStageTop'],
+.dealerValuationSurface [class*='estimateModeSectorLabel'] {
+  position: static !important;
+  margin-bottom: 14px !important;
+}
+
+.dealerValuationSurface [class*='estimateModeIntro'] {
+  padding-top: 0 !important;
+}
+
+.dealerValuationSurface [class*='estimateModeAdvancedCard'] [class*='sectorBigCardContent'] {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 12px !important;
+}
+
+.dealerValuationSurface [class*='estimateModeAdvancedCard'] [class*='sectorCardTopRow'] {
+  position: static !important;
+  width: 100% !important;
+  justify-content: center !important;
+}
+
+.dealerValuationSurface [class*='exclusiveBadge']:not(svg) {
+  min-height: 0 !important;
+  max-width: 100% !important;
+  padding: 5px 7px !important;
+  font-size: 0.625rem !important;
+  line-height: 1.35 !important;
+  letter-spacing: 0.025em !important;
+  white-space: normal !important;
+  text-align: center !important;
+}
+
+.dealerValuationSurface [class*='exclusiveBadgeIcon'] {
+  flex-shrink: 0;
+}
+
+.dealerValuationSurface [class*='resultFinalActions'] {
+  gap: 16px !important;
+}
+
+.dealerValuationSurface [class*='resultFinalActionsButtons'] {
+  gap: 10px !important;
+  margin-top: 0 !important;
+}
+
+.dealerValuationSurface :is(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid #43836a !important;
+  outline-offset: 3px !important;
+}
+
+@media (max-width: 720px) {
+  .dealerValuationSurface [class*='wizardCard'] {
+    border-radius: 20px !important;
+    box-shadow: 0 12px 30px rgba(18, 53, 45, 0.07) !important;
+  }
+
+  .dealerValuationSurface [class*='wizardHeader'] [class*='stepperItem'] {
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .dealerValuationSurface [class*='wizardHeader'] > [class*='stepper'] {
+    gap: 0 !important;
+  }
+
+  .dealerValuationSurface [class*='basicIdentityCard'],
+  .dealerValuationSurface [class*='basicLevelGrid'] {
+    margin-top: 16px !important;
+    gap: 12px !important;
+  }
+
+  .dealerValuationSurface [class*='basicLevelCard'] {
+    min-height: 88px !important;
+    padding-block: 16px !important;
+    border-radius: 14px !important;
+  }
+
+  .dealerValuationSurface [class*='specStepCard'] {
+    border-radius: 14px !important;
+  }
+
+  .dealerValuationSurface [class*='specStepAction'] {
+    min-height: 36px !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    font-size: 0.8rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .dealerValuationSurface [class*='specStepCardComplete'] {
+    grid-template-columns: 32px minmax(0, 1fr) auto !important;
+    column-gap: 10px !important;
+  }
+
+  .dealerValuationSurface [class*='specStepNumber'] {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+  }
+
+  .dealerValuationSurface [class*='wizardFooter'] > button,
+  .dealerValuationSurface [class*='detailsModalActions'] > button,
+  .dealerValuationSurface [class*='resultFinalActionsButtons'] > button {
+    min-height: 48px !important;
+    border-radius: 12px !important;
+    font-size: 0.9rem !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+  }
+
+  .dealerValuationSurface [class*='wizardFooterSingle'] > button {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .dealerValuationSurface [class*='yearSliderPanel'],
+  .dealerValuationSurface [class*='yearSecondaryControls'],
+  .dealerValuationSurface [class*='popularityModalPanel'] {
+    margin-top: 0 !important;
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+
+  .dealerValuationSurface [class*='conditionRouteGrid'],
+  .dealerValuationSurface [class*='conditionModalBody'],
+  .dealerValuationSurface [class*='basicExtrasGrid'] {
+    margin-top: 0 !important;
+  }
+
+  .dealerValuationSurface [class*='conditionRouteGrid'] {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .dealerValuationSurface [class*='conditionRouteCard'] {
+    min-height: 80px !important;
+    padding: 16px !important;
+  }
+
+  .dealerValuationSurface [class*='conditionQuestionCard'] {
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .dealerValuationSurface [class*='conditionQuestionProgressTop'] strong {
+    white-space: normal !important;
+    line-height: 1.4 !important;
+  }
+
+  .dealerValuationSurface [class*='conditionQuestionCard'] [class*='dealerAssessmentGroup'] {
+    padding: 0 !important;
+  }
+
+  .dealerValuationSurface [class*='basicConditionOptionGrid'],
+  .dealerValuationSurface [class*='conditionQuestionCard'] [class*='dealerAssessmentOptions'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .dealerValuationSurface [class*='basicConditionOptionGrid'] > button,
+  .dealerValuationSurface [class*='conditionQuestionCard'] [class*='dealerAssessmentOption'] {
+    min-height: 56px !important;
+    padding: 12px 8px !important;
+    font-size: 0.875rem !important;
+    line-height: 1.35 !important;
+    white-space: normal !important;
+  }
+
+  .dealerValuationSurface [class*='basicConditionOptionGrid'] > button:last-child:nth-child(odd),
+  .dealerValuationSurface [class*='conditionQuestionCard'] [class*='dealerAssessmentOption']:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .dealerValuationSurface [class*='popularityModalStars'] {
+    gap: 8px !important;
+    margin-top: 20px !important;
+  }
+
+  .dealerValuationSurface [class*='popularityModalStarButton'] {
+    min-height: 60px !important;
+    min-width: 0 !important;
+    padding: 8px 0 !important;
+  }
+
+  .dealerValuationSurface [class*='popularityScaleLabels'] {
+    font-size: 0.7rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .dealerValuationSurface [class*='replacementNoticeModal'] {
+    width: min(100%, 420px) !important;
+    padding: 20px !important;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+  }
+
+  .dealerValuationSurface [class*='replacementNoticeActions'] > button {
+    min-height: 48px !important;
+    white-space: normal !important;
+    padding: 12px !important;
   }
 }
