@@ -7705,7 +7705,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         'Below normal demand',
         'Normal demand',
         'Strong demand',
-        'Highly sought after',
+        'Sought After',
       ];
       const popularityLabel = popularityStepComplete ? popularityLabels[popularityStars] : 'Choose a rating to continue';
 
@@ -7759,7 +7759,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <div className={styles.popularityScaleLabels} aria-hidden="true">
                 <span>Difficult to sell</span>
                 <span>Normal demand</span>
-                <span>Highly sought after</span>
+                <span>Sought After</span>
               </div>
             </div>
 
@@ -8249,7 +8249,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </button>
                 ))}
               </div>
-              <small className={styles.advancedFieldHelp}>1 = difficult to sell, 3 = normal demand, 5 = highly sought after.</small>
+              <small className={styles.advancedFieldHelp}>1 = difficult to sell, 3 = normal demand, 5 = Sought After.</small>
             </div>
           ) : null}
 
