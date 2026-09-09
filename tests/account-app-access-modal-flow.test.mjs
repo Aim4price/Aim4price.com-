@@ -100,7 +100,7 @@ test('the login URL and link actions match the polished QR handoff', async () =>
   const launcherEnd = shared.indexOf('function InlineNotice', launcherStart);
   const launcher = shared.slice(launcherStart, launcherEnd);
 
-  assert.match(launcher, /const streamlinedLauncher = config\.qrApp === 'owner' \|\| config\.qrApp === 'field'/);
+  assert.match(launcher, /const streamlinedLauncher = true/);
   assert.match(
     launcher,
     /\{streamlinedLauncher \? null : \(\s*<span className=\{styles\.actionMeta\}>\s*<span className=\{styles\.actionArrow\}/,
@@ -184,4 +184,3 @@ test('access launcher and dialogs stay large, focused and responsive', async () 
   assert.match(shared, /if \(event\.key === 'Escape' && !closeDisabledRef\.current\) onCloseRef\.current\(\)/);
   assert.match(shared, /\}, \[open\]\);/);
 });
-

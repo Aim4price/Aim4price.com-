@@ -35,12 +35,7 @@ type LoginWelcome = {
 };
 
 function normalizeUsername(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/[^a-z0-9._@-]/g, '')
-    .slice(0, 80);
+  return value.trim().toLowerCase();
 }
 
 function extractError(payload: LoginApiResponse | null, fallback: string): string {
@@ -277,11 +272,11 @@ export default function FieldManagerLoginClient() {
 
           <form className={styles.loginForm} onSubmit={handleSubmit}>
             <label className={styles.mobileField}>
-              <span>Username</span>
+              <span>App username</span>
               <input
                 value={username}
                 onChange={(event) => setUsername(normalizeUsername(event.target.value))}
-                placeholder="field.manager"
+                placeholder="kuyler@vasbyt"
                 autoComplete="username"
                 inputMode="text"
                 autoCapitalize="none"
