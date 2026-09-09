@@ -330,8 +330,8 @@ test('middlemen have a focused phone-first workspace and a supported account sub
   assert.match(subtype, /equipment-middleman/);
   assert.match(profile, /equipment-middleman/);
   assert.match(migration, /equipment-middleman/);
-  assert.match(dealerHome, /Middleman workspace/);
-  assert.match(dealerHome, /Value it\. Advertise it\. Move it\./);
+  assert.match(dealerHome, /Middleman tools/);
+  assert.doesNotMatch(dealerHome, /<header className=\{styles.middlemanHomeIntro\}/);
   assert.match(dealerHome, /middlemanCapabilities/);
   assert.match(header, /MIDDLEMAN_ACCOUNT_MENU_ITEMS/);
   assert.match(header, /My Showroom/);
@@ -402,7 +402,7 @@ test('owner and dealer showrooms reuse the seller-scoped Marketplace experience'
   assert.match(manager, /Hosted on Aim4price\.com/);
   assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
-  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
+  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]\)/);
   const dealerTools = dealerHome.match(/const allTools: DealerHomeTool\[\] = \[[\s\S]*?\n  \];/)?.[0];
   assert.ok(dealerTools, 'Dealer App launcher tools must be defined');
   assert.doesNotMatch(dealerTools, /capability: '(?:inventory|client_costs)'/);
@@ -915,7 +915,7 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   assert.match(middlemanHeader, /Marketplace/);
   assert.doesNotMatch(middlemanHeader, /label: 'Account'/);
   assert.doesNotMatch(middlemanHeader, /Leads|Discovery/);
-  assert.match(dealerHome, /'showroom', 'marketplace'/);
+  assert.match(dealerHome, /'discovery', 'marketplace', 'ad_studio', 'showroom'/);
   assert.doesNotMatch(dealerMarketplace, /isMiddlemanAccountSubtype/);
   assert.match(account, /isMiddlemanAccount \? ['"]Middleman app access['"] : ['"]Manage Dealer App staff['"]/);
   assert.match(accessPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
