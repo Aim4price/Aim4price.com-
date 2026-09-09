@@ -25,7 +25,7 @@ export default async function DealerDiscoveryPage() {
   if (isMiddlemanAccountSubtype(profile.accountSubtype)) redirect('/dealer/showroom');
 
   return (
-    <div className={styles.module}>
+    <div className={`${styles.module} ${styles.compactWorkspace}`}>
       <main>
         <AssetDiscoveryClient dealerAppMode />
       </main>
