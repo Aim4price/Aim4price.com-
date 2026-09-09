@@ -3481,3 +3481,15 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Nested app workspaces share the site artwork at every viewport size. */
+.page.page,
+.module.module {
+  background: transparent;
+}
+
+.module > main,
+.module > section {
+  background-color: transparent !important;
+  background-image: none !important;
+}
