@@ -43,6 +43,7 @@ type Props = {
   record: DesktopServiceRecord;
   busy?: boolean;
   askScheduleLink?: boolean;
+  dealerAppMode?: boolean;
   onClose: () => void;
   onSubmit: (completion: DesktopServiceCompletion) => void | Promise<void>;
 };
@@ -101,6 +102,7 @@ export default function DesktopServiceModal({
   record,
   busy = false,
   askScheduleLink = false,
+  dealerAppMode = false,
   onClose,
   onSubmit,
 }: Props) {
@@ -200,13 +202,13 @@ export default function DesktopServiceModal({
 
   if (askScheduleLink && scheduleDecision === null) {
     return (
-      <div className={styles.overlay} data-website-overlay role="presentation">
+      <div className={`${styles.overlay} ${dealerAppMode ? styles.dealerChoiceOverlay : ''}`} data-website-overlay role="presentation">
         <button className={styles.backdrop} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy} />
         <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
           <header className={styles.header}>
             <div>
-              <h2 id="scheduled-service-choice-title">How should this {actionName} be saved?</h2>
-              <p>{serviceAssetMeta(record)}</p>
+              <h2 id="scheduled-service-choice-title">{dealerAppMode ? `Save ${actionName}` : <>How should this {actionName} be saved?</>}</h2>
+              <p>{dealerAppMode ? record.assetTitle : serviceAssetMeta(record)}</p>
             </div>
             <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
               <CloseIcon />
@@ -220,12 +222,12 @@ export default function DesktopServiceModal({
             </div>
             <div className={styles.choiceComparison}>
               <div>
-                <strong>Complete this scheduled item</strong>
-                <span>Choose “Yes” when the completed work was for “{record.title}”. The scheduled item will close.</span>
+                <strong>{dealerAppMode ? 'Complete scheduled' : 'Complete this scheduled item'}</strong>
+                <span>{dealerAppMode ? 'Save the work and close this scheduled item.' : <>Choose “Yes” when the completed work was for “{record.title}”. The scheduled item will close.</>}</span>
               </div>
               <div>
-                <strong>Keep the scheduled item open</strong>
-                <span>Choose “No” when different work was done. A separate record will be saved and this schedule will stay unchanged.</span>
+                <strong>{dealerAppMode ? 'Save separately' : 'Keep the scheduled item open'}</strong>
+                <span>{dealerAppMode ? 'Save other work. Keep this scheduled item open.' : <>Choose “No” when different work was done. A separate record will be saved and this schedule will stay unchanged.</>}</span>
               </div>
             </div>
           </div>
@@ -236,7 +238,7 @@ export default function DesktopServiceModal({
               onClick={() => setScheduleDecision('separate')}
               disabled={busy}
             >
-              No, save separately
+              {dealerAppMode ? 'Save separately' : 'No, save separately'}
             </button>
             <button
               className={styles.submitButton}
@@ -244,7 +246,7 @@ export default function DesktopServiceModal({
               onClick={() => setScheduleDecision('scheduled')}
               disabled={busy}
             >
-              Yes, complete scheduled {actionName}
+              {dealerAppMode ? 'Complete scheduled' : <>Yes, complete scheduled {actionName}</>}
             </button>
           </footer>
         </section>

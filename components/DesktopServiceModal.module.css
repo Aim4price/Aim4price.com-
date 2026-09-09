@@ -473,3 +473,62 @@
   :global(:where(html:not(:has([data-website-canvas])))) .cancelButton, :global(:where(html:not(:has([data-website-canvas])))) .submitButton { flex: 1; padding: 0 12px; }
 }
 
+
+
+/* The dealer's save choice is a compact dialog with full-width actions. */
+.overlay.dealerChoiceOverlay {
+  padding: 16px;
+  place-items: center;
+}
+.dealerChoiceOverlay .modal {
+  width: min(560px, 100%);
+  max-height: calc(var(--website-visible-height, 100dvh) - 32px);
+  border: 1px solid #d5e2df;
+  border-radius: 24px;
+}
+.dealerChoiceOverlay .header {
+  align-items: start;
+  gap: 12px;
+  padding: 22px;
+}
+.dealerChoiceOverlay .header h2 {
+  font-size: 1.55rem;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+}
+.dealerChoiceOverlay .header p {
+  max-width: none;
+  margin-top: .65rem;
+  font-size: .9rem;
+  overflow-wrap: anywhere;
+}
+.dealerChoiceOverlay .body {
+  min-height: 0;
+  gap: 18px;
+  padding: 20px 22px;
+}
+.dealerChoiceOverlay .choiceComparison {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.dealerChoiceOverlay .choiceComparison > div {
+  gap: 8px;
+  padding: 16px;
+}
+.dealerChoiceOverlay .footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  flex-shrink: 0;
+  gap: 12px;
+  padding: 18px 22px 22px;
+}
+.dealerChoiceOverlay .footer > button {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+.dealerChoiceOverlay .footer .submitButton {
+  grid-row: 1;
+}
