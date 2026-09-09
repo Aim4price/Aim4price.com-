@@ -1,3 +1,44 @@
+.dealerApp .trackerAssetIdentity.trackerAssetIdentity {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 100%;
+  min-width: 0;
+  gap: .85rem;
+}
+.dealerApp .trackerAssetIdentity h2 {
+  font-size: 1.3rem;
+  line-height: 1.3;
+  letter-spacing: -.02em;
+  overflow-wrap: break-word;
+}
+.dealerApp .trackerAssetFacts {
+  display: grid;
+  gap: .55rem;
+  margin: 0;
+}
+.dealerApp .trackerAssetFacts > div {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: .75rem;
+  align-items: baseline;
+  font-size: .9rem;
+  line-height: 1.45;
+}
+.dealerApp .trackerAssetFacts dt {
+  color: #60746c;
+  font-weight: 600;
+}
+.dealerApp .trackerAssetFacts dd {
+  margin: 0;
+  color: #173f35;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerExpandedAside .trackerHeaderActions.trackerHeaderActions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
 .trackerPage {
   min-width: 0;
   color: #073b30;
@@ -2666,6 +2707,8 @@
   padding-bottom: 1.25rem;
 }
 .dealerApp .trackerExpandedAside.trackerExpandedAside {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
   display: grid;
   grid-template-columns: minmax(0, 1fr) !important;
   width: 100% !important;
@@ -2673,7 +2716,8 @@
   align-items: start;
   justify-items: stretch !important;
 }
-.dealerApp .trackerStatusValue {
+.dealerApp .trackerStatusValue.trackerStatusValue {
+  justify-items: start !important;
   text-align: left !important;
   justify-self: start;
 }
@@ -2736,4 +2780,3 @@
     justify-self: start;
   }
 }
-
