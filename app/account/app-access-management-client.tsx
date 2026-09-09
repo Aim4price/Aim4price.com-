@@ -337,7 +337,7 @@ function AppInstallQr({ config, loginLink }: { config: DirectoryConfig; loginLin
           <span className={styles.qrFallback}>QR unavailable</span>
         ) : (
           <img
-            src={`/api/account/app-access-qr?app=${config.qrApp}`}
+            src={`/api/account/app-access-qr?app=${config.qrApp}&v=${encodeURIComponent(config.loginPath)}`}
             alt={`QR code to open or install ${config.shareTitle}`}
             width="132"
             height="132"
