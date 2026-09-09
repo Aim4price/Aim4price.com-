@@ -1862,7 +1862,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [otherExtraName, setOtherExtraName] = useState('');
   const [otherExtraReplacementPrice, setOtherExtraReplacementPrice] = useState('');
   const [userReplacementPrice, setUserReplacementPrice] = useState('');
-  const [basicReplacementPrice, setBasicReplacementPrice] = useState('');
+  // null means not initialized; an empty string is an intentional user edit.
+  const [basicReplacementPrice, setBasicReplacementPrice] = useState<string | null>(null);
+  const specificationDialogRef = useRef<HTMLDialogElement>(null);
   const [basicReplacementVatMode, setBasicReplacementVatMode] = useState<VatDisplayMode>('excl');
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
   const [yearModelUnknown, setYearModelUnknown] = useState(false);
@@ -2898,7 +2900,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
-    setBasicReplacementPrice('');
+    setBasicReplacementPrice(null);
     setCondition('good');
     setYearStepComplete(false);
     setUsageStepComplete(false);
@@ -2980,7 +2982,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setUsageAmount('');
       setLifeWorkedPercent('');
       setUserReplacementPrice('');
-      setBasicReplacementPrice('');
+      setBasicReplacementPrice(null);
       setYearModelUnknown(false);
       setYearStepComplete(false);
       setUsageStepComplete(false);
@@ -3039,7 +3041,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
-    setBasicReplacementPrice('');
+    setBasicReplacementPrice(null);
     setYearModelUnknown(false);
     setYearStepComplete(false);
     setUsageStepComplete(false);
@@ -3121,7 +3123,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }, [basicEstimateActive, selectedFamily, selectedSector]);
 
   useEffect(() => {
-    if (!basicEstimateActive || step !== 5 || !basicReplacementGuide || String(basicReplacementPrice).trim()) return;
+    if (!basicEstimateActive || step !== 5 || !basicReplacementGuide || basicReplacementPrice !== null) return;
     const defaultMode = getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey);
     setBasicReplacementVatMode(defaultMode);
     if (!basicReplacementGuide) return;
@@ -3547,7 +3549,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
-    setBasicReplacementPrice('');
+    setBasicReplacementPrice(null);
     setFrontPto(false);
     setFrontLoader(false);
     setFrontLoaderYear('');
@@ -5221,7 +5223,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
       if (step === 5) {
         if (!basicBaseReplacementPriceExVat) {
-          setMessage('Enter a replacement price excluding VAT.');
+          setMessage('Enter a replacement price to continue.');
           return;
         }
         openReplacementPriceNotice();
@@ -5336,7 +5338,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
-    setBasicReplacementPrice('');
+    setBasicReplacementPrice(null);
     setYearModelUnknown(false);
     setMessage('');
     resetResult();
@@ -5531,7 +5533,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setBasicSpecLevel('');
       setBasicExtraChoice('');
       setBasicFamilyExtraReplacementPrice('');
-      setBasicReplacementPrice('');
+      setBasicReplacementPrice(null);
       setOtherExtraEnabled(false);
       setOtherExtraName('');
       setOtherExtraReplacementPrice('');
@@ -5754,7 +5756,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.sectorStart}>
           <div className={styles.sectorIntro}>
             <h2 className={styles.stepTitle}>Choose sector</h2>
-            <p className={styles.stepText}>{compactAppMode ? 'Choose a sector.' : 'Choose a sector to start your estimate.'}</p>
+            {!compactAppMode ? <p className={styles.stepText}>Choose a sector to start your estimate.</p> : null}
           </div>
 
           <div className={styles.sectorLargeGrid}>
@@ -5826,7 +5828,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
             </div>
             <h2 className={styles.stepTitle}>Choose estimate type</h2>
-            <p className={styles.stepText}>Choose how you want Aim4price to build the estimate.</p>
+            {!compactAppMode ? <p className={styles.stepText}>Choose how you want Aim4price to build the estimate.</p> : null}
           </div>
 
           <div className={`${styles.sectorLargeGrid} ${styles.estimateModeGrid}`}>
@@ -5960,7 +5962,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div>
           <h2 className={styles.stepTitle}>Brand &amp; Model</h2>
-          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>Add as much brand and model detail as you can. Aim4price will use it to build the strongest estimate possible.</p>
+          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>{compactAppMode ? 'Enter the brand. Model is optional.' : 'Add as much brand and model detail as you can. Aim4price will use it to build the strongest estimate possible.'}</p>
         </div>
 
         <div className={`${styles.currentCard} ${styles.basicIdentityCard}`}>
@@ -6008,7 +6010,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
         <div>
           <h2 className={styles.stepTitle}>Specification level</h2>
-          <p className={styles.stepText}>Where does this asset roughly sit in the new-asset market?</p>
+          {!compactAppMode ? <p className={styles.stepText}>Where does this asset roughly sit in the new-asset market?</p> : null}
         </div>
 
         <div className={`${styles.choiceGrid} ${styles.basicLevelGrid}`}>
@@ -6022,7 +6024,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 aria-pressed={selected}
                 onClick={() => {
                   setBasicSpecLevel(option.key);
-                  setBasicReplacementPrice('');
+                  setBasicReplacementPrice(null);
                   setMessage('');
                   resetResult();
                 }}
@@ -6035,6 +6037,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
       </div>
     );
+  }
+
+  function applyReplacementSpecification(level: BasicSpecificationLevel) {
+    if (level !== basicSpecLevel) {
+      const nextGuide = selectedFamily?.basicCatalogue
+        ? resolveCatalogueGuide(selectedFamily.basicCatalogue, level)
+        : resolveBasicReplacementGuide(basicReplacementBands, level);
+      const nextPrice = getVatDisplayValue(nextGuide?.suggestedExVat ?? null, basicReplacementVatMode);
+      setBasicSpecLevel(level);
+      setBasicReplacementPrice(nextPrice === null ? '' : String(Math.round(nextPrice)));
+      setMessage('');
+      resetResult();
+    }
+    specificationDialogRef.current?.close();
   }
 
   function renderBasicReplacementStep() {
@@ -6079,16 +6095,64 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
           {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
         </div>
-        <div>
-          <h2 className={styles.stepTitle}>Replacement price</h2>
-          <p className={styles.stepText}>Choose the current new replacement price for a comparable asset.</p>
+        <div className={styles.replacementHeading}>
+          <div>
+            <h2 className={styles.stepTitle}>Replacement price</h2>
+            <p className={styles.stepText}>{compactAppMode ? 'New price for a similar asset.' : 'Choose the current new replacement price for a comparable asset.'}</p>
+          </div>
+          <button
+            type="button"
+            className={styles.changeSpecificationButton}
+            aria-haspopup="dialog"
+            onClick={() => {
+              const dialog = specificationDialogRef.current;
+              dialog?.showModal();
+              dialog?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
+            }}
+          >
+            Change specification
+          </button>
         </div>
+
+        <dialog
+          ref={specificationDialogRef}
+          className={styles.specificationModal}
+          data-website-overlay
+          aria-labelledby="replacement-specification-title"
+          onClick={(event) => {
+            if (event.target !== event.currentTarget) return;
+            const bounds = event.currentTarget.getBoundingClientRect();
+            if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) {
+              event.currentTarget.close();
+            }
+          }}
+        >
+          <div className={styles.specificationModalHeader}>
+            <h3 id="replacement-specification-title">Change specification</h3>
+            <button type="button" className={styles.saveModalClose} onClick={() => specificationDialogRef.current?.close()} aria-label="Close specification options">×</button>
+          </div>
+          <p className={styles.specificationModalHint}>Choose a level to update the price range and suggested price.</p>
+          <div className={styles.specificationOptions}>
+            {BASIC_SPECIFICATION_LEVELS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={styles.specificationOption}
+                aria-pressed={basicSpecLevel === option.key}
+                onClick={() => applyReplacementSpecification(option.key)}
+              >
+                <strong>{option.label}</strong>
+                <span>{option.description}</span>
+              </button>
+            ))}
+          </div>
+        </dialog>
 
         <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
           <div className={styles.replacementPriceStack}>
             <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
-              <span>Selected replacement price</span>
-              <strong>{money(selectedReplacementPrice)}</strong>
+              {!compactAppMode ? <span>Selected replacement price</span> : null}
+              <strong>{basicReplacementPrice !== null && !hasReplacementSliderInput ? '—' : money(selectedReplacementPrice)}</strong>
               <small>{replacementVatLabel}</small>
             </div>
 
@@ -6113,7 +6177,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </div>
 
           <label className={styles.yearSliderControl}>
-            <span className={styles.fieldLabel}>Slide to replacement price</span>
+            <span className={styles.fieldLabel}>{compactAppMode ? 'Adjust price' : 'Slide to replacement price'}</span>
             <input
               className={styles.yearRangeInput}
               style={sliderStyle}
@@ -6162,7 +6226,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div className={`${styles.currentCard} ${styles.replacementManualCard}`}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Or enter replacement price manually ({basicReplacementVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
+            <span className={styles.fieldLabel}>{compactAppMode ? 'Enter price' : 'Or enter replacement price manually'} ({basicReplacementVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
             <input
               type="text"
               inputMode="decimal"
@@ -6174,7 +6238,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               }}
               placeholder="e.g. 1 850 000"
             />
-            <span className={styles.fieldHint}>You can always override the slider with the price you believe best represents the comparable new asset.</span>
+            {!compactAppMode ? <span className={styles.fieldHint}>You can always override the slider with the price you believe best represents the comparable new asset.</span> : null}
           </label>
         </div>
       </div>
@@ -7141,7 +7205,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           <div className={styles.yearSliderPanel}>
             <div className={styles.yearSliderReadout}>
-              <span>Selected year</span>
+              <span>{compactAppMode ? 'Year' : 'Selected year'}</span>
               <strong>{sliderYear}</strong>
               <small>{machineAge === 0 ? 'Current model year' : `${machineAge} year${machineAge === 1 ? '' : 's'} old`}</small>
             </div>
@@ -7196,7 +7260,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           <div className={styles.yearSecondaryControls}>
             <label className={`${styles.field} ${styles.modalInputField} ${styles.manualYearField}`}>
-              <span className={styles.fieldLabel}>Or type the year</span>
+              <span className={styles.fieldLabel}>{compactAppMode ? 'Enter year' : 'Or type the year'}</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -8005,7 +8069,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </div>
         ) : null}
         <h2 className={styles.stepTitle}>{detailsTitle}</h2>
-        <p className={styles.stepText}>{detailsIntro}</p>
+        {!compactAppMode ? <p className={styles.stepText}>{detailsIntro}</p> : null}
 
         <div className={styles.specFlowStack}>
           <button
@@ -8910,13 +8974,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <aside className={styles.resultsSide}>
           <section className={styles.resultFinalActions} aria-label="Estimate actions">
             <div className={styles.resultFinalActionsCopy}>
-              <span>{conversionAssetId ? 'Conversion mode' : 'Estimate actions'}</span>
+              {!compactAppMode ? <span>{conversionAssetId ? 'Conversion mode' : 'Estimate actions'}</span> : null}
               <h3>{conversionAssetId ? 'Save converted asset' : 'Next steps'}</h3>
               <p>
                 {conversionAssetId
                   ? 'Save this estimate to update the existing manual asset. Marketplace, PDF and duplicate asset-register saves are hidden in conversion mode.'
-                  : ownerAppMode
-                    ? 'Save the asset to My Assets, create a Marketplace listing or download the estimate PDF.'
+                  : compactAppMode
+                    ? 'Save, create an ad or download a PDF.'
                   : isDealerAccount
                     ? 'Create an advert, save this asset to an Asset Register, or download the estimate PDF.'
                   : compactAppMode
