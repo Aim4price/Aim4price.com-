@@ -5931,7 +5931,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       className={`${styles.equipmentDropdownOption} ${familyKey === family.familyKey ? styles.equipmentDropdownOptionActive : ''}`}
                       onClick={() => handleFamilySelection(family.familyKey)}
                     >
-                      <span>{family.familyLabel}{family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}</span>
+                      <span>{family.familyLabel}{!compactAppMode && family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}</span>
                     </button>
                   ))
                 ) : (

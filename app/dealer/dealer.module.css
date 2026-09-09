@@ -3562,3 +3562,73 @@
     padding: 12px !important;
   }
 }
+
+/* A readable equipment list in the Owner and Dealer estimate flows. */
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentPickerHead'] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  gap: 8px 12px !important;
+}
+
+.dealerValuationSurface [class*='equipmentPickerHead'] [class*='fieldLabel'] {
+  font-size: 0.95rem !important;
+  font-weight: 750 !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: #244c3e !important;
+}
+
+.dealerValuationSurface [class*='equipmentPickerHead'] [class*='equipmentCountPill'] {
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  color: #64746a !important;
+}
+
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownMenu'] {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 4px !important;
+  scrollbar-width: thin;
+  scrollbar-color: #94b5a5 transparent;
+}
+
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOption'] {
+  width: 100% !important;
+  min-height: 52px !important;
+  height: auto !important;
+  padding: 12px 14px !important;
+  border: 1px solid #dce7e0 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: #244c3e !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  box-shadow: none !important;
+}
+
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOption'] > span {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOption']:hover,
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOption']:focus-visible,
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOptionActive'] {
+  border-color: #43836a !important;
+  background: #edf6f0 !important;
+  color: #164d38 !important;
+}
