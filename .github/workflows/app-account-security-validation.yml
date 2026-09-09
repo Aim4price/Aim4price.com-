@@ -1,0 +1,37 @@
+name: App account security validation
+
+on:
+  pull_request:
+    paths:
+      - 'middleware.ts'
+      - 'app/layout.tsx'
+      - 'lib/app-*.ts'
+      - 'lib/auth-session.ts'
+      - 'lib/*session*.ts'
+      - 'app/api/dealer/**'
+      - 'app/api/middleman/**'
+      - 'app/api/owner-app/**'
+      - 'app/api/field-manager/**'
+      - 'app/api/marketplace/**'
+      - 'tests/app-account-isolation.test.mjs'
+      - 'tests/separate-app-sessions.test.mjs'
+      - '.github/workflows/app-account-security-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Verify app sessions and account isolation
+        run: node --test tests/app-account-isolation.test.mjs tests/separate-app-sessions.test.mjs

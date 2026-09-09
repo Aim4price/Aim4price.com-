@@ -59,7 +59,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const realm = await currentAppRealm() ?? 'dealer';
+  const realm = await currentAppRealm();
+  if (realm !== 'dealer' && realm !== 'middleman') return NextResponse.json({ ok: false, error: 'You must sign in.' }, { status: 401 });
   const session = await getDealerAppSession();
   if (!session) {
     return NextResponse.json({ ok: false, error: 'You must sign in.' }, { status: 401 });
@@ -86,4 +87,5 @@ export async function POST(request: NextRequest) {
   );
   return response;
 }
+
 

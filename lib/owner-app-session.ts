@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { getAccountProfile } from './account-profile';
 import { getOwnerAppUserById } from './owner-app';
+import { currentAppRealm } from './app-realm-server';
 
 export const OWNER_APP_COOKIE = 'aim4price_owner_app';
 export const OWNER_APP_MAX_AGE = 60 * 60 * 12;
@@ -23,9 +24,10 @@ export type OwnerAppSession = {
 };
 
 function sessionSecret(): string {
-  return process.env.BETTER_AUTH_SECRET
-    || process.env.OWNER_APP_SECRET
-    || 'aim4price-development-secret-change-me';
+  const configured = process.env.BETTER_AUTH_SECRET || process.env.OWNER_APP_SECRET;
+  if (configured) return configured;
+  if (process.env.NODE_ENV === 'production') throw new Error('Owner App session secret is not configured.');
+  return 'aim4price-development-secret-change-me';
 }
 
 function sign(raw: string): string {
@@ -56,6 +58,7 @@ function parseOwnerAppToken(token: string): OwnerAppTokenPayload | null {
 }
 
 export async function getOwnerAppSession(): Promise<OwnerAppSession | null> {
+  if (await currentAppRealm() !== 'owner') return null;
   const token = (await cookies()).get(OWNER_APP_COOKIE)?.value;
   const payload = token ? parseOwnerAppToken(token) : null;
   if (!payload) return null;

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import { APP_REQUEST_CONTEXT_SCRIPT } from '../lib/app-request-context';
 import AdminWorkTrackerBar from '../components/AdminWorkTrackerBar';
 import AppFooter from '../components/AppFooter';
 import AppPatternBackground from '../components/AppPatternBackground';
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <script dangerouslySetInnerHTML={{ __html: APP_REQUEST_CONTEXT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

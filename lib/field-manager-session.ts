@@ -88,12 +88,14 @@ function normalizePublicFuelStorageCode(value: unknown): string {
 }
 
 function getFieldManagerCookieSecret(): string {
-  return (
+  const configured = (
     process.env.FIELD_MANAGER_COOKIE_SECRET ||
     process.env.SCAN_COOKIE_SECRET ||
-    process.env.BETTER_AUTH_SECRET ||
-    "aim4price-development-field-manager-secret"
+    process.env.BETTER_AUTH_SECRET
   );
+  if (configured) return configured;
+  if (process.env.NODE_ENV === 'production') throw new Error('Field Manager session secret is not configured.');
+  return "aim4price-development-field-manager-secret";
 }
 
 function toBase64Url(value: string | Buffer): string {

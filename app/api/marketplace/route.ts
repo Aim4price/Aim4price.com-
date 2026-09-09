@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from '../../../lib/auth-session';
+import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
+import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { getAccountProfile } from '../../../lib/account-profile';
 import {
   listPublishedMarketplaceAssetListings,
@@ -144,6 +145,9 @@ export async function POST(request: NextRequest) {
 
   if (!session?.user?.id) {
     return unauthorized();
+  }
+  if (isDealerAppSession(session) && !dealerRoleCan(session.dealerApp.role, 'marketplace')) {
+    return marketplaceResponse({ ok: false, error: 'Your app login cannot publish adverts.' }, 403);
   }
 
   const body = (await request.json()) as {

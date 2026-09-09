@@ -278,17 +278,16 @@ export async function getServerSession(
   options: SessionOptions = {},
 ): Promise<EffectiveServerSession> {
   // Installed apps use only their own staff cookie, never a website or sibling app login.
-  if (await currentAppRealm()) {
+  const realm = await currentAppRealm();
+  if (realm) {
+    if (realm === 'owner') return options.allowOwnerApp ? await readOwnerAppSupportSession() : null;
+    if (realm === 'field') return null; // Field Manager APIs enforce their own scoped permissions.
     return options.allowDealerApp ? await readDealerAppSupportSession() : null;
   }
   const session = options.authSession ?? await readAuthSession();
 
   if (!session?.user?.id) {
-    if (options.allowOwnerApp) {
-      const ownerAppSession = await readOwnerAppSupportSession();
-      if (ownerAppSession) return ownerAppSession;
-    }
-    return options.allowDealerApp ? await readDealerAppSupportSession() : session;
+    return session;
   }
 
   const effectiveSession = await applyAdminSupportSession(session);
