@@ -1,4 +1,5 @@
 'use client';
+import DealerNav from '../dealer/dealer-nav';
 
 import { resolveCatalogueGuide, type BasicCatalogueIdentity } from '../../lib/basic-catalogue-guide';
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
@@ -9139,6 +9140,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   return (
     <main className={`${styles.page} ${compactAppMode ? `${styles.appValuation} ${dealerStyles.dealerValuationSurface}` : ''}`}>
+      {dealerAppMode ? (
+        <DealerNav
+          backLabel="Back"
+          onBack={handleBack}
+          backDisabled={preparingIdentity || valuationLoading || saveLoading}
+        />
+      ) : null}
       {!compactAppMode ? <AppHeader active="valuation" /> : null}
       {completionToastVisible ? (
         <div className={styles.completionToast} role="status" aria-live="polite">

@@ -2780,3 +2780,9 @@
     justify-self: start;
   }
 }
+
+.resultCount {
+  white-space: nowrap;
+}
+
+

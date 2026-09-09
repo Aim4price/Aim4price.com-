@@ -23,7 +23,7 @@ export default async function DealerValuationPage() {
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
 
   return (
-    <div className={styles.module}>
+    <div className={`${styles.module} ${styles.compactWorkspace}`}>
       <ValuationClient dealerAppMode />
     </div>
   );
