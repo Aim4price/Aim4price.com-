@@ -3664,3 +3664,39 @@
   box-shadow: none !important;
   backdrop-filter: none !important;
 }
+
+/* Keep sector and family context on the same left edge as each step title. */
+.dealerValuationSurface [class*='equipmentStageTop'],
+.dealerValuationSurface [class*='estimateModeSectorLabel'] {
+  justify-content: flex-start !important;
+  justify-items: start !important;
+  text-align: left !important;
+}
+
+.dealerValuationSurface [class*='selectedSummaryPill'] {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  justify-self: start !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+}
+
+/* Scroll the list, not the text: every family row keeps its natural height. */
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownMenu'] {
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+}
+
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOption'] {
+  display: block !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 52px !important;
+}
+
+.dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOption'] > span {
+  display: block;
+  height: auto;
+  max-height: none;
+  line-height: inherit;
+}
