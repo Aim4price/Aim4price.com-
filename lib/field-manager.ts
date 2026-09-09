@@ -1,3 +1,4 @@
+import { assetDisplayTitle } from './asset-display-title';
 import { resolveAccountAppUsername, withUniqueAppUsername } from './app-login-namespace';
 import { normalizeAppLogin } from './app-login-name';
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
@@ -50,6 +51,7 @@ type FieldManagerAssetRow = {
   title: string | null;
   kind: string | null;
   equipment_family_label: string | null;
+  family_usage_metric_type?: string | null;
   brand_name: string | null;
   model_name: string | null;
   typed_model_name: string | null;
@@ -356,7 +358,7 @@ function normalizeUsageLabel(row: FieldManagerAssetRow): {
     kind: row.kind,
     hours: row.hours,
     lifeWorkedPercent: row.life_worked_percent,
-    specsJson: specs,
+    specsJson: { ...specs, usageMetricType: specs.usageMetricType ?? specs.usage_metric_type ?? row.family_usage_metric_type },
   });
 
   return {
@@ -408,7 +410,7 @@ function mapFieldManagerAssetRow(
     publicAssetCode: normalizePublicAssetCode(row.public_asset_code),
     plateLabel: asText(row.plate_label),
     qrStatus: asText(row.qr_status) || "active",
-    title: asText(row.title) || "Untitled asset",
+    title: assetDisplayTitle({ title: row.title, modelName: row.model_name, familyLabel: row.equipment_family_label, specsJson: row.specs_json }) || "Untitled asset",
     kind: asText(row.kind),
     equipmentFamilyLabel: asText(row.equipment_family_label),
     brandName: asText(row.brand_name),
@@ -1116,6 +1118,7 @@ function fieldManagerAssetSelect(whereSql: string): string {
       a.title,
       a.kind,
       coalesce(ef.family_label, '') as equipment_family_label,
+      ef.usage_metric_type as family_usage_metric_type,
       a.brand_name,
       a.model_name,
       a.typed_model_name,
@@ -1661,3 +1664,4 @@ export async function validateFieldManagerFuelStorage(input: {
   const row = result.rows[0];
   return row ? mapFieldManagerRow(row) : null;
 }
+

@@ -1,3 +1,4 @@
+import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from "./db";
 import {
   normalizePublicAssetCode,
@@ -671,7 +672,7 @@ function inferScanUsageMode(row: ScanAccessRow): ScanAssetUsageMode {
     kind,
     hours,
     lifeWorkedPercent,
-    specsJson: specs,
+    specsJson: { ...specs, usageMetricType: specs.usageMetricType ?? specs.usage_metric_type ?? row.family_usage_metric_type },
   });
 
   if (kind === "property") return "none";
@@ -924,7 +925,7 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
     publicAssetCode: asText(row.public_asset_code),
     plateLabel: asText(row.plate_label),
     qrStatus: normalizeQrStatus(row.qr_status),
-    title: asText(row.title),
+    title: assetDisplayTitle({ title: row.title, modelName: row.model_name, familyLabel: row.equipment_family_label, specsJson: row.specs_json }),
     kind,
     equipmentFamilyKey: asText(row.equipment_family_key),
     equipmentFamilyLabel: asText(row.equipment_family_label),
@@ -989,7 +990,7 @@ function mapScanAccessRowToDepreciationAsset(
     userId: asText(row.owner_user_id) || asText(row.user_id),
     registerId: asText(row.register_id) || null,
     valuationRunId: asNumber(row.valuation_run_id),
-    title: asText(row.title),
+    title: assetDisplayTitle({ title: row.title, modelName: row.model_name, familyLabel: row.equipment_family_label, specsJson: row.specs_json }),
     kind: asText(row.kind),
     sectorId: asNumber(row.sector_id),
     equipmentFamilyId: asNumber(row.equipment_family_id),
@@ -2291,3 +2292,4 @@ export async function saveScanAssetEvent(
     client.release();
   }
 }
+

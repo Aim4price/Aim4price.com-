@@ -1,3 +1,4 @@
+import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from './db';
 import {
   ensureAssetRegisterTables,
@@ -195,6 +196,7 @@ type AssetRegisterRow = {
   equipment_family_id: string | number | null;
   equipment_family_key: string | null;
   equipment_family_label: string | null;
+  family_usage_metric_type?: string | null;
   equipment_model_id: string | number | null;
   typed_model_name: string | null;
   normalized_typed_model_name: string | null;
@@ -544,7 +546,6 @@ function buildAssetIdentityTitle(input: {
   const modelUnknown = isUnknownAssetIdentityText(input.modelName);
   const brandName = brandUnknown ? UNKNOWN_ASSET_PART : cleanAssetIdentityText(input.brandName);
   const modelName = modelUnknown ? UNKNOWN_ASSET_PART : cleanAssetIdentityText(input.modelName);
-  const typeLabel = humanizeAssetTypeLabel(input.typeLabel);
 
   if (savedYear !== null && Number.isInteger(savedYear) && savedYear >= 1800) {
     parts.push(String(savedYear));
@@ -557,9 +558,9 @@ function buildAssetIdentityTitle(input: {
     appendUniqueTitlePart(parts, modelName || UNKNOWN_ASSET_PART);
   }
 
-  appendUniqueTitlePart(parts, typeLabel);
+  // Classifications remain in metadata, never appended to the asset name.
 
-  return parts.join(' ').replace(/\s+/g, ' ').trim() || [UNKNOWN_ASSET_PART, typeLabel].filter(Boolean).join(' ');
+  return parts.join(' ').replace(/\s+/g, ' ').trim() || UNKNOWN_ASSET_PART;
 }
 
 function withPersistedAssetIdentitySpecs(
@@ -1225,6 +1226,7 @@ function isGenericYearModelUnknown(result: GenericValuationResult): boolean {
 
 function genericValuationResultUsesPercentBasis(result: GenericValuationResult): boolean {
   return (
+    result.family.usageMetricType === 'wear_class' ||
     result.depreciationMethodUsed === 'percentage_depreciation' ||
     (asNumber(result.usageAmount) === null && asNumber(result.lifeWorkedPercent) !== null)
   );
@@ -1706,7 +1708,8 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
   const selectedValueExVat = Math.round(
     asNumber(row.selected_value_ex_vat) ?? asNumber(row.value) ?? 0,
   );
-  const specsJson = isRecord(row.specs_json) ? row.specs_json : {};
+  const savedSpecs = isRecord(row.specs_json) ? row.specs_json : {};
+  const specsJson: Record<string, unknown> = { ...savedSpecs, usageMetricType: savedSpecs.usageMetricType ?? savedSpecs.usage_metric_type ?? row.family_usage_metric_type };
   const replacementPriceExVat =
     normalizeReplacementPriceExVat(row.replacement_price_used_ex_vat) ??
     normalizeReplacementPriceExVat(row.user_replacement_price_ex_vat) ??
@@ -1744,7 +1747,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     estimatedHours,
     maxLifetimeHours,
     kind: normalizeKind(row.kind),
-    title: asText(row.title),
+    title: assetDisplayTitle({ title: row.title, modelName, familyLabel: row.equipment_family_label, specsJson }),
     value: Math.round(asNumber(row.value) ?? selectedValueExVat),
     selectedMethod: normalizeMethod(row.selected_method),
     selectedValueExVat,
@@ -1975,6 +1978,7 @@ function buildSelectList(schema: TableSchema): string {
     `${equipmentFamilyIdExpression} as equipment_family_id`,
     `(select ef.family_key from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as equipment_family_key`,
     `(select ef.family_label from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as equipment_family_label`,
+    `(select ef.usage_metric_type from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as family_usage_metric_type`,
     equipmentModelIdColumn ? `${equipmentModelIdColumn} as equipment_model_id` : 'null::bigint as equipment_model_id',
     `${typedModelNameExpression} as typed_model_name`,
     `${normalizedTypedModelNameExpression} as normalized_typed_model_name`,
@@ -3895,3 +3899,4 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
 function toRoundedNumber(value: number | null): number | null {
   return value === null || !Number.isFinite(value) ? null : Math.round(value);
 }
+

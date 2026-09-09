@@ -622,7 +622,8 @@ function readUsageMetric(
     row.family_usage_metric_type,
   ]);
 
-  if (isPercentUsageValue(usageMode) || isPercentUsageValue(usageMetric))
+  if (isPercentUsageValue(usageMode) || isPercentUsageValue(usageMetric)
+    || (!specs.basic_catalogue_release && [specs.usageMetricType, specs.usage_metric_type, row.family_usage_metric_type].some(isPercentUsageValue)))
     return "percent";
   if (
     isKilometreUsageValue(usageMetric) ||
@@ -2803,3 +2804,4 @@ export async function listLicensingAssetDiscoveryLeadOpportunities(
 /** @deprecated Use listRecentAssetDiscoveryEnquiriesForRequester. */
 export const listRecentAssetDiscoveryEnquiriesForDealer =
   listRecentAssetDiscoveryEnquiriesForRequester;
+
