@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import AppHomeIcon, { AppHomeChevron } from '../../components/AppHomeIcon';
+import launcherStyles from '../../components/AppHomeLauncher.module.css';
 import styles from './owner-app.module.css';
 
 type NotificationsResponse = {
@@ -53,13 +55,17 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
   }, [loadActiveCount, viewerId]);
 
   return (
-    <Link className={styles.homeLaunchCard} href="/owner-app/notifications" prefetch={false}>
+    <Link className={`${styles.homeLaunchCard} ${launcherStyles.card}`} href="/owner-app/notifications" prefetch={false}>
+      <AppHomeIcon name="notifications" />
       <strong>Notifications</strong>
-      {activeCount > 0 ? (
-        <span className={styles.homeLaunchBadge} aria-label={`${activeCount} active notifications`}>
-          {activeCount > 99 ? '99+' : activeCount}
-        </span>
-      ) : null}
+      <span className={launcherStyles.end}>
+        {activeCount > 0 ? (
+          <span className={`${styles.homeLaunchBadge} ${launcherStyles.badge}`} aria-label={`${activeCount} active notifications`}>
+            {activeCount > 99 ? '99+' : activeCount}
+          </span>
+        ) : null}
+        <AppHomeChevron />
+      </span>
     </Link>
   );
 }

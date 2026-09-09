@@ -3,6 +3,8 @@ import { ownerAppCan, requireOwnerAppPageAccess, type OwnerAppPermission } from 
 import OwnerAppNav from './owner-app-nav';
 import OwnerNotificationsLink from './owner-notifications-link';
 import OwnerOverviewLink from './owner-overview-link';
+import AppHomeIcon, { AppHomeChevron } from '../../components/AppHomeIcon';
+import launcherStyles from '../../components/AppHomeLauncher.module.css';
 import styles from './owner-app.module.css';
 
 export const runtime = 'nodejs';
@@ -25,12 +27,14 @@ export default async function OwnerAppHome() {
     <main className={`${styles.page} ${styles.homePage}`}>
       <OwnerAppNav showBack={false} />
       <div className={`${styles.content} ${styles.homeContent}`}>
-        <nav className={styles.homeLauncher} aria-label="Owner tools">
+        <nav className={`${styles.homeLauncher} ${launcherStyles.list}`} aria-label="Owner tools">
           <OwnerNotificationsLink viewerId={notificationViewerId} />
           <OwnerOverviewLink />
           {tools.map((tool) => (
-            <Link key={tool.href} className={styles.homeLaunchCard} href={tool.href} prefetch={false}>
+            <Link key={tool.href} className={`${styles.homeLaunchCard} ${launcherStyles.card}`} href={tool.href} prefetch={false}>
+              <AppHomeIcon name={tool.href.split("/").pop() ?? "assets"} />
               <strong>{tool.label}</strong>
+              <AppHomeChevron />
             </Link>
           ))}
         </nav>

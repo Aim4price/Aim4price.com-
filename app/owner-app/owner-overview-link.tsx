@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
+import AppHomeIcon, { AppHomeChevron } from '../../components/AppHomeIcon';
+import launcherStyles from '../../components/AppHomeLauncher.module.css';
 import styles from './owner-app.module.css';
 
 type OverviewResponse = {
@@ -53,13 +55,17 @@ export default function OwnerOverviewLink() {
   }, [loadCount]);
 
   return (
-    <Link className={styles.homeLaunchCard} href="/owner-app/attention" prefetch={false}>
+    <Link className={`${styles.homeLaunchCard} ${launcherStyles.card}`} href="/owner-app/attention" prefetch={false}>
+      <AppHomeIcon name="overview" />
       <strong>Overview</strong>
-      {count > 0 ? (
-        <span className={styles.homeLaunchBadge} aria-label={`${count} overview ${count === 1 ? 'item' : 'items'}`}>
-          {count > 99 ? '99+' : count}
-        </span>
-      ) : null}
+      <span className={launcherStyles.end}>
+        {count > 0 ? (
+          <span className={`${styles.homeLaunchBadge} ${launcherStyles.badge}`} aria-label={`${count} overview ${count === 1 ? 'item' : 'items'}`}>
+            {count > 99 ? '99+' : count}
+          </span>
+        ) : null}
+        <AppHomeChevron />
+      </span>
     </Link>
   );
 }
