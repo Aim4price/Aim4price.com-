@@ -5855,7 +5855,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     <svg className={styles.exclusiveBadgeIcon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                       <path fill="currentColor" d="M3 6.75 7.5 11 12 4l4.5 7L21 6.75 19.4 18H4.6L3 6.75Zm2.2 12.75h13.6V21H5.2v-1.5Z" />
                     </svg>
-                    <span>Aim4price Exclusive</span>
+                    <span>{compactAppMode ? 'Exclusive' : 'Aim4price Exclusive'}</span>
                   </span>
                 </span>
                 <span className={styles.sectorLabelWrap}>
