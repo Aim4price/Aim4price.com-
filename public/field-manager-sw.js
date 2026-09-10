@@ -25,3 +25,6 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(fetch(event.request));
 });
+
+const PUSH_APP = 'field';
+importScripts('/app-push-worker.js');

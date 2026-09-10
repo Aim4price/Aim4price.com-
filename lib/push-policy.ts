@@ -1,4 +1,5 @@
 export const PUSH_APPS = {
+  field: { root: '/field-manager', name: 'Aim4price Field Manager', icon: '/field-manager-icon.png', worker: '/field-manager-sw.js' },
   owner: { root: '/owner-app', name: 'Aim4price Owner', icon: '/owner-app-icon-192.png', worker: '/owner-app-sw.js' },
   dealer: { root: '/dealer', name: 'Aim4price Dealer', icon: '/dealer-icon-192-dark.png', worker: '/dealer-sw.js' },
   middleman: { root: '/middleman', name: 'Aim4price Middleman', icon: '/middleman-icon-192.png', worker: '/middleman-sw.js' },

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 const reply = (body: object) => NextResponse.json(body, { headers: { 'Cache-Control': 'private, no-store' } });
 export async function GET() {
   const app = await currentAppRealm();
-  if (app !== 'owner' && app !== 'dealer' && app !== 'middleman') return reply({ enabled: false });
+  if (app !== 'owner' && app !== 'dealer' && app !== 'middleman' && app !== 'field') return reply({ enabled: false });
   // The unguessable HttpOnly device cookie is a limited delivery capability, not an account login.
   // This route returns only delivery flags; it cannot read inbox text or perform account actions.
   const id = cookies().get(`aim4price_push_${app}`)?.value;

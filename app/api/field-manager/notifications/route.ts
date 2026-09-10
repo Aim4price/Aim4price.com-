@@ -1,3 +1,4 @@
+import { isTrustedNotificationRequest } from '../../../../lib/notification-request-origin';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   listFieldManagerNotifications,
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  if (!isTrustedNotificationRequest(request)) return NextResponse.json({ ok: false }, { status: 403 });
   const access = await requireActiveFieldManagerSession(request);
   if (!access.ok) {
     return NextResponse.json({ ok: false, error: access.error }, { status: access.status });

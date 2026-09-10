@@ -16,10 +16,12 @@ export function ensurePushTables() {
         app text not null, account_id text not null, member_id text not null, preferences jsonb not null,
         primary key(app, account_id, member_id));
       create table if not exists app_push_devices (
-        id uuid primary key, app text not null check(app in ('owner','dealer','middleman')),
+        id uuid primary key, app text not null check(app in ('owner','dealer','middleman','field')),
         account_id text not null, member_id text not null, version integer not null,
         endpoint text not null unique, subscription jsonb not null, enabled boolean not null default true,
         created_at timestamptz not null default now(), checked_at timestamptz not null default now(), last_test_at timestamptz);
+      alter table app_push_devices drop constraint if exists app_push_devices_app_check;
+      alter table app_push_devices add constraint app_push_devices_app_check check(app in ('owner','dealer','middleman','field'));
       create index if not exists app_push_devices_recipient on app_push_devices(app,account_id,member_id);
       create table if not exists app_push_deliveries (
         device_id uuid not null references app_push_devices(id) on delete cascade,

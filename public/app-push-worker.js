@@ -1,6 +1,6 @@
 /* Shared delivery only; each installed worker owns a separate scope and subscription. */
-const PUSH_ROOTS = { owner: '/owner-app', dealer: '/dealer', middleman: '/middleman' };
-const PUSH_ICONS = { owner: '/owner-app-icon-192.png', dealer: '/dealer-icon-192-dark.png', middleman: '/middleman-icon-192.png' };
+const PUSH_ROOTS = { owner: '/owner-app', dealer: '/dealer', middleman: '/middleman', field: '/field-manager' };
+const PUSH_ICONS = { owner: '/owner-app-icon-192.png', dealer: '/dealer-icon-192-dark.png', middleman: '/middleman-icon-192.png', field: '/field-manager-icon.png' };
 function scopedPushUrl(value) {
   const root = PUSH_ROOTS[PUSH_APP];
   const url = new URL(typeof value === 'string' ? value : root + '/notifications', self.location.origin);
