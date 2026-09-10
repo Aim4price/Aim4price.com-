@@ -1,4 +1,3 @@
-import AppNotificationsTopLink from '../../components/AppNotificationsTopLink';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
@@ -26,6 +25,6 @@ export const viewport: Viewport = {
 };
 
 export default function OwnerAppLayout({ children }: { children: ReactNode }) {
-  return <div data-app-shell="owner" style={{ display: 'contents' }}><AppNotificationsTopLink root="/owner-app" />{children}</div>;
+  return <div data-app-shell="owner" style={{ display: 'contents' }}>{children}</div>;
 }
 

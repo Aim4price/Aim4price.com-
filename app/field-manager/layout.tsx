@@ -1,4 +1,3 @@
-import AppNotificationsTopLink from '../../components/AppNotificationsTopLink';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
@@ -27,6 +26,6 @@ export const viewport: Viewport = {
 };
 
 export default function FieldManagerLayout({ children }: { children: ReactNode }) {
-  return <><AppNotificationsTopLink root="/field-manager" />{children}</>;
+  return <>{children}</>;
 }
 
