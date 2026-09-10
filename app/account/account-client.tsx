@@ -2973,10 +2973,10 @@ export default function AccountClient({
       {activeAccountModal === "notifications" ? (
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard} ${styles.notificationModalCard}`}
             role="dialog" aria-modal="true" aria-labelledby="notifications-modal-title" tabIndex={-1}
             onClick={(event) => event.stopPropagation()}>
-            <AccountModalScroller>
+            <div className={styles.accountModalScrollContent}>
               <div className={styles.modalHeader}>
                 <h2 id="notifications-modal-title">Notifications</h2>
                 <p>Choose the phone alerts for your account.</p>
@@ -2986,7 +2986,7 @@ export default function AccountClient({
               <DesktopNotificationSettings onClose={closeActionModal}
                 onBusyChange={(busy) => { activeActionModalBusyRef.current = busy; setIsSavingNotifications(busy); }}
                 onSaved={() => { closeActionModal(); setNotice({tone:'success',message:'Notification settings saved.'}); }} />
-            </AccountModalScroller>
+            </div>
           </section>
         </div>
       ) : null}

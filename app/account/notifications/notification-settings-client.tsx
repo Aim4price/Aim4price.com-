@@ -38,8 +38,6 @@ export default function DesktopNotificationSettings({ onClose, onSaved, onBusyCh
             onClick={()=>setSettings({...settings,preferences:{...settings.preferences,[category]:!settings.preferences[category]}})}>
             <span>{PUSH_CATEGORIES[category]}</span><span className={settings.preferences[category]?styles.on:styles.off}>{settings.preferences[category]?'On':'Off'}</span>
           </button>)}</div>
-          <p className={styles.hint}>Each phone must allow notifications in its app. App users can turn off additional alerts in Notifications → Settings.</p>
-          <p className={styles.hint}>Your in-app and desktop inboxes stay available when phone alerts are off.</p>
         </> : null}
 
         {error?<div role="alert"><p>{error}</p><button className={styles.retry} type="button" disabled={saving||loading} onClick={()=>void load()}>Try again</button></div>:null}
