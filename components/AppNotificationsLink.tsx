@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import AppHomeIcon, { AppHomeChevron } from '../../components/AppHomeIcon';
-import launcherStyles from '../../components/AppHomeLauncher.module.css';
-import styles from './owner-app.module.css';
+import AppHomeIcon, { AppHomeChevron } from './AppHomeIcon';
+import launcherStyles from './AppHomeLauncher.module.css';
+import styles from '../app/owner-app/owner-app.module.css';
 
 type NotificationsResponse = {
   ok?: boolean;
@@ -12,16 +12,16 @@ type NotificationsResponse = {
   needsActionCount?: number;
 };
 
-export default function OwnerNotificationsLink({ viewerId }: { viewerId: string }) {
+export default function AppNotificationsLink({ app }: { app: 'dealer' | 'middleman' }) {
   const [activeCount, setActiveCount] = useState(0);
 
   const loadActiveCount = useCallback(async (signal?: AbortSignal) => {
     try {
-      const response = await fetch('/api/owner-app/notifications', {
+      const response = await fetch('/api/app-notifications/inbox', {
         credentials: 'include',
         cache: 'no-store',
-        headers: { 'x-aim4price-client-realm': 'owner' },
         signal,
+        headers: { 'x-aim4price-client-realm': app },
       });
       const payload = await response.json().catch(() => null) as NotificationsResponse | null;
       if (!response.ok || !payload?.ok) return;
@@ -33,7 +33,7 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;
     }
-  }, []);
+  }, [app]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -45,18 +45,20 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
     const intervalId = window.setInterval(refresh, 30_000);
 
     window.addEventListener('focus', refresh);
+    window.addEventListener('aim4price-notifications-updated', refresh);
     document.addEventListener('visibilitychange', refreshWhenVisible);
 
     return () => {
       controller.abort();
       window.clearInterval(intervalId);
       window.removeEventListener('focus', refresh);
+      window.removeEventListener('aim4price-notifications-updated', refresh);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
-  }, [loadActiveCount, viewerId]);
+  }, [loadActiveCount, app]);
 
   return (
-    <Link className={`${styles.homeLaunchCard} ${launcherStyles.card}`} href="/owner-app/notifications" prefetch={false}>
+    <Link className={`${styles.homeLaunchCard} ${launcherStyles.card}`} href={`/${app}/notifications`} prefetch={false}>
       <AppHomeIcon name="notifications" />
       <strong>Notifications</strong>
       <span className={launcherStyles.end}>

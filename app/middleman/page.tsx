@@ -1,3 +1,4 @@
+import AppNotificationsLink from '../../components/AppNotificationsLink';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getServerSession, isDealerAppSession } from '../../lib/auth-session';
@@ -122,12 +123,15 @@ export default async function DealerHome() {
     <main className={`${styles.shell} ${styles.homeShell}`}>
       <div className={styles.homeContent}>
         <nav className={styles.homeLauncher} aria-label={middlemanMode ? 'Middleman tools' : 'Dealer tools'}>
-          {tools.map((tool) => <ToolCard key={tool.href} tool={tool} />)}
+          {tools.map((tool) => tool.capability === 'notifications'
+            ? <AppNotificationsLink key={tool.href} app="middleman" />
+            : <ToolCard key={tool.href} tool={tool} />)}
         </nav>
       </div>
     </main>
   );
 }
+
 
 
 

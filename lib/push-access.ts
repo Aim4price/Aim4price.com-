@@ -31,7 +31,7 @@ export async function resolvePushAccess(who: PushIdentity) {
     const scope = await getOwnerAppAssetAccessSettings(who.accountId, who.memberId);
     const allowedAssets = !admin && scope.assetScope === 'selected'
       ? new Set(await resolveOwnerAppAccessibleAssetIds(who.accountId,who.memberId)) : null;
-    const categories: PushCategory[] = admin ? ['maintenance','licensing','enquiries','approvals'] : ['maintenance','licensing'];
+    const categories: PushCategory[] = admin ? ['maintenance','licensing','enquiries','approvals','costs','listings'] : ['maintenance','licensing'];
     return { categories, allowedAssets, viewerKey: `user:${who.memberId}`, admin };
   }
   const member = await getDealerStaffById(who.memberId);
@@ -41,5 +41,9 @@ export async function resolvePushAccess(who: PushIdentity) {
   const categories: PushCategory[] = [];
   if (who.app === 'dealer' && dealerRoleCan(role,'maintenance')) categories.push('maintenance','assignments');
   if (dealerRoleCan(role,'discovery')) categories.push('enquiries');
-  return { categories, allowedAssets: null, viewerKey: `dealer-staff:${who.memberId}`, admin: role === 'owner' };
+  if (dealerRoleCan(role,'marketplace')) categories.push('listings');
+  return { categories, allowedAssets: null, viewerKey: `dealer-staff:${who.memberId}`, admin: role === 'owner',
+    canLead: who.app === 'dealer' && dealerRoleCan(role,'leads'),
+    canSource: dealerRoleCan(role,'marketplace'), canDiscover: dealerRoleCan(role,'discovery') };
 }
+

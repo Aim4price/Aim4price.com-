@@ -36,7 +36,7 @@ test('notification APIs expose durable state mutations', async () => {
   ]);
 
   for (const source of [desktopRoute, ownerRoute]) {
-    assert.match(source, /listNotificationInbox/);
+    assert.match(source, /list(?:Owner)?NotificationInbox/);
     assert.match(source, /export async function PATCH/);
     assert.match(source, /mark_read/);
     assert.match(source, /archive/);
@@ -161,3 +161,4 @@ test('Field Manager Overview requires a captured location before service opens',
   assert.match(locationSession, /latitude: String\(input\.latitude\)/);
   assert.match(openRoute, /publicAssetCode: asset\.publicAssetCode/);
 });
+

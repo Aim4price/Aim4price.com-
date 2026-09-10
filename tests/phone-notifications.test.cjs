@@ -145,6 +145,7 @@ test('owner reminders link to the exact maintenance record and exclude inaccessi
   const record={id:'record',assetId:'asset',assetTitle:'Tractor',status:'upcoming',computedStatus:'due',dueDate:'2026-09-10',updatedAtIso:'2026-09-10'};
   const events=load('lib/push-events.ts',{
     './notifications':{},'./notification-inbox':{},'./push-access':{},'./dealer-maintenance-notification-inbox':{},
+    './listing-alerts':{listMatchingListingEvents:async()=>[]},'./app-notification-state':{readAppNotificationKeys:async()=>new Set()},
     './asset-maintenance':{listAssetMaintenanceRecords:async()=>[record,{...record,id:'done',status:'done'},{...record,id:'private',assetId:'private'}],buildAlertBody:()=> 'Service due.'},
     './asset-license-renewal':{buildAssetLicenseRenewalAlert:()=>null},
     './db':{getDb:()=>({query:async()=>({rows:[{id:'asset'},{id:'private'}]})})},
@@ -177,7 +178,7 @@ test('desktop policy requires website credentials and an active supported accoun
   assert.equal(await desktopAccessFixture({profile:{accountStatus:'suspended',accountType:'owner'}}).desktopNotificationAccount(),null);
   const owner=await desktopAccessFixture().desktopNotificationAccount();assert.equal(owner.accountId,'desktop-account');assert.equal(owner.app,'owner');
   const middleman=await desktopAccessFixture({profile:{accountStatus:'active',accountType:'dealer',accountSubtype:'middleman'}}).desktopNotificationAccount();
-  assert.equal(middleman.app,'middleman');assert.deepEqual(middleman.categories,['enquiries']);
+  assert.equal(middleman.app,'middleman');assert.deepEqual(middleman.categories,['enquiries','listings']);
 });
 test('desktop settings persist only for the authenticated account; CSRF and identity injection fail',async()=>{
   const saved=[];
@@ -230,3 +231,4 @@ test('app preference saves and test delivery succeed through the production prox
   assert.equal((await (await route.GET()).json()).preferences.maintenance,false);
   assert.equal((await post({action:'test'})).status,200);assert.equal(sent.length,1);assert.equal(sent[0].payload.deviceId,'device');assert.equal(sent[0].payload.href,'/owner-app/notifications');
 });
+

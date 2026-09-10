@@ -1,4 +1,5 @@
 'use client';
+import ListingAlertSettings from '../../components/ListingAlertSettings';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
@@ -3114,6 +3115,11 @@ export default function MarketplaceClient({
         </section>
       ) : null}
 
+      {compactAppMode && !showroomMode && dealerListingView === 'browse' ? (
+        <ListingAlertSettings app={ownerAppMode ? 'owner' : dealerAppRoot === '/middleman' ? 'middleman' : 'dealer'}
+          initialFilters={{ sector: sectorFilter, family: familyFilter, query, province: locationFilter === 'south-africa' ? '' : locationFilter, minPrice: null, maxPrice: null }} />
+      ) : null}
+
       {compactAppMode && (isLoadingListings || listingLoadError) ? (
         <div
           className={`${dealerStyles.marketplaceLoadStatus} ${listingLoadError ? dealerStyles.marketplaceLoadStatusError : ''}`}
@@ -4065,5 +4071,6 @@ export default function MarketplaceClient({
     </main>
   );
 }
+
 
 

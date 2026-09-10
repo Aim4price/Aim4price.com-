@@ -46,7 +46,7 @@
     "test:valuation-rules": "node --experimental-strip-types --test tests/valuation-rules.test.mjs",
     "test:saleability": "node --experimental-strip-types --test tests/shared-valuation.test.mjs tests/saleability.test.mjs tests/saleability-ui.test.mjs tests/valuation-rules.test.mjs tests/asset-register-projection-controls.test.mjs tests/mobile-valuation-flow.test.mjs",
     "verify:insurance": "node scripts/verify-insurance-workspace.cjs",
-    "test:phone-notifications": "node --test tests/phone-notifications.test.cjs"
+    "test:phone-notifications": "node --test tests/phone-notifications.test.cjs tests/app-notification-expansion.test.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1029.0",
@@ -72,3 +72,4 @@
     "typescript": "5.6.2"
   }
 }
+

@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import ListingAlertSettings from './ListingAlertSettings';
 import { PUSH_APPS, PUSH_CATEGORIES, DEFAULT_PUSH_PREFERENCES, type PushApp, type PushCategory, type PushPreferences, type AccountPushPreferences } from '../lib/push-policy';
 import styles from './PhoneNotificationSettings.module.css';
 export default function PhoneNotificationSettings({ app, modal = false }: { app: PushApp; modal?: boolean }) {
@@ -95,6 +96,7 @@ export default function PhoneNotificationSettings({ app, modal = false }: { app:
           <span>{PUSH_CATEGORIES[category]}{!accountSettings.preferences[category]?<small className={styles.managed}>Off in Desktop</small>:null}</span><span className={preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]?styles.on:styles.off}>{preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]?'On':'Off'}</span>
         </button>)}
       </div>
+      {categories.includes('listings') ? <ListingAlertSettings app={app} inline /> : null}
       <button className={styles.button} type="button" onClick={()=>void test()} disabled={busy||!enabled||!accountSettings.enabled}>Send test notification</button>
       {!enabled && support==='ready' && accountSettings.enabled ? <p>Turn on Phone alerts to send a test.</p> : null}
       {!modal ? <Link className={styles.button} href={config.root+'/notifications'}>View notifications</Link> : null}
@@ -103,3 +105,4 @@ export default function PhoneNotificationSettings({ app, modal = false }: { app:
     {error?<div role="alert"><p>{error}</p><button type="button" className={styles.button} disabled={busy} onClick={()=>void load()}>Try again</button></div>:null}
   </section>;
 }
+

@@ -12,7 +12,8 @@ export async function desktopNotificationAccount() {
   const profile = await getAccountProfile(session.user);
   if (profile.accountStatus !== 'active' || !['owner','dealer'].includes(profile.accountType)) return null;
   const app: PushApp = profile.accountType === 'owner' ? 'owner' : isMiddlemanAccountSubtype(profile.accountSubtype) ? 'middleman' : 'dealer';
-  const categories: PushCategory[] = app === 'owner' ? ['maintenance','licensing','enquiries','approvals']
-    : app === 'dealer' ? ['maintenance','enquiries','assignments'] : ['enquiries'];
+  const categories: PushCategory[] = app === 'owner' ? ['maintenance','licensing','enquiries','approvals','costs','listings']
+    : app === 'dealer' ? ['maintenance','enquiries','assignments','listings'] : ['enquiries','listings'];
   return { accountId:session.user.id, app, categories };
 }
+

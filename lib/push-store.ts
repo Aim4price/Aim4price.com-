@@ -38,12 +38,12 @@ export async function pushKeys() {
 export async function memberPushPreferences(who: PushIdentity): Promise<PushPreferences> {
   await ensurePushTables();
   const r = await getDb().query('select preferences from app_push_preferences where app=$1 and account_id=$2 and member_id=$3', [who.app, who.accountId, who.memberId]);
-  return r.rows[0]?.preferences ?? { ...DEFAULT_PUSH_PREFERENCES };
+  return { ...DEFAULT_PUSH_PREFERENCES, ...r.rows[0]?.preferences };
 }
 export async function accountPushPreferences(app: PushApp, accountId: string): Promise<AccountPushPreferences> {
   await ensurePushTables();
   const r = await getDb().query('select enabled,preferences from account_push_preferences where app=$1 and account_id=$2', [app,accountId]);
-  return r.rows[0] ?? { enabled:true, preferences:{...DEFAULT_PUSH_PREFERENCES} };
+  return { enabled: r.rows[0]?.enabled ?? true, preferences: { ...DEFAULT_PUSH_PREFERENCES, ...r.rows[0]?.preferences } };
 }
 export async function saveAccountPushPreferences(app: PushApp, accountId: string, settings: AccountPushPreferences) {
   await ensurePushTables();
@@ -95,3 +95,4 @@ export async function sendPhonePush(subscription: BrowserPushSubscription, paylo
     TTL: 300, timeout: 8000, urgency: 'normal',
   });
 }
+
