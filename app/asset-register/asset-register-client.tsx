@@ -1,4 +1,6 @@
 'use client';
+
+import QrCodePreview from '../../components/QrCodePreview';
 import { resolveAssetUsage } from '../../lib/asset-usage';
 
 import { websiteLogicalRect, websiteVisibleViewport, currentWebsiteScale, WEBSITE_DESIGN_WIDTH } from '../../lib/website-canvas';
@@ -5832,9 +5834,6 @@ function buildExternalShareAsset(asset: RegisterAsset): ExternalAssetShareItem {
   };
 }
 
-function buildAssetQrSvgUrl(asset: RegisterAsset): string {
-  return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg`;
-}
 
 function buildAssetPdfReportUrl(
   asset: RegisterAsset,
@@ -22617,7 +22616,7 @@ export default function AssetRegisterClient({
                   <span className={styles.qrPreviewEyebrow}>Permanent asset QR</span>
                   <div className={styles.qrPreviewFrame}>
                     {activeAsset.publicAssetCode ? (
-                      <img src={buildAssetQrSvgUrl(activeAsset)} alt={`QR code for ${activeAsset.title}`} />
+                      <QrCodePreview value={buildAssetScanUrl(activeAsset)} label={`QR code for ${activeAsset.title}`} />
                     ) : (
                       <p className={styles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
                     )}
