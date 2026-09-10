@@ -141,3 +141,15 @@ test('cross-origin settings writes are rejected before identity lookup',async()=
   const response=await route.POST(new Request('https://www.aim4price.com/api/app-notifications',{method:'POST',headers:{origin:'https://evil.test'},body:'{}'}));
   assert.equal(response.status,403);
 });
+test('owner reminders link to the exact maintenance record and exclude inaccessible or completed assets',async()=>{
+  const record={id:'record',assetId:'asset',assetTitle:'Tractor',status:'upcoming',computedStatus:'due',dueDate:'2026-09-10',updatedAtIso:'2026-09-10'};
+  const events=load('lib/push-events.ts',{
+    './notifications':{},'./notification-inbox':{},'./push-access':{},'./dealer-maintenance-notification-inbox':{},
+    './asset-maintenance':{listAssetMaintenanceRecords:async()=>[record,{...record,id:'done',status:'done'},{...record,id:'private',assetId:'private'}],buildAlertBody:()=> 'Service due.'},
+    './asset-license-renewal':{buildAssetLicenseRenewalAlert:()=>null},
+    './db':{getDb:()=>({query:async()=>({rows:[{id:'asset'},{id:'private'}]})})},
+  });
+  const result=await events.listPushEvents(who,{categories:['maintenance'],allowedAssets:new Set(['asset']),admin:false});
+  assert.equal(result.length,1);
+  assert.equal(result[0].href,'/owner-app/assets/asset/maintenance?maintenanceId=record');
+});

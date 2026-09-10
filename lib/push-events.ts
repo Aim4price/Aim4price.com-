@@ -21,14 +21,14 @@ export async function listPushEvents(who: PushIdentity, access: NonNullable<Awai
       if (access.allowedAssets && !access.allowedAssets.has(record.assetId)) continue;
       events.push({ id: `maintenance:${record.id}:${record.dueDate ?? record.dueUsage}:${record.computedStatus}`, category: 'maintenance',
         title: 'Maintenance upcoming', body: `${record.assetTitle}: ${buildAlertBody(record)}`,
-        href: root + '/maintenance', createdAtIso: record.updatedAtIso, reminder: true });
+        href: `${root}/assets/${encodeURIComponent(record.assetId)}/maintenance?maintenanceId=${encodeURIComponent(record.id)}`, createdAtIso: record.updatedAtIso, reminder: true });
     }
     for (const row of assets.rows) {
       if (access.allowedAssets && !access.allowedAssets.has(row.id)) continue;
       const alert = buildAssetLicenseRenewalAlert({ id: row.id, kind: row.kind, isLicensed: row.is_licensed,
         licenseRegistrationNumber: row.license_registration_number, specsJson: row.specs_json }, row.license_renewal_alert_noted_for_date);
       if (alert) events.push({ id: `${alert.id}:${alert.computedStatus}`, category: 'licensing', title: alert.heading,
-        body: alert.body, href: root + '/assets', createdAtIso: new Date().toISOString(), reminder: true });
+        body: alert.body, href: `${root}/assets/${encodeURIComponent(row.id)}`, createdAtIso: new Date().toISOString(), reminder: true });
     }
     // Only current source events, intersected with unread inbox state. Resolved historical snapshots never trigger pushes.
     if (access.admin) {
