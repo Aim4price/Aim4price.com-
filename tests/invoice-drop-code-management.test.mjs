@@ -58,7 +58,7 @@ test('code lifecycle uses the capture domain and full-code viewing is an explici
 test('Cost Ledger exposes a gated three-step code wizard only in the direct owner workspace', () => {
   assert.match(ledger, /const canManageInvoiceDropCodes = !dealerMode && !accountantShareId && !accountantRegisterId/);
   assert.match(ledger, /\{canManageInvoiceDropCodes \? \(/);
-  assert.match(ledger, /<span>Contribution<\/span>/);
+  assert.match(ledger, /<span>Invoice Drop<\/span>/);
   assert.match(ledger, /type InvoiceDropWizardStep = 1 \| 2 \| 3/);
   assert.match(ledger, /useState<InvoiceDropWizardStep>\(1\)/);
   assert.match(ledger, /\[\['Access', 1\], \['Routing', 2\], \['Code', 3\]\]/);
@@ -142,4 +142,5 @@ test('Invoice Drop wizard avoids repeated headings and helper copy', () => {
   assert.doesNotMatch(invoiceDropWizard, /Create and share the code/);
   assert.doesNotMatch(invoiceDropWizard, /<span>Contribution code<\/span>/);
 });
+
 

@@ -38,8 +38,8 @@
     "test:app-umbrella-access": "node --test tests/app-umbrella-directory-access.test.mjs",
     "test:responsive-foundation": "node --test tests/responsive-foundation.test.mjs",
     "test:upload-storage": "node --test tests/asset-register-upload-storage.test.mjs tests/upload-object-storage-foundation.test.mjs tests/bucket-only-upload-catalog.test.mjs tests/bucket-only-upload-runtime.test.mjs tests/bucket-only-upload-purge.test.mjs",
-    "test:invoice-drop": "node --experimental-strip-types --test tests/public-invoice-drop.test.mjs",
-    "test:capture-queue": "node --test tests/admin-capture-queue.test.mjs tests/admin-capture-usage-update.test.mjs tests/capture-requests.security.test.mjs tests/capture-finalization.test.mjs tests/capture-lifecycle-cleanup.test.mjs",
+    "test:invoice-drop": "node --experimental-strip-types --test tests/public-invoice-drop.test.mjs tests/invoice-upload-pages.test.mjs",
+    "test:capture-queue": "node --test tests/admin-capture-queue.test.mjs tests/admin-capture-usage-update.test.mjs tests/capture-requests.security.test.mjs tests/capture-finalization.test.mjs tests/capture-lifecycle-cleanup.test.mjs tests/capture-customer-feedback.test.mjs",
     "capture:purge": "node scripts/purge-assisted-capture-files.mjs",
     "test:ad-studio": "node --test tests/ad-studio.test.mjs tests/ad-studio-renderer.test.mjs tests/separate-app-sessions.test.mjs",
     "test:report-design": "node --experimental-strip-types --test tests/report-design-lock.test.mjs tests/report-opening-lock.test.mjs tests/canonical-report-pdf.test.mjs tests/report-export-correctness.test.mjs",
@@ -55,6 +55,7 @@
     "@tesseract.js-data/eng": "^1.0.0",
     "better-auth": "^1.6.2",
     "next": "14.2.35",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.20.0",
     "puppeteer-core": "24.15.0",
     "react": "18.3.1",
@@ -67,7 +68,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "18.3.5",
     "@types/react-dom": "18.3.0",
-    "typescript": "5.6.2",
-    "@types/web-push": "^3.6.4"
+    "@types/web-push": "^3.6.4",
+    "typescript": "5.6.2"
   }
 }

@@ -65,6 +65,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       requests: visibleRequests.map((capture) => toCaptureRequestStatusView(capture, {
+        canReply: Boolean(ownerAppAccess && ownerAppCan(ownerAppAccess, 'manage_finance')
+          && capture.ownerUserId === ownerAppAccess.ownerUserId),
         canRetract: Boolean(
           ownerAppAccess
           && ownerAppCan(ownerAppAccess, 'manage_finance')
@@ -78,3 +80,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Capture status is temporarily unavailable.' }, { status: 500 });
   }
 }
+

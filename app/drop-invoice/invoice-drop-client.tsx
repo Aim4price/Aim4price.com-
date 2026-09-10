@@ -1,5 +1,6 @@
 'use client';
 
+import { prepareInvoiceUpload, validateInvoicePages } from '../../lib/invoice-upload';
 import DropdownOverlay from '../../components/DropdownOverlay';
 import Link from 'next/link';
 import {
@@ -12,15 +13,6 @@ import {
   useState,
 } from 'react';
 import styles from './page.module.css';
-
-const MAX_FILE_BYTES = 12 * 1024 * 1024;
-const MAX_FILES = 1;
-const ALLOWED_FILE_TYPES = new Set([
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
 
 type LookupMode = 'code' | 'reference';
 type WizardStep = 1 | 2 | 3;
@@ -118,18 +110,7 @@ function formatFileSize(bytes: number): string {
 }
 
 function validateSelectedFiles(files: File[]): string | null {
-  if (!files.length) return 'Choose an invoice before continuing.';
-  if (files.length > MAX_FILES) return 'Upload one invoice file at a time. Use one multi-page PDF when needed.';
-
-  for (const file of files) {
-    if (!ALLOWED_FILE_TYPES.has(file.type.toLowerCase())) {
-      return 'Only PDF, JPG, PNG and WEBP files are accepted.';
-    }
-    if (!file.size) return 'The selected file is empty.';
-    if (file.size > MAX_FILE_BYTES) return 'The invoice must be 12 MB or smaller.';
-  }
-
-  return null;
+  return validateInvoicePages(files);
 }
 
 export default function InvoiceDropClient() {
@@ -174,7 +155,7 @@ export default function InvoiceDropClient() {
   const stepOneComplete = lookupMode === 'code'
     ? completeContributionCode && codeStepComplete
     : identifier.trim().length >= identifierMinimumLength && assetDescription.trim().length >= 3;
-  const stepTwoComplete = files.length === 1;
+  const stepTwoComplete = files.length > 0 && !validateSelectedFiles(files);
   const selectedSenderType = SENDER_TYPE_OPTIONS.find((option) => option.value === senderType) ?? SENDER_TYPE_OPTIONS[0];
 
   const fileSummary = useMemo(() => {
@@ -436,11 +417,13 @@ export default function InvoiceDropClient() {
     formData.set('startedAt', startedAt);
     formData.set('assetSearchQuery', lookupMode === 'code' ? assetSearchQuery.trim() : '');
     formData.delete('files');
-    files.forEach((file) => formData.append('files', file, file.name));
+
 
     setIsSubmitting(true);
 
     try {
+      const invoice = await prepareInvoiceUpload(files);
+      formData.append('files', invoice, invoice.name);
       const response = await fetch('/api/public/invoice-drop', {
         method: 'POST',
         body: formData,
@@ -728,7 +711,7 @@ export default function InvoiceDropClient() {
                       <span className={styles.wizardHeadingNumber}>2</span>
                       <div className={styles.wizardHeadingText}>
                         <h3>Attach the invoice</h3>
-                        <span>Upload one PDF or clear image. Use a multi-page PDF where needed.</span>
+                        <span>Choose one PDF or photos of the same invoice.</span>
                       </div>
                     </div>
 
@@ -741,14 +724,14 @@ export default function InvoiceDropClient() {
                       }}
                       onDrop={handleDrop}
                     >
-                      <input ref={fileInputRef} id="invoice-files" name="files" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleFileChange} />
+                      <input ref={fileInputRef} id="invoice-files" name="files" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" multiple disabled={isSubmitting} onChange={handleFileChange} />
                       <span className={styles.uploadIcon}><UploadIcon /></span>
                       <div>
                         <strong>Drop the invoice here</strong>
                         <span>or choose it from your device</span>
                       </div>
                       <button ref={chooseFileButtonRef} type="button" className={styles.chooseFileButton} onClick={() => fileInputRef.current?.click()}>Choose invoice</button>
-                      <small>PDF, JPG, PNG or WEBP · one file · up to 12 MB</small>
+                      <small>PDF, JPG, PNG or WEBP · up to 12 photos · 12 MB per file</small>
                     </div>
 
                     {files.length > 0 ? (
@@ -858,7 +841,7 @@ export default function InvoiceDropClient() {
                         <input name="jobReference" autoComplete="off" maxLength={100} placeholder="Your internal reference" />
                       </label>
                       <label className={styles.fieldWide}>
-                        <span>Note <em>Optional</em></span>
+                        <span>Anything we should know? <em>Optional</em></span>
                         <textarea name="note" rows={3} maxLength={600} placeholder="Add anything that will help us verify or match the invoice." />
                       </label>
                     </div>
@@ -913,5 +896,6 @@ export default function InvoiceDropClient() {
     </>
   );
 }
+
 
 

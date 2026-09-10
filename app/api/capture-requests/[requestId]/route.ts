@@ -5,6 +5,7 @@ import { retractCaptureRequestForOwner } from '../../../../lib/capture-finalizat
 import { toCaptureRequestStatusView } from '../../../../lib/capture-request-view';
 import {
   getCaptureRequestDetail,
+  sendCaptureCustomerMessage,
   type CaptureEventActor,
 } from '../../../../lib/capture-requests';
 import {
@@ -130,5 +131,31 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     }, { headers: responseHeaders() });
   } catch (error) {
     return cancellationError(error);
+  }
+}
+
+
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  const resolved = await getOwnerActor();
+  if (!resolved) return NextResponse.json({ ok: false, error: 'Owner sign-in is required.' }, { status: 401 });
+  if (!ownerAppCan(resolved.access, 'manage_finance')) {
+    return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can reply.' }, { status: 403 });
+  }
+  const body = await request.json().catch(() => null);
+  if (!cleanText(body?.message, 1000)) return NextResponse.json({ ok: false, error: 'Enter your reply.' }, { status: 400 });
+  try {
+    const capture = await getCaptureRequestDetail(cleanText(context.params.requestId, 80));
+    if (!capture || capture.ownerUserId !== resolved.access.ownerUserId
+      || (resolved.access.sessionKind === 'owner-app-user' && resolved.access.assetScope === 'selected'
+        && (!capture.assetId || !ownerAppCanAccessAsset(resolved.access, capture.assetId)))) {
+      return NextResponse.json({ ok: false, error: 'This capture request was not found.' }, { status: 404 });
+    }
+    const saved = await sendCaptureCustomerMessage(capture.id, {
+      actor: resolved.actor, action: 'reply', message: cleanText(body.message, 1000),
+      expectedVersion: body.version, expectedOwnerUserId: capture.ownerUserId, expectedAssetId: capture.assetId,
+    });
+    return NextResponse.json({ ok: true, request: toCaptureRequestStatusView(saved, { canRetract: capture.submissionChannel === 'owner_upload' }), message: 'Reply sent to Aim4price.' }, { headers: responseHeaders() });
+  } catch {
+    return NextResponse.json({ ok: false, error: 'This request has changed. Refresh the page and try again.' }, { status: 409 });
   }
 }

@@ -43,7 +43,7 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(client, /const completeContributionCode = \/\^A4P/);
   assert.match(client, /const codeStepComplete = contributionCodeScope === 'asset'[\s\S]*?contributionCodeScope === 'all'[\s\S]*?assetSearchAccepted !== null/);
   assert.match(client, /const stepOneComplete = lookupMode === 'code'[\s\S]*?completeContributionCode && codeStepComplete[\s\S]*?assetDescription\.trim\(\)\.length >= 3/);
-  assert.match(client, /const stepTwoComplete = files\.length === 1/);
+  assert.match(client, /const stepTwoComplete = files\.length > 0 && !validateSelectedFiles\(files\)/);
   assert.match(client, /disabled=\{currentStep === 1 \? !stepOneComplete : !stepTwoComplete\}/);
   assert.doesNotMatch(client, /styles\.formSection/);
   assert.match(client, /Invoice Drop Code/);
@@ -287,4 +287,5 @@ test('public route privately auto-links unique serial, VIN or owner-scoped broad
   assert.match(captureStore, /usageMetric:/);
   assert.doesNotMatch(searchRoute, /ownerUserId|assetId|assets:/);
 });
+
 

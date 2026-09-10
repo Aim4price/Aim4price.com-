@@ -1802,6 +1802,62 @@ function assertTransitionActor(
   }
 }
 
+/** Customer messages return work to admin; they never approve or create ledger records. */
+export async function sendCaptureCustomerMessage(
+  requestId: string,
+  input: {
+    actor: CaptureEventActor;
+    message: string;
+    action: 'reply' | 'correction';
+    expectedVersion: number;
+    expectedOwnerUserId: string | null;
+    expectedAssetId: string | null;
+  },
+): Promise<CaptureRequest> {
+  const id = asUuid(requestId, 'CAPTURE_REQUEST_NOT_FOUND');
+  const actor = normalizeActor(input.actor);
+  const message = cleanMultilineText(input.message, 1_000);
+  if (!message) throw new Error('CAPTURE_MESSAGE_REQUIRED');
+  return withTransaction(async (client) => {
+    await assertCaptureRequestNotFinalizing(client, id);
+    const existing = await getLockedRequest(client, id);
+    const owner = actor.actorType === 'owner' && actor.userId === existing.owner_user_id;
+    const dealer = actor.actorType === 'dealer'
+      && existing.submission_channel === 'dealer_upload'
+      && actor.userId === existing.submitted_by_user_id;
+    if (!actor.userId || (!owner && !dealer)
+      || existing.owner_user_id !== input.expectedOwnerUserId
+      || existing.asset_register_item_id !== input.expectedAssetId) {
+      throw new Error('CAPTURE_OWNER_SCOPE_FORBIDDEN');
+    }
+    if (!Number.isInteger(input.expectedVersion) || asNumber(existing.version) !== input.expectedVersion) {
+      throw new Error('CAPTURE_REQUEST_CHANGED');
+    }
+    const fromStatus = enumValue(existing.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
+    const correction = input.action === 'correction';
+    if ((correction && (!owner || fromStatus !== 'awaiting_owner'))
+      || (!correction && fromStatus !== 'needs_information')
+      || existing.final_invoice_id || existing.final_fuel_slip_id) {
+      throw new Error('CAPTURE_CUSTOMER_MESSAGE_STATUS_INVALID');
+    }
+    // Keep the verified payload untouched. Admin must review the customer's message.
+    const label = correction ? 'Correction requested' : 'Customer reply';
+    await client.query(
+      `update public.document_capture_requests
+          set status = 'in_progress', needs_information_reason = null,
+              requester_note = left(concat_ws(E'\\n\\n', $2, nullif(requester_note, '')), 5000),
+              resolved_at = null
+        where id = $1::uuid`,
+      [id, `${label}: ${message}`],
+    );
+    await insertEvent(client, {
+      requestId: id, eventType: 'note_added', actor,
+      fromStatus, toStatus: 'in_progress', note: `${label}: ${message}`,
+    });
+    return getRequestWithCounts(client, id);
+  });
+}
+
 export async function transitionCaptureRequest(
   requestId: string,
   toStatusInput: Exclude<CaptureRequestStatus, 'completed'>,
@@ -2499,3 +2555,4 @@ export async function revokeInvoiceDropCode(
     return true;
   });
 }
+

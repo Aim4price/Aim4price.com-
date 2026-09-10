@@ -311,3 +311,8 @@
   }
 }
 
+
+
+.replyField { display: grid; gap: 8px; font: inherit; }
+.replyField textarea { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #c9ddd2; border-radius: 12px; font: inherit; resize: vertical; }
+.modal { box-sizing: border-box; max-height: 90dvh; overflow-y: auto; }
