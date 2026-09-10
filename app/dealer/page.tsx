@@ -1,3 +1,5 @@
+import launcherStyles from '../../components/AppHomeLauncher.module.css';
+import AppHomeIcon from '../../components/AppHomeIcon';
 import AppNotificationsLink from '../../components/AppNotificationsLink';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -39,17 +41,19 @@ const TOOL_ICON_PATHS: Partial<Record<DealerAppCapability, string>> = {
 function ToolCard({ tool }: { tool: DealerHomeTool }) {
   return (
     <Link
-      className={styles.homeLaunchCard}
+      className={`${styles.homeLaunchCard} ${launcherStyles.card}`}
       href={tool.href}
       prefetch={false}
       aria-label={tool.count ? `${tool.label}, ${tool.count} new` : tool.label}
     >
-      <svg className={styles.homeLaunchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-        <path d={TOOL_ICON_PATHS[tool.capability]} />
-      </svg>
+      {tool.capability === 'overview' ? <AppHomeIcon name="overview" /> : (
+        <svg className={styles.homeLaunchIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+          <path d={TOOL_ICON_PATHS[tool.capability]} />
+        </svg>
+      )}
       <strong>{tool.label}</strong>
-      <span className={styles.homeLaunchEnd}>
-        {tool.count ? <span className={styles.homeLaunchBadge}>{tool.count > 99 ? '99+' : tool.count}</span> : null}
+      <span className={launcherStyles.end}>
+        {tool.count ? <span className={`${styles.homeLaunchBadge} ${launcherStyles.badge}`}>{tool.count > 99 ? '99+' : tool.count}</span> : null}
         <svg className={styles.homeLaunchChevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
           <path d="m9 5 7 7-7 7" />
         </svg>
@@ -102,16 +106,16 @@ export default async function DealerHome() {
 
   const allTools: DealerHomeTool[] = [
     {
-      label: 'Overview',
-      href: '/dealer/overview',
-      capability: 'overview',
-      count: openProblemCount,
-    },
-    {
       label: 'Notifications',
       href: '/dealer/notifications',
       capability: 'notifications',
       count: unreadMaintenanceCount,
+    },
+    {
+      label: 'Overview',
+      href: '/dealer/overview',
+      capability: 'overview',
+      count: openProblemCount,
     },
     {
       label: 'Leads',
@@ -143,7 +147,7 @@ export default async function DealerHome() {
   return (
     <main className={`${styles.shell} ${styles.homeShell}`}>
       <div className={styles.homeContent}>
-        <nav className={styles.homeLauncher} aria-label={middlemanMode ? 'Middleman tools' : 'Dealer tools'}>
+        <nav className={`${styles.homeLauncher} ${launcherStyles.list}`} aria-label={middlemanMode ? 'Middleman tools' : 'Dealer tools'}>
           {tools.map((tool) => tool.capability === 'notifications'
             ? <AppNotificationsLink key={tool.href} app="dealer" />
             : <ToolCard key={tool.href} tool={tool} />)}

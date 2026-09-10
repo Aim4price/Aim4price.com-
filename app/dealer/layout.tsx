@@ -1,3 +1,4 @@
+import AppNotificationsTopLink from '../../components/AppNotificationsTopLink';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
@@ -39,6 +40,7 @@ export default function DealerLayout({ children }: { children: ReactNode }) {
     <>
       <DealerSessionKeeper />
       <div className={styles.dealerLayout} data-app-shell="dealer">
+        <AppNotificationsTopLink root="/dealer" />
         <DealerNav />
         <div className={styles.patternPageContent}>{children}</div>
       </div>
