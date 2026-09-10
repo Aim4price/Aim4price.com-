@@ -3110,7 +3110,7 @@ export default function AccountClient({
         >
           <section
             ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.discoveryModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.discoveryModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="discovery-participation-modal-title"
@@ -3138,7 +3138,7 @@ export default function AccountClient({
 
               <ModalInlineNotice notice={actionModalNotice} />
 
-              <form className={styles.modalForm} onSubmit={handleProfileSubmit}>
+              <form className={`${styles.modalForm} ${styles.compactEditForm}`} onSubmit={handleProfileSubmit}>
                 <label
                   className={styles.toggleField}
                 >
@@ -3170,7 +3170,7 @@ export default function AccountClient({
                   </p>
                 </div>
 
-                <div className={styles.modalActions}>
+                <div className={styles.marketplaceActions}>
                   <button
                     type="button"
                     className={styles.ghostButton}
