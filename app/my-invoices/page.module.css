@@ -1862,9 +1862,10 @@
 }
 
 .costUploadModal {
+  box-sizing: border-box;
   width: min(100%, 860px);
-  max-height: none;
-  overflow: visible;
+  max-height: min(90dvh, calc(var(--website-visible-height, 100dvh) - 3rem));
+  overflow: hidden;
 }
 
 .costFormModal .modalHeader,
@@ -6925,3 +6926,181 @@
 .captureNoteField span { color: #173f31; font-weight: 600; }
 .captureNoteField small { font-weight: 400; }
 .captureNoteField textarea { box-sizing: border-box; width: 100%; min-height: 88px; padding: 12px; border: 1px solid #c9ddd2; border-radius: 12px; font: inherit; resize: vertical; }
+
+/* Keep long client directories inside the picker, with a visible green thumb. */
+.assetModal > .modalHeader,
+.assetModal > .modalDivider,
+.assetModal > .pickerToolbar,
+.assetModal > .modalFooter {
+  flex-shrink: 0;
+}
+
+.assetModal .assetList {
+  max-height: 24rem;
+  overflow-x: hidden;
+  padding: 0.2rem 0.65rem 0.6rem 0;
+  scrollbar-width: auto !important;
+  scrollbar-color: #487c68 #edf3ef !important;
+}
+
+.assetModal .assetList::-webkit-scrollbar {
+  width: 10px;
+}
+
+.assetModal .assetList::-webkit-scrollbar-track {
+  margin-block: 0.25rem;
+  border: 0;
+  border-radius: 999px;
+  background: #edf3ef;
+}
+
+.assetModal .assetList::-webkit-scrollbar-thumb {
+  min-height: 2.5rem;
+  border: 2px solid #edf3ef;
+  border-radius: 999px;
+  background: #487c68;
+}
+
+.assetModal .assetList::-webkit-scrollbar-thumb:hover {
+  background: #285943;
+}
+
+/* Upload controls and notes follow one full-width vertical flow. */
+.costUploadModal .modalHeader > div {
+  min-width: 0;
+}
+
+.costUploadModal .modalHeader h2 {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.costUploadModal .modalHeader p {
+  overflow-wrap: anywhere;
+}
+
+.costUploadModal .formModalScrollBody {
+  min-width: 0;
+  padding-bottom: 0.25rem;
+}
+
+.costUploadModal .uploadPanel {
+  min-width: 0;
+  gap: 1.1rem;
+  padding: 0.25rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.costUploadModal .uploadPanel h3 {
+  padding: 0;
+  border: 0;
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.costUploadModal .uploadBox {
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+  align-content: start;
+  gap: 0.65rem;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  padding: 1rem;
+}
+
+.costUploadModal .uploadButton {
+  box-sizing: border-box;
+  height: auto;
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.costUploadModal .uploadButton:focus-within {
+  outline: 2px solid #487c68;
+  outline-offset: 3px;
+}
+
+.costUploadModal .uploadCounter,
+.costUploadModal .uploadBoxReady .uploadCounter {
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #607286;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.costUploadModal .uploadBox > small {
+  color: #607286;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.costUploadModal .uploadBox p {
+  font-size: 0.9rem;
+  font-weight: 550;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.costUploadModal .captureNoteField {
+  min-width: 0;
+  margin-top: 0;
+  gap: 0.6rem;
+}
+
+.costUploadModal .captureNoteField > span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.6rem;
+  font-size: 0.95rem;
+}
+
+.costUploadModal .captureNoteField textarea {
+  min-height: 5.5rem;
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.costUploadModal .captureNoteField textarea:focus {
+  outline: 2px solid #487c68;
+  outline-offset: 2px;
+}
+
+.costUploadModal .uploadPanel > p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.costUploadModal .modalFooter {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (max-width: 520px) {
+  .costUploadModal {
+    max-height: min(92dvh, calc(var(--website-visible-height, 100dvh) - 2rem));
+  }
+
+  .costUploadModal .uploadBox {
+    padding: 0.85rem;
+  }
+}
