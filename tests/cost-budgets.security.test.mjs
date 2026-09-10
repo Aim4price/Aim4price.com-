@@ -138,7 +138,7 @@ test('owner Cost Ledger presents the four primary actions in the intended order'
   const expectedActions = [
     ['Add Cost', /onClick=\{\(\) => openAddInvoiceModal\(\)\}/],
     ['Budgets', /onClick=\{openBudgetManager\}/],
-    ['Contribution', /openInvoiceDropCodeManager\(\)/],
+    ['Invoice Drop', /openInvoiceDropCodeManager\(\)/],
     ['Download', /onClick=\{openDownloadModal\}/],
   ];
   let previousActionIndex = -1;
@@ -154,7 +154,7 @@ test('owner Cost Ledger presents the four primary actions in the intended order'
   assert.match(costClient, /costBudgets\.filter\(\(budget\) => budget\.status !== 'on_track'\)\.length/);
   assert.match(actionGrid, /budgetAttentionCount/);
   assert.match(actionGrid, /Add an asset first/);
-  assert.match(actionGrid, /Add a saved asset before creating a contribution code/);
+  assert.match(actionGrid, /Add a saved asset before creating an Invoice Drop code/);
   assert.doesNotMatch(costClient, /styles\.invoiceDropCodeBanner/);
 
   assert.match(
