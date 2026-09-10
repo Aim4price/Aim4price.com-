@@ -15,8 +15,10 @@ export async function GET() {
   if (!access) return json({ ok:false,error:'Please sign in to your app.' },401);
   try {
     const device = await getPushDevice(who,cookies().get(`aim4price_push_${who.app}`)?.value);
-    return json({ ok:true, app:who.app, categories:access.categories, preferences:await memberPushPreferences(who), accountSettings:await accountPushPreferences(who.app,who.accountId),
+    const response = json({ ok:true, app:who.app, categories:access.categories, preferences:await memberPushPreferences(who), accountSettings:await accountPushPreferences(who.app,who.accountId),
       enabled: Boolean(device?.enabled), deviceId:device?.id ?? null, publicKey:(await pushKeys()).public_key });
+    if (device?.enabled) response.cookies.set(`aim4price_push_${who.app}`,device.id,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:60*60*24*365});
+    return response;
   } catch { return json({ ok:false,error:'Could not load notification settings. Please try again.' },503); }
 }
 export async function POST(request: Request) {
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
       const subscription = validatePushSubscription(body.subscription);
       const deviceId = await registerPushDevice(who,subscription);
       const response = json({ok:true,deviceId});
-      response.cookies.set(cookieName,deviceId,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:60*60*24*30});
+      response.cookies.set(cookieName,deviceId,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'strict',path:'/',maxAge:60*60*24*365});
       return response;
     } else if (body.action === 'disable') {
       const device = await getPushDevice(who,id);
@@ -57,3 +59,4 @@ export async function POST(request: Request) {
     return json({ok:true});
   } catch { return json({ok:false,error:'Could not save notification settings. Please try again.'},400); }
 }
+

@@ -8,8 +8,9 @@ import local from './AppNotifications.module.css';
 export default function AppNotificationsClient({app}:{app:Exclude<PushApp,'owner'>}) {
   const [items,setItems]=useState<PushEvent[]>([]),[view,setView]=useState<'active'|'history'>('active');
   const [category,setCategory]=useState('all'),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
-  const requestVersion=useRef(0);
+  const requestVersion=useRef(0),mutationPending=useRef(false);
   const load=useCallback(async()=>{
+    if(mutationPending.current)return;
     const version=++requestVersion.current;
     try {
       const r=await fetch('/api/app-notifications/inbox',{cache:'no-store',credentials:'include',headers:{'x-aim4price-client-realm':app}});
@@ -27,7 +28,7 @@ export default function AppNotificationsClient({app}:{app:Exclude<PushApp,'owner
     return()=>{requestVersion.current++;clearInterval(timer);window.removeEventListener('focus',refresh);document.removeEventListener('visibilitychange',refresh);};
   },[load]);
   async function mark(ids:string[]) {
-    if(busy)return;setBusy(true);setError('');requestVersion.current++;
+    if(busy)return;mutationPending.current=true;setBusy(true);setError('');requestVersion.current++;
     try{
       for(let i=0;i<ids.length;i+=250){
         const r=await fetch('/api/app-notifications/inbox',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json','x-aim4price-client-realm':app},body:JSON.stringify({action:'mark_read',notificationIds:ids.slice(i,i+250)})});
@@ -36,7 +37,7 @@ export default function AppNotificationsClient({app}:{app:Exclude<PushApp,'owner
       setItems(current=>current.map(item=>ids.includes(item.id)?{...item,isRead:true}:item));
       window.dispatchEvent(new Event('aim4price-notifications-updated'));
     }catch(e){setError(e instanceof Error?e.message:'Could not update notifications.');}
-    finally{setBusy(false);}
+    finally{mutationPending.current=false;setBusy(false);}
   }
   const active=items.filter(item=>!item.isRead),history=items.filter(item=>item.isRead);
   const visible=(view==='active'?active:history).filter(item=>category==='all'||item.category===category);

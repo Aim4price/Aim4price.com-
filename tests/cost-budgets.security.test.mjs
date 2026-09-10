@@ -11,7 +11,7 @@ const itemRoute = read('app/api/my-invoices/budgets/[budgetId]/route.ts');
 const migration = read('database/migrations/85-cost-budget-tracking.sql');
 const notifications = read('lib/notifications.ts');
 const inbox = read('lib/notification-inbox.ts');
-const ownerNotificationsRoute = read('app/api/owner-app/notifications/route.ts');
+const ownerNotificationsRoute = read('lib/owner-notification-inbox.ts');
 const ownerNotificationsClient = read('app/owner-app/notifications/owner-notifications-client.tsx');
 const appHeader = read('components/AppHeader.tsx');
 const costClient = read('app/my-invoices/my-invoices-client.tsx');
@@ -28,9 +28,9 @@ test('budget API is finance-authorized and always uses the authenticated owner s
 
   for (const route of [collectionRoute, itemRoute]) {
     assert.match(route, /getOwnerAppAccess/);
-    assert.match(route, /ownerAppCan\(access, 'manage_finance'\)/);
+    assert.match(route, /ownerAppCan\(access,\s*'manage_finance'\)/);
     assert.match(route, /ownerAppCanAccessAsset/);
-    assert.match(route, /access\.assetScope === 'all'/);
+    assert.match(route, /access\.assetScope\s*===\s*'all'/);
     assert.match(route, /access\.ownerUserId/);
   }
 
@@ -95,9 +95,9 @@ test('threshold alerts are stable, revision-aware and permission scoped', () => 
   );
   assert.doesNotMatch(actionRequired, /cost_budget|costBudget/i);
 
-  assert.match(ownerNotificationsRoute, /ownerAppCan\(access, 'manage_finance'\)/);
-  assert.match(ownerNotificationsRoute, /access\.assetScope === 'all'/);
-  assert.match(ownerNotificationsRoute, /item\.category === 'cost_budget'/);
+  assert.match(ownerNotificationsRoute, /ownerAppCan\(access,\s*'manage_finance'\)/);
+  assert.match(ownerNotificationsRoute, /access\.assetScope\s*===\s*'all'/);
+  assert.match(ownerNotificationsRoute, /includeCostBudgetNotifications:ownerAppCan\(access,'manage_finance'\)&&access\.assetScope==='all'/);
   assert.match(ownerNotificationsClient, /item\.category === 'cost_budget'/);
   assert.match(appHeader, /'cost_budget'/);
 });
@@ -340,4 +340,5 @@ test('warning-level budget cards and notifications use the red priority treatmen
   assert.match(budgetNotificationBuilder, /tone: 'warning'/);
   assert.match(budgetNotificationBuilder, /priority: true/);
 });
+
 
