@@ -38,6 +38,8 @@ export type HeaderNotificationCategory =
   | 'maintenance'
   | 'dealer_schedule'
   | 'dealer_cost'
+  | 'licensing'
+  | 'listings'
   | 'cost_budget'
   | 'capture'
   | 'dealer_correction'
@@ -63,6 +65,7 @@ export type HeaderNotificationItem = {
   dealerCostInvoiceId?: string;
   dealerCostAction?: 'store' | 'delete';
   captureRequestId?: string;
+  actionRequired?: boolean;
   priority?: boolean;
 };
 
@@ -747,6 +750,7 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
 
       return {
         id: `asset-discovery-owner:${enquiry.id}:${enquiry.updatedAtIso}`,
+        actionRequired: true,
         category: 'asset_discovery',
         tone: 'warning',
         title: licensingOffer ? 'Licence renewal help offered' : '#1 priority · Discovery enquiry',
@@ -781,6 +785,7 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
 
       return {
         id: `asset-discovery-requester:${enquiry.id}:${enquiry.status}:${enquiry.updatedAtIso}`,
+        actionRequired: false,
         category: 'asset_discovery',
         tone: approved ? 'success' : 'warning',
         title: licensingOffer
@@ -958,3 +963,4 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
     )
     .slice(0, MAX_COMPUTED_NOTIFICATIONS);
 }
+

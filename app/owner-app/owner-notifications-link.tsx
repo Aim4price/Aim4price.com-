@@ -20,6 +20,7 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
       const response = await fetch('/api/owner-app/notifications', {
         credentials: 'include',
         cache: 'no-store',
+        headers: { 'x-aim4price-client-realm': 'owner' },
         signal,
       });
       const payload = await response.json().catch(() => null) as NotificationsResponse | null;
@@ -69,3 +70,4 @@ export default function OwnerNotificationsLink({ viewerId }: { viewerId: string 
     </Link>
   );
 }
+

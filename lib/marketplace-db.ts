@@ -1,3 +1,4 @@
+import { ensureListingAlertSchema } from './listing-alert-schema';
 import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from './db';
 import { ensureAccountProfileColumns } from './account-profile';
@@ -353,6 +354,7 @@ export async function ensureMarketplaceColumns(): Promise<void> {
       on marketplace_listings(status, updated_at desc);
   `);
 
+  await ensureListingAlertSchema();
   marketplaceColumnsEnsured = true;
 }
 
@@ -1180,4 +1182,5 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     exposeContact: true,
   });
 }
+
 

@@ -79,7 +79,7 @@ test('whole-umbrella access is enforced for Owner App users and Field Managers',
     read('app/account/app-access-management-client.tsx'),
     read('app/api/owner-app/assets/[assetId]/route.ts'),
     read('app/api/owner-app/assets/[assetId]/actions/route.ts'),
-    read('app/api/owner-app/notifications/route.ts'),
+    read('lib/owner-notification-inbox.ts'),
     read('database/migrations/69-app-umbrella-access.sql'),
   ]);
 
@@ -89,7 +89,7 @@ test('whole-umbrella access is enforced for Owner App users and Field Managers',
   assert.match(ownerAccess, /ownerAppCanAccessAsset/);
   assert.match(ownerDetail, /ownerAppCanAccessAsset\(access, params\.assetId\)/);
   assert.match(ownerActions, /ownerAppCanAccessAsset\(access, params\.assetId\)/);
-  assert.match(ownerNotifications, /allowedAssetIds\.has\(item\.assetId\)/);
+  assert.match(ownerNotifications, /access\.accessibleAssetIds\.includes\(item\.assetId\)/);
 
   assert.match(fieldManager, /field_manager_group_access/);
   assert.match(fieldManager, /inner join public\.asset_group_members member/);
@@ -101,3 +101,4 @@ test('whole-umbrella access is enforced for Owner App users and Field Managers',
   assert.match(accessUi, /Choosing an umbrella includes its current and future linked assets/);
   assert.match(accessUi, /Owner \/ Admin users always have access to every umbrella and asset/);
 });
+

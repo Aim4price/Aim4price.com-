@@ -72,6 +72,7 @@ function inboxStateKey(input: Pick<ListNotificationInboxInput, 'userId' | 'viewe
 }
 
 function isActionRequired(item: HeaderNotificationItem): boolean {
+  if (typeof item.actionRequired === 'boolean') return item.actionRequired;
   return Boolean(
     item.assetDiscoveryEnquiryId
     || item.marketplaceSourcingRequestId
@@ -407,3 +408,4 @@ export async function updateNotificationInboxState(input: {
     [stateKey, notificationIds],
   );
 }
+

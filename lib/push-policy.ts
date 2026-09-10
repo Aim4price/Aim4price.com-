@@ -6,17 +6,18 @@ export const PUSH_APPS = {
 export type PushApp = keyof typeof PUSH_APPS;
 export const PUSH_CATEGORIES = {
   maintenance: 'Maintenance', licensing: 'License renewals', enquiries: 'Enquiries & leads',
-  approvals: 'Approvals needed', assignments: 'Assigned work',
+  approvals: 'Approvals needed', assignments: 'Assigned work', costs: 'Cost warnings', listings: 'Matching listings',
 } as const;
 export type PushCategory = keyof typeof PUSH_CATEGORIES;
 export type PushPreferences = Record<PushCategory, boolean>;
-export const DEFAULT_PUSH_PREFERENCES: PushPreferences = { maintenance: true, licensing: true, enquiries: true, approvals: true, assignments: true };
+export const DEFAULT_PUSH_PREFERENCES: PushPreferences = { maintenance: true, licensing: true, enquiries: true, approvals: true, assignments: true, costs: true, listings: true };
 export function parsePushPreferences(value: unknown): PushPreferences {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Choose your notifications.');
   const input = value as Record<string, unknown>;
   if (Object.keys(input).some(key => !(key in DEFAULT_PUSH_PREFERENCES))) throw new Error('Unknown notification setting.');
   const result = { ...DEFAULT_PUSH_PREFERENCES };
   for (const key of Object.keys(result) as PushCategory[]) {
+    if (!(key in input) && (key === 'costs' || key === 'listings')) continue;
     if (typeof input[key] !== 'boolean') throw new Error('Choose your notifications.');
     result[key] = input[key] as boolean;
   }
@@ -53,3 +54,4 @@ export function combinePushPreferences(member: PushPreferences, account: Account
   for (const key of Object.keys(result) as PushCategory[]) result[key] = account.enabled && account.preferences[key] && member[key];
   return result;
 }
+

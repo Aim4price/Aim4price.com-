@@ -4,6 +4,18 @@ on:
   pull_request:
     paths:
       - 'lib/push-*.ts'
+      - 'lib/listing-alert*.ts'
+      - 'lib/app-notification*.ts'
+      - 'lib/owner-notification-inbox.ts'
+      - 'lib/notification-delivery-plan.ts'
+      - 'components/AppNotification*'
+      - 'components/AppEnquiryDecision.tsx'
+      - 'components/ListingAlertSettings*'
+      - 'app/dealer/page.tsx'
+      - 'app/middleman/page.tsx'
+      - 'app/marketplace/marketplace-client.tsx'
+      - 'lib/marketplace-db.ts'
+      - 'tests/app-notification-expansion.test.cjs'
       - 'lib/notification-request-origin.ts'
       - 'lib/desktop-notification-access.ts'
       - 'components/NotificationSettingsModal*'
@@ -98,3 +110,4 @@ jobs:
 
       - name: Validate phone notifications
         run: npm run test:phone-notifications
+

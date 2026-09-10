@@ -6,15 +6,15 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('Owner notifications stay account-wide but read state follows the active app user', async () => {
   const [route, access, inbox] = await Promise.all([
-    read('app/api/owner-app/notifications/route.ts'),
+    read('lib/owner-notification-inbox.ts'),
     read('lib/owner-app-access.ts'),
     read('lib/notification-inbox.ts'),
   ]);
 
   assert.match(access, /viewerKey: ownerAppSession \? `user:\$\{session\.ownerApp\.ownerAppUserId\}` : `account:\$\{session\.user\.id\}`/);
-  assert.match(route, /userId: access\.ownerUserId/);
-  assert.match(route, /viewerKey: access\.viewerKey/);
-  assert.match(route, /userId: access\.viewerKey,[\s\S]*?action,[\s\S]*?notificationIds/);
+  assert.match(route, /userId:\s*access\.ownerUserId/);
+  assert.match(route, /viewerKey:\s*access\.viewerKey/);
+  assert.match(route, /userId:\s*access\.viewerKey,[\s\S]*?action,[\s\S]*?notificationIds/);
   assert.match(inbox, /listComputedHeaderNotifications\(\{[\s\S]*?userId: input\.userId,[\s\S]*?accountType: input\.accountType/);
   assert.match(inbox, /const stateKey = inboxStateKey\(input\)/);
 });
@@ -33,9 +33,9 @@ test('Dealer notifications are dealership-wide with per-staff clearing and assig
   assert.match(route, /`dealer-staff:\$\{dealerAppSession\.staffId\}`/);
   assert.match(route, /`account:\$\{session\.user\.id\}`/);
   assert.match(route, /staffId: dealerAppSession\?\.staffId \?\? null/);
-  assert.match(page, /const activeStaffId = isDealerAppSession\(session\) \? session\.dealerApp\.staffId : null/);
-  assert.match(page, /listDealerMaintenanceNotificationsForViewer/);
-  assert.match(page, /viewerKey: activeStaffId[\s\S]*?`dealer-staff:\$\{activeStaffId\}`/);
+  assert.match(page, /currentPushIdentity\(\)/);
+  assert.match(page, /resolvePushAccess\(who\)/);
+  assert.match(page, /AppNotificationsClient app="dealer"/);
   assert.match(home, /const activeStaffId = isDealerAppSession\(session\) \? session\.dealerApp\.staffId : null/);
   assert.match(home, /listDealerMaintenanceNotificationsForViewer/);
   assert.match(inbox, /listDealerMaintenanceNotifications\(input\.dealerUserId\)/);
@@ -83,3 +83,4 @@ test('Field Manager notifications are shared operationally and match the Owner A
   assert.match(home, /\/field-manager\/notifications/);
   assert.match(home, /notificationCount/);
 });
+

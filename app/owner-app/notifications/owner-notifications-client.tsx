@@ -9,7 +9,7 @@ type NotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 type NotificationState = 'needs_action' | 'new' | 'history';
 type NotificationView = 'active' | 'history';
 type InboxAction = 'mark_read' | 'archive' | 'resolve';
-type NotificationCategoryFilter = 'all' | 'messages' | 'maintenance' | 'costs' | 'leads' | 'notes' | 'fuel' | 'assets' | 'discovery';
+type NotificationCategoryFilter = 'all' | 'messages' | 'maintenance' | 'costs' | 'leads' | 'notes' | 'fuel' | 'assets' | 'discovery' | 'licensing' | 'listings';
 
 type Notification = {
   id: string;
@@ -53,6 +53,8 @@ const CATEGORY_FILTERS: Array<{ value: NotificationCategoryFilter; label: string
   { value: 'fuel', label: 'Fuel' },
   { value: 'assets', label: 'Assets' },
   { value: 'discovery', label: 'Discovery' },
+  { value: 'licensing', label: 'Licence renewals' },
+  { value: 'listings', label: 'Matching listings' },
 ];
 
 function destination(item: Notification): string {
@@ -91,6 +93,7 @@ function formatNotificationTime(value: string): string {
 
 function matchesCategory(item: Notification, filter: NotificationCategoryFilter): boolean {
   if (filter === 'all') return true;
+  if (filter === 'licensing' || filter === 'listings') return item.category === filter;
   if (filter === 'messages') return item.category === 'admin_message';
   if (filter === 'maintenance') return item.category === 'maintenance' || item.category === 'dealer_schedule';
   if (filter === 'costs') {
@@ -109,7 +112,7 @@ async function updateInboxState(action: InboxAction, notificationIds: string[]):
   const response = await fetch('/api/owner-app/notifications', {
     method: 'PATCH',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'x-aim4price-client-realm': 'owner' },
     body: JSON.stringify({ action, notificationIds }),
   });
   const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
@@ -122,6 +125,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
   const [items, setItems] = useState<Notification[]>([]);
   const [activeView, setActiveView] = useState<NotificationView>('active');
   const [categoryFilter, setCategoryFilter] = useState<NotificationCategoryFilter>('all');
+  useEffect(() => { if (new URLSearchParams(window.location.search).get('category') === 'listings') setCategoryFilter('listings'); }, []);
   const [loading, setLoading] = useState(true);
   const [updatingInbox, setUpdatingInbox] = useState(false);
   const [error, setError] = useState('');
@@ -147,6 +151,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
         const response = await fetch('/api/owner-app/notifications', {
           credentials: 'include',
           cache: 'no-store',
+        headers: { 'x-aim4price-client-realm': 'owner' },
           signal: controller.signal,
         });
         const payload = await response.json().catch(() => null) as NotificationsResponse | null;
@@ -252,7 +257,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
       const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correctionId)}`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-aim4price-client-realm': 'owner' },
         body: JSON.stringify({ decision }),
       });
       const payload = await response.json().catch(() => null) as {
@@ -302,7 +307,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
       const response = await fetch(`/api/dealer-maintenance-schedule-proposals/${encodeURIComponent(proposalId)}`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-aim4price-client-realm': 'owner' },
         body: JSON.stringify({ decision }),
       });
       const payload = await response.json().catch(() => null) as {
@@ -654,3 +659,4 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
     </>
   );
 }
+

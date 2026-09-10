@@ -1,0 +1,6 @@
+.filter { display: grid; gap: .45rem; color: #174c3d; font-weight: 600; }
+.filter select, .actions a, .actions button, .error button { font: inherit; border: 1px solid #c4ded2; border-radius: .85rem; padding: .7rem 1rem; background: #f1faf5; color: #174c3d; min-height: 44px; }
+.actions { display: grid; gap: .6rem; margin-top: .85rem; }
+.actions a, .actions button { text-align: center; text-decoration: none; cursor: pointer; }
+.actions button:disabled { opacity: .6; cursor: wait; }
+.error { color: #8f3333; }

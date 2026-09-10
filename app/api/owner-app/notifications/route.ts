@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import {
-  listNotificationInbox,
-  updateNotificationInboxState,
-  type NotificationInboxAction,
-} from '../../../../lib/notification-inbox';
-import { getOwnerAppAccess, ownerAppCan } from '../../../../lib/owner-app-access';
+import { isTrustedNotificationRequest } from '../../../../lib/notification-request-origin';
+import { listOwnerNotificationInbox, markOwnerNotificationsRead } from '../../../../lib/owner-notification-inbox';
+import type { NotificationInboxAction } from '../../../../lib/notification-inbox';
+import { getOwnerAppAccess } from '../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,25 +12,13 @@ export async function GET() {
   if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
 
   try {
-    const includeCostBudgetNotifications = ownerAppCan(access, 'manage_finance')
-      && access.assetScope === 'all';
-    const inbox = await listNotificationInbox({
-      userId: access.ownerUserId,
-      accountType: 'owner',
-      viewerKey: access.viewerKey,
-      includeCostBudgetNotifications,
-    });
-    const allowedAssetIds = access.assetScope === 'selected' ? new Set(access.accessibleAssetIds) : null;
-    const notifications = inbox.filter((item) => {
-      if (item.category === 'cost_budget' && !includeCostBudgetNotifications) return false;
-      return !allowedAssetIds || !item.assetId || allowedAssetIds.has(item.assetId);
-    });
+    const notifications = await listOwnerNotificationInbox(access);
     return NextResponse.json({
       ok: true,
       notifications,
       needsActionCount: notifications.filter((item) => item.state === 'needs_action').length,
       unreadCount: notifications.filter((item) => item.state === 'new').length,
-    });
+    }, { headers: { 'Cache-Control': 'private, no-store' } });
   } catch (error) {
     console.error('Owner App notifications GET failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to load notifications.' }, { status: 500 });
@@ -40,6 +26,7 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  if (!isTrustedNotificationRequest(request)) return NextResponse.json({ ok: false, error: 'Open notifications from Aim4price.' }, { status: 403 });
   const access = await getOwnerAppAccess();
   if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
 
@@ -58,11 +45,7 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ ok: false, error: 'A valid notification action is required.' }, { status: 400 });
     }
 
-    await updateNotificationInboxState({
-      userId: access.viewerKey,
-      action,
-      notificationIds,
-    });
+    await markOwnerNotificationsRead(access, action, notificationIds);
 
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -70,3 +53,4 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: false, error: 'Failed to update notifications.' }, { status: 500 });
   }
 }
+
