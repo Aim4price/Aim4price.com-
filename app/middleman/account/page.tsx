@@ -7,5 +7,5 @@ export default async function AppAccountPage() {
   const who = await currentPushIdentity();
   if (!who || who.app !== 'middleman') redirect('/middleman/login');
   return <main className={styles.panel}><img className={styles.logo} src="/brand/aim4price-mark-white.png" alt="Aim4price" /><h1>Account</h1>
-    <Link className={styles.button} href="/middleman/account/notifications">Notifications</Link></main>;
+    <Link className={styles.button} href="/middleman/notifications">Notifications</Link></main>;
 }

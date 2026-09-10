@@ -177,6 +177,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 type QuickActionIconName =
+  | "notifications"
   | "business"
   | "registers"
   | "claim"
@@ -266,7 +267,9 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
 
   return (
     <span className={styles.quickActionIcon} aria-hidden="true">
-      {name === "business" ? (
+      {name === "notifications" ? (
+        <svg {...svgProps}><path {...strokeProps} d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path {...strokeProps} d="M10 21h4M12 2V1" /></svg>
+      ) : name === "business" ? (
         <svg {...svgProps}>
           <path
             d="M5.25 20.25h13.5V8.2L12 4.35 5.25 8.2v12.05Z"
@@ -2345,9 +2348,10 @@ export default function AccountClient({
                 </div>
 
                 <div className={styles.quickActionList}>
-                  {isOwnerAccount || isDealerAccount ? <a className={styles.quickActionButton} href={isOwnerAccount ? '/owner-app/account/notifications' : isMiddlemanAccount ? '/middleman/account/notifications' : '/dealer/account/notifications'}>
+                  {isOwnerAccount || isDealerAccount ? <Link className={styles.quickActionButton} href="/account/notifications">
+                    <QuickActionIcon name="notifications" />
                     <strong>Notifications</strong>
-                  </a> : null}
+                  </Link> : null}
                   <button
                     type="button"
                     className={styles.quickActionButton}
@@ -3406,4 +3410,3 @@ export default function AccountClient({
     </main>
   );
 }
-
