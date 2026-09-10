@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - 'lib/push-*.ts'
+      - 'lib/desktop-notification-access.ts'
+      - 'components/NotificationSettingsModal*'
+      - 'app/api/account/notifications/**'
+      - 'app/middleman/notifications/**'
       - 'components/PhoneNotificationSettings*'
       - 'app/api/app-notifications/**'
       - 'public/*sw.js'

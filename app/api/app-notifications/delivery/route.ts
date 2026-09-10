@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { currentAppRealm } from '../../../../lib/app-realm-server';
 import { currentPushIdentity, resolvePushAccess } from '../../../../lib/push-access';
-import { ensurePushTables, pushPreferences, type PushIdentity } from '../../../../lib/push-store';
+import { ensurePushTables, pushPreferences, accountPushPreferences, type PushIdentity } from '../../../../lib/push-store';
 import { getDb } from '../../../../lib/db';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,7 +23,7 @@ export async function GET() {
     const signedIn = await currentPushIdentity();
     if (signedIn && (signedIn.accountId !== who.accountId || signedIn.memberId !== who.memberId || signedIn.version !== who.version)) return reply({ enabled: false });
     const access = await resolvePushAccess(who);
-    if (!access) return reply({ enabled: false });
+    if (!access || !(await accountPushPreferences(who.app,who.accountId)).enabled) return reply({ enabled: false });
     return reply({ app, enabled:true, deviceId:id, categories:access.categories, preferences:await pushPreferences(who) });
   } catch { return reply({ enabled: false }); }
 }

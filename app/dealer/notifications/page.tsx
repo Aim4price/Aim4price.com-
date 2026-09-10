@@ -36,9 +36,7 @@ export default async function DealerNotificationsPage() {
 
   return (
     <main className={`${styles.module} ${styles.notificationOwnerPage}`}>
-      <a className={styles.navButton} href="/dealer/account/notifications">Notification settings</a>
       <DealerMaintenanceNotificationsClient notifications={notifications} />
     </main>
   );
 }
-

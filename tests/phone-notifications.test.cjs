@@ -123,7 +123,7 @@ test('delivery capability supports session expiry but blocks a different signed-
       'next/headers':{cookies:()=>({get:()=>({value:'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa'})})},
       '../../../../lib/app-realm-server':{currentAppRealm:async()=>'owner'},
       '../../../../lib/push-access':{currentPushIdentity:async()=>signedIn,resolvePushAccess:async()=>access},
-      '../../../../lib/push-store':{ensurePushTables:async()=>{},pushPreferences:async()=>({maintenance:true})},
+      '../../../../lib/push-store':{ensurePushTables:async()=>{},accountPushPreferences:async()=>({enabled:true}),pushPreferences:async()=>({maintenance:true})},
       '../../../../lib/db':{getDb:()=>({query:async()=>({rows:[{account_id:'account',member_id:'member',version:1}]})})},
     });return (await route.GET()).json();
   }
@@ -152,4 +152,55 @@ test('owner reminders link to the exact maintenance record and exclude inaccessi
   const result=await events.listPushEvents(who,{categories:['maintenance'],allowedAssets:new Set(['asset']),admin:false});
   assert.equal(result.length,1);
   assert.equal(result[0].href,'/owner-app/assets/asset/maintenance?maintenanceId=record');
+});
+
+test('desktop account limits combine with personal choices without overwriting either',()=>{
+  const member={...policy.DEFAULT_PUSH_PREFERENCES,licensing:false};
+  const account={enabled:true,preferences:{...policy.DEFAULT_PUSH_PREFERENCES,maintenance:false}};
+  const combined=policy.combinePushPreferences(member,account);
+  assert.equal(combined.maintenance,false);assert.equal(combined.licensing,false);assert.equal(combined.enquiries,true);
+  assert.ok(Object.values(policy.combinePushPreferences(member,{...account,enabled:false})).every(v=>v===false));
+  assert.equal(member.maintenance,true);assert.equal(account.preferences.licensing,true);
+});
+function desktopAccessFixture({realm=null,session={user:{id:'desktop-account'}},profile={accountStatus:'active',accountType:'owner'}}={}) {
+  return load('lib/desktop-notification-access.ts',{
+    './app-realm-server':{currentAppRealm:async()=>realm},
+    './auth-session':{getServerSession:async()=>session,isDealerAppSession:s=>s.app==='dealer',isOwnerAppSession:s=>s.app==='owner'},
+    './account-profile':{getAccountProfile:async()=>profile},
+    './middleman-account':{isMiddlemanAccountSubtype:x=>x==='middleman'},
+  });
+}
+test('desktop policy requires website credentials and an active supported account',async()=>{
+  for(const realm of ['owner','dealer','middleman','field']) assert.equal(await desktopAccessFixture({realm}).desktopNotificationAccount(),null);
+  assert.equal(await desktopAccessFixture({session:null}).desktopNotificationAccount(),null);
+  assert.equal(await desktopAccessFixture({session:{user:{id:'app-account'},app:'owner'}}).desktopNotificationAccount(),null);
+  assert.equal(await desktopAccessFixture({profile:{accountStatus:'suspended',accountType:'owner'}}).desktopNotificationAccount(),null);
+  const owner=await desktopAccessFixture().desktopNotificationAccount();assert.equal(owner.accountId,'desktop-account');assert.equal(owner.app,'owner');
+  const middleman=await desktopAccessFixture({profile:{accountStatus:'active',accountType:'dealer',accountSubtype:'middleman'}}).desktopNotificationAccount();
+  assert.equal(middleman.app,'middleman');assert.deepEqual(middleman.categories,['enquiries']);
+});
+test('desktop settings persist only for the authenticated account; CSRF and identity injection fail',async()=>{
+  const saved=[];
+  const route=load('app/api/account/notifications/route.ts',{
+    '../../../../lib/desktop-notification-access':{desktopNotificationAccount:async()=>({accountId:'own-account',app:'owner',categories:['maintenance']})},
+    '../../../../lib/push-store':{saveAccountPushPreferences:async(...args)=>saved.push(args),accountPushPreferences:async()=>({enabled:true,preferences:policy.DEFAULT_PUSH_PREFERENCES})},
+  });
+  const send=(body,origin='https://www.aim4price.com')=>route.POST(new Request('https://www.aim4price.com/api/account/notifications',{method:'POST',headers:{origin},body:JSON.stringify(body)}));
+  const settings={enabled:false,preferences:policy.DEFAULT_PUSH_PREFERENCES};
+  assert.equal((await send(settings,'https://evil.test')).status,403);
+  assert.equal((await send({...settings,accountId:'other'})).status,400);
+  assert.equal((await send({...settings,enabled:'false'})).status,400);
+  assert.equal(saved.length,0);
+  assert.equal((await send(settings)).status,200);assert.deepEqual(saved,[['owner','own-account',settings]]);
+});
+test('account master switch blocks even an uncategorized test push at display time',async()=>{
+  const route=load('app/api/app-notifications/delivery/route.ts',{
+    'next/headers':{cookies:()=>({get:()=>({value:'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa'})})},
+    '../../../../lib/app-realm-server':{currentAppRealm:async()=>'owner'},
+    '../../../../lib/push-access':{currentPushIdentity:async()=>null,resolvePushAccess:async()=>({categories:['maintenance']})},
+    '../../../../lib/push-store':{ensurePushTables:async()=>{},accountPushPreferences:async()=>({enabled:false}),pushPreferences:async()=>policy.DEFAULT_PUSH_PREFERENCES},
+    '../../../../lib/db':{getDb:()=>({query:async()=>({rows:[{account_id:'account',member_id:'member',version:1}]})})},
+  });
+  const state=await (await route.GET()).json();assert.equal(state.enabled,false);
+  const worker=workerFixture(state);await worker.push({title:'Old test',body:'Private'});assert.equal(worker.shown.length,0);
 });

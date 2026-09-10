@@ -1,13 +1,14 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { PUSH_APPS, PUSH_CATEGORIES, DEFAULT_PUSH_PREFERENCES, type PushApp, type PushCategory, type PushPreferences } from '../lib/push-policy';
+import { PUSH_APPS, PUSH_CATEGORIES, DEFAULT_PUSH_PREFERENCES, type PushApp, type PushCategory, type PushPreferences, type AccountPushPreferences } from '../lib/push-policy';
 import styles from './PhoneNotificationSettings.module.css';
-export default function PhoneNotificationSettings({ app }: { app: PushApp }) {
+export default function PhoneNotificationSettings({ app, modal = false }: { app: PushApp; modal?: boolean }) {
   const config = PUSH_APPS[app];
   const [preferences,setPreferences] = useState<PushPreferences>(DEFAULT_PUSH_PREFERENCES);
   const [categories,setCategories] = useState<PushCategory[]>([]);
   const [enabled,setEnabled] = useState(false);
+  const [accountSettings,setAccountSettings] = useState<AccountPushPreferences>({enabled:true,preferences:DEFAULT_PUSH_PREFERENCES});
   const [publicKey,setPublicKey] = useState('');
   const [loading,setLoading] = useState(true);
   const [busy,setBusy] = useState(false);
@@ -25,7 +26,7 @@ export default function PhoneNotificationSettings({ app }: { app: PushApp }) {
     setLoading(true);setError('');
     try {
       const data = await api();
-      setPreferences(data.preferences);setCategories(data.categories);setPublicKey(data.publicKey);
+      setPreferences(data.preferences);setAccountSettings(data.accountSettings);setCategories(data.categories);setPublicKey(data.publicKey);
       let active = false;
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         const registration = await navigator.serviceWorker.getRegistration(config.root);
@@ -76,26 +77,26 @@ export default function PhoneNotificationSettings({ app }: { app: PushApp }) {
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }
   async function test(){setBusy(true);setError('');setMessage('');try{await api({action:'test'});setMessage('Test notification sent.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
-  return <section className={styles.panel} aria-busy={loading||busy}>
-    <img className={styles.logo} src="/brand/aim4price-mark-white.png" alt="Aim4price" />
-    <h1>Notifications</h1>
+  return <section className={modal?styles.modalPanel:styles.panel} aria-busy={loading||busy}>
+    {!modal ? <><img className={styles.logo} src="/brand/aim4price-mark-white.png" alt="Aim4price" /><h1>Notifications</h1></> : null}
     <p className={styles.intro}>Choose your phone notifications.</p>
     {loading?<p role="status">Loading notifications…</p>:<>
-      <button type="button" role="switch" aria-checked={enabled} className={styles.row} disabled={busy||!publicKey||(!enabled&&support!=='ready')} onClick={()=>void togglePhone()}>
+      <button type="button" role="switch" aria-checked={enabled} className={styles.row} disabled={busy||!publicKey||(!enabled&&(support!=='ready'||!accountSettings.enabled))} onClick={()=>void togglePhone()}>
         <span>Phone notifications</span><span className={enabled?styles.on:styles.off}>{enabled?'On':'Off'}</span>
       </button>
       {support==='install'?<p>Add {config.name} to your Home Screen, then open it to enable notifications.</p>:null}
       {support==='blocked'?<p>Notifications are blocked. Allow them in your phone or browser settings, then return here.</p>:null}
       {support==='unsupported'?<p>This browser does not support phone notifications. Your notifications are still available in the app.</p>:null}
       {support!=='ready'?<button type="button" className={styles.button} disabled={busy} onClick={()=>void load()}>Check again</button>:null}
+      {!accountSettings.enabled ? <p>Phone notifications are turned off for this account in Desktop.</p> : null}
       <div className={styles.categories}>
-        {categories.map(category=><button key={category} type="button" className={styles.row} role="switch" aria-checked={preferences[category]} disabled={busy} onClick={()=>void toggleCategory(category)}>
-          <span>{PUSH_CATEGORIES[category]}</span><span className={preferences[category]?styles.on:styles.off}>{preferences[category]?'On':'Off'}</span>
+        {categories.map(category=><button key={category} type="button" className={styles.row} role="switch" aria-checked={preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]} disabled={busy||!accountSettings.enabled||!accountSettings.preferences[category]} onClick={()=>void toggleCategory(category)}>
+          <span>{PUSH_CATEGORIES[category]}{!accountSettings.preferences[category]?<small className={styles.managed}>Off in Desktop</small>:null}</span><span className={preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]?styles.on:styles.off}>{preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]?'On':'Off'}</span>
         </button>)}
       </div>
       <p className={styles.hint}>These settings apply to your {config.name.replace('Aim4price ','')} app login. Turning phone alerts off keeps your notifications in the app.</p>
-      <button className={styles.button} type="button" onClick={()=>void test()} disabled={!enabled||busy}>Send test notification</button>
-      <Link className={styles.button} href={config.root+'/notifications'}>View notifications</Link>
+      <button className={styles.button} type="button" onClick={()=>void test()} disabled={!enabled||busy||!accountSettings.enabled}>Send test notification</button>
+      {!modal ? <Link className={styles.button} href={config.root+'/notifications'}>View notifications</Link> : null}
     </>}
     <p role="status" className={styles.message}>{message}</p>
     {error?<div role="alert"><p>{error}</p><button type="button" className={styles.button} disabled={busy} onClick={()=>void load()}>Try again</button></div>:null}

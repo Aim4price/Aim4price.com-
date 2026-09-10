@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import webpush from 'web-push';
 import { getDb } from './db';
-import { DEFAULT_PUSH_PREFERENCES, type PushApp, type PushPreferences, type BrowserPushSubscription } from './push-policy';
+import { DEFAULT_PUSH_PREFERENCES, combinePushPreferences, type AccountPushPreferences, type PushApp, type PushPreferences, type BrowserPushSubscription } from './push-policy';
 export type PushIdentity = { app: PushApp; accountId: string; memberId: string; version: number };
 export type PushDevice = PushIdentity & { id: string; subscription: BrowserPushSubscription; preferences: PushPreferences; enabled: boolean; created_at: Date; last_test_at: Date | null };
 let ready: Promise<void> | undefined;
@@ -9,6 +9,9 @@ export function ensurePushTables() {
   if (!ready) ready = (async () => {
     await getDb().query(`
       create table if not exists app_push_keys (id integer primary key check(id=1), public_key text not null, private_key text not null);
+      create table if not exists account_push_preferences (
+        app text not null, account_id text not null, enabled boolean not null default true, preferences jsonb not null,
+        primary key(app, account_id));
       create table if not exists app_push_preferences (
         app text not null, account_id text not null, member_id text not null, preferences jsonb not null,
         primary key(app, account_id, member_id));
@@ -32,10 +35,25 @@ export async function pushKeys() {
   const r = await getDb().query<{ public_key: string; private_key: string }>('select public_key,private_key from app_push_keys where id=1');
   return r.rows[0];
 }
-export async function pushPreferences(who: PushIdentity): Promise<PushPreferences> {
+export async function memberPushPreferences(who: PushIdentity): Promise<PushPreferences> {
   await ensurePushTables();
   const r = await getDb().query('select preferences from app_push_preferences where app=$1 and account_id=$2 and member_id=$3', [who.app, who.accountId, who.memberId]);
   return r.rows[0]?.preferences ?? { ...DEFAULT_PUSH_PREFERENCES };
+}
+export async function accountPushPreferences(app: PushApp, accountId: string): Promise<AccountPushPreferences> {
+  await ensurePushTables();
+  const r = await getDb().query('select enabled,preferences from account_push_preferences where app=$1 and account_id=$2', [app,accountId]);
+  return r.rows[0] ?? { enabled:true, preferences:{...DEFAULT_PUSH_PREFERENCES} };
+}
+export async function saveAccountPushPreferences(app: PushApp, accountId: string, settings: AccountPushPreferences) {
+  await ensurePushTables();
+  await getDb().query(`insert into account_push_preferences(app,account_id,enabled,preferences) values($1,$2,$3,$4::jsonb)
+    on conflict(app,account_id) do update set enabled=excluded.enabled,preferences=excluded.preferences`,
+    [app,accountId,settings.enabled,JSON.stringify(settings.preferences)]);
+}
+export async function pushPreferences(who: PushIdentity): Promise<PushPreferences> {
+  const [member,account] = await Promise.all([memberPushPreferences(who),accountPushPreferences(who.app,who.accountId)]);
+  return combinePushPreferences(member,account);
 }
 export async function savePushPreferences(who: PushIdentity, preferences: PushPreferences) {
   await ensurePushTables();

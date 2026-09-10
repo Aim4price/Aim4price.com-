@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { currentPushIdentity, resolvePushAccess } from '../../../lib/push-access';
-import { getPushDevice, pushKeys, pushPreferences, savePushPreferences, registerPushDevice, removePushDevice, sendPhonePush } from '../../../lib/push-store';
+import { getPushDevice, pushKeys, memberPushPreferences, accountPushPreferences, savePushPreferences, registerPushDevice, removePushDevice, sendPhonePush } from '../../../lib/push-store';
 import { parsePushPreferences, validatePushSubscription, PUSH_APPS } from '../../../lib/push-policy';
 import { getDb } from '../../../lib/db';
 export const runtime = 'nodejs';
@@ -14,7 +14,7 @@ export async function GET() {
   if (!access) return json({ ok:false,error:'Please sign in to your app.' },401);
   try {
     const device = await getPushDevice(who,cookies().get(`aim4price_push_${who.app}`)?.value);
-    return json({ ok:true, app:who.app, categories:access.categories, preferences:await pushPreferences(who),
+    return json({ ok:true, app:who.app, categories:access.categories, preferences:await memberPushPreferences(who), accountSettings:await accountPushPreferences(who.app,who.accountId),
       enabled: Boolean(device?.enabled), deviceId:device?.id ?? null, publicKey:(await pushKeys()).public_key });
   } catch { return json({ ok:false,error:'Could not load notification settings. Please try again.' },503); }
 }
@@ -44,13 +44,14 @@ export async function POST(request: Request) {
       response.cookies.set(cookieName,'',{httpOnly:true,path:'/',maxAge:0});
       return response;
     } else if (body.action === 'test') {
+      if (!(await accountPushPreferences(who.app,who.accountId)).enabled) return json({ok:false,error:'Phone notifications are turned off for this account.'},400);
       const device = await getPushDevice(who,id);
       if (!device?.enabled) return json({ok:false,error:'Enable phone notifications first.'},400);
       const claimed = await getDb().query(`update app_push_devices set last_test_at=now() where id=$1
         and (last_test_at is null or last_test_at < now()-interval '30 seconds') returning id`,[device.id]);
       if (!claimed.rowCount) return json({ok:false,error:'Please wait 30 seconds before testing again.'},429);
       await sendPhonePush(device.subscription,{deviceId:device.id,title:PUSH_APPS[who.app].name,body:'Notifications are ready.',
-        href:PUSH_APPS[who.app].root+'/account/notifications',icon:PUSH_APPS[who.app].icon,tag:who.app+':test'});
+        href:PUSH_APPS[who.app].root+'/notifications',icon:PUSH_APPS[who.app].icon,tag:who.app+':test'});
     } else return json({ok:false,error:'Choose a notification action.'},400);
     return json({ok:true});
   } catch { return json({ok:false,error:'Could not save notification settings. Please try again.'},400); }

@@ -10,3 +10,16 @@
 .button:focus-visible, .row:focus-visible { outline: 3px solid #f4d568; outline-offset: 3px; }
 .button:disabled, .row:disabled { opacity: .6; cursor: default; }
 .hint { font-size: .9rem; line-height: 1.5; }.message { min-height: 1.5em; font-size: .9rem; }
+
+.titleRow { display:flex; align-items:center; justify-content:space-between; gap:1rem; width:100%; }
+.titleRow h1 { margin:0; }
+.gear,.close { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:2.8rem; height:2.8rem; border:1px solid #c9e1d5; border-radius:.85rem; background:#e2f1e8; color:#174c3a; cursor:pointer; }
+.gear svg { width:1.5rem; height:1.5rem; }
+.gear:focus-visible,.close:focus-visible { outline:3px solid #e6ba3e; outline-offset:3px; }
+.dialog { box-sizing:border-box; width:min(34rem,calc(100% - 2rem)); max-height:calc(100dvh - 2rem); overflow-y:auto; overscroll-behavior:contain; padding:1.2rem; border:1px solid #c9e1d5; border-radius:1.2rem; background:#fff; color:#174c3a; box-shadow:0 24px 80px #001d3266; }
+.dialog::backdrop { background:#071e2db3; }
+.modalHeading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
+.modalHeading h2 { font-size:1.25rem; margin:0; }
+.close { font-size:1.8rem; }
+.modalPanel { width:100%; color:#174c3a; }
+.managed { display:block; font-size:.75rem; margin-top:.2rem; }

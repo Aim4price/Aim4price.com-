@@ -135,10 +135,10 @@ async function deleteUserWorkspaceDataInTransaction(
     ...PARTNER_ACCESS_TABLES,
     ...USER_COMMUNICATION_TABLES,
     ...ASSISTED_CAPTURE_TABLES,
-    'app_push_devices', 'app_push_preferences',
+    'app_push_devices', 'app_push_preferences', 'account_push_preferences',
   ]);
 
-  for (const table of ['app_push_devices', 'app_push_preferences']) {
+  for (const table of ['app_push_devices', 'app_push_preferences', 'account_push_preferences']) {
     await deleteByColumn(queryable, tableSet, table, 'account_id', userId);
   }
 
@@ -405,4 +405,3 @@ export async function deleteUserWorkspaceDataWithClient(
 ): Promise<void> {
   await deleteUserWorkspaceDataInTransaction(client, userId);
 }
-

@@ -46,3 +46,10 @@ export function safePushHref(app: PushApp, href: string): string {
   } catch { /* Fall back to this app's inbox. */ }
   return root + '/notifications';
 }
+
+export type AccountPushPreferences = { enabled: boolean; preferences: PushPreferences };
+export function combinePushPreferences(member: PushPreferences, account: AccountPushPreferences): PushPreferences {
+  const result = {...member};
+  for (const key of Object.keys(result) as PushCategory[]) result[key] = account.enabled && account.preferences[key] && member[key];
+  return result;
+}
