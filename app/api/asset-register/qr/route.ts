@@ -1,3 +1,4 @@
+import { renderQrImage } from '../../../../lib/qr-image';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
@@ -132,15 +133,6 @@ function resolvePublicOrigin(request: NextRequest): string {
 
 function buildScanUrl(origin: string, publicAssetCode: string): string {
   return new URL(`/scan/${encodeURIComponent(publicAssetCode)}`, origin).toString();
-}
-
-function buildExternalQrImageUrl(scanUrl: string, size: number, format: 'svg' | 'png'): string {
-  const url = new URL('https://api.qrserver.com/v1/create-qr-code/');
-  url.searchParams.set('data', scanUrl);
-  url.searchParams.set('size', `${size}x${size}`);
-  url.searchParams.set('format', format);
-  url.searchParams.set('margin', '18');
-  return url.toString();
 }
 
 function buildQrFileName(assetTitle: string, plateLabel: string, extension: 'svg' | 'png'): string {
@@ -589,14 +581,7 @@ export async function GET(request: NextRequest) {
 
   if (format === 'print') {
     try {
-      const qrImageUrl = buildExternalQrImageUrl(scanUrl, 640, 'png');
-      const qrResponse = await fetch(qrImageUrl, { cache: 'no-store' });
-
-      if (!qrResponse.ok) {
-        throw new Error(`QR render service returned ${qrResponse.status}.`);
-      }
-
-      const qrBuffer = Buffer.from(await qrResponse.arrayBuffer());
+      const qrBuffer = Buffer.from(await renderQrImage(scanUrl, 'png', 640));
       const embeddedQrImageUrl = `data:image/png;base64,${qrBuffer.toString('base64')}`;
 
       return new NextResponse(
@@ -624,14 +609,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const qrImageUrl = buildExternalQrImageUrl(scanUrl, format === 'png' ? 1200 : 840, format);
-    const qrResponse = await fetch(qrImageUrl, { cache: 'no-store' });
-
-    if (!qrResponse.ok) {
-      throw new Error(`QR render service returned ${qrResponse.status}.`);
-    }
-
-    const body = await qrResponse.arrayBuffer();
+    const body = await renderQrImage(scanUrl, format, format === 'png' ? 1200 : 840);
     const fileName = buildQrFileName(asset.title, plateLabel, format);
 
     return new NextResponse(body, {

@@ -3089,7 +3089,7 @@ export default function ScanClient({
       ) ?? null,
     [sharePartners, selectedSharePartnerId],
   );
-  const pageClassName = `${styles.page} ${isFieldManagerMode ? styles.fieldManagerMobileSurface : ""}`;
+  const pageClassName = `${styles.page} ${styles.fieldManagerMobileSurface}`;
   const canUseDealerShare = !ownerAppMode;
   const selectedSharePartnerPhoneHref = selectedSharePartner
     ? normalizePhoneHref(selectedSharePartner.phone)
@@ -3357,10 +3357,10 @@ export default function ScanClient({
 
         {asset ? (
           <>
-            <section className={`${styles.assetOpenedCard} ${isFieldManagerMode ? styles.fieldManagerAssetIdentityCard : ""}`}>
+            <section className={`${styles.assetOpenedCard} ${styles.fieldManagerAssetIdentityCard}`}>
               <div
                 className={`${styles.assetScanTitleBlock} ${
-                  isFieldManagerMode ? styles.fieldManagerAssetTitleBlock : ""
+                  styles.fieldManagerAssetTitleBlock
                 }`}
               >
                 <h1>{scanTitleText(asset.title, "Asset")}</h1>
@@ -3533,10 +3533,10 @@ export default function ScanClient({
       ) : null}
 
       {asset && isShareModalOpen && canUseDealerShare ? (
-        <div className={`${styles.shareOverlay} ${isFieldManagerMode ? styles.fieldManagerShareOverlay : ""}`}>
+        <div className={`${styles.shareOverlay} ${styles.fieldManagerShareOverlay}`}>
           <div className={styles.modalBackdrop} onClick={closeShareModal} />
           <section
-            className={`${styles.shareModal} ${isFieldManagerMode ? styles.fieldManagerShareModal : ""}`}
+            className={`${styles.shareModal} ${styles.fieldManagerShareModal}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="share-modal-title"
@@ -3574,7 +3574,7 @@ export default function ScanClient({
               )}
             </header>
 
-            <div className={`${styles.shareFlow} ${isFieldManagerMode ? styles.fieldManagerShareFlow : ""}`}>
+            <div className={`${styles.shareFlow} ${styles.fieldManagerShareFlow}`}>
             {!shareLeadStep ? (
               <div className={styles.shareBody}>
                 {isFieldManagerMode ? (
@@ -3923,9 +3923,9 @@ export default function ScanClient({
       ) : null}
 
       {asset && activeEditor && scheduleChoiceOptions ? (
-        <div className={`${styles.editorOverlay} ${isFieldManagerMode ? styles.fieldManagerEditorOverlay : ""}`}>
+        <div className={`${styles.editorOverlay} ${styles.fieldManagerEditorOverlay}`}>
           <div
-            className={`${styles.editorCard} ${styles.actionEditorCard} ${isFieldManagerMode ? styles.fieldManagerEditorCard : ""}`}
+            className={`${styles.editorCard} ${styles.actionEditorCard} ${styles.fieldManagerEditorCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="scheduled-maintenance-choice-title"
@@ -4007,9 +4007,9 @@ export default function ScanClient({
       ) : null}
 
       {asset && activeEditor && !scheduleChoiceOptions ? (
-        <div className={`${styles.editorOverlay} ${isFieldManagerMode ? styles.fieldManagerEditorOverlay : ""}`}>
+        <div className={`${styles.editorOverlay} ${styles.fieldManagerEditorOverlay}`}>
           <div
-            className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""} ${isFieldManagerMode ? styles.fieldManagerEditorCard : ""}`}
+            className={`${styles.editorCard} ${activeEditor && activeEditor !== "usage" ? styles.actionEditorCard : ""} ${styles.fieldManagerEditorCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="scan-editor-title"
@@ -4042,7 +4042,7 @@ export default function ScanClient({
               )}
             </div>
 
-            <div className={`${styles.editorContent} ${isFieldManagerMode ? styles.fieldManagerEditorContent : ""}`}>
+            <div className={`${styles.editorContent} ${styles.fieldManagerEditorContent}`}>
             <div className={styles.editorBody}>
               {isFieldManagerMode ? (
                 <p className={styles.fieldManagerScreenDescription}>{editorDescription}</p>
@@ -4768,7 +4768,7 @@ export default function ScanClient({
 
               {activeEditor === "notes" ? (
                 <div className={styles.modalStack}>
-                  <label className={`${styles.field} ${isFieldManagerMode ? styles.fieldManagerNotesField : ""}`}>
+                  <label className={`${styles.field} ${styles.fieldManagerNotesField}`}>
                     <span>Notes</span>
                     <textarea
                       value={draft.note}

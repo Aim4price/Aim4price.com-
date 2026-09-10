@@ -1,3 +1,4 @@
+import { renderQrImage } from '../../../../../../lib/qr-image';
 import { NextRequest, NextResponse } from 'next/server';
 import { getFuelStorageById } from '../../../../../../lib/fuel-ledger';
 import { resolveOwnerWorkspaceContext } from '../../../../../../lib/owner-workspace-access';
@@ -135,15 +136,6 @@ function resolvePublicOrigin(request: NextRequest): string {
 
 function buildFuelScanUrl(origin: string, publicFuelStorageCode: string): string {
   return new URL(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`, origin).toString();
-}
-
-function buildExternalQrImageUrl(scanUrl: string, size: number, format: 'svg' | 'png'): string {
-  const url = new URL('https://api.qrserver.com/v1/create-qr-code/');
-  url.searchParams.set('data', scanUrl);
-  url.searchParams.set('size', `${size}x${size}`);
-  url.searchParams.set('format', format);
-  url.searchParams.set('margin', '18');
-  return url.toString();
 }
 
 function buildQrFileName(storageName: string, publicFuelStorageCode: string, extension: 'svg' | 'png'): string {
@@ -571,14 +563,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
   if (format === 'print') {
     try {
-      const qrImageUrl = buildExternalQrImageUrl(scanUrl, 640, 'png');
-      const qrResponse = await fetch(qrImageUrl, { cache: 'no-store' });
-
-      if (!qrResponse.ok) {
-        throw new Error(`QR render service returned ${qrResponse.status}.`);
-      }
-
-      const qrBuffer = Buffer.from(await qrResponse.arrayBuffer());
+      const qrBuffer = Buffer.from(await renderQrImage(scanUrl, 'png', 640));
       const embeddedQrImageUrl = `data:image/png;base64,${qrBuffer.toString('base64')}`;
 
       return new NextResponse(
@@ -607,14 +592,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const qrImageUrl = buildExternalQrImageUrl(scanUrl, format === 'png' ? 1200 : 840, format);
-    const qrResponse = await fetch(qrImageUrl, { cache: 'no-store' });
-
-    if (!qrResponse.ok) {
-      throw new Error(`QR render service returned ${qrResponse.status}.`);
-    }
-
-    const body = await qrResponse.arrayBuffer();
+    const body = await renderQrImage(scanUrl, format, format === 'png' ? 1200 : 840);
     const fileName = buildQrFileName(storage.name, storage.publicFuelStorageCode, format);
 
     return new NextResponse(body, {
