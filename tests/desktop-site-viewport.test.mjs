@@ -127,11 +127,21 @@ test('Estimate PDF Saleability price only follows a matching refined plan', asyn
   assert.match(polishSource, /HTMLFormElement\.prototype\.submit === submitWithSaleabilityPrice/);
 });
 
-test('operational viewports preserve their former inherited settings', async () => {
-  for (const route of ['admin', 'scan', 'fuel-scan']) {
+test('admin preserves its former inherited viewport settings', async () => {
+  for (const route of ['admin']) {
     const source = await readFile(new URL('../app/' + route + '/layout.tsx', import.meta.url), 'utf8');
     assert.match(source, /width: 980/);
     assert.match(source, /initialScale: -1/);
     assert.match(source, /userScalable: true/);
+  }
+});
+
+test('public QR scans use native app viewports', async () => {
+  for (const route of ['scan', 'fuel-scan']) {
+    const source = await readFile(new URL('../app/' + route + '/layout.tsx', import.meta.url), 'utf8');
+    assert.match(source, /width: 'device-width'/);
+    assert.match(source, /initialScale: 1/);
+    assert.match(source, /viewportFit: 'cover'/);
+    assert.doesNotMatch(source, /width: 980|initialScale: -1/);
   }
 });
