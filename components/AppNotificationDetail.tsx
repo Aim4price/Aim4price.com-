@@ -2,8 +2,6 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { currentPushIdentity, resolvePushAccess } from '../lib/push-access';
 import { PUSH_APPS, type PushApp } from '../lib/push-policy';
-import { getAssetDiscoveryEnquiryForUser } from '../lib/asset-discovery';
-import { getMarketplaceSourcingRequestForAdvertiser } from '../lib/marketplace-sourcing-requests';
 import { getDb } from '../lib/db';
 import OwnerAppNav from '../app/owner-app/owner-app-nav';
 import AppEnquiryDecision from './AppEnquiryDecision';
@@ -22,10 +20,12 @@ export default async function AppNotificationDetail({app,kind,id}:{app:PushApp;k
   if(app==='owner'?!access.admin:kind==='sourcing'?!access.canSource:!access.canDiscover)notFound();
   let content;
   if(kind==='sourcing'){
+    const { getMarketplaceSourcingRequestForAdvertiser } = await import('../lib/marketplace-sourcing-requests');
     const request=await getMarketplaceSourcingRequestForAdvertiser({advertiserUserId:who.accountId,requestId:id});
     if(!request)notFound();
     content=<><h2>{request.title}</h2><p>{request.requesterName} asked for help finding this or similar equipment.</p>{request.message?<p>{request.message}</p>:null}<Contact name={request.requesterName} phone={request.requesterPhone} email={request.requesterEmail}/></>;
   }else{
+    const { getAssetDiscoveryEnquiryForUser } = await import('../lib/asset-discovery');
     const enquiry=await getAssetDiscoveryEnquiryForUser({enquiryId:id,userId:who.accountId,accountType:app==='owner'?'owner':'dealer'}).catch(()=>null);
     if(!enquiry)notFound();
     const owned=app==='owner'&&access.admin?(await getDb().query('select id from asset_discovery_enquiries where id=$1::uuid and owner_user_id=$2',[id,who.accountId])).rows.length>0:false;
