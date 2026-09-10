@@ -1,4 +1,5 @@
 import { requireOwnerAppPageAccess } from '../../../lib/owner-app-access';
+import NotificationSettingsModal from '../../../components/NotificationSettingsModal';
 import OwnerAppNav from '../owner-app-nav';
 import styles from '../owner-app.module.css';
 import OwnerNotificationsClient from './owner-notifications-client';
@@ -12,7 +13,7 @@ export default async function OwnerNotificationsPage() {
 
   return (
     <main className={styles.page}>
-      <OwnerAppNav />
+      <OwnerAppNav trailingAction={<NotificationSettingsModal app="owner" />} />
       <OwnerNotificationsClient viewerId={notificationViewerId} />
     </main>
   );

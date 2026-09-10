@@ -16,7 +16,7 @@
 .gear,.close { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:2.8rem; height:2.8rem; border:1px solid #c9e1d5; border-radius:.85rem; background:#e2f1e8; color:#174c3a; cursor:pointer; }
 .gear svg { width:1.5rem; height:1.5rem; }
 .gear:focus-visible,.close:focus-visible { outline:3px solid #e6ba3e; outline-offset:3px; }
-.dialog { box-sizing:border-box; width:min(34rem,calc(100% - 2rem)); max-height:calc(100dvh - 2rem); overflow-y:auto; overscroll-behavior:contain; padding:1.2rem; border:1px solid #c9e1d5; border-radius:1.2rem; background:#fff; color:#174c3a; box-shadow:0 24px 80px #001d3266; }
+.dialog { box-sizing:border-box; width:min(34rem,calc(100% - 2rem)); max-height:calc(var(--website-visible-height, 100dvh) - 2rem); overflow-y:auto; overscroll-behavior:contain; padding:1.2rem; border:1px solid #c9e1d5; border-radius:1.2rem; background:#fff; color:#174c3a; box-shadow:0 24px 80px #001d3266; }
 .dialog::backdrop { background:#071e2db3; }
 .modalHeading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
 .modalHeading h2 { font-size:1.25rem; margin:0; }
@@ -30,3 +30,13 @@
 .on::after, .off::after { content:''; position:absolute; left:.2rem; top:.2rem; width:1.6rem; height:1.6rem; border-radius:50%; background:#fff; box-shadow:0 1px 3px #0003; transition:transform .18s ease; }
 .on::after { transform:translateX(2.4rem); }
 @media (prefers-reduced-motion:reduce) { .on,.off,.on::after,.off::after { transition:none; } }
+
+/* The portal lives outside the app shell, so repeat the app's typography. */
+.dialog { font-family:'Montserrat',var(--font-body,'Inter'),ui-sans-serif,system-ui,sans-serif; font-size:.875rem; line-height:1.45; padding:1rem; }
+.modalHeading { margin-bottom:.8rem; }
+.modalHeading h2 { font-size:1.05rem; font-weight:800; line-height:1.2; }
+.modalPanel .row { min-height:3rem; padding:.65rem .8rem; font-size:.875rem; font-weight:700; }
+.dialog .button { min-height:2.75rem; padding:.6rem .8rem; font-size:.8rem; font-weight:800; }
+.modalPanel .categories { margin:.75rem 0; gap:.5rem; }
+.modalPanel p { margin:.65rem 0; font-size:.8rem; font-weight:600; line-height:1.45; }
+.modalPanel .message { min-height:0; }

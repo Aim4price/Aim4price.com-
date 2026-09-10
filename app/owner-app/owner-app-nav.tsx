@@ -1,17 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './owner-app.module.css';
 
-export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', backLabel = 'Home', backAction, backDisabled = false, className = '' }: {
+export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', backLabel = 'Home', backAction, backDisabled = false, className = '', trailingAction }: {
   showBack?: boolean;
   backHref?: string;
   backLabel?: string;
   backAction?: () => void;
   backDisabled?: boolean;
   className?: string;
+  trailingAction?: ReactNode;
 }) {
   const [signingOut, setSigningOut] = useState(false);
   const backIsHome = showBack && !backAction && backHref === '/owner-app' && backLabel === 'Home';
@@ -56,6 +57,7 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
           {signingOut ? 'Signing out…' : 'Sign out'}
         </button>
       )}
+      {trailingAction ? <div style={{marginLeft: 'auto', display: 'flex'}}>{trailingAction}</div> : null}
     </header>
   );
 }
