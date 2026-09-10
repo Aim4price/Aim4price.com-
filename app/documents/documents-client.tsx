@@ -1,5 +1,7 @@
 'use client';
 
+import DocumentFileLink from '../../components/DocumentFileLink';
+
 import DropdownOverlay from '../../components/DropdownOverlay';
 import {
   useCallback,
@@ -1137,12 +1139,12 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         </div>
 
         <div className={styles.documentActions} data-recycle-actions={isDeleted ? 'true' : undefined}>
-          <a href={downloadUrl} target="_blank" rel="noreferrer" className={`${styles.actionButton} ${styles.previewButton}`}>
+          <DocumentFileLink href={downloadUrl} target="_blank" rel="noreferrer" className={`${styles.actionButton} ${styles.previewButton}`}>
             <Icon name="eye" /> Preview
-          </a>
-          <a href={`${downloadUrl}?download=1`} className={`${styles.actionButton} ${styles.downloadButton}`}>
+          </DocumentFileLink>
+          <DocumentFileLink href={`${downloadUrl}?download=1`} className={`${styles.actionButton} ${styles.downloadButton}`} download>
             <Icon name="download" /> Download
-          </a>
+          </DocumentFileLink>
           {isDeleted ? (
             <>
               <button type="button" className={styles.restoreButton} disabled={busy} onClick={() => void restoreDocument(document)}>

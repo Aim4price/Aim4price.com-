@@ -1,5 +1,7 @@
 'use client';
 
+import DocumentFileLink from '../../components/DocumentFileLink';
+
 import QrCodePreview from '../../components/QrCodePreview';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
@@ -4311,10 +4313,10 @@ export default function FuelClient({
                             </div>
                             <div className={styles.fuelSlipManagerRowActions}>
                               {slip.documentFileUrl ? (
-                                <a className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} target="_blank" rel="noreferrer">
+                                <DocumentFileLink className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={withAccountantShare(slip.documentFileUrl, accountantShareId, accountantRegisterId)} fuelDocument fuelSource={slip.documentFileUrl} target="_blank" rel="noreferrer">
                                   <OpenFileIcon className={styles.buttonIcon} />
                                   <span>Open file</span>
-                                </a>
+                                </DocumentFileLink>
                               ) : null}
                               <button
                                 type="button"
@@ -4862,7 +4864,7 @@ export default function FuelClient({
                 {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
 
                 {fuelSlipFormPage === 'details' && fuelSlipDraft.documentFileUrl ? (
-                  <a className={styles.fileLink} href={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached fuel slip/photo: {fuelSlipDraft.originalFilename || 'Uploaded file'}</a>
+                  <DocumentFileLink className={styles.fileLink} href={withAccountantShare(fuelSlipDraft.documentFileUrl, accountantShareId, accountantRegisterId)} fuelDocument={Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached fuel slip/photo: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink>
                 ) : null}
 
                 {fuelSlipFormPage === 'details' && fuelSlipDraft.rawExtractedText ? (
