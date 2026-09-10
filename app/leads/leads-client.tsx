@@ -1,4 +1,6 @@
 'use client';
+
+import QrCodePreview from '../../components/QrCodePreview';
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 
@@ -4360,7 +4362,7 @@ export default function LeadsClient({
                   <span className={assetStyles.qrPreviewEyebrow}>Permanent asset QR</span>
                   <div className={assetStyles.qrPreviewFrame}>
                     {qrLeadAsset.publicAssetCode ? (
-                      <img src={buildLeadQrUrl(qrLeadAsset, 'svg')} alt={`QR code for ${qrLeadAsset.title}`} />
+                      <QrCodePreview value={`${window.location.origin}/scan/${encodeURIComponent(qrLeadAsset.publicAssetCode)}`} label={`QR code for ${qrLeadAsset.title}`} />
                     ) : (
                       <p className={assetStyles.qrPreviewFallback}>QR artwork is not ready for this asset yet.</p>
                     )}

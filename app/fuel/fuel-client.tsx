@@ -1,5 +1,7 @@
 'use client';
 
+import QrCodePreview from '../../components/QrCodePreview';
+
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
@@ -1606,9 +1608,6 @@ function buildFuelScanUrl(storage: FuelLedgerStorage): string | null {
   return toAbsoluteUrl(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`);
 }
 
-function buildFuelQrSvgUrl(storage: FuelLedgerStorage, accountantShareId?: string, accountantRegisterId?: string): string {
-  return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=svg`, accountantShareId, accountantRegisterId);
-}
 
 function buildFuelQrPrintUrl(storage: FuelLedgerStorage, accountantShareId?: string, accountantRegisterId?: string): string {
   return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`, accountantShareId, accountantRegisterId);
@@ -4995,7 +4994,7 @@ export default function FuelClient({
                   <span className={styles.qrPreviewEyebrow}>Permanent fuel QR</span>
                   <div className={styles.qrPreviewFrame}>
                     {selectedStorage.publicFuelStorageCode ? (
-                      <img src={buildFuelQrSvgUrl(selectedStorage, accountantShareId, accountantRegisterId)} alt={`QR code for ${selectedStorage.name}`} />
+                      <QrCodePreview value={buildFuelScanUrl(selectedStorage)} label={`QR code for ${selectedStorage.name}`} />
                     ) : (
                       <p className={styles.qrPreviewFallback}>QR artwork is not ready for this fuel storage unit yet.</p>
                     )}

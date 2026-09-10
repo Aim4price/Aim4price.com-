@@ -51,3 +51,15 @@ test('fuel QR preview and print use the same local renderer',async()=>{
   if(format==='print')assert.match(await response.text(),/data:image\/png;base64,/);
  }
 });
+test('QR preview renders inline artwork without an image endpoint',()=>{
+ const React=require('react'),{renderToStaticMarkup}=require('react-dom/server');
+ const code=ts.transpileModule(fs.readFileSync('components/QrCodePreview.tsx','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
+ const component={exports:{}};
+ new Function('require','exports','module',code)(require,component.exports,component);
+ const render=value=>renderToStaticMarkup(React.createElement(component.exports.default,{value,label:'Asset QR'}));
+ const markup=render('https://www.aim4price.com/scan/A4P-TEST123');
+ assert.match(markup,/<svg/);assert.match(markup,/role="img"/);assert.match(markup,/<path d="M/);
+ assert.doesNotMatch(markup,/<img|\/api\/|<image/);
+ assert.notEqual(markup,render('https://www.aim4price.com/scan/A4P-OTHER'));
+ assert.match(render(null),/QR code is not available yet/);
+});
