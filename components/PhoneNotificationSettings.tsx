@@ -66,6 +66,8 @@ export default function PhoneNotificationSettings({ app, modal = false }: { app:
         const subscription=await registration.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
         try {await api({action:'enable',subscription:subscription.toJSON()});}
         catch(e){await subscription.unsubscribe();throw e;}
+        const confirmed = await api();
+        if (!confirmed.enabled) { await subscription.unsubscribe(); throw new Error('Phone registration was not saved. Sign in again and retry.'); }
         setEnabled(true);setMessage('Phone notifications on.');
       }
     } catch(e){setError((e as Error).message);} finally {setBusy(false);}
@@ -93,7 +95,8 @@ export default function PhoneNotificationSettings({ app, modal = false }: { app:
           <span>{PUSH_CATEGORIES[category]}{!accountSettings.preferences[category]?<small className={styles.managed}>Off in Desktop</small>:null}</span><span className={preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]?styles.on:styles.off}>{preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]?'On':'Off'}</span>
         </button>)}
       </div>
-      {enabled && accountSettings.enabled ? <button className={styles.button} type="button" onClick={()=>void test()} disabled={busy}>Send test</button> : null}
+      <button className={styles.button} type="button" onClick={()=>void test()} disabled={busy||!enabled||!accountSettings.enabled}>Send test notification</button>
+      {!enabled && support==='ready' && accountSettings.enabled ? <p>Turn on Phone alerts to send a test.</p> : null}
       {!modal ? <Link className={styles.button} href={config.root+'/notifications'}>View notifications</Link> : null}
     </>}
     {message ? <p role="status" className={styles.message}>{message}</p> : null}

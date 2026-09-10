@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isTrustedNotificationRequest } from '../../../lib/notification-request-origin';
 import { cookies } from 'next/headers';
 import { currentPushIdentity, resolvePushAccess } from '../../../lib/push-access';
 import { getPushDevice, pushKeys, memberPushPreferences, accountPushPreferences, savePushPreferences, registerPushDevice, removePushDevice, sendPhonePush } from '../../../lib/push-store';
@@ -19,7 +20,7 @@ export async function GET() {
   } catch { return json({ ok:false,error:'Could not load notification settings. Please try again.' },503); }
 }
 export async function POST(request: Request) {
-  if (request.headers.get('origin') !== new URL(request.url).origin) return json({ok:false,error:'Please reload the app.'},403);
+  if (!isTrustedNotificationRequest(request)) return json({ok:false,error:'Open notification settings from Aim4price to save changes.'},403);
   if (Number(request.headers.get('content-length') || 0) > 8192) return json({ok:false,error:'Request too large.'},413);
   const who = await currentPushIdentity();
   if (!who || !await resolvePushAccess(who)) return json({ok:false,error:'Please sign in to your app.'},401);

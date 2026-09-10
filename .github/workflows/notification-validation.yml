@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'lib/push-*.ts'
+      - 'lib/notification-request-origin.ts'
       - 'lib/desktop-notification-access.ts'
       - 'components/NotificationSettingsModal*'
       - 'app/api/account/notifications/**'
