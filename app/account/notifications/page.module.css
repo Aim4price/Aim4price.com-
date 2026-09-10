@@ -6,9 +6,9 @@
 .heading p { margin:0; color:#65776f; }
 .icon { display:grid; place-items:center; flex-shrink:0; width:3.2rem; height:3.2rem; border:1px solid #c0dfd2; border-radius:1rem; color:#186248; background:#e8f4ee; }
 .icon svg { width:1.6rem; height:1.6rem; }
-.row { display:flex; align-items:center; justify-content:space-between; gap:1.2rem; width:100%; min-height:4rem; padding:1rem 1.2rem; border:1px solid #dce7e2; border-radius:1rem; background:#fff; color:#17362c; text-align:left; font:inherit; font-weight:600; cursor:pointer; }
+.row { display:flex; align-items:center; justify-content:space-between; gap:1.2rem; width:100%; min-height:3rem; padding:.6rem 1rem; border:1px solid #dce7e2; border-radius:1rem; background:#fff; color:#17362c; text-align:left; font:inherit; font-weight:600; cursor:pointer; }
 .row small { display:block; margin-top:.25rem; color:#65776f; font-weight:400; font-size:.85rem; }
-.categories { display:grid; gap:.7rem; margin:1rem 0 1.5rem; }
+.categories { display:grid; gap:.5rem; margin:.5rem 0 0; }
 .on,.off { display:inline-flex; align-items:center; justify-content:center; min-width:3.3rem; min-height:1.9rem; border-radius:2rem; font-size:.85rem; flex-shrink:0; }
 .on { background:#d8efe1; color:#215f42; }.off { background:#f5dfdf; color:#834444; }
 .row:disabled { cursor:default; opacity:.55; }
