@@ -161,7 +161,7 @@ function normalizeUploadCategory(value: string | undefined): string {
   return (normalized || 'other').slice(0, 60);
 }
 
-function normalizeUploadId(value: string): string {
+export function normalizeUploadId(value: string): string {
   const rawValue = String(value ?? '').trim();
 
   if (!rawValue) {
@@ -171,7 +171,7 @@ function normalizeUploadId(value: string): string {
   const withoutRoute = rawValue.includes(ASSET_REGISTER_UPLOAD_ROUTE_PREFIX)
     ? rawValue.split(ASSET_REGISTER_UPLOAD_ROUTE_PREFIX).pop() ?? rawValue
     : rawValue;
-  const withoutQuery = withoutRoute.split('?')[0] ?? withoutRoute;
+  const withoutQuery = withoutRoute.split(/[?#]/)[0] ?? withoutRoute;
 
   try {
     return decodeURIComponent(withoutQuery).trim();
@@ -1436,7 +1436,7 @@ export async function getLegacyAssetRegisterUploadResponse(
   return {
     data,
     mimeType,
-    sizeBytes: Math.max(0, Math.round(Number(row.byte_size) || data.length)),
+    sizeBytes: data.length,
     fileName,
     disposition: contentDispositionForType(mimeType),
   };

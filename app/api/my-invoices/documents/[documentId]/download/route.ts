@@ -64,6 +64,11 @@ export async function GET(request: Request, context: RouteContext) {
     }
   } catch (error) {
     console.error('Aim4price invoice document download failed.', error);
+    if (error instanceof Error && error.message === 'INVOICE_DOCUMENT_UPLOAD_UNAVAILABLE') {
+      return new NextResponse('Document temporarily unavailable', {
+        status: 503, headers: { 'Cache-Control': 'private, no-store', 'Retry-After': '60' },
+      });
+    }
   }
 
   // Use the same response for missing and forbidden documents so IDs cannot

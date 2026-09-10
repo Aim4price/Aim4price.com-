@@ -1,5 +1,7 @@
 'use client';
 
+import DocumentFileLink from '../../components/DocumentFileLink';
+
 import { prepareInvoiceUpload, validateInvoicePages } from '../../lib/invoice-upload';
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type SVGProps } from 'react';
@@ -3822,10 +3824,10 @@ export default function MyInvoicesClient({
 
                       <div className={styles.rowActions}>
                         {invoice.document?.uploadUrl ? (
-                          <a className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={invoice.document.uploadUrl} target="_blank" rel="noreferrer">
+                          <DocumentFileLink className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={accountScopedUrl(invoice.document.uploadUrl)} target="_blank" rel="noreferrer">
                             <OpenFileIcon className={styles.buttonIcon} />
                             <span>Open file</span>
-                          </a>
+                          </DocumentFileLink>
                         ) : null}
                         <>
                           <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>
@@ -6187,7 +6189,7 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {uploadedDocument?.uploadUrl ? (
-                  <a className={styles.fileLink} href={uploadedDocument.uploadUrl} target="_blank" rel="noreferrer">Open attached invoice/photo: {uploadedDocument.fileName}</a>
+                  <DocumentFileLink className={styles.fileLink} href={accountScopedUrl(uploadedDocument.uploadUrl)} target="_blank" rel="noreferrer">Open attached invoice/photo: {uploadedDocument.fileName}</DocumentFileLink>
                 ) : null}
 
                 {rawTextPreview ? (

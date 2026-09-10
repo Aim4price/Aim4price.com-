@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAssetRegisters } from './asset-registers';
-import { buildAssetRegisterUploadUrl, resolveAssetRegisterUploadBytes } from './asset-register-uploads';
+import { buildAssetRegisterUploadUrl, normalizeUploadId, resolveAssetRegisterUploadBytes } from './asset-register-uploads';
 
 export type MyInvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 export type MyInvoiceUsageMetric = 'none' | 'hours' | 'km' | 'percentage';
@@ -598,7 +598,7 @@ function assetCategoryLabelFromRow(row: MyInvoiceRow): string {
 function mapDocumentRow(row: MyInvoiceDocumentRow | null | undefined): MyInvoiceDocument | null {
   if (!row?.id) return null;
 
-  const uploadId = asText(row.upload_id) || asText(row.upload_url).split('/').pop() || '';
+  const uploadId = normalizeUploadId(asText(row.upload_id) || asText(row.upload_url));
 
   return {
     id: String(row.id),
