@@ -31,18 +31,18 @@
 }
 
 .hero {
+  composes: hero from "./WorkspaceHero.module.css";
   position: relative;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 28px;
-  min-height: clamp(190px, calc(var(--website-design-vw, 1vw) * 16), 240px);
+  min-height: 0;
   margin-bottom: 24px;
-  padding: clamp(30px, calc(var(--website-design-vw, 1vw) * 4), 54px);
+  padding: clamp(24px, calc(var(--website-design-vw, 1vw) * 2.4), 40px);
   border: 1px solid var(--studio-line);
   border-radius: 24px;
-  color: var(--studio-ink);
   background: #fff;
   box-shadow: 0 16px 44px rgba(23, 54, 44, .06);
 }
@@ -70,7 +70,6 @@
   letter-spacing: 0;
 }
 
-.hero h1,
 .sectionHeader h2,
 .editorHeader h2,
 .stepIntro h2 {
@@ -80,8 +79,6 @@
   letter-spacing: -0.045em;
 }
 
-.hero h1 { max-width: 900px; font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3.4), 3.35rem); line-height: 1.05; }
-.hero p { max-width: 790px; margin: 14px 0 0; color: var(--studio-muted); font-size: 1rem; line-height: 1.7; }
 
 .notice {
   margin-bottom: 14px;

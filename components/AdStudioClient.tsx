@@ -608,8 +608,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
-          <h1>Create adverts that look like your business</h1>
-          <p>Add your details, logo and colours once. Aim4price will use them on every advert.</p>
+          <h1>Your adverts, your style</h1>
+          <p>Add your logo, colours and details once.</p>
         </div>
         {canManage && !loading ? (
           <button className={styles.primaryButton} type="button" onClick={startNewKit}>
