@@ -3102,12 +3102,12 @@
   width: min(var(--website-dialog-reference-width, 100%), 70rem) !important;
 }
 
-.marketplaceModalCard {
+.marketplaceModalCard,
+.discoveryModalCard {
   width: min(var(--website-dialog-reference-width, 100%), 58rem) !important;
 }
 
 .scanPinModalCard,
-.discoveryModalCard,
 .deleteAccountModalCard {
   width: min(var(--website-dialog-reference-width, 100%), 41rem) !important;
 }
@@ -4011,3 +4011,33 @@
   padding: .85rem 1.5rem !important;
   border-radius: 0 0 1.5rem 1.5rem;
 }
+
+/* Discovery uses the same field typography and neutral surfaces as Marketplace contact. */
+.discoveryModalCard .toggleField,
+.discoveryModalCard .confirmBox {
+  padding: .85rem 1rem;
+  border: 1px solid var(--account-line, #dce6ec);
+  border-radius: .92rem;
+  background: var(--account-surface, #fff);
+  font-family: inherit;
+  font-weight: 400;
+  color: #20313b;
+}
+.discoveryModalCard .toggleField strong,
+.discoveryModalCard .confirmBox strong {
+  font-family: inherit;
+  color: #405950;
+  font-size: .7rem;
+  font-weight: 850;
+  line-height: 1.4;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+.discoveryModalCard .toggleField small,
+.discoveryModalCard .confirmBox p {
+  font: inherit;
+  color: #20313b;
+  line-height: 1.35;
+  letter-spacing: normal;
+}
+.discoveryModalCard .modalForm { margin-top: 0; gap: 1rem; }
