@@ -23,3 +23,10 @@
 .close { font-size:1.8rem; }
 .modalPanel { width:100%; color:#174c3a; }
 .managed { display:block; font-size:.75rem; margin-top:.2rem; }
+
+.on, .off { position:relative; box-sizing:border-box; display:inline-flex; align-items:center; width:4.4rem; min-width:4.4rem; height:2rem; min-height:2rem; border-radius:2rem; flex-shrink:0; font-size:.78rem; font-weight:600; transition:background-color .18s ease; }
+.on { justify-content:flex-start; padding:0 0 0 .55rem; background:#258357; color:#fff; }
+.off { justify-content:flex-end; padding:0 .45rem 0 0; background:#b94e50; color:#fff; }
+.on::after, .off::after { content:''; position:absolute; left:.2rem; top:.2rem; width:1.6rem; height:1.6rem; border-radius:50%; background:#fff; box-shadow:0 1px 3px #0003; transition:transform .18s ease; }
+.on::after { transform:translateX(2.4rem); }
+@media (prefers-reduced-motion:reduce) { .on,.off,.on::after,.off::after { transition:none; } }

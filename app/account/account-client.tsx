@@ -13,6 +13,7 @@ import {
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import DesktopNotificationSettings from "./notifications/notification-settings-client";
 import AppHeader from "../../components/AppHeader";
 import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
@@ -25,6 +26,7 @@ type AccountNotice = {
 type BusinessDetailsStep = 1 | 2 | 3;
 type PartnerDirectoryStep = 1 | 2 | 3;
 type AccountActionModal =
+  | "notifications"
   | "business"
   | "scanPin"
   | "marketplace"
@@ -1153,6 +1155,7 @@ export default function AccountClient({
   const deleteDialogRef = useRef<HTMLElement | null>(null);
   const activeDialogTriggerRef = useRef<HTMLElement | null>(null);
   const deleteDialogTriggerRef = useRef<HTMLElement | null>(null);
+  const [isSavingNotifications, setIsSavingNotifications] = useState(false);
   const activeActionModalBusyRef = useRef(false);
   const deleteDialogBusyRef = useRef(false);
   const partnerMapElementRef = useRef<HTMLDivElement | null>(null);
@@ -1160,7 +1163,7 @@ export default function AccountClient({
   const partnerPinMarkerRef = useRef<any>(null);
   const partnerRadiusCircleRef = useRef<any>(null);
 
-  activeActionModalBusyRef.current =
+  activeActionModalBusyRef.current = isSavingNotifications ||
     isSavingProfile ||
     isReadingLogo ||
     isSavingScanPin ||
@@ -1353,6 +1356,15 @@ export default function AccountClient({
       });
     };
   }, [activeAccountModal]);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('notifications') === 'open') {
+      openActionModal('notifications');
+      url.searchParams.delete('notifications');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    }
+  }, []);
 
   const completedFields = useMemo(
     () => countCompletedFields(profileDraft),
@@ -2348,10 +2360,10 @@ export default function AccountClient({
                 </div>
 
                 <div className={styles.quickActionList}>
-                  {isOwnerAccount || isDealerAccount ? <Link className={styles.quickActionButton} href="/account/notifications">
+                  {isOwnerAccount || isDealerAccount ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("notifications")}>
                     <QuickActionIcon name="notifications" />
                     <strong>Notifications</strong>
-                  </Link> : null}
+                  </button> : null}
                   <button
                     type="button"
                     className={styles.quickActionButton}
@@ -2953,6 +2965,27 @@ export default function AccountClient({
                 </button>
               </div>
               </form>
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
+
+      {activeAccountModal === "notifications" ? (
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
+          <section ref={activeDialogRef}
+            className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard}`}
+            role="dialog" aria-modal="true" aria-labelledby="notifications-modal-title" tabIndex={-1}
+            onClick={(event) => event.stopPropagation()}>
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="notifications-modal-title">Notifications</h2>
+                <p>Choose the phone alerts for your account.</p>
+                <button type="button" className={styles.modalCloseButton} disabled={isSavingNotifications}
+                  onClick={closeActionModal} aria-label="Close notification settings">×</button>
+              </div>
+              <DesktopNotificationSettings onClose={closeActionModal}
+                onBusyChange={(busy) => { activeActionModalBusyRef.current = busy; setIsSavingNotifications(busy); }}
+                onSaved={() => { closeActionModal(); setNotice({tone:'success',message:'Notification settings saved.'}); }} />
             </AccountModalScroller>
           </section>
         </div>
