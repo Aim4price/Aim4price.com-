@@ -16,7 +16,7 @@
 .gear,.close { display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; width:2.8rem; height:2.8rem; border:1px solid #c9e1d5; border-radius:.85rem; background:#e2f1e8; color:#174c3a; cursor:pointer; }
 .gear svg { width:1.5rem; height:1.5rem; }
 .gear:focus-visible,.close:focus-visible { outline:3px solid #e6ba3e; outline-offset:3px; }
-.dialog { box-sizing:border-box; width:min(34rem,calc(100% - 2rem)); max-height:calc(100dvh - 2rem); overflow-y:auto; overscroll-behavior:contain; padding:1.2rem; border:1px solid #c9e1d5; border-radius:1.2rem; background:#fff; color:#174c3a; box-shadow:0 24px 80px #001d3266; }
+.dialog { box-sizing:border-box; width:min(34rem,calc(100% - 2rem)); max-height:calc(var(--website-visible-height, 100dvh) - 2rem); overflow-y:auto; overscroll-behavior:contain; padding:1.2rem; border:1px solid #c9e1d5; border-radius:1.2rem; background:#fff; color:#174c3a; box-shadow:0 24px 80px #001d3266; }
 .dialog::backdrop { background:#071e2db3; }
 .modalHeading { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
 .modalHeading h2 { font-size:1.25rem; margin:0; }
