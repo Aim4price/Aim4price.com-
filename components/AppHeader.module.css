@@ -3678,10 +3678,11 @@
   }
 
 :global(:where([data-website-canvas])) .accountPopover {
-    left: 0;
-    right: 0;
-    width: 100%;
-    max-width: 100%;
+    left: 50%;
+    right: auto;
+    width: max(18rem, 100%);
+    max-width: none;
+    transform: translateX(-50%);
     overflow-x: visible;
     min-width: max(18rem, 100%);
   }
@@ -4472,7 +4473,14 @@
   :global(:where(html:not(:has([data-website-canvas])))) .inner:has(.accountButton) { position: relative; left: -1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .accountMenu { min-width: 14.75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .accountButton { min-width: 14.75rem; gap: .95rem; padding-inline: 1.08rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover { min-width: max(18rem, 100%); }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
+    left: 50%;
+    right: auto;
+    width: max(18rem, 100%);
+    min-width: max(18rem, 100%);
+    max-width: none;
+    transform: translateX(-50%);
+  }
 }
 
 :global(:where([data-website-canvas])) .actions { min-width: max-content; }

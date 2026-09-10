@@ -662,6 +662,9 @@
   gap: 0.76rem;
   padding: 0.85rem;
   padding-right: 0.74rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(23, 117, 83, 0.46) rgba(235, 243, 239, 0.8);
 }
 
 .assetList::-webkit-scrollbar {
@@ -669,12 +672,20 @@
 }
 
 .assetList::-webkit-scrollbar-track {
-  background: transparent;
+  margin-block: 0.85rem;
+  border-radius: 999px;
+  background: rgba(235, 243, 239, 0.8);
 }
 
 .assetList::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
   border-radius: 999px;
-  background: rgba(115, 133, 147, 0.32);
+  background: rgba(23, 117, 83, 0.46);
+  background-clip: padding-box;
+}
+
+.assetList::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(23, 117, 83, 0.7);
 }
 
 .emptyState {
