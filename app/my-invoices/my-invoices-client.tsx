@@ -1165,6 +1165,7 @@ export default function MyInvoicesClient({
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
+  const [pickerOwnerId, setPickerOwnerId] = useState('');
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
@@ -1492,11 +1493,36 @@ export default function MyInvoicesClient({
     return assets.filter((asset) => assetSearchText(asset).includes(query));
   }, [assets, invoiceDropAssetSearch]);
 
+  const pickerBusinesses = useMemo(() => {
+    const businesses = new Map<string, { id: string; name: string; assetCount: number }>();
+    for (const asset of assets) {
+      const ownerId = asset.ownerUserId;
+      if (!ownerId) continue;
+      const business = businesses.get(ownerId);
+      if (business) business.assetCount += 1;
+      else businesses.set(ownerId, {
+        id: ownerId,
+        name: asset.ownerName?.trim() || 'Asset owner',
+        assetCount: 1,
+      });
+    }
+    return Array.from(businesses.values()).sort((left, right) => left.name.localeCompare(right.name));
+  }, [assets]);
+  const pickerBusiness = pickerBusinesses.find((business) => business.id === pickerOwnerId);
+  const businessPickerOpen = dealerMode && !pickerBusiness;
+  const filteredPickerBusinesses = useMemo(() => {
+    const query = pickerSearch.trim().toLowerCase();
+    return pickerBusinesses.filter((business) => business.name.toLowerCase().includes(query));
+  }, [pickerBusinesses, pickerSearch]);
+
   const filteredAssets = useMemo(() => {
     const query = pickerSearch.trim().toLowerCase();
-    if (!query) return assets;
-    return assets.filter((asset) => assetSearchText(asset).includes(query));
-  }, [assets, pickerSearch]);
+    const visibleAssets = dealerMode
+      ? assets.filter((asset) => Boolean(pickerOwnerId) && asset.ownerUserId === pickerOwnerId)
+      : assets;
+    if (!query) return visibleAssets;
+    return visibleAssets.filter((asset) => assetSearchText(asset).includes(query));
+  }, [assets, dealerMode, pickerOwnerId, pickerSearch]);
 
   const recurringSelectedAssets = useMemo(
     () => assets.filter((asset) => recurringAssetIds.includes(asset.id)),
@@ -1696,7 +1722,9 @@ export default function MyInvoicesClient({
   const formOpen = flow === 'manual-form' || flow === 'review';
   const manualCostWizardOpen = flow === 'manual-form';
   const recurringOpen = flow === 'recurring';
-  const flowTitle = flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
+  const flowTitle = businessPickerOpen
+    ? 'Choose client business'
+    : flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
   const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
@@ -2461,6 +2489,7 @@ export default function MyInvoicesClient({
   function closeModal() {
     const shouldReturn = quickLaunchActive && quickLaunchReturnTo;
     setFlow(null);
+    setPickerOwnerId('');
     setSelectedAssetId('');
     setPickerSearch('');
     setEditingInvoiceId(null);
@@ -2725,6 +2754,7 @@ export default function MyInvoicesClient({
     const normalizedAssetId = assetId.trim();
     setNotice(null);
     setSelectedAssetId(normalizedAssetId);
+    setPickerOwnerId(assets.find((asset) => asset.id === normalizedAssetId)?.ownerUserId ?? '');
     setPickerSearch('');
     setEditingInvoiceId(null);
     setManualUploadFile(null);
@@ -2749,6 +2779,7 @@ export default function MyInvoicesClient({
       : '';
     setNotice(null);
     setSelectedAssetId(presetAssetId);
+    setPickerOwnerId(assets.find((asset) => asset.id === presetAssetId)?.ownerUserId ?? '');
     setPickerSearch('');
     setEditingInvoiceId(null);
     setManualUploadFile(null);
@@ -5819,7 +5850,7 @@ export default function MyInvoicesClient({
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>{flowTitle}</h2>
-                <p>Select the saved asset this cost belongs to.</p>
+                <p>{businessPickerOpen ? 'Select the business this cost belongs to.' : dealerMode ? pickerBusiness?.name : 'Select the saved asset this cost belongs to.'}</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
@@ -5828,14 +5859,32 @@ export default function MyInvoicesClient({
               <input
                 value={pickerSearch}
                 onChange={(event) => setPickerSearch(event.target.value)}
-                placeholder="Search assets..."
-                aria-label="Search assets"
+                placeholder={businessPickerOpen ? 'Search businesses...' : 'Search assets...'}
+                aria-label={businessPickerOpen ? 'Search businesses' : 'Search assets'}
               />
               <button type="button" className={styles.secondaryButton} onClick={() => setPickerSearch('')}>Clear</button>
             </div>
-            <div className={styles.assetList} data-asset-choice-list="true">
+            <div key={businessPickerOpen ? 'businesses' : pickerOwnerId} className={styles.assetList} data-asset-choice-list="true">
               {isLoading ? (
-                <div className={styles.emptyState}>Loading assets...</div>
+                <div className={styles.emptyState}>{businessPickerOpen ? 'Loading businesses...' : 'Loading assets...'}</div>
+              ) : businessPickerOpen ? (
+                filteredPickerBusinesses.length ? filteredPickerBusinesses.map((business) => (
+                  <button
+                    type="button"
+                    key={business.id}
+                    className={styles.assetRow}
+                    data-asset-choice-row="true"
+                    onClick={() => {
+                      setPickerOwnerId(business.id);
+                      setPickerSearch('');
+                    }}
+                  >
+                    <span className={styles.assetInfo} data-asset-choice-copy="true">
+                      <strong>{business.name}</strong>
+                      <small data-asset-choice-meta="true">{business.assetCount} shared {business.assetCount === 1 ? 'asset' : 'assets'}</small>
+                    </span>
+                  </button>
+                )) : <div className={styles.emptyState}>No matching businesses found. Ask the owner to share an asset with your dealership, or use their Invoice Drop code. <a href="/drop-invoice">Open Invoice Drop</a></div>
               ) : filteredAssets.length ? filteredAssets.map((asset) => (
                 <button
                   type="button"
@@ -5858,6 +5907,13 @@ export default function MyInvoicesClient({
               )) : <div className={styles.emptyState}>{dealerMode ? <>No matching shared assets found. Ask the owner to share the asset with your dealership, or use their Invoice Drop code. <a href="/drop-invoice">Open Invoice Drop</a></> : 'No matching assets found.'}</div>}
             </div>
             <div className={styles.modalFooter} data-asset-choice-footer="true">
+              {dealerMode && !businessPickerOpen ? (
+                <button type="button" className={styles.secondaryButton} onClick={() => {
+                  setPickerOwnerId('');
+                  setSelectedAssetId('');
+                  setPickerSearch('');
+                }}>Back to businesses</button>
+              ) : null}
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
             </div>
           </div>
