@@ -1,3 +1,4 @@
+import { isTrustedNotificationRequest } from '../../../../lib/notification-request-origin';
 import { NextResponse } from 'next/server';
 import { desktopNotificationAccount } from '../../../../lib/desktop-notification-access';
 import { accountPushPreferences, saveAccountPushPreferences } from '../../../../lib/push-store';
@@ -12,7 +13,7 @@ export async function GET() {
   catch { return json({ok:false,error:'Could not load notification settings.'},503); }
 }
 export async function POST(request: Request) {
-  if (request.headers.get('origin') !== new URL(request.url).origin) return json({ok:false,error:'Please reload the page.'},403);
+  if (!isTrustedNotificationRequest(request)) return json({ok:false,error:'Please reload the page.'},403);
   if (Number(request.headers.get('content-length') || 0)>4096) return json({ok:false,error:'Request too large.'},413);
   const who = await desktopNotificationAccount();
   if (!who) return json({ok:false,error:'Please sign in to your desktop account.'},401);

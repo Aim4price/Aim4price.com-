@@ -204,3 +204,29 @@ test('account master switch blocks even an uncategorized test push at display ti
   const state=await (await route.GET()).json();assert.equal(state.enabled,false);
   const worker=workerFixture(state);await worker.push({title:'Old test',body:'Private'});assert.equal(worker.shown.length,0);
 });
+
+test('notification writes accept the public origin behind Railway but reject forged origins',()=>{
+  const {isTrustedNotificationRequest:check}=load('lib/notification-request-origin.ts');
+  const request=(origin,extra={})=>new Request('http://internal-railway:3000/api/app-notifications',{method:'POST',headers:{...(origin?{origin}:{}),...extra}});
+  assert.equal(check(request('https://www.aim4price.com')),true);
+  assert.equal(check(request('https://aim4price.com')),true);
+  for(const origin of [null,'null','https://evil.test','https://www.aim4price.com.evil.test','http://www.aim4price.com'])assert.equal(check(request(origin,{'x-forwarded-host':'www.aim4price.com','x-forwarded-proto':'https'})),false);
+});
+test('app preference saves and test delivery succeed through the production proxy URL',async()=>{
+  let preferences={...policy.DEFAULT_PUSH_PREFERENCES};const sent=[];
+  const route=load('app/api/app-notifications/route.ts',{
+    'next/headers':{cookies:()=>({get:()=>({value:'aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa'})})},
+    '../../../lib/push-access':{currentPushIdentity:async()=>who,resolvePushAccess:async()=>({categories:['maintenance']})},
+    '../../../lib/push-store':{
+      savePushPreferences:async(identity,p)=>{assert.deepEqual(identity,who);preferences=p;},
+      memberPushPreferences:async()=>preferences,accountPushPreferences:async()=>({enabled:true,preferences:policy.DEFAULT_PUSH_PREFERENCES}),
+      getPushDevice:async()=>({id:'device',enabled:true,subscription:{endpoint:'https://fcm.googleapis.com/test'}}),
+      pushKeys:async()=>({public_key:'public'}),sendPhonePush:async(sub,payload)=>sent.push({sub,payload}),
+    },
+    '../../../lib/db':{getDb:()=>({query:async()=>({rowCount:1})})},
+  });
+  const post=body=>route.POST(new Request('http://internal-railway:3000/api/app-notifications',{method:'POST',headers:{origin:'https://www.aim4price.com'},body:JSON.stringify(body)}));
+  assert.equal((await post({action:'preferences',preferences:{...preferences,maintenance:false}})).status,200);
+  assert.equal((await (await route.GET()).json()).preferences.maintenance,false);
+  assert.equal((await post({action:'test'})).status,200);assert.equal(sent.length,1);assert.equal(sent[0].payload.deviceId,'device');assert.equal(sent[0].payload.href,'/owner-app/notifications');
+});
