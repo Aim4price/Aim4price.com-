@@ -62,10 +62,12 @@ export default function FieldManagerHomeClient() {
     const interval = window.setInterval(refresh, 30_000);
 
     window.addEventListener('focus', refresh);
+    window.addEventListener('aim4price-notifications-updated', refresh);
     document.addEventListener('visibilitychange', refreshWhenVisible);
     return () => {
       window.clearInterval(interval);
       window.removeEventListener('focus', refresh);
+      window.removeEventListener('aim4price-notifications-updated', refresh);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, [hasManagerAccess]);

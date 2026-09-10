@@ -4,7 +4,7 @@ const APP_COOKIES: Record<AppRealm, readonly string[]> = {
   dealer: ['aim4price_push_dealer', 'aim4price_dealer_app_v2', 'aim4price_dealer_app'],
   middleman: ['aim4price_push_middleman', 'aim4price_middleman_app_v1'],
   owner: ['aim4price_push_owner', 'aim4price_owner_app'],
-  field: ['aim4price_field_manager', 'aim4price_field_manager_scan', 'aim4price_field_manager_fuel_scan'],
+  field: ['aim4price_push_field', 'aim4price_field_manager', 'aim4price_field_manager_scan', 'aim4price_field_manager_fuel_scan'],
 };
 const ALL_APP_COOKIES = new Set(Object.values(APP_COOKIES).flat());
 

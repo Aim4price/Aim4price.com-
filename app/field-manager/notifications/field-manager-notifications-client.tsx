@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import styles from '../../owner-app/owner-app.module.css';
-import FieldManagerNavLink from '../field-manager-nav-link';
+import NotificationSettingsModal from '../../../components/NotificationSettingsModal';
 
 type NotificationView = 'active' | 'history';
 type NotificationCategoryFilter = 'all' | 'maintenance';
@@ -77,6 +77,7 @@ export default function FieldManagerNotificationsClient() {
           credentials: 'include',
           cache: 'no-store',
           signal: controller.signal,
+          headers: { 'x-aim4price-client-realm': 'field' },
         });
         const payload = await response.json().catch(() => null) as NotificationsResponse | null;
 
@@ -106,7 +107,16 @@ export default function FieldManagerNotificationsClient() {
     }
 
     void load();
-    return () => controller.abort();
+    const refresh = () => { if (document.visibilityState === 'visible') void load(); };
+    const interval = window.setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      controller.abort();
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, [reloadToken]);
 
   const counts = useMemo(() => ({
@@ -128,7 +138,7 @@ export default function FieldManagerNotificationsClient() {
       const response = await fetch('/api/field-manager/notifications', {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-aim4price-client-realm': 'field' },
         body: JSON.stringify({ notificationIds }),
       });
       const payload = await response.json().catch(() => null) as NotificationsResponse | null;
@@ -136,6 +146,7 @@ export default function FieldManagerNotificationsClient() {
         throw new Error(payload?.error || 'Could not update notifications.');
       }
 
+      window.dispatchEvent(new Event('aim4price-notifications-updated'));
       const updatedIds = new Set(notificationIds);
       setItems((current) => current.map((item) => (
         updatedIds.has(item.id) ? { ...item, isRead: true } : item
@@ -156,8 +167,11 @@ export default function FieldManagerNotificationsClient() {
 
   return (
     <main className={styles.page}>
+      <header className={`${styles.assetsHeader} ${styles.assetsHeaderSingle}`} aria-label="Field Manager notification controls">
+        <Link className={styles.navButton} href="/field-manager" prefetch={false}>Home</Link>
+        <div style={{ marginLeft: 'auto', display: 'flex' }}><NotificationSettingsModal app="field" /></div>
+      </header>
       <div className={`${styles.content} ${styles.notificationContent}`}>
-        <FieldManagerNavLink href="/field-manager" label="Home" />
 
         <section className={styles.notificationIntro}>
           <div className={styles.ownerPageIntro}>

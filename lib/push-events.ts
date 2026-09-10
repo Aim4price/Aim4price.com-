@@ -13,7 +13,14 @@ export type PushEvent = { id: string; category: PushCategory; title: string; bod
 export async function listPushEvents(who: PushIdentity, access: NonNullable<Awaited<ReturnType<typeof resolvePushAccess>>>, options: { includeRead?: boolean; remindersOnly?: boolean } = {}): Promise<PushEvent[]> {
   const root = PUSH_APPS[who.app].root;
   const events: PushEvent[] = [];
-  if (who.app === 'owner') {
+  if (who.app === 'field') {
+    const { listFieldManagerNotifications } = await import('./field-manager-notifications');
+    const notifications = await listFieldManagerNotifications({ ownerUserId: who.accountId, managerId: who.memberId });
+    for (const item of notifications) {
+      if (!access.allowedAssets?.has(item.assetId)) continue;
+      events.push({ ...item, category: item.assignedToViewer ? 'assignments' : 'maintenance', reminder: !item.assignedToViewer });
+    }
+  } else if (who.app === 'owner') {
     const assets = await getDb().query(`select id::text, kind, is_licensed, license_registration_number, specs_json,
       license_renewal_alert_noted_for_date::text from public.asset_register_items where user_id=$1 and coalesce(to_jsonb(asset_register_items)->>'lifecycle_state','active')='active'`, [who.accountId]);
     const activeAssets = new Set(assets.rows.map(row => row.id));

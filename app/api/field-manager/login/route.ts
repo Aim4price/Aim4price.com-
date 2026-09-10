@@ -1,3 +1,6 @@
+import { cookies } from 'next/headers';
+import { removePushDevice } from '../../../../lib/push-store';
+import { isTrustedNotificationRequest } from '../../../../lib/notification-request-origin';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import {
@@ -101,8 +104,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
+  if (!isTrustedNotificationRequest(request)) return NextResponse.json({ ok: false }, { status: 403 });
+  await removePushDevice('field', cookies().get('aim4price_push_field')?.value);
   const response = NextResponse.json({ ok: true });
+  response.cookies.set('aim4price_push_field', '', { httpOnly: true, path: '/', maxAge: 0 });
   clearFieldManagerSessionCookie(response);
   clearFieldManagerScanCookie(response);
   clearFieldManagerFuelScanCookie(response);

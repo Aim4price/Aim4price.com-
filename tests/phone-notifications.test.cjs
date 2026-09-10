@@ -232,3 +232,76 @@ test('app preference saves and test delivery succeed through the production prox
   assert.equal((await post({action:'test'})).status,200);assert.equal(sent.length,1);assert.equal(sent[0].payload.deviceId,'device');assert.equal(sent[0].payload.href,'/owner-app/notifications');
 });
 
+
+test('Field Manager push access rechecks owner, session version and selected assets', async () => {
+  let manager = { isActive: true, ownerUserId: 'account', sessionVersion: 1 };
+  const fixture = load('lib/push-access.ts', {
+    './app-realm-server': {}, './owner-app-session': {}, './dealer-app-session': {},
+    './account-profile': { getAccountProfile: async () => ({accountType:'owner',accountStatus:'active'}) },
+    './owner-app': {}, './dealer-app': {}, './middleman-account': {},
+    './field-manager': { getFieldManagerById: async () => manager, listFieldManagerAssets: async () => [{id:'allowed'}] },
+  });
+  const field = {...who, app:'field'};
+  const access = await fixture.resolvePushAccess(field);
+  assert.deepEqual(access.categories, ['maintenance','assignments']);
+  assert.deepEqual([...access.allowedAssets], ['allowed']);
+  for (const invalid of [{...manager,isActive:false},{...manager,ownerUserId:'other'},{...manager,sessionVersion:2},null]) {
+    manager = invalid;
+    assert.equal(await fixture.resolvePushAccess(field), null);
+  }
+});
+
+test('Field Manager inbox and read writes exclude assets outside current access', async () => {
+  let assets = [{id:'allowed'}];
+  const writes = [];
+  const record = {id:'task',assetId:'allowed',computedStatus:'due',maintenanceType:'service',updatedAtIso:'2026-09-10',assignedFieldManagerId:'member'};
+  const fixture = load('lib/field-manager-notifications.ts', {
+    './field-manager': {listFieldManagerAssets:async()=>assets},
+    './asset-maintenance': {listAssetMaintenanceRecords:async()=>[record,{...record,id:'private',assetId:'denied'}]},
+    './app-notification-read-state': {listReadNotificationEventKeys:async()=>new Set(),markNotificationEventKeysRead:async(...args)=>writes.push(args)},
+  });
+  const input = {ownerUserId:'account',managerId:'member'};
+  const items = await fixture.listFieldManagerNotifications(input);
+  assert.deepEqual(items.map(x=>x.assetId), ['allowed']);
+  assert.equal(items[0].href, '/field-manager/overview');
+  await fixture.markFieldManagerNotificationsRead({...input,notificationIds:[items[0].id,'field-manager-maintenance:private:due']});
+  assert.deepEqual(writes[0], ['field-manager:member',[items[0].id]]);
+  assets = [];
+  assert.deepEqual(await fixture.listFieldManagerNotifications(input), []);
+  await fixture.markFieldManagerNotificationsRead({...input,notificationIds:[items[0].id]});
+  assert.deepEqual(writes[1][1], []);
+});
+
+test('Field Manager push worker stays in its own app and honours muted categories', async () => {
+  const handlers = {}, shown = [];
+  const state = {app:'field',enabled:true,deviceId:'field-device',categories:['maintenance'],preferences:{maintenance:false}};
+  const self = {location:{origin:'https://www.aim4price.com'},registration:{showNotification:async(...args)=>shown.push(args)},addEventListener:(name,fn)=>handlers[name]=fn};
+  vm.runInNewContext(fs.readFileSync('public/app-push-worker.js','utf8'), {self,URL,PUSH_APP:'field',fetch:async()=>({ok:true,json:async()=>state})});
+  async function push() { let promise; handlers.push({data:{json:()=>({deviceId:'field-device',category:'maintenance',href:'/owner-app/notifications'})},waitUntil:p=>promise=p}); await promise; }
+  await push(); assert.equal(shown.length,0);
+  state.preferences.maintenance = true;
+  await push(); assert.equal(shown.length,1);
+  assert.equal(shown[0][1].data.href,'https://www.aim4price.com/field-manager/notifications');
+  assert.equal(policy.safePushHref('field','/owner-app/assets/private'),'/field-manager/notifications');
+  const isolation = load('lib/app-cookie-isolation.ts');
+  assert.equal(isolation.isolateAppCookies('aim4price_push_field=f; aim4price_push_owner=o','field'),'aim4price_push_field=f');
+  assert.equal(isolation.isolateAppCookies('aim4price_push_field=f; aim4price_push_owner=o','owner'),'aim4price_push_owner=o');
+});
+
+test('Field Manager phone events share inbox read state and reject out-of-scope events', async () => {
+  const fieldWho = {...who,app:'field'};
+  const events = load('lib/push-events.ts', {
+    './listing-alerts': {}, './app-notification-state':{readAppNotificationKeys:async()=>new Set()},
+    './notifications': {}, './notification-inbox': {}, './asset-maintenance': {}, './asset-license-renewal': {},
+    './dealer-maintenance-notification-inbox': {}, './db': {}, './push-access': {},
+    './field-manager-notifications': {listFieldManagerNotifications:async()=>[
+      {id:'unread',assetId:'allowed',assignedToViewer:true,isRead:false,createdAtIso:'2026-09-10',href:'/field-manager/overview'},
+      {id:'read',assetId:'allowed',assignedToViewer:false,isRead:true,createdAtIso:'2026-09-10'},
+      {id:'private',assetId:'other',assignedToViewer:true,isRead:false,createdAtIso:'2026-09-10'},
+    ]},
+  });
+  const result=await events.listPushEvents(fieldWho,{categories:['maintenance','assignments'],allowedAssets:new Set(['allowed'])});
+  assert.deepEqual(result.map(x=>x.id),['unread']);
+  assert.equal(result[0].category,'assignments');
+  assert.equal(result[0].href,'/field-manager/overview');
+});

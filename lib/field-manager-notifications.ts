@@ -1,3 +1,4 @@
+import { listFieldManagerAssets } from './field-manager';
 import { listAssetMaintenanceRecords, type AssetMaintenanceRecord } from './asset-maintenance';
 import {
   listReadNotificationEventKeys,
@@ -75,8 +76,13 @@ async function currentNotificationRecords(input: {
   ownerUserId: string;
   managerId: string;
 }): Promise<AssetMaintenanceRecord[]> {
-  const records = await listAssetMaintenanceRecords(input.ownerUserId, { status: 'upcoming' });
+  const [records, assets] = await Promise.all([
+    listAssetMaintenanceRecords(input.ownerUserId, { status: 'upcoming' }),
+    listFieldManagerAssets(input.ownerUserId, input.managerId),
+  ]);
+  const allowedAssetIds = new Set(assets.map(asset => asset.id));
   return records
+    .filter((record) => allowedAssetIds.has(record.assetId))
     .filter((record) => (
       isSharedMaintenanceNotification(record)
       || record.assignedFieldManagerId === input.managerId
