@@ -722,36 +722,6 @@ function isMeterUsageMode(asset: ScanSafeAsset | null): boolean {
   return asset?.usageMode === "hours" || asset?.usageMode === "km";
 }
 
-function needsUsageUpdateBeforeActions(
-  asset: ScanSafeAsset | null,
-  update: PendingScanUpdate,
-  hasCompletedRequiredUsageUpdate: boolean,
-): boolean {
-  return Boolean(
-    isMeterUsageMode(asset) &&
-    !update.hasUsage &&
-    !hasCompletedRequiredUsageUpdate,
-  );
-}
-
-function requiredUsageTitle(asset: ScanSafeAsset): string {
-  if (asset.usageMode === "km") return "Update kilometres first";
-  return "Update hours first";
-}
-
-function requiredUsageCopy(asset: ScanSafeAsset): string {
-  if (asset.usageMode === "km") {
-    return "Enter the latest kilometre reading before maintenance or photos can be added.";
-  }
-
-  return "Enter the latest hour-meter reading before maintenance or photos can be added.";
-}
-
-function requiredUsageButtonLabel(asset: ScanSafeAsset): string {
-  if (asset.usageMode === "km") return "Update kilometres";
-  return "Update hours";
-}
-
 function toggleValue(values: string[], value: string): string[] {
   return values.includes(value)
     ? values.filter((entry) => entry !== value)
@@ -1187,8 +1157,6 @@ export default function ScanClient({
   const [activeEditor, setActiveEditor] = useState<EditorKey | null>(null);
   const [showLocationReminder, setShowLocationReminder] = useState(false);
   const [isDone, setIsDone] = useState(false);
-  const [hasCompletedRequiredUsageUpdate, setHasCompletedRequiredUsageUpdate] =
-    useState(false);
   const [showServiceDetailsStep, setShowServiceDetailsStep] = useState(false);
   const [showServicePhotoStep, setShowServicePhotoStep] = useState(false);
   const [openMaintenanceOptions, setOpenMaintenanceOptions] = useState<
@@ -1287,7 +1255,7 @@ export default function ScanClient({
     setShowLocationReminder(false);
     setIsDone(false);
     setDoneMessage("The QR update session is closed.");
-    setHasCompletedRequiredUsageUpdate(false);
+
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
     setOpenMaintenanceOptions([]);
@@ -1613,10 +1581,6 @@ export default function ScanClient({
         openedAsset,
         seededSession,
       );
-      const requiresInitialUsageUpdate =
-        !isFieldManagerAccess &&
-        isMeterUsageMode(openedAsset) &&
-        !sessionUsage.hasUsage;
       const shouldOpenScheduledMaintenance = Boolean(
         isFieldManagerAccess
         && normalizedScheduledMaintenanceId
@@ -1660,14 +1624,12 @@ export default function ScanClient({
         hasUsage: sessionUsage.hasUsage,
       });
       setIsDone(false);
-      setHasCompletedRequiredUsageUpdate(!requiresInitialUsageUpdate);
+
       setShowLocationReminder(false);
       setActiveEditor(
         shouldOpenScheduledMaintenance
           ? "service"
-          : requiresInitialUsageUpdate
-            ? "usage"
-            : null,
+          : null,
       );
       setAssetOpenError(null);
       setIsUnavailable(false);
@@ -1916,26 +1878,6 @@ export default function ScanClient({
   }
 
   function openEditor(nextEditor: EditorKey) {
-    const isFieldManagerAccess =
-      fieldManagerMode ||
-      ownerAppMode ||
-      scanAccessMode === "field_manager" ||
-      scanAccessMode === "owner_session";
-    const enforcedEditor =
-      !isFieldManagerAccess &&
-      nextEditor !== "usage" &&
-      needsUsageUpdateBeforeActions(
-        asset,
-        pendingUpdate,
-        hasCompletedRequiredUsageUpdate,
-      )
-        ? "usage"
-        : nextEditor;
-
-    if (enforcedEditor !== nextEditor && asset) {
-      setNotice({ tone: "error", message: requiredUsageCopy(asset) });
-    }
-
     const storedSession = readQrScanSession(normalizedCode);
 
     setDraft((current) => {
@@ -1947,7 +1889,7 @@ export default function ScanClient({
       if (!asset) return nextDraft;
 
       if (
-        enforcedEditor === "usage" &&
+        nextEditor === "usage" &&
         (asset.usageMode === "hours" || asset.usageMode === "km")
       ) {
         const stagedHours =
@@ -1960,7 +1902,7 @@ export default function ScanClient({
         return { ...nextDraft, hours: stagedHours };
       }
 
-      if (enforcedEditor === "service") {
+      if (nextEditor === "service") {
         const storedUsage = sessionUsageForAsset(asset, storedSession);
         const maintenanceHours = pendingUpdate.hasUsage && pendingUpdate.hours
           ? pendingUpdate.hours
@@ -1979,11 +1921,11 @@ export default function ScanClient({
         };
       }
 
-      if (enforcedEditor === "photos") {
+      if (nextEditor === "photos") {
         return { ...nextDraft, photoUrls: pendingUpdate.photoUrls };
       }
 
-      if (enforcedEditor === "notes") {
+      if (nextEditor === "notes") {
         return { ...nextDraft, note: "" };
       }
 
@@ -1992,7 +1934,7 @@ export default function ScanClient({
 
     setShowServiceDetailsStep(false);
     setShowServicePhotoStep(false);
-    setActiveEditor(enforcedEditor);
+    setActiveEditor(nextEditor);
   }
 
   function closeEditor() {
@@ -2003,17 +1945,6 @@ export default function ScanClient({
     setShowServicePhotoStep(false);
     setScheduleChoiceOptions(null);
     setActiveEditor(null);
-  }
-
-  function skipRequiredUsageUpdate() {
-    setDraft((current) =>
-      keepCurrentLocation(current, readQrScanSession(normalizedCode)),
-    );
-    setHasCompletedRequiredUsageUpdate(true);
-    setShowServiceDetailsStep(false);
-    setShowServicePhotoStep(false);
-    setActiveEditor(null);
-    setNotice(null);
   }
 
   function resetShareFlow() {
@@ -2093,18 +2024,6 @@ export default function ScanClient({
 
   function handleShareTap() {
     if (!asset) return;
-
-    if (
-      needsUsageUpdateBeforeActions(
-        asset,
-        pendingUpdate,
-        hasCompletedRequiredUsageUpdate,
-      )
-    ) {
-      setNotice({ tone: "error", message: requiredUsageCopy(asset) });
-      openEditor("usage");
-      return;
-    }
 
     resetShareFlow();
     setShareOwnerMessage(
@@ -2259,7 +2178,7 @@ export default function ScanClient({
       setIsShareModalOpen(false);
       setActiveEditor(null);
       setIsDone(false);
-      setHasCompletedRequiredUsageUpdate(true);
+
       setSharePartners([]);
       resetShareFlow();
       setNotice({
@@ -2627,7 +2546,6 @@ export default function ScanClient({
       setAsset((current) =>
         current ? { ...current, hours: parsedHours } : current,
       );
-      setHasCompletedRequiredUsageUpdate(true);
     }
 
     if (activeEditor === "service") {
@@ -2903,9 +2821,6 @@ export default function ScanClient({
       setAsset(savedAssetFromResponse);
       setSavedAsset(savedAssetFromResponse);
       setAssetPreview(savedAssetFromResponse);
-      if (updateToPersist.hasUsage || storedSessionUsage.hasUsage) {
-        setHasCompletedRequiredUsageUpdate(true);
-      }
       setPendingUpdate({
         ...initialPendingUpdate,
         latitude: finalLatitude,
@@ -2998,13 +2913,6 @@ export default function ScanClient({
     sessionHasLocation(readQrScanSession(normalizedCode));
   const isFieldManagerMode =
     fieldManagerMode || ownerAppMode || scanAccessMode === "field_manager" || scanAccessMode === "owner_session";
-  const usageUpdateRequired =
-    !isFieldManagerMode &&
-    needsUsageUpdateBeforeActions(
-      asset,
-      pendingUpdate,
-      hasCompletedRequiredUsageUpdate,
-    );
   const showFieldManagerUsageAction =
     isFieldManagerMode && isMeterUsageMode(asset);
   const serviceProfile = useMemo(
@@ -3079,9 +2987,7 @@ export default function ScanClient({
                       draft.serviceMode === "repaired") &&
                     !showServiceDetailsStep
                   ? "Next"
-                  : activeEditor === "usage" && usageUpdateRequired
-                    ? "Continue"
-                    : "Add update";
+                  : "Add update";
   const selectedSharePartner = useMemo(
     () =>
       sharePartners.find(
@@ -3385,28 +3291,6 @@ export default function ScanClient({
               </button>
             </section>
 
-            {usageUpdateRequired ? (
-              <section className={styles.usageGateCard}>
-                <div className={styles.usageGateTitleBlock}>
-                  <span>Required first</span>
-                  <h2>{requiredUsageTitle(asset)}</h2>
-                  <p>{requiredUsageCopy(asset)}</p>
-                </div>
-                <div className={styles.usageGateReadingCard}>
-                  <span>Last recorded</span>
-                  <strong>{formatUsage(savedAsset ?? asset)}</strong>
-                </div>
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={() => openEditor("usage")}
-                  disabled={isSaving || isUploading}
-                >
-                  {requiredUsageButtonLabel(asset)}
-                </button>
-              </section>
-            ) : (
-              <>
                 <section className={styles.actionGrid}>
                   {showFieldManagerUsageAction ? (
                     <button
@@ -3497,8 +3381,6 @@ export default function ScanClient({
                     ? "Saving…"
                     : "Done"}
                 </button>
-              </>
-            )}
           </>
         ) : null}
       </div>
@@ -4887,16 +4769,10 @@ export default function ScanClient({
               <button
                 type="button"
                 className={styles.secondaryButton}
-                onClick={
-                  activeEditor === "usage" && usageUpdateRequired
-                    ? skipRequiredUsageUpdate
-                    : closeEditor
-                }
+                onClick={closeEditor}
                 disabled={isSaving}
               >
-                {activeEditor === "usage" && usageUpdateRequired
-                  ? "Skip for now"
-                  : "Cancel"}
+                Cancel
               </button>
               <button
                 type="button"
