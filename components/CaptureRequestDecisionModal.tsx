@@ -15,6 +15,7 @@ type CaptureReviewFile = {
 type CaptureReviewRequest = {
   id: string;
   publicReference: string;
+  version: number;
   requestType: 'invoice' | 'fuel_slip';
   submissionChannel: 'dealer_upload' | 'public_drop';
   status: string;
@@ -119,8 +120,10 @@ export default function CaptureRequestDecisionModal({
 }: CaptureRequestDecisionModalProps) {
   const [capture, setCapture] = useState<CaptureReviewRequest | null>(null);
   const [loading, setLoading] = useState(false);
-  const [savingDecision, setSavingDecision] = useState<'approve' | 'decline' | null>(null);
+  const [savingDecision, setSavingDecision] = useState<'approve' | 'decline' | 'correction' | null>(null);
   const [error, setError] = useState('');
+  const [correctionOpen, setCorrectionOpen] = useState(false);
+  const [correction, setCorrection] = useState('');
 
   useEffect(() => {
     if (!requestId) {
@@ -129,6 +132,8 @@ export default function CaptureRequestDecisionModal({
       return;
     }
 
+    setCorrectionOpen(false);
+    setCorrection('');
     const activeRequestId = requestId;
     const controller = new AbortController();
     setLoading(true);
@@ -186,7 +191,7 @@ export default function CaptureRequestDecisionModal({
 
   if (!requestId) return null;
 
-  async function saveDecision(decision: 'approve' | 'decline') {
+  async function saveDecision(decision: 'approve' | 'decline' | 'correction') {
     if (!capture || capture.status !== 'awaiting_owner') return;
     setSavingDecision(decision);
     setError('');
@@ -197,7 +202,7 @@ export default function CaptureRequestDecisionModal({
           method: 'PATCH',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ decision }),
+          body: JSON.stringify({ decision, reason: correction, version: capture.version }),
         },
       );
       const payload = await response.json().catch(() => null) as CaptureDecisionResponse | null;
@@ -205,7 +210,7 @@ export default function CaptureRequestDecisionModal({
         throw new Error(payload?.error || 'Your decision could not be saved.');
       }
       onResolved(payload.message || (
-        decision === 'approve'
+        decision === 'correction' ? 'Correction sent to Aim4price.' : decision === 'approve'
           ? 'The verified document was added to your ledger.'
           : 'The verified document was declined.'
       ));
@@ -310,6 +315,16 @@ export default function CaptureRequestDecisionModal({
                 </a>
               ))}
 
+              {canDecide ? (
+                <div className={styles.correction}>
+                  {correctionOpen ? (
+                    <label>What needs correcting?
+                      <textarea autoFocus value={correction} onChange={(event) => setCorrection(event.target.value)} maxLength={1000} rows={3} placeholder="For example, this belongs to Tractor 2." disabled={Boolean(savingDecision)} />
+                    </label>
+                  ) : <button type="button" onClick={() => setCorrectionOpen(true)} disabled={Boolean(savingDecision)}>Request correction</button>}
+                </div>
+              ) : null}
+
               <aside className={baseStyles.note}>
                 <span className={baseStyles.noteIcon} aria-hidden="true">i</span>
                 <div>
@@ -328,7 +343,12 @@ export default function CaptureRequestDecisionModal({
         </div>
 
         <footer className={baseStyles.footer}>
-          {canDecide ? (
+          {canDecide && correctionOpen ? (
+            <>
+              <button type="button" className={baseStyles.declineButton} onClick={() => setCorrectionOpen(false)} disabled={Boolean(savingDecision)}>Back</button>
+              <button type="button" className={baseStyles.approveButton} onClick={() => void saveDecision('correction')} disabled={Boolean(savingDecision) || !correction.trim()}>{savingDecision ? 'Sending…' : 'Send to Aim4price'}</button>
+            </>
+          ) : canDecide ? (
             <>
               <button
                 type="button"
@@ -357,4 +377,5 @@ export default function CaptureRequestDecisionModal({
     </div>
   );
 }
+
 

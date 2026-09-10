@@ -9,6 +9,9 @@ export type CaptureRequestStatusItem = {
   requestType: 'invoice' | 'fuel_slip';
   status: string;
   canRetract?: boolean;
+  canReply?: boolean;
+  version?: number;
+  informationNeeded?: string;
   targetLabel?: string | null;
   submittedAtIso: string;
   dueAtIso: string;
@@ -19,12 +22,15 @@ type CaptureRequestStatusListProps = {
   requests: CaptureRequestStatusItem[];
   title?: string;
   emptyLabel?: string;
+  dealerMode?: boolean;
+  onReply?: (request: CaptureRequestStatusItem, message: string) => Promise<void>;
   onReview?: (requestId: string) => void;
   onRetract?: (requestId: string) => Promise<void>;
 };
 
 const STATUS_LABELS: Record<string, string> = {
   submitted: 'Received',
+  needs_matching: 'Matching your asset',
   in_progress: 'With Aim4price',
   waiting_for_customer: 'Waiting for you',
   needs_information: 'Waiting for you',
@@ -54,7 +60,7 @@ function formatDueDate(value: string): string {
 }
 
 function isOverdue(request: CaptureRequestStatusItem): boolean {
-  if (!request.dueAtIso || ['completed', 'duplicate', 'declined', 'rejected', 'cancelled'].includes(request.status)) return false;
+  if (!request.dueAtIso || ['needs_information', 'waiting_for_customer', 'awaiting_owner', 'awaiting_owner_approval', 'completed', 'duplicate', 'declined', 'rejected', 'cancelled'].includes(request.status)) return false;
   const dueAt = new Date(request.dueAtIso).getTime();
   return Number.isFinite(dueAt) && dueAt < Date.now();
 }
@@ -65,10 +71,16 @@ export default function CaptureRequestStatusList({
   emptyLabel = '',
   onReview,
   onRetract,
+  onReply,
+  dealerMode = false,
 }: CaptureRequestStatusListProps) {
   const [retractCandidate, setRetractCandidate] = useState<CaptureRequestStatusItem | null>(null);
   const [isRetracting, setIsRetracting] = useState(false);
   const [retractError, setRetractError] = useState('');
+  const [replyCandidate, setReplyCandidate] = useState<CaptureRequestStatusItem | null>(null);
+  const [reply, setReply] = useState('');
+  const [replyError, setReplyError] = useState('');
+  const [replySending, setReplySending] = useState(false);
   const keepButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -134,17 +146,21 @@ export default function CaptureRequestStatusList({
                 <div className={styles.details}>
                   <strong>{request.targetLabel || (request.requestType === 'fuel_slip' ? 'Fuel slip' : 'Invoice')}</strong>
                   <span>{request.referenceCode}</span>
+                  {request.informationNeeded ? <span>{request.informationNeeded}</span> : null}
                 </div>
                 <div className={styles.timing}>
                   <span className={`${styles.status} ${overdue ? styles.statusOverdue : ''}`}>
-                    {overdue ? 'Overdue' : statusLabel(request.status)}
+                    {dealerMode && request.status === 'awaiting_owner' ? 'Waiting for owner approval' : statusLabel(request.status)}
                   </span>
-                  {!['completed', 'duplicate', 'declined', 'rejected', 'cancelled'].includes(request.status) ? (
-                    <small>Expected by {formatDueDate(request.dueAtIso)}</small>
+                  {!['needs_information', 'awaiting_owner', 'completed', 'duplicate', 'declined', 'rejected', 'cancelled'].includes(request.status) ? (
+                    <small>{overdue ? 'Taking longer than expected · ' : 'Expected by '}{formatDueDate(request.dueAtIso)}</small>
                   ) : null}
                 </div>
-                {(request.status === 'awaiting_owner' && onReview) || (request.canRetract && onRetract) ? (
+                {(request.canReply && onReply) || (request.status === 'awaiting_owner' && onReview) || (request.canRetract && onRetract) ? (
                   <div className={styles.actions}>
+                    {request.canReply && onReply ? (
+                      <button type="button" className={styles.reviewButton} onClick={() => { setReplyCandidate(request); setReply(''); setReplyError(''); }}>Reply</button>
+                    ) : null}
                     {request.status === 'awaiting_owner' && onReview ? (
                       <button type="button" className={styles.reviewButton} onClick={() => onReview(request.id)}>
                         Review
@@ -166,6 +182,28 @@ export default function CaptureRequestStatusList({
           })}
         </div>
       ) : <p className={styles.empty}>{emptyLabel}</p>}
+
+      {replyCandidate ? (
+        <div className={styles.modalBackdrop} data-website-overlay>
+          <form className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="capture-reply-title" onSubmit={async (event) => {
+            event.preventDefault();
+            if (!onReply || !reply.trim() || replySending) return;
+            setReplySending(true); setReplyError('');
+            try { await onReply(replyCandidate, reply.trim()); setReplyCandidate(null); }
+            catch (error) { setReplyError(error instanceof Error ? error.message : 'Your reply could not be sent.'); }
+            finally { setReplySending(false); }
+          }}>
+            <h3 id="capture-reply-title">Reply to Aim4price</h3>
+            <p>{replyCandidate.informationNeeded || 'Tell us what we need to know.'}</p>
+            <label className={styles.replyField}>Your reply<textarea autoFocus value={reply} onChange={(event) => setReply(event.target.value)} maxLength={1000} rows={4} required disabled={replySending} /></label>
+            {replyError ? <p role="alert">{replyError}</p> : null}
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.keepButton} disabled={replySending} onClick={() => setReplyCandidate(null)}>Cancel</button>
+              <button type="submit" className={styles.reviewButton} disabled={replySending || !reply.trim()}>{replySending ? 'Sending…' : 'Send reply'}</button>
+            </div>
+          </form>
+        </div>
+      ) : null}
 
       {retractCandidate ? (
         <div className={styles.modalBackdrop} data-website-overlay role="presentation" onMouseDown={closeRetractConfirmation}>
@@ -213,4 +251,5 @@ export default function CaptureRequestStatusList({
     </section>
   );
 }
+
 

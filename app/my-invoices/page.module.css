@@ -6919,3 +6919,9 @@
   }
 }
 
+
+
+.captureNoteField { display: grid; gap: 8px; margin-top: 16px; }
+.captureNoteField span { color: #173f31; font-weight: 600; }
+.captureNoteField small { font-weight: 400; }
+.captureNoteField textarea { box-sizing: border-box; width: 100%; min-height: 88px; padding: 12px; border: 1px solid #c9ddd2; border-radius: 12px; font: inherit; resize: vertical; }

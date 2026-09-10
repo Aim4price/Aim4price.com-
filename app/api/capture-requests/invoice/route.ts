@@ -91,6 +91,7 @@ export async function POST(request: Request) {
         email: context.actorEmail,
       },
       assetReference: asset.serialNumber,
+      requesterNote: String(formData.get('note') ?? '').trim().slice(0, 1000),
       candidatePayload: { targetLabel: asset.title },
     }, actor);
     createdCaptureId = capture.id;
@@ -133,3 +134,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: safeMessage }, { status: 400 });
   }
 }
+

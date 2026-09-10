@@ -72,6 +72,7 @@ export async function POST(request: Request) {
         businessName: context.actor.supplierName,
       },
       assetReference: asset.serialNumber,
+      requesterNote: String(formData.get('note') ?? '').trim().slice(0, 1000),
       candidatePayload: {
         targetLabel: asset.title,
         dealerStaffId: context.actor.dealerStaffId,
@@ -114,3 +115,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: safeMessage }, { status: 400 });
   }
 }
+

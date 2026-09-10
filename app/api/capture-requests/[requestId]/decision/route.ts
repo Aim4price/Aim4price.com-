@@ -5,7 +5,7 @@ import {
   approveCaptureRequestForOwner,
   declineCaptureRequestForOwner,
 } from '../../../../../lib/capture-finalization';
-import { getCaptureRequestDetail, type CaptureRequestDetail } from '../../../../../lib/capture-requests';
+import { getCaptureRequestDetail, sendCaptureCustomerMessage, type CaptureRequestDetail } from '../../../../../lib/capture-requests';
 import {
   getOwnerAppAccess,
   ownerAppCan,
@@ -136,6 +136,7 @@ function responseDetail(request: CaptureRequestDetail) {
   return {
     id: request.id,
     publicReference: request.publicReference,
+    version: request.version,
     requestType: request.requestType,
     submissionChannel: request.submissionChannel,
     status: request.status,
@@ -182,6 +183,8 @@ function captureDecisionError(error: unknown): NextResponse {
     || code.includes('STATUS')
     || code.includes('ALREADY')
     || code.includes('CLAIMED')
+    || code.includes('CHANGED')
+    || code.includes('FINALIZATION')
   ) {
     return NextResponse.json({ ok: false, error: 'This document can no longer be decided in its current state.' }, { status: 409 });
   }
@@ -226,7 +229,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const requestId = cleanText(context.params.requestId, 80);
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   const decision = cleanText(body?.decision, 20).toLowerCase();
-  if (decision !== 'approve' && decision !== 'decline') {
+  if (decision !== 'approve' && decision !== 'decline' && decision !== 'correction') {
     return NextResponse.json({ ok: false, error: 'Choose whether to approve or decline this document.' }, { status: 400 });
   }
 
@@ -238,6 +241,16 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       || !ownerAppCanReachCapture(capture, actor.ownerAppAccess)
     ) {
       return NextResponse.json({ ok: false, error: 'This capture request was not found.' }, { status: 404 });
+    }
+
+    if (decision === 'correction') {
+      const message = cleanText(body?.reason, 1000);
+      if (!message) return NextResponse.json({ ok: false, error: 'Tell us what needs correcting.' }, { status: 400 });
+      await sendCaptureCustomerMessage(requestId, {
+        actor, action: 'correction', message, expectedVersion: Number(body?.version),
+        expectedOwnerUserId: capture.ownerUserId, expectedAssetId: capture.assetId,
+      });
+      return NextResponse.json({ ok: true, status: 'in_progress', message: 'Correction sent to Aim4price. Nothing has been added to your costs.' });
     }
 
     if (decision === 'decline') {
@@ -270,3 +283,4 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return captureDecisionError(error);
   }
 }
+

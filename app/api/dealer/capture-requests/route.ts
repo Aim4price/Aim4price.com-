@@ -22,9 +22,10 @@ export async function GET(request: NextRequest) {
       statuses: request.nextUrl.searchParams.get('active') === '1' ? OPEN_STATUSES : undefined,
       limit: 100,
     });
-    return NextResponse.json({ ok: true, requests: requests.map((request) => toCaptureRequestStatusView(request)) });
+    return NextResponse.json({ ok: true, requests: requests.map((request) => toCaptureRequestStatusView(request, { canReply: true })) });
   } catch (error) {
     console.error('Dealer assisted capture status load failed.', error);
     return NextResponse.json({ ok: false, error: 'Capture status is temporarily unavailable.' }, { status: 500 });
   }
 }
+
