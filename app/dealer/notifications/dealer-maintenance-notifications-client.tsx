@@ -1,6 +1,4 @@
 'use client';
-import NotificationSettingsModal from '../../../components/NotificationSettingsModal';
-import notificationSettingsStyles from '../../../components/PhoneNotificationSettings.module.css';
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
@@ -111,7 +109,7 @@ export default function DealerMaintenanceNotificationsClient({
     <div className={`${styles.content} ${styles.notificationContent}`}>
       <section className={styles.notificationIntro}>
         <div className={styles.ownerPageIntro}>
-          <div className={notificationSettingsStyles.titleRow}><h1 className={styles.ownerPageTitle}>Notifications</h1><NotificationSettingsModal app="dealer" /></div>
+          <h1 className={styles.ownerPageTitle}>Notifications</h1>
           <p className={styles.ownerPageSubtitle}>Maintenance updates and history.</p>
         </div>
       </section>

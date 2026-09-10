@@ -1,6 +1,4 @@
 'use client';
-import NotificationSettingsModal from '../../../components/NotificationSettingsModal';
-import notificationSettingsStyles from '../../../components/PhoneNotificationSettings.module.css';
 
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -537,7 +535,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
       <div className={`${styles.content} ${styles.notificationContent}`}>
         <section className={styles.notificationIntro}>
           <div className={styles.ownerPageIntro}>
-            <div className={notificationSettingsStyles.titleRow}><h1 className={styles.ownerPageTitle}>Notifications</h1><NotificationSettingsModal app="owner" /></div>
+            <h1 className={styles.ownerPageTitle}>Notifications</h1>
             <p className={styles.ownerPageSubtitle}>Updates that need your attention.</p>
           </div>
         </section>

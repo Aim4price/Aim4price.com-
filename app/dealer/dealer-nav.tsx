@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import NotificationSettingsModal from '../../components/NotificationSettingsModal';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
@@ -96,8 +97,7 @@ export default function DealerNav({
           {isSigningOut ? 'Signing out…' : 'Sign out'}
         </button>
       )}
+      {pathname === '/dealer/notifications' ? <div style={{marginLeft:'auto',display:'flex'}}><NotificationSettingsModal app={appRoot === '/middleman' ? 'middleman' : 'dealer'} /></div> : null}
     </header>
   );
 }
-
-

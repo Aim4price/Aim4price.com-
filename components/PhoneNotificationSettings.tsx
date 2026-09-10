@@ -73,32 +73,30 @@ export default function PhoneNotificationSettings({ app, modal = false }: { app:
   async function toggleCategory(category:PushCategory) {
     if(busy)return;setBusy(true);setError('');setMessage('');
     const next={...preferences,[category]:!preferences[category]};
-    try{await api({action:'preferences',preferences:next});setPreferences(next);setMessage('Notification settings saved.');}
+    try{await api({action:'preferences',preferences:next});setPreferences(next);setMessage('Saved.');}
     catch(e){setError((e as Error).message);}finally{setBusy(false);}
   }
   async function test(){setBusy(true);setError('');setMessage('');try{await api({action:'test'});setMessage('Test notification sent.');}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
   return <section className={modal?styles.modalPanel:styles.panel} aria-busy={loading||busy}>
     {!modal ? <><img className={styles.logo} src="/brand/aim4price-mark-white.png" alt="Aim4price" /><h1>Notifications</h1></> : null}
-    <p className={styles.intro}>Choose your phone notifications.</p>
     {loading?<p role="status">Loading notifications…</p>:<>
       <button type="button" role="switch" aria-checked={enabled} className={styles.row} disabled={busy||!publicKey||(!enabled&&(support!=='ready'||!accountSettings.enabled))} onClick={()=>void togglePhone()}>
-        <span>Phone notifications</span><span className={enabled?styles.on:styles.off}>{enabled?'On':'Off'}</span>
+        <span>Phone alerts</span><span className={enabled?styles.on:styles.off}>{enabled?'On':'Off'}</span>
       </button>
-      {support==='install'?<p>Add {config.name} to your Home Screen, then open it to enable notifications.</p>:null}
-      {support==='blocked'?<p>Notifications are blocked. Allow them in your phone or browser settings, then return here.</p>:null}
-      {support==='unsupported'?<p>This browser does not support phone notifications. Your notifications are still available in the app.</p>:null}
+      {support==='install'?<p>Add to Home Screen, then open the app.</p>:null}
+      {support==='blocked'?<p>Allow notifications in your phone settings.</p>:null}
+      {support==='unsupported'?<p>Phone alerts aren’t supported in this browser.</p>:null}
       {support!=='ready'?<button type="button" className={styles.button} disabled={busy} onClick={()=>void load()}>Check again</button>:null}
-      {!accountSettings.enabled ? <p>Phone notifications are turned off for this account in Desktop.</p> : null}
+      {!accountSettings.enabled ? <p>Alerts are off in Desktop settings.</p> : null}
       <div className={styles.categories}>
         {categories.map(category=><button key={category} type="button" className={styles.row} role="switch" aria-checked={preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]} disabled={busy||!accountSettings.enabled||!accountSettings.preferences[category]} onClick={()=>void toggleCategory(category)}>
           <span>{PUSH_CATEGORIES[category]}{!accountSettings.preferences[category]?<small className={styles.managed}>Off in Desktop</small>:null}</span><span className={preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]?styles.on:styles.off}>{preferences[category]&&accountSettings.enabled&&accountSettings.preferences[category]?'On':'Off'}</span>
         </button>)}
       </div>
-      <p className={styles.hint}>These settings apply to your {config.name.replace('Aim4price ','')} app login. Turning phone alerts off keeps your notifications in the app.</p>
-      <button className={styles.button} type="button" onClick={()=>void test()} disabled={!enabled||busy||!accountSettings.enabled}>Send test notification</button>
+      {enabled && accountSettings.enabled ? <button className={styles.button} type="button" onClick={()=>void test()} disabled={busy}>Send test</button> : null}
       {!modal ? <Link className={styles.button} href={config.root+'/notifications'}>View notifications</Link> : null}
     </>}
-    <p role="status" className={styles.message}>{message}</p>
+    {message ? <p role="status" className={styles.message}>{message}</p> : null}
     {error?<div role="alert"><p>{error}</p><button type="button" className={styles.button} disabled={busy} onClick={()=>void load()}>Try again</button></div>:null}
   </section>;
 }
