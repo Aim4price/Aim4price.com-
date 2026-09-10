@@ -120,7 +120,10 @@ async function check(browser, url) {
   }
   for(let i=0;i<3;i++) {const g=await dropdownGeometry();assert.ok(g.inRoot);assert.ok(Math.abs(g.left)<1);assert.ok(Math.abs(g.width)<1);assert.ok(Math.abs(g.gap-8*g.scale)<1);await page.click('[aria-label="Zoom in"]');await page.evaluate(()=>window.scrollTo({left:0,top:0,behavior:'instant'}));await delay(150);}
   const manual=await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale));
-  await page.reload({waitUntil:'networkidle2'});assert.equal(await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale)),manual);
+  await page.reload({waitUntil:'networkidle2'});
+  // The server renders scale 1; hydration restores the saved preference.
+  await page.waitForFunction(expected=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===expected,{timeout:15000},manual);
+  assert.equal(await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale)),manual);
   await page.click('[aria-controls="canvas-test-dropdown"]');
   await page.click('[aria-haspopup="listbox"]:not([aria-controls="canvas-test-dropdown"])');
   await page.waitForSelector('[role="option"]');await page.$$eval('[role="option"]',els=>els.find(e=>e.textContent.includes('Second option')).click());
