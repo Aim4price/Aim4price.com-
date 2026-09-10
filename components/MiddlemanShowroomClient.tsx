@@ -377,8 +377,8 @@ export function MiddlemanShowroomManager({
     <div className={`${styles.managerPage} ${dealerAppMode ? styles.managerPageMobile : ''}`}>
       <section className={styles.managerHero}>
         <div className={styles.managerHeroCopy}>
-          <h1>A professional home for your machinery adverts</h1>
-          <p>Keep your adverts together and share one polished link with customers.</p>
+          <h1>Your own showroom</h1>
+          <p>All your adverts. One link to share.</p>
         </div>
         <div className={styles.heroActions}>
           <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Value and create advert</Link>

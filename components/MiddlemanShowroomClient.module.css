@@ -24,6 +24,7 @@
 .managerHero, .managerGrid { width: min(1460px, 100%); margin-inline: auto; }
 
 .managerHero {
+  composes: hero from "./WorkspaceHero.module.css";
   position: relative;
   display: flex;
   align-items: center;
@@ -31,7 +32,7 @@
   gap: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 3.5), 3.75rem);
   overflow: hidden;
   min-height: 0;
-  padding: clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.15rem);
+  padding: clamp(24px, calc(var(--website-design-vw, 1vw) * 2.4), 40px);
   border: 1px solid #d6e4de;
   border-radius: 22px;
   background: rgba(255,255,255,.97);
@@ -50,16 +51,6 @@
 }
 .managerHeroCopy, .heroActions { position: relative; z-index: 1; }
 .managerHeroCopy { min-width: 0; }
-.managerHero h1 {
-  max-width: 790px;
-  margin: 0 0 .65rem;
-  font-family: 'Montserrat', sans-serif;
-  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 2.75), 3rem);
-  font-weight: 850;
-  line-height: 1.06;
-  letter-spacing: -.048em;
-}
-.managerHero p { max-width: 720px; margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.6; }
 .heroActions, .settingsActions, .publicContactActions { display: flex; flex-wrap: wrap; gap: .7rem; }
 .heroActions { flex: 0 0 auto; align-self: center; }
 
@@ -310,8 +301,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .managerPage, :global(:where(html:not(:has([data-website-canvas])))) .managerPageMobile { padding: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .managerHero { gap: 1.35rem; border-radius: 18px; padding: 1.3rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .managerHero::after { display: none; }
-  :global(:where(html:not(:has([data-website-canvas])))) .managerHero h1 { font-size: clamp(1.8rem,9vw,2.35rem); }
-  :global(:where(html:not(:has([data-website-canvas])))) .managerHero p { font-size: .88rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .heroActions, :global(:where(html:not(:has([data-website-canvas])))) .heroActions a { width: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .managerGrid { gap: .75rem; margin-top: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .stockCard { order: -1; }

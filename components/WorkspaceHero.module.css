@@ -1,0 +1,18 @@
+/* Shared typography for the Ad Studio and showroom manager banners. */
+.hero h1 {
+  margin: 0;
+  font-family: var(--font-heading, "Montserrat", sans-serif);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3.6), 3.5rem);
+  font-weight: 850;
+  line-height: 1.08;
+  letter-spacing: -.045em;
+  color: #17362c;
+}
+.hero p {
+  margin: 14px 0 0;
+  font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.6;
+  color: #677b74;
+}
