@@ -2345,6 +2345,9 @@ export default function AccountClient({
                 </div>
 
                 <div className={styles.quickActionList}>
+                  {isOwnerAccount || isDealerAccount ? <a className={styles.quickActionButton} href={isOwnerAccount ? '/owner-app/account/notifications' : isMiddlemanAccount ? '/middleman/account/notifications' : '/dealer/account/notifications'}>
+                    <strong>Notifications</strong>
+                  </a> : null}
                   <button
                     type="button"
                     className={styles.quickActionButton}
@@ -3403,3 +3406,4 @@ export default function AccountClient({
     </main>
   );
 }
+

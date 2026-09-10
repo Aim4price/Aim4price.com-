@@ -135,7 +135,12 @@ async function deleteUserWorkspaceDataInTransaction(
     ...PARTNER_ACCESS_TABLES,
     ...USER_COMMUNICATION_TABLES,
     ...ASSISTED_CAPTURE_TABLES,
+    'app_push_devices', 'app_push_preferences',
   ]);
+
+  for (const table of ['app_push_devices', 'app_push_preferences']) {
+    await deleteByColumn(queryable, tableSet, table, 'account_id', userId);
+  }
 
   // Capture requests point both to and from canonical ledger records. Unlink
   // their retry-safety provenance, then remove the owner's private workflow
@@ -400,3 +405,4 @@ export async function deleteUserWorkspaceDataWithClient(
 ): Promise<void> {
   await deleteUserWorkspaceDataInTransaction(client, userId);
 }
+

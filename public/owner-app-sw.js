@@ -12,3 +12,7 @@ self.addEventListener('fetch', (event) => {
   if (!isOwnerAppPath) return;
   event.respondWith(fetch(event.request));
 });
+
+
+const PUSH_APP = 'owner';
+importScripts('/app-push-worker.js');

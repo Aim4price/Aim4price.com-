@@ -13,7 +13,9 @@ export default async function OwnerNotificationsPage() {
   return (
     <main className={styles.page}>
       <OwnerAppNav />
+      <a className={styles.secondaryButton} href="/owner-app/account/notifications">Notification settings</a>
       <OwnerNotificationsClient viewerId={notificationViewerId} />
     </main>
   );
 }
+

@@ -109,7 +109,7 @@ export default async function DealerHome() {
     { label: 'Discover Assets', href: '/middleman/discovery', capability: 'discovery' },
     { label: 'Marketplace', href: '/middleman/marketplace', capability: 'marketplace' },
   ];
-  const middlemanCapabilities = new Set<DealerAppCapability>(['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom']);
+  const middlemanCapabilities = new Set<DealerAppCapability>(['notifications', 'valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom']);
   const orderedTools = middlemanMode
     ? [...middlemanCapabilities].flatMap((capability) => allTools.filter((tool) => tool.capability === capability))
     : allTools;
@@ -123,10 +123,12 @@ export default async function DealerHome() {
       <div className={styles.homeContent}>
         <nav className={styles.homeLauncher} aria-label={middlemanMode ? 'Middleman tools' : 'Dealer tools'}>
           {tools.map((tool) => <ToolCard key={tool.href} tool={tool} />)}
+          <Link className={styles.homeLaunchCard} href="/middleman/account"><strong>Account</strong></Link>
         </nav>
       </div>
     </main>
   );
 }
+
 
 

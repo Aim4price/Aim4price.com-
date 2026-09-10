@@ -14,7 +14,7 @@ export default async function DealerNotificationsPage() {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) redirect('/dealer/login');
   const dealerAppSession = await getDealerAppSession();
-  if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'notifications')) redirect('/dealer');
+  if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'notifications') && !dealerRoleCan(dealerAppSession.role, 'maintenance')) redirect('/dealer');
 
   const profile = await getAccountProfile({
     id: session.user.id,
@@ -36,7 +36,9 @@ export default async function DealerNotificationsPage() {
 
   return (
     <main className={`${styles.module} ${styles.notificationOwnerPage}`}>
+      <a className={styles.navButton} href="/dealer/account/notifications">Notification settings</a>
       <DealerMaintenanceNotificationsClient notifications={notifications} />
     </main>
   );
 }
+

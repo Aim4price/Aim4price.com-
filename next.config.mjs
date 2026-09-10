@@ -4,6 +4,7 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
+    instrumentationHook: true,
     serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   },
   async rewrites() {
@@ -21,3 +22,4 @@ const nextConfig = {
 };
 
 export default nextConfig;
+
