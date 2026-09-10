@@ -25,3 +25,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(fetch(event.request));
 });
 
+
+
+const PUSH_APP = 'middleman';
+importScripts('/app-push-worker.js');

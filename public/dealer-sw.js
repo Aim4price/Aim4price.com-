@@ -24,3 +24,7 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith(fetch(event.request));
 });
+
+
+const PUSH_APP = 'dealer';
+importScripts('/app-push-worker.js');

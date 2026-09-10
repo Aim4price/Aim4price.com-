@@ -3,6 +3,13 @@ name: Notification validation
 on:
   pull_request:
     paths:
+      - 'lib/push-*.ts'
+      - 'components/PhoneNotificationSettings*'
+      - 'app/api/app-notifications/**'
+      - 'public/*sw.js'
+      - 'public/app-push-worker.js'
+      - 'instrumentation.ts'
+      - 'tests/phone-notifications.test.cjs'
       - 'app/api/notifications/**'
       - 'app/api/owner-app/notifications/**'
       - 'app/api/dealer/maintenance/notifications/**'
@@ -82,3 +89,7 @@ jobs:
 
       - name: Test Owner App operations
         run: npm run test:owner-app-operations
+
+
+      - name: Validate phone notifications
+        run: npm run test:phone-notifications

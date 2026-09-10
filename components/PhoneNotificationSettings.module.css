@@ -1,0 +1,12 @@
+.panel { width: min(100%, 36rem); margin: 0 auto; padding: 1rem; color: #fff; box-sizing: border-box; }
+.panel h1 { font-size: 1.6rem; margin: .8rem 0 .35rem; text-align: left; }
+.logo { display: block; width: 9rem; height: 3rem; object-fit: contain; object-position: left center; }
+.intro { margin: 0 0 1.2rem; }
+.categories { display: grid; gap: .65rem; margin: 1.2rem 0; }
+.row { width: 100%; min-height: 3.4rem; padding: .9rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid #c9e1d5; border-radius: .8rem; background: #fff; color: #174c3a; text-align: left; font: inherit; cursor: pointer; }
+.on, .off { display: inline-flex; align-items: center; justify-content: center; min-width: 3.2rem; min-height: 1.8rem; border-radius: 2rem; font-size: .85rem; flex-shrink: 0; }
+.on { background: #caecd7; color: #174c3a; }.off { background: #f4dddd; color: #713d3d; }
+.button { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 3rem; margin: .65rem 0 0; padding: .65rem 1rem; box-sizing: border-box; border: 1px solid #c9e1d5; border-radius: .8rem; background: #e2f1e8; color: #174c3a; font: inherit; text-decoration: none; cursor: pointer; }
+.button:focus-visible, .row:focus-visible { outline: 3px solid #f4d568; outline-offset: 3px; }
+.button:disabled, .row:disabled { opacity: .6; cursor: default; }
+.hint { font-size: .9rem; line-height: 1.5; }.message { min-height: 1.5em; font-size: .9rem; }

@@ -144,10 +144,12 @@ export default async function DealerHome() {
       <div className={styles.homeContent}>
         <nav className={styles.homeLauncher} aria-label={middlemanMode ? 'Middleman tools' : 'Dealer tools'}>
           {tools.map((tool) => <ToolCard key={tool.href} tool={tool} />)}
+          <Link className={styles.homeLaunchCard} href="/dealer/account"><strong>Account</strong></Link>
         </nav>
       </div>
     </main>
   );
 }
+
 
 

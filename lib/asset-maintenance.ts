@@ -2164,7 +2164,7 @@ function alertPriority(alert: AssetMaintenanceAlert): number {
   return 3;
 }
 
-function buildAlertBody(record: AssetMaintenanceRecord): string {
+export function buildAlertBody(record: AssetMaintenanceRecord): string {
   const typeLabel = record.maintenanceType === 'checkup' ? 'Checkup' : 'Service';
   const metric = record.usageMetric ?? record.assetUsageMetric;
 
@@ -2264,3 +2264,4 @@ export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetFor
     maintenanceAlert: alertsByAssetId.get(asset.id) ?? null,
   }));
 }
+

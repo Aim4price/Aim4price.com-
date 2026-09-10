@@ -55,15 +55,18 @@ test('Dealer and Middleman cookies and signed tokens cannot substitute for each 
 
 test('logout clears only the selected app cookies', async () => {
   for (const realm of ['dealer', 'middleman']) {
-    const cleared = [];
+    const cleared = [], removed = [];
     const { POST } = await load('app/api/dealer/logout/route.ts', {
       'next/server': { NextResponse: { json: () => ({ cookies: { set: (...args) => cleared.push(args[0]) } }) } },
+      'next/headers': { cookies: () => ({ get: name => ({ value: name + '-device' }) }) },
+      '../../../../lib/push-store': { removePushDevice: async (...args) => removed.push(args) },
       '../../../../lib/app-realm-server': { currentAppRealm: async () => realm },
       '../../../../lib/middleman-account': {},
       '../../../../lib/dealer-app-session': { DEALER_APP_COOKIE: 'dealer', DEALER_APP_LEGACY_COOKIE: 'old-dealer', MIDDLEMAN_APP_COOKIE: 'middleman', dealerAppCookieOptions: () => ({}), dealerAppLegacyCookieOptions: () => ({}) },
     });
-    await POST({ url: 'https://example.com/api/' + realm + '/logout' });
-    assert.deepEqual(cleared, realm === 'dealer' ? ['dealer', 'old-dealer'] : ['middleman']);
+    await POST({ url: 'https://example.com/api/' + realm + '/logout', headers: new Headers({ origin: 'https://example.com' }) });
+    assert.deepEqual(cleared, realm === 'dealer' ? ['dealer', 'old-dealer', 'aim4price_push_dealer'] : ['middleman', 'aim4price_push_middleman']);
+    assert.deepEqual(removed, [[realm, `aim4price_push_${realm}-device`]]);
   }
 });
 
@@ -92,3 +95,4 @@ test('login rejects the other account subtype and writes only its own cookie', a
     }
   }
 });
+
