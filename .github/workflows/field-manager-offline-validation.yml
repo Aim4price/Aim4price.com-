@@ -1,0 +1,35 @@
+name: Field Manager offline validation
+on:
+  pull_request:
+    paths:
+      - 'app/field-manager/**'
+      - 'app/api/field-manager/offline/**'
+      - 'lib/field-manager*.ts'
+      - 'public/field-manager/**'
+      - 'public/field-manager-sw.js'
+      - 'tests/field-manager-offline.test.cjs'
+      - 'scripts/verify-field-manager-offline.cjs'
+      - '.github/workflows/field-manager-offline-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/field-manager-offline.test.cjs tests/app-account-isolation.test.mjs tests/separate-app-sessions.test.mjs
+      - run: node scripts/verify-field-manager-offline.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: field-manager-offline-browser
+          path: .next/field-offline-validation
+          if-no-files-found: ignore

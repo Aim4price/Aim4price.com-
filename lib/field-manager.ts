@@ -102,6 +102,7 @@ export type FieldManagerAssetSummary = {
   internalReference: string;
   note: string;
   usageReading: number | null;
+  usageMetric: import("./asset-usage").AssetUsageMetric;
   usageLabel: string;
   yearModel: number | null;
   lifeWorkedPercent: number | null;
@@ -351,6 +352,7 @@ function readSpecText(specs: Record<string, unknown>, keys: string[]): string {
 
 function normalizeUsageLabel(row: FieldManagerAssetRow): {
   usageReading: number | null;
+  usageMetric: import("./asset-usage").AssetUsageMetric;
   usageLabel: string;
 } {
   const specs = asRecord(row.specs_json);
@@ -363,6 +365,7 @@ function normalizeUsageLabel(row: FieldManagerAssetRow): {
 
   return {
     usageReading: usage.value,
+    usageMetric: usage.metric,
     usageLabel: formatResolvedAssetUsage(
       usage,
       usage.metric === "percentage" ? "No percentage saved" : "No reading saved",
@@ -435,6 +438,7 @@ function mapFieldManagerAssetRow(
     ]),
     note: asText(row.note) || readSpecText(specs, ["note", "notes", "description"]),
     usageReading: usage.usageReading,
+    usageMetric: usage.usageMetric,
     usageLabel: usage.usageLabel,
     yearModel: normalizeYearModel(row),
     lifeWorkedPercent: asNumber(row.life_worked_percent),

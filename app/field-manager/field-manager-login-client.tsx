@@ -162,6 +162,7 @@ export default function FieldManagerLoginClient() {
         companyName: payload.welcome?.companyName || 'Aim4price',
         logoUrl: payload.welcome?.logoUrl || '/icon.png',
       });
+      if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-field-session'); channel.postMessage('lock'); channel.close(); }
       window.setTimeout(() => window.location.replace(redirectTo), 1400);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Field Manager login failed.');
