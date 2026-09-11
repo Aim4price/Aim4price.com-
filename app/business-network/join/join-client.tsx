@@ -6,6 +6,7 @@ import {
   BUSINESS_SERVICES,
 } from "../../../lib/business-network-shared";
 import styles from "../../../components/business-network/BusinessNetwork.module.css";
+import type { AdminBusiness } from "../../../lib/admin-business-network";
 type Fields = {
   name: string;
   phone: string;
@@ -43,13 +44,21 @@ type Place = {
   primaryTypeDisplayName?: { text: string };
   googleMapsUri?: string;
 };
-export default function BusinessJoin() {
+export default function BusinessJoin({
+  adminMode = false,
+  adminBusiness = null,
+  onAdminSaved,
+}: {
+  adminMode?: boolean;
+  adminBusiness?: AdminBusiness | null;
+  onAdminSaved?: () => void;
+}) {
   const tokenRef = useRef("");
   const [token, setToken] = useState(""),
     [fields, setFields] = useState(defaults),
     [email, setEmail] = useState(""),
-    [status, setStatus] = useState(""),
-    [notice, setNotice] = useState("Loading invitation…"),
+    [status, setStatus] = useState(adminMode ? "new" : ""),
+    [notice, setNotice] = useState(adminMode ? "" : "Loading invitation…"),
     [busy, setBusy] = useState(false),
     [accepted, setAccepted] = useState(false),
     [service, setService] = useState(""),
@@ -57,6 +66,23 @@ export default function BusinessJoin() {
     [query, setQuery] = useState(""),
     [places, setPlaces] = useState<Place[]>([]);
   useEffect(() => {
+    if (adminMode) {
+      if (adminBusiness) {
+        const b = adminBusiness;
+        setFields({
+          ...defaults,
+          ...b.details,
+          name: b.name,
+          latitude: String(b.details.latitude ?? ""),
+          longitude: String(b.details.longitude ?? ""),
+          radiusKm: String(b.details.radiusKm ?? 50),
+        });
+        setEmail(b.email);
+        setStatus(b.status);
+        setQuery(`${b.name} ${b.details.town || ""}`);
+      }
+      return;
+    }
     const token = tokenRef.current || window.location.hash.slice(1);
     tokenRef.current = token;
     history.replaceState(null, "", window.location.pathname);
@@ -83,22 +109,36 @@ export default function BusinessJoin() {
         setNotice("");
       })
       .catch((e) => setNotice(e.message));
-  }, []);
+  }, [adminMode, adminBusiness]);
   const set = (key: keyof Fields, value: unknown) =>
     setFields((current) => ({ ...current, [key]: value }));
   async function save(action = "save") {
     setBusy(true);
     try {
-      const r = await fetch("/api/business-network/profile", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const r = await fetch(
+        adminMode
+          ? "/api/admin/business-network"
+          : "/api/business-network/profile",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(adminMode ? {} : { Authorization: `Bearer ${token}` }),
+          },
+          body: JSON.stringify({
+            ...fields,
+            action,
+            accepted,
+            ...(adminMode ? { email, id: adminBusiness?.id } : {}),
+          }),
         },
-        body: JSON.stringify({ ...fields, action, accepted }),
-      });
+      );
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
+      if (adminMode) {
+        onAdminSaved?.();
+        return;
+      }
       setStatus(action === "pause" ? "paused" : "active");
       setNotice(
         action === "pause"
@@ -114,9 +154,19 @@ export default function BusinessJoin() {
   return (
     <main className={`${styles.panel} ${styles.page}`}>
       <h1>
-        {status === "invited" ? "Join Aim4price" : "Your business listing"}
+        {adminMode
+          ? adminBusiness
+            ? "Edit business"
+            : "Add business"
+          : status === "invited"
+            ? "Join Aim4price"
+            : "Your business listing"}
       </h1>
-      <p>No subscription or login needed.</p>
+      <p>
+        {adminMode
+          ? "Publish directly to the owner directory. No invitation is required."
+          : "No subscription or login needed."}
+      </p>
       {notice ? (
         <p className={styles.notice} role="status">
           {notice}
@@ -140,7 +190,9 @@ export default function BusinessJoin() {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
-                      Authorization: `Bearer ${token}`,
+                      ...(adminMode
+                        ? {}
+                        : { Authorization: `Bearer ${token}` }),
                     },
                     body: JSON.stringify({ query }),
                   });
@@ -218,10 +270,20 @@ export default function BusinessJoin() {
             </label>
             <label>
               Request email
-              <input value={email} readOnly />
+              <input
+                type="email"
+                required
+                value={email}
+                readOnly={!adminMode || Boolean(adminBusiness)}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </label>
             <p className={styles.muted}>
-              Contact Aim4price to change this verified email address.
+              {adminMode
+                ? adminBusiness
+                  ? "The delivery email stays fixed for this listing."
+                  : "Owner enquiries will be sent to this address."
+                : "Contact Aim4price to change this verified email address."}
             </p>
             {(["phone", "website", "address", "town"] as const).map((key) => (
               <label key={key}>
@@ -378,22 +440,26 @@ export default function BusinessJoin() {
                 </button>
               </section>
             ))}
-            <label className={styles.check}>
-              <input
-                type="checkbox"
-                required
-                checked={accepted}
-                onChange={(e) => setAccepted(e.target.checked)}
-              />
-              I represent this business and agree to show these details to all
-              Aim4price owners and receive their requests by email.
-            </label>
+            {!adminMode ? (
+              <label className={styles.check}>
+                <input
+                  type="checkbox"
+                  required
+                  checked={accepted}
+                  onChange={(e) => setAccepted(e.target.checked)}
+                />
+                I represent this business and agree to show these details to all
+                Aim4price owners and receive their requests by email.
+              </label>
+            ) : null}
             <button className={styles.primary} disabled={busy} type="submit">
               {busy
                 ? "Saving…"
-                : status === "invited"
-                  ? "Accept and join"
-                  : "Save listing"}
+                : adminMode
+                  ? "Publish business"
+                  : status === "invited"
+                    ? "Accept and join"
+                    : "Save listing"}
             </button>
           </form>
           {status === "active" ? (
@@ -406,7 +472,9 @@ export default function BusinessJoin() {
             </button>
           ) : null}
           <a href="/privacy-policy">Privacy policy</a>
-          <a href="/business-network/manage">Request a new management link</a>
+          {!adminMode ? (
+            <a href="/business-network/manage">Request a new management link</a>
+          ) : null}
         </>
       ) : null}
     </main>
