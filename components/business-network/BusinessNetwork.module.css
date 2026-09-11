@@ -207,3 +207,93 @@
     padding: 16px;
   }
 }
+
+/* Directory controls use the same floating menus as the account workspace. */
+.filters {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.filterHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #173f31;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.filterHeading > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.filterHeading svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #318363;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+.filterHeading button {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: #38745d;
+  font: inherit;
+  font-size: 0.68rem;
+  cursor: pointer;
+}
+.directorySelect > span {
+  color: #6a7e75;
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+}
+.directorySelect > button {
+  min-height: 2.8rem;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.directorySelect > button strong {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.directoryActions {
+  padding-top: 14px;
+  border-top: 1px solid #e0e9e4;
+}
+.directoryActions .panel button[aria-expanded] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #527065;
+  padding: 8px 10px;
+  min-height: 2.2rem;
+  font-size: 0.72rem;
+}
+.directoryActions .panel button[aria-expanded]::after {
+  content: "+";
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 7px;
+  background: #edf4f0;
+  color: #32765a;
+  font-size: 1rem;
+  font-weight: 500;
+}
+.directoryActions .panel button[aria-expanded="true"]::after {
+  content: "−";
+}
+.directoryActions .panel button[aria-expanded="true"] {
+  background: #edf5f0;
+  color: #215d43;
+}
