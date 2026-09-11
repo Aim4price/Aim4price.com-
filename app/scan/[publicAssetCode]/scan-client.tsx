@@ -2845,12 +2845,20 @@ export default function ScanClient({
       return { asset: savedAssetFromResponse, syncedToServer: true };
     } catch (error) {
       if (isOfflineNetworkError(error)) {
-        await enqueueOfflineMutation({
-          id: finalClientEventId,
-          kind: "asset-scan-update",
-          endpoint,
-          payload,
-        });
+        try {
+          await enqueueOfflineMutation({
+            id: finalClientEventId,
+            kind: "asset-scan-update",
+            endpoint,
+            payload,
+          });
+        } catch (storageError) {
+          setNotice({
+            tone: "error",
+            message: storageError instanceof Error ? storageError.message : "Your update could not be saved on this phone. Please retry when connected.",
+          });
+          return null;
+        }
         const nextCount = await getOfflineMutationCount(["asset-scan-update"]);
         setPendingSyncCount(nextCount);
         setPendingUpdate({

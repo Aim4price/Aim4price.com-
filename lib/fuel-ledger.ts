@@ -2996,7 +2996,6 @@ export async function createFuelStorage(
 ): Promise<FuelLedgerStorage> {
   await ensureFuelLedgerTables();
   const db = getDb();
-  const client = await db.connect();
 
   const name = asText(input.name);
   if (name.length < 2) {
@@ -3008,8 +3007,12 @@ export async function createFuelStorage(
   const capacityLitres = normalizeOptionalLitres(input.capacityLitres);
   const currentLitres = normalizeOptionalLitres(input.currentLitres) ?? 0;
   const reorderLevelLitres = normalizeOptionalLitres(input.reorderLevelLitres);
+  if (capacityLitres !== null && currentLitres > capacityLitres) {
+    throw new Error('Starting fuel cannot exceed the tank capacity.');
+  }
   const publicFuelStorageCode = generateFuelStorageCode();
 
+  const client = await db.connect();
   try {
     await client.query('BEGIN');
 
@@ -3740,7 +3743,6 @@ export async function recordFuelAssetIssue(
 ): Promise<{ storage: FuelLedgerStorage; event: FuelLedgerEvent; assets: FuelLedgerAsset[] }> {
   await ensureFuelLedgerTables();
   const db = getDb();
-  const client = await db.connect();
   const litres = normalizePositiveLitres(input.litres);
   const assetFuelPercentBeforeInput = normalizeFuelPercent(input.assetFuelPercentBefore);
   const assetFuelPercentAfter = normalizeFuelPercent(input.assetFuelPercentAfter);
@@ -3785,6 +3787,7 @@ export async function recordFuelAssetIssue(
   const clientCapturedAt = normalizeClientCapturedAt(input.clientCapturedAt);
   const gpsAccuracyMeters = normalizeGpsAccuracyMeters(input.gpsAccuracyMeters);
 
+  const client = await db.connect();
   try {
     await client.query('BEGIN');
 
@@ -5164,7 +5167,6 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       };
     }
   }
-  const client = await db.connect();
   const existingFuelSlipId = normalizedFuelSlipIdFromInput(input);
   const targetType = normalizeFuelSlipTargetType(input.targetType);
   const rawTargetId = trimText(input.targetId, 120);
@@ -5244,6 +5246,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     throw new Error('Choose the storage tank for this fuel slip.');
   }
 
+  const client = await db.connect();
   try {
     await client.query('BEGIN');
 

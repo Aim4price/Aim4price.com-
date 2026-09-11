@@ -1864,7 +1864,7 @@
 .costUploadModal {
   box-sizing: border-box;
   width: min(100%, 860px);
-  max-height: min(90dvh, calc(var(--website-visible-height, 100dvh) - 3rem));
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.9), calc(var(--website-visible-height, 100dvh) - 3rem));
   overflow: hidden;
 }
 
@@ -6971,7 +6971,7 @@
 }
 
 .costUploadModal .modalHeader h2 {
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem);
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
@@ -7096,11 +7096,11 @@
 }
 
 @media (max-width: 520px) {
-  .costUploadModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .costUploadModal {
     max-height: min(92dvh, calc(var(--website-visible-height, 100dvh) - 2rem));
   }
 
-  .costUploadModal .uploadBox {
+  :global(:where(html:not(:has([data-website-canvas])))) .costUploadModal .uploadBox {
     padding: 0.85rem;
   }
 }
