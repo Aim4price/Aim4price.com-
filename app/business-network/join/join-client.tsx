@@ -151,9 +151,11 @@ export default function BusinessJoin({
       setBusy(false);
     }
   }
+  const Container = adminMode ? "section" : "main";
+  const Heading = adminMode ? "h2" : "h1";
   return (
-    <main className={`${styles.panel} ${styles.page}`}>
-      <h1>
+    <Container className={`${styles.panel} ${styles.page}`}>
+      <Heading>
         {adminMode
           ? adminBusiness
             ? "Edit business"
@@ -161,7 +163,7 @@ export default function BusinessJoin({
           : status === "invited"
             ? "Join Aim4price"
             : "Your business listing"}
-      </h1>
+      </Heading>
       <p>
         {adminMode
           ? "Publish directly to the owner directory. No invitation is required."
@@ -477,6 +479,6 @@ export default function BusinessJoin({
           ) : null}
         </>
       ) : null}
-    </main>
+    </Container>
   );
 }
