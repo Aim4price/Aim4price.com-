@@ -6,6 +6,63 @@
   display: grid;
   gap: 16px;
 }
+.directoryTools {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+  padding: 4px 4px 16px;
+  border-bottom: 1px solid #dce5e1;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+.directoryTools .panel {
+  gap: 10px;
+  align-content: start;
+}
+.directoryTools .panel label {
+  gap: 5px;
+  color: #617580;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.directoryTools .panel input,
+.directoryTools .panel select {
+  min-height: 2.5rem;
+  padding: 9px 12px;
+  border-color: #cddae2;
+  border-radius: 10px;
+  color: #173f31;
+  font-size: 0.8rem;
+}
+.directoryTools .panel button {
+  min-height: 2.5rem;
+  padding: 9px 12px;
+  border-color: #d3e1da;
+  background: #f4f8f6;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  text-align: left;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+.directoryTools .panel button:hover:not(:disabled) {
+  background: #e8f3ed;
+  border-color: #89b29d;
+}
+.directoryTools :is(button, input, select):focus-visible {
+  outline: 2px solid #21815b;
+  outline-offset: 2px;
+}
+.directoryTools .card {
+  padding: 12px;
+  border-color: #d3e1da;
+  background: #fafcfb;
+  box-shadow: none;
+}
+.directoryTools .muted {
+  font-size: 0.72rem;
+}
 .page {
   box-sizing: border-box;
   max-width: 760px;

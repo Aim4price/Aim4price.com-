@@ -1,7 +1,6 @@
 'use client';
 
-import BusinessInvite from '../../components/business-network/BusinessInvite';
-import BusinessFilters from '../../components/business-network/BusinessFilters';
+import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
 import BusinessSharePreview from '../../components/business-network/BusinessSharePreview';
 import QrCodePreview from '../../components/QrCodePreview';
 import { resolveAssetUsage } from '../../lib/asset-usage';
@@ -20424,9 +20423,8 @@ export default function AssetRegisterClient({
                         </button>
                       </div>
 
-                      <BusinessInvite />
-                      <BusinessFilters heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch, undefined, heading, service); }} />
                       <div className={styles.assetQuotePartnerList}>
+                        <BusinessDirectoryTools heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch, undefined, heading, service); }} />
                         {isLoadingQuotePartners ? (
                           <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
                         ) : quotePartners.length ? (

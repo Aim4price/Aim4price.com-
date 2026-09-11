@@ -10,7 +10,7 @@ export default function BusinessInvite() {
     [notice, setNotice] = useState("");
   return (
     <div className={styles.panel}>
-      <button type="button" onClick={() => setOpen(!open)}>
+      <button type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
         Invite a business
       </button>
       {open ? (
