@@ -33,6 +33,7 @@ export default function BusinessShareHistory() {
     <div className={styles.panel}>
       <button
         type="button"
+        aria-expanded={open}
         onClick={() => {
           setOpen(!open);
           if (!open) void load();
