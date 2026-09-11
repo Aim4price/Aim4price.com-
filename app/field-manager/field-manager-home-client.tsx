@@ -1,5 +1,6 @@
 'use client';
 
+import FieldManagerSettings from './field-manager-settings';
 import { useEffect, useState } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import AppHomeIcon, { AppHomeChevron } from '../../components/AppHomeIcon';
@@ -155,6 +156,7 @@ export default function FieldManagerHomeClient() {
     <main className={`${styles.mobilePage} ${styles.homePage}`}>
       <section className={`${styles.assetsShell} ${styles.homeShell}`}>
         <header className={styles.assetsHeader} aria-label="Field Manager account controls">
+          <FieldManagerSettings />
           <button type="button" className={styles.logoutButton} onClick={() => void handleLogout()}>
             Sign out
           </button>
@@ -220,10 +222,7 @@ export default function FieldManagerHomeClient() {
                 <AppHomeChevron />
               </button>
 
-              <button type="button" className={`${styles.homeActionCard} ${launcherStyles.card}`}
-                onClick={() => window.location.assign('/field-manager/offline.html')}>
-                <AppHomeIcon name="operations" /><strong>Offline work</strong><AppHomeChevron />
-              </button>
+
 
               <button
                 type="button"

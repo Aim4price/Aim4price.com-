@@ -1,0 +1,10 @@
+.settings { position: relative; flex: 0 0 auto; z-index: 20; }
+.gear { display: grid; place-items: center; width: 54px; height: 54px; border: 1px solid #d4e1dc; border-radius: 18px; background: rgba(255,255,255,.94); color: #315e4d; box-shadow: 0 8px 22px rgba(13,62,49,.06); cursor: pointer; list-style: none; }
+.gear::-webkit-details-marker { display: none; }
+.gear svg { width: 27px; height: 27px; }
+.gear:focus-visible,.panel a:focus-visible { outline: 3px solid #79ac91; outline-offset: 3px; }
+.panel { position: absolute; top: calc(100% + 10px); left: 0; width: 260px; max-width: calc(100vw - 44px); padding: 8px; border: 1px solid #d4e1dc; border-radius: 20px; background: #fff; box-shadow: 0 16px 40px rgba(13,62,49,.14); }
+.panel a { display: grid; gap: 5px; border-radius: 13px; padding: 14px; color: #173e32; text-decoration: none; font-size: 1rem; }
+.panel a:hover { background: #f0f7f2; }
+.panel strong { font-weight: 800; }
+.panel span { font-size: .8rem; color: #637c70; }

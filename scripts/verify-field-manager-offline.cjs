@@ -24,10 +24,10 @@ async function main() {
         if (dropNext) { dropNext = false; res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"ok":false,"error":"Confirmation interrupted"}'); return; }
         res.setHeader('Content-Type', 'application/json'); res.end('{"ok":true,"asset":{"id":"asset"},"scheduledMaintenanceCompletion":{"completed":true}}'); return;
       }
-      const allowed = ['/field-manager/offline.html', '/field-manager/offline.css', '/field-manager/offline.mjs', '/field-manager/offline-store.mjs', '/field-manager-sw.js', '/app-push-worker.js'];
+      const allowed = ['/field-manager/offline.html', '/field-manager/offline.css', '/field-manager/montserrat-latin.woff', '/field-manager/offline.mjs', '/field-manager/offline-store.mjs', '/field-manager-sw.js', '/app-push-worker.js'];
       if (!allowed.includes(url.pathname)) { req.socket.destroy(); return; }
       const file = path.join(root, 'public', url.pathname);
-      res.setHeader('Content-Type', url.pathname.endsWith('.html') ? 'text/html' : url.pathname.endsWith('.css') ? 'text/css' : 'application/javascript');
+      res.setHeader('Content-Type', url.pathname.endsWith('.woff') ? 'font/woff' : url.pathname.endsWith('.html') ? 'text/html' : url.pathname.endsWith('.css') ? 'text/css' : 'application/javascript');
       res.setHeader('Cache-Control', 'no-store'); res.end(await fs.readFile(file));
     } catch (error) { res.writeHead(500); res.end(String(error)); }
   });
@@ -42,11 +42,14 @@ async function main() {
     await page.setGeolocation({ latitude: -25.7, longitude: 28.2, accuracy: 10 });
     const notice = () => page.$eval('#notice', n => n.textContent);
     await page.goto(origin + '/field-manager/offline.html');
+    await page.evaluate(async () => { const old = await caches.open('aim4price-field-offline-shell-v1'); await old.put('/old-shell-marker', new Response('old')); });
     await page.type('#pin', '12345678'); await page.type('#confirm-pin', '12345678'); await page.click('#unlock-button');
     await page.waitForSelector('#workspace:not([hidden])');
     await page.waitForFunction(() => !document.querySelector('#sync').disabled);
     assert.match(await page.$eval('#assets', n => n.textContent), /Test tractor/);
-    console.log('PASS preparation, snapshot and offline shell installation');
+    await page.waitForFunction(async () => !(await caches.keys()).includes('aim4price-field-offline-shell-v1'));
+    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v2' })), true);
+    console.log('PASS preparation, snapshot, upgraded shell and locally cached font');
     await page.setOfflineMode(true);
     await page.click('.asset'); await page.select('#action', 'Serviced'); await page.select('#task', 'task');
     await page.type('#usage', '105'); await page.type('#notes', 'Changed engine oil offline');
@@ -67,6 +70,9 @@ async function main() {
     assert.ok(!encrypted.plaintext.includes('Changed engine oil offline'));
     await page.goto(origin + '/field-manager/assets/A4P-TEST');
     await page.waitForFunction(() => document.querySelector('#unlock-button')?.textContent === 'Unlock');
+    await page.evaluate(() => document.fonts.ready);
+    assert.equal(await page.evaluate(() => document.fonts.check('800 16px Montserrat')), true);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.type('#pin', '99999999'); await page.click('#unlock-button');
     await page.waitForFunction(() => document.querySelector('#notice').textContent.includes('could not unlock'));
     await page.$eval('#pin', n => n.value = ''); await page.type('#pin', '12345678'); await page.click('#unlock-button');
