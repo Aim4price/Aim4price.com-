@@ -23,3 +23,7 @@ While offline work is open and unlocked, it syncs on reconnect, on unlock, every
 Run `node --test tests/field-manager-offline.test.cjs` and `node scripts/verify-field-manager-offline.cjs`. The browser harness uses fake authenticated APIs and real Chromium storage/crypto/service-worker behaviour, including disconnected reload, account switching and retry after an unconfirmed write. It does not access production data. TypeScript and app isolation checks remain required.
 
 When changing public offline shell files, bump `SHELL_CACHE` in `public/field-manager-sw.js` and the matching preparation readiness check in `offline.mjs`, so an installed worker updates the complete shell atomically. Keep schema migrations explicit before changing the encrypted vault structure.
+
+### Offline work appearance and entry point
+
+Open the gear at the top left of Field Manager home, then choose **Offline work**. It is no longer a main launcher card. The offline shell uses the app’s Montserrat font, green palette, patterned background and rounded controls. The font is bundled under the SIL Open Font License and cached alongside the public shell, so styling does not require Google Fonts or a live connection. Shell v2 replaces the old public shell cache without deleting the encrypted device copy.
