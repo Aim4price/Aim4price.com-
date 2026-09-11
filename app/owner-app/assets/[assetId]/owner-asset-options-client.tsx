@@ -1,5 +1,8 @@
 'use client';
 
+import BusinessInvite from '../../../../components/business-network/BusinessInvite';
+import BusinessFilters from '../../../../components/business-network/BusinessFilters';
+import BusinessSharePreview from '../../../../components/business-network/BusinessSharePreview';
 import Link from 'next/link';
 import { useMemo, useState, type FormEvent } from 'react';
 import AssetExternalShare, {
@@ -23,6 +26,8 @@ type OptionsStage = 'destination' | 'inside' | 'outside' | 'partners' | 'message
 type IconProps = { className?: string };
 
 type Partner = {
+  isExternalBusiness?: boolean;
+  googleMapsUrl?: string;
   userId: string;
   masterAccountUserId?: string;
   partnerType: PartnerType;
@@ -218,6 +223,11 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
   const [search, setSearch] = useState('');
   const [message, setMessage] = useState('');
+  const [additionalContact, setAdditionalContact] = useState('');
+  const [businessPreviewReady, setBusinessPreviewReady] = useState(false);
+  const [requestKey, setRequestKey] = useState('');
+  const [businessHeading, setBusinessHeading] = useState('');
+  const [businessService, setBusinessService] = useState('');
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [trackMaintenance, setTrackMaintenance] = useState(false);
   const [trackingPermissions, setTrackingPermissions] = useState<DealerMaintenancePermissions>(() => ({
@@ -269,11 +279,13 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
         ? () => returnToStage('message')
         : undefined;
 
-  async function loadPartners(option: QuoteOption, searchValue = '') {
+  async function loadPartners(option: QuoteOption, searchValue = '', heading = businessHeading, service = businessService) {
     setLoadingPartners(true);
     setNotice(null);
     try {
       const params = new URLSearchParams({ type: option.partnerType });
+      if (heading) params.set('category', heading);
+      if (service) params.set('service', service);
       if (searchValue.trim()) params.set('search', searchValue.trim());
       const response = await fetch(`/api/partners?${params.toString()}`, { credentials: 'include', cache: 'no-store' });
       const payload = await response.json().catch(() => null) as { ok?: boolean; partners?: Partner[]; error?: string } | null;
@@ -295,6 +307,9 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
       window.location.assign(`${assetHref}/manage/licence`);
       return;
     }
+    setBusinessHeading('');
+    setBusinessService('');
+    setAdditionalContact('');
     setSelectedLeadType(option.leadType);
     setSelectedPartnerId('');
     setSearch('');
@@ -304,7 +319,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
     setTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
     setIsTrackingPermissionsOpen(false);
     setStage('partners');
-    await loadPartners(option);
+    await loadPartners(option, '', '', '');
   }
 
   function addReport(source: ExternalShareFileSource) {
@@ -322,6 +337,8 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
 
   function choosePartner(partner: Partner) {
     setSelectedPartnerId(partner.userId);
+    setTrackMaintenance(false);
+    setRequestKey(crypto.randomUUID());
     setConsentAccepted(false);
     setStage('message');
     setNotice(null);
@@ -353,7 +370,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
   }
 
   async function sendRequest() {
-    if (!selectedOption || !selectedPartner || !consentAccepted || sending) return;
+    if (!selectedOption || !selectedPartner || !consentAccepted || sending || (selectedPartner.isExternalBusiness && !businessPreviewReady)) return;
     setSending(true);
     setNotice(null);
     try {
@@ -367,6 +384,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
           assistanceLocationId: selectedPartner.assistanceLocationId,
           leadType: selectedOption.leadType,
           ownerMessage: message,
+          additionalContact, requestKey,
           includedSections: {
             assetDetails: true,
             valuationSummary: selectedOption.leadType !== 'license_renewal',
@@ -376,7 +394,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
             scanHistory: false,
             source: 'asset_register_options',
           },
-          trackMaintenance: selectedOption.leadType === 'replacement_quote' && trackMaintenance,
+          trackMaintenance: !selectedPartner.isExternalBusiness && selectedOption.leadType === 'replacement_quote' && trackMaintenance,
           trackingPermissions: selectedOption.leadType === 'replacement_quote' && trackMaintenance
             ? trackingPermissions
             : undefined,
@@ -463,6 +481,8 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
             <button type="submit" disabled={loadingPartners}>{loadingPartners ? 'Searching…' : 'Search'}</button>
           </form>
 
+          <BusinessInvite />
+          <BusinessFilters heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadPartners(selectedOption, search, heading, service); }} />
           <div className={styles.ownerPartnerList}>
             {loadingPartners ? <p className={styles.ownerOptionsEmpty}>Loading available companies…</p> : partners.length ? partners.map((partner) => (
               <button type="button" className={styles.ownerPartnerCard} key={partner.userId} onClick={() => choosePartner(partner)}>
@@ -505,6 +525,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
           </div>
 
           <div className={styles.ownerPartnerContacts}>
+            {selectedPartner.googleMapsUrl ? <a href={selectedPartner.googleMapsUrl} target="_blank" rel="noreferrer">View business on Google</a> : null}
             {selectedPartner.email ? <a href={`mailto:${selectedPartner.email}`}><small>Email</small><span>{selectedPartner.email}</span></a> : null}
             {selectedPartner.phone ? <a href={`tel:${selectedPartner.phone.replace(/[^+\d]/g, '')}`}><small>Phone</small><span>{selectedPartner.phone}</span></a> : null}
             {selectedPartner.websiteUrl ? (
@@ -525,7 +546,8 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
             <span>Your message <small>Optional</small></span>
             <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Please contact me about this asset." />
           </label>
-          {selectedOption.leadType === 'replacement_quote' ? (
+          {selectedPartner.isExternalBusiness ? <label className={styles.ownerOptionMessageField}><span>Add contact · optional</span><textarea value={additionalContact} onChange={e => setAdditionalContact(e.target.value)} maxLength={500} placeholder="Phone number or another contact person" /></label> : null}
+          {selectedOption.leadType === 'replacement_quote' && !selectedPartner.isExternalBusiness ? (
             <button
               type="button"
               className={styles.ownerTrackingChoice}
@@ -543,7 +565,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
             </button>
           ) : null}
           <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
-            <button type="button" className={styles.primaryButton} onClick={() => { setConsentAccepted(false); setStage('consent'); }}>Review request</button>
+            <button type="button" className={styles.primaryButton} onClick={() => { setConsentAccepted(false); setBusinessPreviewReady(false); setRequestKey(crypto.randomUUID()); setStage('consent'); }}>Review request</button>
           </div>
         </section>
       ) : null}
@@ -554,6 +576,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
             <div><h2><BalancedHeadingText text="Confirm and send request" /></h2></div>
           </div>
 
+          {selectedPartner.isExternalBusiness ? <BusinessSharePreview onReady={setBusinessPreviewReady} payload={{assetId,partnerUserId:selectedPartner.userId,ownerMessage:message,additionalContact,includedSections:{assetDetails:true,valuationSummary:selectedOption.leadType!=='license_renewal',mainPhoto:true,photos:true}}} /> : null}
           <div className={styles.ownerPopiaBox}>
             <strong>Disclaimer and POPIA note</strong>
             {selectedPartner.isAim4priceManaged ? (
@@ -571,7 +594,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
             <span>I accept the disclaimer and POPIA permission note.</span>
           </label>
           <div className={`${styles.ownerOptionsFooter} ${styles.ownerOptionsFooterSingle}`}>
-            <button type="button" className={styles.primaryButton} onClick={() => void sendRequest()} disabled={sending || !consentAccepted}>{sending ? 'Sending…' : `Send to ${partnerName(selectedPartner)}`}</button>
+            <button type="button" className={styles.primaryButton} onClick={() => void sendRequest()} disabled={sending || !consentAccepted || (selectedPartner.isExternalBusiness && !businessPreviewReady)}>{sending ? 'Sending…' : `Send to ${partnerName(selectedPartner)}`}</button>
           </div>
         </section>
       ) : null}

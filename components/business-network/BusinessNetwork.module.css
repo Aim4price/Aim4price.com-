@@ -1,0 +1,152 @@
+.panel {
+  width: 100%;
+  min-width: 0;
+  color: #173f31;
+  font-family: inherit;
+  display: grid;
+  gap: 16px;
+}
+.page {
+  box-sizing: border-box;
+  max-width: 760px;
+  margin: 32px auto;
+  padding: 24px;
+}
+.panel h1,
+.panel h2,
+.panel h3,
+.panel p {
+  margin: 0;
+}
+.panel h1 {
+  font-size: 1.7rem;
+}
+.panel h2 {
+  font-size: 1.2rem;
+}
+.panel h3 {
+  font-size: 1.05rem;
+}
+.panel label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.panel input,
+.panel select,
+.panel textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 12px;
+  border: 1px solid #a7c5b6;
+  border-radius: 10px;
+  background: #fff;
+  color: #173f31;
+  font: inherit;
+}
+.panel button,
+.button {
+  padding: 11px 16px;
+  border: 1px solid #96b7a6;
+  border-radius: 10px;
+  background: #e8f3ec;
+  color: #174633;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+}
+.panel button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.panel button[aria-pressed="true"] {
+  background: #cce5d5;
+  border-color: #2f7550;
+}
+.panel .primary {
+  background: #286044;
+  color: white;
+}
+.panel .danger {
+  background: #f9e4e0;
+  color: #833b30;
+}
+.panel .check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.5;
+}
+.panel .check input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.choices button {
+  font-size: 0.85rem;
+}
+.card {
+  padding: 16px;
+  border: 1px solid #b9cebf;
+  border-radius: 14px;
+  display: grid;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  overflow-wrap: anywhere;
+}
+.details {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.details div {
+  display: grid;
+  gap: 3px;
+}
+.details dt {
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+.details dd {
+  margin: 0;
+}
+.photos {
+  display: grid;
+  gap: 12px;
+}
+.photos img {
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.notice {
+  padding: 12px;
+  background: #e8f3ec;
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+.muted {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #496453;
+}
+.message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .page {
+    margin: 12px auto;
+    padding: 16px;
+  }
+}

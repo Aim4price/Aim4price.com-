@@ -112,7 +112,7 @@ test('directory keeps real partners first and loads managed listings by viewport
   assert.match(network, /filters\.push\('false'\)/);
   assert.match(partnerAccess, /activeDifference/);
   assert.match(partnerAccess, /distanceKm/);
-  assert.match(partnerAccess, /return \[\.\.\.genuinePartners, \.\.\.assistancePartners\]/);
+  assert.match(partnerAccess, /return \[\.\.\.genuinePartners, \.\.\.outsideBusinesses, \.\.\.assistancePartners\]/);
   assert.match(route, /readBounds/);
   assert.match(route, /west, south, east, north/);
   assert.match(network, /row\.service_key === 'dealer' \? AIM4PRICE_DEALER_ASSISTANCE_PHONE/);
@@ -207,7 +207,7 @@ test('managed selection shares all selected assets with the master and records g
   assert.match(ownerAppClient, /No external provider will receive your asset without your further approval/);
   assert.match(ownerAppClient, /www\.aim4price\.com/);
   assert.match(route, /resolveAssistanceSelection/);
-  assert.match(route, /assistanceSelection && dealerShareAssetIds\.length/);
+  assert.match(route, /const leadAssetIds = dealerShareAssetIds\.length && \(\s*assistanceSelection/);
   assert.match(route, /createAssistanceRequest/);
   assert.match(network, /selected_asset_ids_json/);
   assert.match(network, /asset_lead_ids_json/);

@@ -34,6 +34,7 @@
     "test:asset-map": "node --test tests/asset-map-ux.test.mjs tests/asset-map-report.test.mjs",
     "test:dropdown-overlays": "node --experimental-strip-types --test tests/dropdown-overlay.test.mjs",
     "test:documents": "node --test tests/account-document-vault.test.mjs",
+    "test:business-network": "node --test tests/business-network.test.mjs",
     "test:assistance-network": "node --test tests/assistance-network.test.mjs",
     "test:app-umbrella-access": "node --test tests/app-umbrella-directory-access.test.mjs",
     "test:responsive-foundation": "node --test tests/responsive-foundation.test.mjs",
@@ -65,6 +66,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@types/node": "20.16.5",
     "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.5",

@@ -1,0 +1,39 @@
+name: Business network validation
+on:
+  pull_request:
+    paths:
+      - 'lib/business-network*'
+      - 'lib/partner-access.ts'
+      - 'lib/website-canvas.ts'
+      - 'app/api/business-network/**'
+      - 'app/api/asset-leads/route.ts'
+      - 'app/api/partners/route.ts'
+      - 'app/business-network/**'
+      - 'components/business-network/**'
+      - 'app/asset-register/asset-register-client.tsx'
+      - 'app/owner-app/assets/**/owner-asset-options-client.tsx'
+      - 'database/migrations/102-business-network.sql'
+      - 'tests/business-network.test.mjs'
+      - 'scripts/verify-business-network.cjs'
+      - 'package*.json'
+      - '.github/workflows/business-network-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: business-network-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs
+      - run: node scripts/verify-business-network.cjs

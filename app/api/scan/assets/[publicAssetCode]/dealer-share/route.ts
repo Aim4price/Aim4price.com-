@@ -145,6 +145,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const partners = await listPartnerDirectory({
       currentUserId: access.ownerUserId,
       partnerType: 'dealer',
+      // QR sharing grants dealer tracking; outside businesses use the owner email-share flow.
+      includeExternal: false,
       search,
     });
 

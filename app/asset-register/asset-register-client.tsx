@@ -1,5 +1,8 @@
 'use client';
 
+import BusinessInvite from '../../components/business-network/BusinessInvite';
+import BusinessFilters from '../../components/business-network/BusinessFilters';
+import BusinessSharePreview from '../../components/business-network/BusinessSharePreview';
 import QrCodePreview from '../../components/QrCodePreview';
 import { resolveAssetUsage } from '../../lib/asset-usage';
 
@@ -7,7 +10,7 @@ import { websiteLogicalRect, websiteVisibleViewport, currentWebsiteScale, WEBSIT
 
 import Link from 'next/link';
 import { createPortal } from '../../components/WebsitePortal';
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent as ReactDragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent as ReactDragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import DropdownOverlay from '../../components/DropdownOverlay';
 import AppHeader from '../../components/AppHeader';
 import SaleabilityModal from '../../components/SaleabilityModal';
@@ -227,6 +230,9 @@ function disposalAmountLabel(reason: DisposalDraft['reason']): string {
 }
 
 type PartnerDirectoryEntry = {
+  isExternalBusiness?: boolean;
+  businessHeadings?: string[];
+  googleMapsUrl?: string;
   userId: string;
   masterAccountUserId?: string;
   partnerType: PartnerType;
@@ -6434,6 +6440,7 @@ function quotePartnerServicesDisplay(partner: PartnerDirectoryEntry): string {
 }
 
 function quotePartnerRadiusDisplay(partner: PartnerDirectoryEntry): string {
+  if (partner.isExternalBusiness && partner.serviceAreaNotice) return partner.serviceAreaNotice;
   if (partner.serviceRadiusKm) return `${partner.serviceRadiusKm} km service radius`;
   return partner.partnerType === 'licensing' ? 'Available for renewal requests' : 'Service area not saved';
 }
@@ -6508,6 +6515,7 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, isSelected =
         <strong>${name}</strong>
       </div>
       <div class="assetQuotePopupDetails assetQuotePopupSimpleDetails">${details}</div>
+      ${partner.googleMapsUrl ? `<a href="${escapeHtml(normalizeWebsiteHref(partner.googleMapsUrl))}" target="_blank" rel="noreferrer">View business on Google</a>` : ''}
       ${dealerContacts ? `<div class="assetQuotePopupContacts">${dealerContacts}</div>` : ''}
       ${partner.isAim4priceManaged ? '<p class="assetQuoteManagedNotice">This is a service area, not a physical branch. Aim4price will help locate a suitable provider.</p>' : ''}
       <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" data-quote-partner-action="${opensMessage ? 'message' : 'toggle'}" class="assetQuotePopupChooseButton">${actionLabel}</button>
@@ -6645,6 +6653,14 @@ export default function AssetRegisterClient({
   const [selectedQuotePartnerIds, setSelectedQuotePartnerIds] = useState<string[]>([]);
   const [quotePartnerSearch, setQuotePartnerSearch] = useState('');
   const [quoteOwnerMessage, setQuoteOwnerMessage] = useState('');
+  const [businessAdditionalContact, setBusinessAdditionalContact] = useState('');
+  const [businessPreviewStates, setBusinessPreviewStates] = useState<Record<string, boolean>>({});
+  const setBusinessPreviewReady = useCallback((ready: boolean, id?: string) => setBusinessPreviewStates(current => ({...current, [id || '']:ready})), []);
+  const [businessHeading, setBusinessHeading] = useState('');
+  const [businessService, setBusinessService] = useState('');
+  const businessRequestKey = useRef('');
+  const businessFiltersRef = useRef({heading:'',service:''});
+  businessFiltersRef.current = {heading:businessHeading,service:businessService};
   const [quoteLeadStep, setQuoteLeadStep] = useState<QuoteLeadStep>(null);
   const [quoteConsentAccepted, setQuoteConsentAccepted] = useState(false);
   const [quoteTrackMaintenance, setQuoteTrackMaintenance] = useState(false);
@@ -11481,6 +11497,7 @@ export default function AssetRegisterClient({
     leadType: AssetLeadType | null = selectedQuoteLeadType,
     searchValue = quotePartnerSearch,
     bounds?: { west: number; south: number; east: number; north: number },
+    heading = businessFiltersRef.current.heading, service = businessFiltersRef.current.service,
   ): Promise<PartnerDirectoryEntry[]> {
     const option = quoteOptionForLeadType(leadType);
 
@@ -11496,6 +11513,8 @@ export default function AssetRegisterClient({
 
     try {
       const params = new URLSearchParams({ type: option.partnerType });
+      if (heading) params.set('category', heading);
+      if (service) params.set('service', service);
       if (searchValue.trim()) params.set('search', searchValue.trim());
       const currentMapBounds = !bounds && quoteLeafletMapRef.current
         ? quoteLeafletMapRef.current.getBounds()
@@ -11663,6 +11682,9 @@ export default function AssetRegisterClient({
       return;
     }
 
+    setBusinessHeading('');
+    setBusinessService('');
+    setBusinessAdditionalContact('');
     setSelectedQuoteLeadType(leadType);
     prepareQuoteLocationStep(quoteAsset);
     setSelectedQuotePartnerIds([]);
@@ -11714,7 +11736,9 @@ export default function AssetRegisterClient({
   }
 
   function toggleQuotePartnerSelection(partner: PartnerDirectoryEntry) {
+    setQuoteTrackMaintenance(false);
     setSelectedQuotePartnerIds((current) => {
+      if (!isAssetGroupShare) return current.includes(partner.userId) ? [] : [partner.userId];
       if (current.includes(partner.userId)) {
         return current.filter((partnerId) => partnerId !== partner.userId);
       }
@@ -11779,6 +11803,8 @@ export default function AssetRegisterClient({
     }
 
     setQuoteConsentAccepted(false);
+    businessRequestKey.current = crypto.randomUUID();
+    setBusinessPreviewStates({});
     setQuoteLeadStep('consent');
   }
 
@@ -11786,6 +11812,22 @@ export default function AssetRegisterClient({
     if (isSendingQuoteLead) return;
     setQuoteConsentAccepted(false);
     setQuoteLeadStep('message');
+  }
+
+  function buildBusinessSharePayload(partner: PartnerDirectoryEntry): Record<string, unknown> {
+    const selectedRegisterAssets = isFullRegisterQuoteLead && (selectedQuoteOption?.leadType === 'replacement_quote' || selectedQuoteOption?.leadType === 'license_renewal');
+    return {
+      assetId: selectedRegisterAssets ? selectedDealerShareAssetIds[0] : quoteAsset?.id,
+      partnerUserId: partner.userId,
+      leadType: selectedQuoteOption?.leadType,
+      ownerMessage: quoteOwnerMessage,
+      additionalContact: businessAdditionalContact,
+      requestKey: businessRequestKey.current,
+      assetIds: isFullRegisterQuoteLead ? selectedRegisterAssets ? selectedDealerShareAssetIds : activeShareAssets.map(asset => asset.id) : undefined,
+      assetGroupId: assetGroupShareTarget?.id,
+      assetGroupName: assetGroupShareTarget?.name,
+      includedSections: {assetDetails:true,valuationSummary:selectedQuoteOption?.leadType !== 'license_renewal',mainPhoto:true,photos:isFullRegisterQuoteLead || quoteIncludePhotos},
+    };
   }
 
   async function handleSendAssetQuoteLead() {
@@ -11815,6 +11857,7 @@ export default function AssetRegisterClient({
       return;
     }
 
+    if (selectedQuotePartners.some(p => p.isExternalBusiness) && !selectedQuotePartners.filter(p => p.isExternalBusiness).every(p => businessPreviewStates[p.userId])) return;
     setIsSendingQuoteLead(true);
 
     try {
@@ -11854,13 +11897,15 @@ export default function AssetRegisterClient({
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: JSON.stringify(partner.isExternalBusiness ? buildBusinessSharePayload(partner) : {
             assetId: leadAssetId,
             partnerUserId: partner.masterAccountUserId || partner.userId,
             leadType: selectedQuoteOption.leadType,
             ownerMessage: quoteOwnerMessage,
+            additionalContact: businessAdditionalContact,
+            requestKey: `${businessRequestKey.current}`,
             includedSections,
-            trackMaintenance: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance,
+            trackMaintenance: !partner.isExternalBusiness && selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance,
             trackingPermissions: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance
               ? quoteTrackingPermissions
               : undefined,
@@ -14861,6 +14906,9 @@ export default function AssetRegisterClient({
     setAssetShareDestination('inside');
     resetAssetQuoteState('register');
     setQuoteAsset(anchorAsset);
+    setBusinessHeading('');
+    setBusinessService('');
+    setBusinessAdditionalContact('');
     setSelectedQuoteLeadType(leadType);
     prepareQuoteLocationStep(anchorAsset);
     setSelectedQuotePartnerIds([]);
@@ -20376,6 +20424,8 @@ export default function AssetRegisterClient({
                         </button>
                       </div>
 
+                      <BusinessInvite />
+                      <BusinessFilters heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch, undefined, heading, service); }} />
                       <div className={styles.assetQuotePartnerList}>
                         {isLoadingQuotePartners ? (
                           <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
@@ -20400,6 +20450,7 @@ export default function AssetRegisterClient({
                                 <span className={styles.assetQuotePartnerBody}>
                                   <span className={styles.assetQuotePartnerHeader}>
                                     <strong>{quotePartnerName(partner)}</strong>
+                                    {partner.isExternalBusiness ? <small>Email enquiries</small> : null}
                                     {partner.isAim4priceManaged ? (
                                       <span className={styles.assetQuoteManagedLabel}><i aria-hidden="true" />Aim4price service area</span>
                                     ) : partner.isActivePartner ? (
@@ -20433,7 +20484,7 @@ export default function AssetRegisterClient({
                         <span>
                           {selectedQuotePartners.length
                             ? `${selectedQuotePartners.length} selected`
-                            : 'Select one or more'}
+                            : isAssetGroupShare ? 'Select companies' : 'Select one company'}
                         </span>
                         <button
                           type="button"
@@ -20540,6 +20591,7 @@ export default function AssetRegisterClient({
                                 ) : null}
 
                                 <div className={styles.assetQuoteSelectedContactList}>
+                                  {selectedQuotePartner.googleMapsUrl ? <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartner.googleMapsUrl} target="_blank" rel="noreferrer">View business on Google</a> : null}
                                   {selectedQuotePartner.email && selectedQuotePartnerEmailHref ? (
                                     <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartnerEmailHref}>
                                       <small>Email</small>
@@ -20689,7 +20741,8 @@ export default function AssetRegisterClient({
                                 />
                               </label>
 
-                              {selectedQuoteOption.leadType === 'replacement_quote' ? (
+                              {selectedQuotePartners.some(p => p.isExternalBusiness) ? <label className={styles.assetQuoteMessageField}><span>Add contact · optional</span><textarea value={businessAdditionalContact} onChange={e => setBusinessAdditionalContact(e.target.value)} maxLength={500} placeholder="Phone number or another contact person" /></label> : null}
+                              {selectedQuoteOption.leadType === 'replacement_quote' && !selectedQuotePartners.some(p => p.isExternalBusiness) ? (
                                 <button
                                   type="button"
                                   className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`}
@@ -20717,6 +20770,7 @@ export default function AssetRegisterClient({
                           </div>
                         ) : (
                           <div className={styles.assetQuoteStepBody}>
+                            {selectedQuotePartners.filter(p => p.isExternalBusiness).map(partner => <BusinessSharePreview key={partner.userId} onReady={setBusinessPreviewReady} payload={buildBusinessSharePayload(partner)} />)}
                             <div className={styles.assetQuotePopiaBox}>
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
@@ -20779,7 +20833,7 @@ export default function AssetRegisterClient({
                                 type="button"
                                 className={styles.primaryButton}
                                 onClick={() => void handleSendAssetQuoteLead()}
-                                disabled={isSendingQuoteLead || !quoteConsentAccepted}
+                                disabled={isSendingQuoteLead || !quoteConsentAccepted || (selectedQuotePartners.some(p => p.isExternalBusiness) && !selectedQuotePartners.filter(p => p.isExternalBusiness).every(p => businessPreviewStates[p.userId]))}
                               >
                                 {isSendingQuoteLead
                                   ? 'Sending...'
