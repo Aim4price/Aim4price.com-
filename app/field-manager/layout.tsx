@@ -1,3 +1,4 @@
+import FieldManagerOfflineEntry from './field-manager-offline-entry';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
@@ -26,6 +27,6 @@ export const viewport: Viewport = {
 };
 
 export default function FieldManagerLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <><FieldManagerOfflineEntry />{children}</>;
 }
 

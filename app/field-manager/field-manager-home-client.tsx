@@ -146,6 +146,7 @@ export default function FieldManagerHomeClient() {
       credentials: 'include',
       cache: 'no-store',
     }).catch(() => undefined);
+    if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-field-session'); channel.postMessage('lock'); channel.close(); }
     clearCachedHeaderSession();
     window.location.replace('/field-manager/login');
   }
@@ -217,6 +218,11 @@ export default function FieldManagerHomeClient() {
                 <AppHomeIcon name="operations" />
                 <strong>Maintenance</strong>
                 <AppHomeChevron />
+              </button>
+
+              <button type="button" className={`${styles.homeActionCard} ${launcherStyles.card}`}
+                onClick={() => window.location.assign('/field-manager/offline.html')}>
+                <AppHomeIcon name="operations" /><strong>Offline work</strong><AppHomeChevron />
               </button>
 
               <button
