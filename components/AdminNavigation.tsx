@@ -7,6 +7,7 @@ import styles from "./AdminNavigation.module.css";
 
 export type AdminSection =
   | "accounts"
+  | "businesses"
   | "dashboard"
   | "valuations"
   | "marketplace"
@@ -26,6 +27,11 @@ const ADMIN_LINKS: Array<{
     href: "/admin",
     label: "Accounts",
     key: "accounts",
+  },
+  {
+    href: "/admin/businesses",
+    label: "Business Directory",
+    key: "businesses",
   },
   {
     href: "/admin/dashboard",
@@ -74,11 +80,7 @@ const ADMIN_LINKS: Array<{
   },
 ];
 
-export default function AdminNavigation({
-  active,
-}: {
-  active: AdminSection;
-}) {
+export default function AdminNavigation({ active }: { active: AdminSection }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const manageButtonRef = useRef<HTMLButtonElement | null>(null);

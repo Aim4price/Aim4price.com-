@@ -38,6 +38,6 @@ Before production rollout, exercise one invitation and one asset email using an 
 
 ## Direct Admin listings
 
-Admin → Manage business directory → Add business manually creates an active listing immediately, without an invitation or business acceptance step. Admin can add a Google Maps link or use the optional Google lookup, and enter the business contact email, headings, services and location. Lookup stores only the Place ID and Maps link; it does not connect a Google login or synchronise profile content.
+Admin → Manage → Business Directory → Add business manually creates an active listing immediately, without an invitation or business acceptance step. Admin can add a Google Maps link or use the optional Google lookup, and enter the business contact email, headings, services and location. Lookup stores only the Place ID and Maps link; it does not connect a Google login or synchronise profile content.
 
 Admin can edit, publish and hide existing listings. Existing delivery emails remain fixed. Hiding also revokes existing enquiry viewing links. Direct Admin actions are recorded in `business_network_admin_actions` (migration 103, also initialised at runtime); `accepted_at` is reserved for actual business acceptance. Creating a manual listing sends no email and creates no account or management token. The business can request its own management link through the existing email flow later.
