@@ -14,7 +14,9 @@ export default function BusinessDirectoryTools(props: {
       aria-label="Business filters and invitations"
     >
       <BusinessFilters {...props} />
-      <BusinessInvite />
+      <div className={styles.directoryActions}>
+        <BusinessInvite />
+      </div>
     </section>
   );
 }
