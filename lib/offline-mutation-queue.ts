@@ -146,12 +146,12 @@ function readFallbackQueue(): OfflineMutation[] {
 }
 
 function writeFallbackQueue(queue: OfflineMutation[]): void {
-  if (!canUseBrowserStorage()) return;
+  if (!canUseBrowserStorage()) throw new Error('Phone storage is unavailable. Your update has not been saved.');
 
   try {
     window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(queue));
   } catch {
-    // The caller cannot recover if localStorage is full or blocked.
+    throw new Error('Phone storage is full or unavailable. Your update has not been saved. Keep this page open and retry when connected.');
   }
 }
 
@@ -196,7 +196,7 @@ async function saveFallbackMutation(mutation: OfflineMutation): Promise<void> {
       ...existing,
       ...mutation,
       createdAtIso: existing.createdAtIso || mutation.createdAtIso,
-      attemptCount: existing.attemptCount ?? mutation.attemptCount,
+      attemptCount: mutation.attemptCount,
     };
   } else {
     queue.push(mutation);
