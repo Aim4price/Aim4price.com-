@@ -13,6 +13,9 @@ export default async function AdminPage() {
 
   return (
     <main className={styles.page}>
+      <a href="/admin/businesses">
+        Manage business directory · Add business manually
+      </a>
       <BusinessInvite />
       <AdminClient initialUsers={users} />
     </main>

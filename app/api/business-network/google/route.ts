@@ -1,3 +1,5 @@
+import { getAnyServerSession } from "../../../../lib/auth-session";
+import { isAim4priceAdminEmail } from "../../../../lib/account-constants";
 import { NextRequest } from "next/server";
 import {
   getBusinessByToken,
@@ -15,8 +17,20 @@ export const runtime = "nodejs";
 export async function POST(request: NextRequest) {
   try {
     requireBusinessOrigin(request);
-    const b = await getBusinessByToken(requestBusinessToken(request));
-    await limitBusinessAction(`google:${b.id}`, 20);
+    const token = requestBusinessToken(request);
+    let lookupId: string;
+    if (token) {
+      lookupId = (await getBusinessByToken(token)).id;
+    } else {
+      const session = await getAnyServerSession();
+      if (!session?.user?.id || !isAim4priceAdminEmail(session.user.email))
+        return businessJson(
+          { ok: false, error: "Admin access required." },
+          403,
+        );
+      lookupId = `admin:${session.user.id}`;
+    }
+    await limitBusinessAction(`google:${lookupId}`, 20);
     const key = process.env.GOOGLE_PLACES_API_KEY;
     if (!key)
       return businessJson(

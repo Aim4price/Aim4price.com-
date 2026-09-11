@@ -367,3 +367,164 @@ test("invitation actions require an active owner or an admin and reject foreign 
     ),
   );
 });
+
+test("admin can publish, edit and hide businesses without fabricating acceptance or sending invitations", async () => {
+  const db = new PGlite();
+  const adapter = {
+    query: async (sql, params) =>
+      params ? db.query(sql, params) : (await db.exec(sql)).at(-1),
+  };
+  const network = load("lib/business-network.ts", {
+    "./business-network-shared": shared,
+    "./db": { getDb: () => adapter },
+    "./email": {},
+    "./account-profile": {},
+    "./asset-register-db": {},
+  });
+  const admin = load("lib/admin-business-network.ts", {
+    "./business-network-shared": shared,
+    "./db": { getDb: () => adapter },
+    "./business-network": network,
+  });
+  try {
+    const input = {
+      name: "Manual Workshop",
+      email: "manual@example.com",
+      town: "George",
+      latitude: -33.96,
+      longitude: 22.46,
+      radiusKm: 100,
+      headings: ["Mechanic"],
+      services: ["Brakes"],
+      googlePlaceId: "manual-place",
+      googleMapsUrl: "https://www.google.com/maps?query_place_id=manual-place",
+    };
+    const id = await admin.saveAdminBusiness("admin-one", input);
+    const row = (
+      await db.query("select * from business_network where id=$1", [id])
+    ).rows[0];
+    assert.equal(row.status, "active");
+    assert.equal(row.accepted_at, null);
+    assert.equal(row.invited_by, "admin-one");
+    assert.equal(
+      (await db.query("select * from business_network_tokens")).rows.length,
+      0,
+    );
+    assert.equal(
+      (await network.listExternalBusinesses({ partnerType: "dealer" })).length,
+      1,
+    );
+    await assert.rejects(
+      () => admin.saveAdminBusiness("admin-one", input),
+      /already listed/,
+    );
+    await assert.rejects(
+      () =>
+        admin.saveAdminBusiness("admin-one", {
+          ...input,
+          email: "another@example.com",
+        }),
+      /already listed/,
+    );
+    await assert.rejects(
+      () =>
+        admin.saveAdminBusiness("admin-one", {
+          ...input,
+          email: "third@example.com",
+          googlePlaceId: "",
+          latitude: "",
+        }),
+      /location/,
+    );
+    await assert.rejects(
+      () =>
+        admin.saveAdminBusiness("admin-one", {
+          ...input,
+          id,
+          email: "redirect@example.com",
+        }),
+      /cannot be changed/,
+    );
+    await admin.saveAdminBusiness("admin-two", {
+      ...input,
+      id,
+      name: "Updated Workshop",
+    });
+    assert.equal(
+      (await admin.listAdminBusinesses())[0].name,
+      "Updated Workshop",
+    );
+    await db.query(
+      `insert into business_network_requests(id,owner_id,business_id,request_key,token_hash,snapshot,status,expires_at) values($1,'owner',$2,'key','hash','{}','sent',now()+interval '1 day')`,
+      ["33333333-3333-4333-8333-333333333333", id],
+    );
+    await admin.saveAdminBusiness("admin-two", { id, action: "pause" });
+    assert.equal(
+      (await network.listExternalBusinesses({ partnerType: "dealer" })).length,
+      0,
+    );
+    assert.ok(
+      (await db.query("select revoked_at from business_network_requests"))
+        .rows[0].revoked_at,
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          "select action from business_network_admin_actions order by created_at",
+        )
+      ).rows.map((r) => r.action),
+      ["create", "publish", "pause"],
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("manual business API refuses non-admin callers and cross-origin writes", async () => {
+  let session = null,
+    writes = 0;
+  const route = load("app/api/admin/business-network/route.ts", {
+    "next/server": {},
+    "../../../../lib/auth-session": {
+      getAnyServerSession: async () => session,
+    },
+    "../../../../lib/account-constants": {
+      isAim4priceAdminEmail: (email) => email === "admin@example.com",
+    },
+    "../../../../lib/admin-business-network": {
+      listAdminBusinesses: async () => [],
+      saveAdminBusiness: async () => {
+        writes++;
+        return "id";
+      },
+    },
+    "../../../../lib/business-network-api": {
+      businessJson: (body, status = 200) => ({ body, status }),
+      businessError: () => ({ status: 400 }),
+      businessBody: async () => ({}),
+      requireBusinessOrigin: (r) => {
+        if (r.headers.get("origin") !== "https://aim4price.test")
+          throw Error("origin");
+      },
+    },
+  });
+  const request = {
+    headers: new Headers({ origin: "https://aim4price.test" }),
+  };
+  assert.equal((await route.POST(request)).status, 403);
+  session = { user: { id: "owner", email: "owner@example.com" } };
+  assert.equal((await route.GET()).status, 403);
+  assert.equal((await route.POST(request)).status, 403);
+  session = { user: { id: "admin", email: "admin@example.com" } };
+  assert.equal(
+    (
+      await route.POST({
+        headers: new Headers({ origin: "https://other.test" }),
+      })
+    ).status,
+    400,
+  );
+  assert.equal(writes, 0);
+  assert.equal((await route.POST(request)).status, 200);
+  assert.equal(writes, 1);
+});

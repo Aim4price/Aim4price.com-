@@ -1,6 +1,6 @@
 # Business network
 
-Owners and admin can invite a business with its name and email from the share directory (or the admin page). Only acceptance through the emailed, 30-day management link publishes the business for all owners. No account, password or subscription is created.
+Owners and admin can invite a business with its name and email from the share directory (or the admin page). For owner invitations, acceptance through the emailed, 30-day management link publishes the business for all owners. No account, password or subscription is created.
 
 Businesses confirm their contact details, headings, services and location. They can select several headings and services, add their own labels, set a service radius or nationwide coverage, and pause/reactivate their listing through an emailed management link. A paused listing disappears immediately and its old viewing links remain revoked if reactivated. Changing the verified delivery email currently requires Aim4price support.
 
@@ -34,3 +34,10 @@ The proposed permanent one-time Google Places data import is intentionally not i
 - `npm run typecheck` and existing assistance/umbrella regression tests cover integration.
 
 Before production rollout, exercise one invitation and one asset email using an explicitly selected test business mailbox. This development run does not send real email or modify the production database.
+
+
+## Direct Admin listings
+
+Admin → Manage business directory → Add business manually creates an active listing immediately, without an invitation or business acceptance step. Admin can add a Google Maps link or use the optional Google lookup, and enter the business contact email, headings, services and location. Lookup stores only the Place ID and Maps link; it does not connect a Google login or synchronise profile content.
+
+Admin can edit, publish and hide existing listings. Existing delivery emails remain fixed. Hiding also revokes existing enquiry viewing links. Direct Admin actions are recorded in `business_network_admin_actions` (migration 103, also initialised at runtime); `accepted_at` is reserved for actual business acceptance. Creating a manual listing sends no email and creates no account or management token. The business can request its own management link through the existing email flow later.
