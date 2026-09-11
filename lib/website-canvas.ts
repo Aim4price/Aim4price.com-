@@ -10,7 +10,7 @@ export const WEBSITE_OVERLAY_ROOT_ID = 'aim4price-website-overlays';
 export const WEBSITE_PHONE_SHORT_SIDE_MAX = 560;
 export const WEBSITE_LANDSCAPE_BYPASS_KEY = 'aim4price.website-landscape-entry.v1';
 
-const NATIVE_ROUTE_PREFIXES = ['/owner-app', '/dealer', '/middleman', '/field-manager', '/admin', '/scan', '/fuel-scan'];
+const NATIVE_ROUTE_PREFIXES = ['/owner-app', '/dealer', '/middleman', '/field-manager', '/admin', '/scan', '/fuel-scan', '/business-network'];
 
 export function isNativeWorkspace(pathname: string): boolean {
   return NATIVE_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

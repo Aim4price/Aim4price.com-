@@ -1,3 +1,5 @@
+import { sendBusinessLead } from '../../../lib/business-network';
+import { businessError, requireBusinessOrigin } from '../../../lib/business-network-api';
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { getAccountProfile } from '../../../lib/account-profile';
@@ -22,6 +24,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type CreateAssetLeadBody = {
+  additionalContact?: unknown;
+  requestKey?: unknown;
   assetId?: unknown;
   partnerUserId?: unknown;
   leadType?: unknown;
@@ -213,6 +217,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (partnerUserId.startsWith('external:')) {
+      requireBusinessOrigin(request);
+      if (requesterProfile.accountType !== 'owner' || requesterProfile.accountStatus !== 'active') {
+        return NextResponse.json({ok:false,error:'External sharing requires an active owner account.'},{status:403});
+      }
+      try { await sendBusinessLead(session.user, body as Record<string, unknown>); } catch (error) { return businessError(error); }
+      return NextResponse.json({ok:true,confirmation:'Email sent. The business can reply directly to you.'});
+    }
     const assistanceSelection = assistanceLocationId
       ? await resolveAssistanceSelection({
           assistanceLocationId,

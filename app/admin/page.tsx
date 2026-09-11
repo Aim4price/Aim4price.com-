@@ -1,5 +1,6 @@
 import { requireAdminPageAccess } from "../../lib/account-access";
 import { listAdminUsers } from "../../lib/admin-users";
+import BusinessInvite from "../../components/business-network/BusinessInvite";
 import AdminClient from "./admin-client";
 import styles from "./page.module.css";
 
@@ -12,6 +13,7 @@ export default async function AdminPage() {
 
   return (
     <main className={styles.page}>
+      <BusinessInvite />
       <AdminClient initialUsers={users} />
     </main>
   );

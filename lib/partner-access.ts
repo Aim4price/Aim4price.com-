@@ -1,3 +1,4 @@
+import { listExternalBusinesses } from './business-network';
 import { ensureAccountProfileColumns, getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { getAssetRegisterReportLogoUrl } from './asset-registers';
@@ -27,6 +28,9 @@ export type LeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_
 export type AssetLeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 
 export type PartnerDirectoryEntry = {
+  isExternalBusiness?: boolean;
+  businessHeadings?: string[];
+  googleMapsUrl?: string;
   userId: string;
   masterAccountUserId?: string;
   partnerType: PartnerType;
@@ -1188,6 +1192,9 @@ export async function listPartnerDirectory(input: {
   partnerType?: PartnerType | null;
   search?: string | null;
   bounds?: AssistanceMapBounds | null;
+  includeExternal?: boolean;
+  category?: string | null;
+  service?: string | null;
 }): Promise<PartnerDirectoryEntry[]> {
   await ensurePartnerAccessTables();
   const db = getDb();
@@ -1264,7 +1271,7 @@ export async function listPartnerDirectory(input: {
     params,
   );
 
-  const genuinePartners = result.rows.map(mapPartnerRow);
+  const genuinePartners = result.rows.map(mapPartnerRow).filter(p => (!input.category || [p.accountSubtype,p.description,p.services].join(' ').toLowerCase().includes(input.category.toLowerCase())) && (!input.service || p.services.toLowerCase().includes(input.service.toLowerCase())));
   const bounds = input.bounds ?? null;
   const center = bounds ? {
     latitude: (bounds.south + bounds.north) / 2,
@@ -1281,13 +1288,14 @@ export async function listPartnerDirectory(input: {
     return left.displayName.localeCompare(right.displayName);
   });
 
-  const assistancePartners = partnerType
+  const assistancePartners = partnerType && !input.category && !input.service
     ? await listAssistanceDirectoryEntries({ partnerType, search, bounds })
     : [];
 
   // Genuine registered partners remain first, with nearby active partners ranked
   // highest. Aim4price service-area fallbacks follow them.
-  return [...genuinePartners, ...assistancePartners];
+  const outsideBusinesses = input.includeExternal === false ? [] : (await listExternalBusinesses(input)).filter(b => !genuinePartners.some(p => p.isActivePartner && p.email && p.email.toLowerCase() === b.email.toLowerCase()));
+  return [...genuinePartners, ...outsideBusinesses, ...assistancePartners];
 }
 
 async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerProfileRow | null> {
