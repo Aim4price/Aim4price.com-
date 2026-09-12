@@ -591,6 +591,9 @@
 }
 
 .sidebarToggleButton {
+  position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
   width: 2.65rem;
   min-width: 2.65rem;
   min-height: 2.65rem;
@@ -1070,7 +1073,7 @@
   bottom: clamp(0.95rem, calc(var(--website-design-vw) * 1.5), 1.25rem);
   width: min(
     calc(100% - clamp(1.5rem, calc(var(--website-design-vw) * 2.4), 2.4rem)),
-    clamp(700px, 84%, 920px)
+    clamp(740px, 90%, 1000px)
   );
   max-height: calc(100% - 6.2rem);
   overflow: auto;
@@ -1083,26 +1086,26 @@
     0 8px 20px rgba(19, 39, 54, 0.11),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(18px);
-  padding: clamp(0.68rem, calc(var(--website-design-vw) * 1), 0.82rem);
+  padding: 1.15rem;
   transform: translateX(-50%);
 }
 
 .mapStageCollapsed .selectedAssetCard {
   width: min(
     calc(100% - clamp(1.5rem, calc(var(--website-design-vw) * 2.4), 2.4rem)),
-    clamp(700px, 84%, 920px)
+    clamp(740px, 90%, 1000px)
   );
 }
 
 .selectedCardCloseButton {
   position: absolute;
-  top: clamp(0.58rem, calc(var(--website-design-vw) * 0.9), 0.72rem);
-  right: clamp(0.58rem, calc(var(--website-design-vw) * 0.9), 0.72rem);
+  top: 1.05rem;
+  right: 1.05rem;
   z-index: 2;
-  width: 2.18rem;
-  min-width: 2.18rem;
-  height: 2.18rem;
-  min-height: 2.18rem;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
   padding: 0;
   border-radius: 999px;
   color: #14372e;
@@ -1266,10 +1269,11 @@
   display: grid;
   align-content: start;
   gap: clamp(0.62rem, calc(var(--website-design-vw) * 0.85), 0.78rem);
-  padding-right: clamp(2.25rem, calc(var(--website-design-vw) * 3), 2.55rem);
+  padding-right: 0;
 }
 
 .selectedAssetHeader {
+  padding-right: 3.25rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   align-items: start;
@@ -1295,7 +1299,7 @@
   align-self: start;
   min-width: 0;
   margin: 0;
-  padding-top: clamp(0.38rem, calc(var(--website-design-vw) * 0.55), 0.52rem);
+  padding-top: 0;
   color: var(--text);
   font-size: clamp(1.22rem, calc(var(--website-design-vw) * 1.65), 1.54rem);
   font-weight: 800;
@@ -1924,3 +1928,62 @@
   overflow-wrap: anywhere;
 }
 
+
+/* Shared inset controls and header-style hover labels. */
+.sidebarToggleButton,
+.sidebarExpandButton {
+  border-radius: 0.85rem;
+  background: linear-gradient(180deg, #ffffff, #edf6f1);
+  border: 1px solid #cbded3;
+  box-shadow: 0 6px 16px rgba(18, 49, 48, 0.1), inset 0 1px 0 #fff;
+}
+
+.sidebarToggleButton svg,
+.sidebarExpandButton svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.sidebarToggleButton::after,
+.sidebarExpandButton::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  top: -0.35rem;
+  z-index: 4;
+  width: max-content;
+  padding: 0.38rem 0.58rem;
+  border-radius: 0.55rem;
+  color: #fff;
+  background: #124c3c;
+  box-shadow: 0 10px 22px rgba(10, 47, 37, 0.2);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 0.22rem);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.sidebarToggleButton:hover::after,
+.sidebarToggleButton:focus-visible::after,
+.sidebarExpandButton:hover::after,
+.sidebarExpandButton:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.sidebarToggleButton:focus-visible,
+.sidebarExpandButton:focus-visible,
+.selectedCardCloseButton:focus-visible {
+  outline: 3px solid rgba(18, 76, 60, 0.35);
+  outline-offset: 2px;
+}
+
+.selectedActionButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}

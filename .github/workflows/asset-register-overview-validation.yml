@@ -55,11 +55,14 @@ jobs:
 
           # The repository's production build collects server-route page data and
           # therefore needs the live PG* connection variables after compilation.
-          # In PR CI those credentials are intentionally absent. Only accept that
-          # known post-compilation stop; every compile/type/bundle failure remains fatal.
+          # In PR CI those credentials are intentionally absent. Dealer routes are
+          # collected in parallel, so the first route reporting this can vary.
+          # Only accept that known post-compilation stop; compile/type/bundle
+          # failures remain fatal.
           if grep -Fq "✓ Compiled successfully" /tmp/aim4price-build.log \
             && grep -Fq "Database connection variables are missing" /tmp/aim4price-build.log \
-            && grep -Fq "Failed to collect page data for /api/dealer/session" /tmp/aim4price-build.log; then
+            && grep -Fq "Collecting page data" /tmp/aim4price-build.log \
+            && grep -Eq "Failed to collect page data for /api/dealer/[^[:space:]]+" /tmp/aim4price-build.log; then
             echo "Production bundle compiled successfully; page-data collection requires database credentials that are not available in PR CI."
             exit 0
           fi
