@@ -12,6 +12,7 @@ import {
 } from '../../lib/asset-groups-shared';
 import registerStyles from '../../app/asset-register/page.module.css';
 import styles from './AssetGroupManagerModal.module.css';
+import accountStyles from '../../app/account/page.module.css';
 
 type IconProps = { className?: string };
 type AssetGroupModalView = 'menu' | 'members' | 'reports' | 'delete' | 'create';
@@ -827,7 +828,9 @@ export default function AssetGroupManagerModal({
           </div>
           <button
             type="button"
-            className={useManageModalDesign
+            className={!group
+              ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`
+              : useManageModalDesign
               ? `${registerStyles.modalCloseButton} ${styles.manageCloseButton}`
               : useSharedAssetModalDesign
                 ? registerStyles.modalCloseButton

@@ -4042,3 +4042,19 @@
   letter-spacing: normal;
 }
 .discoveryModalCard .modalForm { margin-top: 0; gap: 1rem; }
+
+/* The password dialog's close control, reusable in other modal headers. */
+.modalCloseButton.passwordModalCloseButton {
+  position: static;
+  flex: 0 0 auto;
+  align-self: start;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.9rem;
+}
+
+.passwordModalCloseButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
