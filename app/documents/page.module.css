@@ -3953,3 +3953,88 @@
   }
 }
 
+
+/* Upload wizard follows the approved Change Password dialog design. */
+.modalBackdrop.accountUploadBackdrop {
+  background: rgba(12, 24, 35, 0.42) !important;
+  backdrop-filter: blur(12px) saturate(0.9) !important;
+}
+.modal.accountUploadModal {
+  --document-dialog-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
+  width: min(var(--website-dialog-reference-width, 100%), 58rem) !important;
+  max-width: 100% !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 3rem) !important;
+  border: 1px solid rgba(18, 45, 37, 0.12) !important;
+  border-radius: 1.55rem !important;
+  background: linear-gradient(180deg, #fff, #f7faf8) !important;
+  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12) !important;
+}
+.accountUploadModal.accountUploadModal .modalHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 2.75rem !important;
+  align-items: start !important;
+  gap: 1.25rem !important;
+  width: auto !important;
+  margin: var(--document-dialog-padding) var(--document-dialog-padding) 0 !important;
+  padding: 0 0 1.15rem !important;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.1) !important;
+  background: transparent !important;
+}
+.accountUploadModal.accountUploadModal .modalHeader h2 {
+  color: #12352d !important;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.08 !important;
+}
+.accountUploadModal.accountUploadModal .modalHeader p {
+  color: #64746a !important;
+  font-size: 0.88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
+.accountUploadModal .modalHeader > button {
+  position: static !important;
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  height: 2.75rem !important;
+  border: 1px solid rgba(37, 71, 51, 0.15) !important;
+  border-radius: 0.9rem !important;
+  color: #254733 !important;
+  background: #f7faf8 !important;
+  box-shadow: none !important;
+}
+.accountUploadModal .modalHeader > button span { font-size: 1.35rem; font-weight: 650; }
+.accountUploadModal.accountUploadModal .modalScroll { padding: 1.3rem var(--document-dialog-padding) var(--document-dialog-padding) !important; background: transparent !important; }
+.accountUploadModal .uploadWizardPanel { padding: 1rem !important; border-radius: 1rem !important; }
+.accountUploadModal .uploadWizardPanel h3 { color: #12352d !important; font-size: 1rem !important; font-weight: 800 !important; }
+.accountUploadModal .uploadWizardPanel p,
+.accountUploadModal .modalScroll > p { color: #64746a !important; font-size: 0.88rem !important; font-weight: 650 !important; line-height: 1.5 !important; }
+.accountUploadModal .field > label,
+.accountUploadModal .field > span { color: #405c50; font-size: 0.7rem; font-weight: 850; letter-spacing: 0.045em; text-transform: uppercase; }
+.accountUploadModal .field input,
+.accountUploadModal .field textarea,
+.accountUploadModal .field select { border-color: #e5ebf1; border-radius: 0.92rem; font-size: 1rem; font-weight: 400; color: #17362c; }
+.accountUploadModal .documentTypeCombobox { border-color: #e5ebf1; border-radius: 0.92rem; }
+.accountUploadModal .filePicker { min-height: 8rem; padding: 1.1rem; border-radius: 1rem; }
+.accountUploadModal .filePicker strong { font-size: 0.95rem; font-weight: 800; }
+.accountUploadModal .filePicker small { line-height: 1.5; }
+.accountUploadModal.accountUploadModal .modalFooter {
+  padding: 1rem var(--document-dialog-padding) 1.6rem !important;
+  gap: 0.65rem !important;
+  border-top: 1px solid rgba(18, 45, 37, 0.11) !important;
+  background: #fff !important;
+}
+.accountUploadModal .modalFooter :is(.cancelButton, .uploadButton) {
+  min-height: 3rem !important;
+  min-width: 8.75rem !important;
+  border-radius: 1rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+}
+.accountUploadModal .modalFooter .cancelButton { color: #17362c !important; background: #f2f5f8 !important; border-color: #d8e1ea !important; }
+.accountUploadModal .modalFooter .uploadButton { background: linear-gradient(180deg, #1a5a45, #124233) !important; border-color: transparent !important; }
+.accountUploadModal.accountUploadModal .modalFooter { flex-wrap: wrap !important; }
+@media (max-width: 620px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountUploadModal .modalFooter :is(.cancelButton, .uploadButton) { min-width: 0 !important; }
+}
