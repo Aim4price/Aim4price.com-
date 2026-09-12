@@ -3677,21 +3677,19 @@ export default function MyInvoicesClient({
 
       {budgetModalOpen ? (
         <div
-          className={`${styles.modalBackdrop} ${budgetAssetPickerOpen ? styles.budgetAssetPickerBackdrop : `${wizardStyles.overlay} ${styles.accountCostBackdrop}`}`} data-website-overlay
+          className={`${styles.modalBackdrop} ${budgetAssetPickerOpen ? `${styles.budgetAssetPickerBackdrop} ${styles.accountCostBackdrop}` : `${wizardStyles.overlay} ${styles.accountCostBackdrop}`}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby={budgetAssetPickerOpen ? 'budget-scope-picker-title' : 'budget-modal-title'}
         >
           {budgetAssetPickerOpen ? (
-            <div className={[styles.assetModal, styles.budgetAssetPickerModal].join(' ')} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <div className={[styles.assetModal, styles.budgetAssetPickerModal, styles.accountCostModal, styles.accountAssetPickerModal, accountStyles.modalTheme].join(' ')} data-asset-choice-surface="true" data-asset-choice-modal="true">
               <div className={styles.modalHeader} data-asset-choice-header="true">
                 <div>
                   <h2 id="budget-scope-picker-title">Choose Saved Assets</h2>
                   <p>{editingBudgetId ? 'Choose the asset for this budget.' : 'Select one or more saved assets.'}</p>
                 </div>
-                <button type="button" className={styles.closeButton} onClick={closeBudgetAssetPicker} aria-label="Back to budget">
-                  <CloseIcon />
-                </button>
+                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetAssetPicker} aria-label="Back to budget"><span aria-hidden="true">×</span></button>
               </div>
               <div className={styles.modalDivider} />
               <div
@@ -4318,13 +4316,13 @@ export default function MyInvoicesClient({
       ) : null}
 
       {invoiceDropCodeOpen && invoiceDropAssetPickerOpen ? (
-        <div className={`${styles.modalBackdrop} ${styles.invoiceDropAssetPickerBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="invoice-drop-asset-picker-title">
-          <div className={`${styles.assetModal} ${styles.invoiceDropAssetPickerModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+        <div className={`${styles.modalBackdrop} ${styles.invoiceDropAssetPickerBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="invoice-drop-asset-picker-title">
+          <div className={`${styles.assetModal} ${styles.invoiceDropAssetPickerModal} ${styles.accountCostModal} ${styles.accountAssetPickerModal} ${accountStyles.modalTheme}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={`${styles.modalHeader} ${styles.invoiceDropAssetPickerHeader}`} data-asset-choice-header="true">
               <div>
                 <h2 id="invoice-drop-asset-picker-title">Choose one asset</h2>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeInvoiceDropAssetPicker} aria-label="Close asset search"><CloseIcon /></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropAssetPicker} aria-label="Close asset search"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.invoiceDropAssetPickerToolbar} data-asset-choice-toolbar="true">
@@ -4351,6 +4349,7 @@ export default function MyInvoicesClient({
                     key={asset.id}
                     className={`${styles.assetRow} ${styles.invoiceDropAssetPickerRow} ${selected ? styles.invoiceDropAssetPickerRowSelected : ''}`}
                     data-asset-choice-row="true"
+                    data-asset-choice-selected={selected ? 'true' : undefined}
                     aria-pressed={selected}
                     onClick={() => chooseInvoiceDropAsset(asset.id)}
                   >
@@ -4360,12 +4359,11 @@ export default function MyInvoicesClient({
                       {asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}
                       <small data-asset-choice-secondary="true">{[asset.categoryLabel, asset.yearModel].filter(Boolean).join(' · ')}</small>
                     </span>
-                    <span className={styles.invoiceDropAssetPickerRowAside}>
-                      <span className={styles.assetValue} data-asset-choice-value="true">
-                        <strong>{formatMoney(asset.value)}</strong>
-                        <small>current value</small>
+                    <span className={styles.assetValue} data-asset-choice-value="true">
+                      <span className={styles.pickerSelectAction}>
+                        <span className={styles.pickerSingleMark} aria-hidden="true">{selected ? '✓' : ''}</span>
+                        <strong>{selected ? 'Selected' : 'Select'}</strong>
                       </span>
-                      <span className={styles.invoiceDropAssetPickerSelection} aria-hidden="true">{selected ? '✓' : 'Choose'}</span>
                     </span>
                   </button>
                 );
@@ -5107,14 +5105,14 @@ export default function MyInvoicesClient({
       ) : null}
 
       {assetPickerOpen ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label={flowTitle}>
-          <div className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label={flowTitle}>
+          <div className={`${styles.assetModal} ${styles.accountCostModal} ${styles.accountAssetPickerModal} ${accountStyles.modalTheme}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>{flowTitle}</h2>
                 <p>{businessPickerOpen ? 'Select the business this cost belongs to.' : dealerMode ? pickerBusiness?.name : 'Select the saved asset this cost belongs to.'}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
@@ -5162,8 +5160,10 @@ export default function MyInvoicesClient({
                     <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
                   </span>
                   <span className={styles.assetValue} data-asset-choice-value="true">
-                    <strong>{formatMoney(asset.value)}</strong>
-                    <small>current value</small>
+                    <span className={styles.pickerSelectAction}>
+                      <span className={styles.pickerSingleMark} aria-hidden="true" />
+                      <strong>Select</strong>
+                    </span>
                   </span>
                 </button>
               )) : <div className={styles.emptyState}>{dealerMode ? <>No matching shared assets found. Ask the owner to share the asset with your dealership, or use their Invoice Drop code. <a href="/drop-invoice">Open Invoice Drop</a></> : 'No matching assets found.'}</div>}
