@@ -6752,7 +6752,6 @@ export default function AssetRegisterClient({
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
-  const [busyMarketplaceRemoveId, setBusyMarketplaceRemoveId] = useState<string | null>(null);
   const [busyFlagAssetId, setBusyFlagAssetId] = useState<string | null>(null);
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
@@ -13296,39 +13295,10 @@ export default function AssetRegisterClient({
     void openMarketplaceModal(asset);
   }
 
-  async function handleRemoveFromMarketplace(asset: RegisterAsset) {
-    setBusyMarketplaceRemoveId(asset.id);
-
-    try {
-      const response = await fetch(`/api/marketplace?assetId=${encodeURIComponent(asset.id)}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      const data = (await response.json()) as MarketplaceApiResponse;
-
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to remove asset from marketplace.');
-      }
-
-      const removedAsset: RegisterAsset = {
-        ...asset,
-        marketplaceStatus: data.marketplaceStatus ?? 'draft',
-        updatedAtIso: new Date().toISOString(),
-      };
-
-      syncUpdatedAsset(removedAsset);
-      setNotice({ tone: 'success', message: `${removedAsset.title} was removed from marketplace.` });
-      closeMarketplaceModal();
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to remove asset from marketplace.',
-      });
-    } finally {
-      setBusyMarketplaceRemoveId(null);
-    }
+  function handleRemoveFromMarketplace(asset: RegisterAsset) {
+    // Marketplace management owns the guided outcome and advert removal flow.
+    window.location.assign(`/marketplace/browse?listing=${encodeURIComponent(asset.id)}&manage=1`);
   }
-
 
   function clearRevaluePreviewResult() {
     setPricingPreview((current) => (current ? {
@@ -22634,10 +22604,10 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={`${styles.secondaryButton} ${styles.ownerMarketplaceRemoveButton}`}
-                      onClick={() => void handleRemoveFromMarketplace(marketplaceAsset)}
-                      disabled={isPublishingMarketplace || busyMarketplaceRemoveId === marketplaceAsset.id}
+                      onClick={() => handleRemoveFromMarketplace(marketplaceAsset)}
+                      disabled={isPublishingMarketplace}
                     >
-                      {busyMarketplaceRemoveId === marketplaceAsset.id ? 'Removing...' : 'Remove listing'}
+                      Remove listing
                     </button>
                   ) : null}
 

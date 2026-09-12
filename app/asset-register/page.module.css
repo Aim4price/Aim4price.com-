@@ -40408,3 +40408,21 @@ button.documentOpenLink {
   border-top: 0 !important;
   padding-top: 0 !important;
 }
+
+/* Keep long deletion copy comfortable and Marketplace actions within the form. */
+.managementAccountModal.deleteConfirmModal {
+  width: min(var(--website-dialog-reference-width, 100%), 64rem) !important;
+}
+.managementAccountModal .marketplaceActions {
+  background: transparent !important;
+  border-top: 0 !important;
+  padding-top: 0 !important;
+  justify-content: flex-end !important;
+}
+.managementAccountModal .marketplaceActions > button:first-child {
+  margin-right: auto !important;
+}
+.managementAccountModal .marketplaceActions > button:not(:first-child) {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
