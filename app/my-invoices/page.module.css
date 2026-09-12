@@ -6737,3 +6737,44 @@
 }
 
 .accountCostModal.accountCostModal .choiceTitleBlock strong { white-space: normal !important; overflow-wrap: anywhere; }
+
+/* Format selection mirrors Export Fuel Report without changing later steps. */
+.accountCostModal.accountCostModal.downloadFormatModal > .costDownloadBody {
+  padding-bottom: calc(var(--cost-dialog-padding) + 1.3rem) !important;
+}
+.accountCostModal.downloadFormatModal .downloadStageContent {
+  gap: 1.12rem !important;
+}
+.accountCostModal.accountCostModal.downloadFormatModal .downloadFormatFooter {
+  margin: 0 !important;
+  padding: 1rem 0 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.accountCostModal.accountCostModal.downloadFormatModal .downloadNextButton {
+  min-width: min(100%, 13.5rem) !important;
+}
+.accountCostModal.downloadFormatModal .reportOption {
+  min-height: 5.9rem !important;
+  grid-template-columns: 3.8rem minmax(0, 1fr) !important;
+  gap: 1rem !important;
+  padding: 1.12rem 1.18rem !important;
+  border-radius: 1.24rem !important;
+}
+.accountCostModal.downloadFormatModal .reportGraphic {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 3.8rem !important;
+  min-width: 3.8rem !important;
+  height: 3.8rem !important;
+  border-radius: 1rem !important;
+  background: #fff !important;
+  border: 1px solid #d8e2ec !important;
+}
+.accountCostModal.downloadFormatModal .reportGraphic .costExportImage {
+  width: 2.38rem !important;
+  height: 2.38rem !important;
+  object-fit: contain;
+}
