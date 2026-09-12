@@ -1275,7 +1275,7 @@
 .selectedAssetHeader {
   padding-right: 3.25rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   column-gap: clamp(0.56rem, calc(var(--website-design-vw) * 0.9), 0.85rem);
   row-gap: 0.22rem;
@@ -1328,41 +1328,6 @@
   font-size: 0.78rem;
   line-height: 1.25;
   font-weight: 500;
-}
-
-.selectedValueBlock {
-  grid-column: 2;
-  grid-row: 1;
-  min-width: clamp(106px, calc(var(--website-design-vw) * 10.5), 132px);
-  text-align: right;
-  padding-left: 0.35rem;
-}
-
-.selectedValueBlock small {
-  display: block;
-  color: #6b7789;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.058em;
-  text-transform: uppercase;
-}
-
-.selectedValueBlock strong {
-  display: block;
-  margin-top: 0.14rem;
-  color: var(--text);
-  font-size: clamp(1.16rem, calc(var(--website-design-vw) * 1.55), 1.34rem);
-  font-weight: 850;
-  line-height: 1;
-  letter-spacing: -0.055em;
-}
-
-.selectedValueBlock span {
-  display: block;
-  margin-top: 0.2rem;
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  font-weight: 700;
 }
 
 .selectedDetailGrid {
@@ -1923,7 +1888,6 @@
 .assetCardHeader,
 .assetCardMeta,
 .selectedAssetTitleGroup,
-.selectedValueBlock,
 .selectedDetailGrid {
   overflow-wrap: anywhere;
 }
