@@ -3803,7 +3803,6 @@ export default function MyInvoicesClient({
               </div>
 
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
-                <p className={wizardStyles.intro}>Complete one short step at a time. Your spending budget is saved on the final step.</p>
 
 
                 {budgetWizardStep === 1 ? (
