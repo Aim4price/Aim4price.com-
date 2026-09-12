@@ -26,6 +26,7 @@ import {
 } from '../../lib/account-document-taxonomy';
 import styles from './page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
+import accountStyles from '../account/page.module.css';
 
 type DocumentCategory = AccountDocumentCategory;
 type DocumentType = AccountDocumentType;
@@ -1387,14 +1388,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       </div>
 
       {modalMode && !showAssetPicker ? (
-        <div className={`${styles.modalBackdrop} ${modalMode === 'upload' ? wizardStyles.overlay : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
-          <section ref={modalRef} className={`${styles.modal} ${modalMode === 'upload' ? wizardStyles.dialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
+        <div className={`${styles.modalBackdrop} ${modalMode === 'upload' ? `${wizardStyles.overlay} ${styles.accountUploadBackdrop}` : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
+          <section ref={modalRef} className={`${styles.modal} ${modalMode === 'upload' ? `${wizardStyles.dialog} ${styles.accountUploadModal} ${accountStyles.modalTheme}` : ''}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
                 <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
                 <p>{modalMode === 'upload' ? 'Add files, details and links in three short steps.' : `Update the details and links for ${editingDocument?.fileName ?? 'this document'}.`}</p>
               </div>
-              <button type="button" className={modalMode === 'upload' ? wizardStyles.closeButton : undefined} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><Icon name="close" /></button>
+              <button type="button" className={modalMode === 'upload' ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : undefined} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true">{modalMode === 'upload' ? <span aria-hidden="true">×</span> : <Icon name="close" />}</button>
             </header>
 
             <form onSubmit={submitDocument} className={styles.modalForm}>
@@ -1856,4 +1857,3 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     </div>
   );
 }
-
