@@ -4403,20 +4403,20 @@ export default function MyInvoicesClient({
 
       {recurringOpen ? (
         <div
-          className={`${styles.modalBackdrop} ${recurringAssetPickerOpen ? styles.budgetAssetPickerBackdrop : wizardStyles.overlay}`} data-website-overlay
+          className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${recurringAssetPickerOpen ? styles.budgetAssetPickerBackdrop : wizardStyles.overlay}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby={recurringAssetPickerOpen ? 'recurring-asset-picker-title' : 'recurring-modal-title'}
         >
           {recurringAssetPickerOpen ? (
-            <div className={[styles.assetModal, styles.budgetAssetPickerModal].join(' ')} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <div className={[styles.assetModal, styles.budgetAssetPickerModal, styles.accountCostModal, styles.accountAssetPickerModal, accountStyles.modalTheme].join(' ')} data-asset-choice-surface="true" data-asset-choice-modal="true">
               <div className={styles.modalHeader} data-asset-choice-header="true">
                 <div>
                   <h2 id="recurring-asset-picker-title">Choose Saved Assets</h2>
                   <p>Select every asset covered by this recurring cost.</p>
                 </div>
-                <button type="button" className={styles.closeButton} onClick={closeRecurringAssetPicker} aria-label="Back to recurring cost">
-                  <CloseIcon />
+                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeRecurringAssetPicker} aria-label="Back to recurring cost">
+                  <span aria-hidden="true">×</span>
                 </button>
               </div>
               <div className={styles.modalDivider} />
@@ -4492,7 +4492,7 @@ export default function MyInvoicesClient({
             </div>
           ) : (
             <form
-              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, styles.recurringWizardModal, wizardStyles.dialog].join(' ')}
+              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, styles.recurringWizardModal, styles.accountCostModal, accountStyles.modalTheme, wizardStyles.dialog].join(' ')}
               onSubmit={submitRecurringCommitment}
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
@@ -4504,8 +4504,8 @@ export default function MyInvoicesClient({
                       ? 'Add the cost and schedule.'
                       : 'Review and save.'}</p>
                 </div>
-                <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeModal} aria-label="Close recurring cost">
-                  <CloseIcon />
+                <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close recurring cost">
+                  <span aria-hidden="true">×</span>
                 </button>
               </div>
 
