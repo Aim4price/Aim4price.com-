@@ -4245,18 +4245,18 @@
 .accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap):focus-within { outline:3px solid rgba(22,83,64,.15); }
 .accountRegisterModal.accountRegisterModal .qrAssetList { min-height:0 !important; max-height:none !important; overflow:visible !important; }
 @media(max-width:600px) {
- .accountRegisterModal.accountRegisterModal .formGrid { grid-template-columns:minmax(0,1fr) !important; }
- .accountRegisterModal.accountRegisterModal .modalHeader h2 { font-size:1.55rem !important; }
- .accountRegisterModal.accountRegisterModal :is(.exportFormatGrid,.manageActionGrid) { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
- .accountRegisterModal.accountRegisterModal .exportFormatGrid { grid-template-columns:minmax(0,1fr) !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal .formGrid { grid-template-columns:minmax(0,1fr) !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal .modalHeader h2 { font-size:1.55rem !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal :is(.exportFormatGrid,.manageActionGrid) { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal .exportFormatGrid { grid-template-columns:minmax(0,1fr) !important; }
 }
 .accountRegisterModal.accountRegisterModal :is(.exportChoiceOption,.exportOption) { grid-template-columns:3rem minmax(0,1fr) !important; }
 .accountRegisterModal.accountRegisterModal .qrExportIcon { width:1.8rem !important; height:1.8rem !important; }
 @media(max-width:600px) {
- .accountRegisterModal.accountRegisterModal .qrAssetToolbar { grid-template-columns:minmax(0,1fr) !important; }
- .accountRegisterModal.accountRegisterModal .qrAssetSearchWrap { grid-column:1 / -1 !important; }
- .accountRegisterModal.accountRegisterModal .qrAssetRow { grid-template-columns:auto minmax(0,1fr) !important; }
- .accountRegisterModal.accountRegisterModal .qrAssetStatus { grid-column:2 !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal .qrAssetToolbar { grid-template-columns:minmax(0,1fr) !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal .qrAssetSearchWrap { grid-column:1 / -1 !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal .qrAssetRow { grid-template-columns:auto minmax(0,1fr) !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal .qrAssetStatus { grid-column:2 !important; }
 }
 
 /* Register export picker: compact results with a clear choice and value summary. */
@@ -4293,7 +4293,7 @@
 .accountRegisterModal.exportPickerModal .exportSearchWrap { gap: .65rem; }
 .accountRegisterModal.exportPickerModal .exportSearchWrap .searchIcon { position: static; transform: none; flex: 0 0 1rem; }
 @media(max-width:600px) {
-  .accountRegisterModal.exportPickerModal .registerPickerRow { grid-template-columns: minmax(0,1fr); }
-  .accountRegisterModal.exportPickerModal .registerPickerValue { grid-template-columns: minmax(0,1fr); }
-  .accountRegisterModal.exportPickerModal .registerPickerQuickActions { grid-template-columns: minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.exportPickerModal .registerPickerRow { grid-template-columns: minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.exportPickerModal .registerPickerValue { grid-template-columns: minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.exportPickerModal .registerPickerQuickActions { grid-template-columns: minmax(0,1fr); }
 }

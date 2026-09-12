@@ -46,10 +46,11 @@ jobs:
           build_status=${PIPESTATUS[0]}
           set -e
           if [ "$build_status" -eq 0 ]; then exit 0; fi
-          # Same narrowly defined missing-database stop as the existing PR workflows.
+          # Dealer routes collect in parallel; accept the same missing-database stop as canvas validation.
           if grep -Fq "✓ Compiled successfully" /tmp/website-build.log \
             && grep -Fq "Database connection variables are missing" /tmp/website-build.log \
-            && grep -Fq "Failed to collect page data for /api/dealer/session" /tmp/website-build.log; then
+            && grep -Fq "Collecting page data" /tmp/website-build.log \
+            && grep -Eq "Failed to collect page data for /api/dealer/[^[:space:]]+" /tmp/website-build.log; then
             echo "Bundle compiled; page-data collection requires deployment database credentials."
             exit 0
           fi
