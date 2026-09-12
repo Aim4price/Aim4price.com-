@@ -23,3 +23,9 @@
 .on::after, .off::after { content:''; position:absolute; left:.2rem; top:.2rem; width:1.6rem; height:1.6rem; border-radius:50%; background:#fff; box-shadow:0 1px 3px #0003; transition:transform .18s ease; }
 .on::after { transform:translateX(2.4rem); }
 @media (prefers-reduced-motion:reduce) { .on,.off,.on::after,.off::after { transition:none; } }
+
+.form.form { display:flex; flex-direction:column; flex:1 1 auto; min-height:0; gap:0; margin:0; }
+.options { min-height:0; overflow-y:auto; padding:1.3rem 2rem; overscroll-behavior:contain; }
+.options .row { min-height:3.2rem; padding:.8rem 1rem; border-color:#d8e2ec; border-radius:.92rem; font-size:1rem; font-weight:750; line-height:1.4; }
+.options .row small { color:#64746a; font-size:.88rem; font-weight:650; line-height:1.5; }
+.options .categories { gap:.65rem; margin-top:.65rem; }
