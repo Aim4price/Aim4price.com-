@@ -40102,3 +40102,47 @@ button.documentOpenLink {
   font-weight: 650 !important;
   letter-spacing: normal !important;
 }
+
+/* Account-style register switching and umbrella report controls. */
+.assetEntryModal .changeRegisterToolbar {
+  margin: 1.3rem var(--entry-padding-right) 1rem var(--entry-padding) !important;
+  padding: 0 !important;
+}
+.assetEntryModal .changeRegisterList {
+  min-height: 0;
+  margin: 0 !important;
+  padding: 0 var(--entry-padding-right) var(--entry-padding) var(--entry-padding) !important;
+  overflow-y: auto;
+}
+.assetEntryModal .changeRegisterSearchWrap input {
+  font-weight: 400 !important;
+}
+.assetEntryModal .changeRegisterCard strong {
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+}
+.assetEntryModal .changeRegisterCard small {
+  color: #64746a !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+}
+.umbrellaAccountModal .assetReportModalBody {
+  margin: 0 !important;
+  padding: 1.3rem var(--umbrella-padding) var(--umbrella-padding) !important;
+}
+.umbrellaAccountModal .assetReportOptionButton {
+  min-height: 5rem !important;
+  padding: 1rem !important;
+  border-radius: 1rem !important;
+}
+.umbrellaAccountModal .assetReportOptionButton strong {
+  font-size: 0.92rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+.umbrellaAccountModal .assetReportOptionButton small {
+  color: #64746a !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}

@@ -264,15 +264,6 @@ function TrashIcon({ className }: IconProps) {
   );
 }
 
-function CloseIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="m6 6 12 12" />
-      <path d="m18 6-12 12" />
-    </svg>
-  );
-}
-
 function SpreadsheetIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -779,11 +770,13 @@ export default function AssetGroupManagerModal({
     : '';
   const modalTitle = !group
     ? 'Create an umbrella'
-    : view === 'menu' || view === 'reports'
-      ? group.name
-      : view === 'members'
-        ? 'Edit umbrella'
-        : 'Remove umbrella';
+    : view === 'reports'
+      ? `${group.name} Reports`
+      : view === 'menu'
+        ? group.name
+        : view === 'members'
+          ? 'Edit umbrella'
+          : 'Remove umbrella';
   const modalSubtitle = !group
     ? 'Group related assets while keeping every record independent.'
     : view === 'menu' || view === 'reports'
@@ -797,7 +790,7 @@ export default function AssetGroupManagerModal({
   const isAttachingReport = reportDeliveryMode === 'attach';
 
   return (
-    <div className={useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
+    <div className={`${useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} ${group ? styles.accountBackdrop : ''}`} data-website-overlay role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !busy && !reportBusy) onClose();
     }}>
       {useSharedAssetModalDesign ? (
@@ -806,11 +799,11 @@ export default function AssetGroupManagerModal({
         }} />
       ) : null}
       <section
-        className={useManageModalDesign
+        className={`${group ? `${styles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${view === 'members' ? styles.accountEditorModal : ''}` : ''} ${useManageModalDesign
           ? `${registerStyles.optionsModal} ${styles.manageModal}`
           : useReportModalDesign
             ? `${registerStyles.modalCard} ${registerStyles.assetReportModal}`
-            : styles.dialog}
+            : styles.dialog}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="asset-group-title"
@@ -828,18 +821,12 @@ export default function AssetGroupManagerModal({
           </div>
           <button
             type="button"
-            className={!group
-              ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`
-              : useManageModalDesign
-              ? `${registerStyles.modalCloseButton} ${styles.manageCloseButton}`
-              : useSharedAssetModalDesign
-                ? registerStyles.modalCloseButton
-                : styles.closeButton}
+            className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
             onClick={onClose}
             disabled={busy || reportBusy}
             aria-label="Close umbrella manager"
           >
-            {useSharedAssetModalDesign ? <CloseIcon className={registerStyles.buttonIcon} /> : '×'}
+            ×
           </button>
         </header>
 
@@ -953,14 +940,14 @@ export default function AssetGroupManagerModal({
               <div className={`${registerStyles.formActions} ${registerStyles.exportActions} ${registerStyles.assetFuelReportActions} ${styles.reportActions}`}>
                 <button
                   type="button"
-                  className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`}
+                  className={accountStyles.ghostButton}
                   onClick={() => setReportStep(reportStep === 'filters' ? 'format' : 'options')}
                   disabled={busy || reportBusy}
                 >
                   Back
                 </button>
-                <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
-                <button type="button" className={registerStyles.primaryButton} onClick={() => reportStep === 'format' ? setReportStep('filters') : handleDownloadSelectedReport()} disabled={busy || reportBusy}>
+                <button type="button" className={accountStyles.ghostButton} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
+                <button type="button" className={accountStyles.primaryButton} onClick={() => reportStep === 'format' ? setReportStep('filters') : handleDownloadSelectedReport()} disabled={busy || reportBusy}>
                   <span>{reportStep === 'format' ? 'Next' : reportBusy ? 'Preparing…' : isAttachingReport ? reportFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                 </button>
               </div>
@@ -979,8 +966,8 @@ export default function AssetGroupManagerModal({
               {error ? <p className={styles.error} role="alert">{error}</p> : null}
             </div>
             <footer className={styles.footer}>
-              <button type="button" className={styles.cancelButton} onClick={() => setView('menu')} disabled={busy}>Cancel</button>
-              <button type="button" className={styles.deleteButton} onClick={() => void onDelete(group)} disabled={busy}>
+              <button type="button" className={group ? accountStyles.ghostButton : styles.cancelButton} onClick={() => setView('menu')} disabled={busy}>Cancel</button>
+              <button type="button" className={accountStyles.dangerButton} onClick={() => void onDelete(group)} disabled={busy}>
                 {busy ? 'Removing…' : 'Remove umbrella'}
               </button>
             </footer>
@@ -1175,17 +1162,17 @@ export default function AssetGroupManagerModal({
             </div>
 
             <footer className={`${styles.footer} ${styles.wizardFooter}`}>
-              <button type="button" className={styles.cancelButton} onClick={() => group ? setView('menu') : onClose()} disabled={busy}>
+              <button type="button" className={group ? accountStyles.ghostButton : styles.cancelButton} onClick={() => group ? setView('menu') : onClose()} disabled={busy}>
                 Cancel
               </button>
               {editorStep > 1 ? (
-                <button type="button" className={styles.cancelButton} onClick={() => setEditorStep((editorStep - 1) as AssetGroupEditorStep)} disabled={busy}>
+                <button type="button" className={group ? accountStyles.ghostButton : styles.cancelButton} onClick={() => setEditorStep((editorStep - 1) as AssetGroupEditorStep)} disabled={busy}>
                   Back
                 </button>
               ) : null}
               <button
                 type="submit"
-                className={styles.saveButton}
+                className={group ? accountStyles.primaryButton : styles.saveButton}
                 disabled={busy || (editorStep === 1 && !name.trim()) || (editorStep === 3 && (selectedAssetIds.length < 1 || countedAssetCount < 1 || (hasPrimaryAsset && !primaryAssetId)))}
               >
                 {editorStep < 3 ? 'Next' : busy ? 'Saving…' : group ? 'Save changes' : 'Create umbrella'}
