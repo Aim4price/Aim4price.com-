@@ -4004,7 +4004,15 @@
   background: #f7faf8 !important;
   box-shadow: none !important;
 }
-.accountUploadModal .modalHeader > button span { font-size: 1.35rem; font-weight: 650; }
+.accountUploadModal .modalHeader > button span {
+  margin: 0;
+  color: inherit;
+  font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+}
 .accountUploadModal.accountUploadModal .modalScroll { padding: 1.3rem var(--document-dialog-padding) var(--document-dialog-padding) !important; background: transparent !important; }
 .accountUploadModal .uploadWizardPanel { padding: 1rem !important; border-radius: 1rem !important; }
 .accountUploadModal .uploadWizardPanel h3 { color: #12352d !important; font-size: 1rem !important; font-weight: 800 !important; }
