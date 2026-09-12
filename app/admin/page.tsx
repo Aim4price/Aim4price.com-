@@ -12,7 +12,6 @@ export default async function AdminPage() {
 
   return (
     <main className={styles.page}>
-      <a href="/admin/maintenance-catalogue">Maintenance checklists</a>
       <AdminClient initialUsers={users} />
     </main>
   );
