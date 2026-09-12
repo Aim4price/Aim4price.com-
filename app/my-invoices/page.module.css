@@ -6940,3 +6940,74 @@
   border-color: #789e8e !important;
   box-shadow: 0 0 0 3px rgba(22, 83, 64, 0.12) !important;
 }
+
+/* Assisted invoice upload follows the Change Password dialog rhythm. */
+.accountCostModal.accountCostModal.costUploadModal {
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 46rem) !important;
+}
+.accountCostModal.accountCostModal.costUploadModal > .formModalScrollBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 1.3rem var(--cost-dialog-padding) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+.accountCostModal.accountCostModal.costUploadModal .uploadPanel {
+  display: grid !important;
+  gap: 1rem !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.accountCostModal.accountCostModal.costUploadModal .uploadPanel h3,
+.accountCostModal.accountCostModal.costUploadModal .captureNoteField > span {
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #405d51 !important;
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  line-height: 1.5 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase;
+}
+.accountCostModal.accountCostModal.costUploadModal .uploadBox {
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 1rem !important;
+  gap: 0.65rem !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(120deg, #edf3f8, #f0f7f3) !important;
+}
+.accountCostModal.accountCostModal.costUploadModal .uploadButton {
+  min-height: 3.2rem !important;
+  height: auto !important;
+  border-radius: 0.92rem !important;
+  font-size: 1rem !important;
+  font-weight: 750 !important;
+  color: #17362c !important;
+}
+.accountCostModal.accountCostModal.costUploadModal .uploadCounter,
+.accountCostModal.accountCostModal.costUploadModal .uploadBox small,
+.accountCostModal.accountCostModal.costUploadModal .uploadPanel > p {
+  margin: 0 !important;
+  color: #64746a !important;
+  font-size: 0.88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
+.accountCostModal.accountCostModal.costUploadModal .captureNoteField { margin: 0 !important; gap: 0.4rem !important; }
+.accountCostModal.accountCostModal.costUploadModal .captureNoteField textarea {
+  padding: 0.9rem !important;
+  border: 1px solid #d8e2ec !important;
+  border-radius: 0.92rem !important;
+  background: #fff !important;
+  color: #17362c !important;
+  font: inherit;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+.accountCostModal.accountCostModal.costUploadModal .uploadPanel > .noticeError { color: #a12f2f !important; }
