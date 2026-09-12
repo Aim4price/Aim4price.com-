@@ -9827,7 +9827,7 @@ export default function AssetRegisterClient({
         ? 1
         : Math.floor(matchingStandaloneIndex / numericPageSize) + 1,
     );
-    scrollToAssetCard(focusAssetId);
+    scrollToAssetCard(focusAssetId, true);
 
     if (shouldOpenMarketplaceModal && matchingAsset) {
       window.setTimeout(() => {
@@ -11313,10 +11313,16 @@ export default function AssetRegisterClient({
     });
   }
 
-  function scrollToAssetCard(assetId: string) {
-    window.setTimeout(() => {
-      document.getElementById(`asset-card-${assetId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 180);
+  function scrollToAssetCard(assetId: string, immediate = false) {
+    const scroll = () => {
+      document.getElementById(`asset-card-${assetId}`)?.scrollIntoView({ behavior: immediate ? 'instant' : 'smooth', block: 'center' });
+    };
+    if (immediate) {
+      // Wait for the expanded card to render without the normal animation delay.
+      window.requestAnimationFrame(scroll);
+    } else {
+      window.setTimeout(scroll, 180);
+    }
   }
 
   async function loadDealerTrackingStatus(assetId: string): Promise<DealerMaintenanceAccessSummary[]> {

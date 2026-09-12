@@ -454,28 +454,6 @@ function formatYearModel(value: number | null): string {
   return String(Math.round(value));
 }
 
-function formatMoney(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value))
-    return "Not saved";
-
-  return new Intl.NumberFormat("en-ZA", {
-    style: "currency",
-    currency: "ZAR",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
-}
-
-function methodLabel(value?: string | null): string {
-  const normalized = String(value ?? "")
-    .trim()
-    .toLowerCase();
-  if (normalized === "market") return "Aim4price";
-  if (normalized === "manual") return "Manual";
-  if (normalized === "generic") return "Aim4price";
-  if (normalized === "tractor") return "Aim4price";
-  return "Aim4price";
-}
-
 function normalizePhotos(photos?: string[] | null): string[] {
   if (!Array.isArray(photos)) return [];
   return photos.map((photo) => String(photo ?? "").trim()).filter(Boolean);
@@ -2059,13 +2037,6 @@ export default function AssetMapClient() {
                           </div>
                         </div>
 
-                        <div className={styles.selectedValueBlock}>
-                          <small>
-                            {methodLabel(selectedAsset.selectedMethod)} value
-                          </small>
-                          <strong>{formatMoney(selectedAsset.value)}</strong>
-                          <span>Excl. VAT</span>
-                        </div>
                       </div>
 
                       <div className={styles.selectedDetailGrid}>
@@ -2084,6 +2055,7 @@ export default function AssetMapClient() {
                       <div className={styles.selectedActionRow}>
                         <Link
                           href={buildAssetRegisterHref(selectedAsset)}
+                          prefetch={true}
                           className={`${styles.selectedActionButton} ${styles.selectedActionRegister}`}
                         >
                           <RegisterIcon className={styles.buttonIcon} />

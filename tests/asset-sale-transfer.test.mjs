@@ -111,7 +111,13 @@ test('claim completion opens the exact asset in the desktop Asset Register', () 
   assert.doesNotMatch(claimSource, /\/owner-app\/assets\//);
   assert.match(desktopClient, /params\.get\('convertedAssetId'\) \|\| params\.get\('assetId'\)/);
   assert.match(desktopClient, /setExpandedAssetId\(focusAssetId\)/);
-  assert.match(desktopClient, /scrollToAssetCard\(focusAssetId\)/);
+  assert.match(desktopClient, /scrollToAssetCard\(focusAssetId, true\)/);
+  const scrollStart = desktopClient.indexOf('  function scrollToAssetCard(');
+  const scrollEnd = desktopClient.indexOf('  async function loadDealerTrackingStatus', scrollStart);
+  const scrollSource = desktopClient.slice(scrollStart, scrollEnd);
+  assert.match(scrollSource, /if \(immediate\)[\s\S]*window\.requestAnimationFrame\(scroll\)/);
+  assert.match(scrollSource, /behavior: immediate \? 'instant' : 'smooth'/);
+  assert.match(scrollSource, /window\.setTimeout\(scroll, 180\)/);
 });
 
 test('portable asset history moves while seller-private financial data is reset', () => {
