@@ -79,6 +79,7 @@ import {
 } from '../../lib/asset-groups-shared';
 import styles from './page.module.css';
 import accountStyles from '../account/page.module.css';
+import externalShareStyles from '../../components/asset-register/AssetExternalShare.module.css';
 import updateStyles from './asset-update-refinements.module.css';
 import { conditionOptions } from '../../lib/tractor-data';
 import { CONDITION_FACTORS } from '../../lib/valuation/shared';
@@ -17979,11 +17980,11 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isRegisterShareModalOpen ? (
-        <div className={styles.modalOverlay} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeRegisterShareModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
+            className={`${styles.optionsModal} ${styles.modalCard} ${styles.assetEntryModal} ${styles.registerShareAccountModal} ${accountStyles.modalTheme} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-hidden={externalShareReportScope === 'register' || externalShareReportScope === 'group' ? true : undefined}
@@ -18007,16 +18008,16 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeRegisterShareModal}
                 aria-label="Close register share options"
                 disabled={isExporting || isSendingQuoteLead}
               >
-                <CloseIcon className={styles.buttonIcon} />
+                ×
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${styles.registerShareModalBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${styles.registerShareModalBody} ${externalShareStyles.accountShareTheme}`}>
               {assetShareDestination === 'choice' ? (
                 <AssetShareDestinationPicker
                   onInside={() => setAssetShareDestination('inside')}
@@ -18104,13 +18105,13 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isSummaryModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.summaryModalOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.summaryModalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeSummaryModal} />
 
           <div
             ref={summaryDialogRef}
             id="asset-register-summary-dialog"
-            className={`${styles.modalCard} ${styles.summaryModal}`}
+            className={`${styles.modalCard} ${styles.summaryModal} ${styles.assetEntryModal} ${styles.registerSummaryAccountModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-register-summary-title"
@@ -18125,21 +18126,11 @@ export default function AssetRegisterClient({
               <div className={styles.summaryHeaderActions}>
                 <button
                   type="button"
-                  className={`${styles.secondaryButton} ${styles.summaryDownloadButton}`}
-                  onClick={handleDownloadRegisterSummary}
-                  disabled={isLoading || isExporting}
-                >
-                  <PdfIcon className={styles.buttonIcon} />
-                  <span>Download PDF</span>
-                </button>
-
-                <button
-                  type="button"
-                  className={styles.modalCloseButton}
+                  className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                   onClick={closeSummaryModal}
                   aria-label="Close register summary"
                 >
-                  <CloseIcon className={styles.buttonIcon} />
+                  ×
                 </button>
               </div>
             </div>
@@ -18222,6 +18213,17 @@ export default function AssetRegisterClient({
                   </table>
                 </div>
               </section>
+            </div>
+            <div className={styles.registerUtilityFooter}>
+              <button
+                type="button"
+                className={accountStyles.primaryButton}
+                onClick={handleDownloadRegisterSummary}
+                disabled={isLoading || isExporting}
+              >
+                <PdfIcon className={styles.buttonIcon} />
+                <span>Download PDF</span>
+              </button>
             </div>
           </div>
         </div>

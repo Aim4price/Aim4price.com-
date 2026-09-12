@@ -40025,3 +40025,80 @@ button.documentOpenLink {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Register summary and sharing follow the approved Change Password chrome. */
+.modalCard.assetEntryModal.registerSummaryAccountModal,
+.modalCard.assetEntryModal.registerShareAccountModal.externalAssetShareModal {
+  width: min(var(--website-dialog-reference-width, 100%), 58rem) !important;
+}
+
+.modalCard.assetEntryModal.registerShareAccountModal {
+  width: min(var(--website-dialog-reference-width, 100%), 46rem) !important;
+  padding: 0 !important;
+  border-radius: 1.55rem !important;
+}
+
+.assetEntryModal.registerShareAccountModal .registerShareModalHeader,
+.assetEntryModal.registerSummaryAccountModal .summaryModalHeader {
+  grid-template-columns: minmax(0, 1fr) 2.75rem !important;
+}
+
+.assetEntryModal.registerSummaryAccountModal .summaryHeaderActions {
+  margin: 0;
+  align-self: start;
+}
+
+.assetEntryModal.registerShareAccountModal .registerShareModalBody,
+.assetEntryModal.registerSummaryAccountModal .summaryModalBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 1.3rem var(--entry-padding-right) var(--entry-padding) var(--entry-padding) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+
+.assetEntryModal.registerShareAccountModal .optionsContent,
+.assetEntryModal.registerShareAccountModal .registerShareOptionGrid {
+  padding: 0 !important;
+}
+
+.optionsModal.assetEntryModal.registerShareAccountModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
+  min-height: 8.5rem !important;
+  padding: 1rem !important;
+  border-radius: 1rem !important;
+}
+
+.optionsModal.assetEntryModal.registerShareAccountModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard .assetQuoteChoiceIconTile {
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  border-radius: 0.9rem !important;
+}
+
+.optionsModal.assetEntryModal.registerShareAccountModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard .assetQuoteChoiceText strong,
+.assetEntryModal.registerSummaryAccountModal .summarySectionHeader h4 {
+  color: #12352d !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+.optionsModal.assetEntryModal.registerShareAccountModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard .assetQuoteChoiceText small,
+.assetEntryModal.registerSummaryAccountModal .summarySectionHeader p {
+  color: #64746a !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
+
+.assetEntryModal.registerSummaryAccountModal .summarySectionTab {
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+}
+
+.assetEntryModal.registerSummaryAccountModal .summaryDataTable tbody th,
+.assetEntryModal.registerSummaryAccountModal .summaryDataTable tbody td {
+  font-size: 0.85rem !important;
+  font-weight: 650 !important;
+  letter-spacing: normal !important;
+}
