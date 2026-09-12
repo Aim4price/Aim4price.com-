@@ -21,10 +21,8 @@ test('spending budget uses a guided four-step flow with a dedicated period step'
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal should be present');
   assert.match(client, /type BudgetWizardStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /const \[budgetWizardStep, setBudgetWizardStep\]/);
-  assert.match(budgetModal, /\[\['Coverage', 1\], \['Period', 2\], \['Limit', 3\], \['Review', 4\]\]/);
-  assert.match(budgetModal, /Step ' \+ budgetWizardStep \+ ' of 4/);
+  assert.doesNotMatch(budgetModal, /styles\.invoiceDropWizardProgress/);
   assert.match(budgetModal, /styles\.invoiceDropCodeModal/);
-  assert.match(budgetModal, /styles\.invoiceDropWizardProgress/);
   assert.match(budgetModal, /styles\.invoiceDropWizardPanel/);
   assert.match(budgetModal, /What should this budget cover\?/);
   assert.match(budgetModal, /Choose the budget period/);
@@ -101,15 +99,8 @@ test('period is selected on step two in a wider, responsive budget modal', () =>
   assert.match(periodStep, /A fresh limit starts each calendar year\./);
   assert.match(styles, /\.downloadModal\.budgetWizardModal\s*\{[^}]*width:\s*min\(1280px, 100%\) !important;/);
   assert.match(styles, /\.budgetWizardPeriodChoices\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
-  assert.match(budgetModal, /\.map\(\(\[label, step\], index\) =>/);
-  assert.match(budgetModal, /index < 3/);
-  assert.match(budgetModal, /styles\.budgetWizardProgressConnector/);
-  assert.match(budgetModal, /budgetWizardStep > step \? styles\.budgetWizardProgressConnectorComplete/);
-  assert.match(styles, /\.budgetWizardProgressConnector\s*\{[^}]*display:\s*none;/);
+  assert.doesNotMatch(budgetModal, /styles\.budgetWizardProgressConnector/);
   assertNoWebsiteReflow(styles);
-  assert.match(styles, /@media \(min-width: 1000px\)[\s\S]*?\.budgetWizardProgressConnector\s*\{[^}]*display:\s*block;[^}]*width:\s*100%;[^}]*height:\s*2px;/);
-  assert.match(styles, /\.budgetWizardProgressConnectorComplete\s*\{[^}]*background:\s*#83c8ae;/);
-  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.budgetWizardModal \.invoiceDropWizardProgress\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/);
 });
 
 test('period-specific duplicate checks happen after coverage is selected', () => {
