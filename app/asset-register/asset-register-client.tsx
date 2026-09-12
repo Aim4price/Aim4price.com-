@@ -78,6 +78,7 @@ import {
   type AssetGroupSaveInput,
 } from '../../lib/asset-groups-shared';
 import styles from './page.module.css';
+import accountStyles from '../account/page.module.css';
 import updateStyles from './asset-update-refinements.module.css';
 import { conditionOptions } from '../../lib/tractor-data';
 import { CONDITION_FACTORS } from '../../lib/valuation/shared';
@@ -18279,11 +18280,11 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAddChoiceModalOpen ? (
-        <div className={styles.modalOverlay} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAddAssetChoiceModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.addAssetChoiceModal}`}
+            className={`${styles.modalCard} ${styles.addAssetChoiceModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-asset-choice-title"
@@ -18296,11 +18297,11 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAddAssetChoiceModal}
                 aria-label="Close add asset options"
               >
-                <CloseIcon className={styles.buttonIcon} />
+                ×
               </button>
             </div>
 
@@ -18324,16 +18325,16 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAcquisitionChoiceOpen ? (
-        <div className={styles.modalOverlay} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsAcquisitionChoiceOpen(false)} />
-          <div className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.newAcquisitionChoiceModal}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
+          <div className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.newAcquisitionChoiceModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="new-acquisition-title">
             <div className={`${styles.modalHeader} ${styles.newAcquisitionChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="new-acquisition-title">Newly acquired asset?</h3>
                 <p>Adding to <strong>{addAssetTargetRegisterName}</strong>. Choose how this asset entered the register.</p>
               </div>
-              <button type="button" className={styles.modalCloseButton} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question">
-                <CloseIcon className={styles.buttonIcon} />
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question">
+                ×
               </button>
             </div>
             <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody} ${styles.newAcquisitionChoiceBody}`}>
@@ -18360,24 +18361,24 @@ export default function AssetRegisterClient({
 
               {newAssetAcquisitionDraft.newlyAcquired === true ? (
                 <div className={styles.assetLifecycleFields}>
-                  <label className={styles.assetSettingsField}>
+                  <label className={accountStyles.modalField}>
                     <span>Acquisition date</span>
                     <input type="date" value={newAssetAcquisitionDraft.acquisitionDate} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, acquisitionDate: event.target.value }))} required />
                   </label>
-                  <label className={styles.assetSettingsField}>
+                  <label className={accountStyles.modalField}>
                     <span>Purchase or acquisition amount <small>Optional, excl. VAT</small></span>
                     <input inputMode="decimal" value={newAssetAcquisitionDraft.acquisitionAmountExVat} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, acquisitionAmountExVat: event.target.value }))} placeholder="R 0" />
                   </label>
-                  <label className={styles.assetSettingsField}>
+                  <label className={accountStyles.modalField}>
                     <span>Note or source <small>Optional</small></span>
                     <textarea value={newAssetAcquisitionDraft.note} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Purchase reference or source note" />
                   </label>
                 </div>
               ) : null}
-              <div className={`${styles.assetSettingsActions} ${styles.newAcquisitionChoiceActions}`}>
-                <button type="button" className={styles.secondaryButton} onClick={() => setIsAcquisitionChoiceOpen(false)}>Cancel</button>
-                <button type="button" className={styles.primaryButton} onClick={continueManualEntryFromAcquisitionChoice} disabled={newAssetAcquisitionDraft.newlyAcquired === null}>Continue</button>
-              </div>
+            </div>
+            <div className={`${styles.assetSettingsActions} ${styles.newAcquisitionChoiceActions}`}>
+              <button type="button" className={accountStyles.ghostButton} onClick={() => setIsAcquisitionChoiceOpen(false)}>Cancel</button>
+              <button type="button" className={accountStyles.primaryButton} onClick={continueManualEntryFromAcquisitionChoice} disabled={newAssetAcquisitionDraft.newlyAcquired === null}>Continue</button>
             </div>
           </div>
         </div>
