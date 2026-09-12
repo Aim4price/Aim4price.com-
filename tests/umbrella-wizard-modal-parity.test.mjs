@@ -69,12 +69,8 @@ test("all five wizards retain shared structure with their approved close control
     assert.match(wizard, /wizardStyles\.overlay/);
     assert.match(wizard, /wizardStyles\.dialog/);
     assert.match(wizard, /wizardStyles\.header/);
-    if (wizard === recurringWizard) {
-      assert.match(wizard, /wizardStyles\.closeButton/);
-    } else {
-      assert.match(wizard, /accountStyles\.modalCloseButton/);
-      assert.match(wizard, /accountStyles\.passwordModalCloseButton/);
-    }
+    assert.match(wizard, /accountStyles\.modalCloseButton/);
+    assert.match(wizard, /accountStyles\.passwordModalCloseButton/);
     assert.match(wizard, /onClick=\{close[^}]*\}[^>]*aria-label="Close/);
     assert.match(wizard, /wizardStyles\.body/);
     if (wizard !== uploadWizard) {
