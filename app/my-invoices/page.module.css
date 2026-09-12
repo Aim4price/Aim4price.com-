@@ -6909,3 +6909,34 @@
   font-size: 0.88rem;
   font-weight: 650;
 }
+
+/* Invoice Drop search is one field; the wrapper owns its border and focus ring. */
+.accountCostModal.accountAssetPickerModal .invoiceDropAssetPickerToolbar > label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  padding: 0 1rem !important;
+  box-sizing: border-box;
+}
+.accountCostModal.accountAssetPickerModal .invoiceDropAssetPickerToolbar > label > svg {
+  position: static !important;
+  flex: 0 0 1.08rem;
+  transform: none !important;
+}
+.accountCostModal.accountAssetPickerModal .invoiceDropAssetPickerToolbar > label > input {
+  flex: 1 1 0 !important;
+  width: 0 !important;
+  height: 3.2rem !important;
+  min-height: 3.2rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  line-height: 1.5 !important;
+}
+.accountCostModal.accountAssetPickerModal .invoiceDropAssetPickerToolbar > label:focus-within {
+  border-color: #789e8e !important;
+  box-shadow: 0 0 0 3px rgba(22, 83, 64, 0.12) !important;
+}
