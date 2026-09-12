@@ -40512,3 +40512,26 @@ button.documentOpenLink {
   font-size: 0.88rem !important;
   line-height: 1.5 !important;
 }
+
+/* Centre the filter and PDF export option labels within each card. */
+.assetFilterModal .assetFilterOptionCard,
+.exportModal .pdfReportOption {
+  position: relative;
+  justify-content: center !important;
+  text-align: center !important;
+}
+.assetFilterModal .assetFilterOptionCard {
+  padding-inline: 2.5rem;
+}
+.assetFilterModal .assetFilterOptionText,
+.exportModal .pdfReportOptionMain {
+  width: 100%;
+  justify-items: center;
+  text-align: center !important;
+}
+.assetFilterModal .assetFilterModalTick {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
