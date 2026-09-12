@@ -40172,3 +40172,232 @@ button.documentOpenLink {
   overflow-wrap: anywhere;
   text-wrap: wrap !important;
 }
+
+/* Asset management uses the account dialog chrome, with room for each workflow. */
+.managementAccountModal.modalCard,
+.managementAccountModal.optionsModal {
+  --management-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
+  width: min(var(--website-dialog-reference-width, 100%), 46rem) !important;
+  max-width: 100% !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 3rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(18, 45, 37, 0.12) !important;
+  border-radius: 1.55rem !important;
+  background: linear-gradient(180deg, #fff 0%, #f7faf8 100%) !important;
+  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12) !important;
+}
+:global([data-account-asset-modal]) > .modalBackdrop {
+  background: rgba(12, 24, 35, 0.42) !important;
+  backdrop-filter: blur(12px) saturate(0.9) !important;
+}
+.managementAccountModal.ownerCommandModal { width: min(var(--website-dialog-reference-width, 100%), 84rem) !important; }
+.managementAccountModal.assetReportModal,
+.managementAccountModal.marketplaceModal { width: min(var(--website-dialog-reference-width, 100%), 76rem) !important; }
+.managementAccountModal.assetFormModal { width: min(var(--website-dialog-reference-width, 100%), 72rem) !important; }
+.managementAccountModal.qrModal,
+.managementAccountModal.assetSettingsMapModal { width: min(var(--website-dialog-reference-width, 100%), 58rem) !important; }
+
+.managementAccountModal > .modalHeader {
+  flex: 0 0 auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 2.75rem !important;
+  align-items: start !important;
+  gap: 1.25rem !important;
+  margin: var(--management-padding) var(--management-padding) 0 !important;
+  padding: 0 0 1.15rem !important;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.1) !important;
+  background: transparent !important;
+}
+.managementAccountModal .modalHeader .modalHeaderText,
+.managementAccountModal .assetUpdateHeaderContent,
+.managementAccountModal .assetUpdateIdentity {
+  min-width: 0 !important;
+  padding: 0 !important;
+  gap: 0.35rem !important;
+}
+.managementAccountModal .modalHeader .modalHeaderText h3,
+.managementAccountModal .modalHeader .assetUpdateIdentity h3 {
+  margin: 0 !important;
+  color: #12352d !important;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.08 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.managementAccountModal .modalHeader .modalHeaderText p,
+.managementAccountModal .modalHeader .assetUpdateIdentity p {
+  max-width: none !important;
+  margin: 0 !important;
+  color: #64746a !important;
+  font-size: 0.88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+  text-wrap: wrap !important;
+}
+.managementAccountModal > .modalScrollBody,
+.managementAccountModal > .ownerCommandChoiceBody,
+.managementAccountModal > .deleteConfirmContent {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 1.3rem var(--management-padding) var(--management-padding) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: auto !important;
+}
+.managementAccountModal .optionsContent { padding: 0 !important; }
+.managementAccountModal .ownerCommandGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)) !important;
+}
+.managementAccountModal .assetReportOptionsGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 29rem), 1fr)) !important;
+  gap: 1rem !important;
+}
+.managementAccountModal .assetReportOptionsGrid .assetReportOptionButton {
+  display: grid !important;
+  grid-template-columns: 2.85rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  min-height: 5.5rem !important;
+}
+.managementAccountModal .assetReportOptionButton > span,
+.managementAccountModal .ownerCommandAction > span {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+.managementAccountModal .assetReportOptionButton strong,
+.managementAccountModal .ownerCommandGrid .ownerCommandAction strong,
+.managementAccountModal .ownerCommandChoiceAction strong,
+.managementAccountModal .assetSettingsOptionButton strong {
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.managementAccountModal .assetReportOptionButton small,
+.managementAccountModal .ownerCommandGrid .ownerCommandAction small,
+.managementAccountModal .assetSettingsOptionButton small {
+  max-width: none !important;
+  color: #64746a !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+  text-wrap: wrap !important;
+}
+.managementAccountModal .secondaryButton,
+.managementAccountModal .primaryButton,
+.managementAccountModal .qrPrimaryActionButton,
+.managementAccountModal .assetSettingsBackButton {
+  min-height: 3rem !important;
+  border-radius: 1rem !important;
+  font-family: inherit !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+.managementAccountModal .secondaryButton {
+  color: #17362c !important;
+  background: #f2f5f8 !important;
+  border: 1px solid #d8e1ea !important;
+}
+.managementAccountModal .primaryButton {
+  color: #fff !important;
+  border: 1px solid transparent !important;
+  background: linear-gradient(180deg, #1a5a45 0%, #124233 100%) !important;
+}
+.managementAccountModal .deleteConfirmButton,
+.managementAccountModal .ownerMarketplaceRemoveButton {
+  color: #fff !important;
+  background: linear-gradient(180deg, #b54747, #9e3434) !important;
+}
+.managementAccountModal :is(.primaryButton, .secondaryButton):disabled {
+  opacity: 0.52 !important;
+  cursor: not-allowed;
+}
+.managementAccountModal :is(.primaryButton, .secondaryButton):focus-visible {
+  outline: 3px solid rgba(24, 112, 83, 0.35);
+  outline-offset: 3px;
+}
+.managementAccountModal .field > span,
+.managementAccountModal .assetSettingsField > span {
+  color: #405c50 !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.045em !important;
+  text-transform: uppercase;
+}
+/* Only text-entry controls: preserve checkbox, upload and map control sizing. */
+.managementAccountModal input:is([type="text"], [type="number"], [type="date"], [type="email"], [type="tel"], [type="url"], :not([type])),
+.managementAccountModal textarea {
+  min-height: 3.2rem !important;
+  border-radius: 0.92rem !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+  color: #17362c !important;
+}
+.managementAccountModal .marketplacePriceField .marketplaceCurrencyInput input {
+  font-size: 1.5rem !important;
+  font-weight: 650 !important;
+}
+.managementAccountModal .marketplaceCurrencyInput > span {
+  font-size: 1.5rem !important;
+}
+.managementAccountModal .assetUpdateFooter,
+.managementAccountModal .deleteConfirmActions,
+.managementAccountModal .marketplaceActions,
+.managementAccountModal .assetSettingsActions,
+.managementAccountModal .assetFuelReportActions {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  padding: 1rem var(--management-padding) 1.6rem !important;
+  border-top: 1px solid rgba(18, 45, 37, 0.11) !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+}
+.managementAccountModal .deleteConfirmActions { margin: 0 !important; justify-content: flex-end !important; }
+.managementAccountModal .deleteConfirmAsset { margin: 0 !important; }
+.managementAccountModal .deleteConfirmActions > button { min-width: 8.75rem; }
+.managementAccountModal .assetSettingsActions,
+.managementAccountModal .assetFuelReportActions,
+.managementAccountModal .marketplaceActions {
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+
+.managementAccountModal .assetSettingsSectionCopy h4 {
+  color: #12352d !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+.managementAccountModal .assetSettingsSectionCopy p {
+  color: #64746a !important;
+  font-size: 0.82rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
+.managementAccountModal.assetSettingsLocationModal .assetSettingsSectionCopy h4,
+.managementAccountModal.assetSettingsLocationModal .assetSettingsSectionCopy p {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+.managementAccountModal .assetSettingsStaticGrid,
+.managementAccountModal .ownerCommandChoiceGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)) !important;
+}

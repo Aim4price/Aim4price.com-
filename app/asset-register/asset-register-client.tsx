@@ -18387,11 +18387,11 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAssetModalOpen ? (
-        <div className={styles.modalOverlay} data-website-overlay>
+        <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) closeAssetModal(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
@@ -18418,12 +18418,12 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAssetModal}
                 aria-label="Close asset form"
                 disabled={isAssetAutosaveBusy}
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -19690,11 +19690,11 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAssetSettingsModalOpen && editingAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.assetSettingsOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetSettingsModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetSettingsModal} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''} ${isManageMapLocationFlow ? styles.assetSettingsMapEntryModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetSettingsModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''} ${isManageMapLocationFlow ? styles.assetSettingsMapEntryModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-settings-title"
@@ -19707,12 +19707,12 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAssetSettingsModal}
                 aria-label={isManageMapLocationFlow ? 'Close map asset' : 'Close settings'}
                 disabled={isAssetSettingsBusy}
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -21034,10 +21034,10 @@ export default function AssetRegisterClient({
           />
         ) : null
       ) : activeAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionDialog} />
 
-          <div className={`${styles.optionsModal} ${styles.ownerCommandModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
+          <div className={`${styles.optionsModal} ${styles.ownerCommandModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-manage-title">{activeAsset.title}</h3>
@@ -21046,11 +21046,11 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeActionDialog}
                 aria-label="Close asset management"
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -21199,11 +21199,11 @@ export default function AssetRegisterClient({
       ) : null}
 
       {activeAsset && ownerAssetCommandPanel ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.ownerCommandChoiceOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.ownerCommandChoiceOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => setOwnerAssetCommandPanel(null)} />
 
           <div
-            className={`${styles.modalCard} ${styles.ownerCommandChoiceModal}`}
+            className={`${styles.modalCard} ${styles.ownerCommandChoiceModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="owner-command-choice-title"
@@ -21216,11 +21216,11 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={() => setOwnerAssetCommandPanel(null)}
                 aria-label="Close maintenance choices"
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -21623,11 +21623,11 @@ export default function AssetRegisterClient({
       ) : null}
 
       {reportAsset && isAssetReportModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetReportDialog} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetReportModal} ${assetReportStep !== 'options' ? styles.assetFuelReportModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetReportModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${assetReportStep !== 'options' ? styles.assetFuelReportModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-report-title"
@@ -21638,8 +21638,8 @@ export default function AssetRegisterClient({
                 <p>{isAttachingExternalReport ? 'Choose an Aim4price report to add to your message.' : buildAssetMeta(reportAsset)}</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={closeAssetReportDialog} aria-label="Close report options">
-                <CloseIcon className={styles.buttonIcon} />
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeAssetReportDialog} aria-label="Close report options">
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -21921,52 +21921,53 @@ export default function AssetRegisterClient({
       ) : null}
 
       {deleteCandidateAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeDeleteConfirmDialog} />
 
           <div
-            className={styles.deleteConfirmModal}
+            className={`${styles.modalCard} ${styles.deleteConfirmModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-confirm-title"
             aria-describedby="delete-confirm-copy"
           >
-            <button
-              type="button"
-              className={styles.deleteConfirmCloseButton}
-              onClick={closeDeleteConfirmDialog}
-              aria-label="Close delete confirmation"
-              disabled={busyDeleteId === deleteCandidateAsset.id}
-            >
-              <CloseIcon className={styles.buttonIcon} />
-            </button>
-
+            <div className={styles.modalHeader}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
+                <p id="delete-confirm-copy">
+                  Continue to tell Aim4price what happened to <strong>{deleteCandidateAsset.title}</strong>. Genuine disposals are archived and kept for reports and history; only mistakes or duplicates are permanently removed.
+                </p>
+              </div>
+              <button
+                type="button"
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
+                onClick={closeDeleteConfirmDialog}
+                aria-label="Close delete confirmation"
+                disabled={busyDeleteId === deleteCandidateAsset.id}
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
             <div className={styles.deleteConfirmContent}>
-              <h3 id="delete-confirm-title">Are you sure you want to delete this?</h3>
-              <p id="delete-confirm-copy">
-                Continue to tell Aim4price what happened to <strong>{deleteCandidateAsset.title}</strong>. Genuine disposals are archived and kept for reports and history; only mistakes or duplicates are permanently removed.
-              </p>
-
               <div className={styles.deleteConfirmAsset}>
                 <span>Selected asset</span>
                 <strong>{deleteCandidateAsset.title}</strong>
                 <small>{buildAssetMeta(deleteCandidateAsset)} · {money(deleteCandidateAsset.value)}</small>
               </div>
+            </div>
+            <div className={styles.deleteConfirmActions}>
+              <button type="button" className={styles.secondaryButton} onClick={closeDeleteConfirmDialog} disabled={busyDeleteId === deleteCandidateAsset.id}>
+                Cancel
+              </button>
 
-              <div className={styles.deleteConfirmActions}>
-                <button type="button" className={styles.secondaryButton} onClick={closeDeleteConfirmDialog} disabled={busyDeleteId === deleteCandidateAsset.id}>
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  className={`${styles.primaryButton} ${styles.deleteConfirmButton}`}
-                  onClick={() => void handleConfirmDeleteAsset()}
-                  disabled={busyDeleteId === deleteCandidateAsset.id}
-                >
-                  <span>Yes, delete asset</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                className={`${styles.primaryButton} ${styles.deleteConfirmButton}`}
+                onClick={() => void handleConfirmDeleteAsset()}
+                disabled={busyDeleteId === deleteCandidateAsset.id}
+              >
+                <span>Yes, delete asset</span>
+              </button>
             </div>
           </div>
         </div>
@@ -22447,18 +22448,18 @@ export default function AssetRegisterClient({
       ) : null}
 
       {marketplaceAsset && marketplaceDraft ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeMarketplaceModal} />
 
-          <div className={`${styles.modalCard} ${styles.marketplaceModal}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
+          <div className={`${styles.modalCard} ${styles.marketplaceModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
             <div className={`${styles.modalHeader} ${styles.marketplaceModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="marketplace-confirm-title">{marketplaceModalTitle}</h3>
                 <p>Check the listing title, asking price, photos and seller details before it goes live.</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={closeMarketplaceModal} aria-label="Close marketplace modal">
-                <CloseIcon className={styles.buttonIcon} />
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeMarketplaceModal} aria-label="Close marketplace modal">
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -22659,18 +22660,18 @@ export default function AssetRegisterClient({
       ) : null}
 
       {activeAsset && isQrModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeQrDialog} />
 
-          <div className={`${styles.modalCard} ${styles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-qr-title">
+          <div className={`${styles.modalCard} ${styles.qrModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="asset-qr-title">
             <div className={`${styles.modalHeader} ${styles.qrModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-qr-title">{activeAsset.title}</h3>
                 <p>Use this permanent QR for scan access. Public QR scans always ask for the farm PIN.</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={closeQrDialog} aria-label="Close QR code">
-                <CloseIcon className={styles.buttonIcon} />
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeQrDialog} aria-label="Close QR code">
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
