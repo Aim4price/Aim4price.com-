@@ -5261,31 +5261,6 @@ export default function MyInvoicesClient({
                 </div>
               ) : null}
 
-              {manualCostWizardOpen ? (
-                <>
-                  <p className={wizardStyles.intro}>Complete one short step at a time. Your cost record is saved on the final step.</p>
-                  <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + manualCostWizardStep + ' of 3'}>
-                    {([['Invoice', 1], ['Work', 2], ['Review', 3]] as const).map(([label, step]) => (
-                      <li
-                        key={label}
-                        className={[
-                          styles.invoiceDropWizardProgressItem,
-                          wizardStyles.progressItem,
-                          manualCostWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
-                          manualCostWizardStep === step ? wizardStyles.progressItemCurrent : '',
-                          manualCostWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
-                          manualCostWizardStep > step ? wizardStyles.progressItemComplete : '',
-                        ].join(' ')}
-                        aria-current={manualCostWizardStep === step ? 'step' : undefined}
-                      >
-                        <span aria-hidden="true">{manualCostWizardStep > step ? '✓' : step}</span>
-                        <strong>{label}</strong>
-                      </li>
-                    ))}
-                  </ol>
-                </>
-              ) : null}
-
               <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel}` : ''}`}>
                 {manualCostWizardOpen ? (
                   <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
