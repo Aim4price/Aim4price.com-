@@ -16101,12 +16101,12 @@ export default function AssetRegisterClient({
           </div>
 
           {isAssetFilterOpen ? (
-            <div className={`${styles.modalOverlay} ${styles.assetFilterModalOverlay}`} data-website-overlay>
+            <div className={`${styles.modalOverlay} ${styles.assetFilterModalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
               <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsAssetFilterOpen(false)} />
 
               <div
                 id="asset-register-filter-modal"
-                className={`${styles.modalCard} ${styles.assetFilterModal}`}
+                className={`${styles.modalCard} ${styles.assetFilterModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="asset-register-filter-title"
@@ -16118,11 +16118,11 @@ export default function AssetRegisterClient({
 
                   <button
                     type="button"
-                    className={styles.modalCloseButton}
+                    className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                     onClick={() => setIsAssetFilterOpen(false)}
                     aria-label="Close asset filters"
                   >
-                    <CloseIcon className={styles.buttonIcon} />
+                    ×
                   </button>
                 </div>
 
@@ -16164,11 +16164,11 @@ export default function AssetRegisterClient({
                   </div>
                 </div>
 
-                <div className={styles.assetFilterModalFooter}>
-                  <button type="button" className={styles.secondaryButton} onClick={clearAssetFilter} disabled={!hasActiveAssetFilter}>
+                <div className={`${styles.assetFilterModalFooter} ${styles.registerUtilityFooter}`}>
+                  <button type="button" className={accountStyles.ghostButton} onClick={clearAssetFilter} disabled={!hasActiveAssetFilter}>
                     Clear filter
                   </button>
-                  <button type="button" className={styles.primaryButton} onClick={() => setIsAssetFilterOpen(false)}>
+                  <button type="button" className={accountStyles.primaryButton} onClick={() => setIsAssetFilterOpen(false)}>
                     Done
                   </button>
                 </div>
@@ -22201,11 +22201,11 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isExportModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.exportModalOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.exportModalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeExportModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : ''}`}
+            className={`${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="export-title"
@@ -22216,8 +22216,8 @@ export default function AssetRegisterClient({
                 {isAttachingExternalReport ? <p>Choose the report you want to attach to your message.</p> : null}
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={closeExportModal} aria-label="Close export options">
-                <CloseIcon className={styles.buttonIcon} />
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeExportModal} aria-label="Close export options">
+                ×
               </button>
             </div>
 
@@ -22225,7 +22225,7 @@ export default function AssetRegisterClient({
               <div className={styles.exportModalBody}>
                 {exportStep === 'format' ? (
                   <>
-                    <label className={`${styles.field} ${styles.exportEntityNameField}`}>
+                    <label className={accountStyles.modalField}>
                       <span>Asset register / report name</span>
                       <input
                         value={exportEntityName}
@@ -22270,16 +22270,6 @@ export default function AssetRegisterClient({
 
                     </div>
 
-                    <div className={`${styles.formActions} ${styles.exportActions}`}>
-                      <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
-                        Cancel
-                      </button>
-
-                      <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
-                        {exportFormat === 'pdf' ? <ChevronRightIcon className={styles.buttonIcon} /> : <DownloadIcon className={styles.buttonIcon} />}
-                        <span>{exportFormat === 'pdf' ? 'Next' : isExporting ? 'Preparing report...' : isAttachingExternalReport ? 'Add Excel report' : 'Download XLSX'}</span>
-                      </button>
-                    </div>
                   </>
                 ) : (
                   <>
@@ -22329,15 +22319,6 @@ export default function AssetRegisterClient({
                           </div>
                         </div>
 
-                        <div className={`${styles.formActions} ${styles.exportActions}`}>
-                          <button type="button" className={styles.secondaryButton} onClick={closePdfReportChooser} disabled={isExporting}>
-                            Back
-                          </button>
-
-                          <button type="button" className={styles.secondaryButton} onClick={closeExportModal} disabled={isExporting}>
-                            Cancel
-                          </button>
-                        </div>
                       </>
                     ) : (
                       <>
@@ -22437,6 +22418,28 @@ export default function AssetRegisterClient({
                 )}
               </div>
             </div>
+            {exportStep === 'format' ? (
+              <div className={styles.registerUtilityFooter}>
+                <button type="button" className={accountStyles.ghostButton} onClick={closeExportModal} disabled={isExporting}>
+                  Cancel
+                </button>
+
+                <button type="button" className={accountStyles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
+                  {exportFormat === 'pdf' ? <ChevronRightIcon className={styles.buttonIcon} /> : <DownloadIcon className={styles.buttonIcon} />}
+                  <span>{exportFormat === 'pdf' ? 'Next' : isExporting ? 'Preparing report...' : isAttachingExternalReport ? 'Add Excel report' : 'Download XLSX'}</span>
+                </button>
+              </div>
+            ) : exportStep === 'pdf-report' ? (
+              <div className={styles.registerUtilityFooter}>
+                <button type="button" className={accountStyles.ghostButton} onClick={closePdfReportChooser} disabled={isExporting}>
+                  Back
+                </button>
+
+                <button type="button" className={accountStyles.ghostButton} onClick={closeExportModal} disabled={isExporting}>
+                  Cancel
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
