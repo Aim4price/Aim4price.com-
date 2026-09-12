@@ -40201,8 +40201,7 @@ button.documentOpenLink {
 .managementAccountModal.qrModal,
 .managementAccountModal.assetSettingsMapModal { width: min(var(--website-dialog-reference-width, 100%), 58rem) !important; }
 
-.managementAccountModal > .modalHeader,
-.managementAccountModal.assetFormModal > .assetFormModalChromeHeader {
+.managementAccountModal > .modalHeader {
   flex: 0 0 auto !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) 2.75rem !important;
@@ -40212,21 +40211,6 @@ button.documentOpenLink {
   padding: 0 0 1.15rem !important;
   border-bottom: 1px solid rgba(18, 45, 37, 0.1) !important;
   background: transparent !important;
-}
-/* Override legacy full-width, unpadded asset headers inside account chrome. */
-.managementAccountModal.assetFormModal > .assetFormModalChromeHeader {
-  width: auto !important;
-  min-height: 0 !important;
-  align-self: stretch !important;
-}
-.managementAccountModal.assetFormModal .assetUpdateIdentity {
-  display: grid !important;
-  width: 100% !important;
-}
-.managementAccountModal.assetFormModal .assetUpdateIdentity h3 {
-  max-width: none !important;
-  overflow: visible !important;
-  text-overflow: clip !important;
 }
 .managementAccountModal .modalHeader .modalHeaderText,
 .managementAccountModal .assetUpdateHeaderContent,
