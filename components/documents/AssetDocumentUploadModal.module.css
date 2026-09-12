@@ -315,8 +315,8 @@
 .accountModal .submit { background: linear-gradient(180deg, #1a5a45, #124233); border-color: transparent; }
 
 @media (max-width: 620px) {
-  .accountModal .header { padding-inline: 0; }
-  .accountModal .footer { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .accountModal .footer > span { grid-column: 1 / -1; }
-  .accountModal .footer button { min-width: 0; padding: 0.65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountModal .header { padding-inline: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountModal .footer { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountModal .footer > span { grid-column: 1 / -1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountModal .footer button { min-width: 0; padding: 0.65rem; }
 }

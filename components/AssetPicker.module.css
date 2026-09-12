@@ -171,6 +171,6 @@
 .select { font-weight:800; font-style:normal; }
 .select i { flex-shrink:0; }
 @media(max-width:600px) {
- .modal.modal.modal [data-asset-choice-row] { gap:.6rem !important; padding:.85rem !important; }
- .select { flex-direction:column; gap:.3rem; font-size:.85rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .modal.modal.modal [data-asset-choice-row] { gap:.6rem !important; padding:.85rem !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .select { flex-direction:column; gap:.3rem; font-size:.85rem; }
 }
