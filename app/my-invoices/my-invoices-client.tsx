@@ -3629,6 +3629,7 @@ export default function MyInvoicesClient({
                                 data-budget-trigger={budget.id}
                               >
                                 <EditIcon />
+                                <span>Edit</span>
                               </button>
                               <button
                                 type="button"
@@ -3638,13 +3639,18 @@ export default function MyInvoicesClient({
                                 data-budget-trigger={`delete:${budget.id}`}
                               >
                                 <TrashIcon />
+                                <span>Delete</span>
                               </button>
                             </div>
                           </div>
-                          <div className={styles.budgetAmount}>
-                            <strong>{formatMoney(budget.spent)}</strong>
-                            <span>of {formatMoney(budget.amount)} spent</span>
-                          </div>
+                          <dl className={styles.budgetMetrics}>
+                            <div><dt>Spent</dt><dd>{formatMoney(budget.spent)}</dd></div>
+                            <div><dt>Budget limit</dt><dd>{formatMoney(budget.amount)}</dd></div>
+                            <div data-over-budget={budget.status === 'over_budget'}>
+                              <dt>{budget.status === 'over_budget' ? 'Over budget' : 'Remaining'}</dt>
+                              <dd>{formatMoney(budget.status === 'over_budget' ? budget.overBy : budget.remaining)}</dd>
+                            </div>
+                          </dl>
                           <div
                             className={styles.budgetProgressTrack}
                             role="progressbar"
@@ -3660,8 +3666,8 @@ export default function MyInvoicesClient({
                             <span>{budget.percentUsed.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}% used</span>
                           </div>
                           <div className={styles.budgetMeta}>
-                            <span>{budget.status === 'over_budget' ? `${formatMoney(budget.overBy)} over budget` : `${formatMoney(budget.remaining)} remaining`}</span>
-                            <span>Alert at {budget.warningPercent}% · Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>
+                            <span>Alert at {budget.warningPercent}%</span>
+                            <span>Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>
                           </div>
                         </article>
                       );

@@ -7011,3 +7011,76 @@
   font-weight: 400 !important;
 }
 .accountCostModal.accountCostModal.costUploadModal .uploadPanel > .noticeError { color: #a12f2f !important; }
+
+/* Budget overview: compact cards with clearly labelled spending figures. */
+.accountCostModal.accountCostModal .budgetManagerSection {
+  padding: 0 !important;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  align-content: start;
+  gap: 1rem;
+}
+.budgetManagerModal .budgetGrid {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.budgetManagerModal .budgetCard {
+  align-content: start;
+  gap: 0.7rem;
+  padding: 1rem;
+}
+.budgetManagerModal .budgetCardTop > div:first-child { flex: 1; }
+.budgetManagerModal .budgetCardTop strong {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+  font-weight: 800;
+}
+.budgetManagerModal .budgetCardTop > .budgetCardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.budgetManagerModal :is(.budgetEditButton, .budgetCardDeleteButton) {
+  width: auto;
+  min-height: 2.5rem;
+  height: auto;
+  gap: 0.4rem;
+  padding: 0.5rem 0.7rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.budgetMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+  gap: 0.8rem;
+  margin: 0.3rem 0 0;
+  padding: 0.9rem 0;
+  border-top: 1px solid #e1e9e5;
+}
+.budgetMetrics > div { min-width: 0; }
+.budgetMetrics dt {
+  margin-bottom: 0.3rem;
+  color: #64746a;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+.budgetMetrics dd {
+  margin: 0;
+  color: #12352d;
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.budgetMetrics > div:last-child dd { color: var(--budget-accent); }
+.budgetManagerModal .budgetCardWarning {
+  --budget-accent: #946000;
+  --budget-accent-soft: #fff8e9;
+  --budget-accent-border: #e8d3a4;
+  box-shadow: 0 10px 24px rgba(16, 41, 36, 0.045), inset 0 3px 0 var(--budget-accent);
+}
+.budgetManagerModal .budgetMeta { flex-wrap: wrap; }
+.budgetManagerModal .budgetProgressTrack { height: 0.5rem; }
