@@ -8,6 +8,7 @@ import styles from "./AdminNavigation.module.css";
 export type AdminSection =
   | "accounts"
   | "businesses"
+  | "maintenance-catalogue"
   | "dashboard"
   | "valuations"
   | "marketplace"
@@ -77,6 +78,11 @@ const ADMIN_LINKS: Array<{
     href: "/admin/lifecycle-calculator",
     label: "Lifecycle Model",
     key: "lifecycle",
+  },
+  {
+    href: "/admin/maintenance-catalogue",
+    label: "Maintenance checklists",
+    key: "maintenance-catalogue",
   },
 ];
 
