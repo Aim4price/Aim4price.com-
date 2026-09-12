@@ -9,6 +9,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent,
 import AppHeader from '../../components/AppHeader';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import styles from './page.module.css';
+import accountStyles from '../account/page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
 import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-slip-number';
 import { ManageFuelStorageChoiceModal, MissingFuelEntryModal, ReconcileFuelBalanceModal, type MissingFuelLedgerPayload } from './missing-fuel-entry-modal';
@@ -3848,8 +3849,8 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'exclusions' ? (
-        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
-          <div className={`${styles.assetModal} ${styles.exclusionsModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
+          <div className={`${styles.assetModal} ${styles.exclusionsModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>
@@ -3863,7 +3864,7 @@ export default function FuelClient({
                     : 'Select assets to exclude from work-use totals, or choose an excluded asset to include it again.'}
                 </p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close exclusions"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close exclusions"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
 
@@ -4007,9 +4008,9 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-menu' ? (
-        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel slips">
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel slips">
           <div
-            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipMenuModal}`}
+            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipMenuModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}
             data-fuel-slip-choice-modal="menu"
           >
             <div className={styles.modalHeader}>
@@ -4017,7 +4018,7 @@ export default function FuelClient({
                 <h2>Fuel slips</h2>
                 <p>Review saved fuel slips or add one to an included asset or storage tank.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel slips"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close fuel slips"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
@@ -4054,9 +4055,9 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.fuelSlipManagerBackdrop}`} data-website-overlay>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.fuelSlipManagerBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
           <div
-            className={`${styles.fuelSlipManagerModal} ${wizardStyles.dialog}`}
+            className={`${styles.fuelSlipManagerModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="fuel-slip-manager-title"
@@ -4067,7 +4068,7 @@ export default function FuelClient({
                 <h2 id="fuel-slip-manager-title">Manage fuel slips</h2>
                 <p>Search, filter, review and download saved fuel slips.</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeModal} aria-label="Close manage fuel slips"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close manage fuel slips"><span aria-hidden="true">×</span></button>
             </div>
 
             <div className={`${styles.fuelSlipManagerBody} ${wizardStyles.body}`}>
@@ -4413,14 +4414,14 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen ? (
-        <div className={styles.fuelSlipSubModalBackdrop} data-website-overlay>
-          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelSlipManagerFilterModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-filter-title" aria-describedby="fuel-slip-filter-description">
+        <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
+          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelSlipManagerFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-filter-title" aria-describedby="fuel-slip-filter-description">
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="fuel-slip-filter-title">Filter fuel slips</h2>
                 <p id="fuel-slip-filter-description">Narrow the Fuel Ledger by target, source and slip period.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeFuelSlipManagerFilterPanel} aria-label="Close fuel slip filters"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipManagerFilterPanel} aria-label="Close fuel slip filters"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.fuelSlipFilterGrid}>
@@ -4479,8 +4480,8 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen ? (
-        <div className={styles.fuelSlipSubModalBackdrop} data-website-overlay>
-          <div className={styles.fuelSlipFilterModal} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title">
+        <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
+          <div className={`${styles.fuelSlipFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title">
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="fuel-slip-download-title">Download fuel slips</h2>
@@ -4488,7 +4489,7 @@ export default function FuelClient({
                   ? `Exports loaded slips matching “${fuelSlipManagerSearch.trim()}” and the filters below.`
                   : 'Choose filters for the loaded slips you want to export.'}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeFuelSlipDownloadPanel} aria-label="Close fuel slip download"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipDownloadPanel} aria-label="Close fuel slip download"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.fuelSlipFilterGrid}>
@@ -4562,14 +4563,14 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && historyFuelSlip ? (
-        <div className={styles.fuelSlipSubModalBackdrop} data-website-overlay>
-          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelHistoryModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-history-title">
+        <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
+          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelHistoryModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-history-title">
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="fuel-slip-history-title">Change history</h2>
                 <p>{historyFuelSlip.supplierName || 'Fuel slip'} · {formatFuelSlipDate(historyFuelSlip.documentDate)}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeFuelSlipHistory} aria-label="Close change history"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipHistory} aria-label="Close change history"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.fuelHistoryList}>
@@ -4596,17 +4597,15 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && deleteCandidateFuelSlip ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay}`} data-website-overlay>
-          <div className={styles.deleteConfirmModal} ref={fuelSlipManagerChildDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title" aria-describedby="fuel-slip-delete-copy">
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay>
+          <div className={`${styles.deleteConfirmModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title" aria-describedby="fuel-slip-delete-copy">
             <button
               type="button"
-              className={styles.deleteConfirmCloseButton}
+              className={`${styles.deleteConfirmCloseButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
               onClick={() => setDeleteCandidateFuelSlip(null)}
               aria-label="Close void fuel slip confirmation"
               disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}
-            >
-              ×
-            </button>
+            ><span aria-hidden="true">×</span></button>
 
             <div className={styles.deleteConfirmContent}>
               <h3 id="fuel-slip-delete-title">Void this fuel slip?</h3>
@@ -4637,9 +4636,9 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'source-choice' ? (
-        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Add fuel slip">
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Add fuel slip">
           <div
-            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipAddModal}`}
+            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipAddModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}
             data-fuel-slip-choice-modal="add"
           >
             <div className={styles.modalHeader}>
@@ -4649,7 +4648,7 @@ export default function FuelClient({
                   ? `Save this fuel slip against ${quickLaunchAsset.title}. Choose how you want to capture it.`
                   : 'Choose how to capture a fuel slip for an included asset or storage tank.'}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={() => closeFuelSlipFlow()} aria-label="Close add fuel slip"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close add fuel slip"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
@@ -4686,16 +4685,22 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && (fuelSlipFlow === 'target-manual' || fuelSlipFlow === 'target-automatic') ? (
-        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label={fuelSlipTargetPickerTitle}>
-          <div className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label={fuelSlipTargetPickerTitle}>
+          <div className={`${styles.assetModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>{fuelSlipTargetPickerTitle}</h2>
                 <p>Select an included asset or the storage tank this fuel slip belongs to.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={() => closeFuelSlipFlow()} aria-label="Close"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
+            <section className={styles.accountAssetPickerPanel}>
+              <div className={styles.accountAssetPickerHeading}>
+                <span className={styles.accountAssetPickerIcon} aria-hidden="true"><FuelSlipsIcon /></span>
+                <div><h3>Choose an asset or storage tank</h3><p>Select the record this fuel slip belongs to.</p></div>
+                <span className={styles.accountAssetPickerCount}>{filteredFuelSlipAssets.length + filteredFuelSlipStorages.length} available</span>
+              </div>
             <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
               <input
                 value={fuelSlipPickerSearch}
@@ -4718,6 +4723,7 @@ export default function FuelClient({
                       data-asset-choice-row="true"
                       onClick={() => selectFuelSlipTarget(`asset:${asset.id}`)}
                     >
+                      <span className={styles.accountAssetChoiceMark} aria-hidden="true"><ChevronRightIcon /></span>
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{asset.title}</strong>
                         <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
@@ -4737,6 +4743,7 @@ export default function FuelClient({
                       data-asset-choice-row="true"
                       onClick={() => selectFuelSlipTarget(`storage_tank:${storage.id}`)}
                     >
+                      <span className={styles.accountAssetChoiceMark} aria-hidden="true"><ChevronRightIcon /></span>
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{storage.name}</strong>
                         <small data-asset-choice-meta="true">{fuelSlipStorageMeta(storage)}</small>
@@ -4751,6 +4758,7 @@ export default function FuelClient({
                 </>
               ) : <div className={styles.emptyState}>No matching assets or storage tanks found.</div>}
             </div>
+            </section>
             <div className={styles.modalFooter} data-asset-choice-footer="true">
               <button type="button" className={styles.secondaryButton} onClick={() => closeFuelSlipFlow()}>Cancel</button>
             </div>
@@ -4759,14 +4767,14 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'upload' ? (
-        <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
-          <div className={`${styles.formModal} ${styles.costUploadModal}`}>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
+          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="fuel-slip-upload-title">Upload fuel slip/photo</h2>
                 <p>{selectedFuelSlipTargetName} · Aim4price assisted capture</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip}><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip}><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
@@ -4794,14 +4802,14 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'manual-form' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`} data-website-overlay>
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manual-title">
+        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay} ${styles.accountFuelBackdrop}`} data-website-overlay>
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manual-title">
             <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="fuel-slip-manual-title">Enter fuel slip manually</h2>
                 <p>{fuelSlipFormSubtitle} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><span aria-hidden="true">×</span></button>
             </div>
             <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
             <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
@@ -4832,14 +4840,14 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'review' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`} data-website-overlay>
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipReviewFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-review-title">
+        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay} ${styles.accountFuelBackdrop}`} data-website-overlay>
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipReviewFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-review-title">
             <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="fuel-slip-review-title">{fuelSlipDraft.id ? 'Review / complete fuel slip' : 'Review fuel slip details'}</h2>
                 <p>{fuelSlipFormSubtitle} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><span aria-hidden="true">×</span></button>
             </div>
             <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
             <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
@@ -4895,13 +4903,13 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'create-storage' || modalMode === 'edit-storage' ? (
-        <div className={styles.modalOverlay} data-website-overlay role="dialog" aria-modal="true">
-          <form className={styles.modalCard} onSubmit={handleStorageSubmit}>
+        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true">
+          <form className={`${styles.modalCard} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={handleStorageSubmit}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>{modalMode === 'create-storage' ? 'Add Fuel Storage' : selectedStorage?.name ?? 'Manage Fuel Storage'}</h2>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal}><span aria-hidden="true">×</span></button>
             </div>
 
             <div className={styles.formGrid}>
@@ -4954,13 +4962,13 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'pin' && selectedStorage ? (
-        <div className={styles.modalOverlay} data-website-overlay role="dialog" aria-modal="true">
-          <form className={styles.modalCardSmall} onSubmit={handlePinSubmit}>
+        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true">
+          <form className={`${styles.modalCardSmall} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={handlePinSubmit}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>{selectedStorage.name}</h2>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal}>×</button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal}><span aria-hidden="true">×</span></button>
             </div>
             <label className={styles.pinField}>
               New PIN
@@ -4975,19 +4983,17 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'qr' && selectedStorage ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay>
           <div className={styles.modalBackdrop} onClick={closeModal} />
 
-          <div className={`${styles.modalCard} ${styles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="fuel-qr-title">
+          <div className={`${styles.modalCard} ${styles.qrModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="fuel-qr-title">
             <div className={`${styles.modalHeader} ${styles.qrModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="fuel-qr-title">{selectedStorage.name}</h3>
                 <p>Use this permanent QR for fuel scan access. Public QR scans always ask for the fuel PIN.</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={closeModal} aria-label="Close QR code">
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
+              <button type="button" className={`${styles.modalCloseButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close QR code"><span aria-hidden="true">×</span></button>
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.qrModalScrollBody}`}>
@@ -5030,13 +5036,13 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'report' ? (
-        <div className={styles.modalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-report-title">
-          <div className={`${styles.modalCard} ${styles.exportModal}`}>
+        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-report-title">
+          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h2 id="fuel-report-title">Export fuel report</h2>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel report options">×</button>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close fuel report options"><span aria-hidden="true">×</span></button>
             </div>
 
             <div className={styles.exportModalScrollBody}>
@@ -5133,17 +5139,15 @@ export default function FuelClient({
       ) : null}
 
       {deleteCandidateStorage ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`} data-website-overlay role="alertdialog" aria-modal="true" aria-labelledby="delete-fuel-title" aria-describedby="delete-fuel-copy">
-          <div className={styles.deleteConfirmModal}>
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="alertdialog" aria-modal="true" aria-labelledby="delete-fuel-title" aria-describedby="delete-fuel-copy">
+          <div className={`${styles.deleteConfirmModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
             <button
               type="button"
-              className={styles.deleteConfirmCloseButton}
+              className={`${styles.deleteConfirmCloseButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
               onClick={() => setDeleteCandidateStorage(null)}
               aria-label="Close archive confirmation"
               disabled={busyDeleteId === deleteCandidateStorage.id}
-            >
-              ×
-            </button>
+            ><span aria-hidden="true">×</span></button>
 
             <div className={styles.deleteConfirmContent}>
               <h3 id="delete-fuel-title">Archive this storage unit?</h3>

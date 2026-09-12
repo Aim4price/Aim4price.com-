@@ -3,6 +3,7 @@
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type SVGProps } from 'react';
 import styles from './page.module.css';
+import accountStyles from '../account/page.module.css';
 
 export type MissingFuelStorage = {
   id: string;
@@ -276,11 +277,11 @@ export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMis
   }, [onClose]);
 
   return (
-    <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="manage-storage-choice-title">
-      <div className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.manageStorageChoiceModal}`}>
+    <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="manage-storage-choice-title">
+      <div className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.manageStorageChoiceModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
         <div className={styles.modalHeader}>
           <div><h2 id="manage-storage-choice-title">{storage.name}</h2><p>Choose what you need to manage.</p></div>
-          <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close storage options"><CloseIcon /></button>
+          <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close storage options"><span aria-hidden="true">×</span></button>
         </div>
         <div className={styles.modalDivider} />
         <div className={styles.sourceChoiceGrid}>
@@ -503,11 +504,11 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
   );
 
   return (
-    <div className={`${styles.fuelSlipFlowBackdrop} ${styles.desktopMissingEntryModal}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="missing-fuel-title">
-      <div className={`${styles.missingEntryModal} ${saved ? styles.missingEntrySuccessModal : ''}`}>
+    <div className={`${styles.fuelSlipFlowBackdrop} ${styles.desktopMissingEntryModal} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="missing-fuel-title">
+      <div className={`${styles.missingEntryModal} ${saved ? styles.missingEntrySuccessModal : ''} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
         <header className={styles.missingEntryHeader}>
           <div><h2 id="missing-fuel-title">Back Track Fuel</h2><p>{selectedAsset?.title ?? 'Choose an asset'}</p></div>
-          <button type="button" className={styles.closeButton} onClick={onClose} disabled={isSaving} aria-label="Close missing fuel entry"><CloseIcon /></button>
+          <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={isSaving} aria-label="Close missing fuel entry"><span aria-hidden="true">×</span></button>
         </header>
 
         <div className={styles.missingEntryScrollBody}>
@@ -676,9 +677,9 @@ export function ReconcileFuelBalanceModal({ storage, accountantShareId, accounta
   }
 
   return (
-    <div className={styles.fuelSlipFlowBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="reconcile-fuel-title">
-      <div className={styles.reconcileBalanceModal}>
-        <header className={styles.missingEntryHeader}><div><span className={styles.missingEntryEyebrow}>Physical reconciliation</span><h2 id="reconcile-fuel-title">Reconcile Balance</h2><p>{storage.name}</p></div><button type="button" className={styles.closeButton} onClick={onClose} disabled={isSaving} aria-label="Close reconciliation"><CloseIcon /></button></header>
+    <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="reconcile-fuel-title">
+      <div className={`${styles.reconcileBalanceModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
+        <header className={styles.missingEntryHeader}><div><span className={styles.missingEntryEyebrow}>Physical reconciliation</span><h2 id="reconcile-fuel-title">Reconcile Balance</h2><p>{storage.name}</p></div><button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} disabled={isSaving} aria-label="Close reconciliation"><span aria-hidden="true">×</span></button></header>
         <div className={styles.missingEntryScrollBody}>
           <div className={styles.balanceWarningBox}><WarningIcon /><div><strong>Balance needs checking</strong><span>{storage.balanceCheckReason || 'Measure the tank physically before replacing the recorded current balance.'}</span></div></div>
           {error ? <div className={styles.missingEntryError} role="alert">{error}</div> : null}
