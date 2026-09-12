@@ -799,7 +799,7 @@ export default function AssetGroupManagerModal({
         }} />
       ) : null}
       <section
-        className={`${group ? `${styles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${view === 'members' ? styles.accountEditorModal : ''}` : ''} ${useManageModalDesign
+        className={`${group ? `${styles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${view === 'members' ? styles.accountEditorModal : view === 'reports' ? styles.accountReportsModal : ''}` : ''} ${useManageModalDesign
           ? `${registerStyles.optionsModal} ${styles.manageModal}`
           : useReportModalDesign
             ? `${registerStyles.modalCard} ${registerStyles.assetReportModal}`
