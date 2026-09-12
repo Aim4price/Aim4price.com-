@@ -1448,18 +1448,107 @@
   background: #dfe8e2;
 }
 
-.assetMapShell :global(.leaflet-control-zoom) {
-  border: 0;
-  border-radius: 0.95rem;
-  overflow: hidden;
-  box-shadow: 0 13px 28px rgba(19, 39, 54, 0.16);
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom) {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.35rem;
+  border: 1px solid rgba(203, 222, 211, 0.95);
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 28px rgba(18, 49, 48, 0.16), inset 0 1px 0 #fff;
 }
 
-.assetMapShell :global(.leaflet-control-zoom a) {
-  border: 0;
-  color: #123130;
-  background: rgba(255, 255, 255, 0.94);
-  font-weight: 700;
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a) {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid #cbded3;
+  border-radius: 0.8rem;
+  color: #124c3c;
+  background: linear-gradient(180deg, #ffffff, #edf6f1);
+  box-shadow: 0 3px 8px rgba(18, 49, 48, 0.06), inset 0 1px 0 #fff;
+  font-size: 0;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+/* Draw equally weighted, centred symbols without font-dependent alignment. */
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a span) {
+  display: none;
+}
+
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a::before) {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
+}
+
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom .leaflet-control-zoom-in::before) {
+  background:
+    linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat,
+    linear-gradient(currentColor, currentColor) center / 2px 100% no-repeat;
+}
+
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:hover:not(.leaflet-disabled)) {
+  border-color: #99bfac;
+  background: linear-gradient(180deg, #f5fcf8, #dcefe4);
+  box-shadow: 0 5px 12px rgba(18, 76, 60, 0.12), inset 0 1px 0 #fff;
+}
+
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:active:not(.leaflet-disabled)) {
+  background: #d5e9dd;
+  box-shadow: inset 0 2px 4px rgba(18, 76, 60, 0.12);
+}
+
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:focus-visible) {
+  outline: 3px solid rgba(18, 76, 60, 0.35);
+  outline-offset: 2px;
+}
+
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a.leaflet-disabled) {
+  color: #a0b1a8;
+  background: #f3f6f4;
+  border-color: #e2e9e5;
+  box-shadow: none;
+  cursor: default;
+}
+
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a::after) {
+  content: attr(title);
+  position: absolute;
+  left: calc(100% + 0.75rem);
+  top: 50%;
+  width: max-content;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.55rem;
+  color: #fff;
+  background: #124c3c;
+  box-shadow: 0 8px 20px rgba(10, 47, 37, 0.2);
+  font-family: var(--font-heading, "Montserrat"), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.2;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-50%);
+}
+
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:hover::after),
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:focus-visible::after) {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Override Leaflet's touch-device end caps as well. */
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:first-child),
+.assetMapShell :global(.leaflet-bar.leaflet-control-zoom a:last-child) {
+  border-radius: 0.8rem;
+  border-bottom: 1px solid #cbded3;
 }
 
 .assetMapShell :global(.leaflet-tooltip) {
@@ -1849,6 +1938,7 @@
     animation: none;
   }
 
+  .assetMapShell :global(.leaflet-bar.leaflet-control-zoom a),
   .mapStage,
   .assetSidebar,
   .assetCard,
