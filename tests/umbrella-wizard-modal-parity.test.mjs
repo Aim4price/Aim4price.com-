@@ -77,7 +77,12 @@ test("all five wizards retain shared structure with their approved close control
     }
     assert.match(wizard, /onClick=\{close[^}]*\}[^>]*aria-label="Close/);
     assert.match(wizard, /wizardStyles\.body/);
-    assert.match(wizard, /wizardStyles\.progress/);
+    if (wizard === manualCostWizard) {
+      assert.doesNotMatch(wizard, /wizardStyles\.progress/);
+      assert.doesNotMatch(wizard, /Your cost record is saved on the final step/);
+    } else {
+      assert.match(wizard, /wizardStyles\.progress/);
+    }
     assert.match(wizard, /wizardStyles\.panel/);
     assert.match(wizard, /wizardStyles\.panelNumber/);
     assert.match(wizard, /wizardStyles\.footer/);

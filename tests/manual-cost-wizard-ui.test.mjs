@@ -14,8 +14,7 @@ test('manual costs use a guided three-step wizard', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'cost form modal should be present');
   assert.match(client, /type ManualCostWizardStep = 1 \| 2 \| 3/);
   assert.match(client, /const \[manualCostWizardStep, setManualCostWizardStep\]/);
-  assert.match(costFormModal, /\[\['Invoice', 1\], \['Work', 2\], \['Review', 3\]\]/);
-  assert.match(costFormModal, /styles\.invoiceDropWizardProgress/);
+  assert.doesNotMatch(costFormModal, /styles\.invoiceDropWizardProgress/);
   assert.match(costFormModal, /styles\.invoiceDropWizardPanel/);
   assert.match(costFormModal, /Add the invoice details/);
   assert.match(costFormModal, /Describe the work/);
@@ -67,7 +66,7 @@ test('manual wizard manages focus, keyboard escape and visible errors', () => {
   assert.match(client, /manualCostWizardStepHeadingRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(client, /event\.key === 'Escape' && !isSaving/);
   assert.match(costFormModal, /role="alert">\{manualCostWizardError\}/);
-  assert.match(costFormModal, /aria-current=\{manualCostWizardStep === step \? 'step' : undefined\}/);
+  assert.match(costFormModal, /<h3 ref={manualCostWizardStepHeadingRef} tabIndex={-1}>/);
 });
 
 test('manual wizard has responsive purpose-built styling', () => {
