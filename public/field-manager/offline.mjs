@@ -99,6 +99,7 @@ function currentReading(a) {
 }
 function updateAction() {
   const maintenance = $('action').value !== 'note';
+  renderChecklist();
   $('task-label').hidden = !maintenance;
   const reading = maintenance && ['hours', 'km'].includes(asset.usageMetric);
   $('usage-label').hidden = !reading; $('usage').required = reading;
@@ -109,6 +110,27 @@ function updateAction() {
   for (const task of vault.data.snapshot.tasks.filter(t => t.assetId === asset.id && t.maintenanceType === type)) {
     if (!vault.data.queue.some(q => q.payload.scheduledMaintenanceId === task.id)) $('task').add(new Option(task.title, task.id));
   }
+}
+function renderChecklist() {
+  const mode = $('action').value;
+  const items = asset?.checklist?.items || [];
+  $('checklist').hidden = !items.length || !['Checked', 'Serviced', 'Repaired'].includes(mode);
+  $('checklist-title').textContent = asset?.checklist?.label || 'Work items';
+  $('checklist-items').replaceChildren();
+  if ($('checklist').hidden) return;
+  for (const item of items) {
+    const label = node('label', '', 'checklist-option');
+    const input = document.createElement('input'); input.type = 'checkbox'; input.value = item.id;
+    label.append(input, node('span', mode === 'Checked' ? item.checkLabel : mode === 'Repaired' ? item.label : item.serviceLabel));
+    $('checklist-items').append(label);
+  }
+}
+function selectedWork() {
+  const ids = new Set([...$('checklist-items').querySelectorAll('input:checked')].map(i => i.value));
+  const mode = $('action').value === 'Checked' ? 'checked' : $('action').value === 'Repaired' ? 'repaired' : 'serviced';
+  const c = asset?.checklist;
+  return c ? [{ version: c.version, family: c.family, profileKey: c.profileKey, mode,
+    items: c.items.filter(i => ids.has(i.id)).map(i => ({ id: i.id, label: mode === 'checked' ? i.checkLabel : mode === 'repaired' ? i.label : i.serviceLabel, action: mode })) }] : [];
 }
 async function sync() {
   const count = await syncVault(vault, render);
@@ -131,7 +153,7 @@ $('unlock-form').onsubmit = event => { event.preventDefault(); void run(async ()
           if (worker.state === 'redundant') { clearTimeout(timeout); reject(Error('Offline setup failed. Please reconnect and retry.')); }
         });
       });
-      if (!await caches.match('/field-manager/offline.html', { cacheName: 'aim4price-field-offline-shell-v2' })) throw Error('Offline screens are not ready. Reconnect and try again.');
+      if (!await caches.match('/field-manager/offline.html', { cacheName: 'aim4price-field-offline-shell-v3' })) throw Error('Offline screens are not ready. Reconnect and try again.');
       vault = await createVault($('pin').value, snapshot);
       await navigator.storage?.persist?.().catch(() => false);
     }
@@ -160,7 +182,10 @@ $('photos').onchange = () => {
 };
 $('capture-form').onsubmit = event => { event.preventDefault(); void run(async () => {
   if (!gps || Date.now() - Date.parse(gps.clientCapturedAt) > 10 * 60 * 1000) throw Error('Capture a fresh GPS location before saving.');
-  const details = $('notes').value.trim(); if (!details) throw Error('Describe the work or problem.');
+  const details = $('notes').value.trim();
+  const maintenanceWork = selectedWork();
+  const selectedLabels = maintenanceWork.flatMap(s => s.items.map(i => i.label));
+  if ((!details && !selectedLabels.length) || ($('action').value === 'Repaired' && !details)) throw Error('Select work items or describe the work or problem.');
   const maintenance = $('action').value !== 'note';
   const hours = maintenance && ['hours', 'km'].includes(asset.usageMetric) ? $('usage').value : '';
   if (maintenance && ['hours', 'km'].includes(asset.usageMetric) && (!hours || !Number.isFinite(Number(hours)) || Number(hours) < currentReading(asset))) throw Error('Enter a reading at least as high as the saved reading.');
@@ -169,8 +194,8 @@ $('capture-form').onsubmit = event => { event.preventDefault(); void run(async (
   })));
   const id = crypto.randomUUID();
   await queueWork(vault, { id, assetId: asset.id, code: asset.publicAssetCode, title: asset.title, createdAt: new Date().toISOString(), photos, maintenance,
-    payload: { ...gps, clientEventId: `field-offline:${id}`, hours,
-      note: maintenance ? `${$('action').value}\n${$('action').value === 'Checked' ? 'Checked items' : $('action').value === 'Repaired' ? 'Repair details' : 'Work done'}: ${details}` : `Notes/Problems: ${details}`,
+    payload: { ...gps, maintenanceWork: maintenance ? maintenanceWork : undefined, clientEventId: `field-offline:${id}`, hours,
+      note: $('action').value === 'Repaired' ? `Repaired\nRepair details: ${details}${selectedLabels.length ? `\nComponents: ${selectedLabels.join(', ')}` : ''}` : maintenance ? `${$('action').value}\n${$('action').value === 'Checked' ? 'Checked items' : $('action').value === 'Repaired' ? 'Repair details' : 'Work done'}: ${selectedLabels.join(', ') || details}${selectedLabels.length && details ? `\nNotes/Problems: ${details}` : ''}` : `Notes/Problems: ${details}`,
       scheduledMaintenanceId: maintenance ? $('task').value || null : null,
       maintenanceDecision: maintenance ? ($('task').value ? 'scheduled' : 'separate') : null } });
   asset = null; gps = null; clearPhotos(); $('capture-form').reset(); $('capture').hidden = true; render(); announce('Saved on this phone. Waiting to sync.');
@@ -178,8 +203,8 @@ $('capture-form').onsubmit = event => { event.preventDefault(); void run(async (
 }); };
 $('action').onchange = updateAction;
 $('search').oninput = renderAssets;
-$('back').onclick = () => { if (busy) return; if (($('notes').value || $('photos').files.length) && !confirm('Discard the unsaved form?')) return; asset = null; gps = null; clearPhotos(); $('capture-form').reset(); $('capture').hidden = true; render(); };
-$('lock').onclick = () => { if (asset && ($('notes').value || $('photos').files.length) && !confirm('Lock and discard the unsaved form?')) return; lock(); };
+$('back').onclick = () => { if (busy) return; if (($('notes').value || $('photos').files.length || $('checklist-items').querySelector('input:checked')) && !confirm('Discard the unsaved form?')) return; asset = null; gps = null; clearPhotos(); $('capture-form').reset(); $('capture').hidden = true; render(); };
+$('lock').onclick = () => { if (asset && ($('notes').value || $('photos').files.length || $('checklist-items').querySelector('input:checked')) && !confirm('Lock and discard the unsaved form?')) return; lock(); };
 $('refresh').onclick = () => run(async () => { await refreshVault(vault); render(); announce('Saved copy updated.'); });
 $('sync').onclick = () => run(sync);
 $('forget').onclick = () => run(async () => {
@@ -189,7 +214,7 @@ $('forget').onclick = () => run(async () => {
 });
 window.addEventListener('online', () => { connection(); if (vault && !asset) void run(sync); });
 window.addEventListener('offline', connection);
-window.addEventListener('beforeunload', event => { if (asset && ($('notes').value || $('photos').files.length)) { event.preventDefault(); event.returnValue = ''; } });
+window.addEventListener('beforeunload', event => { if (asset && ($('notes').value || $('photos').files.length || $('checklist-items').querySelector('input:checked'))) { event.preventDefault(); event.returnValue = ''; } });
 for (const event of ['pointerdown', 'keydown']) window.addEventListener(event, touch, { passive: true });
 setInterval(() => { if (vault && !asset && !document.hidden && navigator.onLine && vault.data.queue.length) void run(sync); }, 60000);
 const channel = 'BroadcastChannel' in window ? new BroadcastChannel('aim4price-field-session') : null;

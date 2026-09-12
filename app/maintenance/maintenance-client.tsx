@@ -4,6 +4,7 @@ import DropdownOverlay from '../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { openCanonicalReportUrl } from '../../lib/report-open';
+import type { MaintenanceIdentity } from '../../lib/maintenance-catalogue';
 import DesktopServiceModal, { type DesktopServiceCompletion } from '../../components/DesktopServiceModal';
 import styles from './page.module.css';
 
@@ -44,6 +45,7 @@ type MaintenanceRecord = {
   assetTitle: string;
   assetKind: string;
   assetCategoryLabel: string;
+  maintenanceIdentity?: MaintenanceIdentity;
   assetYearModel: number | null;
   assetUsageReading: number | null;
   assetUsageMetric: UsageMetric;
@@ -1966,5 +1968,3 @@ export default function MaintenanceClient({
     </div>
   );
 }
-
-

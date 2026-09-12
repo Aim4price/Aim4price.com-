@@ -1,3 +1,4 @@
+import { maintenanceIdentity, validateMaintenanceWork, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from './maintenance-catalogue';
 import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAssetRegisters } from './asset-registers';
@@ -24,6 +25,7 @@ export type AssetMaintenanceAssetOption = {
   title: string;
   kind: string;
   categoryLabel: string;
+  maintenanceIdentity?: MaintenanceIdentity;
   yearModel: number | null;
   usageReading: number | null;
   usageMetric: AssetMaintenanceUsageMetric;
@@ -47,6 +49,7 @@ export type AssetMaintenanceRecord = {
   assetTitle: string;
   assetKind: string;
   assetCategoryLabel: string;
+  maintenanceIdentity?: MaintenanceIdentity;
   assetYearModel: number | null;
   assetUsageReading: number | null;
   assetUsageMetric: AssetMaintenanceUsageMetric;
@@ -78,6 +81,7 @@ export type AssetMaintenanceRecord = {
   completedAtIso: string | null;
   completedUsage: number | null;
   completedNotes: string;
+  maintenanceWork?: MaintenanceWorkSnapshot[] | null;
   completedBy: string;
   sourcePhotoUrls: string[];
   sourceLatitude: number | null;
@@ -139,6 +143,7 @@ export type AssetMaintenanceCompleteInput = {
   completedAt?: unknown;
   completedUsage?: unknown;
   completedNotes?: unknown;
+  maintenanceWork?: unknown;
   completedBy?: unknown;
   sourceScanEventId?: unknown;
 };
@@ -204,6 +209,7 @@ type MaintenanceRow = {
   completed_at: string | Date | null;
   completed_usage: string | number | null;
   completed_notes: string | null;
+  maintenance_work?: MaintenanceWorkSnapshot[] | null;
   completed_by: string | null;
   source_captured_at?: string | Date | null;
   source_photo_urls?: unknown;
@@ -224,6 +230,10 @@ type MaintenanceRow = {
   asset_selected_value: string | number | null;
   asset_selected_method: string | null;
   asset_specs_json: unknown;
+  asset_maintenance_specs_json?: unknown;
+  asset_family_id?: number | string | null;
+  asset_family_key?: string | null;
+  asset_sector_id?: number | string | null;
   field_manager_display_name?: string | null;
 };
 
@@ -587,6 +597,7 @@ function mapAssetOption(asset: AssetRegisterItem): AssetMaintenanceAssetOption {
     title: asText(asset.title) || 'Saved asset',
     kind: asText(asset.kind) || 'asset',
     categoryLabel,
+    maintenanceIdentity: maintenanceIdentity(asset),
     yearModel: asNumber(asset.yearModel),
     usageReading,
     usageMetric,
@@ -627,6 +638,7 @@ function assetOptionFromMaintenanceRow(row: MaintenanceRow): AssetMaintenanceAss
     id: asText(row.asset_register_item_id),
     title: asText(row.asset_title) || 'Saved asset',
     kind,
+    maintenanceIdentity: maintenanceIdentity({ equipmentFamilyId: asNumber(row.asset_family_id), equipmentFamilyKey: row.asset_family_key, sectorId: asNumber(row.asset_sector_id), specsJson: isRecord(row.asset_maintenance_specs_json) ? row.asset_maintenance_specs_json : specs, equipmentFamilyLabel: row.asset_category_label }),
     categoryLabel: asText(row.asset_category_label) || kind || 'Asset',
     yearModel: asNumber(row.asset_year_model),
     usageReading,
@@ -741,6 +753,7 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
     assetTitle: asset.title,
     assetKind: asset.kind,
     assetCategoryLabel: asset.categoryLabel,
+    maintenanceIdentity: asset.maintenanceIdentity,
     assetYearModel: asset.yearModel,
     assetUsageReading: asset.usageReading,
     assetUsageMetric: asset.usageMetric,
@@ -772,6 +785,7 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
     completedAtIso: toNullableIsoString(row.source_captured_at) ?? toNullableIsoString(row.completed_at),
     completedUsage: asNumber(row.completed_usage),
     completedNotes: asLongText(row.completed_notes),
+    maintenanceWork: row.maintenance_work || null,
     completedBy: asText(row.completed_by),
     sourcePhotoUrls: asStringArray(row.source_photo_urls),
     sourceLatitude: asNumber(row.source_latitude),
@@ -853,6 +867,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
       completed_at,
       completed_usage,
       completed_notes,
+      maintenance_work,
       completed_by,
       alert_noted_at,
       created_at,
@@ -893,6 +908,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
       completed_at timestamptz,
       completed_usage numeric(14,2),
       completed_notes text,
+      maintenance_work jsonb,
       completed_by text,
       alert_noted_at timestamptz,
       created_at timestamptz not null default now(),
@@ -903,6 +919,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
   await db.query(`alter table public.asset_maintenance_records add column if not exists title text`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists assigned_name text`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists completed_notes text`);
+  await db.query(`alter table public.asset_maintenance_records add column if not exists maintenance_work jsonb`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists completed_by text`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists alert_noted_at timestamptz`);
   await db.query(`alter table public.asset_maintenance_records add column if not exists generated_from_maintenance_id uuid`);
@@ -1017,6 +1034,9 @@ function maintenanceSelectSql(whereClause: string): string {
   return `
     select
       m.*,
+      ef.id as asset_family_id,
+      ef.family_key as asset_family_key,
+      coalesce(to_jsonb(ai)->>'sector_id', ef.sector_id::text) as asset_sector_id,
       coalesce(
         nullif(to_jsonb(ai)->>'title', ''),
         nullif(to_jsonb(ai)->>'asset_name', ''),
@@ -1063,6 +1083,7 @@ function maintenanceSelectSql(whereClause: string): string {
         ''
       ) as asset_selected_value,
       nullif(coalesce(to_jsonb(ai)->>'selected_method', to_jsonb(ai)->>'method', to_jsonb(ai)->>'valuation_method'), '') as asset_selected_method,
+      coalesce(to_jsonb(vr)->'specs_json', '{}'::jsonb) || coalesce(to_jsonb(ai)->'specs_json', '{}'::jsonb) as asset_maintenance_specs_json,
       coalesce(to_jsonb(ai)->'specs_json', '{}'::jsonb) as asset_specs_json,
       fm.display_name as field_manager_display_name,
       coalesce(to_jsonb(se)->'photo_urls', '[]'::jsonb) as source_photo_urls,
@@ -1172,6 +1193,7 @@ function completedScanHistoryRecord(
     assetTitle: asset.title,
     assetKind: asset.kind,
     assetCategoryLabel: asset.categoryLabel,
+    maintenanceIdentity: asset.maintenanceIdentity,
     assetYearModel: asset.yearModel,
     assetUsageReading: asset.usageReading,
     assetUsageMetric: asset.usageMetric,
@@ -1203,6 +1225,7 @@ function completedScanHistoryRecord(
     completedAtIso: event.createdAtIso,
     completedUsage: event.usageReading,
     completedNotes: event.sourceNote || event.summary || event.note,
+    maintenanceWork: event.maintenanceWork || null,
     completedBy: event.operatorName,
     sourcePhotoUrls: event.photoUrls,
     sourceLatitude: event.latitude,
@@ -1407,6 +1430,7 @@ export async function recordStandaloneAssetMaintenanceCompletion(
 
   const asset = await verifyAssetBelongsToUser(userId, assetId);
   const maintenanceType = normalizeMaintenanceType(input.maintenanceType);
+  const maintenanceWork = validateMaintenanceWork(input.maintenanceWork);
   const completedNotes = asLongText(input.completedNotes);
   const completedBy = asText(input.completedBy);
   const procedureKind = assetMaintenanceProcedureKindFromNote(completedNotes);
@@ -1474,6 +1498,7 @@ export async function recordStandaloneAssetMaintenanceCompletion(
           completed_at,
           completed_usage,
           completed_notes,
+          maintenance_work,
           completed_by,
           alert_noted_at,
           created_at,
@@ -1494,6 +1519,7 @@ export async function recordStandaloneAssetMaintenanceCompletion(
           $10::timestamptz,
           $7,
           $11,
+          $13::jsonb,
           $12,
           now(),
           $10::timestamptz,
@@ -1515,6 +1541,7 @@ export async function recordStandaloneAssetMaintenanceCompletion(
         completedAtIso,
         completedNotes,
         completedBy,
+        JSON.stringify(maintenanceWork),
       ],
     );
 
@@ -1973,6 +2000,7 @@ export async function completeAssetMaintenanceRecord(
         throw new Error('COMPLETION_USAGE_LOWER_THAN_CURRENT');
       }
 
+      const maintenanceWork = validateMaintenanceWork(input.maintenanceWork);
       const completedNotes = asLongText(input.completedNotes);
       const completedBy = asText(input.completedBy);
       if (sourceScanEventId && !isAssetMaintenanceRecordId(sourceScanEventId)) {
@@ -2014,6 +2042,7 @@ export async function completeAssetMaintenanceRecord(
             completed_at = $3::timestamptz,
             completed_usage = $4,
             completed_notes = $5,
+            maintenance_work = $8::jsonb,
             completed_by = $6,
             source_scan_event_id = coalesce($7::uuid, source_scan_event_id),
             alert_noted_at = now(),
@@ -2030,6 +2059,7 @@ export async function completeAssetMaintenanceRecord(
           completedNotes,
           completedBy,
           sourceScanEventId || null,
+          JSON.stringify(maintenanceWork),
         ],
       );
 
@@ -2114,6 +2144,7 @@ export async function reopenAssetMaintenanceRecord(userId: string, maintenanceId
             completed_at = null,
             completed_usage = null,
             completed_notes = null,
+            maintenance_work = null,
             completed_by = null,
             alert_noted_at = null,
             updated_at = now()
@@ -2264,4 +2295,3 @@ export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetFor
     maintenanceAlert: alertsByAssetId.get(asset.id) ?? null,
   }));
 }
-

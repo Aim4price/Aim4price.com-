@@ -9,6 +9,8 @@ import {
   servicedOptionsForProfile,
 } from '../lib/maintenance-service-guidelines';
 import styles from './DesktopServiceModal.module.css';
+import { useMaintenanceChecklist } from '../lib/use-maintenance-checklist';
+import { checklistOptions, buildMaintenanceWorkSnapshot, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from '../lib/maintenance-catalogue';
 
 export type DesktopServiceCompletion = {
   completedAt: string;
@@ -17,11 +19,13 @@ export type DesktopServiceCompletion = {
   completedBy: string;
   linkToScheduledMaintenance?: boolean;
   clientEventId: string;
+  maintenanceWork?: MaintenanceWorkSnapshot[];
 };
 
 export type DesktopServiceRecord = {
   id: string;
   assetTitle: string;
+  maintenanceIdentity?: MaintenanceIdentity;
   assetKind: string;
   assetCategoryLabel?: string | null;
   assetYearModel?: number | null;
@@ -114,11 +118,12 @@ export default function DesktopServiceModal({
     usageMetric: record.usageMetric ?? record.assetUsageMetric,
   }), [record.assetCategoryLabel, record.assetKind, record.assetTitle, record.assetUsageMetric, record.usageMetric]);
   const copy = serviceCopyForProfile(profile);
-  const options = mode === 'checked' ? checkedOptionsForProfile(profile) : servicedOptionsForProfile(profile);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const checklist = useMaintenanceChecklist(record, selectedItems.length > 0);
+  const options = checklist.items.length ? checklistOptions(checklist, mode) : mode === 'checked' ? checkedOptionsForProfile(profile) : servicedOptionsForProfile(profile);
   const today = todayInputValue();
   const [completedAt, setCompletedAt] = useState(today);
   const [completedUsage, setCompletedUsage] = useState(record.currentUsage === null ? '' : String(record.currentUsage));
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [company, setCompany] = useState('');
   const [mechanic, setMechanic] = useState(record.maintenanceType === 'checkup' ? record.assignedName?.trim() || '' : '');
   const [notes, setNotes] = useState('');
@@ -194,6 +199,7 @@ export default function DesktopServiceModal({
         mechanicName: mechanic,
         note: notes,
       }),
+      maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems)],
       completedBy: mechanic.trim(),
       linkToScheduledMaintenance: scheduleDecision !== 'separate',
       clientEventId,
@@ -284,7 +290,7 @@ export default function DesktopServiceModal({
                 <span>1</span>
                 <div>
                   <h3>{mode === 'checked' ? copy.checkedHeader : copy.servicedHeader}</h3>
-                  <p>{mode === 'checked' ? copy.checkedSubheader : copy.servicedSubheader}</p>
+                  <p>{checklist.label} · Select applicable items. Add other work in notes.</p>
                 </div>
                 <strong className={styles.selectedCount}>{selectedItems.length} selected</strong>
               </div>
@@ -300,7 +306,7 @@ export default function DesktopServiceModal({
                       aria-pressed={selected}
                     >
                       <span className={styles.checkbox}>{selected ? <CheckIcon /> : null}</span>
-                      <span><strong>{option.label}</strong><small>{option.description}</small></span>
+                      <span><strong>{option.label}</strong>{option.description ? <small>{option.description}</small> : null}</span>
                     </button>
                   );
                 })}
@@ -388,4 +394,3 @@ export default function DesktopServiceModal({
     </div>
   );
 }
-

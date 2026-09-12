@@ -9,8 +9,9 @@ const root = path.resolve(__dirname, '..');
 async function main() {
   let identity = 'owner:manager', uploads = 0, attempts = 0, dropNext = true;
   const events = new Map();
+  const checklist = { version: 1, family: { source: 'basic', sector: 'agricultural', familyKey: 'compact_tractor', release: 'basic_ballpark_20260907_v1' }, profileKey: 'tractors', label: 'Compact Tractor', items: [{ id: 'oil_filter', label: 'Oil filter', checkLabel: 'Oil filter', serviceLabel: 'Oil filter', description: 'Select work done.' }] };
   const snapshot = () => ({ ok: true, identity, displayName: 'Offline Test Manager', savedAt: new Date().toISOString(), canRecordWork: true,
-    assets: [{ id: 'asset', publicAssetCode: 'A4P-TEST', title: 'Test tractor', registrationNumber: 'TEST123', usageMetric: 'hours', usageReading: 100, usageLabel: '100 hours', note: 'Private asset note' }],
+    assets: [{ id: 'asset', publicAssetCode: 'A4P-TEST', title: 'Test tractor', registrationNumber: 'TEST123', usageMetric: 'hours', usageReading: 100, usageLabel: '100 hours', note: 'Private asset note', checklist }],
     tasks: [{ id: 'task', assetId: 'asset', title: 'Oil service', notes: 'Change oil', maintenanceType: 'service', dueDate: '2026-09-20', status: 'Upcoming' }] });
   const server = http.createServer(async (req, res) => {
     try {
@@ -48,10 +49,11 @@ async function main() {
     await page.waitForFunction(() => !document.querySelector('#sync').disabled);
     assert.match(await page.$eval('#assets', n => n.textContent), /Test tractor/);
     await page.waitForFunction(async () => !(await caches.keys()).includes('aim4price-field-offline-shell-v1'));
-    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v2' })), true);
+    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v3' })), true);
     console.log('PASS preparation, snapshot, upgraded shell and locally cached font');
     await page.setOfflineMode(true);
     await page.click('.asset'); await page.select('#action', 'Serviced'); await page.select('#task', 'task');
+    await page.click('#checklist-items input[value="oil_filter"]');
     await page.type('#usage', '105'); await page.type('#notes', 'Changed engine oil offline');
     await page.evaluate(() => {
       const bytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='), c => c.charCodeAt(0));
@@ -97,6 +99,9 @@ async function main() {
     await page.click('#sync'); await page.waitForFunction(() => document.querySelector('#pending-count').textContent === '(0)');
     assert.equal(events.size, 1); assert.equal(attempts, 2); assert.equal(uploads, 1);
     const saved = [...events.values()][0]; assert.equal(saved.hours, '105'); assert.equal(saved.scheduledMaintenanceId, 'task'); assert.equal(saved.photoUrls.length, 1); assert.equal(saved.latitude, -25.7);
+    assert.equal(saved.maintenanceWork[0].family.source, 'basic');
+    assert.equal(saved.maintenanceWork[0].items[0].id, 'oil_filter');
+    assert.equal(saved.maintenanceWork[0].items[0].action, 'serviced');
     console.log('PASS interrupted response retry keeps event ID, reuses uploaded photo and removes only confirmed work');
     // A second tab cannot unlock or mutate the same vault concurrently.
     const second = await browser.newPage(); await second.goto(origin + '/field-manager/offline.html');

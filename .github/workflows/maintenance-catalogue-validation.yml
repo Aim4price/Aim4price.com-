@@ -1,0 +1,44 @@
+name: Family maintenance catalogue validation
+on:
+  pull_request:
+    paths:
+      - 'lib/maintenance-catalogue*'
+      - 'lib/use-maintenance-checklist.ts'
+      - 'lib/asset-maintenance.ts'
+      - 'lib/scan-assets.ts'
+      - 'lib/field-manager.ts'
+      - 'lib/dealer-maintenance-tracker.ts'
+      - 'components/DesktopServiceModal.tsx'
+      - 'components/DealerMaintenanceTrackerClient.tsx'
+      - 'app/scan/**'
+      - 'app/maintenance/**'
+      - 'app/admin/maintenance-catalogue/**'
+      - 'app/api/**/maintenance*/**'
+      - 'app/api/scan/**'
+      - 'tests/maintenance-catalogue.test.cjs'
+      - 'tests/fixtures/maintenance-catalogue-page.tsx'
+      - 'scripts/verify-maintenance-catalogue.cjs'
+      - '.github/workflows/maintenance-catalogue-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/maintenance-catalogue.test.cjs tests/desktop-service-modal.test.mjs tests/manual-maintenance-completion.test.mjs tests/maintenance-schedule-linking.test.mjs tests/maintenance-flow-guard.test.mjs tests/field-manager-offline.test.cjs
+      - run: node scripts/verify-maintenance-catalogue.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: maintenance-catalogue-browser
+          path: .next/maintenance-validation
+          if-no-files-found: ignore

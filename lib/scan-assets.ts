@@ -1,3 +1,4 @@
+import { maintenanceIdentity, validateMaintenanceWork, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from './maintenance-catalogue';
 import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from "./db";
 import {
@@ -26,6 +27,7 @@ export type ScanAccessMode = "owner_session" | "scan_pin" | "field_manager";
 export type ScanEventActorType = ScanAccessMode | "admin_session";
 
 export type ScanSafeAsset = {
+  maintenanceIdentity?: MaintenanceIdentity;
   id: string;
   userId: string;
   publicAssetCode: string;
@@ -67,6 +69,7 @@ export type ScanAssetAccessContext = {
 };
 
 export type ScanEventRecord = {
+  maintenanceWork?: MaintenanceWorkSnapshot[] | null;
   id: string;
   actorType: ScanEventActorType;
   operatorName: string;
@@ -122,6 +125,7 @@ export type ScanEventRecord = {
 export type AssetMaintenanceStatusKind = "checked" | "serviced" | "repaired";
 
 export type AssetMaintenanceStatus = {
+  maintenanceWork?: MaintenanceWorkSnapshot[] | null;
   id: string;
   assetRegisterItemId: string;
   kind: AssetMaintenanceStatusKind;
@@ -140,6 +144,7 @@ export type AssetMaintenanceStatus = {
 };
 
 export type SaveScanAssetEventInput = {
+  maintenanceWork?: unknown;
   publicAssetCode: string;
   assetId?: string | null;
   actorType: ScanEventActorType;
@@ -189,6 +194,7 @@ type ScanAccessRow = {
   estimated_hours: string | number | null;
   max_lifetime_hours: string | number | null;
   specs_json: unknown;
+  maintenance_specs_json?: unknown;
   family_is_propelled: boolean | string | number | null;
   family_usage_metric_type: string | null;
   serial_number: string | null;
@@ -215,6 +221,7 @@ type ScanAccessRow = {
 };
 
 type ScanEventRow = {
+  maintenance_work?: MaintenanceWorkSnapshot[] | null;
   id: string | number;
   actor_type: string | null;
   operator_name: string | null;
@@ -863,6 +870,7 @@ async function ensureScanAssetSaveColumns(): Promise<void> {
       add column if not exists selected_method text
   `);
 
+  await db.query('alter table public.asset_scan_events add column if not exists maintenance_work jsonb');
   scanAssetSaveColumnsEnsured = true;
 }
 
@@ -927,6 +935,7 @@ function mapScanSafeAsset(row: ScanAccessRow): ScanSafeAsset {
     qrStatus: normalizeQrStatus(row.qr_status),
     title: assetDisplayTitle({ title: row.title, modelName: row.model_name, familyLabel: row.equipment_family_label, specsJson: row.specs_json }),
     kind,
+    maintenanceIdentity: maintenanceIdentity({ equipmentFamilyId: asNumber(row.equipment_family_id), equipmentFamilyKey: row.equipment_family_key, equipmentFamilyLabel: row.equipment_family_label, sectorId: asNumber(row.sector_id), specsJson: asRecord(row.maintenance_specs_json ?? row.specs_json) }),
     equipmentFamilyKey: asText(row.equipment_family_key),
     equipmentFamilyLabel: asText(row.equipment_family_label),
     serialNumber: asText(row.serial_number),
@@ -1074,6 +1083,7 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     workUseExclusionReason: asText(row.work_use_exclusion_reason),
     condition: normalizeCondition(row.condition),
     note: asText(row.note),
+    maintenanceWork: row.maintenance_work || null,
     photoUrls: normalizePhotos(row.photo_urls),
     latitude: asNumber(row.latitude),
     longitude: asNumber(row.longitude),
@@ -1207,6 +1217,7 @@ function mapMaintenanceStatusFromScanEvent(
     summary: summary.summary,
     note: summary.note,
     sourceNote: note,
+    maintenanceWork: row.maintenance_work || null,
     operatorName: asText(row.operator_name),
     usageReading: asNumber(row.asset_usage_reading) ?? asNumber(row.hours),
     photoUrls,
@@ -1256,6 +1267,7 @@ async function getScanAssetAccessContextForResolvedOwner(
         nullif(trim(coalesce(to_jsonb(a)->>'life_worked_percent', '')), '') as life_worked_percent,
         nullif(trim(coalesce(to_jsonb(a)->>'estimated_hours', '')), '') as estimated_hours,
         nullif(trim(coalesce(to_jsonb(a)->>'max_lifetime_hours', '')), '') as max_lifetime_hours,
+        coalesce(to_jsonb(vr)->'specs_json', '{}'::jsonb) || coalesce(to_jsonb(a)->'specs_json', '{}'::jsonb) as maintenance_specs_json,
         coalesce(to_jsonb(a)->'specs_json', to_jsonb(vr)->'specs_json', '{}'::jsonb) as specs_json,
         to_jsonb(ef)->>'is_propelled' as family_is_propelled,
         to_jsonb(ef)->>'usage_metric_type' as family_usage_metric_type,
@@ -1486,6 +1498,7 @@ export async function listScanEventsForAsset(
         coalesce(fse.work_use_exclusion_reason, fs.work_use_exclusion_reason, '') as work_use_exclusion_reason,
         e.condition,
         e.note,
+        to_jsonb(e)->'maintenance_work' as maintenance_work,
         e.photo_urls,
         e.latitude,
         e.longitude,
@@ -1571,6 +1584,7 @@ export async function attachLatestMaintenanceStatusToAssets<
         coalesce(to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
         e.condition,
         e.note,
+        to_jsonb(e)->'maintenance_work' as maintenance_work,
         e.photo_urls,
         e.latitude,
         e.longitude,
@@ -1651,6 +1665,7 @@ function assetMaintenanceStatusSelectSql(whereClause: string): string {
       coalesce(to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
       e.condition,
       e.note,
+      to_jsonb(e)->'maintenance_work' as maintenance_work,
       e.photo_urls,
       e.latitude,
       e.longitude,
@@ -1683,6 +1698,7 @@ export async function listCompletedMaintenanceScanEventsForAssets(
         nullif(to_jsonb(e)->>'asset_usage_reading', '')::numeric as asset_usage_reading,
         coalesce(to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
         coalesce(to_jsonb(e)->>'note', '') as note,
+        to_jsonb(e)->'maintenance_work' as maintenance_work,
         coalesce(to_jsonb(e)->'photo_urls', '[]'::jsonb) as photo_urls,
         nullif(to_jsonb(e)->>'latitude', '')::double precision as latitude,
         nullif(to_jsonb(e)->>'longitude', '')::double precision as longitude,
@@ -1776,6 +1792,7 @@ export async function saveScanAssetEvent(
 }> {
   await ensureFuelLedgerTables();
   await ensureScanAssetSaveColumns();
+  const maintenanceWork = validateMaintenanceWork(input.maintenanceWork);
   const db = getDb();
   const normalizedCode = normalizePublicAssetCode(input.publicAssetCode);
 
@@ -1829,7 +1846,8 @@ export async function saveScanAssetEvent(
           nullif(trim(coalesce(to_jsonb(a)->>'life_worked_percent', '')), '') as life_worked_percent,
           nullif(trim(coalesce(to_jsonb(a)->>'estimated_hours', '')), '') as estimated_hours,
           nullif(trim(coalesce(to_jsonb(a)->>'max_lifetime_hours', '')), '') as max_lifetime_hours,
-          coalesce(to_jsonb(a)->'specs_json', to_jsonb(vr)->'specs_json', '{}'::jsonb) as specs_json,
+          coalesce(to_jsonb(vr)->'specs_json', '{}'::jsonb) || coalesce(to_jsonb(a)->'specs_json', '{}'::jsonb) as maintenance_specs_json,
+        coalesce(to_jsonb(a)->'specs_json', to_jsonb(vr)->'specs_json', '{}'::jsonb) as specs_json,
           to_jsonb(ef)->>'is_propelled' as family_is_propelled,
           to_jsonb(ef)->>'usage_metric_type' as family_usage_metric_type,
           coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serial', to_jsonb(a)->>'vin', '') as serial_number,
@@ -1949,6 +1967,7 @@ export async function saveScanAssetEvent(
             e.fuel_storage_event_id,
             e.condition,
             e.note,
+        to_jsonb(e)->'maintenance_work' as maintenance_work,
             e.photo_urls,
             e.latitude,
             e.longitude,
@@ -2061,6 +2080,7 @@ export async function saveScanAssetEvent(
           fuel_percent,
           condition,
           note,
+          maintenance_work,
           photo_urls,
           latitude,
           longitude,
@@ -2086,6 +2106,7 @@ export async function saveScanAssetEvent(
           $5::integer,
           $6::text,
           $7::text,
+          $22::jsonb,
           $8::jsonb,
           $9::double precision,
           $10::double precision,
@@ -2111,6 +2132,7 @@ export async function saveScanAssetEvent(
           fuel_percent,
           condition,
           note,
+          maintenance_work,
           photo_urls,
           latitude,
           longitude,
@@ -2144,6 +2166,7 @@ export async function saveScanAssetEvent(
         eventUsageMetric,
         "asset_qr_scan",
         "QR Scan",
+        JSON.stringify(maintenanceWork),
       ],
     );
 
@@ -2199,6 +2222,7 @@ export async function saveScanAssetEvent(
           u.life_worked_percent,
           u.estimated_hours,
           u.max_lifetime_hours,
+          coalesce(to_jsonb(vr)->'specs_json', '{}'::jsonb) || coalesce(u.specs_json, '{}'::jsonb) as maintenance_specs_json,
           coalesce(u.specs_json, '{}'::jsonb) as specs_json,
           ef.is_propelled as family_is_propelled,
           ef.usage_metric_type as family_usage_metric_type,
@@ -2292,4 +2316,3 @@ export async function saveScanAssetEvent(
     client.release();
   }
 }
-

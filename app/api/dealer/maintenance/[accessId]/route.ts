@@ -77,6 +77,7 @@ export async function POST(request: Request, { params }: { params: { accessId: s
       completedAt: body.completedAt,
       completedUsage: body.completedUsage,
       completedNotes: body.completedNotes,
+      maintenanceWork: body.maintenanceWork,
       completedBy: technicianName
         ? `${technicianName} · Dealer entry by ${dealerName}`
         : `Dealer entry by ${dealerName}`,

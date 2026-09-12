@@ -81,6 +81,7 @@ async function saveCompletedMaintenance(
     completedAt: body.completedAt,
     completedUsage: body.completedUsage,
     completedNotes: body.completedNotes,
+    maintenanceWork: body.maintenanceWork,
     completedBy: body.completedBy,
   });
   return { completed, nextRecord: null, separateCompletion: true };

@@ -20,6 +20,8 @@ test('offline sync requires the exact owner and manager and a same-origin reques
 });
 test('snapshot excludes other assets, other assigned managers, completed work and financial fields', async () => {
   const route = load('app/api/field-manager/offline/route.ts', {
+    '../../../../lib/maintenance-catalogue-db': { getMaintenanceCatalogue: async () => ({ version: 1 }) },
+    '../../../../lib/maintenance-catalogue': { resolveMaintenanceChecklist: () => ({ version: 1, label: 'Tractor', items: [{ id: 'oil_filter' }] }) },
     '../../../../lib/field-manager-offline-access': { requireOfflineIdentity: async () => ({ ok: true, identity: 'owner:manager', session: { ownerUserId: 'owner', managerId: 'manager', displayName: 'Manager' } }), offlineHeaders: { 'Cache-Control': 'private, no-store' } },
     '../../../../lib/field-manager': { listFieldManagerAssets: async () => [{ id: 'asset', title: 'Tractor', usageMetric: 'hours', value: 500000 }], fieldManagerCan: async () => true },
     '../../../../lib/asset-maintenance': { listAssetMaintenanceRecords: async () => [
@@ -33,6 +35,7 @@ test('snapshot excludes other assets, other assigned managers, completed work an
   const body = await response.json();
   assert.deepEqual(body.tasks.map(t => t.id), ['allowed', 'shared']);
   assert.equal('value' in body.assets[0], false); assert.equal('assetValue' in body.tasks[0], false);
+  assert.equal(body.assets[0].checklist.items[0].id, 'oil_filter');
   assert.match(response.headers.get('cache-control'), /no-store/);
 });
 test('sync delegates unchanged credentials and event ID to existing field scan validation', async () => {

@@ -1,0 +1,165 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+  color: #173c2d;
+  font-family: inherit;
+}
+.page h1 {
+  font-size: 28px;
+  margin: 12px 0;
+}
+.page h2 {
+  font-size: 21px;
+  margin: 0 0 14px;
+}
+.page p,
+.page small {
+  color: #50685d;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.toolbar,
+.filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.page button,
+.upload {
+  font: inherit;
+  border: 1px solid #bed4c5;
+  border-radius: 12px;
+  background: #edf6ef;
+  color: #174a2e;
+  padding: 11px 16px;
+  cursor: pointer;
+  text-align: left;
+}
+.page button[aria-pressed="true"] {
+  background: #d6ebdc;
+  border-color: #478661;
+}
+.page button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.page button:focus-visible,
+.page input:focus-visible {
+  outline: 3px solid #478661;
+  outline-offset: 2px;
+}
+.page input {
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 11px;
+  border: 1px solid #c4d3c9;
+  border-radius: 10px;
+  background: #fff;
+  color: #173c2d;
+}
+.upload input {
+  width: 210px;
+  border: 0;
+  padding: 4px;
+}
+.layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 2fr);
+  gap: 22px;
+}
+.panel {
+  border: 1px solid #cfdfd3;
+  border-radius: 18px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.88);
+  min-width: 0;
+}
+.list {
+  max-height: 680px;
+  overflow: auto;
+  display: grid;
+  gap: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: #99bca5 transparent;
+}
+.list button {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+.item {
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid #d4e1d7;
+  border-radius: 12px;
+}
+.page label {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+}
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow: auto;
+  margin: 12px 0;
+}
+.page summary {
+  cursor: pointer;
+  padding: 16px 0;
+}
+.page small {
+  font-size: 12px;
+}
+.page a {
+  color: #245c3b;
+}
+@media (max-width: 700px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .list {
+    max-height: 280px;
+  }
+  .page {
+    padding: 16px;
+  }
+  .panel {
+    padding: 16px;
+  }
+}
+
+.upload {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  margin: 0 !important;
+}
+.upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  padding: 0;
+}
+.upload:focus-within {
+  outline: 3px solid #478661;
+  outline-offset: 2px;
+}
+.toolbar {
+  align-items: center;
+}

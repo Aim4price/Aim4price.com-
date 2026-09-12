@@ -1,3 +1,4 @@
+import { maintenanceIdentity, type MaintenanceIdentity } from './maintenance-catalogue';
 import { getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
 import {
@@ -145,6 +146,7 @@ export type DealerMaintenanceTrackedAsset = {
   ownerEmail: string;
   assetTitle: string;
   assetKind: string;
+  maintenanceIdentity?: MaintenanceIdentity;
   brandName: string;
   modelName: string;
   yearModel: number | null;
@@ -1426,6 +1428,7 @@ async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<Deale
     ownerEmail: asText(row.owner_email),
     assetTitle: asset.title,
     assetKind: asset.kind,
+    maintenanceIdentity: records[0]?.maintenanceIdentity || maintenanceIdentity(asset),
     brandName: asset.brandName,
     modelName: asset.modelName || asset.typedModelName,
     yearModel: asset.yearModel,
@@ -1548,6 +1551,7 @@ export async function recordDealerStandaloneMaintenance(input: {
       completedAt: input.completion.completedAt,
       completedUsage: input.completion.completedUsage,
       completedNotes: input.completion.completedNotes,
+      maintenanceWork: input.completion.maintenanceWork,
       completedBy: input.completion.completedBy,
     },
   );

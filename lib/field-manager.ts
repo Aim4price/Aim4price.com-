@@ -1,3 +1,4 @@
+import { maintenanceIdentity, type MaintenanceIdentity } from './maintenance-catalogue';
 import { assetDisplayTitle } from './asset-display-title';
 import { resolveAccountAppUsername, withUniqueAppUsername } from './app-login-namespace';
 import { normalizeAppLogin } from './app-login-name';
@@ -51,6 +52,9 @@ type FieldManagerAssetRow = {
   title: string | null;
   kind: string | null;
   equipment_family_label: string | null;
+  equipment_family_id?: number | null;
+  equipment_family_key?: string | null;
+  sector_id?: number | null;
   family_usage_metric_type?: string | null;
   brand_name: string | null;
   model_name: string | null;
@@ -59,6 +63,7 @@ type FieldManagerAssetRow = {
   license_registration_number: string | null;
   note: string | null;
   specs_json: unknown;
+  maintenance_specs_json?: unknown;
   hours: string | number | null;
   year_model: string | number | null;
   life_worked_percent: string | number | null;
@@ -93,6 +98,7 @@ export type FieldManagerAssetSummary = {
   title: string;
   kind: string;
   equipmentFamilyLabel: string;
+  maintenanceIdentity?: MaintenanceIdentity;
   brandName: string;
   modelName: string;
   typedModelName: string;
@@ -416,6 +422,7 @@ function mapFieldManagerAssetRow(
     title: assetDisplayTitle({ title: row.title, modelName: row.model_name, familyLabel: row.equipment_family_label, specsJson: row.specs_json }) || "Untitled asset",
     kind: asText(row.kind),
     equipmentFamilyLabel: asText(row.equipment_family_label),
+    maintenanceIdentity: maintenanceIdentity({ equipmentFamilyId: row.equipment_family_id, equipmentFamilyKey: row.equipment_family_key, sectorId: row.sector_id, specsJson: asRecord(row.maintenance_specs_json ?? row.specs_json), equipmentFamilyLabel: row.equipment_family_label }),
     brandName: asText(row.brand_name),
     modelName: asText(row.model_name),
     typedModelName: asText(row.typed_model_name),
@@ -1121,6 +1128,7 @@ function fieldManagerAssetSelect(whereSql: string): string {
       a.qr_status,
       a.title,
       a.kind,
+      ef.id as equipment_family_id, ef.family_key as equipment_family_key, ef.sector_id,
       coalesce(ef.family_label, '') as equipment_family_label,
       ef.usage_metric_type as family_usage_metric_type,
       a.brand_name,
@@ -1137,6 +1145,7 @@ function fieldManagerAssetSelect(whereSql: string): string {
         coalesce(a.specs_json, '{}'::jsonb)->>'description',
         ''
       ) as note,
+      coalesce(to_jsonb(vr)->'specs_json', '{}'::jsonb) || coalesce(a.specs_json, '{}'::jsonb) as maintenance_specs_json,
       coalesce(a.specs_json, '{}'::jsonb) as specs_json,
       a.hours,
       coalesce(
@@ -1668,4 +1677,3 @@ export async function validateFieldManagerFuelStorage(input: {
   const row = result.rows[0];
   return row ? mapFieldManagerRow(row) : null;
 }
-
