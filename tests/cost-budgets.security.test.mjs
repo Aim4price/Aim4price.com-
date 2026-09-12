@@ -299,7 +299,7 @@ test('budget setup uses a wider four-step wizard and shared searchable asset pic
   const budgetModal = costClient.slice(modalStart, modalEnd);
 
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal source should be present');
-  assert.match(budgetModal, /\[\['Coverage', 1\], \['Period', 2\], \['Limit', 3\], \['Review', 4\]\]/);
+  assert.doesNotMatch(budgetModal, /styles\.invoiceDropWizardProgress/);
   assert.match(budgetModal, /budgetWizardStep === 1/);
   assert.match(budgetModal, /budgetWizardStep === 2/);
   assert.match(budgetModal, /budgetWizardStep === 3/);
