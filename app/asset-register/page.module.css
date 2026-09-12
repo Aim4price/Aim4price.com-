@@ -40401,3 +40401,10 @@ button.documentOpenLink {
 .managementAccountModal .ownerCommandChoiceGrid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)) !important;
 }
+
+/* GPS save actions belong to the location panel, not a separate white footer. */
+.managementAccountModal .assetSettingsLocationSection > .assetSettingsActions {
+  background: transparent !important;
+  border-top: 0 !important;
+  padding-top: 0 !important;
+}
