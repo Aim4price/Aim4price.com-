@@ -235,7 +235,8 @@ test("Create umbrella reuses the export asset picker hierarchy with one modal sc
   assert.match(umbrella, />\s*Clear\s*</);
   assert.match(umbrella, /assetDetailLine\(asset\)/);
   assert.match(umbrella, /assetSourceLine\(asset, combinedMode\)/);
-  assert.match(umbrella, /<small>current value<\/small>/);
+  assert.match(umbrella, /lockedAnchor \? 'Included' : selected \? 'Selected' : 'Select'/);
+  assert.match(umbrella, /<AssetSerialNumber value=\{asset.serialNumber\} \/>/);
   assert.match(umbrella, /const memberValueOptions = group[\s\S]*?PRIMARY_MEMBER_VALUE_OPTIONS[\s\S]*?GROUPED_MEMBER_VALUE_OPTIONS/);
   assert.match(umbrella, /<AssetGroupMemberSelect[\s\S]*?options=\{memberValueOptionsFor\(asset\.id\)\}/);
 

@@ -6781,7 +6781,7 @@
 
 /* Consistent saved-asset chooser: account header, searchable stacked rows and fixed footer. */
 .accountCostModal.accountAssetPickerModal {
-  width: min(var(--website-dialog-reference-width, 100%), 72rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 72rem) !important;
 }
 .accountCostModal.accountAssetPickerModal[data-asset-choice-modal] > [data-asset-choice-toolbar] {
   flex: 0 0 auto !important;

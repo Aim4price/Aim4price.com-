@@ -32,6 +32,7 @@ export type AssetMaintenanceAssetOption = {
   condition: string;
   value: number;
   selectedMethod: string;
+  serialNumber?: string;
   meta: string;
 };
 
@@ -219,6 +220,7 @@ type MaintenanceRow = {
   alert_noted_at: string | Date | null;
   created_at: string | Date | null;
   updated_at: string | Date | null;
+  asset_serial_number?: string | null;
   asset_title: string | null;
   asset_kind: string | null;
   asset_category_label: string | null;
@@ -604,6 +606,7 @@ function mapAssetOption(asset: AssetRegisterItem): AssetMaintenanceAssetOption {
     condition,
     value,
     selectedMethod: asText(asset.selectedMethod) || 'aim4price',
+    serialNumber: asText(asset.serialNumber),
     meta: '',
   };
 
@@ -646,6 +649,7 @@ function assetOptionFromMaintenanceRow(row: MaintenanceRow): AssetMaintenanceAss
     condition: conditionLabel(row.asset_condition),
     value: Math.round(asNumber(row.asset_selected_value) ?? asNumber(row.asset_value) ?? 0),
     selectedMethod: asText(row.asset_selected_method) || 'aim4price',
+    serialNumber: asText(row.asset_serial_number),
     meta: '',
   };
 
@@ -1044,6 +1048,7 @@ function maintenanceSelectSql(whereClause: string): string {
         nullif(to_jsonb(ai)->>'typed_model_name', ''),
         'Saved asset'
       ) as asset_title,
+      to_jsonb(ai)->>'serial_number' as asset_serial_number,
       coalesce(nullif(to_jsonb(ai)->>'kind', ''), nullif(to_jsonb(ai)->>'asset_type', ''), 'asset') as asset_kind,
       coalesce(nullif(ef.family_label, ''), nullif(to_jsonb(ai)->>'kind', ''), 'Asset') as asset_category_label,
       nullif(coalesce(to_jsonb(ai)->>'year_model', to_jsonb(ai)->>'year'), '') as asset_year_model,

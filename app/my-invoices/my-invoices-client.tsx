@@ -1,5 +1,7 @@
 'use client';
 
+import AssetSerialNumber from '../../components/AssetSerialNumber';
+
 import DocumentFileLink from '../../components/DocumentFileLink';
 
 import { prepareInvoiceUpload, validateInvoicePages } from '../../lib/invoice-upload';
@@ -34,6 +36,7 @@ type AssetOption = {
   condition: string;
   value: number;
   selectedMethod: string;
+  serialNumber?: string;
   meta: string;
   ownerName?: string;
 };
@@ -892,7 +895,7 @@ function draftFromInvoice(invoice: InvoiceRecord): InvoiceDraft {
 }
 
 function assetSearchText(asset: AssetOption): string {
-  return `${asset.ownerName ?? ''} ${asset.title} ${asset.categoryLabel} ${asset.meta} ${asset.value}`.toLowerCase();
+  return `${asset.ownerName ?? ''} ${asset.title} ${asset.serialNumber ?? ''} ${asset.categoryLabel} ${asset.meta} ${asset.value}`.toLowerCase();
 }
 
 function invoiceSearchText(invoice: InvoiceRecord): string {
@@ -3746,6 +3749,7 @@ export default function MyInvoicesClient({
                         <strong>{asset.title}</strong>
                         <small data-asset-choice-meta="true">{asset.meta}</small>
                         <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                        <AssetSerialNumber value={asset.serialNumber} />
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
                         <span className={`${styles.budgetAssetChoice} ${isSelected ? styles.budgetAssetChoiceSelected : ''}`}>
@@ -4358,6 +4362,7 @@ export default function MyInvoicesClient({
                       <strong>{asset.title}</strong>
                       {asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}
                       <small data-asset-choice-secondary="true">{[asset.categoryLabel, asset.yearModel].filter(Boolean).join(' · ')}</small>
+                      <AssetSerialNumber value={asset.serialNumber} />
                     </span>
                     <span className={styles.assetValue} data-asset-choice-value="true">
                       <span className={styles.pickerSelectAction}>
@@ -4500,6 +4505,7 @@ export default function MyInvoicesClient({
                         <strong>{asset.title}</strong>
                         <small data-asset-choice-meta="true">{asset.meta}</small>
                         <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                        <AssetSerialNumber value={asset.serialNumber} />
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
                         <span className={`${styles.budgetAssetChoice} ${isSelected ? styles.budgetAssetChoiceSelected : ''}`}>
@@ -5158,6 +5164,7 @@ export default function MyInvoicesClient({
                     <strong>{asset.title}</strong>
                     <small data-asset-choice-meta="true">{asset.meta}</small>
                     <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                    <AssetSerialNumber value={asset.serialNumber} />
                   </span>
                   <span className={styles.assetValue} data-asset-choice-value="true">
                     <span className={styles.pickerSelectAction}>

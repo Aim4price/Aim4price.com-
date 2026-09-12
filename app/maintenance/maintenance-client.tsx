@@ -1,5 +1,8 @@
 'use client';
 
+import pickerStyles from '../../components/AssetPicker.module.css';
+import AssetSerialNumber from '../../components/AssetSerialNumber';
+
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
@@ -28,6 +31,7 @@ type AssetOption = {
   condition: string;
   value: number;
   selectedMethod: string;
+  serialNumber?: string;
   meta: string;
 };
 
@@ -913,7 +917,7 @@ export default function MaintenanceClient({
   const filteredAssets = useMemo(() => {
     const query = pickerSearch.trim().toLowerCase();
     if (!query) return assets;
-    return assets.filter((asset) => [asset.title, asset.meta, asset.kind, asset.categoryLabel].join(' ').toLowerCase().includes(query));
+    return assets.filter((asset) => [asset.title, asset.serialNumber, asset.meta, asset.kind, asset.categoryLabel].join(' ').toLowerCase().includes(query));
   }, [assets, pickerSearch]);
 
   const filterAssetOptions = useMemo<DropdownOption[]>(
@@ -927,7 +931,7 @@ export default function MaintenanceClient({
   const filteredDownloadAssets = useMemo(() => {
     const query = downloadAssetSearch.trim().toLowerCase();
     if (!query) return assets;
-    return assets.filter((asset) => [asset.title, asset.meta, asset.kind, asset.categoryLabel].join(' ').toLowerCase().includes(query));
+    return assets.filter((asset) => [asset.title, asset.serialNumber, asset.meta, asset.kind, asset.categoryLabel].join(' ').toLowerCase().includes(query));
   }, [assets, downloadAssetSearch]);
 
   const filterAssigneeOptions = useMemo<DropdownOption[]>(
@@ -1422,14 +1426,14 @@ export default function MaintenanceClient({
 
       {modalMode === 'asset-picker' ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
-          <section className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
+          <section className={`${styles.assetModal} ${pickerStyles.modal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <header className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2 id="asset-picker-title">Choose asset for maintenance</h2>
                 <p>Choose a saved asset.</p>
               </div>
               <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close asset picker">
-                <CloseIcon />
+                <span aria-hidden="true">×</span>
               </button>
             </header>
             <div className={styles.modalDivider} />
@@ -1449,10 +1453,11 @@ export default function MaintenanceClient({
                     <span className={styles.assetInfo} data-asset-choice-copy="true">
                       <strong>{asset.title}</strong>
                       <small data-asset-choice-meta="true">{asset.meta}</small>
+                      <small data-asset-choice-secondary="true">{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                      <AssetSerialNumber value={asset.serialNumber} />
                     </span>
                     <span className={styles.assetValue} data-asset-choice-value="true">
-                      <strong>{money(asset.value)}</strong>
-                      <small>current value</small>
+                      <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>
                     </span>
                   </button>
                 ))
@@ -1810,7 +1815,7 @@ export default function MaintenanceClient({
       {modalMode === 'download' ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
           <section
-            className={`${styles.downloadModal} ${styles.maintenanceExportModal}`}
+            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${downloadStep === 'asset' ? pickerStyles.modal : ''}`}
             data-asset-choice-surface={downloadStep === 'asset' ? 'true' : undefined}
             data-asset-choice-modal={downloadStep === 'asset' ? 'true' : undefined}
           >
@@ -1834,7 +1839,7 @@ export default function MaintenanceClient({
                 </div>
               </div>
               <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close download reports">
-                <CloseIcon />
+                {downloadStep === 'asset' ? <span aria-hidden="true">×</span> : <CloseIcon />}
               </button>
             </header>
             <div className={styles.modalDivider} />
@@ -1877,7 +1882,7 @@ export default function MaintenanceClient({
               </>
             ) : downloadStep === 'asset' ? (
               <>
-                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
+                <div className={pickerStyles.contents}>
                   <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
                     <input
                       value={downloadAssetSearch}
@@ -1910,10 +1915,11 @@ export default function MaintenanceClient({
                           <span className={styles.assetInfo} data-asset-choice-copy="true">
                             <strong>{asset.title}</strong>
                             <small data-asset-choice-meta="true">{asset.meta}</small>
+                            <small data-asset-choice-secondary="true">{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                            <AssetSerialNumber value={asset.serialNumber} />
                           </span>
                           <span className={styles.assetValue} data-asset-choice-value="true">
-                            <strong>{money(asset.value)}</strong>
-                            <small>current value</small>
+                            <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>
                           </span>
                         </button>
                       ))
