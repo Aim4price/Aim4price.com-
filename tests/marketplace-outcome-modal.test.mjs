@@ -166,3 +166,25 @@ test('Owner App sends listing removal through the guided Marketplace manager', a
   assert.match(ownerAssetDetail, />Manage or remove advert<\/Link>/);
 });
 
+
+test('Asset Register removal opens the manageable advert instead of the retired DELETE endpoint', async () => {
+  const source = await read('app/asset-register/asset-register-client.tsx');
+  const handler = source.slice(
+    source.indexOf('  function handleRemoveFromMarketplace('),
+    source.indexOf('  function clearRevaluePreviewResult()'),
+  );
+  let destination;
+  const run = new Function('window', handler.replace('asset: RegisterAsset', 'asset') + '\nreturn handleRemoveFromMarketplace;')({
+    location: { assign: (url) => { destination = new URL(url, 'https://www.aim4price.com'); } },
+  });
+  run({ id: 'asset/id & one' });
+  assert.equal(destination.pathname, '/marketplace/browse');
+  assert.equal(destination.searchParams.get('listing'), 'asset/id & one');
+  assert.equal(destination.searchParams.get('manage'), '1');
+  assert.doesNotMatch(handler, /fetch\(|method:\s*['"]DELETE/);
+
+  const marketplace = await read('app/marketplace/marketplace-client.tsx');
+  assert.match(marketplace, /normalizedValue === String\(listing\.sourceAssetId/);
+  assert.match(marketplace, /openManageFromUrl\s*&& nextListing\.canManage/);
+  assert.match(marketplace, /onClick={openOutcomeListingModal}/);
+});
