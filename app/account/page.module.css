@@ -1730,7 +1730,8 @@
 }
 
 /* === Account page Asset Register spacing alignment === */
-.page {
+.page,
+.modalTheme {
   --account-bg: #f3f6f8;
   --account-surface: #ffffff;
   --account-surface-soft: #f7fafc;

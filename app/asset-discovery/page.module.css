@@ -475,53 +475,6 @@
   cursor: default;
 }
 
-.discoveryFilterModal.discoveryFilterModal[role='dialog'] {
-  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 64rem) !important;
-  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 4), 3rem)) !important;
-  overflow: hidden !important;
-}
-
-.discoveryFilterModal .discoveryFilterHeader {
-  margin: 0 !important;
-  padding: 1.55rem 5rem 1.35rem 1.7rem !important;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.94) !important;
-}
-
-.discoveryFilterHeaderCopy {
-  display: grid;
-  min-width: 0;
-  gap: 0.48rem;
-}
-
-.discoveryFilterHeaderCopy > h3,
-.discoveryFilterHeaderCopy > p {
-  margin: 0 !important;
-}
-
-.discoveryFilterForm {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 1rem 1.1rem !important;
-  padding: 1.35rem 1.6rem 1.55rem !important;
-  overflow-x: hidden !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain;
-}
-
-.discoveryFilterModal p {
-  white-space: normal !important;
-}
-
-.discoveryFilterWideField {
-  min-width: 0;
-  grid-column: 1 / -1;
-}
-
-.discoveryFilterWideField > * {
-  width: 100%;
-}
-
 .discoveryPipelineStatus {
   min-width: 6.4rem !important;
   min-height: 2.45rem !important;
@@ -1280,96 +1233,7 @@
   content: "";
 }
 
-.discoverySettingsModal {
-  width: min(calc(var(--website-dialog-reference-width, 100%) - 2rem), 47.5rem) !important;
-  max-height: min(48rem, calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem)) !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  border-radius: 1.45rem !important;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.discoverySettingsModal::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-.discoverySettingsHeader {
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
-  gap: clamp(2rem, calc(var(--website-design-vw, 1vw) * 5), 4rem) !important;
-  align-items: start !important;
-  margin: 0 !important;
-  padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.55rem) clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.65rem)
-    clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.3rem) !important;
-  border-bottom: 1px solid #d8e3e8 !important;
-}
-
-.discoverySettingsHeaderCopy {
-  min-width: 0;
-  padding-top: 0.05rem;
-}
-
-.discoverySettingsHeaderCopy h3 {
-  margin: 0;
-}
-
-.discoverySettingsHeaderCopy p {
-  max-width: 36rem;
-  margin-top: 0.35rem;
-}
-
-.discoverySettingsHeader > button {
-  position: static !important;
-  inset: auto !important;
-  align-self: start !important;
-  justify-self: end !important;
-  width: 3rem !important;
-  min-width: 3rem !important;
-  height: 3rem !important;
-  margin: 0 !important;
-  flex: 0 0 3rem !important;
-}
-
-.discoverySettingsBody {
-  display: grid;
-  gap: 0.9rem;
-  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.2rem) clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.4rem)
-    clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2.1), 1.35rem) !important;
-  scrollbar-gutter: auto !important;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.discoverySettingsBody::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-.discoverySettingsStatus,
-.discoverySettingsWarning {
-  border: 1px solid #d3e1db;
-  border-radius: 1.05rem;
-  box-shadow:
-    0 8px 20px rgba(16, 50, 42, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88);
-}
-
-.discoverySettingsStatus {
-  display: grid;
-  grid-template-columns: 2.65rem minmax(0, 1fr);
-  gap: 0.85rem;
-  align-items: center;
-  padding: 0.95rem 1rem;
-  border-color: #bcdccd;
-  background: linear-gradient(180deg, #f5fbf8 0%, #eef8f3 100%);
-}
-
-.discoverySettingsStatusIcon,
-.discoverySettingsWarningIcon {
+.discoverySettingsStatusIcon {
   display: inline-grid;
   place-items: center;
   width: 2.65rem;
@@ -1386,181 +1250,6 @@
 .discoverySettingsDialogIcon {
   width: 1.25rem;
   height: 1.25rem;
-}
-
-.discoverySettingsStatusCopy,
-.discoverySettingsWarningCopy {
-  min-width: 0;
-}
-
-.discoverySettingsEyebrow {
-  display: block;
-  margin-bottom: 0.24rem;
-  color: #668078;
-  font-size: 0.68rem;
-  font-weight: 850;
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
-}
-
-.discoverySettingsStatusCopy > strong,
-.discoverySettingsWarningCopy > strong {
-  display: block;
-  color: #123f34;
-  font-size: 0.98rem;
-  font-weight: 850;
-  line-height: 1.32;
-}
-
-.discoverySettingsStatusCopy > p,
-.discoverySettingsWarningCopy > p {
-  margin: 0.25rem 0 0;
-  color: #5b7169;
-  font-size: 0.82rem;
-  font-weight: 650;
-  line-height: 1.48;
-}
-
-.discoverySettingsWarning {
-  padding: 1.05rem;
-  border-color: #edcaca;
-  background: linear-gradient(180deg, #fffafa 0%, #fff5f5 100%);
-}
-
-.discoverySettingsWarningHeader {
-  display: grid;
-  grid-template-columns: 2.65rem minmax(0, 1fr);
-  gap: 0.85rem;
-  align-items: start;
-}
-
-.discoverySettingsWarningIcon {
-  color: #a43b3b;
-  border: 1px solid #efc6c6;
-  background: #ffe9e9;
-}
-
-.discoverySettingsWarningCopy .discoverySettingsEyebrow {
-  color: #a95353;
-}
-
-.discoverySettingsWarningCopy > strong {
-  color: #902f2f;
-}
-
-.discoverySettingsWarningCopy > .discoverySettingsWarningIntro {
-  margin-top: 0.3rem;
-  color: #596d66;
-  font-weight: 680;
-}
-
-.discoverySettingsConsequences {
-  display: grid;
-  gap: 0;
-  margin: 0.85rem 0 0;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid #efd1d1;
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.62);
-  list-style: none;
-}
-
-.discoverySettingsConsequences li {
-  position: relative;
-  padding: 0.65rem 0.8rem 0.65rem 2.05rem;
-  color: #5b6f68;
-  font-size: 0.84rem;
-  font-weight: 660;
-  line-height: 1.42;
-}
-
-.discoverySettingsConsequences li + li {
-  border-top: 1px solid #f0dada;
-}
-
-.discoverySettingsConsequences li::before {
-  position: absolute;
-  top: 1.02rem;
-  left: 0.85rem;
-  width: 0.38rem;
-  height: 0.38rem;
-  border-radius: 50%;
-  background: #c85555;
-  content: "";
-}
-
-.discoverySettingsAssurance {
-  display: grid;
-  grid-template-columns: 1.25rem minmax(0, 1fr);
-  gap: 0.65rem;
-  align-items: start;
-  margin-top: 0.8rem;
-  padding: 0.75rem 0.8rem;
-  color: #176d50;
-  border: 1px solid #c4ded3;
-  border-radius: 0.85rem;
-  background: #f1f9f5;
-}
-
-.discoverySettingsAssuranceIcon {
-  width: 1.15rem;
-  height: 1.15rem;
-  margin-top: 0.05rem;
-}
-
-.discoverySettingsAssurance strong {
-  display: block;
-  color: #174c3d;
-  font-size: 0.8rem;
-  font-weight: 820;
-  line-height: 1.35;
-}
-
-.discoverySettingsAssurance p {
-  margin: 0.12rem 0 0;
-  color: #5b7169;
-  font-size: 0.8rem;
-  font-weight: 620;
-  line-height: 1.4;
-}
-
-.discoveryDisableButton {
-  min-width: 13.5rem;
-  color: #ffffff !important;
-  border-color: #a83f3f !important;
-  background: linear-gradient(180deg, #bc4b4b 0%, #a53a3a 100%) !important;
-  box-shadow: 0 9px 20px rgba(139, 44, 44, 0.18) !important;
-}
-
-.discoveryDisableButton:hover:not(:disabled) {
-  border-color: #923434 !important;
-  background: linear-gradient(180deg, #ab4040 0%, #922f2f 100%) !important;
-}
-
-.discoverySettingsActions {
-  margin: 0 !important;
-  justify-content: flex-end !important;
-  gap: 0.7rem !important;
-  padding: 0.95rem clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.4rem) 1.1rem !important;
-  border-top: 1px solid #d8e3e8 !important;
-  background: #fbfdfd !important;
-}
-
-.discoverySettingsActions > :first-child {
-  min-width: 7.25rem;
-}
-
-@media (max-height: 650px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .discoverySettingsModal {
-    overflow-y: auto !important;
-    overscroll-behavior: contain;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .discoverySettingsBody {
-    flex: 0 0 auto !important;
-    overflow: visible !important;
-  }
 }
 
 :global(:where([data-website-canvas])) .page .discoveryAccessPanel {
@@ -1708,10 +1397,6 @@
     grid-template-columns: 1fr !important;
   }
 
-  :global(:where(html:not(:has([data-website-canvas])))) .discoveryFilterForm {
-    grid-template-columns: 1fr !important;
-  }
-
   :global(:where(html:not(:has([data-website-canvas])))) .assetCardHeader,
   :global(:where(html:not(:has([data-website-canvas])))) .dealerAssetCardHeader {
     grid-template-columns: 1fr;
@@ -1742,11 +1427,6 @@
     align-items: stretch;
     flex-direction: column;
   }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .discoverySettingsActions {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 @media (max-width: 1180px) {
@@ -1756,9 +1436,6 @@
 }
 
 @media (max-width: 760px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .discoveryFilterModal .discoveryFilterHeader {
-    padding: 1.2rem 4.3rem 1.05rem 1.2rem !important;
-  }
 
   :global(:where(html:not(:has([data-website-canvas])))) .pendingRequestButton,
   :global(:where(html:not(:has([data-website-canvas])))) .discoveryStatusAction,
@@ -1782,8 +1459,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .discoveryAccessPrivacy { grid-template-columns: 1fr; text-align: center; }
   :global(:where(html:not(:has([data-website-canvas])))) .discoveryAccessPrivacy strong { white-space: normal; }
   :global(:where(html:not(:has([data-website-canvas])))) .discoveryExclusions ul { grid-template-columns: 1fr; }
-  :global(:where(html:not(:has([data-website-canvas])))) .discoverySettingsActions { grid-template-columns: 1fr !important; }
-  :global(:where(html:not(:has([data-website-canvas])))) .discoverySettingsActions > * { width: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .discoveryLeadAssetCard .discoveryInlineContact { grid-template-columns: 1fr; }
 }
 
@@ -3542,3 +3217,13 @@
 .compactAppSurface.compactAppSurface .discoveryCardLabels {
   gap: 3px;
 }
+
+.discoverySettingsImpactList {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: #607168;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.discoverySettingsImpactList li + li { margin-top: 0.45rem; }

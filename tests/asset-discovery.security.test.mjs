@@ -265,12 +265,11 @@ test("owner settings can disable participation without deleting Asset Register r
 test("owner settings modal separates status, consequences and reassurance", () => {
   assert.match(client, /aria-describedby="discovery-settings-description"/);
   assert.match(client, /discoverySettingsStatusIcon/);
-  assert.match(client, /Before you continue/);
   assert.match(client, /These changes take effect immediately/);
   assert.match(client, /Your Asset Register stays intact/);
-  assert.match(css, /\.discoverySettingsModal[\s\S]*padding: 0 !important/);
-  assert.match(css, /\.discoverySettingsHeader > button[\s\S]*position: static !important/);
-  assert.match(css, /@media \(max-height: 650px\)/);
+  assert.match(client, /accountStyles\.passwordModalCard/);
+  assert.match(client, /accountStyles\.modalCloseButton/);
+  assert.match(client, /accountStyles\.accountModalScrollViewport/);
 });
 
 test("participation explains request-based contact privacy and exclusions", () => {
@@ -380,17 +379,11 @@ test("licensing Discovery includes every valid renewal date and keeps the pipeli
   assert.match(discovery, /renewalTiming === 'later'/);
   assert.match(discovery, /requestedStatus === 'available'/);
   assert.match(discovery, /requester_account_type = 'licensing' and e\.status in \('approved', 'temporarily_denied'\) then true/);
-  assert.match(client, /label: "All renewal dates"/);
-  assert.match(client, /label: "Won"/);
-  assert.match(client, /label: "Denied"/);
   assert.match(client, /statusPillLabel\(asset, true\)/);
   assert.match(css, /\.discoveryFutureCard/);
 });
 
-test("Discovery filter modal uses balanced two-column spacing", () => {
-  assert.match(client, /label="Renewal timing"/);
-  assert.match(client, /label="Opportunity status"/);
-  assert.match(client, /styles\.discoveryFilterWideField/);
-  assert.match(css, /\.discoveryFilterForm[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(css, /\.discoveryFilterWideField[\s\S]*grid-column: 1 \/ -1/);
+test("desktop Discovery no longer exposes renewal filter controls", () => {
+  assert.doesNotMatch(client, /DiscoveryFilterDropdown|isFilterModalOpen|discovery-filter-title/);
+  assert.doesNotMatch(css, /\.discoveryFilterModal|\.discoveryFilterForm/);
 });
