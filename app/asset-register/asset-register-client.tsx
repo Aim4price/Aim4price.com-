@@ -16255,11 +16255,11 @@ export default function AssetRegisterClient({
           ) : null}
 
           {assetRegisterMoveAsset ? (
-            <div className={styles.modalOverlay} data-website-overlay>
+            <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
               <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetRegisterMoveManager} />
 
               <div
-                className={`${styles.modalCard} ${styles.assetRegisterMoveModal}`}
+                className={`${styles.modalCard} ${styles.assetRegisterMoveModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="asset-register-move-title"
@@ -16272,16 +16272,16 @@ export default function AssetRegisterClient({
 
                   <button
                     type="button"
-                    className={styles.modalCloseButton}
+                    className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                     onClick={closeAssetRegisterMoveManager}
                     aria-label="Close move asset modal"
                     disabled={isMovingAssetRegister}
                   >
-                    <CloseIcon className={styles.buttonIcon} />
+                    <span aria-hidden="true">×</span>
                   </button>
                 </div>
 
-                <div className={styles.assetRegisterMoveModalBody}>
+                <div className={`${styles.assetRegisterMoveModalBody} ${styles.modalScrollBody}`}>
                   <label className={styles.assetRegisterMoveSearchWrap}>
                     <SearchIcon className={styles.assetRegisterMoveSearchIcon} />
                     <input
@@ -22865,6 +22865,7 @@ export default function AssetRegisterClient({
 
       {documentUploadAsset ? (
         <AssetDocumentUploadModal
+          accountDesign
           assetId={documentUploadAsset.id}
           assetTitle={documentUploadAsset.title}
           uploadEndpoint={accountantShareId ? assetVaultDocumentsUrl(documentUploadAsset.id) : '/api/documents'}

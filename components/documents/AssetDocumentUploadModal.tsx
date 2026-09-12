@@ -19,6 +19,7 @@ import {
   type AccountDocumentType,
 } from '../../lib/account-document-taxonomy';
 import styles from './AssetDocumentUploadModal.module.css';
+import accountStyles from '../../app/account/page.module.css';
 
 export type UploadedVaultDocument = {
   id: string;
@@ -43,6 +44,7 @@ type UploadResponse = {
 };
 
 type AssetDocumentUploadModalProps = {
+  accountDesign?: boolean;
   assetId: string;
   assetTitle: string;
   uploadEndpoint?: string;
@@ -91,6 +93,7 @@ export default function AssetDocumentUploadModal({
   assetId,
   assetTitle,
   uploadEndpoint = '/api/documents',
+  accountDesign = false,
   onClose,
   onUploaded,
 }: AssetDocumentUploadModalProps) {
@@ -380,19 +383,19 @@ export default function AssetDocumentUploadModal({
 
   return (
     <div
-      className={styles.backdrop} data-website-overlay
+      className={`${styles.backdrop} ${accountDesign ? styles.accountBackdrop : ''}`} data-website-overlay
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !busyRef.current) onClose();
       }}
     >
-      <section ref={modalRef} className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="asset-document-modal-title">
+      <section ref={modalRef} className={`${styles.modal} ${accountDesign ? `${styles.accountModal} ${accountStyles.modalTheme}` : ''}`} role="dialog" aria-modal="true" aria-labelledby="asset-document-modal-title">
         <header className={styles.header}>
           <div>
-            <span>Documents Vault</span>
+            {!accountDesign ? <span>Documents Vault</span> : null}
             <h2 id="asset-document-modal-title">Add documents</h2>
             <p>Choose a type, then upload directly to this asset’s document record.</p>
           </div>
-          <button type="button" onClick={() => { if (!busyRef.current) onClose(); }} disabled={busy} aria-label="Close document upload">×</button>
+          <button type="button" className={accountDesign ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : undefined} onClick={() => { if (!busyRef.current) onClose(); }} disabled={busy} aria-label="Close document upload"><span aria-hidden="true">×</span></button>
         </header>
 
         <form onSubmit={submit}>
