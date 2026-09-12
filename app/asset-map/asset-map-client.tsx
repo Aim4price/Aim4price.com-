@@ -12,6 +12,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import Link from "next/link";
+import { downloadAssetMapReport } from "../../lib/asset-map-download";
 import AppHeader from "../../components/AppHeader";
 import styles from "./page.module.css";
 
@@ -529,7 +530,8 @@ function buildAssetMeta(asset: AssetMapItem): string {
 
 function buildAssetRegisterHref(asset: AssetMapItem): string {
   const hash = `asset-card-${encodeURIComponent(asset.id)}`;
-  return `/asset-register#${hash}`;
+  const params = new URLSearchParams({ registerId: asset.registerId, assetId: asset.id });
+  return `/asset-register?${params.toString()}#${hash}`;
 }
 
 function hasCoordinates(asset: AssetMapItem): boolean {
@@ -686,6 +688,7 @@ export default function AssetMapClient() {
   );
   const [exportFormat, setExportFormat] = useState<ExportFormat>("pdf");
   const [exportStep, setExportStep] = useState<ExportStep>("format");
+  const [isDownloading, setIsDownloading] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
@@ -1568,6 +1571,21 @@ export default function AssetMapClient() {
     }
   }
 
+  async function handleDownload(href: string, format: ExportFormat) {
+    if (isDownloading) return;
+    setIsDownloading(true);
+    setNotice(null);
+    try {
+      await downloadAssetMapReport(href, format);
+      closeExportModal();
+    } catch (error) {
+      closeExportModal();
+      setNotice({ tone: "error", message: error instanceof Error ? error.message : "Unable to download the report. Please try again." });
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
   function updateSidebarCollapsed(collapsed: boolean) {
     setIsSidebarCollapsed(collapsed);
     if (typeof window === "undefined") return;
@@ -1730,23 +1748,6 @@ export default function AssetMapClient() {
               aria-label="Visible mapped assets"
             >
               <div className={styles.assetSidebarHeader}>
-                <button
-                  ref={sidebarCollapseTriggerRef}
-                  type="button"
-                  className={styles.sidebarToggleButton}
-                  onClick={() => updateSidebarCollapsed(true)}
-                  aria-label={
-                    isSidebarCollapsed
-                      ? "Expand asset list"
-                      : "Collapse asset list"
-                  }
-                  aria-expanded={!isSidebarCollapsed}
-                  aria-controls="asset-map-asset-list"
-                >
-                  <span aria-hidden="true">
-                    {isSidebarCollapsed ? ">" : "<"}
-                  </span>
-                </button>
                 {!isSidebarCollapsed ? (
                   <span className={styles.assetSidebarTitle}>
                     <strong>{visibleAssets.length}</strong>
@@ -1757,6 +1758,18 @@ export default function AssetMapClient() {
                     </span>
                   </span>
                 ) : null}
+                <button
+                  ref={sidebarCollapseTriggerRef}
+                  type="button"
+                  className={styles.sidebarToggleButton}
+                  onClick={() => updateSidebarCollapsed(true)}
+                  aria-label="Close asset list"
+                  data-tooltip="Close"
+                  aria-expanded={!isSidebarCollapsed}
+                  aria-controls="asset-map-asset-list"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="m14 6-6 6 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </button>
               </div>
 
               {!isSidebarCollapsed ? (
@@ -1866,11 +1879,12 @@ export default function AssetMapClient() {
                   type="button"
                   className={styles.sidebarExpandButton}
                   onClick={() => updateSidebarCollapsed(false)}
-                  aria-label="Expand asset list"
+                  aria-label="Open asset list"
+                  data-tooltip="Open"
                   aria-expanded="false"
                   aria-controls="asset-map-asset-list"
                 >
-                  <span aria-hidden="true">&gt;</span>
+                  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><path d="m10 6 6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
               ) : null}
 
@@ -2060,9 +2074,9 @@ export default function AssetMapClient() {
                           <strong>{selectedAsset.serialNumber || "—"}</strong>
                         </span>
                         <span>
-                          <small>Last scanned</small>
+                          <small>Last updated</small>
                           <strong>
-                            {formatDate(selectedAsset.lastScannedAtIso)}
+                            {formatDate(selectedAsset.updatedAtIso)}
                           </strong>
                         </span>
                       </div>
@@ -2087,15 +2101,15 @@ export default function AssetMapClient() {
                           </a>
                         ) : null}
                         {selectedAssetReportHref ? (
-                          <a
-                            href={selectedAssetReportHref}
-                            target="_blank"
-                            rel="noreferrer"
+                          <button
+                            type="button"
+                            disabled={isDownloading}
+                            onClick={() => void handleDownload(selectedAssetReportHref, "pdf")}
                             className={`${styles.selectedActionButton} ${styles.selectedActionDownload}`}
                           >
                             <DownloadIcon className={styles.buttonIcon} />
-                            <span>Download</span>
-                          </a>
+                            <span>{isDownloading ? "Preparing…" : "Download"}</span>
+                          </button>
                         ) : null}
                       </div>
                     </div>
@@ -2321,16 +2335,15 @@ export default function AssetMapClient() {
                     Back
                   </button>
                   {exportScopeHasMappedAssets ? (
-                    <a
-                      href={selectedExportHref}
-                      target={exportFormat === "pdf" ? "_blank" : undefined}
-                      rel={exportFormat === "pdf" ? "noreferrer" : undefined}
+                    <button
+                      type="button"
+                      disabled={isDownloading}
+                      onClick={() => void handleDownload(selectedExportHref, exportFormat)}
                       className={`${styles.primaryAction} ${styles.exportPrimaryButton}`}
-                      onClick={closeExportModal}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{selectedExportLabel}</span>
-                    </a>
+                      <span>{isDownloading ? "Preparing…" : selectedExportLabel}</span>
+                    </button>
                   ) : (
                     <button
                       type="button"

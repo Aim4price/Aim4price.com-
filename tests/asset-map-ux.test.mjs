@@ -156,10 +156,10 @@ test("selected overlay keeps the original compact content without a duplicate nu
   assert.match(assetMapClient, /styles\.selectedAssetIdentity/);
   assert.doesNotMatch(assetMapClient, /styles\.selectedAssetNumber/);
   assert.match(assetMapClient, />Serial</);
-  assert.match(assetMapClient, />Last scanned</);
+  assert.match(assetMapClient, />Last updated</);
   assert.match(assetMapClient, />Asset Register</);
   assert.match(assetMapClient, />Maps</);
-  assert.match(assetMapClient, />Download</);
+  assert.match(assetMapClient, /"Download"/);
   assert.doesNotMatch(assetMapClient, />Last known location</);
   assert.doesNotMatch(assetMapClient, /\.slice\(0, 6\)/);
   assert.match(

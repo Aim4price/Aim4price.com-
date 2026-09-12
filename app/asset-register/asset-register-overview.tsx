@@ -447,6 +447,12 @@ export default function AssetRegisterOverview() {
 
   useEffect(() => {
     try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('assetId') || params.has('focusAssetId') || params.has('convertedAssetId')) {
+        setActiveView('assets');
+        window.sessionStorage.setItem(REGISTER_VIEW_STORAGE_KEY, 'assets');
+        return;
+      }
       const storedView = window.sessionStorage.getItem(REGISTER_VIEW_STORAGE_KEY);
       if (storedView === 'overview' || storedView === 'assets') {
         setActiveView(storedView);
