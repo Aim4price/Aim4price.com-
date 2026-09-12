@@ -394,18 +394,25 @@ test('fuel action mirrors the server eligibility contract and hides unknown equi
   assert.doesNotMatch(fuelGate, /kind !== 'property'/);
 });
 
-test('nested marketplace actions close back to Manage', () => {
+test('marketplace closes back to Manage and removal opens the guided outcome flow', () => {
   const marketplaceOpen = client.slice(
     client.indexOf('async function openMarketplaceModal'),
     client.indexOf('function closeMarketplaceModal'),
   );
   const marketplaceRemove = client.slice(
-    client.indexOf('async function handleRemoveFromMarketplace'),
+    client.indexOf('function handleRemoveFromMarketplace'),
     client.indexOf('function clearRevaluePreviewResult'),
   );
 
   assert.doesNotMatch(marketplaceOpen, /closeActionDialog\(\)/);
-  assert.match(marketplaceRemove, /closeMarketplaceModal\(\)/);
+  assert.match(marketplaceRemove, /window\.location\.assign\(`/);
+  assert.match(marketplaceRemove, /\/marketplace\/browse\?listing=\$\{encodeURIComponent\(asset\.id\)\}&manage=1/);
+  const marketplaceClose = client.slice(
+    client.indexOf('function closeMarketplaceModal'),
+    client.indexOf('async function ensureAccountProfile'),
+  );
+  assert.match(marketplaceClose, /setMarketplaceAsset\(null\)/);
+  assert.doesNotMatch(marketplaceClose, /closeActionDialog\(\)/);
   assert.doesNotMatch(marketplaceRemove, /closeActionDialog\(\)/);
   assert.match(client, /marketplaceAsset && marketplaceDraft[\s\S]*?styles\.subModalOverlay/);
   assert.match(client, /Remove listing/);

@@ -49,7 +49,7 @@ const uploadWizard = slice(
   "{showAssetPicker ?",
 );
 
-test("all five requested wizards use the shared umbrella modal shell", () => {
+test("all five wizards retain shared structure with their approved close controls", () => {
   assert.match(
     invoices,
     /import wizardStyles from '\.\.\/\.\.\/components\/AimWizardModal\.module\.css'/,
@@ -69,7 +69,13 @@ test("all five requested wizards use the shared umbrella modal shell", () => {
     assert.match(wizard, /wizardStyles\.overlay/);
     assert.match(wizard, /wizardStyles\.dialog/);
     assert.match(wizard, /wizardStyles\.header/);
-    assert.match(wizard, /wizardStyles\.closeButton/);
+    if (wizard === recurringWizard) {
+      assert.match(wizard, /wizardStyles\.closeButton/);
+    } else {
+      assert.match(wizard, /accountStyles\.modalCloseButton/);
+      assert.match(wizard, /accountStyles\.passwordModalCloseButton/);
+    }
+    assert.match(wizard, /onClick=\{close[^}]*\}[^>]*aria-label="Close/);
     assert.match(wizard, /wizardStyles\.body/);
     assert.match(wizard, /wizardStyles\.progress/);
     assert.match(wizard, /wizardStyles\.panel/);
