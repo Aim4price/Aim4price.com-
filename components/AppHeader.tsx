@@ -756,6 +756,8 @@ export default function AppHeader({
     ? String(searchParams.get('registerId') ?? '').trim() || null
     : null;
   const accountMenuRef = useRef<HTMLDivElement | null>(null);
+
+
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationDialogRef = useRef<HTMLElement | null>(null);
 
@@ -768,6 +770,32 @@ export default function AppHeader({
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const menu = accountMenuRef.current;
+    const label = menu?.querySelector<HTMLElement>(`.${styles.accountButtonText}`);
+    if (!menu || !label) return;
+    const alignToManageLabel = () => {
+      const menuBox = menu.getBoundingClientRect();
+      const labelBox = label.getBoundingClientRect();
+      if (!menuBox.width) return;
+      // Convert rendered coordinates back to the header's logical canvas units.
+      const centre = (labelBox.left + labelBox.width / 2 - menuBox.left)
+        * menu.offsetWidth / menuBox.width;
+      menu.style.setProperty('--account-menu-anchor-x', `${centre}px`);
+    };
+    alignToManageLabel();
+    const observer = new ResizeObserver(alignToManageLabel);
+    observer.observe(menu);
+    observer.observe(label);
+    window.addEventListener('resize', alignToManageLabel);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', alignToManageLabel);
+      menu.style.removeProperty('--account-menu-anchor-x');
+    };
+  }, [menuOpen]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
