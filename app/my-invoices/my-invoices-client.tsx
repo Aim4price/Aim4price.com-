@@ -4067,19 +4067,7 @@ export default function MyInvoicesClient({
             </div>
 
             <div ref={invoiceDropWizardBodyRef} className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
-              <p className={wizardStyles.intro}>Your assets stay private.</p>
-              <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={`Step ${invoiceDropWizardStep} of 3`}>
-                {([['Access', 1], ['Routing', 2], ['Code', 3]] as const).map(([label, step]) => (
-                  <li
-                    key={label}
-                    className={`${styles.invoiceDropWizardProgressItem} ${wizardStyles.progressItem} ${invoiceDropWizardStep === step ? `${styles.invoiceDropWizardProgressItemActive} ${wizardStyles.progressItemCurrent}` : ''} ${invoiceDropWizardStep > step ? `${styles.invoiceDropWizardProgressItemComplete} ${wizardStyles.progressItemComplete}` : ''}`}
-                    aria-current={invoiceDropWizardStep === step ? 'step' : undefined}
-                  >
-                    <span aria-hidden="true">{invoiceDropWizardStep > step ? '✓' : step}</span>
-                    <strong>{label}</strong>
-                  </li>
-                ))}
-              </ol>
+
 
               {invoiceDropWizardStep === 1 ? (
                 <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-scope-title">

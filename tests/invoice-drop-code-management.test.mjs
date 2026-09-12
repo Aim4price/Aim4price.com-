@@ -61,7 +61,7 @@ test('Cost Ledger exposes a gated three-step code wizard only in the direct owne
   assert.match(ledger, /<span>Invoice Drop<\/span>/);
   assert.match(ledger, /type InvoiceDropWizardStep = 1 \| 2 \| 3/);
   assert.match(ledger, /useState<InvoiceDropWizardStep>\(1\)/);
-  assert.match(ledger, /\[\['Access', 1\], \['Routing', 2\], \['Code', 3\]\]/);
+  assert.doesNotMatch(ledger, /\[\['Access', 1\], \['Routing', 2\], \['Code', 3\]\]/);
   assert.match(ledger, /invoiceDropWizardStep === 1[\s\S]*?Where should invoices go\?/);
   assert.match(ledger, /Invoice uploads only\. No asset access\./);
   assert.match(ledger, /<strong>All assets<\/strong>/);
@@ -72,7 +72,7 @@ test('Cost Ledger exposes a gated three-step code wizard only in the direct owne
   assert.match(ledger, /invoiceDropWizardStep === 3[\s\S]*?Create your code/);
   assert.match(ledger, /invoiceDropWizardStep !== 3/);
   assert.match(ledger, /setInvoiceDropCodeLoading\(true\);[\s\S]*?setInvoiceDropWizardStep\(3\)/);
-  assert.match(ledger, /Your assets stay private\./);
+  assert.doesNotMatch(ledger, /Your assets stay private\./);
   assert.match(ledger, /no asset list is shown/i);
   assert.match(ledger, /disabled=\{invoiceDropWizardStep === 1 \? !invoiceDropScope : invoiceDropScope === 'asset' && !invoiceDropAssetId\}/);
   assert.match(ledger, /const invoiceDropTargetKey = invoiceDropScope === 'all'[\s\S]*?\? 'all'[\s\S]*?: invoiceDropScope === 'asset'[\s\S]*?\? invoiceDropAssetId[\s\S]*?: ''/);
