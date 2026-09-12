@@ -1066,6 +1066,7 @@ export default function MyInvoicesClient({
   const [budgetManagerNotice, setBudgetManagerNotice] = useState<Notice | null>(null);
   const [budgetManagerSearch, setBudgetManagerSearch] = useState('');
   const [budgetManagerOpen, setBudgetManagerOpen] = useState(false);
+  const [budgetManagerView, setBudgetManagerView] = useState<'choice' | 'list'>('choice');
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const [budgetAssetPickerOpen, setBudgetAssetPickerOpen] = useState(false);
   const [budgetAssetSearch, setBudgetAssetSearch] = useState('');
@@ -1188,6 +1189,7 @@ export default function MyInvoicesClient({
     setBudgetManagerNotice(null);
     setBudgetManagerSearch('');
     setBudgetManagerOpen(true);
+    setBudgetManagerView('list');
     setFocusedBudgetId(budget.id);
     setActiveFilters(filters);
     setDraftFilters(filters);
@@ -1658,7 +1660,7 @@ export default function MyInvoicesClient({
       window.cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [budgetDeleteCandidate, budgetManagerOpen, budgetModalOpen]);
+  }, [budgetDeleteCandidate, budgetManagerOpen, budgetManagerView, budgetModalOpen]);
 
   useEffect(() => {
     if (!budgetModalOpen || budgetAssetPickerOpen) return undefined;
@@ -1998,6 +2000,7 @@ export default function MyInvoicesClient({
   }
 
   function openBudgetManager() {
+    setBudgetManagerView('choice');
     budgetManagerReturnFocusRef.current = '';
     setBudgetManagerNotice(null);
     setBudgetManagerSearch('');
@@ -2224,6 +2227,7 @@ export default function MyInvoicesClient({
             ? 'Spending budget created.'
             : `${assetIdsToSave.length} spending budgets created.`,
       };
+      setBudgetManagerView('list');
       setBudgetManagerNotice(successNotice);
       setNotice(successNotice);
       dispatchCostLedgerUpdated();
@@ -2282,6 +2286,7 @@ export default function MyInvoicesClient({
       setEditingBudgetId(null);
       budgetManagerReturnFocusRef.current = 'add';
       const successNotice: Notice = { tone: 'success', message: 'Spending budget deleted.' };
+      setBudgetManagerView('list');
       setBudgetManagerNotice(successNotice);
       setNotice(successNotice);
       dispatchCostLedgerUpdated();
@@ -3495,7 +3500,7 @@ export default function MyInvoicesClient({
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay>
           <div
             ref={budgetManagerDialogRef}
-            className={`${styles.formModal} ${styles.budgetManagerModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`}
+            className={`${styles.formModal} ${styles.budgetManagerModal} ${budgetManagerView === 'choice' ? styles.costChoiceModal : ''} ${styles.accountCostModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="budget-manager-title"
@@ -3504,13 +3509,35 @@ export default function MyInvoicesClient({
           >
             <div className={styles.modalHeader}>
               <div>
-                <h2 id="budget-manager-title">Spending budgets</h2>
-                <p>Set spending limits and get alerts.</p>
+                <h2 id="budget-manager-title">{budgetManagerView === 'choice' ? 'Spending budgets' : 'Manage budgets'}</h2>
+                <p>{budgetManagerView === 'choice' ? 'Choose what you would like to do.' : 'View spending, edit limits and manage alerts.'}</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeBudgetManager} aria-label="Close spending budgets" data-budget-manager-close><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
 
+            {budgetManagerView === 'choice' ? (
+              <div className={styles.sourceChoiceGrid}>
+                <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption}`} onClick={openCreateBudget} disabled={budgetsLoading || Boolean(budgetLoadError)} data-budget-trigger="add">
+                  <span className={styles.choiceGraphic} aria-hidden="true"><span className={styles.plusMark}>+</span></span>
+                  <span className={styles.choiceTitleBlock}>
+                    <strong>Add budget</strong>
+                    <small>Set a spending limit for your assets.</small>
+                  </span>
+                  <span className={styles.costChoiceArrow} aria-hidden="true"><ChevronRightIcon /></span>
+                </button>
+                <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption}`} onClick={() => setBudgetManagerView('list')} data-budget-trigger="manage">
+                  <span className={styles.choiceGraphic} aria-hidden="true"><ManualInvoiceIcon /></span>
+                  <span className={styles.choiceTitleBlock}>
+                    <strong>Manage budgets</strong>
+                    <small>View spending and edit or remove budgets.</small>
+                  </span>
+                  <span className={styles.costChoiceArrow} aria-hidden="true"><ChevronRightIcon /></span>
+                </button>
+                {budgetsLoading ? <p role="status">Loading budgets...</p> : null}
+                {budgetLoadError ? <p role="alert">Budgets could not be loaded. Open Manage budgets to try again.</p> : null}
+              </div>
+            ) : (
             <div className={`${styles.formModalScrollBody} ${styles.budgetManagerBody}`}>
               <section className={`${styles.budgetSection} ${styles.budgetManagerSection}`} aria-label="Spending budget overview">
                 <div className={styles.budgetManagerToolbar}>
@@ -3525,10 +3552,6 @@ export default function MyInvoicesClient({
                             : `${costBudgets.length.toLocaleString('en-ZA')} ${costBudgets.length === 1 ? 'budget' : 'budgets'}`}
                     </strong>
                   </div>
-                  <button type="button" className={styles.primaryButton} onClick={openCreateBudget} disabled={budgetsLoading} data-budget-trigger="add">
-                    <span className={styles.plusMark} aria-hidden="true">+</span>
-                    Add budget
-                  </button>
                 </div>
 
                 {budgetManagerNotice ? (
@@ -3581,7 +3604,7 @@ export default function MyInvoicesClient({
                 {!budgetsLoading && !budgetLoadError && !costBudgets.length ? (
                   <div className={styles.budgetEmpty}>
                     <strong>No budgets yet.</strong>
-                    <span>Add one to start tracking spending.</span>
+                    <span>Choose Add budget from Spending budgets to get started.</span>
                   </div>
                 ) : null}
 
@@ -3677,8 +3700,15 @@ export default function MyInvoicesClient({
               </section>
             </div>
 
+            )}
             <div className={`${styles.modalFooter} ${styles.budgetManagerFooter}`}>
-              <button type="button" className={styles.secondaryButton} onClick={closeBudgetManager}>Done</button>
+              {budgetManagerView === 'list' ? (
+                <button type="button" className={styles.secondaryButton} onClick={() => {
+                  budgetManagerReturnFocusRef.current = 'manage';
+                  setBudgetManagerView('choice');
+                }}>Back</button>
+              ) : null}
+              <button type="button" className={styles.secondaryButton} onClick={closeBudgetManager}>{budgetManagerView === 'choice' ? 'Cancel' : 'Done'}</button>
             </div>
           </div>
         </div>
