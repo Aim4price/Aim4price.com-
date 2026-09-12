@@ -15,6 +15,7 @@ import Link from "next/link";
 import { downloadAssetMapReport } from "../../lib/asset-map-download";
 import AppHeader from "../../components/AppHeader";
 import styles from "./page.module.css";
+import accountStyles from "../account/page.module.css";
 
 type NoticeTone = "error";
 type BasemapMode = "road" | "satellite";
@@ -2137,13 +2138,13 @@ export default function AssetMapClient() {
 
       {isExportModalOpen ? (
         <div
-          className={styles.modalBackdrop} data-website-overlay
+          className={`${styles.modalBackdrop} ${styles.accountExportBackdrop}`} data-website-overlay
           role="presentation"
           onMouseDown={closeExportModal}
         >
           <section
             ref={exportModalRef}
-            className={styles.exportModal}
+            className={`${styles.exportModal} ${styles.accountExportModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-map-export-title"
@@ -2156,11 +2157,11 @@ export default function AssetMapClient() {
               </div>
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeExportModal}
                 aria-label="Close download options"
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">×</span>
               </button>
             </header>
 
@@ -2335,4 +2336,3 @@ export default function AssetMapClient() {
     </main>
   );
 }
-

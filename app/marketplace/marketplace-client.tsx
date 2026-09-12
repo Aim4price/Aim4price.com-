@@ -21,6 +21,7 @@ import MarketplaceFilterSelect from './marketplace-filter-select';
 import MarketplaceOutcomeModal from '../../components/MarketplaceOutcomeModal';
 import MarketplaceWhatsAppAction from '../../components/MarketplaceWhatsAppAction';
 import styles from './page.module.css';
+import accountStyles from '../account/page.module.css';
 import native_dealerStyles from '../dealer/dealer.module.css';
 import {
   FALLBACK_MARKETPLACE_IMAGE,
@@ -3855,25 +3856,24 @@ export default function MarketplaceClient({
       ) : null}
 
       {manageListingTarget ? (
-        <div className={styles.marketplaceManageBackdrop} data-website-overlay onClick={closeManageListingModal}>
+        <div className={`${styles.marketplaceManageBackdrop} ${styles.accountManageBackdrop}`} data-website-overlay onClick={closeManageListingModal}>
           <div
-            className={styles.marketplaceManageModal}
+            className={`${styles.marketplaceManageModal} ${styles.accountManageModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="marketplace-manage-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              className={styles.marketplaceManageCloseButton}
-              onClick={closeManageListingModal}
-              aria-label="Close marketplace listing manager"
-            >
-              <IconClose />
-            </button>
-
             <div className={styles.marketplaceManageHeader}>
               <h3 id="marketplace-manage-title">Manage advert</h3>
+              <button
+                type="button"
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
+                onClick={closeManageListingModal}
+                aria-label="Close marketplace listing manager"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
             </div>
 
             <div className={styles.marketplaceManageSummary}>
@@ -4071,6 +4071,4 @@ export default function MarketplaceClient({
     </main>
   );
 }
-
-
 
