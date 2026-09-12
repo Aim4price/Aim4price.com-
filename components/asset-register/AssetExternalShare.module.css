@@ -772,3 +772,115 @@
   }
 }
 
+
+/* Opt-in Account styling for the Register Share dialogs. */
+.accountShareTheme .destinationGrid {
+  gap: 0.85rem;
+}
+
+.accountShareTheme .destinationCard {
+  min-height: 10rem;
+  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1rem;
+}
+
+.accountShareTheme .destinationIcon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.9rem;
+}
+
+.accountShareTheme .destinationIcon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.accountShareTheme .destinationCopy strong,
+.accountShareTheme .attachmentsHeader h4 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: normal;
+}
+
+.accountShareTheme .destinationCopy small,
+.accountShareTheme .attachmentCopy small {
+  color: #64746a;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.accountShareTheme .shareContext {
+  flex-wrap: wrap;
+}
+
+.accountShareTheme .shareContext > small {
+  white-space: normal;
+}
+
+.accountShareTheme .shareLayout {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.accountShareTheme .messageCard,
+.accountShareTheme .attachmentsCard {
+  padding: 1rem;
+  border-radius: 1rem;
+}
+
+.accountShareTheme .messagePreview {
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.accountShareTheme .photoToggle > input {
+  min-height: 0 !important;
+}
+
+.accountShareTheme .photoToggle > span {
+  letter-spacing: normal;
+}
+
+.accountShareTheme .sendFooter {
+  position: sticky;
+  bottom: calc(-1 * var(--entry-padding));
+  z-index: 2;
+  margin: 0 calc(-1 * var(--entry-padding-right)) calc(-1 * var(--entry-padding)) calc(-1 * var(--entry-padding));
+  padding: 1rem var(--entry-padding-right) 1.6rem var(--entry-padding);
+  border: 0;
+  border-top: 1px solid rgba(18, 45, 37, 0.11);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 -8px 20px rgba(18, 45, 37, 0.035);
+}
+
+.accountShareTheme .sendButton {
+  min-height: 3rem;
+  border-radius: 1rem;
+  font: inherit;
+  font-weight: 700;
+}
+
+.accountShareTheme .emailButton {
+  color: #17362c;
+  border-color: #d8e1ea;
+  background: #f2f5f8;
+}
+
+.accountShareTheme .whatsappButton {
+  background: linear-gradient(180deg, #1a5a45, #124233);
+  border-color: rgba(18, 66, 51, 0.2);
+}
+
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountShareTheme .shareLayout,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountShareTheme .destinationGrid {
+    grid-template-columns: 1fr;
+  }
+}
