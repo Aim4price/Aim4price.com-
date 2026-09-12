@@ -445,6 +445,13 @@ function ReportFileIcon(props: SVGProps<SVGSVGElement>) {
 }
 
 
+function CostExportGraphic({ src }: { src: string }) {
+  const [hasError, setHasError] = useState(false);
+  return hasError
+    ? <ReportFileIcon className={styles.costExportImage} />
+    : <img src={src} alt="" className={styles.costExportImage} onError={() => setHasError(true)} />;
+}
+
 function LedgerIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -4926,17 +4933,16 @@ export default function MyInvoicesClient({
                         ? 'Choose report timeline'
                         : 'External fuel costs'}
                 </h2>
-                <p>
-                  {downloadStep === 'format'
-                    ? 'Choose a file format to begin.'
-                    : downloadStep === 'timeline'
-                        ? 'Select the year and optional month to include.'
-                        : 'Choose whether Fuel Slip records should be included.'}
-                </p>
+                {downloadStep !== 'format' ? (
+                  <p>{downloadStep === 'timeline'
+                    ? 'Select the year and optional month to include.'
+                    : 'Choose whether Fuel Slip records should be included.'}</p>
+                ) : null}
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeDownloadModal} aria-label="Close download"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.costDownloadBody}>
+            {downloadStep !== 'format' ? (
             <ol className={styles.downloadStageRail} aria-label="Cost ledger download progress">
               {downloadSteps.map((step, index) => {
                 const activeIndex = downloadSteps.findIndex((item) => item.key === downloadStep);
@@ -4955,6 +4961,7 @@ export default function MyInvoicesClient({
                 );
               })}
             </ol>
+            ) : null}
             {downloadStep === 'format' ? (
               <div className={styles.downloadStageContent}>
                 <div className={`${styles.reportChoiceGrid} ${styles.downloadFormatGrid}`}>
@@ -4964,13 +4971,12 @@ export default function MyInvoicesClient({
                     onClick={() => chooseDownloadFormat('pdf')}
                     aria-pressed={downloadFormat === 'pdf'}
                   >
-                    <span className={`${styles.reportGraphic} ${styles.reportFileGraphic} ${styles.pdfReportGraphic}`} aria-hidden="true">
-                      <ReportFileIcon />
-                      <span className={styles.reportFormatBadge}>PDF</span>
+                    <span className={styles.reportGraphic} aria-hidden="true">
+                      <CostExportGraphic src="/brand/pdf.png" />
                     </span>
                     <span className={styles.reportTitleBlock}>
                       <strong>PDF report</strong>
-                      <small>A clear report for clients, banks or insurers.</small>
+                      <small>Download a clean printable Cost Ledger report.</small>
                     </span>
                   </button>
                   <button
@@ -4979,19 +4985,19 @@ export default function MyInvoicesClient({
                     onClick={() => chooseDownloadFormat('xlsx')}
                     aria-pressed={downloadFormat === 'xlsx'}
                   >
-                    <span className={`${styles.reportGraphic} ${styles.reportFileGraphic} ${styles.xlsxReportGraphic}`} aria-hidden="true">
-                      <ReportFileIcon />
-                      <span className={styles.reportFormatBadge}>XLSX</span>
+                    <span className={styles.reportGraphic} aria-hidden="true">
+                      <CostExportGraphic src="/brand/sheet.png" />
                     </span>
                     <span className={styles.reportTitleBlock}>
                       <strong>XLSX workbook</strong>
-                      <small>All report rows in an editable workbook.</small>
+                      <small>Download the filtered cost ledger rows in Excel format.</small>
                     </span>
                   </button>
                 </div>
                 <div className={`${styles.modalFooter} ${styles.downloadModalFooter} ${styles.downloadFormatFooter}`}>
                   <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
                   <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showNextStepAfterFormat}>
+                    <ChevronRightIcon className={styles.buttonIcon} />
                     <span>Next</span>
                   </button>
                 </div>
@@ -5626,4 +5632,3 @@ export default function MyInvoicesClient({
     </main>
   );
 }
-
