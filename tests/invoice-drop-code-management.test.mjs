@@ -80,8 +80,8 @@ test('Cost Ledger exposes a gated three-step code wizard only in the direct owne
 });
 
 test('Invoice Drop code wizard stays focused and responsive', () => {
-  assert.match(invoiceDropWizard, /<div className=\{wizardStyles\.overlay\} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">/);
-  assert.match(invoiceDropWizard, /className=\{`\$\{styles\.invoiceDropCodeModal\} \$\{wizardStyles\.dialog\} \$\{wizardStyles\.wideDialog\}`\}/);
+  assert.match(invoiceDropWizard, /<div className=\{`\$\{wizardStyles\.overlay\} \$\{styles\.accountCostBackdrop\}`\} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">/);
+  assert.match(invoiceDropWizard, /className=\{`\$\{styles\.invoiceDropCodeModal\} \$\{wizardStyles\.dialog\} \$\{styles\.accountCostModal\} \$\{accountStyles\.modalTheme\}`\}/);
   assert.doesNotMatch(invoiceDropWizard, /styles\.downloadModal[^\n]*styles\.invoiceDropCodeModal/);
   assert.match(wizardStyles, /\.overlay\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\);[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\);/);
   assert.match(wizardStyles, /\.dialog\s*\{[\s\S]*?width:\s*min\(1120px, var\(--website-dialog-reference-width, 100%\)\) !important/);
@@ -89,7 +89,7 @@ test('Invoice Drop code wizard stays focused and responsive', () => {
   assert.match(ledgerStyles, /\.invoiceDropWizardProgress \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(ledgerStyles, /\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(ledgerStyles, /@media \(max-width: 720px\)[\s\S]*?\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: 1fr/);
-  assert.match(ledgerStyles, /\.invoiceDropCodeHeader \.closeButton,[\s\S]*?border-radius: 999px/);
+  assert.match(invoiceDropWizard, /accountStyles\.passwordModalCloseButton/);
   assert.match(ledgerStyles, /\.invoiceDropCodeCreateState \.primaryButton \{[\s\S]*?grid-column: 2/);
 });
 

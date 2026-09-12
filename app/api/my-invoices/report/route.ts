@@ -7,10 +7,6 @@ import {
   buildMyInvoicesReportHtml,
   buildMyInvoicesWorkbook,
 } from '../../../../lib/my-invoices-report';
-import {
-  buildCostLedgerAccountingCsv,
-  getCostLedgerAccountingSettings,
-} from '../../../../lib/my-invoices-accounting';
 import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
@@ -22,7 +18,7 @@ import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type ReportFormat = 'pdf' | 'xlsx' | 'csv' | 'html';
+type ReportFormat = 'pdf' | 'xlsx' | 'html';
 
 const MONTH_LABELS = [
   'January',
@@ -57,7 +53,7 @@ function parseMonth(value: string | null): number | null {
 
 function parseFormat(value: string | null): ReportFormat {
   const format = String(value ?? '').toLowerCase();
-  if (format === 'xlsx' || format === 'csv' || format === 'html') return format;
+  if (format === 'xlsx' || format === 'html') return format;
   return 'pdf';
 }
 
@@ -127,6 +123,10 @@ export async function GET(request: NextRequest) {
   const workspace = resolved.context;
 
   try {
+    const rawFormat = request.nextUrl.searchParams.get('format');
+    if (rawFormat && !['pdf', 'xlsx', 'html'].includes(rawFormat.toLowerCase())) {
+      return NextResponse.json({ ok: false, error: 'Unsupported report format. Choose PDF or XLSX.' }, { status: 400 });
+    }
     const filters = parseFilters(request);
     const groupId = String(request.nextUrl.searchParams.get('groupId') ?? '').trim();
     const dealerAccessId = String(request.nextUrl.searchParams.get('accessId') ?? '').trim();
@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
     const requestedFormat = parseFormat(request.nextUrl.searchParams.get('format'));
     // Owner App users may open the canonical HTML print document or download
-    // the workbook. CSV remains private to the full workspace.
+    // the workbook.
     const format = ownerAppMode && requestedFormat !== 'xlsx' && requestedFormat !== 'html'
       ? 'pdf'
       : requestedFormat;
@@ -234,40 +234,6 @@ export async function GET(request: NextRequest) {
       : ownerAppMode
         ? `${slugify(options.assetLabel)}-cost-of-ownership.${extension}`
         : `${slugify(options.title)}.${extension}`;
-
-    if (format === 'csv') {
-      const settings = await getCostLedgerAccountingSettings(reportOwnerUserId);
-      const accountingExport = buildCostLedgerAccountingCsv(
-        data.invoices,
-        settings,
-        request.nextUrl.searchParams.get('accountingSoftware'),
-      );
-
-      if (!settings.configured || accountingExport.issues.length) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: !settings.configured
-              ? 'Complete Accounting CSV Settings before downloading this file.'
-              : 'Some cost records need attention before the accounting CSV can be downloaded.',
-            issues: accountingExport.issues,
-            configured: settings.configured,
-            software: accountingExport.software,
-            softwareLabel: accountingExport.softwareLabel,
-          },
-          { status: 422 },
-        );
-      }
-
-      return new NextResponse(accountingExport.csv, {
-        status: 200,
-        headers: {
-          'Content-Type': 'text/csv; charset=utf-8',
-          'Content-Disposition': `attachment; filename="${formatForHeader(filename)}"`,
-          'Cache-Control': 'no-store',
-        },
-      });
-    }
 
     if (format === 'xlsx') {
       const workbook = buildMyInvoicesWorkbook(options);
