@@ -22,6 +22,7 @@ export type MyInvoiceAssetOption = {
   condition: string;
   value: number;
   selectedMethod: string;
+  serialNumber?: string;
   meta: string;
 };
 
@@ -547,6 +548,7 @@ export function mapMyInvoiceAssetOption(asset: AssetRegisterItem): MyInvoiceAsse
     condition: assetConditionLabel(asset.condition),
     value: Math.round(asset.selectedValueExVat || asset.value || 0),
     selectedMethod: asset.selectedMethod,
+    serialNumber: asset.serialNumber || '',
     meta: buildAssetMeta(asset),
   };
 }

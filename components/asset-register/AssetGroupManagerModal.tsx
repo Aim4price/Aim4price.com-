@@ -12,6 +12,7 @@ import {
 } from '../../lib/asset-groups-shared';
 import registerStyles from '../../app/asset-register/page.module.css';
 import styles from './AssetGroupManagerModal.module.css';
+import AssetSerialNumber from '../AssetSerialNumber';
 import accountStyles from '../../app/account/page.module.css';
 
 type IconProps = { className?: string };
@@ -790,7 +791,7 @@ export default function AssetGroupManagerModal({
   const isAttachingReport = reportDeliveryMode === 'attach';
 
   return (
-    <div className={`${useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} ${group ? styles.accountBackdrop : ''}`} data-website-overlay role="presentation" onMouseDown={(event) => {
+    <div className={`${useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} ${group || view === 'create' ? styles.accountBackdrop : ''}`} data-website-overlay role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !busy && !reportBusy) onClose();
     }}>
       {useSharedAssetModalDesign ? (
@@ -799,7 +800,7 @@ export default function AssetGroupManagerModal({
         }} />
       ) : null}
       <section
-        className={`${group ? `${styles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${view === 'members' ? styles.accountEditorModal : view === 'reports' ? styles.accountReportsModal : ''}` : ''} ${useManageModalDesign
+        className={`${(group || view === 'create') ? `${styles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${view === 'members' || view === 'create' ? styles.accountEditorModal : view === 'reports' ? styles.accountReportsModal : ''}` : ''} ${useManageModalDesign
           ? `${registerStyles.optionsModal} ${styles.manageModal}`
           : useReportModalDesign
             ? `${registerStyles.modalCard} ${registerStyles.assetReportModal}`
@@ -1108,18 +1109,18 @@ export default function AssetGroupManagerModal({
                                 : `Add ${asset.title} to umbrella`}
                               onChange={() => toggleAsset(asset)}
                             />
-                            <span className={styles.assetCheckbox} aria-hidden="true" />
                             <span className={styles.assetCopy} data-asset-choice-copy="true">
                               <strong>{asset.title}</strong>
                               <span className={styles.assetDetailLine} data-asset-choice-meta="true">{assetDetailLine(asset)}</span>
                               <small data-asset-choice-secondary="true">{assetSourceLine(asset, combinedMode)}</small>
+                              <AssetSerialNumber value={asset.serialNumber} />
                               {movingFromAnotherGroup ? (
                                 <small className={styles.assetMoveNotice}>Currently in {existingGroup?.name} — select to move</small>
                               ) : null}
                             </span>
                             <span className={styles.assetValue} data-asset-choice-value="true">
-                              <strong>{money(asset.value)}</strong>
-                              <small>current value</small>
+                              <span className={styles.assetCheckbox} aria-hidden="true" />
+                              <strong>{lockedAnchor ? 'Included' : selected ? 'Selected' : 'Select'}</strong>
                             </span>
                           </label>
 

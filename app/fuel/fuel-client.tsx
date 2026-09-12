@@ -1,5 +1,8 @@
 'use client';
 
+import pickerStyles from '../../components/AssetPicker.module.css';
+import AssetSerialNumber from '../../components/AssetSerialNumber';
+
 import DocumentFileLink from '../../components/DocumentFileLink';
 
 import QrCodePreview from '../../components/QrCodePreview';
@@ -3850,7 +3853,7 @@ export default function FuelClient({
 
       {modalMode === 'exclusions' ? (
         <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
-          <div className={`${styles.assetModal} ${styles.exclusionsModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+          <div className={`${styles.assetModal} ${styles.exclusionsModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${!isExclusionEditorOpen ? pickerStyles.modal : ''}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>
@@ -3951,6 +3954,7 @@ export default function FuelClient({
                           <strong>{asset.title}</strong>
                           <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
                           <small data-asset-choice-secondary="true">{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries currently count as work use'}</small>
+                          <AssetSerialNumber value={asset.serialNumber} />
                         </span>
                         <span className={styles.assetValue} data-asset-choice-value="true">
                           <span className={`${styles.exclusionChoice} ${isSelected ? styles.exclusionChoiceSelected : ''}`}>
@@ -4686,7 +4690,7 @@ export default function FuelClient({
 
       {modalMode === 'fuel-slip' && (fuelSlipFlow === 'target-manual' || fuelSlipFlow === 'target-automatic') ? (
         <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label={fuelSlipTargetPickerTitle}>
-          <div className={`${styles.assetModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+          <div className={`${styles.assetModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${pickerStyles.modal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>{fuelSlipTargetPickerTitle}</h2>
@@ -4695,12 +4699,6 @@ export default function FuelClient({
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
-            <section className={styles.accountAssetPickerPanel}>
-              <div className={styles.accountAssetPickerHeading}>
-                <span className={styles.accountAssetPickerIcon} aria-hidden="true"><FuelSlipsIcon /></span>
-                <div><h3>Choose an asset or storage tank</h3><p>Select the record this fuel slip belongs to.</p></div>
-                <span className={styles.accountAssetPickerCount}>{filteredFuelSlipAssets.length + filteredFuelSlipStorages.length} available</span>
-              </div>
             <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
               <input
                 value={fuelSlipPickerSearch}
@@ -4723,15 +4721,14 @@ export default function FuelClient({
                       data-asset-choice-row="true"
                       onClick={() => selectFuelSlipTarget(`asset:${asset.id}`)}
                     >
-                      <span className={styles.accountAssetChoiceMark} aria-hidden="true"><ChevronRightIcon /></span>
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{asset.title}</strong>
                         <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
                         <small data-asset-choice-secondary="true">{fuelSlipAssetDetail(asset)}</small>
+                        <AssetSerialNumber value={asset.serialNumber} />
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
-                        <strong>{formatCurrency(asset.currentValue)}</strong>
-                        <small>current value</small>
+                        <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>
                       </span>
                     </button>
                   ))}
@@ -4743,22 +4740,19 @@ export default function FuelClient({
                       data-asset-choice-row="true"
                       onClick={() => selectFuelSlipTarget(`storage_tank:${storage.id}`)}
                     >
-                      <span className={styles.accountAssetChoiceMark} aria-hidden="true"><ChevronRightIcon /></span>
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{storage.name}</strong>
                         <small data-asset-choice-meta="true">{fuelSlipStorageMeta(storage)}</small>
                         <small data-asset-choice-secondary="true">Storage tank{storage.locationLabel ? ` · ${storage.locationLabel}` : ''}</small>
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
-                        <strong>{formatLitres(storage.currentLitres)}</strong>
-                        <small>available</small>
+                        <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>
                       </span>
                     </button>
                   ))}
                 </>
               ) : <div className={styles.emptyState}>No matching assets or storage tanks found.</div>}
             </div>
-            </section>
             <div className={styles.modalFooter} data-asset-choice-footer="true">
               <button type="button" className={styles.secondaryButton} onClick={() => closeFuelSlipFlow()}>Cancel</button>
             </div>

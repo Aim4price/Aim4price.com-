@@ -1613,5 +1613,25 @@
 
 /* Give report cards enough width for their complete titles and descriptions. */
 .accountModal.accountReportsModal {
-  width: min(var(--website-dialog-reference-width, 100%), 72rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 72rem) !important;
 }
+
+/* The umbrella chooser uses the same stacked asset rows as the Cost picker. */
+.accountModal.accountEditorModal { width:min(var(--website-dialog-reference-width,100%),calc(var(--website-visible-width,100vw) - 3rem),72rem) !important; }
+.accountModal.accountModal .assetSection {
+ padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important;
+}
+.accountModal.accountModal .assetList { gap:.75rem !important; padding-right:.6rem !important; }
+.accountModal.accountModal .assetRow,
+.accountModal.accountModal .assetRowSelected { padding:1rem !important; border-radius:1rem !important; }
+.accountModal.accountModal .assetRowMain {
+ display:grid !important; grid-template-columns:minmax(0,1fr) auto !important; gap:1rem !important; align-items:center !important;
+}
+.accountModal.accountModal .assetCopy { grid-column:1 !important; gap:.25rem !important; }
+.accountModal.accountModal .assetCopy > strong { font-size:1rem !important; font-weight:800 !important; line-height:1.35 !important; }
+.accountModal.accountModal .assetCopy > small,
+.accountModal.accountModal .assetDetailLine { font-size:.88rem !important; line-height:1.5 !important; color:#64746a !important; overflow-wrap:anywhere; }
+.accountModal.accountModal .assetValue { grid-column:2 !important; display:flex !important; align-items:center !important; gap:.6rem !important; }
+.accountModal.accountModal .assetValue > strong { font-size:.95rem !important; font-weight:800 !important; }
+.accountModal.accountModal .assetCheckbox { position:relative; width:1.6rem !important; height:1.6rem !important; border-radius:.45rem !important; flex-shrink:0; }
+.accountModal.accountModal .assetRowMain:focus-within { outline:3px solid #98cbb7; outline-offset:4px; border-radius:.4rem; }
