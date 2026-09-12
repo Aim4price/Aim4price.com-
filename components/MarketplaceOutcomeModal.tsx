@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { MarketplaceListing } from '../lib/marketplace';
 import styles from './MarketplaceOutcomeModal.module.css';
+import accountStyles from '../app/account/page.module.css';
 
 export type MarketplaceOutcomeReason =
   | 'sold'
@@ -322,14 +323,14 @@ export default function MarketplaceOutcomeModal({
 
   return (
     <div
-      className={styles.backdrop} data-website-overlay
+      className={`${styles.backdrop} ${stage === 'confirm' ? styles.accountConfirmBackdrop : ''}`} data-website-overlay
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) closeModal();
       }}
     >
       <section
         ref={dialogRef}
-        className={`${styles.dialog} ${stage === 'confirm' ? styles.confirmDialog : ''}`}
+        className={`${styles.dialog} ${stage === 'confirm' ? `${styles.confirmDialog} ${styles.accountConfirmDialog} ${accountStyles.modalTheme}` : ''}`}
         role={stage === 'confirm' ? 'alertdialog' : 'dialog'}
         aria-modal="true"
         aria-labelledby={titleId}
@@ -338,18 +339,18 @@ export default function MarketplaceOutcomeModal({
       >
         {stage === 'confirm' ? (
           <div className={styles.confirmContent}>
-            <button
-              type="button"
-              className={`${styles.closeButton} ${styles.confirmCloseButton}`}
-              onClick={closeModal}
-              disabled={submitting}
-              aria-label="Close remove advert dialog"
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="m6 6 12 12M18 6 6 18" />
-              </svg>
-            </button>
-            <h2 id={titleId}>Are you sure you want to remove this?</h2>
+            <header className={styles.accountConfirmHeader}>
+              <h2 id={titleId}>Are you sure you want to remove this?</h2>
+              <button
+                type="button"
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
+                onClick={closeModal}
+                disabled={submitting}
+                aria-label="Close remove advert dialog"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </header>
             <p id={descriptionId}>
               {assetId ? (
                 <>Continue to tell Aim4price what happened to <strong>{listing.title}</strong>. The advert is withdrawn from Marketplace and your showroom; the saved asset and valuation remain available.</>
@@ -571,4 +572,3 @@ export default function MarketplaceOutcomeModal({
     </div>
   );
 }
-

@@ -40462,3 +40462,37 @@ button.documentOpenLink {
   font-weight: 850 !important;
   letter-spacing: 0.045em !important;
 }
+
+/* Manage pricing uses the same account dialog shell as the other asset actions. */
+.managementAccountModal.pricingModal {
+  width: min(var(--website-dialog-reference-width, 100%), 64rem) !important;
+}
+.managementAccountModal .pricingOptionsGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)) !important;
+  gap: 0.85rem !important;
+}
+.managementAccountModal .pricingOptionButton {
+  min-height: 6.25rem !important;
+  padding: 1rem !important;
+  border-radius: 1rem !important;
+  border-color: #d8e1ea !important;
+  background: linear-gradient(180deg, #fff, #f7faf8) !important;
+}
+.managementAccountModal .pricingOptionButton::after { display: none !important; }
+.managementAccountModal .pricingOptionButton strong {
+  color: #12352d !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.managementAccountModal .pricingOptionButton:hover:not(:disabled) {
+  border-color: #a9c8bb !important;
+  background: #edf8f2 !important;
+}
+.managementAccountModal .pricingOptionHint {
+  color: #64746a !important;
+  font-size: 0.88rem !important;
+  line-height: 1.5 !important;
+}

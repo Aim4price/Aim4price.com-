@@ -21283,18 +21283,18 @@ export default function AssetRegisterClient({
       ) : null}
 
       {activeAsset && isPricingModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closePricingDialog} />
 
-          <div className={`${styles.modalCard} ${styles.pricingModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-pricing-title">
+          <div className={`${styles.modalCard} ${styles.pricingModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="asset-pricing-title">
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-pricing-title">{activeAsset.title}</h3>
                 <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={closePricingDialog} aria-label="Close pricing options">
-                <CloseIcon className={styles.buttonIcon} />
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closePricingDialog} aria-label="Close pricing options">
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -22906,5 +22906,4 @@ export default function AssetRegisterClient({
     </main>
   );
 }
-
 
