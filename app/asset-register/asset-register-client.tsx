@@ -16178,11 +16178,11 @@ export default function AssetRegisterClient({
           ) : null}
 
           {isChangeRegisterModalOpen ? (
-            <div className={`${styles.modalOverlay} ${styles.changeRegisterModalOverlay}`} data-website-overlay>
+            <div className={`${styles.modalOverlay} ${styles.changeRegisterModalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
               <div className={styles.modalBackdrop} data-website-overlay onClick={closeChangeRegisterModal} />
 
               <div
-                className={`${styles.modalCard} ${styles.changeRegisterModal}`}
+                className={`${styles.modalCard} ${styles.changeRegisterModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="asset-register-change-title"
@@ -16195,12 +16195,12 @@ export default function AssetRegisterClient({
 
                   <button
                     type="button"
-                    className={styles.modalCloseButton}
+                    className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                     onClick={closeChangeRegisterModal}
                     aria-label="Close change asset register modal"
                     disabled={Boolean(changingRegisterId)}
                   >
-                    <CloseIcon className={styles.buttonIcon} />
+                    ×
                   </button>
                 </div>
 
@@ -16221,7 +16221,7 @@ export default function AssetRegisterClient({
                     href={isAccountantWorkspace && accountantShareId
                       ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
                       : registerManagementHref}
-                    className={`${styles.secondaryButton} ${styles.changeRegisterManageButton}`}
+                    className={`${accountStyles.ghostButton} ${styles.changeRegisterManageButton}`}
                     onClick={closeChangeRegisterModal}
                   >
                     <ManageIcon className={styles.buttonIcon} />
