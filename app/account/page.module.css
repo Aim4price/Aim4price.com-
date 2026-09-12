@@ -4075,3 +4075,36 @@
  border-top:1px solid rgba(18,45,37,.11); background:#fff;
 }
 .notificationModalCard.notificationModalCard .marketplaceActions .ghostButton { background:#f2f5f8 !important; border:1px solid #d2dfea !important; color:#17362c !important; border-radius:1rem !important; }
+
+/* Business details: keep the three steps spread across the available width. */
+.businessDetailsModalCard .accountModalScrollRail {
+  display: none;
+}
+
+.businessDetailsModalCard .accountModalScrollContent {
+  padding-right: clamp(1.35rem, calc(var(--website-design-vw) * 2.2), 2rem) !important;
+}
+
+.businessDetailsModalCard .modalStepProgress {
+  display: flex;
+  width: 100%;
+  gap: 0.8rem;
+}
+
+.businessDetailsModalCard .modalStep {
+  flex: 1 1 0;
+}
+
+.businessDetailsModalCard .modalStep:last-child {
+  flex: 0 1 auto;
+}
+
+.businessDetailsModalCard .modalStep:not(:last-child)::after {
+  position: static;
+  flex: 1 1 1rem;
+  min-width: 0;
+}
+
+.businessDetailsModalCard .modalStep > strong {
+  padding-right: 0;
+}
