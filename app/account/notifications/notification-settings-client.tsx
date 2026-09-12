@@ -29,7 +29,8 @@ export default function DesktopNotificationSettings({ onClose, onSaved, onBusyCh
       onBusyChange(false);onSaved();
     } catch(e) {setError((e as Error).message);} finally {setSaving(false);onBusyChange(false);}
   }
-  return <form className={accountStyles.compactEditForm} aria-busy={loading||saving} onSubmit={event=>{event.preventDefault();void save();}}>
+  return <form className={`${accountStyles.compactEditForm} ${styles.form}`} aria-busy={loading||saving} onSubmit={event=>{event.preventDefault();void save();}}>
+      <div className={styles.options}>
         {loading ? <p role="status">Loading notifications…</p> : categories.length ? <>
           <button className={styles.row} type="button" role="switch" aria-checked={settings.enabled} disabled={saving} onClick={()=>setSettings({...settings,enabled:!settings.enabled})}>
             <span>Phone notifications<small>All app logins on this account</small></span><span className={settings.enabled?styles.on:styles.off}>{settings.enabled?'On':'Off'}</span>
@@ -41,6 +42,7 @@ export default function DesktopNotificationSettings({ onClose, onSaved, onBusyCh
         </> : null}
 
         {error?<div role="alert"><p>{error}</p><button className={styles.retry} type="button" disabled={saving||loading} onClick={()=>void load()}>Try again</button></div>:null}
+      </div>
       <div className={accountStyles.marketplaceActions}>
         <button type="button" className={accountStyles.ghostButton} disabled={saving} onClick={onClose}>Cancel</button>
         <button type="submit" className={accountStyles.primaryButton} disabled={loading||saving||!categories.length}>{saving?'Saving…':'Save notifications'}</button>

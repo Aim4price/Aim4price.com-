@@ -4058,3 +4058,20 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Notifications use the password dialog inset and keep actions outside scrolling. */
+.notificationModalCard.notificationModalCard {
+ width:min(var(--website-dialog-reference-width,100%),calc(var(--website-visible-width,100vw) - 3rem),46rem) !important;
+ max-height:calc(var(--website-visible-height,100dvh) - 3rem) !important;
+ display:flex !important; flex-direction:column !important; padding:0 !important; overflow:hidden !important;
+}
+.notificationModalCard.notificationModalCard .accountModalScrollContent { display:contents !important; }
+.notificationModalCard.notificationModalCard .modalHeader {
+ flex:0 0 auto; margin:2rem 2rem 0 !important; padding:0 3.75rem 1.25rem 0 !important;
+}
+.notificationModalCard.notificationModalCard .modalCloseButton { width:2.75rem; height:2.75rem; min-width:2.75rem; border-radius:.9rem; }
+.notificationModalCard.notificationModalCard .marketplaceActions {
+ flex:0 0 auto; margin:0 !important; padding:1rem 2rem 1.6rem !important;
+ border-top:1px solid rgba(18,45,37,.11); background:#fff;
+}
+.notificationModalCard.notificationModalCard .marketplaceActions .ghostButton { background:#f2f5f8 !important; border:1px solid #d2dfea !important; color:#17362c !important; border-radius:1rem !important; }

@@ -2957,7 +2957,7 @@ export default function AssetRegistersClient({
           aria-labelledby="export-registers-title"
         >
           <section
-            className={`${styles.modalCard} ${styles.exportFlowModal} ${
+            className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.exportFlowModal} ${
               exportStep === "choice" ? styles.exportChoiceModal : ""
             } ${
               exportStep === "format" ? styles.exportFormatModal : ""
@@ -3309,7 +3309,7 @@ export default function AssetRegistersClient({
           aria-modal="true"
           aria-labelledby="manage-register-title"
         >
-          <section className={`${styles.modalCard} ${styles.manageModalCard}`}>
+          <section className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.manageModalCard}`}>
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="manage-register-title">
@@ -3493,7 +3493,7 @@ export default function AssetRegistersClient({
           aria-labelledby="qr-labels-title"
         >
           <section
-            className={`${styles.modalCard} ${styles.qrLabelsModal}`}
+            className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.qrLabelsModal}`}
             data-asset-choice-surface="true"
             data-asset-choice-modal="true"
           >
@@ -3645,7 +3645,7 @@ export default function AssetRegistersClient({
           aria-labelledby="edit-register-title"
         >
           <form
-            className={`${styles.modalCard} ${styles.editDetailsModalCard}`}
+            className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.editDetailsModalCard}`}
             onSubmit={handleUpdateRegister}
           >
             <div className={styles.modalHeader}>
@@ -3756,7 +3756,7 @@ export default function AssetRegistersClient({
           aria-labelledby="add-register-title"
         >
           <form
-            className={`${styles.modalCard} ${styles.createModalCard}`}
+            className={`${styles.modalCard} ${styles.accountRegisterModal} ${styles.createModalCard}`}
             onSubmit={handleCreateRegister}
           >
             <div className={styles.modalHeader}>

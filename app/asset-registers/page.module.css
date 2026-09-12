@@ -4179,3 +4179,82 @@
   }
 }
 
+
+/* Register dialogs share the Change Password typography, spacing and controls. */
+.modalOverlay:has(.accountRegisterModal) { background: rgba(12,24,35,.42) !important; backdrop-filter: blur(12px) saturate(.9) !important; }
+.accountRegisterModal.accountRegisterModal {
+ --register-dialog-padding: clamp(1.25rem,calc(var(--website-design-vw,1vw) * 2.2),2rem);
+ width:min(var(--website-dialog-reference-width,100%),calc(var(--website-visible-width,100vw) - 3rem),46rem) !important;
+ max-height:calc(var(--website-visible-height,100dvh) - 3rem) !important;
+ display:flex !important; flex-direction:column !important; gap:0 !important;
+ padding:0 !important; overflow:hidden !important; border-radius:1.55rem !important;
+ border:1px solid rgba(18,45,37,.12) !important;
+ background:linear-gradient(180deg,#fff,#f7faf8) !important;
+ box-shadow:0 32px 90px rgba(7,25,20,.28),0 8px 24px rgba(7,25,20,.12) !important;
+}
+.accountRegisterModal.manageModalCard,.accountRegisterModal.qrLabelsModal,.accountRegisterModal.exportFormatModal {
+ width:min(var(--website-dialog-reference-width,100%),calc(var(--website-visible-width,100vw) - 3rem),58rem) !important;
+}
+.accountRegisterModal.accountRegisterModal > .modalHeader {
+ flex:0 0 auto !important; display:grid !important; grid-template-columns:minmax(0,1fr) 2.75rem !important;
+ align-items:start !important; gap:1.25rem !important;
+ margin:var(--register-dialog-padding) var(--register-dialog-padding) 0 !important;
+ padding:0 0 1.25rem !important; border-bottom:1px solid rgba(18,45,37,.11) !important; background:transparent !important;
+}
+.accountRegisterModal.accountRegisterModal .modalHeader h2 { margin:0 !important; color:#12352d !important; font-size:2rem !important; line-height:1.15 !important; font-weight:800 !important; letter-spacing:-.04em !important; overflow-wrap:anywhere; }
+.accountRegisterModal.accountRegisterModal .modalHeader p { margin:.4rem 0 0 !important; color:#64746a !important; font-size:.88rem !important; font-weight:650 !important; line-height:1.5 !important; }
+.accountRegisterModal.accountRegisterModal .closeButton {
+ position:static !important; display:grid !important; place-items:center !important; margin:0 !important; padding:0 !important;
+ width:2.75rem !important; min-width:2.75rem !important; height:2.75rem !important; min-height:2.75rem !important;
+ border:1px solid #d4dfd9 !important; border-radius:.9rem !important; background:#f5f9f7 !important;
+ color:#294c3c !important; font-size:1.25rem !important; font-weight:700 !important; line-height:1 !important;
+}
+.accountRegisterModal.accountRegisterModal > :is(.modalBody,.formGrid,.manageModalScrollArea) {
+ flex:1 1 auto !important; min-height:0 !important; min-width:0 !important; margin:0 !important;
+ padding:1.3rem var(--register-dialog-padding) !important; overflow-y:auto !important; overscroll-behavior:contain;
+ background:transparent !important;
+}
+.accountRegisterModal.accountRegisterModal > .modalFooter {
+ flex:0 0 auto !important; display:flex !important; justify-content:flex-end !important; flex-wrap:wrap !important; gap:.65rem !important;
+ margin:0 !important; padding:1rem var(--register-dialog-padding) 1.6rem !important;
+ border-top:1px solid rgba(18,45,37,.11) !important; background:#fff !important;
+}
+.accountRegisterModal.accountRegisterModal .modalFooter > button { flex:0 1 auto !important; width:auto !important; min-width:8.75rem !important; }
+.accountRegisterModal.accountRegisterModal :is(.primaryButton,.secondaryButton,.modalPrimaryButton,.modalCancelButton) {
+ min-height:3rem !important; padding:.75rem 1rem !important; border-radius:1rem !important; font-size:.95rem !important; font-weight:750 !important;
+}
+.accountRegisterModal.accountRegisterModal :is(.primaryButton,.modalPrimaryButton) { background:linear-gradient(180deg,#1a5946,#124635) !important; color:#fff !important; }
+.accountRegisterModal.accountRegisterModal :is(.secondaryButton,.modalCancelButton) { background:#f2f5f8 !important; color:#17362c !important; border:1px solid #d2dfea !important; }
+.accountRegisterModal.accountRegisterModal button:disabled { opacity:.52 !important; }
+.accountRegisterModal.accountRegisterModal :is(.field,.exportNameField) > span { color:#405d51 !important; font-size:.75rem !important; font-weight:800 !important; text-transform:uppercase; }
+.accountRegisterModal.accountRegisterModal :is(.field,.exportNameField) :is(input,textarea) {
+ min-height:3.2rem !important; padding:.9rem !important; border:1px solid #d8e2ec !important; border-radius:.92rem !important;
+ background:#fff !important; color:#17362c !important; font-size:1rem !important; font-weight:400 !important; box-shadow:none !important;
+}
+.accountRegisterModal.accountRegisterModal input::placeholder,.accountRegisterModal.accountRegisterModal textarea::placeholder { font-weight:400 !important; }
+.accountRegisterModal.accountRegisterModal :is(.exportChoiceOption,.exportOption) { padding:1rem !important; gap:1rem !important; border-radius:1rem !important; }
+.accountRegisterModal.accountRegisterModal :is(.exportChoiceTitleBlock,.exportOptionTitleBlock) strong { font-size:1rem !important; font-weight:800 !important; line-height:1.35 !important; }
+.accountRegisterModal.accountRegisterModal :is(.exportChoiceTitleBlock,.exportOptionTitleBlock) small { color:#64746a !important; font-size:.88rem !important; font-weight:650 !important; line-height:1.5 !important; }
+.accountRegisterModal.accountRegisterModal :is(.exportGraphic,.exportChoiceGraphic) { width:3rem !important; height:3rem !important; min-width:3rem !important; border-radius:.9rem !important; }
+.accountRegisterModal.accountRegisterModal .manageActionPanel { padding:0 0 1rem !important; background:transparent !important; }
+.accountRegisterModal.accountRegisterModal .manageActionButton { min-height:3.5rem !important; padding:.75rem !important; border-radius:1rem !important; font-size:1rem !important; }
+.accountRegisterModal.accountRegisterModal .assetMovePanel { padding:1rem 0 0 !important; background:transparent !important; }
+.accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) { display:flex !important; align-items:center !important; gap:.65rem !important; padding:0 1rem !important; min-height:3.2rem !important; border:1px solid #d8e2ec !important; border-radius:.92rem !important; background:#fff !important; }
+.accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) .searchIcon { position:static !important; transform:none !important; flex:0 0 1rem; }
+.accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) input { flex:1 1 0 !important; width:0 !important; min-width:0 !important; min-height:3.2rem !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; font-size:1rem !important; font-weight:400 !important; }
+.accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap):focus-within { outline:3px solid rgba(22,83,64,.15); }
+.accountRegisterModal.accountRegisterModal .qrAssetList { min-height:0 !important; max-height:none !important; overflow:visible !important; }
+@media(max-width:600px) {
+ .accountRegisterModal.accountRegisterModal .formGrid { grid-template-columns:minmax(0,1fr) !important; }
+ .accountRegisterModal.accountRegisterModal .modalHeader h2 { font-size:1.55rem !important; }
+ .accountRegisterModal.accountRegisterModal :is(.exportFormatGrid,.manageActionGrid) { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+ .accountRegisterModal.accountRegisterModal .exportFormatGrid { grid-template-columns:minmax(0,1fr) !important; }
+}
+.accountRegisterModal.accountRegisterModal :is(.exportChoiceOption,.exportOption) { grid-template-columns:3rem minmax(0,1fr) !important; }
+.accountRegisterModal.accountRegisterModal .qrExportIcon { width:1.8rem !important; height:1.8rem !important; }
+@media(max-width:600px) {
+ .accountRegisterModal.accountRegisterModal .qrAssetToolbar { grid-template-columns:minmax(0,1fr) !important; }
+ .accountRegisterModal.accountRegisterModal .qrAssetSearchWrap { grid-column:1 / -1 !important; }
+ .accountRegisterModal.accountRegisterModal .qrAssetRow { grid-template-columns:auto minmax(0,1fr) !important; }
+ .accountRegisterModal.accountRegisterModal .qrAssetStatus { grid-column:2 !important; }
+}
