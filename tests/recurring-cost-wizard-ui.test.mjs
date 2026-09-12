@@ -14,10 +14,10 @@ test('recurring costs use the guided three-step Spending budget pattern', () => 
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'recurring cost modal should be present');
   assert.match(client, /type RecurringWizardStep = 1 \| 2 \| 3/);
   assert.match(client, /const \[recurringWizardStep, setRecurringWizardStep\]/);
-  assert.match(recurringModal, /\[\['Coverage', 1\], \['Details', 2\], \['Review', 3\]\]/);
+  assert.doesNotMatch(recurringModal, /\[\['Coverage', 1\], \['Details', 2\], \['Review', 3\]\]/);
   assert.match(recurringModal, /styles\.invoiceDropCodeModal/);
   assert.match(recurringModal, /styles\.budgetWizardModal/);
-  assert.match(recurringModal, /styles\.invoiceDropWizardProgress/);
+  assert.doesNotMatch(recurringModal, /styles\.invoiceDropWizardProgress/);
   assert.match(recurringModal, /styles\.invoiceDropWizardPanel/);
   assert.match(recurringModal, /What should this cost cover\?/);
   assert.match(recurringModal, /Set the recurring cost/);

@@ -3803,7 +3803,6 @@ export default function MyInvoicesClient({
               </div>
 
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
-                <p className={wizardStyles.intro}>Complete one short step at a time. Your spending budget is saved on the final step.</p>
 
 
                 {budgetWizardStep === 1 ? (
@@ -4511,26 +4510,7 @@ export default function MyInvoicesClient({
               </div>
 
               <div ref={recurringWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody, wizardStyles.body].join(' ')}>
-                <p className={wizardStyles.intro}>Complete one short step at a time. Your recurring commitment is saved on the final step.</p>
-                <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + recurringWizardStep + ' of 3'}>
-                  {([['Coverage', 1], ['Details', 2], ['Review', 3]] as const).map(([label, step]) => (
-                    <li
-                      key={label}
-                      className={[
-                        styles.invoiceDropWizardProgressItem,
-                        wizardStyles.progressItem,
-                        recurringWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
-                        recurringWizardStep === step ? wizardStyles.progressItemCurrent : '',
-                        recurringWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
-                        recurringWizardStep > step ? wizardStyles.progressItemComplete : '',
-                      ].join(' ')}
-                      aria-current={recurringWizardStep === step ? 'step' : undefined}
-                    >
-                      <span aria-hidden="true">{recurringWizardStep > step ? '✓' : step}</span>
-                      <strong>{label}</strong>
-                    </li>
-                  ))}
-                </ol>
+
 
                 {recurringWizardStep === 1 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-coverage-title">
