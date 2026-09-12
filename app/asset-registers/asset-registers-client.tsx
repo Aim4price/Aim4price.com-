@@ -3129,11 +3129,18 @@ export default function AssetRegistersClient({
                               </small>
                             </span>
 
+                            {exportStep === "single-picker" ? (
+                              <span className={styles.registerPickerSelect} aria-hidden="true">Select →</span>
+                            ) : null}
                             <span className={styles.registerPickerValue}>
-                              <strong>{money(register.totalValue)}</strong>
-                              <small>register value</small>
-                              <strong>{money(register.totalReplacementPrice)}</strong>
-                              <small>replacement value</small>
+                              <span>
+                                <small>Register value</small>
+                                <strong>{money(register.totalValue)}</strong>
+                              </span>
+                              <span>
+                                <small>Replacement value</small>
+                                <strong>{money(register.totalReplacementPrice)}</strong>
+                              </span>
                             </span>
                           </button>
                         );
