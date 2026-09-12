@@ -277,7 +277,7 @@ test("both Discovery views share one toolbar treatment and archived adverts avoi
   assert.match(client, toolbarClasses);
   assert.match(client, /leadStyles\.leadRefreshButton/);
   assert.match(client, /styles\.discoveryRefreshButton/);
-  assert.match(client, /assetStyles\.filterTriggerButtonActive/);
+  assert.doesNotMatch(client, /assetStyles\.filterTriggerButtonActive/);
   assert.match(client, /leadStyles\.leadRefreshIconActive/);
   assert.match(client, /Photo unavailable/);
   assert.doesNotMatch(client, />A4P</);
@@ -385,8 +385,7 @@ test("new Marketplace snapshots retain discovery details after an asset changes"
 test("recent adverts and request dialogs remain accessible and responsive", () => {
   assert.match(client, /<h2[^>]*>\{advert\.title\}<\/h2>/);
   assert.match(client, /<h3[^>]*>\{advert\.title\}<\/h3>/);
-  assert.match(client, /aria-haspopup="dialog"/);
-  assert.match(client, /aria-expanded=\{filterOpen\}/);
+  assert.doesNotMatch(client, /filterOpen/);
   assert.match(client, /aria-label=\{`Showing \$\{pagination\.rangeStart\}/);
   assert.match(client, /role="dialog"/);
   assert.match(client, /aria-modal="true"/);
