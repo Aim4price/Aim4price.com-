@@ -4373,9 +4373,9 @@ export default function MyInvoicesClient({
       ) : null}
 
       {sourceChoiceOpen ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose cost capture method">
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose cost capture method">
           <div
-            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.costChoiceModal}`}
+            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.costChoiceModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`}
             data-cost-choice-modal="true"
           >
             <div className={styles.modalHeader}>
@@ -4383,7 +4383,7 @@ export default function MyInvoicesClient({
                 <h2>Add asset cost</h2>
                 <p>Choose how to capture a cost for {dealerMode ? 'a shared client asset' : 'a saved asset'}.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add asset cost"><CloseIcon /></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close add asset cost"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
@@ -4826,8 +4826,8 @@ export default function MyInvoicesClient({
       ) : null}
 
       {filterOpen ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Filter saved cost records">
-          <div className={styles.filterModal}>
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Filter saved cost records">
+          <div className={`${styles.filterModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>Filter cost records</h2>
@@ -4837,7 +4837,7 @@ export default function MyInvoicesClient({
                     : 'Narrow the Cost Ledger by asset, source and invoice period.'}
                 </p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeFilterPanel} aria-label="Close filter"><CloseIcon /></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeFilterPanel} aria-label="Close filter"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={`${styles.filterGrid} ${dealerMode ? styles.dealerFilterGrid : ''}`}>
@@ -5219,9 +5219,9 @@ export default function MyInvoicesClient({
       ) : null}
 
       {formOpen ? (
-        <div className={`${styles.modalBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-label={formTitle}>
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-label={formTitle}>
           <form
-            className={`${styles.formModal} ${styles.costFormModal} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${wizardStyles.dialog}` : ''}`}
+            className={`${styles.formModal} ${styles.costFormModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${wizardStyles.dialog}` : ''}`}
             onSubmit={handleInvoiceFormSubmit}
           >
             <div className={`${styles.modalHeader} ${manualCostWizardOpen ? wizardStyles.header : ''}`}>
@@ -5237,7 +5237,7 @@ export default function MyInvoicesClient({
                     : captureMethodLabel(draft.source)}
                 </p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${manualCostWizardOpen ? wizardStyles.closeButton : ''}`} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close"><span aria-hidden="true">×</span></button>
             </div>
             <div className={`${styles.modalDivider} ${manualCostWizardOpen ? wizardStyles.divider : ''}`} />
 
@@ -5555,29 +5555,30 @@ export default function MyInvoicesClient({
       ) : null}
 
       {deleteCandidateInvoice ? (
-        <div className={`${styles.modalBackdrop} ${styles.confirmDeleteBackdrop}`} data-website-overlay onClick={closeDeleteInvoiceDialog}>
+        <div className={`${styles.modalBackdrop} ${styles.confirmDeleteBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay onClick={closeDeleteInvoiceDialog}>
           <div
-            className={styles.deleteConfirmModal}
+            className={`${styles.deleteConfirmModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-cost-confirm-title"
             aria-describedby="delete-cost-confirm-copy"
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              className={styles.deleteConfirmCloseButton}
-              onClick={closeDeleteInvoiceDialog}
-              aria-label="Close delete confirmation"
-              disabled={deletingInvoiceId === deleteCandidateInvoice.id}
-            >
-              <CloseIcon className={styles.buttonIcon} />
-            </button>
-
-            <div className={styles.deleteConfirmContent}>
+            <div className={styles.modalHeader}>
               <h3 id="delete-cost-confirm-title">
                 {dealerMode ? 'Remove this cost from your dealer records?' : 'Are you sure you want to delete this?'}
               </h3>
+              <button
+                type="button"
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`}
+                onClick={closeDeleteInvoiceDialog}
+                aria-label="Close delete confirmation"
+                disabled={deletingInvoiceId === deleteCandidateInvoice.id}
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
+            <div className={styles.deleteConfirmContent}>
               <p id="delete-cost-confirm-copy">
                 {dealerMode
                   ? 'The cost will disappear from your dealer workspace. The owner will be notified and can choose whether to keep their copy in the Cost Ledger or delete it permanently.'
@@ -5625,5 +5626,4 @@ export default function MyInvoicesClient({
     </main>
   );
 }
-
 

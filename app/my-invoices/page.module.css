@@ -726,7 +726,7 @@
 }
 
 .pickerToolbar input,
-.formGrid input,
+.formGrid input:is([type="text"], [type="number"], [type="date"], :not([type])),
 .formGrid select,
 .textAreaGrid textarea,
 .filterGrid select {
@@ -1973,7 +1973,7 @@
   text-transform: none;
 }
 
-.costFormModal .formGrid input,
+.costFormModal .formGrid input:is([type="text"], [type="number"], [type="date"], :not([type])),
 .costFormModal .formGrid select,
 .costFormModal .textAreaGrid textarea {
   min-height: 3.75rem;
@@ -6617,3 +6617,123 @@
 }
 .accountCostModal .downloadStageRail,
 .accountCostModal .downloadStageContent { flex: 0 0 auto; }
+
+/* Manual entry, capture choice, filtering and deletion use account dialog chrome. */
+.accountCostModal.accountCostModal > .formModalScrollBody,
+.accountCostModal.accountCostModal > .sourceChoiceGrid,
+.accountCostModal.accountCostModal > .filterGrid,
+.accountCostModal.accountCostModal > .deleteConfirmContent {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 1.3rem var(--cost-dialog-padding) var(--cost-dialog-padding) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+.accountCostModal.accountCostModal > .sourceChoiceGrid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0.85rem !important;
+}
+.accountCostModal.accountCostModal > .filterGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)) !important;
+  gap: 1rem !important;
+}
+.accountCostModal.accountCostModal .modalHeader h3 {
+  min-width: 0;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: #12352d !important;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.08 !important;
+  overflow-wrap: anywhere;
+}
+.accountCostModal.accountCostModal .choiceTitleBlock strong {
+  color: #12352d !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+.accountCostModal.accountCostModal .choiceTitleBlock small,
+.accountCostModal.accountCostModal .deleteConfirmContent p,
+.accountCostModal.accountCostModal .deleteConfirmAsset small {
+  color: #64746a !important;
+  font-size: 0.88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+}
+.accountCostModal.accountCostModal .costChoiceOption {
+  min-height: 5.5rem !important;
+  padding: 1rem !important;
+  border-radius: 1rem !important;
+  grid-template-columns: 3rem minmax(0, 1fr) 1.75rem !important;
+  gap: 1rem !important;
+}
+.accountCostModal .costChoiceOption .choiceGraphic {
+  width: 3rem !important;
+  min-width: 3rem !important;
+  height: 3rem !important;
+  border-radius: 0.9rem !important;
+}
+.accountCostModal.accountCostModal .formGrid {
+  gap: 1rem !important;
+}
+.accountCostModal.accountCostModal .formGrid > label,
+.accountCostModal.accountCostModal .costUsageMetricField {
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.accountCostModal.accountCostModal .formGrid > label > span,
+.accountCostModal.accountCostModal .costUsageMetricField > span,
+.accountCostModal.accountCostModal .filterField > span {
+  color: #405c50 !important;
+  font-size: 0.7rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.045em !important;
+  text-transform: uppercase;
+}
+.accountCostModal.accountCostModal .formGrid input:is([type="text"], [type="number"], [type="date"], :not([type])),
+.accountCostModal.accountCostModal .formGrid textarea,
+.accountCostModal.accountCostModal .customFilterSelectButton {
+  min-height: 3.2rem !important;
+  border-radius: 0.92rem !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
+}
+.accountCostModal.accountCostModal .formGrid input:is([type="text"], [type="number"], [type="date"], :not([type])),
+.accountCostModal.accountCostModal .formGrid textarea {
+  color: #17362c !important;
+}
+.accountCostModal.accountCostModal .deleteConfirmAsset {
+  padding: 1rem !important;
+  border-radius: 1rem !important;
+}
+.accountCostModal.accountCostModal .deleteConfirmAsset strong {
+  color: #12352d !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+.accountCostModal.accountCostModal > .deleteConfirmContent { padding-bottom: 0 !important; }
+.accountCostModal.accountCostModal .deleteConfirmActions {
+  flex-wrap: wrap;
+  gap: 0.65rem !important;
+  margin: 0 calc(-1 * var(--cost-dialog-padding)) !important;
+  padding: 1rem var(--cost-dialog-padding) 1.6rem !important;
+  border-top: 1px solid rgba(18, 45, 37, 0.11) !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+}
+.accountCostModal.accountCostModal .deleteConfirmButton {
+  color: #fff !important;
+  background: linear-gradient(180deg, #b54747, #9e3434) !important;
+}
+
+.accountCostModal.accountCostModal .choiceTitleBlock strong { white-space: normal !important; overflow-wrap: anywhere; }
