@@ -4520,3 +4520,13 @@
   margin: 0;
   transform: none;
 }
+
+/* Centre desktop menu labels beneath Manage, excluding its leading logo. */
+:global(:where([data-website-canvas])) .accountPopover {
+  left: var(--account-menu-anchor-x, 50%);
+}
+@media (min-width: 1181px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
+    left: var(--account-menu-anchor-x, 50%);
+  }
+}
