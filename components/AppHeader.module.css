@@ -4508,3 +4508,15 @@
   max-width: none;
   margin-inline: min(0px, calc((var(--website-design-width) - var(--website-visible-width, var(--website-design-width))) / 2));
 }
+
+/* Keep the account logo in the button layout so it cannot crowd Manage. */
+.accountButton.accountButton {
+  gap: 0.65rem;
+}
+
+.accountButton.accountButton > .accountAvatar {
+  position: static;
+  flex-shrink: 0;
+  margin: 0;
+  transform: none;
+}
