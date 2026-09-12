@@ -70,7 +70,7 @@ test('advert removal mirrors the Asset Register confirmation and four-step dispo
   const wizardSource = source.slice(wizardStart);
 
   assert.match(confirmSource, /styles\.confirmContent/);
-  assert.match(confirmSource, /styles\.confirmCloseButton/);
+  assert.match(confirmSource, /accountStyles\.passwordModalCloseButton/);
   assert.match(confirmSource, /styles\.selectedAdvert/);
   assert.match(confirmSource, /styles\.confirmActions/);
   assert.doesNotMatch(confirmSource, /styles\.header|styles\.body|<footer/);
