@@ -14,6 +14,7 @@ import assetStyles from "../asset-register/page.module.css";
 import leadStyles from "../leads/page.module.css";
 import native_mobileStyles from "../field-manager/page.module.css";
 import styles from "./page.module.css";
+import accountStyles from "../account/page.module.css";
 import native_dealerStyles from "../dealer/dealer.module.css";
 import RecentlyAdvertisedClient from "./recently-advertised-client";
 
@@ -142,13 +143,6 @@ type IconProps = {
   className?: string;
 };
 
-type DiscoveryFilterKey = "type" | "province" | "renewalTiming" | "status" | "pageSize";
-
-type DiscoveryFilterOption = {
-  value: string;
-  label: string;
-};
-
 type DiscoveryPhotoModal = {
   assetId: string;
   title: string;
@@ -159,20 +153,6 @@ type DiscoveryPhotoModal = {
 const SEARCH_DEBOUNCE_MS = 250;
 const DISCOVERY_PAGE_SIZE = 10;
 const DISCOVERY_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
-const RENEWAL_TIMING_OPTIONS: DiscoveryFilterOption[] = [
-  { value: "all", label: "All renewal dates" },
-  { value: "overdue", label: "Overdue" },
-  { value: "next_30_days", label: "Next 30 days" },
-  { value: "next_6_months", label: "Next 6 months" },
-  { value: "later", label: "More than 6 months away" },
-];
-const RENEWAL_STATUS_OPTIONS: DiscoveryFilterOption[] = [
-  { value: "all", label: "All opportunities" },
-  { value: "available", label: "Available" },
-  { value: "pending", label: "Pending" },
-  { value: "won", label: "Won" },
-  { value: "denied", label: "Denied" },
-];
 type DiscoveryPageSize = (typeof DISCOVERY_PAGE_SIZE_OPTIONS)[number];
 
 const EMPTY_SUMMARY: DiscoverySummary = {
@@ -206,26 +186,6 @@ function SearchIcon({ className }: IconProps) {
     >
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-3.5-3.5" />
-    </svg>
-  );
-}
-
-function FilterIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 5h16M7 12h10M10 19h4" />
-      <circle cx="15" cy="5" r="1.5" />
-      <circle cx="9" cy="12" r="1.5" />
-      <circle cx="15" cy="19" r="1.5" />
     </svg>
   );
 }
@@ -339,25 +299,6 @@ function StatusCheckIcon({ className }: IconProps) {
   );
 }
 
-function WarningIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.15"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M10.3 3.8 2.5 17.3A2 2 0 0 0 4.2 20h15.6a2 2 0 0 0 1.7-2.7L13.7 3.8a2 2 0 0 0-3.4 0Z" />
-      <path d="M12 8v5" />
-      <path d="M12 17h.01" />
-    </svg>
-  );
-}
-
 function ChevronDownIcon({ className }: IconProps) {
   return (
     <svg
@@ -406,76 +347,6 @@ function ChevronRightIcon({ className }: IconProps) {
     >
       <path d="m9 18 6-6-6-6" />
     </svg>
-  );
-}
-
-function DiscoveryFilterDropdown({
-  label,
-  filterKey,
-  value,
-  options,
-  openFilter,
-  onOpenChange,
-  onChange,
-}: {
-  label: string;
-  filterKey: DiscoveryFilterKey;
-  value: string;
-  options: DiscoveryFilterOption[];
-  openFilter: DiscoveryFilterKey | null;
-  onOpenChange: (filter: DiscoveryFilterKey | null) => void;
-  onChange: (value: string) => void;
-}) {
-  const isOpen = openFilter === filterKey;
-  const selectedOption = options.find((option) => option.value === value);
-
-  return (
-    <label
-      className={`${assetStyles.field} ${leadStyles.leadFilterField} ${isOpen ? leadStyles.leadFilterFieldOpen : ""}`}
-      data-discovery-filter="true"
-    >
-      <span>{label}</span>
-      <div className={leadStyles.leadFilterDropdown}>
-        <button
-          type="button"
-          className={`${leadStyles.leadFilterSelectButton} ${isOpen ? leadStyles.leadFilterSelectButtonOpen : ""}`}
-          onClick={() => onOpenChange(isOpen ? null : filterKey)}
-          aria-haspopup="listbox"
-          aria-expanded={isOpen}
-        >
-          <span>{selectedOption?.label ?? "Choose option"}</span>
-          <ChevronDownIcon className={leadStyles.leadFilterSelectIcon} />
-        </button>
-
-        {isOpen ? (
-          <DropdownOverlay
-            className={leadStyles.leadFilterSelectMenu}
-            role="listbox"
-            aria-label={label}
-          >
-            {options.map((option) => {
-              const isSelected = option.value === value;
-
-              return (
-                <button
-                  type="button"
-                  key={`${filterKey}-${option.value}`}
-                  className={`${leadStyles.leadFilterSelectOption} ${isSelected ? leadStyles.leadFilterSelectOptionActive : ""}`}
-                  onClick={() => {
-                    onChange(option.value);
-                    onOpenChange(null);
-                  }}
-                  role="option"
-                  aria-selected={isSelected}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </DropdownOverlay>
-        ) : null}
-      </div>
-    </label>
   );
 }
 
@@ -715,17 +586,15 @@ export default function AssetDiscoveryClient({
   const [assets, setAssets] = useState<AssetDiscoveryAsset[]>([]);
   const [provinceOptions, setProvinceOptions] = useState<Option[]>([]);
   const [typeOptions, setTypeOptions] = useState<Option[]>([]);
+  const [province, setProvince] = useState("all");
+  const [type, setType] = useState("all");
   const [summary, setSummary] = useState<DiscoverySummary>(EMPTY_SUMMARY);
   const [pagination, setPagination] =
     useState<DiscoveryPagination>(EMPTY_PAGINATION);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [province, setProvince] = useState("all");
-  const [type, setType] = useState("all");
-  const [renewalTiming, setRenewalTiming] = useState("all");
-  const [enquiryStatus, setEnquiryStatus] = useState("all");
-  const [openFilter, setOpenFilter] = useState<DiscoveryFilterKey | null>(null);
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [openFilter, setOpenFilter] = useState<"type" | "province" | "pageSize" | null>(null);
+  const settingsDialogRef = useRef<HTMLElement | null>(null);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [showParticipationExclusions, setShowParticipationExclusions] =
     useState(false);
@@ -780,12 +649,11 @@ export default function AssetDiscoveryClient({
 
     preparedOpenAssetIdRef.current = requestedOpenAssetId;
     autoOpenedAssetIdRef.current = "";
-    setSearchInput("");
-    setSearch("");
     setProvince("all");
     setType("all");
-    setRenewalTiming("all");
-    setEnquiryStatus("all");
+    setSearchInput("");
+    setSearch("");
+
     setCurrentPage(1);
   }, [requestedOpenAssetId]);
 
@@ -815,24 +683,35 @@ export default function AssetDiscoveryClient({
   }, [activeEnquiry]);
 
   useEffect(() => {
-    if (!isFilterModalOpen && !isSettingsModalOpen) return undefined;
+    if (!isSettingsModalOpen) return undefined;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    settingsDialogRef.current?.focus();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !isUpdatingParticipation) {
         setOpenFilter(null);
-        setIsFilterModalOpen(false);
+
         setIsSettingsModalOpen(false);
+      }
+      if (event.key === "Tab") {
+        const controls = settingsDialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]');
+        const first = controls?.[0];
+        const last = controls?.[controls.length - 1];
+        if (!first || !last) { event.preventDefault(); return; }
+        if (event.shiftKey && (document.activeElement === first || document.activeElement === settingsDialogRef.current)) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
       }
     };
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
+      previousFocus?.focus();
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isFilterModalOpen, isSettingsModalOpen]);
+  }, [isSettingsModalOpen, isUpdatingParticipation]);
 
   useEffect(() => {
     if (!openFilter) return undefined;
@@ -860,11 +739,9 @@ export default function AssetDiscoveryClient({
 
     let mounted = true;
     const params = new URLSearchParams();
+    if (compactAppMode && province !== "all") params.set("province", province);
+    if (compactAppMode && type !== "all") params.set("type", type);
     if (search) params.set("search", search);
-    if (province !== "all") params.set("province", province);
-    if (type !== "all") params.set("type", type);
-    if (renewalTiming !== "all") params.set("renewalTiming", renewalTiming);
-    if (enquiryStatus !== "all") params.set("status", enquiryStatus);
     if (requestedOpenAssetId) {
       params.set("focusAssetId", requestedOpenAssetId);
     }
@@ -965,12 +842,11 @@ export default function AssetDiscoveryClient({
     currentPage,
     pageSize,
     province,
-    renewalTiming,
-    enquiryStatus,
+    type,
+    compactAppMode,
     refreshVersion,
     requestedOpenAssetId,
     search,
-    type,
     activeDiscoveryView,
   ]);
 
@@ -996,66 +872,6 @@ export default function AssetDiscoveryClient({
     [pagination.page, pagination.totalPages],
   );
 
-  const typeFilterOptions = useMemo<DiscoveryFilterOption[]>(
-    () => [
-      { value: "all", label: "All types" },
-      ...typeOptions.map((option) => ({
-        value: option.value,
-        label: `${option.label} (${option.count})`,
-      })),
-    ],
-    [typeOptions],
-  );
-
-  const provinceFilterOptions = useMemo<DiscoveryFilterOption[]>(
-    () => [
-      { value: "all", label: "All provinces" },
-      ...provinceOptions.map((option) => ({
-        value: option.value,
-        label: `${option.label} (${option.count})`,
-      })),
-    ],
-    [provinceOptions],
-  );
-
-  const pageSizeFilterOptions = useMemo<DiscoveryFilterOption[]>(
-    () =>
-      DISCOVERY_PAGE_SIZE_OPTIONS.map((option) => ({
-        value: String(option),
-        label: `${option} assets per page`,
-      })),
-    [],
-  );
-
-  const hasActiveDiscoveryFilter =
-    type !== "all" ||
-    province !== "all" ||
-    renewalTiming !== "all" ||
-    enquiryStatus !== "all" ||
-    pageSize !== DISCOVERY_PAGE_SIZE;
-
-  const activeDiscoveryFilterLabel = useMemo(() => {
-    const labels: string[] = [];
-    const selectedType = typeOptions.find((option) => option.value === type);
-    const selectedProvince = provinceOptions.find(
-      (option) => option.value === province,
-    );
-
-    if (selectedType) labels.push(selectedType.label);
-    if (selectedProvince) labels.push(selectedProvince.label);
-    if (renewalTiming !== "all") {
-      labels.push(RENEWAL_TIMING_OPTIONS.find((option) => option.value === renewalTiming)?.label ?? "Renewal date");
-    }
-    if (enquiryStatus !== "all") {
-      labels.push(RENEWAL_STATUS_OPTIONS.find((option) => option.value === enquiryStatus)?.label ?? "Status");
-    }
-    if (pageSize !== DISCOVERY_PAGE_SIZE) labels.push(`${pageSize} per page`);
-
-    if (!labels.length) return "Filter";
-    if (labels.length === 1) return labels[0];
-    return `${labels.length} filters`;
-  }, [enquiryStatus, pageSize, province, provinceOptions, renewalTiming, type, typeOptions]);
-
   function handleSearchChange(value: string) {
     setSearchInput(value);
   }
@@ -1068,36 +884,6 @@ export default function AssetDiscoveryClient({
   function handleProvinceChange(value: string) {
     setProvince(value);
     setCurrentPage(1);
-  }
-
-  function handleRenewalTimingChange(value: string) {
-    setRenewalTiming(value);
-    setCurrentPage(1);
-  }
-
-  function handleEnquiryStatusChange(value: string) {
-    setEnquiryStatus(value);
-    setCurrentPage(1);
-  }
-
-  function openDiscoveryFilterModal() {
-    setOpenFilter(null);
-    setIsFilterModalOpen(true);
-  }
-
-  function closeDiscoveryFilterModal() {
-    setOpenFilter(null);
-    setIsFilterModalOpen(false);
-  }
-
-  function resetDiscoveryFilters() {
-    setType("all");
-    setProvince("all");
-    setRenewalTiming("all");
-    setEnquiryStatus("all");
-    setPageSize(DISCOVERY_PAGE_SIZE);
-    setCurrentPage(1);
-    setOpenFilter(null);
   }
 
   function refreshAssets() {
@@ -1246,7 +1032,7 @@ export default function AssetDiscoveryClient({
   }
 
   function renderDealerFilter(
-    filterKey: DiscoveryFilterKey,
+    filterKey: "type" | "province",
     value: string,
     options: Option[],
     allLabel: string,
@@ -2375,7 +2161,7 @@ export default function AssetDiscoveryClient({
         {compactAppMode ? (
           <section
             className={`${workspaceStyles.controlsRow} ${styles.toolbar}`}
-            aria-label="Search and filter Asset Discovery"
+            aria-label="Search Asset Discovery"
           >
             <label className={`${mobileStyles.overviewSearch} ${workspaceStyles.searchField} ${styles.searchBox} ${styles.discoveryOverviewSearch}`}>
               <SearchIcon className={styles.searchIcon} />
@@ -2421,7 +2207,7 @@ export default function AssetDiscoveryClient({
         ) : (
           <div
             className={`${assetStyles.toolbar} ${workspaceStyles.controlsRow} ${leadStyles.leadSearchToolbar} ${styles.parityToolbar}`}
-            aria-label="Search and filter Asset Discovery"
+            aria-label="Search Asset Discovery"
           >
             <label className={`${assetStyles.searchWrap} ${workspaceStyles.searchField}`}>
               <SearchIcon className={assetStyles.searchIcon} />
@@ -2455,16 +2241,6 @@ export default function AssetDiscoveryClient({
               >
                 <RefreshIcon className={`${assetStyles.buttonIcon} ${loading ? leadStyles.leadRefreshIconActive : ""}`} />
                 <span>Refresh</span>
-              </button>
-
-              <button
-                type="button"
-                className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${leadStyles.leadFilterButton} ${hasActiveDiscoveryFilter ? assetStyles.filterTriggerButtonActive : ""}`}
-                onClick={openDiscoveryFilterModal}
-                disabled={loading}
-              >
-                <FilterIcon className={assetStyles.buttonIcon} />
-                <span>{activeDiscoveryFilterLabel}</span>
               </button>
 
               {access?.accountType === "owner" ? (
@@ -2612,259 +2388,64 @@ export default function AssetDiscoveryClient({
         />
       ) : null}
 
-      {!compactAppMode && isFilterModalOpen ? (
-        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeDiscoveryFilterModal} />
-
-          <div
-            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${leadStyles.leadFilterModal} ${styles.discoveryFilterModal}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="discovery-filter-title"
-            aria-describedby="discovery-filter-description"
-          >
-            <div
-              className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${leadStyles.leadFilterHeader} ${styles.discoveryFilterHeader}`}
-            >
-              <div
-                className={`${assetStyles.modalHeaderText} ${styles.discoveryFilterHeaderCopy}`}
-              >
-                <h3 id="discovery-filter-title">Choose which assets to show</h3>
-                <p
-                  id="discovery-filter-description"
-                  className={leadStyles.leadFilterIntro}
-                >
-                  {licensingDiscovery
-                    ? "Filter renewals by asset, location, timing or opportunity status."
-                    : "Filter Discovery by equipment type, owner province or page size."}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`}
-                onClick={closeDiscoveryFilterModal}
-                aria-label="Close filter modal"
-              >
-                <CloseIcon className={assetStyles.buttonIcon} />
-              </button>
-            </div>
-
-            <div className={`${workspaceStyles.modalBody} ${leadStyles.leadFilterForm} ${styles.discoveryFilterForm}`}>
-              <DiscoveryFilterDropdown
-                label="Asset type"
-                filterKey="type"
-                value={type}
-                options={typeFilterOptions}
-                openFilter={openFilter}
-                onOpenChange={setOpenFilter}
-                onChange={handleTypeChange}
-              />
-
-              <DiscoveryFilterDropdown
-                label="Province"
-                filterKey="province"
-                value={province}
-                options={provinceFilterOptions}
-                openFilter={openFilter}
-                onOpenChange={setOpenFilter}
-                onChange={handleProvinceChange}
-              />
-
-              {licensingDiscovery ? (
-                <>
-                  <DiscoveryFilterDropdown
-                    label="Renewal timing"
-                    filterKey="renewalTiming"
-                    value={renewalTiming}
-                    options={RENEWAL_TIMING_OPTIONS}
-                    openFilter={openFilter}
-                    onOpenChange={setOpenFilter}
-                    onChange={handleRenewalTimingChange}
-                  />
-
-                  <DiscoveryFilterDropdown
-                    label="Opportunity status"
-                    filterKey="status"
-                    value={enquiryStatus}
-                    options={RENEWAL_STATUS_OPTIONS}
-                    openFilter={openFilter}
-                    onOpenChange={setOpenFilter}
-                    onChange={handleEnquiryStatusChange}
-                  />
-                </>
-              ) : null}
-
-              <div className={styles.discoveryFilterWideField}>
-                <DiscoveryFilterDropdown
-                  label="Assets per page"
-                  filterKey="pageSize"
-                  value={String(pageSize)}
-                  options={pageSizeFilterOptions}
-                  openFilter={openFilter}
-                  onOpenChange={setOpenFilter}
-                  onChange={handlePageSizeChange}
-                />
-              </div>
-            </div>
-
-            <div className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${leadStyles.leadFilterActions}`}>
-              <button
-                type="button"
-                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`}
-                onClick={resetDiscoveryFilters}
-                disabled={!hasActiveDiscoveryFilter}
-              >
-                Reset filters
-              </button>
-              <button
-                type="button"
-                className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`}
-                onClick={closeDiscoveryFilterModal}
-              >
-                Apply filters
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {!compactAppMode &&
-      access?.accountType === "owner" &&
-      isSettingsModalOpen ? (
-        <div
-          className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay
-        >
-          <div
-            className={assetStyles.modalBackdrop} data-website-overlay
-            onClick={() => setIsSettingsModalOpen(false)}
-          />
-
-          <div
-            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.discoverySettingsModal}`}
+      {!compactAppMode && access?.accountType === "owner" && isSettingsModalOpen ? (
+        <div className={accountStyles.modalBackdrop} data-website-overlay onClick={() => { if (!isUpdatingParticipation) setIsSettingsModalOpen(false); }}>
+          <section
+            ref={settingsDialogRef}
+            className={`${accountStyles.modalCard} ${accountStyles.accountActionModalCardNarrow} ${accountStyles.accountScrollableModalCard} ${accountStyles.passwordModalCard} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="discovery-settings-title"
             aria-describedby="discovery-settings-description"
+            tabIndex={-1}
+            onClick={(event) => event.stopPropagation()}
           >
-            <div
-              className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${styles.discoverySettingsHeader}`}
-            >
-              <div
-                className={`${assetStyles.modalHeaderText} ${styles.discoverySettingsHeaderCopy}`}
-              >
-                <h3 id="discovery-settings-title">Discovery settings</h3>
-                <p id="discovery-settings-description">
-                  Manage how your eligible assets appear in owner Discovery.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`}
-                onClick={() => setIsSettingsModalOpen(false)}
-                aria-label="Close Discovery settings"
-              >
-                <CloseIcon className={assetStyles.buttonIcon} />
-              </button>
-            </div>
-
-            <div
-              className={`${workspaceStyles.modalBody} ${styles.discoverySettingsBody}`}
-            >
-              <div className={styles.discoverySettingsStatus}>
-                <span
-                  className={styles.discoverySettingsStatusIcon}
-                  aria-hidden="true"
-                >
-                  <StatusCheckIcon
-                    className={styles.discoverySettingsDialogIcon}
-                  />
-                </span>
-                <div className={styles.discoverySettingsStatusCopy}>
-                  <span className={styles.discoverySettingsEyebrow}>
-                    Current status
-                  </span>
-                  <strong>Discovery participation is enabled</strong>
-                  <p>
-                    {access.eligibleAssetCount} eligible{" "}
-                    {access.eligibleAssetCount === 1
-                      ? "asset is"
-                      : "assets are"}{" "}
-                    currently participating.
-                  </p>
-                </div>
-              </div>
-
-              <div className={styles.discoverySettingsWarning}>
-                <div className={styles.discoverySettingsWarningHeader}>
-                  <span
-                    className={styles.discoverySettingsWarningIcon}
-                    aria-hidden="true"
-                  >
-                    <WarningIcon
-                      className={styles.discoverySettingsDialogIcon}
-                    />
-                  </span>
-                  <div className={styles.discoverySettingsWarningCopy}>
-                    <span className={styles.discoverySettingsEyebrow}>
-                      Before you continue
-                    </span>
-                    <strong>Disable Discovery and remove my assets</strong>
-                    <p
-                      id="discovery-disable-impact"
-                      className={styles.discoverySettingsWarningIntro}
-                    >
-                      These changes take effect immediately:
-                    </p>
+            <div className={accountStyles.accountModalScrollShell}>
+              <div className={accountStyles.accountModalScrollViewport}>
+                <div className={accountStyles.accountModalScrollContent}>
+                  <div className={accountStyles.modalHeader}>
+                    <h2 id="discovery-settings-title">Discovery settings</h2>
+                    <p id="discovery-settings-description">Manage how your assets appear in Discovery.</p>
+                    <button type="button" className={accountStyles.modalCloseButton} onClick={() => setIsSettingsModalOpen(false)} aria-label="Close Discovery settings" disabled={isUpdatingParticipation}>×</button>
                   </div>
-                </div>
-                <ul className={styles.discoverySettingsConsequences}>
-                  <li>Your eligible assets will be removed from Discovery.</li>
-                  <li>Active requests and approved access will be revoked.</li>
-                  <li>
-                    Browsing other owners&apos; assets will be paused until you
-                    enable participation again.
-                  </li>
-                </ul>
 
-                <div className={styles.discoverySettingsAssurance}>
-                  <StatusCheckIcon
-                    className={styles.discoverySettingsAssuranceIcon}
-                  />
-                  <div>
-                    <strong>Your Asset Register stays intact</strong>
-                    <p>Nothing is deleted from your Asset Register.</p>
+                  {notice?.tone === "error" ? (
+                    <div className={`${accountStyles.modalInlineNotice} ${accountStyles.modalInlineNoticeError}`} role="alert">{notice.message}</div>
+                  ) : null}
+
+                  <div className={accountStyles.passwordModalIntro}>
+                    <span className={styles.discoverySettingsStatusIcon} aria-hidden="true"><StatusCheckIcon className={styles.discoverySettingsDialogIcon} /></span>
+                    <div>
+                      <strong>Discovery participation is enabled</strong>
+                      <p>{access.eligibleAssetCount} eligible {access.eligibleAssetCount === 1 ? "asset is" : "assets are"} currently participating.</p>
+                    </div>
+                  </div>
+
+                  <div className={accountStyles.passwordModalForm}>
+                    <div className={accountStyles.confirmBox}>
+                      <strong>Disable Discovery and remove my assets</strong>
+                      <p>These changes take effect immediately:</p>
+                      <ul className={styles.discoverySettingsImpactList}>
+                        <li>Your eligible assets will be removed from Discovery.</li>
+                        <li>Active requests and approved access will be revoked.</li>
+                        <li>Browsing other owners&apos; assets will pause until you enable participation again.</li>
+                      </ul>
+                    </div>
+                    <div className={accountStyles.passwordModalIntro}>
+                      <span className={styles.discoverySettingsStatusIcon} aria-hidden="true"><StatusCheckIcon className={styles.discoverySettingsDialogIcon} /></span>
+                      <div><strong>Your Asset Register stays intact</strong><p>Nothing is deleted from your Asset Register.</p></div>
+                    </div>
+                    <div className={accountStyles.modalActions}>
+                      <button type="button" className={accountStyles.ghostButton} onClick={() => setIsSettingsModalOpen(false)} disabled={isUpdatingParticipation}>Cancel</button>
+                      <button type="button" className={accountStyles.dangerButton} onClick={() => void updateOwnerDiscoveryParticipation(false)} disabled={isUpdatingParticipation}>
+                        {isUpdatingParticipation ? "Disabling…" : "Disable & remove assets"}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            <div
-              className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${styles.discoverySettingsActions}`}
-            >
-              <button
-                type="button"
-                className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`}
-                onClick={() => setIsSettingsModalOpen(false)}
-                disabled={isUpdatingParticipation}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={`${workspaceStyles.actionButton} ${workspaceStyles.actionDanger} ${styles.discoveryDisableButton}`}
-                onClick={() =>
-                  void updateOwnerDiscoveryParticipation(false)
-                }
-                disabled={isUpdatingParticipation}
-              >
-                {isUpdatingParticipation
-                  ? "Disabling…"
-                  : "Disable & remove assets"}
-              </button>
-            </div>
-          </div>
+          </section>
         </div>
       ) : null}
 

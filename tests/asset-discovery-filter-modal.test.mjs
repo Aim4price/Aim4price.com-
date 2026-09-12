@@ -11,45 +11,6 @@ const recentAdvertsClient = read(
 );
 const css = read("app/asset-discovery/page.module.css");
 
-test("Discovery filter header keeps its own padded layout", () => {
-  assert.match(client, /styles\.discoveryFilterHeader/);
-  assert.match(client, /styles\.discoveryFilterHeaderCopy/);
-  assert.match(
-    css,
-    /\.discoveryFilterModal \.discoveryFilterHeader\s*\{[\s\S]*?margin:\s*0\s*!important;[\s\S]*?padding:\s*1\.55rem 5rem 1\.35rem 1\.7rem\s*!important;/,
-  );
-  assert.match(
-    css,
-    /\.discoveryFilterHeaderCopy\s*\{[\s\S]*?gap:\s*0\.48rem;/,
-  );
-  assert.match(
-    css,
-    /\.discoveryFilterHeaderCopy > h3,[\s\S]*?\.discoveryFilterHeaderCopy > p\s*\{[\s\S]*?margin:\s*0\s*!important;/,
-  );
-});
-
-test("Discovery filter header preserves close-button space on mobile", () => {
-  assert.match(
-    css,
-    /@media \(max-width: 760px\)\s*\{[\s\S]*?\.discoveryFilterModal \.discoveryFilterHeader\s*\{[\s\S]*?padding:\s*1\.2rem 4\.3rem 1\.05rem 1\.2rem\s*!important;/,
-  );
-});
-
-test("Discovery filter body stays usable in short and narrow viewports", () => {
-  assert.match(
-    css,
-    /\.discoveryFilterModal\.discoveryFilterModal\[role='dialog'\]\s*\{[\s\S]*?width:\s*min\(calc\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 100\) - 2rem\), 64rem\)\s*!important;[\s\S]*?max-height:[\s\S]*?!important;[\s\S]*?overflow:\s*hidden\s*!important;/,
-  );
-  assert.match(
-    css,
-    /\.discoveryFilterForm\s*\{[\s\S]*?flex:\s*1 1 auto\s*!important;[\s\S]*?min-height:\s*0\s*!important;[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?overflow-y:\s*auto\s*!important;/,
-  );
-  assert.match(
-    css,
-    /@media \(max-width: 900px\)\s*\{[\s\S]*?\.discoveryFilterForm\s*\{[\s\S]*?grid-template-columns:\s*1fr\s*!important;/,
-  );
-});
-
 test("Recently advertised filter uses the same wider dialog layout", () => {
   assert.match(
     css,
@@ -96,30 +57,6 @@ test("Recently advertised filters use branded custom listboxes", () => {
   assert.doesNotMatch(filterModal, /<select\b|<option\b/);
 });
 
-test("Discovery filters remain branded custom listboxes", () => {
-  const filterDropdown = client.slice(
-    client.indexOf("function DiscoveryFilterDropdown("),
-    client.indexOf("function cleanText("),
-  );
-  const filterModal = client.slice(
-    client.indexOf("{!compactAppMode && isFilterModalOpen ? ("),
-    client.indexOf(
-      'access?.accountType === "owner"',
-      client.indexOf("{!compactAppMode && isFilterModalOpen ? ("),
-    ),
-  );
-
-  assert.match(filterDropdown, /aria-haspopup="listbox"/);
-  assert.match(filterDropdown, /<DropdownOverlay[\s\S]*?role="listbox"/);
-  assert.match(filterDropdown, /role="option"/);
-  assert.match(filterDropdown, /aria-selected=\{isSelected\}/);
-  assert.equal(
-    (filterModal.match(/<DiscoveryFilterDropdown/g) ?? []).length,
-    5,
-  );
-  assert.doesNotMatch(filterModal, /<select\b|<option\b/);
-});
-
 test("Recently advertised filter dialog exposes its description", () => {
   assert.match(
     recentAdvertsClient,
@@ -128,29 +65,19 @@ test("Recently advertised filter dialog exposes its description", () => {
   assert.match(recentAdvertsClient, /id="recent-advert-filter-description"/);
 });
 
-test("Discovery filter dialog exposes its description to assistive technology", () => {
-  assert.match(
-    client,
-    /aria-describedby="discovery-filter-description"/,
-  );
-  assert.match(client, /id="discovery-filter-description"/);
+test("desktop Discovery has no filter button, modal or hidden filter handlers", () => {
+  assert.doesNotMatch(client, /isFilterModalOpen|openDiscoveryFilterModal|closeDiscoveryFilterModal|resetDiscoveryFilters|DiscoveryFilterDropdown|discovery-filter-title|activeDiscoveryFilterLabel/);
+  assert.doesNotMatch(css, /\.discoveryFilterModal/);
+  assert.match(client, /aria-label="Search Asset Discovery"/);
+  assert.match(client, /if \(compactAppMode && province !== "all"\)/);
+  assert.match(client, /if \(compactAppMode && type !== "all"\)/);
 });
 
-test("Discovery filter retains its fields and explicit actions", () => {
-  const filterModal = client.slice(
-    client.indexOf("{!compactAppMode && isFilterModalOpen ? ("),
-    client.indexOf("access?.accountType === \"owner\"", client.indexOf("{!compactAppMode && isFilterModalOpen ? (")),
-  );
-
-  assert.match(filterModal, /label="Asset type"/);
-  assert.match(filterModal, /label="Province"/);
-  assert.match(filterModal, /label="Assets per page"/);
-  assert.match(filterModal, /label="Renewal timing"/);
-  assert.match(filterModal, /label="Opportunity status"/);
-  assert.match(filterModal, /onClick=\{resetDiscoveryFilters\}/);
-  assert.match(filterModal, /disabled=\{!hasActiveDiscoveryFilter\}/);
-  assert.match(filterModal, /onClick=\{closeDiscoveryFilterModal\}/);
-  assert.match(filterModal, /Reset filters/);
-  assert.match(filterModal, /Apply filters/);
+test("Discovery settings reuse the Change Password dialog design", () => {
+  for (const name of ['modalTheme', 'modalBackdrop', 'modalCard', 'accountScrollableModalCard', 'passwordModalCard', 'accountModalScrollContent', 'modalHeader', 'modalCloseButton', 'passwordModalIntro', 'modalActions', 'ghostButton', 'dangerButton']) {
+    assert.ok(client.includes(`accountStyles.${name}`), `Missing shared account style: ${name}`);
+  }
+  assert.match(client, /<h2 id="discovery-settings-title">/);
+  assert.match(client, /aria-describedby="discovery-settings-description"/);
+  assert.match(client, /settingsDialogRef\.current\?\.focus/);
 });
-
