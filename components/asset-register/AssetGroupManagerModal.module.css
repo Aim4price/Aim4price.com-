@@ -1610,3 +1610,8 @@
   min-width: min(8.75rem, 100%);
   border-radius: 1rem;
 }
+
+/* Give report cards enough width for their complete titles and descriptions. */
+.accountModal.accountReportsModal {
+  width: min(var(--website-dialog-reference-width, 100%), 72rem) !important;
+}

@@ -884,3 +884,20 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Compact, aligned Register Share destination choices. */
+.accountShareTheme .destinationCard {
+  min-height: 6.25rem;
+  align-items: center;
+  padding: 1rem;
+}
+.accountShareTheme .destinationCopy {
+  align-self: center;
+  gap: 0.35rem;
+}
+.accountShareTheme .destinationCopy small {
+  min-height: 2.35rem;
+}
+.accountShareTheme .destinationArrow {
+  font-size: 1.75rem;
+}

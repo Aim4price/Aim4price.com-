@@ -176,7 +176,7 @@ export function AssetShareDestinationPicker({
         <span className={styles.destinationIcon}><Aim4priceIcon /></span>
         <span className={styles.destinationCopy}>
           <strong>Inside Aim4price</strong>
-          <small>Share securely with a finance, insurance, dealer or licence-renewal account.</small>
+          <small>Share with an Aim4price partner.</small>
         </span>
         <span className={styles.destinationArrow} aria-hidden="true">›</span>
       </button>
@@ -185,7 +185,7 @@ export function AssetShareDestinationPicker({
         <span className={styles.destinationIcon}><OutsideIcon /></span>
         <span className={styles.destinationCopy}>
           <strong>Outside Aim4price</strong>
-          <small>Send one neat message by WhatsApp or email, with optional photos and Aim4price reports.</small>
+          <small>Send by WhatsApp or email.</small>
         </span>
         <span className={styles.destinationArrow} aria-hidden="true">›</span>
       </button>

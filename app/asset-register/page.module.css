@@ -40146,3 +40146,29 @@ button.documentOpenLink {
   font-weight: 650 !important;
   line-height: 1.5 !important;
 }
+
+/* Report choices keep full text inside the cards, including smaller viewports. */
+.umbrellaAccountModal .assetReportOptionsGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 29rem), 1fr)) !important;
+  gap: 1rem !important;
+}
+.umbrellaAccountModal .assetReportOptionButton {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 2.85rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 1rem !important;
+  min-height: 5.5rem !important;
+}
+.umbrellaAccountModal .assetReportOptionButton > span {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+.umbrellaAccountModal .assetReportOptionButton strong,
+.umbrellaAccountModal .assetReportOptionButton small {
+  max-width: none !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  text-wrap: wrap !important;
+}

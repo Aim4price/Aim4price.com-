@@ -17998,7 +17998,7 @@ export default function AssetRegisterClient({
                     ? 'Share outside Aim4price'
                     : `Share ${activeShareName}`}</h3>
                 <p>{assetShareDestination === 'choice'
-                  ? 'Choose where to share. Keep it inside Aim4price or send a ready-to-read message outside.'
+                  ? 'Choose where to share.'
                   : assetShareDestination === 'outside'
                     ? 'Review the message, choose any attachments, then send it once through WhatsApp or email.'
                     : isAssetGroupShare
