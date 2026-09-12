@@ -5190,14 +5190,14 @@ export default function MyInvoicesClient({
       ) : null}
 
       {flow === 'upload' ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
-          <div className={`${styles.formModal} ${styles.costUploadModal}`}>
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
+          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
               <div>
                 <h2>Upload invoice/photo</h2>
                 <p>{selectedAsset?.title ?? 'Selected asset'}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close" disabled={isExtracting}><CloseIcon /></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeModal} aria-label="Close" disabled={isExtracting}><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
