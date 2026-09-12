@@ -2,10 +2,8 @@
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_mobileStyles from '../../components/website-styles/FieldManagerControls.module.css';
 
-import DropdownOverlay from "../../components/DropdownOverlay";
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -61,12 +59,6 @@ type FilterOption = {
   count: number;
 };
 
-type RecentAdvertFilterKey = "status" | "type" | "province";
-
-type RecentAdvertFilterChoice = {
-  value: string;
-  label: string;
-};
 
 type RecentAdvertSummary = {
   totalAdverts: number;
@@ -181,218 +173,6 @@ function RefreshIcon({ className }: IconProps) {
   );
 }
 
-function FilterIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 5h16M7 12h10M10 19h4" />
-      <circle cx="15" cy="5" r="1.5" />
-      <circle cx="9" cy="12" r="1.5" />
-      <circle cx="15" cy="19" r="1.5" />
-    </svg>
-  );
-}
-
-function ChevronDownIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m7 10 5 5 5-5" />
-    </svg>
-  );
-}
-
-function RecentAdvertFilterDropdown({
-  label,
-  filterKey,
-  value,
-  options,
-  openFilter,
-  onOpenChange,
-  onChange,
-  wide = false,
-}: {
-  label: string;
-  filterKey: RecentAdvertFilterKey;
-  value: string;
-  options: RecentAdvertFilterChoice[];
-  openFilter: RecentAdvertFilterKey | null;
-  onOpenChange: (filter: RecentAdvertFilterKey | null) => void;
-  onChange: (value: string) => void;
-  wide?: boolean;
-}) {
-  const isOpen = openFilter === filterKey;
-  const selectedOption = options.find((option) => option.value === value);
-  const triggerRef = useRef<HTMLButtonElement | null>(null);
-  const triggerId = `recent-advert-${filterKey}-filter-trigger`;
-  const labelId = `recent-advert-${filterKey}-filter-label`;
-  const valueId = `recent-advert-${filterKey}-filter-value`;
-  const listboxId = `recent-advert-${filterKey}-filter-options`;
-
-  useEffect(() => {
-    if (!isOpen) return undefined;
-    const frame = window.requestAnimationFrame(() => {
-      const listbox = document.getElementById(listboxId);
-      const selected = listbox?.querySelector<HTMLElement>(
-        '[role="option"][aria-selected="true"]',
-      );
-      selected?.focus();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [isOpen, listboxId]);
-
-  function closeAndRestoreFocus() {
-    onOpenChange(null);
-    window.requestAnimationFrame(() => triggerRef.current?.focus());
-  }
-
-  function closeAndMoveFocus(reverse: boolean) {
-    const dialog = triggerRef.current?.closest('[role="dialog"]');
-    const focusable = dialog
-      ? Array.from(
-          dialog.querySelectorAll<HTMLElement>(
-            'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-          ),
-        ).filter((element) => element.getClientRects().length > 0)
-      : [];
-    const triggerIndex = focusable.findIndex(
-      (element) => element === triggerRef.current,
-    );
-    const nextIndex = focusable.length
-      ? (triggerIndex + (reverse ? -1 : 1) + focusable.length) %
-        focusable.length
-      : -1;
-
-    onOpenChange(null);
-    window.requestAnimationFrame(() => {
-      (focusable[nextIndex] ?? triggerRef.current)?.focus();
-    });
-  }
-
-  function handleTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      event.preventDefault();
-      onOpenChange(filterKey);
-      return;
-    }
-    if (event.key === "Escape" && isOpen) {
-      event.preventDefault();
-      event.stopPropagation();
-      closeAndRestoreFocus();
-    }
-  }
-
-  function handleListboxKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
-    const optionButtons = Array.from(
-      event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'),
-    );
-    const activeIndex = optionButtons.findIndex(
-      (option) => option === document.activeElement,
-    );
-    let nextIndex = activeIndex;
-
-    if (event.key === "ArrowDown") {
-      nextIndex = Math.min(optionButtons.length - 1, activeIndex + 1);
-    } else if (event.key === "ArrowUp") {
-      nextIndex = Math.max(0, activeIndex - 1);
-    } else if (event.key === "Home") {
-      nextIndex = 0;
-    } else if (event.key === "End") {
-      nextIndex = optionButtons.length - 1;
-    } else if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      closeAndRestoreFocus();
-      return;
-    } else if (event.key === "Tab") {
-      event.preventDefault();
-      event.stopPropagation();
-      closeAndMoveFocus(event.shiftKey);
-      return;
-    } else {
-      return;
-    }
-
-    event.preventDefault();
-    optionButtons[nextIndex]?.focus();
-  }
-
-  return (
-    <div
-      className={`${styles.recentAdvertFilterField} ${wide ? styles.recentAdvertFilterFieldWide : ""} ${isOpen ? styles.recentAdvertFilterFieldOpen : ""}`}
-      data-recent-advert-filter="true"
-    >
-      <span id={labelId}>{label}</span>
-      <div className={`${leadStyles.leadFilterDropdown} ${styles.recentAdvertFilterDropdown}`}>
-        <button
-          ref={triggerRef}
-          id={triggerId}
-          type="button"
-          className={`${leadStyles.leadFilterSelectButton} ${styles.recentAdvertFilterSelectButton} ${isOpen ? leadStyles.leadFilterSelectButtonOpen : ""}`}
-          onClick={() => onOpenChange(isOpen ? null : filterKey)}
-          onKeyDown={handleTriggerKeyDown}
-          aria-haspopup="listbox"
-          aria-expanded={isOpen}
-          aria-controls={isOpen ? listboxId : undefined}
-          aria-labelledby={`${labelId} ${valueId}`}
-          data-recent-advert-filter-trigger="true"
-        >
-          <span id={valueId}>{selectedOption?.label ?? "Choose option"}</span>
-          <ChevronDownIcon className={leadStyles.leadFilterSelectIcon} />
-        </button>
-
-        {isOpen ? (
-          <DropdownOverlay
-            id={listboxId}
-            anchorRef={triggerRef}
-            className={`${leadStyles.leadFilterSelectMenu} ${styles.recentAdvertFilterSelectMenu}`}
-            role="listbox"
-            aria-labelledby={labelId}
-            onKeyDown={handleListboxKeyDown}
-          >
-            {options.map((option) => {
-              const isSelected = option.value === value;
-
-              return (
-                <button
-                  type="button"
-                  key={`${filterKey}-${option.value}`}
-                  className={`${leadStyles.leadFilterSelectOption} ${styles.recentAdvertFilterSelectOption} ${isSelected ? leadStyles.leadFilterSelectOptionActive : ""}`}
-                  onClick={() => {
-                    onChange(option.value);
-                    closeAndRestoreFocus();
-                  }}
-                  role="option"
-                  aria-selected={isSelected}
-                  tabIndex={isSelected ? 0 : -1}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </DropdownOverlay>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 function ContactSentIcon({ className }: IconProps) {
   return (
     <svg
@@ -488,15 +268,10 @@ export default function RecentlyAdvertisedClient({
   const mobileStyles = useWebsiteStyles(native_mobileStyles, website_mobileStyles);
 
   const [adverts, setAdverts] = useState<RecentAdvert[]>([]);
-  const [typeOptions, setTypeOptions] = useState<FilterOption[]>([]);
-  const [provinceOptions, setProvinceOptions] = useState<FilterOption[]>([]);
   const [summary, setSummary] = useState(EMPTY_SUMMARY);
   const [pagination, setPagination] = useState(EMPTY_PAGINATION);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [type, setType] = useState("all");
-  const [province, setProvince] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -504,16 +279,11 @@ export default function RecentlyAdvertisedClient({
   const [contactAccess, setContactAccess] = useState<ContactAccess>("sign_in_required");
   const [advertiserIdentityVisible, setAdvertiserIdentityVisible] = useState(false);
   const [expandedAdvertId, setExpandedAdvertId] = useState<string | null>(null);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [openFilter, setOpenFilter] = useState<RecentAdvertFilterKey | null>(null);
   const [sourcingLoadingId, setSourcingLoadingId] = useState<string | null>(null);
   const [sourcingRequest, setSourcingRequest] = useState<SourcingRequest | null>(null);
   const [sourcingError, setSourcingError] = useState<string | null>(null);
   const [requestedAdvertIds, setRequestedAdvertIds] = useState<Set<string>>(() => new Set());
   const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set());
-  const filterTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const filterDialogRef = useRef<HTMLDivElement | null>(null);
-  const filterWasOpenRef = useRef(false);
   const sourcingTriggerRef = useRef<HTMLButtonElement | null>(null);
   const sourcingDialogRef = useRef<HTMLDivElement | null>(null);
   const sourcingWasOpenRef = useRef(false);
@@ -528,16 +298,11 @@ export default function RecentlyAdvertisedClient({
   }, [searchInput]);
 
   useEffect(() => {
-    if (!filterOpen && !sourcingRequest) return undefined;
+    if (!sourcingRequest) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (filterOpen && openFilter) {
-        setOpenFilter(null);
-        return;
-      }
-      setFilterOpen(false);
       setSourcingRequest(null);
       setSourcingError(null);
     };
@@ -546,42 +311,7 @@ export default function RecentlyAdvertisedClient({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [filterOpen, openFilter, sourcingRequest]);
-
-  useEffect(() => {
-    if (filterOpen) {
-      filterWasOpenRef.current = true;
-      const frame = window.requestAnimationFrame(() => {
-        filterDialogRef.current
-          ?.querySelector<HTMLElement>('[data-recent-advert-filter-trigger="true"]')
-          ?.focus();
-      });
-      return () => window.cancelAnimationFrame(frame);
-    }
-    if (filterWasOpenRef.current) {
-      filterWasOpenRef.current = false;
-      filterTriggerRef.current?.focus();
-    }
-    return undefined;
-  }, [filterOpen]);
-
-  useEffect(() => {
-    if (!openFilter) return undefined;
-
-    const closeOnOutsideClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (
-        !target?.closest(
-          '[data-recent-advert-filter="true"], [data-dropdown-overlay="true"]',
-        )
-      ) {
-        setOpenFilter(null);
-      }
-    };
-
-    document.addEventListener("mousedown", closeOnOutsideClick);
-    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
-  }, [openFilter]);
+  }, [sourcingRequest]);
 
   useEffect(() => {
     if (sourcingRequest) {
@@ -605,9 +335,6 @@ export default function RecentlyAdvertisedClient({
       pageSize: "10",
     });
     if (search) params.set("search", search);
-    if (status !== "all") params.set("status", status);
-    if (type !== "all") params.set("type", type);
-    if (province !== "all") params.set("province", province);
 
     async function loadAdverts() {
       try {
@@ -624,8 +351,6 @@ export default function RecentlyAdvertisedClient({
         }
         if (!mounted) return;
         setAdverts(Array.isArray(payload.adverts) ? payload.adverts : []);
-        setTypeOptions(Array.isArray(payload.typeOptions) ? payload.typeOptions : []);
-        setProvinceOptions(Array.isArray(payload.provinceOptions) ? payload.provinceOptions : []);
         setSummary(payload.summary ?? EMPTY_SUMMARY);
         setPagination(payload.pagination ?? EMPTY_PAGINATION);
         setContactAccess(
@@ -662,32 +387,7 @@ export default function RecentlyAdvertisedClient({
     return () => {
       mounted = false;
     };
-  }, [currentPage, province, refreshVersion, search, status, type]);
-
-  const activeFilterCount = useMemo(
-    () => [status, type, province].filter((value) => value !== "all").length,
-    [province, status, type],
-  );
-  const typeFilterChoices = useMemo<RecentAdvertFilterChoice[]>(
-    () => [
-      { value: "all", label: "All equipment types" },
-      ...typeOptions.map((item) => ({
-        value: item.value,
-        label: `${item.label} (${item.count})`,
-      })),
-    ],
-    [typeOptions],
-  );
-  const provinceFilterChoices = useMemo<RecentAdvertFilterChoice[]>(
-    () => [
-      { value: "all", label: "All provinces" },
-      ...provinceOptions.map((item) => ({
-        value: item.value,
-        label: `${item.label} (${item.count})`,
-      })),
-    ],
-    [provinceOptions],
-  );
+  }, [currentPage, refreshVersion, search]);
 
   async function sendSourcingRequest(advert: RecentAdvert) {
     if (!advert.contactEligible || contactAccess !== "allowed") return;
@@ -717,24 +417,6 @@ export default function RecentlyAdvertisedClient({
     } finally {
       if (sourcingRequestRef.current === requestId) setSourcingLoadingId(null);
     }
-  }
-
-  function openFilterModal() {
-    setOpenFilter(null);
-    setFilterOpen(true);
-  }
-
-  function closeFilterModal() {
-    setOpenFilter(null);
-    setFilterOpen(false);
-  }
-
-  function resetFilters() {
-    setStatus("all");
-    setType("all");
-    setProvince("all");
-    setCurrentPage(1);
-    setOpenFilter(null);
   }
 
   function renderStatus(advert: RecentAdvert) {
@@ -1156,7 +838,7 @@ export default function RecentlyAdvertisedClient({
 
       <section
         className={`${assetStyles.toolbar} ${workspaceStyles.controlsRow} ${leadStyles.leadSearchToolbar} ${styles.parityToolbar}`}
-        aria-label="Search and filter recently advertised equipment"
+        aria-label="Search recently advertised equipment"
       >
         <label className={`${assetStyles.searchWrap} ${workspaceStyles.searchField}`}>
           <SearchIcon className={assetStyles.searchIcon} />
@@ -1185,19 +867,7 @@ export default function RecentlyAdvertisedClient({
             <RefreshIcon className={`${assetStyles.buttonIcon} ${loading ? leadStyles.leadRefreshIconActive : ""}`} />
             <span>Refresh</span>
           </button>
-          <button
-            ref={filterTriggerRef}
-            type="button"
-            className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${leadStyles.leadFilterButton} ${activeFilterCount ? assetStyles.filterTriggerButtonActive : ""}`}
-            onClick={openFilterModal}
-            disabled={loading}
-            aria-haspopup="dialog"
-            aria-expanded={filterOpen}
-            aria-controls="recent-advert-filter-dialog"
-          >
-            <FilterIcon className={assetStyles.buttonIcon} />
-            <span>{activeFilterCount ? `Filter (${activeFilterCount})` : "Filter"}</span>
-          </button>
+
         </div>
       </section>
 
@@ -1228,7 +898,7 @@ export default function RecentlyAdvertisedClient({
           >
             <span>Showing</span>
             <strong>{pagination.totalItems}</strong>
-            <span>adverts for the current search and filters</span>
+            <span>adverts for the current search</span>
           </div>
         )
       ) : null}
@@ -1244,7 +914,7 @@ export default function RecentlyAdvertisedClient({
           adverts.map(renderAdvertCard)
         ) : !error ? (
           <div className={`${workspaceStyles.emptyState} ${styles.emptyState}`}>
-            No Marketplace adverts match this search or filter.
+            No Marketplace adverts match this search.
           </div>
         ) : null}
       </section>
@@ -1264,75 +934,6 @@ export default function RecentlyAdvertisedClient({
             </div>
           ) : null}
         </nav>
-      ) : null}
-
-      {filterOpen ? (
-        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeFilterModal} />
-          <div
-            ref={filterDialogRef}
-            id="recent-advert-filter-dialog"
-            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.recentAdvertFilterModal}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="recent-advert-filter-title"
-            aria-describedby="recent-advert-filter-description"
-            onKeyDown={keepFocusInDialog}
-          >
-            <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader}`}>
-              <div className={assetStyles.modalHeaderText}>
-                <h3 id="recent-advert-filter-title">Choose which adverts to show</h3>
-                <p id="recent-advert-filter-description">Filter by availability, equipment type or Marketplace location.</p>
-              </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={closeFilterModal} aria-label="Close recently advertised filters">
-                <CloseIcon className={assetStyles.buttonIcon} />
-              </button>
-            </div>
-            <div className={`${workspaceStyles.modalBody} ${styles.recentAdvertFilterFields}`}>
-              <RecentAdvertFilterDropdown
-                label="Status"
-                filterKey="status"
-                value={status}
-                options={STATUS_OPTIONS}
-                openFilter={openFilter}
-                onOpenChange={setOpenFilter}
-                onChange={(nextStatus) => {
-                  setStatus(nextStatus);
-                  setCurrentPage(1);
-                }}
-              />
-              <RecentAdvertFilterDropdown
-                label="Equipment type"
-                filterKey="type"
-                value={type}
-                options={typeFilterChoices}
-                openFilter={openFilter}
-                onOpenChange={setOpenFilter}
-                onChange={(nextType) => {
-                  setType(nextType);
-                  setCurrentPage(1);
-                }}
-              />
-              <RecentAdvertFilterDropdown
-                label="Province"
-                filterKey="province"
-                value={province}
-                options={provinceFilterChoices}
-                openFilter={openFilter}
-                onOpenChange={setOpenFilter}
-                onChange={(nextProvince) => {
-                  setProvince(nextProvince);
-                  setCurrentPage(1);
-                }}
-                wide
-              />
-            </div>
-            <div className={`${workspaceStyles.modalFooter} ${styles.recentAdvertFilterActions}`}>
-              <button type="button" className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`} onClick={resetFilters}>Reset filters</button>
-              <button type="button" className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`} onClick={closeFilterModal}>Done</button>
-            </div>
-          </div>
-        </div>
       ) : null}
 
       {sourcingRequest ? (

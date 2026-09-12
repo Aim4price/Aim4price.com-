@@ -2604,76 +2604,6 @@
   white-space: nowrap;
 }
 
-.recentAdvertFilterModal.recentAdvertFilterModal[role='dialog'] {
-  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 64rem) !important;
-}
-
-.recentAdvertFilterFields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem 1.1rem;
-}
-
-.recentAdvertFilterField {
-  min-width: 0;
-  display: grid;
-  gap: 0.55rem;
-}
-
-.recentAdvertFilterFieldWide {
-  grid-column: 1 / -1;
-}
-
-.recentAdvertFilterFieldOpen {
-  z-index: 2;
-}
-
-.recentAdvertFilterField > span {
-  color: #33424c;
-  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.86rem;
-  font-weight: 700;
-  line-height: 1.25;
-}
-
-.recentAdvertFilterDropdown {
-  min-width: 0;
-}
-
-.recentAdvertFilterSelectButton.recentAdvertFilterSelectButton {
-  min-height: 3.55rem;
-  padding: 0 1.05rem;
-  border: 1px solid #dbe4ee;
-  border-radius: 1rem;
-  background: #ffffff;
-  color: #1d2d36;
-  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.96rem;
-  font-weight: 700;
-}
-
-.recentAdvertFilterSelectButton:focus-visible {
-  border-color: rgba(35, 104, 81, 0.54);
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1);
-}
-
-.recentAdvertFilterSelectMenu.recentAdvertFilterSelectMenu {
-  max-height: min(16rem, calc(calc(var(--website-design-vh, 1dvh) * 100) - 15rem));
-  padding: 0.48rem;
-  border-radius: 1.05rem;
-  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
-}
-
-.recentAdvertFilterSelectOption.recentAdvertFilterSelectOption {
-  min-height: 2.8rem;
-  padding-inline: 0.95rem;
-  border-radius: 0.78rem;
-  font-size: 0.94rem;
-  font-weight: 700;
-}
-
-.recentAdvertFilterActions,
 .recentAdvertContactActions {
   display: flex !important;
   flex-wrap: wrap;
@@ -3011,13 +2941,8 @@
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .recentAdvertDetailGrid,
-  :global(:where(html:not(:has([data-website-canvas])))) .recentAdvertFilterFields,
   :global(:where(html:not(:has([data-website-canvas])))) .recentAdvertContactGrid {
     grid-template-columns: 1fr;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .recentAdvertFilterFieldWide {
-    grid-column: auto;
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .recentAdvertExpandedActions {
@@ -3025,7 +2950,6 @@
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .recentAdvertExpandedActions > *,
-  :global(:where(html:not(:has([data-website-canvas])))) .recentAdvertFilterActions > *,
   :global(:where(html:not(:has([data-website-canvas])))) .recentAdvertContactActions > * {
     width: 100%;
   }
@@ -3087,7 +3011,6 @@
 .compactAppSurface.compactAppSurface .compactExpandedTop,
 .compactAppSurface.compactAppSurface .discoveryDetailsGrid,
 .compactAppSurface.compactAppSurface .discoveryInlineContact,
-.compactAppSurface.compactAppSurface .recentAdvertFilterFields,
 .compactAppSurface.compactAppSurface .recentAdvertContactActions,
 .discoveryAppOverlay .contactGrid,
 .discoveryAppOverlay .contactActions {
@@ -3167,7 +3090,6 @@
 .compactAppSurface.compactAppSurface .compactExpandedTop > a,
 .compactAppSurface.compactAppSurface .discoveryExpandedFooter > button,
 .compactAppSurface.compactAppSurface .discoveryViewSwitchButtons > button,
-.compactAppSurface.compactAppSurface .recentAdvertFilterActions > *,
 .compactAppSurface.compactAppSurface .recentAdvertContactActions > *,
 .discoveryAppOverlay .contactActions > * {
   width: 100% !important;
@@ -3179,11 +3101,6 @@
   border-radius: 14px !important;
   text-align: center;
   justify-content: center;
-}
-.compactAppSurface.compactAppSurface .recentAdvertFilterActions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: .85rem;
 }
 .compactAppSurface.compactAppSurface .primaryButton,
 .compactAppSurface.compactAppSurface .discoveryOverviewOpenButton,

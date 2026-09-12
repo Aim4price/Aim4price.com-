@@ -11,60 +11,6 @@ const recentAdvertsClient = read(
 );
 const css = read("app/asset-discovery/page.module.css");
 
-test("Recently advertised filter uses the same wider dialog layout", () => {
-  assert.match(
-    css,
-    /\.recentAdvertFilterModal\.recentAdvertFilterModal\[role='dialog'\]\s*\{[\s\S]*?width:\s*min\(calc\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 100\) - 2rem\), 64rem\)\s*!important;/,
-  );
-  assert.match(
-    css,
-    /\.recentAdvertFilterFields\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
-  );
-  assert.match(
-    css,
-    /@media \(max-width: 760px\)\s*\{[\s\S]*?\.recentAdvertFilterFields,[\s\S]*?grid-template-columns:\s*1fr;/,
-  );
-});
-
-test("Recently advertised filters use branded custom listboxes", () => {
-  const filterDropdown = recentAdvertsClient.slice(
-    recentAdvertsClient.indexOf("function RecentAdvertFilterDropdown("),
-    recentAdvertsClient.indexOf("function ContactSentIcon("),
-  );
-  const filterModal = recentAdvertsClient.slice(
-    recentAdvertsClient.indexOf("{filterOpen ? ("),
-    recentAdvertsClient.indexOf("{sourcingRequest ? ("),
-  );
-
-  assert.match(filterDropdown, /aria-haspopup="listbox"/);
-  assert.match(
-    filterDropdown,
-    /aria-controls=\{isOpen \? listboxId : undefined\}/,
-  );
-  assert.match(filterDropdown, /<DropdownOverlay[\s\S]*?role="listbox"/);
-  assert.match(filterDropdown, /role="option"/);
-  assert.match(filterDropdown, /aria-selected=\{isSelected\}/);
-  assert.match(filterDropdown, /event\.key === "ArrowDown"/);
-  assert.match(filterDropdown, /event\.key === "Home"/);
-  assert.match(filterDropdown, /event\.key === "End"/);
-  assert.match(filterDropdown, /event\.key === "Escape"/);
-  assert.match(filterDropdown, /event\.key === "Tab"/);
-  assert.match(filterDropdown, /tabIndex=\{isSelected \? 0 : -1\}/);
-  assert.equal(
-    (filterModal.match(/<RecentAdvertFilterDropdown/g) ?? []).length,
-    3,
-  );
-  assert.doesNotMatch(filterModal, /<select\b|<option\b/);
-});
-
-test("Recently advertised filter dialog exposes its description", () => {
-  assert.match(
-    recentAdvertsClient,
-    /aria-describedby="recent-advert-filter-description"/,
-  );
-  assert.match(recentAdvertsClient, /id="recent-advert-filter-description"/);
-});
-
 test("desktop Discovery has no filter button, modal or hidden filter handlers", () => {
   assert.doesNotMatch(client, /isFilterModalOpen|openDiscoveryFilterModal|closeDiscoveryFilterModal|resetDiscoveryFilters|DiscoveryFilterDropdown|discovery-filter-title|activeDiscoveryFilterLabel/);
   assert.doesNotMatch(css, /\.discoveryFilterModal/);
@@ -80,4 +26,12 @@ test("Discovery settings reuse the Change Password dialog design", () => {
   assert.match(client, /<h2 id="discovery-settings-title">/);
   assert.match(client, /aria-describedby="discovery-settings-description"/);
   assert.match(client, /settingsDialogRef\.current\?\.focus/);
+});
+
+test("Recently advertised has search and refresh without a filter modal", () => {
+  assert.doesNotMatch(recentAdvertsClient, /FilterIcon|RecentAdvertFilterDropdown|filterOpen|openFilterModal|resetFilters/);
+  assert.doesNotMatch(recentAdvertsClient, /params\.set\("(?:status|type|province)"/);
+  assert.doesNotMatch(css, /\.recentAdvertFilter/);
+  assert.match(recentAdvertsClient, /Search recently advertised equipment/);
+  assert.match(recentAdvertsClient, /adverts for the current search/);
 });
