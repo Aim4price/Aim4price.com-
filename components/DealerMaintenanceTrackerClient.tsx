@@ -2049,6 +2049,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             ...serviceTarget.record,
             assetTitle: serviceTarget.asset.assetTitle,
             assetKind: serviceTarget.asset.assetKind,
+            maintenanceIdentity: serviceTarget.asset.maintenanceIdentity,
             assetCategoryLabel: serviceTarget.asset.assetKind,
             assetYearModel: serviceTarget.asset.yearModel,
             assetCondition: serviceTarget.asset.condition,
@@ -2114,6 +2115,3 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
     </main>
   );
 }
-
-
-

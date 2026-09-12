@@ -1,5 +1,5 @@
 /* Cache only the public offline shell. Private account data is encrypted in IndexedDB by the unlocked app. */
-const SHELL_CACHE = 'aim4price-field-offline-shell-v2';
+const SHELL_CACHE = 'aim4price-field-offline-shell-v3';
 const SHELL_URL = '/field-manager/offline.html';
 const SHELL_FILES = [SHELL_URL, '/field-manager/offline.css', '/field-manager/montserrat-latin.woff', '/field-manager/offline.mjs', '/field-manager/offline-store.mjs'];
 self.addEventListener('install', event => {

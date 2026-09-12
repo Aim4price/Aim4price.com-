@@ -34,6 +34,7 @@ type RouteContext = {
 };
 
 type ScanEventRequest = {
+  maintenanceWork?: unknown;
   hours?: unknown;
   lifeWorkedPercent?: unknown;
   note?: unknown;
@@ -410,6 +411,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       lifeWorkedPercent: payload.lifeWorkedPercent,
       condition: null,
       note: payload.note || null,
+      maintenanceWork: body.maintenanceWork,
       photoUrls: payload.photoUrls,
       latitude: payload.latitude,
       longitude: payload.longitude,
@@ -487,6 +489,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             completedAt: saved.event.createdAtIso,
             completedUsage,
             completedNotes: saved.event.note || payload.note,
+            maintenanceWork: saved.event.maintenanceWork,
             completedBy,
             sourceScanEventId: saved.event.id,
           },
@@ -514,6 +517,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
             completedAt: saved.event.createdAtIso,
             completedUsage,
             completedNotes: saved.event.note || payload.note,
+            maintenanceWork: saved.event.maintenanceWork,
             completedBy,
           },
         );

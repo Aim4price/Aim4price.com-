@@ -1,5 +1,7 @@
 "use client";
 
+import { useMaintenanceChecklist } from '../../../lib/use-maintenance-checklist';
+import { checklistOptions, buildMaintenanceWorkSnapshot, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from '../../../lib/maintenance-catalogue';
 import {
   useEffect,
   useMemo,
@@ -82,6 +84,7 @@ type PartnerDirectoryEntry = {
 };
 
 type ScanSafeAsset = {
+  maintenanceIdentity?: MaintenanceIdentity;
   id: string;
   userId: string;
   publicAssetCode: string;
@@ -182,11 +185,13 @@ type DraftState = {
   checkedItems: string[];
   servicedItems: string[];
   repairDetails: string;
+  repairedItems: string[];
   serviceCompany: string;
   mechanicName: string;
 };
 
 type PendingScanUpdate = {
+  maintenanceWork?: MaintenanceWorkSnapshot[];
   hours: string;
   notes: string[];
   photoUrls: string[];
@@ -222,6 +227,7 @@ const initialDraft: DraftState = {
   checkedItems: [],
   servicedItems: [],
   repairDetails: "",
+  repairedItems: [],
   serviceCompany: "",
   mechanicName: "",
 };
@@ -765,7 +771,7 @@ function buildServiceNote(draft: DraftState): string {
     serviceMode: draft.serviceMode,
     checkedItems: draft.checkedItems,
     servicedItems: draft.servicedItems,
-    repairDetails: draft.repairDetails,
+    repairDetails: [draft.repairDetails, draft.repairedItems.length ? `Components: ${draft.repairedItems.join(", ")}` : ""].filter(Boolean).join("\n"),
     serviceCompany: draft.serviceCompany,
     mechanicName: draft.mechanicName,
     note: draft.note,
@@ -2559,6 +2565,7 @@ export default function ScanClient({
           [...nextPendingUpdate.photoUrls, ...stagedPhotos],
           MAX_QR_PHOTOS,
         ),
+        maintenanceWork: [...(nextPendingUpdate.maintenanceWork || []), buildMaintenanceWorkSnapshot(checklist, draft.serviceMode || "checked", draft.serviceMode === "checked" ? draft.checkedItems : draft.serviceMode === "repaired" ? draft.repairedItems : draft.servicedItems)],
         hasService: true,
         hasPhotos: stagedPhotos.length > 0 || nextPendingUpdate.hasPhotos,
       });
@@ -2742,6 +2749,7 @@ export default function ScanClient({
     const payload = {
       operatorName: operatorNameForSave,
       hours: sessionHours,
+      maintenanceWork: updateToPersist.maintenanceWork,
       note: updateToPersist.notes.join("\n\n---\n\n"),
       photoUrls: updateToPersist.photoUrls,
       latitude: scanLocationPayloadText(finalLatitude),
@@ -2927,13 +2935,14 @@ export default function ScanClient({
     () => resolveAssetServiceProfile(asset),
     [asset],
   );
+  const checklist = useMaintenanceChecklist(asset, draft.checkedItems.length > 0 || draft.servicedItems.length > 0 || draft.repairedItems.length > 0 || pendingUpdate.hasService);
   const checkedOptions = useMemo(
-    () => checkedOptionsForProfile(serviceProfile),
-    [serviceProfile],
+    () => checklist.items.length ? checklistOptions(checklist, "checked") : checkedOptionsForProfile(serviceProfile),
+    [serviceProfile, checklist],
   );
   const servicedOptions = useMemo(
-    () => servicedOptionsForProfile(serviceProfile),
-    [serviceProfile],
+    () => checklist.items.length ? checklistOptions(checklist, "serviced") : servicedOptionsForProfile(serviceProfile),
+    [serviceProfile, checklist],
   );
   const serviceCopy = useMemo(
     () => serviceCopyForProfile(serviceProfile),
@@ -4230,7 +4239,7 @@ export default function ScanClient({
                       <div className={styles.servicePanel}>
                         <div className={styles.serviceSectionHeader}>
                           <strong>{serviceCopy.checkedHeader}</strong>
-                          <small>{serviceCopy.checkedSubheader}</small>
+                          <small>{checklist.label} · Select applicable items.</small>
                         </div>
 
                         <div className={styles.optionList}>
@@ -4257,7 +4266,7 @@ export default function ScanClient({
                               >
                                 <span className={styles.listOptionText}>
                                   <strong>{option.label}</strong>
-                                  <small>{option.description}</small>
+                                  {option.description ? <small>{option.description}</small> : null}
                                 </span>
                                 <span className={styles.listOptionCheck}>
                                   {selected ? "✓" : ""}
@@ -4321,7 +4330,7 @@ export default function ScanClient({
                           <>
                             <div className={styles.serviceSectionHeader}>
                               <strong>{serviceCopy.servicedHeader}</strong>
-                              <small>{serviceCopy.servicedSubheader}</small>
+                              <small>{checklist.label} · Add actions or other work in notes.</small>
                             </div>
 
                             <div className={styles.optionList}>
@@ -4348,7 +4357,7 @@ export default function ScanClient({
                                   >
                                     <span className={styles.listOptionText}>
                                       <strong>{option.label}</strong>
-                                      <small>{option.description}</small>
+                                      {option.description ? <small>{option.description}</small> : null}
                                     </span>
                                     <span className={styles.listOptionCheck}>
                                       {selected ? "✓" : ""}
@@ -4501,6 +4510,15 @@ export default function ScanClient({
                             <div className={styles.serviceSectionHeader}>
                               <strong>{serviceCopy.repairedHeader}</strong>
                               <small>{serviceCopy.repairedSubheader}</small>
+                            </div>
+                            <div className={styles.optionList}>
+                              {checklistOptions(checklist, 'repaired').map(option => <button key={option.id} type="button" disabled={isSaving}
+                                aria-pressed={draft.repairedItems.includes(option.label)}
+                                className={`${styles.listOptionButton} ${draft.repairedItems.includes(option.label) ? styles.listOptionActive : ''}`}
+                                onClick={() => setDraft(current => ({ ...current, repairedItems: current.repairedItems.includes(option.label) ? current.repairedItems.filter(i => i !== option.label) : [...current.repairedItems, option.label] }))}>
+                                <span className={styles.listOptionText}><strong>{option.label}</strong></span>
+                                <span className={styles.listOptionCheck}>{draft.repairedItems.includes(option.label) ? '✓' : ''}</span>
+                              </button>)}
                             </div>
 
                             <label className={styles.field}>
