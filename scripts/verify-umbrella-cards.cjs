@@ -15,8 +15,8 @@ const delay = ms => new Promise(resolve=>setTimeout(resolve,ms));
 async function check(browser, url) {
   const page=await browser.newPage(); const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const make=(id,title,value,extra={})=>({id,userId:user.id,registerId:'canvas-register',title,kind:'tractor',value,selectedValueExVat:value,aim4priceValueExVat:value,replacementPriceExVat:500000,selectedMethod:'aim4price',specsJson:{},brandName:'New Holland',modelName:'TT4.90',equipmentFamilyKey:'tractor',equipmentFamilyLabel:'Tractors',yearModel:2022,hours:1276,condition:'good',note:'',serialNumber:'',marketplaceStatus:'draft',photos:[],documents:[],createdAtIso:'2026-09-13T00:00:00Z',updatedAtIso:'2026-09-13T00:00:00Z',...extra});
-  const assets=[make('member','2018 Massey Ferguson 4708',194438),make('normal','2022 New Holland TT4.90 4WD Openstation',327133),make('live','Year Unknown Zimmatic 6-Tower + Overhang',459000,{marketplaceStatus:'live',isPublishedToMarketplace:true})];
-  let groups=[{id:'umbrella',userId:user.id,registerId:'canvas-register',name:'Asset umbrella',valueMode:'separate',isFlagged:false,members:[{assetId:'member',role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0}],createdAtIso:'2026-09-13T00:00:00Z',updatedAtIso:'2026-09-13T00:00:00Z'}];
+  const assets=[make('member','2018 Massey Ferguson 4708',194438),make('member2','Farm trailer',15000,{specsJson:{assetFlagged:true}}),make('normal','2022 New Holland TT4.90 4WD Openstation',327133),make('live','Year Unknown Zimmatic 6-Tower + Overhang',459000,{marketplaceStatus:'live',isPublishedToMarketplace:true})];
+  let groups=[{id:'umbrella',userId:user.id,registerId:'canvas-register',name:'Asset umbrella',valueMode:'separate',isFlagged:false,members:[{assetId:'member',role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0},{assetId:'member2',role:'member',relationship:'works_with',countsTowardTotal:true,sortOrder:1}],createdAtIso:'2026-09-13T00:00:00Z',updatedAtIso:'2026-09-13T00:00:00Z'}];
   await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth}); localStorage.setItem('aim4price.website-canvas.v2',JSON.stringify({mode:'auto'}));});
   await page.setRequestInterception(true);
   page.on('request',request=>{
@@ -47,12 +47,61 @@ async function check(browser, url) {
     await page.click(`[aria-label="${groups[0].isFlagged?'Unflag':'Flag'} Asset umbrella"]`);
     await page.waitForFunction(()=>document.querySelector('[aria-label="Unflag Asset umbrella"]'));
     assert.equal(await page.$eval('#asset-card-normal [class*="assetGroupButton"]',e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
+    const groupDetails = '[class*="assetGroupHeaderRow"] [class*="cardViewDetailsButton"]';
+    const details = id => `#asset-card-${id} [class*="cardViewDetailsButton"]`;
+    const isOpen = async id => page.$eval(details(id), e => e.getAttribute('aria-expanded') === 'true');
+    const outside = async () => { await page.mouse.click(2,1000); await delay(100); };
+    const red = async selector => {
+      await page.waitForFunction(sel => getComputedStyle(document.querySelector(sel)).borderTopColor === 'rgb(223, 67, 77)', {}, selector);
+      return page.$eval(selector,e=>getComputedStyle(e).borderTopColor);
+    };
+    assert.equal(await red('[class*="assetGroupHeaderFlagged"]'),'rgb(223, 67, 77)');
+    await page.click(groupDetails);
+    await page.waitForSelector('#asset-card-member');
+    for (const id of ['member','member2']) {
+      assert.equal(await page.$eval(`#asset-card-${id} [class*="assetFlagButton"]`, e=>e.getAttribute('aria-pressed')),'true');
+      assert.equal(await red(`#asset-card-${id}`),'rgb(223, 67, 77)');
+    }
+    await page.click(details('member'));
+    await page.waitForFunction(()=>document.querySelector('#asset-card-member [aria-expanded="true"]'));
+    assert.equal(await red('#asset-card-member'),'rgb(223, 67, 77)');
+    await page.click('#asset-card-member h2');
+    assert.equal(await isOpen('member'),true,'inside clicks keep details open');
+    await page.screenshot({path:path.join(output,`umbrella-red-expanded-${width}.png`)});
+    await outside();
+    assert.equal(await page.$('#asset-card-member'),null,'outside closes umbrella and member details');
+    await page.click(groupDetails);
+    await page.waitForSelector('#asset-card-member');
+    assert.equal(await isOpen('member'),false,'reopening umbrella does not restore stale member details');
+    await page.click(details('member'));
+    await page.click('#asset-card-member2 h2');
+    assert.equal(await page.$('#asset-card-member'),null,'clicking a muted card outside the active card dismisses the focused group');
+    await page.click(groupDetails);
+    await page.waitForSelector('#asset-card-member');
+    await page.click('#asset-card-member [class*="assetFlagButton"]');
+    await page.waitForSelector('[aria-label="Flag Asset umbrella"]');
+    assert.equal(await page.$eval('#asset-card-member [class*="assetFlagButton"]',e=>e.getAttribute('aria-pressed')),'false');
+    assert.equal(await page.$eval('#asset-card-member2 [class*="assetFlagButton"]',e=>e.getAttribute('aria-pressed')),'true','unflagging umbrella preserves individual flags');
+    await outside();
+    await page.click(details('normal'));
+    await page.waitForFunction(()=>document.querySelector('#asset-card-normal [aria-expanded="true"]'));
+    await page.click('#asset-card-normal h2');
+    assert.equal(await isOpen('normal'),true);
+    await page.click('#asset-card-normal [class*="cardManageButton"]');
+    await page.waitForSelector('[role="dialog"]');
+    await page.$eval('[role="dialog"]',e=>e.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})));
+    assert.equal(await isOpen('normal'),true,'modal interaction preserves expanded asset');
+    await page.keyboard.press('Escape');
+    await outside();
+    assert.equal(await isOpen('normal'),false,'outside closes standalone details');
+    await page.click('[aria-label="Flag Asset umbrella"]');
+    await page.waitForSelector('[aria-label="Unflag Asset umbrella"]');
     await page.screenshot({path:path.join(output,`umbrella-flagged-${width}.png`)});
     await page.reload({waitUntil:'networkidle2'});
     await page.waitForSelector('[aria-label="Unflag Asset umbrella"]');
     groups[0].isFlagged=false;
   }
-  assert.deepEqual(errors,[]);console.log('PASS populated card layout, direct editor, neutral standalone controls and whole-umbrella flag action');await page.close();
+  assert.deepEqual(errors,[]);console.log('PASS card layout, inherited red flags, independent flag preservation, outside dismissal and modal/inside-click preservation');await page.close();
 }
 async function main() {
   await fs.mkdir(output,{recursive:true});
