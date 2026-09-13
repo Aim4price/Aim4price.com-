@@ -3468,7 +3468,7 @@ export default function MarketplaceClient({
       {createListingModalOpen ? (
         <div className={styles.createListingOverlay} data-website-overlay onClick={() => setCreateListingModalOpen(false)}>
           <div
-            className={styles.createListingDialog}
+            className={`${styles.createListingDialog} ${styles.accountCreateListingDialog} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-listing-title"
@@ -3476,11 +3476,11 @@ export default function MarketplaceClient({
           >
             <button
               type="button"
-              className={styles.createListingCloseButton}
+              className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCreateListingClose}`}
               onClick={() => setCreateListingModalOpen(false)}
               aria-label="Close create listing options"
             >
-              <IconClose />
+              <span aria-hidden="true">×</span>
             </button>
 
             {!isSignedIn ? (
@@ -3502,10 +3502,10 @@ export default function MarketplaceClient({
                 </div>
 
                 <div className={styles.createListingActionRow}>
-                  <a href="/auth#signup" className={styles.createListingPrimaryAction}>
+                  <a href="/auth#signup" className={`${styles.createListingPrimaryAction} ${accountStyles.primaryButton}`}>
                     Create account
                   </a>
-                  <a href={`tel:${DEFAULT_MARKETPLACE_CONTACT_TEL}`} className={styles.createListingSecondaryAction}>
+                  <a href={`tel:${DEFAULT_MARKETPLACE_CONTACT_TEL}`} className={`${styles.createListingSecondaryAction} ${accountStyles.ghostButton}`}>
                     Contact Kuyler
                   </a>
                 </div>
@@ -3532,6 +3532,11 @@ export default function MarketplaceClient({
                 </div>
               </>
             )}
+            {isSignedIn ? (
+              <div className={styles.createListingFooter}>
+                <button type="button" className={accountStyles.ghostButton} onClick={() => setCreateListingModalOpen(false)}>Cancel</button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

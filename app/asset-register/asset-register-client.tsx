@@ -1453,7 +1453,7 @@ const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
   { value: 'aim4price-value', label: 'Aim4price value' },
   { value: 'manual-value', label: 'Manual value' },
   { value: 'marketplace', label: 'Marketplace' },
-  { value: 'property', label: `${PROPERTY_ASSET_LABEL} only` },
+  { value: 'property', label: PROPERTY_ASSET_LABEL },
   { value: 'no-property', label: `No ${PROPERTY_ASSET_LABEL.toLowerCase()}` },
 ];
 
