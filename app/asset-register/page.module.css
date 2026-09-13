@@ -36957,7 +36957,7 @@ button.documentOpenLink {
   margin: 0 !important;
 }
 
-.assetGroupMemberActions .assetGroupButton {
+.assetGroupMemberActions .assetGroupButtonActive {
   border-color: rgba(20, 135, 95, 0.34) !important;
   color: #075d45 !important;
   background: rgba(218, 246, 234, 0.82) !important;
@@ -40773,5 +40773,75 @@ button.documentOpenLink {
  font-weight:750 !important;
  padding:0 .75rem !important;
  justify-content:center !important;
+ }
+}
+
+/* Approved umbrella and asset card design: neutral controls until grouped. */
+.page .assetGroupHeader {
+ background:linear-gradient(180deg,#f0faf5,#f5fbf7) !important;
+ border-color:rgba(61,154,115,.32) !important;
+ min-height:12rem;
+}
+.page .assetGroupMemberActions .assetGroupButton:not(.assetGroupButtonActive) {
+ background:#fff !important;
+ border-color:rgba(126,159,180,.25) !important;
+ color:#647780 !important;
+}
+.page .assetGroupMemberActions .assetGroupButton:not(.assetGroupButtonActive):hover {
+ background:#f5f8f7 !important;
+ border-color:rgba(126,159,180,.5) !important;
+}
+.page .assetGroupHeader > .assetGroupMemberActions {
+ top:2.2rem !important;
+}
+.page .assetCardRow > .assetCard {
+ padding-top:1.4rem !important;
+ min-height:10.2rem;
+}
+.page .assetCard > .assetGroupMemberActions {
+ top:.9rem !important;
+}
+.page .assetTitleBlock > .badgeRow { margin:0; order:9; }
+.page .umbrellaFlagStatus {
+ display:inline-flex;
+ align-items:center;
+ gap:.5rem;
+ margin:.7rem 0 0 1rem;
+ color:#697c84;
+ font-size:.85rem;
+ font-weight:650;
+}
+.page .umbrellaFlagStatus .buttonIcon { color:#b82f38; }
+.page .marketplaceLiveStatus {
+ display:inline-flex;
+ align-items:center;
+ justify-self:start;
+ gap:.45rem;
+ width:fit-content;
+ padding:.4rem .7rem;
+ border:1px solid #c9ecdb;
+ border-radius:999px;
+ background:#eff9f3;
+ color:#126046;
+ font-size:.82rem;
+ line-height:1.2;
+ font-weight:650;
+ letter-spacing:0;
+ text-transform:none;
+ order:10;
+}
+.page .marketplaceLiveStatus > span {
+ width:.5rem;
+ height:.5rem;
+ border-radius:50%;
+ background:#15945c;
+}
+@media(max-width:760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .page .assetGroupHeader,
+ :global(:where(html:not(:has([data-website-canvas])))) .page .assetCardRow > .assetCard {
+  min-height:0;
+ }
+ :global(:where(html:not(:has([data-website-canvas])))) .page .umbrellaFlagStatus {
+  margin-left:0;
  }
 }

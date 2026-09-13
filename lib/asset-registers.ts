@@ -604,7 +604,8 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
 
   await db.query(`
     alter table if exists public.asset_groups
-      alter column register_id drop not null
+      alter column register_id drop not null,
+      add column if not exists is_flagged boolean not null default false
   `);
 
   await db.query(`

@@ -13,6 +13,7 @@ import {
 } from './asset-groups-shared';
 
 type AssetGroupRow = {
+  is_flagged: boolean;
   id: string;
   user_id: string;
   register_id: string | null;
@@ -83,6 +84,7 @@ function mapGroups(rows: AssetGroupRow[], memberRows: AssetGroupMemberRow[]): As
       registerId: cleanText(row.register_id) || null,
       name: cleanText(row.name),
       valueMode: normalizeAssetGroupValueMode(row.value_mode),
+      isFlagged: row.is_flagged === true,
       members: (membersByGroupId.get(cleanText(row.id)) ?? []).sort((left, right) => {
         if (left.role !== right.role) return left.role === 'primary' ? -1 : right.role === 'primary' ? 1 : 0;
         return left.sortOrder - right.sortOrder;
@@ -245,7 +247,7 @@ export async function listAssetGroups(
   const cleanedRegisterId = cleanText(registerId);
   const groupResult = await db.query<AssetGroupRow>(
     `select asset_group.id::text, asset_group.user_id, asset_group.register_id::text,
-            asset_group.name, asset_group.value_mode, asset_group.created_at, asset_group.updated_at
+            asset_group.name, asset_group.value_mode, asset_group.is_flagged, asset_group.created_at, asset_group.updated_at
        from public.asset_groups asset_group
        where asset_group.user_id = $1
          and (
@@ -629,4 +631,23 @@ export async function pruneAssetGroups(userId: string): Promise<void> {
        ) < 1`,
     [userId],
   );
+}
+
+/** Flags the grouping itself; member asset flags are deliberately independent. */
+export async function setAssetGroupFlag(
+  userId: string,
+  groupId: string,
+  isFlagged: boolean,
+  allowedRegisterId: string | null,
+): Promise<void> {
+  await ensureAssetRegisterTables();
+  const result = await getDb().query(
+    `update public.asset_groups
+     set is_flagged = $3, updated_at = now()
+     where id = $1::uuid and user_id = $2
+       and ($4::uuid is null or register_id = $4::uuid)
+     returning id`,
+    [groupId, userId, isFlagged, allowedRegisterId],
+  );
+  if (!result.rows.length) throw new Error('ASSET_GROUP_NOT_FOUND');
 }

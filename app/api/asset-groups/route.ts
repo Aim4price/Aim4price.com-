@@ -6,6 +6,7 @@ import {
   listAssetGroups,
   moveAssetToGroup,
   saveAssetGroup,
+  setAssetGroupFlag,
 } from '../../../lib/asset-groups';
 import { listAssetRegisterItems } from '../../../lib/asset-register-db';
 import {
@@ -224,6 +225,8 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json() as {
+      groupId?: unknown;
+      isFlagged?: unknown;
       assetId?: unknown;
       targetGroupId?: unknown;
       registerId?: unknown;
@@ -241,6 +244,19 @@ export async function PATCH(request: NextRequest) {
           resolved.context.accountantRegisterId,
           body.registerId,
         );
+    if (Object.prototype.hasOwnProperty.call(body, 'isFlagged')) {
+      if (typeof body.isFlagged !== 'boolean' || !cleanText(body.groupId)) {
+        return NextResponse.json({ ok: false, error: 'Choose an umbrella and a valid flag state.' }, { status: 400 });
+      }
+      await setAssetGroupFlag(
+        resolved.context.ownerUserId,
+        cleanText(body.groupId),
+        body.isFlagged,
+        registerId,
+      );
+      const groups = await listWorkspaceGroups(resolved.context, registerId);
+      return NextResponse.json({ ok: true, groups });
+    }
     const group = await moveAssetToGroup(resolved.context.ownerUserId, {
       assetId: cleanText(body.assetId),
       targetGroupId: cleanText(body.targetGroupId),
@@ -251,7 +267,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ ok: true, group, groups });
   } catch (error) {
-    console.error('asset group drag and drop failed', error);
+    console.error('asset group update failed', error);
     return errorResponse(error);
   }
 }

@@ -321,7 +321,7 @@ type Props = {
   group: AssetGroup | null;
   assets: AssetGroupModalAsset[];
   groups: AssetGroup[];
-  initialView?: 'menu' | 'reports';
+  initialView?: 'menu' | 'reports' | 'members';
   combinedMode?: boolean;
   busy?: boolean;
   reportBusy?: boolean;
