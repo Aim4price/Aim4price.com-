@@ -40561,3 +40561,103 @@ button.documentOpenLink {
     grid-row: 1;
   }
 }
+
+/* Register summary: one inset table scrollbar, with stationary controls. */
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) {
+  display: flex !important;
+  flex-direction: column !important;
+  height: min(46rem, calc(var(--website-visible-height, 100dvh) - 2rem)) !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 2rem) !important;
+  overflow: hidden !important;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalHeader,
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter {
+  flex: 0 0 auto !important;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody {
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  padding: 1rem var(--entry-padding) !important;
+  gap: .85rem !important;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll {
+  margin: .65rem .75rem .75rem !important;
+  padding: 0 .55rem 0 0 !important;
+  scrollbar-gutter: stable !important;
+  scrollbar-width: auto;
+  scrollbar-color: #71988b #edf3f0;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll::-webkit-scrollbar-track {
+  background: #edf3f0;
+  border-radius: 999px;
+  margin-block: .4rem;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll::-webkit-scrollbar-thumb {
+  background: #71988b;
+  border: 4px solid #edf3f0;
+  border-radius: 999px;
+  min-height: 40px;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll::-webkit-scrollbar-thumb:hover {
+  background: #426f5e;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryDataTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 1rem var(--entry-padding) !important;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+}
+@media (max-width: 600px), (max-height: 550px) {
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody {
+    padding: .65rem 1rem !important;
+    gap: .6rem !important;
+  }
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll {
+    margin: .45rem .5rem .5rem !important;
+    padding-right: .35rem !important;
+  }
+}
+@media (max-height: 550px) {
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalHeader {
+    padding: .65rem 1rem !important;
+    margin: 0 !important;
+  }
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalHeader p,
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionHeader p {
+    display: none;
+  }
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionHeader {
+    min-height: 2.5rem !important;
+    padding: .5rem .75rem !important;
+  }
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionTab {
+    min-height: 2.4rem !important;
+    padding: .45rem !important;
+  }
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter {
+    padding: .5rem 1rem !important;
+  }
+  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter > button {
+    min-height: 2.5rem !important;
+    padding: .45rem .8rem !important;
+  }
+}
