@@ -16778,14 +16778,7 @@ export default function AssetRegisterClient({
                                   : undefined}
                               >
                                 <UmbrellaIcon className={styles.assetGroupUmbrellaIcon} />
-                                {groupUnnotedAlertCount > 0 ? (
-                                  <span
-                                    className={`${styles.registerChangeAlertBadge} ${styles.assetGroupAlertBadge}`}
-                                    aria-label={`${formatAlertBadgeCount(groupUnnotedAlertCount)} unnoted alert${groupUnnotedAlertCount === 1 ? '' : 's'} in ${group.name}`}
-                                  >
-                                    {formatAlertBadgeCount(groupUnnotedAlertCount)}
-                                  </span>
-                                ) : null}
+
                               </span>
                               <div>
                                 <h2>{group.name}</h2>
@@ -16806,7 +16799,7 @@ export default function AssetRegisterClient({
                                 <div className={styles.assetValueVatDisplay}>
                                   <div className={styles.assetValueVatText}>
                                     <div className={styles.assetValueVatAmountRow}>
-                                      <strong aria-label={`Counted value ${money(displayedGroupValue)}`}>{money(displayedGroupValue)}</strong>
+                                      <strong className={styles.assetGroupCombinedValue}><span>Combined Value:</span> {money(displayedGroupValue)}</strong>
                                       <CardVatToggle included={groupValueVatMode === 'included'} onToggle={() => handleAssetGroupValueVatToggle(group.id)} />
                                     </div>
                                     <span>{groupVatLabel}</span>
