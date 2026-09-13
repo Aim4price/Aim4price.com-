@@ -1604,6 +1604,10 @@
   background: rgba(255, 255, 255, 0.97);
   box-shadow: 0 -8px 20px rgba(18, 45, 37, 0.035);
 }
+.accountModal .reportActions {
+  background: transparent;
+  box-shadow: none;
+}
 .accountModal .footer > button,
 .accountModal .reportActions > button {
   min-height: 3rem;

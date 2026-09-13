@@ -40422,6 +40422,13 @@ button.documentOpenLink {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)) !important;
 }
 
+/* Blend settings and every report step's actions into their surrounding panel. */
+.managementAccountModal .assetSettingsActions,
+.managementAccountModal .assetFuelReportActions {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
 /* GPS save actions belong to the location panel, not a separate white footer. */
 .managementAccountModal .assetSettingsLocationSection > .assetSettingsActions {
   background: transparent !important;
