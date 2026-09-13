@@ -9,6 +9,7 @@ import {
   servicedOptionsForProfile,
 } from '../lib/maintenance-service-guidelines';
 import styles from './DesktopServiceModal.module.css';
+import dialogStyles from './MaintenanceDialog.module.css';
 import { useMaintenanceChecklist } from '../lib/use-maintenance-checklist';
 import { checklistOptions, buildMaintenanceWorkSnapshot, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from '../lib/maintenance-catalogue';
 
@@ -209,18 +210,18 @@ export default function DesktopServiceModal({
   if (askScheduleLink && scheduleDecision === null) {
     return (
       <div className={`${styles.overlay} ${dealerAppMode ? styles.dealerChoiceOverlay : ''}`} data-website-overlay role="presentation">
-        <button className={styles.backdrop} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy} />
-        <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
+        <button className={`${styles.backdrop} ${!dealerAppMode ? dialogStyles.backdrop : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy} />
+        <section className={`${styles.modal} ${!dealerAppMode ? dialogStyles.dialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
           <header className={styles.header}>
             <div>
               <h2 id="scheduled-service-choice-title">{dealerAppMode ? `Save ${actionName}` : <>How should this {actionName} be saved?</>}</h2>
               <p>{dealerAppMode ? record.assetTitle : serviceAssetMeta(record)}</p>
             </div>
-            <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
+            <button className={dealerAppMode ? styles.closeButton : dialogStyles.close} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
               <CloseIcon />
             </button>
           </header>
-          <div className={styles.body}>
+          <div className={`${styles.body} ${!dealerAppMode ? dialogStyles.body : ''}`}>
             <div className={styles.scheduleSummary}>
               <span>Scheduled {actionName}</span>
               <strong>{record.title}</strong>
@@ -248,6 +249,7 @@ export default function DesktopServiceModal({
             </button>
             <button
               className={styles.submitButton}
+              data-primary-action
               type="button"
               onClick={() => setScheduleDecision('scheduled')}
               disabled={busy}
