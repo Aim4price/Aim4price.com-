@@ -35728,24 +35728,36 @@ button.documentOpenLink {
   }
 }
 
-/* Final cascade: shared Owner/Accountant filter labels stay light and the option grid has no visible scrollbar. */
-.assetFilterModalBody {
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-  scrollbar-gutter: auto !important;
+/* Keep the filter options visibly scrollable while the footer stays fixed. */
+.assetFilterModal .assetFilterModalBody {
+  min-height: 0;
+  overflow-y: scroll !important;
+  scrollbar-width: auto !important;
+  scrollbar-color: #377e68 #eaf1ed;
+  -ms-overflow-style: auto !important;
+  scrollbar-gutter: stable !important;
 }
 
-.assetFilterModalBody::-webkit-scrollbar,
-.assetFilterModalBody::-webkit-scrollbar-track,
-.assetFilterModalBody::-webkit-scrollbar-track-piece,
-.assetFilterModalBody::-webkit-scrollbar-thumb,
-.assetFilterModalBody::-webkit-scrollbar-button,
-.assetFilterModalBody::-webkit-scrollbar-corner {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  border: 0 !important;
-  background: transparent !important;
+.assetFilterModal .assetFilterModalBody::-webkit-scrollbar {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.assetFilterModal .assetFilterModalBody::-webkit-scrollbar-track {
+  background: #eaf1ed;
+  border-radius: 999px;
+}
+
+.assetFilterModal .assetFilterModalBody::-webkit-scrollbar-thumb {
+  min-height: 48px;
+  border: 3px solid #eaf1ed;
+  border-radius: 999px;
+  background: #377e68;
+}
+
+.assetFilterModal .assetFilterModalBody::-webkit-scrollbar-thumb:hover {
+  background: #235e4c;
 }
 
 .assetFilterAllOption strong {
