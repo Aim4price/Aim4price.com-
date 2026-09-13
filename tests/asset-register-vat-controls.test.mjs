@@ -26,17 +26,14 @@ test('asset quick actions use a subtle boxed rail outside the asset card', () =>
   assert.match(styles, /\.assetSideActions \.assetFlagButton,[\s\S]*?width: 2\.08rem;[\s\S]*?box-shadow: none;/);
 });
 
-test('the per-asset VAT arrow is anchored to and aligned with the price row', () => {
-  assert.match(
-    client,
-    /assetValueVatAmountRow[\s\S]*?<strong>\{money\(displayedAssetValue\)\}<\/strong>[\s\S]*?assetCardVatToggle/,
-  );
-  assert.doesNotMatch(client, /<\/article>\s*<button[\s\S]{0,500}assetCardVatToggle/);
-  assert.match(styles, /\.assetValueVatAmountRow \{[\s\S]*?position: relative;[\s\S]*?flex-wrap: nowrap;[\s\S]*?align-items: center;/);
-  assert.match(
-    styles,
-    /\.assetValueVatAmountRow \.assetCardVatToggle \{[\s\S]*?top: 50% !important;[\s\S]*?right: calc\(0rem - var\(--asset-card-vat-arrow-offset\) - 1rem\) !important;[\s\S]*?transform: translateY\(-50%\) !important;/,
-  );
+test('asset and umbrella prices share an inline VAT control', () => {
+  assert.match(client, /<CardVatToggle included=\{assetValueVatMode === 'included'\}/);
+  assert.match(client, /<CardVatToggle included=\{groupValueVatMode === 'included'\}/);
+  assert.match(client, /assetGroupValueVatModes\[group.id\] \?\? registerValueVatMode/);
+  assert.match(client, /setAssetGroupValueVatModes\(\{\}\)/);
+  const toggleStyles = readFileSync(new URL('../components/CardVatToggle.module.css', import.meta.url), 'utf8');
+  assert.match(toggleStyles, /position: relative/);
+  assert.doesNotMatch(toggleStyles, /position: absolute/);
 });
 
 test('the Register value selector continues to match Replacement value', () => {
