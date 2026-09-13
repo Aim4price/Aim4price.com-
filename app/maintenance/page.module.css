@@ -4828,3 +4828,142 @@
   }
 }
 
+/* Scheduling and deletion follow the Change Password dialog. Keep the
+   scroll viewport between the header and footer, including short screens. */
+.schedulingDialog.schedulingDialog {
+  align-self: center;
+  box-sizing: border-box;
+  width: min(46rem, 100%, calc(var(--website-visible-width, 100vw) - 2rem));
+  max-width: 100%;
+  max-height: calc(var(--website-visible-height, 100dvh) - 3rem);
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(18, 45, 37, 0.12);
+  border-radius: 1.5rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
+  box-shadow: 0 28px 72px rgba(10, 31, 35, 0.24);
+}
+
+.schedulingDialog *,
+.schedulingDialog *::before,
+.schedulingDialog *::after { box-sizing: border-box; }
+
+.schedulingDialog.schedulingDialog .modalHeader {
+  flex: 0 0 auto;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 2rem 2rem 1.15rem;
+}
+
+.schedulingDialog .modalHeader > div { min-width: 0; }
+.schedulingDialog .modalHeader > button svg { width: 1.05rem; height: 1.05rem; }
+
+.schedulingDialog.schedulingDialog .modalHeader h2 {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.schedulingDialog.schedulingDialog .modalHeader p {
+  margin: 0.35rem 0 0;
+  color: #64746a;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.schedulingDialog.schedulingDialog .modalDivider {
+  flex: 0 0 1px;
+  margin: 0 2rem;
+  background: rgba(18, 45, 37, 0.1);
+}
+
+.schedulingDialog.schedulingDialog :is(.maintenanceChoiceBody, .formModalScrollBody, .deleteConfirmBody) {
+  flex: 0 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 1.3rem 2rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: #7b9d90 #edf3f0;
+  background: transparent;
+}
+
+.schedulingDialog :is(.maintenanceChoiceBody, .formModalScrollBody, .deleteConfirmBody)::-webkit-scrollbar { width: 12px; }
+.schedulingDialog :is(.maintenanceChoiceBody, .formModalScrollBody, .deleteConfirmBody)::-webkit-scrollbar-track { background: #edf3f0; border-radius: 8px; }
+.schedulingDialog :is(.maintenanceChoiceBody, .formModalScrollBody, .deleteConfirmBody)::-webkit-scrollbar-thumb { background: #7b9d90; border: 2px solid #edf3f0; border-radius: 8px; }
+.schedulingDialog :is(.maintenanceChoiceBody, .formModalScrollBody, .deleteConfirmBody)::-webkit-scrollbar-thumb:hover { background: #527867; }
+
+.schedulingDialog.schedulingDialog .maintenanceChoiceGrid { gap: 1rem; }
+.schedulingDialog.schedulingDialog .maintenanceChoiceCard {
+  min-height: 11rem;
+  padding: 1.25rem;
+  gap: 0.65rem;
+  border: 1px solid rgba(62, 110, 213, 0.15);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(62, 110, 213, 0.045), rgba(31, 138, 102, 0.035));
+  box-shadow: 0 8px 20px rgba(18, 45, 37, 0.035);
+}
+.schedulingDialog.schedulingDialog .maintenanceChoiceCard:hover { border-color: #7b9d90; background: #eef6f1; transform: translateY(-1px); }
+.schedulingDialog.schedulingDialog .maintenanceChoiceCard:focus-visible { outline: 3px solid rgba(43, 138, 99, 0.3); outline-offset: 3px; }
+.schedulingDialog.schedulingDialog .maintenanceChoiceIcon { width: 2.85rem; height: 2.85rem; border-radius: 0.9rem; color: #1a5a45; font-size: 1rem; }
+.schedulingDialog.schedulingDialog .maintenanceChoiceCard strong { color: #17362c; font-size: 1.2rem; font-weight: 800; line-height: 1.3; }
+.schedulingDialog.schedulingDialog .maintenanceChoiceCard small { color: #607168; font-size: 0.85rem; font-weight: 650; line-height: 1.45; }
+
+.schedulingDialog .maintenanceFieldGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.schedulingDialog .maintenanceFieldGrid > :is(.filterField, .maintenanceCurrentUsage, .switchField) { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.schedulingDialog .maintenanceFieldGrid > :is(.filterField, .maintenanceCurrentUsage) > span,
+.schedulingDialog .maintenanceSectionTitle { color: #425d51; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.025em; text-transform: uppercase; }
+.schedulingDialog .maintenanceSectionTitle { margin-bottom: 1rem; }
+.schedulingDialog .maintenanceFieldGrid :is(input, textarea, .customFilterSelectButton) { width: 100%; min-width: 0; border: 1px solid #dfe7ef; background: #fff; border-radius: 0.9rem; color: #20313b; font: inherit; font-weight: 500; }
+.schedulingDialog .maintenanceFieldGrid .customFilterSelectButtonText { font-weight: 500; }
+.schedulingDialog .maintenanceInlineFields { grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.55fr); }
+.schedulingDialog .maintenanceCurrentUsage strong { color: #17362c; font-size: 1rem; font-weight: 700; }
+.schedulingDialog .switchField { justify-content: flex-start; gap: 0.85rem; text-align: left; }
+.schedulingDialog .switchField strong { color: #17362c; font-size: 0.9rem; font-weight: 750; }
+.schedulingDialog .switchTrack { flex-shrink: 0; }
+.schedulingDialog .deleteConfirmBody > p { color: #64746a; font-size: 0.88rem; font-weight: 650; }
+.schedulingDialog .deleteRecordSummary { padding: 1rem; border-radius: 1rem; border-color: rgba(62, 110, 213, 0.15); background: linear-gradient(135deg, rgba(62, 110, 213, 0.075), rgba(31, 138, 102, 0.06)); overflow-wrap: anywhere; }
+.schedulingDialog .deleteRecordSummary span { color: #425d51; font-size: 0.74rem; font-weight: 800; }
+.schedulingDialog .deleteRecordSummary strong { color: #17362c; font-size: 1rem; font-weight: 800; }
+.schedulingDialog .deleteRecordSummary small { color: #607168; font-size: 0.85rem; font-weight: 650; }
+
+.schedulingDialog.schedulingDialog .modalFooter {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 1rem 2rem 1.5rem;
+  border-top: 1px solid rgba(18, 45, 37, 0.11);
+  background: #fff;
+  box-shadow: 0 -12px 28px rgba(18, 45, 37, 0.045);
+}
+.schedulingDialog.schedulingDialog .modalFooter button { min-width: 8.75rem; min-height: 3rem; padding: 0.65rem 1rem; border-radius: 1rem; font-size: 0.95rem; font-weight: 700; line-height: 1.3; white-space: normal; }
+.schedulingDialog .modalFooter .secondaryButton { color: #12352d; background: #f2f5f8; border: 1px solid #d2deed; box-shadow: none; }
+.schedulingDialog .modalFooter .primaryButton { background: linear-gradient(180deg, #1a5a45, #124233); border-color: rgba(18, 66, 51, 0.2); box-shadow: 0 12px 24px rgba(18, 66, 51, 0.16); }
+.schedulingDialog .modalFooter .deleteConfirmButton { background: linear-gradient(180deg, #c94d4d, #a93636); border-color: rgba(151, 43, 43, 0.34); box-shadow: 0 12px 24px rgba(142, 43, 43, 0.12); }
+.schedulingDialog .modalFooter button:focus-visible { outline: 3px solid rgba(43, 138, 99, 0.3); outline-offset: 3px; }
+
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog { max-height: calc(100dvh - 2rem); border-radius: 1.2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog .modalHeader { padding: 1.25rem 1.25rem 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog .modalDivider { margin: 0 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog :is(.maintenanceChoiceBody, .formModalScrollBody, .deleteConfirmBody) { padding: 1.1rem 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog :is(.maintenanceChoiceGrid, .maintenanceFieldGrid) { grid-template-columns: minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog .maintenanceChoiceCard { min-height: 9rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog .modalFooter { padding: 1rem 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .schedulingDialog.schedulingDialog .modalFooter button { flex: 1 1 6rem; width: auto; min-width: 0; }
+}

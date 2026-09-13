@@ -10,6 +10,7 @@ import { openCanonicalReportUrl } from '../../lib/report-open';
 import type { MaintenanceIdentity } from '../../lib/maintenance-catalogue';
 import DesktopServiceModal, { type DesktopServiceCompletion } from '../../components/DesktopServiceModal';
 import styles from './page.module.css';
+import accountStyles from '../account/page.module.css';
 import dialogStyles from '../../components/MaintenanceDialog.module.css';
 
 type MaintenanceType = 'service' | 'checkup';
@@ -1476,13 +1477,13 @@ export default function MaintenanceClient({
 
       {modalMode === 'maintenance-type' && draft ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-type-title">
-          <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
+          <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-type-title">What are you scheduling?</h2>
                 <p>{selectedAssetLabel(selectedDraftAsset)}</p>
               </div>
-              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close maintenance type selection">
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance type selection">
                 <CloseIcon />
               </button>
             </header>
@@ -1513,13 +1514,13 @@ export default function MaintenanceClient({
 
       {modalMode === 'trigger-type' && draft ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-trigger-title">
-          <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
+          <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-trigger-title">When should it be due?</h2>
                 <p>{typeLabel(draft.maintenanceType)} · {selectedAssetLabel(selectedDraftAsset)}</p>
               </div>
-              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close maintenance trigger selection">
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance trigger selection">
                 <CloseIcon />
               </button>
             </header>
@@ -1547,14 +1548,14 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'form' && draft ? (
-        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-form-title">
-          <section className={`${styles.formModal} ${dialogStyles.dialog}`}>
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-form-title">
+          <section className={`${styles.formModal} ${styles.schedulingDialog}`}>
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-form-title">{`Schedule ${draft.maintenanceType}`}</h2>
                 <p>{`${triggerLabel(draft.triggerType)} · ${selectedAssetLabel(selectedDraftAsset)}`}</p>
               </div>
-              <button className={dialogStyles.close} type="button" onClick={closeModal} aria-label="Close maintenance form">
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance form">
                 <CloseIcon />
               </button>
             </header>
@@ -1642,7 +1643,7 @@ export default function MaintenanceClient({
 
                 <label className={`${styles.filterField} ${styles.maintenanceFieldFull}`}>
                   <span>Notes</span>
-                  <textarea value={draft.notes} onChange={(event) => updateDraft({ notes: event.target.value })} placeholder="Add service/checkup notes, supplier detail or internal reminders..." />
+                  <textarea value={draft.notes} onChange={(event) => updateDraft({ notes: event.target.value })} placeholder="Add notes or reminders..." />
                 </label>
               </div>
             </div>
@@ -1735,12 +1736,12 @@ export default function MaintenanceClient({
 
       {modalMode === 'delete' && recordPendingDelete ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-delete-title">
-          <section className={styles.deleteConfirmModal}>
+          <section className={`${styles.deleteConfirmModal} ${styles.schedulingDialog}`}>
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-delete-title">Are you sure you want to delete this?</h2>
               </div>
-              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close delete confirmation">
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close delete confirmation">
                 <CloseIcon />
               </button>
             </header>
@@ -1756,7 +1757,7 @@ export default function MaintenanceClient({
             <footer className={styles.modalFooter}>
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
               <button className={styles.deleteConfirmButton} type="button" onClick={() => void deleteRecord()} disabled={deletingRecordId === recordPendingDelete.id}>
-                {deletingRecordId === recordPendingDelete.id ? 'Deleting...' : 'Yes, delete maintenance record'}
+                {deletingRecordId === recordPendingDelete.id ? 'Deleting...' : 'Delete record'}
               </button>
             </footer>
           </section>
