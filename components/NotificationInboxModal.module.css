@@ -121,8 +121,9 @@
 .primary:hover:not(:disabled) { background: #123f31; }
 .pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem; margin-right: auto; }
 
+/* The website scales one canonical canvas; only native layouts reflow. */
 @media (max-width: 540px) {
-  .modal { --inbox-padding: 1rem; }
-  .pagination { flex-basis: 100%; }
-  .button { min-height: 2.75rem; padding-inline: 0.8rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal { --inbox-padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination { flex-basis: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .button { min-height: 2.75rem; padding-inline: 0.8rem; }
 }
