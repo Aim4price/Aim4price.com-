@@ -1,5 +1,7 @@
 'use client';
 
+import CompactChoicePages from '../../components/CompactChoicePages';
+import compactExportStyles from '../../components/CompactRegisterExport.module.css';
 import CardVatToggle from '../../components/CardVatToggle';
 
 import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
@@ -16102,6 +16104,7 @@ export default function AssetRegisterClient({
           {isAssetFilterOpen ? (
             <AssetFilterDialog
               groups={ASSET_FILTER_GROUPS}
+              options={ASSET_FILTER_OPTIONS}
               selected={assetFilters}
               sort={assetSort}
               sortOptions={ASSET_SORT_OPTIONS}
@@ -22143,7 +22146,8 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeExportModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
+            id="compact-register-export"
+            className={`${compactExportStyles.dialog} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="export-title"
@@ -22240,6 +22244,7 @@ export default function AssetRegisterClient({
                           </div>
 
                           <div className={styles.pdfReportChoices}>
+                            <CompactChoicePages maxRows={4} reservedHeight={400} rowHeight={64}>
                             {quickPdfReportOptions.map((option) => (
                               <button
                                 key={option.value}
@@ -22254,6 +22259,7 @@ export default function AssetRegisterClient({
                                 </span>
                               </button>
                             ))}
+                            </CompactChoicePages>
                           </div>
                         </div>
 
@@ -22295,7 +22301,8 @@ export default function AssetRegisterClient({
 
                           <div className={styles.pdfAssetDownloadList}>
                             {visiblePdfAssets.length ? (
-                              visiblePdfAssets.map((asset) => {
+                              <CompactChoicePages columns={1} maxRows={4} rowHeight={140} reservedHeight={480} resetKey={pdfAssetSearchTerm}>
+                              {visiblePdfAssets.map((asset) => {
                                 const isSelectedForPdf = selectedPdfAssetIdSet.has(asset.id);
 
                                 return (
@@ -22324,7 +22331,8 @@ export default function AssetRegisterClient({
                                     </span>
                                   </label>
                                 );
-                              })
+                              })}
+                              </CompactChoicePages>
                             ) : (
                               <div className={styles.pdfAssetDownloadEmpty}>No assets match your search.</div>
                             )}
