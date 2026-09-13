@@ -26,14 +26,14 @@ test('asset quick actions use a subtle boxed rail outside the asset card', () =>
   assert.match(styles, /\.assetSideActions \.assetFlagButton,[\s\S]*?width: 2\.08rem;[\s\S]*?box-shadow: none;/);
 });
 
-test('asset and umbrella prices share an inline VAT control', () => {
+test('asset and umbrella prices share an external VAT control', () => {
   assert.match(client, /<CardVatToggle included=\{assetValueVatMode === 'included'\}/);
   assert.match(client, /<CardVatToggle included=\{groupValueVatMode === 'included'\}/);
   assert.match(client, /assetGroupValueVatModes\[group.id\] \?\? registerValueVatMode/);
   assert.match(client, /setAssetGroupValueVatModes\(\{\}\)/);
   const toggleStyles = readFileSync(new URL('../components/CardVatToggle.module.css', import.meta.url), 'utf8');
-  assert.match(toggleStyles, /position: relative/);
-  assert.doesNotMatch(toggleStyles, /position: absolute/);
+  assert.match(toggleStyles, /position: absolute/);
+  assert.match(toggleStyles, /background: transparent/);
 });
 
 test('the Register value selector continues to match Replacement value', () => {
