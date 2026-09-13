@@ -66,12 +66,31 @@
 
 .body {
   min-height: 0;
-  padding: 1rem 0;
+  margin: 1rem 0;
+  padding: 0 1rem .5rem 0;
   /* A short viewport can still reach every choice; desktop needs no scrolling. */
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: #85b59f #f2f8f4;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: #6b9e89 #edf3ef;
+}
+
+/* Keep a comfortable drag target, inset from the buttons and both dividers. */
+@supports selector(::-webkit-scrollbar) {
+  .body { scrollbar-color: auto; }
+  .body::-webkit-scrollbar { width: 12px; }
+  .body::-webkit-scrollbar-track { background: #edf3ef; border-radius: 999px; }
+  .body::-webkit-scrollbar-thumb {
+    min-height: 44px;
+    border: 2px solid #edf3ef;
+    border-radius: 999px;
+    background: #6b9e89;
+  }
+  .body::-webkit-scrollbar-thumb:hover { background: #457e65; }
+  .body::-webkit-scrollbar-thumb:active { background: #26795e; }
+  .body::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+  .body::-webkit-scrollbar-corner { background: transparent; }
 }
 
 .choices {
