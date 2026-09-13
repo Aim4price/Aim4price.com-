@@ -25,6 +25,7 @@ import AssetGroupManagerModal, {
   type AssetGroupReportKind,
 } from '../../components/asset-register/AssetGroupManagerModal';
 import groupModalStyles from '../../components/asset-register/AssetGroupManagerModal.module.css';
+import InsideShareDialog from '../../components/asset-register/InsideShareDialog';
 import ShareDestinationDialog from '../../components/asset-register/ShareDestinationDialog';
 import AssetExternalShare, {
   AssetShareDestinationPicker,
@@ -17928,6 +17929,22 @@ export default function AssetRegisterClient({
           onInside={() => setAssetShareDestination('inside')}
           onOutside={() => setAssetShareDestination('outside')}
         />
+      ) : isRegisterShareModalOpen && assetShareDestination === 'inside' ? (
+        <InsideShareDialog
+          titleId="asset-register-share-title"
+          subject={activeShareName}
+          disabled={isExporting || isSendingQuoteLead}
+          onClose={closeRegisterShareModal}
+          options={[
+            { id: 'finance', title: 'Finance & accounting', description: 'Accountant, financier or bank' },
+            { id: 'insurance', title: 'Insurance', description: 'Insurer or broker' },
+            { id: 'replacement_quote', title: 'Dealer', description: isAssetGroupShare ? 'Share grouped assets' : 'Choose assets to share' },
+            { id: 'license_renewal', title: 'Licence renewal', description: 'Renewal date required' },
+          ].map(option => ({ ...option,
+            icon: renderQuoteOptionIcon(option.id as AssetLeadType, styles.buttonIcon),
+            onSelect: () => openFullRegisterQuotePartnerPicker(option.id as AssetLeadType),
+          }))}
+        />
       ) : isRegisterShareModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeRegisterShareModal} />
@@ -20195,6 +20212,22 @@ export default function AssetRegisterClient({
           onClose={closeAssetQuoteModal}
           onInside={() => setAssetShareDestination('inside')}
           onOutside={() => setAssetShareDestination('outside')}
+        />
+      ) : isQuoteModalOpen && !selectedQuoteOption && assetShareDestination === 'inside' ? (
+        <InsideShareDialog
+          titleId="asset-quote-title"
+          subject={quoteAsset?.title || 'Asset'}
+          disabled={isSendingQuoteLead}
+          onClose={closeAssetQuoteModal}
+          options={availableAssetQuoteOptions.map(option => ({
+            id: option.leadType,
+            title: option.title,
+            description: option.leadType === 'finance' ? 'Accountant, financier or bank'
+              : option.leadType === 'insurance' ? 'Insurer or broker'
+                : option.leadType === 'license_renewal' ? 'Renewal date required' : 'Share with a dealer',
+            icon: renderQuoteOptionIcon(option.leadType, styles.buttonIcon),
+            onSelect: () => openQuotePartnerPicker(option.leadType),
+          }))}
         />
       ) : isQuoteModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay>
