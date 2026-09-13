@@ -9840,23 +9840,27 @@ export default function AssetRegisterClient({
   const paginationItems = useMemo(() => buildPaginationItems(safeCurrentPage, pageCount), [safeCurrentPage, pageCount]);
 
   useEffect(() => {
-    if (!focusedAssetGroupId || anyModalOpen || documentUploadAsset) return undefined;
+    if ((!focusedAssetGroupId && !expandedAssetId) || anyModalOpen || documentUploadAsset || draggingAssetId) return undefined;
 
-    function handleOutsideUmbrellaPointerDown(event: PointerEvent) {
+    function handleOutsideCardPointerDown(event: PointerEvent) {
       if (isViewportScrollbarInteraction(event)) return;
-
       const target = event.target;
       if (!(target instanceof Element)) return;
+      if (target.closest('[role="dialog"], [data-website-overlay]')) return;
 
       const clickedUmbrella = target.closest<HTMLElement>('[data-asset-group-id]');
-      if (clickedUmbrella?.dataset.assetGroupId === focusedAssetGroupId) return;
-
-      setExpandedAssetGroupIds(new Set());
+      const insideFocusedUmbrella = focusedAssetGroupId
+        && clickedUmbrella?.dataset.assetGroupId === focusedAssetGroupId;
+      const expandedCard = expandedAssetId ? document.getElementById(`asset-card-${expandedAssetId}`) : null;
+      if (expandedAssetId && !expandedCard?.contains(target)) setExpandedAssetId(null);
+      if (focusedAssetGroupId && !insideFocusedUmbrella) {
+        setExpandedAssetGroupIds(new Set());
+      }
     }
 
-    document.addEventListener('pointerdown', handleOutsideUmbrellaPointerDown);
-    return () => document.removeEventListener('pointerdown', handleOutsideUmbrellaPointerDown);
-  }, [anyModalOpen, documentUploadAsset, focusedAssetGroupId]);
+    document.addEventListener('pointerdown', handleOutsideCardPointerDown);
+    return () => document.removeEventListener('pointerdown', handleOutsideCardPointerDown);
+  }, [anyModalOpen, documentUploadAsset, draggingAssetId, expandedAssetId, focusedAssetGroupId]);
 
   useEffect(() => {
     if (currentPage > pageCount) {
@@ -16814,7 +16818,7 @@ export default function AssetRegisterClient({
                           data-asset-group-drop-target={isAssetGroupDropTarget ? 'true' : undefined}
                         >
                           <section
-                            className={`${styles.assetGroupHeader} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
+                            className={`${styles.assetGroupHeader} ${group.isFlagged ? styles.assetGroupHeaderFlagged : ''} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
                             onClick={(event) => {
                               if (draggingAssetId) return;
                               const target = event.target as HTMLElement;
@@ -16949,8 +16953,10 @@ export default function AssetRegisterClient({
                     const isLastAssetGroupMember = Boolean(assetGroup && row.memberIndex === row.memberCount - 1);
                     const previewPhoto = assetPreviewImage(asset);
                     const isLive = isLiveOnMarketplace(asset);
-                    const isFlagged = isAssetFlagged(asset);
-                    const isFlagBusy = busyFlagAssetId === asset.id;
+                    // Umbrella flags apply to all members without replacing their individual flags.
+                    const flaggedUmbrella = assetGroup?.isFlagged ? assetGroup : persistedAssetGroup?.isFlagged ? persistedAssetGroup : null;
+                    const isFlagged = Boolean(flaggedUmbrella) || isAssetFlagged(asset);
+                    const isFlagBusy = busyFlagAssetId === asset.id || Boolean(flaggedUmbrella && busyFlagGroupId);
                     const costBudgetStatus = costBudgetStatusByAssetId[asset.id] ?? null;
                     const isExpanded = expandedAssetId === asset.id;
                     const isAssetRowMuted = expandedAssetId
@@ -17058,11 +17064,11 @@ export default function AssetRegisterClient({
                             <button
                               type="button"
                               className={`${styles.assetFlagButton} ${styles.controlTooltip} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
-                              onClick={() => void handleAssetFlagToggle(asset)}
-                              disabled={isFlagBusy}
-                              aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                              onClick={() => void (flaggedUmbrella ? handleAssetGroupFlagToggle(flaggedUmbrella) : handleAssetFlagToggle(asset))}
+                              disabled={isFlagBusy || Boolean(flaggedUmbrella && !canManageAssetGroups)}
+                              aria-label={flaggedUmbrella ? `Unflag umbrella ${flaggedUmbrella.name}` : isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
                               aria-pressed={isFlagged}
-                              data-tooltip={isFlagged ? 'Remove flag' : 'Flag asset'}
+                              data-tooltip={flaggedUmbrella ? 'Unflag umbrella' : isFlagged ? 'Remove flag' : 'Flag asset'}
                             >
                               <FlagIcon className={styles.assetFlagIcon} />
                             </button>
@@ -17112,7 +17118,7 @@ export default function AssetRegisterClient({
 
                         {isFlagged || costBudgetStatus || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
                           <div className={styles.badgeRow}>
-                            {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
+                            {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>{flaggedUmbrella ? 'Flagged by umbrella' : 'Flagged'}</span> : null}
                             {costBudgetStatus ? (
                               <span className={`${styles.badge} ${styles.badgeDanger} ${styles.badgeBudgetWarning}`}>
                                 {costBudgetStatus === 'over_budget' ? 'Over budget' : 'Budget warning'}
