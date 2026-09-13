@@ -18860,6 +18860,19 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
 }
 
+.assetReplacementPriceButton {
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.assetReplacementPriceButton:hover,
+.assetReplacementPriceButton:focus-visible {
+  outline: 2px solid #158061;
+  outline-offset: 2px;
+}
+
 .assetReplacementPriceBubble span {
   grid-area: label !important;
   min-width: 0 !important;

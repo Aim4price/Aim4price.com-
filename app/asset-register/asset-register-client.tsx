@@ -354,7 +354,7 @@ type AssetStatusSection = 'finance' | 'insurance' | 'license';
 type AssetStatusEditView = 'hub' | AssetStatusSection;
 type AssetStatusQuickOrigin = 'detail-card' | null;
 type ManualAssetStep = 1 | 2 | 3 | 4;
-type AssetDetailEditTarget = 'serial' | 'year' | 'usage' | 'condition';
+type AssetDetailEditTarget = 'serial' | 'year' | 'usage' | 'condition' | 'replacement';
 type OwnerAssetCommandPanel = 'maintenance' | null;
 type AssetModalReturnOrigin = {
   asset: RegisterAsset;
@@ -17794,11 +17794,25 @@ export default function AssetRegisterClient({
                                     </div>
 
                                     <div className={styles.assetValueBubbleStack}>
-                                      <div className={styles.assetReplacementPriceBubble}>
-                                        <span>Replacement Price</span>
-                                        <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
-                                        <small>Excl. VAT</small>
-                                      </div>
+                                      {canUseOwnerOnlyAssetActions && canQuickEditAssetDetail(asset, 'replacement') ? (
+                                        <button
+                                          type="button"
+                                          className={`${styles.assetReplacementPriceBubble} ${styles.assetReplacementPriceButton}`}
+                                          onClick={(event) => openQuickAssetDetailEditor(asset, 'replacement', event.currentTarget)}
+                                          data-asset-return-action="detail-replacement"
+                                          aria-label={`Edit replacement price for ${asset.title}`}
+                                        >
+                                          <span>Replacement Price</span>
+                                          <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
+                                          <small>Excl. VAT</small>
+                                        </button>
+                                      ) : (
+                                        <div className={styles.assetReplacementPriceBubble}>
+                                          <span>Replacement Price</span>
+                                          <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
+                                          <small>Excl. VAT</small>
+                                        </div>
+                                      )}
 
                                       {insuredValueExVat !== null ? (
                                         <div className={styles.assetInsuredValueBubble}>
@@ -18993,7 +19007,7 @@ export default function AssetRegisterClient({
                         </label>
 
                         {replacementPriceRequiredForDraft ? (
-                          <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
+                          <label className={`${styles.field} ${styles.manualReplacementValueField}`} data-asset-detail-edit-target="replacement">
                             <span>{replacementValueFieldLabel}</span>
                             <div className={styles.manualCurrencyInput}>
                               <span>R</span>
@@ -23025,4 +23039,3 @@ export default function AssetRegisterClient({
     </main>
   );
 }
-
