@@ -3,7 +3,16 @@
 import { useEffect, useRef } from 'react';
 import accountStyles from '../app/account/page.module.css';
 import styles from './AssetFilterDialog.module.css';
-import CompactChoicePages from './CompactChoicePages';
+
+// Read across each row, keeping related choices together as in the filter preview.
+const CHOICE_ORDER = [
+  'insured', 'not-insured', 'marketplace',
+  'financed', 'not-financed', 'aim4price-value',
+  'licensed', 'not-licensed', 'license-not-applicable',
+  'mapped', 'not-mapped', 'manual-value',
+  'highest-value', 'lowest-value', 'property',
+  'highest-replacement-price', 'lowest-replacement-price', 'no-property',
+];
 
 export type FilterChoice<K extends string> = { value: K; label: string };
 export type FilterGroup<K extends string> = { label: string; section: 'status' | 'details'; options: FilterChoice<K>[] };
@@ -32,6 +41,15 @@ export default function AssetFilterDialog<K extends string>({ groups, options, s
     return () => previousFocus?.focus();
   }, []);
   const activeCount = selected.length + (sort !== sortOptions[0].value ? 1 : 0);
+  const choices = options
+    .filter((option) => option.value !== sortOptions[0].value)
+    .sort((a, b) => {
+      const rank = (value: string) => {
+        const index = CHOICE_ORDER.indexOf(value);
+        return index < 0 ? CHOICE_ORDER.length : index;
+      };
+      return rank(a.value) - rank(b.value);
+    });
 
   return (
     <div className={styles.overlay} data-website-overlay>
@@ -51,16 +69,17 @@ export default function AssetFilterDialog<K extends string>({ groups, options, s
         </header>
         <div className={styles.body}>
           <button type="button" className={styles.all} aria-pressed={!activeCount} onClick={onClear}>All Assets</button>
-          <CompactChoicePages reservedHeight={300} rowHeight={56}>
-            {options.filter((option) => option.value !== sortOptions[0].value).map((option) => {
+          <div className={styles.choices}>
+            {choices.map((option) => {
               const group = groups.find((item) => item.options.some((choice) => choice.value === option.value));
               const active = group ? selected.includes(option.value) : sort === option.value;
-              return <button type="button" className={styles.choice} key={option.value} aria-pressed={active} onClick={() => {
+              const label = option.value === 'property' ? 'Property' : option.value === 'no-property' ? 'No property' : option.label;
+              return <button type="button" className={styles.choice} key={option.value} title={label !== option.label ? option.label : undefined} aria-pressed={active} onClick={() => {
                 if (group) onGroupChange(group.options, active ? '' : option.value);
                 else onSortChange(active ? sortOptions[0].value : option.value);
-              }}>{option.label}</button>;
+              }}>{label}</button>;
             })}
-          </CompactChoicePages>
+          </div>
         </div>
         <footer className={styles.footer}>
           <button type="button" className={styles.clear} onClick={onClear} disabled={!activeCount}>Clear filters</button>
