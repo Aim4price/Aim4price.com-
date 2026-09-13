@@ -16783,7 +16783,7 @@ export default function AssetRegisterClient({
                               <div>
                                 <h2>{group.name}</h2>
                                 <p>
-                                  {group.members.length} grouped assets · {assetGroupValueModeLabel(group)}
+                                  {group.members.length} grouped {group.members.length === 1 ? 'asset' : 'assets'} · {assetGroupValueModeLabel(group)}
                                   {group.registerId === null ? ' · Combined umbrella' : ''}
                                 </p>
                                 {isCollapsed && groupAnchorAsset ? (
@@ -16799,7 +16799,7 @@ export default function AssetRegisterClient({
                                 <div className={styles.assetValueVatDisplay}>
                                   <div className={styles.assetValueVatText}>
                                     <div className={styles.assetValueVatAmountRow}>
-                                      <strong className={styles.assetGroupCombinedValue}><span>Combined Value:</span> {money(displayedGroupValue)}</strong>
+                                      <strong className={styles.assetGroupCombinedValue}><span>Combined value</span> {money(displayedGroupValue)}</strong>
                                       <CardVatToggle included={groupValueVatMode === 'included'} onToggle={() => handleAssetGroupValueVatToggle(group.id)} />
                                     </div>
                                     <span>{groupVatLabel}</span>
