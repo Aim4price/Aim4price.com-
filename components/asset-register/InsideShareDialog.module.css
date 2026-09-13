@@ -1,16 +1,33 @@
-.dialog.dialog { width:min(56rem,100%); min-width:0; max-height:calc(100dvh - 2rem); display:flex; flex-direction:column; }
-.header { flex:none; }
-.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem; padding-top:1.3rem; min-height:0; overflow-y:auto; }
-.card { --tone:#13775b; --border:#a5ddcc; --tint:#f4fffa; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.65rem; min-width:0; min-height:8.8rem; padding:1rem; border:1px solid var(--border); border-radius:1rem; background:radial-gradient(ellipse at top,color-mix(in srgb,var(--border) 25%,transparent),transparent 60%),linear-gradient(#fff,var(--tint)); color:#12352d; font-family:Montserrat,Arial,sans-serif; cursor:pointer; transition:box-shadow .15s,border-color .15s; }
+.dialog.dialog { width:min(60rem,calc(100vw - 2rem)); max-width:100%; padding:2.25rem; min-width:0; max-height:calc(100dvh - 2rem); display:flex; flex-direction:column; }
+.header { flex:none; padding-bottom:1.6rem; }
+.header.header p { margin-top:.65rem; font-size:1rem; }
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.1rem; padding-top:1.6rem; min-height:0; overflow-y:auto; }
+.card { --tone:#13775b; --border:#a5ddcc; --tint:#f4fffa; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.85rem; min-width:0; min-height:10rem; padding:1.25rem; border:1px solid var(--border); border-radius:1rem; background:radial-gradient(ellipse at top,color-mix(in srgb,var(--border) 25%,transparent),transparent 60%),linear-gradient(#fff,var(--tint)); color:#12352d; font-family:Montserrat,Arial,sans-serif; cursor:pointer; transition:box-shadow .15s,border-color .15s; }
 .card[data-tone=finance] { --tone:#926016; --border:#efd0a5; --tint:#fffbf3; }
 .card[data-tone=insurance] { --tone:#2756d7; --border:#bbceff; --tint:#f7faff; }
 .card[data-tone=license_renewal] { --tone:#642abb; --border:#d8c4ff; --tint:#fcf9ff; }
-.icon { display:grid; place-items:center; width:2.75rem; height:2.75rem; border:1px solid var(--border); border-radius:.9rem; background:linear-gradient(#fff,var(--tint)); color:var(--tone); box-shadow:0 8px 20px color-mix(in srgb,var(--border) 35%,transparent); }
-.icon svg { width:1.6rem; height:1.6rem; }
-.card strong { font-size:.95rem; font-weight:800; line-height:1.35; white-space:nowrap; }
-.card small { color:#64746a; font-size:.8rem; font-weight:650; line-height:1.45; white-space:nowrap; }
+.icon { display:grid; place-items:center; width:3.25rem; height:3.25rem; border:1px solid var(--border); border-radius:.9rem; background:linear-gradient(#fff,var(--tint)); color:var(--tone); box-shadow:0 8px 20px color-mix(in srgb,var(--border) 35%,transparent); }
+.icon svg { width:1.85rem; height:1.85rem; }
+.card strong { font-size:1.05rem; font-weight:800; line-height:1.35; white-space:nowrap; }
+.card small { color:#64746a; font-size:.9rem; font-weight:650; line-height:1.45; white-space:nowrap; }
 .card:hover:not(:disabled) { border-color:var(--tone); box-shadow:0 6px 20px rgba(19,53,45,.1); }
 .card:focus-visible { outline:3px solid var(--tone); outline-offset:-4px; }
 .card:disabled { opacity:.55; cursor:default; }
 @media(max-width:640px) { .grid { grid-template-columns:1fr; gap:.65rem; } .card { min-height:6.4rem; padding:.75rem; gap:.35rem; } .icon { width:2rem; height:2rem; border-radius:.65rem; } .icon svg { width:1.3rem; height:1.3rem; } .header.header h3 { font-size:clamp(.9rem,3.5vw,1.35rem); } }
 @media(max-height:450px) { .grid { padding-top:.75rem; gap:.5rem; } .card { min-height:6rem; padding:.5rem; gap:.3rem; } .icon { width:2rem; height:2rem; } }
+
+@media(max-width:640px) {
+ .dialog.dialog { padding:1.25rem; }
+ .header { padding-bottom:1rem; }
+ .header.header p { font-size:.85rem; }
+ .grid { padding-top:1rem; }
+ .card strong { font-size:.95rem; }
+ .card small { font-size:.8rem; }
+}
+@media(max-width:360px) { .dialog.dialog { padding:1rem; } }
+@media(max-height:450px) {
+ .dialog.dialog { padding:1rem; }
+ .header { padding-bottom:.75rem; }
+ .card strong { font-size:.95rem; }
+ .card small { font-size:.8rem; }
+}
