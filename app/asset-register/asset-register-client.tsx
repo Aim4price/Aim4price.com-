@@ -22201,7 +22201,7 @@ export default function AssetRegisterClient({
 
           <div
             id="compact-register-export"
-            className={`${exportStep === 'pdf-report' ? '' : compactExportStyles.dialog} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
+            className={`${compactExportStyles.dialog} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="export-title"
@@ -22209,7 +22209,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="export-title" tabIndex={-1}>{isAttachingExternalReport ? 'Add Aim4price report' : 'Export asset register'}</h3>
-                {isAttachingExternalReport ? <p>Choose the report you want to attach to your message.</p> : null}
+                <p>{isAttachingExternalReport ? 'Choose a report to attach.' : 'Choose which assets to include.'}</p>
               </div>
 
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeExportModal} aria-label="Close export options">
@@ -22287,7 +22287,7 @@ export default function AssetRegisterClient({
 
                             <button
                               type="button"
-                              className={`${styles.pdfReportOption} ${styles.pdfReportPrimaryOption} ${styles.pdfReportSpecificOption}`}
+                              className={`${styles.pdfReportOption} ${styles.pdfReportPrimaryOption}`}
                               onClick={openPdfAssetChooser}
                               disabled={isExporting}
                             >
@@ -22298,6 +22298,7 @@ export default function AssetRegisterClient({
                           </div>
 
                           <div className={styles.pdfReportChoices}>
+                            <CompactChoicePages reservedHeight={410} rowHeight={58} maxRows={4}>
                             {quickPdfReportOptions.map((option) => (
                               <button
                                 key={option.value}
@@ -22312,6 +22313,8 @@ export default function AssetRegisterClient({
                                 </span>
                               </button>
                             ))}
+
+                            </CompactChoicePages>
                           </div>
                         </div>
 

@@ -40661,3 +40661,22 @@ button.documentOpenLink {
     padding: .45rem .8rem !important;
   }
 }
+
+/* Utility dialogs: continuous footers and a single outer summary scroller. */
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) { scrollbar-gutter:auto !important; }
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter { background:transparent !important; box-shadow:none !important; scrollbar-gutter:auto !important; }
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody {
+ overflow-y:auto !important; margin-right:.75rem !important; padding-right:1rem !important;
+ scrollbar-gutter:stable !important; scrollbar-width:auto; scrollbar-color:#6b9e89 #edf3ef;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryPanel { flex:0 0 auto !important; overflow:visible !important; max-height:none !important; }
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll { overflow:visible !important; height:auto !important; max-height:none !important; flex:0 0 auto !important; margin:.65rem .75rem .75rem !important; padding:0 !important; scrollbar-gutter:auto !important; }
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionTabs { flex-shrink:0 !important; }
+@supports selector(::-webkit-scrollbar) {
+ .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody { scrollbar-color:auto; }
+ .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody::-webkit-scrollbar { width:12px; }
+ .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody::-webkit-scrollbar-track { background:#edf3ef; border-radius:999px; }
+ .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody::-webkit-scrollbar-thumb { background:#6b9e89; border:2px solid #edf3ef; border-radius:999px; min-height:44px; }
+ .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody::-webkit-scrollbar-thumb:hover { background:#457e65; }
+ .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody::-webkit-scrollbar-button { display:none; width:0; height:0; }
+}
