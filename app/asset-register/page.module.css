@@ -40708,29 +40708,29 @@ button.documentOpenLink {
  border-color:rgba(20,135,95,.34) !important;
 }
 .page .assetGroupUmbrellaIcon { width:1.05rem; height:1.05rem; }
-.page .assetGroupCombinedValue { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.25em; }
-.page .assetGroupCombinedValue > span { font:inherit !important; color:inherit !important; letter-spacing:inherit !important; }
 @media(max-width:760px) {
  :global(:where(html:not(:has([data-website-canvas])))) .page .assetGroupHeader { padding-left:clamp(1rem,4vw,1.35rem) !important; }
  :global(:where(html:not(:has([data-website-canvas])))) .page .assetGroupUmbrella { position:static !important; margin-bottom:.8rem; }
 }
 
 /* Asset-register card mockup: clear value hierarchy and a shared action grid. */
-.page .assetGroupCombinedValue {
- display:flex !important;
- flex-direction:column;
- align-items:flex-end;
- gap:.25rem;
- line-height:1.1 !important;
-}
-.page .assetGroupCombinedValue > span {
- font-family:inherit !important;
+/* The label is outside the amount row, keeping the VAT arrow price-centred. */
+.page .assetGroupValueLabel {
+ position:absolute;
+ right:0;
+ bottom:calc(100% + .25rem);
  font-size:.85rem !important;
  font-weight:650 !important;
  line-height:1.4 !important;
- letter-spacing:0 !important;
  color:#647587 !important;
 }
+.page .assetGroupSummary .assetValueVatText { position:relative; }
+.page .assetGroupHeader { padding-top:2.7rem !important; }
+.page .assetGroupHeader,
+.page .assetHeader { align-items:first baseline !important; }
+.page .assetTitleBlock,
+.page .assetHeaderAside,
+.page .assetGroupSummary { align-content:start !important; }
 .page .assetGroupHeader,
 .page .assetCardRow > .assetCard {
  background:linear-gradient(180deg,#fff,#f8fbfa) !important;
@@ -40751,7 +40751,7 @@ button.documentOpenLink {
 }
 .page .assetMetaRow .assetSavedDateLabel::before { content:'·'; margin-right:.6rem; }
 @media(min-width:901px) {
- .page .assetGroupHeader { padding-top:1.4rem !important; padding-bottom:1.4rem !important; }
+ .page .assetGroupHeader { padding-bottom:1.4rem !important; }
  .page .assetGroupHeader .assetGroupSummary,
  .page .assetHeader .assetHeaderAside { gap:1.05rem !important; }
  .page .assetHeaderActions,

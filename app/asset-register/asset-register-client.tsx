@@ -16731,10 +16731,6 @@ export default function AssetRegisterClient({
                           .find((asset) => asset !== undefined)
                         ?? null;
                       const isCollapsed = !expandedAssetGroupIds.has(group.id);
-                      const groupUnnotedAlertCount = group.members.reduce((sum, member) => {
-                        const memberAsset = assetsById.get(member.assetId);
-                        return sum + (memberAsset ? assetUnnotedAlertCount(memberAsset) : 0);
-                      }, 0);
                       const groupValueExVat = groupRegisterValue(group, assets);
                       const groupValueVatMode = assetGroupValueVatModes[group.id] ?? registerValueVatMode;
                       const displayedGroupValue = groupValueVatMode === 'included'
@@ -16770,16 +16766,46 @@ export default function AssetRegisterClient({
                             {isAssetGroupDropTarget ? (
                               <span className={styles.assetGroupDropPrompt} role="status">Drop asset here</span>
                             ) : null}
-                            <div className={styles.assetGroupIdentity}>
-                              <span
-                                className={styles.assetGroupUmbrella}
-                                title={groupUnnotedAlertCount > 0
-                                  ? `${formatAlertBadgeCount(groupUnnotedAlertCount)} unnoted group alert${groupUnnotedAlertCount === 1 ? '' : 's'}`
-                                  : undefined}
-                              >
+                            {groupAnchorAsset && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
+                              <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${group.name}`}>
+                                <button
+                                  type="button"
+                                  className={`${styles.assetFlagButton} ${styles.controlTooltip} ${isAssetFlagged(groupAnchorAsset) ? styles.assetFlagButtonActive : ''}`}
+                                  onClick={() => void handleAssetFlagToggle(groupAnchorAsset)}
+                                  disabled={busyFlagAssetId === groupAnchorAsset.id}
+                                  aria-label={`${isAssetFlagged(groupAnchorAsset) ? 'Unflag' : 'Flag'} ${groupAnchorAsset.title}`}
+                                  aria-pressed={isAssetFlagged(groupAnchorAsset)}
+                                  data-tooltip={isAssetFlagged(groupAnchorAsset) ? 'Remove flag' : 'Flag asset'}
+                                >
+                                  <FlagIcon className={styles.assetFlagIcon} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
+                                  onClick={() => openAssetRegisterMoveManager(groupAnchorAsset)}
+                                  aria-label={`Move ${groupAnchorAsset.title} to another asset register`}
+                                  data-tooltip="Move asset"
+                                >
+                                  <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
+                                </button>
+                                {canManageAssetGroups ? (
+                                  <button
+                                    type="button"
+                                    className={`${styles.assetGroupButton} ${styles.controlTooltip} ${styles.assetGroupButtonActive}`}
+                                    onClick={() => openAssetGroupManager(groupAnchorAsset)}
+                                    aria-label={`Manage ${group.name}`}
+                                    data-tooltip="Manage umbrella"
+                                  >
+                                    <UmbrellaIcon className={styles.assetGroupButtonIcon} />
+                                  </button>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <span className={styles.assetGroupUmbrella} aria-hidden="true">
                                 <UmbrellaIcon className={styles.assetGroupUmbrellaIcon} />
-
                               </span>
+                            )}
+                            <div className={styles.assetGroupIdentity}>
                               <div>
                                 <h2>{group.name}</h2>
                                 <p>
@@ -16798,8 +16824,9 @@ export default function AssetRegisterClient({
                               <div className={styles.valueBlock}>
                                 <div className={styles.assetValueVatDisplay}>
                                   <div className={styles.assetValueVatText}>
+                                    <span className={styles.assetGroupValueLabel}>Combined value</span>
                                     <div className={styles.assetValueVatAmountRow}>
-                                      <strong className={styles.assetGroupCombinedValue}><span>Combined value</span> {money(displayedGroupValue)}</strong>
+                                      <strong className={styles.assetGroupCombinedValue}>{money(displayedGroupValue)}</strong>
                                       <CardVatToggle included={groupValueVatMode === 'included'} onToggle={() => handleAssetGroupValueVatToggle(group.id)} />
                                     </div>
                                     <span>{groupVatLabel}</span>
@@ -17009,28 +17036,28 @@ export default function AssetRegisterClient({
                             ) : null}
                           </div>
                         ) : null}
+                        {isFlagged || isLive || costBudgetStatus || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
+                          <div className={styles.badgeRow}>
+                            {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
+                            {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
+                            {costBudgetStatus ? (
+                              <span className={`${styles.badge} ${styles.badgeDanger} ${styles.badgeBudgetWarning}`}>
+                                {costBudgetStatus === 'over_budget' ? 'Over budget' : 'Budget warning'}
+                              </span>
+                            ) : null}
+                            {estimateNeedsUpdate ? (
+                              <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
+                            ) : null}
+                            {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
+                            {maintenanceAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>Maintenance upcoming</span> : null}
+                            {licenseRenewalAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>License renewal upcoming</span> : null}
+                            {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
+                            {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
+                            {dealerAssetCorrection ? <span className={`${styles.badge} ${styles.badgeDealerCorrection} ${dealerCorrectionRevaluationAlert ? styles.badgeDealerCorrectionWarning : ''}`}>{dealerCorrectionLabel}</span> : null}
+                          </div>
+                        ) : null}
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isFlagged || isLive || costBudgetStatus || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
-                              <div className={styles.badgeRow}>
-                                {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
-                                {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
-                                {costBudgetStatus ? (
-                                  <span className={`${styles.badge} ${styles.badgeDanger} ${styles.badgeBudgetWarning}`}>
-                                    {costBudgetStatus === 'over_budget' ? 'Over budget' : 'Budget warning'}
-                                  </span>
-                                ) : null}
-                                {estimateNeedsUpdate ? (
-                                  <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
-                                ) : null}
-                                {openPartnerNote ? <span className={`${styles.badge} ${styles.badgeInfo} ${partnerNoteToneClass}`}>{partnerNoteLabel}</span> : null}
-                                {maintenanceAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>Maintenance upcoming</span> : null}
-                                {licenseRenewalAlert ? <span className={`${styles.badge} ${styles.badgeMaintenanceUpcoming}`}>License renewal upcoming</span> : null}
-                                {latestMaintenanceStatus ? <span className={`${styles.badge} ${styles.badgeMaintenanceDone}`}>{maintenanceDoneLabel}</span> : null}
-                                {latestIssueNoteStatus ? <span className={`${styles.badge} ${styles.badgeIssueNote}`}>Open issue</span> : null}
-                                {dealerAssetCorrection ? <span className={`${styles.badge} ${styles.badgeDealerCorrection} ${dealerCorrectionRevaluationAlert ? styles.badgeDealerCorrectionWarning : ''}`}>{dealerCorrectionLabel}</span> : null}
-                              </div>
-                            ) : null}
                             <h2>{asset.title}</h2>
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
