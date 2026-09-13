@@ -440,7 +440,7 @@
   border: 1px solid var(--success-line);
 }
 
-.assetTitleBlock h2 {
+:is(.assetTitleBlock, .assetGroupIdentity) h2 {
   margin: 0;
   color: var(--text);
   font-size: 1.18rem;
@@ -3046,7 +3046,7 @@
   gap: 0.34rem;
 }
 
-.assetTitleBlock h2 {
+:is(.assetTitleBlock, .assetGroupIdentity) h2 {
   font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 2), 1.64rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
@@ -4101,7 +4101,7 @@
   padding: 0;
 }
 
-.assetTitleBlock h2 {
+:is(.assetTitleBlock, .assetGroupIdentity) h2 {
   margin: 0;
   color: #0d3028;
   font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem);
@@ -4497,7 +4497,7 @@
     border-radius: 1.25rem;
   }
 
-  :global(:where(html:not(:has([data-website-canvas])))) .assetTitleBlock h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) :is(.assetTitleBlock, .assetGroupIdentity) h2 {
     font-size: 1.35rem;
   }
 
@@ -4551,13 +4551,13 @@
 }
 
 /* === Asset title typography softness === */
-.assetTitleBlock h2 {
+:is(.assetTitleBlock, .assetGroupIdentity) h2 {
   font-weight: 760;
   letter-spacing: -0.032em;
 }
 
 @media (max-width: 760px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .assetTitleBlock h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) :is(.assetTitleBlock, .assetGroupIdentity) h2 {
     font-weight: 740;
     letter-spacing: -0.026em;
   }
@@ -7814,13 +7814,6 @@
   height: 1.7rem;
 }
 
-.assetGroupIdentity h2 {
-  margin: 0;
-  color: #064336;
-  font-size: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 1.65), 1.55rem);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
 
 .assetGroupIdentity p {
   margin: 0.28rem 0 0;
@@ -16930,7 +16923,7 @@
   border-color: #b8e2ca !important;
 }
 
-.assetTitleBlock h2,
+:is(.assetTitleBlock, .assetGroupIdentity) h2,
 .valueBlock strong {
   color: #073b30 !important;
 }
@@ -24739,7 +24732,7 @@ button.documentOpenLink {
   min-width: 0;
 }
 
-.assetTitleBlock h2,
+:is(.assetTitleBlock, .assetGroupIdentity) h2,
 .valueBlock strong,
 .heroSummaryValue,
 .heroRegisterValue,
@@ -37225,7 +37218,7 @@ button.documentOpenLink {
   width: min(calc(100% - (var(--register-inline-gutter) * 2)), 1320px);
 }
 
-.assetTitleBlock h2,
+:is(.assetTitleBlock, .assetGroupIdentity) h2,
 .assetTitleBlock p,
 .assetGroupIdentity h2,
 .assetGroupIdentity p,
@@ -40546,4 +40539,26 @@ button.documentOpenLink {
   right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
+}
+
+/* Give matching card titles and VAT controls their own rows on narrow screens. */
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetGroupHeader {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetHeaderAside,
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetGroupSummary {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetTitleBlock,
+  :global(:where(html:not(:has([data-website-canvas])))) .page .assetGroupIdentity {
+    grid-column: 1;
+    grid-row: 1;
+  }
 }
