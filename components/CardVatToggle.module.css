@@ -1,25 +1,49 @@
 .button {
   appearance: none;
-  position: relative;
-  flex: 0 0 2.25rem;
-  display: inline-grid;
+  position: absolute;
+  top: 50%;
+  right: calc(-1 * var(--asset-card-vat-arrow-offset, 1.65rem) - 1rem);
+  z-index: 2;
+  display: grid;
   place-items: center;
-  width: 2.25rem;
-  min-width: 2.25rem;
-  height: 2.25rem;
-  min-height: 2.25rem;
-  margin: 0 0 0 .65rem;
+  width: 2rem;
+  min-width: 2rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  margin: 0;
   padding: 0;
-  border: 1px solid #bdd8cb;
-  border-radius: .75rem;
-  background: linear-gradient(180deg,#fff,#edf6f1);
-  color: #176849;
-  box-shadow: 0 3px 9px rgba(18,66,51,.07), inset 0 1px 0 rgba(255,255,255,.9);
+  border: 0;
+  border-radius: .35rem;
+  background: transparent;
+  color: rgba(7, 59, 48, .78);
+  box-shadow: none;
+  opacity: .9;
   cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  transform: translateY(-50%);
+  transition: transform 160ms ease, color 160ms ease, opacity 160ms ease;
 }
-.button svg { width: 1.1rem; height: 1.1rem; }
-.button:hover { background: #e0f1e7; border-color: #72aa90; box-shadow: 0 4px 12px rgba(18,66,51,.13); }
-.button[aria-pressed=true] { background:#e7f3ec; border-color:#8ebca4; }
-.button:focus-visible { outline: 3px solid rgba(43,138,99,.35); outline-offset: 3px; }
-@media (pointer:coarse) { .button { width:2.75rem; min-width:2.75rem; height:2.75rem; min-height:2.75rem; flex-basis:2.75rem; } }
+.button > span {
+  display: block;
+  margin: 0;
+  color: inherit !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.2rem, calc(var(--website-design-vw, 1vw) * 2.7), 2.8rem) !important;
+  font-weight: 520;
+  line-height: .78;
+  letter-spacing: -.1em;
+  transform: translateY(-.03em);
+}
+.button:hover { color: #073b30; opacity: 1; transform: translate(.18rem, -50%); }
+.button[aria-pressed=true]:hover { transform: translate(-.18rem, -50%); }
+.button:focus-visible { outline: 3px solid rgba(43,138,99,.35); outline-offset: 2px; }
+@media(max-width:760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .button {
+    right: calc(-1 * var(--asset-card-vat-arrow-offset, 1rem) - .9rem);
+    width: 1.65rem;
+    min-width: 1.65rem;
+  }
+}
+@media(max-width:520px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .button { width:1.45rem; min-width:1.45rem; }
+}
+@media(prefers-reduced-motion:reduce) { .button { transition:none; } }
