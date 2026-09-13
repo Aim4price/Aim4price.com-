@@ -1,0 +1,7 @@
+.container { min-width:0; }
+.grid { display:grid; gap:.5rem; min-width:0; }
+.grid > * { min-width:0; }
+.pages { display:flex; align-items:center; justify-content:space-between; gap:.6rem; margin-top:.65rem; color:#64746a; font-size:.8rem; }
+.pages button { min-height:2.25rem; padding:.35rem .8rem; border:1px solid #d4e0e7; border-radius:.7rem; background:#fff; color:#17362c; font:inherit; font-weight:650; cursor:pointer; }
+.pages button:disabled { opacity:.4; cursor:default; }
+.pages button:focus-visible { outline:3px solid #2b8a634d; outline-offset:2px; }

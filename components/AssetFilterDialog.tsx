@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import accountStyles from '../app/account/page.module.css';
 import styles from './AssetFilterDialog.module.css';
+import CompactChoicePages from './CompactChoicePages';
 
 export type FilterChoice<K extends string> = { value: K; label: string };
 export type FilterGroup<K extends string> = { label: string; section: 'status' | 'details'; options: FilterChoice<K>[] };
@@ -12,8 +13,9 @@ export function replaceFilterGroup<K extends string>(current: K[], options: Filt
   return value ? [...remaining, value] : remaining;
 }
 
-export default function AssetFilterDialog<K extends string>({ groups, selected, sort, sortOptions, resultCount, onGroupChange, onSortChange, onClear, onClose }: {
+export default function AssetFilterDialog<K extends string>({ groups, options, selected, sort, sortOptions, resultCount, onGroupChange, onSortChange, onClear, onClose }: {
   groups: FilterGroup<K>[];
+  options: FilterChoice<K>[];
   selected: K[];
   sort: K;
   sortOptions: FilterChoice<K>[];
@@ -24,30 +26,11 @@ export default function AssetFilterDialog<K extends string>({ groups, selected, 
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLElement | null>(null);
-  const [section, setSection] = useState<'status' | 'details' | 'sort'>('status');
-  const [page, setPage] = useState(0);
-  const [shortScreen, setShortScreen] = useState(false);
-  useEffect(() => {
-    const media = window.matchMedia('(max-height: 640px)');
-    const update = () => {
-      const limit = dialogRef.current ? Number.parseFloat(window.getComputedStyle(dialogRef.current).maxHeight) : Infinity;
-      setShortScreen(media.matches || limit < 620);
-      setPage(0);
-    };
-    update();
-    media.addEventListener('change', update);
-    window.addEventListener('resize', update);
-    return () => { media.removeEventListener('change', update); window.removeEventListener('resize', update); };
-  }, []);
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null;
     dialogRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
     return () => previousFocus?.focus();
   }, []);
-  const visibleGroups = groups.filter((group) => group.section === section);
-  const pageSize = shortScreen ? 2 : 4;
-  const pageCount = Math.max(1, Math.ceil(visibleGroups.length / pageSize));
-  const currentPage = Math.min(page, pageCount - 1);
   const activeCount = selected.length + (sort !== sortOptions[0].value ? 1 : 0);
 
   return (
@@ -66,30 +49,19 @@ export default function AssetFilterDialog<K extends string>({ groups, selected, 
           <div><h3 id="asset-register-filter-title">Filter assets</h3><p aria-live="polite">{resultCount} {resultCount === 1 ? 'asset' : 'assets'} found</p></div>
           <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close asset filters">×</button>
         </header>
-        <nav className={styles.tabs} aria-label="Filter sections">
-          {(['status', 'details', 'sort'] as const).map((tab) => {
-            const count = tab === 'sort' ? Number(sort !== sortOptions[0].value) : groups.filter((group) => group.section === tab).filter((group) => group.options.some((option) => selected.includes(option.value))).length;
-            return <button type="button" key={tab} aria-pressed={section === tab} onClick={() => { setSection(tab); setPage(0); }}>{tab === 'status' ? 'Status' : tab === 'details' ? 'Details' : 'Sort'}{count > 0 ? <span>{count}</span> : null}</button>;
-          })}
-        </nav>
         <div className={styles.body}>
-          {section === 'sort' ? (
-            <label className={styles.sortField}>Sort by
-              <select value={sort} onChange={(event) => onSortChange(event.target.value as K)}>
-                {sortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-          ) : visibleGroups.slice(currentPage * pageSize, (currentPage + 1) * pageSize).map((group) => {
-            const value = group.options.find((option) => selected.includes(option.value))?.value ?? '';
-            return <fieldset className={styles.row} key={group.label}>
-              <legend>{group.label}</legend>
-              <div className={styles.choices}>
-                {[{ value: '' as const, label: 'All' }, ...group.options].map((option) => <button type="button" key={option.value} aria-pressed={value === option.value} onClick={() => onGroupChange(group.options, option.value)}>{option.label}</button>)}
-              </div>
-            </fieldset>;
-          })}
+          <button type="button" className={styles.all} aria-pressed={!activeCount} onClick={onClear}>All Assets</button>
+          <CompactChoicePages reservedHeight={300} rowHeight={56}>
+            {options.filter((option) => option.value !== sortOptions[0].value).map((option) => {
+              const group = groups.find((item) => item.options.some((choice) => choice.value === option.value));
+              const active = group ? selected.includes(option.value) : sort === option.value;
+              return <button type="button" className={styles.choice} key={option.value} aria-pressed={active} onClick={() => {
+                if (group) onGroupChange(group.options, active ? '' : option.value);
+                else onSortChange(active ? sortOptions[0].value : option.value);
+              }}>{option.label}</button>;
+            })}
+          </CompactChoicePages>
         </div>
-        {section !== 'sort' && pageCount > 1 ? <div className={styles.pages}><button type="button" onClick={() => setPage(currentPage - 1)} disabled={currentPage === 0}>Previous</button><span>{currentPage + 1} / {pageCount}</span><button type="button" onClick={() => setPage(currentPage + 1)} disabled={currentPage + 1 === pageCount}>Next</button></div> : null}
         <footer className={styles.footer}>
           <button type="button" className={styles.clear} onClick={onClear} disabled={!activeCount}>Clear filters</button>
           <button type="button" className={styles.done} onClick={onClose}>Done</button>
