@@ -3052,7 +3052,7 @@
   letter-spacing: -0.04em;
 }
 
-.assetTitleBlock p {
+:is(.assetTitleBlock, .assetGroupIdentity) p {
   margin: 0;
   font-size: 1.03rem;
   line-height: 1.42;
@@ -3094,7 +3094,7 @@
     align-items: flex-start;
   }
 
-  :global(:where(html:not(:has([data-website-canvas])))) .assetTitleBlock p {
+  :global(:where(html:not(:has([data-website-canvas])))) :is(.assetTitleBlock, .assetGroupIdentity) p {
     font-size: 0.99rem;
   }
 
@@ -4110,7 +4110,7 @@
   letter-spacing: -0.045em;
 }
 
-.assetTitleBlock p,
+:is(.assetTitleBlock, .assetGroupIdentity) p,
 .assetFactPlaceholder {
   margin: 0;
   color: #637282;
@@ -7818,7 +7818,6 @@
 .assetGroupIdentity p {
   margin: 0.28rem 0 0;
   color: #5c716a;
-  font-size: 0.82rem;
   font-weight: 700;
 }
 
