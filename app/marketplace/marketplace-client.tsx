@@ -3486,7 +3486,7 @@ export default function MarketplaceClient({
             {!isSignedIn ? (
               <>
                 <div className={styles.createListingHeader}>
-                  <h2 id="create-listing-title">Create marketplace listing</h2>
+                  <h2 id="create-listing-title">Create marketplace listing from</h2>
                   <p>
                     Marketplace listings must be tied to a seller profile. You can browse listings as a guest, but you need
                     an account before you can create or publish a listing.
@@ -3513,7 +3513,7 @@ export default function MarketplaceClient({
             ) : (
               <>
                 <div className={styles.createListingHeader}>
-                  <h2 id="create-listing-title">Create marketplace listing</h2>
+                  <h2 id="create-listing-title">Create marketplace listing from</h2>
                 </div>
 
                 <div className={styles.createListingChoiceGrid}>
@@ -3521,13 +3521,21 @@ export default function MarketplaceClient({
                     <span className={styles.createListingChoiceIcon} aria-hidden="true">
                       <IconAssetRegister />
                     </span>
-                    <strong>Asset Register</strong>
+                    <span className={styles.createListingChoiceCopy}>
+                      <strong>Asset Register</strong>
+                      <small>Choose an asset you already saved.</small>
+                    </span>
+                    <span className={styles.createListingChoiceArrow} aria-hidden="true"><IconChevronRight /></span>
                   </a>
                   <button type="button" className={styles.createListingChoiceCard} onClick={goToMarketplaceEstimate}>
                     <span className={styles.createListingChoiceIcon} aria-hidden="true">
                       <IconEstimate />
                     </span>
-                    <strong>Estimate</strong>
+                    <span className={styles.createListingChoiceCopy}>
+                      <strong>Estimate</strong>
+                      <small>Start with an asset estimate.</small>
+                    </span>
+                    <span className={styles.createListingChoiceArrow} aria-hidden="true"><IconChevronRight /></span>
                   </button>
                 </div>
               </>
