@@ -2441,6 +2441,7 @@ type ModalSelectProps<T extends string> = {
   showDescriptions?: boolean;
   usePortal?: boolean;
   assetDetailEditTarget?: AssetDetailEditTarget;
+  buttonLabel?: string;
 };
 
 function ModalSelect<T extends string>({
@@ -2455,6 +2456,7 @@ function ModalSelect<T extends string>({
   showDescriptions = true,
   usePortal = true,
   assetDetailEditTarget,
+  buttonLabel,
 }: ModalSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [portalMenuStyle, setPortalMenuStyle] = useState<ModalSelectPortalStyle | null>(null);
@@ -2606,6 +2608,7 @@ function ModalSelect<T extends string>({
         className={`${styles.customSelectButton} ${isOpen ? styles.customSelectButtonOpen : ''} ${!selectedOption ? styles.customSelectButtonPlaceholder : ''}`}
         onClick={() => setIsOpen((current) => !current)}
         aria-haspopup="listbox"
+        aria-label={buttonLabel}
         aria-expanded={isOpen}
         autoFocus={autoFocus}
       >
@@ -2701,6 +2704,63 @@ function formatRegisterValueInput(value: unknown): string {
 
 function parseRegisterValueInput(value: unknown): number {
   return Math.round(parseMoneyInput(value) ?? 0);
+}
+
+type AssetPriceVatMode = 'excluded' | 'included';
+
+function AssetVatValueField({ label, value, onChange, initialVatMode, className, placeholder, target }: {
+  label: string;
+  value: string;
+  onChange: (valueExVat: string) => void;
+  initialVatMode: AssetPriceVatMode;
+  className: string;
+  placeholder: string;
+  target?: AssetDetailEditTarget;
+}) {
+  const [vatMode, setVatMode] = useState(initialVatMode);
+  // Keep the typed inclusive amount while storing the existing whole-rand, ex-VAT draft.
+  const [entry, setEntry] = useState<{ canonical: string; mode: AssetPriceVatMode; text: string } | null>(null);
+  const displayedValue = entry?.canonical === value && entry.mode === vatMode
+    ? entry.text
+    : value.trim() === '' ? '' : formatRegisterValueInput(
+      vatMode === 'included' ? summaryValueInclVat(parseRegisterValueInput(value)) : parseRegisterValueInput(value),
+    );
+
+  return (
+    <div className={`${styles.field} ${className} ${updateStyles.vatValueField}`} data-asset-detail-edit-target={target}>
+      <span>{label}</span>
+      <div className={updateStyles.vatValueRow}>
+        <ModalSelect<AssetPriceVatMode>
+          label={`${label.replace(' *', '')} VAT`}
+          buttonLabel={`${label.replace(' *', '')} VAT`}
+          className={updateStyles.vatValueSelect}
+          value={vatMode}
+          options={[{ value: 'excluded', label: 'Excl. VAT' }, { value: 'included', label: 'Incl. VAT' }]}
+          onChange={(mode) => { setVatMode(mode); setEntry(null); }}
+        />
+        <div className={styles.manualCurrencyInput}>
+          <span>R</span>
+          <input
+            aria-label={label.replace(' *', '')}
+            type="text"
+            inputMode="numeric"
+            value={displayedValue}
+            onChange={(event) => {
+              const text = formatRegisterValueInput(event.target.value);
+              const canonical = text === '' ? '' : formatRegisterValueInput(
+                vatMode === 'included'
+                  ? Math.round(parseRegisterValueInput(text) / ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER)
+                  : parseRegisterValueInput(text),
+              );
+              setEntry({ canonical, mode: vatMode, text });
+              onChange(canonical);
+            }}
+            placeholder={placeholder}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function formatUsageAmountInput(value: unknown): string {
@@ -7014,6 +7074,7 @@ export default function AssetRegisterClient({
 
   function handleRegisterValueVatModeChange(nextMode: 'excluded' | 'included') {
     setRegisterValueVatMode(nextMode);
+    setReplacementValueVatMode(nextMode);
     setAssetValueVatModes({});
     setAssetGroupValueVatModes({});
   }
@@ -15885,13 +15946,13 @@ export default function AssetRegisterClient({
   const replacementPriceRequiredForDraft = assetFormKind !== 'stock' && !isLandPropertyDraft;
   const assetLicenseApplicable = assetKindSupportsLicensing(assetFormKind);
   const currentValueFieldLabel = assetFormKind === 'stock'
-    ? 'Current stock value excl. VAT *'
+    ? 'Current stock value *'
     : isLandPropertyDraft
-      ? 'Current / market value excl. VAT *'
-      : 'Current Value excl. VAT *';
+      ? 'Current / market value *'
+      : 'Current Value *';
   const replacementValueFieldLabel = assetFormKind === 'property'
-    ? 'Rebuilding / replacement value excl. VAT *'
-    : 'Replacement Price excl. VAT *';
+    ? 'Rebuilding / replacement value *'
+    : 'Replacement Price *';
   const manualDraftDocumentCount = assetDraft.documents.length + pendingDocumentFiles.length;
   const manualDraftRawPhotoCount = assetDraft.photos.length + pendingPhotoFiles.length;
   const manualDraftPhotoCount = Math.min(MAX_PHOTOS, manualDraftRawPhotoCount);
@@ -16695,7 +16756,7 @@ export default function AssetRegisterClient({
                       <button
                         type="button"
                         className={`${styles.vatToggleButton} ${replacementValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
-                        onClick={() => setReplacementValueVatMode('excluded')}
+                        onClick={() => handleRegisterValueVatModeChange('excluded')}
                         aria-pressed={replacementValueVatMode === 'excluded'}
                       >
                         Excl. VAT
@@ -16703,7 +16764,7 @@ export default function AssetRegisterClient({
                       <button
                         type="button"
                         className={`${styles.vatToggleButton} ${replacementValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
-                        onClick={() => setReplacementValueVatMode('included')}
+                        onClick={() => handleRegisterValueVatModeChange('included')}
                         aria-pressed={replacementValueVatMode === 'included'}
                       >
                         Incl. VAT
@@ -17803,22 +17864,22 @@ export default function AssetRegisterClient({
                                           aria-label={`Edit replacement price for ${asset.title}`}
                                         >
                                           <span>Replacement Price</span>
-                                          <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
-                                          <small>Excl. VAT</small>
+                                          <strong>{readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
+                                          <small>{assetValueVatLabel}</small>
                                         </button>
                                       ) : (
                                         <div className={styles.assetReplacementPriceBubble}>
                                           <span>Replacement Price</span>
-                                          <strong>{readAssetReplacementPriceExVat(asset) ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set'}</strong>
-                                          <small>Excl. VAT</small>
+                                          <strong>{readAssetReplacementPriceExVat(asset) ? money((readAssetReplacementPriceExVat(asset) ?? 0) * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1)) : 'Not set'}</strong>
+                                          <small>{assetValueVatLabel}</small>
                                         </div>
                                       )}
 
                                       {insuredValueExVat !== null ? (
                                         <div className={styles.assetInsuredValueBubble}>
                                           <span>Insured For</span>
-                                          <strong>{money(insuredValueExVat)}</strong>
-                                          <small>Excl. VAT</small>
+                                          <strong>{money(insuredValueExVat * (assetValueVatMode === 'included' ? ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER : 1))}</strong>
+                                          <small>{assetValueVatLabel}</small>
                                         </div>
                                       ) : null}
 
@@ -18987,78 +19048,46 @@ export default function AssetRegisterClient({
                       ) : null}
 
                       <div className={`${styles.assetValueBoxGrid} ${updateStyles.valueGrid}`}>
-                        <label className={`${styles.field} ${styles.manualValueField}`}>
-                          <span>{currentValueFieldLabel}</span>
-                          <div className={styles.manualCurrencyInput}>
-                            <span>R</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={formatRegisterValueInput(assetDraft.value)}
-                              onChange={(event) =>
-                                setAssetDraft((current) => ({
-                                  ...current,
-                                  value: formatRegisterValueInput(event.target.value),
-                                }))
-                              }
-                              placeholder="0"
-                            />
-                          </div>
-                        </label>
-
+                        <AssetVatValueField
+                          key={`${editingAssetId ?? 'new'}-value`}
+                          label={currentValueFieldLabel}
+                          value={assetDraft.value}
+                          onChange={(value) => setAssetDraft((current) => ({ ...current, value }))}
+                          initialVatMode={assetValueVatModes[editingAssetId ?? ''] ?? registerValueVatMode}
+                          className={styles.manualValueField}
+                          placeholder="0"
+                        />
                         {replacementPriceRequiredForDraft ? (
-                          <label className={`${styles.field} ${styles.manualReplacementValueField}`} data-asset-detail-edit-target="replacement">
-                            <span>{replacementValueFieldLabel}</span>
-                            <div className={styles.manualCurrencyInput}>
-                              <span>R</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatRegisterValueInput(assetDraft.replacementPrice)}
-                                onChange={(event) =>
-                                  setAssetDraft((current) => ({
-                                    ...current,
-                                    replacementPrice: formatRegisterValueInput(event.target.value),
-                                  }))
-                                }
-                                placeholder="Required"
-                              />
-                            </div>
-                          </label>
+                          <AssetVatValueField
+                            key={`${editingAssetId ?? 'new'}-replacement`}
+                            label={replacementValueFieldLabel}
+                            value={assetDraft.replacementPrice}
+                            onChange={(replacementPrice) => setAssetDraft((current) => ({ ...current, replacementPrice }))}
+                            initialVatMode={assetValueVatModes[editingAssetId ?? ''] ?? registerValueVatMode}
+                            className={styles.manualReplacementValueField}
+                            placeholder="Required"
+                            target="replacement"
+                          />
                         ) : assetFormKind === 'stock' ? (
-                          <label className={`${styles.field} ${styles.manualReplacementValueField}`}>
-                            <span>Peak / seasonal stock value excl. VAT</span>
-                            <div className={styles.manualCurrencyInput}>
-                              <span>R</span>
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={formatRegisterValueInput(assetDraft.stockPeakValue)}
-                                onChange={(event) =>
-                                  setAssetDraft((current) => ({
-                                    ...current,
-                                    stockPeakValue: formatRegisterValueInput(event.target.value),
-                                  }))
-                                }
-                                placeholder="Optional"
-                              />
-                            </div>
-                          </label>
+                          <AssetVatValueField
+                            key={`${editingAssetId ?? 'new'}-stock`}
+                            label="Peak / seasonal stock value"
+                            value={assetDraft.stockPeakValue}
+                            onChange={(stockPeakValue) => setAssetDraft((current) => ({ ...current, stockPeakValue }))}
+                            initialVatMode={assetValueVatModes[editingAssetId ?? ''] ?? registerValueVatMode}
+                            className={styles.manualReplacementValueField}
+                            placeholder="Optional"
+                          />
                         ) : null}
-
-                        <label className={`${styles.field} ${styles.assetInsuredValueField}`}>
-                          <span>Insured Value excl. VAT</span>
-                          <div className={styles.manualCurrencyInput}>
-                            <span>R</span>
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={formatRegisterValueInput(assetDraft.insuredValue)}
-                              onChange={(event) => handleInsuredValueChange(event.target.value)}
-                              placeholder="Optional"
-                            />
-                          </div>
-                        </label>
+                        <AssetVatValueField
+                          key={`${editingAssetId ?? 'new'}-insured`}
+                          label="Insured Value"
+                          value={assetDraft.insuredValue}
+                          onChange={handleInsuredValueChange}
+                          initialVatMode={assetValueVatModes[editingAssetId ?? ''] ?? registerValueVatMode}
+                          className={styles.assetInsuredValueField}
+                          placeholder="Optional"
+                        />
                       </div>
 
                       {showLifeWorkedPercentField ? (
