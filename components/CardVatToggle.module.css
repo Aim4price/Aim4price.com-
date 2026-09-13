@@ -2,7 +2,7 @@
   appearance: none;
   position: absolute;
   top: 50%;
-  right: calc(-1 * var(--asset-card-vat-arrow-offset, 1.65rem) - 1rem);
+  right: calc(-1 * var(--asset-card-vat-arrow-offset, 1.65rem) - 1.15rem);
   z-index: 2;
   display: grid;
   place-items: center;
@@ -22,15 +22,15 @@
   transform: translateY(-50%);
   transition: transform 160ms ease, color 160ms ease, opacity 160ms ease;
 }
-.button > span {
+.button.button > span {
   display: block;
   margin: 0;
   color: inherit !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.2rem, calc(var(--website-design-vw, 1vw) * 2.7), 2.8rem) !important;
-  font-weight: 520;
-  line-height: .78;
-  letter-spacing: -.1em;
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.5rem) !important;
+  font-weight: 520 !important;
+  line-height: .78 !important;
+  letter-spacing: 0 !important;
   transform: translateY(-.03em);
 }
 .button:hover { color: #073b30; opacity: 1; transform: translate(.18rem, -50%); }
