@@ -20,7 +20,7 @@ export default function InsideShareDialog({ titleId, subject, options, disabled 
         <header className={`${base.header} ${styles.header}`}>
           <div>
             <h3 id={titleId} tabIndex={-1} title={subject}>Share inside Aim4price</h3>
-            <p>Choose a partner.</p>
+            <p>Choose who to share with.</p>
           </div>
           <button className={base.close} type="button" onClick={onClose} disabled={disabled} aria-label="Close share options">×</button>
         </header>
