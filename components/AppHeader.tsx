@@ -17,6 +17,7 @@ import { isMiddlemanAccountSubtype } from '../lib/middleman-account';
 import { isViewportScrollbarInteraction } from '../lib/viewport-scrollbar';
 import DealerCostDecisionModal from './DealerCostDecisionModal';
 import styles from './AppHeader.module.css';
+import inboxStyles from './NotificationInboxModal.module.css';
 
 const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
 
@@ -2184,7 +2185,7 @@ export default function AppHeader({
     notificationOpen && canUseNotificationPortal
       ? createPortal(
           <div
-            className={styles.notificationModalBackdrop} data-website-overlay
+            className={inboxStyles.backdrop} data-website-overlay
             role="presentation"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget) {
@@ -2195,161 +2196,164 @@ export default function AppHeader({
             <section
               id="header-notifications-modal"
               ref={notificationDialogRef}
-              className={styles.notificationModal}
+              className={inboxStyles.modal}
               role="dialog"
               aria-modal="true"
               aria-labelledby="header-notifications-title"
               onMouseDown={(event) => event.stopPropagation()}
             >
-              <div className={styles.notificationHeaderRow}>
-                <div className={styles.notificationHeaderText}>
-                  <strong id="header-notifications-title" className={styles.notificationTitle}>
+              <div className={inboxStyles.header}>
+                <div className={inboxStyles.headerText}>
+                  <h2 id="header-notifications-title" className={inboxStyles.title}>
                     Notifications
-                  </strong>
-                  <span className={styles.notificationSubtitle}>
+                  </h2>
+                  <span className={inboxStyles.subtitle}>
                     {isOwnerAccount
-                      ? 'Messages, ads, contact requests, notes, QR scans and fuel updates.'
-                      : 'New lead opportunities and account request results.'}
+                      ? 'Your latest activity and account updates.'
+                      : 'Your latest leads and account updates.'}
                   </span>
                 </div>
 
-                <div className={styles.notificationHeaderActions}>
                   <button
                     type="button"
-                    className={styles.notificationCloseButton}
+                    className={inboxStyles.close}
                     aria-label="Close notifications"
                     onClick={() => setNotificationOpen(false)}
                   >
                     ×
                   </button>
-                </div>
               </div>
 
-              <div className={styles.notificationInboxControls}>
-                <label className={styles.notificationSearchBox}>
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="11" cy="11" r="6.5" />
-                    <path d="m16 16 4 4" />
-                  </svg>
-                  <input
-                    type="search"
-                    value={notificationSearchQuery}
-                    onChange={(event) => {
-                      setNotificationSearchQuery(event.target.value);
-                      setNotificationPage(1);
-                    }}
-                    placeholder="Search notifications…"
-                    aria-label="Search notifications"
-                  />
-                  {notificationSearchQuery ? (
-                    <button type="button" onClick={() => setNotificationSearchQuery('')} aria-label="Clear notification search">×</button>
-                  ) : null}
-                </label>
-                <div className={styles.notificationViewTabs} role="tablist" aria-label="Notification sections">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={notificationView === 'active'}
-                    className={notificationView === 'active' ? styles.notificationViewTabActive : ''}
-                    onClick={() => {
-                      setNotificationView('active');
-                      setNotificationPage(1);
-                    }}
-                  >
-                    Active <span>{activeNotificationCount}</span>
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={notificationView === 'history'}
-                    className={notificationView === 'history' ? styles.notificationViewTabActive : ''}
-                    onClick={() => {
-                      setNotificationView('history');
-                      setNotificationPage(1);
-                    }}
-                  >
-                    History <span>{historyNotifications.length}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.notificationListHeader} aria-live="polite">
-                <span>
-                  {isLoadingNotifications
-                    ? 'Checking activity'
-                    : displayNotificationCount
-                      ? hasNotificationPages
-                        ? `${notificationRangeStart}-${notificationRangeEnd} of ${displayNotificationCount} notifications`
-                        : `${displayNotificationCount} ${displayNotificationCount === 1 ? 'notification' : 'notifications'}`
-                      : notificationSearchQuery
-                        ? 'No matching notifications'
-                        : notificationView === 'history'
-                          ? 'No notification history'
-                          : 'No active notifications'}
-                </span>
-                <div className={styles.notificationListHeaderActions}>
-                  <strong>
-                    {notificationView === 'history'
-                      ? 'Searchable history'
-                      : needsActionCount
-                        ? `${needsActionCount} need action`
-                        : unreadNotificationCount
-                          ? `${unreadNotificationCount} new`
-                          : 'All checked'}
-                  </strong>
-                  {notificationView === 'active' ? (
+              <div className={inboxStyles.body} tabIndex={0} role="region" aria-label="Notification inbox">
+                <div className={styles.notificationInboxControls}>
+                  <label className={styles.notificationSearchBox}>
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <circle cx="11" cy="11" r="6.5" />
+                      <path d="m16 16 4 4" />
+                    </svg>
+                    <input
+                      type="search"
+                      value={notificationSearchQuery}
+                      onChange={(event) => {
+                        setNotificationSearchQuery(event.target.value);
+                        setNotificationPage(1);
+                      }}
+                      placeholder="Search notifications…"
+                      aria-label="Search notifications"
+                    />
+                    {notificationSearchQuery ? (
+                      <button type="button" onClick={() => setNotificationSearchQuery('')} aria-label="Clear notification search">×</button>
+                    ) : null}
+                  </label>
+                  <div className={styles.notificationViewTabs} role="tablist" aria-label="Notification sections">
                     <button
                       type="button"
-                      className={`${styles.notificationClearButton} ${unreadNotificationCount ? styles.notificationClearButtonNew : ''}`}
-                      onClick={markNotificationsSeen}
-                      disabled={!unreadNotificationCount}
-                      aria-label={unreadNotificationCount ? `Mark ${unreadNotificationCount} new notifications checked` : 'All notifications are checked'}
+                      role="tab"
+                      aria-selected={notificationView === 'active'}
+                      className={notificationView === 'active' ? styles.notificationViewTabActive : ''}
+                      onClick={() => {
+                        setNotificationView('active');
+                        setNotificationPage(1);
+                      }}
                     >
-                      {unreadNotificationCount ? 'Mark checked' : 'All checked'}
+                      Active <span>{activeNotificationCount}</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={notificationView === 'history'}
+                      className={notificationView === 'history' ? styles.notificationViewTabActive : ''}
+                      onClick={() => {
+                        setNotificationView('history');
+                        setNotificationPage(1);
+                      }}
+                    >
+                      History <span>{historyNotifications.length}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.notificationListHeader} aria-live="polite">
+                  <span>
+                    {isLoadingNotifications
+                      ? 'Checking activity'
+                      : displayNotificationCount
+                        ? hasNotificationPages
+                          ? `${notificationRangeStart}-${notificationRangeEnd} of ${displayNotificationCount} notifications`
+                          : `${displayNotificationCount} ${displayNotificationCount === 1 ? 'notification' : 'notifications'}`
+                        : notificationSearchQuery
+                          ? 'No matching notifications'
+                          : notificationView === 'history'
+                            ? 'No notification history'
+                            : 'No active notifications'}
+                  </span>
+                  <div className={styles.notificationListHeaderActions}>
+                    <strong>
+                      {notificationView === 'history'
+                        ? 'Searchable history'
+                        : needsActionCount
+                          ? `${needsActionCount} need action`
+                          : unreadNotificationCount
+                            ? `${unreadNotificationCount} new`
+                            : ''}
+                    </strong>
+
+                  </div>
+                </div>
+
+                <div className={inboxStyles.list}>
+                  {isLoadingNotifications ? (
+                    <div className={styles.notificationEmpty}>Loading notifications...</div>
+                  ) : displayNotificationCount ? (
+                    visibleNotifications.map((notification) => renderNotificationItem(notification))
+                  ) : (
+                    <div className={styles.notificationEmpty}>
+                      {notificationSearchQuery
+                        ? 'No notifications match your search.'
+                        : notificationView === 'history'
+                          ? 'Checked notifications will appear here.'
+                          : 'You’re all caught up. Checked notifications remain in History.'}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+              <footer className={inboxStyles.footer}>
+                {!isLoadingNotifications && hasNotificationPages ? (
+                  <div className={inboxStyles.pagination} role="navigation" aria-label="Notification pages">
+                    <button
+                      type="button"
+                      className={inboxStyles.button}
+                      onClick={() => setNotificationPage((current) => Math.max(1, current - 1))}
+                      disabled={activeNotificationPage <= 1}
+                    >
+                      Previous
+                    </button>
+                    <span className={styles.notificationPaginationText}>
+                      Page {activeNotificationPage} of {notificationPageCount}
+                    </span>
+                    <button
+                      type="button"
+                      className={inboxStyles.button}
+                      onClick={() => setNotificationPage((current) => Math.min(notificationPageCount, current + 1))}
+                      disabled={activeNotificationPage >= notificationPageCount}
+                    >
+                      Next
+                    </button>
+                  </div>
+                ) : null}
+                  {notificationView === 'active' && unreadNotificationCount > 0 ? (
+                    <button
+                      type="button"
+                      className={`${inboxStyles.button} ${inboxStyles.primary}`}
+                      onClick={markNotificationsSeen}
+                      aria-label={`Mark ${unreadNotificationCount} new notifications checked`}
+                    >
+                      Mark checked
                     </button>
                   ) : null}
-                </div>
-              </div>
-
-              <div className={styles.notificationList}>
-                {isLoadingNotifications ? (
-                  <div className={styles.notificationEmpty}>Loading notifications...</div>
-                ) : displayNotificationCount ? (
-                  visibleNotifications.map((notification) => renderNotificationItem(notification))
-                ) : (
-                  <div className={styles.notificationEmpty}>
-                    {notificationSearchQuery
-                      ? 'No notifications match your search.'
-                      : notificationView === 'history'
-                        ? 'Checked notifications will appear here.'
-                        : 'You’re all caught up. Checked notifications remain in History.'}
-                  </div>
-                )}
-              </div>
-
-              {!isLoadingNotifications && hasNotificationPages ? (
-                <div className={styles.notificationPagination} role="navigation" aria-label="Notification pages">
-                  <button
-                    type="button"
-                    className={styles.notificationPaginationButton}
-                    onClick={() => setNotificationPage((current) => Math.max(1, current - 1))}
-                    disabled={activeNotificationPage <= 1}
-                  >
-                    Previous
-                  </button>
-                  <span className={styles.notificationPaginationText}>
-                    Page {activeNotificationPage} of {notificationPageCount}
-                  </span>
-                  <button
-                    type="button"
-                    className={styles.notificationPaginationButton}
-                    onClick={() => setNotificationPage((current) => Math.min(notificationPageCount, current + 1))}
-                    disabled={activeNotificationPage >= notificationPageCount}
-                  >
-                    Next
-                  </button>
-                </div>
-              ) : null}
+                <button type="button" className={inboxStyles.button} onClick={() => setNotificationOpen(false)}>Close</button>
+              </footer>
             </section>
           </div>,
           document.body,
