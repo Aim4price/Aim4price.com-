@@ -1,0 +1,30 @@
+/* Reuse Fuel slips appearance; only constrain the four-row scroll layout. */
+.downloadScopeLayout.downloadScopeLayout {
+  display: flex !important;
+  flex-direction: column !important;
+  align-self: center;
+  overflow: hidden !important;
+}
+.downloadScopeLayout > :first-child { flex: 0 0 auto; }
+.downloadScopeChoices.downloadScopeChoices {
+  flex: 0 1 auto;
+  grid-auto-rows: max-content;
+  align-content: start;
+  min-height: 0 !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: auto;
+  scrollbar-color: #608777 #edf3ef;
+}
+.downloadScopeChoices::-webkit-scrollbar { width: 12px; }
+.downloadScopeChoices::-webkit-scrollbar-track { background: #edf3ef; border-radius: 10px; }
+.downloadScopeChoices::-webkit-scrollbar-thumb { background: #608777; border: 3px solid #edf3ef; border-radius: 10px; }
+.downloadScopeChoices > button > span:nth-child(2) { min-width: 0; }
+.downloadScopeChoices > button :is(strong, small) { white-space: normal !important; overflow-wrap: anywhere; }
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadScopeChoices > button {
+    grid-template-columns: 3rem minmax(0, 1fr) 1.75rem !important;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadScopeChoices > button > span:first-child { min-width: 3rem !important; }
+}
