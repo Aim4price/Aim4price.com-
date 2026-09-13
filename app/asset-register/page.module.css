@@ -40680,3 +40680,14 @@ button.documentOpenLink {
  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody::-webkit-scrollbar-thumb:hover { background:#457e65; }
  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody::-webkit-scrollbar-button { display:none; width:0; height:0; }
 }
+
+/* Let the outer-scrolling summary panel contain every table row. */
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryPanel {
+ display:block !important;
+ height:auto !important;
+ overflow:hidden !important;
+}
+.registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryPanel {
+ min-height:max-content !important;
+ align-self:start !important;
+}
