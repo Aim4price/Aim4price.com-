@@ -11,6 +11,7 @@ import type { MaintenanceIdentity } from '../../lib/maintenance-catalogue';
 import DesktopServiceModal, { type DesktopServiceCompletion } from '../../components/DesktopServiceModal';
 import styles from './page.module.css';
 import accountStyles from '../account/page.module.css';
+import dialogStyles from '../../components/MaintenanceDialog.module.css';
 
 type MaintenanceType = 'service' | 'checkup';
 type TriggerType = 'date' | 'usage';
@@ -1558,8 +1559,8 @@ export default function MaintenanceClient({
                 <CloseIcon />
               </button>
             </header>
-            <div className={styles.modalDivider} />
-            <div className={styles.formModalScrollBody}>
+
+            <div className={`${styles.formModalScrollBody} ${dialogStyles.body}`}>
               <div className={styles.maintenanceSectionTitle}>{draft.triggerType === 'date' ? 'Specific date setup' : 'Usage setup'}</div>
               <div className={styles.maintenanceFieldGrid}>
                 {draft.triggerType === 'date' ? (
@@ -1649,7 +1650,7 @@ export default function MaintenanceClient({
             <footer className={styles.modalFooter}>
               {!editingRecordId ? <button className={styles.secondaryButton} type="button" onClick={() => setModalMode('trigger-type')}>Back</button> : null}
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-              <button className={styles.primaryButton} type="button" onClick={() => void submitDraft()} disabled={isSaving}>
+              <button className={styles.primaryButton} data-primary-action type="button" onClick={() => void submitDraft()} disabled={isSaving}>
                 {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : `Add ${draft.maintenanceType}`}
               </button>
             </footer>
@@ -1764,18 +1765,18 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'filter' ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-filter-title">
-          <section className={styles.filterModal}>
+        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-filter-title">
+          <section className={`${styles.filterModal} ${dialogStyles.dialog}`}>
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-filter-title">Filter maintenance records</h2>
               </div>
-              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close filters">
+              <button className={dialogStyles.close} type="button" onClick={closeModal} aria-label="Close filters">
                 <CloseIcon />
               </button>
             </header>
-            <div className={styles.modalDivider} />
-            <div className={styles.filterGrid}>
+
+            <div className={`${styles.filterGrid} ${dialogStyles.body}`}>
               <MaintenanceDropdown
                 label="Asset"
                 value={draftFilters.assetId}
@@ -1807,16 +1808,16 @@ export default function MaintenanceClient({
             <footer className={styles.modalFooter}>
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Close</button>
               <button className={styles.secondaryButton} type="button" onClick={clearFilters}>Clear filters</button>
-              <button className={styles.primaryButton} type="button" onClick={applyFilters}>Apply filters</button>
+              <button className={styles.primaryButton} data-primary-action type="button" onClick={applyFilters}>Apply filters</button>
             </footer>
           </section>
         </div>
       ) : null}
 
       {modalMode === 'download' ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
+        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
           <section
-            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${downloadStep === 'asset' ? pickerStyles.modal : ''}`}
+            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${dialogStyles.dialog} ${downloadStep === 'asset' ? pickerStyles.modal : ''}`}
             data-asset-choice-surface={downloadStep === 'asset' ? 'true' : undefined}
             data-asset-choice-modal={downloadStep === 'asset' ? 'true' : undefined}
           >
@@ -1832,22 +1833,22 @@ export default function MaintenanceClient({
                 <div className={styles.maintenanceExportHeadingRow}>
                   <p>
                     {downloadStep === 'scope'
-                      ? 'Choose which maintenance records should be included in the report.'
+                      ? 'Choose the records to include.'
                       : downloadStep === 'asset'
-                        ? 'Select the saved asset whose maintenance history should be included.'
-                        : 'Choose a PDF report or an Excel-ready maintenance workbook.'}
+                        ? 'Choose an asset.'
+                        : 'Choose PDF or Excel.'}
                   </p>
                 </div>
               </div>
-              <button className={styles.closeButton} type="button" onClick={closeModal} aria-label="Close download reports">
+              <button className={dialogStyles.close} type="button" onClick={closeModal} aria-label="Close download reports">
                 {downloadStep === 'asset' ? <span aria-hidden="true">×</span> : <CloseIcon />}
               </button>
             </header>
-            <div className={styles.modalDivider} />
+
 
             {downloadStep === 'scope' ? (
               <>
-                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
+                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody} ${dialogStyles.body}`}>
                   <div className={styles.maintenanceScopeList}>
                     {DOWNLOAD_SCOPE_OPTIONS.map((option) => (
                       <button
@@ -1874,6 +1875,7 @@ export default function MaintenanceClient({
                   <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
                   <button
                     className={styles.primaryButton}
+                    data-primary-action
                     type="button"
                     onClick={() => setDownloadStep(downloadScope === 'asset' ? 'asset' : 'format')}
                   >
@@ -1936,7 +1938,7 @@ export default function MaintenanceClient({
               </>
             ) : (
               <>
-                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
+                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody} ${dialogStyles.body}`}>
                   <div className={styles.maintenanceFormatGrid}>
                     {DOWNLOAD_FORMAT_OPTIONS.map((option) => (
                       <button
@@ -1962,7 +1964,7 @@ export default function MaintenanceClient({
                 <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`}>
                   <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep(downloadScope === 'asset' ? 'asset' : 'scope')}>Back</button>
                   <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-                  <button className={styles.primaryButton} type="button" onClick={submitDownload}>
+                  <button className={styles.primaryButton} data-primary-action type="button" onClick={submitDownload}>
                     {downloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}
                   </button>
                 </footer>
