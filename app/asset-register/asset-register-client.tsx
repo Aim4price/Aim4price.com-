@@ -1,5 +1,7 @@
 'use client';
 
+import CardVatToggle from '../../components/CardVatToggle';
+
 import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
 
 import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
@@ -6791,6 +6793,7 @@ export default function AssetRegisterClient({
   const [pageSize, setPageSize] = useState<PageSize>(DEFAULT_PAGE_SIZE);
   const [registerValueVatMode, setRegisterValueVatMode] = useState<'excluded' | 'included'>('excluded');
   const [replacementValueVatMode, setReplacementValueVatMode] = useState<'excluded' | 'included'>('excluded');
+  const [assetGroupValueVatModes, setAssetGroupValueVatModes] = useState<Record<string, 'excluded' | 'included'>>({});
   const [assetValueVatModes, setAssetValueVatModes] = useState<Record<string, 'excluded' | 'included'>>({});
   const [registerSummaryStartIndex, setRegisterSummaryStartIndex] = useState(0);
   const [registerSummaryCardsPerView, setRegisterSummaryCardsPerView] = useState(REGISTER_SUMMARY_VISIBLE_CARD_COUNT);
@@ -7006,6 +7009,7 @@ export default function AssetRegisterClient({
   function handleRegisterValueVatModeChange(nextMode: 'excluded' | 'included') {
     setRegisterValueVatMode(nextMode);
     setAssetValueVatModes({});
+    setAssetGroupValueVatModes({});
   }
 
   function handleAssetValueVatToggle(assetId: string) {
@@ -7017,6 +7021,13 @@ export default function AssetRegisterClient({
         [assetId]: currentMode === 'included' ? 'excluded' : 'included',
       };
     });
+  }
+
+  function handleAssetGroupValueVatToggle(groupId: string) {
+    setAssetGroupValueVatModes((currentModes) => ({
+      ...currentModes,
+      [groupId]: (currentModes[groupId] ?? registerValueVatMode) === 'included' ? 'excluded' : 'included',
+    }));
   }
 
   function applyAssetGroups(nextGroups: AssetGroup[]) {
@@ -16720,10 +16731,11 @@ export default function AssetRegisterClient({
                         return sum + (memberAsset ? assetUnnotedAlertCount(memberAsset) : 0);
                       }, 0);
                       const groupValueExVat = groupRegisterValue(group, assets);
-                      const displayedGroupValue = registerValueVatMode === 'included'
+                      const groupValueVatMode = assetGroupValueVatModes[group.id] ?? registerValueVatMode;
+                      const displayedGroupValue = groupValueVatMode === 'included'
                         ? Math.round(groupValueExVat * ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER)
                         : groupValueExVat;
-                      const groupVatLabel = registerValueVatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT';
+                      const groupVatLabel = groupValueVatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT';
                       const additionalAssetCount = Math.max(0, group.members.length - 1);
                       const canReceiveDraggedAsset = canDropAssetIntoGroup(draggingAssetId, group);
                       const isAssetGroupDropTarget = canReceiveDraggedAsset && assetGroupDropTargetId === group.id;
@@ -16785,9 +16797,16 @@ export default function AssetRegisterClient({
                             </div>
 
                             <div className={styles.assetGroupSummary}>
-                              <div className={styles.assetGroupValue}>
-                                <strong>Counted value {money(displayedGroupValue)}</strong>
-                                <span>{groupVatLabel}</span>
+                              <div className={styles.valueBlock}>
+                                <div className={styles.assetValueVatDisplay}>
+                                  <div className={styles.assetValueVatText}>
+                                    <div className={styles.assetValueVatAmountRow}>
+                                      <strong aria-label={`Counted value ${money(displayedGroupValue)}`}>{money(displayedGroupValue)}</strong>
+                                      <CardVatToggle included={groupValueVatMode === 'included'} onToggle={() => handleAssetGroupValueVatToggle(group.id)} />
+                                    </div>
+                                    <span>{groupVatLabel}</span>
+                                  </div>
+                                </div>
                               </div>
 
                               <div className={`${styles.assetHeaderActions} ${styles.assetGroupHeaderActions}`}>
@@ -17039,16 +17058,7 @@ export default function AssetRegisterClient({
                                 <div className={styles.assetValueVatText}>
                                   <div className={styles.assetValueVatAmountRow}>
                                     <strong>{money(displayedAssetValue)}</strong>
-                                    <button
-                                      type="button"
-                                      className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${styles.controlTooltip} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
-                                      onClick={() => handleAssetValueVatToggle(asset.id)}
-                                      aria-label={assetValueVatToggleLabel}
-                                      aria-pressed={assetValueVatMode === 'included'}
-                                      data-tooltip={assetValueVatToggleLabel}
-                                    >
-                                      <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
-                                    </button>
+                                    <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />
                                   </div>
                                   <span>{assetValueVatLabel}</span>
                                 </div>
