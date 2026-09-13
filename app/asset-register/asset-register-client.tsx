@@ -1,5 +1,7 @@
 'use client';
 
+import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
+
 import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
 import BusinessSharePreview from '../../components/business-network/BusinessSharePreview';
 import QrCodePreview from '../../components/QrCodePreview';
@@ -1457,11 +1459,21 @@ const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
   { value: 'no-property', label: `No ${PROPERTY_ASSET_LABEL.toLowerCase()}` },
 ];
 
-const PRIMARY_ASSET_FILTER_OPTION = ASSET_FILTER_OPTIONS.find((option) => option.value === 'all') ?? ASSET_FILTER_OPTIONS[0];
-const SECONDARY_ASSET_FILTER_OPTIONS = ASSET_FILTER_OPTIONS.filter((option) => option.value !== 'all');
-const ASSET_FILTER_LABEL_BY_VALUE: ReadonlyMap<string, string> = new Map(
-  ASSET_FILTER_OPTIONS.map((option) => [option.value, option.label]),
-);
+const ASSET_FILTER_LABEL_BY_VALUE: ReadonlyMap<string, string> = new Map(ASSET_FILTER_OPTIONS.map((option) => [option.value, option.label]));
+
+const ASSET_FILTER_GROUPS: FilterGroup<AssetFilterKey>[] = [
+  { label: 'Insurance', section: 'status', options: [{ value: 'insured', label: 'Insured' }, { value: 'not-insured', label: 'Not insured' }] },
+  { label: 'Finance', section: 'status', options: [{ value: 'financed', label: 'Financed' }, { value: 'not-financed', label: 'Not financed' }] },
+  { label: 'Licensing', section: 'status', options: [{ value: 'licensed', label: 'Licensed' }, { value: 'not-licensed', label: 'Not licensed' }, { value: 'license-not-applicable', label: 'N/A' }] },
+  { label: 'Map', section: 'status', options: [{ value: 'mapped', label: 'Mapped' }, { value: 'not-mapped', label: 'Not mapped' }] },
+  { label: 'Valuation', section: 'details', options: [{ value: 'aim4price-value', label: 'Aim4price' }, { value: 'manual-value', label: 'Manual' }] },
+  { label: 'Marketplace', section: 'details', options: [{ value: 'marketplace', label: 'Listed' }] },
+  { label: 'Property', section: 'details', options: [{ value: 'property', label: 'Property' }, { value: 'no-property', label: 'Other assets' }] },
+];
+const ASSET_SORT_OPTIONS: FilterChoice<AssetFilterKey>[] = [
+  { value: 'all', label: 'Default order' },
+  ...ASSET_FILTER_OPTIONS.filter((option) => ['highest-value', 'lowest-value', 'highest-replacement-price', 'lowest-replacement-price'].includes(option.value)),
+];
 
 const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
 const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
@@ -6771,7 +6783,8 @@ export default function AssetRegisterClient({
   const [revalueAdvancedError, setRevalueAdvancedError] = useState<string | null>(null);
   const [saveReplacementPriceWithRevalue, setSaveReplacementPriceWithRevalue] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [assetFilter, setAssetFilter] = useState<AssetFilterKey>('all');
+  const [assetFilters, setAssetFilters] = useState<AssetFilterKey[]>([]);
+  const [assetSort, setAssetSort] = useState<AssetFilterKey>('all');
   const [isAssetFilterOpen, setIsAssetFilterOpen] = useState(false);
   const assetFilterWrapRef = useRef<HTMLDivElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -8562,7 +8575,7 @@ export default function AssetRegisterClient({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, assetFilter]);
+  }, [searchTerm, assetFilters, assetSort]);
 
   useEffect(() => {
     if (!openAssetReportSelect) return undefined;
@@ -9645,8 +9658,8 @@ export default function AssetRegisterClient({
   const usageTypeOptions = assetFormKind === 'vehicle' ? VEHICLE_USAGE_OPTIONS : EQUIPMENT_USAGE_OPTIONS;
 
   const activeAssetFilterLabel = useMemo(() => {
-    return ASSET_FILTER_OPTIONS.find((option) => option.value === assetFilter)?.label ?? 'All Assets';
-  }, [assetFilter]);
+    return [...assetFilters, ...(assetSort === 'all' ? [] : [assetSort])].map((key) => ASSET_FILTER_OPTIONS.find((option) => option.value === key)?.label).filter(Boolean).join(' · ') || 'All Assets';
+  }, [assetFilters, assetSort]);
 
   const searchMatchedAssets = useMemo(() => {
     const normalizedSearch = normalizeRegisterSearchText(searchTerm);
@@ -9677,8 +9690,8 @@ export default function AssetRegisterClient({
   }, [assetGroups, assets, searchTerm]);
 
   const filteredAssets = useMemo(() => {
-    return sortAssetsByRegisterPriority(filterAssetsByRegisterFilter(searchMatchedAssets, assetFilter), assetFilter);
-  }, [assetFilter, searchMatchedAssets]);
+    return sortAssetsByRegisterPriority(assetFilters.reduce((matches, filter) => filterAssetsByRegisterFilter(matches, filter), searchMatchedAssets), assetSort);
+  }, [assetFilters, assetSort, searchMatchedAssets]);
   const groupedFilteredAssets = useMemo(
     () => orderAssetsByGroups(filteredAssets, displayAssetGroups),
     [displayAssetGroups, filteredAssets],
@@ -9818,7 +9831,8 @@ export default function AssetRegisterClient({
 
     assetFocusActionHandledRef.current = true;
     setSearchTerm('');
-    setAssetFilter('all');
+    setAssetFilters([]);
+    setAssetSort('all');
     setExpandedAssetId(focusAssetId);
     if (matchingMembership) {
       setExpandedAssetGroupIds(new Set([matchingMembership.group.id]));
@@ -12938,7 +12952,8 @@ export default function AssetRegisterClient({
         savedAssetForEditor = savedAsset;
         setAssets((current) => [savedAsset, ...current]);
         setSearchTerm('');
-        setAssetFilter('all');
+        setAssetFilters([]);
+        setAssetSort('all');
         setCurrentPage(1);
         setExpandedAssetId(savedAsset.id);
         assetIdToFocus = savedAsset.id;
@@ -15006,12 +15021,13 @@ export default function AssetRegisterClient({
     }
   }
 
-  function selectAssetFilter(nextFilter: AssetFilterKey) {
-    setAssetFilter(nextFilter);
+  function selectAssetFilterGroup(options: FilterChoice<AssetFilterKey>[], value: AssetFilterKey | '') {
+    setAssetFilters((current) => replaceFilterGroup(current, options, value));
   }
 
   function clearAssetFilter() {
-    setAssetFilter('all');
+    setAssetFilters([]);
+    setAssetSort('all');
   }
 
   function openExportModal() {
@@ -15766,7 +15782,8 @@ export default function AssetRegisterClient({
     setExpandedAssetId(null);
   }
 
-  const hasActiveAssetFilter = assetFilter !== 'all';
+  const activeAssetFilterCount = assetFilters.length + (assetSort === 'all' ? 0 : 1);
+  const hasActiveAssetFilter = activeAssetFilterCount > 0;
   const hasGroupedPaginationEntries = registerPaginationEntries.some((entry) => entry.kind === 'group');
   const registerRangeItems = filteredAssets.length
     ? hasGroupedPaginationEntries
@@ -16055,7 +16072,7 @@ export default function AssetRegisterClient({
                 >
                   <FilterIcon className={styles.buttonIcon} />
                   <span>Filters</span>
-                  {hasActiveAssetFilter ? <span className={styles.filterActiveBadge}>1</span> : null}
+                  {hasActiveAssetFilter ? <span className={styles.filterActiveBadge}>{activeAssetFilterCount}</span> : null}
                 </button>
               </div>
 
@@ -16072,79 +16089,17 @@ export default function AssetRegisterClient({
           </div>
 
           {isAssetFilterOpen ? (
-            <div className={`${styles.modalOverlay} ${styles.assetFilterModalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
-              <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsAssetFilterOpen(false)} />
-
-              <div
-                id="asset-register-filter-modal"
-                className={`${styles.modalCard} ${styles.assetFilterModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="asset-register-filter-title"
-              >
-                <div className={`${styles.modalHeader} ${styles.assetFilterModalHeader}`}>
-                  <div className={styles.modalHeaderText}>
-                    <h3 id="asset-register-filter-title">Filter assets</h3>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
-                    onClick={() => setIsAssetFilterOpen(false)}
-                    aria-label="Close asset filters"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className={`${styles.modalScrollBody} ${styles.assetFilterModalBody}`}>
-                  <div className={styles.assetFilterOptionStack} role="group" aria-label="Asset filter options">
-                    {PRIMARY_ASSET_FILTER_OPTION ? (
-                      <button
-                        type="button"
-                        className={`${styles.assetFilterOptionCard} ${styles.assetFilterAllOptionCard} ${assetFilter === PRIMARY_ASSET_FILTER_OPTION.value ? styles.assetFilterOptionCardActive : ''}`}
-                        onClick={() => selectAssetFilter(PRIMARY_ASSET_FILTER_OPTION.value)}
-                        aria-pressed={assetFilter === PRIMARY_ASSET_FILTER_OPTION.value}
-                      >
-                        <span className={styles.assetFilterOptionText}>
-                          <strong>{PRIMARY_ASSET_FILTER_OPTION.label}</strong>
-                        </span>
-                      </button>
-                    ) : null}
-
-                    <div className={styles.assetFilterOptionGrid}>
-                      {SECONDARY_ASSET_FILTER_OPTIONS.map((option) => {
-                        const isActiveFilter = assetFilter === option.value;
-
-                        return (
-                          <button
-                            type="button"
-                            key={option.value}
-                            className={`${styles.assetFilterOptionCard} ${isActiveFilter ? styles.assetFilterOptionCardActive : ''}`}
-                            onClick={() => selectAssetFilter(option.value)}
-                            aria-pressed={isActiveFilter}
-                          >
-                            <span className={styles.assetFilterOptionText}>
-                              <strong>{option.label}</strong>
-                            </span>
-                            {isActiveFilter ? <span className={styles.assetFilterModalTick}>✓</span> : null}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`${styles.assetFilterModalFooter} ${styles.registerUtilityFooter}`}>
-                  <button type="button" className={accountStyles.ghostButton} onClick={clearAssetFilter} disabled={!hasActiveAssetFilter}>
-                    Clear filter
-                  </button>
-                  <button type="button" className={accountStyles.primaryButton} onClick={() => setIsAssetFilterOpen(false)}>
-                    Done
-                  </button>
-                </div>
-              </div>
-            </div>
+            <AssetFilterDialog
+              groups={ASSET_FILTER_GROUPS}
+              selected={assetFilters}
+              sort={assetSort}
+              sortOptions={ASSET_SORT_OPTIONS}
+              resultCount={filteredAssets.length}
+              onGroupChange={selectAssetFilterGroup}
+              onSortChange={setAssetSort}
+              onClear={clearAssetFilter}
+              onClose={() => setIsAssetFilterOpen(false)}
+            />
           ) : null}
 
           {isChangeRegisterModalOpen ? (
