@@ -25,6 +25,7 @@ import AssetGroupManagerModal, {
   type AssetGroupReportKind,
 } from '../../components/asset-register/AssetGroupManagerModal';
 import groupModalStyles from '../../components/asset-register/AssetGroupManagerModal.module.css';
+import ShareDestinationDialog from '../../components/asset-register/ShareDestinationDialog';
 import AssetExternalShare, {
   AssetShareDestinationPicker,
   type ExternalShareFileSource,
@@ -17917,7 +17918,17 @@ export default function AssetRegisterClient({
         </div>
       ) : null}
 
-      {isRegisterShareModalOpen ? (
+      {isRegisterShareModalOpen && assetShareDestination === 'choice' ? (
+        <ShareDestinationDialog
+          kind={isAssetGroupShare ? 'umbrella' : 'register'}
+          titleId="asset-register-share-title"
+          subject={activeShareName}
+          disabled={isExporting || isSendingQuoteLead}
+          onClose={closeRegisterShareModal}
+          onInside={() => setAssetShareDestination('inside')}
+          onOutside={() => setAssetShareDestination('outside')}
+        />
+      ) : isRegisterShareModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeRegisterShareModal} />
 
@@ -20175,7 +20186,17 @@ export default function AssetRegisterClient({
         </div>
       ) : null}
 
-      {isQuoteModalOpen ? (
+      {isQuoteModalOpen && !selectedQuoteOption && assetShareDestination === 'choice' ? (
+        <ShareDestinationDialog
+          kind="asset"
+          titleId="asset-quote-title"
+          subject={quoteAsset?.title || 'Asset'}
+          disabled={isSendingQuoteLead}
+          onClose={closeAssetQuoteModal}
+          onInside={() => setAssetShareDestination('inside')}
+          onOutside={() => setAssetShareDestination('outside')}
+        />
+      ) : isQuoteModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetQuoteModal} />
 
