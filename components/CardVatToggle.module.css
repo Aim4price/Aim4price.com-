@@ -2,7 +2,7 @@
   appearance: none;
   position: absolute;
   top: 50%;
-  right: calc(-1 * var(--asset-card-vat-arrow-offset, 1.65rem) - 1.15rem);
+  right: calc(-1 * var(--asset-card-vat-arrow-offset, 1.65rem) - 1.7rem);
   z-index: 2;
   display: grid;
   place-items: center;
@@ -38,7 +38,7 @@
 .button:focus-visible { outline: 3px solid rgba(43,138,99,.35); outline-offset: 2px; }
 @media(max-width:760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .button {
-    right: calc(-1 * var(--asset-card-vat-arrow-offset, 1rem) - .9rem);
+    right: calc(-1 * var(--asset-card-vat-arrow-offset, 1rem) - 1.1rem);
     width: 1.65rem;
     min-width: 1.65rem;
   }
@@ -47,3 +47,29 @@
   :global(:where(html:not(:has([data-website-canvas])))) .button { width:1.45rem; min-width:1.45rem; }
 }
 @media(prefers-reduced-motion:reduce) { .button { transition:none; } }
+
+/* Use the register's quick-action tooltip, opening inward from the card edge. */
+.button.button::after {
+  top: 50%;
+  right: calc(100% + .66rem);
+  bottom: auto;
+  left: auto;
+  transform: translate(-.25rem, -50%);
+}
+.button.button::before {
+  top: 50%;
+  right: calc(100% + .35rem);
+  bottom: auto;
+  left: auto;
+  border-color: transparent;
+  border-left-color: rgba(4,55,44,.96);
+  transform: translate(-.25rem, -50%);
+}
+.button.button:hover::before,
+.button.button:hover::after,
+.button.button:focus-visible::before,
+.button.button:focus-visible::after {
+  transform: translate(0, -50%);
+}
+.button.button:focus-visible::before,
+.button.button:focus-visible::after { opacity: 1; }
