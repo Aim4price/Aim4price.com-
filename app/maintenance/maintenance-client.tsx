@@ -595,10 +595,10 @@ const DOWNLOAD_FORMAT_OPTIONS: Array<{ value: DownloadFormat; title: string; des
 ];
 
 const DOWNLOAD_SCOPE_OPTIONS: Array<{ value: DownloadScope; title: string; description: string }> = [
-  { value: 'total', title: 'Total maintenance report', description: 'All open and completed maintenance matching the selected asset and type filters.' },
-  { value: 'asset', title: 'Specific asset maintenance report', description: 'Full maintenance timeline for one saved asset.' },
-  { value: 'upcoming', title: 'Upcoming maintenance report', description: 'Open maintenance records, including due soon and overdue items.' },
-  { value: 'done', title: 'Completed maintenance report', description: 'Every completed service and checkup retained in maintenance history.' },
+  { value: 'total', title: 'All maintenance', description: 'Open and completed records matching your filters.' },
+  { value: 'asset', title: 'Specific asset', description: 'The full maintenance history for one asset.' },
+  { value: 'upcoming', title: 'Upcoming maintenance', description: 'Open records, including due soon and overdue.' },
+  { value: 'done', title: 'Completed maintenance', description: 'All completed services and checkups.' },
 ];
 
 type MaintenanceDropdownProps = {
@@ -1817,7 +1817,7 @@ export default function MaintenanceClient({
       {modalMode === 'download' ? (
         <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
           <section
-            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${dialogStyles.dialog} ${downloadStep === 'asset' ? pickerStyles.modal : ''}`}
+            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${dialogStyles.dialog} ${dialogStyles.compactDownload} ${downloadStep === 'asset' ? pickerStyles.modal : ''}`}
             data-asset-choice-surface={downloadStep === 'asset' ? 'true' : undefined}
             data-asset-choice-modal={downloadStep === 'asset' ? 'true' : undefined}
           >
