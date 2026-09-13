@@ -527,7 +527,7 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
       from public.asset_register_items
       where false
     ), group_schema as (
-      select id, user_id, register_id, name, value_mode, created_at, updated_at
+      select id, user_id, register_id, name, value_mode, is_flagged, created_at, updated_at
       from public.asset_groups
       where false
     ), member_schema as (
