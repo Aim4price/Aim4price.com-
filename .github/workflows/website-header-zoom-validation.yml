@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'components/AppHeader*'
+      - 'components/NotificationInboxModal.module.css'
       - 'components/AppPatternBackground*'
       - 'components/SiteWorkspaceZoom*'
       - 'lib/website-canvas.ts'

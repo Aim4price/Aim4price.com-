@@ -1,0 +1,129 @@
+/* Match the Account Change Password shell; isolate it from legacy inbox layout rules. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 1rem;
+  overflow: hidden;
+  background: rgba(12, 24, 35, 0.42);
+  backdrop-filter: blur(12px) saturate(0.9);
+  -webkit-backdrop-filter: blur(12px) saturate(0.9);
+}
+
+.modal {
+  --inbox-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
+  display: flex;
+  flex-direction: column;
+  width: min(var(--website-dialog-reference-width, 100%), 46rem);
+  max-width: 100%;
+  max-height: min(54rem, calc(var(--website-visible-height, 100dvh) - 2rem));
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid rgba(18, 45, 37, 0.12);
+  border-radius: 1.55rem;
+  background: #fff;
+  color: #12352d;
+  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12);
+}
+
+.modal *,
+.modal *::before,
+.modal *::after { box-sizing: border-box; }
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-shrink: 0;
+  margin: 0 var(--inbox-padding);
+  padding: var(--inbox-padding) 0 1.15rem;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.1);
+}
+
+.headerText { flex: 1; min-width: 0; }
+.title {
+  margin: 0;
+  color: #12352d;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+.subtitle {
+  display: block;
+  margin-top: 0.35rem;
+  color: #64746a;
+  font-size: 0.88rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+.close {
+  composes: modalCloseButton from '../app/account/page.module.css';
+  position: static;
+  flex-shrink: 0;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.9rem;
+}
+.body {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: #78958a #edf2ef;
+  padding: 1.3rem var(--inbox-padding);
+  background: linear-gradient(180deg, #fff, #f8fbf9);
+}
+.body > * + * { margin-top: 1rem; }
+.body::-webkit-scrollbar { width: 12px; }
+.body::-webkit-scrollbar-track { background: #edf2ef; border-radius: 8px; }
+.body::-webkit-scrollbar-thumb { background: #78958a; border: 2px solid #edf2ef; border-radius: 8px; }
+.body::-webkit-scrollbar-thumb:hover { background: #426d5e; }
+.body:focus-visible { outline: 2px solid #78958a; outline-offset: -3px; }
+.list { display: grid; gap: 0.85rem; min-width: 0; margin-top: 0.85rem; overflow-wrap: anywhere; }
+.footer {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 1rem var(--inbox-padding) 1.35rem;
+  border-top: 1px solid rgba(37, 71, 51, 0.13);
+  background: #fff;
+}
+.button {
+  appearance: none;
+  min-height: 3rem;
+  padding: 0.7rem 1.15rem;
+  border: 1px solid rgba(62, 110, 213, 0.16);
+  border-radius: 1rem;
+  background: #f2f5f8;
+  color: #12352d;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.25;
+  cursor: pointer;
+}
+.button:hover:not(:disabled) { background: #e8f0ed; border-color: #78958a; }
+.button:focus-visible { outline: 3px solid rgba(43, 138, 99, 0.3); outline-offset: 2px; }
+.button:disabled { opacity: 0.5; cursor: default; }
+.primary { background: #176047; border-color: #176047; color: #fff; }
+.primary:hover:not(:disabled) { background: #123f31; }
+.pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.65rem; margin-right: auto; }
+
+/* The website scales one canonical canvas; only native layouts reflow. */
+@media (max-width: 540px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal { --inbox-padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination { flex-basis: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .button { min-height: 2.75rem; padding-inline: 0.8rem; }
+}
