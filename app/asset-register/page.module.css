@@ -40691,3 +40691,26 @@ button.documentOpenLink {
  min-height:max-content !important;
  align-self:start !important;
 }
+
+/* Umbrellas share the normal card surface, title inset and small umbrella tile. */
+.page .assetGroupHeader {
+ position:relative;
+ background:linear-gradient(180deg,#fff,#f7fafb) !important;
+ border-color:rgba(174,197,207,.65) !important;
+ padding-left:clamp(4.35rem,calc(var(--website-design-vw,1vw) * 4.8),4.9rem) !important;
+}
+.page .assetGroupIdentity { display:block !important; }
+.page .assetGroupUmbrella {
+ position:absolute !important; top:1.05rem; left:1.35rem;
+ width:2.1rem !important; height:2.1rem !important;
+ border-radius:.65rem !important;
+ background:rgba(218,246,234,.82) !important;
+ border-color:rgba(20,135,95,.34) !important;
+}
+.page .assetGroupUmbrellaIcon { width:1.05rem; height:1.05rem; }
+.page .assetGroupCombinedValue { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:.25em; }
+.page .assetGroupCombinedValue > span { font:inherit !important; color:inherit !important; letter-spacing:inherit !important; }
+@media(max-width:760px) {
+ :global(:where(html:not(:has([data-website-canvas])))) .page .assetGroupHeader { padding-left:clamp(1rem,4vw,1.35rem) !important; }
+ :global(:where(html:not(:has([data-website-canvas])))) .page .assetGroupUmbrella { position:static !important; margin-bottom:.8rem; }
+}
