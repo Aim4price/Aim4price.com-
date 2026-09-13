@@ -19,6 +19,7 @@ export type AssetGroupMember = {
 };
 
 export type AssetGroup = {
+  isFlagged?: boolean;
   id: string;
   userId: string;
   registerId: string | null;
@@ -291,7 +292,8 @@ export function orderAssetsByGroups<T extends { id: string }>(assets: T[], group
     }))
     .filter(({ firstVisibleAssetIndex }) => firstVisibleAssetIndex !== Number.MAX_SAFE_INTEGER)
     .sort((left, right) => (
-      left.group.name.localeCompare(right.group.name, 'en-ZA', { sensitivity: 'base' })
+      Number(Boolean(right.group.isFlagged)) - Number(Boolean(left.group.isFlagged))
+      || left.group.name.localeCompare(right.group.name, 'en-ZA', { sensitivity: 'base' })
       || left.firstVisibleAssetIndex - right.firstVisibleAssetIndex
       || left.groupIndex - right.groupIndex
     ))

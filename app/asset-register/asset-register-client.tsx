@@ -6590,7 +6590,7 @@ export default function AssetRegisterClient({
   const [isAssetGroupModalOpen, setIsAssetGroupModalOpen] = useState(false);
   const [assetGroupModalAsset, setAssetGroupModalAsset] = useState<RegisterAsset | null>(null);
   const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
-  const [assetGroupModalInitialView, setAssetGroupModalInitialView] = useState<'menu' | 'reports'>('menu');
+  const [assetGroupModalInitialView, setAssetGroupModalInitialView] = useState<'menu' | 'reports' | 'members'>('menu');
   const [assetGroupError, setAssetGroupError] = useState('');
   const [isSavingAssetGroup, setIsSavingAssetGroup] = useState(false);
   const [draggingAssetId, setDraggingAssetId] = useState<string | null>(null);
@@ -6770,6 +6770,8 @@ export default function AssetRegisterClient({
   const [marketplaceAsset, setMarketplaceAsset] = useState<RegisterAsset | null>(null);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
+  const groupFlagBusyRef = useRef<string | null>(null);
+  const [busyFlagGroupId, setBusyFlagGroupId] = useState<string | null>(null);
   const [busyFlagAssetId, setBusyFlagAssetId] = useState<string | null>(null);
   const [busyRevalueAssetId, setBusyRevalueAssetId] = useState<string | null>(null);
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
@@ -7405,6 +7407,46 @@ export default function AssetRegisterClient({
     } finally {
       setIsSavingAssetGroup(false);
     }
+  }
+
+  async function handleAssetGroupFlagToggle(group: AssetGroup) {
+    if (!canManageAssetGroups || groupFlagBusyRef.current) return;
+    groupFlagBusyRef.current = group.id;
+    setBusyFlagGroupId(group.id);
+    setNotice(null);
+    try {
+      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, undefined, group.registerId === null), {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId: group.id, registerId: group.registerId, isFlagged: !group.isFlagged }),
+      });
+      const data = await response.json() as { ok: boolean; error?: string; groups?: AssetGroup[] };
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Could not update the umbrella flag.');
+      const updated = data.groups?.find((entry) => entry.id === group.id);
+      if (!updated) throw new Error('The updated umbrella could not be loaded. Refresh and try again.');
+      setAssetGroups((current) => current.map((entry) => entry.id === group.id ? updated : entry));
+      if (updated.isFlagged) setCurrentPage(1);
+      setNotice({ tone: 'success', message: `${group.name} ${updated.isFlagged ? 'flagged' : 'unflagged'}.` });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Could not update the umbrella flag.' });
+    } finally {
+      groupFlagBusyRef.current = null;
+      setBusyFlagGroupId(null);
+    }
+  }
+
+  function openAssetGroupEditor(group: AssetGroup, anchor: RegisterAsset | null) {
+    if (!canManageAssetGroups) return;
+    if (group.registerId === null && !isCombinedRegisterView) {
+      window.location.assign(`/asset-register?scope=combined&editUmbrella=${encodeURIComponent(group.id)}`);
+      return;
+    }
+    setAssetGroupModalInitialView('members');
+    setAssetGroupModalAsset(anchor);
+    setAssetGroupModalGroup(group);
+    setAssetGroupError('');
+    setIsAssetGroupModalOpen(true);
   }
 
   async function handleAssetFlagToggle(asset: RegisterAsset): Promise<void> {
@@ -9750,6 +9792,23 @@ export default function AssetRegisterClient({
     () => visiblePaginationEntries.flatMap((entry) => entry.assets),
     [visiblePaginationEntries],
   );
+  useEffect(() => {
+    if (isLoading || !isCombinedRegisterView || !canManageAssetGroups) return;
+    const url = new URL(window.location.href);
+    const groupId = url.searchParams.get('editUmbrella');
+    if (!groupId) return;
+    const group = assetGroups.find((entry) => entry.id === groupId);
+    if (!group) return;
+    const anchor = assets.find((asset) => asset.id === getAssetGroupPrimaryAssetId(group)) ?? null;
+    setAssetGroupModalInitialView('members');
+    setAssetGroupModalAsset(anchor);
+    setAssetGroupModalGroup(group);
+    setAssetGroupError('');
+    setIsAssetGroupModalOpen(true);
+    url.searchParams.delete('editUmbrella');
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [isLoading, isCombinedRegisterView, canManageAssetGroups, assetGroups, assets]);
+
   const visibleAssetRows = useMemo<AssetRegisterDisplayRow[]>(() => {
     const rows: AssetRegisterDisplayRow[] = [];
     visiblePaginationEntries.forEach((entry) => {
@@ -16770,12 +16829,12 @@ export default function AssetRegisterClient({
                               <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${group.name}`}>
                                 <button
                                   type="button"
-                                  className={`${styles.assetFlagButton} ${styles.controlTooltip} ${isAssetFlagged(groupAnchorAsset) ? styles.assetFlagButtonActive : ''}`}
-                                  onClick={() => void handleAssetFlagToggle(groupAnchorAsset)}
-                                  disabled={busyFlagAssetId === groupAnchorAsset.id}
-                                  aria-label={`${isAssetFlagged(groupAnchorAsset) ? 'Unflag' : 'Flag'} ${groupAnchorAsset.title}`}
-                                  aria-pressed={isAssetFlagged(groupAnchorAsset)}
-                                  data-tooltip={isAssetFlagged(groupAnchorAsset) ? 'Remove flag' : 'Flag asset'}
+                                  className={`${styles.assetFlagButton} ${styles.controlTooltip} ${Boolean(group.isFlagged) ? styles.assetFlagButtonActive : ''}`}
+                                  onClick={() => void handleAssetGroupFlagToggle(group)}
+                                  disabled={!canManageAssetGroups || busyFlagGroupId !== null}
+                                  aria-label={`${Boolean(group.isFlagged) ? 'Unflag' : 'Flag'} ${group.name}`}
+                                  aria-pressed={Boolean(group.isFlagged)}
+                                  data-tooltip={Boolean(group.isFlagged) ? 'Unflag umbrella' : 'Flag umbrella'}
                                 >
                                   <FlagIcon className={styles.assetFlagIcon} />
                                 </button>
@@ -16792,9 +16851,9 @@ export default function AssetRegisterClient({
                                   <button
                                     type="button"
                                     className={`${styles.assetGroupButton} ${styles.controlTooltip} ${styles.assetGroupButtonActive}`}
-                                    onClick={() => openAssetGroupManager(groupAnchorAsset)}
-                                    aria-label={`Manage ${group.name}`}
-                                    data-tooltip="Manage umbrella"
+                                    onClick={() => openAssetGroupEditor(group, groupAnchorAsset)}
+                                    aria-label={`Edit ${group.name}`}
+                                    data-tooltip="Edit umbrella"
                                   >
                                     <UmbrellaIcon className={styles.assetGroupButtonIcon} />
                                   </button>
@@ -16816,6 +16875,9 @@ export default function AssetRegisterClient({
                                   <span className={styles.assetGroupPreview}>
                                     {groupAnchorAsset.title}{additionalAssetCount ? ` + ${additionalAssetCount} more` : ''}
                                   </span>
+                                ) : null}
+                                {group.isFlagged ? (
+                                  <span className={styles.umbrellaFlagStatus}><FlagIcon className={styles.buttonIcon} />Umbrella flagged</span>
                                 ) : null}
                               </div>
                             </div>
@@ -16866,7 +16928,7 @@ export default function AssetRegisterClient({
                                     className={`${styles.optionsButton} ${styles.cardManageButton}`}
                                     onClick={() => groupAnchorAsset && openAssetGroupManager(groupAnchorAsset)}
                                     disabled={!groupAnchorAsset}
-                                    aria-label={`Manage ${group.name}`}
+                                    aria-label={`Edit ${group.name}`}
                                   >
                                     <ManageIcon className={styles.buttonIcon} />
                                     <span>Manage</span>
@@ -17036,10 +17098,21 @@ export default function AssetRegisterClient({
                             ) : null}
                           </div>
                         ) : null}
-                        {isFlagged || isLive || costBudgetStatus || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
+                        <div className={styles.assetHeader}>
+                          <div className={styles.assetTitleBlock}>
+                            <h2>{asset.title}</h2>
+                            <p>{buildAssetMeta(asset)}</p>
+                            <div className={styles.assetMetaRow}>
+                              <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
+                              {isCombinedRegisterView ? (
+                                <span className={styles.assetSourceRegisterName}>{asset.registerName || 'Asset Register'}</span>
+                              ) : null}
+                              <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
+                            </div>
+
+                        {isFlagged || costBudgetStatus || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
                           <div className={styles.badgeRow}>
                             {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
-                            {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
                             {costBudgetStatus ? (
                               <span className={`${styles.badge} ${styles.badgeDanger} ${styles.badgeBudgetWarning}`}>
                                 {costBudgetStatus === 'over_budget' ? 'Over budget' : 'Budget warning'}
@@ -17056,17 +17129,9 @@ export default function AssetRegisterClient({
                             {dealerAssetCorrection ? <span className={`${styles.badge} ${styles.badgeDealerCorrection} ${dealerCorrectionRevaluationAlert ? styles.badgeDealerCorrectionWarning : ''}`}>{dealerCorrectionLabel}</span> : null}
                           </div>
                         ) : null}
-                        <div className={styles.assetHeader}>
-                          <div className={styles.assetTitleBlock}>
-                            <h2>{asset.title}</h2>
-                            <p>{buildAssetMeta(asset)}</p>
-                            <div className={styles.assetMetaRow}>
-                              <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
-                              {isCombinedRegisterView ? (
-                                <span className={styles.assetSourceRegisterName}>{asset.registerName || 'Asset Register'}</span>
-                              ) : null}
-                              <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
-                            </div>
+                            {isLive ? (
+                              <span className={styles.marketplaceLiveStatus}><span aria-hidden="true" />Live on Marketplace</span>
+                            ) : null}
 
                             {isManualValueAsset ? (
                               <div className={styles.manualValueNotice} role="note">
