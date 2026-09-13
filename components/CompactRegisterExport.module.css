@@ -3,7 +3,7 @@
   width:min(42rem,calc(100vw - 2rem),var(--website-dialog-reference-width,42rem)) !important;
   max-height:calc(var(--website-visible-height,100dvh) - 2rem) !important;
   min-height:0 !important;
-  overflow:visible !important;
+  overflow:hidden !important;
 }
 .dialog:global(#compact-register-export) > div:first-child { padding:1.5rem 1.75rem 1rem !important; }
 .dialog:global(#compact-register-export) > div:nth-child(2) { overflow:visible !important; max-height:none !important; min-height:0 !important; padding:0 1.75rem !important; scrollbar-gutter:auto !important; }

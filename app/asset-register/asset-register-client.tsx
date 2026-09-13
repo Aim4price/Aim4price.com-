@@ -22147,7 +22147,7 @@ export default function AssetRegisterClient({
 
           <div
             id="compact-register-export"
-            className={`${compactExportStyles.dialog} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
+            className={`${exportStep === 'pdf-report' ? '' : compactExportStyles.dialog} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="export-title"
@@ -22244,7 +22244,6 @@ export default function AssetRegisterClient({
                           </div>
 
                           <div className={styles.pdfReportChoices}>
-                            <CompactChoicePages maxRows={4} reservedHeight={400} rowHeight={64}>
                             {quickPdfReportOptions.map((option) => (
                               <button
                                 key={option.value}
@@ -22259,7 +22258,6 @@ export default function AssetRegisterClient({
                                 </span>
                               </button>
                             ))}
-                            </CompactChoicePages>
                           </div>
                         </div>
 
