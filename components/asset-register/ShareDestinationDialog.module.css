@@ -21,3 +21,36 @@
 @media(max-width:640px) { .dialog { padding:1.25rem; } .header h3 { font-size:1.35rem; } .header { gap:.5rem; } .choices { grid-template-columns:1fr; } }
 @media(max-height:450px) { .dialog { padding:1rem; } .header { padding-bottom:.75rem; } .choices { padding-top:.75rem; gap:.5rem; } .choice { min-height:4.5rem; padding:.65rem; } }
 @media(max-width:360px) { .dialog { min-width:0; padding:1rem; } .header h3 { font-size:1.15rem; } .choice { padding:.75rem; gap:.6rem; } .copy strong { font-size:.9rem; } }
+
+/* Roomier destination choices across register, umbrella and individual assets. */
+.destinationDialog { width:min(56rem,100%); padding:2.25rem; }
+.destinationDialog .header { padding-bottom:1.6rem; }
+.destinationDialog .header p { margin-top:.65rem; font-size:1rem; }
+.destinationDialog .choices { gap:1.1rem; padding-top:1.6rem; }
+.destinationDialog .choice { min-height:7.5rem; padding:1.25rem; gap:1rem; }
+.destinationDialog .icon { flex-basis:3rem; height:3rem; }
+.destinationDialog .icon svg { width:1.5rem; height:1.5rem; }
+.destinationDialog .copy { gap:.5rem; }
+.destinationDialog .copy strong { font-size:1.05rem; }
+.destinationDialog .copy small { font-size:.9rem; }
+.destinationDialog .arrow { padding-left:.35rem; }
+@media(max-width:760px) {
+ .destinationDialog { padding:1.5rem; }
+ .destinationDialog .choices { grid-template-columns:1fr; gap:.85rem; }
+ .destinationDialog .choice { min-height:6.25rem; }
+}
+@media(max-width:400px) {
+ .destinationDialog { padding:1rem; min-width:0; }
+ .destinationDialog .header p { font-size:.9rem; }
+ .destinationDialog .choice { padding:.85rem; gap:.65rem; }
+ .destinationDialog .icon { flex-basis:2.5rem; height:2.5rem; }
+ .destinationDialog .copy strong { font-size:.9rem; }
+ .destinationDialog .copy small { font-size:.78rem; }
+ .destinationDialog .arrow { padding-left:0; }
+}
+@media(max-height:450px) {
+ .destinationDialog { padding:1rem; }
+ .destinationDialog .header { padding-bottom:.75rem; }
+ .destinationDialog .choices { padding-top:.75rem; gap:.6rem; }
+ .destinationDialog .choice { min-height:5rem; padding:.75rem; }
+}
