@@ -1635,3 +1635,26 @@
 .accountModal.accountModal .assetValue > strong { font-size:.95rem !important; font-weight:800 !important; }
 .accountModal.accountModal .assetCheckbox { position:relative; width:1.6rem !important; height:1.6rem !important; border-radius:.45rem !important; flex-shrink:0; }
 .accountModal.accountModal .assetRowMain:focus-within { outline:3px solid #98cbb7; outline-offset:4px; border-radius:.4rem; }
+
+/* Roomier umbrella Manage menu, using the existing two-column layout. */
+.accountModal.manageModal {
+  --umbrella-padding: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.6), 2.4rem);
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 60rem) !important;
+}
+.accountModal.manageModal .manageMenuBody {
+  padding-top: 1.6rem !important;
+  overflow-y: auto !important;
+}
+.accountModal.manageModal .manageMenuGrid {
+  gap: 1.25rem !important;
+}
+.accountModal.manageModal .manageMenuGrid .manageMenuAction {
+  min-height: 8rem !important;
+  padding: 1.4rem 1.5rem !important;
+}
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountModal.manageModal .manageMenuGrid .manageMenuAction {
+    min-height: 6rem !important;
+    padding: 1rem !important;
+  }
+}
