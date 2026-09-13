@@ -64,7 +64,7 @@ export default function AssetFilterDialog<K extends string>({ groups, options, s
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
       }}>
         <header className={styles.header}>
-          <div><h3 id="asset-register-filter-title">Filter assets</h3><p aria-live="polite">{resultCount} {resultCount === 1 ? 'asset' : 'assets'} found</p></div>
+          <div><h3 id="asset-register-filter-title">Filter assets</h3><p>Choose which assets to include.</p><span className={styles.resultAnnouncement} aria-live="polite">{resultCount} {resultCount === 1 ? 'asset' : 'assets'} found</span></div>
           <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close asset filters">×</button>
         </header>
         <div className={styles.body}>

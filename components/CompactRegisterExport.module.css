@@ -93,3 +93,25 @@
  .dialog:global(#compact-register-export) :global([class*="pdfAssetDownloadRow"]) { grid-template-columns:auto minmax(0,1fr) auto !important; }
  .dialog:global(#compact-register-export) :global([class*="pdfAssetDownloadValue"]) { grid-column:3 !important; grid-row:1 !important; }
 }
+
+.dialog:global(#compact-register-export) { width:min(46rem,calc(100vw - 2rem)) !important; scrollbar-gutter:auto !important; background:linear-gradient(180deg,#fff,#f7faf8) !important; }
+.dialog:global(#compact-register-export) h3 { color:#12352d !important; font-size:2rem !important; font-weight:800 !important; letter-spacing:-.04em !important; line-height:1.2 !important; }
+.dialog:global(#compact-register-export) > div:first-child p { margin:.5rem 0 0 !important; color:#64746a !important; font-size:.9rem !important; font-weight:650 !important; line-height:1.5 !important; }
+.dialog:global(#compact-register-export) > div:last-child { background:transparent !important; box-shadow:none !important; scrollbar-gutter:auto !important; }
+@media(max-width:600px), (max-height:450px) {
+ .dialog:global(#compact-register-export) h3 { font-size:1.5rem !important; }
+ .dialog:global(#compact-register-export) > div:first-child { padding:.75rem 1rem !important; }
+}
+.dialog:global(#compact-register-export) > div:first-child p { display:block !important; visibility:visible !important; }
+@media(max-width:360px) {
+ .dialog:global(#compact-register-export) > div:nth-child(2) > div { padding:.5rem 0 !important; }
+ .dialog:global(#compact-register-export) > div:last-child { padding:.65rem 1rem !important; }
+}
+@media(max-width:360px) {
+ .dialog:global(#compact-register-export) h3 { font-size:1.15rem !important; }
+ .dialog:global(#compact-register-export) > div:first-child p { font-size:.78rem !important; margin-top:.3rem !important; }
+}
+@media(max-width:360px) {
+ .dialog:global(#compact-register-export) :global([class*="pdfAssetDownloadActions"]) { gap:.4rem !important; padding-top:.5rem !important; }
+ .dialog:global(#compact-register-export) :global([class*="pdfAssetDownloadActions"]) button { min-height:2.2rem !important; padding:.4rem .6rem !important; }
+}
