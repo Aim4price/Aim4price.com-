@@ -752,6 +752,10 @@ type RegisterAsset = {
   updatedAtIso: string;
   openPartnerNote?: OpenPartnerNote | null;
   partnerNotes?: OpenPartnerNote[];
+  maintenanceStatuses?: LatestMaintenanceStatus[];
+  issueNoteStatuses?: LatestIssueNoteStatus[];
+  openPartnerNotes?: OpenPartnerNote[];
+  maintenanceAlerts?: MaintenanceUpcomingAlert[];
   latestMaintenanceStatus?: LatestMaintenanceStatus | null;
   latestIssueNoteStatus?: LatestIssueNoteStatus | null;
   maintenanceAlert?: MaintenanceUpcomingAlert | null;
@@ -4527,24 +4531,44 @@ function assetNeedsEstimateAttention(asset: RegisterAsset): boolean {
   return doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
 }
 
+function noticeStack<T>(items: T[] | undefined, latest: T | null | undefined): T[] {
+  return items ?? (latest ? [latest] : []);
+}
+
+function outstandingPartnerNotes(asset: RegisterAsset): OpenPartnerNote[] {
+  return noticeStack(asset.openPartnerNotes ?? asset.partnerNotes?.filter((note) => note.status !== 'noted' && !note.notedAtIso), asset.openPartnerNote);
+}
+
+function acknowledgeAssetNotice(asset: RegisterAsset, kind: 'partner' | 'maintenance' | 'issue' | 'reminder', id: string): RegisterAsset {
+  if (kind === 'partner') {
+    const notes = outstandingPartnerNotes(asset).filter((note) => note.id !== id);
+    return { ...asset, openPartnerNotes: notes, openPartnerNote: notes[0] ?? null,
+      partnerNotes: asset.partnerNotes?.map((note) => note.id === id ? { ...note, status: 'noted', notedAtIso: new Date().toISOString() } : note) };
+  }
+  if (kind === 'maintenance') {
+    const notes = noticeStack(asset.maintenanceStatuses, asset.latestMaintenanceStatus).filter((note) => note.id !== id);
+    return { ...asset, maintenanceStatuses: notes, latestMaintenanceStatus: notes[0] ?? null };
+  }
+  if (kind === 'issue') {
+    const notes = noticeStack(asset.issueNoteStatuses, asset.latestIssueNoteStatus).filter((note) => note.id !== id);
+    return { ...asset, issueNoteStatuses: notes, latestIssueNoteStatus: notes[0] ?? null };
+  }
+  const notes = noticeStack(asset.maintenanceAlerts, asset.maintenanceAlert).filter((note) => note.id !== id);
+  return { ...asset, maintenanceAlerts: notes, maintenanceAlert: notes[0] ?? null };
+}
+
 function openPartnerNoteAlertCount(asset: RegisterAsset): number {
-  if (asset.openPartnerNote) return 1;
-
-  const hasOpenPartnerNote = Array.isArray(asset.partnerNotes)
-    ? asset.partnerNotes.some((note) => note.status !== 'noted' && !note.notedAtIso)
-    : false;
-
-  return hasOpenPartnerNote ? 1 : 0;
+  return outstandingPartnerNotes(asset).length;
 }
 
 function assetUnnotedAlertCount(asset: RegisterAsset): number {
   let count = 0;
 
   if (assetNeedsEstimateAttention(asset)) count += 1;
-  if (asset.maintenanceAlert) count += 1;
+  count += noticeStack(asset.maintenanceAlerts, asset.maintenanceAlert).length;
   if (asset.licenseRenewalAlert) count += 1;
-  if (asset.latestMaintenanceStatus) count += 1;
-  if (asset.latestIssueNoteStatus) count += 1;
+  count += noticeStack(asset.maintenanceStatuses, asset.latestMaintenanceStatus).length;
+  count += noticeStack(asset.issueNoteStatuses, asset.latestIssueNoteStatus).length;
   if (asset.dealerAssetCorrection) count += 1;
   count += openPartnerNoteAlertCount(asset);
 
@@ -6838,6 +6862,7 @@ export default function AssetRegisterClient({
   const [busyMaintenanceStatusId, setBusyMaintenanceStatusId] = useState<string | null>(null);
   const [busyMaintenanceAlertId, setBusyMaintenanceAlertId] = useState<string | null>(null);
   const [busyLicenseRenewalAssetId, setBusyLicenseRenewalAssetId] = useState<string | null>(null);
+  const locallyNotedAssetNoticesRef = useRef(new Map<string, Array<{ kind: 'partner' | 'maintenance' | 'issue' | 'reminder'; id: string }>>());
   const [busyIssueNoteStatusId, setBusyIssueNoteStatusId] = useState<string | null>(null);
   const [busyDealerCorrectionId, setBusyDealerCorrectionId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
@@ -11531,15 +11556,14 @@ export default function AssetRegisterClient({
   function preserveLicenseRenewalAlert(previous: RegisterAsset | null | undefined, nextAsset: RegisterAsset): RegisterAsset {
     if (!previous) return nextAsset;
 
-    const shouldPreserveLicenseAlert = typeof nextAsset.licenseRenewalAlert === 'undefined';
-    const shouldPreserveDealerCorrection = typeof nextAsset.dealerAssetCorrection === 'undefined';
-    if (!shouldPreserveLicenseAlert && !shouldPreserveDealerCorrection) return nextAsset;
-
-    return {
-      ...nextAsset,
-      ...(shouldPreserveLicenseAlert ? { licenseRenewalAlert: previous.licenseRenewalAlert ?? null } : {}),
-      ...(shouldPreserveDealerCorrection ? { dealerAssetCorrection: previous.dealerAssetCorrection ?? null } : {}),
-    };
+    const merged = { ...nextAsset };
+    for (const field of ['licenseRenewalAlert', 'dealerAssetCorrection', 'openPartnerNote', 'openPartnerNotes', 'partnerNotes',
+      'latestMaintenanceStatus', 'maintenanceStatuses', 'latestIssueNoteStatus', 'issueNoteStatuses', 'maintenanceAlert', 'maintenanceAlerts'] as const) {
+      if (typeof nextAsset[field] === 'undefined') Object.assign(merged, { [field]: previous[field] });
+    }
+    return (locallyNotedAssetNoticesRef.current.get(nextAsset.id) ?? []).reduce(
+      (asset, note) => acknowledgeAssetNotice(asset, note.kind, note.id), merged,
+    );
   }
 
   function syncUpdatedAsset(nextAsset: RegisterAsset) {
@@ -13901,13 +13925,12 @@ export default function AssetRegisterClient({
         throw new Error(data.error ?? 'Failed to mark note as noted.');
       }
 
-      const notedAtIso = new Date().toISOString();
-      const markNoteAsNoted = (asset: RegisterAsset): RegisterAsset => ({
-        ...asset,
-        openPartnerNote: null,
-        partnerNotes: asset.partnerNotes?.map((note) => (note.id === noteId ? { ...note, status: 'noted', notedAtIso } : note)),
-      });
+      const markNoteAsNoted = (asset: RegisterAsset) => acknowledgeAssetNotice(asset, 'partner', noteId);
 
+      locallyNotedAssetNoticesRef.current.set(assetId, [...(locallyNotedAssetNoticesRef.current.get(assetId) ?? []), { kind: 'partner', id: noteId }]);
+      if (assetModalReturnRef.current?.assetId === assetId) {
+        assetModalReturnRef.current.asset = acknowledgeAssetNotice(assetModalReturnRef.current.asset, 'partner', noteId);
+      }
       setAssets((current) => current.map((entry) => (entry.id === assetId ? markNoteAsNoted(entry) : entry)));
       setActiveAsset((current) => (current?.id === assetId ? markNoteAsNoted(current) : current));
       setMarketplaceAsset((current) => (current?.id === assetId ? markNoteAsNoted(current) : current));
@@ -14061,10 +14084,14 @@ export default function AssetRegisterClient({
         throw new Error(data.error ?? 'Failed to mark maintenance as noted.');
       }
 
-      setAssets((current) => current.map((entry) => (entry.id === assetId ? { ...entry, latestMaintenanceStatus: null } : entry)));
-      setActiveAsset((current) => (current?.id === assetId ? { ...current, latestMaintenanceStatus: null } : current));
-      setMarketplaceAsset((current) => (current?.id === assetId ? { ...current, latestMaintenanceStatus: null } : current));
-      setProjectionAsset((current) => (current?.id === assetId ? { ...current, latestMaintenanceStatus: null } : current));
+      locallyNotedAssetNoticesRef.current.set(assetId, [...(locallyNotedAssetNoticesRef.current.get(assetId) ?? []), { kind: 'maintenance', id: maintenanceStatusId }]);
+      if (assetModalReturnRef.current?.assetId === assetId) {
+        assetModalReturnRef.current.asset = acknowledgeAssetNotice(assetModalReturnRef.current.asset, 'maintenance', maintenanceStatusId);
+      }
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? acknowledgeAssetNotice(entry, 'maintenance', maintenanceStatusId) : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'maintenance', maintenanceStatusId) : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'maintenance', maintenanceStatusId) : current));
+      setProjectionAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'maintenance', maintenanceStatusId) : current));
       setNotice({ tone: 'success', message: 'Maintenance marked as noted.' });
     } catch (error) {
       setNotice({
@@ -14092,10 +14119,14 @@ export default function AssetRegisterClient({
         throw new Error(data.error ?? 'Failed to mark maintenance alert as noted.');
       }
 
-      setAssets((current) => current.map((entry) => (entry.id === assetId ? { ...entry, maintenanceAlert: null } : entry)));
-      setActiveAsset((current) => (current?.id === assetId ? { ...current, maintenanceAlert: null } : current));
-      setMarketplaceAsset((current) => (current?.id === assetId ? { ...current, maintenanceAlert: null } : current));
-      setProjectionAsset((current) => (current?.id === assetId ? { ...current, maintenanceAlert: null } : current));
+      locallyNotedAssetNoticesRef.current.set(assetId, [...(locallyNotedAssetNoticesRef.current.get(assetId) ?? []), { kind: 'reminder', id: maintenanceAlertId }]);
+      if (assetModalReturnRef.current?.assetId === assetId) {
+        assetModalReturnRef.current.asset = acknowledgeAssetNotice(assetModalReturnRef.current.asset, 'reminder', maintenanceAlertId);
+      }
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? acknowledgeAssetNotice(entry, 'reminder', maintenanceAlertId) : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'reminder', maintenanceAlertId) : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'reminder', maintenanceAlertId) : current));
+      setProjectionAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'reminder', maintenanceAlertId) : current));
       setNotice({ tone: 'success', message: 'Maintenance alert marked as noted.' });
     } catch (error) {
       setNotice({
@@ -14160,10 +14191,14 @@ export default function AssetRegisterClient({
         throw new Error(data.error ?? 'Failed to mark issue note as noted.');
       }
 
-      setAssets((current) => current.map((entry) => (entry.id === assetId ? { ...entry, latestIssueNoteStatus: null } : entry)));
-      setActiveAsset((current) => (current?.id === assetId ? { ...current, latestIssueNoteStatus: null } : current));
-      setMarketplaceAsset((current) => (current?.id === assetId ? { ...current, latestIssueNoteStatus: null } : current));
-      setProjectionAsset((current) => (current?.id === assetId ? { ...current, latestIssueNoteStatus: null } : current));
+      locallyNotedAssetNoticesRef.current.set(assetId, [...(locallyNotedAssetNoticesRef.current.get(assetId) ?? []), { kind: 'issue', id: issueNoteStatusId }]);
+      if (assetModalReturnRef.current?.assetId === assetId) {
+        assetModalReturnRef.current.asset = acknowledgeAssetNotice(assetModalReturnRef.current.asset, 'issue', issueNoteStatusId);
+      }
+      setAssets((current) => current.map((entry) => (entry.id === assetId ? acknowledgeAssetNotice(entry, 'issue', issueNoteStatusId) : entry)));
+      setActiveAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'issue', issueNoteStatusId) : current));
+      setMarketplaceAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'issue', issueNoteStatusId) : current));
+      setProjectionAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'issue', issueNoteStatusId) : current));
       setNotice({ tone: 'success', message: 'Issue note marked as noted.' });
     } catch (error) {
       setNotice({
@@ -17347,8 +17382,10 @@ export default function AssetRegisterClient({
                             </div>
                           ) : null}
 
-                          {openPartnerNote ? (
-                            <div className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`}>
+                          {outstandingPartnerNotes(asset).map((openPartnerNote) => {
+                            const partnerNoteAuthor = openPartnerNote.partnerBusinessName || openPartnerNote.partnerName || 'Aim4price partner'; const partnerNoteToneClass = quoteToneClassForPartnerType(openPartnerNote.partnerType);
+                            return (
+                            <div key={openPartnerNote.id} className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`}>
                               <div className={styles.partnerNoteText}>
                                 <strong>Note from {partnerNoteAuthor}</strong>
                                 <p>{openPartnerNote.noteText}</p>
@@ -17374,10 +17411,13 @@ export default function AssetRegisterClient({
                                 </button>
                               ) : null}
                             </div>
-                          ) : null}
+                            );
+                          })}
 
-                          {maintenanceAlert ? (
-                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
+                          {noticeStack(asset.maintenanceAlerts, asset.maintenanceAlert).map((maintenanceAlert) => {
+                            const isMarkingMaintenanceAlertNoted = busyMaintenanceAlertId === maintenanceAlert.id;
+                            return (
+                            <div key={maintenanceAlert.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
                               <div className={styles.partnerNoteText}>
                                 <strong>{maintenanceAlert.heading || 'Maintenance upcoming'}</strong>
                                 <p>{maintenanceAlert.body}</p>
@@ -17394,7 +17434,8 @@ export default function AssetRegisterClient({
                                 </button>
                               ) : null}
                             </div>
-                          ) : null}
+                            );
+                          })}
 
                           {licenseRenewalAlert ? (
                             <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
@@ -17416,8 +17457,10 @@ export default function AssetRegisterClient({
                             </div>
                           ) : null}
 
-                          {latestIssueNoteStatus ? (
-                            <div className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
+                          {noticeStack(asset.issueNoteStatuses, asset.latestIssueNoteStatus).map((latestIssueNoteStatus) => {
+                            const isMarkingIssueNoteNoted = busyIssueNoteStatusId === latestIssueNoteStatus.id; const issueNoteMeta = [latestIssueNoteStatus.operatorName ? `By ${latestIssueNoteStatus.operatorName}` : '', latestIssueNoteStatus.createdAtIso ? formatDate(latestIssueNoteStatus.createdAtIso) : ''].filter(Boolean).join(' · ');
+                            return (
+                            <div key={latestIssueNoteStatus.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
                               <div className={styles.partnerNoteText}>
                                 <strong>Open issue reported</strong>
                                 <p>{latestIssueNoteStatus.note}</p>
@@ -17434,10 +17477,13 @@ export default function AssetRegisterClient({
                                 </button>
                               ) : null}
                             </div>
-                          ) : null}
+                            );
+                          })}
 
-                          {latestMaintenanceStatus ? (
-                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceDoneBanner}`}>
+                          {noticeStack(asset.maintenanceStatuses, asset.latestMaintenanceStatus).map((latestMaintenanceStatus) => {
+                            const isMarkingMaintenanceNoted = busyMaintenanceStatusId === latestMaintenanceStatus.id; const maintenanceDoneMeta = [latestMaintenanceStatus.operatorName ? `By ${latestMaintenanceStatus.operatorName}` : '', latestMaintenanceStatus.createdAtIso ? formatDate(latestMaintenanceStatus.createdAtIso) : ''].filter(Boolean).join(' · '); const maintenancePhotoUrls = uniquePhotoUrls(latestMaintenanceStatus.photoUrls ?? []).slice(0, 6); const maintenancePhotoCount = latestMaintenanceStatus.photoCount ?? maintenancePhotoUrls.length;
+                            return (
+                            <div key={latestMaintenanceStatus.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceDoneBanner}`}>
                               <div className={styles.partnerNoteText}>
                                 <strong>Maintenance has been done</strong>
                                 <p>{latestMaintenanceStatus.summary}</p>
@@ -17477,7 +17523,8 @@ export default function AssetRegisterClient({
                                 </button>
                               ) : null}
                             </div>
-                          ) : null}
+                            );
+                          })}
                         </div>
 
                         {isExpanded ? (

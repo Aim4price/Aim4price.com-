@@ -2226,13 +2226,13 @@ export function buildAlertBody(record: AssetMaintenanceRecord): string {
 export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetForAlert>(
   ownerUserId: string,
   assets: T[],
-): Promise<Array<T & { maintenanceAlert: AssetMaintenanceAlert | null }>> {
+): Promise<Array<T & { maintenanceAlert: AssetMaintenanceAlert | null; maintenanceAlerts: AssetMaintenanceAlert[] }>> {
   if (!assets.length) return [];
 
   await ensureAssetMaintenanceTables();
 
   const assetIds = assets.map((asset) => asText(asset.id)).filter(Boolean);
-  if (!assetIds.length) return assets.map((asset) => ({ ...asset, maintenanceAlert: null }));
+  if (!assetIds.length) return assets.map((asset) => ({ ...asset, maintenanceAlert: null, maintenanceAlerts: [] }));
 
   const result = await getDb().query<MaintenanceRow>(
     `
@@ -2247,6 +2247,7 @@ export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetFor
     return record.computedStatus === 'overdue' || record.computedStatus === 'due' || record.computedStatus === 'due_soon';
   });
 
+  const allAlertsByAssetId = new Map<string, AssetMaintenanceAlert[]>();
   const alertsByAssetId = new Map<string, AssetMaintenanceAlert>();
 
   records.forEach((record) => {
@@ -2269,6 +2270,9 @@ export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetFor
       createdAtIso: record.createdAtIso,
     };
 
+    const alerts = allAlertsByAssetId.get(record.assetId) ?? [];
+    alerts.push(alert);
+    allAlertsByAssetId.set(record.assetId, alerts);
     const current = alertsByAssetId.get(record.assetId);
     if (!current || alertPriority(alert) < alertPriority(current)) {
       alertsByAssetId.set(record.assetId, alert);
@@ -2298,5 +2302,6 @@ export async function attachUpcomingMaintenanceAlertsToAssets<T extends AssetFor
   return assets.map((asset) => ({
     ...asset,
     maintenanceAlert: alertsByAssetId.get(asset.id) ?? null,
+    maintenanceAlerts: (allAlertsByAssetId.get(asset.id) ?? []).sort((a, b) => alertPriority(a) - alertPriority(b)),
   }));
 }

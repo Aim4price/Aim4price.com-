@@ -1540,7 +1540,7 @@ export async function attachLatestMaintenanceStatusToAssets<
 >(
   assets: T[],
 ): Promise<
-  Array<T & { latestMaintenanceStatus: AssetMaintenanceStatus | null }>
+  Array<T & { latestMaintenanceStatus: AssetMaintenanceStatus | null; maintenanceStatuses: AssetMaintenanceStatus[] }>
 > {
   if (!assets.length) {
     return [];
@@ -1552,7 +1552,7 @@ export async function attachLatestMaintenanceStatusToAssets<
   const assetIds = assets.map((asset) => asset.id).filter(Boolean);
 
   if (!assetIds.length) {
-    return assets.map((asset) => ({ ...asset, latestMaintenanceStatus: null }));
+    return assets.map((asset) => ({ ...asset, latestMaintenanceStatus: null, maintenanceStatuses: [] }));
   }
 
   const result = await db.query<
@@ -1608,33 +1608,18 @@ export async function attachLatestMaintenanceStatusToAssets<
     `,
     [assetIds],
   );
-  const latestByAssetId = new Map<string, AssetMaintenanceStatus>();
-  const latestMaintenanceSeenAssetIds = new Set<string>();
-
-  result.rows.forEach(
-    (row: ScanEventRow & { asset_id: string | number | null }) => {
-      const maintenanceStatus = mapMaintenanceStatusFromScanEvent(row);
-      const assetId = maintenanceStatus?.assetRegisterItemId ?? "";
-
-      if (
-        !maintenanceStatus ||
-        !assetId ||
-        latestMaintenanceSeenAssetIds.has(assetId)
-      ) {
-        return;
-      }
-
-      latestMaintenanceSeenAssetIds.add(assetId);
-
-      if (!maintenanceStatus.notedAtIso) {
-        latestByAssetId.set(assetId, maintenanceStatus);
-      }
-    },
-  );
-
+  const statusesByAssetId = new Map<string, AssetMaintenanceStatus[]>();
+  for (const row of result.rows) {
+    const status = mapMaintenanceStatusFromScanEvent(row);
+    if (!status || status.notedAtIso) continue;
+    const statuses = statusesByAssetId.get(status.assetRegisterItemId) ?? [];
+    statuses.push(status);
+    statusesByAssetId.set(status.assetRegisterItemId, statuses);
+  }
   return assets.map((asset) => ({
     ...asset,
-    latestMaintenanceStatus: latestByAssetId.get(asset.id) ?? null,
+    latestMaintenanceStatus: statusesByAssetId.get(asset.id)?.[0] ?? null,
+    maintenanceStatuses: statusesByAssetId.get(asset.id) ?? [],
   }));
 }
 

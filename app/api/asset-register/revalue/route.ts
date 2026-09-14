@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { revalueAssetRegisterItem } from '../../../../lib/asset-register-revaluation';
-import { attachOpenPartnerNotesToAssets } from '../../../../lib/partner-access';
+import { attachOpenAssetAlerts } from '../../../../lib/asset-register-alerts';
 import type { AdvancedAssumptionsInput } from '../../../../lib/valuation/shared';
 
 export const runtime = 'nodejs';
@@ -294,7 +294,7 @@ export async function POST(request: NextRequest) {
       allowUsageDecrease,
     });
 
-    const [itemWithPartnerNote] = await attachOpenPartnerNotesToAssets(session.user.id, [result.item]);
+    const [itemWithPartnerNote] = await attachOpenAssetAlerts(session.user.id, [result.item]);
 
     return NextResponse.json<RevalueAssetResponse>({
       ok: true,
