@@ -63,6 +63,12 @@ const asset = {
 const profile = { businessName: 'Demonstration Farm', email: 'owner@example.com', phone: '012 345 6789', addressLine1: 'George', logoUrl: logo };
 const base = { title: 'Report', subtitle: 'Aim4price asset register', generatedAt, ownerEmail: ownerDetails.businessEmail, ownerDetails, logoUrl: logo, assetLabel: asset.title, selectedAsset: null, dateRangeLabel: 'All dates', xlsxUrl: '/api/maintenance/report?format=xlsx' };
 
+function saveWorkbook(name, sheets) {
+  const workbook = load('lib/simple-xlsx.ts').createXlsxWorkbook(sheets);
+  assert.equal(Buffer.from(workbook).subarray(0,2).toString(), 'PK', name+' XLSX');
+  fs.writeFileSync(path.join(out, name+'.xlsx'), workbook);
+}
+
 async function fixtures() {
   const reports = {};
   const shared = load('lib/report-print.ts');
@@ -99,7 +105,7 @@ async function fixtures() {
   fs.writeFileSync(path.join(out, 'maintenance.xlsx'), workbook);
 
   const invoices = load('lib/my-invoices-report.ts');
-  reports.ownership = invoices.buildMyInvoicesReportHtml({ ...base,
+  const ownershipOptions = { ...base,
     includeFuelSlipCosts: false,
     summary: { invoiceCount: 20, totalSpent: 23000, maintenanceSpend: 20000, partsSpend: 0, repairSpend: 0, vatTotal: 3000 },
     invoices: Array.from({ length: 20 }, (_, i) => ({
@@ -109,21 +115,74 @@ async function fixtures() {
       blocks: [{ blockType: 'maintenance', totalIncVat: 1150, description: 'Oil and filters', items: [] }],
       createdAtIso: date.toISOString(), updatedAtIso: date.toISOString(),
     })),
-  });
-  const fuel = load('app/api/fuel/report/route.ts', ['buildReportHtml']);
+  };
+  reports.ownership = invoices.buildMyInvoicesReportHtml(ownershipOptions);
+  saveWorkbook('ownership', invoices.buildMyInvoicesWorkbook(ownershipOptions));
+  const fuel = load('app/api/fuel/report/route.ts', ['buildReportHtml', 'buildFuelWorkbook']);
   const fuelTest = fs.readFileSync('tests/fuel-report.test.mjs', 'utf8');
   const fuelEvent = new Function(fuelTest.slice(fuelTest.indexOf('function fuelEvent('), fuelTest.indexOf("\ntest(", fuelTest.indexOf('function fuelEvent('))) + ';return fuelEvent;')();
-  reports['fuel-ledger'] = fuel.buildReportHtml({ ...base, title: 'Fuel Ledger Report',
+  const fuelOptions = { ...base, title: 'Fuel Ledger Report',
     storageName: 'Main tank', storageCode: 'FUEL-DEMO', storageFuelType: 'Diesel',
     totalIssued: 1500, totalWorkUseIssued: 1500, totalExcludedIssued: 0, totalStockIn: 3000,
     currentLitres: 1500, storageCount: 1, eventCount: 25,
     events: Array.from({ length: 25 }, (_, i) => fuelEvent({ id: 'fuel-'+i })),
-  });
+  };
+  reports['fuel-ledger'] = fuel.buildReportHtml(fuelOptions);
+  saveWorkbook('fuel-ledger', fuel.buildFuelWorkbook(fuelOptions));
 
-  const scan = load('app/api/asset-register/scan-report/route.ts', ['buildFuelReport', 'buildMaintenanceReport', 'buildDepreciationReport']);
+  const scan = load('app/api/asset-register/scan-report/route.ts', ['buildFuelReport', 'buildMaintenanceReport', 'buildDepreciationReport', 'buildFuelReportWorkbook', 'buildMaintenanceReportWorkbook', 'buildDepreciationReportWorkbook']);
   reports['asset-fuel-empty'] = scan.buildFuelReport(asset, [], ownerDetails, generatedAt, logo);
   reports['asset-maintenance-empty'] = scan.buildMaintenanceReport(asset, [], ownerDetails, generatedAt, logo);
   reports['depreciation-empty'] = scan.buildDepreciationReport(asset, [], ownerDetails, generatedAt, logo);
+
+  const scanEvents = Array.from({ length: 25 }, (_, i) => ({
+    id: 'scan-'+i, actorType: 'owner', operatorName: 'Demo operator', activityText: 'Field work',
+    workAreaText: 'Field A', hours: 6500+i*10, assetUsageReading: 6500+i*10, assetUsageMetric: 'hours',
+    fuelLitres: 35, fuelLedgerEventType: 'asset_issue', fuelStorageName: 'Main tank',
+    note: 'Routine fuel issue', photoUrls: [], latitude: null, longitude: null, locationText: '',
+    createdAtIso: date.toISOString(), reportOccurredAtIso: date.toISOString(),
+  }));
+  reports['asset-fuel'] = scan.buildFuelReport(asset, scanEvents, ownerDetails, generatedAt, logo);
+  saveWorkbook('asset-fuel', scan.buildFuelReportWorkbook(asset, scanEvents, ownerDetails, generatedAt));
+  reports['asset-maintenance'] = scan.buildMaintenanceReport(asset, scanEvents.slice(0,5).map((event,i) => ({
+    kind: 'serviced', label: 'Serviced', items: ['Oil and filter replacement'],
+    company: 'Demo Service', mechanic: 'Demo mechanic', notes: 'Verified service record',
+    event: { ...event, photoUrls: i === 0 ? photos : [] },
+  })), ownerDetails, generatedAt, logo);
+  saveWorkbook('asset-maintenance-empty', scan.buildMaintenanceReportWorkbook(asset, [], ownerDetails, generatedAt));
+  const depreciation = load('lib/asset-depreciation-timeline.ts');
+  const depreciationEntries = Array.from({ length: 25 }, (_, i) => ({
+    id: 'depreciation-'+i, assetRegisterItemId: asset.id, capturedAtIso: new Date(Date.UTC(2024, i, 14)).toISOString(),
+    createdAtIso: date.toISOString(), eventType: 'valuation_saved', eventSource: 'asset_register',
+    assetTitle: asset.title, brandName: asset.brandName, modelName: asset.modelName, yearModel: 2021,
+    usageAmount: 6000+i*30, usageMetric: 'hours', condition: 'good', replacementPriceExVat: 650000,
+    previousValueExVat: 250000-i*1000, newValueExVat: 249000-i*1000,
+    differenceValueExVat: -1000, differencePercent: -.4, selectedMethod: 'aim4price',
+    depreciationMethodUsed: 'market', metadataJson: { note: 'Saved valuation' },
+    estimatedValueExVat: 249000-i*1000, previousEstimatedValueExVat: 250000-i*1000,
+    depreciationSincePreviousExVat: 1000, depreciationSincePreviousPercent: .4,
+  }));
+  reports.depreciation = scan.buildDepreciationReport(asset, depreciationEntries, ownerDetails, generatedAt, logo);
+  saveWorkbook('depreciation', scan.buildDepreciationReportWorkbook(asset, depreciationEntries,
+    depreciation.buildDepreciationAnnualSummary(depreciationEntries),
+    depreciation.buildDepreciationLogSummary(depreciationEntries, asset), ownerDetails, generatedAt));
+  const map = load('app/api/asset-map/report/route.ts', ['buildReportHtml', 'buildAssetGpsWorkbook']);
+  const mappedAsset = {
+    number: 2, title: asset.title, plateLabel: asset.plateLabel, publicAssetCode: asset.publicAssetCode,
+    serialNumber: asset.serialNumber, assetTypeLabel: 'Tractors', registerId: 'register-1',
+    registerName: 'Demonstration Farm', yearModel: '2021', currentValueRaw: 219725, currentValue: 'R 219 725',
+    replacementValueRaw: 650000, replacementValue: 'R 650 000', insuredValueRaw: null, insuredValue: 'Not saved',
+    fuel: '100%', financed: 'No', insured: 'Yes', licensed: 'Yes', licenseRegistrationNumber: 'DEMO-123',
+    usage: '6 720 hours', condition: 'Good', lastScanned: generatedAt, locationText: 'George',
+    photoUrls: photos, latitude: -33.952511, longitude: 22.474037, latLngText: '-33.952511, 22.474037',
+    googleMapsUrl: 'https://maps.google.com/?q=-33.952511,22.474037',
+  };
+  const mapOptions = { generatedDate: '14 September 2026', generatedTime: '10:40', ownerEmail: ownerDetails.businessEmail, logoUrl: logo, scopeLabel: 'Demonstration Farm' };
+  // Maps are layout-only here: external tile loading is deliberately disabled.
+  reports['asset-map-layout'] = map.buildReportHtml([mappedAsset], mapOptions);
+  const gpsWorkbook = map.buildAssetGpsWorkbook([mappedAsset], mapOptions.scopeLabel, date);
+  assert.equal(Buffer.from(gpsWorkbook).subarray(0,2).toString(), 'PK', 'GPS XLSX');
+  fs.writeFileSync(path.join(out, 'asset-map-gps.xlsx'), gpsWorkbook);
 
   const register = load('app/api/asset-register/export/route.ts', ['renderRegisterSummaryReportHtml', 'renderFullRegisterReportHtml']);
   const assets = Array.from({ length: 25 }, (_, i) => ({ ...asset, id: 'asset-'+i, publicAssetCode: 'A4P-DEMO-'+i }));
@@ -173,9 +232,14 @@ async function fixtures() {
         if (request.url().startsWith('data:')) request.continue();
         else request.abort(); // Fixture rendering never contacts clients or external services.
       });
-      await page.setViewport({ width: 1400, height: 1000 });
+      await page.setViewport({ width: 1400, height: 1000, deviceScaleFactor: 1 });
       await page.setContent(html, { waitUntil: 'load' });
       await page.screenshot({ path: path.join(out,name+'-desktop.png'), fullPage: true });
+      // Small synthetic previews can be inspected through CI logs when a local
+      // checkout is unavailable. No production data or external assets are used.
+      await page.setViewport({ width: 1400, height: 1100, deviceScaleFactor: 0.7 });
+      const preview = await page.screenshot({ type: 'jpeg', quality: 60, encoding: 'base64' });
+      console.log('REPORT_PREVIEW:'+name+':'+preview);
       for (const width of [390, 768, 1400]) {
         await page.setViewport({ width, height: 1000 });
         const size = await page.evaluate(() => ({
@@ -187,9 +251,9 @@ async function fixtures() {
       await page.screenshot({ path: path.join(out,name+'-screen.png'), fullPage: true });
       await page.emulateMediaType('print');
       const printState = await page.evaluate(() => {
-        const sheet = document.querySelector('.assetReportPage,.fullRegisterPage,.reportPage,.paper,.page');
+        const sheet = document.querySelector('.assetReportPage,.fullRegisterPage,.reportPage,.assetMapReportPage,.paper,.page');
         return {
-          toolbarVisible: [...document.querySelectorAll('.assetReportScreenBar,.screenBar,.actions')].some(node => getComputedStyle(node).display !== 'none'),
+          toolbarVisible: [...document.querySelectorAll('.assetReportScreenBar,.screenBar,.assetMapReportScreenBar,.actions')].some(node => getComputedStyle(node).display !== 'none'),
           overflow: sheet && getComputedStyle(sheet).overflow,
           height: sheet?.clientHeight, scroll: sheet?.scrollHeight,
         };
