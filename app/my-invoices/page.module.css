@@ -7092,7 +7092,7 @@
 .invoiceValueBlock { align-content: start; padding-top: 0.12rem; }
 .invoiceAssetPill {
   display: inline-flex; align-items: center; justify-self: start; gap: 0.45rem;
-  max-width: 100%; min-width: 0; margin: 0.1rem 0; padding: 0.45rem 0.8rem; border-radius: 1.5rem;
+  max-width: 100%; min-width: 0; margin: 0; padding: 0.4rem 0.8rem; border-radius: 1.5rem;
   border: 1px solid #acd9c3; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
   background: #d8f2e5; color: #12573f; font-size: 0.86rem; font-weight: 750;
   line-height: 1.4; overflow-wrap: anywhere;
@@ -7101,8 +7101,9 @@
 .invoiceReference { display: flex; flex-wrap: wrap; gap: 0.3rem 0.65rem; margin: 0; color: #627386; font-size: 0.9rem; font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
 .invoiceReference span + span::before { content: '·'; margin-right: 0.65rem; }
 .invoiceOwner { margin: 0; color: #627386; font-size: 0.86rem; font-weight: 650; }
-.invoiceBadges { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.1rem 0 0; }
-.invoiceSourceBadge { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.75rem; border-radius: 1.5rem; border: 1px solid #c3d7ed; background: #e5effb; color: #3b6085; font-size: 0.8rem; font-weight: 650; line-height: 1.4; }
+.invoiceBadges { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0.35rem 0 0; }
+.invoiceBadges > span { box-sizing: border-box; min-height: 2.15rem; max-width: 100%; }
+.invoiceSourceBadge { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.75rem; border-radius: 1.5rem; border: 1px solid #edc0bf; background: #fce9e7; color: #934b47; font-size: 0.8rem; font-weight: 650; line-height: 1.4; }
 .invoiceRow .rowActions { flex-wrap: nowrap; }
 .invoiceRow .rowActions > a, .invoiceRow .rowActions > button { min-width: 150px; box-shadow: inset 0 1px 0 #fff, 0 8px 18px rgba(26, 57, 46, 0.035); }
 .invoiceRow .invoiceOpenButton { color: #824013; border-color: #d59160; background: linear-gradient(180deg, #fff, #fff4e9); }

@@ -3444,13 +3444,13 @@ export default function MyInvoicesClient({
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
                       <h2 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h2>
-                      <span className={styles.invoiceAssetPill}><LinkedAssetIcon /><span>{invoice.assetTitle || 'Saved asset'}</span></span>
                       {dealerMode && invoice.ownerName ? <p className={styles.invoiceOwner}>{invoice.ownerName}</p> : null}
                       <p className={styles.invoiceReference}>
                         <span>{invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber}` : 'No invoice number'}</span>
                         {invoice.invoiceDate ? <span>{formatDateTime(invoice.invoiceDate)}</span> : null}
                       </p>
                       <div className={styles.invoiceBadges}>
+                        <span className={styles.invoiceAssetPill}><LinkedAssetIcon /><span>{invoice.assetTitle || 'Saved asset'}</span></span>
                         <span className={styles.invoiceSourceBadge}>
                           {invoice.source === 'automatic' ? <AutomaticInvoiceIcon /> : <OpenFileIcon />}
                           <span>{sourceLabel(invoice.source)}</span>
