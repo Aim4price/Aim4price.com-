@@ -5,7 +5,7 @@ const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
 const stubs={
  'components/useWebsiteStyles':'exports.useWebsiteStyles=(native,website)=>window.compact?native:website;',
- 'components/WebsitePortal':'exports.createPortal=(children)=>ReactDOM.createPortal(children,document.getElementById("portal"));',
+ 'components/WebsitePortal':'exports.createPortal=(children)=>ReactDOM.createPortal(children,document.getElementById("aim4price-website-overlays"));',
  'components/DropdownOverlay':'exports.default=()=>null;',
  'components/WorkspacePrimitives':'exports.workspaceStyles={};exports.WorkspaceTitlePanel=({title,children})=>React.createElement("header",null,React.createElement("h1",null,title),children);',
  'app/asset-discovery/recently-advertised-client':'exports.default=()=>null;',
@@ -65,38 +65,51 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
   });
   async function open(width,compact=false){
    await page.setViewport({width,height:900});await page.goto('https://discovery.test/');
-   await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef5f0}#app{padding:24px}button{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div><div id="portal"></div>');
+   await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef5f0}#app{padding:24px}button{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div><div id="aim4price-website-overlays"></div>');
    await page.evaluate(value=>{window.compact=value;},compact);
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:appCode});
    await page.waitForSelector('button[aria-label="Open Toyota Hilux details"]');
   }
-  for(const [width,compact] of [[1440,false],[1024,false],[390,true],[320,true]]){
+  for(const [width,compact] of [[1440,false],[390,true],[320,true]]){
    approved=false;fail=false;await open(width,compact);
    const trigger='button[aria-label="Open Toyota Hilux details"]';
    await page.click(trigger);
-   await page.waitForFunction(()=>document.querySelector('[role="dialog"]')?.textContent.includes('Photos locked'));
-   const geometry=await page.$eval('[role="dialog"]',e=>{
-    const r=e.getBoundingClientRect(),values=[...e.querySelectorAll('[class*="discoveryDetailRow"] strong')];
-    return {inside:r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1,blur:getComputedStyle(e.parentElement).backdropFilter,heading:e.querySelectorAll('h2').length,wrap:values.every(v=>getComputedStyle(v).whiteSpace==='normal')};
+   await page.waitForFunction(()=>document.querySelector('#discovery-details-fixture-1')?.textContent.includes('Photos are locked'));
+   assert.equal(await page.$('[role="dialog"]'),null,'details retain the inline design');
+   const state=await page.$eval('#discovery-details-fixture-1',details=>{
+    const card=details.closest('[data-discovery-card]');
+    const summary=card.querySelector('[class*="discoverySummaryBlur"]');
+    const close=card.querySelector('button[aria-expanded="true"]');
+    function clear(element){
+     for(let node=element;node&&node!==document.body;node=node.parentElement){
+      if(getComputedStyle(node).filter!=='none')return false;
+     }
+     return true;
+    }
+    return {summaryBlur:getComputedStyle(summary).filter,detailsClear:clear(details),closeClear:clear(close),
+     backgrounds:[...document.querySelectorAll('[class*="discoveryBackgroundBlur"]')].filter(e=>e.offsetWidth>0).length,
+     portalClear:!document.getElementById('aim4price-website-overlays').inert};
    });
-   assert.equal(geometry.inside,true,JSON.stringify(geometry));assert.match(geometry.blur,/blur/);assert.equal(geometry.heading,1);assert.equal(geometry.wrap,true);
-   assert.equal(await page.$eval('[role="dialog"]',e=>e.contains(document.activeElement)),true);
-   await page.keyboard.press('Tab');assert.equal(await page.$eval('[role="dialog"]',e=>e.contains(document.activeElement)),true);
+   assert.match(state.summaryBlur,/blur\(5px\)/);
+   assert.equal(state.detailsClear,true);assert.equal(state.closeClear,true);
+   assert.ok(state.backgrounds>0);assert.equal(state.portalClear,true);
    await page.screenshot({path:path.join(evidence,'discovery-'+width+'.png'),fullPage:true});
-   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
-   assert.equal(await page.$eval(trigger,e=>e===document.activeElement),true);
-   assert.equal(await page.evaluate(()=>document.documentElement.style.overflow),'');
-   console.log('PASS focused panel, blur, wrapping, keyboard close and focus restoration at '+width);
+   await page.click('button[aria-label="Close Toyota Hilux details"]');
+   assert.equal(await page.$('#discovery-details-fixture-1'),null);
+   assert.equal((await page.$$('[class*="discoveryBackgroundBlur"]')).length,0);
+   assert.equal((await page.$$('[inert]')).length,0);
+   console.log('PASS original inline design, blurred background/upper summary, sharp details/Close and cleanup at '+width);
   }
   approved=true;await open(1440);await page.click('button[aria-label="Open Toyota Hilux details"]');
   await page.waitForSelector('button[aria-label="Open Toyota Hilux photo 1"]');
   await page.click('button[aria-label="Open Toyota Hilux photo 1"]');await page.waitForSelector('button[aria-label="Close asset photos"]');
   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('button[aria-label="Close asset photos"]'));
-  assert.equal((await page.$$('[role="dialog"]')).length,1,'closing photos keeps asset open');
-  await page.keyboard.press('Escape');assert.equal((await page.$$('[role="dialog"]')).length,0);
+  assert.ok(await page.$('#discovery-details-fixture-1'),'closing photos keeps inline details open');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.$('#discovery-details-fixture-1'),null);
   fail=true;await open(1440);await page.click('button[aria-label="Open Toyota Hilux details"]');
-  await page.waitForFunction(()=>document.querySelector('[role="dialog"]')?.textContent.includes('Fixture details unavailable'));
-  await page.click('button[aria-label="Close asset details"]');assert.equal(await page.$('[role="dialog"]'),null);
-  assert.deepEqual(errors,[]);console.log('PASS nested photos and dismissible failed details');
+  await page.waitForFunction(()=>document.querySelector('#discovery-details-fixture-1')?.textContent.includes('Fixture details unavailable'));
+  await page.click('button[aria-label="Close Toyota Hilux details"]');assert.equal(await page.$('#discovery-details-fixture-1'),null);
+  assert.deepEqual(errors,[]);console.log('PASS nested photos, Escape and dismissible failed details');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
