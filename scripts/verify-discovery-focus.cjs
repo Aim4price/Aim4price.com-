@@ -65,7 +65,7 @@ const evidence=path.join(root,'.next/discovery-focus-validation');
   });
   async function open(width,compact=false){
    await page.setViewport({width,height:900});await page.goto('https://discovery.test/');
-   await page.setContent('<style>body{margin:0;font-family:Arial,sans-serif;background:#eef5f0}#app{padding:24px}button{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div><div id="portal"></div>');
+   await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#eef5f0}#app{padding:24px}button{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div><div id="portal"></div>');
    await page.evaluate(value=>{window.compact=value;},compact);
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:appCode});
    await page.waitForSelector('button[aria-label="Open Toyota Hilux details"]');
