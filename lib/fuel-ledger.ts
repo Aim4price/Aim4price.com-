@@ -1,3 +1,4 @@
+import { assetCanReceiveFuel } from './asset-fuel-eligibility';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import type { NextRequest, NextResponse } from 'next/server';
@@ -365,6 +366,7 @@ type FuelAssetRow = {
   model_name: string | null;
   typed_model_name: string | null;
   equipment_family_label: string | null;
+  equipment_family_key?: string | null;
   serial_number: string | null;
   plate_label: string | null;
   public_asset_code: string | null;
@@ -1254,16 +1256,12 @@ function titleCase(value: string): string {
 }
 
 function inferAssetCanReceiveFuel(row: FuelAssetRow): boolean {
-  const kind = asText(row.kind).toLowerCase();
-  const specs = asRecord(row.specs_json);
-  const specValue = asBoolean(specs.is_propelled ?? specs.isPropelled ?? specs.self_propelled ?? specs.selfPropelled ?? specs.accepts_fuel ?? specs.acceptsFuel);
-  const familyValue = asBoolean(row.family_is_propelled);
-
-  if (kind === 'tractor' || kind === 'vehicle') return true;
-  if (specValue !== null) return specValue;
-  if (familyValue !== null) return familyValue;
-
-  return false;
+  return assetCanReceiveFuel({
+    kind: row.kind,
+    specsJson: row.specs_json,
+    familyIsPropelled: row.family_is_propelled,
+    equipmentFamilyKey: row.equipment_family_key,
+  });
 }
 
 const PERCENT_USAGE_SPEC_KEYS = [
@@ -2640,6 +2638,7 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
         a.brand_name,
         a.model_name,
         a.typed_model_name,
+        coalesce(ef.family_key, '') as equipment_family_key,
         coalesce(ef.family_label, '') as equipment_family_label,
         coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
         to_jsonb(a)->>'plate_label' as plate_label,
@@ -3849,6 +3848,7 @@ export async function recordFuelAssetIssue(
           a.brand_name,
           a.model_name,
           a.typed_model_name,
+          coalesce(ef.family_key, '') as equipment_family_key,
           coalesce(ef.family_label, '') as equipment_family_label,
           coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
           to_jsonb(a)->>'plate_label' as plate_label,
@@ -4365,6 +4365,7 @@ export async function recordMissingFuelAssetIssue(
       `
         select
           a.id::text, a.title, a.kind, a.brand_name, a.model_name, a.typed_model_name,
+          coalesce(ef.family_key, '') as equipment_family_key,
           coalesce(ef.family_label, '') as equipment_family_label,
           coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
           to_jsonb(a)->>'plate_label' as plate_label,
@@ -5277,6 +5278,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             a.brand_name,
             a.model_name,
             a.typed_model_name,
+            coalesce(ef.family_key, '') as equipment_family_key,
             coalesce(ef.family_label, '') as equipment_family_label,
             coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
             to_jsonb(a)->>'plate_label' as plate_label,

@@ -386,12 +386,8 @@ test('fuel action mirrors the server eligibility contract and hides unknown equi
     client.indexOf('function buildAssetRegisterManageReturnPath'),
   );
 
-  assert.match(fuelGate, /asset\.kind === 'tractor' \|\| asset\.kind === 'vehicle'/);
-  for (const key of ['is_propelled', 'isPropelled', 'self_propelled', 'selfPropelled', 'accepts_fuel', 'acceptsFuel']) {
-    assert.match(fuelGate, new RegExp(`'${key}'`));
-  }
-  assert.match(fuelGate, /return readBooleanFromSpecs/);
-  assert.doesNotMatch(fuelGate, /kind !== 'property'/);
+  assert.match(fuelGate, /return assetCanReceiveFuel\(asset\)/);
+  assert.match(fuelGate, /'familyIsPropelled'/);
 });
 
 test('marketplace closes back to Manage and removal opens the guided outcome flow', () => {
