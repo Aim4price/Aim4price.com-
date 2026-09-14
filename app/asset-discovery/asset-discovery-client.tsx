@@ -3,8 +3,6 @@ import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 import website_mobileStyles from '../../components/website-styles/FieldManagerControls.module.css';
 
-import { createPortal } from "../../components/WebsitePortal";
-import DiscoveryAssetDialog from "./DiscoveryAssetDialog";
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -674,7 +672,7 @@ export default function AssetDiscoveryClient({
     document.body.style.overflow = "hidden";
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setActiveEnquiry(null);
+      if (event.key === "Escape") { event.preventDefault(); setActiveEnquiry(null); }
     };
     window.addEventListener("keydown", onKeyDown);
 
@@ -851,6 +849,60 @@ export default function AssetDiscoveryClient({
     search,
     activeDiscoveryView,
   ]);
+
+  useEffect(() => {
+    if (
+      !requestedOpenAssetId ||
+      expandedAssetId !== requestedOpenAssetId
+    ) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(`discovery-details-${requestedOpenAssetId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [expandedAssetId, requestedOpenAssetId]);
+
+  useEffect(() => {
+    if (!expandedAssetId) return;
+    const details = document.getElementById(`discovery-details-${expandedAssetId}`);
+    const card = details?.closest<HTMLElement>("[data-discovery-card]");
+    if (!card) return;
+    const background: Array<{ element: HTMLElement; inert: boolean }> = [];
+    // Blur siblings along the inline card's ancestor path, never the card itself.
+    // Portal hosts stay clear so photos, contacts and other overlays still work.
+    let current: HTMLElement | null = card;
+    while (current && current !== document.body) {
+      for (const sibling of Array.from(current.parentElement?.children ?? [])) {
+        if (!(sibling instanceof HTMLElement) || sibling === current ||
+            sibling.id === "aim4price-website-overlays" ||
+            sibling.matches("script, style, link, [data-website-overlay]") ||
+            sibling.querySelector('[role="dialog"], [role="alertdialog"]')) continue;
+        background.push({ element: sibling, inert: sibling.inert });
+        sibling.classList.add(styles.discoveryBackgroundBlur);
+        sibling.inert = true;
+      }
+      current = current.parentElement;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.key !== "Escape" || photoModal || activeEnquiry) return;
+      event.preventDefault();
+      setExpandedAssetId(null);
+      card.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')?.focus({ preventScroll: true });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      for (const { element, inert } of background) {
+        element.classList.remove(styles.discoveryBackgroundBlur);
+        element.inert = inert;
+      }
+    };
+  }, [expandedAssetId, photoModal, activeEnquiry]);
 
   const visiblePaginationPages = useMemo(
     () => paginationPages(pagination.page, pagination.totalPages),
@@ -1382,7 +1434,6 @@ export default function AssetDiscoveryClient({
         type="button"
         className={compactAppMode ? compactClassName : desktopClassName}
         onClick={() => void toggleAssetDetails(asset)}
-        aria-haspopup="dialog"
         aria-expanded={isExpanded}
         aria-controls={`discovery-details-${asset.id}`}
         aria-label={
@@ -1458,22 +1509,42 @@ export default function AssetDiscoveryClient({
     const hasMultiplePhotos = photoUrls.length > 1;
 
     return (
-      <DiscoveryAssetDialog
-        key={asset.id}
-        title={dealerAssetDisplayName(asset)}
-        meta={licensingDiscovery ? licenceRenewalAssetMeta(asset) : dealerAssetMeta(asset)}
-        titleId={`discovery-title-${asset.id}`}
-        compact={compactAppMode}
-        suspended={Boolean(photoModal || activeEnquiry)}
-        actions={renderEnquiryControl(asset)}
-        onClose={() => setExpandedAssetId(null)}
-      >
-      {notice ? <div className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`} role="status">{notice.message}</div> : null}
       <div
         id={`discovery-details-${asset.id}`}
         className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.discoveryLeadAssetCard} ${compactAppMode ? styles.discoveryExpandedCompact : ""}`}
         aria-label={`${assetDisplayName(asset)} Discovery details`}
       >
+        {compactAppMode ? (
+          <div className={styles.compactExpandedTop}>
+            <div>
+              <span>Asset details</span>
+              <p>Review the available information before requesting access.</p>
+            </div>
+            {renderEnquiryControl(asset)}
+          </div>
+        ) : (
+          <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
+            <div className={assetStyles.assetTitleBlock}>
+              <h2>{dealerAssetDisplayName(asset)}</h2>
+              <p>{licensingDiscovery ? licenceRenewalAssetMeta(asset) : dealerAssetMeta(asset)}</p>
+              <div className={assetStyles.assetMetaRow}>
+                <span className={assetStyles.assetValueMethodLabel}>
+                  {cleanText(asset.type) || "Asset"}
+                </span>
+                <span className={assetStyles.assetSavedDateLabel}>
+                  {cleanText(asset.province) || "Location not saved"}
+                </span>
+              </div>
+            </div>
+
+            <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside}`}>
+              <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}>
+                {renderEnquiryControl(asset)}
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
           <div className={`${workspaceStyles.emptyState} ${styles.discoveryDetailsLoading}`}>
             Loading protected asset details…
@@ -1569,8 +1640,8 @@ export default function AssetDiscoveryClient({
                       <span />
                     </div>
                     <div className={styles.discoveryLockedMedia}>
-                      <strong>Photos locked</strong>
-                      <span>Request access to view.</span>
+                      <strong>Photos are locked</strong>
+                      <span>No private image was sent to your browser.</span>
                     </div>
                   </div>
                 )}
@@ -1626,7 +1697,7 @@ export default function AssetDiscoveryClient({
                       ? "Owner-approved Discovery access."
                       : licensingDiscovery
                         ? "Offer renewal help. Exact details remain private until the owner approves."
-                        : "Ask if the owner is interested in selling."}
+                        : "Request access to ask whether the owner is interested in selling."}
                 </strong>
                 <span>
                   {access?.accountType === "public"
@@ -1684,8 +1755,19 @@ export default function AssetDiscoveryClient({
           </div>
         ) : null}
 
+        {compactAppMode ? (
+          <div className={styles.discoveryExpandedFooter}>
+            <button
+              type="button"
+              className={styles.discoveryCloseDetailsButton}
+              onClick={() => void toggleAssetDetails(asset)}
+            >
+              <CloseIcon className={styles.buttonIcon} />
+              Close details
+            </button>
+          </div>
+        ) : null}
       </div>
-      </DiscoveryAssetDialog>
     );
   }
 
@@ -2261,10 +2343,11 @@ export default function AssetDiscoveryClient({
             return compactAppMode ? (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)} ${licensingDiscovery && asset.renewalTiming === "later" ? styles.discoveryFutureCard : ""} `}
+                data-discovery-card
+                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)} ${licensingDiscovery && asset.renewalTiming === "later" ? styles.discoveryFutureCard : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
-                  <div className={styles.assetIdentity}>
+                  <div className={`${styles.assetIdentity} ${expandedAssetId === asset.id ? styles.discoverySummaryBlur : ""}`}>
                     <div className={`${mobileStyles.overviewCardLabels} ${styles.discoveryCardLabels}`}>
                       <span className={styles.discoveryTypeLabel}>
                         {cleanText(asset.type) || "Asset"}
@@ -2284,11 +2367,13 @@ export default function AssetDiscoveryClient({
                     {renderOpenControl(asset)}
                   </div>
                 </div>
+                {renderExpandedAsset(asset)}
               </article>
             ) : (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${licensingDiscovery && asset.renewalTiming === "later" ? styles.discoveryFutureCard : ""}   ${
+                data-discovery-card
+                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${licensingDiscovery && asset.renewalTiming === "later" ? styles.discoveryFutureCard : ""} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""} ${
                   asset.enquiryStatus === "temporarily_denied" &&
                   !temporaryDenialExpired(asset)
                     ? styles.discoveryAssetCardDenied
@@ -2297,7 +2382,7 @@ export default function AssetDiscoveryClient({
               >
                 <div className={leadStyles.clientPanel}>
                   <div className={leadStyles.clientPanelHeader}>
-                    <div className={leadStyles.clientIdentity}>
+                    <div className={`${leadStyles.clientIdentity} ${expandedAssetId === asset.id ? styles.discoverySummaryBlur : ""}`}>
                       <h3>{dealerAssetDisplayName(asset)}</h3>
                       <strong className={leadStyles.leadAssetName}>
                         {licensingDiscovery ? licenceRenewalAssetMeta(asset) : dealerAssetMeta(asset)}
@@ -2318,6 +2403,7 @@ export default function AssetDiscoveryClient({
                     </div>
                   </div>
                 </div>
+                {renderExpandedAsset(asset)}
               </article>
             );
           })
@@ -2329,8 +2415,6 @@ export default function AssetDiscoveryClient({
       </section>
 
       {renderPagination()}
-
-      {assets.filter((asset) => asset.id === expandedAssetId).map(renderExpandedAsset)}
 
       {privateDiscoveryAccess && photoModal ? (
         <LeadPhotoViewerModal
@@ -2405,7 +2489,6 @@ export default function AssetDiscoveryClient({
       ) : null}
 
       {privateDiscoveryAccess && activeEnquiry ? (
-        createPortal(
         <div
           className={`${workspaceStyles.modalOverlay} ${styles.contactOverlay} ${compactAppMode ? styles.discoveryAppOverlay : ""}`}
           onMouseDown={() => setActiveEnquiry(null)}
@@ -2538,7 +2621,6 @@ export default function AssetDiscoveryClient({
             </div>
           </section>
         </div>
-        , document.body)
       ) : null}
     </section>
   );

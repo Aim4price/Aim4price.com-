@@ -136,7 +136,7 @@ test("public Discovery opens with a dedicated contact-free projection", () => {
   assert.match(publicProjection, /PUBLIC_SAFE_PROVINCE_SQL/);
   assert.match(client, /access\?\.accountType === "public"/);
   assert.match(client, /Sign in to contact/);
-  assert.match(client, /Request access to view/);
+  assert.match(client, /No private image was sent to your browser/);
   assert.match(client, /discoveryPublicContactPreview/);
   assert.match(client, /toggleAssetDetails\(requestedAsset, data\.access\)/);
 });
@@ -205,7 +205,7 @@ test("locked cards render a static placeholder without a private image", () => {
     client.indexOf('className={styles.discoveryLockedMedia}'),
     client.indexOf("discoveryInlineContact"),
   );
-  assert.match(lockedBlock, /Photos locked/);
+  assert.match(lockedBlock, /No private image was sent/);
   assert.doesNotMatch(lockedBlock, /<img/);
 });
 
@@ -311,7 +311,7 @@ test("owner and dealer Discovery follow the Overview layout", () => {
   assert.match(css, /\.discoveryOverviewIntro/);
   assert.match(css, /\.discoverySectionHeading/);
   assert.match(client, /isExpanded \? styles\.discoveryCloseButton/);
-  assert.ok(client.includes("<DiscoveryAssetDialog"));
+  assert.match(client, /styles\.discoveryCloseDetailsButton/);
   assert.match(client, /closeButtonClassName=\{styles\.discoveryPhotoCloseButton\}/);
   assert.match(photoViewer, /closeButtonClassName\?: string/);
   assert.match(css, /\.compactAppSurface \.toolbar/);
@@ -361,7 +361,7 @@ test("approved notification opens the matching Discovery card", () => {
   assert.match(discoveryRoute, /focusAssetId: searchParams\.get\("focusAssetId"\)/);
   assert.match(discovery, /focusOrderSql/);
   assert.match(client, /void toggleAssetDetails\(requestedAsset, data\.access\)/);
-  assert.ok(client.includes("assets.filter((asset) => asset.id === expandedAssetId).map(renderExpandedAsset)"));
+  assert.match(client, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
 });
 
 test("Owner App keeps direct separate Discovery and Marketplace buttons", () => {
