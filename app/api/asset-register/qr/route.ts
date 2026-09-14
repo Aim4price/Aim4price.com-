@@ -204,6 +204,8 @@ export async function GET(request: NextRequest) {
         buildAssetQrLabelHtml({
           assetTitle: asset.title,
           serialNumber: asText(asset.serialNumber),
+          yearModel: asset.yearModel,
+          modelName: asText(asset.modelName) || asText(asset.typedModelName),
           logoUrl,
           fallbackLogoUrl,
           qrImageUrl: embeddedQrImageUrl,
