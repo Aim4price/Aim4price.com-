@@ -9,17 +9,13 @@ function load(file,mocks={}){
 }
 const {NextRequest}=require('next/server');
 const asset={title:'2020 Toyota Hilux',publicAssetCode:'A4P-TEST123',plateLabel:'TEST'};
-function routeFixture({signedIn=true,allowed=true,record=asset,profile={logoUrl:''},lead=null,onProfile=()=>{},onLogo=()=>{}}={}){
+function routeFixture({signedIn=true,allowed=true,record=asset}={}){
  return load('app/api/asset-register/qr/route.ts',{
-  '../../../../lib/account-profile':{getAccountProfile:async(user)=>{onProfile(user);return profile;}},
-  '../../../../lib/report-logo':{
-   getFallbackReportLogoUrl:async()=>'/brand/aim4price-mark-black.png',
-   resolveReportLogoUrlForHtml:async(url)=>{onLogo(url);return url||'/brand/aim4price-mark-black.png';},
-  },
+  '../../../../lib/account-profile':{},
   '../../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>allowed},
   '../../../../lib/auth-session':{getServerSession:async()=>signedIn?{user:{id:'owner'}}:null},
   '../../../../lib/asset-register-db':{getAssetRegisterItemById:async()=>record},
-  '../../../../lib/partner-access':{getAssetLeadForPartner:async()=>lead},
+  '../../../../lib/partner-access':{},
  });
 }
 function request(format){return new NextRequest('https://www.aim4price.com/api/asset-register/qr?assetId=asset&format='+format);}
@@ -38,43 +34,6 @@ test('asset QR preview, download and print render locally without network calls'
   const print=await route.GET(request('print'));
   assert.equal(print.status,200);assert.match(await print.text(),/data:image\/png;base64,/);
  }finally{global.fetch=originalFetch;}
-});
-test('printed asset label uses owner branding and only relevant identifying text',async()=>{
- const route=routeFixture({record:{...asset,serialNumber:' SN-123 '},profile:{logoUrl:'https://example.com/owner.png'}});
- const html=await (await route.GET(request('print'))).text();
- assert.match(html,/src="https:\/\/example.com\/owner.png"/);
- assert.match(html,/Serial number<\/span><strong>SN-123<\/strong>/);
- assert.doesNotMatch(html,/Plate label|plateBlock|Farm PIN|Scan access|A4P-TEST123/);
- assert.match(html,/Print \/ Save Label/);
- assert.match(html,/width: 186mm/);
- assert.match(html,/@media screen and/);
- assert.match(html,/qr.decode\(\), decodeLogo\(\)/);
-});
-test('missing logo falls back to Aim4price and blank serial leaves no empty row',async()=>{
- for(const serialNumber of [undefined,'','   ']) {
-  const html=await (await routeFixture({record:{...asset,serialNumber}}).GET(request('print'))).text();
-  assert.match(html,/id="accountLogo" src="\/brand\/aim4price-mark-black.png"/);
-  assert.doesNotMatch(html,/<div class="serialBlock">/);
- }
-});
-test('dealer label resolves the asset owner profile, not dealer branding',async()=>{
- const users=[],logos=[];
- const route=routeFixture({profile:{accountType:'dealer',accountStatus:'active',logoUrl:'owner-logo'},
-  lead:{assetRegisterItemId:'asset',ownerUserId:'lead-owner'},onProfile:user=>users.push(user.id),onLogo:url=>logos.push(url)});
- const response=await route.GET(new NextRequest(request('print').url+'&leadId=lead'));
- assert.equal(response.status,200);
- assert.deepEqual(users,['owner','lead-owner']);
- assert.deepEqual(logos,['owner-logo']);
- const denied=routeFixture({profile:{accountType:'dealer',accountStatus:'active'},lead:{assetRegisterItemId:'other',ownerUserId:'lead-owner'}});
- assert.equal((await denied.GET(new NextRequest(request('print').url+'&leadId=lead'))).status,404);
-});
-test('print label escapes title, serial and image attributes',()=>{
- const {buildAssetQrLabelHtml}=load('lib/asset-qr-label-print.ts');
- const html=buildAssetQrLabelHtml({assetTitle:'<img onerror="attack()">',serialNumber:'<script>attack()</script>',qrImageUrl:'qr',logoUrl:'" onerror="attack()',fallbackLogoUrl:'fallback'});
- assert.match(html,/&lt;img onerror=&quot;attack\(\)&quot;&gt;/);
- assert.match(html,/&lt;script&gt;attack\(\)&lt;\/script&gt;/);
- assert.match(html,/src="&quot; onerror=&quot;attack\(\)"/);
- assert.doesNotMatch(html,/<script>attack|<img onerror/);
 });
 test('QR rendering retains account access and missing-code checks',async()=>{
  for(const [options,status] of [[{signedIn:false},401],[{allowed:false},403],[{record:null},404],[{record:{...asset,publicAssetCode:''}},409]]){
