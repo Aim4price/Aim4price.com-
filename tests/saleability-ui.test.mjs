@@ -61,7 +61,7 @@ test('Manage Pricing opens the same Saleability calculator', () => {
   assert.match(ownerAsset, /<SaleabilityModal/);
   assert.match(pricingRoute, /\['recalculate', 'future', 'saleability'\]/);
   assert.match(assetRegister, /<strong>Saleability<\/strong>/);
-  assert.match(assetRegister, /setSaleabilityAsset\(activeAsset\)/);
+  assert.match(assetRegister, /setSaleabilityAsset\(asset\)/);
   assert.match(assetRegister, /buildRegisterAssetSaleabilityInput/);
 });
 
@@ -85,7 +85,7 @@ test('the questions use plain selectable answers and preserve the valuation boun
   assert.doesNotMatch(modal, /Compared with usual/);
   assert.doesNotMatch(modal, />More than 10</);
   assert.doesNotMatch(modal, /<select/);
-  assert.match(modal, /Valuation: <strong>\{formatMoney\(valuationExVat\)\} excl\. VAT<\/strong>/);
+  assert.match(modal, /Valuation: <strong>\{displayMoney\(valuationExVat\)\} \{vatLabel\}<\/strong>/);
   assert.match(modal, /selling-price guidance only/);
   assert.doesNotMatch(modal, /Outlook/i);
 });

@@ -12,6 +12,8 @@ import {
   SALEABILITY_PDF_PLAN_SESSION_KEY,
   createSaleabilityPdfPlanSnapshot,
 } from '../lib/saleability-pdf';
+import PricingVatToggle from './PricingVatToggle';
+import { pricingVatAmount } from '../lib/pricing-vat';
 import styles from './saleability-modal.module.css';
 import accountStyles from '../app/account/page.module.css';
 
@@ -130,6 +132,9 @@ export default function SaleabilityModal({
   input,
   storageKey,
 }: SaleabilityModalProps) {
+  const [vatIncluded, setVatIncluded] = useState(false);
+  const vatLabel = vatIncluded ? 'Incl. VAT' : 'Excl. VAT';
+  const displayMoney = (value: number) => formatMoney(pricingVatAmount(value, vatIncluded));
   const bodyRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState<number | 'result'>(1);
   const [answers, setAnswers] = useState<Partial<SaleabilityRefinementAnswers>>({});
@@ -230,6 +235,7 @@ export default function SaleabilityModal({
           <div>
             <h2 id="saleability-title">{assetTitle}</h2>
             <p>Build your selling plan.</p>
+            <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} />
           </div>
           <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
@@ -314,11 +320,11 @@ export default function SaleabilityModal({
                 </div>
                 <div className={styles.askingPrice}>
                   <small>Recommended asking price</small>
-                  <strong>{formatMoney(plan.recommendedAskingPriceExVat)}</strong>
-                  <em>Excl. VAT</em>
+                  <strong>{displayMoney(plan.recommendedAskingPriceExVat)}</strong>
+                  <em>{vatLabel}</em>
                 </div>
                 <div className={styles.resultRows}>
-                  <div><span>Likely selling range</span><strong>{formatMoney(plan.likelySellingRangeLowExVat)} – {formatMoney(plan.likelySellingRangeHighExVat)}</strong></div>
+                  <div><span>Likely selling range</span><strong>{displayMoney(plan.likelySellingRangeLowExVat)} – {displayMoney(plan.likelySellingRangeHighExVat)}</strong></div>
                   <div><span>Expected timing</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
                 </div>
               </section>
@@ -346,7 +352,7 @@ export default function SaleabilityModal({
               </details>
 
               <p className={styles.valuationReminder}>
-                Valuation: <strong>{formatMoney(valuationExVat)} excl. VAT</strong> · selling-price guidance only.
+                Valuation: <strong>{displayMoney(valuationExVat)} {vatLabel}</strong> · selling-price guidance only.
               </p>
             </div>
           ) : null}
