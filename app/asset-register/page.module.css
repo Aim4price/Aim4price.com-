@@ -39364,11 +39364,18 @@ button.documentOpenLink {
   padding-bottom: 0.85rem !important;
 }
 
-/* Preserve the pricing symbols; give their SVG strokes a clear, consistent size. */
+/* Keep the pricing symbols, with a larger drawing and a quiet, consistent frame. */
 .pricingModal .ownerCommandGrid .ownerCommandAction > .buttonIcon {
-  width: 1.5rem !important;
-  height: 1.5rem !important;
+  box-sizing: border-box;
+  width: 3rem !important;
+  height: 3rem !important;
+  padding: 0.5625rem;
   flex-shrink: 0;
+  color: #1d3b62;
+  background: linear-gradient(145deg, #f6faff 0%, #eaf1f8 100%);
+  border: 1px solid #d7e2ee;
+  border-radius: 0.875rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
