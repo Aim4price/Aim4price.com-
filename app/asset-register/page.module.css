@@ -40884,3 +40884,9 @@ button.documentOpenLink {
 .page .assetGroupHeaderFlagged .umbrellaFlagStatus .buttonIcon {
  color:#aa2330 !important;
 }
+
+/* Give external sharing the same spacious width across register, umbrella and asset entry points. */
+.assetQuoteModal.externalAssetShareModal:not(.assetQuotePartnerPickerModal),
+.modalCard.assetEntryModal.registerShareAccountModal.externalAssetShareModal {
+  width: min(var(--website-dialog-reference-width, calc(100vw - 2rem)), 76rem) !important;
+}

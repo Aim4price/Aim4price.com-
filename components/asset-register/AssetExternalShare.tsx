@@ -376,16 +376,14 @@ export default function AssetExternalShare({
   return (
     <section className={styles.externalPanel} aria-label="Share outside Aim4price">
       <div className={styles.shareContext}>
-        <span>Ready to share</span>
         <strong>{assets.length === 1 ? assets[0]?.title : shareName}</strong>
-        <small>{assets.length} {assets.length === 1 ? 'asset' : 'assets'} in one neatly formatted message</small>
+        <small>{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</small>
       </div>
 
       <div className={styles.shareLayout}>
         <article className={styles.messageCard}>
           <div className={styles.sectionHeader}>
-            <span>Message preview</span>
-            <small>Sent as one message</small>
+            <span>Message</span>
           </div>
           <pre className={styles.messagePreview} tabIndex={0} aria-label="External asset details message preview">{copy.body}</pre>
         </article>
@@ -393,8 +391,7 @@ export default function AssetExternalShare({
         <aside className={styles.attachmentsCard} aria-labelledby="optional-attachments-title">
           <div className={styles.attachmentsHeader}>
             <div>
-              <span>Optional attachments</span>
-              <h4 id="optional-attachments-title">Add only what you need</h4>
+              <h4 id="optional-attachments-title">Attachments</h4>
             </div>
             <span className={styles.attachmentCount}>{selectedAttachmentCount}</span>
           </div>
@@ -403,8 +400,8 @@ export default function AssetExternalShare({
             <input type="checkbox" checked={includePhotos} onChange={togglePhotos} disabled={!savedPhotoCount} />
             <span className={styles.attachmentIcon}><PhotosIcon /></span>
             <span className={styles.attachmentCopy}>
-              <strong>Include saved photos</strong>
-              <small>{savedPhotoCount ? `${savedPhotoCount} available · Off by default` : 'No saved photos available'}</small>
+              <strong>Include photos</strong>
+              <small>{savedPhotoCount ? `${savedPhotoCount} available` : 'No saved photos'}</small>
             </span>
             <span className={styles.toggleControl} aria-hidden="true"><span><CheckIcon /></span></span>
           </label>
@@ -412,8 +409,7 @@ export default function AssetExternalShare({
           <button type="button" className={styles.addReportButton} onClick={onAddAim4priceReport}>
             <span className={styles.attachmentIcon}><ReportsIcon /></span>
             <span className={styles.attachmentCopy}>
-              <strong>{reportFiles.length ? 'Add another Aim4price report' : 'Add Aim4price report'}</strong>
-              <small>Use the normal Aim4price report flow</small>
+              <strong>{reportFiles.length ? 'Add another report' : 'Add report'}</strong>
             </span>
             <span className={styles.addReportArrow} aria-hidden="true">›</span>
           </button>
@@ -438,20 +434,19 @@ export default function AssetExternalShare({
 
       <footer className={styles.sendFooter}>
         <div className={styles.sendLead}>
-          <strong>Send message</strong>
           <span>{selectedAttachmentCount
-            ? 'Your phone will open its share menu with every selected attachment.'
-            : 'Photos and reports stay private unless you add them above.'}</span>
+            ? 'Choose an app in the share menu.'
+            : 'Only selected attachments are shared.'}</span>
           {shareStatus ? <small role="status" aria-live="polite">{shareStatus}</small> : null}
         </div>
         <div className={styles.sendButtons}>
           <button type="button" className={`${styles.sendButton} ${styles.emailButton}`} onClick={() => void sendShare('email')} disabled={isPreparing || isSending}>
             <span className={styles.sendIcon}><EmailIcon /></span>
-            <span><strong>{sendingTarget === 'email' ? 'Opening…' : 'Send by email'}</strong><small>{selectedAttachmentCount ? 'Choose Email in the share menu' : 'Open a ready email'}</small></span>
+            <span><strong>{sendingTarget === 'email' ? 'Opening…' : 'Email'}</strong></span>
           </button>
           <button type="button" className={`${styles.sendButton} ${styles.whatsappButton}`} onClick={() => void sendShare('whatsapp')} disabled={isPreparing || isSending}>
             <span className={styles.sendIcon}><WhatsAppIcon /></span>
-            <span><strong>{sendingTarget === 'whatsapp' ? 'Opening…' : 'Send with WhatsApp'}</strong><small>{selectedAttachmentCount ? 'Choose WhatsApp in the share menu' : 'Open a ready chat'}</small></span>
+            <span><strong>{sendingTarget === 'whatsapp' ? 'Opening…' : 'WhatsApp'}</strong></span>
           </button>
         </div>
       </footer>
