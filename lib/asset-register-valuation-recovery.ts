@@ -36,7 +36,7 @@ export async function recoverLegacyValuationInput(userId: string, asset: AssetRe
     if (!lifetime && metric !== 'percent') lifetime = profile.expectedLifetime;
   } catch { /* Older families use the existing saved lifetime or tractor guide. */ }
   if (!lifetime && tractor) lifetime = tractorLifetimeHours(asset.tractorType === 'orchard' ? 'orchard' : 'field', asset.powerKw ?? 75);
-  const specs = { ...saved, usageMetricType: metric, basic_recovery: true, sectorKey, familyKey, brandSlug,
+  const specs = { ...saved, yearModelUnknown: !asset.yearModel, year_model_unknown: !asset.yearModel, usageMetricType: metric, basic_recovery: true, sectorKey, familyKey, brandSlug,
     power_kw: asset.powerKw, tractor_type: asset.tractorType,
     basic_specification_level: saved.basic_specification_level || 'standard',
     ...(lifetime ? { max_lifetime_hours: lifetime } : {}),

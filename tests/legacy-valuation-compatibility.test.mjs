@@ -55,7 +55,7 @@ function setup(a=asset(), matches=[{id:42,aim4price_replacement_price_ex_vat:650
     [resolve('lib/asset-register-db.ts')]:{getAssetRegisterItemById:async(owner,id)=>owner===a.userId&&id===a.id?a:null, updateAssetRegisterItemFromValuation:async(input)=>{writes.push(input);return {...a,valuationRunId:99};}, updateAssetRegisterItemFromGenericValuation:async(input)=>{writes.push(input);return {...a,valuationRunId:99};}},
     [resolve('lib/server-valuation.ts')]:{runServerValuation:async(input)=>{inputs.push(input);return {model:{brandName:a.brandName,modelName:a.modelName,powerKw:a.powerKw,tractorType:a.tractorType,drive:a.drive,cab:a.cab},aim4priceValueExVat:300000,replacementPriceUsedExVat:600000,maxLifetimeHours:12000};}},
     [resolve('lib/valuation-runs.ts')]:{getSelectedMethodValue:result=>result.aim4priceValueExVat,saveValuationRunFromResult:async(input)=>{writes.push(input);return {runId:99};},saveGenericValuationRunFromResult:async(input)=>{writes.push(input);return {runId:99};}},
-    [resolve('lib/generic-valuation.ts')]:{getGenericSelectedMethodValue:result=>result.aim4priceValueExVat,runGenericValuation:async(input)=>{inputs.push(input);return {sector:{key:'agricultural'},family:{usageMetricType:'hours'},brand:{name:a.brandName},typedModelName:a.modelName,specsJson:input.specsJson,year:input.year,usageAmount:input.usageAmount,condition:input.condition,aim4priceValueExVat:300000,replacementPriceUsedExVat:600000,maxLifetimeHours:12000};}},
+    [resolve('lib/generic-valuation.ts')]:{getGenericSelectedMethodValue:result=>result.aim4priceValueExVat,runGenericValuation:async(input)=>{inputs.push(input);return {sector:{key:'agricultural'},family:{usageMetricType:'hours'},brand:{name:a.brandName},typedModelName:a.modelName,specsJson:input.specsJson,year:input.year,yearModelUnknown:input.yearModelUnknown,usageAmount:input.usageAmount,condition:input.condition,aim4priceValueExVat:300000,replacementPriceUsedExVat:600000,maxLifetimeHours:12000};}},
   };
   return {load:loader(mocks), queries,writes,inputs,a};
 }
@@ -148,6 +148,15 @@ test('recovery uses the same Basic numeric calculation, including zero usage',as
     assert.equal(recovered.specsJson.catalog_model_id,undefined);
     assert.equal(recovered.catalogModeUsed,'generic_specs');
   }
+  for (const year of [1980, 2030]) {
+    for (const [usageAmount, expected] of [[6000,270000],[0,540000]]) {
+      const result = await runGenericValuation({sectorKey:'agricultural',familyKey:'tractors',brandSlug:'claas',year,yearModelUnknown:true,usageAmount,condition:'good',userReplacementPriceExVat:600000,basicRecovery:true,advancedAssumptions:{maxLifetimeUsage:12000}});
+      assert.equal(result.aim4priceValueExVat,expected);
+      assert.equal(result.selectedCalculation.ageDepPct,0);
+    }
+    const percent = await runGenericValuation({sectorKey:'agricultural',familyKey:'tractors',brandSlug:'claas',year,yearModelUnknown:true,lifeWorkedPercent:50,condition:'good',userReplacementPriceExVat:600000,basicRecovery:true,specsJson:{valuation_mode:'percent_used'}});
+    assert.equal(percent.aim4priceValueExVat,270000);
+  }
   assert.ok(queries.every(sql=>!sql.includes('equipment_models')));
 });
 test('saved Basic tractors stay on the Basic path even with a valid history link',async()=>{
@@ -163,4 +172,22 @@ test('the entered replacement price can complete a missing-history Basic preview
   await ctx.load('asset-register-revaluation').revalueAssetRegisterItem({userId:'owner-1',assetId:'asset-1',previewOnly:true,replacementPriceExVat:750000});
   assert.equal(ctx.inputs[0].userReplacementPriceExVat,750000);
   assert.equal(ctx.a.replacementPriceExVat,null); assert.equal(ctx.writes.length,0);
+});
+test('unknown-year older entries use Basic with and without an original history link',async()=>{
+  for(const valuationRunId of [null,7]) {
+    const ctx=setup(asset({yearModel:null,valuationRunId,specsJson:{yearModel:1980,yearModelUnknown:true},testRun:valuationRunId?{id:7,user_id:'owner-1',equipment_type:'tractor',valuation_payload:{input:{year:1980,modelId:42}}}:undefined}));
+    const api=ctx.load('asset-register-revaluation');
+    assert.equal(legacyValuationRecoveryReason(ctx.a),null);
+    const preview=await api.revalueAssetRegisterItem({userId:'owner-1',assetId:'asset-1',previewOnly:true});
+    assert.equal(ctx.inputs[0].basicRecovery,true);
+    assert.equal(ctx.inputs[0].yearModelUnknown,true);
+    assert.equal(preview.item.yearModel,null);
+    assert.equal(preview.item.specsJson.yearModelUnknown,true);
+    assert.match(preview.warning,/usage and condition only/);
+    assert.equal(ctx.writes.length,0);
+    await api.revalueAssetRegisterItem({userId:'owner-1',assetId:'asset-1',previewOnly:false});
+    assert.equal(ctx.writes[0].result.yearModelUnknown,true);
+    assert.equal(ctx.writes[1].assetId,'asset-1');
+    assert.equal(ctx.a.yearModel,null);
+  }
 });

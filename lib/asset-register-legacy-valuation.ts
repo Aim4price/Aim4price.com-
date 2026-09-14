@@ -78,7 +78,6 @@ export function legacyValuationRecoveryReason(asset: RecoveryAsset): string | nu
   if (percent) {
     if (asset.lifeWorkedPercent == null || asset.lifeWorkedPercent < 0 || asset.lifeWorkedPercent > 100) return 'Add the lifetime worked percentage.';
   } else {
-    if (!asset.yearModel) return 'Add the year model to calculate a Basic estimate.';
     if (asset.hours == null || asset.hours < 0) return 'Add the current usage to calculate a Basic estimate.';
   }
   if (!asset.equipmentFamilyKey && !specs.familyKey && !specs.family_key && asset.kind !== 'tractor') {
