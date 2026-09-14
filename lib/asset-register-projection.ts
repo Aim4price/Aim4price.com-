@@ -1,3 +1,5 @@
+import { recoverLegacyValuationInput } from './asset-register-valuation-recovery';
+import { isLegacyHourProjectionAsset } from './asset-register-legacy-valuation';
 import { getDb } from './db';
 import { getAssetRegisterItemById, type AssetRegisterItem, type AssetRegisterItemMethod } from './asset-register-db';
 import type { ConditionKey, TractorType } from './tractor-data';
@@ -552,15 +554,10 @@ async function fetchCatalogReplacementPrice(input: {
 }
 
 function requireTractorProjectionAsset(asset: AssetRegisterItem): asserts asset is AssetRegisterItem & {
-  valuationRunId: number;
   yearModel: number;
   powerKw: number;
   tractorType: TractorType;
 } {
-  if (asset.valuationRunId === null) {
-    throw new Error('FUTURE_PRICE_UNAVAILABLE');
-  }
-
   if (!asset.yearModel || !asset.powerKw || !asset.tractorType) {
     throw new Error('FUTURE_PRICE_UNAVAILABLE');
   }
@@ -665,7 +662,7 @@ function isMotorProjectionCandidate(input: {
   valuationOutput: Record<string, unknown>;
 }): boolean {
   // Basic meter profiles use the shared usage calculation, including non-motor hours.
-  if (asObject(input.asset.specsJson).basic_catalogue_release) return true;
+  if (asObject(input.asset.specsJson).basic_catalogue_release || isLegacyHourProjectionAsset(input.asset)) return true;
   const sectorKey = getSectorKey(input);
   const usageMetric = readUsageMetric(input);
 
@@ -893,7 +890,7 @@ function calculateMotorProjection(input: {
   const currentCondition = normalizeCondition(input.asset.condition || pick(input.row, ['condition']) || input.valuationInput.condition);
   const targetCondition = input.targetCondition ?? currentCondition;
   const maxLifetimeUsage = readMotorLifetimeUsage({ ...input, familyKey });
-  const usageMetric: UsageMetric = asObject(input.asset.specsJson).basic_catalogue_release ? readUsageMetric(input) : 'km';
+  const usageMetric: UsageMetric = asObject(input.asset.specsJson).basic_catalogue_release || isLegacyHourProjectionAsset(input.asset) ? readUsageMetric(input) : 'km';
 
   const currentModelSnapshot = calculateUsageBasedSnapshot({
     targetYear: input.baseYear,
@@ -1068,11 +1065,13 @@ export async function calculateFuturePriceForAsset(input: {
     throw new Error('ASSET_NOT_FOUND');
   }
 
-  if (!asset.valuationRunId || asset.selectedMethod === 'manual') {
+  if (asset.selectedMethod === 'manual') {
     throw new Error('FUTURE_PRICE_UNAVAILABLE');
   }
 
-  const valuationRow = await fetchValuationRunRow(input.userId, asset.valuationRunId);
+  const valuationRow = asset.valuationRunId
+    ? await fetchValuationRunRow(input.userId, asset.valuationRunId)
+    : await recoverLegacyValuationInput(input.userId, asset);
   if (!valuationRow) {
     throw new Error('VALUATION_RUN_NOT_FOUND');
   }

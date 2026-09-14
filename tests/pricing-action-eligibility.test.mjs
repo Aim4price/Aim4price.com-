@@ -1,3 +1,4 @@
+import { legacyValuationRecoveryReason, isLegacyHourProjectionAsset } from '../lib/asset-register-legacy-valuation.ts';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -6,7 +7,8 @@ const source = readFileSync(new URL('../app/asset-register/asset-register-client
 const start = source.indexOf('function getRecalculationUnavailableReason(');
 const end = source.indexOf('const REPLACEMENT_PRICE_SPEC_KEYS', start);
 const js = ts.transpileModule(source.slice(start, end), { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText;
-const { refresh, project, reason } = Function('assetUsesPercentUsage', 'readAssetReplacementPriceExVat', 'getAssetLifeWorkedPercent', 'isPlainRecord', 'isMotorProjectionAsset', 'isTractorAsset', `${js}; return {refresh: canRefreshAssetEstimate, project: canProjectFuturePrice, reason: getProjectionUnavailableReason};`)(
+const { refresh, project, reason } = Function('legacyValuationRecoveryReason', 'isLegacyHourProjectionAsset', 'assetUsesPercentUsage', 'readAssetReplacementPriceExVat', 'getAssetLifeWorkedPercent', 'isPlainRecord', 'isMotorProjectionAsset', 'isTractorAsset', `${js}; return {refresh: canRefreshAssetEstimate, project: canProjectFuturePrice, reason: getProjectionUnavailableReason};`)(
+  legacyValuationRecoveryReason, isLegacyHourProjectionAsset,
   a => a.specsJson.basic_usage_basis === 'percent',
   a => a.replacementPriceExVat > 0 ? a.replacementPriceExVat : null,
   a => a.lifeWorkedPercent ?? null,
@@ -29,7 +31,7 @@ test('manual and unlinked values remain disabled with actionable reasons', () =>
     const a = asset(overrides);
     assert.equal(refresh(a), false);
     assert.equal(project(a), false);
-    assert.match(reason(a), /Save an Aim4price estimate/);
+    assert.match(reason(a), /Save an Aim4price estimate|older estimate needs/);
   }
 });
 test('missing Basic inputs explain why projection is unavailable', () => {

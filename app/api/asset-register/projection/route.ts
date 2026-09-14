@@ -1,3 +1,4 @@
+import { LegacyValuationRecoveryError } from '../../../../lib/asset-register-valuation-recovery';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true, projection });
   } catch (error) {
+    if (error instanceof LegacyValuationRecoveryError) return badRequest(error.message);
     if (!(error instanceof Error)) {
       console.error('asset register future price failed', error);
       return NextResponse.json({ ok: false, error: 'Failed to calculate future price.' }, { status: 500 });

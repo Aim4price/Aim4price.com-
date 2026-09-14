@@ -1,3 +1,4 @@
+import { hydrateLegacyValuationRow, normalizeSavedValuationMethod } from './asset-register-legacy-valuation';
 import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from './db';
 import {
@@ -189,6 +190,7 @@ export type UpdateAssetRegisterItemStatusDetailsInput = {
 };
 
 type AssetRegisterRow = {
+  legacy_valuation_run?: unknown;
   id: string | number;
   user_id: string | null;
   register_id: string | null;
@@ -1616,9 +1618,7 @@ function normalizeKind(value: unknown): AssetRegisterItemKind {
 }
 
 function normalizeMethod(value: unknown): AssetRegisterItemMethod {
-  const normalized = String(value ?? '').trim().toLowerCase();
-  if (normalized === 'market') return 'aim4price';
-  return normalized === 'aim4price' || normalized === 'manual' ? normalized : 'manual';
+  return normalizeSavedValuationMethod(value);
 }
 
 function normalizeCondition(value: unknown): AssetRegisterItemCondition {
@@ -1707,6 +1707,7 @@ function buildNullableIsoDate(value: unknown): string | null {
 }
 
 function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
+  row = hydrateLegacyValuationRow(row);
   const selectedValueExVat = Math.round(
     asNumber(row.selected_value_ex_vat) ?? asNumber(row.value) ?? 0,
   );
@@ -1871,7 +1872,7 @@ function isJsonColumn(meta: ColumnMetaRow | null): boolean {
 function buildSelectList(schema: TableSchema): string {
   const userIdColumn = resolveColumn(schema, 'user_id');
   const registerIdColumn = resolveColumn(schema, 'register_id');
-  const valuationRunIdColumn = resolveColumn(schema, 'valuation_run_id', 'run_id');
+  const valuationRunIdColumns = ['valuation_run_id', 'run_id'].filter((column) => schema.columnNames.has(column));
   const sectorIdColumn = resolveColumn(schema, 'sector_id');
   const equipmentFamilyIdColumn = resolveColumn(schema, 'equipment_family_id');
   const equipmentModelIdColumn = resolveColumn(schema, 'equipment_model_id');
@@ -1950,21 +1951,29 @@ function buildSelectList(schema: TableSchema): string {
   const fuelPercentColumn = resolveColumn(schema, 'fuel_percent');
   const createdAtColumn = resolveColumn(schema, 'created_at', 'createdon', 'created');
   const updatedAtColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon', 'created_at');
-  const valuationRunIdExpression = valuationRunIdColumn ?? 'null::bigint';
+  const runIdCandidates = valuationRunIdColumns.map((column) => `asset_register_items.${column}`);
+  if (specsJsonColumn) {
+    for (const key of ['valuationLastRunId', 'valuation_last_run_id']) {
+      const value = `asset_register_items.${specsJsonColumn}->>'${key}'`;
+      runIdCandidates.push(`case when (${value}) ~ '^[1-9][0-9]{0,14}$' then (${value})::bigint end`);
+    }
+  }
+  const valuationRunIdExpression = runIdCandidates.length ? `coalesce(${runIdCandidates.join(', ')}, null::bigint)` : 'null::bigint';
+  const valuationOwnerClause = userIdColumn ? ` and vr.user_id = asset_register_items.${userIdColumn}` : ' and false';
   const equipmentFamilyIdExpression = equipmentFamilyIdColumn
-    ? `coalesce(${equipmentFamilyIdColumn}, (select vr.equipment_family_id from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1))`
-    : `(select vr.equipment_family_id from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+    ? `coalesce(${equipmentFamilyIdColumn}, (select vr.equipment_family_id from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1))`
+    : `(select vr.equipment_family_id from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1)`;
   const typedModelNameExpression = typedModelNameColumn
-    ? `coalesce(${typedModelNameColumn}, (select vr.typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1))`
-    : `(select vr.typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+    ? `coalesce(${typedModelNameColumn}, (select vr.typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1))`
+    : `(select vr.typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1)`;
   const normalizedTypedModelNameExpression = normalizedTypedModelNameColumn
-    ? `coalesce(${normalizedTypedModelNameColumn}, (select vr.normalized_typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1))`
-    : `(select vr.normalized_typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+    ? `coalesce(${normalizedTypedModelNameColumn}, (select vr.normalized_typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1))`
+    : `(select vr.normalized_typed_model_name from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1)`;
   const specsJsonExpression = specsJsonColumn
-    ? `coalesce(${specsJsonColumn}, (select vr.specs_json from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1), '{}'::jsonb)`
-    : `coalesce((select vr.specs_json from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1), '{}'::jsonb)`;
-  const valuationBrandExpression = `(select nullif(trim(vr.brand_name), '') from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
-  const valuationModelExpression = `(select nullif(trim(coalesce(vr.model_name, vr.typed_model_name, '')), '') from valuation_runs vr where vr.id = ${valuationRunIdExpression} limit 1)`;
+    ? `coalesce(${specsJsonColumn}, (select vr.specs_json from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1), '{}'::jsonb)`
+    : `coalesce((select vr.specs_json from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1), '{}'::jsonb)`;
+  const valuationBrandExpression = `(select nullif(trim(vr.brand_name), '') from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1)`;
+  const valuationModelExpression = `(select nullif(trim(coalesce(vr.model_name, vr.typed_model_name, '')), '') from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1)`;
   const brandExpression = brandColumn
     ? `coalesce(nullif(trim(${brandColumn}), ''), ${valuationBrandExpression})`
     : valuationBrandExpression;
@@ -1976,7 +1985,8 @@ function buildSelectList(schema: TableSchema): string {
     'id',
     userIdColumn ? `${userIdColumn} as user_id` : `''::text as user_id`,
     registerIdColumn ? `${registerIdColumn} as register_id` : 'null::uuid as register_id',
-    valuationRunIdColumn ? `${valuationRunIdColumn} as valuation_run_id` : 'null::bigint as valuation_run_id',
+    `${valuationRunIdExpression} as valuation_run_id`,
+    `(select to_jsonb(vr) from valuation_runs vr where vr.id = ${valuationRunIdExpression}${valuationOwnerClause} limit 1) as legacy_valuation_run`,
     sectorIdColumn ? `${sectorIdColumn} as sector_id` : 'null::bigint as sector_id',
     `${equipmentFamilyIdExpression} as equipment_family_id`,
     `(select ef.family_key from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as equipment_family_key`,

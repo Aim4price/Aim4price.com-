@@ -1,3 +1,4 @@
+import { recoverLegacyValuationInput } from './asset-register-valuation-recovery';
 import {
   getAssetRegisterItemById,
   updateAssetRegisterItemFromGenericValuation,
@@ -37,7 +38,7 @@ export type AssetRevaluationMarketSource = {
 
 export type AssetRevaluationResult = {
   item: AssetRegisterItem;
-  valuationRunId: number;
+  valuationRunId: number | null;
   selectedMethod: MethodKey | GenericSelectedMethod;
   oldValueExVat: number;
   newValueExVat: number;
@@ -756,7 +757,7 @@ async function revalueTractorAsset(input: {
   const result = await runServerValuation(valuationInput);
   const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
-  const warning = undefined;
+  const warning = input.asset.valuationRunId ? undefined : 'Original estimate history was unavailable. This preview uses the current asset details and selected replacement price.';
   const marketEvidence = neutralMarketEvidence();
 
   if (input.previewOnly) {
@@ -771,7 +772,7 @@ async function revalueTractorAsset(input: {
         condition,
         yearModelUnknown,
       }),
-      valuationRunId: input.asset.valuationRunId ?? Number(input.row.id),
+      valuationRunId: input.asset.valuationRunId,
       selectedMethod,
       oldValueExVat: input.asset.value,
       newValueExVat: selectedValueExVat,
@@ -950,7 +951,7 @@ async function revalueGenericAsset(input: {
   });
   const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
-  const warning = undefined;
+  const warning = input.asset.valuationRunId ? undefined : 'Original estimate history was unavailable. This preview uses the current asset details and selected replacement price.';
   const marketEvidence = neutralMarketEvidence();
 
   if (input.previewOnly) {
@@ -961,7 +962,7 @@ async function revalueGenericAsset(input: {
         selectedMethod,
         selectedValueExVat,
       }),
-      valuationRunId: input.asset.valuationRunId ?? Number(input.row.id),
+      valuationRunId: input.asset.valuationRunId,
       selectedMethod,
       oldValueExVat: input.asset.value,
       newValueExVat: selectedValueExVat,
@@ -1024,11 +1025,13 @@ export async function revalueAssetRegisterItem(input: {
     throw new Error('ASSET_NOT_FOUND');
   }
 
-  if (!asset.valuationRunId || asset.selectedMethod === 'manual') {
+  if (asset.selectedMethod === 'manual') {
     throw new Error('ASSET_NOT_REVALUEABLE');
   }
 
-  const row = await fetchValuationRun(input.userId, asset.valuationRunId);
+  const row = asset.valuationRunId
+    ? await fetchValuationRun(input.userId, asset.valuationRunId)
+    : await recoverLegacyValuationInput(input.userId, asset);
 
   if (!row) {
     throw new Error('VALUATION_RUN_NOT_FOUND');
