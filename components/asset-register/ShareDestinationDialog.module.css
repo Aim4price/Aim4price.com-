@@ -18,9 +18,9 @@
 .outside:hover:not(:disabled) { background:#eaf2ff; border-color:#6b9acd; }
 .choice:focus-visible,.close:focus-visible { outline:3px solid #719e8f; outline-offset:3px; }
 .choice:disabled,.close:disabled { opacity:.55; cursor:default; }
-@media(max-width:640px) { .dialog { padding:1.25rem; } .header h3 { font-size:1.35rem; } .header { gap:.5rem; } .choices { grid-template-columns:1fr; } }
-@media(max-height:450px) { .dialog { padding:1rem; } .header { padding-bottom:.75rem; } .choices { padding-top:.75rem; gap:.5rem; } .choice { min-height:4.5rem; padding:.65rem; } }
-@media(max-width:360px) { .dialog { min-width:0; padding:1rem; } .header h3 { font-size:1.15rem; } .choice { padding:.75rem; gap:.6rem; } .copy strong { font-size:.9rem; } }
+@media(max-width:640px) { :global(body:not(:has([data-website-canvas]))) .dialog { padding:1.25rem; } :global(body:not(:has([data-website-canvas]))) .header h3 { font-size:1.35rem; } :global(body:not(:has([data-website-canvas]))) .header { gap:.5rem; } :global(body:not(:has([data-website-canvas]))) .choices { grid-template-columns:1fr; } }
+@media(max-height:450px) { :global(body:not(:has([data-website-canvas]))) .dialog { padding:1rem; } :global(body:not(:has([data-website-canvas]))) .header { padding-bottom:.75rem; } :global(body:not(:has([data-website-canvas]))) .choices { padding-top:.75rem; gap:.5rem; } :global(body:not(:has([data-website-canvas]))) .choice { min-height:4.5rem; padding:.65rem; } }
+@media(max-width:360px) { :global(body:not(:has([data-website-canvas]))) .dialog { min-width:0; padding:1rem; } :global(body:not(:has([data-website-canvas]))) .header h3 { font-size:1.15rem; } :global(body:not(:has([data-website-canvas]))) .choice { padding:.75rem; gap:.6rem; } :global(body:not(:has([data-website-canvas]))) .copy strong { font-size:.9rem; } }
 
 /* Roomier destination choices across register, umbrella and individual assets. */
 .destinationDialog { width:min(56rem,100%); padding:2.25rem; }
@@ -35,22 +35,22 @@
 .destinationDialog .copy small { font-size:.9rem; }
 .destinationDialog .arrow { padding-left:.35rem; }
 @media(max-width:760px) {
- .destinationDialog { padding:1.5rem; }
- .destinationDialog .choices { grid-template-columns:1fr; gap:.85rem; }
- .destinationDialog .choice { min-height:6.25rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog { padding:1.5rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .choices { grid-template-columns:1fr; gap:.85rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .choice { min-height:6.25rem; }
 }
 @media(max-width:400px) {
- .destinationDialog { padding:1rem; min-width:0; }
- .destinationDialog .header p { font-size:.9rem; }
- .destinationDialog .choice { padding:.85rem; gap:.65rem; }
- .destinationDialog .icon { flex-basis:2.5rem; height:2.5rem; }
- .destinationDialog .copy strong { font-size:.9rem; }
- .destinationDialog .copy small { font-size:.78rem; }
- .destinationDialog .arrow { padding-left:0; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog { padding:1rem; min-width:0; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .header p { font-size:.9rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .choice { padding:.85rem; gap:.65rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .icon { flex-basis:2.5rem; height:2.5rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .copy strong { font-size:.9rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .copy small { font-size:.78rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .arrow { padding-left:0; }
 }
 @media(max-height:450px) {
- .destinationDialog { padding:1rem; }
- .destinationDialog .header { padding-bottom:.75rem; }
- .destinationDialog .choices { padding-top:.75rem; gap:.6rem; }
- .destinationDialog .choice { min-height:5rem; padding:.75rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog { padding:1rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .header { padding-bottom:.75rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .choices { padding-top:.75rem; gap:.6rem; }
+ :global(body:not(:has([data-website-canvas]))) .destinationDialog .choice { min-height:5rem; padding:.75rem; }
 }
