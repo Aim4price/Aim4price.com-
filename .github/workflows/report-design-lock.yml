@@ -12,6 +12,7 @@ on:
       - 'components/*ReportModal.tsx'
       - 'lib/*report*.ts'
       - 'tests/*report*.test.mjs'
+      - 'scripts/verify-report-suite.cjs'
       - 'docs/report-design-contract.md'
       - 'package.json'
       - 'package-lock.json'
@@ -29,6 +30,7 @@ on:
       - 'components/*ReportModal.tsx'
       - 'lib/*report*.ts'
       - 'tests/*report*.test.mjs'
+      - 'scripts/verify-report-suite.cjs'
       - 'docs/report-design-contract.md'
       - 'package.json'
       - 'package-lock.json'
@@ -57,3 +59,17 @@ jobs:
 
       - name: Verify locked report design
         run: npm run test:report-design
+
+      - name: Verify report access and opening regressions
+        run: node --experimental-strip-types --test tests/app-account-isolation.test.mjs tests/asset-register-summary-export.test.mjs tests/rich-report-template-parity.test.mjs tests/asset-map-report.test.mjs
+
+      - name: Verify report templates and print layouts
+        run: node scripts/verify-report-suite.cjs
+
+      - name: Upload synthetic report evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-suite-evidence
+          path: report-evidence/
+          if-no-files-found: warn

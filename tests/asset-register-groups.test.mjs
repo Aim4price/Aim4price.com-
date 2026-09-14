@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import ts from 'typescript';
-import * as reportTheme from '../lib/report-theme.ts';
+import reportTheme from './helpers/report-theme.cjs';
 
 async function loadGroupHelpers() {
   const source = await readFile(new URL('../lib/asset-groups-shared.ts', import.meta.url), 'utf8');

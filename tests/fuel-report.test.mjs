@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ts from 'typescript';
-import { REPORT_THEME_CSS } from '../lib/report-theme.ts';
+import reportTheme from './helpers/report-theme.cjs';
+const { REPORT_THEME_CSS } = reportTheme;
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
