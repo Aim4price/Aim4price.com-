@@ -88,7 +88,6 @@ import {
 import styles from './page.module.css';
 import accountStyles from '../account/page.module.css';
 import externalShareStyles from '../../components/asset-register/AssetExternalShare.module.css';
-import PricingActionIcon from '../../components/asset-register/PricingActionIcon';
 import updateStyles from './asset-update-refinements.module.css';
 import { conditionOptions } from '../../lib/tractor-data';
 import { CONDITION_FACTORS } from '../../lib/valuation/shared';
@@ -4773,10 +4772,6 @@ function canProjectFuturePrice(asset: RegisterAsset): boolean {
 
 function canRefreshAssetEstimate(asset: RegisterAsset): boolean {
   return asset.valuationRunId !== null && asset.selectedMethod !== 'manual';
-}
-
-function canManageAssetPricing(asset: RegisterAsset): boolean {
-  return canRefreshAssetEstimate(asset) || canProjectFuturePrice(asset);
 }
 
 const REPLACEMENT_PRICE_SPEC_KEYS = [
@@ -21248,15 +21243,13 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  {canManageAssetPricing(activeAsset) ? (
-                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openPricingDialog}>
-                      <TrendIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Manage pricing</strong>
-                        <small>Refresh values or calculate future value.</small>
-                      </span>
-                    </button>
-                  ) : null}
+                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openPricingDialog}>
+                    <TrendIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Manage pricing</strong>
+                      <small>Refresh values or calculate future value.</small>
+                    </span>
+                  </button>
 
                   {canUseOwnerOnlyAssetActions ? (
                     <button
@@ -21444,7 +21437,7 @@ export default function AssetRegisterClient({
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closePricingDialog} />
 
-          <div className={`${styles.modalCard} ${styles.pricingModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="asset-pricing-title">
+          <div className={`${styles.modalCard} ${styles.optionsModal} ${styles.pricingModal} ${styles.ownerCommandModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="asset-pricing-title">
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-pricing-title">{activeAsset.title}</h3>
@@ -21457,40 +21450,43 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
-              <div className={styles.pricingOptionsGrid}>
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
                 <button
                   type="button"
-                  className={styles.pricingOptionButton}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => openRevalueGuidedDialog(activeAsset)}
                 >
-                  <PricingActionIcon kind="recalculate" />
+                  <RecalculateIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Recalculate value</strong>
+                    <small>Refresh the saved estimate.</small>
                   </span>
                 </button>
 
                 <button
                   type="button"
-                  className={styles.pricingOptionButton}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={!canProjectFuturePrice(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => openProjectionModal(activeAsset)}
                 >
-                  <PricingActionIcon kind="future" />
+                  <TrendIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Calculate future price</strong>
+                    <small>Estimate a future value.</small>
                   </span>
                 </button>
 
                 <button
                   type="button"
-                  className={styles.pricingOptionButton}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => setSaleabilityAsset(activeAsset)}
                 >
-                  <PricingActionIcon kind="saleability" />
+                  <SaleabilityIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Saleability</strong>
+                    <small>Assess how easily it could sell.</small>
                   </span>
                 </button>
               </div>
