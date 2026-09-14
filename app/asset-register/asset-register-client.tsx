@@ -21613,10 +21613,10 @@ export default function AssetRegisterClient({
       ) : null}
 
       {pricingPreview ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.pricingPreviewOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.pricingPreviewOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closePricingPreviewDialog} />
 
-          <div className={`${styles.modalCard} ${styles.pricingResultModal}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
+          <div className={`${styles.modalCard} ${styles.pricingResultModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
             <div className={`${styles.modalHeader} ${styles.pricingResultHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="pricing-preview-title">{pricingPreview.asset.title}</h3>
@@ -21625,12 +21625,12 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closePricingPreviewDialog}
                 aria-label="Close value preview"
                 disabled={isSavingPricingPreview}
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -22962,18 +22962,18 @@ export default function AssetRegisterClient({
       ) : null}
 
       {projectionAsset ? (
-        <div className={styles.modalOverlay} data-website-overlay>
+        <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeProjectionModal} />
 
-          <div className={`${styles.modalCard} ${styles.projectionModal}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
+          <div className={`${styles.modalCard} ${styles.projectionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
                 <p>Choose the future year, inflation, condition and usage. Quick selections recalculate instantly.</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={closeProjectionModal} aria-label="Close future price modal">
-                <CloseIcon className={styles.buttonIcon} />
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeProjectionModal} aria-label="Close future price modal">
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
