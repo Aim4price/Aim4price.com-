@@ -757,7 +757,7 @@ async function revalueTractorAsset(input: {
   const result = await runServerValuation(valuationInput);
   const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
-  const warning = input.asset.valuationRunId ? undefined : 'Original estimate history was unavailable. This preview uses the current asset details and selected replacement price.';
+  const warning = input.row.id === 0 ? 'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.' : undefined;
   const marketEvidence = neutralMarketEvidence();
 
   if (input.previewOnly) {
@@ -935,6 +935,7 @@ async function revalueGenericAsset(input: {
     asNumber(input.row.user_replacement_price_ex_vat);
 
   const result = await runGenericValuation({
+    basicRecovery: specsJson.basic_recovery === true,
     sectorKey,
     familyKey,
     brandSlug,
@@ -951,7 +952,7 @@ async function revalueGenericAsset(input: {
   });
   const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
-  const warning = input.asset.valuationRunId ? undefined : 'Original estimate history was unavailable. This preview uses the current asset details and selected replacement price.';
+  const warning = input.row.id === 0 ? 'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.' : undefined;
   const marketEvidence = neutralMarketEvidence();
 
   if (input.previewOnly) {
@@ -1029,13 +1030,13 @@ export async function revalueAssetRegisterItem(input: {
     throw new Error('ASSET_NOT_REVALUEABLE');
   }
 
-  const row = asset.valuationRunId
-    ? await fetchValuationRun(input.userId, asset.valuationRunId)
-    : await recoverLegacyValuationInput(input.userId, asset);
-
-  if (!row) {
-    throw new Error('VALUATION_RUN_NOT_FOUND');
-  }
+  const linkedRow = asset.valuationRunId ? await fetchValuationRun(input.userId, asset.valuationRunId) : null;
+  const row = linkedRow ?? await recoverLegacyValuationInput(input.userId, {
+    ...asset,
+    replacementPriceExVat: input.replacementPriceExVat ?? asset.replacementPriceExVat,
+    hours: input.usageAmountOverride ?? asset.hours,
+    lifeWorkedPercent: input.lifeWorkedPercentOverride ?? asset.lifeWorkedPercent,
+  });
 
   const preferredMethod = resolvePreferredMethod(asset, row, input.selectedMethod);
   const familyKey = asText(row.family_key || asset.equipmentFamilyKey).toLowerCase();
@@ -1050,7 +1051,8 @@ export async function revalueAssetRegisterItem(input: {
     throw new Error('ASSET_DOES_NOT_USE_LIFE_WORKED_PERCENT');
   }
 
-  if (asset.kind === 'tractor' || familyKey === 'tractors' || equipmentType === 'tractor') {
+  const basic = rowSpecsForUsage.basic_catalogue_release || rowSpecsForUsage.basic_recovery || asset.specsJson?.basic_catalogue_release || asset.specsJson?.basic_recovery;
+  if (!basic && (asset.kind === 'tractor' || familyKey === 'tractors' || equipmentType === 'tractor')) {
     if (hasLifeWorkedPercentOverride) {
       throw new Error('ASSET_DOES_NOT_USE_LIFE_WORKED_PERCENT');
     }

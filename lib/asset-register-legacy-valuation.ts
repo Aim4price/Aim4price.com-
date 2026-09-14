@@ -66,20 +66,23 @@ type RecoveryAsset = {
   brandName: string; modelName: string; yearModel: number | null; hours: number | null;
   condition: string; equipmentModelId?: number | null; equipmentFamilyKey?: string;
   specsJson?: Record<string, unknown>; maxLifetimeHours?: number | null;
+  replacementPriceExVat?: number | null; lifeWorkedPercent?: number | null; equipmentFamilyId?: number | null;
 };
 export function legacyValuationRecoveryReason(asset: RecoveryAsset): string | null {
   if (normalizeSavedValuationMethod(asset.selectedMethod) === 'manual') return 'Save an Aim4price estimate to replace the manual value.';
   if (asset.valuationRunId) return null;
   const specs = asset.specsJson ?? {};
-  if (!asset.condition) return 'Add the asset condition to recover this older estimate.';
-  if (asset.kind === 'tractor' || asset.equipmentFamilyKey === 'tractors') {
-    if (!asset.yearModel) return 'Add the year model to recover this older estimate.';
-    if (asset.hours === null) return 'Add the current hours to recover this older estimate.';
-    if (!asset.equipmentModelId && (!asset.brandName || !asset.modelName)) return 'Add the brand and model to recover this older estimate.';
-    return null;
+  if (!asset.condition) return 'Add the asset condition to calculate a Basic estimate.';
+  if (!(Number(asset.replacementPriceExVat) > 0)) return 'Add a replacement price to calculate a Basic estimate.';
+  const percent = specs.basic_usage_basis === 'percent' || (asset.hours == null && asset.lifeWorkedPercent != null);
+  if (percent) {
+    if (asset.lifeWorkedPercent == null || asset.lifeWorkedPercent < 0 || asset.lifeWorkedPercent > 100) return 'Add the lifetime worked percentage.';
+  } else {
+    if (!asset.yearModel) return 'Add the year model to calculate a Basic estimate.';
+    if (asset.hours == null || asset.hours < 0) return 'Add the current usage to calculate a Basic estimate.';
   }
-  if (!(specs.sectorKey || specs.sector_key) || !(asset.equipmentFamilyKey || specs.familyKey || specs.family_key) || !(specs.brandSlug || specs.brand_slug)) {
-    return 'This older estimate needs its sector, equipment family and brand details restored.';
+  if (!asset.equipmentFamilyKey && !specs.familyKey && !specs.family_key && asset.kind !== 'tractor') {
+    return 'Add the equipment family to calculate a Basic estimate.';
   }
   return null;
 }
