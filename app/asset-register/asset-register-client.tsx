@@ -1,6 +1,7 @@
 'use client';
 
 import { legacyValuationRecoveryReason, isLegacyHourProjectionAsset } from '../../lib/asset-register-legacy-valuation';
+import { openAssetQrLabel } from '../../lib/asset-qr-label';
 import { downloadAssetMapReport } from '../../lib/asset-map-download';
 
 import { assetCanReceiveFuel } from '../../lib/asset-fuel-eligibility';
@@ -14922,15 +14923,13 @@ export default function AssetRegisterClient({
     }
   }
 
-  function handlePrintQrSheet(asset: RegisterAsset) {
-    const opened = window.open(buildAssetQrPrintUrl(asset), '_blank', 'noopener,noreferrer');
-
-    if (!opened) {
-      setNotice({ tone: 'error', message: 'Unable to open the QR print page. Please allow pop-ups and try again.' });
-      return;
+  async function handlePrintQrSheet(asset: RegisterAsset) {
+    try {
+      await openAssetQrLabel(buildAssetQrPrintUrl(asset));
+      setNotice({ tone: 'success', message: 'QR label opened in a new tab.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Unable to open the QR label.' });
     }
-
-    setNotice({ tone: 'success', message: 'QR print sheet opened in a new tab.' });
   }
 
   function openRegisterShareModal() {

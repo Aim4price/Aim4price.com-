@@ -63,3 +63,34 @@ test('QR preview renders inline artwork without an image endpoint',()=>{
  assert.notEqual(markup,render('https://www.aim4price.com/scan/A4P-OTHER'));
  assert.match(render(null),/QR code is not available yet/);
 });
+test('QR label opens with explicit website/app context and displays authenticated HTML',async()=>{
+ const originalWindow=global.window,originalFetch=global.fetch;
+ try {
+  for(const [pathname,realm] of [['/asset-register','website'],['/owner-app/assets/1','owner'],['/dealer/assets/1','dealer']]) {
+   const events=[];let written='';
+   const tab={opener:{},closed:false,document:{title:'',body:{textContent:''},open(){},write(html){written=html;},close(){}},close(){this.closed=true;}};
+   global.window={location:{pathname},open:()=>{events.push('open');return tab;}};
+   global.fetch=async(url,options)=>{
+    events.push('fetch');assert.equal(options.headers['x-aim4price-client-realm'],realm);
+    assert.equal(options.credentials,'same-origin');assert.equal(options.cache,'no-store');
+    return new Response('<html>QR label<img src="data:image/png;base64,test"></html>',{headers:{'content-type':'text/html'}});
+   };
+   await load('lib/asset-qr-label.ts').openAssetQrLabel('/api/asset-register/qr?assetId=1&format=print');
+   assert.deepEqual(events,['open','fetch']);assert.equal(tab.opener,null);
+   assert.match(written,/QR label/);assert.equal(tab.closed,false);
+  }
+ }finally{global.window=originalWindow;global.fetch=originalFetch;}
+});
+test('QR label closes failed previews and reports expired sessions or blocked popups',async()=>{
+ const originalWindow=global.window,originalFetch=global.fetch;
+ try {
+  const tab={closed:false,document:{body:{},write(){throw Error('Must not display errors as a label');}},close(){this.closed=true;}};
+  global.window={location:{pathname:'/asset-register'},open:()=>tab};
+  global.fetch=async()=>new Response('{"error":"You must be signed in."}',{status:401});
+  await assert.rejects(load('lib/asset-qr-label.ts').openAssetQrLabel('/label'),/session has expired/);
+  assert.equal(tab.closed,true);
+  global.window.open=()=>null;
+  global.fetch=async()=>{throw Error('Must not fetch without a tab');};
+  await assert.rejects(load('lib/asset-qr-label.ts').openAssetQrLabel('/label'),/allow pop-ups/);
+ }finally{global.window=originalWindow;global.fetch=originalFetch;}
+});
