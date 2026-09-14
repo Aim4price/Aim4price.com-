@@ -131,7 +131,7 @@ export default function SaleabilityModal({
   storageKey,
 }: SaleabilityModalProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [step, setStep] = useState<1 | 2 | 'result'>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 'result'>(1);
   const [answers, setAnswers] = useState<Partial<SaleabilityRefinementAnswers>>({});
   const general = useMemo(() => calculateGeneralSaleability(input), [input]);
   const plan: SaleabilityPlan | null = useMemo(
@@ -194,6 +194,7 @@ export default function SaleabilityModal({
   useEffect(() => {
     if (!open) return;
     bodyRef.current?.scrollTo({ top: 0 });
+    bodyRef.current?.focus({ preventScroll: true });
   }, [open, step]);
 
   if (!open) return null;
@@ -215,7 +216,9 @@ export default function SaleabilityModal({
   }
 
   const firstStepComplete = Boolean(answers.saleArea && answers.similarAssetsAvailable && answers.realisticBuyerPool);
-  const secondStepComplete = Boolean(answers.currentDemand && answers.modelFamiliarity && answers.desiredTimeline && answers.sellingPriority);
+  const secondStepComplete = Boolean(answers.currentDemand && answers.modelFamiliarity);
+
+  const thirdStepComplete = Boolean(answers.desiredTimeline && answers.sellingPriority);
 
   return (
     <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
@@ -232,10 +235,11 @@ export default function SaleabilityModal({
 
         <nav className={styles.progress} aria-label="Saleability progress">
           <span aria-current={step === 1 ? 'step' : undefined}>1 · Buyers</span>
-          <span aria-current={step === 2 ? 'step' : undefined}>2 · Selling goal</span>
-          <span aria-current={step === 'result' ? 'step' : undefined}>3 · Your plan</span>
+          <span aria-current={step === 2 ? 'step' : undefined}>2 · Market</span>
+          <span aria-current={step === 3 ? 'step' : undefined}>3 · Selling goal</span>
+          <span aria-current={step === 'result' ? 'step' : undefined}>4 · Your plan</span>
         </nav>
-        <div ref={bodyRef} className={styles.body}>
+        <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling plan' : `Saleability step ${step} of 3`}>
           {step === 1 ? (
             <section className={styles.settingsCard}>
               <div className={styles.stepIntro}>
@@ -266,7 +270,7 @@ export default function SaleabilityModal({
           {step === 2 ? (
             <section className={styles.settingsCard}>
               <div className={styles.stepIntro}>
-                <h3>Selling goal</h3>
+                <h3>Market</h3>
               </div>
               <ChoiceQuestion
                 label="Current demand?"
@@ -280,6 +284,14 @@ export default function SaleabilityModal({
                 options={FAMILIARITY_OPTIONS}
                 onChange={(value) => update('modelFamiliarity', value)}
               />
+            </section>
+          ) : null}
+
+          {step === 3 ? (
+            <section className={styles.settingsCard}>
+              <div className={styles.stepIntro}>
+                <h3>Selling goal</h3>
+              </div>
               <ChoiceQuestion
                 label="When would you like to sell?"
                 value={answers.desiredTimeline}
@@ -302,6 +314,25 @@ export default function SaleabilityModal({
                 <strong>{plan.refinedScore} / 100</strong>
                 <p>Grade {plan.grade} · {plan.gradeLabel}</p>
 
+              </section>
+
+              <section className={styles.pricePlan}>
+                <div className={styles.planHeader}>
+                  <h3>Your selling plan</h3>
+                </div>
+                <div className={styles.askingPrice}>
+                  <small>Recommended asking price</small>
+                  <strong>{formatMoney(plan.recommendedAskingPriceExVat)}</strong>
+                  <em>Excl. VAT</em>
+                </div>
+                <div className={styles.resultRows}>
+                  <div><span>Likely selling range</span><strong>{formatMoney(plan.likelySellingRangeLowExVat)} – {formatMoney(plan.likelySellingRangeHighExVat)}</strong></div>
+                  <div><span>Expected timing</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
+                </div>
+              </section>
+
+              <details className={styles.ratingDetails}>
+                <summary>Rating details</summary>
                 <div className={styles.resultMeta}>
                   <div>
                     <span>General rating</span>
@@ -320,22 +351,7 @@ export default function SaleabilityModal({
                     <strong>{plan.naturalSellingWindow}</strong>
                   </div>
                 </div>
-              </section>
-
-              <section className={styles.pricePlan}>
-                <div className={styles.planHeader}>
-                  <h3>Your selling plan</h3>
-                </div>
-                <div className={styles.askingPrice}>
-                  <small>Recommended asking price</small>
-                  <strong>{formatMoney(plan.recommendedAskingPriceExVat)}</strong>
-                  <em>Excl. VAT</em>
-                </div>
-                <div className={styles.resultRows}>
-                  <div><span>Likely selling range</span><strong>{formatMoney(plan.likelySellingRangeLowExVat)} – {formatMoney(plan.likelySellingRangeHighExVat)}</strong></div>
-                  <div><span>Expected timing</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
-                </div>
-              </section>
+              </details>
 
               <p className={styles.valuationReminder}>
                 Valuation: <strong>{formatMoney(valuationExVat)} excl. VAT</strong> · selling-price guidance only.
@@ -352,7 +368,12 @@ export default function SaleabilityModal({
           ) : step === 2 ? (
             <>
               <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Back</button>
-              <button type="button" className={styles.primary} disabled={!secondStepComplete} onClick={calculate}>Calculate Saleability</button>
+              <button type="button" className={styles.primary} disabled={!secondStepComplete} onClick={() => setStep(3)}>Continue</button>
+            </>
+          ) : step === 3 ? (
+            <>
+              <button type="button" className={styles.secondary} onClick={() => setStep(2)}>Back</button>
+              <button type="button" className={styles.primary} disabled={!thirdStepComplete} onClick={calculate}>Show my plan</button>
             </>
           ) : (
             <>

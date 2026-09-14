@@ -721,3 +721,33 @@
 .modal .stepIntro h3 { font-size: 1.05rem; font-weight: 800; color: #12352d; }
 .modal .choice strong, .modal .choiceActive strong { font-size: .88rem; font-weight: 700; }
 .modal :is(.settingsCard,.pricePlan,.resultHero) { border-radius: 1rem; }
+
+/* Short question groups and a compact plan keep the next decision in view. */
+.modal.modal { width: min(var(--website-dialog-reference-width, 100%), 58rem); }
+.modal .progress { grid-template-columns: repeat(4,minmax(0,1fr)); gap: .4rem; }
+.modal .progress span { font-size: .8rem; padding: .6rem .65rem; }
+.modal .settingsCard { gap: 1rem; }
+.modal .choiceGrid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: .5rem; }
+.modal :is(.choice,.choiceActive) { min-height: 2.8rem; padding: .6rem .75rem; }
+.modal .body:focus { outline: none; }
+.modal .resultHero {
+  grid-template-columns: auto minmax(0,1fr);
+  align-items: center;
+  gap: .2rem 1rem;
+  padding: 1rem;
+}
+.modal .resultHero > span { grid-column: 1 / -1; }
+.modal .resultHero > strong { font-size: 2rem; line-height: 1.15; letter-spacing: -.04em; }
+.modal .resultHero > p { font-size: .88rem; margin: 0; }
+.modal .askingPrice strong { font-size: clamp(1.7rem,calc(var(--website-design-vw,1vw) * 3),2.4rem); line-height: 1.15; }
+.modal .pricePlan { gap: .65rem; padding: 1rem; }
+.modal .planHeader h3 { font-size: 1.05rem; }
+.ratingDetails { border: 1px solid #d8e1ea; border-radius: 1rem; padding: .85rem 1rem; background: #fff; }
+.ratingDetails summary { cursor: pointer; font-size: .88rem; font-weight: 700; color: #17362c; }
+.ratingDetails summary:focus-visible { outline: 3px solid rgba(24,112,83,.35); outline-offset: 4px; border-radius: .25rem; }
+.modal .ratingDetails .resultMeta { grid-template-columns: repeat(2,minmax(0,1fr)); margin-top: .85rem; }
+@media(max-width:700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .progress { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .choiceGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .resultHero { grid-template-columns: 1fr; }
+}
