@@ -149,6 +149,11 @@ export const REPORT_THEME_CSS = `
     .assetReportSectionHeading, .assetReportSection h2, .reportPage .sectionHeading { break-after: avoid; page-break-after: avoid; }
     .assetReportSection:has(.assetReportEmpty) { break-inside: avoid; }
     .reportPage .footerPage::after { content: none; }
+    /* Grid containers can move a whole register onto the next sheet. */
+    .assetReportSummaryStack, .fullRegisterAssetList { display: block; break-inside: auto; }
+    .assetReportSummaryStack > * + * { margin-top: 10px; }
+    .fullRegisterAssetSection { break-inside: auto; }
+    .fullRegisterAssetList > * + * { margin-top: 3.8mm; }
   }
 `;
 

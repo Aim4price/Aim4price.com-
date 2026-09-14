@@ -280,9 +280,10 @@ async function fixtures() {
       fs.writeFileSync(path.join(out,name+'-text.txt'),extracted);
       const pageTexts = extracted.split('\f').filter((text, index, all) => index < all.length-1 || text.trim());
       assert.equal(pageTexts.length, pages, name+' PDF text page count');
+      if (name === 'full-register') assert.ok(pageTexts[0].includes('Register Values'), 'full register must not leave a mostly empty cover');
       assert.ok(pageTexts.every(text => text.trim().length > 0), name+' blank PDF page');
       assert.ok(extracted.includes('Powered by Aim4price.com'), name+' missing printed footer');
-      assert.doesNotMatch(extracted, /Page 0\\b/, name+' invalid page counter');
+      assert.doesNotMatch(extracted, /Page 0\b/, name+' invalid page counter');
       // Render every printed page for artifact review, plus compact first/last
       // previews in logs for remote review of page breaks and footers.
       execFileSync('pdftoppm', ['-png', '-scale-to', '1400', pdfPath, path.join(out,name+'-page')]);
