@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import ts from 'typescript';
+import reportTheme from './helpers/report-theme.cjs';
 
 async function loadGroupHelpers() {
   const source = await readFile(new URL('../lib/asset-groups-shared.ts', import.meta.url), 'utf8');
@@ -12,7 +13,10 @@ async function loadGroupHelpers() {
     },
   }).outputText;
   const loadedModule = { exports: {} };
-  new Function('module', 'exports', output)(loadedModule, loadedModule.exports);
+  new Function('module', 'exports', 'require', output)(loadedModule, loadedModule.exports, (name) => {
+    assert.equal(name, './report-theme.ts');
+    return reportTheme;
+  });
   return loadedModule.exports;
 }
 
@@ -25,7 +29,10 @@ async function loadMaintenanceReportBuilders() {
     },
   }).outputText;
   const loadedModule = { exports: {} };
-  new Function('module', 'exports', output)(loadedModule, loadedModule.exports);
+  new Function('module', 'exports', 'require', output)(loadedModule, loadedModule.exports, (name) => {
+    assert.equal(name, './report-theme.ts');
+    return reportTheme;
+  });
   return loadedModule.exports;
 }
 

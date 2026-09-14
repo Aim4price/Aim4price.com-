@@ -1,5 +1,7 @@
 "use client";
 
+import { openCanonicalReportUrl } from "../../../lib/report-open";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import AdminNavigation from "../../../components/AdminNavigation";
 import {
@@ -450,7 +452,9 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
       return;
     }
     const params = new URLSearchParams({ clientUserId, period, anchor });
-    window.open(`/api/admin/work-tracker/report?${params.toString()}`, "_blank", "noopener,noreferrer");
+    if (!openCanonicalReportUrl(`/api/admin/work-tracker/report?${params.toString()}`)) {
+      setNotice({ tone: "error", message: "Please allow pop-ups to open the work report." });
+    }
   }
 
   const hasDirtyReportNotes = Boolean(

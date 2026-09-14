@@ -6,39 +6,39 @@ const APPROVED_REPORT_STYLES = [
   {
     path: '../app/api/valuation/report/route.ts',
     styleIndexes: [0],
-    fingerprints: ['8283:e09e9b447c606d13'],
+    fingerprints: ['8302:6545dae0e0b1820d'],
   },
   {
     path: '../lib/report-print.ts',
     // The final two style blocks are the shared asset sheet and register report.
     // Earlier blocks are legacy builders and are intentionally outside this lock.
     styleIndexes: [2, 3],
-    fingerprints: ['9788:ad65a7d539dad737', '10394:914e553bb8f8ab3b'],
+    fingerprints: ['9807:407e3f4858b968d1', '10413:5419b724a0ee04f5'],
   },
   {
     path: '../lib/asset-maintenance-report.ts',
     styleIndexes: [0],
-    fingerprints: ['7560:ddbb70d6162e83fa'],
+    fingerprints: ['7612:6d790c46581ef819'],
   },
   {
     path: '../lib/my-invoices-report.ts',
     styleIndexes: [0],
-    fingerprints: ['10396:fe0d74cad229764b'],
+    fingerprints: ['10415:1ce05b0b33a2ac45'],
   },
   {
     path: '../app/api/fuel/report/route.ts',
     styleIndexes: [0],
-    fingerprints: ['10702:d1bfc5906350f892'],
+    fingerprints: ['10721:feb1a5ee6aabe566'],
   },
   {
     path: '../app/api/asset-map/report/route.ts',
     styleIndexes: [0],
-    fingerprints: ['13326:a80b9033eaf04045'],
+    fingerprints: ['13345:204a55ab280254d7'],
   },
   {
     path: '../app/api/asset-register/scan-report/route.ts',
     styleIndexes: [0],
-    fingerprints: ['17280:97e404108494abdb'],
+    fingerprints: ['17299:3f5e76b1d9a7de15'],
   },
 ];
 
@@ -134,4 +134,9 @@ test('PDF generation cannot silently substitute a second report design', async (
     (error) => error?.code === 'ENOENT',
     'The alternate generic PDF layout must remain deleted.',
   );
+});
+
+test('the shared Asset Map theme is locked alongside each structural report layout', async () => {
+  const source = await readFile(new URL('../lib/report-theme.ts', import.meta.url), 'utf8');
+  assert.equal(fingerprint(normaliseCss(source)), '8693:6edf16af5ef20b8b', 'Intentional report-theme changes require visual review.');
 });

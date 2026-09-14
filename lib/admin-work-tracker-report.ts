@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS, REPORT_TOOLBAR_CSS, REPORT_TOOLBAR_HTML } from './report-theme.ts';
 import {
   formatAdminWorkDuration,
   type AdminWorkHistory,
@@ -138,6 +139,7 @@ export function buildAdminWorkReportHtml(input: {
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(periodLabel)} Retainer Work Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
     :root { color-scheme: light; font-family: Inter, Arial, sans-serif; color: #17362c; background: #eef3f0; }
     * { box-sizing: border-box; }
@@ -184,14 +186,29 @@ export function buildAdminWorkReportHtml(input: {
       .actions { display: none; }
       .paper { max-width: none; min-height: 0; box-shadow: none; }
     }
+  ${REPORT_TOOLBAR_CSS}
+    ${REPORT_THEME_CSS}
+    body { padding: 0; }
+    .paper { margin: 18px auto; padding: 11mm; border-radius: 10px; }
+    .header { border-bottom: 1px solid var(--line-strong); gap: 16px; }
+    .header h1 { font-size: 22px; color: var(--brand); }
+    .summary { margin: 12px 0; }
+    .summary article, .session, .areaRows { border-radius: 8px; border-color: var(--line-strong); }
+    .summary article { background: var(--brand-soft); min-height: 0; }
+    .summary strong { overflow-wrap: anywhere; }
+    section { margin-top: 16px; }
+    .paper h2 { font-size: 14px; }
+    @page { size: A4; margin: 9mm; }
+    @media screen and (max-width: 640px) { .paper { width: calc(100% - 20px); padding: 20px; } .header, .summary { display: grid; grid-template-columns: 1fr; } .period { text-align: left; } }
+    @media print { .paper { padding: 0; margin: 0; border-radius: 0; } }
   </style>
 </head>
 <body>
-  <div class="actions"><button type="button" onclick="window.print()">Print / Save PDF</button></div>
+  ${REPORT_TOOLBAR_HTML}
   <main class="paper">
     <header class="header">
       <div>
-        <p class="brand">Aim4price</p>
+        <img src="/brand/aim4price-mark-black.png" alt="Aim4price" style="width:22mm;height:18mm;object-fit:contain;margin-bottom:8px" />
         <h1>${escapeHtml(periodLabel)} Retainer Work Report</h1>
         <p>A clear summary of platform areas worked on during the selected period.</p>
       </div>
@@ -220,7 +237,7 @@ export function buildAdminWorkReportHtml(input: {
     </section>
 
     <footer>
-      <div><strong>Prepared by Aim4price Admin</strong><br />This report is generated and supplied manually. It is not a live access log.</div>
+      <div><strong>Powered by Aim4price.com</strong><br />This report is generated and supplied manually. It is not a live access log.</div>
       <div>Generated ${escapeHtml(formatDate(generatedAt.toISOString()))} · Africa/Johannesburg</div>
     </footer>
   </main>

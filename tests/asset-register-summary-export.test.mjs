@@ -15,7 +15,8 @@ const getHandler = route.slice(route.indexOf('export async function GET'));
 
 test('asset register summary supports a canonical HTML report response', () => {
   assert.match(getHandler, /format !== 'xlsx' && format !== 'pdf' && format !== 'html'/);
-  assert.match(getHandler, /format === 'html' && reportKind !== 'summary'/);
+  assert.doesNotMatch(getHandler, /format === 'html' && reportKind !== 'summary'/);
+  assert.match(getHandler, /renderFullRegisterReportHtml/);
   assert.match(responseHelper, /'Content-Type': 'text\/html; charset=utf-8'/);
   assert.match(responseHelper, /'Content-Disposition': `inline; filename="\$\{fileName\}"`/);
   assert.match(responseHelper, /'Cache-Control': 'private, no-store'/);
@@ -36,7 +37,7 @@ test('both scoped and single-register summaries bypass Chromium for browser prin
 test('explicit server PDF summaries remain available for external consumers', () => {
   const chromiumCalls = getHandler.match(/renderReportHtmlToPdf\(html,/g) ?? [];
 
-  assert.equal(chromiumCalls.length, 2);
+  assert.equal(chromiumCalls.length, 4);
   assert.match(getHandler, /'Content-Type': 'application\/pdf'/);
 });
 

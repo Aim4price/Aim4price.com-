@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile, type AccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
@@ -591,6 +592,7 @@ function buildReportHtml(options: FuelReportOptions): string {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${escapeHtml(options.title)} - Aim4price Fuel Ledger</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
         color-scheme: light;
@@ -1272,6 +1274,7 @@ function buildReportHtml(options: FuelReportOptions): string {
           min-height: 197mm;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>

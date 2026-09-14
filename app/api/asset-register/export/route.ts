@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { isAssetRegisterAccountType } from '../../../../lib/asset-register-account-access';
@@ -1806,6 +1807,7 @@ async function renderRegisterSummaryReportHtml(
   profile: AccountProfileResult | null,
   generatedAt: Date,
   requestUrl: string,
+  fullReport?: { sectionsHtml: string },
 ): Promise<string> {
   const summary = buildRegisterBasicExportSummary(items);
   const ownerName = buildOwnerName(profile);
@@ -1816,10 +1818,12 @@ async function renderRegisterSummaryReportHtml(
   const generatedLabel = formatPdfDate(generatedAt);
   const registerValueExVat = formatPdfMoney(summary.currentValueExVat);
   const registerValueInclVat = formatPdfMoney(moneyInclVatTotal(summary.currentValueExVat));
-  const safeTitle = escapeHtml(`${ownerName} - Asset Register Summary`);
+  const reportTitle = fullReport ? 'Full Asset Register' : 'Asset Register Summary';
+  const safeTitle = escapeHtml(`${ownerName} - ${reportTitle}`);
   const heroMeta = ownerAddress || 'Selected Aim4price asset register';
-  const footerDisclaimer =
-    'This summary is calculated from grouped asset-register data saved in Aim4price at export time. It excludes individual asset rows, photos and asset-level valuation details. Values are shown excluding VAT and including VAT at 15%. This is not a certified valuation, inspection report or guarantee of selling price.';
+  const footerDisclaimer = fullReport
+    ? 'Values reflect saved asset-register information at export time. Both VAT bases are shown at 15%. This is not a certified valuation, inspection report or guarantee of selling price.'
+    : 'This summary is calculated from grouped asset-register data saved in Aim4price at export time. It excludes individual asset rows, photos and asset-level valuation details. Values are shown excluding VAT and including VAT at 15%. This is not a certified valuation, inspection report or guarantee of selling price.';
 
   return `<!doctype html>
 <html lang="en">
@@ -2355,11 +2359,12 @@ async function renderRegisterSummaryReportHtml(
           grid-template-columns: minmax(0, 1fr) 62mm;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Save or print this asset register summary. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="assetReportScreenText">Save or print this report.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
         <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
@@ -2371,7 +2376,7 @@ async function renderRegisterSummaryReportHtml(
         <header class="assetReportHeader">
           <div class="assetReportLogoWrap">${logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(logoUrl)}" alt="Aim4price logo" />` : ''}</div>
           <div class="assetReportDocumentTitle">
-            <strong>Asset Register Summary</strong>
+            <strong>${escapeHtml(reportTitle)}</strong>
             <span>Aim4price asset register</span>
           </div>
           <div class="assetReportHeaderMeta">
@@ -2382,7 +2387,7 @@ async function renderRegisterSummaryReportHtml(
 
         <section class="assetReportOverview">
           <div class="assetReportIdentity">
-            <p class="assetReportKicker">Asset Register Summary</p>
+            <p class="assetReportKicker">${escapeHtml(reportTitle)}</p>
             <h1 class="assetReportTitle">${escapeHtml(ownerName)}</h1>
             <p class="assetReportMeta">${escapeHtml(heroMeta)}</p>
           </div>
@@ -2400,6 +2405,7 @@ async function renderRegisterSummaryReportHtml(
 
         <div class="assetReportSummaryStack">
           ${sections.map(renderRegisterSummaryReportSection).join('')}
+          ${fullReport?.sectionsHtml ?? ''}
         </div>
 
         <footer class="assetReportFooter">
@@ -2468,6 +2474,43 @@ async function renderRegisterSummaryReportHtml(
 </html>`;
 }
 
+
+
+/** Full exports use the same canonical HTML as the summary, not a second PDF design. */
+async function renderFullRegisterReportHtml(
+  bundles: RegisterExportBundle[],
+  profile: AccountProfileResult,
+  generatedAt: Date,
+  requestUrl: string,
+): Promise<string> {
+  let index = 0;
+  const sectionsHtml = bundles.map((bundle) => {
+    const items = orderGroupedExportAssets(dedupeAssetItems(bundle.items));
+    const heading = `<header class="reportFullRegisterHeading">
+      <h2>${escapeHtml(bundle.register.businessName || 'Asset Register')}</h2>
+      <p>${escapeHtml(registerContactLine(bundle.register))}</p>
+      <p>${items.length} assets · Register value ${escapeHtml(formatPdfMoney(registerValueTotal(items)))} excl. VAT · Replacement ${escapeHtml(formatPdfMoney(replacementValueTotal(items)))} excl. VAT</p>
+    </header>`;
+    let previousGroupId = '';
+    const records = items.map((item) => {
+      const group = exportAssetGroup(item);
+      const groupHeading = group && group.id !== previousGroupId
+        ? `<header class="reportFullRegisterHeading"><h2>${escapeHtml(group.name)}</h2>
+          <p>${group.memberCount} grouped assets · ${escapeHtml(assetGroupValueModeLabel(group))} · Counted group value ${escapeHtml(formatPdfMoney(registerValueTotal(items.filter((member) => exportAssetGroup(member)?.id === group.id))))} excl. VAT</p></header>`
+        : '';
+      previousGroupId = group?.id ?? '';
+      const lines = buildPdfAssetLines(item, index++);
+      return `${groupHeading}<section class="assetReportSection reportFullAsset">
+        <h2>${escapeHtml(lines[0]?.text || item.title)}</h2>
+        ${lines.slice(1).map((line) => `<p>${escapeHtml(line.text)}</p>`).join('')}
+      </section>`;
+    }).join('');
+    return heading + (records || '<section class="assetReportSection">No saved assets.</section>');
+  }).join('');
+  return renderRegisterSummaryReportHtml(
+    flattenSourceAssetRows(bundles).map((row) => row.item), profile, generatedAt, requestUrl, { sectionsHtml },
+  );
+}
 
 function parseRegisterIds(params: URLSearchParams): string[] {
   const combinedIds = cleanText(params.get('registerIds'));
@@ -3083,9 +3126,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid asset register export type.' }, { status: 400 });
   }
 
-  if (format === 'html' && reportKind !== 'summary') {
-    return NextResponse.json({ ok: false, error: 'HTML is only available for the asset register summary.' }, { status: 400 });
-  }
   const assetIdSelection = parseRequestedAssetIds(params);
 
   if (assetIdSelection.error) {
@@ -3238,7 +3278,9 @@ export async function GET(request: NextRequest) {
 
       if (format === 'html') {
         const summaryItems = bundles.flatMap((bundle) => registerSummaryAssets(bundle.register, bundle.items));
-        const html = await renderRegisterSummaryReportHtml(summaryItems, exportProfile, generatedAt, request.url);
+        const html = reportKind === 'summary'
+          ? await renderRegisterSummaryReportHtml(summaryItems, exportProfile, generatedAt, request.url)
+          : await renderFullRegisterReportHtml(bundles, exportProfile, generatedAt, request.url);
         const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
 
         return buildRegisterSummaryHtmlResponse(html, fileName);
@@ -3265,7 +3307,11 @@ export async function GET(request: NextRequest) {
           });
         }
 
-        const pdf = buildAssetRegistersPdf(bundles, exportProfile, scope, entityName, generatedAt);
+        const html = await renderFullRegisterReportHtml(bundles, exportProfile, generatedAt, request.url);
+        const pdf = await renderReportHtmlToPdf(html, {
+          baseUrl: request.url,
+          cookie: request.headers.get('cookie') ?? '',
+        });
         const fileName = `aim4price-asset-registers-${ownerSlug}-${filenameDate}.pdf`;
 
         return new NextResponse(pdf, {
@@ -3364,7 +3410,9 @@ export async function GET(request: NextRequest) {
 
     if (format === 'html') {
       const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
-      const html = await renderRegisterSummaryReportHtml(items, exportProfile, generatedAt, request.url);
+      const html = reportKind === 'summary'
+        ? await renderRegisterSummaryReportHtml(items, exportProfile, generatedAt, request.url)
+        : await renderFullRegisterReportHtml([{ register, items }], exportProfile, generatedAt, request.url);
       const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
 
       return buildRegisterSummaryHtmlResponse(html, fileName);
@@ -3392,7 +3440,11 @@ export async function GET(request: NextRequest) {
         });
       }
 
-      const pdf = buildFullRegisterPdf(items, exportProfile, generatedAt);
+      const html = await renderFullRegisterReportHtml([{ register, items }], exportProfile, generatedAt, request.url);
+      const pdf = await renderReportHtmlToPdf(html, {
+        baseUrl: request.url,
+        cookie: request.headers.get('cookie') ?? '',
+      });
       const fileName = `aim4price-full-asset-register-${ownerSlug}-${filenameDate}.pdf`;
 
       return new NextResponse(pdf, {

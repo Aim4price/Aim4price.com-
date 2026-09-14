@@ -1,5 +1,7 @@
 'use client';
 
+import { openCanonicalReportUrl } from '../../lib/report-open';
+
 import pickerStyles from '../../components/AssetPicker.module.css';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
@@ -3252,7 +3254,11 @@ export default function FuelClient({
 
   function handleOpenReport() {
     const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
-    window.open(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf', accountantShareId, accountantRegisterId), '_blank', 'noopener,noreferrer');
+    const opened = openCanonicalReportUrl(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf', accountantShareId, accountantRegisterId));
+    if (!opened) {
+      setNotice({ tone: 'error', message: 'Please allow pop-ups to open the fuel report.' });
+      return;
+    }
     closeModal();
   }
 

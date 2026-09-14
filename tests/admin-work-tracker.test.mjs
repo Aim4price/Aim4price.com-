@@ -27,7 +27,8 @@ async function loadReportBuilder() {
   );
   const reportJavaScript = ts
     .transpileModule(reportSource, { compilerOptions })
-    .outputText.replace('"./admin-work-tracker-shared"', JSON.stringify(sharedUrl));
+    .outputText.replace('"./admin-work-tracker-shared"', JSON.stringify(sharedUrl))
+    .replace("'./report-theme.ts'", JSON.stringify(new URL("../lib/report-theme.ts", import.meta.url).href));
   const reportUrl = `data:text/javascript;base64,${Buffer.from(reportJavaScript).toString("base64")}`;
   return import(reportUrl);
 }

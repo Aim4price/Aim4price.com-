@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextResponse } from "next/server";
 import { getServerSession } from "../../../../lib/auth-session";
 import {
@@ -2073,11 +2074,12 @@ function buildReportHtml(
           box-shadow: none;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>
     <div class="assetMapReportScreenBar">
-      <div class="assetMapReportScreenText">Save or print this Asset Map Tracking report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="assetMapReportScreenText">Save or print this report.</div>
       <div class="assetMapReportScreenActions">
         <button type="button" class="assetMapReportButton" onclick="window.close()">Close</button>
         <button type="button" class="assetMapReportButton assetMapReportButtonPrimary" onclick="window.printAssetMapReport()">Save PDF / Print</button>

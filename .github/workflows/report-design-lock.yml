@@ -12,6 +12,7 @@ on:
       - 'components/*ReportModal.tsx'
       - 'lib/*report*.ts'
       - 'tests/*report*.test.mjs'
+      - 'scripts/verify-report-suite.cjs'
       - 'docs/report-design-contract.md'
       - 'package.json'
       - 'package-lock.json'
@@ -29,6 +30,7 @@ on:
       - 'components/*ReportModal.tsx'
       - 'lib/*report*.ts'
       - 'tests/*report*.test.mjs'
+      - 'scripts/verify-report-suite.cjs'
       - 'docs/report-design-contract.md'
       - 'package.json'
       - 'package-lock.json'
@@ -57,3 +59,49 @@ jobs:
 
       - name: Verify locked report design
         run: npm run test:report-design
+
+      - name: Verify report access and opening regressions
+        run: node --experimental-strip-types --test tests/app-account-isolation.test.mjs tests/asset-register-summary-export.test.mjs tests/rich-report-template-parity.test.mjs tests/asset-map-report.test.mjs
+
+      - name: Install PDF inspection tools
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: Verify report templates and print layouts
+        run: node scripts/verify-report-suite.cjs
+
+      - name: Upload synthetic report evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-suite-evidence
+          path: report-evidence/
+          if-no-files-found: warn
+
+  report-bundle:
+    name: Report production bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Compile production bundle
+        shell: bash
+        run: |
+          set +e
+          npm run build 2>&1 | tee /tmp/report-build.log
+          build_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$build_status" -eq 0 ]; then exit 0; fi
+          # Same deployment-DB-only guard as the existing canvas workflow.
+          if grep -Fq "✓ Compiled successfully" /tmp/report-build.log \
+            && grep -Fq "Database connection variables are missing" /tmp/report-build.log \
+            && grep -Fq "Collecting page data" /tmp/report-build.log \
+            && grep -Eq "Failed to collect page data for /api/dealer/[^[:space:]]+" /tmp/report-build.log; then
+            echo "Bundle compiled; page-data collection requires deployment database credentials."
+            exit 0
+          fi
+          exit "$build_status"

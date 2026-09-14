@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS, REPORT_TOOLBAR_CSS, REPORT_TOOLBAR_HTML } from './report-theme.ts';
 import type { AccountProfile } from './account-profile';
 import type {
   AssetMaintenanceAssetOption,
@@ -156,7 +157,7 @@ function maintenanceMapUrl(record: AssetMaintenanceRecord): string {
 }
 
 function maintenancePhotoLabel(record: AssetMaintenanceRecord): string {
-  const count = record.sourcePhotoUrls.length;
+  const count = (record.sourcePhotoUrls?.length ?? 0);
   return count === 1 ? '1 photo captured' : count > 1 ? `${count} photos captured` : '-';
 }
 
@@ -460,17 +461,19 @@ export function buildAssetMaintenanceReportHtml(options: AssetMaintenanceReportO
   .footer { display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line-strong); font-size:7.35px; color:#323a45; }
   .footer strong { display:block; margin-bottom:4px; color:var(--strong); font-size:8.2px; }
   .footer p { margin:0; font-style:italic; line-height:1.35; }
-  @media(max-width:800px){ .topbar,.hero,.detailsGrid{grid-template-columns:1fr}.meta{min-width:0}.heroMain{border-right:0;border-bottom:1px solid #bfc7cd}.statusGrid{grid-template-columns:repeat(2,1fr)}.maintenanceCardHead{grid-template-columns:1fr}.maintenanceType{text-align:left}.maintenanceDetails{grid-template-columns:1fr}.maintenanceDetail{border-right:0}.actions{margin-left:0;margin-right:0}.reportPage{width:calc(100% - 20px)} }
+  @media screen and (max-width:800px){ .topbar,.hero,.detailsGrid{grid-template-columns:1fr}.meta{min-width:0}.heroMain{border-right:0;border-bottom:1px solid #bfc7cd}.statusGrid{grid-template-columns:repeat(2,1fr)}.maintenanceCardHead{grid-template-columns:1fr}.maintenanceType{text-align:left}.maintenanceDetails{grid-template-columns:1fr}.maintenanceDetail{border-right:0}.actions{margin-left:0;margin-right:0}.reportPage{width:calc(100% - 20px)} }
   @media print { html,body{background:#fff}.reportPage{width:auto;min-height:281mm;margin:0;padding:0;box-shadow:none}.actions{display:none}.footerPage:after{content:' - Page ' counter(page)} }
-</style>
+  ${REPORT_TOOLBAR_CSS}
+  ${REPORT_THEME_CSS}
+    </style>
 </head>
 <body>
+${REPORT_TOOLBAR_HTML.replace('<button type="button" class="assetReportButton"', `<a class="assetReportButton" href="${escapeHtml(options.xlsxUrl)}">Download Excel</a><button type="button" class="assetReportButton"`)}
 <main class="reportPage">
   <header class="topbar">
     <div class="brand">${logo}<div><h1>${escapeHtml(reportTitle)}</h1><p>${escapeHtml(options.subtitle)}</p></div></div>
     <div class="meta"><span>Generated</span><strong>${escapeHtml(options.generatedAt)}</strong><span>Business Email</span><strong>${escapeHtml(options.ownerEmail || '-')}</strong></div>
   </header>
-  <div class="actions"><a class="action" href="${escapeHtml(options.xlsxUrl)}">Download Excel</a><button class="action" onclick="window.print()">Print / Save PDF</button></div>
   <section class="hero">
     <div class="heroMain"><p class="eyebrow">Maintenance Management</p><h2 class="heroTitle">${escapeHtml(heroTitle)}</h2><p class="heroMeta">${escapeHtml(heroMeta)}</p></div>
     <div class="heroStatus"><span>Current Position</span><strong>${escapeHtml(primaryStatusLabel(options.summary))}</strong><p>${formatCount(options.summary.openCount)} open - ${formatCount(options.summary.doneCount)} completed</p></div>
@@ -558,8 +561,8 @@ function recordRow(record: AssetMaintenanceRecord): XlsxCellValue[] {
     linkedCell(maintenanceLocation(record), maintenanceMapUrl(record)),
     cell(record.sourceLatitude, 'decimal'),
     cell(record.sourceLongitude, 'decimal'),
-    cell(record.sourcePhotoUrls.length || null, 'integer'),
-    cell(record.sourcePhotoUrls.join('\n') || '-', 'note'),
+    cell((record.sourcePhotoUrls?.length ?? 0) || null, 'integer'),
+    cell(record.sourcePhotoUrls?.join('\n') || '-', 'note'),
     cell(formatDateOnly(record.updatedAtIso), 'date'),
   ];
 }

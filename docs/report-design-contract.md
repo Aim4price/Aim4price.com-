@@ -1,6 +1,14 @@
 # Aim4price report design contract
 
-## Approved visual references
+## 14 September 2026 Asset Map redesign
+
+The owner explicitly requested that all reports adopt the Asset Map Tracking Report styling. This supersedes the monochrome requirement below. The historical references remain documented for context.
+
+The shared theme is `lib/report-theme.ts`: pale green screen background, white report sheet, dark green Montserrat typography, thin green borders, subtly rounded sections, tinted summary cards, consistent Close / Save PDF / Print controls, and non-clipping multi-page print flow. Each report retains its own data, width, orientation and access checks. CSV/XLSX outputs remain structured exports, not HTML reports.
+
+This is an intentional redesign. The new fingerprints protect the proposed changes, not a claim of completed visual approval. The PR must remain draft until the generated report evidence and authenticated opening checks have been reviewed. See `docs/report-audit-2026-09-14.md` for scope and verification limitations.
+
+## Historical approved visual references
 
 The report styling is locked to the user-approved PDFs reviewed on 25 August 2026:
 
@@ -39,7 +47,7 @@ Server-side PDF rendering is reserved for an explicit binary attachment or share
 
 ## Deliberate redesign process
 
-Changing locked report CSS requires all of the following in the same pull request:
+Changing locked report CSS requires all of the following before the pull request is merged:
 
 1. State explicitly that the pull request intentionally changes report design.
 2. Generate representative valuation and multi-page maintenance PDFs.

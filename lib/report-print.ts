@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS } from './report-theme.ts';
 export type ReportTone = 'high' | 'medium' | 'low';
 
 export type ReportKeyValue = {
@@ -709,11 +710,12 @@ function renderDocumentShell(options: {
           text-decoration: none;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>
     <div class="screenBar">
-      <div class="screenBarText">Save or print this report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="screenBarText">Save or print this report.</div>
       <div class="screenBarActions">
         <button type="button" class="screenButton" onclick="window.close()">Close</button>
         <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Save PDF / Print</button>
@@ -1300,11 +1302,12 @@ function renderValuationReportDocument(payload: ValuationReportPayload): string 
           box-shadow: none;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>
     <div class="screenBar">
-      <div class="screenText">Save or print this valuation. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="screenText">Save or print this report.</div>
       <div class="screenActions">
         <button type="button" class="screenButton" onclick="window.close()">Close</button>
         <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Save PDF / Print</button>
@@ -2328,11 +2331,12 @@ export function buildAssetSheetReportHtml(payload: AssetSheetPayload): string {
           grid-template-columns: 1fr;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Save or print this asset report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="assetReportScreenText">Save or print this report.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
         <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>
@@ -3373,11 +3377,12 @@ export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummar
           box-shadow: none;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>
     <div class="screenBar">
-      <div class="screenBarText">Save or print this asset register report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="screenBarText">Save or print this report.</div>
       <div class="screenBarActions">
         <button type="button" class="screenButton" onclick="window.close()">Close</button>
         <button type="button" class="screenButton screenButtonPrimary" onclick="window.print()">Save PDF / Print</button>
