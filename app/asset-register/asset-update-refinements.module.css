@@ -13,7 +13,8 @@
   border-radius: 1rem !important;
 }
 
-.valueGrid > label {
+.valueGrid > label,
+.valueGrid > .vatValueField {
   min-height: 6.35rem !important;
   padding: 0.84rem !important;
   border-radius: 1rem !important;
@@ -54,3 +55,36 @@
   }
 }
 
+
+.vatValueRow {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vatValueSelect {
+  min-width: 0;
+}
+
+.vatValueSelect > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.vatValueRow input {
+  min-width: 0;
+}
+
+.vatValueSelect > button {
+  min-height: 3.75rem !important;
+  padding-inline: 0.65rem !important;
+  gap: 0.35rem !important;
+}
+
+.vatValueSelect > button span {
+  white-space: nowrap !important;
+}
