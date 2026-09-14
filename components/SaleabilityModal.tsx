@@ -131,7 +131,7 @@ export default function SaleabilityModal({
   storageKey,
 }: SaleabilityModalProps) {
   const bodyRef = useRef<HTMLDivElement>(null);
-  const [step, setStep] = useState<1 | 2 | 3 | 'result'>(1);
+  const [step, setStep] = useState<number | 'result'>(1);
   const [answers, setAnswers] = useState<Partial<SaleabilityRefinementAnswers>>({});
   const general = useMemo(() => calculateGeneralSaleability(input), [input]);
   const plan: SaleabilityPlan | null = useMemo(
@@ -200,25 +200,26 @@ export default function SaleabilityModal({
   if (!open) return null;
 
   function update<K extends keyof SaleabilityRefinementAnswers>(key: K, value: SaleabilityRefinementAnswers[K]) {
-    setAnswers((current) => ({ ...current, [key]: value }));
+    const nextAnswers = { ...answers, [key]: value };
+    setAnswers(nextAnswers);
+    if (step === 7) {
+      calculate(nextAnswers);
+    } else if (typeof step === 'number') {
+      setStep(step + 1);
+    }
   }
 
-  function calculate() {
-    if (!answersAreComplete(answers)) return;
+  function calculate(completedAnswers: Partial<SaleabilityRefinementAnswers>) {
+    if (!answersAreComplete(completedAnswers)) return;
     if (storageKey) {
       try {
-        window.localStorage.setItem(storageKey, JSON.stringify(answers));
+        window.localStorage.setItem(storageKey, JSON.stringify(completedAnswers));
       } catch {
         // Storage is optional.
       }
     }
     setStep('result');
   }
-
-  const firstStepComplete = Boolean(answers.saleArea && answers.similarAssetsAvailable && answers.realisticBuyerPool);
-  const secondStepComplete = Boolean(answers.currentDemand && answers.modelFamiliarity);
-
-  const thirdStepComplete = Boolean(answers.desiredTimeline && answers.sellingPriority);
 
   return (
     <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
@@ -233,77 +234,68 @@ export default function SaleabilityModal({
           <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
 
-        <nav className={styles.progress} aria-label="Saleability progress">
-          <span aria-current={step === 1 ? 'step' : undefined}>1 · Buyers</span>
-          <span aria-current={step === 2 ? 'step' : undefined}>2 · Market</span>
-          <span aria-current={step === 3 ? 'step' : undefined}>3 · Selling goal</span>
-          <span aria-current={step === 'result' ? 'step' : undefined}>4 · Your plan</span>
-        </nav>
-        <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling plan' : `Saleability step ${step} of 3`}>
-          {step === 1 ? (
-            <section className={styles.settingsCard}>
-              <div className={styles.stepIntro}>
-                <h3>Buyers</h3>
-                <p>Choose an answer, or “I’m not sure”.</p>
-              </div>
+        <div className={styles.questionProgress} role="status" aria-live="polite">
+          {step === 'result' ? 'Your selling plan' : `Question ${step} of 7`}
+        </div>
+        <div ref={bodyRef} className={styles.body} tabIndex={-1} aria-label={step === 'result' ? 'Your selling plan' : `Question ${step} of 7`}>
+          {step !== 'result' ? (
+            <section key={step} className={`${styles.settingsCard} ${styles.singleQuestion}`}>
+              {step === 1 ? (
               <ChoiceQuestion
                 label="Where will you sell?"
                 value={answers.saleArea}
                 options={SALE_AREA_OPTIONS}
                 onChange={(value) => update('saleArea', value)}
               />
+              ) : null}
+              {step === 2 ? (
               <ChoiceQuestion
                 label="How many similar assets are for sale?"
                 value={answers.similarAssetsAvailable}
                 options={AVAILABLE_OPTIONS}
                 onChange={(value) => update('similarAssetsAvailable', value)}
               />
+              ) : null}
+              {step === 3 ? (
               <ChoiceQuestion
                 label="How many likely buyers?"
                 value={answers.realisticBuyerPool}
                 options={BUYER_OPTIONS}
                 onChange={(value) => update('realisticBuyerPool', value)}
               />
-            </section>
-          ) : null}
-
-          {step === 2 ? (
-            <section className={styles.settingsCard}>
-              <div className={styles.stepIntro}>
-                <h3>Market</h3>
-              </div>
+              ) : null}
+              {step === 4 ? (
               <ChoiceQuestion
                 label="Current demand?"
                 value={answers.currentDemand}
                 options={DEMAND_OPTIONS}
                 onChange={(value) => update('currentDemand', value)}
               />
+              ) : null}
+              {step === 5 ? (
               <ChoiceQuestion
                 label="How well known is the model?"
                 value={answers.modelFamiliarity}
                 options={FAMILIARITY_OPTIONS}
                 onChange={(value) => update('modelFamiliarity', value)}
               />
-            </section>
-          ) : null}
-
-          {step === 3 ? (
-            <section className={styles.settingsCard}>
-              <div className={styles.stepIntro}>
-                <h3>Selling goal</h3>
-              </div>
+              ) : null}
+              {step === 6 ? (
               <ChoiceQuestion
                 label="When would you like to sell?"
                 value={answers.desiredTimeline}
                 options={TIMELINE_OPTIONS}
                 onChange={(value) => update('desiredTimeline', value)}
               />
+              ) : null}
+              {step === 7 ? (
               <ChoiceQuestion
                 label="What matters most?"
                 value={answers.sellingPriority}
                 options={PRIORITY_OPTIONS}
                 onChange={(value) => update('sellingPriority', value)}
               />
+              ) : null}
             </section>
           ) : null}
 
@@ -360,21 +352,10 @@ export default function SaleabilityModal({
           ) : null}
         </div>
         <footer className={styles.actions}>
-          {step === 1 ? (
-            <>
-              <button type="button" className={styles.secondary} onClick={onClose}>Cancel</button>
-              <button type="button" className={styles.primary} disabled={!firstStepComplete} onClick={() => setStep(2)}>Continue</button>
-            </>
-          ) : step === 2 ? (
-            <>
-              <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Back</button>
-              <button type="button" className={styles.primary} disabled={!secondStepComplete} onClick={() => setStep(3)}>Continue</button>
-            </>
-          ) : step === 3 ? (
-            <>
-              <button type="button" className={styles.secondary} onClick={() => setStep(2)}>Back</button>
-              <button type="button" className={styles.primary} disabled={!thirdStepComplete} onClick={calculate}>Show my plan</button>
-            </>
+          {step !== 'result' ? (
+            <button type="button" className={styles.secondary} onClick={step === 1 ? onClose : () => setStep(step - 1)}>
+              {step === 1 ? 'Cancel' : 'Back'}
+            </button>
           ) : (
             <>
               <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Change answers</button>
