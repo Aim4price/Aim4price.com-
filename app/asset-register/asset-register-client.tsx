@@ -8,6 +8,8 @@ import { assetCanReceiveFuel } from '../../lib/asset-fuel-eligibility';
 
 import CompactChoicePages from '../../components/CompactChoicePages';
 import compactExportStyles from '../../components/CompactRegisterExport.module.css';
+import PricingVatToggle from '../../components/PricingVatToggle';
+import { pricingVatAmount, pricingInputExVat } from '../../lib/pricing-vat';
 import CardVatToggle from '../../components/CardVatToggle';
 
 import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
@@ -6906,6 +6908,10 @@ export default function AssetRegisterClient({
   const pricingReturnAssetRef = useRef<RegisterAsset | null>(null);
   const [isLoadingPricingPreview, setIsLoadingPricingPreview] = useState(false);
   const [isSavingPricingPreview, setIsSavingPricingPreview] = useState(false);
+  const [pricingVatIncluded, setPricingVatIncluded] = useState(false);
+  const pricingVatLabel = pricingVatIncluded ? 'Incl. VAT' : 'Excl. VAT';
+  const pricingMoney = (value: number | null | undefined) => money(pricingVatAmount(value ?? 0, pricingVatIncluded));
+  const [revalueVatEntry, setRevalueVatEntry] = useState<{canonical: string; text: string; included: boolean} | null>(null);
   const [revalueReplacementPriceInput, setRevalueReplacementPriceInput] = useState('');
   const [revalueReplacementPriceError, setRevalueReplacementPriceError] = useState<string | null>(null);
   const [revalueLifetimeUsageInput, setRevalueLifetimeUsageInput] = useState('');
@@ -13564,7 +13570,10 @@ export default function AssetRegisterClient({
   }
 
   function handleRevalueReplacementPriceChange(event: ChangeEvent<HTMLInputElement>) {
-    setRevalueReplacementPriceInput(formatRegisterValueInput(event.target.value));
+    const text = formatRegisterValueInput(event.target.value);
+    const canonical = text === '' ? '' : formatRegisterValueInput(pricingInputExVat(parseRegisterValueInput(text), pricingVatIncluded));
+    setRevalueVatEntry({ canonical, text, included: pricingVatIncluded });
+    setRevalueReplacementPriceInput(canonical);
     if (revalueReplacementPriceError) {
       setRevalueReplacementPriceError(null);
     }
@@ -21680,6 +21689,7 @@ export default function AssetRegisterClient({
               <div className={styles.modalHeaderText}>
                 <h3 id="pricing-preview-title">{pricingPreview.asset.title}</h3>
                 <p>{buildAssetMeta(pricingPreview.asset)}</p>
+                <PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} />
               </div>
 
               <button
@@ -21701,7 +21711,7 @@ export default function AssetRegisterClient({
                         <h4>Use the saved replacement price?</h4>
                         <div className={styles.revalueSavedReplacementCard}>
                           <span>Current replacement price</span>
-                          <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'No saved price'}</strong>
+                          <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${pricingMoney(pricingPreviewSavedReplacementPriceExVat)} ${pricingVatLabel}` : 'No saved price'}</strong>
                         </div>
                         <div className={styles.revalueDecisionActions}>
                           <button type="button" className={styles.revalueCustomReplacementButton} disabled={pricingPreviewSavedReplacementPriceExVat === null} onClick={() => chooseRevaluePrice(pricingPreview.asset)}>Use this price</button>
@@ -21711,11 +21721,11 @@ export default function AssetRegisterClient({
                       {revalueQuestion === 'price' && pricingPreview.replacementMode === 'custom' ? (<>
                         <h4>What is the replacement price?</h4>
                         <label className={styles.revalueReplacementField}>
-                          <span>Replacement price excl. VAT</span>
+                          <span>Replacement price · {pricingVatLabel}</span>
                           <input
                             type="text"
                             inputMode="numeric"
-                            value={revalueReplacementPriceInput}
+                            value={revalueVatEntry?.canonical === revalueReplacementPriceInput && revalueVatEntry.included === pricingVatIncluded ? revalueVatEntry.text : revalueReplacementPriceInput === '' ? '' : formatRegisterValueInput(pricingVatAmount(parseRegisterValueInput(revalueReplacementPriceInput), pricingVatIncluded))}
                             onChange={handleRevalueReplacementPriceChange}
                             placeholder="Example: 650 000"
                             disabled={isLoadingPricingPreview || isSavingPricingPreview}
@@ -21725,7 +21735,7 @@ export default function AssetRegisterClient({
                       </>) : null}
                       {revalueQuestion === 'save' ? (<>
                         <h4>Save this replacement price to the asset?</h4>
-                        <p>{money(normalizedRevalueReplacementPriceInput ?? 0)} excl. VAT</p>
+                        <p>{pricingMoney(normalizedRevalueReplacementPriceInput ?? 0)} {pricingVatLabel}</p>
                         <div className={styles.revalueDecisionActions}>
                           <button type="button" className={styles.revalueCustomReplacementButton} onClick={() => chooseRevaluePersistence(pricingPreview.asset, true)}>Save with the new value</button>
                           <button type="button" className={styles.revalueSecondaryButton} onClick={() => chooseRevaluePersistence(pricingPreview.asset, false)}>Use for this calculation only</button>
@@ -21762,29 +21772,29 @@ export default function AssetRegisterClient({
 
                           <div className={styles.pricingResultHero}>
                             <span>New asset value</span>
-                            <strong>{money(pricingPreviewNewValueExVat)}</strong>
-                            <p>This is the value that will be saved to the asset.</p>
+                            <strong>{pricingMoney(pricingPreviewNewValueExVat)}</strong>
+                            <p>{pricingVatLabel} · Save to update the asset.</p>
                           </div>
 
                           <div className={styles.pricingCompareGrid}>
                             <div>
                               <span>Current value</span>
-                              <strong>{money(pricingPreviewOldValueExVat)}</strong>
+                              <strong>{pricingMoney(pricingPreviewOldValueExVat)}</strong>
                             </div>
                             <div>
                               <span>New value</span>
-                              <strong>{money(pricingPreviewNewValueExVat)}</strong>
+                              <strong>{pricingMoney(pricingPreviewNewValueExVat)}</strong>
                             </div>
                             <div>
                               <span>Difference</span>
-                              <strong>{formatMoneyDifference(pricingPreviewDifferenceExVat)}</strong>
+                              <strong>{formatMoneyDifference(pricingVatAmount(pricingPreviewNewValueExVat ?? 0, pricingVatIncluded) - pricingVatAmount(pricingPreviewOldValueExVat ?? 0, pricingVatIncluded))}</strong>
                             </div>
                           </div>
 
                           <div className={styles.revalueReplacementSummary}>
                             <div>
                               <span>Replacement price used:</span>
-                              <strong>{pricingPreviewReplacementPriceExVat !== null ? money(pricingPreviewReplacementPriceExVat) : 'Not set'}</strong>
+                              <strong>{pricingPreviewReplacementPriceExVat !== null ? pricingMoney(pricingPreviewReplacementPriceExVat) : 'Not set'}</strong>
                             </div>
                             <div>
                               <span>Replacement price action:</span>
@@ -22982,6 +22992,7 @@ export default function AssetRegisterClient({
               <div className={styles.modalHeaderText}>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
                 <p>Estimate this asset’s future value.</p>
+                <PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} />
               </div>
 
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeProjectionModal} aria-label="Close future price modal">
@@ -23093,11 +23104,11 @@ export default function AssetRegisterClient({
                 {projectionStep === 'result' && projectionResult ? (
                   <section ref={projectionResultRef} className={styles.projectionSimpleResult} aria-live="polite">
                     <span>Projected future price</span>
-                    <strong>{money(projectionResult.projected.retailExVat)}</strong>
-                    <p>Estimated ex VAT value for {projectionResult.targetYear}.</p>
+                    <strong>{pricingMoney(projectionResult.projected.retailExVat)}</strong>
+                    <p>{pricingVatLabel} value for {projectionResult.targetYear}.</p>
 
                     <div className={styles.projectionSimpleMeta}>
-                      <div><span>Current saved value</span><strong>{money(projectionAsset.value)}</strong></div>
+                      <div><span>Current saved value</span><strong>{pricingMoney(projectionAsset.value)}</strong></div>
                       <div>
                         <span>Year</span>
                         <strong>{projectionResult.baseYear} → {projectionResult.targetYear}</strong>
