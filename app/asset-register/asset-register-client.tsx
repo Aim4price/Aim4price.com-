@@ -20430,11 +20430,11 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isManualConversionConfirmOpen && editingAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => setIsManualConversionConfirmOpen(false)} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetSettingsConfirmModal}`}
+            className={`${styles.modalCard} ${styles.assetSettingsConfirmModal} ${styles.managementAccountModal} ${styles.manualConversionAccountModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-conversion-confirm-title"
@@ -20447,11 +20447,11 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={() => setIsManualConversionConfirmOpen(false)}
                 aria-label="Close conversion confirmation"
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">×</span>
               </button>
             </div>
 
@@ -20459,6 +20459,7 @@ export default function AssetRegisterClient({
               <p className={styles.assetSettingsConfirmCopy}>
                 The current manual asset will stay unchanged while you complete the estimate. It will only become an Aim4price valued asset after you click Save on the final result page.
               </p>
+            </div>
 
               <div className={styles.assetSettingsActions}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setIsManualConversionConfirmOpen(false)}>
@@ -20468,7 +20469,6 @@ export default function AssetRegisterClient({
                   Continue to estimate
                 </button>
               </div>
-            </div>
           </div>
         </div>
       ) : null}
