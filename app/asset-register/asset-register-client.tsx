@@ -6908,6 +6908,13 @@ export default function AssetRegisterClient({
   const [revalueReplacementPriceError, setRevalueReplacementPriceError] = useState<string | null>(null);
   const [revalueLifetimeUsageInput, setRevalueLifetimeUsageInput] = useState('');
   const [revalueAdvancedError, setRevalueAdvancedError] = useState<string | null>(null);
+  const [revalueQuestion, setRevalueQuestion] = useState<'price' | 'save' | 'lifetime'>('price');
+  const revalueQuestionRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    revalueQuestionRef.current?.scrollTo({ top: 0 });
+    revalueQuestionRef.current?.focus({ preventScroll: true });
+  }, [revalueQuestion, pricingPreview?.replacementMode, pricingPreview?.result]);
+
   const [saveReplacementPriceWithRevalue, setSaveReplacementPriceWithRevalue] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [assetFilters, setAssetFilters] = useState<AssetFilterKey[]>([]);
@@ -13589,6 +13596,7 @@ export default function AssetRegisterClient({
   }
 
   function openRevalueGuidedDialog(asset: RegisterAsset) {
+    setRevalueQuestion('price');
     setPricingPreview({
       asset,
       method: 'aim4price',
@@ -13609,6 +13617,7 @@ export default function AssetRegisterClient({
   }
 
   function showCustomReplacementStep(asset: RegisterAsset) {
+    setRevalueQuestion('price');
     setPricingPreview({
       asset,
       method: 'aim4price',
@@ -13626,6 +13635,7 @@ export default function AssetRegisterClient({
   }
 
   function showSavedReplacementStep(asset: RegisterAsset) {
+    setRevalueQuestion('price');
     setPricingPreview({
       asset,
       method: 'aim4price',
@@ -13654,6 +13664,7 @@ export default function AssetRegisterClient({
     const { asset, newReplacementPriceExVat } = replacementPriceRevaluePrompt;
 
     setReplacementPriceRevaluePrompt(null);
+    setRevalueQuestion('price');
     setActiveAsset(asset);
     setIsPricingModalOpen(false);
     setPricingPreview({
@@ -13675,31 +13686,46 @@ export default function AssetRegisterClient({
     setSaveReplacementPriceWithRevalue(true);
   }
 
-  function handlePreviousRevalueStep() {
-    if (!pricingPreview || pricingPreview.method !== 'aim4price' || isLoadingPricingPreview || isSavingPricingPreview) {
-      return;
-    }
+  function chooseRevaluePrice(asset: RegisterAsset) {
+    if (shouldShowRevalueLifetimeInput(asset)) setRevalueQuestion('lifetime');
+    else openSavedReplacementPreview(asset);
+  }
 
-    if (pricingPreview.result || pricingPreview.error) {
-      if (pricingPreview.replacementMode === 'custom') {
-        setPricingPreview({
-          asset: pricingPreview.asset,
-          method: 'aim4price',
-          replacementMode: 'custom',
-          replacementPriceExVat: null,
-          advancedAssumptions: null,
-          result: null,
-          error: null,
-          errorContext: null,
-        });
-      } else {
-        showSavedReplacementStep(pricingPreview.asset);
+  function chooseRevaluePersistence(asset: RegisterAsset, persist: boolean) {
+    setSaveReplacementPriceWithRevalue(persist);
+    if (shouldShowRevalueLifetimeInput(asset)) setRevalueQuestion('lifetime');
+    else openCustomReplacementPreview(asset);
+  }
+
+  function continueRevalueQuestion() {
+    if (!pricingPreview) return;
+    if (revalueQuestion === 'price' && pricingPreview.replacementMode === 'custom') {
+      if (readCustomRevalueReplacementPrice() === null) {
+        setRevalueReplacementPriceError('Enter a valid replacement price excluding VAT.');
+        return;
       }
-
-      return;
+      setRevalueQuestion('save');
+    } else if (revalueQuestion === 'lifetime') {
+      if (pricingPreview.replacementMode === 'custom') openCustomReplacementPreview(pricingPreview.asset);
+      else openSavedReplacementPreview(pricingPreview.asset);
     }
+  }
 
-    showSavedReplacementStep(pricingPreview.asset);
+  function handlePreviousRevalueStep() {
+    if (!pricingPreview || pricingPreview.method !== 'aim4price' || isLoadingPricingPreview || isSavingPricingPreview) return;
+    const custom = pricingPreview.replacementMode === 'custom';
+    if (pricingPreview.result || pricingPreview.error) {
+      setPricingPreview({ ...pricingPreview, result: null, error: null, errorContext: null, advancedAssumptions: null });
+      setRevalueQuestion(shouldShowRevalueLifetimeInput(pricingPreview.asset) ? 'lifetime' : custom ? 'save' : 'price');
+    } else if (revalueQuestion === 'lifetime') {
+      setRevalueQuestion(custom ? 'save' : 'price');
+    } else if (revalueQuestion === 'save') {
+      setRevalueQuestion('price');
+    } else {
+      showSavedReplacementStep(pricingPreview.asset);
+    }
+    setRevalueAdvancedError(null);
+    setRevalueReplacementPriceError(null);
   }
 
   function openSavedReplacementPreview(asset: RegisterAsset) {
@@ -16151,11 +16177,6 @@ export default function AssetRegisterClient({
     ? pricingPreview.advancedAssumptions?.maxLifetimeUsage ??
       (pricingPreview.result?.item ? readAssetMaxLifetimeUsage(pricingPreview.result.item) : readAssetMaxLifetimeUsage(pricingPreview.asset))
     : null;
-  const pricingPreviewSavedStepTitle = pricingPreviewUsesPercentUsage ? 'Use saved replacement price?' : 'Use saved replacement price and lifetime?';
-  const pricingPreviewCustomStepTitle = pricingPreviewUsesPercentUsage ? 'Enter a different price' : 'Enter a different price and lifetime';
-  const pricingPreviewCustomStepCopy = pricingPreviewUsesPercentUsage
-    ? 'Type the replacement price excluding VAT before calculating the new value.'
-    : 'Type the replacement price excluding VAT and adjust expected lifetime before calculating the new value.';
   const projectionUsesPercentUsage = Boolean(
     projectionResult?.usageMetric === 'percent' ||
     (projectionAsset && assetUsesPercentUsage(projectionAsset)),
@@ -16191,11 +16212,6 @@ export default function AssetRegisterClient({
         ? 2
         : 1
     : null;
-  const canCalculateCustomReplacementPreview = Boolean(
-    normalizedRevalueReplacementPriceInput !== null &&
-    !isLoadingPricingPreview &&
-    !isSavingPricingPreview,
-  );
   const canSavePricingPreview = Boolean(
     pricingPreview?.result?.item &&
     !pricingPreview.error &&
@@ -21634,7 +21650,7 @@ export default function AssetRegisterClient({
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.pricingPreviewOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closePricingPreviewDialog} />
 
-          <div className={`${styles.modalCard} ${styles.pricingResultModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
+          <div className={`${styles.modalCard} ${styles.pricingResultModal} ${styles.revalueQuestionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="pricing-preview-title">
             <div className={`${styles.modalHeader} ${styles.pricingResultHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="pricing-preview-title">{pricingPreview.asset.title}</h3>
@@ -21652,61 +21668,23 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.pricingResultBody}`}>
+            <div ref={revalueQuestionRef} tabIndex={-1} aria-label="Recalculate value" className={`${styles.modalScrollBody} ${styles.pricingResultBody}`}>
               <>
-                  {pricingPreviewWizardStep === 1 ? (
-                    <section className={`${styles.revalueReplacementPanel} ${styles.revalueSavedStepPanel}`}>
-                      <div className={styles.revalueReplacementHeader}>
-                        <div>
-                          <span>Step 1 of 3</span>
-                          <h4>{pricingPreviewSavedStepTitle}</h4>
+                  {pricingPreviewWizardStep !== 3 && pricingPreview.method === 'aim4price' ? (
+                    <section key={`${pricingPreview.replacementMode}-${revalueQuestion}`} className={styles.revalueQuestionPanel}>
+                      {revalueQuestion === 'price' && pricingPreview.replacementMode !== 'custom' ? (<>
+                        <h4>Use the saved replacement price?</h4>
+                        <div className={styles.revalueSavedReplacementCard}>
+                          <span>Current replacement price</span>
+                          <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'No saved price'}</strong>
                         </div>
-                      </div>
-
-                      <div className={styles.revalueSavedReplacementCard}>
-                        <span>Current replacement price</span>
-                        <strong>{pricingPreviewSavedReplacementPriceExVat !== null ? `${money(pricingPreviewSavedReplacementPriceExVat)} excl. VAT` : 'No saved price'}</strong>
-                        <small>This is the replacement price currently saved on this asset.</small>
-                      </div>
-
-                      {renderRevalueLifetimeField(pricingPreview.asset)}
-                      {revalueAdvancedError ? <p className={styles.revalueReplacementError}>{revalueAdvancedError}</p> : null}
-
-                      <div className={styles.revalueDecisionCard}>
-                        <strong>Continue with this replacement price?</strong>
                         <div className={styles.revalueDecisionActions}>
-                          <button
-                            type="button"
-                            className={styles.revalueCustomReplacementButton}
-                            disabled={pricingPreviewSavedReplacementPriceExVat === null || isLoadingPricingPreview || isSavingPricingPreview}
-                            onClick={() => openSavedReplacementPreview(pricingPreview.asset)}
-                          >
-                            Use this price
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.revalueSecondaryButton}
-                            disabled={isLoadingPricingPreview || isSavingPricingPreview}
-                            onClick={() => showCustomReplacementStep(pricingPreview.asset)}
-                          >
-                            Enter different price
-                          </button>
+                          <button type="button" className={styles.revalueCustomReplacementButton} disabled={pricingPreviewSavedReplacementPriceExVat === null} onClick={() => chooseRevaluePrice(pricingPreview.asset)}>Use this price</button>
+                          <button type="button" className={styles.revalueSecondaryButton} onClick={() => showCustomReplacementStep(pricingPreview.asset)}>Enter different price</button>
                         </div>
-                      </div>
-                    </section>
-                  ) : null}
-
-                  {pricingPreviewWizardStep === 2 ? (
-                    <section className={`${styles.revalueReplacementPanel} ${styles.revalueCustomStepPanel}`}>
-                      <div className={styles.revalueReplacementHeader}>
-                        <div>
-                          <span>Step 2 of 3</span>
-                          <h4>{pricingPreviewCustomStepTitle}</h4>
-                          <p className={styles.revalueStepCopy}>{pricingPreviewCustomStepCopy}</p>
-                        </div>
-                      </div>
-
-                      <div className={styles.revalueCustomReplacementCard}>
+                      </>) : null}
+                      {revalueQuestion === 'price' && pricingPreview.replacementMode === 'custom' ? (<>
+                        <h4>What is the replacement price?</h4>
                         <label className={styles.revalueReplacementField}>
                           <span>Replacement price excl. VAT</span>
                           <input
@@ -21719,22 +21697,22 @@ export default function AssetRegisterClient({
                           />
                         </label>
 
-                        <label className={styles.revalueReplacementToggle}>
-                          <input
-                            type="checkbox"
-                            checked={saveReplacementPriceWithRevalue}
-                            onChange={(event) => setSaveReplacementPriceWithRevalue(event.target.checked)}
-                            disabled={isLoadingPricingPreview || isSavingPricingPreview}
-                          />
-                          <span>Save this as the replacement price on this asset</span>
-                        </label>
-                        <p className={styles.revalueReplacementHelper}>Leave unticked to use this price for this calculation only.</p>
-                      </div>
-
-                      {renderRevalueLifetimeField(pricingPreview.asset)}
-
-                      {revalueReplacementPriceError ? <p className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
-                      {revalueAdvancedError ? <p className={styles.revalueReplacementError}>{revalueAdvancedError}</p> : null}
+                      </>) : null}
+                      {revalueQuestion === 'save' ? (<>
+                        <h4>Save this replacement price to the asset?</h4>
+                        <p>{money(normalizedRevalueReplacementPriceInput ?? 0)} excl. VAT</p>
+                        <div className={styles.revalueDecisionActions}>
+                          <button type="button" className={styles.revalueCustomReplacementButton} onClick={() => chooseRevaluePersistence(pricingPreview.asset, true)}>Save with the new value</button>
+                          <button type="button" className={styles.revalueSecondaryButton} onClick={() => chooseRevaluePersistence(pricingPreview.asset, false)}>Use for this calculation only</button>
+                        </div>
+                        <p>The asset updates only after you review and save the new value.</p>
+                      </>) : null}
+                      {revalueQuestion === 'lifetime' ? (<>
+                        <h4>What is the expected lifetime?</h4>
+                        {renderRevalueLifetimeField(pricingPreview.asset)}
+                      </>) : null}
+                      {revalueReplacementPriceError ? <p role="alert" className={styles.revalueReplacementError}>{revalueReplacementPriceError}</p> : null}
+                      {revalueAdvancedError ? <p role="alert" className={styles.revalueReplacementError}>{revalueAdvancedError}</p> : null}
                     </section>
                   ) : null}
 
@@ -21751,7 +21729,7 @@ export default function AssetRegisterClient({
                         <section className={`${styles.revalueReplacementPanel} ${styles.revaluePreviewPanel}`} aria-live="polite">
                           <div className={styles.revalueReplacementHeader}>
                             <div>
-                              <span>Step 3 of 3</span>
+                              <span>Your new value</span>
                               <h4>Preview and save</h4>
                               <p className={styles.revalueStepCopy}>Review the new value before saving it to the Asset Register.</p>
                             </div>
@@ -21814,23 +21792,14 @@ export default function AssetRegisterClient({
                 pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 1 ? styles.pricingPreviewActionsSingle : ''
               }`}
             >
-              {pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 1 ? (
-                <button type="button" className={styles.secondaryButton} onClick={closePricingPreviewDialog} disabled={isSavingPricingPreview}>
-                  Keep current value
-                </button>
-              ) : pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 2 ? (
+              {pricingPreview.method === 'aim4price' && pricingPreviewWizardStep !== 3 ? (
                 <>
-                  <button type="button" className={styles.secondaryButton} onClick={handlePreviousRevalueStep} disabled={isLoadingPricingPreview || isSavingPricingPreview}>
-                    Back
+                  <button type="button" className={styles.secondaryButton} onClick={revalueQuestion === 'price' && pricingPreview.replacementMode !== 'custom' ? closePricingPreviewDialog : handlePreviousRevalueStep}>
+                    {revalueQuestion === 'price' && pricingPreview.replacementMode !== 'custom' ? 'Keep current value' : 'Back'}
                   </button>
-                  <button
-                    type="button"
-                    className={styles.primaryButton}
-                    onClick={() => openCustomReplacementPreview(pricingPreview.asset)}
-                    disabled={!canCalculateCustomReplacementPreview}
-                  >
-                    Calculate new value
-                  </button>
+                  {revalueQuestion === 'lifetime' || (revalueQuestion === 'price' && pricingPreview.replacementMode === 'custom') ? (
+                    <button type="button" className={styles.primaryButton} onClick={continueRevalueQuestion}>Continue</button>
+                  ) : null}
                 </>
               ) : pricingPreview.method === 'aim4price' && pricingPreviewWizardStep === 3 ? (
                 <>
