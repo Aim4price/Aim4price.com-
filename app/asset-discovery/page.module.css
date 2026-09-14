@@ -3296,7 +3296,7 @@
 .discoveryFocusPanel .discoveryAccessNote strong { font-weight: 600; }
 .discoveryFocusPanel .discoveryPreviewStage { max-height: 360px; }
 .discoveryFocusPanel .discoveryLockedMedia { box-shadow: none; }
-.discoveryFocusOverlay.compactAppSurface { padding: 12px; }
+.discoveryFocusOverlay.compactAppSurface { width: 100% !important; margin: 0 !important; padding: 12px !important; }
 .compactAppSurface .discoveryFocusPanel { width: 100%; max-height: calc(var(--website-visible-height, 100dvh) - 24px); border-radius: 20px; }
 .compactAppSurface .discoveryFocusHeader { gap: 16px; padding: 20px; }
 .compactAppSurface .discoveryFocusHeader h2 { font-size: 1.35rem; }
