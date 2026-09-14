@@ -97,6 +97,14 @@ fs.mkdirSync(output, { recursive: true });
     await page.setViewport({width:960,height:600,deviceScaleFactor:1.5,isMobile:false,hasTouch:false});
     await waitScale(1);
     console.log('PASS desktop pointer change and browser magnification retain outer-window sizing');
+    // Fresh phone entry with actual mobile viewport semantics and device-width metadata.
+    await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:3,mobile:true,screenWidth:390,screenHeight:844});
+    await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+    await page.evaluate(()=>{sessionStorage.clear();localStorage.removeItem('aim4price.website-canvas.v2');window.fixtureRoot.unmount();window.mount()});
+    await waitScale(390/1440);
+    await page.waitForSelector('[data-mobile-landscape-entry]');
+    assert.equal(await page.evaluate(()=>document.documentElement.clientWidth),390);
+    console.log('PASS fresh mobile entry uses phone layout viewport and shows rotation prompt');
     assert.deepEqual(errors,[]);
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1});
