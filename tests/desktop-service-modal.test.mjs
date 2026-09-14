@@ -22,20 +22,17 @@ test('Owner and Dealer desktop maintenance use one mobile-inspired service form'
   assert.match(dealerClient, /!isCompletedCard && asset\.nextMaintenance/);
   assert.doesNotMatch(dealerClient, /!dealerAppMode && !isCompletedCard && asset\.nextMaintenance/);
   assert.doesNotMatch(modal, /Desktop backup entry|WrenchIcon|headerIcon/);
-  assert.match(modal, /serviceAssetMeta\(record\)/);
-  assert.match(modal, /Year Model:/);
-  assert.match(modal, /Usage:/);
-  assert.match(modal, /Condition:/);
+  assert.match(modal, /<p>\{record.assetTitle\}<\/p>/);
   assert.match(modalStyles, /font-family: var\(--font-heading, 'Montserrat'\)/);
   assert.match(modalStyles, /font-weight: 780/);
   assert.match(modal, /Completion date/);
   assert.match(modal, /Usage at completion/);
-  assert.match(modal, /Notes \/ problems/);
-  assert.match(modal, /How should this \{actionName\} be saved\?/);
-  assert.match(modal, /Complete this scheduled item/);
-  assert.match(modal, /Keep the scheduled item open/);
-  assert.match(modal, /Record completed \{actionName\}/);
-  assert.match(modalStyles, /\.choiceComparison \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(modal, /Work details \/ notes/);
+  assert.match(modal, /Which work was done\?/);
+  assert.match(modal, /Complete scheduled/);
+  assert.match(modal, /Record other work/);
+  assert.match(modal, /Record completed work/);
+  assert.match(modalStyles, /\.saveChoices \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });
 
 test('Dealer maintenance card actions stay in one row and use the copper service action', () => {
@@ -74,12 +71,11 @@ test('Service and check-up validation follows the app rules', () => {
 });
 
 test('scheduled and separate work explain different outcomes before saving', () => {
-  assert.match(modal, /“\$\{record\.title\}” will remain open and unchanged/);
-  assert.match(modal, /record\.recurringEnabled && !isSeparateCompletion/);
-  assert.match(modal, /The scheduled item stays open/);
-  assert.match(modal, /Save separate \$\{actionName\}/);
+  assert.match(modal, /The scheduled work stays open/);
+  assert.match(modal, /record\.recurringEnabled \? 'The next reminder/);
+  assert.match(modal, /setScheduleDecision\('separate'\)/);
+  assert.match(modal, /setScheduleDecision\('scheduled'\)/);
   assert.match(modal, /Complete scheduled \$\{actionName\}/);
-  assert.match(modalStyles, /\.separateBanner \{[\s\S]*?background: #fff8e9/);
 });
 
 test('Dealer completion is owner-asset guarded, audited and refreshes recurring cards', () => {

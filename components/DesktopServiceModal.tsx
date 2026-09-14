@@ -49,6 +49,8 @@ type Props = {
   busy?: boolean;
   askScheduleLink?: boolean;
   dealerAppMode?: boolean;
+  standalone?: boolean;
+  onBack?: () => void;
   onClose: () => void;
   onSubmit: (completion: DesktopServiceCompletion) => void | Promise<void>;
 };
@@ -72,29 +74,6 @@ function intervalLabel(record: DesktopServiceRecord): string {
   return `Every ${value.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} ${unit}`;
 }
 
-function titleCase(value: string): string {
-  return value
-    .replace(/[_-]+/g, ' ')
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function serviceAssetMeta(record: DesktopServiceRecord): string {
-  const unit = usageUnit(record.usageMetric ?? record.assetUsageMetric ?? null);
-  const details = [
-    record.assetTitle,
-    typeof record.assetYearModel === 'number' && record.assetYearModel > 0
-      ? `Year Model: ${record.assetYearModel}`
-      : '',
-    typeof record.currentUsage === 'number' && Number.isFinite(record.currentUsage)
-      ? `Usage: ${record.currentUsage.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} ${unit}`
-      : '',
-    record.assetCondition?.trim() ? `Condition: ${record.assetCondition.trim()}` : '',
-    titleCase(record.assetCategoryLabel?.trim() || record.assetKind.trim()),
-  ].filter(Boolean);
-
-  return details.length > 1 ? details.join(' · ') : record.assetMeta?.trim() || record.assetTitle;
-}
-
 function CloseIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11m0-11-11 11" /></svg>;
 }
@@ -108,6 +87,8 @@ export default function DesktopServiceModal({
   busy = false,
   askScheduleLink = false,
   dealerAppMode = false,
+  standalone = false,
+  onBack,
   onClose,
   onSubmit,
 }: Props) {
@@ -124,7 +105,7 @@ export default function DesktopServiceModal({
   const options = checklist.items.length ? checklistOptions(checklist, mode) : mode === 'checked' ? checkedOptionsForProfile(profile) : servicedOptionsForProfile(profile);
   const today = todayInputValue();
   const [completedAt, setCompletedAt] = useState(today);
-  const [completedUsage, setCompletedUsage] = useState(record.currentUsage === null ? '' : String(record.currentUsage));
+  const [completedUsage, setCompletedUsage] = useState(standalone || record.currentUsage === null ? '' : String(record.currentUsage));
   const [company, setCompany] = useState('');
   const [mechanic, setMechanic] = useState(record.maintenanceType === 'checkup' ? record.assignedName?.trim() || '' : '');
   const [notes, setNotes] = useState('');
@@ -136,7 +117,7 @@ export default function DesktopServiceModal({
   const actionName = record.maintenanceType === 'checkup' ? 'check-up' : 'service';
   const unit = usageUnit(record.usageMetric ?? record.assetUsageMetric ?? null);
   const isSeparateCompletion = scheduleDecision === 'separate';
-  const requiresUsageReading = record.triggerType === 'usage';
+  const requiresUsageReading = !standalone && !isSeparateCompletion && record.triggerType === 'usage';
   const savedUsageLabel = record.currentUsage === null
     ? `No saved ${unit} reading`
     : `Saved reading: ${record.currentUsage.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} ${unit}`;
@@ -183,39 +164,43 @@ export default function DesktopServiceModal({
       setError('Enter a valid non-negative usage reading.');
       return;
     }
-    if (usage !== null && record.currentUsage !== null && usage < record.currentUsage) {
+    if (!standalone && !isSeparateCompletion && usage !== null && record.currentUsage !== null && usage < record.currentUsage) {
       setError(`The completed reading cannot be lower than the saved ${record.currentUsage.toLocaleString('en-ZA')} ${unit}.`);
       return;
     }
 
-    await onSubmit({
-      completedAt,
-      completedUsage: usage,
-      completedNotes: buildMaintenanceCompletionNote({
-        serviceMode: mode,
-        checkedItems: mode === 'checked' ? selectedItems : [],
-        servicedItems: mode === 'serviced' ? selectedItems : [],
-        repairDetails: '',
-        serviceCompany: company,
-        mechanicName: mechanic,
-        note: notes,
-      }),
-      maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems)],
-      completedBy: mechanic.trim(),
-      linkToScheduledMaintenance: scheduleDecision !== 'separate',
-      clientEventId,
-    });
+    try {
+      await onSubmit({
+        completedAt,
+        completedUsage: usage,
+        completedNotes: buildMaintenanceCompletionNote({
+          serviceMode: mode,
+          checkedItems: mode === 'checked' ? selectedItems : [],
+          servicedItems: mode === 'serviced' ? selectedItems : [],
+          repairDetails: '',
+          serviceCompany: company,
+          mechanicName: mechanic,
+          note: notes,
+        }),
+        maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems)],
+        completedBy: mechanic.trim(),
+        linkToScheduledMaintenance: !standalone && scheduleDecision !== 'separate',
+        clientEventId,
+      });
+    } catch (failure) {
+      setError(failure instanceof Error ? failure.message : "Could not save completed work.");
+    }
   }
 
   if (askScheduleLink && scheduleDecision === null) {
     return (
       <div className={`${styles.overlay} ${dealerAppMode ? styles.dealerChoiceOverlay : ''}`} data-website-overlay role="presentation">
         <button className={`${styles.backdrop} ${!dealerAppMode ? dialogStyles.backdrop : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy} />
-        <section className={`${styles.modal} ${!dealerAppMode ? dialogStyles.dialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
+        <section className={`${styles.modal} ${styles.saveChoiceModal} ${!dealerAppMode ? dialogStyles.dialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
           <header className={styles.header}>
             <div>
-              <h2 id="scheduled-service-choice-title">{dealerAppMode ? `Save ${actionName}` : <>How should this {actionName} be saved?</>}</h2>
-              <p>{dealerAppMode ? record.assetTitle : serviceAssetMeta(record)}</p>
+              <h2 id="scheduled-service-choice-title">Which work was done?</h2>
+              <p>{record.assetTitle}</p>
             </div>
             <button className={dealerAppMode ? styles.closeButton : dialogStyles.close} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
               <CloseIcon />
@@ -225,38 +210,20 @@ export default function DesktopServiceModal({
             <div className={styles.scheduleSummary}>
               <span>Scheduled {actionName}</span>
               <strong>{record.title}</strong>
-              <small>{intervalLabel(record) || 'One-time scheduled maintenance'}</small>
+              <small>{intervalLabel(record) || 'One-time'}</small>
             </div>
-            <div className={styles.choiceComparison}>
-              <div>
-                <strong>{dealerAppMode ? 'Complete scheduled' : 'Complete this scheduled item'}</strong>
-                <span>{dealerAppMode ? 'Save the work and close this scheduled item.' : <>Choose “Yes” when the completed work was for “{record.title}”. The scheduled item will close.</>}</span>
-              </div>
-              <div>
-                <strong>{dealerAppMode ? 'Save separately' : 'Keep the scheduled item open'}</strong>
-                <span>{dealerAppMode ? 'Save other work. Keep this scheduled item open.' : <>Choose “No” when different work was done. A separate record will be saved and this schedule will stay unchanged.</>}</span>
-              </div>
+            <div className={styles.saveChoices}>
+              <button type="button" onClick={() => setScheduleDecision('scheduled')} disabled={busy}>
+                <strong>Complete scheduled</strong>
+                <span>{record.recurringEnabled ? 'Mark done and create the next reminder.' : 'Mark this scheduled work as done.'}</span>
+              </button>
+              <button type="button" onClick={() => setScheduleDecision('separate')} disabled={busy}>
+                <strong>Record other work</strong>
+                <span>Keep this schedule open.</span>
+              </button>
             </div>
           </div>
-          <footer className={styles.footer}>
-            <button
-              className={styles.cancelButton}
-              type="button"
-              onClick={() => setScheduleDecision('separate')}
-              disabled={busy}
-            >
-              {dealerAppMode ? 'Save separately' : 'No, save separately'}
-            </button>
-            <button
-              className={styles.submitButton}
-              data-primary-action
-              type="button"
-              onClick={() => setScheduleDecision('scheduled')}
-              disabled={busy}
-            >
-              {dealerAppMode ? 'Complete scheduled' : <>Yes, complete scheduled {actionName}</>}
-            </button>
-          </footer>
+
         </section>
       </div>
     );
@@ -268,8 +235,8 @@ export default function DesktopServiceModal({
       <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="desktop-service-title">
         <header className={styles.header}>
           <div>
-            <h2 id="desktop-service-title">Record completed {actionName}</h2>
-            <p>{serviceAssetMeta(record)}</p>
+            <h2 id="desktop-service-title">{standalone ? 'Record completed work' : `Record ${actionName}`}</h2>
+            <p>{record.assetTitle}</p>
           </div>
           <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close service form" disabled={busy}>
             <CloseIcon />
@@ -278,14 +245,10 @@ export default function DesktopServiceModal({
 
         <form onSubmit={(event) => void submit(event)}>
           <div className={styles.body}>
-            <div className={`${styles.infoBanner} ${isSeparateCompletion ? styles.separateBanner : ''}`}>
-              <strong>{isSeparateCompletion ? `Saving a separate ${actionName}` : `Completing “${record.title}”`}</strong>
-              <span>
-                {isSeparateCompletion
-                  ? `Log work that has already been completed. “${record.title}” will remain open and unchanged.`
-                  : 'Log work that has already been completed. This scheduled item will be marked as done.'}
-              </span>
-            </div>
+            {!standalone ? <div className={styles.infoBanner}>
+              <strong>{isSeparateCompletion ? 'Record other work' : `Completing “${record.title}”`}</strong>
+              <span>{isSeparateCompletion ? 'The scheduled work stays open.' : record.recurringEnabled ? 'The next reminder will be created automatically.' : 'This scheduled work will be marked done.'}</span>
+            </div> : null}
 
             <section className={styles.section}>
               <div className={styles.sectionHeading}>
@@ -318,7 +281,7 @@ export default function DesktopServiceModal({
             <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <span>2</span>
-                <div><h3>When was it completed?</h3><p>Use the actual date and the reading after the work.</p></div>
+                <div><h3>When was it completed?</h3><p>Enter the date and reading at the time.</p></div>
               </div>
               <div className={styles.fieldGrid}>
                 <label className={styles.field}>
@@ -328,7 +291,7 @@ export default function DesktopServiceModal({
                 <label className={styles.field}>
                   <span>Usage at completion <small>({unit}, {requiresUsageReading ? 'required' : 'optional'})</small></span>
                   <div className={styles.usageInput}>
-                    <input type="number" min={record.currentUsage ?? 0} step="0.1" value={completedUsage} onChange={(event) => setCompletedUsage(event.target.value)} placeholder={`Final ${unit} reading`} required={requiresUsageReading} />
+                    <input type="number" min={standalone || isSeparateCompletion ? 0 : record.currentUsage ?? 0} step="0.1" value={completedUsage} onChange={(event) => setCompletedUsage(event.target.value)} placeholder={`Final ${unit} reading`} required={requiresUsageReading} />
                     <b>{unit}</b>
                   </div>
                   <small className={styles.fieldHint}>{savedUsageLabel}</small>
@@ -356,36 +319,23 @@ export default function DesktopServiceModal({
                   <input type="text" value={mechanic} onChange={(event) => setMechanic(event.target.value)} placeholder={mode === 'checked' ? 'Name of person who checked the asset' : copy.mechanicPlaceholder} required />
                 </label>
                 <label className={`${styles.field} ${styles.fieldWide}`}>
-                  <span>Notes / problems <small>(optional if items are selected)</small></span>
-                  <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={mode === 'checked' ? copy.checkedNotePlaceholder : copy.servicedNotePlaceholder} rows={4} />
+                  <span>Work details / notes <small>(optional if items are selected)</small></span>
+                  <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={mode === 'checked' ? copy.checkedNotePlaceholder : copy.servicedNotePlaceholder} rows={3} />
                 </label>
               </div>
             </section>
-
-            {record.recurringEnabled && !isSeparateCompletion ? (
-              <div className={styles.recurringBanner}>
-                <CheckIcon />
-                <div><strong>What happens after saving</strong><span>This scheduled item will close and the next one will be created automatically{intervalLabel(record) ? ` · ${intervalLabel(record)}` : ''}.</span></div>
-              </div>
-            ) : null}
-
-            {isSeparateCompletion ? (
-              <div className={`${styles.recurringBanner} ${styles.separateBanner}`}>
-                <span className={styles.infoIcon} aria-hidden="true">i</span>
-                <div><strong>The scheduled item stays open</strong><span>Only this separate completed {actionName} will be added to the asset history.</span></div>
-              </div>
-            ) : null}
 
             {error ? <div className={styles.error} role="alert">{error}</div> : null}
           </div>
 
           <footer className={styles.footer}>
+            {onBack || askScheduleLink ? <button className={styles.cancelButton} type="button" disabled={busy} onClick={() => { if (askScheduleLink) setScheduleDecision(null); else onBack?.(); }}>Back</button> : null}
             <button className={styles.cancelButton} type="button" onClick={onClose} disabled={busy}>Cancel</button>
             <button className={styles.submitButton} type="submit" disabled={busy}>
               {busy
-                ? `Saving ${actionName}…`
-                : isSeparateCompletion
-                  ? `Save separate ${actionName}`
+                ? `Saving…`
+                : standalone || isSeparateCompletion
+                  ? 'Save record'
                   : askScheduleLink
                     ? `Complete scheduled ${actionName}`
                     : `Save completed ${actionName}`}

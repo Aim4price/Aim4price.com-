@@ -25,6 +25,7 @@ type UsageIntervalUnit = 'hours' | 'km' | 'percentage';
 type IntervalUnit = DateIntervalUnit | UsageIntervalUnit;
 
 type AssetOption = {
+  maintenanceIdentity?: MaintenanceIdentity;
   id: string;
   title: string;
   kind: string;
@@ -145,7 +146,7 @@ type MaintenanceDraft = {
   recurringIntervalUnit: IntervalUnit;
 };
 
-type ModalMode = 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'quick-clear' | 'delete' | null;
+type ModalMode = 'timing' | 'record-work' | 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'quick-clear' | 'delete' | null;
 type QuickClearStep = 'confirm' | 'completion';
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
@@ -800,6 +801,7 @@ export default function MaintenanceClient({
   const [pickerSearch, setPickerSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<MaintenanceFilters>(initialFilters);
   const [draftFilters, setDraftFilters] = useState<MaintenanceFilters>(initialFilters);
+  const [entryTiming, setEntryTiming] = useState<'done' | 'upcoming'>('upcoming');
   const [draft, setDraft] = useState<MaintenanceDraft | null>(null);
   const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
   const [quickLaunchActive, setQuickLaunchActive] = useState(false);
@@ -873,7 +875,7 @@ export default function MaintenanceClient({
       setDraft(emptyDraftForAsset(requestedAsset));
       setPickerSearch('');
       setQuickLaunchActive(true);
-      setModalMode('maintenance-type');
+      setModalMode('timing');
       return;
     }
 
@@ -982,12 +984,33 @@ export default function MaintenanceClient({
 
   function selectAsset(asset: AssetOption) {
     setDraft(emptyDraftForAsset(asset));
-    setModalMode('maintenance-type');
+    setModalMode('timing');
   }
 
   function chooseMaintenanceType(type: MaintenanceType) {
     updateDraft({ maintenanceType: type });
-    setModalMode('trigger-type');
+    setModalMode(entryTiming === 'done' ? 'record-work' : 'trigger-type');
+  }
+
+  async function savePastWork(completion: DesktopServiceCompletion) {
+    if (!draft || completeRequestInFlight.current) return;
+    completeRequestInFlight.current = true;
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/maintenance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...completion, assetId: draft.assetId, maintenanceType: draft.maintenanceType, status: 'done' }),
+      });
+      const payload = await response.json();
+      if (!response.ok || payload.ok === false) throw new Error(payload.error || 'Could not save completed work.');
+      await loadData(activeFilters, { silent: true });
+      closeModal();
+      setNotice({ type: 'success', text: 'Completed work saved to maintenance history.' });
+    } finally {
+      completeRequestInFlight.current = false;
+      setIsSaving(false);
+    }
   }
 
   function chooseTriggerType(triggerType: TriggerType) {
@@ -1477,12 +1500,56 @@ export default function MaintenanceClient({
       ) : null}
 
 
+      {modalMode === 'timing' && draft ? (
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-timing-title">
+          <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
+            <header className={styles.modalHeader}>
+              <div><h2 id="maintenance-timing-title">Already done or upcoming?</h2><p>{selectedDraftAsset?.title}</p></div>
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance"><CloseIcon /></button>
+            </header>
+            <div className={styles.modalDivider} />
+            <div className={styles.maintenanceChoiceBody}>
+              <div className={styles.maintenanceChoiceGrid}>
+                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => { setEntryTiming('done'); setModalMode('maintenance-type'); }}>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><CheckIcon /></span>
+                  <strong>Already done</strong><small>Record past services, repairs or checks.</small>
+                </button>
+                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => { setEntryTiming('upcoming'); setModalMode('maintenance-type'); }}>
+                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">31</span>
+                  <strong>Upcoming</strong><small>Schedule work and reminders.</small>
+                </button>
+              </div>
+            </div>
+            <footer className={styles.modalFooter}>
+              {!assetEntryLocked ? <button className={styles.secondaryButton} type="button" onClick={returnToAssetPicker}>Back</button> : null}
+              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {modalMode === 'record-work' && draft && selectedDraftAsset ? (
+        <DesktopServiceModal
+          record={{ id: selectedDraftAsset.id, assetTitle: selectedDraftAsset.title,
+            maintenanceIdentity: selectedDraftAsset.maintenanceIdentity,
+            assetKind: selectedDraftAsset.kind, assetCategoryLabel: selectedDraftAsset.categoryLabel,
+            assetYearModel: selectedDraftAsset.yearModel, assetCondition: selectedDraftAsset.condition,
+            maintenanceType: draft.maintenanceType, title: 'Completed work',
+            currentUsage: selectedDraftAsset.usageReading, usageMetric: selectedDraftAsset.usageMetric }}
+          standalone
+          busy={isSaving}
+          onBack={() => setModalMode('maintenance-type')}
+          onClose={closeModal}
+          onSubmit={savePastWork}
+        />
+      ) : null}
+
       {modalMode === 'maintenance-type' && draft ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-type-title">
           <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
             <header className={styles.modalHeader}>
               <div>
-                <h2 id="maintenance-type-title">What are you scheduling?</h2>
+                <h2 id="maintenance-type-title">{entryTiming === 'done' ? 'What was done?' : 'What needs doing?'}</h2>
                 <p>{selectedAssetLabel(selectedDraftAsset)}</p>
               </div>
               <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance type selection">
@@ -1495,7 +1562,7 @@ export default function MaintenanceClient({
                 <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseMaintenanceType('service')}>
                   <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><ServiceGearIcon /></span>
                   <strong>Service</strong>
-                  <small>Routine servicing or repairs.</small>
+                  <small>Servicing, repairs or maintenance.</small>
                 </button>
                 <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseMaintenanceType('checkup')}>
                   <span className={styles.maintenanceChoiceIcon} aria-hidden="true">✓</span>
@@ -1505,9 +1572,7 @@ export default function MaintenanceClient({
               </div>
             </div>
             <footer className={styles.modalFooter}>
-              {!assetEntryLocked ? (
-                <button className={styles.secondaryButton} type="button" onClick={returnToAssetPicker}>Back</button>
-              ) : null}
+              <button className={styles.secondaryButton} type="button" onClick={() => setModalMode('timing')}>Back</button>
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
             </footer>
           </section>
@@ -1519,7 +1584,7 @@ export default function MaintenanceClient({
           <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
             <header className={styles.modalHeader}>
               <div>
-                <h2 id="maintenance-trigger-title">When should it be due?</h2>
+                <h2 id="maintenance-trigger-title">Due by date or usage?</h2>
                 <p>{typeLabel(draft.maintenanceType)} · {selectedAssetLabel(selectedDraftAsset)}</p>
               </div>
               <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance trigger selection">
