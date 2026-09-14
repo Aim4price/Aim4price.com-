@@ -148,3 +148,36 @@ test('QR label closes failed previews and reports expired sessions or blocked po
   await assert.rejects(load('lib/asset-qr-label.ts').openAssetQrLabel('/label'),/allow pop-ups/);
  }finally{global.window=originalWindow;global.fetch=originalFetch;}
 });
+
+test('label keeps the full title and resolves the saved account name without mockup placeholders',async()=>{
+ const record={...asset,title:'Year Unknown Zimmatic 6-Tower + Overhang'};
+ for(const [profile,expected] of [
+  [{businessName:'Vasbyt & Sons',displayName:'Kuyler'},'Vasbyt &amp; Sons'],
+  [{businessName:'   ',displayName:'Kuyler'},'Kuyler'],
+  [{name:'Owner name'},'Owner name'],
+ ]) {
+  const html=await (await routeFixture({record,profile}).GET(request('print'))).text();
+  assert.ok(html.includes('<h2 class="assetTitle">'+record.title+'</h2>'));
+  assert.ok(html.includes('<p class="accountName">'+expected+'</p>'));
+  assert.ok(html.indexOf('<header class="labelTitle">')<html.indexOf('<div class="qrFrame">'));
+  assert.doesNotMatch(html,/Your account name|Your logo/);
+ }
+ const html=await (await routeFixture({record,profile:{}}).GET(request('print'))).text();
+ assert.doesNotMatch(html,/<p class="accountName">/);
+});
+test('account name is escaped and dealer previews use the owner name',async()=>{
+ // Give dealer and owner distinct names to guard against branding the wrong account.
+ const branded=load('app/api/asset-register/qr/route.ts',{
+  '../../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>true},
+  '../../../../lib/account-profile':{getAccountProfile:async({id})=>id==='owner'
+   ?{accountType:'dealer',accountStatus:'active',businessName:'Dealer business'}
+   :{businessName:'Owner <farm>',logoUrl:''}},
+  '../../../../lib/report-logo':{getFallbackReportLogoUrl:async()=>'/fallback.png',resolveReportLogoUrlForHtml:async()=>'/fallback.png'},
+  '../../../../lib/auth-session':{getServerSession:async()=>({user:{id:'owner',name:'Dealer name'}})},
+  '../../../../lib/asset-register-db':{getAssetRegisterItemById:async()=>asset},
+  '../../../../lib/partner-access':{getAssetLeadForPartner:async()=>({assetRegisterItemId:'asset',ownerUserId:'lead-owner'})},
+ });
+ const html=await (await branded.GET(new NextRequest(request('print').url+'&leadId=lead'))).text();
+ assert.match(html,/<p class="accountName">Owner &lt;farm&gt;<\/p>/);
+ assert.doesNotMatch(html,/Dealer business|Dealer name|<farm>/);
+});
