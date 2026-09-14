@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { openCanonicalReportUrl } from '../lib/report-open.ts';
+import { openCanonicalReportUrl, downloadCanonicalReportFile } from '../lib/report-open.ts';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -163,4 +163,42 @@ test('Owner App may open authenticated canonical HTML but still cannot request C
   const route = await read('app/api/my-invoices/report/route.ts');
 
   assert.match(route, /ownerAppMode && requestedFormat !== 'xlsx' && requestedFormat !== 'html'[\s\S]*?\? 'pdf'[\s\S]*?: requestedFormat/);
+});
+
+test('Excel downloads preserve the original app session and validate the file before saving', async () => {
+  const previousWindow = globalThis.window, previousFetch = globalThis.fetch, previousDocument = globalThis.document;
+  const previousCreate = URL.createObjectURL, previousRevoke = URL.revokeObjectURL;
+  const downloaded = [], revoked = [];
+  try {
+    globalThis.window = {
+      location: { href: 'https://www.aim4price.com/owner-app/assets/asset-1', origin: 'https://www.aim4price.com', pathname: '/owner-app/assets/asset-1' },
+      setTimeout(callback, delay) { if (delay === 60_000) { callback(); return 0; } return setTimeout(callback, delay); },
+      clearTimeout,
+    };
+    globalThis.document = {
+      body: { append() {} },
+      createElement() { return { click() { downloaded.push({ href: this.href, filename: this.download }); }, remove() {} }; },
+    };
+    URL.createObjectURL = (blob) => { assert.ok(blob.size > 0); return 'blob:fixture'; };
+    URL.revokeObjectURL = (url) => revoked.push(url);
+    globalThis.fetch = async (_url, options) => {
+      assert.equal(options.headers['x-aim4price-client-realm'], 'owner');
+      assert.equal(options.credentials, 'same-origin');
+      return new Response('PK-fixture', { headers: {
+        'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'content-disposition': 'attachment; filename="maintenance.xlsx"',
+      } });
+    };
+    await downloadCanonicalReportFile('/api/maintenance/report?format=xlsx');
+    assert.deepEqual(downloaded, [{ href: 'blob:fixture', filename: 'maintenance.xlsx' }]);
+    assert.deepEqual(revoked, ['blob:fixture']);
+    globalThis.fetch = async () => new Response('{"ok":false}', { headers: { 'content-type': 'application/json' } });
+    await assert.rejects(downloadCanonicalReportFile('/api/maintenance/report?format=xlsx'), /spreadsheet could not be prepared/);
+    globalThis.fetch = async () => new Response('{"error":"You must be signed in."}', { status: 401 });
+    await assert.rejects(downloadCanonicalReportFile('/api/maintenance/report?format=xlsx'), /session has expired/);
+    assert.equal(downloaded.length, 1);
+  } finally {
+    globalThis.window = previousWindow; globalThis.fetch = previousFetch; globalThis.document = previousDocument;
+    URL.createObjectURL = previousCreate; URL.revokeObjectURL = previousRevoke;
+  }
 });

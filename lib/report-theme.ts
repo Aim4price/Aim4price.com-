@@ -72,7 +72,7 @@ export const REPORT_THEME_CSS = `
   .assetReportSummaryRow { padding: 4px 7px; }
   .assetReportSummaryRow:nth-child(odd) { background: var(--brand-wash); }
   .assetReportTable thead th { background: var(--brand-soft); color: var(--strong); border-color: var(--line); }
-  .assetReportTable td { border-color: var(--line); overflow-wrap: anywhere; }
+  .assetReportTable td { border-color: var(--line); color: var(--ink); overflow-wrap: anywhere; }
   .assetReportTable tbody tr:nth-child(even) td { background: var(--brand-wash); }
   .assetReportTableWrap { border-color: var(--line); border-radius: 6px; }
   thead { display: table-header-group; }
@@ -112,7 +112,18 @@ export const REPORT_THEME_CSS = `
   .reportFullRegisterHeading { padding: 9px 11px; background: var(--brand-soft); border: 1px solid var(--line-strong); border-radius: 8px; break-after: avoid; }
   .reportFullRegisterHeading h2 { margin: 0 0 4px; color: var(--brand); }
   .reportFullRegisterHeading p { margin: 0; color: var(--muted); }
+  @media screen and (max-width: 900px) {
+    .assetMapReportInner > *, .assetMapReportKeyRows { min-width: 0; }
+    .assetMapReportKeyRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .assetMapReportMarkerNumber, .assetMapReportAssetCell { grid-column: 1 / -1; }
+    .assetMapReportPage { padding: 20px 16px; }
+    .assetMapReportPhotoGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .assetMapReportPhotoGrid .assetMapReportPhotoTile { grid-column: auto; }
+  }
   @media screen and (max-width: 760px) {
+    .assetReportInner > *, .assetReportMainStack, .assetReportFullStack,
+    .assetReportSection, .assetReportSideCard, .assetReportTableWrap { min-width: 0; max-width: 100%; }
+    .assetReportMainStack, .assetReportFullStack { grid-template-columns: minmax(0, 1fr); }
     .assetReportPage, .fullRegisterPage, .reportPage { width: calc(100% - 20px); padding: 20px 16px; }
     .assetReportValuationCard, .fullRegisterValuePanel, .reportPage .heroStatus { border-radius: 0 0 8px 8px; }
     .assetReportIdentity, .reportPage .heroMain { border-radius: 8px 8px 0 0; }
