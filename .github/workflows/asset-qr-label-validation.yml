@@ -1,0 +1,40 @@
+name: Asset QR label validation
+
+on:
+  pull_request:
+    paths:
+      - 'app/api/asset-register/qr/**'
+      - 'lib/asset-qr-label*.ts'
+      - 'lib/qr-image.ts'
+      - 'lib/report-logo.ts'
+      - 'tests/qr-rendering.test.cjs'
+      - 'scripts/verify-asset-qr-label.cjs'
+      - 'public/brand/**'
+      - 'public/field-manager/montserrat-latin.woff'
+      - 'package*.json'
+      - '.github/workflows/asset-qr-label-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/qr-rendering.test.cjs
+      - run: node scripts/verify-asset-qr-label.cjs
+      - name: Save label previews and print evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: asset-qr-label-evidence
+          path: .next/qr-label-validation
