@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (error.message === 'FUTURE_PRICE_UNAVAILABLE') {
-      return badRequest('Future price is only available for saved tractor, motor vehicle, and percentage-worked valuations with the required asset data.');
+      return badRequest('Future pricing requires a saved Aim4price valuation and the required asset details. Basic hours, kilometres and lifetime-worked valuations are supported.');
     }
 
     if (error.message === 'TARGET_PERCENT_INVALID') {
