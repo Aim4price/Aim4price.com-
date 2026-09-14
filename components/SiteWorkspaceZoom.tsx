@@ -14,7 +14,10 @@ import {
 import styles from './SiteWorkspaceZoom.module.css';
 import { WebsiteCanvasContext } from './WebsitePortal';
 
-function availableUnzoomedWidth(): number {
+function availableUnzoomedWidth(coarsePointer: boolean): number {
+  // Touch browsers and device emulation must fit the layout viewport. The outer
+  // window can still be desktop-sized; clientWidth is stable during pinch zoom.
+  if (coarsePointer) return Math.max(1, document.documentElement.clientWidth);
   // Browser zoom changes innerWidth, but must not cause Aim4price to cancel
   // the user's magnification. outerWidth remains stable across browser zoom.
   // The scrollbar belongs to viewport mechanics, not the desktop composition.
@@ -51,11 +54,18 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     if (native) return;
     try { setPreference(parseWebsitePreference(localStorage.getItem(WEBSITE_PREFERENCE_KEY))); }
     catch { setPreference({ mode: 'auto' }); }
-    const syncAutomaticScale = () => setAutomaticScale(calculateWebsiteScale(availableUnzoomedWidth()));
+    const coarsePointer = window.matchMedia('(hover: none) and (pointer: coarse)');
+    const syncAutomaticScale = () => setAutomaticScale(calculateWebsiteScale(availableUnzoomedWidth(coarsePointer.matches)));
     syncAutomaticScale();
     setLoaded(true);
     window.addEventListener('resize', syncAutomaticScale);
-    return () => window.removeEventListener('resize', syncAutomaticScale);
+    window.addEventListener('orientationchange', syncAutomaticScale);
+    coarsePointer.addEventListener('change', syncAutomaticScale);
+    return () => {
+      window.removeEventListener('resize', syncAutomaticScale);
+      window.removeEventListener('orientationchange', syncAutomaticScale);
+      coarsePointer.removeEventListener('change', syncAutomaticScale);
+    };
   }, [native]);
 
   useLayoutEffect(() => {
