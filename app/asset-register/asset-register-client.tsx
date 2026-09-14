@@ -1,5 +1,7 @@
 'use client';
 
+import { assetCanReceiveFuel } from '../../lib/asset-fuel-eligibility';
+
 import CompactChoicePages from '../../components/CompactChoicePages';
 import compactExportStyles from '../../components/CompactRegisterExport.module.css';
 import CardVatToggle from '../../components/CardVatToggle';
@@ -695,6 +697,7 @@ type RegisterAsset = {
   equipmentModelId: number | null;
   typedModelName: string;
   normalizedTypedModelName: string;
+  familyIsPropelled?: boolean | null;
   specsJson: Record<string, unknown>;
   depreciationMethodUsed: string;
   lifeWorkedPercent: number | null;
@@ -4411,18 +4414,8 @@ function readBooleanFromSpecs(specs: Record<string, unknown>, keys: string[]): b
   return false;
 }
 
-function canAssetReceiveFuel(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>): boolean {
-  if (asset.kind === 'tractor' || asset.kind === 'vehicle') return true;
-
-  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
-  return readBooleanFromSpecs(specs, [
-    'is_propelled',
-    'isPropelled',
-    'self_propelled',
-    'selfPropelled',
-    'accepts_fuel',
-    'acceptsFuel',
-  ]);
+function canAssetReceiveFuel(asset: Pick<RegisterAsset, 'kind' | 'specsJson' | 'familyIsPropelled' | 'equipmentFamilyKey'>): boolean {
+  return assetCanReceiveFuel(asset);
 }
 
 function buildAssetRegisterManageReturnPath(assetId: string, currentLocation = '/asset-register'): string {

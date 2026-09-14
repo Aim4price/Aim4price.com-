@@ -43,6 +43,7 @@ export type AssetRegisterItem = {
   equipmentFamilyId: number | null;
   equipmentFamilyKey: string;
   equipmentFamilyLabel: string;
+  familyIsPropelled?: boolean | null;
   equipmentModelId: number | null;
   typedModelName: string;
   normalizedTypedModelName: string;
@@ -197,6 +198,7 @@ type AssetRegisterRow = {
   equipment_family_key: string | null;
   equipment_family_label: string | null;
   family_usage_metric_type?: string | null;
+  family_is_propelled?: boolean | null;
   equipment_model_id: string | number | null;
   typed_model_name: string | null;
   normalized_typed_model_name: string | null;
@@ -1741,6 +1743,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     typedModelName: asText(row.typed_model_name),
     normalizedTypedModelName: asText(row.normalized_typed_model_name),
     specsJson,
+    familyIsPropelled: row.family_is_propelled ?? null,
     depreciationMethodUsed: asText(row.depreciation_method_used),
     lifeWorkedPercent,
     lifeRemainingPercent: asNumber(row.life_remaining_percent),
@@ -1979,6 +1982,7 @@ function buildSelectList(schema: TableSchema): string {
     `(select ef.family_key from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as equipment_family_key`,
     `(select ef.family_label from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as equipment_family_label`,
     `(select ef.usage_metric_type from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as family_usage_metric_type`,
+    `(select ef.is_propelled from public.equipment_families ef where ef.id = ${equipmentFamilyIdExpression} limit 1) as family_is_propelled`,
     equipmentModelIdColumn ? `${equipmentModelIdColumn} as equipment_model_id` : 'null::bigint as equipment_model_id',
     `${typedModelNameExpression} as typed_model_name`,
     `${normalizedTypedModelNameExpression} as normalized_typed_model_name`,
