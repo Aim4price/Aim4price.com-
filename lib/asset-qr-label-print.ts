@@ -79,14 +79,14 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
     .printButton:disabled { opacity: .6; cursor: wait; }
     .qrLabel {
       width: 100%;
-      min-height: 390px;
+      min-height: 440px;
       display: grid;
       grid-template-columns: minmax(240px, .8fr) minmax(0, 1.6fr);
       align-items: center;
       gap: clamp(24px, 3.5vw, 44px);
       padding: clamp(24px, 3.5vw, 40px);
-      border: 2px solid #bacdc2;
-      border-radius: 32px;
+      border: 2px solid #78978a;
+      border-radius: 44px;
       background: #fff;
       box-shadow: 0 20px 60px #10382f0e;
     }
@@ -95,12 +95,13 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       padding: 4px;
       border: 1px solid #d6e2da;
       border-radius: 24px;
+      overflow: hidden;
       background: #fff;
     }
     .qrFrame img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
-    .labelCopy { min-width: 0; display: grid; gap: 28px; }
-    .labelHeading { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: center; gap: 24px; }
-    .logoFrame { display: grid; place-items: center; width: 100%; height: 112px; }
+    .labelCopy { min-width: 0; display: grid; grid-template-rows: auto 1fr; align-self: stretch; gap: 24px; }
+    .labelHeading { display: grid; grid-template-columns: 156px minmax(0, 1fr); align-items: start; gap: 24px; }
+    .logoFrame { display: grid; place-items: center; width: 100%; height: 156px; padding: 12px; border: 1.5px solid #78978a; border-radius: 22px; background: #fff; }
     .accountLogo { display: block; max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
     .assetTitle {
       margin: 0;
@@ -109,8 +110,13 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       line-height: 1.14;
       letter-spacing: -.035em;
       overflow-wrap: anywhere;
+      padding-bottom: 18px;
+      border-bottom: 2px solid #78978a;
     }
-    .serialBlock { display: grid; gap: 8px; padding-top: 22px; border-top: 1px solid var(--line); }
+    .labelDetails { display: flex; flex-direction: column; justify-content: flex-end; gap: 20px; }
+    .writingLines { display: grid; flex: 1; grid-auto-rows: minmax(12px, 1fr); align-items: end; gap: 22px; }
+    .writingLines span { display: block; height: 12px; border-bottom: 1.5px solid #78978a; }
+    .serialBlock { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1.5px solid #78978a; }
     .serialBlock span { color: #52695f; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
     .serialBlock strong { font-size: clamp(20px, 2.4vw, 26px); font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
     .printStatus { margin: 16px 0 0; color: #52695f; font-size: 14px; }
@@ -118,7 +124,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
     @media screen and (max-width: 800px) {
       .qrLabel { grid-template-columns: minmax(160px, .8fr) minmax(0, 1.3fr); min-height: 0; padding: 22px; gap: 24px; }
       .labelHeading { grid-template-columns: 1fr; gap: 14px; }
-      .logoFrame { width: 100px; height: 70px; }
+      .logoFrame { width: 110px; height: 110px; }
       .assetTitle { font-size: 26px; }
       .labelCopy { gap: 20px; }
     }
@@ -131,7 +137,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       .qrLabel { grid-template-columns: 1fr; padding: 24px; gap: 24px; border-radius: 26px; }
       .qrFrame { width: min(100%, 260px); justify-self: center; }
       .labelHeading { grid-template-columns: 76px minmax(0, 1fr); gap: 16px; }
-      .logoFrame { width: 76px; height: 76px; }
+      .logoFrame { width: 76px; height: 76px; padding: 6px; border-radius: 14px; }
       .assetTitle { font-size: 23px; }
     }
     @page { size: A4; margin: 12mm; }
@@ -142,7 +148,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       .qrLabel {
         width: 186mm;
         max-width: 100%;
-        min-height: 78mm;
+        min-height: 84mm;
         grid-template-columns: 55mm minmax(0, 1fr);
         padding: 7mm;
         gap: 7mm;
@@ -154,10 +160,13 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       }
       .qrFrame { padding: 1mm; border-radius: 5mm; }
       .labelCopy { gap: 6mm; }
-      .labelHeading { grid-template-columns: 23mm minmax(0, 1fr); gap: 5mm; }
-      .logoFrame { width: 23mm; height: 23mm; }
-      .assetTitle { font-size: 22pt; }
-      .serialBlock { gap: 2mm; padding-top: 5mm; }
+      .labelHeading { grid-template-columns: 30mm minmax(0, 1fr); gap: 5mm; }
+      .logoFrame { width: 30mm; height: 30mm; padding: 2mm; border-radius: 4mm; }
+      .assetTitle { font-size: 20pt; padding-bottom: 3mm; }
+      .labelDetails { gap: 4mm; }
+      .writingLines { gap: 4mm; }
+      .writingLines span { height: 3mm; }
+      .serialBlock { gap: 2mm; padding-bottom: 3mm; }
       .serialBlock span { font-size: 8pt; }
       .serialBlock strong { font-size: 15pt; }
     }
@@ -186,7 +195,10 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
             <div class="logoFrame"><img class="accountLogo" id="accountLogo" src="${logoUrl}" data-fallback="${fallbackLogoUrl}" alt="Account logo" referrerpolicy="no-referrer" /></div>
             <h2 class="assetTitle">${assetTitle}</h2>
           </div>
-          ${serialNumber ? `<div class="serialBlock"><span>Serial number</span><strong>${serialNumber}</strong></div>` : ''}
+          <div class="labelDetails">
+            ${serialNumber ? `<div class="serialBlock"><span>Serial number</span><strong>${serialNumber}</strong></div>` : ''}
+            <div class="writingLines" aria-label="Space for handwritten details"><span></span><span></span>${serialNumber ? '' : '<span></span>'}</div>
+          </div>
         </div>
       </section>
     </main>
@@ -197,6 +209,38 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       var logo = document.getElementById('accountLogo');
       var qr = document.getElementById('assetQr');
       var status = document.getElementById('printStatus');
+      // Uploaded logos often contain large empty margins. Fit the actual artwork
+      // into its frame without changing the stored image or touching the QR.
+      async function fitLogoArtwork() {
+        logo.dataset.originalSrc = logo.src;
+        try {
+          var canvas = document.createElement('canvas');
+          var scale = Math.min(1, 1200 / Math.max(logo.naturalWidth, logo.naturalHeight));
+          var width = canvas.width = Math.max(1, Math.round(logo.naturalWidth * scale));
+          var height = canvas.height = Math.max(1, Math.round(logo.naturalHeight * scale));
+          var context = canvas.getContext('2d');
+          context.drawImage(logo, 0, 0, width, height);
+          var pixels = context.getImageData(0, 0, width, height).data;
+          var left = width, top = height, right = -1, bottom = -1;
+          // Prefer alpha bounds, preserving white artwork on transparent logos.
+          var transparent = [0, (width - 1) * 4, (height - 1) * width * 4, (width * height - 1) * 4]
+            .every(function (i) { return pixels[i + 3] < 16; });
+          for (var y = 0; y < height; y++) {
+            for (var x = 0; x < width; x++) {
+              var i = (y * width + x) * 4;
+              if (pixels[i + 3] < 16 || (!transparent && pixels[i] > 245 && pixels[i + 1] > 245 && pixels[i + 2] > 245)) continue;
+              left = Math.min(left, x); right = Math.max(right, x);
+              top = Math.min(top, y); bottom = Math.max(bottom, y);
+            }
+          }
+          if (right < left || bottom < top || (left === 0 && top === 0 && right === width - 1 && bottom === height - 1)) return;
+          var cropped = document.createElement('canvas');
+          cropped.width = right - left + 1; cropped.height = bottom - top + 1;
+          cropped.getContext('2d').drawImage(canvas, left, top, cropped.width, cropped.height, 0, 0, cropped.width, cropped.height);
+          logo.src = cropped.toDataURL('image/png');
+          await logo.decode();
+        } catch (_) { /* Cross-origin images remain contained at their original aspect ratio. */ }
+      }
       // A failed or slow remote logo must never leave a broken image on the label.
       async function decodeLogo() {
         var timer;
@@ -213,6 +257,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       }
       try {
         await Promise.all([qr.decode(), decodeLogo()]);
+        await fitLogoArtwork();
         // Use the bundled font for printing without waiting indefinitely on a failed request.
         var fontTimer;
         await Promise.race([document.fonts.ready, new Promise(function (resolve) { fontTimer = setTimeout(resolve, 3000); })]);
