@@ -40823,7 +40823,8 @@ button.documentOpenLink {
 /* Approved umbrella and asset card design: neutral controls until grouped. */
 .page .assetGroupHeader {
  background:linear-gradient(180deg,#f0faf5,#f5fbf7) !important;
- border-color:rgba(61,154,115,.32) !important;
+ border-color:#175c48 !important;
+ box-shadow:0 10px 26px rgba(22,52,44,.055),inset 0 0 0 1px rgba(23,92,72,.24) !important;
  min-height:12rem;
 }
 .page .assetGroupMemberActions .assetGroupButton:not(.assetGroupButtonActive) {
