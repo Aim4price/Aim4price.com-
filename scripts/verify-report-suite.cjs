@@ -263,11 +263,13 @@ async function fixtures() {
           toolbarVisible: [...document.querySelectorAll('.assetReportScreenBar,.screenBar,.assetMapReportScreenBar,.actions')].some(node => getComputedStyle(node).display !== 'none'),
           overflow: sheet && getComputedStyle(sheet).overflow,
           shadow: sheet && getComputedStyle(sheet).boxShadow,
+          rootBackground: getComputedStyle(document.documentElement).backgroundColor,
           height: sheet?.clientHeight, scroll: sheet?.scrollHeight,
         };
       });
       assert.equal(printState.toolbarVisible, false, name+' print toolbar');
       assert.equal(printState.shadow, 'none', name+' print sheet shadow');
+      assert.equal(printState.rootBackground, 'rgb(255, 255, 255)', name+' printed paper background');
       assert.ok(printState.scroll <= printState.height+2 || printState.overflow === 'visible', name+' clips print content');
       const pdf = await page.pdf({ printBackground: true, preferCSSPageSize: true });
       const parsed = await PDFDocument.load(pdf);

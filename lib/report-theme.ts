@@ -109,7 +109,7 @@ export const REPORT_THEME_CSS = `
   .assetReportPageNumber, .fullRegisterFooterRight { display: none; }
   .reportFullAsset { break-inside: avoid; }
   .reportFullAsset p { margin: 5px 0; line-height: 1.5; overflow-wrap: anywhere; }
-  .reportFullRegisterHeading { padding: 9px 11px; background: var(--brand-soft); border: 1px solid var(--line-strong); border-radius: 8px; break-after: avoid; }
+  .reportFullRegisterHeading { break-inside: avoid; padding: 9px 11px; background: var(--brand-soft); border: 1px solid var(--line-strong); border-radius: 8px; break-after: avoid; }
   .reportFullRegisterHeading h2 { margin: 0 0 4px; color: var(--brand); }
   .reportFullRegisterHeading p { margin: 0; color: var(--muted); }
   @media screen {
@@ -136,7 +136,7 @@ export const REPORT_THEME_CSS = `
     .assetReportScreenActions > * { flex: 1 1 120px; width: auto; }
   }
   @media print {
-    html, body { background: #fff; }
+    :root, html, body { background: #fff; }
     .assetReportScreenBar, .screenBar, .assetMapReportScreenBar { display: none !important; }
     .assetReportPage, .fullRegisterPage, .reportPage, .assetMapReportPage {
       width: auto; height: auto; min-height: 0; margin: 0; padding: 0;
@@ -149,6 +149,7 @@ export const REPORT_THEME_CSS = `
     .assetReportSectionHeading, .assetReportSection h2, .reportPage .sectionHeading { break-after: avoid; page-break-after: avoid; }
     .assetReportSection:has(.assetReportEmpty) { break-inside: avoid; }
     .reportPage .footerPage::after { content: none; }
+    .page h2, .page h3 { break-after: avoid; page-break-after: avoid; }
     /* Grid containers can move a whole register onto the next sheet. */
     .assetReportSummaryStack, .fullRegisterAssetList { display: block; break-inside: auto; }
     .assetReportSummaryStack > * + * { margin-top: 10px; }
