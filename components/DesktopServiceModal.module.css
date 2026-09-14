@@ -532,3 +532,15 @@
 .dealerChoiceOverlay .footer .submitButton {
   grid-row: 1;
 }
+
+/* Direct choices keep the scheduled-work decision short and easy to scan. */
+.saveChoiceModal.saveChoiceModal { width: min(700px, var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 2rem)) !important; }
+.saveChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.saveChoices button { display: grid; align-content: center; gap: 8px; min-height: 118px; padding: 20px; border: 1px solid #cbded6; border-radius: 18px; background: linear-gradient(135deg, #f7faf9, #eef6f2); color: #173e31; text-align: left; font: inherit; cursor: pointer; }
+.saveChoices strong { font-size: 1.05rem; font-weight: 800; }
+.saveChoices span { color: #607168; font-size: .88rem; line-height: 1.45; }
+.saveChoices button:hover { border-color: #6a9d88; background: #eaf5ef; }
+.saveChoices button:focus-visible { outline: 3px solid #7db99d; outline-offset: 3px; }
+.saveChoices button:disabled { opacity: .6; cursor: wait; }
+.dealerChoiceOverlay .saveChoices { grid-template-columns: 1fr; }
+@media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .saveChoices { grid-template-columns: 1fr; } }
