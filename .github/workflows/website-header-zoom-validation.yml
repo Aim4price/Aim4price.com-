@@ -13,6 +13,7 @@ on:
       - 'tests/home-story-swipe.test.mjs'
       - 'tests/site-workspace-zoom.test.mjs'
       - 'scripts/verify-website-canvas.cjs'
+      - 'scripts/verify-website-mobile-sizing.cjs'
       - '.github/workflows/website-header-zoom-validation.yml'
   workflow_dispatch:
 
@@ -58,3 +59,21 @@ jobs:
           exit "$build_status"
 
 
+  mobile-sizing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Mobile Auto sizing and magnification
+        run: node scripts/verify-website-mobile-sizing.cjs
+      - run: npm run typecheck
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-sizing-validation
+          path: .next/mobile-sizing-validation
