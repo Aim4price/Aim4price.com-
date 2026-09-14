@@ -248,8 +248,8 @@ test('Manage uses concise update copy and a dedicated recalculate icon', () => {
     client.indexOf('{activeAsset && ownerAssetCommandPanel', client.indexOf('styles.ownerCommandOverlay')),
   );
   const pricingOptions = client.slice(
-    client.indexOf('<div className={styles.pricingOptionsGrid}>'),
-    client.indexOf('</div>', client.indexOf('<div className={styles.pricingOptionsGrid}>') + 1),
+    client.indexOf('{activeAsset && isPricingModalOpen ? ('),
+    client.indexOf('{saleabilityAsset ? ('),
   );
   const recalculateOption = pricingOptions.slice(
     pricingOptions.indexOf('openRevalueGuidedDialog'),
@@ -259,7 +259,7 @@ test('Manage uses concise update copy and a dedicated recalculate icon', () => {
   assert.match(ownerManage, /Edit details, documents and photos\./);
   assert.doesNotMatch(ownerManage, /Edit details, documents, photos and status\./);
   assert.match(recalculateOption, /<RecalculateIcon className=\{styles\.buttonIcon\}/);
-  assert.match(client, /function RecalculateIcon[\s\S]*?<path d="M4 9V4h5" \/>/);
+  assert.match(client, /function RecalculateIcon[\s\S]*?<path d="M3 3v5h5" \/>/);
 });
 
 test('Manage routes mapped assets to a focused map and unmapped assets to location setup', () => {
