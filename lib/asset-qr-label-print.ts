@@ -53,7 +53,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       background: radial-gradient(ellipse at top left, #dfece6 0, transparent 55%), #eef3f5;
       min-height: 100vh;
     }
-    .shell { width: min(100%, 1120px); margin: 0 auto; }
+    .shell { width: min(100%, 1200px); margin: 0 auto; }
     .toolbar {
       display: flex;
       align-items: center;
@@ -89,13 +89,13 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
     .printButton:disabled { opacity: .6; cursor: wait; }
     .qrLabel {
       width: 100%;
-      min-height: 440px;
+      min-height: 480px;
       display: grid;
-      grid-template-columns: minmax(240px, .8fr) minmax(0, 1.6fr);
+      grid-template-columns: minmax(240px, .75fr) minmax(0, 1.6fr);
       align-items: center;
-      gap: clamp(24px, 3.5vw, 44px);
-      padding: clamp(24px, 3.5vw, 40px);
-      border: 2px solid #78978a;
+      gap: clamp(28px, 4vw, 48px);
+      padding: clamp(28px, 4vw, 48px);
+      border: 1.5px solid #9bb5a9;
       border-radius: 44px;
       background: #fff;
       box-shadow: 0 20px 60px #10382f0e;
@@ -109,24 +109,22 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       background: #fff;
     }
     .qrFrame img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
-    .labelCopy { min-width: 0; display: grid; grid-template-rows: auto 1fr; align-self: stretch; gap: 24px; }
-    .labelHeading { display: grid; grid-template-columns: 156px minmax(0, 1fr); align-items: start; gap: 24px; }
-    .logoFrame { display: grid; place-items: center; width: 100%; height: 156px; padding: 12px; border: 1.5px solid #78978a; border-radius: 22px; background: #fff; }
+    .labelCopy { min-width: 0; display: grid; grid-template-rows: auto 1fr; align-self: stretch; gap: 36px; }
+    .labelHeading { display: grid; grid-template-columns: 144px minmax(0, 1fr); align-items: start; gap: 32px; }
+    .logoFrame { display: grid; place-items: center; width: 100%; height: 144px; padding: 16px; border: 1px solid #c5d6ce; border-radius: 22px; background: #fff; }
     .accountLogo { display: block; max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
     .assetTitle {
       margin: 0;
-      font-size: clamp(26px, 3.2vw, 38px);
-      font-weight: 800;
-      line-height: 1.14;
-      letter-spacing: -.035em;
+      font-size: clamp(25px, 2.5vw, 32px);
+      font-weight: 700;
+      line-height: 1.3;
+      letter-spacing: -.02em;
       overflow-wrap: anywhere;
-      padding-bottom: 18px;
-      border-bottom: 2px solid #78978a;
     }
-    .labelDetails { display: grid; align-content: start; gap: 16px; margin: 0; }
-    .detailRow { display: grid; grid-template-columns: 116px minmax(0, 1fr); align-items: baseline; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid #b4c9be; }
-    .detailRow dt { color: #52695f; font-size: 13px; font-weight: 600; }
-    .detailRow dd { margin: 0; font-size: clamp(18px, 2vw, 23px); font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
+    .labelDetails { display: grid; align-content: start; gap: 22px; margin: 0; }
+    .detailRow { display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: baseline; gap: 28px; padding-bottom: 20px; border-bottom: 1px solid #d8e3dd; }
+    .detailRow dt { color: #52695f; font-size: 14px; font-weight: 500; }
+    .detailRow dd { margin: 0; font-size: clamp(18px, 1.8vw, 21px); font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
     .printStatus { margin: 16px 0 0; color: #52695f; font-size: 14px; }
     .printStatus:empty { display: none; }
     @media screen and (max-width: 800px) {
@@ -135,7 +133,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       .logoFrame { width: 110px; height: 110px; }
       .assetTitle { font-size: 26px; }
       .detailRow { grid-template-columns: 1fr; gap: 6px; }
-      .labelCopy { gap: 20px; }
+      .labelCopy { gap: 28px; }
     }
     @media screen and (max-width: 520px) {
       body { padding: 16px; }
@@ -145,8 +143,8 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       button { padding: 12px 14px; }
       .qrLabel { grid-template-columns: 1fr; padding: 24px; gap: 24px; border-radius: 26px; }
       .qrFrame { width: min(100%, 260px); justify-self: center; }
-      .labelHeading { grid-template-columns: 76px minmax(0, 1fr); gap: 16px; }
-      .logoFrame { width: 76px; height: 76px; padding: 6px; border-radius: 14px; }
+      .labelHeading { grid-template-columns: 1fr; gap: 20px; }
+      .logoFrame { width: 96px; height: 96px; padding: 10px; border-radius: 16px; }
       .assetTitle { font-size: 23px; }
     }
     @page { size: A4; margin: 12mm; }
@@ -157,10 +155,10 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       .qrLabel {
         width: 186mm;
         max-width: 100%;
-        min-height: 84mm;
-        grid-template-columns: 55mm minmax(0, 1fr);
-        padding: 7mm;
-        gap: 7mm;
+        min-height: 92mm;
+        grid-template-columns: 52mm minmax(0, 1fr);
+        padding: 8mm;
+        gap: 8mm;
         border: .4mm solid #859c8f;
         border-radius: 7mm;
         box-shadow: none;
@@ -168,14 +166,14 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
         page-break-inside: avoid;
       }
       .qrFrame { padding: 1mm; border-radius: 5mm; }
-      .labelCopy { gap: 6mm; }
-      .labelHeading { grid-template-columns: 30mm minmax(0, 1fr); gap: 5mm; }
-      .logoFrame { width: 30mm; height: 30mm; padding: 2mm; border-radius: 4mm; }
-      .assetTitle { font-size: 20pt; padding-bottom: 3mm; }
-      .labelDetails { gap: 4mm; }
-      .detailRow { grid-template-columns: 24mm minmax(0, 1fr); gap: 3mm; padding-bottom: 3mm; }
+      .labelCopy { gap: 8mm; }
+      .labelHeading { grid-template-columns: 28mm minmax(0, 1fr); gap: 6mm; }
+      .logoFrame { width: 28mm; height: 28mm; padding: 3mm; border-radius: 4mm; }
+      .assetTitle { font-size: 17pt; }
+      .labelDetails { gap: 5mm; }
+      .detailRow { grid-template-columns: 25mm minmax(0, 1fr); gap: 5mm; padding-bottom: 4mm; }
       .detailRow dt { font-size: 9pt; }
-      .detailRow dd { font-size: 13pt; }
+      .detailRow dd { font-size: 12pt; }
     }
   </style>
 </head>
