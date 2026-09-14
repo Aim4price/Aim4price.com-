@@ -40970,7 +40970,10 @@ button.documentOpenLink {
 .pricingAccountModal .revalueReplacementField > span { color:#405c50 !important; font-size:.7rem !important; font-weight:850 !important; letter-spacing:.045em !important; text-transform:uppercase; }
 
 .managementAccountModal.projectionQuestionModal { width:min(var(--website-dialog-reference-width,100%),58rem) !important; }
-.projectionQuestionModal .projectionSimpleCard { display:grid; gap:1rem; }
+.projectionQuestionModal .projectionSimpleBody { align-content:start; }
+.projectionQuestionModal .projectionSimpleCard { display:grid; align-content:start; gap:.75rem; }
+.projectionQuestionModal .projectionSimpleCard :is(h4, p) { margin:0 !important; }
+.projectionQuestionModal .projectionSimpleSectionHeader { gap:.25rem; }
 .projectionQuestionModal .projectionConditionGrid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
 .projectionQuestionModal .projectionQuestionProgress { margin:0; }
 

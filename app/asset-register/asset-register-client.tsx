@@ -16214,20 +16214,18 @@ export default function AssetRegisterClient({
     : projectionResult?.usageMetric ?? (projectionAsset ? getAssetUsageMetric(projectionAsset) : 'hours');
   const projectionUsageShortUnit = projectionUsageMetric === 'percent' ? '%' : usageMetricLabel(projectionUsageMetric);
   const projectionUsageFieldLabel = projectionUsageMetric === 'percent'
-    ? 'New Expected %'
+    ? `Total lifetime worked (%) in ${projectionForm.targetYear}`
     : projectionUsageMetric === 'km'
-      ? 'Add extra kilometres'
-      : 'Add extra hours';
+      ? `Additional kilometres by ${projectionForm.targetYear}`
+      : `Additional hours by ${projectionForm.targetYear}`;
   const projectionUsagePlaceholder = projectionUsageMetric === 'percent'
     ? 'Example: 60'
     : projectionUsageMetric === 'km'
       ? 'Type extra kilometres'
       : 'Type extra hours';
   const projectionUsageHelpText = projectionUsageMetric === 'percent'
-    ? 'Enter the expected usage percentage for the target year.'
-    : projectionUsageMetric === 'km'
-      ? 'Only change what you know. Leave extra kilometres empty if usage stays the same.'
-      : 'Only change what you know. Leave extra hours empty if usage stays the same.';
+    ? 'Enter the total percentage worked by then, not an additional percentage.'
+    : 'Enter only the extra usage from now until that year. Leave blank for no increase.';
   const projectionUsageMetaLabel = projectionUsageMetric === 'percent' ? 'Usage %' : projectionUsageMetric === 'km' ? 'Kilometres' : 'Hours';
   const projectionCurrentWorkedPercent = projectionResult?.current.lifeWorkedPercent ?? (projectionAsset ? getAssetLifeWorkedPercent(projectionAsset) : null);
   const projectionTargetWorkedPercent = projectionResult?.projected.lifeWorkedPercent ?? projectionResult?.targetLifeWorkedPercent ?? null;
@@ -23041,14 +23039,17 @@ export default function AssetRegisterClient({
 
                     </>) : null}
                     {projectionStep === 3 ? (<>
-                      <h4>How much will the asset be used?</h4>
-                      <p>Current usage: {buildAssetUsageValue(projectionAsset)}</p>
-                      <p>{projectionUsageHelpText}</p>
+                      <div className={styles.projectionSimpleSectionHeader}>
+                        <h4>{projectionUsesPercentUsage ? 'How much of its lifetime will be used?' : 'How much more will it be used?'}</h4>
+                        <p>Current usage: {buildAssetUsageValue(projectionAsset)}</p>
+                      </div>
+                      <p id="projection-usage-help">{projectionUsageHelpText}</p>
                     <label className={styles.field}>
                       <span>{projectionUsageFieldLabel}</span>
                       <input
                         type="number"
-                        min="0"
+                        aria-describedby="projection-usage-help"
+                        min={projectionUsesPercentUsage ? String(projectionCurrentWorkedPercent ?? 0) : '0'}
                         max={projectionUsesPercentUsage ? '100' : undefined}
                         step={projectionUsesPercentUsage ? '0.1' : '50'}
                         value={projectionUsesPercentUsage ? projectionForm.targetLifeWorkedPercent : projectionForm.extraHours}
@@ -23063,8 +23064,10 @@ export default function AssetRegisterClient({
                       <button type="button" className={styles.secondaryButton} onClick={() => advanceProjectionStep(projectionUsesPercentUsage ? { targetLifeWorkedPercent: String(getAssetLifeWorkedPercent(projectionAsset) ?? 0) } : { extraHours: '0' })}>Keep current usage</button>
                     </>) : null}
                     {projectionStep === 4 ? (<>
-                      <h4>What will its future condition be?</h4>
-                      <p>Current condition: {conditionLabel(projectionAsset.condition)}</p>
+                      <div className={styles.projectionSimpleSectionHeader}>
+                        <h4>What will its future condition be?</h4>
+                        <p>In {projectionForm.targetYear} · Current condition: {conditionLabel(projectionAsset.condition)}</p>
+                      </div>
                     <div className={styles.projectionConditionGrid}>
                       {PROJECTION_CONDITION_OPTIONS.map((option) => {
                         const isSelected = projectionForm.targetCondition === option.key;
