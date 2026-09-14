@@ -22,7 +22,7 @@ const evidence = path.join(__dirname, '../.next/qr-label-validation');
   const fallback = 'data:image/png;base64,' + fs.readFileSync(path.join(__dirname, '../public/brand/aim4price-mark-black.png')).toString('base64');
   const customLogo = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" rx="16" fill="#10382f"/><text x="60" y="74" fill="white" font-family="Arial" font-size="36" text-anchor="middle">KG</text></svg>').toString('base64');
   const qrImageUrl = await QRCode.toDataURL('https://www.aim4price.com/scan/A4P-LABEL-TEST', { width: 640, margin: 4, errorCorrectionLevel: 'M' });
-  const options = { assetTitle: '2022 New Holland TT4.90 4WD Openstation', yearModel: 2022, modelName: 'TT4.90 4WD Openstation', serialNumber: 'NH-TT490-2022-001309', qrImageUrl, logoUrl: customLogo, fallbackLogoUrl: fallback };
+  const options = { accountName: 'Kuyler Farms', assetTitle: '2022 New Holland TT4.90 4WD Openstation', yearModel: 2022, modelName: 'TT4.90 4WD Openstation', serialNumber: 'NH-TT490-2022-001309', qrImageUrl, logoUrl: customLogo, fallbackLogoUrl: fallback };
   const browser = await puppeteer.launch({ executablePath: process.env.CANVAS_BROWSER_PATH || await chromium.executablePath(), args: chromium.args, headless: true, pipe: true });
   try {
     const page = await browser.newPage();
@@ -65,7 +65,7 @@ const evidence = path.join(__dirname, '../.next/qr-label-validation');
       await open();
       await checkGeometry();
       await page.screenshot({ path: path.join(evidence, `label-${width}.png`), fullPage: true });
-      await open({ ...options, assetTitle: 'Long asset title '.repeat(12), serialNumber: 'SERIAL'.repeat(18) });
+      await open({ ...options, assetTitle: 'Long asset title '.repeat(12), serialNumber: 'SERIAL'.repeat(18), accountName: 'Long account name '.repeat(8) });
       await checkGeometry();
       console.log(`PASS ${width}px, standard and long title/serial`);
     }
@@ -85,9 +85,25 @@ const evidence = path.join(__dirname, '../.next/qr-label-validation');
       const logo = document.querySelector('.logoFrame').getBoundingClientRect();
       const title = document.querySelector('.assetTitle').getBoundingClientRect();
       const details = document.querySelector('.labelDetails').getBoundingClientRect();
-      return { topAligned: Math.abs(logo.top - title.top) < 1, upper: title.top < label.top + 70, below: details.top >= logo.bottom, details: [...document.querySelectorAll('.detailRow')].map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent]), blankLines: document.querySelectorAll('.writingLines').length };
+      const qr = document.querySelector('.qrFrame').getBoundingClientRect();
+      const titleHeader = document.querySelector('.labelTitle').getBoundingClientRect();
+      return {
+        titleAbove: title.bottom < qr.top && title.bottom < logo.top,
+        titleSpans: titleHeader.left <= qr.left && titleHeader.right >= logo.right,
+        qrLeft: qr.right < logo.left,
+        below: details.top >= logo.bottom,
+        accountName: document.querySelector('.accountName').textContent,
+        details: [...document.querySelectorAll('.detailRow')].map(row => [row.querySelector('dt').textContent, row.querySelector('dd').textContent]),
+        blankLines: document.querySelectorAll('.writingLines').length,
+      };
     });
-    assert.deepEqual(heading, { topAligned: true, upper: true, below: true, details: [['Year model', '2022'], ['Model', 'TT4.90 4WD Openstation']], blankLines: 0 });
+    assert.deepEqual(heading, { titleAbove: true, titleSpans: true, qrLeft: true, below: true, accountName: 'Kuyler Farms', details: [['Year model', '2022'], ['Model', 'TT4.90 4WD Openstation']], blankLines: 0 });
+    await open({ ...options, assetTitle: 'Year Unknown Zimmatic 6-Tower + Overhang', yearModel: null, modelName: '6-Tower + Overhang', serialNumber: '' });
+    assert.equal(await page.$eval('.assetTitle', element => element.textContent), 'Year Unknown Zimmatic 6-Tower + Overhang');
+    await checkGeometry();
+    await page.screenshot({ path: path.join(evidence, 'label-approved-layout.png'), fullPage: true });
+    await open({ ...options, accountName: '' });
+    assert.equal(await page.$('.accountName'), null, 'missing account name does not show a placeholder');
     await open({ ...options, yearModel: null, modelName: '', serialNumber: '' });
     assert.equal(await page.$('.labelDetails'), null, 'no empty detail section');
     await checkGeometry();
