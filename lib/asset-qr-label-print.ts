@@ -1,6 +1,8 @@
 type AssetQrLabelOptions = {
   assetTitle: string;
   serialNumber?: string;
+  yearModel?: number | null;
+  modelName?: string;
   qrImageUrl: string;
   /** Resolved through report-logo, which embeds uploads and validates remote URLs. */
   logoUrl: string;
@@ -16,6 +18,14 @@ function escapeHtml(value: string): string {
 export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
   const assetTitle = escapeHtml(options.assetTitle.trim() || 'Asset');
   const serialNumber = escapeHtml(options.serialNumber?.trim() || '');
+  const modelName = escapeHtml(options.modelName?.trim() || '');
+  const yearModel = Number.isInteger(options.yearModel) && Number(options.yearModel) > 0
+    ? String(options.yearModel) : '';
+  const details = [
+    yearModel ? `<div class="detailRow"><dt>Year model</dt><dd>${yearModel}</dd></div>` : '',
+    modelName ? `<div class="detailRow"><dt>Model</dt><dd>${modelName}</dd></div>` : '',
+    serialNumber ? `<div class="detailRow serialBlock"><dt>Serial number</dt><dd>${serialNumber}</dd></div>` : '',
+  ].join('');
   const logoUrl = escapeHtml(options.logoUrl || options.fallbackLogoUrl);
   const fallbackLogoUrl = escapeHtml(options.fallbackLogoUrl);
 
@@ -113,12 +123,10 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       padding-bottom: 18px;
       border-bottom: 2px solid #78978a;
     }
-    .labelDetails { display: flex; flex-direction: column; justify-content: flex-end; gap: 20px; }
-    .writingLines { display: grid; flex: 1; grid-auto-rows: minmax(12px, 1fr); align-items: end; gap: 22px; }
-    .writingLines span { display: block; height: 12px; border-bottom: 1.5px solid #78978a; }
-    .serialBlock { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1.5px solid #78978a; }
-    .serialBlock span { color: #52695f; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
-    .serialBlock strong { font-size: clamp(20px, 2.4vw, 26px); font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
+    .labelDetails { display: grid; align-content: start; gap: 16px; margin: 0; }
+    .detailRow { display: grid; grid-template-columns: 116px minmax(0, 1fr); align-items: baseline; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid #b4c9be; }
+    .detailRow dt { color: #52695f; font-size: 13px; font-weight: 600; }
+    .detailRow dd { margin: 0; font-size: clamp(18px, 2vw, 23px); font-weight: 650; line-height: 1.3; overflow-wrap: anywhere; }
     .printStatus { margin: 16px 0 0; color: #52695f; font-size: 14px; }
     .printStatus:empty { display: none; }
     @media screen and (max-width: 800px) {
@@ -126,6 +134,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       .labelHeading { grid-template-columns: 1fr; gap: 14px; }
       .logoFrame { width: 110px; height: 110px; }
       .assetTitle { font-size: 26px; }
+      .detailRow { grid-template-columns: 1fr; gap: 6px; }
       .labelCopy { gap: 20px; }
     }
     @media screen and (max-width: 520px) {
@@ -164,11 +173,9 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       .logoFrame { width: 30mm; height: 30mm; padding: 2mm; border-radius: 4mm; }
       .assetTitle { font-size: 20pt; padding-bottom: 3mm; }
       .labelDetails { gap: 4mm; }
-      .writingLines { gap: 4mm; }
-      .writingLines span { height: 3mm; }
-      .serialBlock { gap: 2mm; padding-bottom: 3mm; }
-      .serialBlock span { font-size: 8pt; }
-      .serialBlock strong { font-size: 15pt; }
+      .detailRow { grid-template-columns: 24mm minmax(0, 1fr); gap: 3mm; padding-bottom: 3mm; }
+      .detailRow dt { font-size: 9pt; }
+      .detailRow dd { font-size: 13pt; }
     }
   </style>
 </head>
@@ -195,10 +202,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
             <div class="logoFrame"><img class="accountLogo" id="accountLogo" src="${logoUrl}" data-fallback="${fallbackLogoUrl}" alt="Account logo" referrerpolicy="no-referrer" /></div>
             <h2 class="assetTitle">${assetTitle}</h2>
           </div>
-          <div class="labelDetails">
-            ${serialNumber ? `<div class="serialBlock"><span>Serial number</span><strong>${serialNumber}</strong></div>` : ''}
-            <div class="writingLines" aria-label="Space for handwritten details"><span></span><span></span>${serialNumber ? '' : '<span></span>'}</div>
-          </div>
+          ${details ? `<dl class="labelDetails" aria-label="Asset details">${details}</dl>` : ''}
         </div>
       </section>
     </main>

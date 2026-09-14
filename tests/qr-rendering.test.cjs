@@ -43,7 +43,7 @@ test('printed asset label uses owner branding and only relevant identifying text
  const route=routeFixture({record:{...asset,serialNumber:' SN-123 '},profile:{logoUrl:'https://example.com/owner.png'}});
  const html=await (await route.GET(request('print'))).text();
  assert.match(html,/src="https:\/\/example.com\/owner.png"/);
- assert.match(html,/Serial number<\/span><strong>SN-123<\/strong>/);
+ assert.match(html,/Serial number<\/dt><dd>SN-123<\/dd>/);
  assert.doesNotMatch(html,/Plate label|plateBlock|Farm PIN|Scan access|A4P-TEST123/);
  assert.match(html,/Print \/ Save Label/);
  assert.match(html,/width: 186mm/);
@@ -54,7 +54,7 @@ test('missing logo falls back to Aim4price and blank serial leaves no empty row'
  for(const serialNumber of [undefined,'','   ']) {
   const html=await (await routeFixture({record:{...asset,serialNumber}}).GET(request('print'))).text();
   assert.match(html,/id="accountLogo" src="\/brand\/aim4price-mark-black.png"/);
-  assert.doesNotMatch(html,/<div class="serialBlock">/);
+  assert.doesNotMatch(html,/<div class="detailRow serialBlock">/);
  }
 });
 test('dealer label resolves the asset owner profile, not dealer branding',async()=>{
@@ -67,6 +67,19 @@ test('dealer label resolves the asset owner profile, not dealer branding',async(
  assert.deepEqual(logos,['owner-logo']);
  const denied=routeFixture({profile:{accountType:'dealer',accountStatus:'active'},lead:{assetRegisterItemId:'other',ownerUserId:'lead-owner'}});
  assert.equal((await denied.GET(new NextRequest(request('print').url+'&leadId=lead'))).status,404);
+});
+test('label displays saved model and year, omits missing details and never prints blank writing lines',async()=>{
+ for (const [record,expected] of [
+  [{...asset,yearModel:2022,modelName:'TT4.90',serialNumber:'SN-123'},['Year model</dt><dd>2022','Model</dt><dd>TT4.90','Serial number</dt><dd>SN-123']],
+  [{...asset,yearModel:null,typedModelName:'Basic model'},['Model</dt><dd>Basic model']],
+ ]) {
+  const html=await (await routeFixture({record}).GET(request('print'))).text();
+  for(const text of expected) assert.ok(html.includes(text));
+  if(record.yearModel===null) assert.doesNotMatch(html,/<dt>Year model<\/dt>|<dt>Serial number<\/dt>/);
+  assert.doesNotMatch(html,/writingLines|handwritten/);
+ }
+ const empty=await (await routeFixture().GET(request('print'))).text();
+ assert.doesNotMatch(empty,/<dl class="labelDetails"/);
 });
 test('print label escapes title, serial and image attributes',()=>{
  const {buildAssetQrLabelHtml}=load('lib/asset-qr-label-print.ts');
