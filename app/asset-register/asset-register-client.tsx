@@ -88,6 +88,7 @@ import {
 import styles from './page.module.css';
 import accountStyles from '../account/page.module.css';
 import externalShareStyles from '../../components/asset-register/AssetExternalShare.module.css';
+import PricingActionIcon from '../../components/asset-register/PricingActionIcon';
 import updateStyles from './asset-update-refinements.module.css';
 import { conditionOptions } from '../../lib/tractor-data';
 import { CONDITION_FACTORS } from '../../lib/valuation/shared';
@@ -21463,7 +21464,7 @@ export default function AssetRegisterClient({
                   disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => openRevalueGuidedDialog(activeAsset)}
                 >
-                  <RecalculateIcon className={styles.buttonIcon} />
+                  <PricingActionIcon kind="recalculate" />
                   <span>
                     <strong>Recalculate value</strong>
                   </span>
@@ -21475,7 +21476,7 @@ export default function AssetRegisterClient({
                   disabled={!canProjectFuturePrice(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => openProjectionModal(activeAsset)}
                 >
-                  <TrendIcon className={styles.buttonIcon} />
+                  <PricingActionIcon kind="future" />
                   <span>
                     <strong>Calculate future price</strong>
                   </span>
@@ -21487,7 +21488,7 @@ export default function AssetRegisterClient({
                   disabled={isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => setSaleabilityAsset(activeAsset)}
                 >
-                  <SaleabilityIcon className={styles.buttonIcon} />
+                  <PricingActionIcon kind="saleability" />
                   <span>
                     <strong>Saleability</strong>
                   </span>
