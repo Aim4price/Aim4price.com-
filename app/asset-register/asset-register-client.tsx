@@ -1,5 +1,7 @@
 'use client';
 
+import { downloadAssetMapReport } from '../../lib/asset-map-download';
+
 import { assetCanReceiveFuel } from '../../lib/asset-fuel-eligibility';
 
 import CompactChoicePages from '../../components/CompactChoicePages';
@@ -6863,6 +6865,8 @@ export default function AssetRegisterClient({
   const [busyMaintenanceAlertId, setBusyMaintenanceAlertId] = useState<string | null>(null);
   const [busyLicenseRenewalAssetId, setBusyLicenseRenewalAssetId] = useState<string | null>(null);
   const locallyNotedAssetNoticesRef = useRef(new Map<string, Array<{ kind: 'partner' | 'maintenance' | 'issue' | 'reminder'; id: string }>>());
+  const [isDownloadingIndividualAssetMap, setIsDownloadingIndividualAssetMap] = useState(false);
+  const individualAssetMapDownloadRef = useRef(false);
   const [busyIssueNoteStatusId, setBusyIssueNoteStatusId] = useState<string | null>(null);
   const [busyDealerCorrectionId, setBusyDealerCorrectionId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
@@ -14630,6 +14634,26 @@ export default function AssetRegisterClient({
     }
   }
 
+  async function handleDownloadIndividualAssetMap(asset: RegisterAsset) {
+    if (individualAssetMapDownloadRef.current) return;
+    if (!hasAssetGpsCoordinates(asset)) {
+      setNotice({ tone: 'error', message: 'Add a map location to this asset first.' });
+      return;
+    }
+    individualAssetMapDownloadRef.current = true;
+    setIsDownloadingIndividualAssetMap(true);
+    try {
+      const params = new URLSearchParams({ format: 'pdf', assetId: asset.id });
+      await downloadAssetMapReport(`/api/asset-map/report?${params.toString()}`, 'pdf');
+      closeAssetReportDialog();
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Unable to download the asset map.' });
+    } finally {
+      individualAssetMapDownloadRef.current = false;
+      setIsDownloadingIndividualAssetMap(false);
+    }
+  }
+
   async function handleDownloadFilteredMaintenanceReport(asset: RegisterAsset, format: AssetReportFormat = 'pdf') {
     const filters: AssetPdfReportFilters = {
       maintenanceType: assetMaintenanceReportType,
@@ -22084,6 +22108,21 @@ export default function AssetRegisterClient({
                           <small>PDF or Excel ownership costs and VAT.</small>
                         </span>
                       </button>
+
+                      {!isAttachingExternalReport ? (
+                        <button
+                          type="button"
+                          className={styles.assetReportOptionButton}
+                          disabled={isDownloadingIndividualAssetMap || !hasAssetGpsCoordinates(reportAsset)}
+                          onClick={() => void handleDownloadIndividualAssetMap(reportAsset)}
+                        >
+                          <MapPinIcon className={styles.buttonIcon} />
+                          <span>
+                            <strong>{isDownloadingIndividualAssetMap ? 'Preparing asset map…' : 'Download asset map'}</strong>
+                            <small>{hasAssetGpsCoordinates(reportAsset) ? 'PDF map of this asset’s saved location.' : 'Add a map location first.'}</small>
+                          </span>
+                        </button>
+                      ) : null}
                     </>
                   ) : null}
                 </div>
