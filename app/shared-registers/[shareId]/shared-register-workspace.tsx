@@ -1,5 +1,7 @@
 'use client';
 
+import { openCanonicalReportUrl } from '../../../lib/report-open';
+
 import Link from 'next/link';
 import { useMemo, useRef, useState } from 'react';
 import AppHeader from '../../../components/AppHeader';
@@ -192,10 +194,18 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
   }
 
   async function generateReport(type: InsuranceReportType) {
+    if (saving) return;
     if (!requiredReady) {
       setNotice({ tone: 'error', message: 'Complete the four required review steps before creating a report.' });
       return;
     }
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) {
+      setNotice({ tone: 'error', message: 'Please allow pop-ups to open the report.' });
+      return;
+    }
+    reportWindow.opener = null;
+    reportWindow.document.body.textContent = 'Preparing your report…';
     setSaving(true);
     try {
       const response = await fetch(`/api/insurance-workspaces/${workspace.id}/reports`, {
@@ -203,10 +213,12 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
       });
       const payload = (await response.json()) as { url?: string; error?: string };
       if (!response.ok || !payload.url) throw new Error(payload.error || 'The report could not be generated.');
-      setWorkspace(await readWorkspace(await fetch(`/api/insurance-workspaces/${workspace.id}`)));
-      window.open(payload.url, '_blank', 'noopener,noreferrer');
+      if (!reportWindow.closed) openCanonicalReportUrl(payload.url, reportWindow);
       setNotice({ tone: 'success', message: `${titleCase(type)} report generated.` });
+      const refreshed = await readWorkspace(await fetch(`/api/insurance-workspaces/${workspace.id}`)).catch(() => null);
+      if (refreshed) setWorkspace(refreshed);
     } catch (error) {
+      reportWindow.close();
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The report could not be generated.' });
     } finally {
       setSaving(false);
@@ -364,7 +376,12 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
             <article><span>Recommended</span><h2>Client summary</h2><p>A concise, client-ready view of the cover position, values and outstanding information.</p><button type="button" onClick={() => void generateReport('summary')} disabled={saving || !requiredReady}>{requiredReady ? 'Create summary report' : 'Complete required steps first'}</button></article>
             <article><span>Full working record</span><h2>Detailed report</h2><p>The policy hierarchy, schedule links, VAT-inclusive values, limits, excesses and evidence trail.</p><button type="button" onClick={() => void generateReport('detailed')} disabled={saving || !requiredReady}>{requiredReady ? 'Create detailed report' : 'Complete required steps first'}</button></article>
           </div>
-          <article className={styles.reportHistory}><h2>Previous reports</h2><p>Previous reports do not mark the current review complete. Create a new report only when the readiness check is green.</p>{workspace.reports.length ? <div className={styles.reportList}>{workspace.reports.map((report) => <div key={report.id}><div><strong>{titleCase(report.type)} report</strong><small>Revision {report.revision} · {dateLabel(report.generatedAtIso)}</small></div><a href={`/api/insurance-reports/${report.id}`} target="_blank" rel="noreferrer">Open report</a></div>)}</div> : <div className={styles.empty}>No reports have been generated yet.</div>}</article>
+          <article className={styles.reportHistory}><h2>Previous reports</h2><p>Previous reports do not mark the current review complete. Create a new report only when the readiness check is green.</p>{workspace.reports.length ? <div className={styles.reportList}>{workspace.reports.map((report) => <div key={report.id}><div><strong>{titleCase(report.type)} report</strong><small>Revision {report.revision} · {dateLabel(report.generatedAtIso)}</small></div><a href={`/api/insurance-reports/${report.id}`} onClick={(event) => {
+            event.preventDefault();
+            if (!openCanonicalReportUrl(`/api/insurance-reports/${report.id}`)) {
+              setNotice({ tone: 'error', message: 'Please allow pop-ups to open the report.' });
+            }
+          }}>Open report</a></div>)}</div> : <div className={styles.empty}>No reports have been generated yet.</div>}</article>
           <p className={styles.disclaimer}>System suggestions are areas to consider, not confirmation of cover. Only a recorded human decision and supporting source can confirm the current position.</p>
         </section> : null}
 

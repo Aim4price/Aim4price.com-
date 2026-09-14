@@ -90,7 +90,7 @@ async function fixtures() {
       assetTitle: asset.title, assetMeta: '2021 · Good', maintenanceType: 'service', triggerType: 'date',
       completedAtIso: date, completedUsage: 6720+i, completedBy: 'Demo mechanic',
       completedNotes: 'Oil, filters and coolant checked. '.repeat(i === 3 ? 25 : 2),
-      updatedAtIso: date, usageMetric: 'hours',
+      updatedAtIso: date, usageMetric: 'hours', sourcePhotoUrls: i === 0 ? undefined : [],
     })),
   };
   reports.maintenance = maintenance.buildAssetMaintenanceReportHtml(maintenanceOptions);

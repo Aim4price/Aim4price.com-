@@ -157,7 +157,7 @@ function maintenanceMapUrl(record: AssetMaintenanceRecord): string {
 }
 
 function maintenancePhotoLabel(record: AssetMaintenanceRecord): string {
-  const count = record.sourcePhotoUrls.length;
+  const count = (record.sourcePhotoUrls?.length ?? 0);
   return count === 1 ? '1 photo captured' : count > 1 ? `${count} photos captured` : '-';
 }
 
@@ -561,7 +561,7 @@ function recordRow(record: AssetMaintenanceRecord): XlsxCellValue[] {
     linkedCell(maintenanceLocation(record), maintenanceMapUrl(record)),
     cell(record.sourceLatitude, 'decimal'),
     cell(record.sourceLongitude, 'decimal'),
-    cell(record.sourcePhotoUrls.length || null, 'integer'),
+    cell((record.sourcePhotoUrls?.length ?? 0) || null, 'integer'),
     cell(record.sourcePhotoUrls.join('\n') || '-', 'note'),
     cell(formatDateOnly(record.updatedAtIso), 'date'),
   ];

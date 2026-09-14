@@ -68,10 +68,10 @@ function showReportStatus(reportWindow: Window, message: string, retry?: () => v
  * strip ambiguous cookies. Never change server authentication to work around it.
  * The boolean reports popup availability; loading failures stay in the tab.
  */
-export function openCanonicalReportUrl(url: string): boolean {
+export function openCanonicalReportUrl(url: string, preparedWindow?: Window): boolean {
   if (typeof window === 'undefined') return false;
   const target = reportUrl(url);
-  const reportWindow = window.open('', '_blank');
+  const reportWindow = preparedWindow ?? window.open('', '_blank');
   if (!reportWindow) return false;
   reportWindow.opener = null;
 
