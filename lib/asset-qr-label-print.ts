@@ -1,5 +1,6 @@
 type AssetQrLabelOptions = {
   assetTitle: string;
+  accountName?: string;
   serialNumber?: string;
   yearModel?: number | null;
   modelName?: string;
@@ -17,6 +18,7 @@ function escapeHtml(value: string): string {
 /** A self-contained label, also used by the authenticated app popup. */
 export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
   const assetTitle = escapeHtml(options.assetTitle.trim() || 'Asset');
+  const accountName = escapeHtml(options.accountName?.trim() || '');
   const serialNumber = escapeHtml(options.serialNumber?.trim() || '');
   const modelName = escapeHtml(options.modelName?.trim() || '');
   const yearModel = Number.isInteger(options.yearModel) && Number(options.yearModel) > 0
@@ -89,63 +91,53 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
     .printButton:disabled { opacity: .6; cursor: wait; }
     .qrLabel {
       width: 100%;
-      min-height: 480px;
       display: grid;
-      grid-template-columns: minmax(240px, .75fr) minmax(0, 1.6fr);
-      align-items: center;
-      gap: clamp(28px, 4vw, 48px);
+      grid-template-columns: minmax(220px, .85fr) minmax(0, 1.4fr);
+      gap: 36px 40px;
       padding: clamp(28px, 4vw, 48px);
-      border: 1.5px solid #9bb5a9;
-      border-radius: 44px;
+      border: 1px solid #adc5b9;
+      border-radius: 32px;
       background: #fff;
       box-shadow: 0 20px 60px #10382f0e;
     }
-    .qrFrame {
-      min-width: 0;
-      padding: 4px;
-      border: 1px solid #d6e2da;
-      border-radius: 24px;
-      overflow: hidden;
-      background: #fff;
-    }
+    .labelTitle { grid-column: 1 / -1; min-width: 0; padding-bottom: 30px; border-bottom: 1px solid var(--line); }
+    .assetEyebrow { margin: 0 0 12px; color: #637b70; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+    .assetTitle { margin: 0; font-size: clamp(26px, 3vw, 38px); font-weight: 650; line-height: 1.3; letter-spacing: -.025em; overflow-wrap: anywhere; }
+    .qrFrame { min-width: 0; width: 100%; max-width: 340px; align-self: center; justify-self: center; padding: 4px; background: #fff; }
     .qrFrame img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
-    .labelCopy { min-width: 0; display: grid; grid-template-rows: auto 1fr; align-self: stretch; gap: 36px; }
-    .labelHeading { display: grid; grid-template-columns: 144px minmax(0, 1fr); align-items: start; gap: 32px; }
-    .logoFrame { display: grid; place-items: center; width: 100%; height: 144px; padding: 16px; border: 1px solid #c5d6ce; border-radius: 22px; background: #fff; }
+    .labelCopy { min-width: 0; display: grid; align-content: center; gap: 32px; padding-left: 40px; border-left: 1px solid var(--line); }
+    .labelHeading { min-width: 0; display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: center; gap: 24px; }
+    .logoFrame { display: grid; place-items: center; width: 112px; height: 112px; padding: 12px; border: 1px solid #d8e3dd; border-radius: 20px; background: #fff; }
     .accountLogo { display: block; max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
-    .assetTitle {
-      margin: 0;
-      font-size: clamp(25px, 2.5vw, 32px);
-      font-weight: 700;
-      line-height: 1.3;
-      letter-spacing: -.02em;
-      overflow-wrap: anywhere;
-    }
+    .accountName { margin: 0; min-width: 0; font-size: clamp(22px, 2.3vw, 30px); font-weight: 600; line-height: 1.35; letter-spacing: -.02em; overflow-wrap: anywhere; }
     .labelDetails { display: grid; align-content: start; gap: 22px; margin: 0; }
-    .detailRow { display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: baseline; gap: 28px; padding-bottom: 20px; border-bottom: 1px solid #d8e3dd; }
-    .detailRow dt { color: #52695f; font-size: 14px; font-weight: 500; }
-    .detailRow dd { margin: 0; font-size: clamp(18px, 1.8vw, 21px); font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+    .detailRow { display: grid; gap: 7px; }
+    .detailRow dt { color: #52695f; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+    .detailRow dd { margin: 0; font-size: clamp(18px, 1.8vw, 22px); font-weight: 550; line-height: 1.4; overflow-wrap: anywhere; }
+    .serialBlock dd { letter-spacing: .025em; }
     .printStatus { margin: 16px 0 0; color: #52695f; font-size: 14px; }
     .printStatus:empty { display: none; }
     @media screen and (max-width: 800px) {
-      .qrLabel { grid-template-columns: minmax(160px, .8fr) minmax(0, 1.3fr); min-height: 0; padding: 22px; gap: 24px; }
-      .labelHeading { grid-template-columns: 1fr; gap: 14px; }
-      .logoFrame { width: 110px; height: 110px; }
-      .assetTitle { font-size: 26px; }
-      .detailRow { grid-template-columns: 1fr; gap: 6px; }
-      .labelCopy { gap: 28px; }
+      .qrLabel { grid-template-columns: minmax(168px, .8fr) minmax(0, 1.3fr); padding: 28px; gap: 28px; }
+      .labelCopy { padding-left: 28px; gap: 28px; }
+      .labelHeading { grid-template-columns: 1fr; gap: 16px; }
+      .logoFrame { width: 96px; height: 96px; }
+      .assetTitle { font-size: 28px; }
     }
-    @media screen and (max-width: 520px) {
+    @media screen and (max-width: 600px) {
       body { padding: 16px; }
       .toolbar { align-items: stretch; gap: 16px; margin-bottom: 20px; }
       .actions { width: 100%; }
       .printButton { flex: 1; }
       button { padding: 12px 14px; }
       .qrLabel { grid-template-columns: 1fr; padding: 24px; gap: 24px; border-radius: 26px; }
-      .qrFrame { width: min(100%, 260px); justify-self: center; }
-      .labelHeading { grid-template-columns: 1fr; gap: 20px; }
-      .logoFrame { width: 96px; height: 96px; padding: 10px; border-radius: 16px; }
-      .assetTitle { font-size: 23px; }
+      .labelTitle { padding-bottom: 24px; }
+      .assetTitle { font-size: 25px; }
+      .qrFrame { max-width: 280px; }
+      .labelCopy { padding: 24px 0 0; border-left: 0; border-top: 1px solid var(--line); gap: 28px; }
+      .labelHeading { grid-template-columns: 80px minmax(0, 1fr); gap: 18px; }
+      .logoFrame { width: 80px; height: 80px; padding: 8px; border-radius: 16px; }
+      .accountName { font-size: 21px; }
     }
     @page { size: A4; margin: 12mm; }
     @media print {
@@ -155,24 +147,26 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       .qrLabel {
         width: 186mm;
         max-width: 100%;
-        min-height: 92mm;
-        grid-template-columns: 52mm minmax(0, 1fr);
+        grid-template-columns: 55mm minmax(0, 1fr);
         padding: 8mm;
-        gap: 8mm;
-        border: .4mm solid #859c8f;
-        border-radius: 7mm;
+        gap: 6mm;
+        border: .3mm solid #859c8f;
+        border-radius: 6mm;
         box-shadow: none;
         break-inside: avoid;
         page-break-inside: avoid;
       }
-      .qrFrame { padding: 1mm; border-radius: 5mm; }
-      .labelCopy { gap: 8mm; }
-      .labelHeading { grid-template-columns: 28mm minmax(0, 1fr); gap: 6mm; }
-      .logoFrame { width: 28mm; height: 28mm; padding: 3mm; border-radius: 4mm; }
-      .assetTitle { font-size: 17pt; }
-      .labelDetails { gap: 5mm; }
-      .detailRow { grid-template-columns: 25mm minmax(0, 1fr); gap: 5mm; padding-bottom: 4mm; }
-      .detailRow dt { font-size: 9pt; }
+      .labelTitle { padding-bottom: 5mm; }
+      .assetEyebrow { font-size: 8pt; margin-bottom: 2mm; }
+      .assetTitle { font-size: 20pt; }
+      .qrFrame { max-width: 55mm; padding: 1mm; }
+      .labelCopy { gap: 5mm; padding-left: 6mm; }
+      .labelHeading { grid-template-columns: 22mm minmax(0, 1fr); gap: 4mm; }
+      .logoFrame { width: 22mm; height: 22mm; padding: 2mm; border-radius: 3mm; }
+      .accountName { font-size: 15pt; }
+      .labelDetails { gap: 4mm; }
+      .detailRow { gap: 1.5mm; }
+      .detailRow dt { font-size: 8pt; }
       .detailRow dd { font-size: 12pt; }
     }
   </style>
@@ -180,7 +174,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
 <body>
   <div class="shell">
     <header class="toolbar">
-      <h1>QR label</h1>
+      <h1>Asset label</h1>
       <div class="actions">
         <button type="button" onclick="window.close()" aria-label="Close label window">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
@@ -194,11 +188,15 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
     </header>
     <main>
       <section class="qrLabel" aria-label="Printable asset QR label">
+        <header class="labelTitle">
+          <p class="assetEyebrow">Asset</p>
+          <h2 class="assetTitle">${assetTitle}</h2>
+        </header>
         <div class="qrFrame"><img id="assetQr" src="${escapeHtml(options.qrImageUrl)}" alt="QR code for ${assetTitle}" /></div>
         <div class="labelCopy">
           <div class="labelHeading">
             <div class="logoFrame"><img class="accountLogo" id="accountLogo" src="${logoUrl}" data-fallback="${fallbackLogoUrl}" alt="Account logo" referrerpolicy="no-referrer" /></div>
-            <h2 class="assetTitle">${assetTitle}</h2>
+            ${accountName ? `<p class="accountName">${accountName}</p>` : ''}
           </div>
           ${details ? `<dl class="labelDetails" aria-label="Asset details">${details}</dl>` : ''}
         </div>
