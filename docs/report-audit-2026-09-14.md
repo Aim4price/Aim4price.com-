@@ -29,14 +29,27 @@ The shared opener checks response type, rejects external URLs and redirects, and
 
 ## Verification and review gate
 
-The editing environment failed to initialize. Changes were prepared via GitHub, not a local checkout. Do not interpret source inspection or tests with fixtures as a successful authenticated production report download.
+The editing environment failed to initialize. Changes were prepared via GitHub and executed in GitHub Actions. Synthetic rendered previews were inspected through CI evidence; this is not an authenticated production report download.
+
+The report workflow runs:
+
+- 24 report-design, opening and download regression tests, plus 17 account-isolation, summary-export, template-parity and map tests.
+- 18 real HTML-builder fixtures at 390, 768 and 1400 pixels, with the repository's Montserrat font and synthetic photos.
+- Native Chromium PDF output for every fixture, including long names, empty states, multi-page records, five-photo evidence and historical maintenance with missing photo metadata.
+- Poppler rasterization of every PDF page, checks for blank pages, visible print toolbars, clipping, incorrect counters and printed shadows, with first/last-page previews for inspection.
+- Seven XLSX files: maintenance, ownership, fuel ledger, asset fuel, asset maintenance, depreciation and GPS. These exercise the real workbook builders and ZIP serialization; interactive Excel application testing is still outstanding.
+- A separate production-bundle check, with the same missing-deployment-database guard already used by the canvas workflow.
+
+During review, populated tables exposed mobile/tablet overflow, the map key did not reflow, the maintenance footer printed Page 0, map paper shadows leaked into print, and a register grid left an unnecessarily empty cover. These are now covered by the fixture checks.
+
+The existing Canonical website canvas suite reports three failures in unchanged application styles: two related to the Asset Register summary modal's native viewport guard, and one for the shared-register dialog's physical viewport width. Those files and tests are outside this report change. TypeScript succeeds before that suite; the PR is not all-green while those checks fail.
 
 Before merge:
-- Run TypeScript and report regression tests in CI.
-- Inspect representative portrait/landscape and multi-page report PDFs, including long names and missing data.
-- Open each report from a real owner, dealer and Owner App session, including a browser with both website and app cookies.
-- Check summary single/all/combined, umbrella filters, evidence links and XLSX downloads.
-- Retain the draft status until the visual review is complete.
+
+- Open each report from real owner, dealer and Owner App sessions, including a browser with both website and app cookies.
+- Check summary single/all/combined, umbrella filters, attached evidence and applicable XLSX downloads against real account data.
+- Review the generated report evidence with account logos, real photos and external map tiles. CI intentionally blocks external requests and cannot validate tile-provider availability.
+- Review the remaining canvas failures. Keep the PR draft until the live acceptance review is complete.
 
 The legacy hand-drawn full-register helper functions remain unused for now; active export branches use the canonical HTML/PDF renderer and no alternate fallback.
 
