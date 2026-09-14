@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('typescript');
+const { execFileSync } = require('node:child_process');
 const { PDFDocument } = require('pdf-lib');
 const chromium = require('@sparticuz/chromium');
 const puppeteer = require('puppeteer-core');
@@ -265,7 +266,22 @@ async function fixtures() {
       const pages = parsed.getPageCount();
       assert.ok(pages >= 1, name+' empty PDF');
       if (['maintenance','ownership','full-register','register-umbrella'].includes(name)) assert.ok(pages > 1, name+' must exercise multiple pages');
-      fs.writeFileSync(path.join(out,name+'.pdf'),pdf);
+      const pdfPath = path.join(out,name+'.pdf');
+      fs.writeFileSync(pdfPath,pdf);
+      const extracted = execFileSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' });
+      fs.writeFileSync(path.join(out,name+'-text.txt'),extracted);
+      const pageTexts = extracted.split('\f').filter((text, index, all) => index < all.length-1 || text.trim());
+      assert.equal(pageTexts.length, pages, name+' PDF text page count');
+      assert.ok(pageTexts.every(text => text.trim().length > 0), name+' blank PDF page');
+      assert.ok(extracted.includes('Powered by Aim4price.com'), name+' missing printed footer');
+      // Render every printed page for artifact review, plus compact first/last
+      // previews in logs for remote review of page breaks and footers.
+      execFileSync('pdftoppm', ['-png', '-scale-to', '1400', pdfPath, path.join(out,name+'-page')]);
+      for (const pageNumber of new Set([1, pages])) {
+        const prefix = path.join(out,name+'-preview-'+pageNumber);
+        execFileSync('pdftoppm', ['-jpeg', '-jpegopt', 'quality=65', '-scale-to', '1100', '-f', String(pageNumber), '-l', String(pageNumber), '-singlefile', pdfPath, prefix]);
+        console.log('PDF_PREVIEW:'+name+'-page-'+pageNumber+':'+fs.readFileSync(prefix+'.jpg').toString('base64'));
+      }
       results.push({ report: name, pages, screenWidths: [390,768,1400], printToolbarHidden: true });
       console.log('PASS '+name+': '+pages+' PDF pages, 3 screen widths');
       } catch (error) {

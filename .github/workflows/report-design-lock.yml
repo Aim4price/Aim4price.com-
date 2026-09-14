@@ -63,6 +63,9 @@ jobs:
       - name: Verify report access and opening regressions
         run: node --experimental-strip-types --test tests/app-account-isolation.test.mjs tests/asset-register-summary-export.test.mjs tests/rich-report-template-parity.test.mjs tests/asset-map-report.test.mjs
 
+      - name: Install PDF inspection tools
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+
       - name: Verify report templates and print layouts
         run: node scripts/verify-report-suite.cjs
 
