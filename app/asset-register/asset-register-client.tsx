@@ -1899,8 +1899,8 @@ function RecalculateIcon({ className }: IconProps) {
       className={className}
       aria-hidden="true"
     >
-      <path d="M4 9V4h5" />
-      <path d="M4.8 4.8A8.5 8.5 0 1 1 3.6 14" />
+      <path d="M3 12a9 9 0 1 0 9-9c-2.52 0-4.93 1-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
     </svg>
   );
 }
