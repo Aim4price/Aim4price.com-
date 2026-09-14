@@ -168,8 +168,8 @@ test('document upload keeps the footer visible and scrolls only its content', ()
 
 test('scrollbar drags do not trigger outside-click closing', () => {
   const umbrellaHandler = client.slice(
-    client.indexOf('function handleOutsideUmbrellaPointerDown'),
-    client.indexOf("document.addEventListener('pointerdown', handleOutsideUmbrellaPointerDown)"),
+    client.indexOf('function handleOutsideCardPointerDown'),
+    client.indexOf("document.addEventListener('pointerdown', handleOutsideCardPointerDown)"),
   );
   const headerHandler = header.slice(
     header.indexOf('function handleDocumentClick'),
@@ -181,7 +181,7 @@ test('scrollbar drags do not trigger outside-click closing', () => {
 });
 
 test('asset modals preserve the open umbrella and its expanded View details card', () => {
-  const handlerIndex = client.indexOf('function handleOutsideUmbrellaPointerDown');
+  const handlerIndex = client.indexOf('function handleOutsideCardPointerDown');
   const umbrellaEffect = client.slice(
     client.lastIndexOf('useEffect(() => {', handlerIndex),
     client.indexOf('useEffect(() => {', handlerIndex),
@@ -189,11 +189,11 @@ test('asset modals preserve the open umbrella and its expanded View details card
 
   assert.match(
     umbrellaEffect,
-    /if \(!focusedAssetGroupId \|\| anyModalOpen \|\| documentUploadAsset\) return undefined;/,
+    /if \(\(!focusedAssetGroupId && !expandedAssetId\) \|\| anyModalOpen \|\| documentUploadAsset \|\| draggingAssetId\) return undefined;/,
   );
   assert.match(
     umbrellaEffect,
-    /\}, \[anyModalOpen, documentUploadAsset, focusedAssetGroupId\]\);/,
+    /\}, \[anyModalOpen, documentUploadAsset, draggingAssetId, expandedAssetId, focusedAssetGroupId\]\);/,
   );
   assert.match(client, /Boolean\(activeAsset\)[\s\S]*?isQuoteModalOpen/);
   assert.match(client, /const \[documentUploadAsset, setDocumentUploadAsset\]/);
@@ -234,7 +234,8 @@ test('owner Manage keeps disposal and mapping inside the gated ten-action comman
   assert.ok(ownerManage.indexOf('Asset map') < ownerManage.indexOf('QR code'));
   assert.doesNotMatch(ownerManage, /Documents &amp; photos|manage-documents/);
   assert.match(ownerManage, /canAssetReceiveFuel\(activeAsset\)[\s\S]*?buildOwnerAssetPageHref\('\/fuel'/);
-  assert.match(ownerManage, /canManageAssetPricing\(activeAsset\)/);
+  assert.match(ownerManage, /onClick=\{openPricingDialog\}/);
+  assert.doesNotMatch(ownerManage, /canManageAssetPricing\(activeAsset\)/);
   assert.match(ownerManage, /canUseMarketplaceActions && isMarketplaceEligible\(activeAsset\)/);
   assert.match(ownerManage, /ownerCommandGrid[\s\S]*?Marketplace[\s\S]*?ownerCommandDangerAction[\s\S]*?Dispose or remove asset/);
   assert.doesNotMatch(ownerManage, /ownerCommandDangerZone/);
@@ -252,8 +253,8 @@ test('Manage uses concise update copy and a dedicated recalculate icon', () => {
     client.indexOf('{saleabilityAsset ? ('),
   );
   const recalculateOption = pricingOptions.slice(
-    pricingOptions.indexOf('openRevalueGuidedDialog'),
-    pricingOptions.indexOf('openProjectionModal'),
+    pricingOptions.indexOf("openPricingTool(activeAsset, 'recalculate')"),
+    pricingOptions.indexOf("openPricingTool(activeAsset, 'future')"),
   );
 
   assert.match(ownerManage, /Edit details, documents and photos\./);
@@ -422,7 +423,10 @@ test('successful asset reports close only the report child and preserve Manage',
   );
 
   assert.doesNotMatch(reportSuccessFlows, /closeActionDialog\(\)/);
-  assert.equal(reportSuccessFlows.match(/closeAssetReportDialog\(\)/g)?.length, 13);
+  const mapHandlerStart = reportSuccessFlows.indexOf('async function handleDownloadIndividualAssetMap');
+  assert.ok(mapHandlerStart >= 0, 'individual map report handler exists');
+  const mapHandler = reportSuccessFlows.slice(mapHandlerStart, reportSuccessFlows.indexOf('\n  async function ', mapHandlerStart + 1));
+  assert.match(mapHandler, /await downloadAssetMapReport\([^\n]+\);\s*closeAssetReportDialog\(\);\s*\} catch/);
   assert.match(reportSuccessFlows, /if \(!didOpen\)[\s\S]*?return;[\s\S]*?closeAssetReportDialog\(\);[\s\S]*?async function handleCopyScanLink/);
   assert.match(reportSuccessFlows, /message: `\$\{reportLabel\} Excel downloaded\.` \}\);[\s\S]*?closeAssetReportDialog\(\);/);
 

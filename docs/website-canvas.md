@@ -36,7 +36,7 @@ Run `node scripts/verify-website-canvas.cjs` for real-component checks at 1920, 
 
 Chromium rounds thin borders and text metrics at fractional CSS zoom, so geometry comparisons allow accumulated border-pixel rounding while checking the fixed width, composition, typography, scrolling and scale separately. Screenshot rasterization is not pixel-identical across magnifications.
 
-Browsers do not expose a standard cross-platform unzoomed content-width API. `outerWidth` is the stable width proxy so browser zoom is not immediately cancelled by Auto; unusual browser side panels, frames or docked developer tools can make that proxy wider than the content area. Manual sizing remains available. Native pinch/browser magnification is enabled. The automated zoom check simulates the browser's CSS-viewport/DPR change with a fixed outer width; it is not an operating-system accessibility test.
+Browsers do not expose a standard cross-platform unzoomed content-width API. On touch devices (including phone emulation), Auto uses the layout viewport's `clientWidth`, so a desktop-sized outer window cannot prevent phone fitting. It responds to viewport resize, orientation and primary-pointer changes. Pinch zoom does not change this layout width. On desktop, `outerWidth` is the stable width proxy so browser zoom is not immediately cancelled by Auto; unusual browser side panels, frames or docked developer tools can make that proxy wider than the content area. Manual sizing remains available. Native pinch/browser magnification is enabled. The automated zoom check simulates the browser's CSS-viewport/DPR change with a fixed outer width; it is not an operating-system accessibility test.
 
 Data-backed browser checks use fixtures. Actual authenticated app workspaces, live maps, uploads and report/database integrations require staging credentials and services. The change does not modify their business logic.
 
@@ -49,3 +49,9 @@ All requested npm suites passed: dropdown overlays (7), asset cards (25), umbrel
 Owner, Dealer and Field Manager login screenshots at 430 pixels were pixel-identical to the base checkout, in addition to matching DOM geometry and viewport metadata. This comparison covers their login surfaces, not authenticated operational workflows.
 
 Review screenshots: [Home at 1440](website-canvas-evidence/home-1440.png), [Home at 430](website-canvas-evidence/home-430.png), [modal in Auto](website-canvas-evidence/register-modal-auto-430.png), [the same modal at 150%, scrolled horizontally](website-canvas-evidence/register-modal-manual-430.png).
+
+## Checking phone entry
+
+Auto fits the same canonical composition to portrait or landscape; it does not load a different homepage. A saved manual percentage remains intentional until the percentage button restores Auto. Portrait phones show the sideways suggestion unless `Continue in portrait` was selected in the current tab session. Rotating dismisses that suggestion automatically; the website does not force device rotation. Test a fresh tab session when checking the initial prompt.
+
+Run `node scripts/verify-website-mobile-sizing.cjs` for isolated Chromium checks of the real canvas component, with a desktop outer window and touch viewport, rotation, saved manual sizing/Auto, pinch magnification, and desktop browser zoom.
