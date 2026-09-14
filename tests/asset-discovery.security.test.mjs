@@ -311,7 +311,7 @@ test("owner and dealer Discovery follow the Overview layout", () => {
   assert.match(css, /\.discoveryOverviewIntro/);
   assert.match(css, /\.discoverySectionHeading/);
   assert.match(client, /isExpanded \? styles\.discoveryCloseButton/);
-  assert.match(client, /styles\.discoveryCloseDetailsButton/);
+  assert.ok(client.includes("<DiscoveryAssetDialog"));
   assert.match(client, /closeButtonClassName=\{styles\.discoveryPhotoCloseButton\}/);
   assert.match(photoViewer, /closeButtonClassName\?: string/);
   assert.match(css, /\.compactAppSurface \.toolbar/);
