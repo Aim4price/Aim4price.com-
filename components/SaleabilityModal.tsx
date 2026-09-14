@@ -13,6 +13,7 @@ import {
   createSaleabilityPdfPlanSnapshot,
 } from '../lib/saleability-pdf';
 import styles from './saleability-modal.module.css';
+import accountStyles from '../app/account/page.module.css';
 
 type SaleabilityModalProps = {
   open: boolean;
@@ -220,13 +221,13 @@ export default function SaleabilityModal({
     <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
+      <section className={`${styles.modal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
           <div>
             <h2 id="saleability-title">{assetTitle}</h2>
             <p>Build your selling plan.</p>
           </div>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Close Saleability">×</button>
+          <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
 
         <nav className={styles.progress} aria-label="Saleability progress">

@@ -40915,3 +40915,56 @@ button.documentOpenLink {
 .modalCard.assetEntryModal.registerShareAccountModal.externalAssetShareModal {
   width: min(var(--website-dialog-reference-width, calc(100vw - 2rem)), 76rem) !important;
 }
+
+/* Pricing workflows share the Change password dialog's typography and chrome. */
+.managementAccountModal.pricingAccountModal {
+  width: min(var(--website-dialog-reference-width, 100%), 68rem) !important;
+}
+.pricingAccountModal .pricingPreviewActions {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: .65rem !important;
+  margin: 0 !important;
+  padding: 1rem var(--management-padding) 1.6rem !important;
+  border-top: 1px solid rgba(18,45,37,.11) !important;
+  background: rgba(255,255,255,.97) !important;
+}
+.pricingAccountModal .pricingPreviewActions > button {
+  width: auto !important;
+  min-width: min(8.75rem, 100%) !important;
+  max-width: 100%;
+}
+.pricingAccountModal :is(.revalueReplacementPanel, .revalueSavedReplacementCard, .revalueDecisionCard, .projectionSimpleCard, .projectionBaselineStrip) {
+  border-radius: 1rem !important;
+  box-shadow: none !important;
+}
+.pricingAccountModal h4 {
+  color: #12352d !important;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  letter-spacing: normal !important;
+}
+.pricingAccountModal :is(p, small) {
+  color: #64746a !important;
+  font-size: .85rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
+.pricingAccountModal .revalueSavedReplacementCard > strong {
+  font-size: 1.65rem !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+.pricingAccountModal :is(.projectionBaselineStrip, .revalueSavedReplacementCard) > div > span,
+.pricingAccountModal .revalueSavedReplacementCard > span {
+  color: #405c50 !important;
+  font-size: .7rem !important;
+  font-weight: 850 !important;
+  letter-spacing: .045em !important;
+  text-transform: uppercase;
+}
+
+.pricingAccountModal .revalueReplacementField > span { color:#405c50 !important; font-size:.7rem !important; font-weight:850 !important; letter-spacing:.045em !important; text-transform:uppercase; }

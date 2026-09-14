@@ -646,3 +646,78 @@
     text-align: center;
   }
 }
+
+/* Match the account Change password dialog while retaining the selling-plan steps. */
+.backdrop { background: rgba(12,24,35,.42); backdrop-filter: blur(12px) saturate(.9); }
+.modal.modal {
+  --dialog-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
+  width: min(var(--website-dialog-reference-width, 100%), 68rem);
+  max-height: calc(var(--website-visible-height, 100dvh) - 3rem);
+  padding: 0;
+  border: 1px solid rgba(18,45,37,.12);
+  border-radius: 1.55rem;
+  background: linear-gradient(180deg,#fff 0%,#f7faf8 100%);
+  box-shadow: 0 32px 90px rgba(7,25,20,.28),0 8px 24px rgba(7,25,20,.12);
+}
+.modal .header {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 2.75rem;
+  align-items: start;
+  gap: 1.25rem;
+  margin: var(--dialog-padding) var(--dialog-padding) 0;
+  padding: 0 0 1.15rem;
+  border-bottom: 1px solid rgba(18,45,37,.1);
+}
+.modal .header h2 {
+  color: #12352d;
+  font-size: clamp(1.55rem,calc(var(--website-design-vw,1vw) * 2.3),2rem);
+  font-weight: 800;
+  letter-spacing: -.04em;
+  line-height: 1.08;
+  white-space: normal;
+}
+.modal .header p, .modal .stepIntro p, .modal .valuationReminder {
+  color: #64746a;
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.5;
+  white-space: normal;
+}
+.modal .progress { margin: 1.3rem var(--dialog-padding) 0; }
+.modal .body {
+  margin: 0;
+  padding: 1rem var(--dialog-padding) var(--dialog-padding);
+  scrollbar-gutter: auto;
+}
+.modal .actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 1rem var(--dialog-padding) 1.6rem;
+  border-top: 1px solid rgba(18,45,37,.11);
+  background: rgba(255,255,255,.97);
+}
+.modal .actions > button {
+  width: auto;
+  min-width: min(8.75rem,100%);
+  max-width: 100%;
+  min-height: 3rem;
+  font-size: .95rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.modal .primary { background: linear-gradient(180deg,#1a5a45,#124233); border-color: transparent; }
+.modal .primary:disabled { opacity: .52; }
+.modal .secondary { background: #f2f5f8; border-color: #d8e1ea; color: #17362c; }
+.modal .question legend {
+  color: #405c50;
+  font-size: .7rem;
+  font-weight: 850;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  white-space: normal;
+}
+.modal .stepIntro h3 { font-size: 1.05rem; font-weight: 800; color: #12352d; }
+.modal .choice strong, .modal .choiceActive strong { font-size: .88rem; font-weight: 700; }
+.modal :is(.settingsCard,.pricePlan,.resultHero) { border-radius: 1rem; }
