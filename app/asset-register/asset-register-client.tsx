@@ -6947,7 +6947,14 @@ export default function AssetRegisterClient({
   const [pdfAssetSearchTerm, setPdfAssetSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [projectionAsset, setProjectionAsset] = useState<RegisterAsset | null>(null);
+  const projectionQuestionRef = useRef<HTMLDivElement>(null);
+  const [projectionStep, setProjectionStep] = useState<1 | 2 | 3 | 4 | 'result'>(1);
   const [projectionForm, setProjectionForm] = useState<ProjectionFormState>(createDefaultProjectionForm());
+  useEffect(() => {
+    projectionQuestionRef.current?.scrollTo({ top: 0 });
+    projectionQuestionRef.current?.focus({ preventScroll: true });
+  }, [projectionStep]);
+
   const [projectionResult, setProjectionResult] = useState<AssetFutureProjection | null>(null);
   const [projectionError, setProjectionError] = useState<string | null>(null);
   const [isLoadingProjection, setIsLoadingProjection] = useState(false);
@@ -15962,7 +15969,9 @@ export default function AssetRegisterClient({
     setProjectionResult(null);
     setProjectionError(null);
     setShouldScrollToProjectionResult(false);
-    void requestProjection(asset, defaults);
+    projectionRequestRef.current += 1;
+    setIsLoadingProjection(false);
+    setProjectionStep(1);
   }
 
   function updateProjectionForm(nextState: Partial<ProjectionFormState>) {
@@ -15975,31 +15984,40 @@ export default function AssetRegisterClient({
     setShouldScrollToProjectionResult(false);
   }
 
-  function handleProjectionPreset(nextState: Partial<ProjectionFormState>) {
-    if (!projectionAsset) {
-      updateProjectionForm(nextState);
-      return;
+  function advanceProjectionStep(nextState: Partial<ProjectionFormState> = {}) {
+    const nextForm = { ...projectionForm, ...nextState };
+    if (projectionStep === 2) {
+      const rate = Number(nextForm.inflationRatePct);
+      if (!nextForm.inflationRatePct.trim() || !Number.isFinite(rate) || rate < -50 || rate > 200) {
+        setProjectionError('Enter an inflation rate between -50% and 200%.');
+        return;
+      }
     }
-
-    const nextForm = {
-      ...projectionForm,
-      ...nextState,
-    };
-
-    setProjectionForm(nextForm);
-    setProjectionResult(null);
-    setProjectionError(null);
-    setShouldScrollToProjectionResult(false);
-    void requestProjection(projectionAsset, nextForm);
+    if (projectionStep === 3 && projectionAsset) {
+      const percent = assetUsesPercentUsage(projectionAsset);
+      const raw = percent ? nextForm.targetLifeWorkedPercent.replace(',', '.').trim() : nextForm.extraHours.trim();
+      const amount = Number(raw);
+      const current = getAssetLifeWorkedPercent(projectionAsset) ?? 0;
+      if (!Number.isFinite(amount) || amount < 0 || (percent && (!raw || amount < current || amount > 100))) {
+        setProjectionError(percent ? `Enter a usage percentage between ${current}% and 100%.` : 'Enter zero or more extra hours or kilometres.');
+        return;
+      }
+    }
+    updateProjectionForm(nextState);
+    if (projectionStep === 4 && projectionAsset) {
+      setProjectionStep('result');
+      void requestProjection(projectionAsset, nextForm);
+    } else if (typeof projectionStep === 'number') {
+      setProjectionStep((projectionStep + 1) as 2 | 3 | 4);
+    }
   }
 
-  function handleProjectionSubmit() {
-    if (!projectionAsset) {
-      return;
-    }
-
-    setShouldScrollToProjectionResult(true);
-    void requestProjection(projectionAsset, projectionForm);
+  function goBackProjection() {
+    projectionRequestRef.current += 1;
+    setIsLoadingProjection(false);
+    setProjectionError(null);
+    setProjectionResult(null);
+    setProjectionStep(projectionStep === 'result' ? 4 : Math.max(1, projectionStep - 1) as 1 | 2 | 3);
   }
 
   function handlePageSizeChange(nextPageSize: PageSize) {
@@ -22965,11 +22983,11 @@ export default function AssetRegisterClient({
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeProjectionModal} />
 
-          <div className={`${styles.modalCard} ${styles.projectionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
+          <div className={`${styles.modalCard} ${styles.projectionModal} ${styles.managementAccountModal} ${styles.pricingAccountModal} ${styles.projectionQuestionModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="projection-title">
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
-                <p>Choose the future year, inflation, condition and usage. Quick selections recalculate instantly.</p>
+                <p>Estimate this asset’s future value.</p>
               </div>
 
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeProjectionModal} aria-label="Close future price modal">
@@ -22977,38 +22995,41 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.projectionScrollBody}`}>
+            <div ref={projectionQuestionRef} tabIndex={-1} aria-label="Future price questions" className={`${styles.modalScrollBody} ${styles.projectionScrollBody}`}>
               <div className={styles.projectionSimpleBody}>
-                <div className={styles.projectionBaselineStrip}>
-                  <div>
-                    <span>Current saved value</span>
-                    <strong>{money(projectionAsset.value)}</strong>
-                  </div>
-                  <div>
-                    <span>Current condition</span>
-                    <strong>{conditionLabel(projectionAsset.condition)}</strong>
-                  </div>
-                  <div>
-                    <span>Current usage</span>
-                    <strong>{buildAssetUsageValue(projectionAsset)}</strong>
-                  </div>
-                </div>
-
-                <section className={styles.projectionSimpleCard}>
-                  <div className={styles.projectionSimpleSectionHeader}>
-                    <h4>Future settings</h4>
-                    <p>{projectionUsageHelpText}</p>
-                  </div>
-
-                  <div className={styles.projectionInputRow}>
+                <p className={styles.projectionQuestionProgress} role="status">{projectionStep === 'result' ? 'Your future price' : `Question ${projectionStep} of 4`}</p>
+                {projectionStep !== 'result' ? (
+                  <section key={projectionStep} className={styles.projectionSimpleCard}>
+                    {projectionStep === 1 ? (<>
+                      <h4>Which year would you like to estimate?</h4>
                     <ModalSelect<string>
                       label="Target year"
                       value={projectionForm.targetYear}
                       options={projectionYearSelectOptions}
-                      onChange={(value) => updateProjectionForm({ targetYear: value })}
+                      onChange={(value) => advanceProjectionStep({ targetYear: value })}
                       className={styles.projectionYearSelectField}
                     />
 
+                    </>) : null}
+                    {projectionStep === 2 ? (<>
+                      <h4>What annual inflation rate do you expect?</h4>
+                    <div className={styles.projectionQuickButtons}>
+                      {PROJECTION_INFLATION_PRESETS.map((rate) => {
+                        const isSelected = projectionForm.inflationRatePct === rate;
+
+                        return (
+                          <button
+                            key={rate}
+                            type="button"
+                            className={`${styles.projectionPresetButton} ${isSelected ? styles.projectionPresetButtonActive : ''}`}
+                            aria-pressed={isSelected}
+                            onClick={() => advanceProjectionStep({ inflationRatePct: rate })}
+                          >
+                            {rate}%
+                          </button>
+                        );
+                      })}
+                    </div>
                     <label className={styles.field}>
                       <span>Inflation % p.a.</span>
                       <input
@@ -23021,6 +23042,11 @@ export default function AssetRegisterClient({
                       />
                     </label>
 
+                    </>) : null}
+                    {projectionStep === 3 ? (<>
+                      <h4>How much will the asset be used?</h4>
+                      <p>Current usage: {buildAssetUsageValue(projectionAsset)}</p>
+                      <p>{projectionUsageHelpText}</p>
                     <label className={styles.field}>
                       <span>{projectionUsageFieldLabel}</span>
                       <input
@@ -23037,37 +23063,11 @@ export default function AssetRegisterClient({
                         placeholder={projectionUsagePlaceholder}
                       />
                     </label>
-                  </div>
-
-                  <div className={styles.projectionQuickRow}>
-                    <div className={styles.projectionQuickCopy}>
-                      <span>Quick inflation</span>
-                      <small>Choose a rate to recalculate instantly.</small>
-                    </div>
-                    <div className={styles.projectionQuickButtons}>
-                      {PROJECTION_INFLATION_PRESETS.map((rate) => {
-                        const isSelected = projectionForm.inflationRatePct === rate;
-
-                        return (
-                          <button
-                            key={rate}
-                            type="button"
-                            className={`${styles.projectionPresetButton} ${isSelected ? styles.projectionPresetButtonActive : ''}`}
-                            aria-pressed={isSelected}
-                            onClick={() => handleProjectionPreset({ inflationRatePct: rate })}
-                          >
-                            {rate}%
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className={styles.projectionConditionCard}>
-                    <div className={styles.projectionConditionHeader}>
-                      <span>Future condition</span>
-                      <small>Select the expected condition. The retained value percentage matches the estimate page.</small>
-                    </div>
+                      <button type="button" className={styles.secondaryButton} onClick={() => advanceProjectionStep(projectionUsesPercentUsage ? { targetLifeWorkedPercent: String(getAssetLifeWorkedPercent(projectionAsset) ?? 0) } : { extraHours: '0' })}>Keep current usage</button>
+                    </>) : null}
+                    {projectionStep === 4 ? (<>
+                      <h4>What will its future condition be?</h4>
+                      <p>Current condition: {conditionLabel(projectionAsset.condition)}</p>
                     <div className={styles.projectionConditionGrid}>
                       {PROJECTION_CONDITION_OPTIONS.map((option) => {
                         const isSelected = projectionForm.targetCondition === option.key;
@@ -23078,29 +23078,27 @@ export default function AssetRegisterClient({
                             type="button"
                             className={`${styles.projectionConditionButton} ${isSelected ? styles.projectionConditionButtonActive : ''}`}
                             aria-pressed={isSelected}
-                            onClick={() => handleProjectionPreset({ targetCondition: option.key })}
+                            onClick={() => advanceProjectionStep({ targetCondition: option.key })}
                           >
                             <strong>{option.label}</strong>
                           </button>
                         );
                       })}
                     </div>
-                  </div>
+                    </>) : null}
+                  </section>
+                ) : null}
 
-                  <button type="button" className={`${styles.primaryButton} ${styles.projectionFullWidthButton}`} onClick={handleProjectionSubmit} disabled={isLoadingProjection}>
-                    {isLoadingProjection ? 'Calculating...' : 'Calculate future price'}
-                  </button>
-                </section>
+                {projectionError ? <div role="alert" className={styles.projectionError}>{projectionError}</div> : null}
 
-                {projectionError ? <div className={styles.projectionError}>{projectionError}</div> : null}
-
-                {projectionResult ? (
+                {projectionStep === 'result' && projectionResult ? (
                   <section ref={projectionResultRef} className={styles.projectionSimpleResult} aria-live="polite">
                     <span>Projected future price</span>
                     <strong>{money(projectionResult.projected.retailExVat)}</strong>
                     <p>Estimated ex VAT value for {projectionResult.targetYear}.</p>
 
                     <div className={styles.projectionSimpleMeta}>
+                      <div><span>Current saved value</span><strong>{money(projectionAsset.value)}</strong></div>
                       <div>
                         <span>Year</span>
                         <strong>{projectionResult.baseYear} → {projectionResult.targetYear}</strong>
@@ -23128,13 +23126,14 @@ export default function AssetRegisterClient({
                   </section>
                 ) : isLoadingProjection ? (
                   <div className={styles.projectionLoading}>Calculating future price...</div>
-                ) : (
-                  <div className={styles.projectionEmptyResult}>
-                    <strong>No projection yet</strong>
-                    <span>Enter the simple settings above and calculate.</span>
-                  </div>
-                )}
+                ) : null}
               </div>
+            </div>
+            <div className={styles.pricingPreviewActions}>
+              <button type="button" className={styles.secondaryButton} onClick={projectionStep === 1 ? closeProjectionModal : goBackProjection}>{projectionStep === 1 ? 'Cancel' : 'Back'}</button>
+              {projectionStep !== 'result' && projectionStep !== 4 ? <button type="button" className={styles.primaryButton} onClick={() => advanceProjectionStep()}>Continue</button> : null}
+              {projectionStep === 'result' && projectionError ? <button type="button" className={styles.primaryButton} onClick={() => void requestProjection(projectionAsset, projectionForm)} disabled={isLoadingProjection}>Try again</button> : null}
+              {projectionStep === 'result' && projectionResult ? <button type="button" className={styles.primaryButton} onClick={closeProjectionModal}>Done</button> : null}
             </div>
           </div>
         </div>
