@@ -757,7 +757,9 @@ async function revalueTractorAsset(input: {
   const result = await runServerValuation(valuationInput);
   const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
-  const warning = input.row.id === 0 ? 'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.' : undefined;
+  const warning = yearModelUnknown
+    ? 'Year unknown: Basic estimate uses usage and condition only.'
+    : input.row.id === 0 ? 'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.' : undefined;
   const marketEvidence = neutralMarketEvidence();
 
   if (input.previewOnly) {
@@ -952,7 +954,9 @@ async function revalueGenericAsset(input: {
   });
   const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
   const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
-  const warning = input.row.id === 0 ? 'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.' : undefined;
+  const warning = yearModelUnknown
+    ? 'Year unknown: Basic estimate uses usage and condition only.'
+    : input.row.id === 0 ? 'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.' : undefined;
   const marketEvidence = neutralMarketEvidence();
 
   if (input.previewOnly) {
@@ -1031,7 +1035,7 @@ export async function revalueAssetRegisterItem(input: {
   }
 
   const linkedRow = asset.valuationRunId ? await fetchValuationRun(input.userId, asset.valuationRunId) : null;
-  const row = linkedRow ?? await recoverLegacyValuationInput(input.userId, {
+  const row = linkedRow && asSupportedYearModel(asset.yearModel) !== null ? linkedRow : await recoverLegacyValuationInput(input.userId, {
     ...asset,
     replacementPriceExVat: input.replacementPriceExVat ?? asset.replacementPriceExVat,
     hours: input.usageAmountOverride ?? asset.hours,

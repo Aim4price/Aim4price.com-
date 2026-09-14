@@ -46,6 +46,7 @@ export type NormalizedAdvancedAssumptions = {
 };
 
 export type EngineHoursMethodInput = {
+  includeAgeDepreciation?: boolean;
   replacementPriceExVat: number;
   yearModel: number;
   hours?: number | null;
@@ -312,13 +313,13 @@ export function calculateEngineHoursValue(input: EngineHoursMethodInput): Engine
   const replacementPriceExVat = Math.max(0, Number(input.replacementPriceExVat) || 0);
   const maxLifetimeHours = Math.max(1, Math.round(input.maxLifetimeHours));
   const hoursProvided = Number(input.hours);
-  const hoursUsed = Number.isFinite(hoursProvided) && hoursProvided > 0
+  const hoursUsed = Number.isFinite(hoursProvided) && (hoursProvided > 0 || (input.includeAgeDepreciation === false && hoursProvided === 0))
     ? Math.round(hoursProvided)
     : fallbackEngineHours(maxLifetimeHours, input.fallbackLifetimeUsedPercent);
 
-  const ageDepPct = tractorAgeDepPct(input.yearModel, input.baseYear ?? currentBaseYear());
+  const ageDepPct = input.includeAgeDepreciation === false ? 0 : tractorAgeDepPct(input.yearModel, input.baseYear ?? currentBaseYear());
   const usageDepPct = engineUsageDepPct(hoursUsed, maxLifetimeHours);
-  const averageDepPct = Math.round((ageDepPct + usageDepPct) / 2);
+  const averageDepPct = input.includeAgeDepreciation === false ? usageDepPct : Math.round((ageDepPct + usageDepPct) / 2);
   const depreciatedValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(depreciatedValueExVat, input.condition, input.conditionFactorOverride);
   const marketabilityFactor = clamp(Number(input.marketabilityFactor) || 1, 0, 1);

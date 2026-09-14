@@ -722,6 +722,7 @@ function resolveDepreciation(input: DepreciationInput): {
       const calculated = calculateEngineHoursValue({
         replacementPriceExVat: input.replacementPrice,
         yearModel: yearForDepreciation,
+        includeAgeDepreciation: !input.yearModelUnknown,
         hours: knownHours,
         condition: input.condition,
         maxLifetimeHours,
@@ -754,6 +755,7 @@ function resolveDepreciation(input: DepreciationInput): {
     const calculated = calculateEngineHoursValue({
       replacementPriceExVat: input.replacementPrice,
       yearModel: yearForDepreciation,
+      includeAgeDepreciation: !input.yearModelUnknown,
       hours: estimatedHours,
       condition: input.condition,
       maxLifetimeHours,
@@ -2028,7 +2030,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   if (family.valuationMode === 'year_condition') {
     notes.push('Year and condition depreciation used. This family does not require a usage or percentage-worked input.');
   } else if (selectedCalculation.depreciationMethodUsed === 'full_depreciation') {
-    notes.push(`Full depreciation used: year, ${usageSentenceLabel} and condition.`);
+    notes.push(input.yearModelUnknown ? 'Usage and condition depreciation used; no age depreciation applied.' : `Full depreciation used: year, ${usageSentenceLabel} and condition.`);
   } else if (selectedCalculation.depreciationMethodUsed === 'semi_depreciation') {
     notes.push(
       `Semi depreciation used: ${usageSentenceLabel} were estimated from ${selectedCalculation.lifeWorkedPercent ?? 0}% worked of ${selectedCalculation.maxLifetimeHours ?? 0} lifetime ${usageSentenceLabel}.`,
@@ -2042,7 +2044,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   }
 
   if (input.yearModelUnknown) {
-    notes.push('Year model was marked unknown, so year was not used as the main depreciation driver.');
+    notes.push('Year model is unknown; no age depreciation applied.');
   }
 
   if (userReplacementCalculation && userReplacementPriceExVat) {
