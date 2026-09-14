@@ -18132,7 +18132,7 @@ export default function AssetRegisterClient({
                 <p>{assetShareDestination === 'choice'
                   ? 'Choose where to share.'
                   : assetShareDestination === 'outside'
-                    ? 'Review the message, choose any attachments, then send it once through WhatsApp or email.'
+                    ? 'Choose attachments, then share.'
                     : isAssetGroupShare
                       ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'}. Unrelated assets stay private.`
                       : 'Choose who to share with. Each partner sees only what they need.'}</p>
@@ -20387,7 +20387,7 @@ export default function AssetRegisterClient({
                   <p>{assetShareDestination === 'choice'
                     ? 'Choose where to share this asset.'
                     : assetShareDestination === 'outside'
-                      ? 'Review the message, choose any attachments, then send it once through WhatsApp or email.'
+                      ? 'Choose attachments, then share.'
                       : quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : quoteDirectoryStage === 'location' ? (
                   <p>Choose an area first. We will open the map there and show nearby active partners before Aim4price assistance listings.</p>
