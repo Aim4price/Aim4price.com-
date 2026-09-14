@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAccountProfile, type AccountProfile } from '../../../../lib/account-profile';
@@ -3030,6 +3031,7 @@ function buildReportHtml(options: {
           grid-template-columns: minmax(0, 1fr) 62mm;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>

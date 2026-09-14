@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -916,11 +917,12 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
           grid-template-columns: 1fr;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>
     <div class="assetReportScreenBar">
-      <div class="assetReportScreenText">Save or print this estimate report. In the print dialog, choose <strong>Save as PDF</strong>.</div>
+      <div class="assetReportScreenText">Save or print this report.</div>
       <div class="assetReportScreenActions">
         <button type="button" class="assetReportButton" onclick="window.close()">Close</button>
         <button type="button" class="assetReportButton assetReportButtonPrimary" onclick="window.print()">Save PDF / Print</button>

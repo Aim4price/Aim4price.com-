@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS } from './report-theme.ts';
 import type { AccountProfile } from './account-profile';
 import type { MyInvoiceAssetOption, MyInvoiceRecord, MyInvoiceSummary } from './my-invoices';
 import type { XlsxCellStyle, XlsxCellValue, XlsxPrimitiveCellValue, XlsxSheet } from './simple-xlsx';
@@ -1122,6 +1123,7 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
           page-break-inside: avoid;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>

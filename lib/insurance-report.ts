@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS, REPORT_TOOLBAR_CSS, REPORT_TOOLBAR_HTML } from './report-theme.ts';
 import { getDb } from './db';
 import type { InsuranceFinancialTerm, InsuranceReportType, InsuranceWorkspaceData } from './insurance-workspace-types';
 import { getInsuranceWorkspace } from './insurance-workspaces';
@@ -360,7 +361,20 @@ function reportBody(payload: InsuranceReportPayload): string {
 }
 
 export function buildInsuranceReportHtml(payload: InsuranceReportPayload): string {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(`${workspaceTitle(payload)} insurance report`)}</title><style>${baseStyles(payload.type)}</style></head><body><main class="page">${reportHeader(payload)}${reportBody(payload)}<p class="disclaimer">${escapeHtml(DISCLAIMER)}</p></main><button class="print" onclick="window.print()">Print / Save PDF</button></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(`${workspaceTitle(payload)} insurance report`)}</title><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet"><style>${baseStyles(payload.type)}${REPORT_TOOLBAR_CSS}${REPORT_THEME_CSS}
+
+  .page { width: min(calc(100% - 24px), ${payload.type === 'summary' ? '297mm' : '210mm'}); padding: 11mm; margin: 18px auto; background: #fff; border-radius: 10px; box-shadow: 0 16px 44px rgba(16,63,53,.13); }
+  header { border-bottom: 1px solid var(--line-strong); }
+  h1 { font-size: 22px; color: var(--brand); }
+  h2 { color: var(--brand); font-size: 15px; }
+  .meta div { border-color: var(--line-strong); border-radius: 7px; background: var(--brand-soft); overflow-wrap: anywhere; }
+  th { background: var(--brand-soft); color: var(--strong); border-color: var(--line); }
+  td { border-color: var(--line); }
+  .section { break-inside: auto; }
+  .disclaimer { border-radius: 7px; }
+  @media screen and (max-width: 760px) { .page { padding: 18px; } header { flex-wrap: wrap; } .meta { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+  @media print { .page { width: auto; padding: 0; margin: 0; border-radius: 0; box-shadow: none; } }
+  </style></head><body>${REPORT_TOOLBAR_HTML}<main class="page">${reportHeader(payload)}${reportBody(payload)}<p class="disclaimer"><strong>Powered by Aim4price.com</strong><br>${escapeHtml(DISCLAIMER)}</p></main></body></html>`;
 }
 
 function workspaceTitle(payload: InsuranceReportPayload): string {

@@ -5,33 +5,109 @@ import { openCanonicalReportUrl } from '../lib/report-open.ts';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('canonical report URL opening claims the tab before navigation', () => {
-  const previousWindow = globalThis.window;
-  let openedUrl = '';
-  const reportWindow = {
-    opener: 'initial',
-    location: {
-      replace(url) {
-        openedUrl = url;
-      },
+function reportTab() {
+  const elements = [];
+  const element = () => ({
+    style: {}, children: [], textContent: '', setAttribute() {},
+    append(...children) { this.children.push(...children); },
+    replaceChildren() { this.children = []; },
+  });
+  const body = element();
+  return {
+    opener: 'initial', closed: false, written: '',
+    document: {
+      title: '', body,
+      createElement() { const node = element(); elements.push(node); return node; },
+      open() {}, close() {}, addEventListener() {},
+      write(html) { tab.written = html; },
     },
+    close() { this.closed = true; },
+    elements,
   };
-  globalThis.window = {
-    open(url, target) {
-      assert.equal(url, '');
-      assert.equal(target, '_blank');
-      return reportWindow;
-    },
-  };
+}
 
+let tab;
+const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+test('canonical reports claim a tab before fetching with the originating realm', async () => {
+  const previousWindow = globalThis.window;
+  const previousFetch = globalThis.fetch;
   try {
-    assert.equal(openCanonicalReportUrl('/api/report?format=html'), true);
-    assert.equal(reportWindow.opener, null);
-    assert.equal(openedUrl, '/api/report?format=html');
-  } finally {
-    if (previousWindow === undefined) delete globalThis.window;
-    else globalThis.window = previousWindow;
-  }
+    for (const [pathname, realm] of [
+      ['/asset-register', 'website'], ['/asset-registers', 'website'],
+      ['/owner-app/assets/asset-1', 'owner'], ['/dealer/tracking', 'dealer'],
+      ['/middleman/tracking', 'middleman'], ['/field-manager/home', 'field'],
+    ]) {
+      const events = [];
+      tab = reportTab();
+      globalThis.window = {
+        location: { href: 'https://www.aim4price.com' + pathname, origin: 'https://www.aim4price.com', pathname },
+        setTimeout, clearTimeout,
+        open(url, target) { assert.equal(url, ''); assert.equal(target, '_blank'); events.push('open'); return tab; },
+      };
+      globalThis.fetch = async (url, options) => {
+        events.push('fetch');
+        assert.equal(options.headers['x-aim4price-client-realm'], realm);
+        assert.equal(options.credentials, 'same-origin');
+        assert.equal(options.cache, 'no-store');
+        assert.equal(options.redirect, 'error');
+        assert.ok(options.signal);
+        assert.match(url, /accountantShareId=share-1/);
+        return new Response('<html><body>Canonical report</body></html>', { headers: { 'content-type': 'text/html' } });
+      };
+      assert.equal(openCanonicalReportUrl('/api/asset-register/export?format=html&reportKind=summary&accountantShareId=share-1'), true);
+      assert.deepEqual(events, ['open', 'fetch']);
+      await settle();
+      assert.equal(tab.opener, null);
+      assert.match(tab.written, /Canonical report/);
+    }
+  } finally { globalThis.window = previousWindow; globalThis.fetch = previousFetch; }
+});
+
+test('failed report responses show an actionable error and retry, never raw JSON', async () => {
+  const previousWindow = globalThis.window, previousFetch = globalThis.fetch;
+  try {
+    for (const [status, contentType, expected] of [
+      [401, 'application/json', /session has expired/],
+      [403, 'application/json', /permission/],
+      [404, 'application/json', /no longer available/],
+      [500, 'application/json', /Unable to prepare/],
+      [200, 'application/json', /could not be prepared/],
+    ]) {
+      tab = reportTab();
+      globalThis.window = {
+        location: { href: 'https://www.aim4price.com/asset-register', origin: 'https://www.aim4price.com', pathname: '/asset-register' },
+        open: () => tab, setTimeout, clearTimeout,
+      };
+      globalThis.fetch = async () => new Response('{"error":"<script>bad</script>"}', { status, headers: { 'content-type': contentType } });
+      assert.equal(openCanonicalReportUrl('/api/report?format=html'), true);
+      await settle();
+      assert.equal(tab.written, '');
+      const message = tab.document.body.children[0].children.map((node) => node.textContent).join(' ');
+      assert.match(message, expected);
+      assert.match(message, /Retry/);
+      assert.doesNotMatch(message, /<script>|bad/);
+      globalThis.fetch = async () => new Response('<html>Retry succeeded</html>', { headers: { 'content-type': 'text/html' } });
+      tab.elements.findLast((node) => node.textContent === 'Retry').onclick();
+      await settle();
+      assert.match(tab.written, /Retry succeeded/);
+    }
+  } finally { globalThis.window = previousWindow; globalThis.fetch = previousFetch; }
+});
+
+test('blocked popups and foreign URLs cannot trigger a credentialed report request', () => {
+  const previousWindow = globalThis.window, previousFetch = globalThis.fetch;
+  let fetches = 0;
+  try {
+    globalThis.window = {
+      location: { href: 'https://www.aim4price.com/asset-register', origin: 'https://www.aim4price.com', pathname: '/asset-register' },
+      open: () => null,
+    };
+    globalThis.fetch = () => { fetches++; throw Error('Unexpected fetch'); };
+    assert.equal(openCanonicalReportUrl('/api/report?format=html'), false);
+    assert.throws(() => openCanonicalReportUrl('https://other.example/api/report'), /not available/);
+    assert.equal(fetches, 0);
+  } finally { globalThis.window = previousWindow; globalThis.fetch = previousFetch; }
 });
 
 test('normal PDF actions use canonical browser HTML instead of the server Chromium renderer', async () => {
@@ -65,7 +141,9 @@ test('normal PDF actions use canonical browser HTML instead of the server Chromi
   assert.match(dealerOwnership, /openCanonicalReportUrl\(buildReportUrl\('html'\)\)/);
   assert.match(reportOpen, /window\.open\('', '_blank'\)/);
   assert.match(reportOpen, /reportWindow\.opener = null/);
-  assert.match(reportOpen, /reportWindow\.location\.replace\(url\)/);
+  assert.match(reportOpen, /reportWindow\.document\.write\(html\)/);
+  assert.match(reportOpen, /x-aim4price-client-realm/);
+  assert.doesNotMatch(reportOpen, /reportWindow\.location\.replace/);
 });
 
 test('external attachments keep an explicit canonical PDF source', async () => {

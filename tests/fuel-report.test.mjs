@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ts from 'typescript';
+import { REPORT_THEME_CSS } from '../lib/report-theme.ts';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -24,7 +25,7 @@ function loadReportHelpers() {
     fileName: 'fuel-report-helpers.ts',
   }).outputText;
   const compiled = { exports: {} };
-  Function('module', 'exports', output)(compiled, compiled.exports);
+  Function('module', 'exports', 'REPORT_THEME_CSS', output)(compiled, compiled.exports, REPORT_THEME_CSS);
   return compiled.exports;
 }
 

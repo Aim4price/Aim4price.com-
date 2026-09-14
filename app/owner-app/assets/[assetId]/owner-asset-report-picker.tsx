@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { ExternalShareFileSource } from '../../../../lib/external-file-share';
 import { openCanonicalReportHtml } from '../../../../lib/report-print';
+import { openCanonicalReportUrl, downloadCanonicalReportFile } from '../../../../lib/report-open';
 import styles from '../../owner-app.module.css';
 
 export type OwnerAssetReportPickerAsset = {
@@ -338,7 +339,21 @@ export default function OwnerAssetReportPicker({
             Open PDF
           </button>
         ) : (
-          <a href={normalReportUrl(selectedReport, format)} target="_blank" rel="noreferrer" onClick={() => setSelectedReport(null)}>
+          <a href={normalReportUrl(selectedReport, format)} onClick={async (event) => {
+            event.preventDefault();
+            setReportError('');
+            try {
+              const url = normalReportUrl(selectedReport, format);
+              if (format === 'pdf') {
+                if (!openCanonicalReportUrl(url)) throw new Error('Please allow pop-ups to open this report.');
+              } else {
+                await downloadCanonicalReportFile(url);
+              }
+              setSelectedReport(null);
+            } catch (error) {
+              setReportError(error instanceof Error ? error.message : 'Unable to open the report.');
+            }
+          }}>
             {format === 'pdf' ? 'Open PDF' : 'Download Excel'}
           </a>
         )}

@@ -1,3 +1,4 @@
+import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile, type AccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
@@ -1272,6 +1273,7 @@ function buildReportHtml(options: FuelReportOptions): string {
           min-height: 197mm;
         }
       }
+      ${REPORT_THEME_CSS}
     </style>
   </head>
   <body>
