@@ -15945,6 +15945,7 @@ export default function AssetRegisterClient({
   const isLandPropertyDraft = assetFormKind === 'property' && assetDraft.propertyAssetSubtype === 'land';
   const replacementPriceRequiredForDraft = assetFormKind !== 'stock' && !isLandPropertyDraft;
   const assetLicenseApplicable = assetKindSupportsLicensing(assetFormKind);
+  const isExternalAssetShareView = !selectedQuoteOption && assetShareDestination === 'outside';
   const currentValueFieldLabel = assetFormKind === 'stock'
     ? 'Current stock value *'
     : isLandPropertyDraft
@@ -20364,17 +20365,17 @@ export default function AssetRegisterClient({
           }))}
         />
       ) : isQuoteModalOpen ? (
-        <div className={styles.modalOverlay} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${isExternalAssetShareView ? styles.assetEntryOverlay : ''}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetQuoteModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${!selectedQuoteOption && assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${isExternalAssetShareView ? `${styles.externalAssetShareModal} ${styles.modalCard} ${styles.assetEntryModal} ${styles.registerShareAccountModal} ${styles.registerShareModal} ${accountStyles.modalTheme}` : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-hidden={externalShareReportScope === 'asset' ? true : undefined}
             aria-labelledby="asset-quote-title"
           >
-            <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${isExternalAssetShareView ? styles.registerShareModalHeader : ''}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-quote-title" tabIndex={-1}>{selectedQuoteOption
                   ? quoteDirectoryStage === 'location' ? 'Where do you need help?' : selectedQuoteOption.mapTitle
@@ -20404,16 +20405,16 @@ export default function AssetRegisterClient({
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={isExternalAssetShareView ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : styles.modalCloseButton}
                 onClick={closeAssetQuoteModal}
                 aria-label="Close asset options"
                 disabled={isSendingQuoteLead}
               >
-                <CloseIcon className={styles.buttonIcon} />
+                <span aria-hidden="true">{isExternalAssetShareView ? '×' : <CloseIcon className={styles.buttonIcon} />}</span>
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${isExternalAssetShareView ? `${styles.registerShareModalBody} ${externalShareStyles.accountShareTheme}` : ''}`}>
               {!selectedQuoteOption ? (
                 assetShareDestination === 'choice' ? (
                   <AssetShareDestinationPicker
