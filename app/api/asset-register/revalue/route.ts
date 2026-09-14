@@ -1,3 +1,4 @@
+import { LegacyValuationRecoveryError } from '../../../../lib/asset-register-valuation-recovery';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
@@ -16,7 +17,7 @@ const USAGE_READING_SETTINGS_ERROR =
 type RevalueAssetResponse = {
   ok: boolean;
   item?: unknown;
-  valuationRunId?: number;
+  valuationRunId?: number | null;
   selectedMethod?: string;
   oldValueExVat?: number;
   newValueExVat?: number;
@@ -119,6 +120,7 @@ function normalizeAdvancedAssumptionsRequest(value: unknown): AdvancedAssumption
 
 
 function formatError(error: unknown): { status: number; message: string } {
+  if (error instanceof LegacyValuationRecoveryError) return { status: 400, message: error.message };
   if (error instanceof Error) {
     if (error.message === 'ASSET_NOT_FOUND') {
       return { status: 404, message: 'Asset not found.' };

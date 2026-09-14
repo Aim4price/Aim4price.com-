@@ -1,5 +1,6 @@
 'use client';
 
+import { legacyValuationRecoveryReason, isLegacyHourProjectionAsset } from '../../lib/asset-register-legacy-valuation';
 import { downloadAssetMapReport } from '../../lib/asset-map-download';
 
 import { assetCanReceiveFuel } from '../../lib/asset-fuel-eligibility';
@@ -4792,8 +4793,7 @@ function isMotorProjectionAsset(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>
 
 function getRecalculationUnavailableReason(asset: RegisterAsset): string | null {
   if (asset.selectedMethod === 'manual') return 'Save an Aim4price estimate to replace the manual value.';
-  if (!asset.valuationRunId) return 'Save an Aim4price estimate for this asset first.';
-  return null;
+  return legacyValuationRecoveryReason(asset);
 }
 
 function getProjectionUnavailableReason(asset: RegisterAsset): string | null {
@@ -4810,7 +4810,7 @@ function getProjectionUnavailableReason(asset: RegisterAsset): string | null {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
   // The server uses the shared usage calculation for Basic hours AND kilometres.
   // Check this before tractor specifications: Basic does not require kW or type.
-  if (specs.basic_catalogue_release || isMotorProjectionAsset(asset)) {
+  if (specs.basic_catalogue_release || isMotorProjectionAsset(asset) || isLegacyHourProjectionAsset(asset)) {
     if (readAssetReplacementPriceExVat(asset) === null) return 'Add a replacement price.';
     if (!asset.yearModel) return 'Add the year model.';
     return null;

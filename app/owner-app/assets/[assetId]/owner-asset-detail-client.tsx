@@ -1,5 +1,6 @@
 'use client';
 
+import { legacyValuationRecoveryReason } from '../../../../lib/asset-register-legacy-valuation';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import DealerMaintenanceAccessSettings from '../../../../components/DealerMaintenanceAccessSettings';
@@ -1532,7 +1533,7 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
   setNotice: Dispatch<SetStateAction<{ tone: 'success' | 'error'; message: string } | null>>;
 }) {
   const usage = resolveAssetUsage({ kind: draft.kind, hours: draft.hours, lifeWorkedPercent: draft.lifeWorkedPercent, specsJson: draft.specsJson });
-  const canRecalculate = draft.valuationRunId !== null && draft.selectedMethod !== 'manual';
+  const canRecalculate = legacyValuationRecoveryReason(draft) === null;
   const usesPercentUsage = usage.metric === 'percentage';
   const lifetimeUnit = usage.metric === 'km' ? 'km' : 'hours';
   const [replacementMode, setReplacementMode] = useState<'saved' | 'custom'>('saved');
