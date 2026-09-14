@@ -6902,6 +6902,7 @@ export default function AssetRegisterClient({
   const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
   const revaluePreviewRequestSeqRef = useRef(0);
+  const pricingReturnAssetRef = useRef<RegisterAsset | null>(null);
   const [isLoadingPricingPreview, setIsLoadingPricingPreview] = useState(false);
   const [isSavingPricingPreview, setIsSavingPricingPreview] = useState(false);
   const [revalueReplacementPriceInput, setRevalueReplacementPriceInput] = useState('');
@@ -9013,7 +9014,7 @@ export default function AssetRegisterClient({
       }
 
       if (saleabilityAsset) {
-        setSaleabilityAsset(null);
+        closeSaleabilityDialog();
         return;
       }
 
@@ -11584,6 +11585,7 @@ export default function AssetRegisterClient({
   }
 
   function closeActionDialog() {
+    pricingReturnAssetRef.current = null;
     setOwnerAssetCommandPanel(null);
     setIsAssetReportModalOpen(false);
     setIsPricingModalOpen(false);
@@ -12298,11 +12300,34 @@ export default function AssetRegisterClient({
 
   function closePricingDialog() {
     if (isLoadingPricingPreview || isSavingPricingPreview) return;
+    pricingReturnAssetRef.current = null;
     setPricingPreview(null);
     setRevalueReplacementPriceError(null);
     setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
     setIsPricingModalOpen(false);
+  }
+
+  function openPricingTool(asset: RegisterAsset, tool: 'recalculate' | 'future' | 'saleability') {
+    setIsPricingModalOpen(false);
+    if (tool === 'recalculate') openRevalueGuidedDialog(asset);
+    else if (tool === 'future') openProjectionModal(asset);
+    else setSaleabilityAsset(asset);
+    // Projection clears the action dialog, so record the return destination afterwards.
+    pricingReturnAssetRef.current = asset;
+  }
+
+  function returnToPricingMenu() {
+    const asset = pricingReturnAssetRef.current;
+    pricingReturnAssetRef.current = null;
+    if (!asset) return;
+    setActiveAsset(asset);
+    setIsPricingModalOpen(true);
+  }
+
+  function closeSaleabilityDialog() {
+    setSaleabilityAsset(null);
+    returnToPricingMenu();
   }
 
   function closePricingPreviewDialog() {
@@ -12311,6 +12336,7 @@ export default function AssetRegisterClient({
     setRevalueReplacementPriceError(null);
     setRevalueAdvancedError(null);
     setSaveReplacementPriceWithRevalue(false);
+    returnToPricingMenu();
   }
 
   function openQrDialog() {
@@ -13951,6 +13977,7 @@ export default function AssetRegisterClient({
       setRevalueReplacementPriceError(null);
       setRevalueAdvancedError(null);
       setSaveReplacementPriceWithRevalue(false);
+      pricingReturnAssetRef.current = null;
       setIsPricingModalOpen(false);
 
       const updateLabel = 'Aim4price value';
@@ -15985,6 +16012,7 @@ export default function AssetRegisterClient({
     setProjectionForm(createDefaultProjectionForm());
     setShouldScrollToProjectionResult(false);
     setIsLoadingProjection(false);
+    returnToPricingMenu();
   }
 
   function openProjectionModal(asset: RegisterAsset) {
@@ -21594,7 +21622,7 @@ export default function AssetRegisterClient({
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
-                  onClick={() => openRevalueGuidedDialog(activeAsset)}
+                  onClick={() => openPricingTool(activeAsset, 'recalculate')}
                 >
                   <RecalculateIcon className={styles.buttonIcon} />
                   <span>
@@ -21607,7 +21635,7 @@ export default function AssetRegisterClient({
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={!canProjectFuturePrice(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
-                  onClick={() => openProjectionModal(activeAsset)}
+                  onClick={() => openPricingTool(activeAsset, 'future')}
                 >
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
@@ -21620,7 +21648,7 @@ export default function AssetRegisterClient({
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={isLoadingPricingPreview || isSavingPricingPreview}
-                  onClick={() => setSaleabilityAsset(activeAsset)}
+                  onClick={() => openPricingTool(activeAsset, 'saleability')}
                 >
                   <SaleabilityIcon className={styles.buttonIcon} />
                   <span>
@@ -21638,7 +21666,7 @@ export default function AssetRegisterClient({
       {saleabilityAsset ? (
         <SaleabilityModal
           open
-          onClose={() => setSaleabilityAsset(null)}
+          onClose={closeSaleabilityDialog}
           assetTitle={saleabilityAsset.title}
           valuationExVat={saleabilityAsset.value}
           input={buildRegisterAssetSaleabilityInput(saleabilityAsset)}
