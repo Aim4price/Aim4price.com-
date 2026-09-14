@@ -2491,9 +2491,16 @@ async function renderFullRegisterReportHtml(
       <p>${escapeHtml(registerContactLine(bundle.register))}</p>
       <p>${items.length} assets · Register value ${escapeHtml(formatPdfMoney(registerValueTotal(items)))} excl. VAT · Replacement ${escapeHtml(formatPdfMoney(replacementValueTotal(items)))} excl. VAT</p>
     </header>`;
+    let previousGroupId = '';
     const records = items.map((item) => {
+      const group = exportAssetGroup(item);
+      const groupHeading = group && group.id !== previousGroupId
+        ? `<header class="reportFullRegisterHeading"><h2>${escapeHtml(group.name)}</h2>
+          <p>${group.memberCount} grouped assets · ${escapeHtml(assetGroupValueModeLabel(group))} · Counted group value ${escapeHtml(formatPdfMoney(registerValueTotal(items.filter((member) => exportAssetGroup(member)?.id === group.id))))} excl. VAT</p></header>`
+        : '';
+      previousGroupId = group?.id ?? '';
       const lines = buildPdfAssetLines(item, index++);
-      return `<section class="assetReportSection reportFullAsset">
+      return `${groupHeading}<section class="assetReportSection reportFullAsset">
         <h2>${escapeHtml(lines[0]?.text || item.title)}</h2>
         ${lines.slice(1).map((line) => `<p>${escapeHtml(line.text)}</p>`).join('')}
       </section>`;

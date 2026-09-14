@@ -39,3 +39,9 @@ Before merge:
 - Retain the draft status until the visual review is complete.
 
 The legacy hand-drawn full-register helper functions remain unused for now; active export branches use the canonical HTML/PDF renderer and no alternate fallback.
+
+## Additional findings during verification
+
+- Historical maintenance records without `sourcePhotoUrls` could throw during both HTML and Excel rendering. Both paths now treat missing photo metadata as no photos.
+- Insurance generation previously opened a tab only after awaiting the report POST, which risks popup blocking. It now reserves the tab during the click and uses the same session-aware loader; historical insurance report links do likewise.
+- CI now produces synthetic HTML, PDF, PNG and maintenance XLSX evidence with `scripts/verify-report-suite.cjs`. This is automated layout verification, not a substitute for human visual review or live authenticated checks.

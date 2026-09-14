@@ -562,7 +562,7 @@ function recordRow(record: AssetMaintenanceRecord): XlsxCellValue[] {
     cell(record.sourceLatitude, 'decimal'),
     cell(record.sourceLongitude, 'decimal'),
     cell((record.sourcePhotoUrls?.length ?? 0) || null, 'integer'),
-    cell(record.sourcePhotoUrls.join('\n') || '-', 'note'),
+    cell(record.sourcePhotoUrls?.join('\n') || '-', 'note'),
     cell(formatDateOnly(record.updatedAtIso), 'date'),
   ];
 }
