@@ -262,10 +262,12 @@ async function fixtures() {
         return {
           toolbarVisible: [...document.querySelectorAll('.assetReportScreenBar,.screenBar,.assetMapReportScreenBar,.actions')].some(node => getComputedStyle(node).display !== 'none'),
           overflow: sheet && getComputedStyle(sheet).overflow,
+          shadow: sheet && getComputedStyle(sheet).boxShadow,
           height: sheet?.clientHeight, scroll: sheet?.scrollHeight,
         };
       });
       assert.equal(printState.toolbarVisible, false, name+' print toolbar');
+      assert.equal(printState.shadow, 'none', name+' print sheet shadow');
       assert.ok(printState.scroll <= printState.height+2 || printState.overflow === 'visible', name+' clips print content');
       const pdf = await page.pdf({ printBackground: true, preferCSSPageSize: true });
       const parsed = await PDFDocument.load(pdf);
@@ -280,6 +282,7 @@ async function fixtures() {
       assert.equal(pageTexts.length, pages, name+' PDF text page count');
       assert.ok(pageTexts.every(text => text.trim().length > 0), name+' blank PDF page');
       assert.ok(extracted.includes('Powered by Aim4price.com'), name+' missing printed footer');
+      assert.doesNotMatch(extracted, /Page 0\\b/, name+' invalid page counter');
       // Render every printed page for artifact review, plus compact first/last
       // previews in logs for remote review of page breaks and footers.
       execFileSync('pdftoppm', ['-png', '-scale-to', '1400', pdfPath, path.join(out,name+'-page')]);

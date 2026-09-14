@@ -105,7 +105,7 @@ export const REPORT_THEME_CSS = `
   .assetReportDisclaimer, .fullRegisterDisclaimer, .reportPage .footer p { color: var(--muted); }
   /* A report can grow beyond one page. Never reserve or clip a fixed sheet. */
   .assetReportInner { padding-bottom: 0; }
-  .assetReportWideSection, .assetReportSummaryStack { break-inside: auto; }
+  .assetReportWideSection:has(table), .assetReportWideSection:has(.assetReportMaintenanceList), .assetReportSummaryStack { break-inside: auto; }
   .assetReportPageNumber, .fullRegisterFooterRight { display: none; }
   .reportFullAsset { break-inside: avoid; }
   .reportFullAsset p { margin: 5px 0; line-height: 1.5; overflow-wrap: anywhere; }
@@ -138,7 +138,7 @@ export const REPORT_THEME_CSS = `
   @media print {
     html, body { background: #fff; }
     .assetReportScreenBar, .screenBar, .assetMapReportScreenBar { display: none !important; }
-    .assetReportPage, .fullRegisterPage, .reportPage {
+    .assetReportPage, .fullRegisterPage, .reportPage, .assetMapReportPage {
       width: auto; height: auto; min-height: 0; margin: 0; padding: 0;
       border-radius: 0; box-shadow: none; overflow: visible;
     }
@@ -146,6 +146,9 @@ export const REPORT_THEME_CSS = `
     .assetReportTableWrap { overflow: visible; }
     .assetReportFooter, .fullRegisterFooter, .reportPage .footer { position: static; margin-top: 12px; }
     .assetReportSection:has(table), .assetReportNotesSection { break-inside: auto; }
+    .assetReportSectionHeading, .assetReportSection h2, .reportPage .sectionHeading { break-after: avoid; page-break-after: avoid; }
+    .assetReportSection:has(.assetReportEmpty) { break-inside: avoid; }
+    .reportPage .footerPage::after { content: none; }
   }
 `;
 
