@@ -278,7 +278,7 @@ export async function listIssueNotesForAssets(
 
 export async function attachOpenIssueNoteStatusToAssets<T extends { id: string }>(
   assets: T[],
-): Promise<Array<T & { latestIssueNoteStatus: AssetIssueNoteStatus | null }>> {
+): Promise<Array<T & { latestIssueNoteStatus: AssetIssueNoteStatus | null; issueNoteStatuses: AssetIssueNoteStatus[] }>> {
   if (!assets.length) {
     return [];
   }
@@ -286,17 +286,20 @@ export async function attachOpenIssueNoteStatusToAssets<T extends { id: string }
   const assetIds = assets.map((asset) => asId(asset.id)).filter(Boolean);
 
   if (!assetIds.length) {
-    return assets.map((asset) => ({ ...asset, latestIssueNoteStatus: null }));
+    return assets.map((asset) => ({ ...asset, latestIssueNoteStatus: null, issueNoteStatuses: [] }));
   }
 
-  const groups = await listOpenIssueNoteGroupsForAssets(assetIds);
-  const latestByAssetId = new Map(
-    groups.map((group) => [group.assetRegisterItemId, group.latest]),
-  );
-
+  const notes = await listIssueNotesForAssets(assetIds);
+  const notesByAssetId = new Map<string, AssetIssueNoteStatus[]>();
+  for (const note of notes) {
+    const entries = notesByAssetId.get(note.assetRegisterItemId) ?? [];
+    entries.push(note);
+    notesByAssetId.set(note.assetRegisterItemId, entries);
+  }
   return assets.map((asset) => ({
     ...asset,
-    latestIssueNoteStatus: latestByAssetId.get(asset.id) ?? null,
+    latestIssueNoteStatus: notesByAssetId.get(asset.id)?.[0] ?? null,
+    issueNoteStatuses: notesByAssetId.get(asset.id) ?? [],
   }));
 }
 

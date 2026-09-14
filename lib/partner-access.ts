@@ -1336,7 +1336,7 @@ async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerP
 export async function attachOpenPartnerNotesToAssets<T extends { id: string }>(
   ownerUserId: string,
   assets: T[],
-): Promise<Array<T & { openPartnerNote: AssetPartnerNote | null }>> {
+): Promise<Array<T & { openPartnerNote: AssetPartnerNote | null; openPartnerNotes: AssetPartnerNote[] }>> {
   if (!assets.length) {
     return [];
   }
@@ -1351,18 +1351,17 @@ export async function attachOpenPartnerNotesToAssets<T extends { id: string }>(
     [ownerUserId, assets.map((asset) => asset.id)],
   );
 
-  const notesByAssetId = new Map<string, AssetPartnerNote>();
-
-  result.rows.forEach((row) => {
+  const notesByAssetId = new Map<string, AssetPartnerNote[]>();
+  for (const row of result.rows) {
     const note = mapAssetPartnerNoteRow(row);
-    if (!notesByAssetId.has(note.assetRegisterItemId)) {
-      notesByAssetId.set(note.assetRegisterItemId, note);
-    }
-  });
-
+    const notes = notesByAssetId.get(note.assetRegisterItemId) ?? [];
+    notes.push(note);
+    notesByAssetId.set(note.assetRegisterItemId, notes);
+  }
   return assets.map((asset) => ({
     ...asset,
-    openPartnerNote: notesByAssetId.get(asset.id) ?? null,
+    openPartnerNote: notesByAssetId.get(asset.id)?.[0] ?? null,
+    openPartnerNotes: notesByAssetId.get(asset.id) ?? [],
   }));
 }
 
