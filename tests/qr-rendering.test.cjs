@@ -168,6 +168,7 @@ test('label keeps the full title and resolves the saved account name without moc
 test('account name is escaped and dealer previews use the owner name',async()=>{
  // Give dealer and owner distinct names to guard against branding the wrong account.
  const branded=load('app/api/asset-register/qr/route.ts',{
+  '../../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>true},
   '../../../../lib/account-profile':{getAccountProfile:async({id})=>id==='owner'
    ?{accountType:'dealer',accountStatus:'active',businessName:'Dealer business'}
    :{businessName:'Owner <farm>',logoUrl:''}},
