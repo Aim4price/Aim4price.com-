@@ -520,6 +520,7 @@
 }
 
 .recycleNotice {
+  margin-bottom: clamp(1.08rem, calc(var(--website-design-vw) * 1.35), 1.28rem);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.85rem;
@@ -3355,6 +3356,7 @@
 }
 
 .assetFilterBanner {
+  margin-bottom: clamp(1.08rem, calc(var(--website-design-vw) * 1.35), 1.28rem);
   min-height: 5.1rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
