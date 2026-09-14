@@ -31,7 +31,7 @@ test('manual and unlinked values remain disabled with actionable reasons', () =>
     const a = asset(overrides);
     assert.equal(refresh(a), false);
     assert.equal(project(a), false);
-    assert.match(reason(a), /Save an Aim4price estimate|older estimate needs/);
+    assert.match(reason(a), /Save an Aim4price estimate|Add the current usage|Add the equipment family/);
   }
 });
 test('missing Basic inputs explain why projection is unavailable', () => {

@@ -662,7 +662,7 @@ function isMotorProjectionCandidate(input: {
   valuationOutput: Record<string, unknown>;
 }): boolean {
   // Basic meter profiles use the shared usage calculation, including non-motor hours.
-  if (asObject(input.asset.specsJson).basic_catalogue_release || isLegacyHourProjectionAsset(input.asset)) return true;
+  if (asObject(input.asset.specsJson).basic_catalogue_release || asObject(input.asset.specsJson).basic_recovery || isLegacyHourProjectionAsset(input.asset)) return true;
   const sectorKey = getSectorKey(input);
   const usageMetric = readUsageMetric(input);
 
@@ -890,7 +890,7 @@ function calculateMotorProjection(input: {
   const currentCondition = normalizeCondition(input.asset.condition || pick(input.row, ['condition']) || input.valuationInput.condition);
   const targetCondition = input.targetCondition ?? currentCondition;
   const maxLifetimeUsage = readMotorLifetimeUsage({ ...input, familyKey });
-  const usageMetric: UsageMetric = asObject(input.asset.specsJson).basic_catalogue_release || isLegacyHourProjectionAsset(input.asset) ? readUsageMetric(input) : 'km';
+  const usageMetric: UsageMetric = asObject(input.asset.specsJson).basic_catalogue_release || asObject(input.asset.specsJson).basic_recovery || isLegacyHourProjectionAsset(input.asset) ? readUsageMetric(input) : 'km';
 
   const currentModelSnapshot = calculateUsageBasedSnapshot({
     targetYear: input.baseYear,
@@ -1059,7 +1059,7 @@ export async function calculateFuturePriceForAsset(input: {
   targetLifeWorkedPercent?: number | null;
   targetCondition?: ConditionKey | null;
 }): Promise<AssetFutureProjection> {
-  const asset = await getAssetRegisterItemById(input.userId, input.assetId);
+  let asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
   if (!asset) {
     throw new Error('ASSET_NOT_FOUND');
@@ -1069,11 +1069,11 @@ export async function calculateFuturePriceForAsset(input: {
     throw new Error('FUTURE_PRICE_UNAVAILABLE');
   }
 
-  const valuationRow = asset.valuationRunId
-    ? await fetchValuationRunRow(input.userId, asset.valuationRunId)
-    : await recoverLegacyValuationInput(input.userId, asset);
-  if (!valuationRow) {
-    throw new Error('VALUATION_RUN_NOT_FOUND');
+  const linkedRow = asset.valuationRunId ? await fetchValuationRunRow(input.userId, asset.valuationRunId) : null;
+  const valuationRow = linkedRow ?? await recoverLegacyValuationInput(input.userId, asset);
+  if (!linkedRow) {
+    const specs = asObject(valuationRow.specs_json);
+    asset = { ...asset, specsJson: specs, maxLifetimeHours: asset.maxLifetimeHours ?? asNumber(specs.max_lifetime_hours) };
   }
 
   const valuationPayload = parseValuationPayload(pick(valuationRow, ['valuation_payload', 'payload']));

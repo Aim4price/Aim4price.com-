@@ -127,6 +127,8 @@ export type MarketMatch = {
 };
 
 export type GenericValuationInput = {
+  /** Internal asset recovery: use Basic inputs without matching an Advanced model. */
+  basicRecovery?: boolean;
   sectorKey: SectorKey;
   familyKey: EquipmentFamilyKey;
   brandSlug: string;
@@ -713,7 +715,7 @@ function resolveDepreciation(input: DepreciationInput): {
 
   if (input.isPropelled || isUsageAmountMetric(input.usageMetricType)) {
     const maxLifetimeHours = resolveMaxLifetimeHours(input);
-    const knownHours = input.basicLifetime !== undefined && input.usageAmount !== null
+    const knownHours = (input.basicLifetime !== undefined || input.specsJson.basic_recovery === true) && input.usageAmount !== null
       ? input.usageAmount : positiveUsageAmount(input.usageAmount);
 
     if (knownHours !== null) {
@@ -1712,6 +1714,8 @@ async function collectTypedModelKeys(input: {
 
 export async function runGenericValuation(input: GenericValuationInput): Promise<GenericValuationResult> {
   const rawSpecsJson = normalizeSpecsJson(input.specsJson);
+  const basicRecovery = input.basicRecovery === true;
+  if (basicRecovery && !(Number(input.userReplacementPriceExVat) > 0)) throw new Error('Confirm a positive replacement price.');
   let lifeWorkedPercent = positivePercent(input.lifeWorkedPercent);
   const inputYear = Math.round(input.year);
   let specsJson: Record<string, unknown> = {
@@ -1746,6 +1750,10 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
       : {}),
   };
 
+  if (basicRecovery) {
+    for (const key of ['catalog_model_id', 'equipment_model_id', 'equipmentModelId', 'aim4_model_key', 'selected_model_key']) delete specsJson[key];
+    specsJson.basic_recovery = true;
+  }
   const basicRelease = rawSpecsJson.basic_catalogue_release;
   const basicRecord = basicRelease == null ? null
     : await getBasicCatalogueFamily(input.sectorKey, input.familyKey, basicRelease);
@@ -1785,7 +1793,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
 
   const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, family.usageMetricType);
 
-  const brand = basicRecord ? await fetchBasicBrandContext(input.brandSlug)
+  const brand = basicRecord || basicRecovery ? await fetchBasicBrandContext(input.brandSlug)
     : await fetchBrandContext(family.id!, input.brandSlug);
   if (!brand) throw new Error('BRAND_NOT_FOUND_FOR_FAMILY');
 
@@ -1794,7 +1802,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const userReplacementPriceExVat = userReplacementPriceExVatRaw && userReplacementPriceExVatRaw > 0 ? userReplacementPriceExVatRaw : null;
   const userReplacementPriceYear = toInteger(input.userReplacementPriceYear) ?? null;
 
-  const selectedEquipmentModel = basicRecord ? null : await fetchEquipmentModelContext({
+  const selectedEquipmentModel = basicRecord || basicRecovery ? null : await fetchEquipmentModelContext({
     sectorKey: input.sectorKey,
     familyKey: input.familyKey,
     brandSlug: input.brandSlug,
@@ -1845,7 +1853,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     }
   }
 
-  const replacementBand = basicRecord ? null : motorPricingRow
+  const replacementBand = basicRecord || basicRecovery ? null : motorPricingRow
     ? buildMotorPricingBand(motorPricingRow, family, brand)
     : await findReplacementBand({
         sectorKey: input.sectorKey,
@@ -2048,7 +2056,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     }
   }
 
-  if (!basicRecord && typedModelName && input.saveModelCandidate && !selectedEquipmentModel) {
+  if (!basicRecord && !basicRecovery && typedModelName && input.saveModelCandidate && !selectedEquipmentModel) {
     await saveModelCandidate({
       sectorKey: input.sectorKey,
       familyKey: input.familyKey,
@@ -2062,7 +2070,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   }
 
   return {
-    catalogModeUsed: family.catalogMode === 'hybrid' ? 'generic_specs' : family.catalogMode,
+    catalogModeUsed: basicRecovery || family.catalogMode === 'hybrid' ? 'generic_specs' : family.catalogMode,
     sector: { id: family.sectorId, key: family.sectorKey, label: family.sectorLabel },
     family,
     brand,

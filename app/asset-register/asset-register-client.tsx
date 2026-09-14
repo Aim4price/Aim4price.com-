@@ -4810,7 +4810,7 @@ function getProjectionUnavailableReason(asset: RegisterAsset): string | null {
   const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
   // The server uses the shared usage calculation for Basic hours AND kilometres.
   // Check this before tractor specifications: Basic does not require kW or type.
-  if (specs.basic_catalogue_release || isMotorProjectionAsset(asset) || isLegacyHourProjectionAsset(asset)) {
+  if (specs.basic_catalogue_release || specs.basic_recovery || isMotorProjectionAsset(asset) || isLegacyHourProjectionAsset(asset)) {
     if (readAssetReplacementPriceExVat(asset) === null) return 'Add a replacement price.';
     if (!asset.yearModel) return 'Add the year model.';
     return null;
