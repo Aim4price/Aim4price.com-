@@ -112,6 +112,12 @@ export const REPORT_THEME_CSS = `
   .reportFullRegisterHeading { padding: 9px 11px; background: var(--brand-soft); border: 1px solid var(--line-strong); border-radius: 8px; break-after: avoid; }
   .reportFullRegisterHeading h2 { margin: 0 0 4px; color: var(--brand); }
   .reportFullRegisterHeading p { margin: 0; color: var(--muted); }
+  @media screen {
+    .assetReportInner > *, .assetReportMainStack, .assetReportFullStack,
+    .assetReportSection, .assetReportSideCard, .assetReportTableWrap { min-width: 0; max-width: 100%; }
+    .assetReportMainStack, .assetReportFullStack { grid-template-columns: minmax(0, 1fr); }
+    .assetReportTableWrap { overflow-x: auto; }
+  }
   @media screen and (max-width: 900px) {
     .assetMapReportInner > *, .assetMapReportKeyRows { min-width: 0; }
     .assetMapReportKeyRow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -121,9 +127,7 @@ export const REPORT_THEME_CSS = `
     .assetMapReportPhotoGrid .assetMapReportPhotoTile { grid-column: auto; }
   }
   @media screen and (max-width: 760px) {
-    .assetReportInner > *, .assetReportMainStack, .assetReportFullStack,
-    .assetReportSection, .assetReportSideCard, .assetReportTableWrap { min-width: 0; max-width: 100%; }
-    .assetReportMainStack, .assetReportFullStack { grid-template-columns: minmax(0, 1fr); }
+
     .assetReportPage, .fullRegisterPage, .reportPage { width: calc(100% - 20px); padding: 20px 16px; }
     .assetReportValuationCard, .fullRegisterValuePanel, .reportPage .heroStatus { border-radius: 0 0 8px 8px; }
     .assetReportIdentity, .reportPage .heroMain { border-radius: 8px 8px 0 0; }

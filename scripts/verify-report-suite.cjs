@@ -106,7 +106,7 @@ async function fixtures() {
   fs.writeFileSync(path.join(out, 'maintenance.xlsx'), workbook);
 
   const invoices = load('lib/my-invoices-report.ts');
-  const ownershipOptions = { ...base,
+  const ownershipOptions = { ...base, title: 'Cost of Ownership Report',
     includeFuelSlipCosts: false,
     summary: { invoiceCount: 20, totalSpent: 23000, maintenanceSpend: 20000, partsSpend: 0, repairSpend: 0, vatTotal: 3000 },
     invoices: Array.from({ length: 20 }, (_, i) => ({
@@ -145,12 +145,13 @@ async function fixtures() {
   }));
   reports['asset-fuel'] = scan.buildFuelReport(asset, scanEvents, ownerDetails, generatedAt, logo);
   saveWorkbook('asset-fuel', scan.buildFuelReportWorkbook(asset, scanEvents, ownerDetails, generatedAt));
-  reports['asset-maintenance'] = scan.buildMaintenanceReport(asset, scanEvents.slice(0,5).map((event,i) => ({
-    kind: 'serviced', label: 'Serviced', items: ['Oil and filter replacement'],
-    company: 'Demo Service', mechanic: 'Demo mechanic', notes: 'Verified service record',
-    event: { ...event, photoUrls: i === 0 ? photos : [] },
-  })), ownerDetails, generatedAt, logo);
-  saveWorkbook('asset-maintenance-empty', scan.buildMaintenanceReportWorkbook(asset, [], ownerDetails, generatedAt));
+  const maintenanceEvents = scanEvents.slice(0,6).map((event,i) => ({
+    ...event, photoUrls: i === 0 ? photos : [],
+    note: 'Serviced\nWork done: Oil and filter replacement\nCompany: Demo Service\nMechanic: Demo mechanic\nNotes/Problems: Verified service record '+i,
+  }));
+  reports['asset-maintenance'] = scan.buildMaintenanceReport(asset, maintenanceEvents, ownerDetails, generatedAt, logo);
+  assert.ok(reports['asset-maintenance'].includes('Oil and filter replacement'), 'maintenance fixture contains parsed work');
+  saveWorkbook('asset-maintenance', scan.buildMaintenanceReportWorkbook(asset, maintenanceEvents, ownerDetails, generatedAt));
   const depreciation = load('lib/asset-depreciation-timeline.ts');
   const depreciationEntries = Array.from({ length: 25 }, (_, i) => ({
     id: 'depreciation-'+i, assetRegisterItemId: asset.id, capturedAtIso: new Date(Date.UTC(2024, i, 14)).toISOString(),
@@ -198,7 +199,7 @@ async function fixtures() {
 
   const admin = load('lib/admin-work-tracker-report.ts');
   reports.retainer = admin.buildAdminWorkReportHtml({ client: { name: 'Demonstration Farm', accountType: 'owner' },
-    generatedAt: date, history: { period: 'month', startIso: '2026-09-01T00:00:00Z', endIso: '2026-10-01T00:00:00Z', sessions: [] } });
+    generatedAt: date, history: { period: 'month', startIso: '2026-09-01T00:00:00Z', endIso: '2026-10-01T00:00:00Z', sessions: [] } }).replace('/brand/aim4price-mark-black.png', logo);
   const insurance = load('lib/insurance-report.ts');
   const workspace = {
     clientName: 'Demonstration Farm', segments: ['commercial'], industryProfiles: ['agriculture'],
@@ -215,6 +216,10 @@ async function fixtures() {
 
 (async () => {
   const reports = await fixtures();
+  const font = fs.readFileSync('public/field-manager/montserrat-latin.woff').toString('base64');
+  for (const name of Object.keys(reports)) {
+    reports[name] = reports[name].replace('</head>', '<style>@font-face{font-family:Montserrat;font-style:normal;font-weight:100 900;src:url(data:font/woff;base64,'+font+') format("woff");font-display:block}</style></head>');
+  }
   const browser = await puppeteer.launch({ args: chromium.args, executablePath: await chromium.executablePath(), headless: true });
   const results = [];
   const failures = [];
@@ -235,6 +240,7 @@ async function fixtures() {
       });
       await page.setViewport({ width: 1400, height: 1000, deviceScaleFactor: 1 });
       await page.setContent(html, { waitUntil: 'load' });
+      await page.evaluate(async () => { await document.fonts.ready; });
       await page.screenshot({ path: path.join(out,name+'-desktop.png'), fullPage: true });
       // Small synthetic previews can be inspected through CI logs when a local
       // checkout is unavailable. No production data or external assets are used.
@@ -265,7 +271,7 @@ async function fixtures() {
       const parsed = await PDFDocument.load(pdf);
       const pages = parsed.getPageCount();
       assert.ok(pages >= 1, name+' empty PDF');
-      if (['maintenance','ownership','full-register','register-umbrella'].includes(name)) assert.ok(pages > 1, name+' must exercise multiple pages');
+      if (['maintenance','asset-maintenance','ownership','full-register','register-umbrella'].includes(name)) assert.ok(pages > 1, name+' must exercise multiple pages');
       const pdfPath = path.join(out,name+'.pdf');
       fs.writeFileSync(pdfPath,pdf);
       const extracted = execFileSync('pdftotext', ['-layout', pdfPath, '-'], { encoding: 'utf8' });
