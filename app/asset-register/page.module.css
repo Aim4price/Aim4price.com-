@@ -40983,3 +40983,28 @@ button.documentOpenLink {
   :global(:where(html:not(:has([data-website-canvas])))) .revalueQuestionPanel .revalueDecisionActions { grid-template-columns:1fr; }
 }
 .revalueQuestionPanel .revalueDecisionActions button { border-radius:1rem !important; font-family:inherit !important; font-size:.95rem !important; font-weight:700 !important; }
+
+/* Manual conversion shares the Change password dialog's body and footer. */
+.manualConversionAccountModal .assetSettingsConfirmCopy {
+  margin:0 !important;
+  color:#64746a !important;
+  font-size:.88rem !important;
+  font-weight:650 !important;
+  line-height:1.5 !important;
+}
+.manualConversionAccountModal > .assetSettingsActions {
+  margin:0 !important;
+  justify-content:flex-end !important;
+}
+.manualConversionAccountModal > .assetSettingsActions > button {
+  width:auto !important;
+  min-width:min(8.75rem,100%) !important;
+  max-width:100%;
+}
+.manualConversionAccountModal > .assetSettingsActions {
+  position:static !important;
+  width:auto !important;
+  align-self:stretch !important;
+  padding:1rem var(--management-padding) 1.6rem !important;
+  background:rgba(255,255,255,.97) !important;
+}
