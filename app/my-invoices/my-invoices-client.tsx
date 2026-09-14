@@ -385,7 +385,7 @@ function IconBase(props: SVGProps<SVGSVGElement>) {
 }
 
 function ManageCostIcon(props: SVGProps<SVGSVGElement>) {
-  return <IconBase {...props}><path d="m9 3-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3h6l1-3 3-1-1-3 2-2-2-2 1-3-3-1-1-3Z" /><circle cx="12" cy="12" r="3" /></IconBase>;
+  return <IconBase {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></IconBase>;
 }
 
 function LinkedAssetIcon(props: SVGProps<SVGSVGElement>) {
@@ -3444,7 +3444,7 @@ export default function MyInvoicesClient({
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
                       <h2 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h2>
-                      <span className={styles.invoiceAssetPill}><LinkedAssetIcon />{invoice.assetTitle || 'Saved asset'}</span>
+                      <span className={styles.invoiceAssetPill}><LinkedAssetIcon /><span>{invoice.assetTitle || 'Saved asset'}</span></span>
                       {dealerMode && invoice.ownerName ? <p className={styles.invoiceOwner}>{invoice.ownerName}</p> : null}
                       <p className={styles.invoiceReference}>
                         <span>{invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber}` : 'No invoice number'}</span>
@@ -3453,7 +3453,7 @@ export default function MyInvoicesClient({
                       <div className={styles.invoiceBadges}>
                         <span className={styles.invoiceSourceBadge}>
                           {invoice.source === 'automatic' ? <AutomaticInvoiceIcon /> : <OpenFileIcon />}
-                          {sourceLabel(invoice.source)}
+                          <span>{sourceLabel(invoice.source)}</span>
                         </span>
                         {dealerMode ? <span className={styles.invoiceSourceBadge}>{ownerStorageLabel(invoice.ownerStorageStatus)}</span> : null}
                       </div>
@@ -5563,7 +5563,7 @@ export default function MyInvoicesClient({
 
       {managedInvoice ? (
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay onClick={closeManageCost}>
-          <div ref={manageCostRef} className={`${styles.downloadModal} ${styles.costChoiceModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="manage-cost-title" aria-describedby="manage-cost-supplier" onClick={(event) => event.stopPropagation()}>
+          <div ref={manageCostRef} className={`${styles.costManageModal} ${styles.downloadModal} ${styles.costChoiceModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="manage-cost-title" aria-describedby="manage-cost-supplier" onClick={(event) => event.stopPropagation()}>
             <div className={styles.modalHeader}>
               <div><h2 id="manage-cost-title">Manage cost</h2><p id="manage-cost-supplier">{managedInvoice.supplierName || 'Unknown supplier'} · {formatMoney(managedInvoice.totalIncVat)}</p></div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeManageCost} aria-label="Close manage cost"><span aria-hidden="true">×</span></button>
