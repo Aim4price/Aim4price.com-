@@ -672,7 +672,7 @@ export default function AssetDiscoveryClient({
     document.body.style.overflow = "hidden";
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setActiveEnquiry(null);
+      if (event.key === "Escape") { event.preventDefault(); setActiveEnquiry(null); }
     };
     window.addEventListener("keydown", onKeyDown);
 
@@ -889,7 +889,8 @@ export default function AssetDiscoveryClient({
       current = current.parentElement;
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || photoModal || activeEnquiry) return;
+      if (event.defaultPrevented || event.key !== "Escape" || photoModal || activeEnquiry) return;
+      event.preventDefault();
       setExpandedAssetId(null);
       card.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')?.focus({ preventScroll: true });
     };
