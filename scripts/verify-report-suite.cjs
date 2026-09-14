@@ -157,13 +157,16 @@ async function fixtures() {
   const reports = await fixtures();
   const browser = await puppeteer.launch({ args: chromium.args, executablePath: await chromium.executablePath(), headless: true });
   const results = [];
+  const failures = [];
   try {
     for (const [name, html] of Object.entries(reports)) {
-      assert.match(html, /#edf4f0/);
-      assert.match(html, /Save PDF \/ Print/);
-      assert.match(html, /Powered by Aim4price.com/);
       fs.writeFileSync(path.join(out, name+'.html'), html);
       const page = await browser.newPage();
+      try {
+      assert.ok(html.includes('#edf4f0'), name+' shared palette');
+      assert.ok(html.includes('Save PDF / Print'), name+' standard print button');
+      assert.ok(html.includes('window.close()'), name+' close button');
+      assert.ok(html.includes('Powered by Aim4price.com'), name+' branded footer');
       await page.setJavaScriptEnabled(false); // Do not auto-open native print dialogs.
       await page.setRequestInterception(true);
       page.on('request', request => {
@@ -201,8 +204,15 @@ async function fixtures() {
       fs.writeFileSync(path.join(out,name+'.pdf'),pdf);
       results.push({ report: name, pages, screenWidths: [390,768,1400], printToolbarHidden: true });
       console.log('PASS '+name+': '+pages+' PDF pages, 3 screen widths');
-      await page.close();
+      } catch (error) {
+        failures.push(name+': '+error.message);
+        results.push({ report: name, error: error.message });
+        console.error('FAIL '+name+': '+error.message);
+      } finally {
+        await page.close();
+      }
     }
+    assert.equal(failures.length, 0, failures.join('\n'));
   } finally {
     fs.writeFileSync(path.join(out,'results.json'),JSON.stringify(results,null,2));
     await browser.close();

@@ -215,7 +215,7 @@ export default function SharedRegisterWorkspace({ initialWorkspace }: { initialW
       if (!response.ok || !payload.url) throw new Error(payload.error || 'The report could not be generated.');
       if (!reportWindow.closed) openCanonicalReportUrl(payload.url, reportWindow);
       setNotice({ tone: 'success', message: `${titleCase(type)} report generated.` });
-      const refreshed = await readWorkspace(await fetch(`/api/insurance-workspaces/${workspace.id}`)).catch(() => null);
+      const refreshed = await fetch(`/api/insurance-workspaces/${workspace.id}`).then(readWorkspace).catch(() => null);
       if (refreshed) setWorkspace(refreshed);
     } catch (error) {
       reportWindow.close();
