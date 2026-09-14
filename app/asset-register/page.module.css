@@ -40511,7 +40511,7 @@ button.documentOpenLink {
 
 /* Manage pricing uses the same account dialog shell as the other asset actions. */
 .managementAccountModal.pricingModal {
-  width: min(var(--website-dialog-reference-width, 100%), 64rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 84rem) !important;
 }
 .managementAccountModal .pricingOptionsGrid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)) !important;
