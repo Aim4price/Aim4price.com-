@@ -4735,36 +4735,48 @@ function isMotorProjectionAsset(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>
   return asset.kind === 'vehicle' || sectorKey === 'motor' || getAssetUsageMetric(asset) === 'km';
 }
 
-function canProjectFuturePrice(asset: RegisterAsset): boolean {
-  if (asset.valuationRunId === null || asset.selectedMethod === 'manual') {
-    return false;
-  }
+function getRecalculationUnavailableReason(asset: RegisterAsset): string | null {
+  if (asset.selectedMethod === 'manual') return 'Save an Aim4price estimate to replace the manual value.';
+  if (!asset.valuationRunId) return 'Save an Aim4price estimate for this asset first.';
+  return null;
+}
+
+function getProjectionUnavailableReason(asset: RegisterAsset): string | null {
+  const valuationReason = getRecalculationUnavailableReason(asset);
+  if (valuationReason) return valuationReason;
 
   if (assetUsesPercentUsage(asset)) {
-    return (
-      readAssetReplacementPriceExVat(asset) !== null &&
-      getAssetLifeWorkedPercent(asset) !== null &&
-      Boolean(asset.condition)
-    );
+    if (readAssetReplacementPriceExVat(asset) === null) return 'Add a replacement price.';
+    if (getAssetLifeWorkedPercent(asset) === null) return 'Add the lifetime worked percentage.';
+    if (!asset.condition) return 'Add the asset condition.';
+    return null;
   }
 
-  if (asset.yearModel === null) {
-    return false;
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  // The server uses the shared usage calculation for Basic hours AND kilometres.
+  // Check this before tractor specifications: Basic does not require kW or type.
+  if (specs.basic_catalogue_release || isMotorProjectionAsset(asset)) {
+    if (readAssetReplacementPriceExVat(asset) === null) return 'Add a replacement price.';
+    if (!asset.yearModel) return 'Add the year model.';
+    return null;
   }
 
   if (isTractorAsset(asset)) {
-    return Boolean(asset.powerKw !== null && asset.tractorType);
+    if (!asset.yearModel) return 'Add the year model.';
+    if (!asset.powerKw || asset.powerKw <= 0) return 'Add the tractor power in kW.';
+    if (!asset.tractorType) return 'Add the tractor type.';
+    return null;
   }
 
-  if (isMotorProjectionAsset(asset)) {
-    return readAssetReplacementPriceExVat(asset) !== null;
-  }
+  return 'Future pricing is not yet supported for this valuation type.';
+}
 
-  return false;
+function canProjectFuturePrice(asset: RegisterAsset): boolean {
+  return getProjectionUnavailableReason(asset) === null;
 }
 
 function canRefreshAssetEstimate(asset: RegisterAsset): boolean {
-  return asset.valuationRunId !== null && asset.selectedMethod !== 'manual';
+  return getRecalculationUnavailableReason(asset) === null;
 }
 
 const REPLACEMENT_PRICE_SPEC_KEYS = [
@@ -21453,7 +21465,7 @@ export default function AssetRegisterClient({
                   <RecalculateIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Recalculate value</strong>
-                    <small>Refresh the saved estimate.</small>
+                    <small>{getRecalculationUnavailableReason(activeAsset) ?? 'Refresh the saved estimate.'}</small>
                   </span>
                 </button>
 
@@ -21466,7 +21478,7 @@ export default function AssetRegisterClient({
                   <TrendIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Calculate future price</strong>
-                    <small>Estimate a future value.</small>
+                    <small>{getProjectionUnavailableReason(activeAsset) ?? 'Estimate a future value.'}</small>
                   </span>
                 </button>
 
@@ -21484,9 +21496,6 @@ export default function AssetRegisterClient({
                 </button>
               </div>
 
-              {!canRefreshAssetEstimate(activeAsset) ? (
-                <p className={styles.pricingOptionHint}>Automatic recalculation is only available for assets saved from an Aim4price valuation.</p>
-              ) : null}
             </div>
           </div>
         </div>
