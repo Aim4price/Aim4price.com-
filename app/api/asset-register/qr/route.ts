@@ -194,7 +194,10 @@ export async function GET(request: NextRequest) {
       const embeddedQrImageUrl = `data:image/png;base64,${qrBuffer.toString('base64')}`;
 
       // Brand the asset owner's label, including when a dealer opens a shared lead.
-      const ownerProfile = await getAccountProfile({ id: assetOwnerUserId }).catch(() => null);
+      const ownerProfile = await getAccountProfile({
+        id: assetOwnerUserId,
+        name: assetOwnerUserId === session.user.id ? session.user.name : undefined,
+      }).catch(() => null);
       const [logoUrl, fallbackLogoUrl] = await Promise.all([
         resolveReportLogoUrlForHtml(ownerProfile?.logoUrl, request.url),
         getFallbackReportLogoUrl(request.url),
@@ -203,6 +206,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse(
         buildAssetQrLabelHtml({
           assetTitle: asset.title,
+          accountName: asText(ownerProfile?.businessName) || asText(ownerProfile?.displayName) || asText(ownerProfile?.name),
           serialNumber: asText(asset.serialNumber),
           yearModel: asset.yearModel,
           modelName: asText(asset.modelName) || asText(asset.typedModelName),
