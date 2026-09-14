@@ -40671,36 +40671,36 @@ button.documentOpenLink {
   gap: .55rem;
 }
 @media (max-width: 600px), (max-height: 550px) {
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody {
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalBody {
     padding: .65rem 1rem !important;
     gap: .6rem !important;
   }
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll {
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryTableScroll {
     margin: .45rem .5rem .5rem !important;
     padding-right: .35rem !important;
   }
 }
 @media (max-height: 550px) {
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalHeader {
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalHeader {
     padding: .65rem 1rem !important;
     margin: 0 !important;
   }
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalHeader p,
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionHeader p {
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summaryModalHeader p,
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionHeader p {
     display: none;
   }
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionHeader {
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionHeader {
     min-height: 2.5rem !important;
     padding: .5rem .75rem !important;
   }
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionTab {
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .summarySectionTab {
     min-height: 2.4rem !important;
     padding: .45rem !important;
   }
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter {
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter {
     padding: .5rem 1rem !important;
   }
-  .registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter > button {
+  :global(body:not(:has([data-website-canvas]))) .registerSummaryAccountModal:global(#asset-register-summary-dialog) .registerUtilityFooter > button {
     min-height: 2.5rem !important;
     padding: .45rem .8rem !important;
   }
@@ -40794,21 +40794,45 @@ button.documentOpenLink {
  font-weight:650 !important;
 }
 .page .assetMetaRow .assetSavedDateLabel::before { content:'·'; margin-right:.6rem; }
-@media(min-width:901px) {
- .page .assetGroupHeader { padding-bottom:1.4rem !important; }
- .page .assetGroupHeader .assetGroupSummary,
- .page .assetHeader .assetHeaderAside { gap:1.05rem !important; }
- .page .assetHeaderActions,
- .page .assetGroupHeaderActions {
+/* Keep the desktop card actions at every canonical website scale. */
+:global([data-website-canvas]) .page .assetGroupHeader { padding-bottom:1.4rem !important; }
+:global([data-website-canvas]) .page .assetGroupHeader .assetGroupSummary,
+ :global([data-website-canvas]) .page .assetHeader .assetHeaderAside { gap:1.05rem !important; }
+:global([data-website-canvas]) .page .assetHeaderActions,
+ :global([data-website-canvas]) .page .assetGroupHeaderActions {
  width:32rem !important;
  max-width:100% !important;
  display:grid !important;
  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
  gap:.75rem !important;
  }
- .page .assetHeaderActions .cardOptionsButton,
- .page .assetHeaderActions .cardViewDetailsButton,
- .page .assetHeaderActions .cardManageButton {
+:global([data-website-canvas]) .page .assetHeaderActions .cardOptionsButton,
+ :global([data-website-canvas]) .page .assetHeaderActions .cardViewDetailsButton,
+ :global([data-website-canvas]) .page .assetHeaderActions .cardManageButton {
+ width:100% !important;
+ min-width:0 !important;
+ min-height:3.2rem !important;
+ height:3.2rem !important;
+ font-size:.95rem !important;
+ font-weight:750 !important;
+ padding:0 .75rem !important;
+ justify-content:center !important;
+ }
+@media(min-width:901px) {
+ :global(body:not(:has([data-website-canvas]))) .page .assetGroupHeader { padding-bottom:1.4rem !important; }
+ :global(body:not(:has([data-website-canvas]))) .page .assetGroupHeader .assetGroupSummary,
+ :global(body:not(:has([data-website-canvas]))) .page .assetHeader .assetHeaderAside { gap:1.05rem !important; }
+ :global(body:not(:has([data-website-canvas]))) .page .assetHeaderActions,
+ :global(body:not(:has([data-website-canvas]))) .page .assetGroupHeaderActions {
+ width:32rem !important;
+ max-width:100% !important;
+ display:grid !important;
+ grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+ gap:.75rem !important;
+ }
+ :global(body:not(:has([data-website-canvas]))) .page .assetHeaderActions .cardOptionsButton,
+ :global(body:not(:has([data-website-canvas]))) .page .assetHeaderActions .cardViewDetailsButton,
+ :global(body:not(:has([data-website-canvas]))) .page .assetHeaderActions .cardManageButton {
  width:100% !important;
  min-width:0 !important;
  min-height:3.2rem !important;
