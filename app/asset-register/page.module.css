@@ -39364,6 +39364,17 @@ button.documentOpenLink {
   padding-bottom: 0.85rem !important;
 }
 
+/* Preserve the pricing symbols; give their SVG strokes a clear, consistent size. */
+.pricingModal .ownerCommandGrid .ownerCommandAction > .buttonIcon {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  flex-shrink: 0;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  shape-rendering: geometricPrecision;
+}
+
 .pricingOptionsGrid {
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   gap: clamp(0.75rem, calc(var(--website-design-vw, 1vw) * 1.15), 0.95rem) !important;
