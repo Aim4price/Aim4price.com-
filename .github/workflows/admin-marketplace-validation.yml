@@ -21,6 +21,7 @@ on:
       - 'app/api/owner-app/**'
       - 'app/api/asset-discovery/**'
       - 'app/asset-discovery/**'
+      - 'scripts/verify-discovery-focus.cjs'
       - 'app/marketplace/sourcing-requests/**'
       - 'app/api/marketplace/route.ts'
       - 'app/api/marketplace/views/**'
@@ -120,6 +121,16 @@ jobs:
 
       - name: Test Asset Discovery
         run: npm run test:asset-discovery
+
+      - name: Verify Discovery focus and dialogs
+        run: node scripts/verify-discovery-focus.cjs
+
+      - name: Save Discovery browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: discovery-focus-evidence
+          path: .next/discovery-focus-validation
 
       - name: Test Admin navigation
         run: npm run test:admin-accounts
