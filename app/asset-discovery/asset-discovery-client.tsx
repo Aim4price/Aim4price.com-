@@ -880,7 +880,8 @@ export default function AssetDiscoveryClient({
       for (const sibling of Array.from(current.parentElement?.children ?? [])) {
         if (!(sibling instanceof HTMLElement) || sibling === current ||
             sibling.id === "aim4price-website-overlays" ||
-            sibling.matches("script, style, link, [data-website-overlay]")) continue;
+            sibling.matches("script, style, link, [data-website-overlay]") ||
+            sibling.querySelector('[role="dialog"], [role="alertdialog"]')) continue;
         background.push({ element: sibling, inert: sibling.inert });
         sibling.classList.add(styles.discoveryBackgroundBlur);
         sibling.inert = true;
