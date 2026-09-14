@@ -97,10 +97,10 @@ jobs:
           set -e
           if [ "$build_status" -eq 0 ]; then exit 0; fi
           # Same deployment-DB-only guard as the existing canvas workflow.
-          if rg -Fq "✓ Compiled successfully" /tmp/report-build.log \
-            && rg -Fq "Database connection variables are missing" /tmp/report-build.log \
-            && rg -Fq "Collecting page data" /tmp/report-build.log \
-            && rg -q "Failed to collect page data for /api/dealer/[^[:space:]]+" /tmp/report-build.log; then
+          if grep -Fq "✓ Compiled successfully" /tmp/report-build.log \
+            && grep -Fq "Database connection variables are missing" /tmp/report-build.log \
+            && grep -Fq "Collecting page data" /tmp/report-build.log \
+            && grep -Eq "Failed to collect page data for /api/dealer/[^[:space:]]+" /tmp/report-build.log; then
             echo "Bundle compiled; page-data collection requires deployment database credentials."
             exit 0
           fi
