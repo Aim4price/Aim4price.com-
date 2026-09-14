@@ -4097,6 +4097,7 @@ export default function MyInvoicesClient({
             <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="invoice-drop-code-title">Invoice Drop code</h2>
+                <p>Create a code for suppliers to upload invoices for your assets.</p>
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager"><span aria-hidden="true">×</span></button>
             </div>
