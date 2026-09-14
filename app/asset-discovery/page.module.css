@@ -3228,9 +3228,9 @@
 .discoveryFocusClose > span { font-size: 1.4rem; line-height: 1; }
 .discoveryFocusActions { display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; padding: 20px 32px 0; }
 .discoveryFocusActions:empty { display: none; }
-.discoveryFocusActions .primaryButton,
-.discoveryFocusActions .enquireButton,
-.discoveryFocusActions .discoveryPrimaryAction {
+.discoveryFocusPanel .discoveryFocusActions .primaryButton,
+.discoveryFocusPanel .discoveryFocusActions .enquireButton,
+.discoveryFocusPanel .discoveryFocusActions .discoveryPrimaryAction {
   color: #fff !important;
   background: #174f3b !important;
   border: 1px solid #174f3b !important;
