@@ -384,6 +384,14 @@ function IconBase(props: SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
 }
 
+function ManageCostIcon(props: SVGProps<SVGSVGElement>) {
+  return <IconBase {...props}><path d="m9 3-1 3-3 1 1 3-2 2 2 2-1 3 3 1 1 3h6l1-3 3-1-1-3 2-2-2-2 1-3-3-1-1-3Z" /><circle cx="12" cy="12" r="3" /></IconBase>;
+}
+
+function LinkedAssetIcon(props: SVGProps<SVGSVGElement>) {
+  return <IconBase {...props}><rect x="4" y="7" width="16" height="13" rx="3" /><path d="M9 7V4h6v3M9 12h6" /></IconBase>;
+}
+
 function SearchIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -1013,6 +1021,10 @@ export default function MyInvoicesClient({
       ? invoiceDropAssetId
       : '';
   const visibleInvoiceDropCode = newInvoiceDropCode || revealedInvoiceDropCode;
+  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
+  const [managedInvoice, setManagedInvoice] = useState<InvoiceRecord | null>(null);
+  const manageCostRef = useRef<HTMLDivElement>(null);
+  const manageCostTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -1578,10 +1590,33 @@ export default function MyInvoicesClient({
     || filterOpen
     || downloadOpen
     || deleteConfirmOpen
+    || Boolean(managedInvoice)
     || budgetManagerOpen
     || budgetModalOpen
     || Boolean(budgetDeleteCandidate);
   const selectedUsageMetricOption = USAGE_METRIC_OPTIONS.find((option) => option.value === draft.usageMetric) ?? USAGE_METRIC_OPTIONS[0];
+
+  function closeManageCost() {
+    setManagedInvoice(null);
+    window.requestAnimationFrame(() => manageCostTriggerRef.current?.focus());
+  }
+
+  useEffect(() => {
+    if (!managedInvoice) return;
+    const frame = window.requestAnimationFrame(() => manageCostRef.current?.querySelector<HTMLButtonElement>('button')?.focus());
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') { event.preventDefault(); closeManageCost(); }
+      if (event.key !== 'Tab') return;
+      const buttons = manageCostRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+      if (!buttons?.length) return;
+      const first = buttons[0];
+      const last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+    document.addEventListener('keydown', handleKey);
+    return () => { window.cancelAnimationFrame(frame); document.removeEventListener('keydown', handleKey); };
+  }, [managedInvoice]);
 
   useEffect(() => {
     setCurrentInvoicePage(1);
@@ -3402,62 +3437,70 @@ export default function MyInvoicesClient({
             ) : null}
 
             {!isLoading ? paginatedInvoices.map((invoice) => {
-              const updatedLabel = invoice.updatedAtIso ? `Updated ${formatDateTime(invoice.updatedAtIso)}` : '';
-
+              const expanded = expandedInvoiceId === invoice.id;
+              const detailsId = `cost-details-${invoice.id}`;
               return (
                 <article className={styles.invoiceRow} key={invoice.id}>
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
                       <h2 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h2>
-                      <p className={styles.invoiceAsset}>
-                        {dealerMode && invoice.ownerName ? `${invoice.ownerName} · ` : ''}
-                        {buildInvoiceAssetMeta(invoice)}
+                      <span className={styles.invoiceAssetPill}><LinkedAssetIcon />{invoice.assetTitle || 'Saved asset'}</span>
+                      {dealerMode && invoice.ownerName ? <p className={styles.invoiceOwner}>{invoice.ownerName}</p> : null}
+                      <p className={styles.invoiceReference}>
+                        <span>{invoice.invoiceNumber ? `Invoice ${invoice.invoiceNumber}` : 'No invoice number'}</span>
+                        {invoice.invoiceDate ? <span>{formatDateTime(invoice.invoiceDate)}</span> : null}
                       </p>
-                      <div className={styles.invoiceMetaList}>
-                        <span className={styles.invoiceValueMethodLabel}>{invoice.invoiceNumber || 'No invoice number'}</span>
-                        <span className={styles.invoiceSavedDateLabel}>{sourceLabel(invoice.source)}</span>
-                        {invoice.createdByDisplayName ? (
-                          <span className={styles.invoiceSavedDateLabel}>Added by {invoice.createdByDisplayName}</span>
-                        ) : null}
-                        {dealerMode ? (
-                          <span className={styles.invoiceSavedDateLabel}>
-                            Visibility: {ownerStorageLabel(invoice.ownerStorageStatus)}
-                          </span>
-                        ) : null}
-                        {updatedLabel ? <span className={styles.invoiceSavedDateLabel}>{updatedLabel}</span> : null}
+                      <div className={styles.invoiceBadges}>
+                        <span className={styles.invoiceSourceBadge}>
+                          {invoice.source === 'automatic' ? <AutomaticInvoiceIcon /> : <OpenFileIcon />}
+                          {sourceLabel(invoice.source)}
+                        </span>
+                        {dealerMode ? <span className={styles.invoiceSourceBadge}>{ownerStorageLabel(invoice.ownerStorageStatus)}</span> : null}
                       </div>
                     </div>
-
                     <div className={styles.invoiceHeaderAside}>
                       <div className={styles.invoiceValueBlock}>
                         <strong className={styles.invoicePrice}>{formatMoney(invoice.totalIncVat)}</strong>
-                        <span className={styles.invoiceVatLabel}>Total incl. VAT</span>
+                        <span className={styles.invoiceVatLabel}>Incl. VAT</span>
                       </div>
-
                       <div className={styles.rowActions}>
                         {invoice.document?.uploadUrl ? (
                           <DocumentFileLink className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} href={accountScopedUrl(invoice.document.uploadUrl)} target="_blank" rel="noreferrer">
-                            <OpenFileIcon className={styles.buttonIcon} />
-                            <span>Open file</span>
+                            <OpenFileIcon className={styles.buttonIcon} /><span>Open file</span>
                           </DocumentFileLink>
-                        ) : null}
-                        <>
-                          <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => editInvoice(invoice)}>
-                            <EditIcon className={styles.buttonIcon} />
-                            <span>Edit</span>
-                          </button>
-                          <button
-                            type="button"
-                            className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
-                            onClick={() => openDeleteInvoiceDialog(invoice)}
-                            disabled={deletingInvoiceId === invoice.id}
-                          >
-                            <TrashIcon className={styles.buttonIcon} />
-                            <span>{deletingInvoiceId === invoice.id ? 'Deleting...' : 'Delete'}</span>
-                          </button>
-                        </>
+                        ) : (
+                          <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton}`} disabled title="No file attached to this cost"><OpenFileIcon className={styles.buttonIcon} /><span>No file</span></button>
+                        )}
+                        <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} aria-expanded={expanded} aria-controls={detailsId} onClick={() => setExpandedInvoiceId(expanded ? null : invoice.id)}>
+                          <ChevronDownIcon className={styles.invoiceDetailsChevron} /><span>{expanded ? 'Hide details' : 'View details'}</span>
+                        </button>
+                        <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceManageButton}`} onClick={(event) => { manageCostTriggerRef.current = event.currentTarget; setManagedInvoice(invoice); }} disabled={deletingInvoiceId === invoice.id} aria-haspopup="dialog">
+                          <ManageCostIcon className={styles.buttonIcon} /><span>Manage</span>
+                        </button>
                       </div>
                     </div>
+                  </div>
+                  <div id={detailsId} hidden={!expanded} className={styles.invoiceDetails}>
+                    <h3>Cost details</h3>
+                    <dl className={styles.invoiceDetailsGrid}>
+                      <div><dt>Asset</dt><dd>{buildInvoiceAssetMeta(invoice)}</dd></div>
+                      <div><dt>Invoice date</dt><dd>{invoice.invoiceDate ? formatDateTime(invoice.invoiceDate) : 'Not recorded'}</dd></div>
+                      <div><dt>Excl. VAT</dt><dd>{invoice.subtotalExVat !== null ? formatMoney(invoice.subtotalExVat) : 'Not recorded'}</dd></div>
+                      <div><dt>VAT</dt><dd>{invoice.vatAmount !== null ? formatMoney(invoice.vatAmount) : 'Not recorded'}</dd></div>
+                      {invoice.usageMetric !== 'none' && invoice.usageReading !== null ? <div><dt>Usage at capture</dt><dd>{formatAssetUsageReading(invoice.usageReading, invoice.usageMetric) || '0 ' + (invoice.usageMetric === 'km' ? 'km' : 'hours')}</dd></div> : null}
+                      <div><dt>Source</dt><dd>{sourceLabel(invoice.source)}</dd></div>
+                      {invoice.createdByDisplayName ? <div><dt>Added by</dt><dd>{invoice.createdByDisplayName}</dd></div> : null}
+                      {invoice.createdAtIso ? <div><dt>Added</dt><dd>{formatDateTime(invoice.createdAtIso)}</dd></div> : null}
+                      {invoice.updatedAtIso ? <div><dt>Updated</dt><dd>{formatDateTime(invoice.updatedAtIso)}</dd></div> : null}
+                    </dl>
+                    {invoice.blocks.length ? <div className={styles.invoiceBreakdown}>
+                      {invoice.blocks.map((block) => <div key={block.id}><div><strong>{({ maintenance: 'Maintenance', parts: 'Parts', repair: 'Repair', other: 'Other' })[block.blockType]}</strong><p>{block.description || 'No description'}</p></div><span>{block.totalIncVat !== null ? formatMoney(block.totalIncVat) : 'Not recorded'}</span></div>)}
+                    </div> : <div className={styles.invoiceLegacyDetails}>
+                      {invoice.maintenanceWorkDone ? <p><strong>Maintenance</strong>{invoice.maintenanceWorkDone}</p> : null}
+                      {invoice.partsSupplied ? <p><strong>Parts</strong>{invoice.partsSupplied}</p> : null}
+                      {invoice.repairWorkDone ? <p><strong>Repair</strong>{invoice.repairWorkDone}</p> : null}
+                    </div>}
+                    {invoice.notes ? <p className={styles.invoiceNotes}><strong>Notes</strong>{invoice.notes}</p> : null}
                   </div>
                 </article>
               );
@@ -5515,6 +5558,22 @@ export default function MyInvoicesClient({
               )}
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {managedInvoice ? (
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay onClick={closeManageCost}>
+          <div ref={manageCostRef} className={`${styles.downloadModal} ${styles.costChoiceModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="manage-cost-title" aria-describedby="manage-cost-supplier" onClick={(event) => event.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div><h2 id="manage-cost-title">Manage cost</h2><p id="manage-cost-supplier">{managedInvoice.supplierName || 'Unknown supplier'} · {formatMoney(managedInvoice.totalIncVat)}</p></div>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeManageCost} aria-label="Close manage cost"><span aria-hidden="true">×</span></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.costManageActions}>
+              <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => { setManagedInvoice(null); editInvoice(managedInvoice); }}><EditIcon className={styles.buttonIcon} />Edit cost</button>
+              <button type="button" className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`} onClick={() => { setManagedInvoice(null); openDeleteInvoiceDialog(managedInvoice); }}><TrashIcon className={styles.buttonIcon} />{dealerMode ? 'Remove cost' : 'Delete cost'}</button>
+            </div>
+          </div>
         </div>
       ) : null}
 
