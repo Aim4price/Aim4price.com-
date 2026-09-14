@@ -40125,6 +40125,12 @@ button.documentOpenLink {
   margin: 1.3rem var(--entry-padding-right) 1rem var(--entry-padding) !important;
   padding: 0 !important;
 }
+.assetEntryModal .changeRegisterManageButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
 .assetEntryModal .changeRegisterList {
   min-height: 0;
   margin: 0 !important;
