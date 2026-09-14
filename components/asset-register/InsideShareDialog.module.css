@@ -1,4 +1,4 @@
-.dialog.dialog { width:min(60rem,calc(100vw - 2rem)); max-width:100%; padding:2.25rem; min-width:0; max-height:calc(100dvh - 2rem); display:flex; flex-direction:column; }
+.dialog.dialog { width:min(60rem,calc(var(--website-dialog-reference-width, 100vw) - 2rem)); max-width:100%; padding:2.25rem; min-width:0; max-height:calc(var(--website-visible-height, 100dvh) - 2rem); display:flex; flex-direction:column; }
 .header { flex:none; padding-bottom:1.6rem; }
 .header.header p { margin-top:.65rem; font-size:1rem; }
 .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.1rem; padding-top:1.6rem; min-height:0; overflow-y:auto; }
@@ -13,21 +13,21 @@
 .card:hover:not(:disabled) { border-color:var(--tone); box-shadow:0 6px 20px rgba(19,53,45,.1); }
 .card:focus-visible { outline:3px solid var(--tone); outline-offset:-4px; }
 .card:disabled { opacity:.55; cursor:default; }
-@media(max-width:640px) { .grid { grid-template-columns:1fr; gap:.65rem; } .card { min-height:6.4rem; padding:.75rem; gap:.35rem; } .icon { width:2rem; height:2rem; border-radius:.65rem; } .icon svg { width:1.3rem; height:1.3rem; } .header.header h3 { font-size:clamp(.9rem,3.5vw,1.35rem); } }
-@media(max-height:450px) { .grid { padding-top:.75rem; gap:.5rem; } .card { min-height:6rem; padding:.5rem; gap:.3rem; } .icon { width:2rem; height:2rem; } }
+@media(max-width:640px) { :global(body:not(:has([data-website-canvas]))) .grid { grid-template-columns:1fr; gap:.65rem; } :global(body:not(:has([data-website-canvas]))) .card { min-height:6.4rem; padding:.75rem; gap:.35rem; } :global(body:not(:has([data-website-canvas]))) .icon { width:2rem; height:2rem; border-radius:.65rem; } :global(body:not(:has([data-website-canvas]))) .icon svg { width:1.3rem; height:1.3rem; } :global(body:not(:has([data-website-canvas]))) .header.header h3 { font-size:clamp(.9rem,3.5vw,1.35rem); } }
+@media(max-height:450px) { :global(body:not(:has([data-website-canvas]))) .grid { padding-top:.75rem; gap:.5rem; } :global(body:not(:has([data-website-canvas]))) .card { min-height:6rem; padding:.5rem; gap:.3rem; } :global(body:not(:has([data-website-canvas]))) .icon { width:2rem; height:2rem; } }
 
 @media(max-width:640px) {
- .dialog.dialog { padding:1.25rem; }
- .header { padding-bottom:1rem; }
- .header.header p { font-size:.85rem; }
- .grid { padding-top:1rem; }
- .card strong { font-size:.95rem; }
- .card small { font-size:.8rem; }
+ :global(body:not(:has([data-website-canvas]))) .dialog.dialog { padding:1.25rem; }
+ :global(body:not(:has([data-website-canvas]))) .header { padding-bottom:1rem; }
+ :global(body:not(:has([data-website-canvas]))) .header.header p { font-size:.85rem; }
+ :global(body:not(:has([data-website-canvas]))) .grid { padding-top:1rem; }
+ :global(body:not(:has([data-website-canvas]))) .card strong { font-size:.95rem; }
+ :global(body:not(:has([data-website-canvas]))) .card small { font-size:.8rem; }
 }
-@media(max-width:360px) { .dialog.dialog { padding:1rem; } }
+@media(max-width:360px) { :global(body:not(:has([data-website-canvas]))) .dialog.dialog { padding:1rem; } }
 @media(max-height:450px) {
- .dialog.dialog { padding:1rem; }
- .header { padding-bottom:.75rem; }
- .card strong { font-size:.95rem; }
- .card small { font-size:.8rem; }
+ :global(body:not(:has([data-website-canvas]))) .dialog.dialog { padding:1rem; }
+ :global(body:not(:has([data-website-canvas]))) .header { padding-bottom:.75rem; }
+ :global(body:not(:has([data-website-canvas]))) .card strong { font-size:.95rem; }
+ :global(body:not(:has([data-website-canvas]))) .card small { font-size:.8rem; }
 }
