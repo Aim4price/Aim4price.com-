@@ -1,5 +1,7 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
+
 import { openCanonicalReportUrl } from '../../lib/report-open';
 
 import pickerStyles from '../../components/AssetPicker.module.css';
@@ -550,6 +552,10 @@ const FUEL_SLIP_CAPTURE_FILTER_OPTIONS: ReportSelectOption[] = [
 
 function IconBase(props: SVGProps<SVGSVGElement>) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props} />;
+}
+
+function StorageViewIcon(props: SVGProps<SVGSVGElement>) {
+  return <IconBase {...props}><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></IconBase>;
 }
 
 function GearIcon(props: SVGProps<SVGSVGElement>) {
@@ -1655,6 +1661,19 @@ export default function FuelClient({
   initialOpenAdd?: boolean;
   initialReturnTo?: string;
 }) {
+  const searchParams = useSearchParams();
+  const isSlipsPage = searchParams.get('view') === 'slips';
+  const fuelPageRef = useRef<HTMLElement>(null);
+
+  function switchFuelView() {
+    const url = new URL(window.location.href);
+    if (isSlipsPage) url.searchParams.delete('view');
+    else url.searchParams.set('view', 'slips');
+    window.history.pushState(null, '', `${url.pathname}${url.search}${url.hash}`);
+    closeModal();
+    window.scrollTo({ top: 0 });
+  }
+
   const isAccountantReadOnly = false;
   const scopedApiUrl = (url: string) => withAccountantShare(url, accountantShareId, accountantRegisterId);
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
@@ -1950,6 +1969,15 @@ export default function FuelClient({
     || Boolean(deleteCandidateFuelSlip);
 
 
+  useEffect(() => {
+    if (!isSlipsPage || (!isFuelSlipManagerChildDialogOpen && (!modalMode || modalMode === 'fuel-slip-manager'))) return;
+    const page = fuelPageRef.current;
+    const overflow = document.body.style.overflow;
+    page?.setAttribute('inert', '');
+    document.body.style.overflow = 'hidden';
+    return () => { page?.removeAttribute('inert'); document.body.style.overflow = overflow; };
+  }, [isSlipsPage, isFuelSlipManagerChildDialogOpen, modalMode]);
+
   async function loadLedger(options: { silent?: boolean; discardAssetsOnError?: boolean } = {}) {
     if (!options.silent) {
       setIsLoading(true);
@@ -2128,7 +2156,7 @@ export default function FuelClient({
   }, [isFuelSlipManagerChildDialogOpen]);
 
   useEffect(() => {
-    if (modalMode !== 'fuel-slip-manager') return undefined;
+    if (modalMode !== 'fuel-slip-manager' && !isSlipsPage) return undefined;
 
     function handleFuelSlipManagerKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
@@ -2194,6 +2222,7 @@ export default function FuelClient({
     fuelSlipManagerFilterOpen,
     historyFuelSlip,
     isFuelSlipManagerChildDialogOpen,
+    isSlipsPage,
     modalMode,
     openFuelSlipDownloadSelect,
     openFuelSlipManagerFilterSelect,
@@ -3595,535 +3624,7 @@ export default function FuelClient({
     );
   }
 
-  return (
-    <>
-      <main className={styles.page}>
-        <AppHeader active="none" />
-
-        <section className={styles.shell}>
-          {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
-
-          <section className={styles.ledgerPanel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.pageTitleBlock}>
-                <h1>FUEL TRACKING SYSTEM</h1>
-              </div>
-
-              <div className={styles.topActions}>
-                <div className={styles.topActionButtons}>
-                  {!isAccountantReadOnly ? (
-                    <button
-                      type="button"
-                      className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
-                      onClick={openCreateStorage}
-                    >
-                      <PlusIcon className={styles.buttonIcon} />
-                      <span>Add Storage Tank</span>
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topExclusionsButton}`}
-                    onClick={openExclusionsModal}
-                  >
-                    <ExclusionIcon className={styles.buttonIcon} />
-                    <span>Exclusions</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topFuelSlipButton}`}
-                    onClick={openFuelSlipMenu}
-                  >
-                    <span>Fuel Slips</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topReportButton}`}
-                    onClick={openReportModal}
-                  >
-                    <DownloadIcon className={styles.buttonIcon} />
-                    <span>Download</span>
-                  </button>
-                </div>
-
-                <label className={styles.searchWrap}>
-                  <SearchIcon className={styles.searchIcon} />
-                  <input
-                    type="search"
-                    className={styles.searchInput}
-                    value={searchText}
-                    onChange={(event) => setSearchText(event.target.value)}
-                    placeholder="Search by storage name, type or serial"
-                    aria-label="Search by storage name, type or serial"
-                  />
-                  {hasActiveSearch ? (
-                    <button type="button" className={styles.clearSearchButton} onClick={clearSearch} aria-label="Clear search">
-                      ×
-                    </button>
-                  ) : null}
-                </label>
-              </div>
-            </div>
-
-            <CaptureRequestStatusList
-              requests={captureRequests}
-              title="Fuel slips being captured"
-              onRetract={!accountantShareId && !accountantRegisterId ? retractCaptureRequest : undefined}
-            />
-
-            {!isLoading && !storages.length ? (
-              <div className={styles.emptyState}>
-                <strong>No fuel storage yet.</strong>
-                <span>{isAccountantReadOnly ? 'No fuel storage or fuel records have been shared for this register.' : 'Add your first tank, bowser or storage unit.'}</span>
-                {!isAccountantReadOnly ? (
-                  <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
-                    <PlusIcon className={styles.buttonIcon} />
-                    <span>Add Storage Tank</span>
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
-
-            {!isLoading && storages.length > 0 && visibleStorages.length === 0 ? (
-              <div className={styles.emptyState}>
-                <strong>No storage matches the search.</strong>
-                <button type="button" className={styles.secondaryButton} onClick={clearSearch}>
-                  Clear Search
-                </button>
-              </div>
-            ) : null}
-
-            <div className={styles.storageList}>
-              {visibleStorages.map((storage) => {
-                const progress = getProgressPercent(storage);
-                const storageIsLow = isLowStorage(storage);
-                const dipstickNoteText = getDipstickNote(storage);
-                const balanceNeedsChecking = Boolean(storage.balanceNeedsChecking || storage.balanceVerificationStatus === 'needs_check');
-                const hasStorageWarning = storageIsLow || Boolean(dipstickNoteText) || balanceNeedsChecking;
-
-                return (
-                  <article key={storage.id} className={`${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
-                    <div className={styles.storageInfo}>
-                      <div className={styles.storageHeadingRow}>
-                        <div className={styles.storageTitleBlock}>
-                          <h2>{storage.name}</h2>
-                          <div className={styles.storageDetails}>
-                            <span>{formatFuelType(storage.fuelType)}</span>
-                            <span>{formatLitres(storage.currentLitres)} available</span>
-                            <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className={styles.storageProgressBlock}>
-                        <div className={styles.progressTrack} aria-hidden="true">
-                          <span style={{ width: `${progress}%` }} />
-                        </div>
-                        <div className={styles.progressMeta}>
-                          <span>{storage.reorderLevelLitres === null ? 'No low level set' : `Low at ${formatLitres(storage.reorderLevelLitres)}`}</span>
-                          <span>{formatPercent(storage.stockPercent)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {!isAccountantReadOnly ? <div className={styles.storageHeaderAside}>
-                      <div className={styles.unitActions}>
-                        <button type="button" className={styles.unitButton} onClick={() => openManageStorageChoice(storage)} disabled={isSaving}>
-                          <GearIcon className={styles.buttonIcon} />
-                          <span>Manage</span>
-                        </button>
-                        <button type="button" className={styles.unitButton} onClick={() => openQrModal(storage)} disabled={isSaving}>
-                          <QrIcon className={styles.buttonIcon} />
-                          <span>QR Code</span>
-                        </button>
-                        <button
-                          type="button"
-                          className={`${styles.unitButton} ${styles.changePinButton}`}
-                          onClick={() => openPin(storage)}
-                          disabled={isSaving}
-                        >
-                          <LockIcon className={styles.buttonIcon} />
-                          <span>Change PIN</span>
-                        </button>
-                        <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => setDeleteCandidateStorage(storage)} disabled={isSaving}>
-                          <TrashIcon className={styles.buttonIcon} />
-                          <span>Archive Unit</span>
-                        </button>
-                      </div>
-                    </div> : null}
-
-                    {hasStorageWarning ? (
-                      <div className={styles.storageWarningList}>
-                        {storageIsLow ? (
-                          <div className={styles.storageWarningNote}>
-                            <div>
-                              <strong>Storage below reorder level</strong>
-                              <span>{formatLitres(storage.currentLitres)} remaining. Reorder at {formatLitres(storage.reorderLevelLitres)}.</span>
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {balanceNeedsChecking ? (
-                          <div className={`${styles.storageWarningNote} ${styles.balanceCheckWarning}`}>
-                            <div>
-                              <strong>Balance needs checking</strong>
-                              <span>{storage.balanceCheckReason || 'Measure the tank physically and reconcile the recorded current litres.'}</span>
-                            </div>
-                            {!isAccountantReadOnly ? (
-                              <button type="button" className={styles.reconcileBalanceButton} onClick={() => openReconcileBalance(storage)} disabled={isSaving}>
-                                Reconcile Balance
-                              </button>
-                            ) : null}
-                          </div>
-                        ) : null}
-
-                        {dipstickNoteText ? (
-                          <div className={styles.storageWarningNote}>
-                            <div>
-                              <strong>Dipstick note</strong>
-                              <span>{dipstickNoteText}</span>
-                            </div>
-                            {!isAccountantReadOnly ? (
-                              <button type="button" className={styles.clearDipstickButton} onClick={() => handleClearDipstickNote(storage)} disabled={isSaving}>
-                                Clear note
-                              </button>
-                            ) : null}
-                          </div>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </article>
-                );
-              })}
-            </div>
-
-          </section>
-        </section>
-
-        <nav className={styles.mobileQuickActions} aria-label="Fuel quick actions">
-          {!isAccountantReadOnly ? (
-            <button type="button" className={styles.mobileQuickButton} onClick={openCreateStorage}>
-              <PlusIcon className={styles.buttonIcon} />
-              <span>Add</span>
-            </button>
-          ) : null}
-          <button type="button" className={styles.mobileQuickButton} onClick={openFuelSlipMenu}>
-            <FuelSlipsIcon className={styles.buttonIcon} />
-            <span>Slips</span>
-          </button>
-          <button type="button" className={styles.mobileQuickButton} onClick={openExclusionsModal}>
-            <ExclusionIcon className={styles.buttonIcon} />
-            <span>Exclude</span>
-          </button>
-          <button type="button" className={styles.mobileQuickButton} onClick={openReportModal}>
-            <DownloadIcon className={styles.buttonIcon} />
-            <span>Reports</span>
-          </button>
-        </nav>
-      </main>
-
-      {modalMode === 'manage-storage-choice' && selectedStorage ? (
-        <ManageFuelStorageChoiceModal
-          storage={selectedStorage}
-          onClose={closeModal}
-          onManage={() => openEditStorage(selectedStorage)}
-          onMissingEntry={() => openMissingFuelEntry(selectedStorage)}
-        />
-      ) : null}
-
-      {modalMode === 'missing-entry' && selectedStorage ? (
-        <MissingFuelEntryModal
-          storage={selectedStorage}
-          assets={includedFuelAssets}
-          addedByLabel={addedByLabel}
-          accountantShareId={accountantShareId}
-          accountantRegisterId={accountantRegisterId}
-          onClose={closeModal}
-          onLedgerUpdated={applyLedgerData}
-          onReconcile={() => openReconcileBalance(selectedStorage)}
-        />
-      ) : null}
-
-      {modalMode === 'reconcile-balance' && selectedStorage ? (
-        <ReconcileFuelBalanceModal
-          storage={selectedStorage}
-          accountantShareId={accountantShareId}
-          accountantRegisterId={accountantRegisterId}
-          onClose={closeModal}
-          onLedgerUpdated={(data: MissingFuelLedgerPayload) => {
-            applyLedgerData(data);
-            setNotice({ tone: 'success', message: 'Tank balance reconciled.' });
-          }}
-        />
-      ) : null}
-
-      {modalMode === 'exclusions' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
-          <div className={`${styles.assetModal} ${styles.exclusionsModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${!isExclusionEditorOpen ? pickerStyles.modal : ''}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
-            <div className={styles.modalHeader} data-asset-choice-header="true">
-              <div>
-                <h2>
-                  {isExclusionEditorOpen
-                    ? exclusionSelectionAction === 'exclude' ? 'Confirm Fuel Exclusions' : 'Confirm Work-use Inclusion'
-                    : 'Choose Saved Assets'}
-                </h2>
-                <p>
-                  {isExclusionEditorOpen
-                    ? `${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'} selected.`
-                    : 'Select assets to exclude from work-use totals, or choose an excluded asset to include it again.'}
-                </p>
-              </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close exclusions"><span aria-hidden="true">×</span></button>
-            </div>
-            <div className={styles.modalDivider} />
-
-            {notice ? <div className={`${styles.exclusionNotice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
-
-            {isExclusionEditorOpen ? (
-              <div className={styles.exclusionEditor}>
-                <div className={styles.exclusionEditorHeading}>
-                  <h3>{exclusionSelectionAction === 'exclude' ? 'Exclude these assets from work-use totals?' : 'Include these assets in work-use totals again?'}</h3>
-                  <p>
-                    Fuel movement and tank balances will stay unchanged. Only the work-use classification changes, and the change is kept in history.
-                  </p>
-                </div>
-                <div className={styles.exclusionSelectedAssets}>
-                  {selectedExclusionAssets.map((asset) => (
-                    <div key={asset.id}>
-                      <strong>{asset.title}</strong>
-                      <small>{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
-                    </div>
-                  ))}
-                </div>
-                {exclusionSelectionAction === 'exclude' ? (
-                  <label className={styles.exclusionReasonField}>
-                    <span>Reason for all selected assets</span>
-                    <input
-                      value={exclusionReason}
-                      onChange={(event) => setExclusionReason(event.target.value)}
-                      placeholder="Example: Generator serving normal houses"
-                      maxLength={500}
-                      autoFocus
-                    />
-                    <small>Only exclude an asset when its fuel is fully outside work use.</small>
-                  </label>
-                ) : (
-                  <div className={styles.exclusionReasonSummary}>
-                    <span>What will happen</span>
-                    <strong>The selected assets will count as work use again. Their previous exclusion reasons remain available in change history.</strong>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <div className={`${styles.pickerToolbar} ${styles.exclusionPickerToolbar}`} data-asset-choice-toolbar="true">
-                  <input
-                    value={exclusionSearch}
-                    onChange={(event) => setExclusionSearch(event.target.value)}
-                    placeholder="Search saved assets..."
-                    aria-label="Search saved assets for fuel exclusions"
-                  />
-                  <button
-                    type="button"
-                    className={`${styles.secondaryButton} ${styles.exclusionSelectAllButton}`}
-                    onClick={toggleAllVisibleExclusionAssets}
-                    disabled={!bulkSelectableExclusionAssets.length}
-                    aria-pressed={areAllBulkSelectableExclusionAssetsSelected}
-                    aria-label={areAllBulkSelectableExclusionAssetsSelected
-                      ? 'Unselect all shown assets'
-                      : exclusionSelectionAction === 'include'
-                        ? 'Select all shown excluded assets to include again'
-                        : 'Select all shown assets to exclude'}
-                  >
-                    {areAllBulkSelectableExclusionAssetsSelected
-                      ? `Unselect shown (${bulkSelectableExclusionAssets.length})`
-                      : exclusionSelectionAction === 'include'
-                        ? `Select all excluded (${bulkSelectableExclusionAssets.length})`
-                        : `Select all shown (${bulkSelectableExclusionAssets.length})`}
-                  </button>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')} disabled={!exclusionSearch}>Clear search</button>
-                </div>
-                <div className={styles.assetList} data-asset-choice-list="true">
-                  {isLoading ? <div className={styles.emptyState}>Loading saved assets...</div> : filteredExclusionAssets.length ? filteredExclusionAssets.map((asset) => {
-                    const isSelected = selectedExclusionAssetIdSet.has(asset.id);
-                    return (
-                      <button
-                        type="button"
-                        key={asset.id}
-                        className={styles.assetRow}
-                        onClick={() => toggleExclusionAsset(asset)}
-                        aria-pressed={isSelected}
-                        data-asset-choice-row="true"
-                        data-asset-choice-selected={isSelected ? 'true' : undefined}
-                      >
-                        <span className={styles.assetInfo} data-asset-choice-copy="true">
-                          <strong>{asset.title}</strong>
-                          <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
-                          <small data-asset-choice-secondary="true">{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries currently count as work use'}</small>
-                          <AssetSerialNumber value={asset.serialNumber} />
-                        </span>
-                        <span className={styles.assetValue} data-asset-choice-value="true">
-                          <span className={`${styles.exclusionChoice} ${isSelected ? styles.exclusionChoiceSelected : ''}`}>
-                            <span className={styles.exclusionChoiceBox} aria-hidden="true">{isSelected ? '✓' : ''}</span>
-                            <strong>{isSelected ? 'Selected' : asset.workUseExcluded ? 'Include again' : 'Exclude'}</strong>
-                          </span>
-                        </span>
-                      </button>
-                    );
-                  }) : <div className={styles.emptyState}>No matching saved assets found.</div>}
-                </div>
-              </>
-            )}
-
-            <div className={styles.modalFooter} data-asset-choice-footer="true">
-              {isExclusionEditorOpen ? (
-                <>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setIsExclusionEditorOpen(false)} disabled={Boolean(busyExclusionAssetId)}>Back</button>
-                  <button
-                    type="button"
-                    className={`${styles.primaryButton} ${exclusionSelectionAction === 'exclude' ? styles.exclusionDangerButton : ''}`}
-                    onClick={() => void updateSelectedAssetWorkUseExclusions()}
-                    disabled={Boolean(busyExclusionAssetId)}
-                  >
-                    {busyExclusionAssetId
-                      ? 'Saving...'
-                      : exclusionSelectionAction === 'exclude'
-                        ? `Exclude ${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'}`
-                        : `Include ${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'}`}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span className={styles.exclusionSelectionCount} aria-live="polite">
-                    {selectedExclusionAssets.length
-                      ? `${selectedExclusionAssets.length} selected to ${exclusionSelectionAction === 'include' ? 'include again' : 'exclude'}`
-                      : 'Select one or more assets'}
-                  </span>
-                  {selectedExclusionAssets.length ? (
-                    <button type="button" className={styles.secondaryButton} onClick={() => setSelectedExclusionAssetIds([])}>Clear selection</button>
-                  ) : null}
-                  <button type="button" className={styles.secondaryButton} onClick={closeModal}>Close</button>
-                  <button type="button" className={styles.primaryButton} onClick={openExclusionEditor} disabled={!selectedExclusionAssets.length}>
-                    {selectedExclusionAssets.length
-                      ? exclusionSelectionAction === 'exclude'
-                        ? `Review exclusions (${selectedExclusionAssets.length})`
-                        : `Review inclusions (${selectedExclusionAssets.length})`
-                      : 'Review selection'}
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {modalMode === 'fuel-slip-menu' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel slips">
-          <div
-            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipMenuModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}
-            data-fuel-slip-choice-modal="menu"
-          >
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>Fuel slips</h2>
-                <p>Review saved fuel slips or add one to an included asset or storage tank.</p>
-              </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close fuel slips"><span aria-hidden="true">×</span></button>
-            </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.sourceChoiceGrid}>
-              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={openFuelSlipManager}>
-                <span className={styles.choiceGraphic}>
-                  <FuelSlipsIcon />
-                </span>
-                <span className={styles.choiceTitleBlock}>
-                  <strong>Manage fuel slips</strong>
-                  <small>Review, download or void saved slips.</small>
-                </span>
-                <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
-                  <ChevronRightIcon />
-                </span>
-              </button>
-              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={() => openFuelSlipModal()}>
-                <span className={styles.choiceGraphic}>
-                  <PlusIcon />
-                </span>
-                <span className={styles.choiceTitleBlock}>
-                  <strong>Add fuel slip</strong>
-                  <small>Capture a new slip manually or from a file.</small>
-                </span>
-                <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
-                  <ChevronRightIcon />
-                </span>
-              </button>
-            </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {modalMode === 'fuel-slip-manager' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.fuelSlipManagerBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
-          <div
-            className={`${styles.fuelSlipManagerModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="fuel-slip-manager-title"
-            aria-hidden={isFuelSlipManagerChildDialogOpen ? true : undefined}
-          >
-            <div className={`${styles.fuelSlipManagerHeader} ${wizardStyles.header}`}>
-              <div className={`${wizardStyles.headerText} ${styles.fuelSlipManagerHeaderCopy}`}>
-                <h2 id="fuel-slip-manager-title">Manage fuel slips</h2>
-                <p>Review fuel purchases and their linked assets.</p>
-              </div>
-              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close manage fuel slips"><span aria-hidden="true">×</span></button>
-            </div>
-
-            <div className={`${styles.fuelSlipManagerBody} ${wizardStyles.body}`} ref={fuelSlipManagerListRef}>
-              <section className={styles.fuelSlipManagerToolbar} aria-label="Fuel slip manager controls">
-                <label className={styles.searchWrap}>
-                  <SearchIcon className={styles.searchIcon} />
-                  <input
-                    type="search"
-                    className={styles.searchInput}
-                    value={fuelSlipManagerSearch}
-                    onChange={(event) => setFuelSlipManagerSearch(event.target.value)}
-                    placeholder="Search supplier, target, slip or transaction number..."
-                    aria-label="Search saved fuel slips"
-                  />
-                  {fuelSlipManagerSearch.trim() ? (
-                    <button type="button" className={styles.clearSearchButton} onClick={() => setFuelSlipManagerSearch('')} aria-label="Clear fuel slip search">
-                      ×
-                    </button>
-                  ) : null}
-                </label>
-
-                <div className={styles.fuelSlipManagerToolbarButtons}>
-                  {!isAccountantReadOnly ? (
-                    <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerAddButton}`} onClick={() => openFuelSlipModal(true)}>
-                      <PlusIcon className={styles.buttonIcon} />
-                      <span>Add fuel slip</span>
-                    </button>
-                  ) : null}
-                  <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerFilterButton}`} onClick={openFuelSlipManagerFilterPanel}>
-                    <FilterIcon className={styles.buttonIcon} />
-                    <span>Filter</span>
-                    {activeFuelSlipManagerFilterCount ? <strong>{activeFuelSlipManagerFilterCount}</strong> : null}
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`}
-                    onClick={openFuelSlipDownloadPanel}
-                    disabled={!recentFuelSlips.length || isDownloadingFuelSlips}
-                  >
-                    <DownloadIcon className={styles.buttonIcon} />
-                    <span>Download</span>
-                  </button>
-                </div>
-              </section>
-
+  const fuelSlipResults = isLoading ? <div className={styles.fuelSlipManagerEmptyState} role="status">Loading saved fuel slips...</div> : (<>
               <section className={styles.fuelSlipManagerContextBar} aria-label="Current fuel slip view">
                 <div className={styles.fuelSlipManagerContextLead}>
                   <span className={styles.fuelSlipManagerContextIcon} aria-hidden="true"><FilterIcon /></span>
@@ -4395,12 +3896,546 @@ export default function FuelClient({
                   </nav>
                 ) : null}
               </section>
+  </>);
+
+  return (
+    <>
+      <main className={styles.page} ref={fuelPageRef}>
+        <AppHeader active="none" />
+
+        <section className={styles.shell}>
+          {notice ? <div className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
+
+          <section className={styles.ledgerPanel}>
+            <div className={styles.panelHeader}>
+              <div className={styles.pageTitleBlock}>
+                <h1>{isSlipsPage ? 'FUEL SLIP TRACKING' : 'FUEL TRACKING SYSTEM'}</h1>
+              </div>
+
+              <div className={styles.topActions}>
+                <div className={styles.topActionButtons}>
+                  {!isAccountantReadOnly ? (
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
+                      onClick={isSlipsPage ? () => openFuelSlipModal(true) : openCreateStorage}
+                    >
+                      <PlusIcon className={styles.buttonIcon} />
+                      <span>{isSlipsPage ? 'Add Fuel Slip' : 'Add Storage Tank'}</span>
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topExclusionsButton}`}
+                    onClick={isSlipsPage ? openFuelSlipManagerFilterPanel : openExclusionsModal}
+                  >
+                    <>{isSlipsPage ? <FilterIcon className={styles.buttonIcon} /> : <ExclusionIcon className={styles.buttonIcon} />}</>
+                    <span>{isSlipsPage ? 'Filter' : 'Exclusions'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topFuelSlipButton}`}
+                    onClick={switchFuelView}
+                  >
+                    {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}<span>{isSlipsPage ? 'Storage' : 'Fuel Slips'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topReportButton}`}
+                    onClick={isSlipsPage ? openFuelSlipDownloadPanel : openReportModal}
+                  >
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>Download</span>
+                  </button>
+                </div>
+
+                <label className={styles.searchWrap}>
+                  <SearchIcon className={styles.searchIcon} />
+                  <input
+                    type="search"
+                    className={styles.searchInput}
+                    value={isSlipsPage ? fuelSlipManagerSearch : searchText}
+                    onChange={(event) => isSlipsPage ? setFuelSlipManagerSearch(event.target.value) : setSearchText(event.target.value)}
+                    placeholder={isSlipsPage ? 'Search supplier, asset or slip number...' : 'Search by storage name, type or serial'}
+                    aria-label={isSlipsPage ? 'Search saved fuel slips' : 'Search by storage name, type or serial'}
+                  />
+                  {(isSlipsPage ? fuelSlipManagerSearch.trim() : hasActiveSearch) ? (
+                    <button type="button" className={styles.clearSearchButton} onClick={isSlipsPage ? () => setFuelSlipManagerSearch('') : clearSearch} aria-label="Clear search">
+                      ×
+                    </button>
+                  ) : null}
+                </label>
+              </div>
+            </div>
+
+            <CaptureRequestStatusList
+              requests={captureRequests}
+              title="Fuel slips being captured"
+              onRetract={!accountantShareId && !accountantRegisterId ? retractCaptureRequest : undefined}
+            />
+
+            {isSlipsPage ? <section className={styles.fuelSlipTrackingPage} aria-label="Fuel slip tracking">{fuelSlipResults}</section> : (<>
+            {!isLoading && !storages.length ? (
+              <div className={styles.emptyState}>
+                <strong>No fuel storage yet.</strong>
+                <span>{isAccountantReadOnly ? 'No fuel storage or fuel records have been shared for this register.' : 'Add your first tank, bowser or storage unit.'}</span>
+                {!isAccountantReadOnly ? (
+                  <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
+                    <PlusIcon className={styles.buttonIcon} />
+                    <span>Add Storage Tank</span>
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {!isLoading && storages.length > 0 && visibleStorages.length === 0 ? (
+              <div className={styles.emptyState}>
+                <strong>No storage matches the search.</strong>
+                <button type="button" className={styles.secondaryButton} onClick={clearSearch}>
+                  Clear Search
+                </button>
+              </div>
+            ) : null}
+
+            <div className={styles.storageList}>
+              {visibleStorages.map((storage) => {
+                const progress = getProgressPercent(storage);
+                const storageIsLow = isLowStorage(storage);
+                const dipstickNoteText = getDipstickNote(storage);
+                const balanceNeedsChecking = Boolean(storage.balanceNeedsChecking || storage.balanceVerificationStatus === 'needs_check');
+                const hasStorageWarning = storageIsLow || Boolean(dipstickNoteText) || balanceNeedsChecking;
+
+                return (
+                  <article key={storage.id} className={`${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
+                    <div className={styles.storageInfo}>
+                      <div className={styles.storageHeadingRow}>
+                        <div className={styles.storageTitleBlock}>
+                          <h2>{storage.name}</h2>
+                          <div className={styles.storageDetails}>
+                            <span>{formatFuelType(storage.fuelType)}</span>
+                            <span>{formatLitres(storage.currentLitres)} available</span>
+                            <span>{storage.capacityLitres === null ? 'Capacity not set' : `${formatLitres(storage.capacityLitres)} capacity`}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className={styles.storageProgressBlock}>
+                        <div className={styles.progressTrack} aria-hidden="true">
+                          <span style={{ width: `${progress}%` }} />
+                        </div>
+                        <div className={styles.progressMeta}>
+                          <span>{storage.reorderLevelLitres === null ? 'No low level set' : `Low at ${formatLitres(storage.reorderLevelLitres)}`}</span>
+                          <span>{formatPercent(storage.stockPercent)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {!isAccountantReadOnly ? <div className={styles.storageHeaderAside}>
+                      <div className={styles.unitActions}>
+                        <button type="button" className={styles.unitButton} onClick={() => openManageStorageChoice(storage)} disabled={isSaving}>
+                          <GearIcon className={styles.buttonIcon} />
+                          <span>Manage</span>
+                        </button>
+                        <button type="button" className={styles.unitButton} onClick={() => openQrModal(storage)} disabled={isSaving}>
+                          <QrIcon className={styles.buttonIcon} />
+                          <span>QR Code</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.unitButton} ${styles.changePinButton}`}
+                          onClick={() => openPin(storage)}
+                          disabled={isSaving}
+                        >
+                          <LockIcon className={styles.buttonIcon} />
+                          <span>Change PIN</span>
+                        </button>
+                        <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => setDeleteCandidateStorage(storage)} disabled={isSaving}>
+                          <TrashIcon className={styles.buttonIcon} />
+                          <span>Archive Unit</span>
+                        </button>
+                      </div>
+                    </div> : null}
+
+                    {hasStorageWarning ? (
+                      <div className={styles.storageWarningList}>
+                        {storageIsLow ? (
+                          <div className={styles.storageWarningNote}>
+                            <div>
+                              <strong>Storage below reorder level</strong>
+                              <span>{formatLitres(storage.currentLitres)} remaining. Reorder at {formatLitres(storage.reorderLevelLitres)}.</span>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {balanceNeedsChecking ? (
+                          <div className={`${styles.storageWarningNote} ${styles.balanceCheckWarning}`}>
+                            <div>
+                              <strong>Balance needs checking</strong>
+                              <span>{storage.balanceCheckReason || 'Measure the tank physically and reconcile the recorded current litres.'}</span>
+                            </div>
+                            {!isAccountantReadOnly ? (
+                              <button type="button" className={styles.reconcileBalanceButton} onClick={() => openReconcileBalance(storage)} disabled={isSaving}>
+                                Reconcile Balance
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {dipstickNoteText ? (
+                          <div className={styles.storageWarningNote}>
+                            <div>
+                              <strong>Dipstick note</strong>
+                              <span>{dipstickNoteText}</span>
+                            </div>
+                            {!isAccountantReadOnly ? (
+                              <button type="button" className={styles.clearDipstickButton} onClick={() => handleClearDipstickNote(storage)} disabled={isSaving}>
+                                Clear note
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+
+            </>)}
+          </section>
+        </section>
+
+        <nav className={styles.mobileQuickActions} aria-label="Fuel quick actions">
+          {!isAccountantReadOnly ? (
+            <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? () => openFuelSlipModal(true) : openCreateStorage}>
+              <PlusIcon className={styles.buttonIcon} />
+              <span>Add</span>
+            </button>
+          ) : null}
+          <button type="button" className={styles.mobileQuickButton} onClick={switchFuelView}>
+            {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}
+            <span>{isSlipsPage ? 'Storage' : 'Slips'}</span>
+          </button>
+          <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? openFuelSlipManagerFilterPanel : openExclusionsModal}>
+            <ExclusionIcon className={styles.buttonIcon} />
+            <span>{isSlipsPage ? 'Filter' : 'Exclude'}</span>
+          </button>
+          <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? openFuelSlipDownloadPanel : openReportModal}>
+            <DownloadIcon className={styles.buttonIcon} />
+            <span>Reports</span>
+          </button>
+        </nav>
+      </main>
+
+      {modalMode === 'manage-storage-choice' && selectedStorage ? (
+        <ManageFuelStorageChoiceModal
+          storage={selectedStorage}
+          onClose={closeModal}
+          onManage={() => openEditStorage(selectedStorage)}
+          onMissingEntry={() => openMissingFuelEntry(selectedStorage)}
+        />
+      ) : null}
+
+      {modalMode === 'missing-entry' && selectedStorage ? (
+        <MissingFuelEntryModal
+          storage={selectedStorage}
+          assets={includedFuelAssets}
+          addedByLabel={addedByLabel}
+          accountantShareId={accountantShareId}
+          accountantRegisterId={accountantRegisterId}
+          onClose={closeModal}
+          onLedgerUpdated={applyLedgerData}
+          onReconcile={() => openReconcileBalance(selectedStorage)}
+        />
+      ) : null}
+
+      {modalMode === 'reconcile-balance' && selectedStorage ? (
+        <ReconcileFuelBalanceModal
+          storage={selectedStorage}
+          accountantShareId={accountantShareId}
+          accountantRegisterId={accountantRegisterId}
+          onClose={closeModal}
+          onLedgerUpdated={(data: MissingFuelLedgerPayload) => {
+            applyLedgerData(data);
+            setNotice({ tone: 'success', message: 'Tank balance reconciled.' });
+          }}
+        />
+      ) : null}
+
+      {modalMode === 'exclusions' ? (
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
+          <div className={`${styles.assetModal} ${styles.exclusionsModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${!isExclusionEditorOpen ? pickerStyles.modal : ''}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <div className={styles.modalHeader} data-asset-choice-header="true">
+              <div>
+                <h2>
+                  {isExclusionEditorOpen
+                    ? exclusionSelectionAction === 'exclude' ? 'Confirm Fuel Exclusions' : 'Confirm Work-use Inclusion'
+                    : 'Choose Saved Assets'}
+                </h2>
+                <p>
+                  {isExclusionEditorOpen
+                    ? `${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'} selected.`
+                    : 'Select assets to exclude from work-use totals, or choose an excluded asset to include it again.'}
+                </p>
+              </div>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close exclusions"><span aria-hidden="true">×</span></button>
+            </div>
+            <div className={styles.modalDivider} />
+
+            {notice ? <div className={`${styles.exclusionNotice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
+
+            {isExclusionEditorOpen ? (
+              <div className={styles.exclusionEditor}>
+                <div className={styles.exclusionEditorHeading}>
+                  <h3>{exclusionSelectionAction === 'exclude' ? 'Exclude these assets from work-use totals?' : 'Include these assets in work-use totals again?'}</h3>
+                  <p>
+                    Fuel movement and tank balances will stay unchanged. Only the work-use classification changes, and the change is kept in history.
+                  </p>
+                </div>
+                <div className={styles.exclusionSelectedAssets}>
+                  {selectedExclusionAssets.map((asset) => (
+                    <div key={asset.id}>
+                      <strong>{asset.title}</strong>
+                      <small>{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
+                    </div>
+                  ))}
+                </div>
+                {exclusionSelectionAction === 'exclude' ? (
+                  <label className={styles.exclusionReasonField}>
+                    <span>Reason for all selected assets</span>
+                    <input
+                      value={exclusionReason}
+                      onChange={(event) => setExclusionReason(event.target.value)}
+                      placeholder="Example: Generator serving normal houses"
+                      maxLength={500}
+                      autoFocus
+                    />
+                    <small>Only exclude an asset when its fuel is fully outside work use.</small>
+                  </label>
+                ) : (
+                  <div className={styles.exclusionReasonSummary}>
+                    <span>What will happen</span>
+                    <strong>The selected assets will count as work use again. Their previous exclusion reasons remain available in change history.</strong>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className={`${styles.pickerToolbar} ${styles.exclusionPickerToolbar}`} data-asset-choice-toolbar="true">
+                  <input
+                    value={exclusionSearch}
+                    onChange={(event) => setExclusionSearch(event.target.value)}
+                    placeholder="Search saved assets..."
+                    aria-label="Search saved assets for fuel exclusions"
+                  />
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.exclusionSelectAllButton}`}
+                    onClick={toggleAllVisibleExclusionAssets}
+                    disabled={!bulkSelectableExclusionAssets.length}
+                    aria-pressed={areAllBulkSelectableExclusionAssetsSelected}
+                    aria-label={areAllBulkSelectableExclusionAssetsSelected
+                      ? 'Unselect all shown assets'
+                      : exclusionSelectionAction === 'include'
+                        ? 'Select all shown excluded assets to include again'
+                        : 'Select all shown assets to exclude'}
+                  >
+                    {areAllBulkSelectableExclusionAssetsSelected
+                      ? `Unselect shown (${bulkSelectableExclusionAssets.length})`
+                      : exclusionSelectionAction === 'include'
+                        ? `Select all excluded (${bulkSelectableExclusionAssets.length})`
+                        : `Select all shown (${bulkSelectableExclusionAssets.length})`}
+                  </button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')} disabled={!exclusionSearch}>Clear search</button>
+                </div>
+                <div className={styles.assetList} data-asset-choice-list="true">
+                  {isLoading ? <div className={styles.emptyState}>Loading saved assets...</div> : filteredExclusionAssets.length ? filteredExclusionAssets.map((asset) => {
+                    const isSelected = selectedExclusionAssetIdSet.has(asset.id);
+                    return (
+                      <button
+                        type="button"
+                        key={asset.id}
+                        className={styles.assetRow}
+                        onClick={() => toggleExclusionAsset(asset)}
+                        aria-pressed={isSelected}
+                        data-asset-choice-row="true"
+                        data-asset-choice-selected={isSelected ? 'true' : undefined}
+                      >
+                        <span className={styles.assetInfo} data-asset-choice-copy="true">
+                          <strong>{asset.title}</strong>
+                          <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
+                          <small data-asset-choice-secondary="true">{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries currently count as work use'}</small>
+                          <AssetSerialNumber value={asset.serialNumber} />
+                        </span>
+                        <span className={styles.assetValue} data-asset-choice-value="true">
+                          <span className={`${styles.exclusionChoice} ${isSelected ? styles.exclusionChoiceSelected : ''}`}>
+                            <span className={styles.exclusionChoiceBox} aria-hidden="true">{isSelected ? '✓' : ''}</span>
+                            <strong>{isSelected ? 'Selected' : asset.workUseExcluded ? 'Include again' : 'Exclude'}</strong>
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  }) : <div className={styles.emptyState}>No matching saved assets found.</div>}
+                </div>
+              </>
+            )}
+
+            <div className={styles.modalFooter} data-asset-choice-footer="true">
+              {isExclusionEditorOpen ? (
+                <>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setIsExclusionEditorOpen(false)} disabled={Boolean(busyExclusionAssetId)}>Back</button>
+                  <button
+                    type="button"
+                    className={`${styles.primaryButton} ${exclusionSelectionAction === 'exclude' ? styles.exclusionDangerButton : ''}`}
+                    onClick={() => void updateSelectedAssetWorkUseExclusions()}
+                    disabled={Boolean(busyExclusionAssetId)}
+                  >
+                    {busyExclusionAssetId
+                      ? 'Saving...'
+                      : exclusionSelectionAction === 'exclude'
+                        ? `Exclude ${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'}`
+                        : `Include ${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'}`}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className={styles.exclusionSelectionCount} aria-live="polite">
+                    {selectedExclusionAssets.length
+                      ? `${selectedExclusionAssets.length} selected to ${exclusionSelectionAction === 'include' ? 'include again' : 'exclude'}`
+                      : 'Select one or more assets'}
+                  </span>
+                  {selectedExclusionAssets.length ? (
+                    <button type="button" className={styles.secondaryButton} onClick={() => setSelectedExclusionAssetIds([])}>Clear selection</button>
+                  ) : null}
+                  <button type="button" className={styles.secondaryButton} onClick={closeModal}>Close</button>
+                  <button type="button" className={styles.primaryButton} onClick={openExclusionEditor} disabled={!selectedExclusionAssets.length}>
+                    {selectedExclusionAssets.length
+                      ? exclusionSelectionAction === 'exclude'
+                        ? `Review exclusions (${selectedExclusionAssets.length})`
+                        : `Review inclusions (${selectedExclusionAssets.length})`
+                      : 'Review selection'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
       ) : null}
 
-      {modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen ? (
+      {modalMode === 'fuel-slip-menu' ? (
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Fuel slips">
+          <div
+            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipMenuModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}
+            data-fuel-slip-choice-modal="menu"
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Fuel slips</h2>
+                <p>Review saved fuel slips or add one to an included asset or storage tank.</p>
+              </div>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close fuel slips"><span aria-hidden="true">×</span></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.sourceChoiceGrid}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={openFuelSlipManager}>
+                <span className={styles.choiceGraphic}>
+                  <FuelSlipsIcon />
+                </span>
+                <span className={styles.choiceTitleBlock}>
+                  <strong>Manage fuel slips</strong>
+                  <small>Review, download or void saved slips.</small>
+                </span>
+                <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
+                </span>
+              </button>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={() => openFuelSlipModal()}>
+                <span className={styles.choiceGraphic}>
+                  <PlusIcon />
+                </span>
+                <span className={styles.choiceTitleBlock}>
+                  <strong>Add fuel slip</strong>
+                  <small>Capture a new slip manually or from a file.</small>
+                </span>
+                <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
+                </span>
+              </button>
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {modalMode === 'fuel-slip-manager' && !isSlipsPage ? (
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.fuelSlipManagerBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
+          <div
+            className={`${styles.fuelSlipManagerModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fuel-slip-manager-title"
+            aria-hidden={isFuelSlipManagerChildDialogOpen ? true : undefined}
+          >
+            <div className={`${styles.fuelSlipManagerHeader} ${wizardStyles.header}`}>
+              <div className={`${wizardStyles.headerText} ${styles.fuelSlipManagerHeaderCopy}`}>
+                <h2 id="fuel-slip-manager-title">Manage fuel slips</h2>
+                <p>Review fuel purchases and their linked assets.</p>
+              </div>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close manage fuel slips"><span aria-hidden="true">×</span></button>
+            </div>
+
+            <div className={`${styles.fuelSlipManagerBody} ${wizardStyles.body}`} ref={fuelSlipManagerListRef}>
+              <section className={styles.fuelSlipManagerToolbar} aria-label="Fuel slip manager controls">
+                <label className={styles.searchWrap}>
+                  <SearchIcon className={styles.searchIcon} />
+                  <input
+                    type="search"
+                    className={styles.searchInput}
+                    value={fuelSlipManagerSearch}
+                    onChange={(event) => setFuelSlipManagerSearch(event.target.value)}
+                    placeholder="Search supplier, target, slip or transaction number..."
+                    aria-label="Search saved fuel slips"
+                  />
+                  {fuelSlipManagerSearch.trim() ? (
+                    <button type="button" className={styles.clearSearchButton} onClick={() => setFuelSlipManagerSearch('')} aria-label="Clear fuel slip search">
+                      ×
+                    </button>
+                  ) : null}
+                </label>
+
+                <div className={styles.fuelSlipManagerToolbarButtons}>
+                  {!isAccountantReadOnly ? (
+                    <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerAddButton}`} onClick={() => openFuelSlipModal(true)}>
+                      <PlusIcon className={styles.buttonIcon} />
+                      <span>Add fuel slip</span>
+                    </button>
+                  ) : null}
+                  <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerFilterButton}`} onClick={openFuelSlipManagerFilterPanel}>
+                    <FilterIcon className={styles.buttonIcon} />
+                    <span>Filter</span>
+                    {activeFuelSlipManagerFilterCount ? <strong>{activeFuelSlipManagerFilterCount}</strong> : null}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`}
+                    onClick={openFuelSlipDownloadPanel}
+                    disabled={!recentFuelSlips.length || isDownloadingFuelSlips}
+                  >
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>Download</span>
+                  </button>
+                </div>
+              </section>
+
+              {fuelSlipResults}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipManagerFilterOpen ? (
         <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
           <div className={`${styles.fuelSlipFilterModal} ${styles.fuelSlipManagerFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-filter-title" aria-describedby="fuel-slip-filter-description">
             <div className={styles.modalHeader}>
@@ -4466,7 +4501,7 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen ? (
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? (
         <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
           <div className={`${styles.fuelSlipFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title">
             <div className={styles.modalHeader}>
@@ -4549,7 +4584,7 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'fuel-slip-manager' && historyFuelSlip ? (
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && historyFuelSlip ? (
         <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
           <div className={`${styles.fuelSlipFilterModal} ${styles.fuelHistoryModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-history-title">
             <div className={styles.modalHeader}>
@@ -4583,7 +4618,7 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'fuel-slip-manager' && deleteCandidateFuelSlip ? (
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && deleteCandidateFuelSlip ? (
         <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay>
           <div className={`${styles.deleteConfirmModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title" aria-describedby="fuel-slip-delete-copy">
             <button
