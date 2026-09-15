@@ -104,11 +104,6 @@ test('fuel slip manager is compact, scalable and exposes secondary details on de
   assert.ok(Number(pageSize[1]) >= 20, 'Expected at least 20 compact slips per page');
 
   assert.match(managerModal, /paginatedFuelSlipManagerSlips\.map/);
-  assert.match(managerModal, /fuelSlipManagerResultStart/);
-  assert.match(managerModal, /fuelSlipManagerResultEnd/);
-  assert.match(managerModal, /fuelSlipManagerFilteredTotals\.litres/);
-  assert.match(managerModal, /fuelSlipManagerFilteredTotals\.amount/);
-  assert.match(managerModal, /aria-live="polite"/);
   assert.match(managerModal, /ref=\{fuelSlipManagerListRef\}/);
   assert.match(managerModal, /aria-expanded=\{isExpanded\}/);
   assert.match(managerModal, /aria-controls=\{detailsId\}/);

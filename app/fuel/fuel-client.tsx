@@ -1925,24 +1925,6 @@ export default function FuelClient({
     return visibleFuelSlipManagerSlips.slice(startIndex, startIndex + FUEL_SLIP_MANAGER_PAGE_SIZE);
   }, [safeFuelSlipManagerPage, visibleFuelSlipManagerSlips]);
   const shouldShowFuelSlipManagerPagination = visibleFuelSlipManagerSlips.length > FUEL_SLIP_MANAGER_PAGE_SIZE;
-  const fuelSlipManagerResultStart = visibleFuelSlipManagerSlips.length
-    ? ((safeFuelSlipManagerPage - 1) * FUEL_SLIP_MANAGER_PAGE_SIZE) + 1
-    : 0;
-  const fuelSlipManagerResultEnd = Math.min(
-    safeFuelSlipManagerPage * FUEL_SLIP_MANAGER_PAGE_SIZE,
-    visibleFuelSlipManagerSlips.length,
-  );
-  const fuelSlipManagerFilteredTotals = useMemo(() => visibleFuelSlipManagerSlips.reduce(
-    (totals, slip) => ({
-      litres: totals.litres + (slip.litres ?? 0),
-      amount: totals.amount + (slip.totalAmount ?? 0),
-    }),
-    { litres: 0, amount: 0 },
-  ), [visibleFuelSlipManagerSlips]);
-  const fuelSlipManagerIncompleteTotalCount = useMemo(
-    () => visibleFuelSlipManagerSlips.filter((slip) => slip.litres === null || slip.totalAmount === null).length,
-    [visibleFuelSlipManagerSlips],
-  );
   const activeFuelSlipManagerFilterCount = useMemo(() => [
     fuelSlipManagerFilters.targetKey !== 'all',
     fuelSlipManagerFilters.capture !== 'all',
@@ -3679,28 +3661,6 @@ export default function FuelClient({
               </section> : null}
 
               <section className={styles.fuelSlipManagerPanel} aria-label="Saved fuel slips">
-                <div className={styles.fuelSlipManagerSummary}>
-                  <div className={styles.fuelSlipManagerResultCopy} aria-live="polite">
-                    <strong>{visibleFuelSlipManagerSlips.length.toLocaleString('en-ZA')} {visibleFuelSlipManagerSlips.length === 1 ? 'fuel slip' : 'fuel slips'}</strong>
-                    <span>{visibleFuelSlipManagerSlips.length
-                      ? `Showing ${fuelSlipManagerResultStart.toLocaleString('en-ZA')}–${fuelSlipManagerResultEnd.toLocaleString('en-ZA')} of ${visibleFuelSlipManagerSlips.length.toLocaleString('en-ZA')}`
-                      : 'Adjust the search or filters to see more results.'}</span>
-                    {fuelSlipManagerIncompleteTotalCount ? (
-                      <small>{fuelSlipManagerIncompleteTotalCount.toLocaleString('en-ZA')} incomplete {fuelSlipManagerIncompleteTotalCount === 1 ? 'slip has' : 'slips have'} missing values that are not included in the totals.</small>
-                    ) : null}
-                  </div>
-                  <div className={styles.fuelSlipManagerTotals} aria-label="Totals for matching fuel slips">
-                    <span>
-                      <small>Recorded litres</small>
-                      <strong>{formatLitres(fuelSlipManagerFilteredTotals.litres)}</strong>
-                    </span>
-                    <span>
-                      <small>Recorded amount</small>
-                      <strong>{formatCurrency(fuelSlipManagerFilteredTotals.amount)}</strong>
-                    </span>
-                  </div>
-                </div>
-
                 <div className={styles.fuelSlipManagerList}>
                   {isLoading ? <div className={styles.fuelSlipManagerEmptyState}>Loading saved fuel slips...</div> : null}
 
