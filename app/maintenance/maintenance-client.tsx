@@ -183,6 +183,13 @@ function filtersForInitialAsset(assetId: string): MaintenanceFilters {
 
 const PAGE_SIZE = 10;
 
+function ManageIcon() {
+  return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></svg>;
+}
+function AssetPillIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="3" /><path d="M9 7V4h6v3M9 12h6" /></svg>;
+}
+
 function SearchIcon() {
   return (
     <svg className={styles.searchIcon} viewBox="0 0 24 24" aria-hidden="true">
@@ -418,7 +425,7 @@ function maintenanceCardValue(record: MaintenanceRecord): string {
 }
 
 function maintenanceCardCaption(record: MaintenanceRecord): string {
-  if (record.status !== 'done') return maintenanceDueCaption(record);
+  if (record.status !== 'done') return (record.triggerType === 'date' ? 'Scheduled date' : 'Scheduled usage');
   return record.triggerType === 'date' ? 'Completed On' : 'Completed At';
 }
 
@@ -819,6 +826,44 @@ export default function MaintenanceClient({
   const [downloadStep, setDownloadStep] = useState<'scope' | 'asset' | 'format'>('scope');
   const [downloadAssetSearch, setDownloadAssetSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
+  const [managedRecord, setManagedRecord] = useState<MaintenanceRecord | null>(null);
+  const manageRef = useRef<HTMLElement>(null);
+  const manageTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const pageRef = useRef<HTMLElement>(null);
+
+  function closeManage() {
+    setManagedRecord(null);
+    window.requestAnimationFrame(() => manageTriggerRef.current?.focus());
+  }
+
+  useEffect(() => {
+    if (!managedRecord) return;
+    const bodyOverflow = document.body.style.overflow;
+    const htmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    const pageElement = pageRef.current;
+    pageElement?.setAttribute('inert', '');
+    const frame = requestAnimationFrame(() => manageRef.current?.querySelector<HTMLButtonElement>('button')?.focus());
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeManage(); }
+      if (event.key !== 'Tab') return;
+      const buttons = manageRef.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)');
+      if (!buttons?.length) return;
+      const first = buttons[0], last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = htmlOverflow;
+      pageElement?.removeAttribute('inert');
+    };
+  }, [managedRecord]);
 
   const assetById = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
   const selectedDraftAsset = draft ? assetById.get(draft.assetId) : undefined;
@@ -1265,7 +1310,7 @@ export default function MaintenanceClient({
   return (
     <div className={styles.page}>
       <AppHeader active="maintenance" />
-      <main className={styles.shell}>
+      <main ref={pageRef} className={styles.shell}>
         {notice ? (
           <div
             className={`${styles.notice} ${notice.type === 'success' ? styles.noticeSuccess : styles.noticeError}`}
@@ -1328,6 +1373,9 @@ export default function MaintenanceClient({
             <div className={styles.invoiceList}>
               {pagedRecords.map((record) => {
                 const isDone = record.status === 'done';
+                const canComplete = record.status === 'upcoming';
+                const expanded = expandedRecordId === record.id;
+                const detailsId = `maintenance-details-${record.id}`;
                 const isRecurringFollowUp = Boolean(record.generatedFromMaintenanceId);
                 const isUpcomingRecurringFollowUp = isRecurringFollowUp && !isDone;
                 const needsAttention = !isDone && (record.computedStatus === 'due' || record.computedStatus === 'overdue');
@@ -1346,38 +1394,23 @@ export default function MaintenanceClient({
                     : isDueSoon || isRecurringFollowUp
                       ? styles.maintenanceStatusWarning
                       : styles.maintenanceStatusNeutral;
-                const statusText = isDone
-                  ? 'Maintenance completed'
-                  : isRecurringFollowUp
-                    ? `Next recurring maintenance · ${record.computedStatusLabel}`
-                    : record.computedStatusLabel || 'Maintenance upcoming';
+                const statusText = isDone ? 'Completed' : record.status === 'cancelled' ? 'Cancelled' : record.computedStatusLabel || 'Upcoming';
 
                 return (
                   <article
-                    className={`${styles.invoiceRow} ${cardStatusClass} ${isUpcomingRecurringFollowUp && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
+                    className={`${styles.invoiceRow} ${styles.ledgerCard} ${cardStatusClass} ${isUpcomingRecurringFollowUp && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
                     key={record.id}
                   >
                     <div className={styles.invoiceHeader}>
                       <div className={styles.invoiceTitleBlock}>
-                        <span
-                          className={`${styles.maintenanceStatusPill} ${statusPillClass}`}
-                        >
-                          {statusText}
-                        </span>
-                        <h2 className={styles.invoiceTitle} title={record.assetTitle}>{record.assetTitle}</h2>
-                        <p className={styles.maintenanceServiceTitle}>
-                          {record.title || (record.maintenanceType === 'checkup' ? 'Maintenance checkup' : 'Maintenance service')}
+                        <h2 className={styles.invoiceTitle}>{record.title || (record.maintenanceType === 'checkup' ? 'Maintenance check-up' : 'Scheduled service')}</h2>
+                        <p className={styles.ledgerMeta}>
+                          {typeLabel(record.maintenanceType)}
+                          {isDone ? ` · Completed ${dateOnly(record.completedAtIso || record.updatedAtIso)}` : record.recurringEnabled || isRecurringFollowUp ? ' · Recurring' : ' · Once-off'}
                         </p>
-                        <p className={styles.invoiceAsset}>{buildMaintenanceAssetMeta(record)}</p>
-                        <div className={styles.invoiceMetaList}>
-                          <span className={styles.invoiceValueMethodLabel}>Assigned to {record.assignedName || 'Unassigned'}</span>
-                          <span className={styles.invoiceSavedDateLabel}>{maintenanceAlertLabel(record)}</span>
-                          <span className={styles.invoiceSavedDateLabel}>
-                            {isDone ? `Completed ${dateOnly(record.completedAtIso || record.updatedAtIso)}` : `Updated ${dateOnly(record.updatedAtIso)}`}
-                          </span>
-                          {isDone && maintenanceDueValue(record) ? (
-                            <span className={styles.invoiceSavedDateLabel}>Scheduled for {maintenanceDueValue(record)}</span>
-                          ) : null}
+                        <div className={styles.ledgerBadges}>
+                          <span className={styles.ledgerAssetPill}><AssetPillIcon /><span>{record.assetTitle}</span></span>
+                          <span className={`${styles.maintenanceStatusPill} ${statusPillClass}`}>{statusText}</span>
                         </div>
                       </div>
 
@@ -1387,48 +1420,47 @@ export default function MaintenanceClient({
                           <span className={styles.invoiceVatLabel}>{maintenanceCardCaption(record)}</span>
                         </div>
 
-                        <div className={`${styles.rowActions} ${!isDone ? styles.rowActionsFour : ''}`}>
+                        <div className={styles.rowActions}>
                           <button
                             className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton} ${isDone ? styles.invoiceCompletedButton : ''}`}
                             type="button"
                             onClick={() => {
-                              if (!isDone) openComplete(record);
+                              if (canComplete) openComplete(record);
                             }}
-                            disabled={isDone || busyCompleteId !== null}
+                            disabled={!canComplete || busyCompleteId !== null}
                             aria-pressed={isDone}
-                            aria-label={isDone ? `${record.assetTitle} maintenance completed` : `Record ${record.maintenanceType} for ${record.assetTitle}`}
+                            aria-label={isDone ? `${record.assetTitle} maintenance completed` : !canComplete ? `${record.assetTitle} maintenance cancelled` : `Record ${record.maintenanceType} for ${record.assetTitle}`}
                           >
                             <CheckIcon />
-                            <span>{busyCompleteId === record.id ? 'Saving...' : isDone ? 'Done' : record.maintenanceType === 'checkup' ? 'Record check-up' : 'Record service'}</span>
+                            <span>{busyCompleteId === record.id ? 'Saving...' : isDone ? 'Completed' : !canComplete ? 'Cancelled' : record.maintenanceType === 'checkup' ? 'Record check-up' : 'Record service'}</span>
                           </button>
-                          {!isDone ? (
-                            <button
-                              className={`${styles.secondaryButtonSmall} ${styles.maintenanceQuickClearButton}`}
-                              type="button"
-                              onClick={() => openQuickClear(record)}
-                              disabled={busyCompleteId !== null}
-                              aria-label={`Clear ${record.maintenanceType} for ${record.assetTitle}`}
-                            >
-                              <CheckIcon />
-                              <span>Clear</span>
-                            </button>
-                          ) : null}
-                          <button className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} type="button" onClick={() => openEdit(record)}>
-                            <EditIcon />
-                            <span>Edit</span>
+                          <button className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} type="button" aria-expanded={expanded} aria-controls={detailsId} onClick={() => setExpandedRecordId(expanded ? null : record.id)}>
+                            <ChevronDownIcon className={styles.detailsChevron} /><span>{expanded ? 'Hide details' : 'View details'}</span>
                           </button>
-                          <button
-                            className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`}
-                            type="button"
-                            onClick={() => openDelete(record)}
-                            disabled={deletingRecordId === record.id}
-                          >
-                            <TrashIcon />
-                            <span>{deletingRecordId === record.id ? 'Deleting...' : 'Delete'}</span>
+                          <button className={`${styles.secondaryButtonSmall} ${styles.ledgerManageButton}`} type="button" aria-haspopup="dialog" onClick={(event) => { manageTriggerRef.current = event.currentTarget; setManagedRecord(record); }} disabled={deletingRecordId === record.id || busyCompleteId !== null}>
+                            <ManageIcon /><span>Manage</span>
                           </button>
                         </div>
                       </div>
                     </div>
+                    <section id={detailsId} hidden={!expanded} className={styles.ledgerDetails} aria-label="Maintenance details">
+                      <h3>Maintenance details</h3>
+                      <dl className={styles.ledgerDetailsGrid}>
+                        <div><dt>Asset</dt><dd>{record.assetTitle}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record)}</span></dd></div>
+                        <div><dt>{(record.triggerType === 'date' ? 'Scheduled date' : 'Scheduled usage')}</dt><dd>{maintenanceDueValue(record) || 'Not set'}</dd></div>
+                        <div><dt>Status</dt><dd>{statusText}</dd></div>
+                        <div><dt>Assigned to</dt><dd>{record.assignedName || 'Unassigned'}</dd></div>
+                        <div><dt>Reminder</dt><dd>{maintenanceAlertLabel(record)}</dd></div>
+                        <div><dt>Repeats</dt><dd>{record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? `Every ${record.recurringIntervalValue} ${record.recurringIntervalUnit}` : 'Once-off'}</dd></div>
+                        {isDone ? <div><dt>{maintenanceCardCaption(record)}</dt><dd>{maintenanceCardValue(record)}</dd></div> : null}
+                        {record.completedAtIso ? <div><dt>Completed on</dt><dd>{dateOnly(record.completedAtIso)}</dd></div> : null}
+                        {record.completedBy ? <div><dt>Completed by</dt><dd>{record.completedBy}</dd></div> : null}
+                        <div><dt>Updated</dt><dd>{dateOnly(record.updatedAtIso)}</dd></div>
+                        {record.alertNotedAtIso ? <div><dt>Alert noted</dt><dd>{dateOnly(record.alertNotedAtIso)}</dd></div> : null}
+                      </dl>
+                      {record.notes ? <div className={styles.ledgerNotes}><h4>Notes</h4><p>{record.notes}</p></div> : null}
+                      {record.completedNotes ? <div className={styles.ledgerNotes}><h4>Completion notes</h4><p>{record.completedNotes}</p></div> : null}
+                    </section>
                   </article>
                 );
               })}
@@ -1450,6 +1482,23 @@ export default function MaintenanceClient({
           ) : null}
         </section>
       </main>
+
+      {managedRecord ? (
+        <div className={`${styles.modalBackdrop} ${styles.ledgerManageBackdrop}`} data-website-overlay onClick={closeManage}>
+          <section ref={manageRef} className={`${styles.schedulingDialog} ${styles.ledgerManageModal}`} role="dialog" aria-modal="true" aria-labelledby="maintenance-manage-title" onClick={(event) => event.stopPropagation()}>
+            <header className={styles.modalHeader}>
+              <div><h2 id="maintenance-manage-title">Manage maintenance</h2><p>{managedRecord.assetTitle}</p></div>
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeManage} aria-label="Close manage maintenance"><CloseIcon /></button>
+            </header>
+            <div className={styles.modalDivider} />
+            <div className={styles.ledgerManageActions}>
+              <button className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><EditIcon /><span>Edit</span></button>
+              {managedRecord.status === 'upcoming' ? <button className={`${styles.secondaryButtonSmall} ${styles.maintenanceQuickClearButton}`} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><CheckIcon /><span>Clear</span></button> : null}
+              <button className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><TrashIcon /><span>Delete</span></button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {modalMode === 'asset-picker' ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
