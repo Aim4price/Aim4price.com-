@@ -1,4 +1,5 @@
 'use client';
+import ListPagination from '../../components/ListPagination';
 
 import AssetReportTypeIcon from '../../components/asset-register/AssetReportTypeIcon';
 
@@ -1192,7 +1193,6 @@ type ProjectionFormState = {
   targetLifeWorkedPercent: string;
 };
 
-type PageItem = number | 'ellipsis';
 
 type IconProps = {
   className?: string;
@@ -6131,27 +6131,6 @@ function buildAssetSheetMethodCards(asset: RegisterAsset): ReportMethodCard[] {
   return cards;
 }
 
-function buildPaginationItems(currentPage: number, pageCount: number): PageItem[] {
-  if (pageCount <= 1) return [1];
-
-  const pages = new Set<number>([1, pageCount, currentPage - 1, currentPage, currentPage + 1]);
-  const sorted = Array.from(pages)
-    .filter((page) => page >= 1 && page <= pageCount)
-    .sort((left, right) => left - right);
-
-  const result: PageItem[] = [];
-
-  sorted.forEach((page, index) => {
-    if (index > 0 && page - sorted[index - 1] > 1) {
-      result.push('ellipsis');
-    }
-
-    result.push(page);
-  });
-
-  return result;
-}
-
 function parseDownloadFileName(response: Response, fallback: string): string {
   const disposition = response.headers.get('content-disposition') || '';
   const quotedMatch = /filename="([^"]+)"/i.exec(disposition);
@@ -9955,7 +9934,7 @@ export default function AssetRegisterClient({
   const expandedAssetGroupId = expandedAssetId
     ? assetGroupMemberships.get(expandedAssetId)?.group.id ?? null
     : null;
-  const paginationItems = useMemo(() => buildPaginationItems(safeCurrentPage, pageCount), [safeCurrentPage, pageCount]);
+
 
   useEffect(() => {
     if ((!focusedAssetGroupId && !expandedAssetId) || anyModalOpen || documentUploadAsset || draggingAssetId) return undefined;
@@ -18077,79 +18056,15 @@ export default function AssetRegisterClient({
                 </div>
 
                 {filteredAssets.length > 0 ? (
-                  <div className={styles.paginationBar}>
-                    <div className={styles.paginationInfo}>
-                      <div className={styles.paginationMeta}>
-                        Page {safeCurrentPage} of {pageCount}
-                      </div>
-
-                      <div className={styles.pageSizeControls} aria-label="Standalone assets per page">
-                        <span>{hasGroupedPaginationEntries ? 'Show standalone' : 'Show'}</span>
-                        <div className={styles.pageSizeButtonGroup}>
-                          {PAGE_SIZE_OPTIONS.map((option) => (
-                            <button
-                              type="button"
-                              key={option}
-                              className={`${styles.paginationButton} ${styles.pageSizeButton} ${pageSize === option ? styles.pageSizeButtonActive : ''}`}
-                              onClick={() => handlePageSizeChange(option)}
-                              aria-pressed={pageSize === option}
-                            >
-                              {option}
-                            </button>
-                          ))}
-                          <button
-                            type="button"
-                            className={`${styles.paginationButton} ${styles.pageSizeButton} ${pageSize === 'all' ? styles.pageSizeButtonActive : ''}`}
-                            onClick={() => handlePageSizeChange('all')}
-                            aria-pressed={pageSize === 'all'}
-                          >
-                            All
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {pageCount > 1 ? (
-                      <div className={styles.paginationActions}>
-                        <button
-                          type="button"
-                          className={styles.paginationButton}
-                          onClick={() => setCurrentPage((current) => Math.max(1, current - 1))}
-                          disabled={safeCurrentPage === 1}
-                        >
-                          <ChevronLeftIcon className={styles.buttonIcon} />
-                          <span>Previous</span>
-                        </button>
-
-                        {paginationItems.map((item, index) =>
-                          item === 'ellipsis' ? (
-                            <span className={styles.paginationEllipsis} key={`ellipsis-${index}`}>
-                              …
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              key={item}
-                              className={`${styles.paginationButton} ${item === safeCurrentPage ? styles.paginationButtonActive : ''}`}
-                              onClick={() => setCurrentPage(item)}
-                            >
-                              {item}
-                            </button>
-                          ),
-                        )}
-
-                        <button
-                          type="button"
-                          className={styles.paginationButton}
-                          onClick={() => setCurrentPage((current) => Math.min(pageCount, current + 1))}
-                          disabled={safeCurrentPage === pageCount}
-                        >
-                          <span>Next</span>
-                          <ChevronRightIcon className={styles.buttonIcon} />
-                        </button>
-                      </div>
-                    ) : null}
-                  </div>
+                  <ListPagination
+                    label="Asset register pagination"
+                    page={safeCurrentPage}
+                    pageCount={pageCount}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                    onPageSizeChange={handlePageSizeChange}
+                    sizeLabel={hasGroupedPaginationEntries ? 'Show standalone' : 'Show'}
+                  />
                 ) : null}
               </>
             ) : (

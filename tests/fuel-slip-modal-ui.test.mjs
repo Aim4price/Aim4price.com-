@@ -99,18 +99,13 @@ test('fuel wizard keeps the canonical two-step progress and final-step save beha
 });
 
 test('fuel slip manager is compact, scalable and exposes secondary details on demand', () => {
-  const pageSize = client.match(/const FUEL_SLIP_MANAGER_PAGE_SIZE = (\d+);/);
-  assert.ok(pageSize, 'Expected a manager page-size constant');
-  assert.ok(Number(pageSize[1]) >= 20, 'Expected at least 20 compact slips per page');
-
   assert.match(managerModal, /paginatedFuelSlipManagerSlips\.map/);
   assert.match(managerModal, /ref=\{fuelSlipManagerListRef\}/);
   assert.match(managerModal, /aria-expanded=\{isExpanded\}/);
   assert.match(managerModal, /aria-controls=\{detailsId\}/);
   assert.match(managerModal, /styles\.fuelSlipManagerExpanded/);
   assert.match(managerModal, /<HistoryIcon className=\{styles\.buttonIcon\} \/>[\s\S]*?<span>Change history<\/span>/);
-  assert.match(managerModal, />\s*First\s*<\/button>/);
-  assert.match(managerModal, />\s*Last\s*<\/button>/);
+  assert.match(managerModal, /<ListPagination\s+label="Fuel slips pagination"/);
   assert.match(managerModal, /Show all fuel slips/);
   assert.match(managerModal, /styles\.fuelSlipManagerBackdrop/);
   assert.doesNotMatch(managerModal, /styles\.fuelSlipManagerEyebrow|>\s*Fuel Ledger\s*</);
@@ -136,7 +131,7 @@ test('fuel slip filters use the Cost Ledger modal language without limiting mont
 });
 
 test('pagination only limits rendering while search, filters and downloads use the full loaded set', () => {
-  assert.match(client, /visibleFuelSlipManagerSlips\.slice\(startIndex, startIndex \+ FUEL_SLIP_MANAGER_PAGE_SIZE\)/);
+  assert.match(client, /visibleFuelSlipManagerSlips\.slice\(startIndex, startIndex \+ fuelSlipLimit\)/);
   assert.match(client, /recentFuelSlips\.filter\(\(slip\) => matchesFuelSlipManagerFilters\(slip, draftFuelSlipDownloadFilters, fuelSlipManagerSearchTerm\)\)/);
 
   const downloadHandler = sliceBetween(

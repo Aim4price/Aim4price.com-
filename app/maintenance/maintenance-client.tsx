@@ -1,4 +1,5 @@
 'use client';
+import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
 import MaintenanceChecklistBrowser from '../../components/MaintenanceChecklistBrowser';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
@@ -183,8 +184,6 @@ function filtersForInitialAsset(assetId: string): MaintenanceFilters {
     ? { ...EMPTY_FILTERS, assetId: normalizedAssetId }
     : { ...EMPTY_FILTERS };
 }
-
-const PAGE_SIZE = 10;
 
 function ScheduleIcon() {
   return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 2v6m10-6v6M3 10h18M7 14h3m4 0h3M7 17h3" /></svg>;
@@ -850,6 +849,7 @@ export default function MaintenanceClient({
   const [downloadScope, setDownloadScope] = useState<DownloadScope>('total');
   const [downloadStep, setDownloadStep] = useState<'scope' | 'asset' | 'format'>('scope');
   const [downloadAssetSearch, setDownloadAssetSearch] = useState('');
+  const [pageSize, setPageSize] = useState<ListPageSize>(6);
   const [page, setPage] = useState(1);
   const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
   const [managedRecord, setManagedRecord] = useState<MaintenanceRecord | null>(null);
@@ -978,8 +978,10 @@ export default function MaintenanceClient({
     return arrangeMaintenanceTimeline(matchingRecords.filter((record) => scheduleView === 'all' || (record.status === 'upcoming' && (scheduleView === 'upcoming' || record.recurringEnabled || Boolean(record.generatedFromMaintenanceId)))));
   }, [records, search, scheduleView]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
-  const pagedRecords = filteredRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const pageLimit = pageSize === 'all' ? Math.max(1, filteredRecords.length) : pageSize;
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / pageLimit));
+  const safePage = Math.min(page, totalPages);
+  const pagedRecords = filteredRecords.slice((safePage - 1) * pageLimit, safePage * pageLimit);
   const filtersCount = activeFilterCount(activeFilters);
 
   useEffect(() => {
@@ -1537,16 +1539,15 @@ export default function MaintenanceClient({
             <div className={styles.emptyState}>No maintenance records match the current view.</div>
           )}
 
-          {filteredRecords.length > PAGE_SIZE ? (
-            <nav className={styles.paginationRow} aria-label="Maintenance record pages">
-              <button className={styles.paginationButton} type="button" onClick={() => setPage((value) => Math.max(1, value - 1))} disabled={page <= 1}>
-                Previous
-              </button>
-              <span className={styles.paginationStatus} aria-live="polite">Page {page} of {totalPages}</span>
-              <button className={styles.paginationButton} type="button" onClick={() => setPage((value) => Math.min(totalPages, value + 1))} disabled={page >= totalPages}>
-                Next
-              </button>
-            </nav>
+          {!isLoading && filteredRecords.length > 0 ? (
+            <ListPagination
+              label="Maintenance record pages"
+              page={safePage}
+              pageCount={totalPages}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+            />
           ) : null}
         </section>
       </main>
