@@ -17338,9 +17338,6 @@ export default function AssetRegisterClient({
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
                               <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
-                              {isCombinedRegisterView ? (
-                                <span className={styles.assetSourceRegisterName}>{asset.registerName || 'Asset Register'}</span>
-                              ) : null}
                               <span className={styles.assetSavedDateLabel}>{assetStatusDateLabel(asset)}</span>
                             </div>
 
