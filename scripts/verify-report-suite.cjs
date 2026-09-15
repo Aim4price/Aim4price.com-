@@ -211,6 +211,15 @@ async function fixtures() {
   for (const type of ['summary','detailed']) reports['insurance-'+type] = insurance.buildInsuranceReportHtml({
     workspace, broker: { displayName: 'Demo Broker', businessName: 'Demo Broker', logoUrl: logo }, type, reference: 'DEMO', generatedAtIso: date.toISOString(),
   });
+  const fuelSlips = load('lib/fuel-slip-export.ts');
+  const slipRecords = Array.from({ length: 35 }, (_, i) => ({
+    documentDate: '2026-09-14', supplierName: 'Demonstration Supplier', targetType: 'asset',
+    assetTitle: asset.title, slipNumber: '1234567890123456', litres: 12.345,
+    pricePerLitre: 23.67, totalAmount: 292.21, vatAmount: 38.11, fuelType: 'Diesel',
+    extractionStatus: 'extracted', reviewRequired: false,
+  }));
+  reports['fuel-slips'] = fuelSlips.buildFuelSlipReportHtml(slipRecords, { accountName: ownerDetails.businessName, logoUrl: logo });
+  fs.writeFileSync(path.join(out, 'fuel-slips.xlsx'), fuelSlips.buildFuelSlipWorkbook(slipRecords));
   return reports;
 }
 
@@ -229,8 +238,10 @@ async function fixtures() {
       const page = await browser.newPage();
       try {
       assert.ok(html.includes('#edf4f0'), name+' shared palette');
-      assert.ok(html.includes('Save PDF / Print'), name+' standard print button');
-      assert.ok(html.includes('window.close()'), name+' close button');
+      if (name !== 'fuel-slips') { // This endpoint delivers a binary PDF, with native reader controls.
+        assert.ok(html.includes('Save PDF / Print'), name+' standard print button');
+        assert.ok(html.includes('window.close()'), name+' close button');
+      }
       assert.ok(html.includes('Powered by Aim4price.com'), name+' branded footer');
       await page.setJavaScriptEnabled(false); // Do not auto-open native print dialogs.
       await page.setRequestInterception(true);

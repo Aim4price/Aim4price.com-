@@ -40,6 +40,8 @@ function exportRoute({ authorized = true, slips = [] } = {}) {
   class NextResponse extends Response { static json(body, init) { return new Response(JSON.stringify(body), init); } }
   const mocks = {
     'next/server': { NextResponse },
+    '../../../../../lib/account-profile': { getAccountProfile: async () => ({ businessName: 'Owner Farm', logoUrl: '' }) },
+    '../../../../../lib/report-logo': { resolveReportLogoUrlForHtml: async () => '' },
     '../../../../../lib/owner-workspace-access': {
       resolveOwnerWorkspaceContext: async () => authorized ? { ok: true, context: { ownerUserId: 'owner' } } : { ok: false, response: new Response('', { status: 401 }) },
       filterFuelLedgerForWorkspace: async (_, ledger) => ({ recentFuelSlips: ledger.recentFuelSlips.filter((s) => s.allowed) }),
@@ -71,4 +73,11 @@ test('export validates format and returns private attachments for accessible rec
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
   assert.match(response.headers.get('Content-Type'), /spreadsheetml/);
+});
+
+test('PDF export renders authorized records with account context', async () => {
+  const route = exportRoute({ slips: [{ id: 'a', allowed: true }] });
+  const response = await route.post(['a'], 'pdf');
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('Content-Type'), /application\/pdf/);
 });

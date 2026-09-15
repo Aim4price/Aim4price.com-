@@ -1,3 +1,5 @@
+import { getAccountProfile } from '../../../../../lib/account-profile';
+import { resolveReportLogoUrlForHtml } from '../../../../../lib/report-logo';
 import { NextResponse } from 'next/server';
 import { listFuelLedger } from '../../../../../lib/fuel-ledger';
 import { filterFuelLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../../lib/owner-workspace-access';
@@ -24,7 +26,9 @@ export async function POST(request: Request) {
     const slips = ledger.recentFuelSlips.filter((slip) => ids.has(slip.id));
     // Never trust client records or silently export a partial/stale selection.
     if (slips.length !== ids.size) return NextResponse.json({ error: 'Some selected slips are no longer available. Refresh and try again.' }, { status: 409 });
-    const data = payload.format === 'xlsx' ? buildFuelSlipWorkbook(slips) : await renderReportHtmlToPdf(buildFuelSlipReportHtml(slips));
+    const profile = payload.format === 'pdf' ? await getAccountProfile({ id: workspace.ownerUserId }) : null;
+    const context = profile ? { accountName: profile.businessName || profile.displayName || profile.name, logoUrl: await resolveReportLogoUrlForHtml(profile.logoUrl || '', request.url) } : {};
+    const data = payload.format === 'xlsx' ? buildFuelSlipWorkbook(slips) : await renderReportHtmlToPdf(buildFuelSlipReportHtml(slips, context), { baseUrl: request.url });
     return new NextResponse(new Uint8Array(data), { headers: {
       'Content-Type': payload.format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf',
       'Content-Disposition': `attachment; filename="fuel-slips-${new Date().toISOString().slice(0, 10)}.${payload.format}"`,

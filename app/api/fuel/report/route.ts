@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile, type AccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import { getFuelStorageById, listFuelEventsForReport, listFuelLedger, type FuelLedgerEvent } from '../../../../lib/fuel-ledger';
-import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
+import { reportExcelDate, createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import {
   filterFuelLedgerForWorkspace,
@@ -290,6 +290,16 @@ function formatCurrency(value: number | null | undefined): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function eventIssuedExcelCell(event: FuelLedgerEvent): XlsxCellValue {
+  if (event.sourceType === 'fuel_slip' && /^\d{4}-\d{2}-\d{2}$/.test(event.fuelSlipDocumentDate)) {
+    const time = asText(event.fuelSlipDocumentTime);
+    const hasTime = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(time);
+    return styled(reportExcelDate(hasTime ? `${event.fuelSlipDocumentDate}T${time}+02:00` : event.fuelSlipDocumentDate), hasTime ? 'dateTime' : 'date');
+  }
+  if (event.isLateEntry && !event.issueTimeRecorded) return styled(reportExcelDate(event.issueDate), 'date');
+  return styled(reportExcelDate(event.isLateEntry ? event.issueAtIso : event.createdAtIso), 'dateTime');
 }
 
 function eventIssuedDateTime(event: FuelLedgerEvent): string {
@@ -1444,9 +1454,9 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
   ];
 
   const movementHeader = [
-    'Date / Time', 'Activity / Source', 'Direction', 'Storage Unit', 'Asset / Target', 'Litres',
+    'Issued on (SAST)', 'Activity / Source', 'Direction', 'Storage Unit', 'Asset / Target', 'Litres',
     'Litres Before Fill', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
-    'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On', 'Added By', 'Evidence / Review Status',
+    'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On (SAST)', 'Added By', 'Evidence / Review Status',
     'Evidence Type', 'Evidence Reference', 'Tank Balance Treatment', 'Late-entry Reason', 'Notes',
     'Work-use Status', 'Exclusion Reason', 'Fuel Slip Supplier', 'Total incl. VAT', 'Payment Method', 'Fuel Slip Document', 'Fuel Slip Review Status',
   ];
@@ -1463,7 +1473,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
       const directionLabel = eventDirectionLabel(event);
       const rowNumber = movementHeaderRow + 1 + index;
       return [
-        styled(eventIssuedDateTime(event), 'text'),
+        eventIssuedExcelCell(event),
         styled(eventActivityLabel(event), event.isLateEntry ? 'statusInfo' : 'text'),
         styled(directionLabel, directionLabel === 'Out' ? 'statusWarn' : directionLabel === 'In' ? 'statusGood' : 'statusInfo'),
         styled(event.storageName || '', 'text'),
@@ -1484,7 +1494,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
         styled(eventWorkActivityLabel(event), 'text'),
         styled(eventWorkAreaLabel(event), 'text'),
         styled(formatLocation(event), 'text'),
-        styled(event.isLateEntry || event.sourceType === 'fuel_slip' ? formatExcelDateTime(event.entryAddedAtIso) : '', 'text'),
+        styled(event.isLateEntry || event.sourceType === 'fuel_slip' ? reportExcelDate(event.entryAddedAtIso) : null, 'dateTime'),
         styled(eventAddedBy(event), 'text'),
         styled(eventEvidenceStatus(event), 'text'),
         styled(event.evidenceType || '', 'text'),

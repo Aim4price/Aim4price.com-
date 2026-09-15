@@ -544,7 +544,8 @@ export async function listAdminAssetNameTemplateAssets(
 }
 
 function escapeCsvCell(value: unknown): string {
-  const textValue = String(value ?? "");
+  const raw = String(value ?? "");
+  const textValue = /^[\s]*[=+@-]/.test(raw) ? `'${raw}` : raw;
 
   if (/[",\r\n]/.test(textValue)) {
     return `"${textValue.replace(/"/g, '""')}"`;

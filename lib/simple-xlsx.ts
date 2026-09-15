@@ -22,7 +22,8 @@ export type XlsxCellStyle =
   | 'note'
   | 'year'
   | 'link'
-  | 'dateTime';
+  | 'dateTime'
+  | 'coordinate';
 
 export type XlsxStyledCell = {
   value?: XlsxPrimitiveCellValue;
@@ -88,6 +89,7 @@ const CELL_STYLE_IDS: Record<XlsxCellStyle, number> = {
   year: 19,
   link: 20,
   dateTime: 21,
+  coordinate: 22,
 };
 
 function escapeXml(value: unknown): string {
@@ -143,7 +145,7 @@ function rangeReference(range: XlsxMergeRange | XlsxAutoFilterRange): string {
 
 function normalizeCellText(value: string): string {
   const normalized = value.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  return /^[=+\-@]/.test(normalized) ? `'${normalized}` : normalized;
+  return normalized.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, ''); // inlineStr cells cannot execute formulas.
 }
 
 function isStyledCell(value: XlsxCellValue): value is XlsxStyledCell {
@@ -391,7 +393,7 @@ function buildWorksheetXml(sheet: XlsxSheet, hyperlinks: XlsxHyperlink[]): strin
   const rowsXml = rows
     .map((row, rowIndex) => {
       const rowNumber = rowIndex + 1;
-      const rowHeight = rowNumber === 1 ? ' ht="26" customHeight="1"' : rowNumber === 11 ? ' ht="24" customHeight="1"' : '';
+      const rowHeight = row.some((cell) => normalizeCell(cell).style === 'tableHeader') ? ' ht="42" customHeight="1"' : rowNumber === 1 ? ' ht="26" customHeight="1"' : '';
       const cells = row
         .map((value, colIndex) => toCellXml(value, cellReference(rowNumber, colIndex + 1)))
         .filter(Boolean)
@@ -413,7 +415,7 @@ function buildWorksheetXml(sheet: XlsxSheet, hyperlinks: XlsxHyperlink[]): strin
   ${mergesXml}
   ${hyperlinksXml}
   <pageMargins left="0.35" right="0.35" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
-  <pageSetup orientation="${orientation}" paperSize="9" fitToWidth="1" fitToHeight="0"/>
+  <pageSetup orientation="${orientation}" paperSize="9" fitToWidth="${maxColumnCount > 10 ? 0 : 1}" fitToHeight="0" scale="100"/>
 </worksheet>`;
 }
 
@@ -444,7 +446,7 @@ function buildRootRelationships(): string {
 </Relationships>`;
 }
 
-function buildWorkbookXml(sheetNames: string[]): string {
+function buildWorkbookXml(sheetNames: string[], definitions: XlsxSheet[]): string {
   const sheetsXml = sheetNames
     .map(
       (name, index) =>
@@ -456,6 +458,12 @@ function buildWorkbookXml(sheetNames: string[]): string {
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <workbookPr date1904="false"/>
   <sheets>${sheetsXml}</sheets>
+  <definedNames>${definitions.map((sheet, index) => {
+    const lastHeaderRow = sheet.freezeRow || (typeof sheet.autoFilter === 'object' ? sheet.autoFilter.fromRow : 0);
+    if (!lastHeaderRow) return '';
+    const name = "'" + sheetNames[index].replace(/'/g, "''") + "'";
+    return `<definedName name="_xlnm.Print_Titles" localSheetId="${index}">${escapeXml(`${name}!$1:$${lastHeaderRow},${name}!$A:$A`)}</definedName>`;
+  }).join('')}</definedNames>
   <calcPr calcId="0" fullCalcOnLoad="1" forceFullCalc="1"/>
 </workbook>`;
 }
@@ -474,16 +482,17 @@ function buildWorkbookRelationships(sheetCount: number): string {
 }
 
 function buildStylesXml(): string {
-  const accountingRandFormat = '_-"R" * #,##0_-;[Red]_-"R" * -#,##0_-;_-"R" * "-"_-;_-@_-';
+  const accountingRandFormat = '"R" #,##0.00;[Red]-"R" #,##0.00;"R" 0.00';
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <numFmts count="5">
+  <numFmts count="6">
     <numFmt numFmtId="164" formatCode="${escapeXml(accountingRandFormat)}"/>
-    <numFmt numFmtId="165" formatCode="#,##0.##"/>
+    <numFmt numFmtId="165" formatCode="#,##0.###"/>
     <numFmt numFmtId="166" formatCode="dd mmm yyyy"/>
     <numFmt numFmtId="167" formatCode="0%"/>
     <numFmt numFmtId="168" formatCode="dd mmm yyyy hh:mm"/>
+    <numFmt numFmtId="169" formatCode="0.000000"/>
   </numFmts>
   <fonts count="10">
     <font><sz val="11"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
@@ -521,7 +530,7 @@ function buildStylesXml(): string {
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="22">
+  <cellXfs count="23">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment vertical="center"/></xf>
     <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment wrapText="1" vertical="center"/></xf>
@@ -544,6 +553,7 @@ function buildStylesXml(): string {
     <xf numFmtId="1" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
     <xf numFmtId="0" fontId="9" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"><alignment wrapText="1" vertical="top"/></xf>
     <xf numFmtId="168" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="left" vertical="center"/></xf>
+    <xf numFmtId="169" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1"><alignment horizontal="right"/></xf>
   </cellXfs>
   <cellStyles count="1">
     <cellStyle name="Normal" xfId="0" builtinId="0"/>
@@ -697,7 +707,7 @@ export function createXlsxWorkbook(sheets: XlsxSheet[]): Buffer {
     { name: '_rels/.rels', data: buildRootRelationships() },
     { name: 'docProps/core.xml', data: buildCoreXml() },
     { name: 'docProps/app.xml', data: buildAppXml(sheetNames) },
-    { name: 'xl/workbook.xml', data: buildWorkbookXml(sheetNames) },
+    { name: 'xl/workbook.xml', data: buildWorkbookXml(sheetNames, safeSheets) },
     { name: 'xl/_rels/workbook.xml.rels', data: buildWorkbookRelationships(safeSheets.length) },
     { name: 'xl/styles.xml', data: buildStylesXml() },
   ];
@@ -718,4 +728,18 @@ export function createXlsxWorkbook(sheets: XlsxSheet[]): Buffer {
   });
 
   return createZip(entries);
+}
+
+/** Excel has no timezone: encode the displayed South African wall clock. */
+export function reportExcelDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return date;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  }).formatToParts(date);
+  const n = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find(part => part.type === type)?.value ?? 0);
+  return new Date(Date.UTC(n('year'), n('month') - 1, n('day'), n('hour'), n('minute'), n('second')));
 }

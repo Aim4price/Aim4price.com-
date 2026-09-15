@@ -12,7 +12,8 @@ type Context = { params: { shareId: string } };
 type CsvCell = string | number | boolean | null | undefined;
 
 function csvCell(value: CsvCell): string {
-  const text = String(value ?? '');
+  const raw = String(value ?? '');
+  const text = typeof value === 'string' && /^[\s]*[=+@-]/.test(raw) ? `'${raw}` : raw;
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest, context: Context) {
       const events = await listAssetLifecycleReport(data.access.ownerUserId, data.access.registerId, params.get('from'), params.get('to'));
       return reportResponse(`${baseName}-additions-disposals`, [
         ['Asset', 'Event', 'Reason', 'Effective date', 'Amount excl. VAT', 'Note', 'Supporting reference', 'Recorded by'],
-        ...events.map((event) => [event.assetTitle, event.eventType, event.reason, event.effectiveDate, event.amountExVat, event.note, event.sourceDocumentReference, event.actorOrganisation || event.actorName]),
+        ...events.filter((event) => !requestedAssetId || event.assetId === requestedAssetId).map((event) => [event.assetTitle, event.eventType, event.reason, event.effectiveDate, event.amountExVat, event.note, event.sourceDocumentReference, event.actorOrganisation || event.actorName]),
       ]);
     }
 
@@ -152,29 +153,33 @@ export async function GET(request: NextRequest, context: Context) {
     }
 
     if (kind === 'fuel-report' || kind === 'fuel-ledger' || kind === 'fuel') {
-      const ledger = await getAccountantLedger({ accountantUserId: session.user.id, shareId: context.params.shareId, kind: 'fuel' });
+      const ledger = await getAccountantLedger({ accountantUserId: session.user.id, shareId: context.params.shareId, kind: 'fuel', fullFuelHistory: true });
       const events = ledger.fuel?.recentEvents.filter((event) => !requestedAssetId || event.assetId === requestedAssetId) ?? [];
       if (kind === 'fuel-report') {
-        const byAsset = new Map<string, { litres: number; amount: number; entries: number }>();
+        const byAsset = new Map<string, { title: string; litres: number; amount: number; entries: number; pricedEntries: number }>();
         for (const event of events) {
-          const key = event.assetTitle || 'Unallocated';
-          const current = byAsset.get(key) ?? { litres: 0, amount: 0, entries: 0 };
+          if (event.eventType !== 'asset_issue' || !event.assetId) continue;
+          const key = event.assetId;
+          const current = byAsset.get(key) ?? { title: event.assetTitle || 'Unnamed asset', litres: 0, amount: 0, entries: 0, pricedEntries: 0 };
           current.litres += Number(event.litres || 0);
-          current.amount += Number(event.totalAmount || 0);
+          if (typeof event.totalAmount === 'number' && Number.isFinite(event.totalAmount)) {
+            current.amount += event.totalAmount;
+            current.pricedEntries += 1;
+          }
           current.entries += 1;
           byAsset.set(key, current);
         }
         return reportResponse(`${baseName}-fuel-report`, [
-          ['Asset', 'Recorded entries', 'Total litres', 'Recorded amount'],
-          ...[...byAsset.entries()].map(([assetTitle, totals]) => [assetTitle, totals.entries,
-            Math.round(totals.litres * 100) / 100, Math.round(totals.amount * 100) / 100]),
+          ['Asset ID', 'Asset', 'Recorded entries', 'Total litres issued', 'Recorded amount', 'Entries with amounts'],
+          ...[...byAsset.entries()].map(([assetId, totals]) => [assetId, totals.title, totals.entries,
+            Math.round(totals.litres * 1000) / 1000, totals.pricedEntries ? Math.round(totals.amount * 100) / 100 : null, totals.pricedEntries]),
         ]);
       }
       return reportResponse(`${baseName}-fuel`, [
-        ['Asset', 'Date', 'Storage', 'Event', 'Litres', 'Amount', 'Usage', 'Operator', 'Location', 'Note', 'Supporting document'],
-        ...events.map((event) => [event.assetTitle, event.createdAtIso, event.storageName, event.eventType,
-          event.litres, event.totalAmount, event.assetUsageReading, event.operatorName, event.locationText,
-          event.note, event.documentFileUrl]),
+        ['Asset', 'Fuel issue date', 'Storage', 'Event', 'Litres', 'Amount', 'Usage', 'Usage unit', 'Operator', 'Location', 'Note', 'Supporting document', 'Entry added (UTC)'],
+        ...events.map((event) => [event.assetTitle, event.issueDate || event.issueAtIso || event.createdAtIso, event.storageName, event.eventType,
+          event.litres, event.totalAmount, event.assetUsageReading, event.assetUsageMetric, event.operatorName, event.locationText,
+          event.note, event.documentFileUrl, event.entryAddedAtIso || event.createdAtIso]),
       ]);
     }
 
