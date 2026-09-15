@@ -1,5 +1,7 @@
 'use client';
 
+import AssetReportTypeIcon from './AssetReportTypeIcon';
+
 import { websiteLogicalRect, websiteVisibleViewport } from '../../lib/website-canvas';
 
 import { createPortal } from '../WebsitePortal';
@@ -330,6 +332,9 @@ type Props = {
   onClose: () => void;
   onSave: (input: AssetGroupSaveInput) => void | Promise<void>;
   onDelete: (group: AssetGroup) => void | Promise<void>;
+  onDownloadMap?: (group: AssetGroup) => void | Promise<void>;
+  canDownloadMap?: boolean;
+  mapBusy?: boolean;
   onDownloadPdf?: (group: AssetGroup) => void | Promise<void>;
   onDownloadXlsx?: (group: AssetGroup) => void | Promise<void>;
   onDownloadReport?: (
@@ -466,6 +471,9 @@ export default function AssetGroupManagerModal({
   onDownloadPdf,
   onDownloadXlsx,
   onDownloadReport,
+  onDownloadMap,
+  canDownloadMap = false,
+  mapBusy = false,
 }: Props) {
   const [name, setName] = useState('');
   const [hasPrimaryAsset, setHasPrimaryAsset] = useState(false);
@@ -877,25 +885,31 @@ export default function AssetGroupManagerModal({
             {reportStep === 'options' ? (
               <div className={registerStyles.assetReportOptionsGrid}>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('valuation')}>
-                  <PdfIcon className={registerStyles.buttonIcon} />
+                  <AssetReportTypeIcon kind="valuation" className={registerStyles.buttonIcon} />
                   <span><strong>{isAttachingReport ? 'Add umbrella valuation' : 'Download umbrella valuation'}</strong><small>{isAttachingReport ? 'Attach a polished Aim4price PDF.' : 'PDF values, notes and grouped assets.'}</small></span>
                 </button>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('maintenance')}>
-                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <AssetReportTypeIcon kind="maintenance" className={registerStyles.buttonIcon} />
                   <span><strong>{isAttachingReport ? 'Add maintenance report' : 'Download maintenance report'}</strong><small>Combined service and repair history.</small></span>
                 </button>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('fuel')}>
-                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <AssetReportTypeIcon kind="fuel" className={registerStyles.buttonIcon} />
                   <span><strong>{isAttachingReport ? 'Add fuel report' : 'Download fuel report'}</strong><small>Combined fuel records by month.</small></span>
                 </button>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('depreciation')}>
-                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <AssetReportTypeIcon kind="depreciation" className={registerStyles.buttonIcon} />
                   <span><strong>{isAttachingReport ? 'Add depreciation log' : 'Download depreciation log'}</strong><small>Combined saved value changes.</small></span>
                 </button>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('ownership')}>
-                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <AssetReportTypeIcon kind="ownership" className={registerStyles.buttonIcon} />
                   <span><strong>{isAttachingReport ? 'Add cost of ownership report' : 'Download cost of ownership report'}</strong><small>Combined expenses, costs and VAT.</small></span>
                 </button>
+                {!isAttachingReport && onDownloadMap ? (
+                  <button type="button" className={registerStyles.assetReportOptionButton} disabled={mapBusy || reportBusy || !canDownloadMap} onClick={() => void onDownloadMap(group)}>
+                    <AssetReportTypeIcon kind="map" className={registerStyles.buttonIcon} />
+                    <span><strong>{mapBusy ? 'Preparing asset map…' : 'Download asset map'}</strong><small>{canDownloadMap ? 'PDF map of grouped assets with saved locations.' : 'Add a map location to a grouped asset first.'}</small></span>
+                  </button>
+                ) : null}
               </div>
             ) : reportStep === 'format' ? (
               <>

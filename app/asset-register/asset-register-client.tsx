@@ -1,5 +1,7 @@
 'use client';
 
+import AssetReportTypeIcon from '../../components/asset-register/AssetReportTypeIcon';
+
 import { legacyValuationRecoveryReason, isLegacyHourProjectionAsset } from '../../lib/asset-register-legacy-valuation';
 import { openAssetQrLabel } from '../../lib/asset-qr-label';
 import { downloadAssetMapReport } from '../../lib/asset-map-download';
@@ -2215,34 +2217,6 @@ function PdfIcon({ className }: IconProps) {
 }
 
 
-function AssetReportTypeIcon({ className, kind }: IconProps & { kind: 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership' }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      {kind === 'valuation' ? (
-        <>
-          <rect x="5" y="3" width="14" height="18" rx="2" />
-          <path d="M8 7h8M8 11h1m6 0h1M8 15h1m6 0h1M8 18h1m6 0h1" />
-        </>
-      ) : kind === 'maintenance' ? (
-        <path d="M14.7 6.3a5 5 0 0 0-6.4 6.4l-4.8 4.8a2.1 2.1 0 0 0 3 3l4.8-4.8a5 5 0 0 0 6.4-6.4l-3 3-3-3 3-3Z" />
-      ) : kind === 'fuel' ? (
-        <>
-          <rect x="3" y="3" width="10" height="18" rx="1.5" />
-          <path d="M3 10h10M2 21h12M13 12h2a2 2 0 0 1 2 2v3a2 2 0 0 0 4 0V8l-4-4M18 5v3h3" />
-        </>
-      ) : kind === 'depreciation' ? (
-        <>
-          <path d="M3 3v18h18M6 7l5 5 4-3 6 7M16 16h5v-5" />
-        </>
-      ) : (
-        <>
-          <path d="M20 8V5a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h14v12H6a3 3 0 0 1-3-3V6" />
-          <path d="M20 12h-4a2 2 0 0 0 0 4h4" />
-        </>
-      )}
-    </svg>
-  );
-}
 
 function DocumentIcon({ className }: IconProps) {
   return (
@@ -15788,6 +15762,28 @@ export default function AssetRegisterClient({
     }
   }
 
+  async function handleDownloadAssetGroupMap(group: AssetGroup) {
+    if (individualAssetMapDownloadRef.current) return;
+    const mappedMembers = assetsForGroup(group).filter(hasAssetGpsCoordinates);
+    if (!mappedMembers.length) {
+      setAssetGroupError('Add a map location to a grouped asset first.');
+      return;
+    }
+    individualAssetMapDownloadRef.current = true;
+    setIsDownloadingIndividualAssetMap(true);
+    setAssetGroupError('');
+    try {
+      const params = new URLSearchParams({ format: 'pdf', ids: mappedMembers.map((asset) => asset.id).join(',') });
+      await downloadAssetMapReport(`/api/asset-map/report?${params.toString()}`, 'pdf');
+      closeAssetGroupManager();
+    } catch (error) {
+      setAssetGroupError(error instanceof Error ? error.message : 'Unable to download the umbrella asset map.');
+    } finally {
+      individualAssetMapDownloadRef.current = false;
+      setIsDownloadingIndividualAssetMap(false);
+    }
+  }
+
   async function handleDownloadAssetGroupReport(
     group: AssetGroup,
     reportKind: AssetGroupReportKind,
@@ -22167,7 +22163,7 @@ export default function AssetRegisterClient({
                           disabled={isDownloadingIndividualAssetMap || !hasAssetGpsCoordinates(reportAsset)}
                           onClick={() => void handleDownloadIndividualAssetMap(reportAsset)}
                         >
-                          <MapPinIcon className={styles.buttonIcon} />
+                          <AssetReportTypeIcon kind="map" className={styles.buttonIcon} />
                           <span>
                             <strong>{isDownloadingIndividualAssetMap ? 'Preparing asset map…' : 'Download asset map'}</strong>
                             <small>{hasAssetGpsCoordinates(reportAsset) ? 'PDF map of this asset’s saved location.' : 'Add a map location first.'}</small>
@@ -23178,6 +23174,9 @@ export default function AssetRegisterClient({
         onDownloadPdf={handleDownloadAssetGroupPdf}
         onDownloadXlsx={handleDownloadAssetGroupXlsx}
         onDownloadReport={handleDownloadAssetGroupReport}
+        onDownloadMap={handleDownloadAssetGroupMap}
+        mapBusy={isDownloadingIndividualAssetMap}
+        canDownloadMap={Boolean(assetGroupModalGroup && assetsForGroup(assetGroupModalGroup).some(hasAssetGpsCoordinates))}
       />
 
       {isAccountantReportsOpen && accountantShareId && accountantAccess ? (
