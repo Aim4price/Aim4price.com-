@@ -146,21 +146,38 @@ export function resolveMaintenanceChecklist(
     matched: !!family,
   };
 }
+/** Inspections record condition and safe operation; servicing records work done. */
 export function checklistOptions(
   checklist: MaintenanceChecklist,
   mode: "checked" | "serviced" | "repaired",
 ) {
-  return checklist.items.map((i) => ({
-    id: i.id,
-    label:
-      mode === "checked"
-        ? i.checkLabel
-        : mode === "repaired"
-          ? i.label
-          : i.serviceLabel,
-    description: i.description,
-  }));
+  if (mode === "checked") {
+    const safetyItems = checklist.items.filter((item) =>
+      /brak|steer|tyre|tire|track|guard|light|reflect|mirror|horn|seat.?belt|hitch|drawbar|coupl|mount|frame|weld|hose|leak|cable|wire|emergency|interlock|control|alarm|stabil|outrigger|handrail|platform|fasten|structure|safety/i.test(item.id),
+    ).map((item) => ({ id: item.id, label: item.checkLabel === item.label ? `${item.label} condition` : item.checkLabel, description: item.description }));
+    const items = [
+      { id: 'inspection_visible_damage', label: 'Visible damage and loose parts', description: '' },
+      ...safetyItems,
+    ];
+    const mobile = checklist.items.some((item) => /^(brakes|steering|tyres|tyres_or_tracks|tracks|tyres_and_wheels)$/.test(item.id));
+    if (mobile) items.push(
+      { id: 'inspection_lights', label: 'Lights, indicators and reflectors', description: '' },
+      { id: 'inspection_horn', label: 'Horn and warning devices', description: '' },
+      { id: 'inspection_visibility', label: 'Mirrors and visibility', description: '' },
+      { id: 'inspection_restraints', label: 'Seat belt and seat mounting, where fitted', description: '' },
+    );
+    items.push({ id: 'inspection_safe_operation', label: 'Controls and safe operation', description: '' });
+    return items;
+  }
+  return checklist.items
+    .filter((item) => mode === 'repaired' || !/guard|seat.?belt|reflector|mirror|horn|safety_interlock/.test(item.id))
+    .map((item) => ({
+      id: item.id,
+      label: mode === 'repaired' ? item.label : item.serviceLabel,
+      description: item.description,
+    }));
 }
+
 export function buildMaintenanceWorkSnapshot(
   checklist: MaintenanceChecklist,
   mode: MaintenanceWorkSnapshot["mode"],
@@ -171,28 +188,28 @@ export function buildMaintenanceWorkSnapshot(
     family: checklist.family,
     profileKey: checklist.profileKey,
     mode,
-    items: checklist.items
-      .filter((i) =>
-        selected.includes(
-          mode === "checked"
-            ? i.checkLabel
-            : mode === "repaired"
-              ? i.label
-              : i.serviceLabel,
-        ),
-      )
-      .map((i) => ({
-        id: i.id,
-        label:
-          mode === "checked"
-            ? i.checkLabel
-            : mode === "repaired"
-              ? i.label
-              : i.serviceLabel,
-        action: mode,
-      })),
+    items: [
+      ...checklistOptions(checklist, mode),
+      // Retain selections from older/offline clients using the original labels.
+      ...checklist.items.map((item) => ({ id: item.id, label: mode === 'checked' ? item.checkLabel : mode === 'repaired' ? item.label : item.serviceLabel })),
+    ].filter((item, index, options) => selected.includes(item.label) && options.findIndex((candidate) => candidate.id === item.id && selected.includes(candidate.label)) === index)
+      .map((item) => ({ id: item.id, label: item.label, action: mode })),
   };
 }
+export function buildCustomMaintenanceWorkSnapshot(
+  checklist: MaintenanceChecklist,
+  mode: MaintenanceWorkSnapshot['mode'],
+  labels: string[],
+): MaintenanceWorkSnapshot {
+  const unique = Array.from(new Set(labels.map((label) => label.trim()).filter(Boolean)));
+  if (unique.length > 20 || unique.some((label) => label.length > 160 || /[\r\n\u0000-\u001f]/.test(label))) {
+    throw new Error('Add up to 20 custom items, each no longer than 160 characters.');
+  }
+  return { version: checklist.version, family: checklist.family, profileKey: checklist.profileKey, mode,
+    items: unique.map((label, index) => ({ id: `custom_${index + 1}`, label, action: mode })),
+  };
+}
+
 function record(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }

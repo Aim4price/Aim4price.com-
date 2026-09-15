@@ -11,7 +11,7 @@ import {
 import styles from './DesktopServiceModal.module.css';
 import dialogStyles from './MaintenanceDialog.module.css';
 import { useMaintenanceChecklist } from '../lib/use-maintenance-checklist';
-import { checklistOptions, buildMaintenanceWorkSnapshot, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from '../lib/maintenance-catalogue';
+import { checklistOptions, buildMaintenanceWorkSnapshot, buildCustomMaintenanceWorkSnapshot, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from '../lib/maintenance-catalogue';
 
 export type DesktopServiceCompletion = {
   completedAt: string;
@@ -109,6 +109,9 @@ export default function DesktopServiceModal({
   const [company, setCompany] = useState('');
   const [mechanic, setMechanic] = useState(record.maintenanceType === 'checkup' ? record.assignedName?.trim() || '' : '');
   const [notes, setNotes] = useState('');
+  const [ownItem, setOwnItem] = useState('');
+  const [customItems, setCustomItems] = useState<string[]>([]);
+  const [inHouse, setInHouse] = useState(false);
   const [error, setError] = useState('');
   const [clientEventId] = useState(() => globalThis.crypto.randomUUID());
   const [scheduleDecision, setScheduleDecision] = useState<
@@ -140,13 +143,13 @@ export default function DesktopServiceModal({
       setError('The completion date cannot be in the future.');
       return;
     }
-    if (!selectedItems.length && !notes.trim()) {
+    if (!selectedItems.length && !customItems.length && !ownItem.trim() && !notes.trim()) {
       setError(mode === 'checked'
         ? 'Select at least one checked item or add notes/problems.'
         : 'Select at least one completed service item or add notes/problems.');
       return;
     }
-    if (mode === 'serviced' && !company.trim()) {
+    if (mode === 'serviced' && !inHouse && !company.trim()) {
       setError(`${copy.companyLabel} is required.`);
       return;
     }
@@ -170,19 +173,21 @@ export default function DesktopServiceModal({
     }
 
     try {
+      const ownWork = buildCustomMaintenanceWorkSnapshot(checklist, mode, [...customItems, ownItem]);
+      const workLabels = [...selectedItems, ...ownWork.items.map((item) => item.label)];
       await onSubmit({
         completedAt,
         completedUsage: usage,
         completedNotes: buildMaintenanceCompletionNote({
           serviceMode: mode,
-          checkedItems: mode === 'checked' ? selectedItems : [],
-          servicedItems: mode === 'serviced' ? selectedItems : [],
+          checkedItems: mode === 'checked' ? workLabels : [],
+          servicedItems: mode === 'serviced' ? workLabels : [],
           repairDetails: '',
-          serviceCompany: company,
+          serviceCompany: inHouse ? 'Owner / in-house' : company,
           mechanicName: mechanic,
           note: notes,
         }),
-        maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems)],
+        maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems), ...(ownWork.items.length ? [ownWork] : [])],
         completedBy: mechanic.trim(),
         linkToScheduledMaintenance: !standalone && scheduleDecision !== 'separate',
         clientEventId,
@@ -255,9 +260,19 @@ export default function DesktopServiceModal({
                 <span>1</span>
                 <div>
                   <h3>{mode === 'checked' ? copy.checkedHeader : copy.servicedHeader}</h3>
-                  <p>{checklist.label} · Select applicable items. Add other work in notes.</p>
+                  <p>{checklist.label} · {mode === 'checked' ? 'Inspect condition and safe operation.' : 'Select service work completed.'} Add your own items below.</p>
                 </div>
-                <strong className={styles.selectedCount}>{selectedItems.length} selected</strong>
+                <strong className={styles.selectedCount}>{selectedItems.length + customItems.length} selected</strong>
+              </div>
+              <div className={styles.customWork}>
+                <label className={styles.field}>
+                  <span>{mode === 'checked' ? 'Add your own inspection item' : 'Add your own maintenance item'}</span>
+                  <input type="text" maxLength={160} value={ownItem} onChange={(event) => setOwnItem(event.target.value)} placeholder={mode === 'checked' ? 'e.g. Checked trailer brake lights' : 'e.g. Replaced hydraulic hose'} onKeyDown={(event) => {
+                    if (event.key === 'Enter') { event.preventDefault(); if (ownItem.trim() && customItems.length < 20) { setCustomItems((items) => Array.from(new Set([...items, ownItem.trim()]))); setOwnItem(''); } }
+                  }} />
+                </label>
+                <button type="button" className={styles.cancelButton} disabled={!ownItem.trim() || customItems.length >= 20 || busy} onClick={() => { setCustomItems((items) => Array.from(new Set([...items, ownItem.trim()]))); setOwnItem(''); }}>+ Add item</button>
+                {customItems.length ? <ul className={styles.customWorkList}>{customItems.map((item) => <li key={item}><span>{item}</span><button type="button" disabled={busy} onClick={() => setCustomItems((items) => items.filter((value) => value !== item))} aria-label={`Remove ${item}`}>×</button></li>)}</ul> : null}
               </div>
               <div className={styles.checklist}>
                 {options.map((option) => {
@@ -308,7 +323,8 @@ export default function DesktopServiceModal({
                 </div>
               </div>
               <div className={styles.fieldGrid}>
-                {mode === 'serviced' ? (
+                {mode === 'serviced' ? <label className={styles.inHouseChoice}><input type="checkbox" checked={inHouse} onChange={(event) => setInHouse(event.target.checked)} />I did the work / in-house</label> : null}
+                {mode === 'serviced' && !inHouse ? (
                   <label className={styles.field}>
                     <span>{copy.companyLabel}</span>
                     <input type="text" value={company} onChange={(event) => setCompany(event.target.value)} placeholder={copy.companyPlaceholder} required />
