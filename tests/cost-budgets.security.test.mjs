@@ -251,7 +251,8 @@ test('budget overview has its own owner page and cost links preserve budget scop
   assert.match(page, /profile.accountType !== 'owner'/);
   assert.match(page, /MyInvoicesClient budgetsPage/);
   assert.match(costClient, /router.push\('\/budgets'\)/);
-  assert.match(overview, /view=costs/);
+  assert.match(overview, /BudgetCostDetails budget=\{budget\}/);
+  assert.match(overview, /aria-expanded=\{expandedId === budget.id\}/);
   assert.match(costClient, /assetId: budget.assetId \|\| 'all'/);
   assert.match(costClient, /focusedBudget && !focusedBudget.includeFuelSlipCosts && invoice.source === 'fuel_slip'/);
   assert.match(costClient, /setBudgetDeleteError\(error instanceof Error/);
