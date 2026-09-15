@@ -290,6 +290,43 @@ export default function RecentlyAdvertisedClient({
   const sourcingRequestRef = useRef(0);
 
   useEffect(() => {
+    if (!expandedAdvertId) return;
+    const details = document.getElementById(`recent-advert-${expandedAdvertId}`);
+    const card = details?.closest<HTMLElement>("[data-discovery-card]");
+    if (!card) return;
+    const background: Array<{ element: HTMLElement; inert: boolean }> = [];
+    // Blur siblings along the inline card's ancestor path, never the card itself.
+    // Portal hosts stay clear so photos, contacts and other overlays still work.
+    let current: HTMLElement | null = card;
+    while (current && current !== document.body) {
+      for (const sibling of Array.from(current.parentElement?.children ?? [])) {
+        if (!(sibling instanceof HTMLElement) || sibling === current ||
+            sibling.id === "aim4price-website-overlays" ||
+            sibling.matches("script, style, link, [data-website-overlay]") ||
+            sibling.querySelector('[role="dialog"], [role="alertdialog"]')) continue;
+        background.push({ element: sibling, inert: sibling.inert });
+        sibling.classList.add(styles.discoveryBackgroundBlur);
+        sibling.inert = true;
+      }
+      current = current.parentElement;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.key !== "Escape" || sourcingRequest) return;
+      event.preventDefault();
+      setExpandedAdvertId(null);
+      card.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')?.focus({ preventScroll: true });
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      for (const { element, inert } of background) {
+        element.classList.remove(styles.discoveryBackgroundBlur);
+        element.inert = inert;
+      }
+    };
+  }, [expandedAdvertId, sourcingRequest]);
+
+  useEffect(() => {
     const timer = window.setTimeout(() => {
       setSearch(searchInput.trim());
       setCurrentPage(1);
@@ -708,10 +745,11 @@ export default function RecentlyAdvertisedClient({
       return (
         <article
           key={advert.id}
+          data-discovery-card
           className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard}`}
         >
           <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
-            <div className={styles.assetIdentity}>
+            <div className={`${styles.assetIdentity} ${isExpanded ? styles.discoverySummaryBlur : ""}`}>
               <div className={`${mobileStyles.overviewCardLabels} ${styles.discoveryCardLabels}`}>
                 <span className={mobileStyles.overviewType}>{clean(advert.type) || "Asset"}</span>
                 <span className={styles.discoveryLocationPill}>{clean(advert.province) || "Location not saved"}</span>
@@ -746,11 +784,12 @@ export default function RecentlyAdvertisedClient({
     return (
       <article
         key={advert.id}
+          data-discovery-card
         className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadStyles.leadThreadNew} ${isExpanded ? leadStyles.leadThreadOpen : ""}`}
       >
         <div className={leadStyles.clientPanel}>
           <div className={leadStyles.clientPanelHeader}>
-            <div className={leadStyles.clientIdentity}>
+            <div className={`${leadStyles.clientIdentity} ${isExpanded ? styles.discoverySummaryBlur : ""}`}>
               <h3 className={styles.recentAdvertCardTitle} title={advert.title}>{advert.title}</h3>
               <strong className={leadStyles.leadAssetName}>{advertMeta(advert)}</strong>
               <span className={leadStyles.clientKicker}>

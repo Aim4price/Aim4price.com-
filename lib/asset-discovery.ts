@@ -351,6 +351,7 @@ const SAFE_LICENSE_RENEWAL_DATE_SQL = `(case
   else null
 end)`;
 const LICENSING_DISCOVERY_ASSET_SQL = `
+  coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active' and
   ${SAFE_LICENSE_RENEWAL_DATE_SQL} is not null
 `;
 const PROVINCE_ABBREVIATION_SQL = `case lower(nullif(trim(owner.province), ''))
@@ -367,6 +368,7 @@ const PROVINCE_ABBREVIATION_SQL = `case lower(nullif(trim(owner.province), ''))
   else coalesce(owner.province, '')
 end`;
 const DISCOVERY_ELIGIBLE_ASSET_SQL = `
+  coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active' and
   (
     lower(coalesce(asset.selected_method, '')) = 'aim4price'
     or asset.valuation_run_id is not null
@@ -1256,6 +1258,7 @@ function baseAssetWhere(input: {
     "owner.account_type = 'owner'",
     "owner.account_status = 'active'",
     "owner.discovery_participation_enabled = true",
+    "coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'",
     "asset.user_id <> $1",
     `(${licensingViewer ? LICENSING_DISCOVERY_ASSET_SQL : DISCOVERY_ELIGIBLE_ASSET_SQL})`,
     `${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
@@ -1362,6 +1365,7 @@ function basePublicAssetWhere(input: {
     "owner.account_type = 'owner'",
     "owner.account_status = 'active'",
     "owner.discovery_participation_enabled = true",
+    "coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'",
     "asset.equipment_family_id is not null",
     "family.id is not null",
     "lower(coalesce(asset.selected_method, '')) <> 'manual'",

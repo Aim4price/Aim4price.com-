@@ -3167,3 +3167,37 @@
   background: #dcefe3 !important;
 }
 .discoveryOpenButton:focus-visible { outline: 3px solid #4c8a6e; outline-offset: 3px; }
+
+/* Shared Discovery details: readable values and a quieter label hierarchy. */
+.discoveryLeadAssetCard.discoveryLeadAssetCard {
+  padding: 1.4rem;
+  margin-top: 1.1rem;
+}
+.discoveryLeadAssetCard .discoveryLeadAssetBody { gap: 1.25rem; }
+.discoveryLeadAssetCard .discoveryDetailsPanel { padding: 1rem; }
+.discoveryLeadAssetCard .discoveryDetailGroup { gap: .7rem; }
+.discoveryLeadAssetCard .discoveryDetailRow {
+  height: auto !important;
+  min-height: 3.2rem !important;
+}
+.discoveryLeadAssetCard .discoveryDetailRow > span,
+.discoveryLeadAssetCard .discoveryDetailRow > strong {
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  line-height: 1.5;
+  padding: .8rem 1rem;
+}
+.discoveryLeadAssetCard .discoveryDetailRow > span {
+  font-weight: 600;
+  color: #607583;
+  font-size: .75rem;
+}
+.discoveryLeadAssetCard .discoveryDetailRow > strong { font-weight: 600; }
+.discoveryLeadAssetCard .discoveryAccessNote { margin-top: .8rem; padding: 1rem; line-height: 1.6; }
+.recentAdvertByline { line-height: 1.6; font-weight: 500; }
+.recentAdvertByline strong { font-weight: 600; }
+.recentAdvertDetailGrid { gap: .85rem; }
+.recentAdvertDetailGrid dt { font-weight: 500; }
+.recentAdvertDetailGrid dd { font-weight: 600; line-height: 1.5; }
