@@ -31,6 +31,8 @@ const records = assets.map((asset, i) => ({ ...times, id: asset.id, userId: 'tes
 const storages = assets.map((asset, i) => ({ ...times, id: asset.id, name: name(i), fuelType: 'diesel', capacityLitres: 1000, currentLitres: 500, stockPercent: 50, reorderLevelLitres: 100, locationLabel: '', notes: '', dipstickNote: '', dipstickNoteUpdatedAtIso: null, status: 'active', publicFuelStorageCode: '', pinEnabled: false, hasPin: false, pinUpdatedAtIso: null }));
 const slips = assets.map((asset, i) => ({ ...times, id: asset.id, sourceType: 'fuel_slip', sourceLabel: 'Fuel Slip', targetType: 'asset', assetId: asset.id, assetTitle: name(i), storageId: '', storageName: '', supplierName: name(i), slipNumber: name(i), transactionNumber: '', documentDate: '2026-09-01', documentTime: '12:00', fuelType: 'diesel', litres: 10, pricePerLitre: 20, totalAmount: 200, vatAmount: 0, vatIncluded: true, vatRate: 15, paymentMethod: '', cardType: '', cardNumberMasked: '', cardLast4: '', operatorName: '', activityText: '', workAreaText: '', note: '', extractionStatus: 'manual', ocrConfidence: null, reviewRequired: false, rawExtractedText: '', extractionWarnings: [], workUseExcluded: false, workUseExclusionReason: '', recordStatus: 'active', voidedAtIso: null, voidedByName: '', voidReason: '' }));
 const scenarios = [
+ ['add-asset-choice','register&registerId=test',['Add Asset']], ['manage-asset-choice','register',['@asset-manage']],
+ ['manage-umbrella-choice','group-menu',[]], ['share-destination-choice','share-destination',[]], ['share-inside-choice','share-inside',[]],
  ['map','map',['Download']], ['register','register',['Download']],
  ['registers','registers',['Download']], ['budgets','budgets',['Download']],
  ['costs','costs',['Download']], ['maintenance-scope','maintenance',['Download']],
@@ -54,11 +56,11 @@ async function click(page, text) {
  }
 
  await page.waitForFunction(text => {
-   const roots=[...document.querySelectorAll('[role="dialog"], [data-download-dialog="true"]')].filter(e=>e.getBoundingClientRect().width);
+   const roots=[...document.querySelectorAll('[role="dialog"], :is([data-download-dialog="true"],[data-choice-dialog="true"])')].filter(e=>e.getBoundingClientRect().width);
    return [...(roots.at(-1)||document).querySelectorAll('button')].some(e=>e.textContent.trim().startsWith(text)&&!e.disabled&&Object.keys(e).some(key=>key.startsWith('__reactProps$')));
  }, {timeout:15000}, text);
  await page.evaluate(text => {
-   const roots = [...document.querySelectorAll('[role="dialog"], [data-download-dialog="true"]')].filter(e=>e.getBoundingClientRect().width);
+   const roots = [...document.querySelectorAll('[role="dialog"], :is([data-download-dialog="true"],[data-choice-dialog="true"])')].filter(e=>e.getBoundingClientRect().width);
    const root = roots.at(-1) || document;
    const button = [...root.querySelectorAll('button')].find(e=>e.textContent.trim().startsWith(text));
    if(!button) throw new Error(`Missing button ${text}`);
@@ -78,7 +80,7 @@ async function appearance(page, selector, original=false) {
  },original);
 }
 async function details(page, original=false) {
- return page.$eval(original?'[data-original-report]':'[data-download-dialog="true"]',(root,original)=>{
+ return page.$eval(original?'[data-original-report]':':is([data-download-dialog="true"],[data-choice-dialog="true"])',(root,original)=>{
   const read=(el,keys)=>Object.fromEntries(keys.map(key=>[key,getComputedStyle(el)[key].replace(/ 0%/g,'').replace(/ 100%/g,'')]));
   const header=root.querySelector(original?'header':'[data-download-header]');
   const cards=[...root.querySelectorAll(original?'button[aria-pressed]':'[data-download-option]')];
@@ -87,6 +89,8 @@ async function details(page, original=false) {
    backdrop:read(original?root.parentElement:root.closest('[class*="ReportDownload_backdrop"]'),['backgroundColor','backdropFilter']),
    header:read(header,['paddingBottom','borderBottomWidth','borderBottomColor','columnGap']),
    cards:cards.map(card=>({
+    copyGap:Math.round((card.querySelector('strong').getBoundingClientRect().left-(card.querySelector('[data-download-icon]')||card.firstElementChild).getBoundingClientRect().right)*10)/10,
+    danger:card.hasAttribute('data-choice-danger'),
     selected:card.getAttribute('aria-pressed')==='true',
     style:read(card,['padding','borderRadius','columnGap','backgroundImage','borderTopColor']),
     title:read(card.querySelector('strong'),['fontSize','fontWeight','lineHeight','color','letterSpacing']),
@@ -97,6 +101,7 @@ async function details(page, original=false) {
    footer:footer?read(footer,['justifyContent','backgroundColor','borderTopWidth']):null,
    buttons:footer?[...footer.querySelectorAll('button,a')].map(button=>read(button,['minWidth','minHeight','borderRadius','fontSize','fontWeight','lineHeight','letterSpacing'])):[],
    secondary:footer?[...footer.querySelectorAll('button,a')].filter(button=>!button.hasAttribute('data-download-primary')).map(button=>read(button,['color','backgroundColor','backgroundImage','borderTopColor','boxShadow'])):[],
+   choice:root.hasAttribute('data-choice-dialog'),
    overflow:root.scrollWidth>root.clientWidth+1,
    overflowingCopy:[...root.querySelectorAll('[data-download-option] strong,[data-download-option] small')].filter(el=>el.scrollWidth>el.clientWidth+1).map(el=>el.textContent),
   };
@@ -114,16 +119,23 @@ async function hoverStyle(page, selector) {
 function verifyDetails(actual, reference, name) {
  // All page CSS is loaded in this fixture; legacy global overlay rules can alter the unscoped reference.
  assert.deepEqual(actual.backdrop,{backgroundColor:'rgba(12, 24, 35, 0.42)',backdropFilter:'blur(12px) saturate(0.9)'},`${name} canonical Asset Map backdrop`);
- assert.deepEqual(actual.header,reference.header,`${name} header divider and spacing`);
+ // CSS zoom rasterizes a 1px border to a device pixel (0.8333 CSS px at 120%).
+ assert.ok(Math.abs(parseFloat(actual.header.borderBottomWidth)-parseFloat(reference.header.borderBottomWidth))<.2,`${name} header divider width`);
+ assert.deepEqual({...actual.header,borderBottomWidth:reference.header.borderBottomWidth},reference.header,`${name} header divider and spacing`);
  assert.equal(actual.overflow,false,`${name} horizontal overflow`);
  assert.deepEqual(actual.overflowingCopy,[],`${name} concise card copy fits without truncation`);
  for(const [index,card] of actual.cards.entries()) {
-  const expected=reference.cards.find(option=>option.selected===card.selected);
+  const base=reference.cards.find(option=>option.selected===card.selected);
+  const expected=card.danger?{...base,style:{...base.style,backgroundImage:card.style.backgroundImage,borderTopColor:card.style.borderTopColor},title:{...base.title,color:card.title.color}}:base;
   assert.deepEqual(card.style,expected.style,`${name} card ${index+1} spacing and selected background`);
   assert.deepEqual(card.title,expected.title,`${name} card ${index+1} title`);
   if(card.small)assert.deepEqual(card.small,expected.small,`${name} card ${index+1} description`);
   assert.deepEqual(card.icon,expected.icon,`${name} card ${index+1} icon`);
   assert.deepEqual(card.iconBounds,expected.iconBounds,`${name} card ${index+1} rendered icon bounds`);
+ }
+ if(actual.choice){
+  for(const card of actual.cards)assert.ok(Math.abs(card.copyGap-reference.cards[0].copyGap)<.2,`${name} icon-to-text spacing`);
+  if(!actual.footer)return;
  }
  assert.ok(actual.footer,`${name} footer exists`);
  assert.deepEqual(actual.footer,reference.footer,`${name} footer layout`);
@@ -187,10 +199,10 @@ function verifyDetails(actual, reference, name) {
         try {
           await page.goto(`http://localhost:3036/report-validation?mode=${mode}`,{waitUntil:'networkidle2',timeout:120000});
           for(const text of clicks)await click(page,text);
-          await page.waitForSelector('[data-download-dialog="true"]',{timeout:15000});
+          await page.waitForSelector(':is([data-download-dialog="true"],[data-choice-dialog="true"])',{timeout:15000});
           if(name==='dealer-maintenance')await page.waitForSelector('[data-download-option]',{timeout:15000});
           await page.evaluate(()=>document.activeElement?.blur());await page.mouse.move(0,0);await delay(200);
-          const actual=await appearance(page,'[data-download-dialog="true"]');
+          const actual=await appearance(page,':is([data-download-dialog="true"],[data-choice-dialog="true"])');
           const expected={...reference};
           if(!actual.card){delete expected.card;delete expected.strong;delete expected.small;delete expected.icon;}
           if(!actual.small)delete expected.small;
@@ -200,7 +212,7 @@ function verifyDetails(actual, reference, name) {
           await page.screenshot({path:path.join(output,`${name}-${width}.png`)});
           assert.deepEqual(actual,expected,`${name} rendered style parity`);
           verifyDetails(await details(page),referenceDetails,name);
-          const hovered=await hoverStyle(page,'[data-download-dialog="true"] [data-download-option]:not(:disabled)');
+          const hovered=await hoverStyle(page,':is([data-download-dialog="true"],[data-choice-dialog="true"]) [data-download-option]:not(:disabled)');
           if(hovered)assert.deepEqual(hovered,referenceHover,`${name} option hover`);
           assert.deepEqual(errors,[],`${name} runtime errors`);
           console.log(`PASS ${name} ${width}px`);
