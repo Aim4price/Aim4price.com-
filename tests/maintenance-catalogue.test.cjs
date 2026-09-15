@@ -134,11 +134,34 @@ test('actual maintenance SQL saves snapshots, preserves them on retry and leaves
     await assert.rejects(mod.recordStandaloneAssetMaintenanceCompletion('other-owner', input), /ASSET_NOT_FOUND/);
     const scheduledId = '33333333-3333-4333-8333-333333333333';
     await pg.query(`insert into asset_maintenance_records(id,user_id,asset_register_item_id,maintenance_type,trigger_type,status,title,due_date,recurring_enabled,recurring_interval_value,recurring_interval_unit) values($1,$2,$3,'checkup','date','upcoming','Check',current_date,true,1,'months')`, [scheduledId, owner, assetId]);
-    const result = await mod.completeAssetMaintenanceRecord(owner, scheduledId, { completedNotes: input.completedNotes, completedBy: 'Tester', maintenanceWork: work });
+    const result = await mod.completeAssetMaintenanceRecord(owner, scheduledId, { completedNotes: input.completedNotes, completedBy: 'Tester', maintenanceWork: work, continueSchedule: true });
     assert.deepEqual(result.completed.maintenanceWork, work); assert.ok(result.nextRecord); assert.equal(result.nextRecord.maintenanceWork, null);
-    const again = await mod.completeAssetMaintenanceRecord(owner, scheduledId, { maintenanceWork: [] });
+    const again = await mod.completeAssetMaintenanceRecord(owner, scheduledId, { maintenanceWork: [], continueSchedule: false });
     assert.deepEqual(again.completed.maintenanceWork, work);
     assert.equal((await pg.query('select count(*)::int as n from asset_maintenance_records where generated_from_maintenance_id=$1', [scheduledId])).rows[0].n, 1);
+    const endedId = '44444444-4444-4444-8444-444444444444';
+    await pg.query(`insert into asset_maintenance_records(id,user_id,asset_register_item_id,maintenance_type,trigger_type,status,title,due_date,recurring_enabled,recurring_interval_value,recurring_interval_unit) values($1,$2,$3,'checkup','date','upcoming','Check',current_date,true,1,'months')`, [endedId, owner, assetId]);
+    await assert.rejects(mod.completeAssetMaintenanceRecord(owner, endedId, { continueSchedule: 'false' }), /COMPLETION_SCHEDULE_CHOICE_INVALID/);
+    await assert.rejects(mod.completeAssetMaintenanceRecord('other-owner', endedId, { continueSchedule: false }), /MAINTENANCE_NOT_FOUND/);
+    const customWork = JSON.parse(JSON.stringify([shared.buildCustomMaintenanceWorkSnapshot(get({equipmentFamilyId:38}), 'checked', ['Checked custom guard'])]));
+    const historical = await mod.recordStandaloneAssetMaintenanceCompletion(owner, { ...input, sourceScanEventId: '55555555-5555-4555-8555-555555555555', completedAt: '2026-01-10', completedUsage: 50, maintenanceWork: customWork });
+    assert.equal(historical.completedUsage, 50);
+    const unchanged = await mod.getAssetMaintenanceRecordById(owner, endedId);
+    assert.equal(unchanged.status, 'upcoming');
+    assert.equal(unchanged.recurringEnabled, true);
+    const ended = await mod.completeAssetMaintenanceRecord(owner, endedId, { completedNotes: input.completedNotes, completedBy: 'Tester', maintenanceWork: customWork, continueSchedule: false });
+    assert.equal(ended.completed.status, 'done');
+    assert.equal(ended.completed.recurringEnabled, false);
+    assert.equal(ended.nextRecord, null);
+    assert.deepEqual(ended.completed.maintenanceWork, customWork);
+    // A retry from an older client, or one with a changed choice, must not restart the schedule.
+    for (const retryInput of [{}, { continueSchedule: true }]) {
+      const replay = await mod.completeAssetMaintenanceRecord(owner, endedId, retryInput);
+      assert.equal(replay.nextRecord, null);
+      assert.deepEqual(replay.completed.maintenanceWork, customWork);
+    }
+    assert.equal((await pg.query('select count(*)::int as n from asset_maintenance_records where generated_from_maintenance_id=$1', [endedId])).rows[0].n, 0);
+
   } finally { await pg.close(); }
 });
 

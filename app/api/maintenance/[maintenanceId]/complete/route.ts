@@ -113,6 +113,7 @@ function parseFilters(request: NextRequest): AssetMaintenanceListFilters {
 function errorMessage(error: unknown): string {
   const message = typeof error === 'object' && error !== null ? (error as ErrorWithMessage).message : '';
 
+  if (message === 'COMPLETION_SCHEDULE_CHOICE_INVALID') return 'Choose whether to continue or end the schedule.';
   if (message === 'MAINTENANCE_NOT_FOUND') return 'The maintenance record could not be found.';
   if (message === 'COMPLETION_DATE_INVALID') return 'Enter a valid service completion date.';
   if (message === 'COMPLETION_DATE_IN_FUTURE') return 'The service completion date cannot be in the future.';

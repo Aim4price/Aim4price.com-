@@ -141,6 +141,7 @@ export type AssetMaintenanceDraftInput = {
 };
 
 export type AssetMaintenanceCompleteInput = {
+  continueSchedule?: unknown;
   completedAt?: unknown;
   completedUsage?: unknown;
   completedNotes?: unknown;
@@ -1962,6 +1963,7 @@ export async function completeAssetMaintenanceRecord(
   input: AssetMaintenanceCompleteInput = {},
   guard: AssetMaintenanceCompletionGuard = {},
 ): Promise<{ completed: AssetMaintenanceRecord; nextRecord: AssetMaintenanceRecord | null }> {
+  if (input.continueSchedule !== undefined && typeof input.continueSchedule !== 'boolean') throw new Error('COMPLETION_SCHEDULE_CHOICE_INVALID');
   await ensureAssetMaintenanceTables();
   const client = await getDb().connect();
 
@@ -2044,6 +2046,7 @@ export async function completeAssetMaintenanceRecord(
           update public.asset_maintenance_records
           set
             status = 'done',
+            recurring_enabled = case when $9::boolean = false then false else recurring_enabled end,
             completed_at = $3::timestamptz,
             completed_usage = $4,
             completed_notes = $5,
@@ -2065,6 +2068,7 @@ export async function completeAssetMaintenanceRecord(
           completedBy,
           sourceScanEventId || null,
           JSON.stringify(maintenanceWork),
+          input.continueSchedule !== false,
         ],
       );
 
