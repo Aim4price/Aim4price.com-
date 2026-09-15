@@ -30,3 +30,14 @@ test('urgency groups precede history, preserve stable order and do not mutate re
   assert.equal(scope.arrangeMaintenanceTimeline(records).map(r => r.id).join(','), 'overdue,due,soon,upcoming,upcoming2,done,cancelled');
   assert.equal(records[0].id, 'done');
 });
+
+test('generic recurring titles describe the interval while preserving custom titles', () => {
+  const recurring = { ...base, recurringEnabled: true, recurringIntervalValue: 250, recurringIntervalUnit: 'hours' };
+  assert.equal(scope.maintenanceDisplayTitle(recurring), '250-hour service');
+  assert.equal(scope.maintenanceDisplayTitle({ ...recurring, title: 'Inspect hydraulic pump' }), 'Inspect hydraulic pump');
+  assert.equal(scope.maintenanceDisplayTitle({ ...recurring, recurringIntervalUnit: 'months', recurringIntervalValue: 6 }), '6-month service');
+});
+test('asset titles hide only an unknown-year prefix and preserve real years', () => {
+  assert.equal(scope.cleanMaintenanceAssetTitle('Year Unknown Zimmatic 6-Tower'), 'Zimmatic 6-Tower');
+  assert.equal(scope.cleanMaintenanceAssetTitle('2017 John Deere 5075E'), '2017 John Deere 5075E');
+});
