@@ -7572,3 +7572,10 @@
 }
 .slipManageModal .accountFuelClose svg { width: 1rem; height: 1rem; }
 .accountFuelModal.slipManageModal .slipManageOptions button { min-height: 3.6rem !important; }
+
+.slipDownloadBody { display: grid; gap: 1rem; padding: 1.2rem 0; }
+.slipDownloadPanel { padding: 1rem; border: 1px solid #d1e2ed; border-radius: 1rem; background: linear-gradient(135deg, #f0f6f3, #fff); }
+.slipDownloadFields { display: grid; gap: 1rem; }
+.slipDownloadSummary { margin: 0; color: #60756d; font-size: .9rem; }
+.accountFuelModal .modalFooter.slipDownloadFooter { justify-content: space-between !important; gap: 1rem !important; }
+.slipDownloadActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .65rem; }
