@@ -22458,7 +22458,7 @@ export default function AssetRegisterClient({
                   <>
                     {exportStep === 'pdf-report' ? (
                       <>
-                        <div className={styles.pdfReportSelector}>
+                        <div className={styles.pdfReportSelector} data-download-report-selector="true">
                           <div className={styles.pdfReportTopChoices} data-download-grid="true">
                             <button
                               type="button"
@@ -22484,8 +22484,8 @@ export default function AssetRegisterClient({
                             </button>
                           </div>
 
-                          <div className={styles.pdfReportChoices}>
-                            <CompactChoicePages reservedHeight={410} rowHeight={58} maxRows={4}>
+                          <div className={styles.pdfReportChoices} data-download-quick-reports="true">
+                            <CompactChoicePages reservedHeight={410} rowHeight={110} maxRows={2}>
                             {quickPdfReportOptions.map((option) => (
                               <button
                                 key={option.value}
