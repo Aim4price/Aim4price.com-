@@ -1,5 +1,7 @@
 'use client';
 
+import BudgetTracking from '../budgets/BudgetTracking';
+import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
 import AssetSerialNumber from '../../components/AssetSerialNumber';
@@ -174,6 +176,7 @@ type DealerDefaults = {
 };
 
 type MyInvoicesClientProps = {
+  budgetsPage?: boolean;
   accountantShareId?: string;
   accountantRegisterId?: string;
   dealerMode?: boolean;
@@ -976,6 +979,7 @@ function withAccountantShare(url: string, accountantShareId?: string, accountant
 }
 
 export default function MyInvoicesClient({
+  budgetsPage = false,
   accountantShareId,
   accountantRegisterId,
   dealerMode = false,
@@ -985,6 +989,7 @@ export default function MyInvoicesClient({
   initialReturnTo = '',
   initialDealerDefaults = { supplierName: '', vatNumber: '', address: '' },
 }: MyInvoicesClientProps = {}) {
+  const router = useRouter();
   const routeSearchParams = useSearchParams();
   const apiRoot = dealerMode
       ? '/api/dealer/cost'
@@ -1119,6 +1124,7 @@ export default function MyInvoicesClient({
     let cancelled = false;
 
     async function loadInvoices() {
+      if (budgetsPage) { setIsLoading(false); return; }
       setIsLoading(true);
 
       try {
@@ -1141,7 +1147,7 @@ export default function MyInvoicesClient({
     return () => {
       cancelled = true;
     };
-  }, [activeFilters.ownerId, activeFilters.assetId, activeFilters.year, activeFilters.month]);
+  }, [budgetsPage, activeFilters.ownerId, activeFilters.assetId, activeFilters.year, activeFilters.month]);
 
   useEffect(() => {
     if (!canManageBudgets) {
@@ -1202,7 +1208,11 @@ export default function MyInvoicesClient({
     budgetManagerReturnFocusRef.current = budget.id;
     setBudgetManagerNotice(null);
     setBudgetManagerSearch('');
-    setBudgetManagerOpen(true);
+    if (!budgetsPage && routeSearchParams.get('view') !== 'costs') {
+      router.replace(`/budgets?budgetId=${encodeURIComponent(budget.id)}`);
+      return;
+    }
+    setBudgetManagerOpen(false);
     setBudgetManagerView('list');
     setFocusedBudgetId(budget.id);
     setActiveFilters(filters);
@@ -1223,13 +1233,14 @@ export default function MyInvoicesClient({
     let cancelled = false;
 
     async function loadCaptureRequests() {
+      if (budgetsPage) return;
       const requests = await fetchCaptureRequests();
       if (!cancelled && requests) setCaptureRequests(requests);
     }
 
     void loadCaptureRequests();
     return () => { cancelled = true; };
-  }, [accountantRegisterId, accountantShareId, captureApiRoot]);
+  }, [budgetsPage, accountantRegisterId, accountantShareId, captureApiRoot]);
 
   useEffect(() => {
     if (!canManageInvoiceDropCodes) return;
@@ -1645,6 +1656,20 @@ export default function MyInvoicesClient({
     };
   }, [modalOpen]);
 
+  const budgetPageHadDialog = useRef(false);
+  useEffect(() => {
+    if (!budgetsPage) return;
+    if (budgetModalOpen || budgetDeleteCandidate) { budgetPageHadDialog.current = true; return; }
+    if (!budgetPageHadDialog.current) return;
+    budgetPageHadDialog.current = false;
+    const frame = window.requestAnimationFrame(() => {
+      const key = budgetManagerReturnFocusRef.current.replace(/^delete:/, '') || 'add';
+      const controls = Array.from(pageShellRef.current?.querySelectorAll<HTMLElement>('[data-budget-trigger]') ?? []);
+      (controls.find(node => node.dataset.budgetTrigger === key) ?? controls[0])?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [budgetsPage, budgetModalOpen, budgetDeleteCandidate]);
+
   useEffect(() => {
     if (!budgetManagerOpen || budgetModalOpen || budgetDeleteCandidate) return undefined;
     const dialog = budgetManagerDialogRef.current;
@@ -2037,6 +2062,7 @@ export default function MyInvoicesClient({
   }
 
   function openBudgetManager() {
+    if (!dealerMode && !accountantShareId && !accountantRegisterId) { router.push('/budgets'); return; }
     setBudgetManagerView('choice');
     budgetManagerReturnFocusRef.current = '';
     setBudgetManagerNotice(null);
@@ -3287,6 +3313,13 @@ export default function MyInvoicesClient({
       <section ref={pageShellRef} className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
+        {budgetsPage && canManageBudgets ? <BudgetTracking
+          budgets={costBudgets} loading={budgetsLoading} error={budgetLoadError}
+          onRetry={() => { setBudgetsLoading(true); setBudgetLoadError(''); void reloadBudgets().catch(error => setBudgetLoadError(error instanceof Error ? error.message : 'Budgets could not be loaded.')).finally(() => setBudgetsLoading(false)); }}
+          onAdd={openCreateBudget}
+          onEdit={id => { const budget = costBudgets.find(item => item.id === id); if (budget) openEditBudget(budget); }}
+          onDelete={id => { const budget = costBudgets.find(item => item.id === id); if (budget) askToDeleteBudget(budget); }}
+        /> : <>
         {dealerMode ? (
           <WorkspaceTitlePanel
             title="CLIENT ASSET COSTS"
@@ -3531,6 +3564,7 @@ export default function MyInvoicesClient({
             </nav>
           ) : null}
         </section>
+        </>}
       </section>
 
       {canManageInvoiceDropCodes ? (
@@ -3665,7 +3699,7 @@ export default function MyInvoicesClient({
                         ? 'Over budget'
                         : budget.status === 'warning'
                           ? 'Warning'
-                          : 'On track';
+                          : 'Within budget';
                       return (
                         <article
                           id={`cost-budget-${budget.id}`}

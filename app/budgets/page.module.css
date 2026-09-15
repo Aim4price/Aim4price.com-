@@ -1,0 +1,42 @@
+.page { display: grid; gap: 24px; }
+.page svg { width: 22px; height: 22px; flex-shrink: 0; }
+.page a { text-decoration: none; }
+.alertButton { background: #fff8eb; border: 1px solid #edbd79; color: #86501b; }
+.alertButton[aria-pressed=true] { background: #ffebc7; box-shadow: 0 0 0 2px #edbd79; }
+.searchRow { display: grid; grid-template-columns: minmax(0,1fr) 220px; gap: 22px; }
+.searchRow input { min-width: 0; padding: 22px; border: 1px solid #bdd2e0; border-radius: 22px; font: inherit; background: white; color: #173c32; }
+.filterButton, .cardActions button, .cardActions a { display: flex; justify-content: center; align-items: center; gap: 12px; border: 1px solid #a7ddc2; border-radius: 20px; padding: 18px 24px; background: #f1fbf6; color: #14583f; font: inherit; font-weight: 700; cursor: pointer; }
+.results, .progressLabels, .meta { display: flex; justify-content: space-between; gap: 16px; color: #657b72; }
+.results button { border: 0; background: transparent; color: #14583f; font: inherit; cursor: pointer; text-decoration: underline; }
+.card { --budget-color: #197454; padding: 28px; border-radius: 28px; border: 1px solid #bfd5df; background: linear-gradient(120deg,#fff,#f6faf8); border-top: 3px solid var(--budget-color); box-shadow: 0 14px 30px #173c320a; }
+.card[data-status=warning] { --budget-color: #a76b12; }
+.card[data-status=over_budget] { --budget-color: #b44242; }
+.cardHeading { display: flex; justify-content: space-between; align-items: start; gap: 20px; margin-bottom: 24px; }
+.cardHeading h2 { font-size: 27px; line-height: 1.3; margin: 0; color: #103f35; overflow-wrap: anywhere; }
+.cardHeading p { margin: 8px 0 0; color: #657b72; }
+.status { color: var(--budget-color); font-weight: 700; white-space: nowrap; }
+.cardBody { display: grid; grid-template-columns: minmax(0,1fr) 420px; align-items: center; gap: 28px; }
+.metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 22px; margin: 0 0 24px; }
+.metrics dt { color: #657b72; font-size: 15px; margin-bottom: 7px; }
+.metrics dd { margin: 0; font-size: 25px; font-weight: 750; color: #173c32; overflow-wrap: anywhere; }
+.metrics div:last-child dd { color: var(--budget-color); }
+.track { position: relative; height: 12px; background: #e5ecee; border-radius: 20px; overflow: hidden; }
+.track span { display: block; height: 100%; background: var(--budget-color); border-radius: inherit; }
+.track i { position: absolute; top: 0; height: 100%; width: 2px; background: #6c7e76; }
+.progressLabels { margin-top: 10px; font-size: 15px; }
+.progressLabels strong { color: var(--budget-color); }
+.cardActions { white-space: nowrap; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.cardActions a { border-color: #a9c9ed; background: #f2f8ff; color: #1d486f; }
+.meta { font-size: 14px; border-top: 1px solid #dce8e2; padding-top: 16px; margin-top: 22px; }
+.overlay { position: fixed; inset: 0; z-index: 1500; display: grid; place-items: center; padding: 24px; background: #102f3266; backdrop-filter: blur(12px); }
+.dialog { width: min(700px,100%); max-height: 90dvh; overflow: auto; background: linear-gradient(#fff,#f5faf7); padding: 32px; border: 1px solid #d6e4dd; border-radius: 28px; box-shadow: 0 24px 70px #12352c33; }
+.dialog header { display: flex; align-items: start; justify-content: space-between; gap: 24px; }
+.dialog h2 { margin: 0; font-size: 30px; color: #173c32; }
+.dialog p { color: #657b72; }
+.dialog button { font: inherit; font-weight: 700; padding: 16px 22px; border-radius: 16px; border: 1px solid #bfd7ca; background: #eef8f2; color: #173c32; cursor: pointer; }
+.dialogActions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+.dialog .deleteButton { color: #ad3838; border-color: #edbbbb; background: #fff5f5; }
+.page button:disabled { opacity: .55; cursor: not-allowed; }
+.page :is(button,a,input):focus-visible, .dialog button:focus-visible { outline: 3px solid #70b797; outline-offset: 3px; }
+@media(max-width: 900px) { .cardBody { grid-template-columns: 1fr; } .cardActions { justify-self: end; } }
+@media(max-width: 600px) { .searchRow { grid-template-columns: minmax(0,1fr) auto; gap: 10px; } .searchRow input { padding: 16px; } .filterButton { padding: 14px; } .card { padding: 20px; } .cardHeading { flex-direction: column; gap: 10px; } .cardHeading h2 { font-size: 22px; } .metrics { grid-template-columns: 1fr; gap: 15px; } .metrics div { display: flex; justify-content: space-between; gap: 16px; } .metrics dd { font-size: 21px; } .cardActions { justify-self: stretch; } .cardActions a,.cardActions button { padding: 15px 12px; } .dialog { padding: 24px; } .dialogActions { grid-template-columns: 1fr; } }
