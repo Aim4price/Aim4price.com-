@@ -1569,7 +1569,7 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'asset-picker' ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
+        <div className={`${styles.modalBackdrop} ${pickerStyles.overlay}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
           <section className={`${styles.assetModal} ${pickerStyles.modal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <header className={styles.modalHeader} data-asset-choice-header="true">
               <div>
@@ -2014,9 +2014,9 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'download' && downloadStep !== 'scope' ? (
-        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
+        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop} ${downloadStep === 'asset' ? pickerStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
           <section
-            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${dialogStyles.dialog} ${dialogStyles.compactDownload} ${downloadStep === 'asset' ? pickerStyles.modal : ''}`}
+            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${downloadStep === 'asset' ? pickerStyles.modal : `${dialogStyles.dialog} ${dialogStyles.compactDownload}`} `}
             data-asset-choice-surface={downloadStep === 'asset' ? 'true' : undefined}
             data-asset-choice-modal={downloadStep === 'asset' ? 'true' : undefined}
           >

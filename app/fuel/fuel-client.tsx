@@ -4124,8 +4124,8 @@ export default function FuelClient({
                           <AssetSerialNumber value={asset.serialNumber} />
                         </span>
                         <span className={styles.assetValue} data-asset-choice-value="true">
-                          <span className={`${styles.exclusionChoice} ${isSelected ? styles.exclusionChoiceSelected : ''}`}>
-                            <span className={styles.exclusionChoiceBox} aria-hidden="true">{isSelected ? '✓' : ''}</span>
+                          <span className={`${pickerStyles.select} ${pickerStyles.multi}`}>
+                            <i aria-hidden="true">{isSelected ? '✓' : ''}</i>
                             <strong>{isSelected ? 'Selected' : asset.workUseExcluded ? 'Include again' : 'Exclude'}</strong>
                           </span>
                         </span>
