@@ -54,26 +54,51 @@ async function main() {
    if(request.resourceType()==='media')return request.abort();request.continue();
   });
   const click=async text=>{assert.ok(await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===t&&!b.disabled);if(!b)return false;b.click();return true;},text),`Missing button: ${text}`)};
+  const choose=async text=>{
+   await page.click('[role="dialog"] [role="combobox"]');
+   await page.waitForSelector('[role="option"]',{visible:true});
+   assert.ok(await page.evaluate(t=>{const option=[...document.querySelectorAll('[role="option"]')].find(e=>e.textContent.replace('✓','').trim()===t);if(!option)return false;option.click();return true;},text));
+  };
   for(const [route,width] of [['/filter-validation',1440],['/owner-app/filter-validation',430]]) {
    await page.setViewport({width,height:900});await page.goto('http://127.0.0.1:3030'+route,{waitUntil:'networkidle0',timeout:120000});
-   await click('Filter');await page.waitForSelector('[role="dialog"] select');
-   assert.equal(await page.$$eval('[role="dialog"] select',es=>es.length),1);
-   await page.type('[role="dialog"] input','Tractor');await page.select('[role="dialog"] select','tractor');
+   await click('Filter');await page.waitForSelector('[role="dialog"] [role="combobox"]');
+   assert.equal(await page.$$eval('[role="dialog"] [role="combobox"]',es=>es.length),1);
+   await page.type('[role="dialog"] input','Tractor');await choose('Tractor');
    await click('Next');assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/Question 2 of 2/);
-   await click('Back');assert.equal(await page.$eval('[role="dialog"] select',e=>e.value),'tractor');
+   await click('Back');assert.match(await page.$eval('[role="dialog"] [role="combobox"]',e=>e.textContent),/Tractor/);
    await page.keyboard.press('Escape');assert.equal(await page.$eval('output',e=>e.textContent),'all');
-   await click('Filter');await page.select('[role="dialog"] select','truck');await click('Apply filters');assert.equal(await page.$eval('output',e=>e.textContent),'truck');
+   await click('Filter');await choose('Truck');await click('Apply filters');assert.equal(await page.$eval('output',e=>e.textContent),'truck');
    await click('Filter');const last=await page.$('[role="dialog"] footer button:last-child');await last.focus();await page.keyboard.press('Tab');assert.equal(await page.$eval('[role="dialog"] button',e=>e===document.activeElement),true);
    const box=await page.$eval('[role="dialog"]',e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right}});assert.ok(box.left>=0&&box.right<=width+1,'Dialog fits viewport');
    await fs.mkdir(path.join(root,'.next/filter-validation'),{recursive:true});await page.screenshot({path:path.join(root,`.next/filter-validation/filter-${width}.png`)});
+   await page.click('[role="combobox"]');
+   await page.waitForSelector('[role="listbox"]',{visible:true});
+   await page.keyboard.press('Home');await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+   assert.match(await page.$eval('[role="combobox"]',e=>e.textContent),/Tractor/);
+   await page.click('[role="combobox"]');await page.keyboard.press('Escape');
+   assert.ok(await page.$('[role="dialog"]'),'Escape closes only the menu first');
+   assert.equal(await page.$('[role="listbox"]'),null);
+   const spacing=await page.$eval('[role="combobox"]',e=>{const r=e.getBoundingClientRect(),label=e.firstElementChild.getBoundingClientRect(),arrow=e.lastElementChild.getBoundingClientRect();return {gap:arrow.left-label.right,inset:r.right-arrow.right}});
+   assert.ok(spacing.gap>5&&spacing.inset>5,'Chevron has its own space and right inset');
+   await page.click('[role="combobox"]');await page.waitForSelector('[role="listbox"]',{visible:true});
+   await page.screenshot({path:path.join(root,`.next/filter-validation/menu-${width}.png`)});
+   await page.keyboard.press('Escape');
    await click('Clear filters');assert.equal(await page.$eval('output',e=>e.textContent),'all');
    console.log(`PASS ${width}: search, Back/Next, cancellation, apply, clear, focus containment, viewport`);
   }
   for(const kind of ['cost','maintenance','fuel']) {
    await page.setViewport({width:1440,height:1000});await page.goto(`http://127.0.0.1:3030/filter-validation?page=${kind}&view=slips`,{waitUntil:'networkidle0',timeout:120000});
    if(kind==='fuel') {await click('Exclusions');await page.waitForSelector('[aria-label="Fuel ledger exclusions"]');await page.click('[aria-label="Close exclusions"]');}
-   await click('Filter');await page.waitForSelector('[role="dialog"] select');
+   await click('Filter');await page.waitForSelector('[role="dialog"] [role="combobox"]');
    for(let i=1;i<=4;i++){assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),new RegExp(`Question ${i} of 4`));if(i<4)await click('Next');}
+   if(kind==='fuel') {
+    await page.click('[role="combobox"]');await page.waitForSelector('[role="listbox"]',{visible:true});
+    const menu=await page.$eval('[role="listbox"]',e=>{const r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,height:r.height,scroll:e.scrollHeight,client:e.clientHeight}});
+    assert.ok(menu.top>=0&&menu.bottom<=1000&&menu.height<=282,'Month menu stays bounded in the viewport');
+    assert.ok(menu.scroll>menu.client,'Long month list scrolls inside the styled menu');
+    await page.keyboard.press('End');await page.keyboard.press('Enter');
+    assert.match(await page.$eval('[role="combobox"]',e=>e.textContent),/December/);
+   }
    await click('Apply filters');assert.equal(await page.$('[role="dialog"]'),null);
    console.log(`PASS ${kind}: real client launches shared four-question flow${kind==='fuel'?' and exclusions':''}`);
   }

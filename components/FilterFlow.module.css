@@ -29,9 +29,9 @@
 .progress { margin: 0 0 1rem; color: #64766d; font-size: 0.85rem; font-weight: 650; }
 .question { display: grid; gap: 0.8rem; }
 .question label { font-size: 1.15rem; font-weight: 700; }
-.question select, .question input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 3.25rem; padding: 0.8rem 1rem; border: 1px solid #c8dcd3; border-radius: 0.9rem; background: #fff; color: #173b30; font: inherit; font-weight: 600; }
+.question .selectTrigger, .question input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 3.25rem; padding: 0.8rem 1rem; border: 1px solid #c8dcd3; border-radius: 0.9rem; background: #fff; color: #173b30; font: inherit; font-weight: 600; }
 .question input { font-weight: 400; }
-.question select:disabled { color: #7b8982; background: #f0f4f2; }
+.question .selectTrigger:disabled { color: #7b8982; background: #f0f4f2; }
 .question small { color: #64766d; line-height: 1.5; }
 .footer { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.65rem; padding: 1rem 1.75rem 1.5rem; border-top: 1px solid #dfe7e2; }
 .footer button { min-height: 3rem; padding: 0.7rem 1.1rem; border: 1px solid #d6e1dc; border-radius: 0.85rem; background: #f1f5f3; color: #173b30; font: inherit; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
@@ -39,7 +39,7 @@
 .footer .apply, .footer .next { background: #175540; border-color: #175540; color: #fff; }
 .footer:has(.next) .apply { background: #e1f3e9; color: #175540; border-color: #b8dfca; }
 .dialog button:hover { filter: brightness(0.97); }
-.dialog button:focus-visible, .question select:focus-visible, .question input:focus-visible { outline: 3px solid #78b99a; outline-offset: 3px; }
+.dialog button:focus-visible, .question .selectTrigger:focus-visible, .question input:focus-visible { outline: 3px solid #78b99a; outline-offset: 3px; }
 @media (max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .header, :global(:where(html:not(:has([data-website-canvas])))) .body { padding: 1.25rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .header h2 { font-size: 1.45rem; }
@@ -47,3 +47,19 @@
   :global(:where(html:not(:has([data-website-canvas])))) .footer button { flex: 1 1 40%; }
   :global(:where(html:not(:has([data-website-canvas])))) .footer .clear { margin-right: 0; }
 }
+
+/* Shared branded menus, including a reserved arrow column for long labels. */
+.question .selectTrigger { display: flex; align-items: center; gap: 1rem; padding: .75rem 1.1rem .75rem 1.2rem; text-align: left; cursor: pointer; box-shadow: 0 2px 5px #173b3005; }
+.selectedLabel { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.4; }
+.chevronSlot { display: grid; place-items: center; flex: 0 0 1.6rem; width: 1.6rem; height: 1.6rem; color: #376853; }
+.chevronSlot svg { display: block; width: 1.05rem; height: 1.05rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chevronOpen { transform: rotate(180deg); }
+.question .selectTrigger[aria-expanded="true"] { border-color: #76ae92; background: #f8fcfa; box-shadow: 0 0 0 3px #78b99a22; }
+.selectMenu { box-sizing: border-box; padding: .4rem; border: 1px solid #c8dcd3; border-radius: 1rem; background: #fff; color: #173b30; box-shadow: 0 14px 36px #173b3029; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #7ba28f #eef5f1; }
+.selectOption { box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.9rem; padding: .7rem .85rem; border: 0; border-radius: .65rem; background: transparent; color: #173b30; text-align: left; font: inherit; font-weight: 550; line-height: 1.4; cursor: pointer; }
+.selectOption > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.selectOption:hover, .optionFocused { background: #f0f7f3; }
+.selectOption[aria-selected="true"] { background: #dff1e7; color: #15513b; font-weight: 700; }
+.optionCheck { flex: 0 0 1.25rem; text-align: center; color: #257052; }
+.selectMenu::-webkit-scrollbar { width: 10px; }
+.selectMenu::-webkit-scrollbar-thumb { background: #7ba28f; border: 3px solid #fff; border-radius: 8px; }
