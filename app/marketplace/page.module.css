@@ -1055,6 +1055,16 @@
   background: #f0f2f5;
 }
 
+.modalCloseButton {
+  top: 1.25rem;
+  right: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid #e2e8e5;
+  background: #f7faf8;
+  box-shadow: 0 3px 10px rgba(16, 44, 35, 0.1);
+}
+
 .accountManageModal .marketplaceSquareClose.marketplaceSquareClose {
   border-radius: 0.35rem;
 }
@@ -1259,6 +1269,7 @@
   min-width: 0;
   min-height: 0;
   height: 100%;
+  margin-right: 0.5rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding: 1.4rem;
@@ -1275,29 +1286,32 @@
 }
 
 .modalDetails::-webkit-scrollbar {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .modalDetails::-webkit-scrollbar-track {
   background: #eaf1ed;
-  border-radius: 6px;
-  margin-block: 12px;
+  background-clip: padding-box;
+  border: 4px solid transparent;
+  border-radius: 999px;
+  margin-block: 1rem;
 }
 
 .modalDetails::-webkit-scrollbar-thumb {
   min-height: 56px;
-  border: 3px solid #eaf1ed;
-  border-radius: 6px;
+  border: 4px solid transparent;
+  border-radius: 999px;
   background: #377e68;
+  background-clip: padding-box;
 }
 
 .modalDetails::-webkit-scrollbar-thumb:hover {
-  background: #235e4c;
+  background-color: #235e4c;
 }
 
 .modalDetails::-webkit-scrollbar-thumb:active {
-  background: #123f32;
+  background-color: #123f32;
 }
 
 .modalDetails::-webkit-scrollbar-button {
