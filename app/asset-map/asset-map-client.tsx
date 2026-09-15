@@ -2188,7 +2188,7 @@ export default function AssetMapClient() {
                     <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                       <strong>PDF map report</strong>
                       <small>
-                        Download a clean printable Asset Map Tracking report.
+                        Printable asset map.
                       </small>
                     </span>
                   </button>
@@ -2209,8 +2209,7 @@ export default function AssetMapClient() {
                     <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                       <strong>XLSX GPS workbook</strong>
                       <small>
-                        Download the latest saved GPS coordinates in Excel
-                        format.
+                        Saved GPS locations in Excel.
                       </small>
                     </span>
                   </button>

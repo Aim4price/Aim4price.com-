@@ -2412,7 +2412,7 @@ function AssetReportFormatPicker({ value, deliveryMode = 'download', onChange }:
         </span>
         <span className={styles.assetTimelineFormatCopy} data-download-copy="true">
           <strong>PDF report</strong>
-          <small>{isAttaching ? 'Attach a clear report for clients, banks or insurance partners.' : 'Open a clear report for clients, banks or insurance partners.'}</small>
+          <small>Printable asset report.</small>
         </span>
       </button>
 
@@ -2427,7 +2427,7 @@ function AssetReportFormatPicker({ value, deliveryMode = 'download', onChange }:
         </span>
         <span className={styles.assetTimelineFormatCopy} data-download-copy="true">
           <strong>XLSX workbook</strong>
-          <small>{isAttaching ? 'Attach the selected timeline records as an Excel-ready workbook.' : 'Download the selected timeline records in an Excel-ready workbook.'}</small>
+          <small>Selected records in Excel.</small>
         </span>
       </button>
     </div>
@@ -15747,7 +15747,7 @@ export default function AssetRegisterClient({
     if (individualAssetMapDownloadRef.current) return;
     const mappedMembers = assetsForGroup(group).filter(hasAssetGpsCoordinates);
     if (!mappedMembers.length) {
-      setAssetGroupError('Add a map location to a grouped asset first.');
+      setAssetGroupError('Add an asset location first.');
       return;
     }
     individualAssetMapDownloadRef.current = true;
@@ -21796,7 +21796,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`} data-download-header="true">
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-report-title" tabIndex={-1}>{reportAsset.title}</h3>
-                <p>{isAttachingExternalReport ? 'Choose an Aim4price report to add to your message.' : buildAssetMeta(reportAsset)}</p>
+                <p>{isAttachingExternalReport ? 'Choose a report to attach.' : buildAssetMeta(reportAsset)}</p>
               </div>
 
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeAssetReportDialog} aria-label="Close report options">
@@ -21809,7 +21809,7 @@ export default function AssetRegisterClient({
                 <>
                   <div className={styles.assetTimelineStageHeading}>
                     <strong>Choose export format</strong>
-                    <span>Select PDF or Excel, then continue to the report timeline.</span>
+                    <span>Choose PDF or Excel.</span>
                   </div>
 
                   <AssetReportFormatPicker value={assetReportDownloadFormat} deliveryMode={isAttachingExternalReport ? 'attach' : 'download'} onChange={setAssetReportDownloadFormat} />
@@ -21832,7 +21832,7 @@ export default function AssetRegisterClient({
                 <>
                   <div className={styles.assetTimelineStageHeading}>
                     <strong>Report timeline</strong>
-                    <span>Choose the year and month to include.</span>
+                    <span>Choose a year and month.</span>
                   </div>
 
                   <div className={styles.assetFuelReportFilterBox}>
@@ -21879,7 +21879,7 @@ export default function AssetRegisterClient({
                 <>
                   <div className={styles.assetTimelineStageHeading}>
                     <strong>Report timeline</strong>
-                    <span>Choose the maintenance type, year and month to include.</span>
+                    <span>Choose type, year and month.</span>
                   </div>
 
                   <div className={`${styles.assetFuelReportFilterBox} ${styles.assetMaintenanceReportFilterBox}`}>
@@ -21935,7 +21935,7 @@ export default function AssetRegisterClient({
                 <>
                   <div className={styles.assetTimelineStageHeading}>
                     <strong>Report timeline</strong>
-                    <span>Choose the year and month to include.</span>
+                    <span>Choose a year and month.</span>
                   </div>
 
                   <div className={styles.assetFuelReportFilterBox}>
@@ -21982,7 +21982,7 @@ export default function AssetRegisterClient({
                 <>
                   <div className={styles.assetTimelineStageHeading}>
                     <strong>Report timeline</strong>
-                    <span>Choose the year and month to include.</span>
+                    <span>Choose a year and month.</span>
                   </div>
 
                   <div className={styles.assetFuelReportFilterBox}>
@@ -22030,8 +22030,8 @@ export default function AssetRegisterClient({
                   <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(reportAsset)} data-download-option="true">
                     <AssetReportTypeIcon kind="valuation" className={styles.buttonIcon} />
                     <span>
-                      <strong>{isAttachingExternalReport ? 'Add asset valuation' : 'Open asset valuation'}</strong>
-                      <small>{isAttachingExternalReport ? 'Attach a polished Aim4price PDF.' : 'PDF value summary with notes and documents.'}</small>
+                      <strong>Asset valuation</strong>
+                      <small>{isAttachingExternalReport ? 'Asset valuation PDF.' : 'Values, notes and documents.'}</small>
                     </span>
                   </button>
 
@@ -22040,8 +22040,8 @@ export default function AssetRegisterClient({
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetMaintenanceReportFilter} data-download-option="true">
                         <AssetReportTypeIcon kind="maintenance" className={styles.buttonIcon} />
                         <span>
-                          <strong>{isAttachingExternalReport ? 'Add maintenance report' : 'Download maintenance report'}</strong>
-                          <small>PDF or Excel service and repair costs.</small>
+                          <strong>Maintenance report</strong>
+                          <small>Service and repair costs.</small>
                         </span>
                       </button>
 
@@ -22049,8 +22049,8 @@ export default function AssetRegisterClient({
                         <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter} data-download-option="true">
                           <AssetReportTypeIcon kind="fuel" className={styles.buttonIcon} />
                           <span>
-                            <strong>{isAttachingExternalReport ? 'Add fuel report' : 'Download fuel report'}</strong>
-                            <small>PDF or Excel fuel costs by month.</small>
+                            <strong>Fuel report</strong>
+                            <small>Monthly fuel costs.</small>
                           </span>
                         </button>
                       ) : null}
@@ -22059,8 +22059,8 @@ export default function AssetRegisterClient({
                         <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter} data-download-option="true">
                           <AssetReportTypeIcon kind="depreciation" className={styles.buttonIcon} />
                           <span>
-                            <strong>{isAttachingExternalReport ? 'Add depreciation log' : 'Download depreciation log'}</strong>
-                            <small>PDF or Excel log of saved value changes.</small>
+                            <strong>Depreciation log</strong>
+                            <small>Saved value changes.</small>
                           </span>
                         </button>
                       ) : null}
@@ -22068,8 +22068,8 @@ export default function AssetRegisterClient({
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetOwnershipReportFilter} data-download-option="true">
                         <AssetReportTypeIcon kind="ownership" className={styles.buttonIcon} />
                         <span>
-                          <strong>{isAttachingExternalReport ? 'Add cost of ownership report' : 'Download cost of ownership report'}</strong>
-                          <small>PDF or Excel ownership costs and VAT.</small>
+                          <strong>Cost of ownership</strong>
+                          <small>Ownership costs and VAT.</small>
                         </span>
                       </button>
 
@@ -22082,8 +22082,8 @@ export default function AssetRegisterClient({
                         >
                           <AssetReportTypeIcon kind="map" className={styles.buttonIcon} />
                           <span>
-                            <strong>{isDownloadingIndividualAssetMap ? 'Preparing asset map…' : 'Download asset map'}</strong>
-                            <small>{hasAssetGpsCoordinates(reportAsset) ? 'PDF map of this asset’s saved location.' : 'Add a map location first.'}</small>
+                            <strong>{isDownloadingIndividualAssetMap ? 'Preparing map…' : 'Asset map'}</strong>
+                            <small>{hasAssetGpsCoordinates(reportAsset) ? 'Saved asset location.' : 'Add a map location first.'}</small>
                           </span>
                         </button>
                       ) : null}
@@ -22431,7 +22431,7 @@ export default function AssetRegisterClient({
 
                         <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>PDF report</strong>
-                          <small>Choose a clear PDF report for clients, banks or insurance partners.</small>
+                          <small>Printable asset report.</small>
                         </span>
                       </button>
 
@@ -22447,7 +22447,7 @@ export default function AssetRegisterClient({
 
                         <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>XLSX workbook</strong>
-                          <small>Download all register rows in an Excel-ready workbook.</small>
+                          <small>Register records in Excel.</small>
                         </span>
                       </button>
 

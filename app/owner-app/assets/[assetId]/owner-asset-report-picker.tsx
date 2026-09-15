@@ -287,7 +287,7 @@ export default function OwnerAssetReportPicker({
   const filters = selectedReport && selectedReportDetails ? (
     <>
       <div className={styles.reportFilterGrid}>
-        <div data-download-grid="true" style={{ gridColumn: '1 / -1' }}>{(['pdf', 'xlsx'] as const).map(value => <button type="button" key={value} data-download-option="true" aria-pressed={format === value} onClick={() => setFormat(value)}><span data-download-icon="true"><img src={value === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{value === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{value === 'pdf' ? 'Open a printable asset report.' : 'Download asset records in Excel format.'}</small></span></button>)}</div>
+        <div data-download-grid="true" style={{ gridColumn: '1 / -1' }}>{(['pdf', 'xlsx'] as const).map(value => <button type="button" key={value} data-download-option="true" aria-pressed={format === value} onClick={() => setFormat(value)}><span data-download-icon="true"><img src={value === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{value === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{value === 'pdf' ? 'Printable asset report.' : 'Asset records in Excel.'}</small></span></button>)}</div>
         {selectedReport !== 'valuation' ? (
           <>
             <label className={styles.field}>
@@ -365,7 +365,7 @@ export default function OwnerAssetReportPicker({
           <div className={styles.reportFilterModalHeader} data-download-header="true">
             <div>
               <h2 id="owner-share-report-title">{selectedReportDetails?.title || 'Add Aim4price report'}</h2>
-              {!selectedReport ? <p>Choose the exact Aim4price PDF or Excel report to attach to this message.</p> : null}
+              {!selectedReport ? <p>Choose a report to attach.</p> : null}
             </div>
             <button type="button" onClick={onDismiss} aria-label="Close Aim4price reports">×</button>
           </div>

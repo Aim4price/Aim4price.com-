@@ -28,10 +28,10 @@ test('Dealer App Leads and Maintenance loading screens reveal the layout backgro
 });
 
 test('Dealer App report choices use short titles without descriptions', () => {
-  assert.match(leads, /dealerAppMode \? 'Asset valuation' : 'Download asset valuation'/);
-  assert.match(leads, /dealerAppMode \? 'Maintenance report' : 'Download maintenance report'/);
-  assert.match(leads, /dealerAppMode \? 'Cost of ownership' : 'Download cost of ownership'/);
-  assert.match(leads, /dealerAppMode \? null : <small>PDF value summary/);
+  assert.match(leads, /<strong>Asset valuation<\/strong>/);
+  assert.match(leads, /<strong>Maintenance report<\/strong>/);
+  assert.match(leads, /<strong>Cost of ownership<\/strong>/);
+  assert.match(leads, /dealerAppMode \? null : <small>Shared asset values/);
   assert.equal((leads.match(/pdfOnly=\{dealerAppMode\}/g) ?? []).length, 2);
 });
 

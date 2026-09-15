@@ -129,14 +129,14 @@ export default function AccountantRegisterReportsModal({ shareId, registerName, 
               </div>
             ) : null}
             <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`} data-download-grid="true">
-              <a className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`} href={href('market-accounting')} data-download-option="true"><ReportIcon/><span><strong>Market versus Accounting</strong><small>Market, replacement, Accounting Book Value and finance shown separately.</small></span></a>
-              <a className={styles.optionActionButton} href={href('market-value-trend')} data-download-option="true"><ReportIcon/><span><strong>Market Value Trend</strong><small>Saved Aim4price Market Value movement and revaluations.</small></span></a>
-              <a className={styles.optionActionButton} href={href('finance-position')} data-download-option="true"><ReportIcon/><span><strong>Finance Position and Commitments</strong><small>Agreement balances, linked assets and future instalments.</small></span></a>
-              {includeCostLedger ? <a className={styles.optionActionButton} href={href('cost-of-ownership')} data-download-option="true"><ReportIcon/><span><strong>Cost of Ownership</strong><small>Incurred costs and recurring commitments remain distinct.</small></span></a> : null}
-              {includeFuelLedger ? <a className={styles.optionActionButton} href={href('fuel-report')} data-download-option="true"><ReportIcon/><span><strong>Fuel Report</strong><small>Asset-level fuel usage and recorded cost summary.</small></span></a> : null}
-              <a className={styles.optionActionButton} href={href('asset-register')} data-download-option="true"><ReportIcon/><span><strong>Asset Register</strong><small>Active asset records with ownership, status and values.</small></span></a>
-              {includeFuelLedger ? <a className={styles.optionActionButton} href={href('fuel-ledger')} data-download-option="true"><ReportIcon/><span><strong>Fuel Ledger</strong><small>Detailed storage and asset fuel transactions.</small></span></a> : null}
-              {includeCostLedger ? <a className={styles.optionActionButton} href={href('cost-ledger')} data-download-option="true"><ReportIcon/><span><strong>Cost Ledger</strong><small>Detailed supplier invoices and recorded incurred costs.</small></span></a> : null}
+              <a className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`} href={href('market-accounting')} data-download-option="true"><ReportIcon/><span><strong>Market vs accounting</strong><small>Market, book and finance.</small></span></a>
+              <a className={styles.optionActionButton} href={href('market-value-trend')} data-download-option="true"><ReportIcon/><span><strong>Market Value Trend</strong><small>Saved market value changes.</small></span></a>
+              <a className={styles.optionActionButton} href={href('finance-position')} data-download-option="true"><ReportIcon/><span><strong>Finance commitments</strong><small>Balances and instalments.</small></span></a>
+              {includeCostLedger ? <a className={styles.optionActionButton} href={href('cost-of-ownership')} data-download-option="true"><ReportIcon/><span><strong>Cost of Ownership</strong><small>Costs and commitments.</small></span></a> : null}
+              {includeFuelLedger ? <a className={styles.optionActionButton} href={href('fuel-report')} data-download-option="true"><ReportIcon/><span><strong>Fuel Report</strong><small>Fuel usage and costs.</small></span></a> : null}
+              <a className={styles.optionActionButton} href={href('asset-register')} data-download-option="true"><ReportIcon/><span><strong>Asset Register</strong><small>Asset details and values.</small></span></a>
+              {includeFuelLedger ? <a className={styles.optionActionButton} href={href('fuel-ledger')} data-download-option="true"><ReportIcon/><span><strong>Fuel Ledger</strong><small>Storage and asset fuel.</small></span></a> : null}
+              {includeCostLedger ? <a className={styles.optionActionButton} href={href('cost-ledger')} data-download-option="true"><ReportIcon/><span><strong>Cost Ledger</strong><small>Invoices and recorded costs.</small></span></a> : null}
             </div>
           </div>
         </div>

@@ -27,7 +27,7 @@ export default function ReportDownloadPage() {
  if (mode==='dealer-costs') return <DealerCosts accessId="test" assetTitle="Test tractor" assetMeta="2023" onClose={noop} />;
  if (mode==='dealer-maintenance') return <DealerMaintenance accessId="test" onClose={noop} />;
  if (mode==='accountant') return <Accountant shareId="test" registerName="Test register" includeCostLedger includeFuelLedger onClose={noop} />;
- if (mode==='group') return <Group open initialView="reports" anchorAsset={asset} group={{id:'test',userId:'test',registerId:null,name:'Test umbrella',valueMode:'separate',members:[{assetId:'1',role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0}],createdAtIso:'2026-09-01',updatedAtIso:'2026-09-01'}} assets={[asset]} groups={[]} onClose={noop} onSave={noop} onDelete={noop} onDownloadReport={noop} />;
+ if (mode==='group') return <Group open initialView="reports" anchorAsset={asset} group={{id:'test',userId:'test',registerId:null,name:'Test umbrella',valueMode:'separate',members:[{assetId:'1',role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0}],createdAtIso:'2026-09-01',updatedAtIso:'2026-09-01'}} assets={[asset]} groups={[]} onClose={noop} onSave={noop} onDelete={noop} onDownloadReport={noop} onDownloadMap={noop} canDownloadMap={false} />;
  if (mode==='owner-open') return <OwnerReports asset={asset} />;
  if (mode==='owner') return <OwnerReports asset={asset} mode="attach" onDismiss={noop} onAttach={noop} />;
  if (mode==='maintenance') return <Maintenance />;

@@ -622,15 +622,15 @@ const FILTER_STATUS_OPTIONS: DropdownOption[] = [
 ];
 
 const DOWNLOAD_FORMAT_OPTIONS: Array<{ value: DownloadFormat; title: string; description: string }> = [
-  { value: 'pdf', title: 'PDF report', description: 'Clean print-ready report for clients, banks or insurance partners.' },
-  { value: 'xlsx', title: 'XLSX workbook', description: 'Excel-ready maintenance data for sorting, filtering and record keeping.' },
+  { value: 'pdf', title: 'PDF report', description: 'Printable maintenance report.' },
+  { value: 'xlsx', title: 'XLSX workbook', description: 'Maintenance records in Excel.' },
 ];
 
 const DOWNLOAD_SCOPE_OPTIONS: Array<{ value: DownloadScope; title: string; description: string }> = [
-  { value: 'total', title: 'All maintenance', description: 'Open and completed records matching your filters.' },
-  { value: 'asset', title: 'Specific asset', description: 'The full maintenance history for one asset.' },
-  { value: 'upcoming', title: 'Upcoming maintenance', description: 'Open records, including due soon and overdue.' },
-  { value: 'done', title: 'Completed maintenance', description: 'All completed services and checkups.' },
+  { value: 'total', title: 'All maintenance', description: 'All matching records.' },
+  { value: 'asset', title: 'Specific asset', description: 'One asset’s history.' },
+  { value: 'upcoming', title: 'Upcoming maintenance', description: 'Open and overdue work.' },
+  { value: 'done', title: 'Completed maintenance', description: 'Completed services and checks.' },
 ];
 
 type MaintenanceDropdownProps = {
@@ -1989,7 +1989,7 @@ export default function MaintenanceClient({
           <div className={`${fuelStyles.downloadModal} ${fuelStyles.sourceChoiceModal} ${fuelStyles.fuelSlipChoiceModal} ${fuelStyles.fuelSlipMenuModal} ${fuelStyles.accountFuelModal} ${accountStyles.modalTheme} ${chooserStyles.downloadScopeLayout} ${downloadStyles.dialog}`} data-download-dialog="true">
             <div className={fuelStyles.modalHeader} data-download-header="true">
               <div>
-                <h2 id="maintenance-download-title">Download maintenance reports</h2>
+                <h2 id="maintenance-download-title">Maintenance reports</h2>
                 <p>Choose the records to include.</p>
               </div>
               <button type="button" className={`${fuelStyles.closeButton} ${fuelStyles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close download reports"><span aria-hidden="true">×</span></button>

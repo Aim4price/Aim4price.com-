@@ -4336,7 +4336,7 @@ export default function FuelClient({
             <div className={styles.modalHeader} data-download-header="true">
               <div>
                 <h2 id="fuel-slip-download-title">{['Download fuel slips', 'Choose report timeline', 'Choose fuel slips'][fuelSlipDownloadStep]}</h2>
-                {fuelSlipDownloadStep > 0 ? <p>{fuelSlipDownloadStep === 1 ? 'Select a year and optional month.' : 'Choose the asset or storage tank and capture status.'}</p> : null}
+                {fuelSlipDownloadStep > 0 ? <p>{fuelSlipDownloadStep === 1 ? 'Select a year and optional month.' : 'Choose asset, tank and status.'}</p> : null}
               </div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipDownloadPanel} aria-label="Close fuel slip download"><span aria-hidden="true">×</span></button>
             </div>
@@ -4350,7 +4350,7 @@ export default function FuelClient({
               {fuelSlipDownloadStep === 0 ? <div className={styles.exportChoices} data-download-grid="true">
                 {(['pdf', 'xlsx'] as const).map((format) => <button key={format} type="button" className={`${styles.exportOption} ${fuelSlipDownloadFormat === format ? styles.exportOptionActive : ''}`} onClick={() => setFuelSlipDownloadFormat(format)} aria-pressed={fuelSlipDownloadFormat === format} data-download-option="true">
                   <span className={styles.exportGraphic} data-download-icon="true"><ExportGraphic src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" icon={format === 'pdf' ? <PdfIcon className={styles.exportOptionIcon} /> : <SpreadsheetIcon className={styles.exportOptionIcon} />} /></span>
-                  <span className={styles.exportOptionTitleBlock} data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Download a clean printable fuel slip report.' : 'Download fuel slip records in Excel format.'}</small></span>
+                  <span className={styles.exportOptionTitleBlock} data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Printable fuel slips.' : 'Fuel slips in Excel.'}</small></span>
                 </button>)}
               </div> : <section className={styles.slipDownloadPanel} aria-label={fuelSlipDownloadStep === 1 ? 'Report timeline' : 'Fuel slip selection'}>
                 <div className={styles.slipDownloadFields}>
@@ -4926,7 +4926,7 @@ export default function FuelClient({
 
                         <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>PDF report</strong>
-                          <small>Download a clean printable Fuel Ledger report.</small>
+                          <small>Printable fuel ledger.</small>
                         </span>
                       </button>
 
@@ -4942,7 +4942,7 @@ export default function FuelClient({
 
                         <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>XLSX workbook</strong>
-                          <small>Download the filtered fuel ledger rows in Excel format.</small>
+                          <small>Fuel records in Excel.</small>
                         </span>
                       </button>
                     </div>

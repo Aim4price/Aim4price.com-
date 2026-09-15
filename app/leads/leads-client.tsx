@@ -4535,8 +4535,8 @@ export default function LeadsClient({
                 >
                   <PdfIcon className={assetStyles.buttonIcon} />
                   <span>
-                    <strong>{dealerAppMode ? 'Asset valuation' : 'Download asset valuation'}</strong>
-                    {dealerAppMode ? null : <small>PDF value summary with the shared asset details.</small>}
+                    <strong>Asset valuation</strong>
+                    {dealerAppMode ? null : <small>Shared asset values.</small>}
                   </span>
                 </button>
 
@@ -4553,12 +4553,12 @@ export default function LeadsClient({
                     >
                       <DocumentIcon className={assetStyles.buttonIcon} />
                       <span>
-                        <strong>{dealerAppMode ? 'Maintenance report' : 'Download maintenance report'}</strong>
+                        <strong>Maintenance report</strong>
                         {dealerAppMode ? null : (
                           <small>
                             {reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
-                              ? 'PDF or Excel maintenance history.'
-                              : 'Owner permission is required.'}
+                              ? 'Maintenance history.'
+                              : 'Owner permission required.'}
                           </small>
                         )}
                       </span>
@@ -4575,12 +4575,12 @@ export default function LeadsClient({
                     >
                       <DocumentIcon className={assetStyles.buttonIcon} />
                       <span>
-                        <strong>{dealerAppMode ? 'Cost of ownership' : 'Download cost of ownership'}</strong>
+                        <strong>Cost of ownership</strong>
                         {dealerAppMode ? null : (
                           <small>
                             {reportLead.maintenanceAccess.permissions.canViewCostOfOwnership
-                              ? 'PDF or Excel ownership costs and VAT.'
-                              : 'Owner permission is required.'}
+                              ? 'Ownership costs and VAT.'
+                              : 'Owner permission required.'}
                           </small>
                         )}
                       </span>

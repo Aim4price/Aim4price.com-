@@ -40,7 +40,7 @@ test('My Leads exposes the owner-style maintenance report and schedule creation 
   assert.match(leads, /<strong>PDF reports<\/strong>/);
   assert.match(leads, /assetReportOptionsGrid/);
   assert.match(leads, /<strong>Download asset valuation<\/strong>/);
-  assert.match(leads, /<strong>Download maintenance report<\/strong>/);
+  assert.match(leads, /<strong>Maintenance report<\/strong>/);
   assert.match(leads, /<strong>Send a proposed schedule<\/strong>/);
   assert.match(leads, /DealerMaintenanceReportModal/);
   assert.match(leads, /DealerMaintenanceScheduleModal/);

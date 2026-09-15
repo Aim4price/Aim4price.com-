@@ -193,7 +193,7 @@ test('dealer Cost of Ownership report is permission-gated and locked to the shar
   assert.match(costReportRoute, /!trackedAsset\.permissions\.canViewCostOfOwnership/);
   assert.match(costReportRoute, /reportOwnerUserId = trackedAsset\.ownerUserId/);
   assert.match(costReportRoute, /filters\.assetId = trackedAsset\.assetId/);
-  assert.match(leads, /Download cost of ownership/);
+  assert.match(leads, /Cost of ownership/);
   assert.match(leads, /permissions\.canViewCostOfOwnership/);
   assert.match(costPermissionMigration, /ADD COLUMN IF NOT EXISTS can_view_cost_of_ownership/);
   assert.match(costPermissionMigration, /NOT NULL DEFAULT false/);

@@ -40,10 +40,10 @@ const scenarios = [
  ['dealer-costs','dealer-costs',[]], ['dealer-maintenance','dealer-maintenance',[]],
  ['accountant','accountant',[]], ['group','group',[]], ['owner','owner',[]],
  ['register-options','register',['Download','PDF report','Next']],
- ['registers-format','registers',['Download','Download all Asset Registers']],
+ ['registers-format','registers',['Download','All asset registers']],
  ['cost-timeline','costs',['Download','PDF','Next']],
  ['slip-timeline','fuel&view=slips',['Download','Next']],
- ['group-format','group',['Download maintenance report']],
+ ['group-format','group',['Maintenance report']],
  ['owner-format','owner',['Maintenance report']], ['owner-open','owner-open',['Maintenance report']],
 ];
 async function click(page, text) {
@@ -98,6 +98,7 @@ async function details(page, original=false) {
    buttons:footer?[...footer.querySelectorAll('button,a')].map(button=>read(button,['minWidth','minHeight','borderRadius','fontSize','fontWeight','lineHeight','letterSpacing'])):[],
    secondary:footer?[...footer.querySelectorAll('button,a')].filter(button=>!button.hasAttribute('data-download-primary')).map(button=>read(button,['color','backgroundColor','backgroundImage','borderTopColor','boxShadow'])):[],
    overflow:root.scrollWidth>root.clientWidth+1,
+   overflowingCopy:[...root.querySelectorAll('[data-download-option] strong,[data-download-option] small')].filter(el=>el.scrollWidth>el.clientWidth+1).map(el=>el.textContent),
   };
  },original);
 }
@@ -115,6 +116,7 @@ function verifyDetails(actual, reference, name) {
  assert.deepEqual(actual.backdrop,{backgroundColor:'rgba(12, 24, 35, 0.42)',backdropFilter:'blur(12px) saturate(0.9)'},`${name} canonical Asset Map backdrop`);
  assert.deepEqual(actual.header,reference.header,`${name} header divider and spacing`);
  assert.equal(actual.overflow,false,`${name} horizontal overflow`);
+ assert.deepEqual(actual.overflowingCopy,[],`${name} concise card copy fits without truncation`);
  for(const [index,card] of actual.cards.entries()) {
   const expected=reference.cards.find(option=>option.selected===card.selected);
   assert.deepEqual(card.style,expected.style,`${name} card ${index+1} spacing and selected background`);
