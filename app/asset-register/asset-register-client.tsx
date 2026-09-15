@@ -22617,8 +22617,8 @@ export default function AssetRegisterClient({
                               <button
                                 type="button"
                                 className={styles.secondaryButton}
-                                onClick={clearSelectedPdfAssets}
-                                disabled={isExporting || selectedPdfAssetCount === 0}
+                                onClick={() => setPdfAssetSearchTerm('')}
+                                disabled={isExporting}
                               >
                                 Clear
                               </button>
@@ -22667,6 +22667,9 @@ export default function AssetRegisterClient({
                         </section>
 
                         <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`} data-asset-choice-footer="true">
+                          {selectedPdfAssetCount > 0 ? (
+                            <button type="button" className={styles.secondaryButton} onClick={clearSelectedPdfAssets} disabled={isExporting}>Clear selection</button>
+                          ) : null}
                           <button type="button" className={styles.secondaryButton} onClick={backToPdfReportChooser} disabled={isExporting}>
                             Back
                           </button>
@@ -22678,6 +22681,7 @@ export default function AssetRegisterClient({
                           <button
                             type="button"
                             className={`${styles.primaryButton} ${styles.pdfAssetDownloadButton}`}
+                            data-asset-choice-action="primary"
                             onClick={() => void handleExportSelectedPdfReport()}
                             disabled={isExporting || selectedPdfAssetCount === 0}
                           >

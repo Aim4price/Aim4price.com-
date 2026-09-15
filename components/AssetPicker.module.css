@@ -208,7 +208,7 @@
 .modal.modal.modal [data-asset-choice-copy] { grid-column: 1 !important; grid-row: 1 !important; }
 .modal.modal.modal .select { display: inline-flex !important; align-items: center; gap: .6rem; font-size: .95rem; }
 .modal.modal.modal .select i { font-style: normal; font-size: .9rem; }
-.modal.modal.modal .multi i { border-radius: .4rem; }
+.modal.modal.modal .multi i { border-radius: 50%; }
 .modal.modal.modal [data-asset-choice-selected="true"] .select i { background: #17563f; border-color: #17563f; color: #fff; }
 .modal.modal.modal [data-asset-choice-row]:focus-within { outline: 3px solid rgba(24,112,83,.35); outline-offset: -3px; }
 .checkbox { position: absolute; width: 1px; height: 1px; opacity: 0; }
@@ -237,4 +237,68 @@
 .modal.modal.modal [data-asset-choice-footer] {
   position: static !important;
   border-radius: 0 !important;
+}
+
+/* Neutralize page-specific heading grids and text tracking. */
+.modal.modal.modal [data-asset-choice-header] > div {
+  display: block !important;
+  min-width: 0 !important;
+  gap: normal !important;
+}
+.modal.modal.modal [data-asset-choice-copy],
+.modal.modal.modal [data-asset-choice-copy] > *,
+.modal.modal.modal [data-asset-choice-value],
+.modal.modal.modal [data-asset-choice-value] * {
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+.modal.modal.modal .select {
+  font-size: .95rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+/* Search and secondary actions use the manual-cost buttons in every chooser. */
+.modal.modal.modal [data-asset-choice-toolbar] button,
+.modal.modal.modal [data-asset-choice-footer] button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: .52rem !important;
+  margin: 0 !important;
+  line-height: 1.35 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+.modal.modal.modal [data-asset-choice-toolbar] button,
+.modal.modal.modal [data-asset-choice-footer] button:not([data-asset-choice-action='primary']) {
+  color: #17362c !important;
+  background: #f2f5f8 !important;
+  border: 1px solid #d8e1ea !important;
+  box-shadow: 0 10px 20px rgba(18,35,39,.045), inset 0 1px 0 rgba(255,255,255,.98) !important;
+}
+.modal.modal.modal [data-asset-choice-toolbar] button:hover:not(:disabled),
+.modal.modal.modal [data-asset-choice-footer] button:not([data-asset-choice-action='primary']):hover:not(:disabled) {
+  background: #eaf0ed !important;
+  border-color: #b4c9bf !important;
+}
+.modal.modal.modal [data-asset-choice-footer] button[data-asset-choice-action='primary'] {
+  color: #fff !important;
+  background: #17563f !important;
+  border: 1px solid #17563f !important;
+}
+.modal.modal.modal [data-asset-choice-footer] button:disabled,
+.modal.modal.modal [data-asset-choice-toolbar] button:disabled {
+  opacity: .45 !important;
+  cursor: not-allowed !important;
+}
+.modal.modal.modal {
+  font-family: var(--font-body, 'Montserrat'), 'Montserrat', sans-serif !important;
+  color: #17362c !important;
+}
+.modal.modal.modal [data-asset-choice-row] { font-weight: 400 !important; color: #17362c !important; }
+.modal.modal.modal [data-asset-choice-header] > button {
+  gap: normal !important;
+  letter-spacing: normal !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
