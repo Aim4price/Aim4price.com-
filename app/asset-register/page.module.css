@@ -41090,3 +41090,33 @@ button.documentOpenLink {
   background: #edf8f2 !important;
   border-color: #bedfce;
 }
+
+/* Reserve a stable summary column so long umbrella names cannot push controls out. */
+:global([data-website-canvas]) .page .assetGroupHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 32rem) !important;
+  column-gap: 1.4rem !important;
+  padding-right: 1.45rem !important;
+}
+:global([data-website-canvas]) .page .assetGroupHeader .assetGroupSummary {
+  width: 100%;
+}
+@media (min-width: 901px) {
+  :global(body:not(:has([data-website-canvas]))) .page .assetGroupHeader {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 32rem) !important;
+    column-gap: 1.4rem !important;
+    padding-right: 1.45rem !important;
+  }
+  :global(body:not(:has([data-website-canvas]))) .page .assetGroupHeader .assetGroupSummary {
+    width: 100%;
+  }
+}
+.page .assetGroupSummary > .valueBlock {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding-right: 2.25rem;
+}
+.page .assetGroupSummary .assetValueVatAmountRow .assetCardVatToggle {
+  right: -2.25rem !important;
+}

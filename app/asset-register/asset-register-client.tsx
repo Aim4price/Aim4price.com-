@@ -6168,7 +6168,13 @@ function readRegisterIdFromLocation(): string {
     return COMBINED_REGISTER_ID;
   }
 
-  return params.get('registerId')?.trim() ?? '';
+  const registerId = params.get('registerId')?.trim();
+  if (registerId) return registerId;
+
+  // The owner register opens the combined view without a visible scope query.
+  return window.location.pathname === '/asset-register' && !params.has('dealerView')
+    ? COMBINED_REGISTER_ID
+    : '';
 }
 
 function buildAssetRegisterApiUrl(registerId?: string | null): string {
@@ -7253,7 +7259,7 @@ export default function AssetRegisterClient({
 
     const group = allAssetGroupMemberships.get(asset.id)?.group ?? null;
     if (group && group.registerId === null && !isCombinedRegisterView) {
-      window.location.assign('/asset-register?scope=combined');
+      window.location.assign('/asset-register');
       return;
     }
     setAssetGroupModalInitialView('menu');
@@ -7536,7 +7542,7 @@ export default function AssetRegisterClient({
   function openAssetGroupEditor(group: AssetGroup, anchor: RegisterAsset | null) {
     if (!canManageAssetGroups) return;
     if (group.registerId === null && !isCombinedRegisterView) {
-      window.location.assign(`/asset-register?scope=combined&editUmbrella=${encodeURIComponent(group.id)}`);
+      window.location.assign(`/asset-register?editUmbrella=${encodeURIComponent(group.id)}`);
       return;
     }
     setAssetGroupModalInitialView('members');
@@ -8163,6 +8169,15 @@ export default function AssetRegisterClient({
   useEffect(() => {
     let mounted = true;
 
+    // Keep old bookmarks working without reloading the register or losing deep links.
+    const url = new URL(window.location.href);
+    if (!dealerRegisterMode && !isAccountantWorkspace && url.pathname === '/asset-register'
+      && url.searchParams.get('scope')?.trim().toLowerCase() === 'combined') {
+      url.searchParams.delete('scope');
+      url.searchParams.delete('registerId');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+
     async function loadAccountProfile() {
       try {
         const profileResponse = await fetch('/api/account-profile', {
@@ -8398,7 +8413,7 @@ export default function AssetRegisterClient({
     setNotice(null);
 
     if (nextRegisterId === COMBINED_REGISTER_ID) {
-      window.location.assign('/asset-register?scope=combined');
+      window.location.assign('/asset-register');
       return;
     }
 

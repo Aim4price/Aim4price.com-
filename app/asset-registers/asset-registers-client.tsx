@@ -298,7 +298,7 @@ function buildOpenHref(registerId: string, accountantShareId?: string, registerB
 function buildCombinedOpenHref(accountantShareId?: string, registerBaseHref = '/asset-register'): string {
   return accountantShareId
     ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?scope=combined`
-    : `${registerBaseHref}?scope=combined`;
+    : registerBaseHref === '/asset-register' ? registerBaseHref : `${registerBaseHref}?scope=combined`;
 }
 
 function normalizeLogoUrls(value: unknown): string[] {
