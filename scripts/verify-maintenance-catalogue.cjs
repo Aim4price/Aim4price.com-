@@ -19,7 +19,7 @@ async function main() {
     server = spawn(process.execPath,['node_modules/next/dist/bin/next','dev','-p','3034'],{cwd:root,env:{...process.env,PGHOST:'127.0.0.1',PGPORT:'5432',PGUSER:'maintenance_fixture',PGPASSWORD:'local-fixture-only',PGDATABASE:'maintenance_fixture',BETTER_AUTH_SECRET:'local-maintenance-fixture-secret'},stdio:['ignore','pipe','pipe']});
     await new Promise((resolve,reject)=>{ const timer=setTimeout(()=>reject(Error('Next startup timeout')),90000);server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));server.once('exit',code=>{clearTimeout(timer);reject(Error(`Next exited ${code}`));}); });
     await fs.mkdir(output,{recursive:true});
-    browser = await puppeteer.launch({executablePath:await chromium.executablePath(),args:chromium.args,headless:true,pipe:true});
+    browser = await puppeteer.launch({executablePath:process.env.CHROMIUM_PATH || await chromium.executablePath(),args:chromium.args,headless:true,pipe:true});
     const origin='http://127.0.0.1:3034';
     await browser.defaultBrowserContext().overridePermissions(origin,['geolocation']);
     const page=await browser.newPage(); await page.setGeolocation({latitude:-25.7,longitude:28.2,accuracy:10});
@@ -39,22 +39,22 @@ async function main() {
     const url=origin+'/owner-app/maintenance-validation';
     for(const source of ['basic','advanced'])for(const width of [430,1280]){
       await page.setViewport({width,height:900});await page.goto(`${url}?source=${source}`,{waitUntil:'networkidle0',timeout:120000});
-      await page.waitForFunction(()=>document.body.textContent.includes('Ploughshares'));
-      const options=await page.$$eval('button[aria-pressed]',els=>els.map(e=>e.textContent));assert.ok(options.some(t=>t.includes('Ploughshares')));assert.ok(!options.some(t=>t.includes('Engine oil')));
-      await clickText('Ploughshares');await page.type('input[placeholder="Name of person who checked the asset"]','Test inspector');await clickText('Save completed check-up');
+      await page.waitForFunction(()=>document.body.textContent.includes('Frame and welds condition'));
+      const options=await page.$$eval('button[aria-pressed]',els=>els.map(e=>e.textContent));assert.ok(options.some(t=>t.includes('Frame and welds condition')));assert.ok(!options.some(t=>t.includes('Engine oil')));assert.ok(!options.some(t=>t.includes('Ploughshares')));
+      await clickText('Frame and welds condition');await page.type('input[placeholder="Name of person who checked the asset"]','Test inspector');await clickText('Save completed check-up');
       await page.waitForFunction(()=>document.querySelector('#result').textContent!=='null');
-      const saved=JSON.parse(await page.$eval('#result',e=>e.textContent));assert.equal(saved.maintenanceWork[0].family.source,source);assert.equal(saved.maintenanceWork[0].items[0].id,'ploughshares');assert.match(saved.completedNotes,/Ploughshares/);
+      const saved=JSON.parse(await page.$eval('#result',e=>e.textContent));assert.equal(saved.maintenanceWork[0].family.source,source);assert.equal(saved.maintenanceWork[0].items[0].id,'frame_and_welds');assert.match(saved.completedNotes,/Frame and welds condition/);assert.equal(saved.maintenanceWork[0].items[0].action,'checked');
       await page.screenshot({path:path.join(output,`desktop-${source}-${width}.png`)});
     }
     console.log('PASS Basic and Advanced desktop selection and completion payloads at 430 and 1280 pixels');
     await page.setViewport({width:430,height:900,isMobile:true,hasTouch:true});await page.goto(url+'?view=app',{waitUntil:'networkidle0',timeout:120000});
     await page.waitForFunction(()=>[...document.querySelectorAll('button strong')].some(e=>e.textContent==='Maintenance'));
-    await clickText('Maintenance');await clickText('Checked');await page.waitForFunction(()=>document.body.textContent.includes('Ploughshares'));
-    await clickText('Ploughshares');await page.screenshot({path:path.join(output,'owner-app-plough.png')});
+    await clickText('Maintenance');await clickText('Checked');await page.waitForFunction(()=>document.body.textContent.includes('Frame and welds condition'));
+    await clickText('Frame and welds condition');await page.screenshot({path:path.join(output,'owner-app-plough.png')});
     await page.waitForFunction(()=>{const b=document.querySelector('[class*="editorFooter"] button:last-child');return b&&!b.disabled;});
     await page.$eval('[class*="editorFooter"] button:last-child',b=>b.click());
     await page.waitForFunction(()=>!document.querySelector('[class*="editorFooter"]'));
-    assert.equal(submitted.maintenanceWork[0].family.source,'basic');assert.equal(submitted.maintenanceWork[0].items[0].id,'ploughshares');
+    assert.equal(submitted.maintenanceWork[0].family.source,'basic');assert.equal(submitted.maintenanceWork[0].items[0].id,'frame_and_welds');
     console.log('PASS Owner App uses Basic identity over legacy tractor metadata and sends structured work');
     await page.goto(url+'?view=admin',{waitUntil:'networkidle0',timeout:120000});await page.type('input[aria-label="Find a family"]','plough');
     await clickText('Plough');await page.waitForFunction(()=>document.body.textContent.includes('Create separate checklist'));
