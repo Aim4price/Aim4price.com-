@@ -28,4 +28,48 @@
 .header, .footer { flex: 0 0 auto; }
 .body { overscroll-behavior: contain; }
 
-.changeAsset { border: 1px solid #d8e2ec; border-radius: 1rem; padding: .75rem 1.05rem; background: #f3f6f9; color: #17362c; }
+
+/* Asset-specific workspace: clear sections and enough room for long task names. */
+.dialog { width: min(100%, 72rem); padding: 2rem; }
+.header { padding-bottom: 1.5rem; gap: 2rem; }
+.close { border-radius: .65rem; width: 2.75rem; height: 2.75rem; flex: 0 0 2.75rem; font-size: 1.4rem !important; }
+.body { padding: 1.5rem .6rem 1.5rem 0; scrollbar-gutter: stable; }
+.identity { margin: 0 0 1.5rem; padding: 1.25rem 1.5rem; gap: .45rem; border: 1px solid #cddfd6; border-radius: 1rem; background: #f0f8f4; }
+.identity > strong { font-size: 1.25rem; overflow-wrap: anywhere; }
+.identity small { color: #567167; margin-top: .35rem; }
+.identity .eyebrow { font-size: .7rem; letter-spacing: .09em; font-weight: 800; color: #197454; }
+.tabs { padding: .35rem; border-radius: 1rem; background: #eff4f2; gap: .4rem; margin-bottom: 1.5rem; }
+.tabs button { flex: 1; border-color: transparent; background: transparent; white-space: nowrap; }
+.tabs button[aria-pressed=true] { background: #fff; border-color: #a7cdbc; box-shadow: 0 3px 10px #123b300b; }
+.sectionHeading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+.sectionHeading h3, .editor h3 { margin: 0; font-size: 1.1rem; }
+.sectionHeading .hint { margin: .4rem 0 0; }
+.addButton, .editor button, .error button { border: 1px solid #bad9ca; border-radius: .75rem; background: #edf8f1; color: #14553f; padding: .8rem 1rem; white-space: nowrap; }
+.items { margin: 0 0 1.25rem; gap: .85rem; }
+.items li { padding: 1.1rem; gap: .8rem; }
+.itemIcon { width: 1.1rem; height: 1.1rem; flex: 0 0 1.1rem; border: 1.5px solid #809e90; border-radius: .2rem; margin-top: .2rem; }
+.itemCopy { flex: 1; min-width: 0; }
+.itemCopy p { white-space: pre-wrap; line-height: 1.5; }
+.itemCopy small { display: block; color: #638073; font-size: .72rem; margin-top: .6rem; }
+.remove { align-self: flex-start; padding: .3rem; border: 0; background: transparent; color: #a13c36; font-size: .75rem !important; }
+.editor { display: grid; gap: 1rem; padding: 1.25rem; margin-bottom: 1.25rem; border: 1px solid #bad9ca; border-radius: 1rem; background: #f0f8f4; }
+.editor label { display: grid; gap: .5rem; font-size: .9rem; font-weight: 700; }
+.editor label span { font-weight: 400; }
+.editor input, .editor textarea { width: 100%; box-sizing: border-box; padding: .8rem 1rem; border: 1px solid #b8cfc3; border-radius: .65rem; color: #123b30; background: white; font: inherit; font-weight: 400; }
+.editor textarea { resize: vertical; }
+.editorActions { display: flex; justify-content: flex-end; gap: .65rem; }
+.editor button.primary { background: #14553f; border-color: #14553f; color: white; }
+.error { padding: 1rem; border-radius: .75rem; color: #9c302b; background: #fff1ef; }
+.notice { padding: .8rem 1rem; color: #14553f; background: #eaf7f0; border-radius: .75rem; }
+.empty { padding: 2rem; text-align: center; color: #64746a; border: 1px dashed #bdd2c7; border-radius: 1rem; }
+.footer { padding-top: 1.4rem; gap: .8rem; }
+.footer button { min-height: 3rem; }
+.dialog button:disabled { opacity: .5; cursor: not-allowed; }
+.dialog input:focus-visible, .dialog textarea:focus-visible { outline: 3px solid #78b89b; outline-offset: 2px; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { align-items: stretch; flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .tabs { flex-direction: column; }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer button { flex: 1 1 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .identity { padding: 1rem; }
+}
