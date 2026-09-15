@@ -17,7 +17,7 @@
   --inbox-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
   display: flex;
   flex-direction: column;
-  width: min(var(--website-dialog-reference-width, 100%), 46rem);
+  width: min(var(--website-dialog-reference-width, 100%), 60rem);
   max-width: 100%;
   max-height: min(54rem, calc(var(--website-visible-height, 100dvh) - 2rem));
   min-height: 0;
