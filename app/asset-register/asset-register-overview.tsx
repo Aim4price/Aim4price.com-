@@ -1,4 +1,5 @@
 'use client';
+import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 
 import { createPortal } from '../../components/WebsitePortal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -538,16 +539,8 @@ export default function AssetRegisterOverview() {
     setError('');
 
     try {
-      const current = new URL(window.location.href);
-      const params = new URLSearchParams();
-      const registerId = text(current.searchParams.get('registerId'));
-      const scope = text(current.searchParams.get('scope'));
-
-      if (registerId) params.set('registerId', registerId);
-      if (scope === 'combined') params.set('scope', 'combined');
-
-      const suffix = params.toString() ? `?${params.toString()}` : '';
-      const response = await fetch(`/api/asset-register${suffix}`, {
+      const registerUrl = buildAssetRegisterApiUrl(registerIdFromLocation(window.location));
+      const response = await fetch(registerUrl, {
         cache: 'no-store',
         headers: { Accept: 'application/json' },
       });

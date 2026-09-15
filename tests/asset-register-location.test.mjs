@@ -5,12 +5,11 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const source = readFileSync(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
-const helpers = source.slice(source.indexOf('function readRegisterIdFromLocation()'), source.indexOf('function buildAssetGroupsApiUrl('));
-const javascript = ts.transpileModule(helpers, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+const helpers = readFileSync(new URL('../lib/asset-register-location.ts', import.meta.url), 'utf8');
+const javascript = ts.transpileModule(helpers, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
 function resolveLocation(path) {
-  return vm.runInNewContext(`${javascript}\nbuildAssetRegisterApiUrl(readRegisterIdFromLocation());`, {
-    URLSearchParams, COMBINED_REGISTER_ID: '__combined__', window: { location: new URL(path, 'https://www.aim4price.com') },
-  });
+  const context = { URLSearchParams, exports: {}, location: new URL(path, 'https://www.aim4price.com') };
+  return vm.runInNewContext(`${javascript}\nexports.buildAssetRegisterApiUrl(exports.registerIdFromLocation(location));`, context);
 }
 
 test('clean owner address and old combined links request all registers', () => {
@@ -36,4 +35,10 @@ test('legacy address cleanup preserves deep links, hash and history without navi
       history: { state: { retained: true }, replaceState: (...args) => { replaced = args; } } },
   });
   assert.deepEqual(replaced, [{ retained: true }, '', '/asset-register?editUmbrella=group-1#assets']);
+});
+
+test('main register and overview use the same location resolver', () => {
+  const overview = readFileSync(new URL('../app/asset-register/asset-register-overview.tsx', import.meta.url), 'utf8');
+  assert.match(source, /registerIdFromLocation\(window.location\)/);
+  assert.match(overview, /buildAssetRegisterApiUrl\(registerIdFromLocation\(window.location\)\)/);
 });

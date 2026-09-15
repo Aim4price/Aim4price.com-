@@ -1,4 +1,5 @@
 'use client';
+import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination from '../../components/ListPagination';
 
@@ -6159,37 +6160,7 @@ function downloadBlob(blob: Blob, fileName: string) {
 }
 
 function readRegisterIdFromLocation(): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('scope')?.trim().toLowerCase() === 'combined') {
-    return COMBINED_REGISTER_ID;
-  }
-
-  const registerId = params.get('registerId')?.trim();
-  if (registerId) return registerId;
-
-  // The owner register opens the combined view without a visible scope query.
-  return window.location.pathname === '/asset-register' && !params.has('dealerView')
-    ? COMBINED_REGISTER_ID
-    : '';
-}
-
-function buildAssetRegisterApiUrl(registerId?: string | null): string {
-  const cleanedRegisterId = String(registerId ?? '').trim();
-
-  if (cleanedRegisterId === COMBINED_REGISTER_ID) {
-    return '/api/asset-register?scope=combined';
-  }
-
-  if (!cleanedRegisterId) {
-    return '/api/asset-register';
-  }
-
-  const params = new URLSearchParams({ registerId: cleanedRegisterId });
-  return `/api/asset-register?${params.toString()}`;
+  return typeof window === 'undefined' ? '' : registerIdFromLocation(window.location);
 }
 
 function buildAssetGroupsApiUrl(accountantShareId?: string, groupId?: string, combined = false): string {
