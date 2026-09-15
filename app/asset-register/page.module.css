@@ -41120,3 +41120,36 @@ button.documentOpenLink {
 .page .assetGroupSummary .assetValueVatAmountRow .assetCardVatToggle {
   right: -2.25rem !important;
 }
+
+/* Outstanding member updates remain visible while the umbrella is folded. */
+.page .assetGroupHeader.umbrellaHasUpdates:not(.assetGroupHeaderFlagged) {
+  background: linear-gradient(180deg, #fff9eb, #fffdf7) !important;
+  border-color: #c79943 !important;
+  box-shadow: 0 10px 26px rgba(125, 91, 28, .07), inset 0 0 0 1px rgba(199, 153, 67, .18) !important;
+}
+.page .assetGroupHeader.umbrellaNeedsAttention:not(.assetGroupHeaderFlagged) {
+  background: linear-gradient(180deg, #fff2ef, #fff9f7) !important;
+  border-color: #c77769 !important;
+  box-shadow: 0 10px 26px rgba(125, 50, 28, .07), inset 0 0 0 1px rgba(199, 119, 105, .18) !important;
+}
+.page .umbrellaAttentionPills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .65rem;
+}
+.page .umbrellaAttentionPills > span {
+  padding: .3rem .65rem;
+  border: 1px solid #ead5a7;
+  border-radius: .5rem;
+  background: #fff3d8;
+  color: #72521b;
+  font-size: .76rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+.page .umbrellaAttentionPills > .umbrellaIssuePill {
+  border-color: #ebc1b9;
+  background: #ffe6df;
+  color: #8c3e32;
+}
