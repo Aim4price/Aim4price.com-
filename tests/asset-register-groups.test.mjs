@@ -749,7 +749,7 @@ test('combined Asset Register groups are account-wide, preserve member counting,
   assert.match(persistence, /input\.countsTowardTotalByAssetId/);
   assert.doesNotMatch(persistence, /const valueMode = isCombinedScope \? 'separate'/);
   assert.match(client, /projectAssetGroupsToAssets\(assetGroups, assets\)/);
-  assert.match(client, /window\.location\.assign\('\/asset-register\?scope=combined'\)/);
+  assert.match(client, /window\.location\.assign\('\/asset-register'\)/);
   assert.match(client, /reportAssetGroups = projectAssetGroupsToAssets\(assetGroups, reportAssets\)/);
   assert.match(exportRoute, /combinedGroups = scope === 'combined'/);
   assert.match(accountantWorkspace, /projectAssetGroupsToAssets/);
