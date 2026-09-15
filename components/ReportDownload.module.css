@@ -310,3 +310,12 @@
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-quick-reports]) strong {
   text-align: left !important;
 }
+
+/* Concise report copy stays on one line; dynamic metadata has a safe overflow fallback. */
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) :is(strong,small),
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) p {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  min-width: 0;
+}

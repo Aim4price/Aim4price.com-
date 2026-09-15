@@ -342,7 +342,7 @@ export default function DealerMaintenanceReportModal({
               <>
                 <div className={assetStyles.assetTimelineStageHeading}>
                   <strong>Choose export format</strong>
-                  <span>Select PDF or Excel, then continue to the report timeline.</span>
+                  <span>Choose PDF or Excel.</span>
                 </div>
 
                 <div className={assetStyles.assetTimelineFormatGrid} aria-label="Report format" data-download-grid="true">
@@ -357,7 +357,7 @@ export default function DealerMaintenanceReportModal({
                     </span>
                     <span className={assetStyles.assetTimelineFormatCopy} data-download-copy="true">
                       <strong>PDF report</strong>
-                      <small>Open a clear report for clients, banks or insurance partners.</small>
+                      <small>Printable asset report.</small>
                     </span>
                   </button>
 
@@ -372,7 +372,7 @@ export default function DealerMaintenanceReportModal({
                     </span>
                     <span className={assetStyles.assetTimelineFormatCopy} data-download-copy="true">
                       <strong>XLSX workbook</strong>
-                      <small>Download the selected timeline records in an Excel-ready workbook.</small>
+                      <small>Selected records in Excel.</small>
                     </span>
                   </button>
                 </div>
@@ -393,7 +393,7 @@ export default function DealerMaintenanceReportModal({
             <>
               <div className={assetStyles.assetTimelineStageHeading}>
                 <strong>Report timeline</strong>
-                <span>Choose the maintenance type, year and month to include.</span>
+                <span>Choose type, year and month.</span>
               </div>
 
               <div className={`${assetStyles.assetFuelReportFilterBox} ${assetStyles.assetMaintenanceReportFilterBox}`}>

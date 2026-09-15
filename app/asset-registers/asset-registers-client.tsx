@@ -1490,19 +1490,19 @@ export default function AssetRegistersClient({
               : "Export Asset Register";
   const exportIntro = exportStep === "choice"
     ? isSummaryFlow
-      ? "Choose whether to summarise all registers, one register, or a selected merged set."
-      : "Choose whether to export all registers, one register, or a selected merged set."
+      ? "Choose registers to summarise."
+      : "Choose registers to export."
     : exportStep === "single-picker"
       ? isSummaryFlow
-        ? "Select the saved asset register to summarise."
-        : "Select the saved asset register to download."
+        ? "Choose a register to summarise."
+        : "Choose a register to export."
       : exportStep === "combined-picker"
         ? isSummaryFlow
-          ? "Select at least two asset registers to merge into one summary."
-          : "Select at least two asset registers to merge into one export."
+          ? "Choose two or more registers."
+          : "Choose two or more registers."
         : isSummaryFlow
-          ? "Confirm the report name and open the PDF summary report."
-          : "Confirm the report name and choose the export format.";
+          ? "Name the report and open PDF."
+          : "Name the report and choose a format.";
   const deleteMoveTargets = useMemo(
     () =>
       deleteCandidateRegister
@@ -2998,8 +2998,8 @@ export default function AssetRegistersClient({
                         <DownloadIcon className={styles.exportChoiceIcon} />
                       </span>
                       <span className={styles.exportChoiceTitleBlock} data-download-copy="true">
-                        <strong>{isSummaryFlow ? "Summary of all Asset Registers" : "Download all Asset Registers"}</strong>
-                        <small>{isSummaryFlow ? "Open one PDF summary for every asset register saved on this account." : "Export every asset register saved on this account."}</small>
+                        <strong>{isSummaryFlow ? "All register summaries" : "All asset registers"}</strong>
+                        <small>{isSummaryFlow ? "Summaries for all registers." : "Assets from all registers."}</small>
                       </span>
                     </button>
 
@@ -3013,8 +3013,8 @@ export default function AssetRegistersClient({
                         <OpenIcon className={styles.exportChoiceIcon} />
                       </span>
                       <span className={styles.exportChoiceTitleBlock} data-download-copy="true">
-                        <strong>{isSummaryFlow ? "Summary of a specific Asset Register" : "Download a specific Asset Register"}</strong>
-                        <small>{isSummaryFlow ? "Choose one register and open only its PDF summary." : "Choose one register and export only its saved assets."}</small>
+                        <strong>{isSummaryFlow ? "One register summary" : "One asset register"}</strong>
+                        <small>{isSummaryFlow ? "Summary for one register." : "Assets from one register."}</small>
                       </span>
                     </button>
 
@@ -3029,8 +3029,8 @@ export default function AssetRegistersClient({
                           <PlusIcon className={styles.exportChoiceIcon} />
                         </span>
                         <span className={styles.exportChoiceTitleBlock} data-download-copy="true">
-                          <strong>Merge specific Asset Registers</strong>
-                          <small>{isSummaryFlow ? "Select two or more registers and merge them into one PDF summary." : "Select two or more registers and merge them into one export."}</small>
+                          <strong>Merge registers</strong>
+                          <small>{isSummaryFlow ? "Combined register summary." : "Combined register export."}</small>
                         </span>
                       </button>
                     ) : null}
@@ -3236,8 +3236,8 @@ export default function AssetRegistersClient({
                         <strong>{isSummaryFlow ? "PDF summary report" : "PDF report"}</strong>
                         <small>
                           {isSummaryFlow
-                            ? "Open a clear PDF summary for clients, banks or insurance partners."
-                            : "Choose a clear PDF report for clients, banks or insurance partners."}
+                            ? "Printable register summary."
+                            : "Printable asset report."}
                         </small>
                       </span>
                     </button>
@@ -3260,7 +3260,7 @@ export default function AssetRegistersClient({
                         </span>
                         <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>XLSX workbook</strong>
-                          <small>Download all register rows in an Excel-ready workbook.</small>
+                          <small>Register records in Excel.</small>
                         </span>
                       </button>
                     ) : null}

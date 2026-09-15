@@ -4943,8 +4943,8 @@ export default function MyInvoicesClient({
                 </h2>
                 {downloadStep !== 'format' ? (
                   <p>{downloadStep === 'timeline'
-                    ? 'Select the year and optional month to include.'
-                    : 'Choose whether Fuel Slip records should be included.'}</p>
+                    ? 'Choose a year and month.'
+                    : 'Include fuel slips?'}</p>
                 ) : null}
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeDownloadModal} aria-label="Close download"><span aria-hidden="true">×</span></button>
@@ -4984,7 +4984,7 @@ export default function MyInvoicesClient({
                     </span>
                     <span className={styles.reportTitleBlock}>
                       <strong>PDF report</strong>
-                      <small>Download a clean printable Cost Ledger report.</small>
+                      <small>Printable cost ledger.</small>
                     </span>
                   </button>
                   <button
@@ -4998,7 +4998,7 @@ export default function MyInvoicesClient({
                     </span>
                     <span className={styles.reportTitleBlock}>
                       <strong>XLSX workbook</strong>
-                      <small>Download the filtered cost ledger rows in Excel format.</small>
+                      <small>Cost records in Excel.</small>
                     </span>
                   </button>
                 </div>
@@ -5015,7 +5015,7 @@ export default function MyInvoicesClient({
                 <section className={styles.reportPeriodPanel} aria-label="Report timeline">
                   <div className={styles.reportSectionHeading}>
                     <strong>Report timeline</strong>
-                    <span>Choose a year, then narrow the report to a specific month if needed.</span>
+                    <span>Choose a year and month.</span>
                   </div>
                   <div className={styles.reportPeriodGrid}>
                     <FilterDropdown
@@ -5072,7 +5072,7 @@ export default function MyInvoicesClient({
                       </span>
                       <span className={styles.reportTitleBlock}>
                         <strong>Include fuel slip costs</strong>
-                        <small>Fuel Slip records stay in the report and are included in totals.</small>
+                        <small>Add fuel slips to totals.</small>
                       </span>
                     </button>
                     <button
@@ -5086,7 +5086,7 @@ export default function MyInvoicesClient({
                       </span>
                       <span className={styles.reportTitleBlock}>
                         <strong>Exclude fuel slip costs</strong>
-                        <small>Fuel Slip records are left out of the report and its totals.</small>
+                        <small>Leave fuel slips out.</small>
                       </span>
                     </button>
                   </div>

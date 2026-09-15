@@ -273,7 +273,7 @@ export default function DealerCostOfOwnershipReportModal({
             <>
               <div className={assetStyles.assetTimelineStageHeading}>
                 <strong>Choose export format</strong>
-                <span>Select PDF or Excel, then continue to the report timeline.</span>
+                <span>Choose PDF or Excel.</span>
               </div>
 
               <div className={assetStyles.assetTimelineFormatGrid} aria-label="Report format" data-download-grid="true">
@@ -288,7 +288,7 @@ export default function DealerCostOfOwnershipReportModal({
                   </span>
                   <span className={assetStyles.assetTimelineFormatCopy} data-download-copy="true">
                     <strong>PDF report</strong>
-                    <small>Open a clear ownership cost report.</small>
+                    <small>Printable ownership costs.</small>
                   </span>
                 </button>
 
@@ -303,7 +303,7 @@ export default function DealerCostOfOwnershipReportModal({
                   </span>
                   <span className={assetStyles.assetTimelineFormatCopy} data-download-copy="true">
                     <strong>XLSX workbook</strong>
-                    <small>Download ownership costs and VAT in Excel.</small>
+                    <small>Costs and VAT in Excel.</small>
                   </span>
                 </button>
               </div>
@@ -324,7 +324,7 @@ export default function DealerCostOfOwnershipReportModal({
             <>
               <div className={assetStyles.assetTimelineStageHeading}>
                 <strong>Report timeline</strong>
-                <span>Choose the year and month to include.</span>
+                <span>Choose a year and month.</span>
               </div>
 
               <div className={assetStyles.assetFuelReportFilterBox}>

@@ -380,11 +380,11 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.match(modal, /registerStyles\.optionFeaturedButton/);
   assert.match(modal, /registerStyles\.optionDangerButton/);
   assert.match(modal, /Ungroup without deleting assets/);
-  assert.match(modal, /Download umbrella valuation/);
-  assert.match(modal, /Download maintenance report/);
-  assert.match(modal, /Download fuel report/);
-  assert.match(modal, /Download depreciation log/);
-  assert.match(modal, /Download cost of ownership report/);
+  assert.match(modal, /Umbrella valuation/);
+  assert.match(modal, /Maintenance report/);
+  assert.match(modal, /Fuel report/);
+  assert.match(modal, /Depreciation log/);
+  assert.match(modal, /Cost of ownership/);
   assert.doesNotMatch(modal, /Saved documents|href="\/documents"/);
   assert.match(modal, /registerStyles\.modalCloseButton/);
   assert.match(modal, /registerStyles\.assetTimelineFormatGrid/);
