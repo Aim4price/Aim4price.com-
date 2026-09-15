@@ -1,3 +1,4 @@
+import { basicAssetFamilySql, basicAssetUsageSql } from './basic-asset-catalogue';
 import { createHash } from 'node:crypto';
 import { getDb } from './db';
 import { ensureMarketplaceColumns } from './marketplace-db';
@@ -148,6 +149,8 @@ const RECENT_ADVERTS_CTE = `
         ''
       ) as year_label,
       coalesce(
+        case when ${basicAssetUsageSql('listing.specs_json')} = 'percent' then
+          coalesce(case when listing.specs_json->>'usageUnit' = 'percent' then nullif(listing.specs_json->>'usageAmount', '') end, nullif(listing.specs_json->>'lifeWorkedPercent', ''), current_asset.life_worked_percent::text) end,
         nullif(trim(listing.specs_json->>'usageAmount'), ''),
         nullif(trim(listing.specs_json->>'hours'), ''),
         nullif(trim(listing.specs_json->>'kilometres'), ''),
@@ -202,6 +205,7 @@ const RECENT_ADVERTS_CTE = `
       coalesce(asset.specs_json, '{}'::jsonb) as specs_json,
       coalesce(asset.year_model::text, '') as year_label,
       coalesce(
+        case when ${basicAssetUsageSql('asset.specs_json')} = 'percent' then asset.life_worked_percent::text end,
         nullif(trim(asset.specs_json->>'usageAmount'), ''),
         asset.hours::text,
         ''
@@ -250,6 +254,7 @@ const RECENT_ADVERTS_CTE = `
       listing.year_label,
       listing.usage_amount,
       coalesce(
+        ${basicAssetUsageSql('listing.specs_json')},
         nullif(trim(listing.specs_json->>'usageUnit'), ''),
         case when listing.specs_json ? 'kilometres' then 'km' end,
         nullif(trim(family.usage_metric_type), ''),
@@ -257,6 +262,7 @@ const RECENT_ADVERTS_CTE = `
       ) as usage_unit,
       listing.condition_label,
       coalesce(
+        ${basicAssetFamilySql("listing.specs_json", 'label')},
         nullif(trim(family.family_label), ''),
         nullif(trim(listing.specs_json->>'familyLabel'), ''),
         nullif(trim(listing.specs_json->>'assetType'), ''),
@@ -266,11 +272,12 @@ const RECENT_ADVERTS_CTE = `
       coalesce(nullif(trim(brand.name), ''), '') as taxonomy_brand_name,
       coalesce(nullif(trim(model.model_name), ''), '') as taxonomy_model_name,
       coalesce(
+        ${basicAssetFamilySql("listing.specs_json", 'label')},
         nullif(trim(family.family_label), ''),
         nullif(trim(sector.sector_label), ''),
         'Equipment'
       ) as taxonomy_type_label,
-      coalesce(nullif(trim(family.usage_metric_type), ''), 'hours')
+      coalesce(${basicAssetUsageSql('listing.specs_json')}, nullif(trim(family.usage_metric_type), ''), 'hours')
         as taxonomy_usage_unit,
       coalesce(nullif(trim(listing.province), ''), 'South Africa') as province,
       case lower(trim(listing.province))
