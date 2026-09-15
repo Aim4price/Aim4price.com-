@@ -1,5 +1,7 @@
 'use client';
 
+import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
+
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
 import DocumentFileLink from '../../components/DocumentFileLink';
@@ -4856,92 +4858,52 @@ export default function MyInvoicesClient({
       ) : null}
 
       {filterOpen ? (
-        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Filter saved cost records">
-          <div className={`${styles.filterModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>Filter cost records</h2>
-                <p>
-                  {dealerMode
-                    ? 'Choose a company or owner first, then narrow the records to one of their shared assets.'
-                    : 'Narrow the Cost Ledger by asset, source and invoice period.'}
-                </p>
-              </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeFilterPanel} aria-label="Close filter"><span aria-hidden="true">×</span></button>
-            </div>
-            <div className={styles.modalDivider} />
-            <div className={`${styles.filterGrid} ${dealerMode ? styles.dealerFilterGrid : ''}`}>
-              {dealerMode ? (
-                <FilterDropdown
-                  label="Company / owner"
-                  dropdownKey="owner"
-                  value={draftFilters.ownerId}
-                  options={ownerFilterOptions}
-                  openDropdown={openFilterDropdown}
-                  searchable
-                  searchValue={filterOwnerSearch}
-                  searchPlaceholder="Search companies and owners"
-                  noMatchesLabel="No companies or owners found"
-                  onOpenChange={handleFilterDropdownOpenChange}
-                  onChange={(value) => setDraftFilters((current) => ({
-                    ...current,
-                    ownerId: value,
-                    assetId: 'all',
-                  }))}
-                  onSearchChange={setFilterOwnerSearch}
-                />
-              ) : null}
-              <FilterDropdown
-                label="Asset"
-                dropdownKey="asset"
-                value={draftFilters.assetId}
-                options={assetFilterOptions}
-                openDropdown={openFilterDropdown}
-                searchable
-                searchValue={filterAssetSearch}
-                searchPlaceholder={dealerMode ? 'Search this owner’s assets' : 'Search saved assets'}
-                noMatchesLabel={dealerMode ? 'No shared assets found for this owner' : 'No saved assets found'}
-                onOpenChange={handleFilterDropdownOpenChange}
-                onChange={(value) => setDraftFilters((current) => ({ ...current, assetId: value }))}
-                onSearchChange={setFilterAssetSearch}
-                disabled={dealerMode && draftFilters.ownerId === 'all'}
-              />
-              <FilterDropdown
-                label="Source"
-                dropdownKey="source"
-                value={draftFilters.source}
-                options={dealerMode ? DEALER_SOURCE_FILTER_OPTIONS : SOURCE_FILTER_OPTIONS}
-                openDropdown={openFilterDropdown}
-                onOpenChange={handleFilterDropdownOpenChange}
-                onChange={(value) => setDraftFilters((current) => ({ ...current, source: value as FilterSource }))}
-              />
-              <FilterDropdown
-                label="Year"
-                dropdownKey="year"
-                value={draftFilters.year}
-                options={yearFilterOptions}
-                openDropdown={openFilterDropdown}
-                onOpenChange={handleFilterDropdownOpenChange}
-                onChange={(value) => setDraftFilters((current) => ({ ...current, year: value, month: value === 'all' ? 'all' : current.month }))}
-              />
-              <FilterDropdown
-                label="Month"
-                dropdownKey="month"
-                value={draftFilters.month}
-                options={monthFilterOptions}
-                openDropdown={openFilterDropdown}
-                onOpenChange={handleFilterDropdownOpenChange}
-                onChange={(value) => setDraftFilters((current) => ({ ...current, month: value }))}
-                disabled={draftFilters.year === 'all'}
-              />
-            </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeFilterPanel}>Close</button>
-              <button type="button" className={styles.secondaryButton} onClick={clearFilters}>Clear filters</button>
-              <button type="button" className={styles.primaryButton} onClick={applyFilters}>Apply filters</button>
-            </div>
-          </div>
-        </div>
+        <FilterFlow title="Filter cost records" onClose={closeFilterPanel} onClear={clearFilters} onApply={applyFilters}>
+          {dealerMode ? (
+            <FilterQuestion
+              label="Which company or owner?"
+              value={draftFilters.ownerId}
+              options={ownerFilterOptions}
+              searchable
+              searchPlaceholder="Search companies and owners"
+              noMatchesLabel="No companies or owners found"
+              onChange={(value) => setDraftFilters((current) => ({
+                ...current,
+                ownerId: value,
+                assetId: 'all',
+              }))}
+            />
+          ) : null}
+          <FilterQuestion
+            label="Which asset?"
+            value={draftFilters.assetId}
+            options={assetFilterOptions}
+            searchable
+            searchPlaceholder={dealerMode ? 'Search this owner’s assets' : 'Search saved assets'}
+            noMatchesLabel={dealerMode ? 'No shared assets found for this owner' : 'No saved assets found'}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, assetId: value }))}
+            disabled={dealerMode && draftFilters.ownerId === 'all'}
+          />
+          <FilterQuestion
+            label="Which source?"
+            value={draftFilters.source}
+            options={dealerMode ? DEALER_SOURCE_FILTER_OPTIONS : SOURCE_FILTER_OPTIONS}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, source: value as FilterSource }))}
+          />
+          <FilterQuestion
+            label="Which year?"
+            value={draftFilters.year}
+            options={yearFilterOptions}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, year: value, month: value === 'all' ? 'all' : current.month }))}
+          />
+          <FilterQuestion
+            label="Which month?"
+            value={draftFilters.month}
+            options={monthFilterOptions}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, month: value }))}
+            disabled={draftFilters.year === 'all'}
+          />
+        </FilterFlow>
       ) : null}
 
       {!dealerMode && downloadOpen ? (

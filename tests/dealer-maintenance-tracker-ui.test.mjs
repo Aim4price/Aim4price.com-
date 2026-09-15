@@ -57,10 +57,10 @@ test('maintenance tracker proximity filters support days, hours and kilometres',
   assert.match(tracker, /remainingDays <= dayLimit/);
   assert.match(tracker, /record\.remainingUsage <= hourLimit/);
   assert.match(tracker, /record\.remainingUsage <= kilometreLimit/);
-  assert.match(tracker, /aria-label="Due within days"/);
-  assert.match(tracker, /aria-label="Due within hours"/);
-  assert.match(tracker, /aria-label="Due within kilometres"/);
-  assert.match(tracker, /Overdue maintenance remains included/);
+  assert.match(tracker, /label="Due within how many days\?"/);
+  assert.match(tracker, /label="Due within how many hours\?"/);
+  assert.match(tracker, /label="Due within how many kilometres\?"/);
+  assert.match(tracker, /<FilterThresholdQuestion/g);
 });
 
 test('proximity filters participate in apply, clear and active-filter states', () => {

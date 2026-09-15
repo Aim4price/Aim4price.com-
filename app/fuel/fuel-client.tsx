@@ -1,5 +1,7 @@
 'use client';
 
+import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
+
 import { useSearchParams } from 'next/navigation';
 
 import { openCanonicalReportUrl } from '../../lib/report-open';
@@ -3858,10 +3860,10 @@ export default function FuelClient({
                   <button
                     type="button"
                     className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topExclusionsButton}`}
-                    onClick={isSlipsPage ? openFuelSlipManagerFilterPanel : openExclusionsModal}
+                    onClick={openExclusionsModal}
                   >
-                    <>{isSlipsPage ? <FilterIcon className={styles.buttonIcon} /> : <ExclusionIcon className={styles.buttonIcon} />}</>
-                    <span>{isSlipsPage ? 'Filter' : 'Exclusions'}</span>
+                    <ExclusionIcon className={styles.buttonIcon} />
+                    <span>Exclusions</span>
                   </button>
                   <button
                     type="button"
@@ -3880,6 +3882,7 @@ export default function FuelClient({
                   </button>
                 </div>
 
+                <div className={styles.slipSearchRow}>
                 <label className={styles.searchWrap}>
                   <SearchIcon className={styles.searchIcon} />
                   <input
@@ -3896,6 +3899,10 @@ export default function FuelClient({
                     </button>
                   ) : null}
                 </label>
+                  {isSlipsPage ? <button type="button" className={styles.slipFilterButton} onClick={openFuelSlipManagerFilterPanel}>
+                    <FilterIcon className={styles.buttonIcon} /><span>Filter</span>
+                  </button> : null}
+                </div>
               </div>
             </div>
 
@@ -4047,9 +4054,9 @@ export default function FuelClient({
             {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}
             <span>{isSlipsPage ? 'Storage' : 'Slips'}</span>
           </button>
-          <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? openFuelSlipManagerFilterPanel : openExclusionsModal}>
+          <button type="button" className={styles.mobileQuickButton} onClick={openExclusionsModal}>
             <ExclusionIcon className={styles.buttonIcon} />
-            <span>{isSlipsPage ? 'Filter' : 'Exclude'}</span>
+            <span>Exclude</span>
           </button>
           <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? openFuelSlipDownloadPanel : openReportModal}>
             <DownloadIcon className={styles.buttonIcon} />
@@ -4383,69 +4390,35 @@ export default function FuelClient({
       ) : null}
 
       {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipManagerFilterOpen ? (
-        <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
-          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelSlipManagerFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-filter-title" aria-describedby="fuel-slip-filter-description">
-            <div className={styles.modalHeader}>
-              <div>
-                <h2 id="fuel-slip-filter-title">Filter fuel slips</h2>
-                <p id="fuel-slip-filter-description">Narrow the Fuel Ledger by target, source and slip period.</p>
-              </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipManagerFilterPanel} aria-label="Close fuel slip filters"><span aria-hidden="true">×</span></button>
-            </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.fuelSlipFilterGrid}>
-              <FuelSlipFilterDropdown
-                label="Target"
-                dropdownKey="target"
-                value={draftFuelSlipManagerFilters.targetKey}
-                options={fuelSlipManagerTargetOptions}
-                openDropdown={openFuelSlipManagerFilterSelect}
-                searchable
-                searchValue={fuelSlipManagerTargetSearch}
-                searchPlaceholder="Search saved assets or storage tanks"
-                noMatchesLabel="No matching targets found"
-                onOpenChange={setOpenFuelSlipManagerFilterSelect}
-                onSearchChange={setFuelSlipManagerTargetSearch}
-                onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, targetKey: value }))}
-              />
-
-              <FuelSlipFilterDropdown
-                label="Source / status"
-                dropdownKey="capture"
-                value={draftFuelSlipManagerFilters.capture}
-                options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
-                openDropdown={openFuelSlipManagerFilterSelect}
-                onOpenChange={setOpenFuelSlipManagerFilterSelect}
-                onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, capture: value as FuelSlipCaptureFilter }))}
-              />
-
-              <FuelSlipFilterDropdown
-                label="Year"
-                dropdownKey="year"
-                value={draftFuelSlipManagerFilters.year}
-                options={fuelSlipManagerYearOptions}
-                openDropdown={openFuelSlipManagerFilterSelect}
-                onOpenChange={setOpenFuelSlipManagerFilterSelect}
-                onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, year: value }))}
-              />
-
-              <FuelSlipFilterDropdown
-                label="Month"
-                dropdownKey="month"
-                value={draftFuelSlipManagerFilters.month}
-                options={fuelSlipManagerMonthOptions}
-                openDropdown={openFuelSlipManagerFilterSelect}
-                onOpenChange={setOpenFuelSlipManagerFilterSelect}
-                onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, month: value }))}
-              />
-            </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipManagerFilterPanel}>Close</button>
-              <button type="button" className={styles.secondaryButton} onClick={clearFuelSlipManagerFilters}>Clear filters</button>
-              <button type="button" className={styles.primaryButton} onClick={applyFuelSlipManagerFilters}>Apply filters</button>
-            </div>
-          </div>
-        </div>
+        <FilterFlow title="Filter fuel slips" onClose={closeFuelSlipManagerFilterPanel} onClear={clearFuelSlipManagerFilters} onApply={applyFuelSlipManagerFilters} dialogRef={fuelSlipManagerChildDialogRef}>
+          <FilterQuestion
+            label="Which asset or storage tank?"
+            value={draftFuelSlipManagerFilters.targetKey}
+            options={fuelSlipManagerTargetOptions}
+            searchable
+            searchPlaceholder="Search saved assets or storage tanks"
+            noMatchesLabel="No matching targets found"
+            onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, targetKey: value }))}
+          />
+          <FilterQuestion
+            label="Which source or status?"
+            value={draftFuelSlipManagerFilters.capture}
+            options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
+            onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, capture: value as FuelSlipCaptureFilter }))}
+          />
+          <FilterQuestion
+            label="Which year?"
+            value={draftFuelSlipManagerFilters.year}
+            options={fuelSlipManagerYearOptions}
+            onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, year: value }))}
+          />
+          <FilterQuestion
+            label="Which month?"
+            value={draftFuelSlipManagerFilters.month}
+            options={fuelSlipManagerMonthOptions}
+            onChange={(value) => setDraftFuelSlipManagerFilters((current) => ({ ...current, month: value }))}
+          />
+        </FilterFlow>
       ) : null}
 
       {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? (

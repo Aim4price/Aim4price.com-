@@ -25,23 +25,17 @@ test("Dealer App summary cards omit supporting copy while Dealer Desktop keeps i
 test("Dealer App filter is concise, uses both native dropdowns, and applies both drafts", () => {
   assert.match(
     source,
-    /dealerAppMode \? 'Filter' : 'Filter tracked equipment'/,
+    /<FilterFlow title="Filter tracked equipment"/,
   );
-  assert.match(source, /nativeSelect=\{dealerAppMode\}/g);
+  assert.match(source, /<FilterQuestion label="Which asset owner\?"/);
+  assert.match(source, /<FilterQuestion label="Which maintenance status\?"/);
   assert.match(source, /onChange=\{setDraftOwnerFilter\}/);
   assert.match(source, /setDraftStatusFilter\(value as TrackerStatusFilter\)/);
   assert.match(
     source,
     /setOwnerFilter\(draftOwnerFilter\); setStatusFilter\(draftStatusFilter\)/,
   );
-  assert.match(
-    styles,
-    /\.dealerApp \.trackerFilterForm\.trackerFilterForm \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
-  );
-  assert.match(
-    styles,
-    /\.dealerApp \.trackerFilterForm select \{[\s\S]*?min-height: 3\.4rem/,
-  );
+
 });
 
 test("Dealer App and Dealer Desktop history type choices omit supporting copy", () => {

@@ -1,5 +1,7 @@
 'use client';
 
+import FilterFlow, { FilterQuestion, FilterThresholdQuestion } from './FilterFlow';
+
 import DropdownOverlay from './DropdownOverlay';
 import { useEffect, useMemo, useState } from 'react';
 import DealerCostOfOwnershipReportModal from './DealerCostOfOwnershipReportModal';
@@ -1949,74 +1951,14 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       ) : null}
 
       {filterOpen ? (
-        <div className={assetStyles.modalOverlay} data-website-overlay>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setFilterOpen(false)} />
-          <div className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${leadStyles.leadFilterModal} ${styles.trackerFilterModal}`} role="dialog" aria-modal="true" aria-labelledby="tracker-filter-title">
-            <div className={`${assetStyles.modalHeader} ${leadStyles.leadFilterHeader} ${styles.trackerFilterHeader}`}>
-              <div>
-                <h3 id="tracker-filter-title">{dealerAppMode ? 'Filter' : 'Filter tracked equipment'}</h3>
-                {!dealerAppMode ? <p className={leadStyles.leadFilterIntro}>Filter by asset owner, maintenance status, or how close the next service is.</p> : null}
-              </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setFilterOpen(false)} aria-label="Close filters"><CloseIcon className={assetStyles.buttonIcon} /></button>
-            </div>
-            <div className={`${workspaceStyles.modalBody} ${leadStyles.leadFilterForm} ${styles.trackerFilterForm}`}>
-              <Dropdown label="Asset owner" value={draftOwnerFilter} options={ownerOptions} dropdownKey="owner" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={setDraftOwnerFilter} nativeSelect={dealerAppMode} />
-              <Dropdown label="Maintenance status" value={draftStatusFilter} options={statusOptions} dropdownKey="status" openDropdown={openFilterDropdown} onOpenChange={(key) => setOpenFilterDropdown(key as FilterDropdownKey | null)} onChange={(value) => setDraftStatusFilter(value as TrackerStatusFilter)} nativeSelect={dealerAppMode} />
-              <section className={styles.proximityFilterSection} aria-labelledby="maintenance-proximity-filter-title">
-                <div className={styles.proximityFilterHeading}>
-                  <strong id="maintenance-proximity-filter-title">Due within</strong>
-                  <span>Enter any distance you want to monitor.</span>
-                </div>
-                <div className={styles.proximityFilterGrid}>
-                  <label className={styles.proximityFilterField}>
-                    <span>Days</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      inputMode="numeric"
-                      value={draftProximityFilters.days}
-                      onChange={(event) => setDraftProximityFilters((current) => ({ ...current, days: event.target.value }))}
-                      placeholder="e.g. 30"
-                      aria-label="Due within days"
-                    />
-                  </label>
-                  <label className={styles.proximityFilterField}>
-                    <span>Hours</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      inputMode="decimal"
-                      value={draftProximityFilters.hours}
-                      onChange={(event) => setDraftProximityFilters((current) => ({ ...current, hours: event.target.value }))}
-                      placeholder="e.g. 100"
-                      aria-label="Due within hours"
-                    />
-                  </label>
-                  <label className={styles.proximityFilterField}>
-                    <span>Kilometres</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      inputMode="decimal"
-                      value={draftProximityFilters.km}
-                      onChange={(event) => setDraftProximityFilters((current) => ({ ...current, km: event.target.value }))}
-                      placeholder="e.g. 1 000"
-                      aria-label="Due within kilometres"
-                    />
-                  </label>
-                </div>
-                <small>When more than one value is entered, assets matching any relevant distance are shown. Overdue maintenance remains included.</small>
-              </section>
-            </div>
-            <div className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${leadStyles.leadFilterActions} ${styles.trackerFilterActions}`}>
-              <button type="button" className={assetStyles.secondaryButton} onClick={clearFilters}>{dealerAppMode ? 'Clear' : 'Clear filters'}</button>
-              <button type="button" className={assetStyles.primaryButton} onClick={() => { setOwnerFilter(draftOwnerFilter); setStatusFilter(draftStatusFilter); setProximityFilters({ ...draftProximityFilters }); setOpenFilterDropdown(null); setFilterOpen(false); }}>{dealerAppMode ? 'Apply' : 'Apply filters'}</button>
-            </div>
-          </div>
-        </div>
+        <FilterFlow title="Filter tracked equipment" onClose={() => setFilterOpen(false)} onClear={clearFilters} onApply={() => { setOwnerFilter(draftOwnerFilter); setStatusFilter(draftStatusFilter); setProximityFilters({ ...draftProximityFilters }); setOpenFilterDropdown(null); setFilterOpen(false); }}>
+          <FilterQuestion label="Which asset owner?" value={draftOwnerFilter} options={ownerOptions} onChange={setDraftOwnerFilter} searchable searchPlaceholder="Search owners" />
+          <FilterQuestion label="Which maintenance status?" value={draftStatusFilter} options={statusOptions} onChange={(value) => setDraftStatusFilter(value as TrackerStatusFilter)} />
+          <FilterThresholdQuestion label="Due within how many days?" unit="days" value={draftProximityFilters.days} presets={[7, 30, 90]} onChange={(value) => setDraftProximityFilters((current) => ({ ...current, days: value }))} />
+          <FilterThresholdQuestion label="Due within how many hours?" unit="hours" value={draftProximityFilters.hours} presets={[50, 100, 250]} onChange={(value) => setDraftProximityFilters((current) => ({ ...current, hours: value }))} />
+          <FilterThresholdQuestion label="Due within how many kilometres?" unit="kilometres" value={draftProximityFilters.km} presets={[500, 1000, 5000]} onChange={(value) => setDraftProximityFilters((current) => ({ ...current, km: value }))} />
+
+        </FilterFlow>
       ) : null}
 
       {reportAccessId ? (
