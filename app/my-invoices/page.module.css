@@ -7161,3 +7161,6 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
     padding-top: 1.2rem;
   }
 }
+
+.assetDetailsLine { display: block; line-height: 1.5; }
+.assetDetailsLine + .assetDetailsLine { margin-top: 0.2rem; }
