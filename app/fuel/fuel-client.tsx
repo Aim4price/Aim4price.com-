@@ -4081,7 +4081,7 @@ export default function FuelClient({
                   <input
                     value={exclusionSearch}
                     onChange={(event) => setExclusionSearch(event.target.value)}
-                    placeholder="Search saved assets..."
+                    placeholder="Search assets..."
                     aria-label="Search saved assets for fuel exclusions"
                   />
                   <button
@@ -4102,7 +4102,7 @@ export default function FuelClient({
                         ? `Select all excluded (${bulkSelectableExclusionAssets.length})`
                         : `Select all shown (${bulkSelectableExclusionAssets.length})`}
                   </button>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')} disabled={!exclusionSearch}>Clear search</button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')}>Clear</button>
                 </div>
                 <div className={styles.assetList} data-asset-choice-list="true">
                   {isLoading ? <div className={styles.emptyState}>Loading saved assets...</div> : filteredExclusionAssets.length ? filteredExclusionAssets.map((asset) => {
@@ -4164,7 +4164,7 @@ export default function FuelClient({
                     <button type="button" className={styles.secondaryButton} onClick={() => setSelectedExclusionAssetIds([])}>Clear selection</button>
                   ) : null}
                   <button type="button" className={styles.secondaryButton} onClick={closeModal}>Close</button>
-                  <button type="button" className={styles.primaryButton} onClick={openExclusionEditor} disabled={!selectedExclusionAssets.length}>
+                  <button type="button" className={styles.primaryButton} data-asset-choice-action="primary" onClick={openExclusionEditor} disabled={!selectedExclusionAssets.length}>
                     {selectedExclusionAssets.length
                       ? exclusionSelectionAction === 'exclude'
                         ? `Review exclusions (${selectedExclusionAssets.length})`

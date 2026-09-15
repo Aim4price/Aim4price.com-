@@ -3819,7 +3819,7 @@ export default function MyInvoicesClient({
                   type="search"
                   value={budgetAssetSearch}
                   onChange={(event) => setBudgetAssetSearch(event.target.value)}
-                  placeholder="Search saved assets..."
+                  placeholder="Search assets..."
                   aria-label="Search saved assets"
                   autoComplete="off"
                   autoFocus
@@ -3838,8 +3838,8 @@ export default function MyInvoicesClient({
                       : `Select all shown (${selectableFilteredBudgetAssets.length})`}
                   </button>
                 ) : null}
-                <button type="button" className={styles.secondaryButton} onClick={() => setBudgetAssetSearch('')} disabled={!budgetAssetSearch}>
-                  Clear search
+                <button type="button" className={styles.secondaryButton} onClick={() => setBudgetAssetSearch('')}>
+                  Clear
                 </button>
               </div>
               <div className={[styles.assetList, styles.budgetAssetList].join(' ')} data-asset-choice-list="true">
@@ -3892,6 +3892,7 @@ export default function MyInvoicesClient({
                 <button
                   type="button"
                   className={styles.primaryButton}
+                  data-asset-choice-action="primary"
                   onClick={confirmBudgetAssetPicker}
                   disabled={!budgetPickerAssetIds.length && budgetDraft.assetId !== 'all'}
                 >
@@ -4436,8 +4437,8 @@ export default function MyInvoicesClient({
                       <AssetSerialNumber value={asset.serialNumber} />
                     </span>
                     <span className={styles.assetValue} data-asset-choice-value="true">
-                      <span className={styles.pickerSelectAction}>
-                        <span className={styles.pickerSingleMark} aria-hidden="true">{selected ? '✓' : ''}</span>
+                      <span className={pickerStyles.select}>
+                        <i aria-hidden="true">{selected ? '✓' : ''}</i>
                         <strong>{selected ? 'Selected' : 'Select'}</strong>
                       </span>
                     </span>
@@ -4538,7 +4539,7 @@ export default function MyInvoicesClient({
                   type="search"
                   value={recurringAssetSearch}
                   onChange={(event) => setRecurringAssetSearch(event.target.value)}
-                  placeholder="Search saved assets..."
+                  placeholder="Search assets..."
                   aria-label="Search saved assets"
                   autoComplete="off"
                   autoFocus
@@ -4554,8 +4555,8 @@ export default function MyInvoicesClient({
                     ? `Unselect shown (${filteredRecurringAssets.length})`
                     : `Select all shown (${filteredRecurringAssets.length})`}
                 </button>
-                <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetSearch('')} disabled={!recurringAssetSearch}>
-                  Clear search
+                <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetSearch('')}>
+                  Clear
                 </button>
               </div>
               <div className={[styles.assetList, styles.budgetAssetList].join(' ')} data-asset-choice-list="true">
@@ -4598,7 +4599,7 @@ export default function MyInvoicesClient({
                   <button type="button" className={styles.secondaryButton} onClick={() => setRecurringPickerAssetIds([])}>Clear selection</button>
                 ) : null}
                 <button type="button" className={styles.secondaryButton} onClick={closeRecurringAssetPicker}>Cancel</button>
-                <button type="button" className={styles.primaryButton} onClick={confirmRecurringAssetPicker} disabled={!recurringPickerAssetIds.length}>
+                <button type="button" className={styles.primaryButton} data-asset-choice-action="primary" onClick={confirmRecurringAssetPicker} disabled={!recurringPickerAssetIds.length}>
                   Done
                 </button>
               </div>
@@ -5179,8 +5180,8 @@ export default function MyInvoicesClient({
                     <AssetSerialNumber value={asset.serialNumber} />
                   </span>
                   <span className={styles.assetValue} data-asset-choice-value="true">
-                    <span className={styles.pickerSelectAction}>
-                      <span className={styles.pickerSingleMark} aria-hidden="true" />
+                    <span className={pickerStyles.select}>
+                      <i aria-hidden="true" />
                       <strong>Select</strong>
                     </span>
                   </span>
