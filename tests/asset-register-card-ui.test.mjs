@@ -205,7 +205,7 @@ test('dropdowns reserve scrollbar space only when content is clipped', () => {
   assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(calc\(var\(--website-visible-height, 100dvh\) \* 1\) - 7rem\)\)/);
 });
 
-test('owner Manage keeps disposal and mapping inside the gated ten-action command grid', () => {
+test('owner Manage keeps disposal and mapping inside the gated command grid with budget action', () => {
   const ownerManage = client.slice(
     client.indexOf('styles.ownerCommandOverlay'),
     client.indexOf('{activeAsset && ownerAssetCommandPanel', client.indexOf('styles.ownerCommandOverlay')),
@@ -215,6 +215,8 @@ test('owner Manage keeps disposal and mapping inside the gated ten-action comman
     'Update asset',
     'Reports',
     'Add cost',
+    'Add budget',
+    'Manage budget',
     'Add fuel',
     'Maintenance',
     'Manage pricing',
@@ -227,7 +229,7 @@ test('owner Manage keeps disposal and mapping inside the gated ten-action comman
     assert.match(ownerManage, new RegExp(label.replace('&amp;', '&amp;')));
   }
 
-  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 10);
+  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 11);
   assert.ok(ownerManage.indexOf('Update asset') < ownerManage.indexOf('Reports'));
   assert.ok(ownerManage.indexOf('Reports') < ownerManage.indexOf('Add cost'));
   assert.ok(ownerManage.indexOf('Manage pricing') < ownerManage.indexOf('Asset map'));

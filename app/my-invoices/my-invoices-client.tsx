@@ -3,6 +3,7 @@ import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
 import pickerStyles from '../../components/AssetPicker.module.css';
+import { normalizeInternalReturnPath } from '../../lib/internal-return-path';
 import BudgetTracking from '../budgets/BudgetTracking';
 import { useRouter } from 'next/navigation';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
@@ -1087,6 +1088,9 @@ export default function MyInvoicesClient({
   const [budgetManagerNotice, setBudgetManagerNotice] = useState<Notice | null>(null);
   const [budgetManagerSearch, setBudgetManagerSearch] = useState('');
   const [budgetManagerOpen, setBudgetManagerOpen] = useState(false);
+  const handledAssetBudgetLaunch = useRef('');
+  const budgetLaunchAssetId = budgetsPage ? routeSearchParams.get('assetId')?.trim() || '' : '';
+  const budgetLaunchReturnTo = budgetsPage ? normalizeInternalReturnPath(routeSearchParams.get('returnTo') ?? undefined) : '';
   const [budgetManagerView, setBudgetManagerView] = useState<'choice' | 'list'>('choice');
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const [budgetAssetPickerOpen, setBudgetAssetPickerOpen] = useState(false);
@@ -1183,6 +1187,21 @@ export default function MyInvoicesClient({
       cancelled = true;
     };
   }, [canManageBudgets]);
+
+  useEffect(() => {
+    if (!budgetsPage || !canManageBudgets || budgetsLoading || budgetLoadError
+      || !budgetLaunchAssetId || routeSearchParams.get('budgetAction') !== 'open'
+      || handledAssetBudgetLaunch.current === budgetLaunchAssetId) return;
+    handledAssetBudgetLaunch.current = budgetLaunchAssetId;
+    const asset = budgetAssets.find((item) => item.id === budgetLaunchAssetId);
+    if (!asset) {
+      setNotice({ tone: 'error', message: 'This asset is no longer available for budgeting.' });
+      return;
+    }
+    const existing = costBudgets.filter((budget) => budget.assetId === asset.id);
+    if (existing.length === 1) openEditBudget(existing[0]);
+    else if (!existing.length) openCreateBudget(asset.id);
+  }, [budgetsPage, canManageBudgets, budgetsLoading, budgetLoadError, budgetLaunchAssetId, routeSearchParams, budgetAssets, costBudgets]);
 
   useEffect(() => {
     if (!canManageBudgets || budgetsLoading || budgetLoadError) return;
@@ -2081,13 +2100,11 @@ export default function MyInvoicesClient({
     window.requestAnimationFrame(() => budgetManagerTriggerRef.current?.focus());
   }
 
-  function openCreateBudget() {
+  function openCreateBudget(requestedAssetId?: unknown) {
     budgetManagerReturnFocusRef.current = 'add';
     setBudgetManagerNotice(null);
-    const defaultAssetId = activeFilters.assetId !== 'all'
-      && budgetAssets.some((asset) => asset.id === activeFilters.assetId)
-      ? activeFilters.assetId
-      : '';
+    const candidateAssetId = typeof requestedAssetId === 'string' ? requestedAssetId : budgetLaunchAssetId || activeFilters.assetId;
+    const defaultAssetId = candidateAssetId !== 'all' && budgetAssets.some((asset) => asset.id === candidateAssetId) ? candidateAssetId : '';
     setEditingBudgetId(null);
     setBudgetWizardStep(1);
     setBudgetDraft(buildEmptyCostBudgetDraft(defaultAssetId));
@@ -3316,8 +3333,10 @@ export default function MyInvoicesClient({
       <section ref={pageShellRef} className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
+        {budgetLaunchReturnTo ? <a className={styles.secondaryButton} href={budgetLaunchReturnTo}>Back to asset</a> : null}
         {budgetsPage && canManageBudgets ? <BudgetTracking
-          budgets={costBudgets} loading={budgetsLoading} error={budgetLoadError}
+          scopeAssetId={budgetLaunchAssetId}
+          budgets={budgetLaunchAssetId ? costBudgets.filter((budget) => budget.assetId === budgetLaunchAssetId) : costBudgets} loading={budgetsLoading} error={budgetLoadError}
           onRetry={() => { setBudgetsLoading(true); setBudgetLoadError(''); void reloadBudgets().catch(error => setBudgetLoadError(error instanceof Error ? error.message : 'Budgets could not be loaded.')).finally(() => setBudgetsLoading(false)); }}
           onAdd={openCreateBudget}
           onEdit={id => { const budget = costBudgets.find(item => item.id === id); if (budget) openEditBudget(budget); }}
