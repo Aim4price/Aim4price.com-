@@ -18497,19 +18497,19 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isAddChoiceModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
+        <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAddAssetChoiceModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.addAssetChoiceModal} ${styles.assetEntryModal} ${accountStyles.modalTheme} ${downloadStyles.dialog}`} data-choice-dialog="true"
+            className={`${styles.modalCard} ${styles.addAssetChoiceModal} ${styles.assetEntryModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-asset-choice-title"
           >
-            <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`} data-download-header="true">
+            <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="add-asset-choice-title">Choose how to add an asset</h3>
-                <p>Adding to <strong>{addAssetTargetRegisterName}</strong>.</p>
+                <p>Adding to <strong>{addAssetTargetRegisterName}</strong>. Start with an Aim4price valuation, or add a manually priced asset.</p>
               </div>
 
               <button
@@ -18522,15 +18522,15 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={styles.addAssetChoiceGrid} data-download-grid="true">
-              <Link href={addAssetValuationHref} className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`} data-download-option="true">
+            <div className={styles.addAssetChoiceGrid}>
+              <Link href={addAssetValuationHref} className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
                 <TrendIcon className={styles.buttonIcon} />
                 <span>
                   <strong>Aim4price Value</strong>
                 </span>
               </Link>
 
-              <button type="button" className={styles.addAssetChoiceButton} data-download-option="true" onClick={openManualEntryFromChoice}>
+              <button type="button" className={styles.addAssetChoiceButton} onClick={openManualEntryFromChoice}>
                 <DocumentIcon className={styles.buttonIcon} />
                 <span>
                   <strong>Manual Entry</strong>
@@ -21243,11 +21243,11 @@ export default function AssetRegisterClient({
           />
         ) : null
       ) : activeAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay} ${downloadStyles.backdrop}`} data-website-overlay data-account-asset-modal>
+        <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionDialog} />
 
-          <div className={`${styles.optionsModal} ${styles.ownerCommandModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${downloadStyles.dialog}`} data-choice-dialog="true" role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
-            <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`} data-download-header="true">
+          <div className={`${styles.optionsModal} ${styles.ownerCommandModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
+            <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-manage-title">{activeAsset.title}</h3>
                 <p>{buildAssetMeta(activeAsset)}</p>
@@ -21263,12 +21263,12 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`} data-download-body="true">
-              <div className={styles.optionsContent} data-download-body="true">
-                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`} data-download-grid="true">
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
+              <div className={styles.optionsContent}>
+                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
                   <button
                     type="button"
-                    className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`} data-download-option="true"
+                    className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}
                     data-asset-return-action="manage-update"
                     onClick={(event) => {
                       const asset = activeAsset;
@@ -21284,7 +21284,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} data-download-option="true" onClick={openAssetReportDialog}>
+                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Reports</strong>
@@ -21294,7 +21294,7 @@ export default function AssetRegisterClient({
 
                   <Link
                     href={buildOwnerAssetPageHref('/my-invoices', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
-                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} data-download-option="true"
+                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   >
                     <MoneyBagIcon className={styles.buttonIcon} />
                     <span>
@@ -21306,7 +21306,7 @@ export default function AssetRegisterClient({
                   {canAssetReceiveFuel(activeAsset) ? (
                     <Link
                       href={buildOwnerAssetPageHref('/fuel', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
-                      className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} data-download-option="true"
+                      className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     >
                       <PlusIcon className={styles.buttonIcon} />
                       <span>
@@ -21318,7 +21318,7 @@ export default function AssetRegisterClient({
 
                   <button
                     type="button"
-                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} data-download-option="true"
+                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     data-asset-return-action="manage-maintenance"
                     onClick={() => setOwnerAssetCommandPanel('maintenance')}
                   >
@@ -21329,18 +21329,18 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} data-download-option="true" onClick={openPricingDialog}>
+                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openPricingDialog}>
                     <TrendIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Manage pricing</strong>
-                      <small>Current and future values.</small>
+                      <small>Refresh values or calculate future value.</small>
                     </span>
                   </button>
 
                   {canUseOwnerOnlyAssetActions ? (
                     <button
                       type="button"
-                      className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} data-download-option="true"
+                      className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                       data-asset-return-action="manage-map-location"
                       onClick={(event) => {
                         const asset = activeAsset;
@@ -21365,7 +21365,7 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {canUseOwnerOnlyAssetActions ? (
-                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} data-download-option="true" onClick={openQrDialog}>
+                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openQrDialog}>
                       <QrIcon className={styles.buttonIcon} />
                       <span>
                         <strong>QR code</strong>
@@ -21375,7 +21375,7 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {canUseMarketplaceActions && isMarketplaceEligible(activeAsset) ? (
-                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} data-download-option="true" onClick={() => handlePublishFromDialog(activeAsset)}>
+                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => handlePublishFromDialog(activeAsset)}>
                       <CartIcon className={styles.buttonIcon} />
                       <span>
                         <strong>Marketplace</strong>
@@ -21387,7 +21387,7 @@ export default function AssetRegisterClient({
                   {canUseOwnerOnlyAssetActions ? (
                     <button
                       type="button"
-                      className={`${styles.optionActionButton} ${styles.optionDangerButton} ${styles.ownerCommandAction} ${styles.ownerCommandDangerAction}`} data-download-option="true" data-choice-danger="true"
+                      className={`${styles.optionActionButton} ${styles.optionDangerButton} ${styles.ownerCommandAction} ${styles.ownerCommandDangerAction}`}
                       disabled={busyDeleteId === activeAsset.id}
                       onClick={() => handleDeleteFromDialog(activeAsset)}
                     >

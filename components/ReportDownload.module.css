@@ -10,7 +10,7 @@
   backdrop-filter: none !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) {
   width: min(var(--website-dialog-reference-width, 100%), 58rem) !important;
   max-width: 100% !important;
   min-width: 0 !important;
@@ -32,7 +32,7 @@
   scrollbar-color: #93b3a7 transparent;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) {
   display: grid !important;
   grid-template-columns: minmax(0,1fr) 2.75rem !important;
   align-items: start !important;
@@ -45,7 +45,7 @@
   flex-shrink: 0;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) :is(h2,h3) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) :is(h2,h3) {
   margin: 0 !important;
   color: #12352d !important;
   font-size: clamp(1.55rem,calc(var(--website-design-vw,1vw) * 2.3),2rem) !important;
@@ -55,7 +55,7 @@
   text-transform: none !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) p {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) p {
   margin: .4rem 0 0 !important;
   color: #64746a !important;
   font-size: .88rem !important;
@@ -63,7 +63,7 @@
   line-height: 1.5 !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) > button {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) > button {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -81,12 +81,12 @@
   box-shadow: none !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) > button svg {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) > button svg {
   width: 1rem !important;
   height: 1rem !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-body]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-body]) {
   min-height: 0 !important;
   max-height: none !important;
   overflow: visible !important;
@@ -99,7 +99,7 @@
   flex: 0 0 auto !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-grid]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-grid]) {
   display: grid !important;
   grid-template-columns: repeat(auto-fit,minmax(min(100%,22rem),1fr)) !important;
   gap: 1rem !important;
@@ -107,7 +107,7 @@
   margin: 0 !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) {
   appearance: none;
   display: grid !important;
   grid-template-columns: 3.8rem minmax(0,1fr) !important;
@@ -129,19 +129,19 @@
   transition: transform 160ms ease,border-color 160ms ease,background 160ms ease,box-shadow 160ms ease;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option][aria-pressed="true"]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option][aria-pressed="true"]) {
   border-color: rgba(190,224,206,.98) !important;
   background: radial-gradient(circle at top left,rgba(25,116,84,.08),transparent 42%),linear-gradient(180deg,#fff,#edf8f2) !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option]):is(:hover,:focus-visible):not(:disabled) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):is(:hover,:focus-visible):not(:disabled) {
   border-color: rgba(190,224,206,.98) !important;
   background: radial-gradient(circle at top left,rgba(25,116,84,.07),transparent 44%),linear-gradient(180deg,#fff,#edf8f2) !important;
   box-shadow: 0 18px 34px rgba(16,36,40,.085),inset 0 1px 0 #fff !important;
   transform: translateY(-1px) !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-icon]), .dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option]) > svg {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-icon]), .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg {
   width: 3.8rem !important;
   height: 3.8rem !important;
   display: inline-flex !important;
@@ -153,20 +153,20 @@
   padding: 0 !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-icon]) :is(img,svg) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-icon]) :is(img,svg) {
   width: 2.38rem !important;
   height: 2.38rem !important;
   max-height: 2.38rem !important;
   object-fit: contain;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-copy]), .dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option]) > span:has(> strong) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-copy]), .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > span:has(> strong) {
   display: grid !important;
   min-width: 0 !important;
   gap: .3rem !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option]) strong {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) strong {
   display: block !important;
   margin: 0 !important;
   color: #10352b !important;
@@ -176,7 +176,7 @@
   letter-spacing: -.025em !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option]) small {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) small {
   display: block !important;
   margin: 0 !important;
   color: #64746a !important;
@@ -185,11 +185,11 @@
   line-height: 1.5 !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-decoration]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-decoration]) {
   display: none !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-footer]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) {
   display: flex !important;
   flex-wrap: wrap !important;
   justify-content: flex-end !important;
@@ -202,7 +202,7 @@
   box-shadow: none !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-footer]) :is(button, a) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :is(button, a) {
   min-width: 8.75rem !important;
   min-height: 3rem !important;
   padding: .7rem 1.1rem !important;
@@ -222,7 +222,7 @@
   cursor: not-allowed;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-footer]) :is(button, a) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :is(button, a) {
   color: #17362c !important;
   border: 1px solid #d8e1ea !important;
   background: #f2f5f8 !important;
@@ -230,13 +230,13 @@
   letter-spacing: -.018em !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-footer]) :global([data-download-primary]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :global([data-download-primary]) {
   color: #fff !important;
   background: linear-gradient(180deg,#1a5a45,#124233) !important;
   border-color: transparent !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :is(input,select) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :is(input,select) {
   font-size: .95rem;
 }
 
@@ -245,24 +245,24 @@
   backdrop-filter: none !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option]) > svg {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg {
   padding: .7rem !important;
   /* Legacy report SVGs use content-box !important; padding must stay inside the tile. */
   box-sizing: border-box !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-icon]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-icon]) {
   min-width: 3.8rem !important;
   max-width: 3.8rem !important;
   min-height: 3.8rem !important;
   box-sizing: border-box !important;
 }
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option])::before,
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option])::after {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option])::before,
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option])::after {
   display: none !important;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) > p {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) > p {
   margin: 0 !important;
   color: #64746a;
   font-size: .88rem;
@@ -270,76 +270,52 @@
   line-height: 1.5;
 }
 
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-footer]) :is(button, a) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :is(button, a) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: .55rem !important;
   text-decoration: none !important;
 }
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) {
   justify-items: stretch !important;
   text-align: left !important;
 }
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) :is(h2, h3) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) :is(h2, h3) {
   text-align: left !important;
 }
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) > button {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) > button {
   position: static !important;
   transform: none !important;
 }
 
 /* Register quick reports fill the panel instead of nesting in its first grid column. */
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-report-selector]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-report-selector]) {
   display: grid !important;
   gap: 1.3rem !important;
 }
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-report-selector]) > :global([data-download-grid]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-report-selector]) > :global([data-download-grid]) {
   border-bottom: 0 !important;
 }
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-quick-reports]) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-quick-reports]) {
   display: block !important;
   width: 100% !important;
   box-sizing: border-box;
   padding: .75rem !important;
   margin: 0 !important;
 }
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-quick-reports]) > div > div {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-quick-reports]) > div > div {
   gap: 1rem !important;
 }
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-quick-reports]) strong {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-quick-reports]) strong {
   text-align: left !important;
 }
 
 /* Concise report copy stays on one line; dynamic metadata has a safe overflow fallback. */
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-option]) :is(strong,small),
-.dialog.dialog.dialog:is(:global([data-download-dialog="true"]),:global([data-choice-dialog="true"])) :global([data-download-header]) p {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) :is(strong,small),
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) p {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   min-width: 0;
-}
-
-/* Destructive management actions retain their warning colour in the shared sizing. */
-.dialog.dialog.dialog:global([data-choice-dialog="true"]) :global([data-choice-danger="true"]) {
-  border-color: #efb7b7 !important;
-  background: linear-gradient(180deg,#fff,#fff3f3) !important;
-}
-.dialog.dialog.dialog:global([data-choice-dialog="true"]) :global([data-choice-danger="true"]) :is(strong,svg) {
-  color: #a62f31 !important;
-}
-.dialog.dialog.dialog:global([data-choice-dialog="true"]) :global([data-download-option]) > span:has(> strong) {
-  justify-content: start !important;
-  justify-items: start !important;
-  justify-self: stretch !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.dialog.dialog.dialog:global([data-choice-dialog="true"]) :global([data-download-option]) {
-  grid-template-rows: auto !important;
-}
-.dialog.dialog.dialog:global([data-choice-dialog="true"]) :global([data-download-option]) > span:has(> strong) {
-  grid-column: 2 !important;
-  grid-row: 1 !important;
 }

@@ -800,7 +800,7 @@ export default function AssetGroupManagerModal({
   const isAttachingReport = reportDeliveryMode === 'attach';
 
   return (
-    <div className={`${useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} ${group || view === 'create' ? styles.accountBackdrop : ''} ${useSharedAssetModalDesign ? downloadStyles.backdrop : ''}`} data-website-overlay role="presentation" onMouseDown={(event) => {
+    <div className={`${useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} ${group || view === 'create' ? styles.accountBackdrop : ''} ${view === 'reports' ? downloadStyles.backdrop : ''}`} data-website-overlay role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !busy && !reportBusy) onClose();
     }}>
       {useSharedAssetModalDesign ? (
@@ -813,10 +813,10 @@ export default function AssetGroupManagerModal({
           ? `${registerStyles.optionsModal} ${styles.manageModal}`
           : useReportModalDesign
             ? `${registerStyles.modalCard} ${registerStyles.assetReportModal}`
-            : styles.dialog} ${useSharedAssetModalDesign ? downloadStyles.dialog : ''}`}
+            : styles.dialog} ${view === 'reports' ? downloadStyles.dialog : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="asset-group-title" data-download-dialog={view === 'reports' ? 'true' : undefined} data-choice-dialog={useManageModalDesign ? 'true' : undefined}
+        aria-labelledby="asset-group-title" data-download-dialog={view === 'reports' ? 'true' : undefined}
       >
         <header className={useManageModalDesign
           ? `${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${styles.manageHeader}`
@@ -848,7 +848,7 @@ export default function AssetGroupManagerModal({
                   setEditorStep(1);
                   setView('members');
                 }} data-download-option="true">
-                  <i data-download-icon="true" className={`${styles.manageMenuIconTile} ${styles.manageMenuEditIcon}`} aria-hidden="true">
+                  <i className={`${styles.manageMenuIconTile} ${styles.manageMenuEditIcon}`} aria-hidden="true">
                     <MembersIcon className={styles.manageMenuIconGlyph} />
                   </i>
                   <span>
@@ -860,7 +860,7 @@ export default function AssetGroupManagerModal({
                   setReportStep('options');
                   setView('reports');
                 }} disabled={!onDownloadReport && !onDownloadPdf && !onDownloadXlsx} data-download-option="true">
-                  <i data-download-icon="true" className={`${styles.manageMenuIconTile} ${styles.manageMenuReportIcon}`} aria-hidden="true">
+                  <i className={`${styles.manageMenuIconTile} ${styles.manageMenuReportIcon}`} aria-hidden="true">
                     <DownloadIcon className={styles.manageMenuIconGlyph} />
                   </i>
                   <span>
@@ -868,8 +868,8 @@ export default function AssetGroupManagerModal({
                     <small className={styles.menuOptionSubtitle}>Reports for grouped assets.</small>
                   </span>
                 </button>
-                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${styles.manageMenuAction} ${styles.manageMenuDanger}`} onClick={() => setView('delete')} data-download-option="true" data-choice-danger="true">
-                  <i data-download-icon="true" className={`${styles.manageMenuIconTile} ${styles.manageMenuRemoveIcon}`} aria-hidden="true">
+                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${styles.manageMenuAction} ${styles.manageMenuDanger}`} onClick={() => setView('delete')} data-download-option="true">
+                  <i className={`${styles.manageMenuIconTile} ${styles.manageMenuRemoveIcon}`} aria-hidden="true">
                     <TrashIcon className={styles.manageMenuIconGlyph} />
                   </i>
                   <span>
