@@ -9,6 +9,8 @@ import { downloadAssetMapReport } from '../../lib/asset-map-download';
 import { assetCanReceiveFuel } from '../../lib/asset-fuel-eligibility';
 
 import CompactChoicePages from '../../components/CompactChoicePages';
+import pickerStyles from '../../components/AssetPicker.module.css';
+import AssetSerialNumber from '../../components/AssetSerialNumber';
 import compactExportStyles from '../../components/CompactRegisterExport.module.css';
 import PricingVatToggle from '../../components/PricingVatToggle';
 import { pricingVatAmount, pricingInputExVat } from '../../lib/pricing-vat';
@@ -22464,16 +22466,18 @@ export default function AssetRegisterClient({
 
       {isExportModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.exportModalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={closeExportModal} />
+          <div className={`${styles.modalBackdrop} ${exportStep === 'pdf-assets' ? pickerStyles.overlay : ''}`} data-website-overlay onClick={closeExportModal} />
 
           <div
             id="compact-register-export"
-            className={`${compactExportStyles.dialog} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
+            className={`${exportStep === 'pdf-assets' ? pickerStyles.modal : compactExportStyles.dialog} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
+            data-asset-choice-surface={exportStep === 'pdf-assets' ? 'true' : undefined}
+            data-asset-choice-modal={exportStep === 'pdf-assets' ? 'true' : undefined}
             role="dialog"
             aria-modal="true"
             aria-labelledby="export-title"
           >
-            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
+            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`} data-asset-choice-header={exportStep === 'pdf-assets' ? 'true' : undefined}>
               <div className={styles.modalHeaderText}>
                 <h3 id="export-title" tabIndex={-1}>{isAttachingExternalReport ? 'Add Aim4price report' : 'Export asset register'}</h3>
                 <p>{isAttachingExternalReport ? 'Choose a report to attach.' : 'Choose which assets to include.'}</p>
@@ -22484,8 +22488,8 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.exportModalScrollBody}`}>
-              <div className={styles.exportModalBody}>
+            <div className={exportStep === 'pdf-assets' ? pickerStyles.contents : `${styles.modalScrollBody} ${styles.exportModalScrollBody}`}>
+              <div className={exportStep === 'pdf-assets' ? pickerStyles.contents : styles.exportModalBody}>
                 {exportStep === 'format' ? (
                   <>
                     <label className={accountStyles.modalField}>
@@ -22588,19 +22592,19 @@ export default function AssetRegisterClient({
                       </>
                     ) : (
                       <>
-                        <section className={styles.pdfAssetDownloadPanel} aria-label="Choose assets for PDF download">
-                          <div className={styles.pdfAssetDownloadToolbar}>
+                        <section className={pickerStyles.contents} aria-label="Choose assets for PDF download">
+                          <div className={styles.pdfAssetDownloadToolbar} data-asset-choice-toolbar="true">
                             <input
                               className={styles.pdfAssetSearchInput}
                               type="search"
                               value={pdfAssetSearchTerm}
                               onChange={(event) => setPdfAssetSearchTerm(event.target.value)}
-                              placeholder="Search..."
+                              placeholder="Search assets..."
                               aria-label="Search assets"
                               disabled={isExporting}
                             />
 
-                            <div className={styles.pdfAssetDownloadToolbarActions}>
+                            <div className={pickerStyles.contents}>
                               <button
                                 type="button"
                                 className={styles.secondaryButton}
@@ -22621,9 +22625,9 @@ export default function AssetRegisterClient({
                             </div>
                           </div>
 
-                          <div className={styles.pdfAssetDownloadList}>
+                          <div className={styles.pdfAssetDownloadList} data-asset-choice-list="true">
                             {visiblePdfAssets.length ? (
-                              <CompactChoicePages columns={1} maxRows={4} rowHeight={140} reservedHeight={480} resetKey={pdfAssetSearchTerm}>
+                              <>
                               {visiblePdfAssets.map((asset) => {
                                 const isSelectedForPdf = selectedPdfAssetIdSet.has(asset.id);
 
@@ -22631,37 +22635,38 @@ export default function AssetRegisterClient({
                                   <label
                                     key={asset.id}
                                     className={`${styles.pdfAssetDownloadRow} ${isSelectedForPdf ? styles.pdfAssetDownloadRowSelected : ''}`}
+                                    data-asset-choice-row="true"
+                                    data-asset-choice-selected={isSelectedForPdf ? 'true' : undefined}
                                   >
                                     <input
-                                      className={styles.pdfAssetDownloadCheckboxInput}
+                                      className={pickerStyles.checkbox}
                                       type="checkbox"
                                       checked={isSelectedForPdf}
                                       onChange={() => togglePdfAssetSelection(asset.id)}
                                       disabled={isExporting}
                                     />
-                                    <span className={styles.pdfAssetDownloadCheckbox} aria-hidden="true" />
 
-                                    <span className={styles.pdfAssetDownloadCopy}>
+                                    <span className={styles.pdfAssetDownloadCopy} data-asset-choice-copy="true">
                                       <strong>{asset.title}</strong>
-                                      <span>{buildAssetMeta(asset)}</span>
-                                      <small>{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</small>
+                                      <small data-asset-choice-meta="true">{buildAssetMeta(asset)}</small>
+                                      <small data-asset-choice-secondary="true">{assetKindLabel(asset)} · {methodLabel(asset.selectedMethod)}</small>
+                                      <AssetSerialNumber value={asset.serialNumber} />
                                     </span>
 
-                                    <span className={styles.pdfAssetDownloadValue}>
-                                      <strong>{money(asset.value)}</strong>
-                                      <small>current value</small>
+                                    <span className={styles.pdfAssetDownloadValue} data-asset-choice-value="true">
+                                      <span className={`${pickerStyles.select} ${pickerStyles.multi}`}><i aria-hidden="true">{isSelectedForPdf ? '✓' : ''}</i><strong>{isSelectedForPdf ? 'Selected' : 'Select'}</strong></span>
                                     </span>
                                   </label>
                                 );
                               })}
-                              </CompactChoicePages>
+                              </>
                             ) : (
                               <div className={styles.pdfAssetDownloadEmpty}>No assets match your search.</div>
                             )}
                           </div>
                         </section>
 
-                        <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`}>
+                        <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`} data-asset-choice-footer="true">
                           <button type="button" className={styles.secondaryButton} onClick={backToPdfReportChooser} disabled={isExporting}>
                             Back
                           </button>

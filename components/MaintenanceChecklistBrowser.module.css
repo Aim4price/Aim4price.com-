@@ -27,3 +27,5 @@
 }
 .header, .footer { flex: 0 0 auto; }
 .body { overscroll-behavior: contain; }
+
+.changeAsset { border: 1px solid #d8e2ec; border-radius: 1rem; padding: .75rem 1.05rem; background: #f3f6f9; color: #17362c; }

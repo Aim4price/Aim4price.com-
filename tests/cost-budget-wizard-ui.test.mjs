@@ -45,7 +45,7 @@ test('coverage uses the Fuel Ledger saved-asset picker design with multi-select'
   assert.match(budgetModal, /`Select all shown \(\$\{selectableFilteredBudgetAssets\.length\}\)`/);
   assert.match(budgetModal, /toggleAllFilteredBudgetAssets/);
   assert.match(budgetModal, /styles\.budgetSelectAllButton/);
-  assert.match(budgetModal, /styles\.budgetAssetChoiceSelected/);
+  assert.match(budgetModal, /pickerStyles\.multi/);
   assert.match(budgetModal, /data-asset-choice-selected=\{isSelected \? 'true' : undefined\}/);
   assert.equal(
     (budgetModal.match(/data-asset-choice-selected=/g) ?? []).length,
