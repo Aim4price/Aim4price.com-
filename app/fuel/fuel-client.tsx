@@ -558,6 +558,13 @@ function StorageViewIcon(props: SVGProps<SVGSVGElement>) {
   return <IconBase {...props}><ellipse cx="12" cy="5" rx="8" ry="3" /><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" /></IconBase>;
 }
 
+function SlipManageIcon() {
+  return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></svg>;
+}
+function AssetPillIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="3" /><path d="M9 7V4h6v3M9 12h6" /></svg>;
+}
+
 function GearIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -1720,6 +1727,7 @@ export default function FuelClient({
   const [fuelSlipDownloadError, setFuelSlipDownloadError] = useState('');
   const [currentFuelSlipManagerPage, setCurrentFuelSlipManagerPage] = useState(1);
   const [expandedFuelSlipId, setExpandedFuelSlipId] = useState<string | null>(null);
+  const [managedFuelSlip, setManagedFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [fuelSlipReturnToManager, setFuelSlipReturnToManager] = useState(false);
   const [isDownloadingFuelSlips, setIsDownloadingFuelSlips] = useState(false);
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
@@ -1966,7 +1974,8 @@ export default function FuelClient({
   const isFuelSlipManagerChildDialogOpen = fuelSlipManagerFilterOpen
     || fuelSlipDownloadOpen
     || Boolean(historyFuelSlip)
-    || Boolean(deleteCandidateFuelSlip);
+    || Boolean(deleteCandidateFuelSlip)
+    || Boolean(managedFuelSlip);
 
 
   useEffect(() => {
@@ -2132,7 +2141,7 @@ export default function FuelClient({
     const wasOpen = fuelSlipManagerChildOpenRef.current;
     fuelSlipManagerChildOpenRef.current = isFuelSlipManagerChildDialogOpen;
 
-    if (!wasOpen && isFuelSlipManagerChildDialogOpen) {
+    if (isFuelSlipManagerChildDialogOpen) {
       const frame = window.requestAnimationFrame(() => {
         const dialog = fuelSlipManagerChildDialogRef.current;
         const firstControl = dialog?.querySelector<HTMLElement>(
@@ -2153,13 +2162,14 @@ export default function FuelClient({
     }
 
     return undefined;
-  }, [isFuelSlipManagerChildDialogOpen]);
+  }, [isFuelSlipManagerChildDialogOpen, managedFuelSlip, historyFuelSlip, deleteCandidateFuelSlip, fuelSlipManagerFilterOpen, fuelSlipDownloadOpen]);
 
   useEffect(() => {
-    if (modalMode !== 'fuel-slip-manager' && !isSlipsPage) return undefined;
+    if (modalMode !== 'fuel-slip-manager' && (!isSlipsPage || modalMode !== null)) return undefined;
 
     function handleFuelSlipManagerKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
+        if (managedFuelSlip) { event.preventDefault(); setManagedFuelSlip(null); return; }
         if (openFuelSlipManagerFilterSelect) {
           event.preventDefault();
           setOpenFuelSlipManagerFilterSelect(null);
@@ -2216,6 +2226,7 @@ export default function FuelClient({
     document.addEventListener('keydown', handleFuelSlipManagerKeyDown);
     return () => document.removeEventListener('keydown', handleFuelSlipManagerKeyDown);
   }, [
+    managedFuelSlip,
     busyFuelSlipDeleteId,
     deleteCandidateFuelSlip,
     fuelSlipDownloadOpen,
@@ -2589,6 +2600,7 @@ export default function FuelClient({
     fuelSlipExtractionRequestRef.current += 1;
     const shouldReturnToAsset = Boolean(quickLaunchAssetId && initialReturnTo);
     setModalMode(null);
+    setManagedFuelSlip(null);
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
     setPinDraft('');
@@ -3625,7 +3637,7 @@ export default function FuelClient({
   }
 
   const fuelSlipResults = isLoading ? <div className={styles.fuelSlipManagerEmptyState} role="status">Loading saved fuel slips...</div> : (<>
-              <section className={styles.fuelSlipManagerContextBar} aria-label="Current fuel slip view">
+              {activeFuelSlipManagerRefinementCount ? <section className={styles.fuelSlipManagerContextBar} aria-label="Current fuel slip view">
                 <div className={styles.fuelSlipManagerContextLead}>
                   <span className={styles.fuelSlipManagerContextIcon} aria-hidden="true"><FilterIcon /></span>
                   <span className={styles.fuelSlipManagerContextCopy}>
@@ -3664,7 +3676,7 @@ export default function FuelClient({
                     Clear all
                   </button>
                 ) : null}
-              </section>
+              </section> : null}
 
               <section className={styles.fuelSlipManagerPanel} aria-label="Saved fuel slips">
                 <div className={styles.fuelSlipManagerSummary}>
@@ -3744,7 +3756,7 @@ export default function FuelClient({
                             <p className={styles.slipLedgerMeta}>{slip.slipNumber ? `Slip ${slip.slipNumber} · ` : ''}{formatFuelSlipDate(slip.documentDate)}</p>
                             <p className={styles.slipLedgerFuel}>{slip.fuelType || 'Fuel not recorded'} · {formatLitres(slip.litres)}{slip.pricePerLitre !== null ? ` · ${formatCurrency(slip.pricePerLitre)}/L` : ''}</p>
                             <div className={styles.slipLedgerPills}>
-                              <span className={styles.slipLedgerAsset}><FuelSlipsIcon className={styles.buttonIcon} /><span>{fuelSlipTargetLabel(slip)}</span></span>
+                              <span className={styles.slipLedgerAsset}><AssetPillIcon /><span>{fuelSlipTargetLabel(slip)}</span></span>
                           {needsReview && !isAccountantReadOnly ? (
                             <button
                               type="button"
@@ -3772,6 +3784,9 @@ export default function FuelClient({
                               ) : null}
                               <button type="button" className={styles.fuelSlipManagerExpandButton} onClick={() => setExpandedFuelSlipId((current) => current === slip.id ? null : slip.id)} aria-expanded={isExpanded} aria-controls={detailsId} aria-label={`${isExpanded ? 'Hide' : 'View'} details for ${slip.supplierName || 'unknown supplier'} on ${formatFuelSlipDate(slip.documentDate)}`}>
                                 <ChevronDownIcon aria-hidden="true" /><span>{isExpanded ? 'Hide details' : 'View details'}</span>
+                              </button>
+                              <button type="button" className={`${styles.secondaryButton} ${styles.slipManageButton}`} aria-haspopup="dialog" onClick={() => { rememberFuelSlipManagerChildTrigger(); setManagedFuelSlip(slip); }} disabled={deletingThisSlip}>
+                                <SlipManageIcon /><span>Manage</span>
                               </button>
                             </div>
                           </div>
@@ -3806,51 +3821,7 @@ export default function FuelClient({
                                 <strong>{slip.transactionNumber || 'Not recorded'}</strong>
                               </span>
                             </div>
-                            <div className={styles.fuelSlipManagerRowActions}>
-                              <button
-                                type="button"
-                                className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`}
-                                onClick={() => void openFuelSlipHistory(slip)}
-                                disabled={deletingThisSlip}
-                              >
-                                <HistoryIcon className={styles.buttonIcon} />
-                                <span>Change history</span>
-                              </button>
-                              {!isAccountantReadOnly ? (
-                                <>
-                                  {needsReview ? (
-                                    <button
-                                      type="button"
-                                      className={`${styles.secondaryButton} ${styles.fuelSlipManagerReviewButton}`}
-                                      onClick={() => openFuelSlipReview(slip)}
-                                      disabled={deletingThisSlip}
-                                    >
-                                      <FuelSlipsIcon className={styles.buttonIcon} />
-                                      <span>Review / complete</span>
-                                    </button>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      className={`${styles.secondaryButton} ${styles.fuelSlipManagerEditButton}`}
-                                      onClick={() => openFuelSlipReview(slip)}
-                                      disabled={deletingThisSlip}
-                                    >
-                                      <EditIcon className={styles.buttonIcon} />
-                                      <span>Edit</span>
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    className={`${styles.secondaryButton} ${styles.fuelSlipManagerDeleteButton}`}
-                                    onClick={() => openFuelSlipDeleteConfirm(slip)}
-                                    disabled={deletingThisSlip}
-                                  >
-                                    <TrashIcon className={styles.buttonIcon} />
-                                    <span>{deletingThisSlip ? 'Voiding...' : 'Void'}</span>
-                                  </button>
-                                </>
-                              ) : null}
-                            </div>
+
                           </div>
                         ) : null}
                       </article>
@@ -4432,6 +4403,22 @@ export default function FuelClient({
               {fuelSlipResults}
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && managedFuelSlip ? (
+        <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop} ${styles.slipManageBackdrop}`} data-website-overlay onClick={() => setManagedFuelSlip(null)}>
+          <section className={`${styles.accountFuelModal} ${accountStyles.modalTheme} ${styles.slipManageModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manage-title" onClick={(event) => event.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <div><h2 id="fuel-slip-manage-title">Manage fuel slip</h2><p>{managedFuelSlip.supplierName || 'Fuel slip'} · {formatFuelSlipDate(managedFuelSlip.documentDate)}</p></div>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setManagedFuelSlip(null)} aria-label="Close manage fuel slip"><CloseIcon /></button>
+            </div>
+            <div className={styles.slipManageOptions}>
+              {!isAccountantReadOnly ? <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerEditButton}`} onClick={() => { const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipReview(slip); }}><EditIcon className={styles.buttonIcon} /><span>{fuelSlipNeedsReview(managedFuelSlip) ? 'Review / complete' : 'Edit'}</span></button> : null}
+              <button type="button" className={`${styles.secondaryButton} ${styles.slipHistoryButton}`} onClick={() => { const trigger = fuelSlipManagerChildTriggerRef.current; const slip = managedFuelSlip; setManagedFuelSlip(null); void openFuelSlipHistory(slip); fuelSlipManagerChildTriggerRef.current = trigger; }}><HistoryIcon className={styles.buttonIcon} /><span>Change history</span></button>
+              {!isAccountantReadOnly ? <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerDeleteButton}`} onClick={() => { const trigger = fuelSlipManagerChildTriggerRef.current; const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipDeleteConfirm(slip); fuelSlipManagerChildTriggerRef.current = trigger; }}><TrashIcon className={styles.buttonIcon} /><span>Void</span></button> : null}
+            </div>
+          </section>
         </div>
       ) : null}
 

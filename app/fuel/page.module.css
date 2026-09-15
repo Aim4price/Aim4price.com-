@@ -7551,3 +7551,24 @@
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .fuelSlipTrackingPage .fuelSlipManagerSecondaryGrid { grid-template-columns: 1fr; }
 }
+
+/* Match the Maintenance card actions and Manage dialog. */
+.slipLedgerActions .slipManageButton { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-width: 9.5rem; min-height: 3.1rem; padding: .7rem 1rem; color: #0b563f; border: 1px solid #6fc997; border-radius: 1rem; background: linear-gradient(#fff,#eaf8f1); font-size: .95rem; font-weight: 700; }
+.slipLedgerActions .slipManageButton:hover { background: #e4f5ec; border-color: #40a875; }
+.slipLedgerActions .fuelSlipManagerExpandButton svg { width: 1.05rem; height: 1.05rem; padding: .15rem; box-sizing: content-box; border: 1px solid #bbdafa; border-radius: 50%; background: #e5f3ff; }
+.slipManageBackdrop { background: rgba(12,24,35,.42); backdrop-filter: blur(12px) saturate(.9); }
+.accountFuelModal.slipManageModal { width: min(var(--website-dialog-reference-width,100%),66rem) !important; align-self: center; max-height: calc(var(--website-visible-height,100dvh) - 3rem); overflow-y: auto; }
+.slipManageOptions { display: flex; flex-wrap: wrap; gap: 1rem; padding-top: 1.6rem; }
+.slipManageOptions button { flex: 1 1 10rem; min-height: 3.6rem !important; min-width: 0; }
+.slipManageOptions .fuelSlipManagerEditButton { color: #17456d !important; border-color: #84baff !important; background: linear-gradient(#fff,#edf6ff) !important; }
+.slipManageOptions .slipHistoryButton { color: #315d4d !important; border-color: #b3cec3 !important; background: linear-gradient(#fff,#f0f7f3) !important; }
+.slipManageOptions .fuelSlipManagerDeleteButton { color: #a52b22 !important; border-color: #edb2ad !important; background: linear-gradient(#fff,#fff1ef) !important; }
+.slipManageButton:focus-visible, .slipManageOptions button:focus-visible { outline: 3px solid #176f9e; outline-offset: 4px; }
+.fuelSlipTrackingPage .fuelSlipManagerSummary { padding: 1rem 1.25rem; margin-bottom: 1rem; }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .slipLedgerActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+  :global(:where(html:not(:has([data-website-canvas])))) .slipLedgerActions > * { min-width: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .slipLedgerActions > a { grid-column: 1 / -1; }
+}
+.slipManageModal .accountFuelClose svg { width: 1rem; height: 1rem; }
+.accountFuelModal.slipManageModal .slipManageOptions button { min-height: 3.6rem !important; }
