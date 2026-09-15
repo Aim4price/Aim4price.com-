@@ -1,4 +1,5 @@
 'use client';
+import budgetModalStyles from '../../components/BudgetModal.module.css';
 import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
@@ -4143,17 +4144,20 @@ export default function MyInvoicesClient({
       ) : null}
       {budgetDeleteCandidate ? (
         <div className={styles.modalBackdrop} data-website-overlay role="alertdialog" aria-modal="true" aria-labelledby="delete-budget-title" aria-describedby="delete-budget-description">
-          <div className={styles.budgetDeleteDialog}>
-            <div>
-              <h2 id="delete-budget-title">Remove this spending budget?</h2>
-              <p id="delete-budget-description">This removes the limit and alerts. Cost records stay unchanged.</p>
+          <div className={`${styles.budgetDeleteDialog} ${budgetModalStyles.surface} ${budgetModalStyles.deleteSurface}`}>
+            <div className={budgetModalStyles.header}>
+              <div className={budgetModalStyles.headerText}>
+                <h2 id="delete-budget-title">Remove this spending budget?</h2>
+                <p id="delete-budget-description">This removes the limit and alerts. Cost records stay unchanged.</p>
+              </div>
+              <button type="button" className={budgetModalStyles.close} onClick={closeDeleteBudgetDialog} disabled={Boolean(budgetDeletingId)} aria-label="Close delete budget confirmation"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
             </div>
-            <div className={styles.budgetDeleteSummary}>
+            <div className={`${styles.budgetDeleteSummary} ${budgetModalStyles.context}`}>
               <strong>{budgetDeleteCandidate.assetTitle}</strong>
               <span>{budgetDeleteCandidate.period === 'monthly' ? 'Monthly' : 'Annual'} · {formatMoney(budgetDeleteCandidate.amount)}</span>
             </div>
             {budgetDeleteError ? <div className={styles.budgetFormError} role="alert">{budgetDeleteError}</div> : null}
-            <div className={styles.budgetDeleteActions}>
+            <div className={`${styles.budgetDeleteActions} ${budgetModalStyles.actions}`}>
               <button ref={budgetDeleteCancelRef} type="button" className={styles.secondaryButton} onClick={closeDeleteBudgetDialog} disabled={Boolean(budgetDeletingId)}>Keep budget</button>
               <button type="button" className={styles.budgetDeleteButton} onClick={() => void confirmDeleteBudget()} disabled={Boolean(budgetDeletingId)}>
                 {budgetDeletingId ? 'Deleting...' : 'Delete budget'}

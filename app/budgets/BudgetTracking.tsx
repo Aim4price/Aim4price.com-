@@ -1,4 +1,5 @@
 'use client';
+import budgetModalStyles from '../../components/BudgetModal.module.css';
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 import downloadStyles from '../../components/ReportDownload.module.css';
 import Link from 'next/link';
@@ -25,7 +26,7 @@ function Dialog({ title, onClose, children, report = false }: { report?: boolean
     return () => { document.body.style.overflow = overflow; previous?.focus(); };
   }, []);
   return <div className={`${styles.overlay} ${report ? downloadStyles.backdrop : ''}`} data-website-overlay onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <div ref={ref} tabIndex={-1} className={`${styles.dialog} ${report ? downloadStyles.dialog : ''}`} data-download-dialog={report ? 'true' : undefined} role="dialog" aria-modal="true" aria-label={title} onKeyDown={e => {
+    <div ref={ref} tabIndex={-1} className={`${styles.dialog} ${report ? downloadStyles.dialog : budgetModalStyles.surface}`} data-download-dialog={report ? 'true' : undefined} role="dialog" aria-modal="true" aria-label={title} onKeyDown={e => {
       if (e.key === 'Escape') { e.stopPropagation(); onClose(); }
       if (e.key === 'Tab') {
         const controls = Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') || []);
@@ -33,7 +34,7 @@ function Dialog({ title, onClose, children, report = false }: { report?: boolean
         if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) { e.preventDefault(); last?.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
-    }}><header data-download-header="true"><h2>{title}</h2><button type="button" onClick={onClose} aria-label="Close">×</button></header>{children}</div>
+    }}><header className={report ? undefined : budgetModalStyles.header} data-download-header="true"><div className={budgetModalStyles.headerText}><h2>{title}</h2></div><button type="button" className={report ? undefined : budgetModalStyles.close} onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>{report ? '×' : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>}</button></header>{children}</div>
   </div>;
 }
 export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd, onEdit, onDelete }: {
@@ -143,7 +144,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
       <FilterQuestion label="Which period?" value={draft.period} onChange={period => setDraft({ ...draft, period })} options={[{ value: 'all', label: 'Monthly and annual' }, { value: 'monthly', label: 'Monthly' }, { value: 'annual', label: 'Annual' }]} />
       <FilterQuestion label="Which status?" value={draft.status} onChange={status => setDraft({ ...draft, status })} options={[{ value: 'all', label: 'All statuses' }, { value: 'on_track', label: 'Within budget' }, { value: 'warning', label: 'Approaching limit' }, { value: 'over_budget', label: 'Limit reached or exceeded' }, { value: 'attention', label: 'All alerts' }]} />
     </FilterFlow> : null}
-    {selected ? <Dialog title="Manage budget" onClose={() => setManageId(null)}><p>{selected.assetTitle} · {selected.periodLabel}</p><div className={styles.dialogActions}><button onClick={() => { setManageId(null); onEdit(selected.id); }}>Edit budget & alerts</button><button className={styles.deleteButton} onClick={() => { setManageId(null); onDelete(selected.id); }}>Delete budget</button></div></Dialog> : null}
+    {selected ? <Dialog title="Manage budget" onClose={() => setManageId(null)}><div className={budgetModalStyles.context}><strong>{selected.assetTitle}</strong><span>{selected.periodLabel}</span></div><div className={`${styles.dialogActions} ${budgetModalStyles.actions}`}><button onClick={() => { setManageId(null); onEdit(selected.id); }}>Edit budget & alerts</button><button className={styles.deleteButton} onClick={() => { setManageId(null); onDelete(selected.id); }}>Delete budget</button></div></Dialog> : null}
     {downloadOpen ? <Dialog report title="Download budgets" onClose={() => { if (!downloading) setDownloadOpen(false); }}><p>{visible.length} matching budgets · Amounts incl. VAT</p><div data-download-grid="true">{(['pdf', 'xlsx'] as const).map(format => <button type="button" key={format} data-download-option="true" disabled={downloading} onClick={() => void download(format)}><span data-download-icon="true"><img src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{format === 'pdf' ? 'PDF budget report' : 'XLSX budget workbook'}</strong><small>{format === 'pdf' ? 'Printable budget report.' : 'Matching budgets in Excel.'}</small></span></button>)}</div>{downloading ? <p role="status">Preparing budget report…</p> : null}<footer data-download-footer="true"><button disabled={downloading} onClick={() => setDownloadOpen(false)}>Cancel</button></footer>{downloadError ? <p role="alert">{downloadError}</p> : null}</Dialog> : null}
   </div>;
 }
