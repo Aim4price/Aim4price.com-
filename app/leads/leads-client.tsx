@@ -1,5 +1,7 @@
 'use client';
 
+import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
+
 import QrCodePreview from '../../components/QrCodePreview';
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
@@ -1776,6 +1778,7 @@ export default function LeadsClient({
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
   const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
+  const [draftLeadFilters, setDraftLeadFilters] = useState({ month: 'all', year: 'all', status: 'all' as LeadStatusFilter });
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
@@ -2305,6 +2308,7 @@ export default function LeadsClient({
   }
 
   function openLeadFilterModal() {
+    setDraftLeadFilters({ month: monthFilter, year: yearFilter, status: statusFilter });
     setOpenFilterDropdown(null);
     setIsFilterModalOpen(true);
   }
@@ -4061,79 +4065,28 @@ export default function LeadsClient({
       ) : null}
 
       {isFilterModalOpen ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`} data-website-overlay>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadFilterModal} />
-
-          <div
-            className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadFilterModal} ${accountantWorkspaceMode ? styles.accountantFilterModal : ''}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="lead-filter-title"
-          >
-            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadFilterHeader}`}>
-              <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-filter-title">{accountantWorkspaceMode ? 'Filter clients' : licensingWorkspaceMode ? 'Filter renewals' : 'Filter leads'}</h3>
-                <p className={styles.leadFilterIntro}>
-                  {accountantWorkspaceMode
-                    ? 'Choose a received date or client status.'
-                    : licensingWorkspaceMode
-                      ? 'Choose a received date or lead status.'
-                      : 'Choose a received date, lead status, or show only asset tracking requests.'}
-                </p>
-              </div>
-
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadFilterModal} aria-label="Close filter modal">
-                <CloseIcon className={assetStyles.buttonIcon} />
-              </button>
-            </div>
-
-            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadFilterForm}`}>
-              <LeadFilterDropdown
-                label="Month"
-                dropdownKey="month"
-                value={monthFilter}
-                options={MONTH_OPTIONS}
-                openDropdown={openFilterDropdown}
-                onOpenChange={setOpenFilterDropdown}
-                onChange={setMonthFilter}
-                nativeSelect={dealerAppMode}
-              />
-
-              <LeadFilterDropdown
-                label="Year"
-                dropdownKey="year"
-                value={yearFilter}
-                options={yearFilterOptions}
-                openDropdown={openFilterDropdown}
-                onOpenChange={setOpenFilterDropdown}
-                onChange={setYearFilter}
-                nativeSelect={dealerAppMode}
-              />
-
-              <LeadFilterDropdown
-                label="Status"
-                dropdownKey="status"
-                value={statusFilter}
-                options={accountantWorkspaceMode
-                  ? ACCOUNTANT_STATUS_FILTER_OPTIONS
-                  : STATUS_FILTER_OPTIONS}
-                openDropdown={openFilterDropdown}
-                onOpenChange={setOpenFilterDropdown}
-                onChange={(value) => setStatusFilter(value as LeadStatusFilter)}
-                nativeSelect={dealerAppMode}
-              />
-            </div>
-
-            <div className={`${assetStyles.formActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadFilterActions}`}>
-              <button type="button" className={assetStyles.secondaryButton} onClick={resetLeadFilters} disabled={!hasActiveLeadFilter}>
-                Reset
-              </button>
-              <button type="button" className={assetStyles.primaryButton} onClick={closeLeadFilterModal}>
-                Apply
-              </button>
-            </div>
-          </div>
-        </div>
+        <FilterFlow title={accountantWorkspaceMode ? 'Filter clients' : licensingWorkspaceMode ? 'Filter renewals' : 'Filter leads'} onClose={closeLeadFilterModal} onClear={resetLeadFilters} onApply={() => { setMonthFilter(draftLeadFilters.month); setYearFilter(draftLeadFilters.year); setStatusFilter(draftLeadFilters.status); closeLeadFilterModal(); }}>
+          <FilterQuestion
+            label="Which year?"
+            value={draftLeadFilters.year}
+            options={yearFilterOptions}
+            onChange={(value) => setDraftLeadFilters((current) => ({ ...current, year: value }))}
+          />
+          <FilterQuestion
+            label="Which month?"
+            value={draftLeadFilters.month}
+            options={MONTH_OPTIONS}
+            onChange={(value) => setDraftLeadFilters((current) => ({ ...current, month: value }))}
+          />
+          <FilterQuestion
+            label="Which status?"
+            value={draftLeadFilters.status}
+            options={accountantWorkspaceMode
+              ? ACCOUNTANT_STATUS_FILTER_OPTIONS
+              : STATUS_FILTER_OPTIONS}
+            onChange={(value) => setDraftLeadFilters((current) => ({ ...current, status: value as LeadStatusFilter }))}
+          />
+        </FilterFlow>
       ) : null}
 
       {managedLead ? (

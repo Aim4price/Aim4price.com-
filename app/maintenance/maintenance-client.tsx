@@ -1,5 +1,7 @@
 'use client';
 
+import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
+
 import pickerStyles from '../../components/AssetPicker.module.css';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
 
@@ -1889,53 +1891,35 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'filter' ? (
-        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-filter-title">
-          <section className={`${styles.filterModal} ${dialogStyles.dialog}`}>
-            <header className={styles.modalHeader}>
-              <div>
-                <h2 id="maintenance-filter-title">Filter maintenance records</h2>
-              </div>
-              <button className={dialogStyles.close} type="button" onClick={closeModal} aria-label="Close filters">
-                <CloseIcon />
-              </button>
-            </header>
-
-            <div className={`${styles.filterGrid} ${dialogStyles.body}`}>
-              <MaintenanceDropdown
-                label="Asset"
-                value={draftFilters.assetId}
-                options={filterAssetOptions}
-                searchable
-                searchPlaceholder="Search saved assets"
-                noMatchesLabel="No saved assets found"
-                onChange={(value) => setDraftFilters((current) => ({ ...current, assetId: value }))}
-              />
-              <MaintenanceDropdown
-                label="Type"
-                value={draftFilters.type}
-                options={FILTER_TYPE_OPTIONS}
-                onChange={(value) => setDraftFilters((current) => ({ ...current, type: value as MaintenanceFilters['type'] }))}
-              />
-              <MaintenanceDropdown
-                label="Status"
-                value={draftFilters.status}
-                options={FILTER_STATUS_OPTIONS}
-                onChange={(value) => setDraftFilters((current) => ({ ...current, status: value as MaintenanceFilters['status'] }))}
-              />
-              <MaintenanceDropdown
-                label="Assigned to"
-                value={draftFilters.assignedTo}
-                options={filterAssigneeOptions}
-                onChange={(value) => setDraftFilters((current) => ({ ...current, assignedTo: value }))}
-              />
-            </div>
-            <footer className={styles.modalFooter}>
-              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Close</button>
-              <button className={styles.secondaryButton} type="button" onClick={clearFilters}>Clear filters</button>
-              <button className={styles.primaryButton} data-primary-action type="button" onClick={applyFilters}>Apply filters</button>
-            </footer>
-          </section>
-        </div>
+        <FilterFlow title="Filter maintenance records" onClose={closeModal} onClear={clearFilters} onApply={applyFilters}>
+          <FilterQuestion
+            label="Which asset?"
+            value={draftFilters.assetId}
+            options={filterAssetOptions}
+            searchable
+            searchPlaceholder="Search saved assets"
+            noMatchesLabel="No saved assets found"
+            onChange={(value) => setDraftFilters((current) => ({ ...current, assetId: value }))}
+          />
+          <FilterQuestion
+            label="Which type?"
+            value={draftFilters.type}
+            options={FILTER_TYPE_OPTIONS}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, type: value as MaintenanceFilters['type'] }))}
+          />
+          <FilterQuestion
+            label="Which status?"
+            value={draftFilters.status}
+            options={FILTER_STATUS_OPTIONS}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, status: value as MaintenanceFilters['status'] }))}
+          />
+          <FilterQuestion
+            label="Assigned to whom?"
+            value={draftFilters.assignedTo}
+            options={filterAssigneeOptions}
+            onChange={(value) => setDraftFilters((current) => ({ ...current, assignedTo: value }))}
+          />
+        </FilterFlow>
       ) : null}
 
       {modalMode === 'download' && downloadStep === 'scope' ? (

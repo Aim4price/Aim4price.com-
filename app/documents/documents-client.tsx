@@ -1,5 +1,7 @@
 'use client';
 
+import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
+
 import DocumentFileLink from '../../components/DocumentFileLink';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
@@ -338,6 +340,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [view, setView] = useState<VaultView>('documents');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<'all' | DocumentCategory>('all');
+  const [draftCategory, setDraftCategory] = useState<'all' | DocumentCategory>('all');
   const [showSummary, setShowSummary] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -368,7 +371,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const modalRef = useRef<HTMLElement | null>(null);
   const uploadWizardBodyRef = useRef<HTMLDivElement | null>(null);
   const assetPickerModalRef = useRef<HTMLElement | null>(null);
-  const filterModalRef = useRef<HTMLElement | null>(null);
+  const filterModalRef = useRef<HTMLDivElement | null>(null);
   const deleteModalRef = useRef<HTMLElement | null>(null);
   const documentTypeComboboxRef = useRef<HTMLDivElement | null>(null);
   const pageContentRef = useRef<HTMLDivElement | null>(null);
@@ -655,6 +658,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   function openFiltersModal() {
     if (busyRef.current || loading || loadFailed || !hasDocumentsInView) return;
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setDraftCategory(category);
     setShowFilters(true);
   }
 
@@ -1749,51 +1753,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       ) : null}
 
       {showFilters ? (
-        <div className={styles.modalBackdrop} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) setShowFilters(false); }}>
-          <section ref={filterModalRef} className={styles.filterModal} role="dialog" aria-modal="true" aria-labelledby="document-filter-title">
-            <header className={`${styles.modalHeader} ${styles.compactModalHeader}`}>
-              <div>
-                <h2 id="document-filter-title">Filter documents</h2>
-                <p>Choose one category to narrow down your Document Vault.</p>
-              </div>
-              <button type="button" onClick={() => setShowFilters(false)} aria-label="Close filters" data-modal-initial-focus="true"><Icon name="close" /></button>
-            </header>
-
-            <div className={styles.filterModalBody}>
-              <button
-                type="button"
-                className={`${styles.filterOption} ${styles.filterOptionAll} ${category === 'all' ? styles.filterOptionActive : ''}`}
-                aria-pressed={category === 'all'}
-                onClick={() => setCategory('all')}
-              >
-                <span>All documents</span>
-                <strong>{documents.length}</strong>
-              </button>
-              <div className={styles.filterOptionGrid}>
-                {CATEGORY_OPTIONS.map((option) => {
-                  const count = documents.filter((document) => document.category === option.value).length;
-                  return (
-                    <button
-                      type="button"
-                      key={option.value}
-                      className={`${styles.filterOption} ${category === option.value ? styles.filterOptionActive : ''}`}
-                      aria-pressed={category === option.value}
-                      onClick={() => setCategory(option.value)}
-                    >
-                      <span>{option.label}</span>
-                      <strong>{count}</strong>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <footer className={styles.modalFooter}>
-              <button type="button" className={styles.cancelButton} disabled={category === 'all'} onClick={() => setCategory('all')}>Clear filter</button>
-              <button type="button" className={styles.uploadButton} onClick={() => setShowFilters(false)}>Done</button>
-            </footer>
-          </section>
-        </div>
+        <FilterFlow title="Filter documents" dialogRef={filterModalRef} onClose={() => setShowFilters(false)} onClear={() => setCategory('all')} onApply={() => { setCategory(draftCategory); setShowFilters(false); }}>
+          <FilterQuestion label="Which category?" value={draftCategory} options={[{ value: 'all', label: 'All documents' }, ...CATEGORY_OPTIONS]} onChange={(value) => setDraftCategory(value as 'all' | DocumentCategory)} />
+        </FilterFlow>
       ) : null}
 
       {documentPendingDelete ? (

@@ -126,10 +126,9 @@ test('fuel slip manager is compact, scalable and exposes secondary details on de
 });
 
 test('fuel slip filters use the Cost Ledger modal language without limiting month-only filtering', () => {
-  assert.match(filterModal, /styles\.fuelSlipManagerFilterModal/);
-  assert.match(filterModal, /aria-describedby="fuel-slip-filter-description"/);
-  assert.match(filterModal, /Narrow the Fuel Ledger by target, source and slip period\./);
-  assert.match(filterModal, /label="Source \/ status"/);
+  assert.match(filterModal, /<FilterFlow title="Filter fuel slips"/);
+  assert.match(filterModal, /dialogRef=\{fuelSlipManagerChildDialogRef\}/);
+  assert.match(filterModal, /label="Which source or status\?"/);
   assert.match(filterModal, /year: value/);
   assert.match(filterModal, /month: value/);
   assert.doesNotMatch(filterModal, /disabled=\{draftFuelSlipManagerFilters\.year === 'all'\}/);

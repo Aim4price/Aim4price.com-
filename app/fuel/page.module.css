@@ -7573,6 +7573,14 @@
 .slipManageModal .accountFuelClose svg { width: 1rem; height: 1rem; }
 .accountFuelModal.slipManageModal .slipManageOptions button { min-height: 3.6rem !important; }
 
+/* Fuel Slip Tracking uses the same search/filter arrangement as the Cost Ledger. */
+.slipSearchRow { display: flex; align-items: stretch; gap: 1rem; width: 100%; }
+.slipSearchRow .searchWrap { flex: 1 1 0; min-width: 0; }
+.slipFilterButton { display: inline-flex; align-items: center; justify-content: center; gap: 0.65rem; flex: 0 0 11rem; min-height: 3.5rem; padding: 0.8rem 1.25rem; border: 1px solid #b8dfca; border-radius: 1.2rem; background: linear-gradient(180deg, #fbfffd, #edf9f2); color: #125940; font: inherit; font-weight: 800; cursor: pointer; }
+.slipFilterButton:hover { background: #e1f3e9; }
+.slipFilterButton:focus-visible { outline: 3px solid #78b99a; outline-offset: 3px; }
+@media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .slipSearchRow { gap: 0.5rem; } :global(:where(html:not(:has([data-website-canvas])))) .slipFilterButton { flex-basis: auto; padding: 0.65rem 0.85rem; } }
+
 .slipDownloadBody { display: grid; gap: 1rem; padding: 1.2rem 0; }
 .slipDownloadPanel { padding: 1rem; border: 1px solid #d1e2ed; border-radius: 1rem; background: linear-gradient(135deg, #f0f6f3, #fff); }
 .slipDownloadFields { display: grid; gap: 1rem; }
