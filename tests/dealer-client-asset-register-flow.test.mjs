@@ -61,11 +61,13 @@ test('client registers reuse the complete owner Asset Register and keep client s
   assert.match(registerClient, /dealerView=\$\{dealerRegisterMode\}/);
 });
 
-test('manual add stays scoped to the specific dealer or client register already open', () => {
+test('manual add chooses its destination without switching the current register', () => {
   assert.doesNotMatch(registerClient, /Where should this asset be added\?|dealerAddDestination|dealerClientRegisterOptions/);
-  assert.match(registerClient, /if \(isCombinedRegisterView\)[\s\S]*setIsAddAssetDestinationModalOpen\(true\)/);
-  assert.match(registerClient, /const currentRegisterId = String\(activeRegister\?\.id \|\| activeRegisterId \|\| ''\)\.trim\(\)/);
-  assert.match(registerClient, /setAddAssetTargetRegisterId\(currentRegisterId\);[\s\S]*setIsAddChoiceModalOpen\(true\)/);
+  const openChooser = registerClient.slice(registerClient.indexOf('  function openAddAssetChoiceModal()'), registerClient.indexOf('  function closeAddAssetDestinationModal()'));
+  assert.match(openChooser, /setIsAddAssetDestinationModalOpen\(true\)/);
+  assert.match(openChooser, /option.value === currentRegisterId/);
+  assert.doesNotMatch(openChooser, /window.location|router\.|isCombinedRegisterView/);
+  assert.match(registerClient, /isCombinedRegisterView \|\| savedRegisterId === currentRegisterId/);
   assert.match(registerClient, /Adding to <strong>\{addAssetTargetRegisterName\}<\/strong>/);
   assert.match(registerClient, /params\.set\([\s\S]*'dealerRegisterMode'/);
   assert.match(registerClient, /registerId: destinationRegisterId \|\| null/);

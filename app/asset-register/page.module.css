@@ -41044,3 +41044,49 @@ button.documentOpenLink {
 .managementAccountModal .ownerCommandGrid .ownerCommandAction small {
   font-size: .88rem !important;
 }
+
+/* Register destination chooser: square controls and a clear, scrollable option list. */
+.addAssetDestinationHeader > button {
+  border-radius: .65rem !important;
+  flex-shrink: 0;
+}
+.addAssetDestinationHeader p {
+  color: #64746a !important;
+  font-size: .95rem !important;
+}
+.addAssetDestinationField .customSelectButton {
+  border-radius: .65rem !important;
+  min-height: 3.5rem;
+  font-size: 1rem;
+  border-color: #cbdcd5;
+}
+.addAssetDestinationFooter button {
+  border-radius: .65rem !important;
+}
+.addAssetDestinationMenu.customSelectMenu {
+  border-radius: .65rem !important;
+  padding: .5rem !important;
+  border: 1px solid #cbdcd5 !important;
+  background: #fff !important;
+  scrollbar-width: thin;
+  scrollbar-color: #93b3a7 #f4f8f6;
+}
+.addAssetDestinationMenu .customSelectOption {
+  border-radius: .5rem !important;
+  padding: .8rem 1rem !important;
+  border: 1px solid transparent;
+  text-align: left;
+}
+.addAssetDestinationMenu .customSelectOption strong {
+  font-size: .95rem !important;
+  color: #12352d;
+}
+.addAssetDestinationMenu .customSelectOption small {
+  font-size: .82rem !important;
+  color: #64746a;
+}
+.addAssetDestinationMenu .customSelectOption:is(:hover,:focus-visible),
+.addAssetDestinationMenu .customSelectOption[aria-selected="true"] {
+  background: #edf8f2 !important;
+  border-color: #bedfce;
+}
