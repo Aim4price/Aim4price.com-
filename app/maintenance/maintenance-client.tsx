@@ -1387,7 +1387,7 @@ export default function MaintenanceClient({
             <span className={styles.plusMark}>+</span><span>Add Maintenance</span>
           </button>
           <button className={`${styles.toolbarButton} ${styles.toolbarSchedulesButton}`} type="button" onClick={() => showSchedules('upcoming')} aria-pressed={scheduleView !== 'all'}>
-            <ScheduleIcon /><span>Schedules</span>
+            <ScheduleIcon /><span>Scheduled</span>
           </button>
           <button className={`${styles.toolbarButton} ${styles.toolbarChecklistsButton}`} type="button" onClick={() => { setChecklistAssetId(activeFilters.assetId === 'all' ? '' : activeFilters.assetId); setModalMode('checklists'); }}>
             <ChecklistIcon /><span>Checklists</span>
