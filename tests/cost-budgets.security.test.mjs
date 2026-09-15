@@ -244,53 +244,17 @@ test('owner search remains a long field with a dedicated adjacent Filter button'
   );
 });
 
-test('budget overview opens in a focused manager dialog and deep links reveal it', () => {
-  const managerStart = costClient.indexOf('{budgetManagerOpen && !budgetModalOpen && !budgetDeleteCandidate ?');
-  const formStart = costClient.indexOf('{budgetModalOpen ?', managerStart);
-  const manager = costClient.slice(managerStart, formStart);
-
-  assert.ok(managerStart >= 0 && formStart > managerStart, 'budget manager should wrap the existing budget form');
-  assert.match(manager, /aria-labelledby="budget-manager-title"/);
-  assert.match(manager, /styles\.budgetManagerModal/);
-  assert.match(manager, /<h2 id="budget-manager-title">Spending budgets<\/h2>/);
-  assert.match(manager, /onClick=\{openCreateBudget\}/);
-  assert.match(manager, /filteredCostBudgets\.map\(\(budget\) =>/);
-  assert.match(manager, /onClick=\{\(\) => openEditBudget\(budget\)\}/);
-  assert.match(manager, /type="search"/);
-  assert.match(manager, /placeholder="Search budgets\.\.\."/);
-  assert.match(manager, /onClick=\{\(\) => askToDeleteBudget\(budget\)\}/);
-  assert.match(manager, /<TrashIcon \/>/);
-  assert.doesNotMatch(manager, /budgetPeriodBadge|budgetStatusPill/);
-  assert.match(manager, /onClick=\{closeBudgetManager\}>Done<\/button>/);
-  assert.match(manager, /ref=\{budgetManagerDialogRef\}/);
-  assert.match(manager, /tabIndex=\{-1\}/);
-  assert.match(manager, /budgetManagerNotice/);
-
-  const deepLinkStart = costClient.indexOf("const budgetId = routeSearchParams.get('budgetId')");
-  const deepLinkEnd = costClient.indexOf('  useEffect(() => {', deepLinkStart);
-  const deepLinkEffect = costClient.slice(deepLinkStart, deepLinkEnd);
-  const openManagerIndex = deepLinkEffect.indexOf('setBudgetManagerOpen(true)');
-  const focusBudgetIndex = deepLinkEffect.indexOf('setFocusedBudgetId(budget.id)');
-  const scrollBudgetIndex = deepLinkEffect.indexOf('scrollIntoView');
-
-  assert.ok(deepLinkStart >= 0 && deepLinkEnd > deepLinkStart, 'budget deep-link effect should be present');
-  assert.ok(openManagerIndex >= 0, 'budget deep links should open the manager');
-  assert.ok(focusBudgetIndex > openManagerIndex, 'the manager should open before selecting the focused budget');
-  assert.ok(scrollBudgetIndex > focusBudgetIndex, 'the focused budget should be selected before it is scrolled into view');
-  assert.match(
-    costClient,
-    /function closeBudgetManager\(\) \{[\s\S]*?setBudgetManagerOpen\(false\);[\s\S]*?requestAnimationFrame\(\(\) => budgetManagerTriggerRef\.current\?\.focus\(\)\);[\s\S]*?\}/,
-  );
-  assert.match(costClient, /if \(event\.key === 'Escape'\)[\s\S]*?setBudgetManagerOpen\(false\)/);
-  assert.match(costClient, /event\.key !== 'Tab'/);
-  assert.match(costClient, /pageShell\?\.setAttribute\('inert', ''\)/);
-  assert.match(costClient, /pageShell\?\.removeAttribute\('inert'\)/);
+test('budget overview has its own owner page and cost links preserve budget scope', () => {
+  const page = read('app/budgets/page.tsx');
+  const overview = read('app/budgets/BudgetTracking.tsx');
+  assert.match(page, /requireActivePageAccess/);
+  assert.match(page, /profile.accountType !== 'owner'/);
+  assert.match(page, /MyInvoicesClient budgetsPage/);
+  assert.match(costClient, /router.push\('\/budgets'\)/);
+  assert.match(overview, /view=costs/);
+  assert.match(costClient, /assetId: budget.assetId \|\| 'all'/);
+  assert.match(costClient, /focusedBudget && !focusedBudget.includeFuelSlipCosts && invoice.source === 'fuel_slip'/);
   assert.match(costClient, /setBudgetDeleteError\(error instanceof Error/);
-
-  assert.match(costStyles, /\.budgetModal,\s*\.budgetManagerModal\s*\{[\s\S]*?grid-template-rows: auto minmax\(0, 1fr\) auto;/);
-  for (const styleName of ['budgetManagerBody', 'budgetManagerSection', 'budgetManagerToolbar', 'budgetManagerFooter']) {
-    assert.match(costStyles, new RegExp(`\\.${styleName}\\b`), `missing .${styleName} manager styling`);
-  }
 });
 
 test('budget setup uses a wider four-step wizard and shared searchable asset picker', () => {
