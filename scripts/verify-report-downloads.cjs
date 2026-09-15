@@ -1,4 +1,4 @@
-/* Exercise pagination on real page clients with 25 fixture records; never writes user data. */
+/* Verify report dialog design on real page clients with fixture records; never writes user data. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -41,7 +41,7 @@ const scenarios = [
  ['accountant','accountant',[]], ['group','group',[]], ['owner','owner',[]],
  ['register-options','register',['Download','PDF report','Next']],
  ['registers-format','registers',['Download','Download all Asset Registers']],
- ['cost-timeline','costs',['Download','PDF']],
+ ['cost-timeline','costs',['Download','PDF','Next']],
  ['slip-timeline','fuel&view=slips',['Download','Next']],
  ['group-format','group',['Download maintenance report']],
  ['owner-format','owner',['Maintenance report']], ['owner-open','owner-open',['Maintenance report']],
@@ -76,6 +76,56 @@ async function appearance(page, selector, original=false) {
    if(card){const icon=card.querySelector('[data-download-icon]') || card.firstElementChild;if(icon)value.icon=read(icon,['width','height','borderRadius']);value.card=read(card,['padding','borderRadius','backgroundImage','gridTemplateColumns']);delete value.card.gridTemplateColumns;value.strong=read(card.querySelector('strong'),['fontSize','fontWeight','lineHeight','color']);const small=card.querySelector('small');if(small)value.small=read(small,['fontSize','fontWeight','lineHeight','color']);}
    return value;
  },original);
+}
+async function details(page, original=false) {
+ return page.$eval(original?'[data-original-report]':'[data-download-dialog="true"]',(root,original)=>{
+  const read=(el,keys)=>Object.fromEntries(keys.map(key=>[key,getComputedStyle(el)[key].replace(/ 0%/g,'').replace(/ 100%/g,'')]));
+  const header=root.querySelector(original?'header':'[data-download-header]');
+  const cards=[...root.querySelectorAll(original?'button[aria-pressed]':'[data-download-option]')];
+  const footer=root.querySelector(original?'[class*="exportActions"]':'[data-download-footer]');
+  return {
+   backdrop:read(original?root.parentElement:root.closest('[class*="ReportDownload_backdrop"]'),['backgroundColor','backdropFilter']),
+   header:read(header,['paddingBottom','borderBottomWidth','borderBottomColor','columnGap']),
+   cards:cards.map(card=>({
+    selected:card.getAttribute('aria-pressed')==='true',
+    style:read(card,['padding','borderRadius','columnGap','backgroundImage','borderTopColor']),
+    title:read(card.querySelector('strong'),['fontSize','fontWeight','lineHeight','color','letterSpacing']),
+    small:card.querySelector('small')?read(card.querySelector('small'),['fontSize','fontWeight','lineHeight','color']):null,
+    icon:read(card.querySelector('[data-download-icon]')||card.firstElementChild,['width','height','borderRadius']),
+   })),
+   footer:footer?read(footer,['justifyContent','backgroundColor','borderTopWidth']):null,
+   buttons:footer?[...footer.querySelectorAll('button,a')].map(button=>read(button,['minWidth','minHeight','borderRadius','fontSize','fontWeight','lineHeight','letterSpacing'])):[],
+   secondary:footer?[...footer.querySelectorAll('button,a')].filter(button=>!button.hasAttribute('data-download-primary')).map(button=>read(button,['color','backgroundColor','backgroundImage','borderTopColor','boxShadow'])):[],
+   overflow:root.scrollWidth>root.clientWidth+1,
+  };
+ },original);
+}
+async function hoverStyle(page, selector) {
+ const card=await page.$(selector);
+ if(!card)return null;
+ await card.hover();await delay(220);
+ return card.evaluate(card=>{
+  const css=getComputedStyle(card);
+  return Object.fromEntries(['backgroundImage','borderTopColor','boxShadow','transform'].map(key=>[key,css[key].replace(/ 0%/g,'').replace(/ 100%/g,'')]));
+ });
+}
+function verifyDetails(actual, reference, name) {
+ // All page CSS is loaded in this fixture; legacy global overlay rules can alter the unscoped reference.
+ assert.deepEqual(actual.backdrop,{backgroundColor:'rgba(12, 24, 35, 0.42)',backdropFilter:'blur(12px) saturate(0.9)'},`${name} canonical Asset Map backdrop`);
+ assert.deepEqual(actual.header,reference.header,`${name} header divider and spacing`);
+ assert.equal(actual.overflow,false,`${name} horizontal overflow`);
+ for(const [index,card] of actual.cards.entries()) {
+  const expected=reference.cards.find(option=>option.selected===card.selected);
+  assert.deepEqual(card.style,expected.style,`${name} card ${index+1} spacing and selected background`);
+  assert.deepEqual(card.title,expected.title,`${name} card ${index+1} title`);
+  if(card.small)assert.deepEqual(card.small,expected.small,`${name} card ${index+1} description`);
+  assert.deepEqual(card.icon,expected.icon,`${name} card ${index+1} icon`);
+ }
+ assert.ok(actual.footer,`${name} footer exists`);
+ assert.deepEqual(actual.footer,reference.footer,`${name} footer layout`);
+ assert.ok(actual.buttons.length,`${name} footer buttons exist`);
+ for(const button of actual.secondary)assert.deepEqual(button,reference.secondary[0],`${name} secondary button colors`);
+ for(const button of actual.buttons)assert.deepEqual(button,reference.buttons[0],`${name} footer button dimensions and typography`);
 }
 (async () => {
   let server, browser, fixtureCreated = false;
@@ -126,6 +176,9 @@ async function appearance(page, selector, original=false) {
       await page.setViewport({width,height:1000});
       await page.goto('http://localhost:3036/report-validation?mode=reference',{waitUntil:'networkidle2',timeout:120000});
       const reference=await appearance(page,'[data-original-report]',true);
+      const referenceDetails=await details(page,true);
+      const referenceHover=await hoverStyle(page,'[data-original-report] button[aria-pressed="false"]');
+      await page.mouse.move(0,0);
       for(const [name,mode,clicks] of scenarios.filter(([name])=>!process.env.REPORT_SCENARIOS||process.env.REPORT_SCENARIOS.split(',').includes(name))){
         try {
           await page.goto(`http://localhost:3036/report-validation?mode=${mode}`,{waitUntil:'networkidle2',timeout:120000});
@@ -142,6 +195,9 @@ async function appearance(page, selector, original=false) {
           if(expected.card){expected.card={...expected.card};delete expected.card.backgroundImage;}
           await page.screenshot({path:path.join(output,`${name}-${width}.png`)});
           assert.deepEqual(actual,expected,`${name} rendered style parity`);
+          verifyDetails(await details(page),referenceDetails,name);
+          const hovered=await hoverStyle(page,'[data-download-dialog="true"] [data-download-option]:not(:disabled)');
+          if(hovered)assert.deepEqual(hovered,referenceHover,`${name} option hover`);
           assert.deepEqual(errors,[],`${name} runtime errors`);
           console.log(`PASS ${name} ${width}px`);
         }catch(error){failures.push(name+' '+width);console.error('FAIL '+name+' '+width+' '+error.message, errors);console.error(await page.$eval('body', el=>el.innerText.slice(-1800)));errors.length=0;}

@@ -1,6 +1,6 @@
 /* Canonical report dialog: Export Asset Map Tracking. Scope beats legacy page themes. */
 
-.backdrop {
+.backdrop.backdrop.backdrop {
   background: rgba(12,24,35,.42) !important;
   backdrop-filter: blur(12px) saturate(.9) !important;
 }
@@ -125,11 +125,20 @@
   white-space: normal !important;
   box-shadow: 0 14px 28px rgba(16,36,40,.055),inset 0 1px 0 rgba(255,255,255,.96) !important;
   cursor: pointer;
+  transform: none !important;
+  transition: transform 160ms ease,border-color 160ms ease,background 160ms ease,box-shadow 160ms ease;
 }
 
-.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option][aria-pressed="true"]), .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):hover:not(:disabled) {
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option][aria-pressed="true"]) {
   border-color: rgba(190,224,206,.98) !important;
   background: radial-gradient(circle at top left,rgba(25,116,84,.08),transparent 42%),linear-gradient(180deg,#fff,#edf8f2) !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):is(:hover,:focus-visible):not(:disabled) {
+  border-color: rgba(190,224,206,.98) !important;
+  background: radial-gradient(circle at top left,rgba(25,116,84,.07),transparent 44%),linear-gradient(180deg,#fff,#edf8f2) !important;
+  box-shadow: 0 18px 34px rgba(16,36,40,.085),inset 0 1px 0 #fff !important;
+  transform: translateY(-1px) !important;
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-icon]), .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg {
@@ -214,16 +223,17 @@
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :is(button, a) {
-  color: #12352d !important;
-  border: 1px solid #d1dfea !important;
-  background: linear-gradient(180deg,#f7fafc,#f1f5f8) !important;
-  box-shadow: 0 10px 22px rgba(31,51,71,.045) !important;
+  color: #17362c !important;
+  border: 1px solid #d8e1ea !important;
+  background: #f2f5f8 !important;
+  box-shadow: 0 9px 18px rgba(16,36,40,.04),inset 0 1px 0 rgba(255,255,255,.96) !important;
+  letter-spacing: -.018em !important;
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :global([data-download-primary]) {
   color: #fff !important;
-  background: linear-gradient(180deg,#197454,#0f5840) !important;
-  border-color: #0f6248 !important;
+  background: linear-gradient(180deg,#1a5a45,#124233) !important;
+  border-color: transparent !important;
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :is(input,select) {

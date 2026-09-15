@@ -22496,7 +22496,7 @@ export default function AssetRegisterClient({
                                 aria-pressed={pdfReportSelection === option.value} data-download-option="true"
                               ><span data-download-icon="true"><img src="/brand/pdf.png" alt="" /></span>
                                 <span className={styles.pdfReportOptionMain}>
-                                  <span className={styles.pdfReportQuickLabel}>{ASSET_FILTER_LABEL_BY_VALUE.get(option.value) ?? option.label}</span>
+                                  <strong className={styles.pdfReportQuickLabel}>{ASSET_FILTER_LABEL_BY_VALUE.get(option.value) ?? option.label}</strong>
                                 </span>
                               </button>
                             ))}

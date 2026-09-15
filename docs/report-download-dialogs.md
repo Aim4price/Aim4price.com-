@@ -26,6 +26,8 @@ Asset selection steps continue to use the shared AssetPicker design. Summary das
 
 ## Verification
 
-`node scripts/verify-report-downloads.cjs` opens the real page clients with fixture API responses. It compares dialog geometry, title/card/icon styles and close buttons against independent original Asset Map markup at 1440px and 430px. It covers report choices, format selection and subsequent timeline/scope steps. The temporary route is removed after the run. Set `REPORT_BROWSER_PATH` when Chromium is supplied externally.
+`node scripts/verify-report-downloads.cjs` opens the real page clients with fixture API responses. It compares dialog geometry, heading/divider spacing, every option card and icon, selected backgrounds, hover effects, footer button dimensions/typography/colours, and horizontal overflow at 1440px and 430px. Style comparisons use independent original Asset Map markup; backdrop colour and blur are checked against its source values because legacy global overlay CSS affects the unscoped reference in the combined test fixture. It covers 23 report choice, format and timeline/scope flows (46 viewport combinations), including advancing Cost Ledger with Next to reach the actual timeline. The temporary route is removed after the run. Set `REPORT_BROWSER_PATH` when Chromium is supplied externally.
 
 The audit inventory lives in `tests/fixtures/report-download-inventory.json`. The tests use no production records.
+
+The second audit corrected footer colours, shadows and letter spacing, standardized option hover effects, restored the umbrella backdrop against a legacy transparent-overlay rule, and brought the later Asset Register quick-report labels under the shared typography. These are fixture-based browser checks; production deployment and live authenticated download generation are separate checks.

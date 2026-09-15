@@ -18,7 +18,7 @@ const noop = () => {};
 const asset = {id:'1',registerId:null,title:'Test tractor',kind:'tractor',value:1000,createdAtIso:'2026-09-01',updatedAtIso:'2026-09-01',lastScannedAtIso:null};
 export default function ReportDownloadPage() {
  const mode = useSearchParams().get('mode');
- if (mode === 'reference') return <div className={mapStyles.modalBackdrop} data-website-overlay><section className={`${mapStyles.exportModal} ${mapStyles.accountExportModal} ${accountStyles.modalTheme}`} data-original-report>
+ if (mode === 'reference') return <div className={`${mapStyles.modalBackdrop} ${mapStyles.accountExportBackdrop}`} data-website-overlay><section className={`${mapStyles.exportModal} ${mapStyles.accountExportModal} ${accountStyles.modalTheme}`} data-original-report>
    <header className={mapStyles.exportModalHeader}><div><h2>Export Asset Map Tracking</h2></div><button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}>×</button></header>
    <div className={mapStyles.exportChoices}>{(['pdf','xlsx'] as const).map(format=><button key={format} className={`${mapStyles.exportOption} ${format==='pdf'?mapStyles.exportOptionActive:''}`} aria-pressed={format==='pdf'}><span className={mapStyles.exportGraphic}><img className={mapStyles.exportGraphicImage} src={format==='pdf'?'/brand/pdf.png':'/brand/sheet.png'} alt=""/></span><span className={mapStyles.exportOptionTitleBlock}><strong>{format==='pdf'?'PDF map report':'XLSX GPS workbook'}</strong><small>Download a printable report or Excel workbook.</small></span></button>)}</div>
    <div className={mapStyles.exportActions}><button className={`${mapStyles.secondaryAction} ${mapStyles.exportSecondaryButton}`}>Cancel</button></div>
