@@ -1510,17 +1510,21 @@ export default function MaintenanceClient({
                     <section id={detailsId} hidden={!expanded} className={styles.ledgerDetails} aria-label="Maintenance details">
                       <h3>Maintenance details</h3>
                       <dl className={styles.ledgerDetailsGrid}>
+                        <div><dt>Asset</dt><dd>{cleanMaintenanceAssetTitle(record.assetTitle)}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</span></dd></div>
                         <div><dt>Work</dt><dd>{maintenanceDisplayTitle(record)}</dd></div>
                         <div><dt>Type</dt><dd>{typeLabel(record.maintenanceType)}</dd></div>
-                        <div><dt>Asset</dt><dd>{cleanMaintenanceAssetTitle(record.assetTitle)}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</span></dd></div>
-                        <div><dt>Assigned to</dt><dd>{record.assignedName || 'Unassigned'}</dd></div>
-                        <div><dt>Reminder</dt><dd>{maintenanceAlertLabel(record)}</dd></div>
-                        <div><dt>Repeats</dt><dd>{record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? `Every ${record.recurringIntervalValue} ${record.recurringIntervalUnit}` : 'Once-off'}</dd></div>
-                        {isDone ? <div><dt>Originally scheduled</dt><dd>{maintenanceDueValue(record) || 'Not set'}</dd></div> : null}
-                        {record.completedAtIso && record.triggerType !== 'date' ? <div><dt>Completed on</dt><dd>{dateOnly(record.completedAtIso)}</dd></div> : null}
-                        {record.completedBy ? <div><dt>Completed by</dt><dd>{record.completedBy}</dd></div> : null}
+                        {isDone ? <>
+                          {record.completedAtIso ? <div><dt>Completed on</dt><dd>{dateOnly(record.completedAtIso)}</dd></div> : null}
+                          {record.completedUsage !== null ? <div><dt>Usage at completion</dt><dd>{formatUsage(record.completedUsage, record.usageMetric ?? record.assetUsageMetric)}</dd></div> : null}
+                          {record.completedBy ? <div><dt>Completed by</dt><dd>{record.completedBy}</dd></div> : null}
+                        </> : canComplete ? <>
+                          <div><dt>{maintenanceCardCaption(record)}</dt><dd>{maintenanceDueValue(record)}</dd></div>
+                          <div><dt>Assigned to</dt><dd>{record.assignedName || 'Unassigned'}</dd></div>
+                          {record.alertBeforeValue !== null && record.alertBeforeUnit ? <div><dt>Reminder</dt><dd>{maintenanceAlertLabel(record)}</dd></div> : null}
+                        </> : null}
+                        {record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? <div><dt>Interval</dt><dd>Every {record.recurringIntervalValue} {record.recurringIntervalUnit}</dd></div> : null}
                         <div><dt>Updated</dt><dd>{dateOnly(record.updatedAtIso)}</dd></div>
-                        {record.alertNotedAtIso ? <div><dt>Alert noted</dt><dd>{dateOnly(record.alertNotedAtIso)}</dd></div> : null}
+                        {canComplete && record.alertNotedAtIso ? <div><dt>Alert noted</dt><dd>{dateOnly(record.alertNotedAtIso)}</dd></div> : null}
                       </dl>
                       {record.notes ? <div className={styles.ledgerNotes}><h4>Notes</h4><p>{record.notes}</p></div> : null}
                       {record.completedNotes ? <div className={styles.ledgerNotes}><h4>Completion notes</h4><p>{record.completedNotes}</p></div> : null}

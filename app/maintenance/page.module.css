@@ -5037,7 +5037,7 @@
 .ledgerDetailsGrid div { min-width: 0; }
 .ledgerDetailsGrid dt { margin-bottom: 0.25rem; color: #697d8b; font-size: 0.8rem; }
 .ledgerDetailsGrid dd { margin: 0; color: #304d46; font-size: 0.9rem; font-weight: 600; overflow-wrap: anywhere; }
-.ledgerAssetMeta { display: block; color: #627386; margin-top: 0.3rem; font-weight: 500; }
+.ledgerAssetMeta { display: block; color: inherit; margin-top: 0.3rem; font-weight: inherit; }
 .ledgerNotes { padding-top: 1rem; margin-top: 1rem; border-top: 1px solid #e4ebeb; }
 .ledgerNotes h4 { margin: 0 0 0.35rem; color: #304d46; font-size: 0.9rem; }
 .ledgerNotes p { margin: 0; color: #617486; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
