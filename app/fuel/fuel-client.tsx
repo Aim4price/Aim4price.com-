@@ -18,6 +18,8 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent,
 import AppHeader from '../../components/AppHeader';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import styles from './page.module.css';
+import costStyles from '../my-invoices/page.module.css';
+import { appRealmForPath } from '../../lib/app-realm';
 import accountStyles from '../account/page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
 import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-slip-number';
@@ -1170,97 +1172,6 @@ function getFuelSlipYearOptions(slips: FuelSlipRecord[]): string[] {
   return Array.from(years).sort((a, b) => Number(b) - Number(a));
 }
 
-function csvCell(value: unknown): string {
-  const text = sanitizeFuelSlipSensitiveText(value).replace(/\r?\n/g, ' ').trim();
-  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-}
-
-function csvNumber(value: number | null | undefined): string {
-  return typeof value === 'number' && Number.isFinite(value) ? String(value) : '';
-}
-
-function buildFuelSlipCsv(slips: FuelSlipRecord[]): string {
-  const headers = [
-    'Date',
-    'Supplier',
-    'Supplier VAT number',
-    'Target type',
-    'Target',
-    'Slip number',
-    'Transaction number',
-    'Fuel type',
-    'Litres',
-    'Price per litre',
-    'Total incl. VAT',
-    'VAT amount',
-    'VAT included',
-    'VAT rate',
-    'Payment method',
-    'Card type',
-    'Card last 4',
-    'Merchant number',
-    'Terminal number',
-    'Site number',
-    'Odometer reading',
-    'Hour-meter reading',
-    'Operator / manager',
-    'Activity / reason',
-    'Work area / direction',
-    'Asset fuel % before',
-    'Asset fuel % after',
-    'Note',
-    'Capture status',
-    'Review required',
-    'Original filename',
-    'Document URL',
-    'Created at',
-    'Updated at',
-  ];
-
-  const rows = slips.map((slip) => [
-    slip.documentDate || '',
-    slip.supplierName,
-    slip.supplierVatNumber,
-    slip.targetType === 'storage_tank' ? 'Storage tank' : 'Asset',
-    fuelSlipTargetLabel(slip),
-    slip.slipNumber,
-    slip.transactionNumber,
-    slip.fuelType,
-    csvNumber(slip.litres),
-    csvNumber(slip.pricePerLitre),
-    csvNumber(slip.totalAmount),
-    csvNumber(slip.vatAmount),
-    slip.vatIncluded === null ? '' : slip.vatIncluded ? 'Yes' : 'No',
-    csvNumber(slip.vatRate),
-    slip.paymentMethod,
-    slip.cardType,
-    cardLast4FromValue(slip.cardLast4 || slip.cardNumberMasked),
-    slip.merchantNumber,
-    slip.terminalNumber,
-    slip.siteNumber,
-    csvNumber(slip.odometerReading),
-    csvNumber(slip.hourMeterReading),
-    slip.operatorName,
-    slip.activityText,
-    slip.workAreaText,
-    csvNumber(slip.assetFuelPercentBefore),
-    csvNumber(slip.assetFuelPercentAfter),
-    slip.note,
-    fuelSlipStatusLabel(slip),
-    slip.reviewRequired ? 'Yes' : 'No',
-    slip.originalFilename,
-    slip.documentFileUrl,
-    slip.createdAtIso,
-    slip.updatedAtIso,
-  ]);
-
-  return `\ufeff${[headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')}`;
-}
-
-function fuelSlipDownloadFileName(): string {
-  return `fuel-slips-${new Date().toISOString().slice(0, 10)}.csv`;
-}
-
 function numberToInput(value: number | null | undefined, decimals?: number): string {
   return fuelSlipDecimalToInput(value, decimals);
 }
@@ -1723,6 +1634,8 @@ export default function FuelClient({
   const [openFuelSlipManagerFilterSelect, setOpenFuelSlipManagerFilterSelect] = useState<FuelSlipManagerFilterKey | null>(null);
   const [fuelSlipManagerTargetSearch, setFuelSlipManagerTargetSearch] = useState('');
   const [fuelSlipDownloadOpen, setFuelSlipDownloadOpen] = useState(false);
+  const [fuelSlipDownloadFormat, setFuelSlipDownloadFormat] = useState<ReportFormat>('pdf');
+  const [fuelSlipDownloadStep, setFuelSlipDownloadStep] = useState(0);
   const [draftFuelSlipDownloadFilters, setDraftFuelSlipDownloadFilters] = useState<FuelSlipManagerFilterState>(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
   const [openFuelSlipDownloadSelect, setOpenFuelSlipDownloadSelect] = useState<FuelSlipManagerFilterKey | null>(null);
   const [fuelSlipDownloadTargetSearch, setFuelSlipDownloadTargetSearch] = useState('');
@@ -3185,8 +3098,10 @@ export default function FuelClient({
   }
 
   function openFuelSlipDownloadPanel() {
+    setFuelSlipDownloadFormat('pdf');
+    setFuelSlipDownloadStep(0);
     rememberFuelSlipManagerChildTrigger();
-    setDraftFuelSlipDownloadFilters(fuelSlipManagerFilters);
+    setDraftFuelSlipDownloadFilters({ ...fuelSlipManagerFilters, month: fuelSlipManagerFilters.year === 'all' ? 'all' : fuelSlipManagerFilters.month });
     setOpenFuelSlipDownloadSelect(null);
     setFuelSlipDownloadTargetSearch('');
     setFuelSlipDownloadError('');
@@ -3203,14 +3118,7 @@ export default function FuelClient({
     setFuelSlipDownloadOpen(false);
   }
 
-  function clearFuelSlipDownloadFilters() {
-    setDraftFuelSlipDownloadFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
-  }
-
-  function handleFuelSlipDownload() {
+  async function handleFuelSlipDownload() {
     if (isDownloadingFuelSlips) return;
 
     const downloadableSlips = recentFuelSlips.filter((slip) => matchesFuelSlipManagerFilters(slip, draftFuelSlipDownloadFilters, fuelSlipManagerSearchTerm));
@@ -3224,11 +3132,21 @@ export default function FuelClient({
     setFuelSlipDownloadError('');
 
     try {
-      downloadBlob(new Blob([buildFuelSlipCsv(downloadableSlips)], { type: 'text/csv;charset=utf-8' }), fuelSlipDownloadFileName());
-      setNotice({ tone: 'success', message: 'Fuel slip CSV downloaded.' });
+      const response = await fetch(scopedApiUrl('/api/fuel/slips/export'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', 'x-aim4price-client-realm': appRealmForPath(window.location.pathname) ?? 'website' },
+        body: JSON.stringify({ format: fuelSlipDownloadFormat, ids: downloadableSlips.map((slip) => slip.id) }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Fuel slips could not be downloaded.');
+      }
+      downloadBlob(await response.blob(), `fuel-slips-${new Date().toISOString().slice(0, 10)}.${fuelSlipDownloadFormat}`);
+      setNotice({ tone: 'success', message: `Fuel slip ${fuelSlipDownloadFormat === 'pdf' ? 'PDF' : 'Excel workbook'} downloaded.` });
       closeFuelSlipDownloadPanel();
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Fuel slip CSV could not be downloaded.' });
+      setFuelSlipDownloadError(error instanceof Error ? error.message : 'Fuel slips could not be downloaded.');
     } finally {
       setIsDownloadingFuelSlips(false);
     }
@@ -4423,86 +4341,109 @@ export default function FuelClient({
 
       {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? (
         <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
-          <div className={`${styles.fuelSlipFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title">
+          <div className={`${styles.fuelSlipFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title" aria-busy={isDownloadingFuelSlips}>
             <div className={styles.modalHeader}>
               <div>
-                <h2 id="fuel-slip-download-title">Download fuel slips</h2>
-                <p>{fuelSlipManagerSearch.trim()
-                  ? `Exports loaded slips matching “${fuelSlipManagerSearch.trim()}” and the filters below.`
-                  : 'Choose filters for the loaded slips you want to export.'}</p>
+                <h2 id="fuel-slip-download-title">{['Download fuel slips', 'Choose report timeline', 'Choose fuel slips'][fuelSlipDownloadStep]}</h2>
+                {fuelSlipDownloadStep > 0 ? <p>{fuelSlipDownloadStep === 1 ? 'Select a year and optional month.' : 'Choose the asset or storage tank and capture status.'}</p> : null}
               </div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipDownloadPanel} aria-label="Close fuel slip download"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.fuelSlipFilterGrid}>
-              <FuelSlipFilterDropdown
-                label="Target"
-                dropdownKey="target"
-                value={draftFuelSlipDownloadFilters.targetKey}
-                options={fuelSlipManagerTargetOptions}
-                openDropdown={openFuelSlipDownloadSelect}
-                searchable
-                searchValue={fuelSlipDownloadTargetSearch}
-                searchPlaceholder="Search saved assets or storage tanks"
-                noMatchesLabel="No matching targets found"
-                onOpenChange={setOpenFuelSlipDownloadSelect}
-                onSearchChange={setFuelSlipDownloadTargetSearch}
-                onChange={(value) => {
-                  setFuelSlipDownloadError('');
-                  setDraftFuelSlipDownloadFilters((current) => ({ ...current, targetKey: value }));
-                }}
-              />
+            <div className={styles.slipDownloadBody}>
+              {fuelSlipDownloadStep > 0 ? <ol className={costStyles.downloadStageRail} aria-label="Fuel slip download progress">
+                {['Format', 'Timeline', 'Fuel slips'].map((label, index) => <li key={label} className={`${costStyles.downloadStageItem} ${index === fuelSlipDownloadStep ? costStyles.downloadStageItemActive : ''} ${index < fuelSlipDownloadStep ? costStyles.downloadStageItemComplete : ''}`} aria-current={index === fuelSlipDownloadStep ? 'step' : undefined}>
+                  <span className={costStyles.downloadStageNumber}>{index < fuelSlipDownloadStep ? '✓' : index + 1}</span><span>{label}</span>
+                </li>)}
+              </ol> : null}
+              {fuelSlipDownloadStep === 0 ? <div className={styles.exportChoices}>
+                {(['pdf', 'xlsx'] as const).map((format) => <button key={format} type="button" className={`${styles.exportOption} ${fuelSlipDownloadFormat === format ? styles.exportOptionActive : ''}`} onClick={() => setFuelSlipDownloadFormat(format)} aria-pressed={fuelSlipDownloadFormat === format}>
+                  <span className={styles.exportGraphic}><ExportGraphic src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" icon={format === 'pdf' ? <PdfIcon className={styles.exportOptionIcon} /> : <SpreadsheetIcon className={styles.exportOptionIcon} />} /></span>
+                  <span className={styles.exportOptionTitleBlock}><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Download a clean printable fuel slip report.' : 'Download fuel slip records in Excel format.'}</small></span>
+                </button>)}
+              </div> : <section className={styles.slipDownloadPanel} aria-label={fuelSlipDownloadStep === 1 ? 'Report timeline' : 'Fuel slip selection'}>
+                <div className={styles.slipDownloadFields}>
+                  {fuelSlipDownloadStep === 1 ? <>
+                    <FuelSlipFilterDropdown
+                      label="Year"
+                      dropdownKey="year"
+                      value={draftFuelSlipDownloadFilters.year}
+                      options={fuelSlipManagerYearOptions}
+                      openDropdown={openFuelSlipDownloadSelect}
+                      onOpenChange={setOpenFuelSlipDownloadSelect}
+                      onChange={(value) => {
+                        setFuelSlipDownloadError('');
+                        setDraftFuelSlipDownloadFilters((current) => ({ ...current, year: value, month: value === 'all' ? 'all' : current.month }));
+                      }}
+                    />
 
-              <FuelSlipFilterDropdown
-                label="Source / status"
-                dropdownKey="capture"
-                value={draftFuelSlipDownloadFilters.capture}
-                options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
-                openDropdown={openFuelSlipDownloadSelect}
-                onOpenChange={setOpenFuelSlipDownloadSelect}
-                onChange={(value) => {
-                  setFuelSlipDownloadError('');
-                  setDraftFuelSlipDownloadFilters((current) => ({ ...current, capture: value as FuelSlipCaptureFilter }));
-                }}
-              />
+                    <FuelSlipFilterDropdown
+                      label="Month"
+                      disabled={draftFuelSlipDownloadFilters.year === 'all'}
+                      dropdownKey="month"
+                      value={draftFuelSlipDownloadFilters.month}
+                      options={fuelSlipManagerMonthOptions}
+                      openDropdown={openFuelSlipDownloadSelect}
+                      onOpenChange={setOpenFuelSlipDownloadSelect}
+                      onChange={(value) => {
+                        setFuelSlipDownloadError('');
+                        setDraftFuelSlipDownloadFilters((current) => ({ ...current, month: value }));
+                      }}
+                    />
 
-              <FuelSlipFilterDropdown
-                label="Year"
-                dropdownKey="year"
-                value={draftFuelSlipDownloadFilters.year}
-                options={fuelSlipManagerYearOptions}
-                openDropdown={openFuelSlipDownloadSelect}
-                onOpenChange={setOpenFuelSlipDownloadSelect}
-                onChange={(value) => {
-                  setFuelSlipDownloadError('');
-                  setDraftFuelSlipDownloadFilters((current) => ({ ...current, year: value }));
-                }}
-              />
+                  </> : <>
+                    <FuelSlipFilterDropdown
+                      label="Target"
+                      dropdownKey="target"
+                      value={draftFuelSlipDownloadFilters.targetKey}
+                      options={fuelSlipManagerTargetOptions}
+                      openDropdown={openFuelSlipDownloadSelect}
+                      searchable
+                      searchValue={fuelSlipDownloadTargetSearch}
+                      searchPlaceholder="Search saved assets or storage tanks"
+                      noMatchesLabel="No matching targets found"
+                      onOpenChange={setOpenFuelSlipDownloadSelect}
+                      onSearchChange={setFuelSlipDownloadTargetSearch}
+                      onChange={(value) => {
+                        setFuelSlipDownloadError('');
+                        setDraftFuelSlipDownloadFilters((current) => ({ ...current, targetKey: value }));
+                      }}
+                    />
 
-              <FuelSlipFilterDropdown
-                label="Month"
-                dropdownKey="month"
-                value={draftFuelSlipDownloadFilters.month}
-                options={fuelSlipManagerMonthOptions}
-                openDropdown={openFuelSlipDownloadSelect}
-                onOpenChange={setOpenFuelSlipDownloadSelect}
-                onChange={(value) => {
-                  setFuelSlipDownloadError('');
-                  setDraftFuelSlipDownloadFilters((current) => ({ ...current, month: value }));
-                }}
-              />
+                    <FuelSlipFilterDropdown
+                      label="Source / status"
+                      dropdownKey="capture"
+                      value={draftFuelSlipDownloadFilters.capture}
+                      options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
+                      openDropdown={openFuelSlipDownloadSelect}
+                      onOpenChange={setOpenFuelSlipDownloadSelect}
+                      onChange={(value) => {
+                        setFuelSlipDownloadError('');
+                        setDraftFuelSlipDownloadFilters((current) => ({ ...current, capture: value as FuelSlipCaptureFilter }));
+                      }}
+                    />
+
+
+                  </>}
+                </div>
+              </section>}
+              {fuelSlipDownloadStep === 2 ? <p className={styles.slipDownloadSummary}>
+                {recentFuelSlips.filter((slip) => matchesFuelSlipManagerFilters(slip, draftFuelSlipDownloadFilters, fuelSlipManagerSearchTerm)).length} loaded slips selected{fuelSlipManagerSearch.trim() ? ` matching “${fuelSlipManagerSearch.trim()}”` : ''}.
+              </p> : null}
+              {fuelSlipDownloadError ? <p className={styles.fuelSlipDownloadError} role="alert">{fuelSlipDownloadError}</p> : null}
             </div>
-            {fuelSlipDownloadError ? (
-              <p className={styles.fuelSlipDownloadError}>{fuelSlipDownloadError}</p>
-            ) : null}
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipDownloadPanel}>Close</button>
-              <button type="button" className={styles.secondaryButton} onClick={clearFuelSlipDownloadFilters}>Clear filters</button>
-              <button type="button" className={styles.primaryButton} onClick={handleFuelSlipDownload} disabled={isDownloadingFuelSlips}>Download</button>
+            <div className={`${styles.modalFooter} ${styles.slipDownloadFooter}`}>
+              {fuelSlipDownloadStep > 0 ? <button type="button" className={styles.secondaryButton} disabled={isDownloadingFuelSlips} onClick={() => { setOpenFuelSlipDownloadSelect(null); setFuelSlipDownloadError(''); setFuelSlipDownloadStep((step) => step - 1); }}>Back</button> : <span />}
+              <div className={styles.slipDownloadActions}>
+                <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipDownloadPanel}>Cancel</button>
+                {fuelSlipDownloadStep < 2 ? <button type="button" className={styles.primaryButton} onClick={() => { setOpenFuelSlipDownloadSelect(null); setFuelSlipDownloadStep((step) => step + 1); }}>Next</button> :
+                <button type="button" className={styles.primaryButton} onClick={() => void handleFuelSlipDownload()} disabled={isDownloadingFuelSlips}>{isDownloadingFuelSlips ? 'Preparing…' : fuelSlipDownloadFormat === 'pdf' ? 'Download PDF' : 'Download Excel'}</button>}
+              </div>
             </div>
           </div>
         </div>
       ) : null}
+
 
       {(modalMode === 'fuel-slip-manager' || isSlipsPage) && historyFuelSlip ? (
         <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>

@@ -7580,3 +7580,10 @@
 .slipFilterButton:hover { background: #e1f3e9; }
 .slipFilterButton:focus-visible { outline: 3px solid #78b99a; outline-offset: 3px; }
 @media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .slipSearchRow { gap: 0.5rem; } :global(:where(html:not(:has([data-website-canvas])))) .slipFilterButton { flex-basis: auto; padding: 0.65rem 0.85rem; } }
+
+.slipDownloadBody { display: grid; gap: 1rem; padding: 1.2rem 0; }
+.slipDownloadPanel { padding: 1rem; border: 1px solid #d1e2ed; border-radius: 1rem; background: linear-gradient(135deg, #f0f6f3, #fff); }
+.slipDownloadFields { display: grid; gap: 1rem; }
+.slipDownloadSummary { margin: 0; color: #60756d; font-size: .9rem; }
+.accountFuelModal .modalFooter.slipDownloadFooter { justify-content: space-between !important; gap: 1rem !important; }
+.slipDownloadActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .65rem; }
