@@ -7956,14 +7956,17 @@ export default function AssetRegisterClient({
   const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions
     || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
   const addAssetRegisterOptions = useMemo<Array<ModalSelectOption<string>>>(
-    () => assetRegisters
-      .filter((register) => register.id && register.id !== COMBINED_REGISTER_ID)
+    () => (activeRegister && !assetRegisters.some((register) => register.id === activeRegister.id)
+      ? [...assetRegisters, activeRegister]
+      : assetRegisters)
+      .filter((register) => register.id && register.id !== COMBINED_REGISTER_ID
+        && (!isAccountantWorkspace || register.id === (activeRegister?.id || activeRegisterId)))
       .map((register) => ({
         value: register.id,
         label: register.businessName || 'Asset Register',
         description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'} · ${money(Number(register.totalValue) || 0)} current value`,
       })),
-    [assetRegisters],
+    [assetRegisters, isAccountantWorkspace, activeRegister, activeRegisterId],
   );
   const dealerOwnedRegister = useMemo(
     () => assetRegisters.find((register) => register.isPrimary) ?? assetRegisters[0] ?? null,
@@ -10092,34 +10095,22 @@ export default function AssetRegisterClient({
   }
 
   function openAddAssetChoiceModal() {
+    if (!canAddAssetsToActiveRegister) return;
     setNotice(null);
     setIsAssetFilterOpen(false);
 
-    if (isCombinedRegisterView) {
-      if (!addAssetRegisterOptions.length) {
-        setNotice({
-          tone: 'warning',
-          message: 'Create an Asset Register before adding an asset from the combined view.',
-        });
-        return;
-      }
-
-      setAddAssetTargetRegisterId('');
-      setIsAddAssetDestinationModalOpen(true);
+    if (!addAssetRegisterOptions.length) {
+      setNotice({ tone: 'warning', message: 'Create an Asset Register before adding an asset.' });
       return;
     }
 
     const currentRegisterId = String(activeRegister?.id || activeRegisterId || '').trim();
-    if (!currentRegisterId || currentRegisterId === COMBINED_REGISTER_ID) {
-      setNotice({
-        tone: 'error',
-        message: 'Open a specific Asset Register before adding an asset.',
-      });
-      return;
-    }
-
-    setAddAssetTargetRegisterId(currentRegisterId);
-    setIsAddChoiceModalOpen(true);
+    setAddAssetTargetRegisterId(
+      addAssetRegisterOptions.some((option) => option.value === currentRegisterId)
+        ? currentRegisterId
+        : '',
+    );
+    setIsAddAssetDestinationModalOpen(true);
   }
 
   function closeAddAssetDestinationModal() {
@@ -10128,7 +10119,7 @@ export default function AssetRegisterClient({
   }
 
   function continueAddAssetForRegister() {
-    if (!addAssetTargetRegisterId) {
+    if (!addAssetRegisterOptions.some((option) => option.value === addAssetTargetRegisterId)) {
       setNotice({ tone: 'error', message: 'Choose the Asset Register that should own this asset.' });
       return;
     }
@@ -13134,29 +13125,17 @@ export default function AssetRegisterClient({
         const savedAsset = data.item as RegisterAsset;
         const currentRegisterId = String(activeRegister?.id || activeRegisterId || '').trim();
         const savedRegisterId = String(savedAsset.registerId || destinationRegisterId || '').trim();
-        if (
-          isDealerAccountRegister
-          && savedRegisterId
-          && currentRegisterId
-          && savedRegisterId !== currentRegisterId
-        ) {
-          closeAssetModal();
-          const targetMode = savedRegisterId === dealerOwnedRegister?.id ? 'dealer' : 'client';
-          window.location.assign(
-            `${dealerRegisterBaseHref}?dealerView=${targetMode}&registerId=${encodeURIComponent(savedRegisterId)}&convertedAssetId=${encodeURIComponent(savedAsset.id)}`,
-          );
-          return true;
-        }
-
         savedAssetForEditor = savedAsset;
-        setAssets((current) => [savedAsset, ...current]);
-        setSearchTerm('');
-        setAssetFilters([]);
-        setAssetSort('all');
-        setCurrentPage(1);
-        setExpandedAssetId(savedAsset.id);
-        assetIdToFocus = savedAsset.id;
-        if (showFeedback) setNotice({ tone: 'success', message: 'Asset added successfully.' });
+        if (isCombinedRegisterView || savedRegisterId === currentRegisterId) {
+          setAssets((current) => [savedAsset, ...current]);
+          setSearchTerm('');
+          setAssetFilters([]);
+          setAssetSort('all');
+          setCurrentPage(1);
+          setExpandedAssetId(savedAsset.id);
+          assetIdToFocus = savedAsset.id;
+        }
+        if (showFeedback) setNotice({ tone: 'success', message: `Asset added to ${addAssetTargetRegisterName}.` });
       }
 
       if (options.keepOpen && savedAssetForEditor) {
@@ -18456,13 +18435,13 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.addAssetDestinationHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="add-asset-destination-title">Choose an Asset Register</h3>
-                <p>The combined register is a view. Choose which Asset Register should own the new asset.</p>
+                <h3 id="add-asset-destination-title">Choose asset register</h3>
+                <p>Where should this asset be saved?</p>
               </div>
 
               <button
                 type="button"
-                className={styles.modalCloseButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 onClick={closeAddAssetDestinationModal}
                 aria-label="Close Asset Register selection"
               >
@@ -18479,7 +18458,9 @@ export default function AssetRegisterClient({
                   setAddAssetTargetRegisterId(value);
                   setNotice(null);
                 }}
-                placeholder="Choose the owning Asset Register"
+                placeholder="Choose a register"
+                buttonLabel="Choose asset register"
+                menuClassName={styles.addAssetDestinationMenu}
                 className={styles.addAssetDestinationField}
                 autoFocus
                 usePortal
