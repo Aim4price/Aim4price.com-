@@ -1,3 +1,4 @@
+import { retryDatabaseRead, isTransientDatabaseReadError } from '../../../lib/database-read-retry';
 import { attachOpenAssetAlerts } from '../../../lib/asset-register-alerts';
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
@@ -525,95 +526,102 @@ export async function GET(request: NextRequest) {
     const ownerError = await requireAssetRegisterAccount(session);
     if (ownerError) return ownerError;
 
-    const { searchParams } = new URL(request.url);
-    const scope = String(searchParams.get('scope') ?? '').trim().toLowerCase();
-    if (scope === 'combined') {
-      const registers = await listAssetRegisters(session.user.id);
-      if (!registers.length) {
-        return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
-      }
+    return await retryDatabaseRead(() => readAssetRegister(request, session.user.id));
+  } catch (error) {
+    console.error('asset register GET failed', error);
+    return NextResponse.json(
+      { ok: false, error: isTransientDatabaseReadError(error)
+        ? 'The register is busy. Please try refreshing again.'
+        : 'The Asset Register could not be loaded. Please try again.' },
+      { status: isTransientDatabaseReadError(error) ? 503 : 500 },
+    );
+  }
+}
 
-      const itemGroups = await Promise.all(registers.map(async (sourceRegister) => {
-        const registerItems = await listAssetRegisterItems(session.user.id, sourceRegister.id);
-        return registerItems.map((item) => ({
-          ...item,
-          registerId: item.registerId || sourceRegister.id,
-          registerName: sourceRegister.businessName,
-        }));
-      }));
-      const baseItems = itemGroups.flat();
-      const items = await attachOpenAssetAlerts(session.user.id, baseItems);
-      const groups = await listAssetGroups(session.user.id);
-      const combinedValue = registerValueForAssets(items, projectAssetGroupsToAssets(groups, items));
-      const combinedRegister = {
-        id: '__combined_asset_registers__',
-        userId: session.user.id,
-        businessName: 'Combined Asset Registers',
-        email: '',
-        phone: '',
-        addressLine1: 'All asset registers on this account',
-        logoUrls: [],
-        showLogosOnRegister: false,
-        isPrimary: false,
-        isSelected: false,
-        assetCount: items.length,
-        totalValue: combinedValue,
-        totalReplacementPrice: items.reduce((sum, item) => sum + Number(item.replacementPriceExVat || 0), 0),
-        createdAtIso: registers[0]?.createdAtIso ?? new Date().toISOString(),
-        updatedAtIso: registers.reduce(
-          (latest, entry) => entry.updatedAtIso > latest ? entry.updatedAtIso : latest,
-          registers[0]?.updatedAtIso ?? new Date().toISOString(),
-        ),
-      };
-
-      return NextResponse.json({
-        ok: true,
-        register: combinedRegister,
-        registers,
-        items,
-        groups,
-        summary: {
-          count: items.length,
-          totalValue: combinedRegister.totalValue,
-        },
-      });
-    }
-
-    const requestedRegisterId = String(searchParams.get('registerId') ?? '').trim();
-    const register = requestedRegisterId
-      ? await getAssetRegisterForUser(session.user.id, requestedRegisterId)
-      : await getSelectedAssetRegister(session.user.id);
-
-    if (!register) {
+async function readAssetRegister(request: NextRequest, userId: string) {
+  const { searchParams } = new URL(request.url);
+  const scope = String(searchParams.get('scope') ?? '').trim().toLowerCase();
+  if (scope === 'combined') {
+    const registers = await listAssetRegisters(userId);
+    if (!registers.length) {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
     }
 
-    const baseItems = await listAssetRegisterItems(session.user.id, register.id);
-    const items = await attachOpenAssetAlerts(session.user.id, baseItems);
-    const [registers, groups] = await Promise.all([
-      listAssetRegisters(session.user.id),
-      listAssetGroups(session.user.id, register.id),
-    ]);
+    const itemGroups = await Promise.all(registers.map(async (sourceRegister) => {
+      const registerItems = await listAssetRegisterItems(userId, sourceRegister.id);
+      return registerItems.map((item) => ({
+        ...item,
+        registerId: item.registerId || sourceRegister.id,
+        registerName: sourceRegister.businessName,
+      }));
+    }));
+    const baseItems = itemGroups.flat();
+    const items = await attachOpenAssetAlerts(userId, baseItems);
+    const groups = await listAssetGroups(userId);
+    const combinedValue = registerValueForAssets(items, projectAssetGroupsToAssets(groups, items));
+    const combinedRegister = {
+      id: '__combined_asset_registers__',
+      userId: userId,
+      businessName: 'Combined Asset Registers',
+      email: '',
+      phone: '',
+      addressLine1: 'All asset registers on this account',
+      logoUrls: [],
+      showLogosOnRegister: false,
+      isPrimary: false,
+      isSelected: false,
+      assetCount: items.length,
+      totalValue: combinedValue,
+      totalReplacementPrice: items.reduce((sum, item) => sum + Number(item.replacementPriceExVat || 0), 0),
+      createdAtIso: registers[0]?.createdAtIso ?? new Date().toISOString(),
+      updatedAtIso: registers.reduce(
+        (latest, entry) => entry.updatedAtIso > latest ? entry.updatedAtIso : latest,
+        registers[0]?.updatedAtIso ?? new Date().toISOString(),
+      ),
+    };
 
     return NextResponse.json({
       ok: true,
-      register,
+      register: combinedRegister,
       registers,
       items,
       groups,
       summary: {
         count: items.length,
-        totalValue: registerValueForAssets(items, projectAssetGroupsToAssets(groups, items)),
+        totalValue: combinedRegister.totalValue,
       },
     });
-  } catch (error) {
-    console.error('asset register GET failed', error);
-    return NextResponse.json(
-      { ok: false, error: formatUnknownError(error, 'Failed to load asset register.') },
-      { status: 500 },
-    );
   }
+
+  const requestedRegisterId = String(searchParams.get('registerId') ?? '').trim();
+  const register = requestedRegisterId
+    ? await getAssetRegisterForUser(userId, requestedRegisterId)
+    : await getSelectedAssetRegister(userId);
+
+  if (!register) {
+    return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
+  }
+
+  const baseItems = await listAssetRegisterItems(userId, register.id);
+  const items = await attachOpenAssetAlerts(userId, baseItems);
+  const [registers, groups] = await Promise.all([
+    listAssetRegisters(userId),
+    listAssetGroups(userId, register.id),
+  ]);
+
+  return NextResponse.json({
+    ok: true,
+    register,
+    registers,
+    items,
+    groups,
+    summary: {
+      count: items.length,
+      totalValue: registerValueForAssets(items, projectAssetGroupsToAssets(groups, items)),
+    },
+  });
 }
+
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession({ allowDealerApp: true });

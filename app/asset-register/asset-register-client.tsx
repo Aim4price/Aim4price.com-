@@ -6651,6 +6651,7 @@ export default function AssetRegisterClient({
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
   const [activeRegister, setActiveRegister] = useState<AssetRegisterSummary | null>(null);
   const [activeRegisterId, setActiveRegisterId] = useState('');
+  const registerRequestVersion = useRef(0);
   const [isChangeRegisterModalOpen, setIsChangeRegisterModalOpen] = useState(false);
   const [changingRegisterId, setChangingRegisterId] = useState('');
   const [registerSwitcherSearchTerm, setRegisterSwitcherSearchTerm] = useState('');
@@ -8167,6 +8168,7 @@ export default function AssetRegisterClient({
     }
 
     async function loadAssetRegister() {
+      const requestVersion = ++registerRequestVersion.current;
       setIsLoading(true);
       setActiveRegister(null);
       setAssets([]);
@@ -8196,7 +8198,7 @@ export default function AssetRegisterClient({
           throw new Error(assetsData.error ?? 'Failed to load asset register.');
         }
 
-        if (!mounted) return;
+        if (!mounted || requestVersion !== registerRequestVersion.current) return;
 
         const loadedAssets = Array.isArray(assetsData.items)
           ? assetsData.items
@@ -8224,14 +8226,14 @@ export default function AssetRegisterClient({
         }
 
       } catch (error) {
-        if (!mounted) return;
+        if (!mounted || requestVersion !== registerRequestVersion.current) return;
 
         setNotice({
           tone: 'error',
           message: error instanceof Error ? error.message : 'Failed to load your asset register.',
         });
       } finally {
-        if (mounted) {
+        if (mounted && requestVersion === registerRequestVersion.current) {
           setIsLoading(false);
         }
       }
@@ -8242,6 +8244,7 @@ export default function AssetRegisterClient({
 
     return () => {
       mounted = false;
+      registerRequestVersion.current++;
       window.removeEventListener('aim4price:asset-register-updated', loadAssetRegister);
     };
   }, [accountantShareId, isAccountantWorkspace]);
@@ -8275,6 +8278,7 @@ export default function AssetRegisterClient({
   async function handleRefreshAssetRegister() {
     if (isLoading || isRefreshingRegister) return;
 
+    const requestVersion = ++registerRequestVersion.current;
     setIsRefreshingRegister(true);
 
     try {
@@ -8304,6 +8308,7 @@ export default function AssetRegisterClient({
           ? assetsData.assets
           : [];
 
+      if (requestVersion !== registerRequestVersion.current) return;
       setAssets(loadedAssets);
       setAssetGroups(Array.isArray(assetsData.groups) ? assetsData.groups : []);
 
@@ -8325,11 +8330,13 @@ export default function AssetRegisterClient({
         setAssetRegisters(assetsData.registers);
       }
 
+      window.dispatchEvent(new Event('aim4price:asset-register-refreshed'));
       setNotice({
         tone: 'success',
         message: 'Asset Register refreshed.',
       });
     } catch (error) {
+      if (requestVersion !== registerRequestVersion.current) return;
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'Failed to refresh your asset register.',

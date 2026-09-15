@@ -2,7 +2,7 @@
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 
 import { createPortal } from '../../components/WebsitePortal';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import registerStyles from './page.module.css';
 import styles from './asset-register-overview.module.css';
 
@@ -445,6 +445,7 @@ export default function AssetRegisterOverview() {
   const [groups, setGroups] = useState<OverviewGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const overviewRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
     try {
@@ -535,12 +536,16 @@ export default function AssetRegisterOverview() {
   }, [portalHost, selectView]);
 
   const loadOverview = useCallback(async () => {
+    overviewRequest.current?.abort();
+    const controller = new AbortController();
+    overviewRequest.current = controller;
     setLoading(true);
     setError('');
 
     try {
       const registerUrl = buildAssetRegisterApiUrl(registerIdFromLocation(window.location));
       const response = await fetch(registerUrl, {
+        signal: controller.signal,
         cache: 'no-store',
         headers: { Accept: 'application/json' },
       });
@@ -550,12 +555,14 @@ export default function AssetRegisterOverview() {
         throw new Error(payload.error || 'The Asset Register overview could not be loaded.');
       }
 
+      if (controller.signal.aborted) return;
       setAssets(payload.items ?? payload.assets ?? []);
       setGroups(payload.groups ?? []);
     } catch (loadError) {
+      if (controller.signal.aborted) return;
       setError(loadError instanceof Error ? loadError.message : 'The Asset Register overview could not be loaded.');
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
   }, []);
 
@@ -563,7 +570,14 @@ export default function AssetRegisterOverview() {
     void loadOverview();
     const refreshOnFocus = () => void loadOverview();
     window.addEventListener('focus', refreshOnFocus);
-    return () => window.removeEventListener('focus', refreshOnFocus);
+    window.addEventListener('aim4price:asset-register-updated', refreshOnFocus);
+    window.addEventListener('aim4price:asset-register-refreshed', refreshOnFocus);
+    return () => {
+      overviewRequest.current?.abort();
+      window.removeEventListener('focus', refreshOnFocus);
+      window.removeEventListener('aim4price:asset-register-updated', refreshOnFocus);
+      window.removeEventListener('aim4price:asset-register-refreshed', refreshOnFocus);
+    };
   }, [loadOverview]);
 
   const overviewItems = useMemo(() => buildOverviewItems(assets, groups), [assets, groups]);
@@ -582,7 +596,7 @@ export default function AssetRegisterOverview() {
 
   const assetSwitchDetail = loading
     ? 'Loading register…'
-    : `${assets.length} asset${assets.length === 1 ? '' : 's'}`;
+    : error ? 'Assets unavailable' : `${assets.length} asset${assets.length === 1 ? '' : 's'}`;
 
   if (!portalHost) return null;
 
