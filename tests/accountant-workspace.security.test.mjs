@@ -276,7 +276,8 @@ test('migration is additive, idempotent and keeps values separate', () => {
 });
 
 test('final reports use approved accounting language and keep audit history in product', () => {
-  for (const label of ['Market versus Accounting', 'Market Value Trend', 'Finance Position and Commitments',
+  // Dialog labels are concise; generated reports retain their accounting terminology.
+  for (const label of ['Market vs accounting', 'Market Value Trend', 'Finance commitments',
     'Cost of Ownership', 'Fuel Report', 'Asset Register', 'Fuel Ledger', 'Cost Ledger']) {
     assert.match(accountantReportsUi, new RegExp(label));
   }
