@@ -288,3 +288,25 @@
   position: static !important;
   transform: none !important;
 }
+
+/* Register quick reports fill the panel instead of nesting in its first grid column. */
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-report-selector]) {
+  display: grid !important;
+  gap: 1.3rem !important;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-report-selector]) > :global([data-download-grid]) {
+  border-bottom: 0 !important;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-quick-reports]) {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box;
+  padding: .75rem !important;
+  margin: 0 !important;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-quick-reports]) > div > div {
+  gap: 1rem !important;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-quick-reports]) strong {
+  text-align: left !important;
+}
