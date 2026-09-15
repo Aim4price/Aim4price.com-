@@ -4378,31 +4378,20 @@
   display: none;
 }
 
-/* Keep every account action reachable when the menu grows beyond the viewport. */
+/* Keep every action reachable on short screens without a visible menu scrollbar. */
 .accountPopover {
   max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 7rem);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(23, 117, 83, 0.46) rgba(235, 243, 239, 0.8);
+  scrollbar-width: none;
 }
 
 .accountPopover::-webkit-scrollbar {
-  width: 0.55rem;
-}
-
-.accountPopover::-webkit-scrollbar-track {
-  border-radius: 999px;
-  background: rgba(235, 243, 239, 0.8);
-}
-
-.accountPopover::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: rgba(23, 117, 83, 0.46);
-  background-clip: padding-box;
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Standalone black Aim4price mark used in the global header. */
