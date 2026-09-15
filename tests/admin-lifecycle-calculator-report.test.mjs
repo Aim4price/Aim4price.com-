@@ -120,15 +120,18 @@ test("report context carries explicit VAT, preferred scenario and model checks",
   assert.deepEqual(context.sensitivity.map((entry) => entry.label), ["Base", "Conservative", "Stress"]);
 });
 
-test("finance worksheet uses numeric typed cells and auditable formulas", () => {
+test("lifecycle exports are protected numeric snapshots without partially live formulas", () => {
   const sheets = report.buildLifecycleWorkbook(request());
   const finance = sheets.find((sheet) => sheet.name === "Finance Comparison");
   const cells = finance.rows.flat();
   const formulaCells = cells.filter((cell) => cell && typeof cell === "object" && "formula" in cell);
   const numericCells = cells.filter((cell) => cell && typeof cell === "object" && typeof cell.value === "number");
 
-  assert.ok(formulaCells.some((cell) => cell.formula.includes("PMT(")));
-  assert.ok(formulaCells.some((cell) => cell.formula.includes("MAX(0")));
+  assert.equal(formulaCells.length, 0);
+  assert.ok(sheets.every(sheet => sheet.protectedSnapshot));
+  const buffer = xlsx.createXlsxWorkbook(sheets).toString();
+  assert.equal((buffer.match(/<sheetProtection /g) || []).length, sheets.length);
+  assert.doesNotMatch(buffer, /<f>/);
   assert.ok(numericCells.some((cell) => cell.value === 500_000));
   assert.ok(numericCells.every((cell) => !String(cell.value).startsWith("R ")));
 });
@@ -165,7 +168,7 @@ test("simple XLSX writer creates a valid uncompressed workbook with numeric valu
   assert.match(raw, /xl\/workbook\.xml/);
   assert.match(raw, /Executive Comparison/);
   assert.match(raw, /<v>500000<\/v>/);
-  assert.match(raw, /PMT\(/);
+  assert.doesNotMatch(raw, /<f>/);
   assert.doesNotMatch(raw, />R 500,000</);
 });
 
