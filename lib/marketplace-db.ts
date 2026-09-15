@@ -1,3 +1,4 @@
+import { basicAssetFamily, basicAssetUsage } from './basic-asset-catalogue';
 import { ensureListingAlertSchema } from './listing-alert-schema';
 import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from './db';
@@ -549,6 +550,8 @@ function listingUsageUnit(
   lifeWorkedPercent: number | null,
   usageAmount: number,
 ): MarketplaceUsageUnit {
+  const basicUsage = basicAssetUsage(specs);
+  if (basicUsage) return basicUsage;
   const metricCandidates = [
     specs.usageMetric,
     specs.usage_metric,
@@ -668,6 +671,7 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
       normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition'])),
     );
     const snapshotFamilyLabel =
+      basicAssetFamily(existingSpecs)?.label ||
       asText(pick(row, ['equipment_family_label', 'family_label']))
       || familyLabelFromAssetKind(readAssetKind(row));
     const description =
@@ -730,7 +734,7 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
         JSON.stringify({
           ...existingSpecs,
           ...(snapshotYear > 0 ? { yearModel: snapshotYear } : {}),
-          ...(snapshotUsageAmount !== null && snapshotUsageAmount > 0
+          ...(snapshotUsageAmount !== null && snapshotUsageAmount >= 0
             ? { usageAmount: snapshotUsageAmount, usageUnit }
             : {}),
           ...(snapshotCondition ? { conditionLabel: snapshotCondition } : {}),
@@ -835,8 +839,9 @@ function buildMarketplaceListing(
   const linkedFamilyLabel = asText(pick(row, ['equipment_family_label', 'family_label']));
   const linkedFamilyKey = asText(pick(row, ['equipment_family_key', 'family_key']));
   const assetKindFamilyLabel = familyLabelFromAssetKind(assetKind);
-  const familyLabel = linkedFamilyLabel || assetKindFamilyLabel;
-  const familyKey = linkedFamilyKey || slugify(familyLabel);
+  const basicFamily = basicAssetFamily(specs);
+  const familyLabel = basicFamily?.label || linkedFamilyLabel || assetKindFamilyLabel;
+  const familyKey = basicFamily?.key || linkedFamilyKey || slugify(familyLabel);
   const conditionKey = normalizeConditionKey(
     pick(row, ['condition', 'valuation_last_condition'])
       ?? pick(specs, ['conditionLabel', 'condition_label', 'condition']),

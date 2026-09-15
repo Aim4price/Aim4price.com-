@@ -1,3 +1,4 @@
+import { basicAssetFamilySql, basicAssetUsageSql, basicAssetUsage } from './basic-asset-catalogue';
 import { ensureAccountProfileColumns } from "./account-profile";
 import { resolveAssetRegisterUploadBytes } from "./asset-register-uploads";
 import { ensureDealerMaintenanceTrackerTables } from "./dealer-maintenance-tracker";
@@ -275,8 +276,10 @@ const ASSET_DISCOVERY_STATUSES = new Set<AssetDiscoveryEnquiryStatus>([
   "revoked",
 ]);
 const ASSET_SPECS_JSON_SQL = "coalesce(asset.specs_json, '{}'::jsonb)";
+const BASIC_ASSET_TYPE_SQL = basicAssetFamilySql(ASSET_SPECS_JSON_SQL, 'label');
+const BASIC_ASSET_USAGE_SQL = basicAssetUsageSql(ASSET_SPECS_JSON_SQL);
 const RESOLVED_ASSET_TYPE_SQL =
-  "coalesce(nullif(trim(family.family_label), ''), nullif(trim(asset.kind), ''), 'Asset')";
+  `coalesce(${BASIC_ASSET_TYPE_SQL}, nullif(trim(family.family_label), ''), nullif(trim(asset.kind), ''), 'Asset')`;
 const RESOLVED_ASSET_BRAND_SQL = `coalesce(
   nullif(trim(asset.brand_name), ''),
   nullif(trim(brand.name), ''),
@@ -296,7 +299,7 @@ const RESOLVED_ASSET_MODEL_SQL = `coalesce(
 // Public Discovery deliberately uses only curated taxonomy values. Asset-entered
 // names, titles and specs stay out of both the public projection and search.
 const PUBLIC_ASSET_TYPE_SQL =
-  "coalesce(nullif(trim(family.family_label), ''), 'Asset')";
+  `coalesce(${BASIC_ASSET_TYPE_SQL}, nullif(trim(family.family_label), ''), 'Asset')`;
 const PUBLIC_ASSET_BRAND_SQL =
   "coalesce(nullif(trim(brand.name), ''), 'Unknown')";
 const PUBLIC_ASSET_MODEL_SQL = `coalesce(
@@ -371,6 +374,7 @@ const DISCOVERY_ELIGIBLE_ASSET_SQL = `
   coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active' and
   (
     lower(coalesce(asset.selected_method, '')) = 'aim4price'
+    or ${BASIC_ASSET_TYPE_SQL} is not null
     or asset.valuation_run_id is not null
     or asset.equipment_family_id is not null
     or asset.equipment_model_id is not null
@@ -379,7 +383,8 @@ const DISCOVERY_ELIGIBLE_ASSET_SQL = `
   and lower(coalesce(asset.kind, '')) not in ('manual', 'other', 'tools', 'tool', 'property', 'building', 'land')
   and lower(${RESOLVED_ASSET_TYPE_SQL}) not in ('manual', 'other', 'tools', 'tool', 'property', 'building', 'land')
   and (
-    asset.equipment_family_id is not null
+    ${BASIC_ASSET_TYPE_SQL} is not null
+    or asset.equipment_family_id is not null
     or asset.equipment_model_id is not null
     or nullif(trim(family.family_label), '') is not null
     or (
@@ -399,6 +404,7 @@ const DISCOVERY_ELIGIBLE_ASSET_SQL = `
   )
   and (
     lower(${RESOLVED_ASSET_TYPE_SQL}) <> 'equipment'
+    or ${BASIC_ASSET_TYPE_SQL} is not null
     or asset.equipment_family_id is not null
     or asset.equipment_model_id is not null
     or lower(coalesce(asset.selected_method, '')) = 'aim4price'
@@ -614,6 +620,8 @@ function readUsageMetric(
     specs.valuation_mode,
     depreciationMethod,
   ]);
+  const basicUsage = basicAssetUsage(specs);
+  if (basicUsage) return basicUsage;
   const usageMetric = readFirstText([
     specs.usageMetric,
     specs.usage_metric,
@@ -1140,8 +1148,8 @@ export async function getAssetDiscoveryBrowseAccess(input: {
         left join public.brands brand
           on brand.id = model.brand_id
         where (${DISCOVERY_ELIGIBLE_ASSET_SQL})
-          and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
-          and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
+          and (${BASIC_ASSET_TYPE_SQL} is not null or ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
+          and (${BASIC_ASSET_TYPE_SQL} is not null or coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
       ) eligible_asset on eligible_asset.user_id = profile.user_id
       where profile.user_id = $1
         and profile.account_type = 'owner'
@@ -1261,8 +1269,8 @@ function baseAssetWhere(input: {
     "coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'",
     "asset.user_id <> $1",
     `(${licensingViewer ? LICENSING_DISCOVERY_ASSET_SQL : DISCOVERY_ELIGIBLE_ASSET_SQL})`,
-    `${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
-    `coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
+    `(${BASIC_ASSET_TYPE_SQL} is not null or ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}')`,
+    `(${BASIC_ASSET_TYPE_SQL} is not null or coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}')`,
   ];
   if (!licensingViewer) {
     where.push(`(
@@ -1366,10 +1374,9 @@ function basePublicAssetWhere(input: {
     "owner.account_status = 'active'",
     "owner.discovery_participation_enabled = true",
     "coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'",
-    "asset.equipment_family_id is not null",
-    "family.id is not null",
+    `(family.id is not null or ${BASIC_ASSET_TYPE_SQL} is not null)`,
     "lower(coalesce(asset.selected_method, '')) <> 'manual'",
-    `${PUBLIC_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
+    `(${BASIC_ASSET_TYPE_SQL} is not null or ${PUBLIC_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}')`,
     `not exists (
       select 1
       from public.asset_discovery_enquiries blocked_enquiry
@@ -1527,7 +1534,7 @@ export async function listAssetDiscoveryAssets(input: {
       owner.province,
       asset.selected_method,
       asset.depreciation_method_used,
-      family.usage_metric_type as family_usage_metric_type,
+      coalesce(${BASIC_ASSET_USAGE_SQL}, family.usage_metric_type) as family_usage_metric_type,
       case when enquiry.is_active then enquiry.id::text else null end as enquiry_id,
       case when enquiry.is_active then enquiry.status else null end as enquiry_status,
       case when enquiry.is_active then enquiry.request_again_at::text else null end as request_again_at,
@@ -1706,7 +1713,7 @@ export async function listPublicAssetDiscoveryAssets(input: {
         asset.life_worked_percent,
         ${PUBLIC_SAFE_CONDITION_SQL} as condition,
         ${PUBLIC_SAFE_PROVINCE_SQL} as province,
-        family.usage_metric_type as family_usage_metric_type
+        coalesce(${BASIC_ASSET_USAGE_SQL}, family.usage_metric_type) as family_usage_metric_type
       from public.asset_register_items asset
       join public.account_profiles owner on owner.user_id = asset.user_id
       left join public.equipment_families family on family.id = asset.equipment_family_id
@@ -1786,7 +1793,7 @@ async function findSafeAssetForEnquiry(
         owner.province,
         asset.selected_method,
         asset.depreciation_method_used,
-        family.usage_metric_type as family_usage_metric_type,
+        coalesce(${BASIC_ASSET_USAGE_SQL}, family.usage_metric_type) as family_usage_metric_type,
         null::text as enquiry_id,
         null::text as enquiry_status,
         null::text as request_again_at,
@@ -1816,8 +1823,8 @@ async function findSafeAssetForEnquiry(
               and permanent_licensing_denial.status = 'temporarily_denied'
           )
         )
-        and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
-        and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
+        and (${BASIC_ASSET_TYPE_SQL} is not null or ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
+        and (${BASIC_ASSET_TYPE_SQL} is not null or coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
         and ($3 = 'licensing' or not exists (
           select 1
           from public.asset_discovery_enquiries blocked_enquiry
@@ -2031,7 +2038,7 @@ async function loadDiscoveryDetailRow(
         owner.town_city as owner_town_city,
         asset.selected_method,
         asset.depreciation_method_used,
-        family.usage_metric_type as family_usage_metric_type,
+        coalesce(${BASIC_ASSET_USAGE_SQL}, family.usage_metric_type) as family_usage_metric_type,
         null::text as enquiry_id,
         null::text as enquiry_status,
         null::text as request_again_at,
@@ -2046,8 +2053,8 @@ async function loadDiscoveryDetailRow(
         and owner.account_type = 'owner'
         and owner.account_status = 'active'
         and ((${DISCOVERY_ELIGIBLE_ASSET_SQL}) or (${LICENSING_DISCOVERY_ASSET_SQL}))
-        and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
-        and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
+        and (${BASIC_ASSET_TYPE_SQL} is not null or ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
+        and (${BASIC_ASSET_TYPE_SQL} is not null or coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
       limit 1
     `,
     [assetId],
@@ -2391,7 +2398,7 @@ function enquirySelectSql(whereClause: string): string {
       asset.condition,
       asset.selected_method,
       asset.depreciation_method_used,
-      family.usage_metric_type as family_usage_metric_type,
+      coalesce(${BASIC_ASSET_USAGE_SQL}, family.usage_metric_type) as family_usage_metric_type,
       owner.province as owner_province,
       owner.business_name as owner_business_name,
       owner.display_name as owner_display_name,
