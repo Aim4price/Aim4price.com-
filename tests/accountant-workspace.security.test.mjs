@@ -50,7 +50,13 @@ test('unauthorised assets cannot escape the shared client owner boundary', () =>
 
 test('direct finance, accounting value and document writes require owner permission', () => {
   assert.match(workspace, /requireWrite && !access\.allowDirectUpdates/);
-  assert.equal((workspace.match(/authorisedAsset\([^\n]+true\)/g) || []).length >= 3, true);
+  for (const fn of ['updateAccountantFinance', 'saveAccountantCarryingValue']) {
+    const body = workspace.slice(workspace.indexOf(`export async function ${fn}`));
+    assert.match(body.split('\nexport async function ')[0], /authorisedAsset\(input.accountantUserId, input.shareId, input.assetId, true\)/);
+  }
+  const upload = workspace.slice(workspace.indexOf('export async function uploadAccountantDocument'));
+  assert.match(upload, /authorisedSharedDocumentAsset\(\s*input.accountantUserId,\s*input.shareId,\s*input.assetId,\s*true,?\s*\)/);
+  assert.match(workspace, /authorisedAsset\(accountantUserId, shareId, assetId, requireWrite\)/);
 });
 
 test('accountant removal ends only the lead access record', () => {
@@ -101,10 +107,10 @@ test('accounting manage modals keep a fixed blur layer, inner scrolling and one-
   assert.match(ownerStyles, /\.accountantManageBackdrop[\s\S]*?position: fixed !important/);
   assert.match(ownerStyles, /\.accountantManageBody[\s\S]*?overflow-y: auto !important/);
   assert.match(ownerStyles, /\.accountantManageModal \.assetOptionsGrid \.optionActionButton small[\s\S]*?white-space: nowrap !important/);
-  assert.match(ownerUi, /Remove or archive this asset safely\./);
-  assert.match(ownerStyles, /\.deleteAssetOptionSubtitle[\s\S]*?white-space: nowrap !important/);
+  assert.match(ownerUi, /Archive, sell, write off or remove\./);
+  assert.match(ownerStyles, /\.accountantManageModal \.assetOptionsGrid \.optionActionButton small[\s\S]*?white-space: nowrap !important/);
   assert.match(ownerStyles, /\.assetDisposalReasonGrid/);
-  assert.match(ownerStyles, /\.assetDisposalReasonButtonActive/);
+  assert.match(ownerStyles, /\.assetDisposalReasonButton\[aria-pressed='true'\]/);
 });
 
 test('normal accountant account keeps standard leads, account and notifications', () => {
@@ -130,8 +136,8 @@ test('client choice stays on My Clients while Change manages registers inside on
 
 test('Get Estimate remains inside the client workspace and saves to its active or shared register', () => {
   assert.match(headerUi, /new URLSearchParams\(\{ accountantShareId: accountantWorkspaceShareId \}\)/);
-  assert.match(ownerUi, /const accountantValuationHref/);
-  assert.match(ownerUi, /href=\{accountantValuationHref\}/);
+  assert.match(headerUi, /valuationQuery.set\('registerId', accountantWorkspaceRegisterId\)/);
+  assert.match(headerUi, /href: `\/valuation\?\$\{valuationQuery.toString\(\)\}`/);
   assert.match(valuationUi, /normalizedSignedInAccountType === 'finance' && Boolean\(accountantShareId\)/);
   assert.match(valuationRoute, /requestedRegisterId \|\| accountantAccess\?\.registerId \|\| ''/);
   assert.match(valuationUi, /savePayload\.accountantShareId = accountantShareId/);
@@ -187,10 +193,10 @@ test('accountants can leave copper-styled notes on authorised client assets', ()
   assert.match(ownerStyles, /\.accountantNoteActions[\s\S]*?justify-content: flex-end/);
 });
 
-test('owner and accountant asset filters share lighter labels without a visible scrollbar', () => {
-  assert.match(ownerStyles, /Final cascade: shared Owner\/Accountant filter labels/);
-  assert.match(ownerStyles, /\.assetFilterModalBody[\s\S]*?scrollbar-width: none !important/);
-  assert.match(ownerStyles, /\.assetFilterModalBody::\-webkit-scrollbar[\s\S]*?display: none !important/);
+test('owner and accountant asset filters share lighter labels and an accessible scrollbar', () => {
+  assert.match(ownerStyles, /\.assetFilterModal \.assetFilterModalBody/);
+  assert.match(ownerStyles, /\.assetFilterModalBody[\s\S]*?scrollbar-width: auto !important/);
+  assert.match(ownerStyles, /\.assetFilterModalBody::\-webkit-scrollbar[\s\S]*?display: block/);
   assert.match(ownerStyles, /\.assetFilterOption strong[\s\S]*?font-weight: 650 !important/);
 });
 
@@ -207,7 +213,7 @@ test('shared workspace reuses the real Asset Register, Fuel Ledger and Cost Ledg
 
 test('shared Fuel and Cost Ledgers reuse owner controls with register-scoped writes and reports', () => {
   assert.match(fuelUi, /const isAccountantReadOnly = false/);
-  assert.match(fuelUi, /scopedApiUrl\('\/api\/fuel\/slips\/extract'\)/);
+  assert.match(fuelUi, /scopedApiUrl\('\/api\/capture-requests\/fuel-slip'\)/);
   assert.match(fuelUi, /buildReportUrl\(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId, accountantRegisterId\)/);
   assert.match(fuelUi, /Fuel Slips/);
   assert.match(costUi, /accountScopedUrl\(editingInvoiceId \? `\$\{apiRoot\}\/\$\{editingInvoiceId\}` : apiRoot\)/);
@@ -221,7 +227,8 @@ test('shared Fuel and Cost Ledgers reuse owner controls with register-scoped wri
   assert.match(costUi, /\/api\/recurring-commitments/);
   assert.match(recurringCommitmentsRoute, /resolveOwnerWorkspaceContext\(request, \{ ledger: 'cost' \}\)/);
   assert.match(collaboration, /annualise\(amount, row\.frequency\)/);
-  assert.doesNotMatch(ownerWorkspaceAccess, /requireWrite/);
+  assert.match(ownerWorkspaceAccess, /requireWrite: options.requireWrite/);
+  assert.match(read('app/api/capture-requests/fuel-slip/route.ts'), /resolveOwnerWorkspaceContext\(request, \{ ledger: 'fuel', requireWrite: true \}\)/);
   assert.match(ownerWorkspaceAccess, /assertWorkspaceAssetAccess/);
 });
 

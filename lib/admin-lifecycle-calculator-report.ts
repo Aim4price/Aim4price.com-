@@ -269,7 +269,7 @@ function executiveSheet(context: LifecycleReportContext, generatedAt: Date): Xls
     [styled("Maintenance is not double counted in Full", "text"), currency(model.scenarios[2].cashFlow.reduce((sum, year) => sum + year.maintenanceCashPayments, 0)), currency(0), styled(model.scenarios[2].cashFlow.every((year) => year.maintenanceCashPayments === 0) ? "OK" : "REVIEW", "statusGood")],
     [],
     [styled("Important", "section"), "", "", ""],
-    [styled("Exported snapshot. Change assumptions in Aim4price and export again; edits here do not update other sheets. Results are indicative scenario estimates.", "note"), "", "", ""],
+    [styled("Protected snapshot. Update assumptions in Aim4price and export again. All sheets reflect the same calculation at export time.", "note"), "", "", ""],
   ];
   return {
     name: "Executive Comparison",
@@ -293,7 +293,7 @@ function assumptionsSheet(context: LifecycleReportContext): XlsxSheet {
   const input = model.input;
   const rows: XlsxCellValue[][] = [
     [styled("Lifecycle Model Assumptions", "title"), "", ""],
-    [styled("Snapshot of the Aim4price model. Change inputs in Aim4price and export again. Editing this workbook does not update the other sheets.", "subtitle"), "", ""],
+    [styled("Protected snapshot of the model inputs. Change assumptions in Aim4price and export again.", "subtitle"), "", ""],
     [],
     [styled("Section", "tableHeader"), styled("Assumption", "tableHeader"), styled("Value", "tableHeader")],
     [styled("Asset", "section"), styled("Starting price ex VAT", "text"), currency(model.future.startingPrice.netAmount)],
@@ -355,7 +355,7 @@ function assumptionsSheet(context: LifecycleReportContext): XlsxSheet {
 function financeComparisonSheet(model: LifecycleWorkspaceModel): XlsxSheet {
   const rows: XlsxCellValue[][] = [
     [styled("Finance Comparison", "title"), "", "", ""],
-    [styled("Local finance formulas only. Other sheets remain the original exported snapshot.", "subtitle"), "", "", ""],
+    [styled("Protected snapshot. Update assumptions in Aim4price and export a new workbook.", "subtitle"), "", "", ""],
     [],
     scenarioHeader(),
   ];
@@ -697,7 +697,17 @@ export function buildLifecycleWorkbook(
     refinanceStressSheet(context),
   ];
   if (context.request.includeDealerEconomics) sheets.push(dealerSheet(context));
-  return sheets;
+  // A partially live workbook is unsafe: never mix recalculated finance cells
+  // with frozen cash flows, valuations and executive totals.
+  return sheets.map((sheet) => ({
+    ...sheet,
+    protectedSnapshot: true,
+    rows: sheet.rows.map((row) => row.map((cell) => {
+      if (!cell || typeof cell !== 'object' || cell instanceof Date) return cell;
+      const { formula: _formula, ...snapshot } = cell;
+      return snapshot;
+    })),
+  }));
 }
 
 export function lifecycleWorkbookFileName(

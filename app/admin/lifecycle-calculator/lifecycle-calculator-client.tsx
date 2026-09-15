@@ -650,7 +650,7 @@ export default function LifecycleCalculatorClient() {
             onClick={exportFinancialModel}
             disabled={exporting}
           >
-            {exporting ? "Preparing…" : "Export"}
+            {exporting ? "Preparing…" : "Export snapshot"}
           </button>
         </div>
       </section>

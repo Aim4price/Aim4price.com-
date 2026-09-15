@@ -57,6 +57,7 @@ export type XlsxSheet = {
   autoFilter?: XlsxAutoFilterRange;
   tabColor?: string;
   orientation?: 'portrait' | 'landscape';
+  protectedSnapshot?: boolean;
 };
 
 type ZipEntry = {
@@ -411,6 +412,7 @@ function buildWorksheetXml(sheet: XlsxSheet, hyperlinks: XlsxHyperlink[]): strin
   <sheetFormatPr defaultRowHeight="17"/>
   ${colsXml}
   <sheetData>${rowsXml}</sheetData>
+  ${sheet.protectedSnapshot ? '<sheetProtection sheet="1" objects="1" scenarios="1" selectLockedCells="0" selectUnlockedCells="0" autoFilter="0"/>' : ''}
   ${autoFilterXml}
   ${mergesXml}
   ${hyperlinksXml}

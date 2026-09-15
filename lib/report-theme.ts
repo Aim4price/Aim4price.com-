@@ -108,7 +108,10 @@ export const REPORT_THEME_CSS = `
   .assetReportWideSection:has(table), .assetReportWideSection:has(.assetReportMaintenanceList), .assetReportSummaryStack { break-inside: auto; }
   .assetReportPageNumber, .fullRegisterFooterRight { display: none; }
   .reportFullAsset { break-inside: avoid; }
-  .reportFullAsset p { margin: 5px 0; line-height: 1.5; overflow-wrap: anywhere; }
+  .reportFullAsset p { margin: 3px 0; line-height: 1.4; overflow-wrap: anywhere; }
+  .reportFullDetails { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px; }
+  .reportFullDetails > div { min-width: 0; }
+  @media screen and (max-width: 600px) { .reportFullDetails { grid-template-columns: minmax(0, 1fr); } }
   .reportFullRegisterHeading { break-inside: avoid; padding: 9px 11px; background: var(--brand-soft); border: 1px solid var(--line-strong); border-radius: 8px; break-after: avoid; }
   .reportFullRegisterHeading h2 { margin: 0 0 4px; color: var(--brand); }
   .reportFullRegisterHeading p { margin: 0; color: var(--muted); }
