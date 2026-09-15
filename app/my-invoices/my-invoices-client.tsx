@@ -791,7 +791,7 @@ function invoiceAssetYearLabel(invoice: InvoiceRecord): string {
   return category.includes('property') || category.includes('building') ? 'Year Built' : 'Year Model';
 }
 
-function buildInvoiceAssetMeta(invoice: InvoiceRecord): string {
+function buildInvoiceAssetMeta(invoice: InvoiceRecord): string[] {
   const assetTitle = String(invoice.assetTitle || 'Saved asset').trim();
   const assetYear = typeof invoice.assetYearModel === 'number' && Number.isFinite(invoice.assetYearModel) && invoice.assetYearModel > 0
     ? `${invoiceAssetYearLabel(invoice)}: ${invoice.assetYearModel}`
@@ -804,7 +804,7 @@ function buildInvoiceAssetMeta(invoice: InvoiceRecord): string {
     assetCondition ? `Condition: ${assetCondition}` : '',
   ].filter(Boolean);
 
-  return details.length ? `${assetTitle} ${details.join(' • ')}` : assetTitle;
+  return [assetTitle, ...details];
 }
 
 function sourceLabel(source: InvoiceSource): string {
@@ -3483,7 +3483,7 @@ export default function MyInvoicesClient({
                   <div id={detailsId} hidden={!expanded} className={styles.invoiceDetails}>
                     <h3>Cost details</h3>
                     <dl className={styles.invoiceDetailsGrid}>
-                      <div><dt>Asset</dt><dd>{buildInvoiceAssetMeta(invoice)}</dd></div>
+                      <div><dt>Asset</dt><dd>{buildInvoiceAssetMeta(invoice).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</dd></div>
                       <div><dt>Invoice date</dt><dd>{invoice.invoiceDate ? formatDateTime(invoice.invoiceDate) : 'Not recorded'}</dd></div>
                       <div><dt>Excl. VAT</dt><dd>{invoice.subtotalExVat !== null ? formatMoney(invoice.subtotalExVat) : 'Not recorded'}</dd></div>
                       <div><dt>VAT</dt><dd>{invoice.vatAmount !== null ? formatMoney(invoice.vatAmount) : 'Not recorded'}</dd></div>

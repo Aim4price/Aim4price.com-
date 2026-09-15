@@ -392,7 +392,7 @@ function assetYearLabelFromCategory(categoryLabel: string | null | undefined): s
   return category.includes('property') || category.includes('building') ? 'Year Built' : 'Year Model';
 }
 
-function buildMaintenanceAssetMeta(record: MaintenanceRecord): string {
+function buildMaintenanceAssetMeta(record: MaintenanceRecord): string[] {
   const usageLabel = formatAssetUsage(record.assetUsageReading, record.assetUsageMetric);
   const familyLabel = record.assetCategoryLabel || titleCase(record.assetKind || 'asset');
   const details = [
@@ -404,7 +404,7 @@ function buildMaintenanceAssetMeta(record: MaintenanceRecord): string {
     familyLabel ? `Family: ${familyLabel}` : '',
   ].filter(Boolean);
 
-  return details.length ? details.join(' • ') : record.assetMeta || record.assetTitle;
+  return details.length ? details : record.assetMeta ? [record.assetMeta] : [];
 }
 
 function maintenanceDueValue(record: MaintenanceRecord): string {
@@ -1456,7 +1456,7 @@ export default function MaintenanceClient({
                     <section id={detailsId} hidden={!expanded} className={styles.ledgerDetails} aria-label="Maintenance details">
                       <h3>Maintenance details</h3>
                       <dl className={styles.ledgerDetailsGrid}>
-                        <div><dt>Asset</dt><dd>{record.assetTitle}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record)}</span></dd></div>
+                        <div><dt>Asset</dt><dd>{record.assetTitle}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</span></dd></div>
                         <div><dt>Assigned to</dt><dd>{record.assignedName || 'Unassigned'}</dd></div>
                         <div><dt>Reminder</dt><dd>{maintenanceAlertLabel(record)}</dd></div>
                         <div><dt>Repeats</dt><dd>{record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? `Every ${record.recurringIntervalValue} ${record.recurringIntervalUnit}` : 'Once-off'}</dd></div>
