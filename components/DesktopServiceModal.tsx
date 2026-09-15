@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useMemo, useState, type KeyboardEvent, type FormEvent } from 'react';
 import {
   buildMaintenanceCompletionNote,
   checkedOptionsForProfile,
@@ -20,6 +20,7 @@ export type DesktopServiceCompletion = {
   completedNotes: string;
   completedBy: string;
   linkToScheduledMaintenance?: boolean;
+  continueSchedule?: boolean;
   clientEventId: string;
   maintenanceWork?: MaintenanceWorkSnapshot[];
 };
@@ -36,6 +37,8 @@ export type DesktopServiceRecord = {
   assetMeta?: string | null;
   maintenanceType: 'service' | 'checkup';
   triggerType?: 'date' | 'usage';
+  dueDate?: string | null;
+  dueUsage?: number | null;
   title: string;
   currentUsage: number | null;
   usageMetric: 'hours' | 'km' | 'percentage' | null;
@@ -108,7 +111,7 @@ export default function DesktopServiceModal({
   const checklist = { ...baseChecklist, customItems: savedChecklist.items };
   const repairChecklist = { ...checklist, items: [] };
   const repairOptions = mode === 'serviced' ? checklistOptions(repairChecklist, 'repaired') : [];
-  const options = [...(checklist.items.length ? checklistOptions(checklist, mode) : mode === 'checked' ? checkedOptionsForProfile(profile) : servicedOptionsForProfile(profile)), ...repairOptions];
+  const options = [...(checklist.items.length ? checklistOptions(checklist, mode) : (mode === 'checked' ? checkedOptionsForProfile(profile) : servicedOptionsForProfile(profile)).map((option, index) => ({ ...option, id: `fallback_${index}` }))), ...repairOptions];
   const today = todayInputValue();
   const [completedAt, setCompletedAt] = useState(today);
   const [completedUsage, setCompletedUsage] = useState(standalone || record.currentUsage === null ? '' : String(record.currentUsage));
@@ -123,10 +126,39 @@ export default function DesktopServiceModal({
   const [scheduleDecision, setScheduleDecision] = useState<
     'scheduled' | 'separate' | null
   >(askScheduleLink ? null : 'scheduled');
+  const [continueSchedule, setContinueSchedule] = useState<boolean | null>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const trigger = document.activeElement as HTMLElement | null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = overflow; if (trigger?.isConnected) trigger.focus(); };
+  }, []);
+  useEffect(() => { dialogRef.current?.focus(); }, [scheduleDecision]);
+  function dialogKeys(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape' && !busy) { event.stopPropagation(); onClose(); }
+    if (event.key !== 'Tab') return;
+    const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]') ?? []).filter(element => element.getClientRects().length > 0);
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
+  const previousChoice = useRef<'scheduled' | 'separate' | null>(null);
+  function chooseSchedule(value: 'scheduled' | 'separate') {
+    if (value !== previousChoice.current) {
+      setCompletedUsage('');
+      if (value === 'separate' && completedAt === today) setCompletedAt('');
+    }
+    previousChoice.current = value;
+    setScheduleDecision(value);
+    setError('');
+  }
   const actionName = record.maintenanceType === 'checkup' ? 'check-up' : 'service';
   const unit = usageUnit(record.usageMetric ?? record.assetUsageMetric ?? null);
   const isSeparateCompletion = scheduleDecision === 'separate';
   const requiresUsageReading = !standalone && !isSeparateCompletion && record.triggerType === 'usage';
+  const asksRecurrence = !dealerAppMode && !standalone && !isSeparateCompletion && !!record.recurringEnabled;
+  const dueLabel = record.triggerType === 'usage' && record.dueUsage != null ? `Due at ${record.dueUsage.toLocaleString('en-ZA')} ${unit}` : record.dueDate ? `Due ${new Date(record.dueDate.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'No due target set';
   const savedUsageLabel = record.currentUsage === null
     ? `No saved ${unit} reading`
     : `Saved reading: ${record.currentUsage.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} ${unit}`;
@@ -139,7 +171,9 @@ export default function DesktopServiceModal({
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     setError('');
+    if (asksRecurrence && continueSchedule === null) { setError('Choose whether to continue or end this schedule.'); return; }
 
     if (!completedAt) {
       setError(`Select the date the ${actionName} was completed.`);
@@ -196,6 +230,7 @@ export default function DesktopServiceModal({
         maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems), ...(mode === 'serviced' && repairOptions.some(item => selectedItems.includes(item.label)) ? [buildMaintenanceWorkSnapshot(repairChecklist, 'repaired', selectedItems)] : []), ...(ownWork.items.length ? [ownWork] : [])],
         completedBy: mechanic.trim(),
         linkToScheduledMaintenance: !standalone && scheduleDecision !== 'separate',
+        ...(asksRecurrence ? { continueSchedule: continueSchedule === true } : {}),
         clientEventId,
       });
     } catch (failure) {
@@ -207,13 +242,13 @@ export default function DesktopServiceModal({
     return (
       <div className={`${styles.overlay} ${dealerAppMode ? styles.dealerChoiceOverlay : ''}`} data-website-overlay role="presentation">
         <button className={`${styles.backdrop} ${!dealerAppMode ? dialogStyles.backdrop : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy} />
-        <section className={`${styles.modal} ${styles.saveChoiceModal} ${!dealerAppMode ? dialogStyles.dialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
+        <section className={`${styles.modal} ${styles.saveChoiceModal} ${!dealerAppMode ? dialogStyles.dialog : ''}`} ref={dialogRef} tabIndex={-1} onKeyDown={dialogKeys} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
           <header className={styles.header}>
             <div>
-              <h2 id="scheduled-service-choice-title">Which work was done?</h2>
+              <h2 id="scheduled-service-choice-title">Was this work for the scheduled {actionName}?</h2>
               <p>{record.assetTitle}</p>
             </div>
-            <button className={dealerAppMode ? styles.closeButton : dialogStyles.close} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
+            <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
               <CloseIcon />
             </button>
           </header>
@@ -221,16 +256,16 @@ export default function DesktopServiceModal({
             <div className={styles.scheduleSummary}>
               <span>Scheduled {actionName}</span>
               <strong>{record.title}</strong>
-              <small>{intervalLabel(record) || 'One-time'}</small>
+              <small>{dueLabel} · {intervalLabel(record) || 'One-time schedule'}</small>
             </div>
             <div className={styles.saveChoices}>
-              <button type="button" onClick={() => setScheduleDecision('scheduled')} disabled={busy}>
-                <strong>Complete scheduled</strong>
-                <span>{record.recurringEnabled ? 'Mark done and create the next reminder.' : 'Mark this scheduled work as done.'}</span>
+              <button type="button" onClick={() => chooseSchedule('scheduled')} disabled={busy}>
+                <strong>Yes, complete this schedule</strong>
+                <span>Save the work against this scheduled {actionName} and mark it done.{record.recurringEnabled && !dealerAppMode ? ' Next, choose whether to keep it recurring.' : ''}</span>
               </button>
-              <button type="button" onClick={() => setScheduleDecision('separate')} disabled={busy}>
-                <strong>Record other work</strong>
-                <span>Keep this schedule open.</span>
+              <button type="button" onClick={() => chooseSchedule('separate')} disabled={busy}>
+                <strong>No, record previous or other work</strong>
+                <span>Add completed work to the asset’s history. This schedule and its reminders stay open.</span>
               </button>
             </div>
           </div>
@@ -242,14 +277,14 @@ export default function DesktopServiceModal({
 
   return (
     <div className={styles.overlay} data-website-overlay role="presentation">
-      <button className={styles.backdrop} type="button" onClick={onClose} aria-label="Close service form" disabled={busy} />
-      <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="desktop-service-title">
+      <button className={`${styles.backdrop} ${!dealerAppMode ? dialogStyles.backdrop : ''}`} type="button" onClick={onClose} aria-label="Close service form" disabled={busy} />
+      <section className={`${styles.modal} ${!dealerAppMode ? styles.completionModal : ''}`} ref={dialogRef} tabIndex={-1} onKeyDown={dialogKeys} role="dialog" aria-modal="true" aria-labelledby="desktop-service-title">
         <header className={styles.header}>
           <div>
-            <h2 id="desktop-service-title">{standalone ? 'Record completed work' : `Record ${actionName}`}</h2>
+            <h2 id="desktop-service-title">{standalone || isSeparateCompletion ? `Record completed ${actionName}` : `Complete scheduled ${actionName}`}</h2>
             <p>{record.assetTitle}</p>
           </div>
-          <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close service form" disabled={busy}>
+          <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={onClose} aria-label="Close service form" disabled={busy}>
             <CloseIcon />
           </button>
         </header>
@@ -257,24 +292,33 @@ export default function DesktopServiceModal({
         <form onSubmit={(event) => void submit(event)}>
           <div className={styles.body}>
             {!standalone ? <div className={styles.infoBanner}>
-              <strong>{isSeparateCompletion ? 'Record other work' : `Completing “${record.title}”`}</strong>
-              <span>{isSeparateCompletion ? 'The scheduled work stays open.' : record.recurringEnabled ? 'The next reminder will be created automatically.' : 'This scheduled work will be marked done.'}</span>
+              <strong>{isSeparateCompletion ? 'Save to history · schedule stays open' : `Completing “${record.title}”`}</strong>
+              <span>{isSeparateCompletion ? 'Use the date and usage when this work was actually done. Existing reminders will not change.' : asksRecurrence ? continueSchedule === null ? 'Choose below what happens after this completion.' : continueSchedule ? 'This occurrence will close and the next reminder will be created.' : 'This occurrence will close. No further reminder will be created.' : record.recurringEnabled ? 'The next reminder will be created automatically.' : 'This one-time schedule will close when you save.'}</span>
             </div> : null}
+
+            {asksRecurrence ? <fieldset className={styles.recurrenceChoice}>
+              <legend>After this {actionName}, keep the schedule recurring?</legend>
+              <div>
+                <label><input type="radio" name="continue-schedule" checked={continueSchedule === true} onChange={() => setContinueSchedule(true)} required disabled={busy} /><span><strong>Continue the schedule</strong><small>Mark this work done and create the next reminder. {intervalLabel(record)}.</small></span></label>
+                <label><input type="radio" name="continue-schedule" checked={continueSchedule === false} onChange={() => setContinueSchedule(false)} required disabled={busy} /><span><strong>End the schedule</strong><small>Mark this work done without creating another reminder.</small></span></label>
+              </div>
+            </fieldset> : null}
 
             <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <span>1</span>
                 <div>
                   <h3>{mode === 'checked' ? copy.checkedHeader : copy.servicedHeader}</h3>
-                  <p>{checklist.label} · {mode === 'checked' ? 'Inspect condition and safe operation.' : 'Select service work completed.'} Add your own items below.</p>
+                  <p>{checklist.label} · {mode === 'checked' ? 'Inspect condition and safe operation.' : 'Select service work completed.'} Select only the work actually completed.</p>
                 </div>
                 <strong className={styles.selectedCount}>{selectedItems.length + customItems.length} selected</strong>
               </div>
               {savedChecklist.loading ? <p role="status">Loading your saved checklist items…</p> : null}
               {savedChecklist.error ? <p role="alert">Your saved checklist items could not be loaded. <button type="button" onClick={savedChecklist.reload}>Try again</button></p> : null}
+              <p className={styles.fieldHint}>Saved custom checklist items appear below. Extra items entered here are saved with this completion only.</p>
               <div className={styles.customWork}>
                 <label className={styles.field}>
-                  <span>{mode === 'checked' ? 'Add your own inspection item' : 'Add your own maintenance item'}</span>
+                  <span>{mode === 'checked' ? 'Add a check completed' : 'Add other work completed'}</span>
                   <input type="text" maxLength={160} value={ownItem} onChange={(event) => setOwnItem(event.target.value)} placeholder={mode === 'checked' ? 'e.g. Checked trailer brake lights' : 'e.g. Replaced hydraulic hose'} onKeyDown={(event) => {
                     if (event.key === 'Enter') { event.preventDefault(); if (ownItem.trim() && customItems.length < 20) { setCustomItems((items) => Array.from(new Set([...items, ownItem.trim()]))); setOwnItem(''); } }
                   }} />
@@ -287,14 +331,15 @@ export default function DesktopServiceModal({
                   const selected = selectedItems.includes(option.label);
                   return (
                     <button
-                      key={option.label}
+                      key={option.id}
                       type="button"
                       className={selected ? styles.checkOptionSelected : styles.checkOption}
                       onClick={() => toggleItem(option.label)}
                       aria-pressed={selected}
+                      disabled={busy}
                     >
                       <span className={styles.checkbox}>{selected ? <CheckIcon /> : null}</span>
-                      <span><strong>{option.label}</strong>{option.description ? <small>{option.description}</small> : null}</span>
+                      <span><strong>{option.label}</strong>{option.id.startsWith('asset_custom_') ? <small className={styles.customTag}>Your saved checklist item</small> : null}{option.description ? <small>{option.description}</small> : null}</span>
                     </button>
                   );
                 })}
@@ -359,9 +404,9 @@ export default function DesktopServiceModal({
               {busy
                 ? `Saving…`
                 : standalone || isSeparateCompletion
-                  ? 'Save record'
+                  ? 'Save to history'
                   : askScheduleLink
-                    ? `Complete scheduled ${actionName}`
+                    ? asksRecurrence && continueSchedule === true ? 'Save & continue schedule' : 'Save & close schedule'
                     : `Save completed ${actionName}`}
             </button>
           </footer>
