@@ -1,5 +1,6 @@
 'use client';
 
+import MaintenanceChecklistBrowser from '../../components/MaintenanceChecklistBrowser';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
 import pickerStyles from '../../components/AssetPicker.module.css';
@@ -148,7 +149,7 @@ type MaintenanceDraft = {
   recurringIntervalUnit: IntervalUnit;
 };
 
-type ModalMode = 'timing' | 'record-work' | 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'quick-clear' | 'delete' | null;
+type ModalMode = 'checklists' | 'timing' | 'record-work' | 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'quick-clear' | 'delete' | null;
 type QuickClearStep = 'confirm' | 'completion';
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
@@ -184,6 +185,13 @@ function filtersForInitialAsset(assetId: string): MaintenanceFilters {
 }
 
 const PAGE_SIZE = 10;
+
+function ScheduleIcon() {
+  return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M7 2v6m10-6v6M3 10h18M7 14h3m4 0h3M7 17h3" /></svg>;
+}
+function ChecklistIcon() {
+  return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3" /><path d="m7 8 1 1 2-2m-3 6 1 1 2-2m-3 6 1 1 2-2M13 8h4m-4 5h4m-4 5h4" /></svg>;
+}
 
 function ManageIcon() {
   return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></svg>;
@@ -442,10 +450,18 @@ function maintenanceTimingLabel(record: MaintenanceRecord): string {
   return `${amount} ${remaining < 0 ? 'overdue' : 'remaining'}`;
 }
 
+function cleanMaintenanceAssetTitle(title: string): string {
+  return title.replace(/^year\s+unknown\s*[-–:·]?\s*/i, '').trim() || 'Asset';
+}
+
 function maintenanceDisplayTitle(record: MaintenanceRecord): string {
   const title = record.title?.trim();
   if (record.status === 'done' && ((!title && record.maintenanceType === 'service') || /^(next|scheduled) service$/i.test(title || ''))) return 'Completed service';
   if (record.status === 'done' && (!title || /^(next|scheduled) check[- ]?up$/i.test(title))) return 'Completed check-up';
+  if (record.status === 'upcoming' && (!title || /^(next|scheduled) (service|check[- ]?up)$/i.test(title)) && record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit) {
+    const unit = record.recurringIntervalUnit === 'hours' ? 'hour' : record.recurringIntervalUnit === 'percentage' ? '% life' : record.recurringIntervalUnit.replace(/s$/, '');
+    return `${numberText(record.recurringIntervalValue)}-${unit} ${record.maintenanceType === 'checkup' ? 'check-up' : 'service'}`;
+  }
   return title || (record.maintenanceType === 'checkup' ? 'Maintenance check-up' : 'Scheduled service');
 }
 
@@ -815,6 +831,9 @@ export default function MaintenanceClient({
   const [isSaving, setIsSaving] = useState(false);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [search, setSearch] = useState('');
+  const [scheduleView, setScheduleView] = useState<'all' | 'upcoming' | 'recurring'>('all');
+  const previousFilters = useRef<MaintenanceFilters | null>(null);
+  const [checklistAssetId, setChecklistAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<MaintenanceFilters>(initialFilters);
   const [draftFilters, setDraftFilters] = useState<MaintenanceFilters>(initialFilters);
@@ -960,8 +979,8 @@ export default function MaintenanceClient({
     const matchingRecords = query
       ? records.filter((record) => recordSearchText(record).includes(query))
       : records;
-    return arrangeMaintenanceTimeline(matchingRecords);
-  }, [records, search]);
+    return arrangeMaintenanceTimeline(matchingRecords.filter((record) => scheduleView === 'all' || (record.status === 'upcoming' && (scheduleView === 'upcoming' || record.recurringEnabled || Boolean(record.generatedFromMaintenanceId)))));
+  }, [records, search, scheduleView]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
   const pagedRecords = filteredRecords.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -969,7 +988,7 @@ export default function MaintenanceClient({
 
   useEffect(() => {
     setPage(1);
-  }, [search, activeFilters]);
+  }, [search, activeFilters, scheduleView]);
 
   useEffect(() => {
     setPage((current) => Math.min(current, totalPages));
@@ -1027,6 +1046,31 @@ export default function MaintenanceClient({
     if (shouldReturn) {
       window.location.assign(shouldReturn);
     }
+  }
+
+  function showSchedules(view: 'upcoming' | 'recurring') {
+    if (scheduleView === 'all') previousFilters.current = activeFilters;
+    setScheduleView(view);
+    setActiveFilters((filters) => ({ ...filters, status: 'upcoming' }));
+    setExpandedRecordId(null);
+  }
+
+  function showAllMaintenance() {
+    setScheduleView('all');
+    setActiveFilters(previousFilters.current ?? EMPTY_FILTERS);
+    previousFilters.current = null;
+    setExpandedRecordId(null);
+  }
+
+  function startChecklistWork(assetId: string, timing: 'done' | 'upcoming') {
+    const asset = assets.find((item) => item.id === assetId);
+    if (!asset) return;
+    setNotice(null);
+    setEditingRecordId(null);
+    setQuickLaunchActive(false);
+    setDraft(emptyDraftForAsset(asset));
+    setEntryTiming(timing);
+    setModalMode('maintenance-type');
   }
 
   function openAddService() {
@@ -1275,13 +1319,13 @@ export default function MaintenanceClient({
   }
 
   function applyFilters() {
-    setActiveFilters(draftFilters);
+    setActiveFilters(scheduleView === 'all' ? draftFilters : { ...draftFilters, status: 'upcoming' });
     setModalMode(null);
   }
 
   function clearFilters() {
     setDraftFilters(EMPTY_FILTERS);
-    setActiveFilters(EMPTY_FILTERS);
+    setActiveFilters(scheduleView === 'all' ? EMPTY_FILTERS : { ...EMPTY_FILTERS, status: 'upcoming' });
     setModalMode(null);
   }
 
@@ -1289,7 +1333,7 @@ export default function MaintenanceClient({
     const defaultAssetId = activeFilters.assetId !== 'all' ? activeFilters.assetId : 'all';
     setDownloadAssetId(defaultAssetId);
     setDownloadFormat('pdf');
-    setDownloadScope('total');
+    setDownloadScope(scheduleView === 'all' ? 'total' : 'upcoming');
     setDownloadStep('scope');
     setDownloadAssetSearch('');
     setModalMode('download');
@@ -1342,7 +1386,21 @@ export default function MaintenanceClient({
           </div>
         </section>
 
-        <section className={styles.invoiceToolbar} aria-label="Maintenance toolbar">
+        <section className={styles.maintenanceActions} aria-label="Maintenance actions">
+          <button className={`${styles.toolbarButton} ${styles.toolbarAddButton}`} type="button" onClick={openAddService}>
+            <span className={styles.plusMark}>+</span><span>Add Maintenance</span>
+          </button>
+          <button className={`${styles.toolbarButton} ${styles.toolbarSchedulesButton}`} type="button" onClick={() => showSchedules('upcoming')} aria-pressed={scheduleView !== 'all'}>
+            <ScheduleIcon /><span>Schedules</span>
+          </button>
+          <button className={`${styles.toolbarButton} ${styles.toolbarChecklistsButton}`} type="button" onClick={() => { setChecklistAssetId(activeFilters.assetId === 'all' ? '' : activeFilters.assetId); setModalMode('checklists'); }}>
+            <ChecklistIcon /><span>Checklists</span>
+          </button>
+          <button className={`${styles.toolbarButton} ${styles.primaryButton} ${styles.toolbarDownloadButton}`} type="button" onClick={openDownload}>
+            <DownloadIcon /><span>Download</span>
+          </button>
+        </section>
+        <section className={`${styles.invoiceToolbar} ${styles.maintenanceSearchToolbar}`} aria-label="Maintenance toolbar">
           <label className={styles.searchWrap}>
             <SearchIcon />
             <input
@@ -1359,22 +1417,18 @@ export default function MaintenanceClient({
               </button>
             ) : null}
           </label>
-          <div className={styles.toolbarButtons}>
-            <button className={`${styles.toolbarButton} ${styles.toolbarAddButton}`} type="button" onClick={openAddService}>
-              <span className={styles.plusMark}>+</span>
-              Add Service
-            </button>
-            <button className={`${styles.toolbarButton} ${styles.toolbarFilterButton}`} type="button" onClick={openFilters}>
-              <FilterIcon />
-              Filter
-              {filtersCount ? <strong>{filtersCount}</strong> : null}
-            </button>
-            <button className={`${styles.toolbarButton} ${styles.primaryButton} ${styles.toolbarDownloadButton}`} type="button" onClick={openDownload}>
-              <DownloadIcon />
-              Download
-            </button>
-          </div>
+          <button className={`${styles.toolbarButton} ${styles.toolbarFilterButton}`} type="button" onClick={openFilters}>
+            <FilterIcon />Filter{filtersCount ? <strong>{filtersCount}</strong> : null}
+          </button>
         </section>
+        {scheduleView !== 'all' ? <section className={styles.scheduleOverview} aria-label="Maintenance schedules">
+          <div><h2>Maintenance schedules</h2><p>Due dates, usage intervals and assigned managers.</p></div>
+          <div className={styles.scheduleTabs}>
+            <button type="button" aria-pressed={scheduleView === 'upcoming'} onClick={() => showSchedules('upcoming')}>All upcoming</button>
+            <button type="button" aria-pressed={scheduleView === 'recurring'} onClick={() => showSchedules('recurring')}>Recurring</button>
+            <button type="button" onClick={showAllMaintenance}>Back to all maintenance</button>
+          </div>
+        </section> : null}
 
         <section className={styles.invoicePanel}>
           {isLoading ? (
@@ -1401,16 +1455,16 @@ export default function MaintenanceClient({
                   ? styles.maintenanceStatusGood
                   : needsAttention
                     ? styles.maintenanceStatusDanger
-                    : isDueSoon || isRecurringFollowUp
+                    : isDueSoon
                       ? styles.maintenanceStatusWarning
                       : styles.maintenanceStatusNeutral;
                 const statusText = isDone ? 'Completed' : record.status === 'cancelled' ? 'Cancelled' : record.computedStatusLabel || 'Upcoming';
 
                 return (
                   <article
-                    className={`${styles.invoiceRow} ${styles.ledgerCard} ${cardStatusClass} ${isUpcomingRecurringFollowUp && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
+                    className={`${styles.invoiceRow} ${styles.ledgerCard} ${cardStatusClass} ${isUpcomingRecurringFollowUp && isDueSoon && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
                     key={record.id}
-                    data-maintenance-status={record.status === 'done' ? 'completed' : record.status === 'cancelled' ? 'cancelled' : needsAttention ? 'attention' : 'upcoming'}
+                    data-maintenance-status={record.status === 'done' ? 'completed' : record.status === 'cancelled' ? 'cancelled' : needsAttention ? 'attention' : isDueSoon ? 'due-soon' : 'upcoming'}
                   >
                     <div className={styles.invoiceHeader}>
                       <div className={styles.invoiceTitleBlock}>
@@ -1419,8 +1473,12 @@ export default function MaintenanceClient({
                           {typeLabel(record.maintenanceType)}
                           {isDone ? ` · Completed ${dateOnly(record.completedAtIso || record.updatedAtIso)}` : record.recurringEnabled || isRecurringFollowUp ? ' · Recurring' : ' · Once-off'}
                         </p>
+                        {scheduleView !== 'all' ? <p className={styles.scheduleRecordMeta}>
+                          <span>{record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? `Every ${record.recurringIntervalValue} ${record.recurringIntervalUnit}` : 'Once-off'}</span>
+                          <span>Assigned to: {record.assignedName || 'Unassigned'}</span>
+                        </p> : null}
                         <div className={styles.ledgerBadges}>
-                          <span className={styles.ledgerAssetPill}><AssetPillIcon /><span>{record.assetTitle}</span></span>
+                          <span className={styles.ledgerAssetPill}><AssetPillIcon /><span>{cleanMaintenanceAssetTitle(record.assetTitle)}</span></span>
                           <span className={`${styles.maintenanceStatusPill} ${statusPillClass}`}><span aria-hidden="true" className={styles.statusSymbol}>{isDone ? '✓' : record.status === 'cancelled' ? '−' : needsAttention ? '!' : '◷'}</span>{statusText}</span>
                         </div>
                       </div>
@@ -1458,7 +1516,7 @@ export default function MaintenanceClient({
                     <section id={detailsId} hidden={!expanded} className={styles.ledgerDetails} aria-label="Maintenance details">
                       <h3>Maintenance details</h3>
                       <dl className={styles.ledgerDetailsGrid}>
-                        <div><dt>Asset</dt><dd>{record.assetTitle}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</span></dd></div>
+                        <div><dt>Asset</dt><dd>{cleanMaintenanceAssetTitle(record.assetTitle)}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</span></dd></div>
                         <div><dt>Assigned to</dt><dd>{record.assignedName || 'Unassigned'}</dd></div>
                         <div><dt>Reminder</dt><dd>{maintenanceAlertLabel(record)}</dd></div>
                         <div><dt>Repeats</dt><dd>{record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? `Every ${record.recurringIntervalValue} ${record.recurringIntervalUnit}` : 'Once-off'}</dd></div>
@@ -1890,6 +1948,8 @@ export default function MaintenanceClient({
         </div>
       ) : null}
 
+      {modalMode === 'checklists' ? <MaintenanceChecklistBrowser assets={assets.map((asset) => ({ ...asset, title: cleanMaintenanceAssetTitle(asset.title) }))} initialAssetId={checklistAssetId} onClose={closeModal} onStartWork={startChecklistWork} /> : null}
+
       {modalMode === 'filter' ? (
         <FilterFlow title="Filter maintenance records" onClose={closeModal} onClear={clearFilters} onApply={applyFilters}>
           <FilterQuestion
@@ -1907,12 +1967,12 @@ export default function MaintenanceClient({
             options={FILTER_TYPE_OPTIONS}
             onChange={(value) => setDraftFilters((current) => ({ ...current, type: value as MaintenanceFilters['type'] }))}
           />
-          <FilterQuestion
+          {scheduleView === 'all' ? <FilterQuestion
             label="Which status?"
             value={draftFilters.status}
             options={FILTER_STATUS_OPTIONS}
             onChange={(value) => setDraftFilters((current) => ({ ...current, status: value as MaintenanceFilters['status'] }))}
-          />
+          /> : null}
           <FilterQuestion
             label="Assigned to whom?"
             value={draftFilters.assignedTo}
