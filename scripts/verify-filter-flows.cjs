@@ -79,12 +79,12 @@ async function main() {
   }
   assert.deepEqual(errors,[],'Browser errors');
  } finally {
-  if(browser) await browser.close();
-  if(server) { server.kill(); await new Promise(resolve => server.once('exit',resolve)); }
   for(const dir of created){await fs.unlink(path.join(dir,'page.tsx')).catch(()=>{});await fs.rmdir(dir).catch(()=>{});
     const generated=path.join(root,'.next/types',path.relative(root,dir),'page.ts');
     await fs.unlink(generated).catch(()=>{});
   }
+  if(browser) await browser.close().catch(()=>{});
+  if(server) server.kill();
  }
 }
 main().catch(error=>{console.error(error);process.exitCode=1});
