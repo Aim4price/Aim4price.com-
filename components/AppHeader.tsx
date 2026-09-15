@@ -407,6 +407,8 @@ function isPathMatchingHref(pathname: string, href: string): boolean {
 function resolveActiveNavKey(pathname: string, items: NavItem[], active: ActivePage): ActivePage {
   const normalizedPath = pathname || '/';
 
+  if (normalizedPath === '/budgets' || normalizedPath.startsWith('/budgets/')) return 'cost';
+
   if (normalizedPath === '/asset-registers' || normalizedPath.startsWith('/asset-registers/')) {
     return 'asset-register';
   }
