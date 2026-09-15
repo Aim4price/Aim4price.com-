@@ -253,7 +253,7 @@ function comparisonRows(model: LifecycleWorkspaceModel): XlsxCellValue[][] {
 function executiveSheet(context: LifecycleReportContext, generatedAt: Date): XlsxSheet {
   const { model, preferred, request } = context;
   const rows: XlsxCellValue[][] = [
-    [styled("Aim4price Asset Lifecycle & Cash-Flow Model", "title"), "", "", ""],
+    [styled("Aim4price Asset Lifecycle & Cash-Flow Snapshot", "title"), "", "", ""],
     [styled(`${request.clientName || "Internal review"} • ${request.assetDescription || "Asset scenario"}`, "subtitle"), "", "", ""],
     [],
     [styled("Calculation date", "metaLabel"), styled(generatedAt, "date"), styled("VAT treatment", "metaLabel"), styled(request.modelInput.vatTreatment === "included" ? "VAT Included" : "VAT Excluded", "metaValue")],
@@ -262,14 +262,14 @@ function executiveSheet(context: LifecycleReportContext, generatedAt: Date): Xls
     [styled("Executive comparison", "section"), "", "", ""],
     ...comparisonRows(model),
     [],
-    [styled("Model checks", "section"), "", "", ""],
+    [styled("Checks at export time", "section"), "", "", ""],
     [styled("Check", "tableHeader"), styled("Actual", "tableHeader"), styled("Expected", "tableHeader"), styled("Status", "tableHeader")],
     [styled("Package VAT ties", "text"), currency(model.packageVat.full.netAmount + model.packageVat.full.vatAmount), currency(model.packageVat.full.grossAmount), styled(Math.abs(model.packageVat.full.netAmount + model.packageVat.full.vatAmount - model.packageVat.full.grossAmount) < 0.02 ? "OK" : "REVIEW", "statusGood")],
     [styled("Service is not double counted when financed", "text"), currency(model.scenarios[1].cashFlow.reduce((sum, year) => sum + year.serviceCashPayments, 0)), currency(0), styled(model.scenarios[1].cashFlow.every((year) => year.serviceCashPayments === 0) ? "OK" : "REVIEW", "statusGood")],
     [styled("Maintenance is not double counted in Full", "text"), currency(model.scenarios[2].cashFlow.reduce((sum, year) => sum + year.maintenanceCashPayments, 0)), currency(0), styled(model.scenarios[2].cashFlow.every((year) => year.maintenanceCashPayments === 0) ? "OK" : "REVIEW", "statusGood")],
     [],
     [styled("Important", "section"), "", "", ""],
-    [styled("This model provides indicative scenario-planning support, not a lending decision, tax opinion, guaranteed valuation or refinance approval.", "note"), "", "", ""],
+    [styled("Exported snapshot. Change assumptions in Aim4price and export again; edits here do not update other sheets. Results are indicative scenario estimates.", "note"), "", "", ""],
   ];
   return {
     name: "Executive Comparison",
@@ -293,7 +293,7 @@ function assumptionsSheet(context: LifecycleReportContext): XlsxSheet {
   const input = model.input;
   const rows: XlsxCellValue[][] = [
     [styled("Lifecycle Model Assumptions", "title"), "", ""],
-    [styled("Blue-style input convention: these are the values supplied to the live Aim4price model.", "subtitle"), "", ""],
+    [styled("Snapshot of the Aim4price model. Change inputs in Aim4price and export again. Editing this workbook does not update the other sheets.", "subtitle"), "", ""],
     [],
     [styled("Section", "tableHeader"), styled("Assumption", "tableHeader"), styled("Value", "tableHeader")],
     [styled("Asset", "section"), styled("Starting price ex VAT", "text"), currency(model.future.startingPrice.netAmount)],
@@ -355,7 +355,7 @@ function assumptionsSheet(context: LifecycleReportContext): XlsxSheet {
 function financeComparisonSheet(model: LifecycleWorkspaceModel): XlsxSheet {
   const rows: XlsxCellValue[][] = [
     [styled("Finance Comparison", "title"), "", "", ""],
-    [styled("Formula-backed principal, payment, repayment and interest comparison", "subtitle"), "", "", ""],
+    [styled("Local finance formulas only. Other sheets remain the original exported snapshot.", "subtitle"), "", "", ""],
     [],
     scenarioHeader(),
   ];

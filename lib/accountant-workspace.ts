@@ -26,7 +26,7 @@ import {
 import { getAccountDocumentType } from './account-document-taxonomy';
 import { ensureAssetRegisterTables, getAssetRegisterForUser, listAssetRegisters, type AssetRegisterSummary } from './asset-registers';
 import { getDb } from './db';
-import { listFuelLedger, type FuelLedgerData } from './fuel-ledger';
+import { listFuelLedger, listFuelEventsForReport, type FuelLedgerData } from './fuel-ledger';
 import { listMyInvoicesData, type MyInvoiceListResult } from './my-invoices';
 import { ensurePartnerAccessTables, type AssetPartnerNote } from './partner-access';
 
@@ -938,7 +938,7 @@ export async function moveAccountantAssetToRegister(input: {
 }
 
 export async function getAccountantLedger(input: {
-  accountantUserId: string; shareId: string; kind: 'fuel' | 'cost'; registerId?: string | null;
+  accountantUserId: string; shareId: string; kind: 'fuel' | 'cost'; registerId?: string | null; fullFuelHistory?: boolean;
 }): Promise<{ access: AccountantRegisterAccess; fuel?: FuelLedgerData; cost?: MyInvoiceListResult }> {
   const access = await loadAccess(input.accountantUserId, input.shareId);
   const requestedRegisterId = String(input.registerId ?? '').trim() || access.registerId;
@@ -949,6 +949,7 @@ export async function getAccountantLedger(input: {
   if (input.kind === 'fuel') {
     if (!access.includeFuelLedger) throw new Error('ACCOUNTANT_FUEL_NOT_SHARED');
     const ledger = await listFuelLedger(access.ownerUserId);
+    if (input.fullFuelHistory) ledger.recentEvents = await listFuelEventsForReport(access.ownerUserId);
     return {
       access,
       fuel: {

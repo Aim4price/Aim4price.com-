@@ -248,28 +248,28 @@ function reviewQualitySummary(payload: InsuranceReportPayload): string {
 function assetTable(payload: InsuranceReportPayload): string {
   const assessmentByAsset = new Map<string, InsuranceWorkspaceData['assessments']>();
   payload.workspace.assessments.forEach((assessment) => assessment.assetIds.forEach((assetId) => assessmentByAsset.set(assetId, [...(assessmentByAsset.get(assetId) ?? []), assessment])));
-  const scheduleTermsByAsset = new Map<string, InsuranceFinancialTerm[]>();
-  payload.workspace.policies.forEach((policy) => policy.sections.forEach((section) => section.scheduleItems.forEach((item) => item.assetIds.forEach((assetId) => {
-    scheduleTermsByAsset.set(assetId, [...(scheduleTermsByAsset.get(assetId) ?? []), ...item.financialTerms]);
+  const scheduleTermsByAsset = new Map<string, string[]>();
+  payload.workspace.policies.filter((policy) => policy.status === 'current').forEach((policy) => policy.sections.forEach((section) => section.scheduleItems.forEach((item) => item.assetIds.forEach((assetId) => {
+    scheduleTermsByAsset.set(assetId, [...(scheduleTermsByAsset.get(assetId) ?? []), ...item.financialTerms.filter((term) => term.termType === 'sum_insured').map((term) => `${policy.insurerName || policy.policyNumber || 'Current policy'} / ${item.itemLabel}: ${financialTermReportLabel(term)}${item.assetIds.length > 1 ? ` (shared across ${item.assetIds.length} assets; not an individual allocation)` : ''}`)]);
   }))));
   const rows = payload.workspace.assets.map((asset) => {
     const assessments = assessmentByAsset.get(asset.id) ?? [];
     const sumTerms = assessments.flatMap((assessment) => assessment.financialTerms).filter((term) => term.termType === 'sum_insured');
-    const scheduleSumTerms = (scheduleTermsByAsset.get(asset.id) ?? []).filter((term) => term.termType === 'sum_insured');
-    const recordedSum = scheduleSumTerms[0] ?? sumTerms[0];
+    const scheduleSumTerms = scheduleTermsByAsset.get(asset.id) ?? [];
+    const recordedSums = scheduleSumTerms.length ? scheduleSumTerms : sumTerms.map((term) => `Assessment: ${financialTermReportLabel(term)}`);
     const current = assessments.length ? [...new Set(assessments.map((assessment) => label(assessment.currentCoverPosition)))].join(', ') : 'Unknown';
     const ownerInsuredValue = nullableNumber(asset.snapshot.insuredValueExVat);
     return `<tr>
       <td>${escapeHtml(asset.title)}</td><td>${escapeHtml(asset.kind)}</td><td>${escapeHtml(asset.location || 'Unknown / not supplied')}</td>
       <td class="right">${escapeHtml(money(vatIncluded(asset.replacementValue)))}</td>
       <td class="right">${escapeHtml(money(vatIncluded(ownerInsuredValue)))}</td>
-      <td class="right">${escapeHtml(recordedSum ? money(financialAmountVatIncluded(recordedSum), recordedSum.currency) : 'Not recorded')}</td>
+      <td class="right">${escapeHtml(recordedSums.length ? recordedSums.join('; ') : 'Not recorded')}</td>
       <td>${escapeHtml(current)}</td>
       <td>${escapeHtml(assessments.map((assessment) => assessment.coverLabel).join(', ') || 'Not assessed')}</td>
     </tr>`;
   }).join('');
   return `<h2>Locations and asset inventory</h2>
-    <table><thead><tr><th>Asset</th><th>Risk object</th><th>Location</th><th>Replacement value (VAT incl.)</th><th>Owner-provided insured value (VAT incl.)</th><th>Recorded sum insured (VAT incl.)</th><th>Current-cover position</th><th>Linked covers / sections</th></tr></thead>
+    <table><thead><tr><th>Asset</th><th>Risk object</th><th>Location</th><th>Replacement value (VAT incl.)</th><th>Owner-provided insured value (VAT incl.)</th><th>Recorded sums insured / VAT basis</th><th>Current-cover position</th><th>Linked covers / sections</th></tr></thead>
     <tbody>${rows || '<tr><td colspan="8">No assets recorded.</td></tr>'}</tbody></table>`;
 }
 

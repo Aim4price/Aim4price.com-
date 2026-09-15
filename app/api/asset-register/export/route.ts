@@ -2502,7 +2502,7 @@ async function renderFullRegisterReportHtml(
       const lines = buildPdfAssetLines(item, index++);
       return `${groupHeading}<section class="assetReportSection reportFullAsset">
         <h2>${escapeHtml(lines[0]?.text || item.title)}</h2>
-        ${lines.slice(1).map((line) => `<p>${escapeHtml(line.text)}</p>`).join('')}
+        ${lines.slice(1).flatMap((line) => line.text.split(' | ')).map((detail) => `<p>${escapeHtml(detail)}</p>`).join('')}
       </section>`;
     }).join('');
     return heading + (records || '<section class="assetReportSection">No saved assets.</section>');
