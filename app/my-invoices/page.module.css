@@ -7121,9 +7121,8 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
 .invoiceDetailsGrid dt { color: #697d8b; font-size: 0.8rem; margin-bottom: 0.25rem; }
 .invoiceDetailsGrid dd { color: #304d46; font-size: 0.9rem; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
 .invoiceBreakdown { margin-top: 1.25rem; border-top: 1px solid #dce7e7; }
-.invoiceBreakdown > div { display: flex; justify-content: space-between; gap: 1.25rem; padding: 0.95rem 0; border-bottom: 1px solid #e4ebeb; font-size: 0.9rem; color: #304d46; }
+.invoiceBreakdown > div { display: block; padding: 0.95rem 0; border-bottom: 1px solid #e4ebeb; font-size: 0.9rem; color: #304d46; }
 .invoiceBreakdown > div > div { min-width: 0; }
-.invoiceBreakdown > div > span { flex-shrink: 0; font-weight: 700; }
 .invoiceBreakdown p { margin: 0.3rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #617486; }
 .invoiceNotes, .invoiceLegacyDetails p { color: #617486; font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
 .invoiceNotes strong, .invoiceLegacyDetails strong { display: block; color: #304d46; margin-bottom: 0.3rem; }

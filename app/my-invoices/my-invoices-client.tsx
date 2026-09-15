@@ -3494,7 +3494,7 @@ export default function MyInvoicesClient({
                       {invoice.updatedAtIso ? <div><dt>Updated</dt><dd>{formatDateTime(invoice.updatedAtIso)}</dd></div> : null}
                     </dl>
                     {invoice.blocks.length ? <div className={styles.invoiceBreakdown}>
-                      {invoice.blocks.map((block) => <div key={block.id}><div><strong>{({ maintenance: 'Maintenance', parts: 'Parts', repair: 'Repair', other: 'Other' })[block.blockType]}</strong><p>{block.description || 'No description'}</p></div><span>{block.totalIncVat !== null ? formatMoney(block.totalIncVat) : 'Not recorded'}</span></div>)}
+                      {invoice.blocks.map((block) => <div key={block.id}><div><strong>{({ maintenance: 'Maintenance', parts: 'Parts', repair: 'Repair', other: 'Other' })[block.blockType]}</strong><p>{block.description || 'No description'}</p></div></div>)}
                     </div> : <div className={styles.invoiceLegacyDetails}>
                       {invoice.maintenanceWorkDone ? <p><strong>Maintenance</strong>{invoice.maintenanceWorkDone}</p> : null}
                       {invoice.partsSupplied ? <p><strong>Parts</strong>{invoice.partsSupplied}</p> : null}
