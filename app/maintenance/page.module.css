@@ -5007,9 +5007,9 @@
 .invoiceRow.ledgerCard:hover { border-color: #adc8c4; box-shadow: 0 18px 34px rgba(16,31,28,0.055); }
 .invoiceRow.ledgerCard::after { content: none; }
 .ledgerCard .invoiceHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.6rem; align-items: stretch; }
-.ledgerCard .invoiceTitleBlock { display: grid; align-content: start; gap: 0.7rem; min-width: 0; padding: 0; }
-.ledgerCard .invoiceTitle { margin: 0; color: #073b30; font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem); font-weight: 760; line-height: 1.12; letter-spacing: -0.032em; white-space: normal; overflow-wrap: anywhere; }
-.ledgerMeta { margin: 0; color: #627386; font-size: 0.9rem; font-weight: 650; line-height: 1.45; }
+.ledgerCard .invoiceTitleBlock { display: grid; align-content: start; gap: 0.6rem; min-width: 0; padding: 0; }
+.ledgerCard .invoiceTitle { margin: 0; color: #073b30; font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem); font-weight: 760; line-height: 1.08; letter-spacing: -0.032em; white-space: normal; overflow-wrap: anywhere; }
+.ledgerMeta { margin: 0; color: #5d6d7c; font-size: 0.96rem; font-weight: 650; line-height: 1.45; }
 .ledgerBadges { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.35rem; }
 .ledgerAssetPill, .ledgerCard .maintenanceStatusPill { display: inline-flex; align-items: center; gap: 0.45rem; max-width: 100%; min-height: 2.15rem; box-sizing: border-box; padding: 0.4rem 0.75rem; border-radius: 1.5rem; font-size: 0.8rem; line-height: 1.4; font-weight: 700; letter-spacing: 0; text-transform: none; white-space: normal; overflow-wrap: anywhere; }
 .ledgerAssetPill { color: #12573f; background: #d8f2e5; border: 1px solid #acd9c3; }
@@ -5079,7 +5079,7 @@
   box-shadow: 0 12px 30px rgba(24, 54, 44, 0.045), inset 0 1px 0 #fff;
 }
 .invoiceRow.ledgerCard[data-maintenance-status='completed'] { --status-edge: #afd6bf; --status-wash: #e7f6ec; --status-ink: #216344; }
-.invoiceRow.ledgerCard[data-maintenance-status='attention'] { --status-edge: #e7aaa6; --status-wash: #fde9e7; --status-ink: #a23e38; }
+.invoiceRow.ledgerCard[data-maintenance-status='attention'] { --status-edge: #edaaa6; --status-wash: #fde9e7; --status-ink: #b12e28; }
 .invoiceRow.ledgerCard[data-maintenance-status='cancelled'] { --status-edge: #d2dadd; --status-wash: #eff2f3; --status-ink: #626e76; }
 .ledgerCard[data-maintenance-status] .maintenanceStatusPill { color: var(--status-ink); border-color: var(--status-edge); background: var(--status-wash); }
 .ledgerCard[data-maintenance-status] .invoiceHeaderAside { gap: 1.1rem; }
@@ -5143,7 +5143,8 @@
   :global(:where(html:not(:has([data-website-canvas])))) .invoiceToolbar.maintenanceSearchToolbar { grid-template-columns: minmax(0,1fr); }
 }
 
-.invoiceRow.ledgerCard[data-maintenance-status='upcoming'] { --status-edge: #d0ddd6; --status-wash: #f6faf8; --status-ink: #526e60; }
+.invoiceRow.ledgerCard[data-maintenance-status='upcoming'],
+.invoiceRow.ledgerCard[data-maintenance-status='due-soon'] { --status-edge: #edbd82; --status-wash: #fff0dc; --status-ink: #99500d; }
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .maintenanceActions .toolbarDownloadButton { grid-column: auto; }
 }
@@ -5159,4 +5160,13 @@
 }
 .invoiceRow.ledgerCard.maintenanceCardDone {
   background: linear-gradient(180deg, #fff, #f8fcfa);
+}
+
+/* Match Asset Register title typography on native narrow layouts as well. */
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard .invoiceTitle {
+    font-size: 1.35rem;
+    font-weight: 740;
+    letter-spacing: -0.026em;
+  }
 }
