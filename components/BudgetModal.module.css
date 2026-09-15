@@ -1,0 +1,79 @@
+/* Shared chrome for the budget management and removal dialogs. */
+.surface.surface {
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+  border: 1px solid #d4e2dd;
+  border-radius: 1.5rem;
+  background: linear-gradient(180deg, #fff, #f8fbfa);
+  box-shadow: 0 24px 70px rgba(18, 53, 44, .2);
+}
+.surface .header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding-bottom: 1.15rem;
+  margin-bottom: 0;
+  border-bottom: 1px solid #e0e9e5;
+}
+.surface .headerText { min-width: 0; }
+.surface .header h2 {
+  margin: 0;
+  color: #103d32;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+.surface .header p {
+  margin: .55rem 0 0;
+  color: #667c73;
+  font-size: .9rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.surface .close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0;
+  margin: 0;
+  border: 1px solid #cfddd7;
+  border-radius: .6rem;
+  background: #f5faf7;
+  color: #234c3e;
+  cursor: pointer;
+}
+.surface .close svg { width: 1rem; height: 1rem; }
+.surface .close:hover:not(:disabled) { background: #e9f4ee; border-color: #9bbdad; }
+.surface .close:focus-visible { outline: 3px solid #70b797; outline-offset: 3px; }
+.surface .close:disabled { opacity: .55; cursor: not-allowed; }
+.surface .context {
+  display: grid;
+  gap: .35rem;
+  padding: 1rem;
+  margin: 1.15rem 0 0;
+  border: 1px solid #dce7e2;
+  border-radius: .75rem;
+  background: #f4f9f6;
+  overflow-wrap: anywhere;
+}
+.surface .context strong { font-size: .98rem; font-weight: 750; color: #173e33; line-height: 1.4; }
+.surface .context span { font-size: .85rem; color: #647a70; font-weight: 600; }
+.surface .actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .85rem;
+  margin-top: 1.15rem;
+}
+.surface .actions > button { min-width: 0; min-height: 3rem; border-radius: .75rem; padding: .75rem 1rem; font-size: .95rem; line-height: 1.35; }
+.surface.deleteSurface { gap: 1.15rem; }
+.deleteSurface .context, .deleteSurface .actions { margin-top: 0; }
+@media (max-width: 520px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .surface .actions { grid-template-columns: 1fr; }
+}
