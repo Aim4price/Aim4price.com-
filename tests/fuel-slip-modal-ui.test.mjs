@@ -16,7 +16,8 @@ const sliceBetween = (source, startMarker, endMarker) => {
 };
 
 const sharedResults = sliceBetween(client, 'const fuelSlipResults =', '  return (\n    <>\n      <main');
-const managerModal = sharedResults + sliceBetween(
+const manageDialog = sliceBetween(client, "&& managedFuelSlip ?", "&& fuelSlipManagerFilterOpen ?");
+const managerModal = sharedResults + manageDialog + sliceBetween(
   client,
   "modalMode === 'fuel-slip-manager' && !isSlipsPage ?",
   "(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipManagerFilterOpen",
