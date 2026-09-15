@@ -4076,12 +4076,12 @@ export default function FuelClient({
             <div className={`${styles.fuelSlipManagerHeader} ${wizardStyles.header}`}>
               <div className={`${wizardStyles.headerText} ${styles.fuelSlipManagerHeaderCopy}`}>
                 <h2 id="fuel-slip-manager-title">Manage fuel slips</h2>
-                <p>Search, filter, review and download saved fuel slips.</p>
+                <p>Review fuel purchases and their linked assets.</p>
               </div>
               <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close manage fuel slips"><span aria-hidden="true">×</span></button>
             </div>
 
-            <div className={`${styles.fuelSlipManagerBody} ${wizardStyles.body}`}>
+            <div className={`${styles.fuelSlipManagerBody} ${wizardStyles.body}`} ref={fuelSlipManagerListRef}>
               <section className={styles.fuelSlipManagerToolbar} aria-label="Fuel slip manager controls">
                 <label className={styles.searchWrap}>
                   <SearchIcon className={styles.searchIcon} />
@@ -4188,17 +4188,7 @@ export default function FuelClient({
                   </div>
                 </div>
 
-                <div className={styles.fuelSlipManagerTableHeader} aria-hidden="true">
-                  <span>Date</span>
-                  <span>Supplier &amp; target</span>
-                  <span>Fuel</span>
-                  <span>Litres</span>
-                  <span>Total</span>
-                  <span>Status</span>
-                  <span>Details</span>
-                </div>
-
-                <div className={styles.fuelSlipManagerList} ref={fuelSlipManagerListRef}>
+                <div className={styles.fuelSlipManagerList}>
                   {isLoading ? <div className={styles.fuelSlipManagerEmptyState}>Loading saved fuel slips...</div> : null}
 
                   {!isLoading && !recentFuelSlips.length ? (
@@ -4241,32 +4231,19 @@ export default function FuelClient({
 
                     return (
                       <article
-                        className={styles.fuelSlipManagerRow}
+                        className={`${styles.fuelSlipManagerRow} ${styles.slipLedgerCard}`}
+                        data-needs-review={needsReview ? 'true' : undefined}
                         key={slip.id}
                         data-expanded={isExpanded ? 'true' : undefined}
                         aria-label={`${slip.supplierName || 'Unknown supplier'} fuel slip`}
                       >
-                        <div className={styles.fuelSlipManagerRowMain}>
-                          <span className={styles.fuelSlipManagerDate} aria-label={`Date: ${formatFuelSlipDate(slip.documentDate)}. ${slip.slipNumber ? `Slip number: ${slip.slipNumber}` : `Target type: ${fuelSlipTargetTypeLabel(slip)}`}`}>
-                            <strong>{formatFuelSlipDate(slip.documentDate)}</strong>
-                            <small>{slip.slipNumber ? `Slip ${slip.slipNumber}` : fuelSlipTargetTypeLabel(slip)}</small>
-                          </span>
-                          <span className={styles.fuelSlipManagerIdentity} aria-label={`Supplier: ${slip.supplierName || 'Unknown supplier'}. Target: ${fuelSlipTargetLabel(slip)}`}>
-                            <strong>{slip.supplierName || 'Unknown supplier'}</strong>
-                            <small>{fuelSlipTargetLabel(slip)}</small>
-                          </span>
-                          <span className={styles.fuelSlipManagerMetric} aria-label={`Fuel: ${slip.fuelType || 'Not recorded'}. Price per litre: ${slip.pricePerLitre !== null ? formatCurrency(slip.pricePerLitre) : 'Not recorded'}`}>
-                            <strong>{slip.fuelType || 'Not recorded'}</strong>
-                            <small>{slip.pricePerLitre !== null ? `${formatCurrency(slip.pricePerLitre)}/L` : 'No unit price'}</small>
-                          </span>
-                          <span className={styles.fuelSlipManagerMetric} aria-label={`Litres: ${formatLitres(slip.litres)}`}>
-                            <strong>{formatLitres(slip.litres)}</strong>
-                            <small>Quantity</small>
-                          </span>
-                          <span className={`${styles.fuelSlipManagerMetric} ${styles.fuelSlipManagerAmount}`} aria-label={`Total amount: ${formatCurrency(slip.totalAmount)}`}>
-                            <strong>{formatCurrency(slip.totalAmount)}</strong>
-                            <small>Total amount</small>
-                          </span>
+                        <div className={styles.slipLedgerHeader}>
+                          <div className={styles.slipLedgerIdentity}>
+                            <h3>{slip.supplierName || 'Unknown supplier'}</h3>
+                            <p className={styles.slipLedgerMeta}>{slip.slipNumber ? `Slip ${slip.slipNumber} · ` : ''}{formatFuelSlipDate(slip.documentDate)}</p>
+                            <p className={styles.slipLedgerFuel}>{slip.fuelType || 'Fuel not recorded'} · {formatLitres(slip.litres)}{slip.pricePerLitre !== null ? ` · ${formatCurrency(slip.pricePerLitre)}/L` : ''}</p>
+                            <div className={styles.slipLedgerPills}>
+                              <span className={styles.slipLedgerAsset}><FuelSlipsIcon className={styles.buttonIcon} /><span>{fuelSlipTargetLabel(slip)}</span></span>
                           {needsReview && !isAccountantReadOnly ? (
                             <button
                               type="button"
@@ -4281,21 +4258,27 @@ export default function FuelClient({
                               {fuelSlipStatusLabel(slip)}
                             </span>
                           )}
-                          <button
-                            type="button"
-                            className={styles.fuelSlipManagerExpandButton}
-                            onClick={() => setExpandedFuelSlipId((current) => current === slip.id ? null : slip.id)}
-                            aria-expanded={isExpanded}
-                            aria-controls={detailsId}
-                            aria-label={`${isExpanded ? 'Hide' : 'View'} details for ${slip.supplierName || 'unknown supplier'} on ${formatFuelSlipDate(slip.documentDate)}`}
-                          >
-                            <span>{isExpanded ? 'Hide' : 'View'}</span>
-                            <ChevronDownIcon aria-hidden="true" />
-                          </button>
+                            </div>
+                          </div>
+                          <div className={styles.slipLedgerAside}>
+                            <div className={styles.slipLedgerAmount}><strong>{formatCurrency(slip.totalAmount)}</strong><span>Total amount</span></div>
+                            <div className={styles.slipLedgerActions}>
+                              {slip.documentFileUrl ? (
+                                <DocumentFileLink className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={withAccountantShare(slip.documentFileUrl, accountantShareId, accountantRegisterId)} fuelDocument fuelSource={slip.documentFileUrl} target="_blank" rel="noreferrer">
+                                  <OpenFileIcon className={styles.buttonIcon} />
+                                  <span>Open file</span>
+                                </DocumentFileLink>
+                              ) : null}
+                              <button type="button" className={styles.fuelSlipManagerExpandButton} onClick={() => setExpandedFuelSlipId((current) => current === slip.id ? null : slip.id)} aria-expanded={isExpanded} aria-controls={detailsId} aria-label={`${isExpanded ? 'Hide' : 'View'} details for ${slip.supplierName || 'unknown supplier'} on ${formatFuelSlipDate(slip.documentDate)}`}>
+                                <ChevronDownIcon aria-hidden="true" /><span>{isExpanded ? 'Hide details' : 'View details'}</span>
+                              </button>
+                            </div>
+                          </div>
                         </div>
 
                         {isExpanded ? (
                           <div className={styles.fuelSlipManagerExpanded} id={detailsId}>
+                            <h4 className={styles.slipLedgerDetailsTitle}>Fuel slip details</h4>
                             <div className={styles.fuelSlipManagerSecondaryGrid}>
                               <span>
                                 <small>Target type</small>
@@ -4323,12 +4306,6 @@ export default function FuelClient({
                               </span>
                             </div>
                             <div className={styles.fuelSlipManagerRowActions}>
-                              {slip.documentFileUrl ? (
-                                <DocumentFileLink className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={withAccountantShare(slip.documentFileUrl, accountantShareId, accountantRegisterId)} fuelDocument fuelSource={slip.documentFileUrl} target="_blank" rel="noreferrer">
-                                  <OpenFileIcon className={styles.buttonIcon} />
-                                  <span>Open file</span>
-                                </DocumentFileLink>
-                              ) : null}
                               <button
                                 type="button"
                                 className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`}
