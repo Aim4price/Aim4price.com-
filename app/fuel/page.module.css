@@ -7587,3 +7587,36 @@
 .slipDownloadSummary { margin: 0; color: #60756d; font-size: .9rem; }
 .accountFuelModal .modalFooter.slipDownloadFooter { justify-content: space-between !important; gap: 1rem !important; }
 .slipDownloadActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .65rem; }
+
+/* Give exclusion confirmation room between the header, form and footer. */
+.accountFuelModal.exclusionsModal .exclusionEditor {
+  min-height: 0;
+  margin: 1.25rem 0;
+  padding: 1.25rem;
+  gap: 1.25rem;
+  flex-shrink: 1;
+}
+.accountFuelModal.exclusionsModal .exclusionEditorHeading {
+  gap: .65rem;
+}
+.accountFuelModal.exclusionsModal .exclusionSelectedAssets {
+  gap: .65rem;
+  padding: .75rem;
+}
+.accountFuelModal.exclusionsModal .exclusionSelectedAssets > div {
+  padding: .85rem 1rem;
+  gap: .35rem;
+}
+.accountFuelModal.exclusionsModal .exclusionReasonField {
+  gap: .75rem;
+}
+.accountFuelModal.exclusionsModal .exclusionReasonField small {
+  margin-top: .1rem;
+}
+@media (max-width: 600px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountFuelModal.exclusionsModal .exclusionEditor {
+    margin: 1rem 0;
+    padding: 1rem;
+    gap: 1rem;
+  }
+}
