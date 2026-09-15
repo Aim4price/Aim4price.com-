@@ -5147,3 +5147,16 @@
 @media (max-width: 760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .maintenanceActions .toolbarDownloadButton { grid-column: auto; }
 }
+
+/* Keep timeline cards faint, with the stronger status colour confined to pills. */
+.invoiceRow.ledgerCard.maintenanceCardOpen {
+  background: linear-gradient(180deg, #fff, #fffafa);
+}
+.invoiceRow.ledgerCard.maintenanceCardUpcoming,
+.invoiceRow.ledgerCard.maintenanceCardDueSoon,
+.invoiceRow.ledgerCard.maintenanceRecurringFollowUp {
+  background: linear-gradient(180deg, #fff, #fffdf8);
+}
+.invoiceRow.ledgerCard.maintenanceCardDone {
+  background: linear-gradient(180deg, #fff, #f8fcfa);
+}

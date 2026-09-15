@@ -196,10 +196,6 @@ function ChecklistIcon() {
 function ManageIcon() {
   return <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></svg>;
 }
-function AssetPillIcon() {
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="3" /><path d="M9 7V4h6v3M9 12h6" /></svg>;
-}
-
 function SearchIcon() {
   return (
     <svg className={styles.searchIcon} viewBox="0 0 24 24" aria-hidden="true">
@@ -402,7 +398,7 @@ function assetYearLabelFromCategory(categoryLabel: string | null | undefined): s
   return category.includes('property') || category.includes('building') ? 'Year Built' : 'Year Model';
 }
 
-function buildMaintenanceAssetMeta(record: MaintenanceRecord): string[] {
+function buildMaintenanceAssetMeta(record: MaintenanceRecord, includeFamily = true): string[] {
   const usageLabel = formatAssetUsage(record.assetUsageReading, record.assetUsageMetric);
   const familyLabel = record.assetCategoryLabel || titleCase(record.assetKind || 'asset');
   const details = [
@@ -411,7 +407,7 @@ function buildMaintenanceAssetMeta(record: MaintenanceRecord): string[] {
       : '',
     usageLabel ? `Usage: ${usageLabel}` : '',
     record.assetCondition ? `Condition: ${record.assetCondition}` : '',
-    familyLabel ? `Family: ${familyLabel}` : '',
+    includeFamily && familyLabel ? `Family: ${familyLabel}` : '',
   ].filter(Boolean);
 
   return details.length ? details : record.assetMeta ? [record.assetMeta] : [];
@@ -1457,7 +1453,7 @@ export default function MaintenanceClient({
                     ? styles.maintenanceStatusDanger
                     : isDueSoon
                       ? styles.maintenanceStatusWarning
-                      : styles.maintenanceStatusNeutral;
+                      : record.status === 'cancelled' ? styles.maintenanceStatusNeutral : styles.maintenanceStatusWarning;
                 const statusText = isDone ? 'Completed' : record.status === 'cancelled' ? 'Cancelled' : record.computedStatusLabel || 'Upcoming';
 
                 return (
@@ -1468,17 +1464,15 @@ export default function MaintenanceClient({
                   >
                     <div className={styles.invoiceHeader}>
                       <div className={styles.invoiceTitleBlock}>
-                        <h2 className={styles.invoiceTitle}>{maintenanceDisplayTitle(record)}</h2>
-                        <p className={styles.ledgerMeta}>
-                          {typeLabel(record.maintenanceType)}
-                          {isDone ? ` · Completed ${dateOnly(record.completedAtIso || record.updatedAtIso)}` : record.recurringEnabled || isRecurringFollowUp ? ' · Recurring' : ' · Once-off'}
-                        </p>
+                        <h2 className={styles.invoiceTitle}>{cleanMaintenanceAssetTitle(record.assetTitle)}</h2>
+                        {buildMaintenanceAssetMeta(record, false).length ? <p className={styles.ledgerMeta}>
+                          {buildMaintenanceAssetMeta(record, false).join(' · ')}
+                        </p> : null}
                         {scheduleView !== 'all' ? <p className={styles.scheduleRecordMeta}>
                           <span>{record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? `Every ${record.recurringIntervalValue} ${record.recurringIntervalUnit}` : 'Once-off'}</span>
                           <span>Assigned to: {record.assignedName || 'Unassigned'}</span>
                         </p> : null}
                         <div className={styles.ledgerBadges}>
-                          <span className={styles.ledgerAssetPill}><AssetPillIcon /><span>{cleanMaintenanceAssetTitle(record.assetTitle)}</span></span>
                           <span className={`${styles.maintenanceStatusPill} ${statusPillClass}`}><span aria-hidden="true" className={styles.statusSymbol}>{isDone ? '✓' : record.status === 'cancelled' ? '−' : needsAttention ? '!' : '◷'}</span>{statusText}</span>
                         </div>
                       </div>
@@ -1516,6 +1510,8 @@ export default function MaintenanceClient({
                     <section id={detailsId} hidden={!expanded} className={styles.ledgerDetails} aria-label="Maintenance details">
                       <h3>Maintenance details</h3>
                       <dl className={styles.ledgerDetailsGrid}>
+                        <div><dt>Work</dt><dd>{maintenanceDisplayTitle(record)}</dd></div>
+                        <div><dt>Type</dt><dd>{typeLabel(record.maintenanceType)}</dd></div>
                         <div><dt>Asset</dt><dd>{cleanMaintenanceAssetTitle(record.assetTitle)}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record).map((line, index) => <span className={styles.assetDetailsLine} key={index}>{line}</span>)}</span></dd></div>
                         <div><dt>Assigned to</dt><dd>{record.assignedName || 'Unassigned'}</dd></div>
                         <div><dt>Reminder</dt><dd>{maintenanceAlertLabel(record)}</dd></div>
