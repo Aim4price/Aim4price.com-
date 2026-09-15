@@ -3821,7 +3821,7 @@ export default function MarketplaceClient({
               <h3 id="marketplace-manage-title">Manage advert</h3>
               <button
                 type="button"
-                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.marketplaceSquareClose}`}
                 onClick={closeManageListingModal}
                 aria-label="Close marketplace listing manager"
               >
@@ -3970,7 +3970,6 @@ export default function MarketplaceClient({
 
             <div className={styles.shareDialogScroll}>
               <div className={styles.shareHeader}>
-                <span>Share listing</span>
                 <h2 id="share-listing-title">Send this listing outside Aim4price.</h2>
                 <p>Share the direct listing link or create a ready-to-post JPEG ad.</p>
               </div>
