@@ -310,9 +310,12 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /uploadStep === 1[\s\S]*?setUploadStep\(2\)/);
   assert.match(client, /uploadStep === 2 && validateDocumentDetails\(\)/);
 
-  assert.match(client, /className=\{styles\.filterModal\} role="dialog"/);
-  assert.match(client, /id="document-filter-title">Filter documents/);
-  assert.match(client, /className=\{styles\.filterOptionGrid\}/);
+  assert.match(client, /<FilterFlow title="Filter documents" dialogRef=\{filterModalRef\}/);
+  assert.match(client, /onClose=\{\(\) => setShowFilters\(false\)\}/);
+  assert.match(client, /onClear=\{\(\) => setCategory\('all'\)\}/);
+  assert.match(client, /onApply=\{\(\) => \{ setCategory\(draftCategory\); setShowFilters\(false\); \}\}/);
+  assert.match(client, /<FilterQuestion label="Which category\?" value=\{draftCategory\} options=\{\[\{ value: 'all', label: 'All documents' \}, \.\.\.CATEGORY_OPTIONS\]\}/);
+  assert.match(client, /onChange=\{\(value\) => setDraftCategory\(value as 'all' \| DocumentCategory\)\}/);
   assert.doesNotMatch(client, /id="document-vault-filters" className=\{styles\.filterPanel\}/);
 
   assert.match(client, /Are you sure you want to delete this document\?/);

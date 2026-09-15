@@ -183,3 +183,31 @@ test('specialist family choices exclude unrelated components in both catalogues'
   assert.ok(!ids(basic('air_receiver')).includes('drive_mechanism'));
   assert.ok(!ids(basic('plastic_mulch_layer')).includes('seed_meters'));
 });
+
+test('inspection choices focus on safety while service choices retain consumables', () => {
+  const tractor = get(basic('compact_tractor'));
+  const checks = shared.checklistOptions(tractor, 'checked');
+  const service = shared.checklistOptions(tractor, 'serviced');
+  assert.ok(checks.some(i => /brake/i.test(i.label)));
+  assert.ok(checks.some(i => /lights/i.test(i.label)));
+  assert.ok(!checks.some(i => i.id === 'oil_filter' || i.id === 'engine_oil'));
+  assert.ok(service.some(i => i.id === 'oil_filter'));
+  assert.ok(!service.some(i => i.id === 'pto_guards'));
+  const plough = shared.checklistOptions(get(basic('plough')), 'checked');
+  assert.ok(!plough.some(i => /horn|seat belt/i.test(i.label)));
+  const selection = checks.find(i => i.id === 'inspection_lights');
+  const snapshot = shared.buildMaintenanceWorkSnapshot(tractor, 'checked', [selection.label]);
+  assert.equal(snapshot.items[0].id, selection.id);
+  assert.equal(shared.validateMaintenanceWork([snapshot])[0].items[0].action, 'checked');
+});
+
+test('manual items save as structured work without requiring preset selections', () => {
+  const checklist = get(basic('compact_tractor'));
+  const work = shared.buildCustomMaintenanceWorkSnapshot(checklist, 'serviced', [' Replaced custom hose ', 'Replaced custom hose']);
+  const restored = shared.validateMaintenanceWork(JSON.parse(JSON.stringify([work])));
+  assert.equal(restored[0].items.length, 1);
+  assert.equal(restored[0].items[0].label, 'Replaced custom hose');
+  assert.equal(restored[0].items[0].action, 'serviced');
+  assert.throws(() => shared.buildCustomMaintenanceWorkSnapshot(checklist, 'checked', ['x'.repeat(161)]));
+  assert.throws(() => shared.buildCustomMaintenanceWorkSnapshot(checklist, 'checked', ['line\nbreak']));
+});

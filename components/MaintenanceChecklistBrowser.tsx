@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FilterQuestion } from './FilterFlow';
 import AssetSerialNumber from './AssetSerialNumber';
 import { useMaintenanceChecklist } from '../lib/use-maintenance-checklist';
-import type { MaintenanceIdentity } from '../lib/maintenance-catalogue';
+import { checklistOptions, type MaintenanceIdentity } from '../lib/maintenance-catalogue';
 import styles from './MaintenanceChecklistBrowser.module.css';
 
 type ChecklistAsset = { id: string; title: string; serialNumber?: string; maintenanceIdentity?: MaintenanceIdentity };
@@ -44,11 +44,12 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
           <div className={styles.identity}><strong>{asset.title}</strong><AssetSerialNumber value={asset.serialNumber} /><span>{checklist.label}</span></div>
           {!checklist.matched ? <p className={styles.hint}>General checks are shown for this asset. Add any other work in notes when recording it.</p> : null}
           <div className={styles.tabs} aria-label="Checklist type"><button type="button" aria-pressed={mode === 'checked'} onClick={() => setMode('checked')}>Inspection checks</button><button type="button" aria-pressed={mode === 'serviced'} onClick={() => setMode('serviced')}>Service items</button></div>
-          <ul className={styles.items}>{checklist.items.map((item) => <li key={item.id}><span className={styles.itemIcon} aria-hidden="true">✓</span><div><strong>{mode === 'checked' ? item.checkLabel : item.serviceLabel}</strong>{item.description ? <p>{item.description}</p> : null}</div></li>)}</ul>
-          <p className={styles.hint}>Select the items actually completed when recording work.</p>
+          <p className={styles.hint}>{mode === 'checked' ? 'Inspect condition and safe operation: brakes, tyres, lights and guards where fitted. Record faults found.' : 'Record work carried out: oil changes, filters, lubrication and repairs.'}</p>
+          <ul className={styles.items}>{checklistOptions(checklist, mode).map((item) => <li key={item.id}><span className={styles.itemIcon} aria-hidden="true">✓</span><div><strong>{item.label}</strong>{item.description ? <p>{item.description}</p> : null}</div></li>)}</ul>
+          <p className={styles.hint}>You can add your own items when recording maintenance. No preset selection is required.</p>
         </> : null}
       </div>
-      <footer className={styles.footer}><button type="button" onClick={onClose}>Close</button><button type="button" disabled={!asset} onClick={() => asset && onStartWork(asset.id, 'upcoming')}>Schedule work</button><button className={styles.primary} type="button" disabled={!asset} onClick={() => asset && onStartWork(asset.id, 'done')}>Record completed work</button></footer>
+      <footer className={styles.footer}><button type="button" onClick={onClose}>Close</button><button type="button" disabled={!asset} onClick={() => asset && onStartWork(asset.id, 'upcoming')}>Schedule work</button><button className={styles.primary} type="button" disabled={!asset} onClick={() => asset && onStartWork(asset.id, 'done')}>Add own maintenance</button></footer>
     </section>
   </div>;
 }

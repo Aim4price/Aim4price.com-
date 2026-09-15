@@ -544,3 +544,12 @@
 .saveChoices button:disabled { opacity: .6; cursor: wait; }
 .dealerChoiceOverlay .saveChoices { grid-template-columns: 1fr; }
 @media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .saveChoices { grid-template-columns: 1fr; } }
+
+.customWork { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid #bcdcca; border-radius: 1rem; background: #f3faf6; }
+.customWork > label { flex: 1 1 20rem; }
+.customWork > button { padding: .8rem 1rem; }
+.customWorkList { flex: 1 0 100%; margin: 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
+.customWorkList li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem .85rem; border: 1px solid #d0e4d8; border-radius: .65rem; background: white; overflow-wrap: anywhere; }
+.customWorkList button { border: 0; background: transparent; color: #7b3933; font-size: 1.3rem; cursor: pointer; }
+.inHouseChoice { grid-column: 1 / -1; display: flex; align-items: center; gap: .65rem; color: #14553f; font-weight: 650; }
+.inHouseChoice input { width: 1.15rem; height: 1.15rem; accent-color: #197454; }
