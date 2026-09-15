@@ -27,7 +27,7 @@
 .cardActions .viewCosts { border-color: #8fc0ff; background: linear-gradient(180deg,#fff,#edf6ff); color: #164c77; }
 .meta { font-size: .8rem; font-weight: 650; margin-top: .85rem; }
 .overlay { position: fixed; inset: 0; z-index: 1500; display: grid; place-items: center; padding: 24px; background: #102f3266; backdrop-filter: blur(12px); }
-.dialog { width: min(700px,100%); max-height: 90dvh; overflow: auto; background: linear-gradient(#fff,#f5faf7); padding: 32px; border: 1px solid #d6e4dd; border-radius: 28px; box-shadow: 0 24px 70px #12352c33; }
+.dialog { width: min(700px,100%); max-height: calc(var(--website-design-vh, 1dvh) * 90); overflow: auto; background: linear-gradient(#fff,#f5faf7); padding: 32px; border: 1px solid #d6e4dd; border-radius: 28px; box-shadow: 0 24px 70px #12352c33; }
 .dialog header { display: flex; align-items: start; justify-content: space-between; gap: 24px; }
 .dialog h2 { margin: 0; font-size: 30px; color: #173c32; }
 .dialog p { color: #657b72; }
@@ -37,16 +37,16 @@
 .page button:disabled { opacity: .55; cursor: not-allowed; }
 .page :is(button,a,input):focus-visible, .dialog button:focus-visible { outline: 3px solid #70b797; outline-offset: 3px; }
 @media(max-width: 900px) {
-  .cardBody { grid-template-columns: 1fr; gap: 1rem; }
-  .cardActions { justify-self: end; }
+  :global(:where(html:not(:has([data-website-canvas])))) .cardBody { grid-template-columns: 1fr; gap: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .cardActions { justify-self: end; }
 }
 @media(max-width: 600px) {
-  .cardHeading { flex-direction: column; gap: .65rem; }
-  .metrics { grid-template-columns: 1fr; gap: .6rem; }
-  .metrics div { display: flex; justify-content: space-between; gap: 1rem; }
-  .metrics dd { font-size: 1.2rem; }
-  .cardActions { justify-self: stretch; display: grid; grid-template-columns: 1fr 1fr; }
-  .cardActions a, .cardActions button { min-width: 0; }
-  .dialog { padding: 24px; }
-  .dialogActions { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .cardHeading { flex-direction: column; gap: .65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics { grid-template-columns: 1fr; gap: .6rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics div { display: flex; justify-content: space-between; gap: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .metrics dd { font-size: 1.2rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .cardActions { justify-self: stretch; display: grid; grid-template-columns: 1fr 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .cardActions a, :global(:where(html:not(:has([data-website-canvas])))) .cardActions button { min-width: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog { padding: 24px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialogActions { grid-template-columns: 1fr; }
 }
