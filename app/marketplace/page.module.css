@@ -1022,6 +1022,12 @@
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.34);
 }
 
+.shareOverlay {
+  background: rgba(5, 14, 11, 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
 .listingModalNoMedia {
   grid-template-columns: minmax(380px, 460px) minmax(660px, 1fr);
   width: min(1210px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2.5rem));
@@ -1038,7 +1044,7 @@
   width: 2.55rem;
   height: 2.55rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0.35rem;
   color: #050505;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
@@ -1047,6 +1053,17 @@
 .modalCloseButton:hover,
 .shareCloseButton:hover {
   background: #f0f2f5;
+}
+
+.accountManageModal .marketplaceSquareClose.marketplaceSquareClose {
+  border-radius: 0.35rem;
+}
+
+.modalCloseButton:focus-visible,
+.shareCloseButton:focus-visible,
+.accountManageModal .marketplaceSquareClose:focus-visible {
+  outline: 3px solid #377e68;
+  outline-offset: 2px;
 }
 
 .modalGallery {
@@ -1258,19 +1275,20 @@
 }
 
 .modalDetails::-webkit-scrollbar {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .modalDetails::-webkit-scrollbar-track {
   background: #eaf1ed;
-  border-radius: 999px;
+  border-radius: 6px;
+  margin-block: 12px;
 }
 
 .modalDetails::-webkit-scrollbar-thumb {
-  min-height: 48px;
+  min-height: 56px;
   border: 3px solid #eaf1ed;
-  border-radius: 999px;
+  border-radius: 6px;
   background: #377e68;
 }
 
@@ -1280,6 +1298,19 @@
 
 .modalDetails::-webkit-scrollbar-thumb:active {
   background: #123f32;
+}
+
+.modalDetails::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Let Chromium/Safari use the wider custom track; Firefox keeps native colours. */
+@supports selector(::-webkit-scrollbar) {
+  .modalDetails {
+    scrollbar-color: auto;
+  }
 }
 
 .listingModalNoMedia .modalDetails {
