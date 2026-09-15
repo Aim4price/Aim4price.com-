@@ -7533,3 +7533,21 @@
 .fuelSlipManagerModal .fuelSlipManagerContextBar { margin-bottom: 1rem; }
 .fuelSlipManagerModal .slipLedgerActions a.fuelSlipManagerOpenButton { color: #824013 !important; border-color: #d59160 !important; background: linear-gradient(#fff,#fff4e9) !important; }
 .fuelSlipManagerModal .slipLedgerActions a.fuelSlipManagerOpenButton:hover { background: #fff0df !important; }
+
+/* Dedicated slips view uses the page scroll and the established ledger cards. */
+.fuelSlipTrackingPage { min-width: 0; }
+.fuelSlipTrackingPage .fuelSlipManagerContextBar { margin: 0 0 1rem; }
+.fuelSlipTrackingPage .fuelSlipManagerPanel { display: block; overflow: visible; max-height: none; background: transparent; border: 0; box-shadow: none; }
+.fuelSlipTrackingPage .fuelSlipManagerList { display: grid; gap: 1rem; overflow: visible; max-height: none; height: auto; scrollbar-gutter: auto; padding: .15rem; }
+.fuelSlipTrackingPage .fuelSlipManagerSummary { border: 0; border-radius: 1rem; margin-bottom: 1rem; background: #f0f7f4; }
+.fuelSlipTrackingPage .fuelSlipManagerTotals strong { font-size: 1.1rem; }
+.fuelSlipTrackingPage .fuelSlipManagerResultCopy strong { font-size: 1.1rem; }
+.fuelSlipTrackingPage .fuelSlipManagerRowActions { display: flex; gap: .7rem; flex-wrap: wrap; }
+.fuelSlipTrackingPage .fuelSlipManagerRowActions > * { flex: 1 1 9rem; min-height: 3rem; border-radius: 1rem; font-size: .95rem; }
+.fuelSlipTrackingPage .slipLedgerActions .fuelSlipManagerOpenButton { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 3rem; min-width: 10rem; padding: .7rem 1rem; border-radius: 1rem; font-size: .95rem; text-decoration: none; color: #824013; border: 1px solid #d59160; background: linear-gradient(#fff,#fff4e9); }
+.fuelSlipTrackingPage .fuelSlipManagerEditButton { color: #17456d; border-color: #84baff; background: #edf6ff; }
+.fuelSlipTrackingPage .fuelSlipManagerDeleteButton { color: #a52b22; border-color: #edb2ad; background: #fff1ef; }
+.fuelSlipTrackingPage .fuelSlipManagerSecondaryGrid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .fuelSlipTrackingPage .fuelSlipManagerSecondaryGrid { grid-template-columns: 1fr; }
+}

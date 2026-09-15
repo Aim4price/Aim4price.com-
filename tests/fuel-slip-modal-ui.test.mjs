@@ -15,20 +15,21 @@ const sliceBetween = (source, startMarker, endMarker) => {
   return source.slice(start, end);
 };
 
-const managerModal = sliceBetween(
+const sharedResults = sliceBetween(client, 'const fuelSlipResults =', '  return (\n    <>\n      <main');
+const managerModal = sharedResults + sliceBetween(
   client,
-  "modalMode === 'fuel-slip-manager' ?",
-  "modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen",
+  "modalMode === 'fuel-slip-manager' && !isSlipsPage ?",
+  "(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipManagerFilterOpen",
 );
 const filterModal = sliceBetween(
   client,
-  "modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen",
-  "modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen",
+  "(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipManagerFilterOpen",
+  "(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen",
 );
 const downloadModal = sliceBetween(
   client,
-  "modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen",
-  "modalMode === 'fuel-slip-manager' && historyFuelSlip",
+  "(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen",
+  "(modalMode === 'fuel-slip-manager' || isSlipsPage) && historyFuelSlip",
 );
 const uploadModal = sliceBetween(
   client,
