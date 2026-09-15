@@ -167,8 +167,12 @@ const RECENT_ADVERTS_CTE = `
     left join public.asset_register_items current_asset
       on current_asset.id = listing.asset_register_item_id
      and current_asset.user_id = listing.user_id
-    where listing.published_at is not null
-       or lower(coalesce(listing.status, '')) in ('live', 'withdrawn')
+    where (listing.published_at is not null
+       or lower(coalesce(listing.status, '')) in ('live', 'withdrawn'))
+      and (listing.asset_register_item_id is null or (
+        current_asset.id is not null
+        and coalesce(to_jsonb(current_asset)->>'lifecycle_state', 'active') = 'active'
+      ))
 
     union all
 
@@ -206,6 +210,7 @@ const RECENT_ADVERTS_CTE = `
       null::text as outcome_reason
     from public.asset_register_items asset
     where coalesce(asset.marketplace_status, 'draft') = 'live'
+      and coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'
       and not exists (
         select 1
         from public.marketplace_listings saved_listing
