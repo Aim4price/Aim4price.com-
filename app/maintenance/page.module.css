@@ -4995,3 +4995,76 @@
   :global(:where(html:not(:has([data-website-canvas])))) .maintenanceExportModal .maintenanceScopeOption { gap: 0.65rem; padding: 0.8rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .maintenanceExportModal .maintenanceScopeIcon { flex-basis: 2.5rem; width: 2.5rem; min-width: 2.5rem; height: 2.5rem; }
 }
+
+/* Shared visual rhythm with the Cost Ledger; status lives in the badges. */
+.invoiceRow.ledgerCard {
+  padding: 1.3rem 1.38rem;
+  border: 1px solid #c6d8df;
+  border-radius: 1.58rem;
+  background: linear-gradient(180deg, #fff, #f8fcfd);
+  box-shadow: 0 14px 28px rgba(20, 43, 43, 0.04), inset 0 1px 0 #fff;
+}
+.invoiceRow.ledgerCard:hover { border-color: #adc8c4; box-shadow: 0 18px 34px rgba(16,31,28,0.055); }
+.invoiceRow.ledgerCard::after { content: none; }
+.ledgerCard .invoiceHeader { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.6rem; align-items: stretch; }
+.ledgerCard .invoiceTitleBlock { display: grid; align-content: start; gap: 0.7rem; min-width: 0; padding: 0; }
+.ledgerCard .invoiceTitle { margin: 0; color: #073b30; font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem); font-weight: 760; line-height: 1.12; letter-spacing: -0.032em; white-space: normal; overflow-wrap: anywhere; }
+.ledgerMeta { margin: 0; color: #627386; font-size: 0.9rem; font-weight: 650; line-height: 1.45; }
+.ledgerBadges { display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.35rem; }
+.ledgerAssetPill, .ledgerCard .maintenanceStatusPill { display: inline-flex; align-items: center; gap: 0.45rem; max-width: 100%; min-height: 2.15rem; box-sizing: border-box; padding: 0.4rem 0.75rem; border-radius: 1.5rem; font-size: 0.8rem; line-height: 1.4; font-weight: 700; letter-spacing: 0; text-transform: none; white-space: normal; overflow-wrap: anywhere; }
+.ledgerAssetPill { color: #12573f; background: #d8f2e5; border: 1px solid #acd9c3; }
+.ledgerAssetPill svg { width: 0.95rem; height: 0.95rem; flex: 0 0 auto; }
+.ledgerAssetPill > span { min-width: 0; }
+.ledgerCard .maintenanceStatusDanger { background: #fce9e7; border-color: #edc0bf; color: #934b47; }
+.ledgerCard .maintenanceStatusWarning { background: #fff0dc; border-color: #e9c99e; color: #8b4f12; }
+.ledgerCard .maintenanceStatusGood { background: #e6f5ec; border-color: #b7d9c5; color: #196344; }
+.ledgerCard .maintenanceStatusNeutral { background: #eaf0f6; border-color: #cfdae7; color: #536b81; }
+.ledgerCard .invoiceHeaderAside { display: grid; grid-template-rows: 1fr auto; min-width: 0; gap: 1.4rem; align-content: stretch; }
+.ledgerCard .invoiceValueBlock { align-content: start; min-width: 0; padding: 0; }
+.ledgerCard .invoicePrice { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.05), 1.9rem); }
+.ledgerCard .rowActions { display: flex; flex-wrap: nowrap; gap: 0.72rem; margin: 0; }
+.ledgerCard .rowActions button { min-width: 150px; min-height: 3.1rem; padding: 0 1rem; border-radius: 1rem; font-size: 0.96rem; font-weight: 700; gap: 0.55rem; box-shadow: inset 0 1px 0 #fff, 0 8px 18px rgba(26,57,46,0.035); white-space: nowrap; }
+.ledgerCard .invoiceOpenButton { color: #824013; border-color: #d59160; background: linear-gradient(180deg, #fff, #fff4e9); }
+.ledgerCard .invoiceOpenButton:hover:not(:disabled) { background: #fff0df; border-color: #b86e39; color: #70320d; }
+.ledgerCard .invoiceCompletedButton { color: #196344; border-color: #b7d9c5; background: #e6f5ec; }
+.ledgerManageButton { color: #0b563f; border: 1px solid #6fc997; background: linear-gradient(180deg, #fff, #eaf8f1); }
+.ledgerManageButton:hover:not(:disabled) { background: #e4f5ec; border-color: #40a875; }
+.ledgerCard .rowActions .detailsChevron { width: 1.05rem; height: 1.05rem; padding: 0.15rem; box-sizing: content-box; border: 1px solid #bbdafa; border-radius: 50%; background: #e5f3ff; transition: transform 160ms ease; }
+.ledgerCard button[aria-expanded='true'] .detailsChevron { transform: rotate(180deg); }
+.ledgerDetails { margin-top: 1.5rem; padding-top: 1.35rem; border-top: 1px solid #dce7e7; }
+.ledgerDetails h3 { margin: 0 0 1rem; color: #164d3f; font-size: 1rem; }
+.ledgerDetailsGrid { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(0,1fr) minmax(0,0.55fr); gap: 1.2rem 1.5rem; margin: 0; }
+.ledgerDetailsGrid div { min-width: 0; }
+.ledgerDetailsGrid dt { margin-bottom: 0.25rem; color: #697d8b; font-size: 0.8rem; }
+.ledgerDetailsGrid dd { margin: 0; color: #304d46; font-size: 0.9rem; font-weight: 600; overflow-wrap: anywhere; }
+.ledgerAssetMeta { display: block; color: #627386; margin-top: 0.3rem; font-weight: 500; }
+.ledgerNotes { padding-top: 1rem; margin-top: 1rem; border-top: 1px solid #e4ebeb; }
+.ledgerNotes h4 { margin: 0 0 0.35rem; color: #304d46; font-size: 0.9rem; }
+.ledgerNotes p { margin: 0; color: #617486; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ledgerManageBackdrop { background: rgba(12,24,35,0.42); backdrop-filter: blur(12px) saturate(0.9); }
+.schedulingDialog.ledgerManageModal { width: min(100%, 66rem); align-self: center; overflow-y: auto; }
+.ledgerManageActions { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1.6rem 2rem 2rem; }
+.ledgerManageActions button { flex: 1 1 10rem; min-width: 0; min-height: 3.6rem; border-radius: 1rem; }
+.ledgerCard button:focus-visible, .ledgerManageActions button:focus-visible { outline: 3px solid #176f9e; outline-offset: 4px; }
+@media (max-width: 960px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard .invoiceHeader { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard .invoiceHeaderAside { grid-template-rows: auto auto; gap: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard .rowActions { flex-wrap: wrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerDetailsGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceRow.ledgerCard { padding: 1.05rem; border-radius: 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard .invoiceTitle { font-size: 1.35rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard .rowActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0.55rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard .rowActions button { min-width: 0; font-size: 0.84rem; padding: 0 0.55rem; width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard .rowActions > :first-child { grid-column: 1 / -1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerDetailsGrid { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerManageActions { padding: 1.2rem 1.25rem 1.25rem; }
+}
+@media (prefers-reduced-motion: reduce) { .ledgerCard .detailsChevron { transition: none; } }
+
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; min-width: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons .toolbarButton { min-width: 0; width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarDownloadButton { grid-column: 1 / -1; }
+}
