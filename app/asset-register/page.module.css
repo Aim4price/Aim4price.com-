@@ -41035,3 +41035,12 @@ button.documentOpenLink {
   padding:1rem var(--management-padding) 1.6rem !important;
   background:rgba(255,255,255,.97) !important;
 }
+
+/* Slightly larger action wording; retain the original modal and icon geometry. */
+.assetEntryModal .addAssetChoiceButton strong,
+.managementAccountModal .ownerCommandGrid .ownerCommandAction strong {
+  font-size: 1rem !important;
+}
+.managementAccountModal .ownerCommandGrid .ownerCommandAction small {
+  font-size: .88rem !important;
+}

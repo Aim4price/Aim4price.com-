@@ -31,3 +31,6 @@
  :global(body:not(:has([data-website-canvas]))) .card strong { font-size:.95rem; }
  :global(body:not(:has([data-website-canvas]))) .card small { font-size:.8rem; }
 }
+
+.card strong { font-size: 1.1rem; }
+.card small { font-size: .95rem; }

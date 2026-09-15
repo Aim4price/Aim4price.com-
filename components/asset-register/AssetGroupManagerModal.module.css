@@ -1662,3 +1662,10 @@
     padding: 1rem !important;
   }
 }
+
+.accountModal .manageMenuGrid .manageMenuAction strong {
+  font-size: 1rem !important;
+}
+.accountModal .manageMenuGrid .manageMenuAction .menuOptionSubtitle {
+  font-size: .88rem !important;
+}
