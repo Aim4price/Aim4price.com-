@@ -1649,7 +1649,7 @@ export default function MaintenanceClient({
 
       {modalMode === 'record-work' && draft && selectedDraftAsset ? (
         <DesktopServiceModal
-          record={{ id: selectedDraftAsset.id, assetTitle: selectedDraftAsset.title,
+          record={{ id: selectedDraftAsset.id, assetId: selectedDraftAsset.id, assetTitle: selectedDraftAsset.title,
             maintenanceIdentity: selectedDraftAsset.maintenanceIdentity,
             assetKind: selectedDraftAsset.kind, assetCategoryLabel: selectedDraftAsset.categoryLabel,
             assetYearModel: selectedDraftAsset.yearModel, assetCondition: selectedDraftAsset.condition,

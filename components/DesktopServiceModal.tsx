@@ -10,6 +10,7 @@ import {
 } from '../lib/maintenance-service-guidelines';
 import styles from './DesktopServiceModal.module.css';
 import dialogStyles from './MaintenanceDialog.module.css';
+import { useAssetChecklistItems } from '../lib/use-asset-checklist-items';
 import { useMaintenanceChecklist } from '../lib/use-maintenance-checklist';
 import { checklistOptions, buildMaintenanceWorkSnapshot, buildCustomMaintenanceWorkSnapshot, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from '../lib/maintenance-catalogue';
 
@@ -24,6 +25,7 @@ export type DesktopServiceCompletion = {
 };
 
 export type DesktopServiceRecord = {
+  assetId?: string;
   id: string;
   assetTitle: string;
   maintenanceIdentity?: MaintenanceIdentity;
@@ -101,8 +103,12 @@ export default function DesktopServiceModal({
   }), [record.assetCategoryLabel, record.assetKind, record.assetTitle, record.assetUsageMetric, record.usageMetric]);
   const copy = serviceCopyForProfile(profile);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const checklist = useMaintenanceChecklist(record, selectedItems.length > 0);
-  const options = checklist.items.length ? checklistOptions(checklist, mode) : mode === 'checked' ? checkedOptionsForProfile(profile) : servicedOptionsForProfile(profile);
+  const baseChecklist = useMaintenanceChecklist(record, selectedItems.length > 0);
+  const savedChecklist = useAssetChecklistItems(dealerAppMode ? undefined : record.assetId);
+  const checklist = { ...baseChecklist, customItems: savedChecklist.items };
+  const repairChecklist = { ...checklist, items: [] };
+  const repairOptions = mode === 'serviced' ? checklistOptions(repairChecklist, 'repaired') : [];
+  const options = [...(checklist.items.length ? checklistOptions(checklist, mode) : mode === 'checked' ? checkedOptionsForProfile(profile) : servicedOptionsForProfile(profile)), ...repairOptions];
   const today = todayInputValue();
   const [completedAt, setCompletedAt] = useState(today);
   const [completedUsage, setCompletedUsage] = useState(standalone || record.currentUsage === null ? '' : String(record.currentUsage));
@@ -187,7 +193,7 @@ export default function DesktopServiceModal({
           mechanicName: mechanic,
           note: notes,
         }),
-        maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems), ...(ownWork.items.length ? [ownWork] : [])],
+        maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems), ...(mode === 'serviced' && repairOptions.some(item => selectedItems.includes(item.label)) ? [buildMaintenanceWorkSnapshot(repairChecklist, 'repaired', selectedItems)] : []), ...(ownWork.items.length ? [ownWork] : [])],
         completedBy: mechanic.trim(),
         linkToScheduledMaintenance: !standalone && scheduleDecision !== 'separate',
         clientEventId,
@@ -264,6 +270,8 @@ export default function DesktopServiceModal({
                 </div>
                 <strong className={styles.selectedCount}>{selectedItems.length + customItems.length} selected</strong>
               </div>
+              {savedChecklist.loading ? <p role="status">Loading your saved checklist items…</p> : null}
+              {savedChecklist.error ? <p role="alert">Your saved checklist items could not be loaded. <button type="button" onClick={savedChecklist.reload}>Try again</button></p> : null}
               <div className={styles.customWork}>
                 <label className={styles.field}>
                   <span>{mode === 'checked' ? 'Add your own inspection item' : 'Add your own maintenance item'}</span>

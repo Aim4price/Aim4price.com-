@@ -1,3 +1,4 @@
+import type { AssetChecklistItem } from "./asset-checklist";
 import { maintenanceCatalogueSeed } from "./maintenance-catalogue-seed";
 
 export type MaintenanceItem = {
@@ -44,6 +45,7 @@ export type MaintenanceAsset = {
   specsJson?: Record<string, unknown>;
 };
 export type MaintenanceChecklist = {
+  customItems?: AssetChecklistItem[];
   version: number;
   family: MaintenanceIdentity;
   profileKey: string;
@@ -151,6 +153,7 @@ export function checklistOptions(
   checklist: MaintenanceChecklist,
   mode: "checked" | "serviced" | "repaired",
 ) {
+  const custom = (checklist.customItems ?? []).filter(item => item.mode === mode).map(item => ({ ...item, id: `asset_custom_${item.id}` }));
   if (mode === "checked") {
     const safetyItems = checklist.items.filter((item) =>
       /brak|steer|tyre|tire|track|guard|light|reflect|mirror|horn|seat.?belt|hitch|drawbar|coupl|mount|frame|weld|hose|leak|cable|wire|emergency|interlock|control|alarm|stabil|outrigger|handrail|platform|fasten|structure|safety/i.test(item.id),
@@ -167,15 +170,15 @@ export function checklistOptions(
       { id: 'inspection_restraints', label: 'Seat belt and seat mounting, where fitted', description: '' },
     );
     items.push({ id: 'inspection_safe_operation', label: 'Controls and safe operation', description: '' });
-    return items;
+    return [...items, ...custom];
   }
-  return checklist.items
+  return [...checklist.items
     .filter((item) => mode === 'repaired' || !/guard|seat.?belt|reflector|mirror|horn|safety_interlock/.test(item.id))
     .map((item) => ({
       id: item.id,
       label: mode === 'repaired' ? item.label : item.serviceLabel,
       description: item.description,
-    }));
+    })), ...custom];
 }
 
 export function buildMaintenanceWorkSnapshot(
