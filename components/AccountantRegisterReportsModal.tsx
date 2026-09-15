@@ -1,4 +1,5 @@
 'use client';
+import downloadStyles from "./ReportDownload.module.css";
 
 import { useEffect, useState } from 'react';
 import styles from '../app/asset-register/page.module.css';
@@ -96,15 +97,15 @@ export default function AccountantRegisterReportsModal({ shareId, registerName, 
   }
 
   return (
-    <div className={`${styles.modalOverlay} ${workspaceClass(workspaceStyles.modalOverlay)}`} data-website-overlay>
-      <div className={styles.modalBackdrop} data-website-overlay onClick={onClose}/>
-      <section className={`${styles.optionsModal} ${workspaceClass(workspaceStyles.modal)}`} role="dialog" aria-modal="true" aria-labelledby="accountant-register-reports-title">
-        <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${workspaceClass(workspaceStyles.modalHeader)}`}>
+    <div className={`${styles.modalOverlay} ${workspaceClass(workspaceStyles.modalOverlay)} ${downloadStyles.backdrop}`} data-website-overlay>
+      <div className={styles.modalBackdrop} data-website-overlay onClick={onClose} data-download-shade="true"/>
+      <section className={`${styles.optionsModal} ${workspaceClass(workspaceStyles.modal)} ${downloadStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby="accountant-register-reports-title" data-download-dialog="true">
+        <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${workspaceClass(workspaceStyles.modalHeader)}`} data-download-header="true">
           <div className={styles.modalHeaderText}><h3 id="accountant-register-reports-title">Download reports</h3><p>{registerName}</p></div>
           <button type="button" className={`${styles.modalCloseButton} ${workspaceClass(workspaceStyles.modalClose)}`} onClick={onClose} aria-label="Close reports"><CloseIcon/></button>
         </div>
-        <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${workspaceClass(workspaceStyles.modalBody)}`}>
-          <div className={styles.optionsContent}>
+        <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${workspaceClass(workspaceStyles.modalBody)}`} data-download-body="true">
+          <div className={styles.optionsContent} data-download-body="true">
             {financialSummary?.summary ? (
               <section className={styles.accountantFinanceSection} aria-label="Asset and finance summary">
                 <div className={styles.accountantFinanceSectionHeader}><div><h4>Asset &amp; Finance Summary</h4><p>{financialSummary.summary.partial ? 'Some totals are incomplete because source information is missing.' : 'Totals reflect the current shared client information.'}</p></div></div>
@@ -127,19 +128,20 @@ export default function AccountantRegisterReportsModal({ shareId, registerName, 
                 ))}
               </div>
             ) : null}
-            <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`}>
-              <a className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`} href={href('market-accounting')}><ReportIcon/><span><strong>Market versus Accounting</strong><small>Market, replacement, Accounting Book Value and finance shown separately.</small></span></a>
-              <a className={styles.optionActionButton} href={href('market-value-trend')}><ReportIcon/><span><strong>Market Value Trend</strong><small>Saved Aim4price Market Value movement and revaluations.</small></span></a>
-              <a className={styles.optionActionButton} href={href('finance-position')}><ReportIcon/><span><strong>Finance Position and Commitments</strong><small>Agreement balances, linked assets and future instalments.</small></span></a>
-              {includeCostLedger ? <a className={styles.optionActionButton} href={href('cost-of-ownership')}><ReportIcon/><span><strong>Cost of Ownership</strong><small>Incurred costs and recurring commitments remain distinct.</small></span></a> : null}
-              {includeFuelLedger ? <a className={styles.optionActionButton} href={href('fuel-report')}><ReportIcon/><span><strong>Fuel Report</strong><small>Asset-level fuel usage and recorded cost summary.</small></span></a> : null}
-              <a className={styles.optionActionButton} href={href('asset-register')}><ReportIcon/><span><strong>Asset Register</strong><small>Active asset records with ownership, status and values.</small></span></a>
-              {includeFuelLedger ? <a className={styles.optionActionButton} href={href('fuel-ledger')}><ReportIcon/><span><strong>Fuel Ledger</strong><small>Detailed storage and asset fuel transactions.</small></span></a> : null}
-              {includeCostLedger ? <a className={styles.optionActionButton} href={href('cost-ledger')}><ReportIcon/><span><strong>Cost Ledger</strong><small>Detailed supplier invoices and recorded incurred costs.</small></span></a> : null}
+            <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`} data-download-grid="true">
+              <a className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`} href={href('market-accounting')} data-download-option="true"><ReportIcon/><span><strong>Market versus Accounting</strong><small>Market, replacement, Accounting Book Value and finance shown separately.</small></span></a>
+              <a className={styles.optionActionButton} href={href('market-value-trend')} data-download-option="true"><ReportIcon/><span><strong>Market Value Trend</strong><small>Saved Aim4price Market Value movement and revaluations.</small></span></a>
+              <a className={styles.optionActionButton} href={href('finance-position')} data-download-option="true"><ReportIcon/><span><strong>Finance Position and Commitments</strong><small>Agreement balances, linked assets and future instalments.</small></span></a>
+              {includeCostLedger ? <a className={styles.optionActionButton} href={href('cost-of-ownership')} data-download-option="true"><ReportIcon/><span><strong>Cost of Ownership</strong><small>Incurred costs and recurring commitments remain distinct.</small></span></a> : null}
+              {includeFuelLedger ? <a className={styles.optionActionButton} href={href('fuel-report')} data-download-option="true"><ReportIcon/><span><strong>Fuel Report</strong><small>Asset-level fuel usage and recorded cost summary.</small></span></a> : null}
+              <a className={styles.optionActionButton} href={href('asset-register')} data-download-option="true"><ReportIcon/><span><strong>Asset Register</strong><small>Active asset records with ownership, status and values.</small></span></a>
+              {includeFuelLedger ? <a className={styles.optionActionButton} href={href('fuel-ledger')} data-download-option="true"><ReportIcon/><span><strong>Fuel Ledger</strong><small>Detailed storage and asset fuel transactions.</small></span></a> : null}
+              {includeCostLedger ? <a className={styles.optionActionButton} href={href('cost-ledger')} data-download-option="true"><ReportIcon/><span><strong>Cost Ledger</strong><small>Detailed supplier invoices and recorded incurred costs.</small></span></a> : null}
             </div>
           </div>
         </div>
-      </section>
+      <footer data-download-footer="true"><button type="button" onClick={onClose}>Cancel</button></footer>
+</section>
     </div>
   );
 }

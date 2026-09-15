@@ -1,5 +1,6 @@
 'use client';
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
+import downloadStyles from '../../components/ReportDownload.module.css';
 import Link from 'next/link';
 import BudgetCostDetails from './BudgetCostDetails';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -14,7 +15,7 @@ function Icon({ kind }: { kind: string }) {
   if (kind === 'search') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>;
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={kind === 'add' ? 'M12 5v14M5 12h14' : kind === 'download' ? 'M12 3v12m-5-5 5 5 5-5M5 20h14' : kind === 'filter' ? 'M4 6h16M7 12h10M10 18h4' : kind === 'alerts' ? 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4' : kind === 'manage' ? 'M4 7h16M4 17h16M8 4v6M16 14v6' : 'M5 3h14v18H5zM9 7h6M9 12h6M9 17h6'} /></svg>;
 }
-function Dialog({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+function Dialog({ title, onClose, children, report = false }: { report?: boolean; title: string; onClose: () => void; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -23,8 +24,8 @@ function Dialog({ title, onClose, children }: { title: string; onClose: () => vo
     ref.current?.focus();
     return () => { document.body.style.overflow = overflow; previous?.focus(); };
   }, []);
-  return <div className={styles.overlay} data-website-overlay onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <div ref={ref} tabIndex={-1} className={styles.dialog} role="dialog" aria-modal="true" aria-label={title} onKeyDown={e => {
+  return <div className={`${styles.overlay} ${report ? downloadStyles.backdrop : ''}`} data-website-overlay onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div ref={ref} tabIndex={-1} className={`${styles.dialog} ${report ? downloadStyles.dialog : ''}`} data-download-dialog={report ? 'true' : undefined} role="dialog" aria-modal="true" aria-label={title} onKeyDown={e => {
       if (e.key === 'Escape') { e.stopPropagation(); onClose(); }
       if (e.key === 'Tab') {
         const controls = Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') || []);
@@ -32,7 +33,7 @@ function Dialog({ title, onClose, children }: { title: string; onClose: () => vo
         if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) { e.preventDefault(); last?.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
-    }}><header><h2>{title}</h2><button type="button" onClick={onClose} aria-label="Close">×</button></header>{children}</div>
+    }}><header data-download-header="true"><h2>{title}</h2><button type="button" onClick={onClose} aria-label="Close">×</button></header>{children}</div>
   </div>;
 }
 export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd, onEdit, onDelete }: {
@@ -143,6 +144,6 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
       <FilterQuestion label="Which status?" value={draft.status} onChange={status => setDraft({ ...draft, status })} options={[{ value: 'all', label: 'All statuses' }, { value: 'on_track', label: 'Within budget' }, { value: 'warning', label: 'Approaching limit' }, { value: 'over_budget', label: 'Limit reached or exceeded' }, { value: 'attention', label: 'All alerts' }]} />
     </FilterFlow> : null}
     {selected ? <Dialog title="Manage budget" onClose={() => setManageId(null)}><p>{selected.assetTitle} · {selected.periodLabel}</p><div className={styles.dialogActions}><button onClick={() => { setManageId(null); onEdit(selected.id); }}>Edit budget & alerts</button><button className={styles.deleteButton} onClick={() => { setManageId(null); onDelete(selected.id); }}>Delete budget</button></div></Dialog> : null}
-    {downloadOpen ? <Dialog title="Download budgets" onClose={() => { if (!downloading) setDownloadOpen(false); }}><p>{visible.length} matching budgets · Amounts incl. VAT</p><div className={styles.dialogActions}><button disabled={downloading} onClick={() => void download('pdf')}>PDF report</button><button disabled={downloading} onClick={() => void download('xlsx')}>{downloading ? 'Preparing…' : 'Excel workbook'}</button></div>{downloadError ? <p role="alert">{downloadError}</p> : null}</Dialog> : null}
+    {downloadOpen ? <Dialog report title="Download budgets" onClose={() => { if (!downloading) setDownloadOpen(false); }}><p>{visible.length} matching budgets · Amounts incl. VAT</p><div data-download-grid="true">{(['pdf', 'xlsx'] as const).map(format => <button type="button" key={format} data-download-option="true" disabled={downloading} onClick={() => void download(format)}><span data-download-icon="true"><img src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{format === 'pdf' ? 'PDF budget report' : 'XLSX budget workbook'}</strong><small>{format === 'pdf' ? 'Download a printable spending budget report.' : 'Download matching budgets in Excel format.'}</small></span></button>)}</div>{downloading ? <p role="status">Preparing budget report…</p> : null}<footer data-download-footer="true"><button disabled={downloading} onClick={() => setDownloadOpen(false)}>Cancel</button></footer>{downloadError ? <p role="alert">{downloadError}</p> : null}</Dialog> : null}
   </div>;
 }

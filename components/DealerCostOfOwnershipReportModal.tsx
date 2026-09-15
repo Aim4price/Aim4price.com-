@@ -1,4 +1,5 @@
 'use client';
+import downloadStyles from "./ReportDownload.module.css";
 
 import DropdownOverlay from './DropdownOverlay';
 import { useMemo, useState } from 'react';
@@ -247,15 +248,15 @@ export default function DealerCostOfOwnershipReportModal({
   }
 
   return (
-    <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>
-      <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose} />
+    <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
+      <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose} data-download-shade="true" />
       <div
-        className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${assetStyles.assetFuelReportModal}`}
+        className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${assetStyles.assetFuelReportModal} ${downloadStyles.dialog}`}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dealer-cost-of-ownership-report-title"
+        aria-labelledby="dealer-cost-of-ownership-report-title" data-download-dialog="true"
       >
-        <div className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`}>
+        <div className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`} data-download-header="true">
           <div className={assetStyles.modalHeaderText}>
             <h3 id="dealer-cost-of-ownership-report-title">{assetTitle}</h3>
             <p>{assetMeta}</p>
@@ -265,7 +266,7 @@ export default function DealerCostOfOwnershipReportModal({
           </button>
         </div>
 
-        <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`}>
+        <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`} data-download-body="true">
           {error ? <div className={trackerStyles.reportError} role="alert">{error}</div> : null}
 
           {!pdfOnly && step === 'format' ? (
@@ -275,17 +276,17 @@ export default function DealerCostOfOwnershipReportModal({
                 <span>Select PDF or Excel, then continue to the report timeline.</span>
               </div>
 
-              <div className={assetStyles.assetTimelineFormatGrid} aria-label="Report format">
+              <div className={assetStyles.assetTimelineFormatGrid} aria-label="Report format" data-download-grid="true">
                 <button
                   type="button"
                   className={`${assetStyles.assetTimelineFormatOption} ${format === 'pdf' ? assetStyles.assetTimelineFormatOptionActive : ''}`}
                   onClick={() => setFormat('pdf')}
-                  aria-pressed={format === 'pdf'}
+                  aria-pressed={format === 'pdf'} data-download-option="true"
                 >
-                  <span className={assetStyles.assetTimelineFormatGraphic}>
+                  <span className={assetStyles.assetTimelineFormatGraphic} data-download-icon="true">
                     <img src="/brand/pdf.png" alt="" className={assetStyles.exportGraphicImage} />
                   </span>
-                  <span className={assetStyles.assetTimelineFormatCopy}>
+                  <span className={assetStyles.assetTimelineFormatCopy} data-download-copy="true">
                     <strong>PDF report</strong>
                     <small>Open a clear ownership cost report.</small>
                   </span>
@@ -295,26 +296,26 @@ export default function DealerCostOfOwnershipReportModal({
                   type="button"
                   className={`${assetStyles.assetTimelineFormatOption} ${format === 'xlsx' ? assetStyles.assetTimelineFormatOptionActive : ''}`}
                   onClick={() => setFormat('xlsx')}
-                  aria-pressed={format === 'xlsx'}
+                  aria-pressed={format === 'xlsx'} data-download-option="true"
                 >
-                  <span className={assetStyles.assetTimelineFormatGraphic}>
+                  <span className={assetStyles.assetTimelineFormatGraphic} data-download-icon="true">
                     <img src="/brand/sheet.png" alt="" className={assetStyles.exportGraphicImage} />
                   </span>
-                  <span className={assetStyles.assetTimelineFormatCopy}>
+                  <span className={assetStyles.assetTimelineFormatCopy} data-download-copy="true">
                     <strong>XLSX workbook</strong>
                     <small>Download ownership costs and VAT in Excel.</small>
                   </span>
                 </button>
               </div>
 
-              <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`}>
+              <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`} data-download-footer="true">
                 <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onBack ?? onClose}>
                   Back
                 </button>
                 <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onClose}>
                   Cancel
                 </button>
-                <button type="button" className={assetStyles.primaryButton} onClick={() => setStep('timeline')}>
+                <button type="button" className={assetStyles.primaryButton} onClick={() => setStep('timeline')} data-download-primary="true">
                   Next
                 </button>
               </div>
@@ -351,7 +352,7 @@ export default function DealerCostOfOwnershipReportModal({
                 />
               </div>
 
-              <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`}>
+              <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`} data-download-footer="true">
                 <button
                   type="button"
                   className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
@@ -379,7 +380,7 @@ export default function DealerCostOfOwnershipReportModal({
                   type="button"
                   className={assetStyles.primaryButton}
                   onClick={() => void downloadReport()}
-                  disabled={downloading}
+                  disabled={downloading} data-download-primary="true"
                 >
                   <DownloadIcon className={assetStyles.buttonIcon} />
                   <span>

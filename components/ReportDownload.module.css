@@ -1,0 +1,279 @@
+/* Canonical report dialog: Export Asset Map Tracking. Scope beats legacy page themes. */
+
+.backdrop {
+  background: rgba(12,24,35,.42) !important;
+  backdrop-filter: blur(12px) saturate(.9) !important;
+}
+
+.backdrop > :global([data-website-overlay]):not(.dialog) {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) {
+  width: min(var(--website-dialog-reference-width, 100%), 58rem) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 3rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.3rem !important;
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem) !important;
+  border: 1px solid rgba(18,45,37,.12) !important;
+  border-radius: 1.55rem !important;
+  background: linear-gradient(180deg,#fff,#f7faf8) !important;
+  box-shadow: 0 32px 90px rgba(7,25,20,.28),0 8px 24px rgba(7,25,20,.12) !important;
+  font-family: var(--font-heading,"Montserrat"),var(--font-body,"Inter"),sans-serif;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #93b3a7 transparent;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) 2.75rem !important;
+  align-items: start !important;
+  gap: 1.25rem !important;
+  padding: 0 0 1.15rem !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(18,45,37,.1) !important;
+  background: transparent !important;
+  flex-shrink: 0;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) :is(h2,h3) {
+  margin: 0 !important;
+  color: #12352d !important;
+  font-size: clamp(1.55rem,calc(var(--website-design-vw,1vw) * 2.3),2rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -.04em !important;
+  line-height: 1.08 !important;
+  text-transform: none !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) p {
+  margin: .4rem 0 0 !important;
+  color: #64746a !important;
+  font-size: .88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) > button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  min-width: 2.75rem !important;
+  min-height: 2.75rem !important;
+  padding: 0 !important;
+  border: 1px solid #d5dfda !important;
+  border-radius: .9rem !important;
+  background: #f6faf8 !important;
+  color: #254b3b !important;
+  font-size: 1.25rem !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) > button svg {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-body]) {
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  display: grid;
+  gap: 1.3rem !important;
+  flex: 0 0 auto !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-grid]) {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,22rem),1fr)) !important;
+  gap: 1rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) {
+  appearance: none;
+  display: grid !important;
+  grid-template-columns: 3.8rem minmax(0,1fr) !important;
+  align-items: center !important;
+  gap: .85rem !important;
+  min-height: 5.9rem !important;
+  height: auto !important;
+  padding: 1rem !important;
+  border: 1px solid rgba(216,226,236,.98) !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(180deg,#fff,#f5f8fb) !important;
+  color: #10352b !important;
+  text-align: left !important;
+  text-decoration: none;
+  white-space: normal !important;
+  box-shadow: 0 14px 28px rgba(16,36,40,.055),inset 0 1px 0 rgba(255,255,255,.96) !important;
+  cursor: pointer;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option][aria-pressed="true"]), .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):hover:not(:disabled) {
+  border-color: rgba(190,224,206,.98) !important;
+  background: radial-gradient(circle at top left,rgba(25,116,84,.08),transparent 42%),linear-gradient(180deg,#fff,#edf8f2) !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-icon]), .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg {
+  width: 3.8rem !important;
+  height: 3.8rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 1px solid rgba(216,226,236,.98) !important;
+  border-radius: 1rem !important;
+  background: #fff !important;
+  padding: 0 !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-icon]) :is(img,svg) {
+  width: 2.38rem !important;
+  height: 2.38rem !important;
+  max-height: 2.38rem !important;
+  object-fit: contain;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-copy]), .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > span:has(> strong) {
+  display: grid !important;
+  min-width: 0 !important;
+  gap: .3rem !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) strong {
+  display: block !important;
+  margin: 0 !important;
+  color: #10352b !important;
+  font-size: .95rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  letter-spacing: -.025em !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) small {
+  display: block !important;
+  margin: 0 !important;
+  color: #64746a !important;
+  font-size: .88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-decoration]) {
+  display: none !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: .65rem !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :is(button, a) {
+  min-width: 8.75rem !important;
+  min-height: 3rem !important;
+  padding: .7rem 1.1rem !important;
+  border-radius: 1rem !important;
+  font-size: .95rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+
+.dialog button:focus-visible,.dialog a:focus-visible {
+  outline: 3px solid #79ad97 !important;
+  outline-offset: 3px;
+}
+
+.dialog button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :is(button, a) {
+  color: #12352d !important;
+  border: 1px solid #d1dfea !important;
+  background: linear-gradient(180deg,#f7fafc,#f1f5f8) !important;
+  box-shadow: 0 10px 22px rgba(31,51,71,.045) !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :global([data-download-primary]) {
+  color: #fff !important;
+  background: linear-gradient(180deg,#197454,#0f5840) !important;
+  border-color: #0f6248 !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :is(input,select) {
+  font-size: .95rem;
+}
+
+.backdrop > :global([data-download-shade]) {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg {
+  padding: .7rem !important;
+  box-sizing: border-box;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-icon]) {
+  min-width: 3.8rem !important;
+  max-width: 3.8rem !important;
+  min-height: 3.8rem !important;
+  box-sizing: border-box !important;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option])::before,
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option])::after {
+  display: none !important;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) > p {
+  margin: 0 !important;
+  color: #64746a;
+  font-size: .88rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :is(button, a) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: .55rem !important;
+  text-decoration: none !important;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) {
+  justify-items: stretch !important;
+  text-align: left !important;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) :is(h2, h3) {
+  text-align: left !important;
+}
+.dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) > button {
+  position: static !important;
+  transform: none !important;
+}

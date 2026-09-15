@@ -1,4 +1,5 @@
 "use client";
+import downloadStyles from "../../components/ReportDownload.module.css";
 
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useRouter } from "next/navigation";
@@ -2951,7 +2952,7 @@ export default function AssetRegistersClient({
 
       {isExportFlowOpen ? (
         <div
-          className={`${styles.modalOverlay} ${styles.exportFlowOverlay}`} data-website-overlay
+          className={`${styles.modalOverlay} ${styles.exportFlowOverlay} ${downloadStyles.backdrop}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby="export-registers-title"
@@ -2965,9 +2966,9 @@ export default function AssetRegistersClient({
               exportStep === "single-picker" || exportStep === "combined-picker"
                 ? styles.exportPickerModal
                 : ""
-            }`}
+            } ${downloadStyles.dialog}`} data-download-dialog="true"
           >
-            <div className={styles.modalHeader}>
+            <div className={styles.modalHeader} data-download-header="true">
               <div>
                 <h2 id="export-registers-title">{exportTitle}</h2>
                 <p className={styles.modalIntro}>{exportIntro}</p>
@@ -2985,18 +2986,18 @@ export default function AssetRegistersClient({
 
             {exportStep === "choice" ? (
               <>
-                <div className={`${styles.modalBody} ${styles.exportFlowBody}`}>
-                  <div className={styles.exportChoiceGrid}>
+                <div className={`${styles.modalBody} ${styles.exportFlowBody}`} data-download-body="true">
+                  <div className={styles.exportChoiceGrid} data-download-grid="true">
                     <button
                       type="button"
                       className={styles.exportChoiceOption}
                       onClick={openAllRegistersExport}
-                      disabled={isExporting || !registers.length}
+                      disabled={isExporting || !registers.length} data-download-option="true"
                     >
-                      <span className={styles.exportChoiceGraphic}>
+                      <span className={styles.exportChoiceGraphic} data-download-icon="true">
                         <DownloadIcon className={styles.exportChoiceIcon} />
                       </span>
-                      <span className={styles.exportChoiceTitleBlock}>
+                      <span className={styles.exportChoiceTitleBlock} data-download-copy="true">
                         <strong>{isSummaryFlow ? "Summary of all Asset Registers" : "Download all Asset Registers"}</strong>
                         <small>{isSummaryFlow ? "Open one PDF summary for every asset register saved on this account." : "Export every asset register saved on this account."}</small>
                       </span>
@@ -3006,12 +3007,12 @@ export default function AssetRegistersClient({
                       type="button"
                       className={styles.exportChoiceOption}
                       onClick={openSingleRegisterPicker}
-                      disabled={isExporting || !registers.length}
+                      disabled={isExporting || !registers.length} data-download-option="true"
                     >
-                      <span className={styles.exportChoiceGraphic}>
+                      <span className={styles.exportChoiceGraphic} data-download-icon="true">
                         <OpenIcon className={styles.exportChoiceIcon} />
                       </span>
-                      <span className={styles.exportChoiceTitleBlock}>
+                      <span className={styles.exportChoiceTitleBlock} data-download-copy="true">
                         <strong>{isSummaryFlow ? "Summary of a specific Asset Register" : "Download a specific Asset Register"}</strong>
                         <small>{isSummaryFlow ? "Choose one register and open only its PDF summary." : "Choose one register and export only its saved assets."}</small>
                       </span>
@@ -3022,12 +3023,12 @@ export default function AssetRegistersClient({
                         type="button"
                         className={styles.exportChoiceOption}
                         onClick={openCombinedRegisterPicker}
-                        disabled={isExporting || registers.length < 2}
+                        disabled={isExporting || registers.length < 2} data-download-option="true"
                       >
-                        <span className={styles.exportChoiceGraphic}>
+                        <span className={styles.exportChoiceGraphic} data-download-icon="true">
                           <PlusIcon className={styles.exportChoiceIcon} />
                         </span>
-                        <span className={styles.exportChoiceTitleBlock}>
+                        <span className={styles.exportChoiceTitleBlock} data-download-copy="true">
                           <strong>Merge specific Asset Registers</strong>
                           <small>{isSummaryFlow ? "Select two or more registers and merge them into one PDF summary." : "Select two or more registers and merge them into one export."}</small>
                         </span>
@@ -3036,7 +3037,7 @@ export default function AssetRegistersClient({
                   </div>
                 </div>
 
-                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`}>
+                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`} data-download-footer="true">
                   <button
                     type="button"
                     className={styles.secondaryButton}
@@ -3051,7 +3052,7 @@ export default function AssetRegistersClient({
 
             {exportStep === "single-picker" || exportStep === "combined-picker" ? (
               <>
-                <div className={`${styles.modalBody} ${styles.exportFlowBody} ${styles.registerPickerBody}`}>
+                <div className={`${styles.modalBody} ${styles.exportFlowBody} ${styles.registerPickerBody}`} data-download-body="true">
                   <div className={styles.registerPickerToolbar}>
                     <label className={styles.exportSearchWrap}>
                       <SearchIcon className={styles.searchIcon} />
@@ -3167,7 +3168,7 @@ export default function AssetRegistersClient({
                   ) : null}
                 </div>
 
-                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`}>
+                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`} data-download-footer="true">
                   <button
                     type="button"
                     className={styles.secondaryButton}
@@ -3189,7 +3190,7 @@ export default function AssetRegistersClient({
                       type="button"
                       className={`${styles.primaryButton} ${styles.exportNextButton}`}
                       onClick={continueCombinedExport}
-                      disabled={!isCombinedSelectionValid || isExporting}
+                      disabled={!isCombinedSelectionValid || isExporting} data-download-primary="true"
                     >
                       {isSummaryFlow
                         ? isExporting
@@ -3204,7 +3205,7 @@ export default function AssetRegistersClient({
 
             {exportStep === "format" ? (
               <>
-                <div className={`${styles.modalBody} ${styles.exportSetupBody}`}>
+                <div className={`${styles.modalBody} ${styles.exportSetupBody}`} data-download-body="true">
                   <label className={`${styles.field} ${styles.exportNameField}`}>
                     <span>{isSummaryFlow ? "Summary report name" : "Entity / report name"}</span>
                     <input
@@ -3222,16 +3223,16 @@ export default function AssetRegistersClient({
                         exportFormat === "pdf" ? styles.exportOptionActive : ""
                       }`}
                       onClick={() => setExportFormat("pdf")}
-                      disabled={isExporting}
+                      disabled={isExporting} data-download-option="true"
                     >
-                      <span className={styles.exportGraphic}>
+                      <span className={styles.exportGraphic} data-download-icon="true">
                         <img
                           src="/brand/pdf.png"
                           alt=""
                           className={styles.exportGraphicImage}
                         />
                       </span>
-                      <span className={styles.exportOptionTitleBlock}>
+                      <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                         <strong>{isSummaryFlow ? "PDF summary report" : "PDF report"}</strong>
                         <small>
                           {isSummaryFlow
@@ -3248,16 +3249,16 @@ export default function AssetRegistersClient({
                           exportFormat === "xlsx" ? styles.exportOptionActive : ""
                         }`}
                         onClick={() => setExportFormat("xlsx")}
-                        disabled={isExporting}
+                        disabled={isExporting} data-download-option="true"
                       >
-                        <span className={styles.exportGraphic}>
+                        <span className={styles.exportGraphic} data-download-icon="true">
                           <img
                             src="/brand/sheet.png"
                             alt=""
                             className={styles.exportGraphicImage}
                           />
                         </span>
-                        <span className={styles.exportOptionTitleBlock}>
+                        <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>XLSX workbook</strong>
                           <small>Download all register rows in an Excel-ready workbook.</small>
                         </span>
@@ -3266,7 +3267,7 @@ export default function AssetRegistersClient({
                   </div>
                 </div>
 
-                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`}>
+                <div className={`${styles.modalFooter} ${styles.exportModalFooter}`} data-download-footer="true">
                   <button
                     type="button"
                     className={styles.secondaryButton}
@@ -3287,7 +3288,7 @@ export default function AssetRegistersClient({
                     type="button"
                     className={`${styles.primaryButton} ${styles.exportConfirmButton}`}
                     onClick={() => void handleExportDownload()}
-                    disabled={isExporting}
+                    disabled={isExporting} data-download-primary="true"
                   >
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>

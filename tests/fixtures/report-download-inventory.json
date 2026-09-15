@@ -1,0 +1,87 @@
+[
+  {
+    "file": "app/asset-map/asset-map-client.tsx",
+    "condition": "true",
+    "name": "Asset Map export"
+  },
+  {
+    "file": "app/asset-register/asset-register-client.tsx",
+    "condition": "true",
+    "name": "Individual asset reports"
+  },
+  {
+    "file": "app/asset-register/asset-register-client.tsx",
+    "condition": "exportStep !== 'pdf-assets'",
+    "name": "Asset Register export"
+  },
+  {
+    "file": "app/asset-registers/asset-registers-client.tsx",
+    "condition": "true",
+    "name": "Multiple Asset Registers and summaries"
+  },
+  {
+    "file": "app/my-invoices/my-invoices-client.tsx",
+    "condition": "true",
+    "name": "Cost Ledger download"
+  },
+  {
+    "file": "app/maintenance/maintenance-client.tsx",
+    "condition": "true",
+    "name": "Maintenance scope"
+  },
+  {
+    "file": "app/maintenance/maintenance-client.tsx",
+    "condition": "downloadStep !== 'asset'",
+    "name": "Maintenance format and timeline"
+  },
+  {
+    "file": "app/fuel/fuel-client.tsx",
+    "condition": "true",
+    "name": "Fuel Slips download"
+  },
+  {
+    "file": "app/fuel/fuel-client.tsx",
+    "condition": "true",
+    "name": "Fuel Ledger export"
+  },
+  {
+    "file": "app/leads/leads-client.tsx",
+    "condition": "true",
+    "name": "Lead asset reports"
+  },
+  {
+    "file": "components/DealerMaintenanceReportModal.tsx",
+    "condition": "true",
+    "name": "Dealer maintenance reports"
+  },
+  {
+    "file": "components/DealerCostOfOwnershipReportModal.tsx",
+    "condition": "true",
+    "name": "Dealer cost of ownership"
+  },
+  {
+    "file": "components/AccountantRegisterReportsModal.tsx",
+    "condition": "true",
+    "name": "Accountant register reports"
+  },
+  {
+    "file": "components/asset-register/AssetGroupManagerModal.tsx",
+    "condition": "view === 'reports'",
+    "name": "Umbrella reports"
+  },
+  {
+    "file": "app/owner-app/assets/[assetId]/owner-asset-report-picker.tsx",
+    "condition": "true",
+    "name": "Owner app report attachments"
+  },
+  {
+    "file": "app/owner-app/assets/[assetId]/owner-asset-report-picker.tsx",
+    "condition": "true",
+    "name": "Owner app report filters"
+  },
+  {
+    "file": "app/budgets/BudgetTracking.tsx",
+    "condition": "downloadOpen",
+    "name": "Spending budgets"
+  }
+]

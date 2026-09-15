@@ -1,4 +1,5 @@
 'use client';
+import downloadStyles from "../../../../components/ReportDownload.module.css";
 
 import { useEffect, useState } from 'react';
 import type { ExternalShareFileSource } from '../../../../lib/external-file-share';
@@ -274,10 +275,10 @@ export default function OwnerAssetReportPicker({
   }
 
   const reportList = (
-    <div className={styles.reportList}>
+    <div className={styles.reportList} data-download-grid="true">
       {reports.map((report) => (
-        <button type="button" className={styles.reportCard} key={report.id} onClick={() => chooseReport(report.id)}>
-          <span>{report.title}</span>
+        <button type="button" className={styles.reportCard} data-download-option="true" key={report.id} onClick={() => chooseReport(report.id)}>
+          {mode === 'attach' ? <><span data-download-icon="true"><img src="/brand/pdf.png" alt="" /></span><span data-download-copy="true"><strong>{report.title}</strong></span></> : <span>{report.title}</span>}
         </button>
       ))}
     </div>
@@ -286,13 +287,7 @@ export default function OwnerAssetReportPicker({
   const filters = selectedReport && selectedReportDetails ? (
     <>
       <div className={styles.reportFilterGrid}>
-        <label className={styles.field}>
-          <span>Format</span>
-          <select value={format} onChange={(event) => setFormat(event.target.value as OwnerAssetReportFormat)}>
-            <option value="pdf">PDF</option>
-            <option value="xlsx">Excel</option>
-          </select>
-        </label>
+        <div data-download-grid="true" style={{ gridColumn: '1 / -1' }}>{(['pdf', 'xlsx'] as const).map(value => <button type="button" key={value} data-download-option="true" aria-pressed={format === value} onClick={() => setFormat(value)}><span data-download-icon="true"><img src={value === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{value === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{value === 'pdf' ? 'Open a printable asset report.' : 'Download asset records in Excel format.'}</small></span></button>)}</div>
         {selectedReport !== 'valuation' ? (
           <>
             <label className={styles.field}>
@@ -323,23 +318,23 @@ export default function OwnerAssetReportPicker({
           </label>
         ) : null}
       </div>
-      <div className={styles.reportFilterActions}>
+      <div className={styles.reportFilterActions} data-download-footer="true">
         <button type="button" onClick={() => setSelectedReport(null)}>{mode === 'attach' ? 'Back' : 'Cancel'}</button>
         {mode === 'attach' ? (
           <button
             type="button"
-            className={styles.ownerReportAttachButton}
+            className={styles.ownerReportAttachButton} data-download-primary="true"
             onClick={attachSelectedReport}
             disabled={selectedReport === 'valuation' && format === 'pdf' && !valuationReportHtml}
           >
             {format === 'pdf' ? 'Add PDF' : 'Add Excel'}
           </button>
         ) : selectedReport === 'valuation' && format === 'pdf' ? (
-          <button type="button" className={styles.ownerReportAttachButton} onClick={openSelectedValuationPdf} disabled={!valuationReportHtml}>
+          <button type="button" className={styles.ownerReportAttachButton} data-download-primary="true" onClick={openSelectedValuationPdf} disabled={!valuationReportHtml}>
             Open PDF
           </button>
         ) : (
-          <a href={normalReportUrl(selectedReport, format)} onClick={async (event) => {
+          <a data-download-primary="true" href={normalReportUrl(selectedReport, format)} onClick={async (event) => {
             event.preventDefault();
             setReportError('');
             try {
@@ -364,17 +359,17 @@ export default function OwnerAssetReportPicker({
 
   if (mode === 'attach') {
     return (
-      <div className={styles.reportFilterDialog} role="dialog" aria-modal="true" aria-labelledby="owner-share-report-title">
-        <button type="button" className={styles.reportFilterBackdrop} onClick={onDismiss} aria-label="Close Aim4price reports" />
-        <section className={`${styles.reportFilterModal} ${styles.ownerShareReportModal}`}>
-          <div className={styles.reportFilterModalHeader}>
+      <div className={`${styles.reportFilterDialog} ${downloadStyles.backdrop}`} role="dialog" aria-modal="true" aria-labelledby="owner-share-report-title">
+        <button type="button" className={styles.reportFilterBackdrop} onClick={onDismiss} aria-label="Close Aim4price reports" data-download-shade="true" />
+        <section className={`${styles.reportFilterModal} ${styles.ownerShareReportModal} ${downloadStyles.dialog}`} data-download-dialog="true">
+          <div className={styles.reportFilterModalHeader} data-download-header="true">
             <div>
               <h2 id="owner-share-report-title">{selectedReportDetails?.title || 'Add Aim4price report'}</h2>
               {!selectedReport ? <p>Choose the exact Aim4price PDF or Excel report to attach to this message.</p> : null}
             </div>
             <button type="button" onClick={onDismiss} aria-label="Close Aim4price reports">×</button>
           </div>
-          {selectedReport ? filters : reportList}
+          {selectedReport ? filters : <>{reportList}<footer data-download-footer="true"><button type="button" onClick={onDismiss}>Cancel</button></footer></>}
         </section>
       </div>
     );
@@ -384,10 +379,10 @@ export default function OwnerAssetReportPicker({
     <section className={`${styles.section} ${styles.editorSection}`}>
       {reportList}
       {selectedReport && selectedReportDetails ? (
-        <div className={styles.reportFilterDialog} role="dialog" aria-modal="true" aria-labelledby="owner-report-filter-title">
-          <button type="button" className={styles.reportFilterBackdrop} onClick={() => setSelectedReport(null)} aria-label="Close report filters" />
-          <section className={styles.reportFilterModal}>
-            <div className={styles.reportFilterModalHeader}>
+        <div className={`${styles.reportFilterDialog} ${downloadStyles.backdrop}`} role="dialog" aria-modal="true" aria-labelledby="owner-report-filter-title">
+          <button type="button" className={styles.reportFilterBackdrop} onClick={() => setSelectedReport(null)} aria-label="Close report filters" data-download-shade="true" />
+          <section className={`${styles.reportFilterModal} ${true ? downloadStyles.dialog : ''}`} data-download-dialog="true">
+            <div className={styles.reportFilterModalHeader} data-download-header="true">
               <div><h2 id="owner-report-filter-title">{selectedReportDetails.title}</h2></div>
               <button type="button" onClick={() => setSelectedReport(null)} aria-label="Close report filters">×</button>
             </div>

@@ -1,4 +1,5 @@
 'use client';
+import downloadStyles from "../../components/ReportDownload.module.css";
 
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
@@ -4498,16 +4499,16 @@ export default function LeadsClient({
       ) : null}
 
       {reportLead ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadReportModal} />
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadReportModal} data-download-shade="true" />
 
           <div
-            className={`${assetStyles.modalCard} ${assetStyles.assetReportModal}`}
+            className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${downloadStyles.dialog}`}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="lead-report-title"
+            aria-labelledby="lead-report-title" data-download-dialog="true"
           >
-            <div className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`}>
+            <div className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`} data-download-header="true">
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-report-title">{assetTitle(reportLead)}</h3>
                 <p>{leadAssetMeta(reportLead)}</p>
@@ -4524,13 +4525,13 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`}>
-              <div className={assetStyles.assetReportOptionsGrid}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`} data-download-body="true">
+              <div className={assetStyles.assetReportOptionsGrid} data-download-grid="true">
                 <button
                   type="button"
                   className={assetStyles.assetReportOptionButton}
                   onClick={() => void handleLeadPdfReportDownload(reportLead, 'full')}
-                  disabled={isDownloadingLeadReport}
+                  disabled={isDownloadingLeadReport} data-download-option="true"
                 >
                   <PdfIcon className={assetStyles.buttonIcon} />
                   <span>
@@ -4548,7 +4549,7 @@ export default function LeadsClient({
                       disabled={!reportLead.maintenanceAccess.permissions.canViewMaintenanceReports}
                       title={!reportLead.maintenanceAccess.permissions.canViewMaintenanceReports
                         ? 'The asset owner has not enabled maintenance report access.'
-                        : undefined}
+                        : undefined} data-download-option="true"
                     >
                       <DocumentIcon className={assetStyles.buttonIcon} />
                       <span>
@@ -4570,7 +4571,7 @@ export default function LeadsClient({
                       disabled={!reportLead.maintenanceAccess.permissions.canViewCostOfOwnership}
                       title={!reportLead.maintenanceAccess.permissions.canViewCostOfOwnership
                         ? 'The asset owner has not enabled Cost of Ownership access.'
-                        : undefined}
+                        : undefined} data-download-option="true"
                     >
                       <DocumentIcon className={assetStyles.buttonIcon} />
                       <span>
@@ -4588,7 +4589,8 @@ export default function LeadsClient({
                 ) : null}
               </div>
             </div>
-          </div>
+          <footer data-download-footer="true"><button type="button" onClick={closeLeadReportModal}>Cancel</button></footer>
+</div>
         </div>
       ) : null}
 
