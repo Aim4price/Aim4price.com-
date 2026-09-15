@@ -1,4 +1,5 @@
 'use client';
+import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
 import MaintenanceChecklistBrowser from '../../components/MaintenanceChecklistBrowser';
@@ -1984,44 +1985,45 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'download' && downloadStep === 'scope' ? (
-        <div className={`${fuelStyles.fuelSlipFlowBackdrop} ${fuelStyles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
-          <div className={`${fuelStyles.downloadModal} ${fuelStyles.sourceChoiceModal} ${fuelStyles.fuelSlipChoiceModal} ${fuelStyles.fuelSlipMenuModal} ${fuelStyles.accountFuelModal} ${accountStyles.modalTheme} ${chooserStyles.downloadScopeLayout}`}>
-            <div className={fuelStyles.modalHeader}>
+        <div className={`${fuelStyles.fuelSlipFlowBackdrop} ${fuelStyles.accountFuelBackdrop} ${downloadStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
+          <div className={`${fuelStyles.downloadModal} ${fuelStyles.sourceChoiceModal} ${fuelStyles.fuelSlipChoiceModal} ${fuelStyles.fuelSlipMenuModal} ${fuelStyles.accountFuelModal} ${accountStyles.modalTheme} ${chooserStyles.downloadScopeLayout} ${downloadStyles.dialog}`} data-download-dialog="true">
+            <div className={fuelStyles.modalHeader} data-download-header="true">
               <div>
                 <h2 id="maintenance-download-title">Download maintenance reports</h2>
                 <p>Choose the records to include.</p>
               </div>
               <button type="button" className={`${fuelStyles.closeButton} ${fuelStyles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close download reports"><span aria-hidden="true">×</span></button>
             </div>
-            <div className={`${fuelStyles.sourceChoiceGrid} ${chooserStyles.downloadScopeChoices}`}>
+            <div className={`${fuelStyles.sourceChoiceGrid} ${chooserStyles.downloadScopeChoices}`} data-download-grid="true">
               {DOWNLOAD_SCOPE_OPTIONS.map((option) => (
                 <button key={option.value} type="button" className={`${fuelStyles.sourceChoiceOption} ${fuelStyles.fuelSlipChoiceOption}`} onClick={() => {
                   setDownloadScope(option.value);
                   setDownloadStep(option.value === 'asset' ? 'asset' : 'format');
-                }}>
-                  <span className={fuelStyles.choiceGraphic} aria-hidden="true"><MaintenanceReportScopeIcon scope={option.value} /></span>
-                  <span className={fuelStyles.choiceTitleBlock}>
+                }} data-download-option="true">
+                  <span className={fuelStyles.choiceGraphic} aria-hidden="true" data-download-icon="true"><MaintenanceReportScopeIcon scope={option.value} /></span>
+                  <span className={fuelStyles.choiceTitleBlock} data-download-copy="true">
                     <strong>{option.title}</strong>
                     <small>{option.description}</small>
                   </span>
-                  <span className={fuelStyles.fuelSlipChoiceArrow} aria-hidden="true">
+                  <span className={fuelStyles.fuelSlipChoiceArrow} aria-hidden="true" data-download-decoration="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
                   </span>
                 </button>
               ))}
             </div>
-          </div>
+          <footer data-download-footer="true"><button type="button" onClick={closeModal}>Cancel</button></footer>
+</div>
         </div>
       ) : null}
 
       {modalMode === 'download' && downloadStep !== 'scope' ? (
-        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop} ${downloadStep === 'asset' ? pickerStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
+        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop} ${downloadStep === 'asset' ? pickerStyles.overlay : ''} ${downloadStep !== 'asset' ? downloadStyles.backdrop : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
           <section
-            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${downloadStep === 'asset' ? pickerStyles.modal : `${dialogStyles.dialog} ${dialogStyles.compactDownload}`} `}
+            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${downloadStep === 'asset' ? pickerStyles.modal : `${dialogStyles.dialog} ${dialogStyles.compactDownload}`}  ${downloadStep !== 'asset' ? downloadStyles.dialog : ''}`}
             data-asset-choice-surface={downloadStep === 'asset' ? 'true' : undefined}
-            data-asset-choice-modal={downloadStep === 'asset' ? 'true' : undefined}
+            data-asset-choice-modal={downloadStep === 'asset' ? 'true' : undefined} data-download-dialog={downloadStep !== 'asset' ? 'true' : undefined}
           >
-            <header className={styles.modalHeader} data-asset-choice-header="true">
+            <header className={styles.modalHeader} data-asset-choice-header="true" data-download-header="true">
               <div>
                 <h2 id="maintenance-download-title">
                   {downloadStep === 'asset'
@@ -2090,40 +2092,41 @@ export default function MaintenanceClient({
                     )}
                   </div>
                 </div>
-                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`} data-asset-choice-footer="true">
+                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`} data-asset-choice-footer="true" data-download-footer="true">
                   <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep('scope')}>Back</button>
                   <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
                 </footer>
               </>
             ) : (
               <>
-                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody} ${dialogStyles.body}`}>
-                  <div className={styles.maintenanceFormatGrid}>
+                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody} ${dialogStyles.body}`} data-download-body="true">
+                  <div className={styles.maintenanceFormatGrid} data-download-grid="true">
                     {DOWNLOAD_FORMAT_OPTIONS.map((option) => (
                       <button
                         key={option.value}
                         type="button"
                         className={`${styles.maintenanceFormatOption} ${downloadFormat === option.value ? styles.maintenanceFormatOptionActive : ''}`}
                         onClick={() => setDownloadFormat(option.value)}
+                        aria-pressed={downloadFormat === option.value} data-download-option="true"
                       >
-                        <span className={styles.maintenanceFormatGraphic}>
+                        <span className={styles.maintenanceFormatGraphic} data-download-icon="true">
                           <img src={option.value === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" />
                         </span>
-                        <span className={styles.maintenanceFormatCopy}>
+                        <span className={styles.maintenanceFormatCopy} data-download-copy="true">
                           <strong>{option.title}</strong>
                           <small>{option.description}</small>
                         </span>
-                        <span className={styles.maintenanceSelectionMark} aria-hidden="true">
+                        <span className={styles.maintenanceSelectionMark} aria-hidden="true" data-download-decoration="true">
                           <SelectedTickIcon />
                         </span>
                       </button>
                     ))}
                   </div>
                 </div>
-                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`}>
+                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`} data-download-footer="true">
                   <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep(downloadScope === 'asset' ? 'asset' : 'scope')}>Back</button>
                   <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-                  <button className={styles.primaryButton} data-primary-action type="button" onClick={submitDownload}>
+                  <button className={styles.primaryButton} data-primary-action type="button" onClick={submitDownload} data-download-primary="true">
                     {downloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}
                   </button>
                 </footer>

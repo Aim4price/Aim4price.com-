@@ -1,4 +1,5 @@
 'use client';
+import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
@@ -4330,26 +4331,26 @@ export default function FuelClient({
       ) : null}
 
       {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? (
-        <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
-          <div className={`${styles.fuelSlipFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title" aria-busy={isDownloadingFuelSlips}>
-            <div className={styles.modalHeader}>
+        <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop} ${downloadStyles.backdrop}`} data-website-overlay>
+          <div className={`${styles.fuelSlipFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${downloadStyles.dialog}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title" aria-busy={isDownloadingFuelSlips} data-download-dialog="true">
+            <div className={styles.modalHeader} data-download-header="true">
               <div>
                 <h2 id="fuel-slip-download-title">{['Download fuel slips', 'Choose report timeline', 'Choose fuel slips'][fuelSlipDownloadStep]}</h2>
                 {fuelSlipDownloadStep > 0 ? <p>{fuelSlipDownloadStep === 1 ? 'Select a year and optional month.' : 'Choose the asset or storage tank and capture status.'}</p> : null}
               </div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipDownloadPanel} aria-label="Close fuel slip download"><span aria-hidden="true">×</span></button>
             </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.slipDownloadBody}>
+
+            <div className={styles.slipDownloadBody} data-download-body="true">
               {fuelSlipDownloadStep > 0 ? <ol className={costStyles.downloadStageRail} aria-label="Fuel slip download progress">
                 {['Format', 'Timeline', 'Fuel slips'].map((label, index) => <li key={label} className={`${costStyles.downloadStageItem} ${index === fuelSlipDownloadStep ? costStyles.downloadStageItemActive : ''} ${index < fuelSlipDownloadStep ? costStyles.downloadStageItemComplete : ''}`} aria-current={index === fuelSlipDownloadStep ? 'step' : undefined}>
                   <span className={costStyles.downloadStageNumber}>{index < fuelSlipDownloadStep ? '✓' : index + 1}</span><span>{label}</span>
                 </li>)}
               </ol> : null}
-              {fuelSlipDownloadStep === 0 ? <div className={styles.exportChoices}>
-                {(['pdf', 'xlsx'] as const).map((format) => <button key={format} type="button" className={`${styles.exportOption} ${fuelSlipDownloadFormat === format ? styles.exportOptionActive : ''}`} onClick={() => setFuelSlipDownloadFormat(format)} aria-pressed={fuelSlipDownloadFormat === format}>
-                  <span className={styles.exportGraphic}><ExportGraphic src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" icon={format === 'pdf' ? <PdfIcon className={styles.exportOptionIcon} /> : <SpreadsheetIcon className={styles.exportOptionIcon} />} /></span>
-                  <span className={styles.exportOptionTitleBlock}><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Download a clean printable fuel slip report.' : 'Download fuel slip records in Excel format.'}</small></span>
+              {fuelSlipDownloadStep === 0 ? <div className={styles.exportChoices} data-download-grid="true">
+                {(['pdf', 'xlsx'] as const).map((format) => <button key={format} type="button" className={`${styles.exportOption} ${fuelSlipDownloadFormat === format ? styles.exportOptionActive : ''}`} onClick={() => setFuelSlipDownloadFormat(format)} aria-pressed={fuelSlipDownloadFormat === format} data-download-option="true">
+                  <span className={styles.exportGraphic} data-download-icon="true"><ExportGraphic src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" icon={format === 'pdf' ? <PdfIcon className={styles.exportOptionIcon} /> : <SpreadsheetIcon className={styles.exportOptionIcon} />} /></span>
+                  <span className={styles.exportOptionTitleBlock} data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Download a clean printable fuel slip report.' : 'Download fuel slip records in Excel format.'}</small></span>
                 </button>)}
               </div> : <section className={styles.slipDownloadPanel} aria-label={fuelSlipDownloadStep === 1 ? 'Report timeline' : 'Fuel slip selection'}>
                 <div className={styles.slipDownloadFields}>
@@ -4422,12 +4423,12 @@ export default function FuelClient({
               </p> : null}
               {fuelSlipDownloadError ? <p className={styles.fuelSlipDownloadError} role="alert">{fuelSlipDownloadError}</p> : null}
             </div>
-            <div className={`${styles.modalFooter} ${styles.slipDownloadFooter}`}>
+            <div className={`${styles.modalFooter} ${styles.slipDownloadFooter}`} data-download-footer="true">
               {fuelSlipDownloadStep > 0 ? <button type="button" className={styles.secondaryButton} disabled={isDownloadingFuelSlips} onClick={() => { setOpenFuelSlipDownloadSelect(null); setFuelSlipDownloadError(''); setFuelSlipDownloadStep((step) => step - 1); }}>Back</button> : <span />}
-              <div className={styles.slipDownloadActions}>
+              <div className={styles.slipDownloadActions} data-download-footer="true">
                 <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipDownloadPanel}>Cancel</button>
-                {fuelSlipDownloadStep < 2 ? <button type="button" className={styles.primaryButton} onClick={() => { setOpenFuelSlipDownloadSelect(null); setFuelSlipDownloadStep((step) => step + 1); }}>Next</button> :
-                <button type="button" className={styles.primaryButton} onClick={() => void handleFuelSlipDownload()} disabled={isDownloadingFuelSlips}>{isDownloadingFuelSlips ? 'Preparing…' : fuelSlipDownloadFormat === 'pdf' ? 'Download PDF' : 'Download Excel'}</button>}
+                {fuelSlipDownloadStep < 2 ? <button type="button" className={styles.primaryButton} onClick={() => { setOpenFuelSlipDownloadSelect(null); setFuelSlipDownloadStep((step) => step + 1); }} data-download-primary="true">Next</button> :
+                <button type="button" className={styles.primaryButton} onClick={() => void handleFuelSlipDownload()} disabled={isDownloadingFuelSlips} data-download-primary="true">{isDownloadingFuelSlips ? 'Preparing…' : fuelSlipDownloadFormat === 'pdf' ? 'Download PDF' : 'Download Excel'}</button>}
               </div>
             </div>
           </div>
@@ -4899,31 +4900,31 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'report' ? (
-        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-report-title">
-          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
-            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
+        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop} ${downloadStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-report-title">
+          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${downloadStyles.dialog}`} data-download-dialog="true">
+            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`} data-download-header="true">
               <div className={styles.modalHeaderText}>
                 <h2 id="fuel-report-title">Export fuel report</h2>
               </div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close fuel report options"><span aria-hidden="true">×</span></button>
             </div>
 
-            <div className={styles.exportModalScrollBody}>
-              <div className={styles.exportModalBody}>
+            <div className={styles.exportModalScrollBody} data-download-body="true">
+              <div className={styles.exportModalBody} data-download-body="true">
                 {reportStep === 'format' ? (
                   <>
-                    <div className={styles.exportChoices}>
+                    <div className={styles.exportChoices} data-download-grid="true">
                       <button
                         type="button"
                         className={`${styles.exportOption} ${reportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
                         onClick={() => setReportFormat('pdf')}
-                        aria-pressed={reportFormat === 'pdf'}
+                        aria-pressed={reportFormat === 'pdf'} data-download-option="true"
                       >
-                        <span className={styles.exportGraphic}>
+                        <span className={styles.exportGraphic} data-download-icon="true">
                           <ExportGraphic src="/brand/pdf.png" alt="PDF fuel report" icon={<PdfIcon className={styles.exportOptionIcon} />} />
                         </span>
 
-                        <span className={styles.exportOptionTitleBlock}>
+                        <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>PDF report</strong>
                           <small>Download a clean printable Fuel Ledger report.</small>
                         </span>
@@ -4933,22 +4934,22 @@ export default function FuelClient({
                         type="button"
                         className={`${styles.exportOption} ${reportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
                         onClick={() => setReportFormat('xlsx')}
-                        aria-pressed={reportFormat === 'xlsx'}
+                        aria-pressed={reportFormat === 'xlsx'} data-download-option="true"
                       >
-                        <span className={styles.exportGraphic}>
+                        <span className={styles.exportGraphic} data-download-icon="true">
                           <ExportGraphic src="/brand/sheet.png" alt="Fuel spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
                         </span>
 
-                        <span className={styles.exportOptionTitleBlock}>
+                        <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>XLSX workbook</strong>
                           <small>Download the filtered fuel ledger rows in Excel format.</small>
                         </span>
                       </button>
                     </div>
 
-                    <div className={`${styles.modalActions} ${styles.exportActions}`}>
+                    <div className={`${styles.modalActions} ${styles.exportActions}`} data-download-footer="true">
                       <button type="button" className={`${styles.secondaryButton} ${styles.exportSecondaryButton}`} onClick={closeModal}>Cancel</button>
-                      <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton}`} onClick={handleReportNext}>
+                      <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton}`} onClick={handleReportNext} data-download-primary="true">
                         <ChevronRightIcon className={styles.buttonIcon} />
                         <span>Next</span>
                       </button>
@@ -4986,9 +4987,9 @@ export default function FuelClient({
                       />
                     </div>
 
-                    <div className={`${styles.modalActions} ${styles.exportActions}`}>
+                    <div className={`${styles.modalActions} ${styles.exportActions}`} data-download-footer="true">
                       <button type="button" className={`${styles.secondaryButton} ${styles.exportSecondaryButton}`} onClick={handleReportBack}>Back</button>
-                      <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton}`} onClick={handleDownloadSelectedReport}>
+                      <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton}`} onClick={handleDownloadSelectedReport} data-download-primary="true">
                         <DownloadIcon className={styles.buttonIcon} />
                         <span>{reportFormat === 'pdf' ? 'Download PDF' : 'Download XLSX'}</span>
                       </button>

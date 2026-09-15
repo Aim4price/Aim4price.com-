@@ -1,4 +1,5 @@
 'use client';
+import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
 import pickerStyles from '../../components/AssetPicker.module.css';
@@ -4929,9 +4930,9 @@ export default function MyInvoicesClient({
       ) : null}
 
       {!dealerMode && downloadOpen ? (
-        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Download cost records">
-          <div className={`${styles.downloadModal} ${styles.reportModal} ${styles.downloadExportModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${downloadStep === 'format' ? styles.downloadFormatModal : ''}`}>
-            <div className={styles.modalHeader}>
+        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${downloadStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Download cost records">
+          <div className={`${styles.downloadModal} ${styles.reportModal} ${styles.downloadExportModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${downloadStep === 'format' ? styles.downloadFormatModal : ''} ${downloadStyles.dialog}`} data-download-dialog="true">
+            <div className={styles.modalHeader} data-download-header="true">
               <div>
                 <h2>
                   {downloadStep === 'format'
@@ -4948,7 +4949,7 @@ export default function MyInvoicesClient({
               </div>
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeDownloadModal} aria-label="Close download"><span aria-hidden="true">×</span></button>
             </div>
-            <div className={styles.costDownloadBody}>
+            <div className={styles.costDownloadBody} data-download-body="true">
             {downloadStep !== 'format' ? (
             <ol className={styles.downloadStageRail} aria-label="Cost ledger download progress">
               {downloadSteps.map((step, index) => {
@@ -4970,15 +4971,15 @@ export default function MyInvoicesClient({
             </ol>
             ) : null}
             {downloadStep === 'format' ? (
-              <div className={styles.downloadStageContent}>
-                <div className={`${styles.reportChoiceGrid} ${styles.downloadFormatGrid}`}>
+              <div className={styles.downloadStageContent} data-download-body="true">
+                <div className={`${styles.reportChoiceGrid} ${styles.downloadFormatGrid}`} data-download-grid="true">
                   <button
                     type="button"
                     className={`${styles.reportOption} ${downloadFormat === 'pdf' ? styles.reportOptionActive : ''}`}
                     onClick={() => chooseDownloadFormat('pdf')}
-                    aria-pressed={downloadFormat === 'pdf'}
+                    aria-pressed={downloadFormat === 'pdf'} data-download-option="true"
                   >
-                    <span className={styles.reportGraphic} aria-hidden="true">
+                    <span className={styles.reportGraphic} aria-hidden="true" data-download-icon="true">
                       <CostExportGraphic src="/brand/pdf.png" />
                     </span>
                     <span className={styles.reportTitleBlock}>
@@ -4990,9 +4991,9 @@ export default function MyInvoicesClient({
                     type="button"
                     className={`${styles.reportOption} ${downloadFormat === 'xlsx' ? styles.reportOptionActive : ''}`}
                     onClick={() => chooseDownloadFormat('xlsx')}
-                    aria-pressed={downloadFormat === 'xlsx'}
+                    aria-pressed={downloadFormat === 'xlsx'} data-download-option="true"
                   >
-                    <span className={styles.reportGraphic} aria-hidden="true">
+                    <span className={styles.reportGraphic} aria-hidden="true" data-download-icon="true">
                       <CostExportGraphic src="/brand/sheet.png" />
                     </span>
                     <span className={styles.reportTitleBlock}>
@@ -5001,16 +5002,16 @@ export default function MyInvoicesClient({
                     </span>
                   </button>
                 </div>
-                <div className={`${styles.modalFooter} ${styles.downloadModalFooter} ${styles.downloadFormatFooter}`}>
+                <div className={`${styles.modalFooter} ${styles.downloadModalFooter} ${styles.downloadFormatFooter}`} data-download-footer="true">
                   <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
-                  <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showNextStepAfterFormat}>
+                  <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showNextStepAfterFormat} data-download-primary="true">
                     <ChevronRightIcon className={styles.buttonIcon} />
                     <span>Next</span>
                   </button>
                 </div>
               </div>
             ) : downloadStep === 'timeline' ? (
-              <div className={styles.downloadStageContent}>
+              <div className={styles.downloadStageContent} data-download-body="true">
                 <section className={styles.reportPeriodPanel} aria-label="Report timeline">
                   <div className={styles.reportSectionHeading}>
                     <strong>Report timeline</strong>
@@ -5042,31 +5043,31 @@ export default function MyInvoicesClient({
                     />
                   </div>
                 </section>
-                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`}>
+                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`} data-download-footer="true">
                   <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showPreviousStepBeforeTimeline}>Back</button>
                   <div className={styles.downloadFooterActions}>
                     <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
-                    <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showDownloadFuelStep}>
+                    <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showDownloadFuelStep} data-download-primary="true">
                       <span>Next</span>
                     </button>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className={styles.downloadStageContent}>
+              <div className={styles.downloadStageContent} data-download-body="true">
                 <section className={styles.downloadFuelPanel} aria-label="External fuel costs">
                   <div className={styles.reportSectionHeading}>
                     <strong>Include external fuel costs?</strong>
                     <span>Fuel Slip records can be included in the ledger and its totals, or left out completely.</span>
                   </div>
-                  <div className={`${styles.reportChoiceGrid} ${styles.downloadFuelChoiceGrid}`}>
+                  <div className={`${styles.reportChoiceGrid} ${styles.downloadFuelChoiceGrid}`} data-download-grid="true">
                     <button
                       type="button"
                       className={`${styles.reportOption} ${includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
                       onClick={() => setIncludeFuelSlipCosts(true)}
-                      aria-pressed={includeFuelSlipCosts}
+                      aria-pressed={includeFuelSlipCosts} data-download-option="true"
                     >
-                      <span className={styles.reportGraphic}>
+                      <span className={styles.reportGraphic} data-download-icon="true">
                         <ManualInvoiceIcon />
                       </span>
                       <span className={styles.reportTitleBlock}>
@@ -5078,9 +5079,9 @@ export default function MyInvoicesClient({
                       type="button"
                       className={`${styles.reportOption} ${!includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
                       onClick={() => setIncludeFuelSlipCosts(false)}
-                      aria-pressed={!includeFuelSlipCosts}
+                      aria-pressed={!includeFuelSlipCosts} data-download-option="true"
                     >
-                      <span className={styles.reportGraphic}>
+                      <span className={styles.reportGraphic} data-download-icon="true">
                         <AutomaticInvoiceIcon />
                       </span>
                       <span className={styles.reportTitleBlock}>
@@ -5090,14 +5091,14 @@ export default function MyInvoicesClient({
                     </button>
                   </div>
                 </section>
-                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`}>
+                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`} data-download-footer="true">
                   <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showDownloadTimelineStep}>Back</button>
                   <div className={styles.downloadFooterActions}>
                     <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
                     <button
                       type="button"
                       className={`${styles.primaryButton} ${styles.downloadSubmitButton}`}
-                      onClick={() => void handleDownloadReport(downloadFormat)}
+                      onClick={() => void handleDownloadReport(downloadFormat)} data-download-primary="true"
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>

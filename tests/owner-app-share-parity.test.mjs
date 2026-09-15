@@ -63,8 +63,8 @@ test('Owner App opens and attaches each canonical report artifact without redraw
   assert.match(picker, /if \(report !== 'ownership'\) params\.set\('report', report\)/);
   assert.match(picker, /contentType: reportFormat === 'pdf'[\s\S]*?'application\/pdf'[\s\S]*?'application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet'/);
   assert.match(picker, /const fileName = reportFileName\([\s\S]*?url,[\s\S]*?credentials: 'include'/);
-  assert.match(picker, /<option value="pdf">PDF<\/option>/);
-  assert.match(picker, /<option value="xlsx">Excel<\/option>/);
+  assert.match(picker, /\['pdf', 'xlsx'\] as const/);
+  assert.match(picker, /aria-pressed=\{format === value\} onClick=\{\(\) => setFormat\(value\)\}/);
   assert.match(picker, /format === 'pdf' \? 'Add PDF' : 'Add Excel'/);
   assert.match(picker, /selectedReport === 'valuation' && format === 'pdf'[\s\S]*?openSelectedValuationPdf/);
   assert.match(picker, /href=\{normalReportUrl\(selectedReport, format\)\}/);

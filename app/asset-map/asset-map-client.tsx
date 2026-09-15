@@ -1,4 +1,5 @@
 "use client";
+import downloadStyles from "../../components/ReportDownload.module.css";
 
 import { currentWebsiteScale } from '../../lib/website-canvas';
 
@@ -2138,20 +2139,20 @@ export default function AssetMapClient() {
 
       {isExportModalOpen ? (
         <div
-          className={`${styles.modalBackdrop} ${styles.accountExportBackdrop}`} data-website-overlay
+          className={`${styles.modalBackdrop} ${styles.accountExportBackdrop} ${downloadStyles.backdrop}`} data-website-overlay
           role="presentation"
           onMouseDown={closeExportModal}
         >
           <section
             ref={exportModalRef}
-            className={`${styles.exportModal} ${styles.accountExportModal} ${accountStyles.modalTheme}`}
+            className={`${styles.exportModal} ${styles.accountExportModal} ${accountStyles.modalTheme} ${downloadStyles.dialog}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-map-export-title"
             tabIndex={-1}
-            onMouseDown={(event) => event.stopPropagation()}
+            onMouseDown={(event) => event.stopPropagation()} data-download-dialog="true"
           >
-            <header className={styles.exportModalHeader}>
+            <header className={styles.exportModalHeader} data-download-header="true">
               <div>
                 <h2 id="asset-map-export-title">Export Asset Map Tracking</h2>
               </div>
@@ -2169,22 +2170,22 @@ export default function AssetMapClient() {
               <>
                 <div
                   className={styles.exportChoices}
-                  aria-label="Choose Asset Map export format"
+                  aria-label="Choose Asset Map export format" data-download-grid="true"
                 >
                   <button
                     type="button"
                     className={`${styles.exportOption} ${exportFormat === "pdf" ? styles.exportOptionActive : ""}`}
                     onClick={() => chooseExportFormat("pdf")}
-                    aria-pressed={exportFormat === "pdf"}
+                    aria-pressed={exportFormat === "pdf"} data-download-option="true"
                   >
-                    <span className={styles.exportGraphic}>
+                    <span className={styles.exportGraphic} data-download-icon="true">
                       <img
                         src="/brand/pdf.png"
                         alt="PDF map report"
                         className={styles.exportGraphicImage}
                       />
                     </span>
-                    <span className={styles.exportOptionTitleBlock}>
+                    <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                       <strong>PDF map report</strong>
                       <small>
                         Download a clean printable Asset Map Tracking report.
@@ -2196,16 +2197,16 @@ export default function AssetMapClient() {
                     type="button"
                     className={`${styles.exportOption} ${exportFormat === "xlsx" ? styles.exportOptionActive : ""}`}
                     onClick={() => chooseExportFormat("xlsx")}
-                    aria-pressed={exportFormat === "xlsx"}
+                    aria-pressed={exportFormat === "xlsx"} data-download-option="true"
                   >
-                    <span className={styles.exportGraphic}>
+                    <span className={styles.exportGraphic} data-download-icon="true">
                       <img
                         src="/brand/sheet.png"
                         alt="XLSX GPS workbook"
                         className={styles.exportGraphicImage}
                       />
                     </span>
-                    <span className={styles.exportOptionTitleBlock}>
+                    <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                       <strong>XLSX GPS workbook</strong>
                       <small>
                         Download the latest saved GPS coordinates in Excel
@@ -2215,7 +2216,7 @@ export default function AssetMapClient() {
                   </button>
                 </div>
 
-                <div className={styles.exportActions}>
+                <div className={styles.exportActions} data-download-footer="true">
                   <button
                     type="button"
                     className={`${styles.secondaryAction} ${styles.exportSecondaryButton}`}
@@ -2299,7 +2300,7 @@ export default function AssetMapClient() {
                   </p>
                 ) : null}
 
-                <div className={styles.exportActions}>
+                <div className={styles.exportActions} data-download-footer="true">
                   <button
                     type="button"
                     className={`${styles.secondaryAction} ${styles.exportSecondaryButton}`}
@@ -2312,7 +2313,7 @@ export default function AssetMapClient() {
                       type="button"
                       disabled={isDownloading}
                       onClick={() => void handleDownload(selectedExportHref, exportFormat)}
-                      className={`${styles.primaryAction} ${styles.exportPrimaryButton}`}
+                      className={`${styles.primaryAction} ${styles.exportPrimaryButton}`} data-download-primary="true"
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{isDownloading ? "Preparing…" : selectedExportLabel}</span>
@@ -2321,7 +2322,7 @@ export default function AssetMapClient() {
                     <button
                       type="button"
                       className={`${styles.primaryAction} ${styles.exportPrimaryButton}`}
-                      disabled
+                      disabled data-download-primary="true"
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{selectedExportLabel}</span>

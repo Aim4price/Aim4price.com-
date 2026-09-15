@@ -1,4 +1,5 @@
 'use client';
+import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination from '../../components/ListPagination';
 
 import AssetReportTypeIcon from '../../components/asset-register/AssetReportTypeIcon';
@@ -12,7 +13,6 @@ import { assetCanReceiveFuel } from '../../lib/asset-fuel-eligibility';
 import CompactChoicePages from '../../components/CompactChoicePages';
 import pickerStyles from '../../components/AssetPicker.module.css';
 import AssetSerialNumber from '../../components/AssetSerialNumber';
-import compactExportStyles from '../../components/CompactRegisterExport.module.css';
 import PricingVatToggle from '../../components/PricingVatToggle';
 import { pricingVatAmount, pricingInputExVat } from '../../lib/pricing-vat';
 import CardVatToggle from '../../components/CardVatToggle';
@@ -2400,17 +2400,17 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
 function AssetReportFormatPicker({ value, deliveryMode = 'download', onChange }: AssetReportFormatPickerProps) {
   const isAttaching = deliveryMode === 'attach';
   return (
-    <div className={styles.assetTimelineFormatGrid} aria-label="Report format">
+    <div className={styles.assetTimelineFormatGrid} aria-label="Report format" data-download-grid="true">
       <button
         type="button"
         className={`${styles.assetTimelineFormatOption} ${value === 'pdf' ? styles.assetTimelineFormatOptionActive : ''}`}
         onClick={() => onChange('pdf')}
-        aria-pressed={value === 'pdf'}
+        aria-pressed={value === 'pdf'} data-download-option="true"
       >
-        <span className={styles.assetTimelineFormatGraphic}>
+        <span className={styles.assetTimelineFormatGraphic} data-download-icon="true">
           <ExportGraphic src="/brand/pdf.png" alt="PDF report" icon={<PdfIcon className={styles.assetTimelineFormatFallbackIcon} />} />
         </span>
-        <span className={styles.assetTimelineFormatCopy}>
+        <span className={styles.assetTimelineFormatCopy} data-download-copy="true">
           <strong>PDF report</strong>
           <small>{isAttaching ? 'Attach a clear report for clients, banks or insurance partners.' : 'Open a clear report for clients, banks or insurance partners.'}</small>
         </span>
@@ -2420,12 +2420,12 @@ function AssetReportFormatPicker({ value, deliveryMode = 'download', onChange }:
         type="button"
         className={`${styles.assetTimelineFormatOption} ${value === 'xlsx' ? styles.assetTimelineFormatOptionActive : ''}`}
         onClick={() => onChange('xlsx')}
-        aria-pressed={value === 'xlsx'}
+        aria-pressed={value === 'xlsx'} data-download-option="true"
       >
-        <span className={styles.assetTimelineFormatGraphic}>
+        <span className={styles.assetTimelineFormatGraphic} data-download-icon="true">
           <ExportGraphic src="/brand/sheet.png" alt="Excel workbook" icon={<SpreadsheetIcon className={styles.assetTimelineFormatFallbackIcon} />} />
         </span>
-        <span className={styles.assetTimelineFormatCopy}>
+        <span className={styles.assetTimelineFormatCopy} data-download-copy="true">
           <strong>XLSX workbook</strong>
           <small>{isAttaching ? 'Attach the selected timeline records as an Excel-ready workbook.' : 'Download the selected timeline records in an Excel-ready workbook.'}</small>
         </span>
@@ -21784,16 +21784,16 @@ export default function AssetRegisterClient({
       ) : null}
 
       {reportAsset && isAssetReportModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`} data-website-overlay data-account-asset-modal>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetReportDialog} />
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${downloadStyles.backdrop}`} data-website-overlay data-account-asset-modal>
+          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetReportDialog} data-download-shade="true" />
 
           <div
-            className={`${styles.modalCard} ${styles.assetReportModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${assetReportStep !== 'options' ? styles.assetFuelReportModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetReportModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${assetReportStep !== 'options' ? styles.assetFuelReportModal : ''} ${downloadStyles.dialog}`}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="asset-report-title"
+            aria-labelledby="asset-report-title" data-download-dialog="true"
           >
-            <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`}>
+            <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`} data-download-header="true">
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-report-title" tabIndex={-1}>{reportAsset.title}</h3>
                 <p>{isAttachingExternalReport ? 'Choose an Aim4price report to add to your message.' : buildAssetMeta(reportAsset)}</p>
@@ -21804,7 +21804,7 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.assetReportModalBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.assetReportModalBody}`} data-download-body="true">
               {assetReportStep.endsWith('-format') ? (
                 <>
                   <div className={styles.assetTimelineStageHeading}>
@@ -21814,7 +21814,7 @@ export default function AssetRegisterClient({
 
                   <AssetReportFormatPicker value={assetReportDownloadFormat} deliveryMode={isAttachingExternalReport ? 'attach' : 'download'} onChange={setAssetReportDownloadFormat} />
 
-                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`} data-download-footer="true">
                     <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
                     <button
                       type="button"
@@ -21823,7 +21823,7 @@ export default function AssetRegisterClient({
                     >
                       Cancel
                     </button>
-                    <button type="button" className={styles.primaryButton} onClick={showAssetReportTimelineStep}>
+                    <button type="button" className={styles.primaryButton} onClick={showAssetReportTimelineStep} data-download-primary="true">
                       <span>Next</span>
                     </button>
                   </div>
@@ -21856,7 +21856,7 @@ export default function AssetRegisterClient({
                     />
                   </div>
 
-                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`} data-download-footer="true">
                     <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportFormatStep}>Back</button>
                     <button
                       type="button"
@@ -21868,7 +21868,7 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={() => void handleDownloadFilteredFuelReport(reportAsset, assetReportDownloadFormat)}
+                      onClick={() => void handleDownloadFilteredFuelReport(reportAsset, assetReportDownloadFormat)} data-download-primary="true"
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{isAttachingExternalReport ? assetReportDownloadFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
@@ -21912,7 +21912,7 @@ export default function AssetRegisterClient({
                     />
                   </div>
 
-                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`} data-download-footer="true">
                     <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportFormatStep}>Back</button>
                     <button
                       type="button"
@@ -21924,7 +21924,7 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={() => void handleDownloadFilteredMaintenanceReport(reportAsset, assetReportDownloadFormat)}
+                      onClick={() => void handleDownloadFilteredMaintenanceReport(reportAsset, assetReportDownloadFormat)} data-download-primary="true"
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{isAttachingExternalReport ? assetReportDownloadFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
@@ -21959,7 +21959,7 @@ export default function AssetRegisterClient({
                     />
                   </div>
 
-                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`} data-download-footer="true">
                     <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportFormatStep}>Back</button>
                     <button
                       type="button"
@@ -21971,7 +21971,7 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={() => void handleDownloadFilteredDepreciationReport(reportAsset, assetReportDownloadFormat)}
+                      onClick={() => void handleDownloadFilteredDepreciationReport(reportAsset, assetReportDownloadFormat)} data-download-primary="true"
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{isAttachingExternalReport ? assetReportDownloadFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
@@ -22006,7 +22006,7 @@ export default function AssetRegisterClient({
                     />
                   </div>
 
-                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
+                  <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`} data-download-footer="true">
                     <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportFormatStep}>Back</button>
                     <button
                       type="button"
@@ -22018,7 +22018,7 @@ export default function AssetRegisterClient({
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={() => void handleDownloadFilteredOwnershipReport(reportAsset, assetReportDownloadFormat)}
+                      onClick={() => void handleDownloadFilteredOwnershipReport(reportAsset, assetReportDownloadFormat)} data-download-primary="true"
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{isAttachingExternalReport ? assetReportDownloadFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
@@ -22026,8 +22026,8 @@ export default function AssetRegisterClient({
                   </div>
                 </>
               ) : (
-                <div className={styles.assetReportOptionsGrid}>
-                  <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(reportAsset)}>
+                <div className={styles.assetReportOptionsGrid} data-download-grid="true">
+                  <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(reportAsset)} data-download-option="true">
                     <AssetReportTypeIcon kind="valuation" className={styles.buttonIcon} />
                     <span>
                       <strong>{isAttachingExternalReport ? 'Add asset valuation' : 'Open asset valuation'}</strong>
@@ -22037,7 +22037,7 @@ export default function AssetRegisterClient({
 
                   {canUseOwnerOnlyAssetActions ? (
                     <>
-                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetMaintenanceReportFilter}>
+                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetMaintenanceReportFilter} data-download-option="true">
                         <AssetReportTypeIcon kind="maintenance" className={styles.buttonIcon} />
                         <span>
                           <strong>{isAttachingExternalReport ? 'Add maintenance report' : 'Download maintenance report'}</strong>
@@ -22046,7 +22046,7 @@ export default function AssetRegisterClient({
                       </button>
 
                       {canDownloadAssetFuelReport(reportAsset) ? (
-                        <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter}>
+                        <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter} data-download-option="true">
                           <AssetReportTypeIcon kind="fuel" className={styles.buttonIcon} />
                           <span>
                             <strong>{isAttachingExternalReport ? 'Add fuel report' : 'Download fuel report'}</strong>
@@ -22056,7 +22056,7 @@ export default function AssetRegisterClient({
                       ) : null}
 
                       {canDownloadAssetDepreciationReport(reportAsset) ? (
-                        <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter}>
+                        <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter} data-download-option="true">
                           <AssetReportTypeIcon kind="depreciation" className={styles.buttonIcon} />
                           <span>
                             <strong>{isAttachingExternalReport ? 'Add depreciation log' : 'Download depreciation log'}</strong>
@@ -22065,7 +22065,7 @@ export default function AssetRegisterClient({
                         </button>
                       ) : null}
 
-                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetOwnershipReportFilter}>
+                      <button type="button" className={styles.assetReportOptionButton} onClick={openAssetOwnershipReportFilter} data-download-option="true">
                         <AssetReportTypeIcon kind="ownership" className={styles.buttonIcon} />
                         <span>
                           <strong>{isAttachingExternalReport ? 'Add cost of ownership report' : 'Download cost of ownership report'}</strong>
@@ -22078,7 +22078,7 @@ export default function AssetRegisterClient({
                           type="button"
                           className={styles.assetReportOptionButton}
                           disabled={isDownloadingIndividualAssetMap || !hasAssetGpsCoordinates(reportAsset)}
-                          onClick={() => void handleDownloadIndividualAssetMap(reportAsset)}
+                          onClick={() => void handleDownloadIndividualAssetMap(reportAsset)} data-download-option="true"
                         >
                           <AssetReportTypeIcon kind="map" className={styles.buttonIcon} />
                           <span>
@@ -22092,7 +22092,8 @@ export default function AssetRegisterClient({
                 </div>
               )}
             </div>
-          </div>
+          {assetReportStep === 'options' ? <footer data-download-footer="true"><button type="button" onClick={closeAssetReportDialog}>Cancel</button></footer> : null}
+</div>
         </div>
       ) : null}
 
@@ -22380,19 +22381,19 @@ export default function AssetRegisterClient({
       ) : null}
 
       {isExportModalOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.exportModalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
-          <div className={`${styles.modalBackdrop} ${exportStep === 'pdf-assets' ? pickerStyles.overlay : ''}`} data-website-overlay onClick={closeExportModal} />
+        <div className={`${styles.modalOverlay} ${styles.exportModalOverlay} ${styles.assetEntryOverlay} ${exportStep !== 'pdf-assets' ? downloadStyles.backdrop : ''}`} data-website-overlay>
+          <div className={`${styles.modalBackdrop} ${exportStep === 'pdf-assets' ? pickerStyles.overlay : ''}`} data-website-overlay onClick={closeExportModal} data-download-shade="true" />
 
           <div
             id="compact-register-export"
-            className={`${exportStep === 'pdf-assets' ? pickerStyles.modal : compactExportStyles.dialog} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`}`}
+            className={`${exportStep === 'pdf-assets' ? pickerStyles.modal : ''} ${styles.modalCard} ${styles.exportModal} ${exportStep === 'pdf-assets' ? styles.exportAssetPickerModal : `${styles.assetEntryModal} ${styles.registerExportModal} ${accountStyles.modalTheme}`} ${exportStep !== 'pdf-assets' ? downloadStyles.dialog : ''}`}
             data-asset-choice-surface={exportStep === 'pdf-assets' ? 'true' : undefined}
             data-asset-choice-modal={exportStep === 'pdf-assets' ? 'true' : undefined}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="export-title"
+            aria-labelledby="export-title" data-download-dialog={exportStep !== 'pdf-assets' ? 'true' : undefined}
           >
-            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`} data-asset-choice-header={exportStep === 'pdf-assets' ? 'true' : undefined}>
+            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`} data-asset-choice-header={exportStep === 'pdf-assets' ? 'true' : undefined} data-download-header="true">
               <div className={styles.modalHeaderText}>
                 <h3 id="export-title" tabIndex={-1}>{isAttachingExternalReport ? 'Add Aim4price report' : 'Export asset register'}</h3>
                 <p>{isAttachingExternalReport ? 'Choose a report to attach.' : 'Choose which assets to include.'}</p>
@@ -22403,8 +22404,8 @@ export default function AssetRegisterClient({
               </button>
             </div>
 
-            <div className={exportStep === 'pdf-assets' ? pickerStyles.contents : `${styles.modalScrollBody} ${styles.exportModalScrollBody}`}>
-              <div className={exportStep === 'pdf-assets' ? pickerStyles.contents : styles.exportModalBody}>
+            <div className={exportStep === 'pdf-assets' ? pickerStyles.contents : `${styles.modalScrollBody} ${styles.exportModalScrollBody}`} data-download-body="true">
+              <div className={exportStep === 'pdf-assets' ? pickerStyles.contents : styles.exportModalBody} data-download-body="true">
                 {exportStep === 'format' ? (
                   <>
                     <label className={accountStyles.modalField}>
@@ -22417,18 +22418,18 @@ export default function AssetRegisterClient({
                       />
                     </label>
 
-                    <div className={styles.exportChoices}>
+                    <div className={styles.exportChoices} data-download-grid="true">
                       <button
                         type="button"
                         className={`${styles.exportOption} ${exportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
                         onClick={() => selectExportFormat('pdf')}
-                        aria-pressed={exportFormat === 'pdf'}
+                        aria-pressed={exportFormat === 'pdf'} data-download-option="true"
                       >
-                        <span className={styles.exportGraphic}>
+                        <span className={styles.exportGraphic} data-download-icon="true">
                           <ExportGraphic src="/brand/pdf.png" alt="PDF export" icon={<PdfIcon className={styles.exportOptionIcon} />} />
                         </span>
 
-                        <span className={styles.exportOptionTitleBlock}>
+                        <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>PDF report</strong>
                           <small>Choose a clear PDF report for clients, banks or insurance partners.</small>
                         </span>
@@ -22438,13 +22439,13 @@ export default function AssetRegisterClient({
                         type="button"
                         className={`${styles.exportOption} ${exportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
                         onClick={() => selectExportFormat('xlsx')}
-                        aria-pressed={exportFormat === 'xlsx'}
+                        aria-pressed={exportFormat === 'xlsx'} data-download-option="true"
                       >
-                        <span className={styles.exportGraphic}>
+                        <span className={styles.exportGraphic} data-download-icon="true">
                           <ExportGraphic src="/brand/sheet.png" alt="Spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
                         </span>
 
-                        <span className={styles.exportOptionTitleBlock}>
+                        <span className={styles.exportOptionTitleBlock} data-download-copy="true">
                           <strong>XLSX workbook</strong>
                           <small>Download all register rows in an Excel-ready workbook.</small>
                         </span>
@@ -22458,14 +22459,14 @@ export default function AssetRegisterClient({
                     {exportStep === 'pdf-report' ? (
                       <>
                         <div className={styles.pdfReportSelector}>
-                          <div className={styles.pdfReportTopChoices}>
+                          <div className={styles.pdfReportTopChoices} data-download-grid="true">
                             <button
                               type="button"
                               className={`${styles.pdfReportOption} ${styles.pdfReportPrimaryOption} ${pdfReportSelection === fullPdfReportOption.value ? styles.pdfReportOptionActive : ''}`}
                               onClick={() => handlePdfReportChoice(fullPdfReportOption.value)}
                               disabled={isExporting}
-                              aria-pressed={pdfReportSelection === fullPdfReportOption.value}
-                            >
+                              aria-pressed={pdfReportSelection === fullPdfReportOption.value} data-download-option="true"
+                            ><span data-download-icon="true"><img src="/brand/pdf.png" alt="" /></span>
                               <span className={styles.pdfReportOptionMain}>
                                 <strong>{fullPdfReportOption.label}</strong>
                               </span>
@@ -22475,8 +22476,8 @@ export default function AssetRegisterClient({
                               type="button"
                               className={`${styles.pdfReportOption} ${styles.pdfReportPrimaryOption}`}
                               onClick={openPdfAssetChooser}
-                              disabled={isExporting}
-                            >
+                              disabled={isExporting} data-download-option="true"
+                            ><span data-download-icon="true"><img src="/brand/pdf.png" alt="" /></span>
                               <span className={styles.pdfReportOptionMain}>
                                 <strong>Choose Specific Assets</strong>
                               </span>
@@ -22492,10 +22493,10 @@ export default function AssetRegisterClient({
                                 className={`${styles.pdfReportOption} ${pdfReportSelection === option.value ? styles.pdfReportOptionActive : ''}`}
                                 onClick={() => handlePdfReportChoice(option.value)}
                                 disabled={isExporting}
-                                aria-pressed={pdfReportSelection === option.value}
-                              >
+                                aria-pressed={pdfReportSelection === option.value} data-download-option="true"
+                              ><span data-download-icon="true"><img src="/brand/pdf.png" alt="" /></span>
                                 <span className={styles.pdfReportOptionMain}>
-                                  <span className={styles.pdfReportQuickLabel}>{ASSET_FILTER_LABEL_BY_VALUE.get(option.value) ?? option.label}</span>
+                                  <strong className={styles.pdfReportQuickLabel}>{ASSET_FILTER_LABEL_BY_VALUE.get(option.value) ?? option.label}</strong>
                                 </span>
                               </button>
                             ))}
@@ -22581,7 +22582,7 @@ export default function AssetRegisterClient({
                           </div>
                         </section>
 
-                        <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`} data-asset-choice-footer="true">
+                        <div className={`${styles.formActions} ${styles.exportActions} ${styles.pdfAssetDownloadActions}`} data-asset-choice-footer="true" data-download-footer="true">
                           {selectedPdfAssetCount > 0 ? (
                             <button type="button" className={styles.secondaryButton} onClick={clearSelectedPdfAssets} disabled={isExporting}>Clear selection</button>
                           ) : null}
@@ -22598,7 +22599,7 @@ export default function AssetRegisterClient({
                             className={`${styles.primaryButton} ${styles.pdfAssetDownloadButton}`}
                             data-asset-choice-action="primary"
                             onClick={() => void handleExportSelectedPdfReport()}
-                            disabled={isExporting || selectedPdfAssetCount === 0}
+                            disabled={isExporting || selectedPdfAssetCount === 0} data-download-primary="true"
                           >
                             <DownloadIcon className={styles.buttonIcon} />
                             <span>{isExporting ? 'Preparing PDF...' : isAttachingExternalReport ? selectedPdfAssetCount ? `Add ${selectedPdfAssetCount} selected PDF` : 'Add selected PDF' : selectedPdfAssetCount ? `Download ${selectedPdfAssetCount} selected PDF` : 'Download selected PDF'}</span>
@@ -22611,18 +22612,18 @@ export default function AssetRegisterClient({
               </div>
             </div>
             {exportStep === 'format' ? (
-              <div className={styles.registerUtilityFooter}>
+              <div className={styles.registerUtilityFooter} data-download-footer="true">
                 <button type="button" className={accountStyles.ghostButton} onClick={closeExportModal} disabled={isExporting}>
                   Cancel
                 </button>
 
-                <button type="button" className={accountStyles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
+                <button type="button" className={accountStyles.primaryButton} onClick={handleConfirmExport} disabled={isExporting} data-download-primary="true">
                   {exportFormat === 'pdf' ? <ChevronRightIcon className={styles.buttonIcon} /> : <DownloadIcon className={styles.buttonIcon} />}
                   <span>{exportFormat === 'pdf' ? 'Next' : isExporting ? 'Preparing report...' : isAttachingExternalReport ? 'Add Excel report' : 'Download XLSX'}</span>
                 </button>
               </div>
             ) : exportStep === 'pdf-report' ? (
-              <div className={styles.registerUtilityFooter}>
+              <div className={styles.registerUtilityFooter} data-download-footer="true">
                 <button type="button" className={accountStyles.ghostButton} onClick={closePdfReportChooser} disabled={isExporting}>
                   Back
                 </button>
