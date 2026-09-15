@@ -5068,3 +5068,28 @@
   :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons .toolbarButton { min-width: 0; width: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .toolbarDownloadButton { grid-column: 1 / -1; }
 }
+
+/* A gentle status wash preserves the ledger surface and readable details. */
+.invoiceRow.ledgerCard[data-maintenance-status] {
+  --status-edge: #e9c79e;
+  --status-wash: #fff3e3;
+  --status-ink: #925315;
+  border-color: var(--status-edge);
+  background: linear-gradient(115deg, var(--status-wash), #fff 78%) top / 100% 12rem no-repeat, #fbfdfd;
+  box-shadow: 0 12px 30px rgba(24, 54, 44, 0.045), inset 0 1px 0 #fff;
+}
+.invoiceRow.ledgerCard[data-maintenance-status='completed'] { --status-edge: #afd6bf; --status-wash: #e7f6ec; --status-ink: #216344; }
+.invoiceRow.ledgerCard[data-maintenance-status='attention'] { --status-edge: #e7aaa6; --status-wash: #fde9e7; --status-ink: #a23e38; }
+.invoiceRow.ledgerCard[data-maintenance-status='cancelled'] { --status-edge: #d2dadd; --status-wash: #eff2f3; --status-ink: #626e76; }
+.ledgerCard[data-maintenance-status] .maintenanceStatusPill { color: var(--status-ink); border-color: var(--status-edge); background: var(--status-wash); }
+.ledgerCard[data-maintenance-status] .invoiceHeaderAside { gap: 1.1rem; }
+.ledgerCard .timingLabel { display: block; color: var(--status-ink); font-size: 0.8rem; font-weight: 700; line-height: 1.5; margin-top: 0.4rem; }
+.statusSymbol { display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem; font-size: 0.9rem; font-weight: 800; }
+.ledgerCard[data-maintenance-status] .ledgerDetails { background: #fbfdfd; }
+.ledgerCard[data-maintenance-status] .ledgerDetailsGrid { grid-template-columns: minmax(0,1.45fr) minmax(0,1fr) minmax(0,0.7fr); }
+@media (max-width: 960px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard[data-maintenance-status] .ledgerDetailsGrid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .ledgerCard[data-maintenance-status] .ledgerDetailsGrid { grid-template-columns: 1fr; }
+}
