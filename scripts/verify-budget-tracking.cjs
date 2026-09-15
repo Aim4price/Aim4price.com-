@@ -28,7 +28,7 @@ async function main(){let server,browser;const created=[];try{
  if(u.pathname.startsWith('/api/my-invoices/budgets/') && r.method()==='DELETE'){budgets=budgets.filter(b=>b.id!==u.pathname.split('/').pop());body={ok:true};}
  if(u.pathname==='/api/me')body={ok:true,signedIn:true,user};
  if(u.pathname==='/api/account-profile')body={ok:true,profile:{...user,userId:user.id,displayName:user.name,extraPhotoUrls:[]}};
- if(u.pathname==='/api/my-invoices') body={ok:true,assets,invoices:[{id:'invoice-one',supplierName:'Workshop',invoiceDate:'2026-09-10',totalIncVat:10000,source:'manual',assetTitle:'New Holland TT4.90',blocks:[]},{id:'invoice-fuel',supplierName:'Fuel depot',invoiceDate:'2026-09-11',totalIncVat:500,source:'fuel_slip',blocks:[]}]};
+ if(u.pathname==='/api/my-invoices') body={ok:true,assets,invoices:[{id:'invoice-one',assetId:'tractor',invoiceNumber:'INV-001',supplierName:'Workshop',invoiceDate:'2026-09-10',totalIncVat:10000,source:'manual',assetTitle:'New Holland TT4.90',blocks:[]},{id:'invoice-fuel',assetId:'tractor',invoiceNumber:'FUEL-001',supplierName:'Fuel depot',invoiceDate:'2026-09-11',totalIncVat:500,source:'fuel_slip',blocks:[]}]};
  return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
  }if(r.resourceType()==='media')return r.abort();r.continue();});
  const click=async text=>{assert.ok(await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(x=>x.textContent.trim()===t&&!x.disabled);if(!b)return false;b.click();return true;},text),`Button ${text}`);};
@@ -41,12 +41,17 @@ async function main(){let server,browser;const created=[];try{
  await click('Manage');await page.waitForSelector('[role=dialog]');await click('Delete budget');await page.waitForSelector('[role=alertdialog]');await page.keyboard.press('Escape');assert.equal(await page.$('[role=alertdialog]'),null);
  await click('Add Budget');await page.waitForSelector('[role=dialog]');await page.keyboard.press('Escape');
  await click('Download');await page.waitForSelector('[role=dialog]');assert.match(await page.$eval('[role=dialog]',e=>e.textContent),/PDF report.*Excel workbook/);await click('PDF report');await page.waitForFunction(()=>!document.querySelector('[role=dialog]'));assert.ok(requests.some(u=>u.includes('/budgets/report?')&&u.includes('format=pdf')));
- const link=await page.$eval('a[href*="view=costs"]',a=>a.getAttribute('href'));assert.match(link,/budgetId=budget-one&view=costs/);
- await page.goto('http://localhost:3031/budget-validation?page=cost&budgetId=budget-one&view=costs',{waitUntil:'networkidle0'});assert.equal(await page.$('[role=dialog]'),null);assert.ok(requests.some(u=>u.includes('assetId=tractor')&&u.includes('year=2026')&&u.includes('month=9')));assert.match(await page.$eval('main',e=>e.textContent),/Workshop/);assert.doesNotMatch(await page.$eval('main',e=>e.textContent),/Fuel depot/);
+ await click('View details');await page.waitForSelector('[aria-label="Allocated costs"]');
+ assert.match(await page.$eval('[aria-label="Allocated costs"]',e=>e.textContent),/Workshop/);
+ assert.doesNotMatch(await page.$eval('[aria-label="Allocated costs"]',e=>e.textContent),/Fuel depot/);
+ assert.ok(requests.some(u=>u.includes('assetId=tractor')&&u.includes('year=2026')&&u.includes('month=9')));
+ assert.match(page.url(),/budget-validation$/);
+ await page.screenshot({path:'/tmp/budget-expanded.png',fullPage:true});
+ await click('Hide details');assert.equal(await page.$('[aria-label="Allocated costs"]'),null);
  await page.setViewport({width:430,height:932});await page.goto('http://localhost:3031/owner-app/budget-validation',{waitUntil:'networkidle0'});await page.waitForSelector('article[data-status]');await page.screenshot({path:'/tmp/budget-mobile.png',fullPage:true});
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'No mobile horizontal overflow');
  assert.deepEqual(errors,[]);
- console.log('PASS: desktop/mobile cards, alerts, asset filter, add/edit modal launch, export choices and scoped cost navigation');
+ console.log('PASS: desktop/mobile cards, alerts, asset filter, add/edit modal launch, export choices and inline allocated costs');
  }finally{for(const dir of created){await fs.rm(dir,{recursive:true,force:true});await fs.rm(path.join(root,'.next/types',path.relative(root,dir)),{recursive:true,force:true});}if(browser)await browser.close();if(server)server.kill();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import BudgetCostDetails from './BudgetCostDetails';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 import { budgetStatusLabel, filterTrackedBudgets, EMPTY_BUDGET_FILTERS, type TrackedBudget } from '../../lib/budget-tracking';
@@ -38,6 +39,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   onAdd: () => void; onEdit: (id: string) => void; onDelete: (id: string) => void;
 }) {
   const [query, setQuery] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filters, setFilters] = useState(EMPTY_BUDGET_FILTERS);
   const [draft, setDraft] = useState(EMPTY_BUDGET_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -97,13 +99,26 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span><button onClick={() => { setFilters(EMPTY_BUDGET_FILTERS); setQuery(''); }}>Clear filters</button></div> : null}
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
     {ready ? visible.map(budget => <article id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
-      <div className={styles.cardHeading}><div><h2 className={ledger.invoiceTitle}>{budget.assetTitle}</h2><p className={ledger.invoiceReference}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel}</p></div><span className={styles.status}>{budgetStatusLabel(budget)}</span></div>
-      <div className={styles.cardBody}><div>
-        <dl className={styles.metrics}><div><dt>Spent</dt><dd>{money(budget.spent)}</dd></div><div><dt>Budget</dt><dd>{money(budget.amount)}</dd></div><div><dt>{budget.overBy > 0 ? 'Over budget' : 'Remaining'}</dt><dd>{money(budget.overBy > 0 ? budget.overBy : budget.remaining)}</dd></div></dl>
-        <div className={styles.track} role="progressbar" aria-label={`${budget.assetTitle} budget used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.max(0, budget.percentUsed))} aria-valuetext={`${budget.percentUsed}% used${budget.overBy > 0 ? `, ${money(budget.overBy)} over budget` : ''}`}><span style={{ width: `${Math.min(100, Math.max(0, budget.percentUsed))}%` }} /><i style={{ left: `${budget.warningPercent}%` }} aria-hidden="true" /></div>
-        <div className={styles.progressLabels}><span>{budget.overBy > 0 ? `${money(budget.overBy)} over budget` : `Alert at ${budget.warningPercent}%`}</span><strong>{budget.percentUsed.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}% used</strong></div>
-      </div><div className={styles.cardActions}><Link className={`${ledger.secondaryButtonSmall} ${styles.viewCosts}`} href={`/my-invoices?budgetId=${encodeURIComponent(budget.id)}&view=costs`}><Icon kind="ledger" />View costs</Link><button className={`${ledger.secondaryButtonSmall} ${ledger.invoiceManageButton}`} data-budget-trigger={budget.id} onClick={() => setManageId(budget.id)}><Icon kind="manage" />Manage</button></div></div>
-      <div className={styles.meta}><span>Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span><span>Amounts incl. VAT</span></div>
+      <div className={styles.cardHeading}>
+        <div><h2 className={ledger.invoiceTitle}>{budget.assetTitle}</h2><p className={ledger.invoiceReference}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel}</p></div>
+        <div className={styles.spentBlock}><strong className={ledger.invoicePrice}>{money(budget.spent)}</strong><span className={ledger.invoiceVatLabel}>Spent incl. VAT</span></div>
+      </div>
+      <div className={styles.cardBody}>
+        <div className={styles.progressBlock}>
+          <div className={styles.track} role="progressbar" aria-label={`${budget.assetTitle} budget used`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.max(0, budget.percentUsed))} aria-valuetext={`${budget.percentUsed}% used${budget.overBy > 0 ? `, ${money(budget.overBy)} over budget` : ''}`}><span style={{ width: `${Math.min(100, Math.max(0, budget.percentUsed))}%` }} /><i style={{ left: `${budget.warningPercent}%` }} aria-hidden="true" /></div>
+          <div className={styles.progressLabels}><span>{budgetStatusLabel(budget)} · {money(budget.amount)} budget</span><strong>{budget.percentUsed.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}% used</strong></div>
+        </div>
+        <div className={styles.cardActions}>
+          <button type="button" className={`${ledger.secondaryButtonSmall} ${styles.viewCosts}`} aria-expanded={expandedId === budget.id} aria-controls={`budget-details-${budget.id}`} onClick={() => setExpandedId(expandedId === budget.id ? null : budget.id)}>
+            <svg className={ledger.invoiceDetailsChevron} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+            {expandedId === budget.id ? 'Hide details' : 'View details'}
+          </button>
+          <button className={`${ledger.secondaryButtonSmall} ${ledger.invoiceManageButton}`} data-budget-trigger={budget.id} onClick={() => setManageId(budget.id)}><Icon kind="manage" />Manage</button>
+        </div>
+      </div>
+      {expandedId === budget.id ? <section id={`budget-details-${budget.id}`} className={ledger.invoiceDetails} aria-label={`Costs allocated to ${budget.assetTitle}`}>
+        <h3>Allocated costs</h3><BudgetCostDetails budget={budget} />
+      </section> : null}
     </article>) : null}
     {filterOpen ? <FilterFlow title="Filter budgets" onClose={() => setFilterOpen(false)} onClear={() => setFilters(EMPTY_BUDGET_FILTERS)} onApply={() => { setFilters(draft); setFilterOpen(false); }}>
       <FilterQuestion label="Which asset?" searchable value={draft.asset} onChange={asset => setDraft({ ...draft, asset })} options={[{ value: 'all', label: 'All budget scopes' }, ...Array.from(new Map(budgets.map(b => [b.assetId || 'overall', { value: b.assetId || 'overall', label: b.assetTitle }])).values())]} />
