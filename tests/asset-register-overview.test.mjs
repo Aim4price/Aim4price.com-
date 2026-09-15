@@ -18,7 +18,8 @@ test('Asset Register mounts the quick overview for owner and dealer register wor
 });
 
 test('quick overview reuses the existing Asset Register alert payload', () => {
-  assert.match(overview, /fetch\(`\/api\/asset-register\$\{suffix\}`/);
+  assert.match(overview, /buildAssetRegisterApiUrl\(registerIdFromLocation\(window.location\)\)/);
+  assert.match(overview, /fetch\(registerUrl/);
   assert.match(overview, /latestIssueNoteStatus/);
   assert.match(overview, /maintenanceAlert/);
   assert.match(overview, /licenseRenewalAlert/);

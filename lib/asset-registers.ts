@@ -924,7 +924,7 @@ async function setSinglePrimaryRegister(userId: string, registerId: string): Pro
       update public.asset_registers
       set is_primary = (id::text = $2),
           updated_at = case when id::text = $2 then now() else updated_at end
-      where user_id = $1
+      where user_id = $1 and is_primary is distinct from (id::text = $2)
     `,
     [userId, registerId],
   );
@@ -937,7 +937,7 @@ async function setSingleSelectedRegister(userId: string, registerId: string): Pr
       update public.asset_registers
       set is_selected = (id::text = $2),
           updated_at = case when id::text = $2 then now() else updated_at end
-      where user_id = $1
+      where user_id = $1 and is_selected is distinct from (id::text = $2)
     `,
     [userId, registerId],
   );
@@ -951,13 +951,17 @@ async function normalizeSelectedRegister(userId: string, fallbackRegisterId: str
       from public.asset_registers
       where user_id = $1 and is_selected = true
       order by updated_at desc nulls last, created_at desc nulls last, id desc
-      limit 1
+      limit 2
     `,
     [userId],
   );
 
   const selectedId = cleanText(selected.rows[0]?.id) || fallbackRegisterId;
-  await setSingleSelectedRegister(userId, selectedId);
+  // Register reads must not rewrite every account register. Combined loads and
+  // the overview can arrive together; those no-op updates compete for row locks.
+  if (selected.rows.length !== 1) {
+    await setSingleSelectedRegister(userId, selectedId);
+  }
   return selectedId;
 }
 
