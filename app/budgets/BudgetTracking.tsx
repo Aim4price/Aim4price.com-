@@ -36,7 +36,8 @@ function Dialog({ title, onClose, children, report = false }: { report?: boolean
     }}><header data-download-header="true"><h2>{title}</h2><button type="button" onClick={onClose} aria-label="Close">×</button></header>{children}</div>
   </div>;
 }
-export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd, onEdit, onDelete }: {
+export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd, onEdit, onDelete, scopeAssetId = '' }: {
+  scopeAssetId?: string;
   budgets: TrackedBudget[]; loading: boolean; error: string; onRetry: () => void;
   onAdd: () => void; onEdit: (id: string) => void; onDelete: (id: string) => void;
 }) {
@@ -64,6 +65,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   const ready = !loading && !error;
   async function download(format: 'pdf' | 'xlsx') {
     const params = new URLSearchParams({ format, q: query, ...filters });
+    if (scopeAssetId) params.set('asset', scopeAssetId);
     const url = `/api/my-invoices/budgets/report?${params}`;
     setDownloadError('');
     const reportWindow = format === 'pdf' ? window.open('', '_blank') : null;

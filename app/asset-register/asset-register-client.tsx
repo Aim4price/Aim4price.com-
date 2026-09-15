@@ -4447,13 +4447,14 @@ function buildAssetRegisterManageReturnPath(assetId: string, currentLocation = '
 }
 
 function buildOwnerAssetPageHref(
-  pathname: '/my-invoices' | '/fuel' | '/maintenance' | '/documents',
+  pathname: '/my-invoices' | '/fuel' | '/maintenance' | '/documents' | '/budgets',
   assetId: string,
-  options: { add?: boolean } = {},
+  options: { add?: boolean; budgetAction?: boolean } = {},
   currentLocation = '/asset-register',
 ): string {
   const params = new URLSearchParams({ assetId });
   if (options.add) params.set('add', '1');
+  if (options.budgetAction) params.set('budgetAction', 'open');
   params.set('returnTo', buildAssetRegisterManageReturnPath(assetId, currentLocation));
   return `${pathname}?${params.toString()}`;
 }
@@ -6661,6 +6662,8 @@ export default function AssetRegisterClient({
   const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [costBudgetStatusByAssetId, setCostBudgetStatusByAssetId] = useState<Record<string, AssetCostBudgetStatus>>({});
+  const [budgetAssetIds, setBudgetAssetIds] = useState<Set<string>>(new Set());
+  const [budgetLookupState, setBudgetLookupState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [assetGroups, setAssetGroups] = useState<AssetGroup[]>([]);
   const [expandedAssetGroupIds, setExpandedAssetGroupIds] = useState<Set<string>>(() => new Set());
   const [assetGroupShareTarget, setAssetGroupShareTarget] = useState<AssetGroup | null>(null);
@@ -6968,13 +6971,17 @@ export default function AssetRegisterClient({
     let cancelled = false;
 
     async function loadCostBudgetStatuses() {
+      if (!cancelled) setBudgetLookupState('loading');
       try {
         const response = await fetch('/api/my-invoices/budgets', {
           cache: 'no-store',
           credentials: 'include',
         });
         const data = (await response.json().catch(() => null)) as AssetCostBudgetResponse | null;
-        if (!response.ok || !data?.ok || cancelled) return;
+        if (cancelled) return;
+        if (!response.ok || !data?.ok) throw new Error('Budget lookup failed.');
+        setBudgetAssetIds(new Set((data.budgets ?? []).map((budget) => String(budget.assetId ?? '').trim()).filter(Boolean)));
+        setBudgetLookupState('ready');
 
         const next: Record<string, AssetCostBudgetStatus> = {};
         for (const budget of data.budgets ?? []) {
@@ -6985,6 +6992,7 @@ export default function AssetRegisterClient({
         }
         setCostBudgetStatusByAssetId(next);
       } catch {
+        if (!cancelled) setBudgetLookupState('error');
         // Budget highlighting is supplemental; the Asset Register remains usable if it cannot load.
       }
     }
@@ -6992,10 +7000,12 @@ export default function AssetRegisterClient({
     const handleCostLedgerUpdated = () => void loadCostBudgetStatuses();
     void loadCostBudgetStatuses();
     window.addEventListener('aim4price:cost-ledger-updated', handleCostLedgerUpdated);
+    window.addEventListener('focus', handleCostLedgerUpdated);
 
     return () => {
       cancelled = true;
       window.removeEventListener('aim4price:cost-ledger-updated', handleCostLedgerUpdated);
+      window.removeEventListener('focus', handleCostLedgerUpdated);
     };
   }, [isAccountantWorkspace]);
 
@@ -21326,6 +21336,27 @@ export default function AssetRegisterClient({
                       <small>Record an expense for this asset.</small>
                     </span>
                   </Link>
+
+                  {accountProfile?.accountType === 'owner' && !isAccountantWorkspace ? (
+                    <button
+                      type="button"
+                      className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                      disabled={budgetLookupState === 'loading'}
+                      onClick={() => {
+                        if (budgetLookupState === 'error') {
+                          window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
+                          return;
+                        }
+                        window.location.assign(buildOwnerAssetPageHref('/budgets', activeAsset.id, { budgetAction: true }, ownerCommandReturnLocation));
+                      }}
+                    >
+                      <MoneyBagIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>{budgetLookupState === 'loading' ? 'Loading budget…' : budgetLookupState === 'error' ? 'Retry budget' : budgetAssetIds.has(activeAsset.id) ? 'Manage budget' : 'Add budget'}</strong>
+                        <small>{budgetLookupState === 'error' ? 'Check this asset’s budget again.' : budgetAssetIds.has(activeAsset.id) ? 'Review or change this asset’s budget.' : 'Set a spending limit for this asset.'}</small>
+                      </span>
+                    </button>
+                  ) : null}
 
                   {canAssetReceiveFuel(activeAsset) ? (
                     <Link
