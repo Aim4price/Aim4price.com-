@@ -247,7 +247,8 @@
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) > svg {
   padding: .7rem !important;
-  box-sizing: border-box;
+  /* Legacy report SVGs use content-box !important; padding must stay inside the tile. */
+  box-sizing: border-box !important;
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-icon]) {

@@ -91,7 +91,8 @@ async function details(page, original=false) {
     style:read(card,['padding','borderRadius','columnGap','backgroundImage','borderTopColor']),
     title:read(card.querySelector('strong'),['fontSize','fontWeight','lineHeight','color','letterSpacing']),
     small:card.querySelector('small')?read(card.querySelector('small'),['fontSize','fontWeight','lineHeight','color']):null,
-    icon:read(card.querySelector('[data-download-icon]')||card.firstElementChild,['width','height','borderRadius']),
+    icon:read(card.querySelector('[data-download-icon]')||card.firstElementChild,['width','height','borderRadius','boxSizing']),
+    iconBounds:(()=>{const rect=(card.querySelector('[data-download-icon]')||card.firstElementChild).getBoundingClientRect();return {width:Math.round(rect.width*10)/10,height:Math.round(rect.height*10)/10};})(),
    })),
    footer:footer?read(footer,['justifyContent','backgroundColor','borderTopWidth']):null,
    buttons:footer?[...footer.querySelectorAll('button,a')].map(button=>read(button,['minWidth','minHeight','borderRadius','fontSize','fontWeight','lineHeight','letterSpacing'])):[],
@@ -120,6 +121,7 @@ function verifyDetails(actual, reference, name) {
   assert.deepEqual(card.title,expected.title,`${name} card ${index+1} title`);
   if(card.small)assert.deepEqual(card.small,expected.small,`${name} card ${index+1} description`);
   assert.deepEqual(card.icon,expected.icon,`${name} card ${index+1} icon`);
+  assert.deepEqual(card.iconBounds,expected.iconBounds,`${name} card ${index+1} rendered icon bounds`);
  }
  assert.ok(actual.footer,`${name} footer exists`);
  assert.deepEqual(actual.footer,reference.footer,`${name} footer layout`);
