@@ -429,27 +429,35 @@ function maintenanceCardCaption(record: MaintenanceRecord): string {
   return record.triggerType === 'date' ? 'Completed On' : 'Completed At';
 }
 
+function maintenanceTimingLabel(record: MaintenanceRecord): string {
+  if (record.status !== 'upcoming') return '';
+  const remaining = record.triggerType === 'date' ? record.daysUntilDue : record.remainingUsage;
+  if (remaining === null || !Number.isFinite(remaining)) return '';
+  if (remaining === 0) return record.triggerType === 'date' ? 'Due today' : 'Due now';
+  const amount = record.triggerType === 'date'
+    ? `${numberText(Math.abs(remaining))} ${Math.abs(remaining) === 1 ? 'day' : 'days'}`
+    : formatUsage(Math.abs(remaining), record.usageMetric ?? record.assetUsageMetric);
+  return `${amount} ${remaining < 0 ? 'overdue' : 'remaining'}`;
+}
+
+function maintenanceDisplayTitle(record: MaintenanceRecord): string {
+  const title = record.title?.trim();
+  if (record.status === 'done' && ((!title && record.maintenanceType === 'service') || /^(next|scheduled) service$/i.test(title || ''))) return 'Completed service';
+  if (record.status === 'done' && (!title || /^(next|scheduled) check[- ]?up$/i.test(title))) return 'Completed check-up';
+  return title || (record.maintenanceType === 'checkup' ? 'Maintenance check-up' : 'Scheduled service');
+}
+
 function arrangeMaintenanceTimeline(records: MaintenanceRecord[]): MaintenanceRecord[] {
-  const byId = new Map(records.map((record) => [record.id, record]));
-  const added = new Set<string>();
-  const arranged: MaintenanceRecord[] = [];
-
-  records.forEach((record) => {
-    if (added.has(record.id)) return;
-
-    arranged.push(record);
-    added.add(record.id);
-
-    if (record.generatedFromMaintenanceId) {
-      const completedParent = byId.get(record.generatedFromMaintenanceId);
-      if (completedParent && completedParent.status === 'done' && !added.has(completedParent.id)) {
-        arranged.push(completedParent);
-        added.add(completedParent.id);
-      }
-    }
-  });
-
-  return arranged;
+  const priority = (record: MaintenanceRecord) => {
+    if (record.status === 'cancelled') return 5;
+    if (record.status === 'done') return 4;
+    if (record.computedStatus === 'overdue') return 0;
+    if (record.computedStatus === 'due') return 1;
+    if (record.computedStatus === 'due_soon') return 2;
+    return 3;
+  };
+  // Stable sorting retains the server's ordering within each urgency group.
+  return [...records].sort((a, b) => priority(a) - priority(b));
 }
 
 function maintenanceAlertLabel(record: MaintenanceRecord): string {
@@ -1400,17 +1408,18 @@ export default function MaintenanceClient({
                   <article
                     className={`${styles.invoiceRow} ${styles.ledgerCard} ${cardStatusClass} ${isUpcomingRecurringFollowUp && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
                     key={record.id}
+                    data-maintenance-status={record.status === 'done' ? 'completed' : record.status === 'cancelled' ? 'cancelled' : needsAttention ? 'attention' : 'upcoming'}
                   >
                     <div className={styles.invoiceHeader}>
                       <div className={styles.invoiceTitleBlock}>
-                        <h2 className={styles.invoiceTitle}>{record.title || (record.maintenanceType === 'checkup' ? 'Maintenance check-up' : 'Scheduled service')}</h2>
+                        <h2 className={styles.invoiceTitle}>{maintenanceDisplayTitle(record)}</h2>
                         <p className={styles.ledgerMeta}>
                           {typeLabel(record.maintenanceType)}
                           {isDone ? ` · Completed ${dateOnly(record.completedAtIso || record.updatedAtIso)}` : record.recurringEnabled || isRecurringFollowUp ? ' · Recurring' : ' · Once-off'}
                         </p>
                         <div className={styles.ledgerBadges}>
                           <span className={styles.ledgerAssetPill}><AssetPillIcon /><span>{record.assetTitle}</span></span>
-                          <span className={`${styles.maintenanceStatusPill} ${statusPillClass}`}>{statusText}</span>
+                          <span className={`${styles.maintenanceStatusPill} ${statusPillClass}`}><span aria-hidden="true" className={styles.statusSymbol}>{isDone ? '✓' : record.status === 'cancelled' ? '−' : needsAttention ? '!' : '◷'}</span>{statusText}</span>
                         </div>
                       </div>
 
@@ -1418,6 +1427,7 @@ export default function MaintenanceClient({
                         <div className={styles.invoiceValueBlock}>
                           <strong className={styles.invoicePrice}>{maintenanceCardValue(record)}</strong>
                           <span className={styles.invoiceVatLabel}>{maintenanceCardCaption(record)}</span>
+                          {maintenanceTimingLabel(record) ? <span className={styles.timingLabel}>{maintenanceTimingLabel(record)}</span> : null}
                         </div>
 
                         <div className={styles.rowActions}>
@@ -1447,13 +1457,11 @@ export default function MaintenanceClient({
                       <h3>Maintenance details</h3>
                       <dl className={styles.ledgerDetailsGrid}>
                         <div><dt>Asset</dt><dd>{record.assetTitle}<span className={styles.ledgerAssetMeta}>{buildMaintenanceAssetMeta(record)}</span></dd></div>
-                        <div><dt>{(record.triggerType === 'date' ? 'Scheduled date' : 'Scheduled usage')}</dt><dd>{maintenanceDueValue(record) || 'Not set'}</dd></div>
-                        <div><dt>Status</dt><dd>{statusText}</dd></div>
                         <div><dt>Assigned to</dt><dd>{record.assignedName || 'Unassigned'}</dd></div>
                         <div><dt>Reminder</dt><dd>{maintenanceAlertLabel(record)}</dd></div>
                         <div><dt>Repeats</dt><dd>{record.recurringEnabled && record.recurringIntervalValue && record.recurringIntervalUnit ? `Every ${record.recurringIntervalValue} ${record.recurringIntervalUnit}` : 'Once-off'}</dd></div>
-                        {isDone ? <div><dt>{maintenanceCardCaption(record)}</dt><dd>{maintenanceCardValue(record)}</dd></div> : null}
-                        {record.completedAtIso ? <div><dt>Completed on</dt><dd>{dateOnly(record.completedAtIso)}</dd></div> : null}
+                        {isDone ? <div><dt>Originally scheduled</dt><dd>{maintenanceDueValue(record) || 'Not set'}</dd></div> : null}
+                        {record.completedAtIso && record.triggerType !== 'date' ? <div><dt>Completed on</dt><dd>{dateOnly(record.completedAtIso)}</dd></div> : null}
                         {record.completedBy ? <div><dt>Completed by</dt><dd>{record.completedBy}</dd></div> : null}
                         <div><dt>Updated</dt><dd>{dateOnly(record.updatedAtIso)}</dd></div>
                         {record.alertNotedAtIso ? <div><dt>Alert noted</dt><dd>{dateOnly(record.alertNotedAtIso)}</dd></div> : null}
