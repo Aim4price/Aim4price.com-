@@ -4587,6 +4587,32 @@ function assetUnnotedAlertCount(asset: RegisterAsset): number {
   return count;
 }
 
+function umbrellaAttentionSummary(assetList: RegisterAsset[]) {
+  const summary = { issues: 0, updates: 0, actions: 0, reminders: 0, total: 0, latest: 0 };
+  for (const asset of assetList) {
+    const issues = noticeStack(asset.issueNoteStatuses, asset.latestIssueNoteStatus).filter((note) => !note.notedAtIso);
+    const updates = [
+      ...noticeStack(asset.maintenanceStatuses, asset.latestMaintenanceStatus).filter((note) => !note.notedAtIso),
+      ...outstandingPartnerNotes(asset).filter((note) => !note.notedAtIso),
+    ];
+    const reminders = noticeStack(asset.maintenanceAlerts, asset.maintenanceAlert);
+    const actions = Number(assetNeedsEstimateAttention(asset)) + Number(Boolean(asset.dealerAssetCorrection));
+    const count = issues.length + updates.length + reminders.length + Number(Boolean(asset.licenseRenewalAlert)) + actions;
+    summary.issues += issues.length;
+    summary.updates += updates.length;
+    summary.actions += actions;
+    summary.reminders += reminders.length + Number(Boolean(asset.licenseRenewalAlert));
+    summary.total += count;
+    if (count) {
+      summary.latest = Math.max(summary.latest, timestampFromIso(asset.updatedAtIso),
+        timestampFromIso(asset.dealerAssetCorrection?.updatedAtIso),
+        timestampFromIso(asset.dealerAssetCorrection?.createdAtIso),
+        ...[...issues, ...updates, ...reminders].map((notice) => timestampFromIso(notice.createdAtIso)));
+    }
+  }
+  return summary;
+}
+
 function assetListUnnotedAlertCount(assetList: RegisterAsset[]): number {
   return assetList.reduce((sum, asset) => sum + assetUnnotedAlertCount(asset), 0);
 }
@@ -9846,13 +9872,28 @@ export default function AssetRegisterClient({
     () => orderAssetsByGroups(filteredAssets, displayAssetGroups),
     [displayAssetGroups, filteredAssets],
   );
+  const umbrellaAttentionById = useMemo(() => {
+    const byId = new Map(assets.map((asset) => [asset.id, asset]));
+    return new Map(displayAssetGroups.map((group) => [group.id, umbrellaAttentionSummary(
+      group.members.flatMap((member) => {
+        const asset = byId.get(member.assetId);
+        return asset ? [asset] : [];
+      }),
+    )]));
+  }, [assets, displayAssetGroups]);
   const registerPaginationEntries = useMemo(
     () => buildAssetGroupPageEntries(groupedFilteredAssets, displayAssetGroups).map((entry) => (
       entry.kind === 'group'
         ? { ...entry, assets: [...entry.assets].sort(compareUmbrellaAssetsByAttention) }
         : entry
-    )),
-    [displayAssetGroups, groupedFilteredAssets],
+    )).sort((left, right) => {
+      if (left.kind !== 'group' || right.kind !== 'group') return 0;
+      const a = umbrellaAttentionById.get(left.group.id);
+      const b = umbrellaAttentionById.get(right.group.id);
+      return Number(Boolean(b?.total)) - Number(Boolean(a?.total))
+        || (a?.total && b?.total ? b.latest - a.latest : 0);
+    }),
+    [displayAssetGroups, groupedFilteredAssets, umbrellaAttentionById],
   );
 
   const isShowingAllAssets = pageSize === 'all';
@@ -16955,6 +16996,7 @@ export default function AssetRegisterClient({
                   {visibleAssetRows.map((row) => {
                     if (row.kind === 'group') {
                       const group = row.group;
+                      const attention = umbrellaAttentionById.get(group.id);
                       const primaryAssetId = getAssetGroupPrimaryAssetId(group);
                       const groupAnchorAsset = assetsById.get(primaryAssetId)
                         ?? group.members
@@ -16986,7 +17028,7 @@ export default function AssetRegisterClient({
                           data-asset-group-drop-target={isAssetGroupDropTarget ? 'true' : undefined}
                         >
                           <section
-                            className={`${styles.assetGroupHeader} ${group.isFlagged ? styles.assetGroupHeaderFlagged : ''} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
+                            className={`${styles.assetGroupHeader} ${group.isFlagged ? styles.assetGroupHeaderFlagged : ''} ${attention?.total ? (attention.issues ? styles.umbrellaNeedsAttention : styles.umbrellaHasUpdates) : ''} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
                             onClick={(event) => {
                               if (draggingAssetId) return;
                               const target = event.target as HTMLElement;
@@ -17043,6 +17085,14 @@ export default function AssetRegisterClient({
                                   {group.members.length} grouped {group.members.length === 1 ? 'asset' : 'assets'} · {assetGroupValueModeLabel(group)}
                                   {group.registerId === null ? ' · Combined umbrella' : ''}
                                 </p>
+                                {attention && attention.total > 0 ? (
+                                  <div className={styles.umbrellaAttentionPills} aria-label="Outstanding umbrella updates">
+                                    {attention.issues > 0 ? <span className={styles.umbrellaIssuePill}>{attention.issues} to check</span> : null}
+                                    {attention.updates > 0 ? <span>{attention.updates} to note</span> : null}
+                                    {attention.actions > 0 ? <span>{attention.actions} to update</span> : null}
+                                    {attention.reminders > 0 ? <span>{attention.reminders} {attention.reminders === 1 ? 'reminder' : 'reminders'}</span> : null}
+                                  </div>
+                                ) : null}
                                 {isCollapsed && groupAnchorAsset ? (
                                   <span className={styles.assetGroupPreview}>
                                     {groupAnchorAsset.title}{additionalAssetCount ? ` + ${additionalAssetCount} more` : ''}
