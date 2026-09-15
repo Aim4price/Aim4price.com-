@@ -1,4 +1,5 @@
 'use client';
+import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 import Link from 'next/link';
 import BudgetCostDetails from './BudgetCostDetails';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
@@ -38,6 +39,8 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   budgets: TrackedBudget[]; loading: boolean; error: string; onRetry: () => void;
   onAdd: () => void; onEdit: (id: string) => void; onDelete: (id: string) => void;
 }) {
+  const [pageSize, setPageSize] = useState<ListPageSize>(6);
+  const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filters, setFilters] = useState(EMPTY_BUDGET_FILTERS);
@@ -48,6 +51,12 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   const [downloadError, setDownloadError] = useState('');
   const [downloading, setDownloading] = useState(false);
   const visible = filterTrackedBudgets(budgets, query, filters);
+  const pageLimit = pageSize === 'all' ? Math.max(1, visible.length) : pageSize;
+  const pageCount = Math.max(1, Math.ceil(visible.length / pageLimit));
+  const safePage = Math.min(page, pageCount);
+  const pagedBudgets = visible.slice((safePage - 1) * pageLimit, safePage * pageLimit);
+  useEffect(() => { setPage(1); }, [query, filters]);
+  useEffect(() => { setPage(current => Math.min(current, pageCount)); }, [pageCount]);
   const attention = budgets.filter(b => b.status !== 'on_track').length;
   const count = Object.values(filters).filter(v => v !== 'all').length;
   const selected = budgets.find(b => b.id === manageId);
@@ -98,7 +107,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     </div>
     {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span><button onClick={() => { setFilters(EMPTY_BUDGET_FILTERS); setQuery(''); }}>Clear filters</button></div> : null}
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
-    {ready ? visible.map(budget => <article id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
+    {ready ? pagedBudgets.map(budget => <article id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
       <div className={styles.cardHeading}>
         <div><h2 className={ledger.invoiceTitle}>{budget.assetTitle}</h2><p className={ledger.invoiceReference}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel}</p></div>
         <div className={styles.spentBlock}><strong className={ledger.invoicePrice}>{money(budget.spent)}</strong><span className={ledger.invoiceVatLabel}>Spent incl. VAT</span></div>
@@ -120,6 +129,14 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
         <h3>Allocated costs</h3><BudgetCostDetails budget={budget} />
       </section> : null}
     </article>) : null}
+    {ready && visible.length > 0 ? <ListPagination
+      label="Budgets pagination"
+      page={safePage}
+      pageCount={pageCount}
+      pageSize={pageSize}
+      onPageChange={setPage}
+      onPageSizeChange={size => { setPageSize(size); setPage(1); }}
+    /> : null}
     {filterOpen ? <FilterFlow title="Filter budgets" onClose={() => setFilterOpen(false)} onClear={() => setFilters(EMPTY_BUDGET_FILTERS)} onApply={() => { setFilters(draft); setFilterOpen(false); }}>
       <FilterQuestion label="Which asset?" searchable value={draft.asset} onChange={asset => setDraft({ ...draft, asset })} options={[{ value: 'all', label: 'All budget scopes' }, ...Array.from(new Map(budgets.map(b => [b.assetId || 'overall', { value: b.assetId || 'overall', label: b.assetTitle }])).values())]} />
       <FilterQuestion label="Which period?" value={draft.period} onChange={period => setDraft({ ...draft, period })} options={[{ value: 'all', label: 'Monthly and annual' }, { value: 'monthly', label: 'Monthly' }, { value: 'annual', label: 'Annual' }]} />

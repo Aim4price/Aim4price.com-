@@ -1,4 +1,5 @@
 'use client';
+import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
 import pickerStyles from '../../components/AssetPicker.module.css';
 import BudgetTracking from '../budgets/BudgetTracking';
@@ -348,8 +349,6 @@ function buildEmptyCostBudgetDraft(assetId = ''): CostBudgetDraft {
     includeFuelSlipCosts: true,
   };
 }
-
-const INVOICE_PAGE_SIZE = 10;
 
 const MONTH_OPTIONS = [
   'January',
@@ -1042,6 +1041,7 @@ export default function MyInvoicesClient({
   const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [downloadFilters, setDownloadFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [invoicePageSize, setInvoicePageSize] = useState<ListPageSize>(6);
   const [currentInvoicePage, setCurrentInvoicePage] = useState(1);
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [usageMetricDropdownOpen, setUsageMetricDropdownOpen] = useState(false);
@@ -1505,13 +1505,14 @@ export default function MyInvoicesClient({
     });
   }, [activeFilters.source, focusedBudget, invoiceSearch, invoices]);
 
-  const totalInvoicePages = useMemo(() => Math.max(1, Math.ceil(visibleInvoices.length / INVOICE_PAGE_SIZE)), [visibleInvoices.length]);
+  const invoiceLimit = invoicePageSize === 'all' ? Math.max(1, visibleInvoices.length) : invoicePageSize;
+  const totalInvoicePages = useMemo(() => Math.max(1, Math.ceil(visibleInvoices.length / invoiceLimit)), [visibleInvoices.length, invoiceLimit]);
   const safeInvoicePage = Math.min(currentInvoicePage, totalInvoicePages);
   const paginatedInvoices = useMemo(() => {
-    const startIndex = (safeInvoicePage - 1) * INVOICE_PAGE_SIZE;
-    return visibleInvoices.slice(startIndex, startIndex + INVOICE_PAGE_SIZE);
-  }, [safeInvoicePage, visibleInvoices]);
-  const shouldShowPagination = visibleInvoices.length > INVOICE_PAGE_SIZE;
+    const startIndex = (safeInvoicePage - 1) * invoiceLimit;
+    return visibleInvoices.slice(startIndex, startIndex + invoiceLimit);
+  }, [safeInvoicePage, visibleInvoices, invoiceLimit]);
+  const shouldShowPagination = visibleInvoices.length > 0;
 
   const yearOptions = useMemo(() => {
     const years = new Set(availableYears);
@@ -3544,25 +3545,14 @@ export default function MyInvoicesClient({
           </div>
 
           {!isLoading && shouldShowPagination ? (
-            <nav className={styles.paginationRow} aria-label="Cost records pagination">
-              <button
-                type="button"
-                className={styles.paginationButton}
-                onClick={() => setCurrentInvoicePage((page) => Math.max(1, page - 1))}
-                disabled={safeInvoicePage <= 1}
-              >
-                Previous
-              </button>
-              <span className={styles.paginationStatus}>Page {safeInvoicePage.toLocaleString('en-ZA')} of {totalInvoicePages.toLocaleString('en-ZA')}</span>
-              <button
-                type="button"
-                className={styles.paginationButton}
-                onClick={() => setCurrentInvoicePage((page) => Math.min(totalInvoicePages, page + 1))}
-                disabled={safeInvoicePage >= totalInvoicePages}
-              >
-                Next
-              </button>
-            </nav>
+            <ListPagination
+              label="Cost records pagination"
+              page={safeInvoicePage}
+              pageCount={totalInvoicePages}
+              pageSize={invoicePageSize}
+              onPageChange={setCurrentInvoicePage}
+              onPageSizeChange={(size) => { setInvoicePageSize(size); setCurrentInvoicePage(1); }}
+            />
           ) : null}
         </section>
         </>}

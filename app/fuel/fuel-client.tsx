@@ -1,4 +1,5 @@
 'use client';
+import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
@@ -544,8 +545,6 @@ function getFuelSlipMissingFieldPage(field: FuelSlipMissingFieldKey): FuelSlipFo
     ? 'details'
     : 'extra';
 }
-
-const FUEL_SLIP_MANAGER_PAGE_SIZE = 20;
 
 const FUEL_SLIP_CAPTURE_FILTER_OPTIONS: ReportSelectOption[] = [
   { value: 'all', label: 'All fuel slips' },
@@ -1640,6 +1639,9 @@ export default function FuelClient({
   const [openFuelSlipDownloadSelect, setOpenFuelSlipDownloadSelect] = useState<FuelSlipManagerFilterKey | null>(null);
   const [fuelSlipDownloadTargetSearch, setFuelSlipDownloadTargetSearch] = useState('');
   const [fuelSlipDownloadError, setFuelSlipDownloadError] = useState('');
+  const [fuelSlipPageSize, setFuelSlipPageSize] = useState<ListPageSize>(6);
+  const [storagePageSize, setStoragePageSize] = useState<ListPageSize>(6);
+  const [storagePage, setStoragePage] = useState(1);
   const [currentFuelSlipManagerPage, setCurrentFuelSlipManagerPage] = useState(1);
   const [expandedFuelSlipId, setExpandedFuelSlipId] = useState<string | null>(null);
   const [managedFuelSlip, setManagedFuelSlip] = useState<FuelSlipRecord | null>(null);
@@ -1676,6 +1678,12 @@ export default function FuelClient({
     () => storages.filter((storage) => matchesSearch(storage, searchText)),
     [searchText, storages],
   );
+  const storageLimit = storagePageSize === 'all' ? Math.max(1, visibleStorages.length) : storagePageSize;
+  const storagePages = Math.max(1, Math.ceil(visibleStorages.length / storageLimit));
+  const safeStoragePage = Math.min(storagePage, storagePages);
+  const pagedStorages = visibleStorages.slice((safeStoragePage - 1) * storageLimit, safeStoragePage * storageLimit);
+  useEffect(() => { setStoragePage(1); }, [searchText]);
+  useEffect(() => { setStoragePage(current => Math.min(current, storagePages)); }, [storagePages]);
   const includedFuelAssets = useMemo(
     () => assets.filter(isIncludedFuelEntryAsset),
     [assets],
@@ -1830,16 +1838,17 @@ export default function FuelClient({
     [fuelSlipManagerFilters, fuelSlipManagerSearchTerm, recentFuelSlips],
   );
 
+  const fuelSlipLimit = fuelSlipPageSize === 'all' ? Math.max(1, visibleFuelSlipManagerSlips.length) : fuelSlipPageSize;
   const totalFuelSlipManagerPages = useMemo(
-    () => Math.max(1, Math.ceil(visibleFuelSlipManagerSlips.length / FUEL_SLIP_MANAGER_PAGE_SIZE)),
-    [visibleFuelSlipManagerSlips.length],
+    () => Math.max(1, Math.ceil(visibleFuelSlipManagerSlips.length / fuelSlipLimit)),
+    [visibleFuelSlipManagerSlips.length, fuelSlipLimit],
   );
   const safeFuelSlipManagerPage = Math.min(currentFuelSlipManagerPage, totalFuelSlipManagerPages);
   const paginatedFuelSlipManagerSlips = useMemo(() => {
-    const startIndex = (safeFuelSlipManagerPage - 1) * FUEL_SLIP_MANAGER_PAGE_SIZE;
-    return visibleFuelSlipManagerSlips.slice(startIndex, startIndex + FUEL_SLIP_MANAGER_PAGE_SIZE);
-  }, [safeFuelSlipManagerPage, visibleFuelSlipManagerSlips]);
-  const shouldShowFuelSlipManagerPagination = visibleFuelSlipManagerSlips.length > FUEL_SLIP_MANAGER_PAGE_SIZE;
+    const startIndex = (safeFuelSlipManagerPage - 1) * fuelSlipLimit;
+    return visibleFuelSlipManagerSlips.slice(startIndex, startIndex + fuelSlipLimit);
+  }, [safeFuelSlipManagerPage, visibleFuelSlipManagerSlips, fuelSlipLimit]);
+  const shouldShowFuelSlipManagerPagination = visibleFuelSlipManagerSlips.length > 0;
   const activeFuelSlipManagerFilterCount = useMemo(() => [
     fuelSlipManagerFilters.targetKey !== 'all',
     fuelSlipManagerFilters.capture !== 'all',
@@ -2032,7 +2041,7 @@ export default function FuelClient({
   useEffect(() => {
     if (modalMode !== 'fuel-slip-manager') return;
     if (fuelSlipManagerListRef.current) fuelSlipManagerListRef.current.scrollTop = 0;
-  }, [fuelSlipManagerFilters, fuelSlipManagerSearch, modalMode, safeFuelSlipManagerPage]);
+  }, [fuelSlipManagerFilters, fuelSlipManagerSearch, fuelSlipPageSize, modalMode, safeFuelSlipManagerPage]);
 
   useEffect(() => {
     const wasOpen = fuelSlipManagerChildOpenRef.current;
@@ -3710,41 +3719,14 @@ export default function FuelClient({
                 </div>
 
                 {!isLoading && shouldShowFuelSlipManagerPagination ? (
-                  <nav className={styles.fuelSlipManagerPaginationRow} aria-label="Fuel slips pagination">
-                    <button
-                      type="button"
-                      className={styles.fuelSlipManagerPaginationButton}
-                      onClick={() => setCurrentFuelSlipManagerPage(1)}
-                      disabled={safeFuelSlipManagerPage <= 1}
-                    >
-                      First
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.fuelSlipManagerPaginationButton}
-                      onClick={() => setCurrentFuelSlipManagerPage((page) => Math.max(1, page - 1))}
-                      disabled={safeFuelSlipManagerPage <= 1}
-                    >
-                      Previous
-                    </button>
-                    <span className={styles.fuelSlipManagerPaginationStatus}>Page {safeFuelSlipManagerPage.toLocaleString('en-ZA')} of {totalFuelSlipManagerPages.toLocaleString('en-ZA')}</span>
-                    <button
-                      type="button"
-                      className={styles.fuelSlipManagerPaginationButton}
-                      onClick={() => setCurrentFuelSlipManagerPage((page) => Math.min(totalFuelSlipManagerPages, page + 1))}
-                      disabled={safeFuelSlipManagerPage >= totalFuelSlipManagerPages}
-                    >
-                      Next
-                    </button>
-                    <button
-                      type="button"
-                      className={styles.fuelSlipManagerPaginationButton}
-                      onClick={() => setCurrentFuelSlipManagerPage(totalFuelSlipManagerPages)}
-                      disabled={safeFuelSlipManagerPage >= totalFuelSlipManagerPages}
-                    >
-                      Last
-                    </button>
-                  </nav>
+                  <ListPagination
+                    label="Fuel slips pagination"
+                    page={safeFuelSlipManagerPage}
+                    pageCount={totalFuelSlipManagerPages}
+                    pageSize={fuelSlipPageSize}
+                    onPageChange={setCurrentFuelSlipManagerPage}
+                    onPageSizeChange={(size) => { setFuelSlipPageSize(size); setCurrentFuelSlipManagerPage(1); }}
+                  />
                 ) : null}
               </section>
   </>);
@@ -3854,7 +3836,7 @@ export default function FuelClient({
             ) : null}
 
             <div className={styles.storageList}>
-              {visibleStorages.map((storage) => {
+              {pagedStorages.map((storage) => {
                 const progress = getProgressPercent(storage);
                 const storageIsLow = isLowStorage(storage);
                 const dipstickNoteText = getDipstickNote(storage);
@@ -3957,6 +3939,14 @@ export default function FuelClient({
               })}
             </div>
 
+            {!isLoading && visibleStorages.length > 0 ? <ListPagination
+              label="Fuel ledger pagination"
+              page={safeStoragePage}
+              pageCount={storagePages}
+              pageSize={storagePageSize}
+              onPageChange={setStoragePage}
+              onPageSizeChange={(size) => { setStoragePageSize(size); setStoragePage(1); }}
+            /> : null}
             </>)}
           </section>
         </section>
