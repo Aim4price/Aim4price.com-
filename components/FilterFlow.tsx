@@ -1,8 +1,12 @@
 'use client';
 
-import { Children, useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
+import { Children, cloneElement, isValidElement, useEffect, useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import styles from './FilterFlow.module.css';
 import DropdownOverlay from './DropdownOverlay';
+import picker from './AssetPicker.module.css';
+import AssetSerialNumber from './AssetSerialNumber';
+
+type FilterAssetPicker = { title: string; assets: Array<{ id: string; title: string; meta?: string; serialNumber?: string; selectedMethod?: string; categoryLabel?: string }> };
 
 /** Shared filter dialog: keep choices in the caller so Back never loses an answer. */
 export default function FilterFlow({ title, children, onClose, onClear, onApply, dialogRef }: {
@@ -19,6 +23,10 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
   const bodyRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const currentStep = Math.min(step, steps.length - 1);
+  const question = steps[currentStep];
+  const assetQuestion = isValidElement<{assetPicker?: FilterAssetPicker; onChange: (value: string) => void}>(question) && question.props.assetPicker ? question : null;
+  const assetPicker = assetQuestion?.props.assetPicker;
+
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -33,7 +41,7 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
     <div className={styles.overlay} data-website-overlay onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <div className={styles.dialog} ref={(node) => {
+      <div className={assetPicker ? `${styles.dialog} ${picker.modal}` : styles.dialog} data-asset-choice-modal={assetPicker ? "true" : undefined} ref={(node) => {
         rootRef.current = node;
         if (typeof dialogRef === 'function') dialogRef(node);
         else if (dialogRef) (dialogRef as { current: HTMLDivElement | null }).current = node;
@@ -47,26 +55,28 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
         if (event.shiftKey && (document.activeElement === first || document.activeElement === bodyRef.current)) { event.preventDefault(); last?.focus(); }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
       }}>
-        <header className={styles.header}>
-          <h2 id={titleId}>{title}</h2>
+        <header className={styles.header} data-asset-choice-header={assetPicker ? "true" : undefined}>
+          <div><h2 id={titleId}>{assetPicker?.title || title}</h2>{assetPicker ? <p>Choose a saved asset, or include all assets.</p> : null}</div>
           <button className={styles.close} type="button" onClick={onClose} aria-label="Close filters">×</button>
         </header>
-        <div className={styles.body} ref={bodyRef} tabIndex={-1} key={currentStep}>
-          <p className={styles.progress}>Question {currentStep + 1} of {steps.length}</p>
-          {steps[currentStep]}
+        <div className={assetPicker ? picker.contents : styles.body} ref={bodyRef} tabIndex={-1} key={currentStep}>
+          {!assetPicker ? <p className={styles.progress}>Question {currentStep + 1} of {steps.length}</p> : null}
+          {assetQuestion ? cloneElement(assetQuestion, {onChange: (value: string) => {assetQuestion.props.onChange(value); if(currentStep < steps.length - 1) setStep(currentStep + 1);}}) : question}
         </div>
-        <footer className={styles.footer}>
+        <footer className={styles.footer} data-asset-choice-footer={assetPicker ? "true" : undefined}>
+          {assetPicker ? <>{currentStep > 0 ? <button type="button" onClick={()=>setStep(currentStep - 1)}>Back</button> : null}<button type="button" onClick={onClose}>Cancel</button></> : <>
           <button type="button" className={styles.clear} onClick={() => { onClear(); onClose(); }}>Clear filters</button>
           {currentStep > 0 ? <button type="button" onClick={() => setStep(currentStep - 1)}>Back</button> : null}
           <button type="button" className={styles.apply} onClick={onApply}>Apply filters</button>
           {currentStep < steps.length - 1 ? <button type="button" className={styles.next} onClick={() => setStep(currentStep + 1)}>Next</button> : null}
+          </>}
         </footer>
       </div>
     </div>
   );
 }
 
-export function FilterQuestion({ label, value, options, onChange, disabled = false, searchable = false, searchPlaceholder = 'Search options', noMatchesLabel = 'No matches found', menuClassName = '', disabledHint = 'Choose a specific option in the previous question to narrow this further, or continue with all.' }: {
+export function FilterQuestion({ label, value, options, onChange, disabled = false, searchable = false, searchPlaceholder = 'Search options', noMatchesLabel = 'No matches found', menuClassName = '', disabledHint = 'Choose a specific option in the previous question to narrow this further, or continue with all.', assetPicker }: {
   label: string;
   value: string;
   options: readonly { value: string; label: string }[];
@@ -77,6 +87,7 @@ export function FilterQuestion({ label, value, options, onChange, disabled = fal
   noMatchesLabel?: string;
   menuClassName?: string;
   disabledHint?: string;
+  assetPicker?: FilterAssetPicker;
 }) {
   const id = useId();
   const [query, setQuery] = useState('');
@@ -112,6 +123,16 @@ export function FilterQuestion({ label, value, options, onChange, disabled = fal
   useEffect(() => {
     if (open) document.getElementById(`${menuId}-${activeIndex}`)?.scrollIntoView({ block: 'nearest' });
   }, [open, activeIndex, menuId]);
+  if (assetPicker) return <>
+    <div data-asset-choice-toolbar="true"><input aria-label="Search saved assets" placeholder="Search assets..." value={query} onChange={event=>setQuery(event.target.value)} /><button type="button" onClick={()=>setQuery('')}>Clear</button></div>
+    <div data-asset-choice-list="true">{options.filter((option,index)=>index === 0 || `${option.label} ${assetPicker.assets.find(asset=>asset.id === option.value)?.serialNumber || ''}`.toLowerCase().includes(query.trim().toLowerCase())).map(option=>{
+      const asset=assetPicker.assets.find(asset=>asset.id === option.value);
+      return <button key={option.value} type="button" data-asset-choice-row="true" data-asset-choice-selected={value === option.value} aria-pressed={value === option.value} onClick={()=>onChange(option.value)}>
+        <span data-asset-choice-copy="true"><strong>{option.label}</strong>{asset?.meta ? <small>{asset.meta}</small> : null}{asset?.selectedMethod ? <small>{[asset.categoryLabel, asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'].filter(Boolean).join(' · ')}</small> : null}{asset ? <AssetSerialNumber value={asset.serialNumber} /> : null}</span>
+        <span data-asset-choice-value="true"><span className={picker.select}><i aria-hidden="true">{value === option.value ? '✓' : ''}</i>Select</span></span>
+      </button>;
+    })}</div>
+  </>;
   return <div className={styles.question} ref={questionRef}>
     <label id={`${id}-label`} htmlFor={id}>{label}</label>
     {searchable && !disabled ? <input type="search" value={query} onChange={(event) => { setQuery(event.target.value); setActive(0); }} placeholder={searchPlaceholder} aria-label={searchPlaceholder} /> : null}

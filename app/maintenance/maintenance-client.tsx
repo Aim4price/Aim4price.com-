@@ -1893,6 +1893,7 @@ export default function MaintenanceClient({
       {modalMode === 'filter' ? (
         <FilterFlow title="Filter maintenance records" onClose={closeModal} onClear={clearFilters} onApply={applyFilters}>
           <FilterQuestion
+            assetPicker={{title: "Choose asset for maintenance filters", assets: assets}}
             label="Which asset?"
             value={draftFilters.assetId}
             options={filterAssetOptions}

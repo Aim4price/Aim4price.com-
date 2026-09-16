@@ -111,7 +111,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
       onPageSizeChange={size => { setPageSize(size); setPage(1); }}
     /> : null}
     {filterOpen ? <FilterFlow title="Filter budgets" onClose={() => setFilterOpen(false)} onClear={() => setFilters(EMPTY_BUDGET_FILTERS)} onApply={() => { setFilters(draft); setFilterOpen(false); }}>
-      <FilterQuestion label="Which asset?" searchable value={draft.asset} onChange={asset => setDraft({ ...draft, asset })} options={[{ value: 'all', label: 'All budget scopes' }, ...Array.from(new Map(budgets.map(b => [b.assetId || 'overall', { value: b.assetId || 'overall', label: b.assetTitle }])).values())]} />
+      <FilterQuestion assetPicker={{title: "Choose asset for budget filters", assets: reportAssets}} label="Which asset?" searchable value={draft.asset} onChange={asset => setDraft({ ...draft, asset })} options={[{ value: 'all', label: 'All budget scopes' }, ...Array.from(new Map(budgets.map(b => [b.assetId || 'overall', { value: b.assetId || 'overall', label: b.assetTitle }])).values())]} />
       <FilterQuestion label="Which period?" value={draft.period} onChange={period => setDraft({ ...draft, period })} options={[{ value: 'all', label: 'Monthly and annual' }, { value: 'monthly', label: 'Monthly' }, { value: 'annual', label: 'Annual' }]} />
       <FilterQuestion label="Which status?" value={draft.status} onChange={status => setDraft({ ...draft, status })} options={[{ value: 'all', label: 'All statuses' }, { value: 'on_track', label: 'Within budget' }, { value: 'warning', label: 'Approaching limit' }, { value: 'over_budget', label: 'Limit reached or exceeded' }, { value: 'attention', label: 'All alerts' }]} />
     </FilterFlow> : null}
