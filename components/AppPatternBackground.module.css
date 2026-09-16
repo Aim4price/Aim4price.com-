@@ -214,15 +214,15 @@
 }
 
 /* Background-only preference: content cards retain their light surfaces. */
-:global(html[data-background='dark']) .background {
+:global(html[data-background='dark']:not(:has([data-home-page]))) .background {
   --pattern-background:
     radial-gradient(circle at top left, rgba(79, 150, 119, .16), transparent 34%),
     radial-gradient(circle at 92% 92%, rgba(79, 150, 119, .1), transparent 30%),
     linear-gradient(180deg, #243b34 0%, #1d302b 45%, #162822 100%);
 }
-:global(html[data-background='dark']) .arcs { stroke: #9dcdb7; opacity: .18; }
-:global(html[data-background='dark']) .dotGrid { fill: #9dcdb7; opacity: .25; }
-:global(html[data-background='dark']) .mintCircle { background: #619a80; opacity: .1; }
+:global(html[data-background='dark']:not(:has([data-home-page]))) .arcs { stroke: #9dcdb7; opacity: .18; }
+:global(html[data-background='dark']:not(:has([data-home-page]))) .dotGrid { fill: #9dcdb7; opacity: .25; }
+:global(html[data-background='dark']:not(:has([data-home-page]))) .mintCircle { background: #619a80; opacity: .1; }
 @media print {
-  :global(html[data-background='dark']) .background { --pattern-background: #fff; }
+  :global(html[data-background='dark']:not(:has([data-home-page]))) .background { --pattern-background: #fff; }
 }

@@ -2537,7 +2537,7 @@ export default function AppHeader({
 
           <div className={styles.actions}>
             <div className={styles.actionsRail}>
-              <BackgroundToggle className={styles.notificationButton} iconClassName={styles.notificationIcon} />
+              {pathname !== '/' && <BackgroundToggle className={styles.notificationButton} iconClassName={styles.notificationIcon} />}
               {isLoadingSession ? null : session ? (
                 <>
                   {!isAccountantWorkspace ? <div className={styles.notificationMenu} ref={notificationMenuRef}>
