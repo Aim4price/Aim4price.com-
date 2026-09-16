@@ -5226,3 +5226,10 @@
 .simpleScheduleDialog .scheduleQuestion .scheduleRepeat { order: initial; }
 .simpleScheduleDialog .scheduleHiddenLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .simpleScheduleDialog .scheduleSectionHeading h3:focus { outline: none; }
+
+/* Keep questions prominent and entered values light. */
+.simpleScheduleDialog .scheduleQuestion :is(input, textarea, .customFilterSelectButton, .customFilterSelectButtonText) { font-weight: 450; color: #40574d; }
+.simpleScheduleDialog .scheduleQuestion :is(input, textarea)::placeholder { font-weight: 400; color: #82928a; }
+.simpleScheduleDialog .scheduleQuestion .filterField > span { font-weight: 550; text-transform: none; letter-spacing: 0; font-size: .85rem; }
+.simpleScheduleDialog .scheduleQuestion .scheduleRepeat button { font-weight: 550; }
+.simpleScheduleDialog .scheduleQuestion .maintenanceCurrentUsage strong { font-weight: 500; }

@@ -20,6 +20,7 @@ import { openCanonicalReportUrl } from '../../lib/report-open';
 import type { MaintenanceIdentity } from '../../lib/maintenance-catalogue';
 import DesktopServiceModal, { type DesktopServiceCompletion } from '../../components/DesktopServiceModal';
 import styles from './page.module.css';
+import ScheduleDatePicker from './ScheduleDatePicker';
 import accountStyles from '../account/page.module.css';
 import fuelStyles from '../fuel/page.module.css';
 import chooserStyles from '../../components/MaintenanceDownloadChooser.module.css';
@@ -1684,17 +1685,17 @@ export default function MaintenanceClient({
               </div>
               <div className={styles.scheduleQuestion}>
                 {scheduleStep === 0 ? (
-                  <label className={styles.filterField}>
-                    <span>{draft.triggerType === 'date' ? 'Due date' : `Due at (${usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)})`}</span>
+                  <>
                     {draft.triggerType === 'date' ? (
-                      <input aria-label="Due date" required type="date" value={draft.dueDate} onChange={(event) => updateDraft({ dueDate: event.target.value })} />
+                      <ScheduleDatePicker value={draft.dueDate} onChange={(dueDate) => updateDraft({ dueDate })} />
                     ) : (
-                      <>
+                      <label className={styles.filterField}>
+                        <span>Due at ({usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)})</span>
                         <input aria-label="Due usage" required type="number" min="0" step="0.01" value={draft.dueUsage} onChange={(event) => updateDraft({ dueUsage: event.target.value })} />
                         <small>Current: {formatUsage(selectedDraftAsset?.usageReading ?? null, selectedDraftAsset?.usageMetric ?? draft.usageMetric)}</small>
-                      </>
+                      </label>
                     )}
-                  </label>
+                  </>
                 ) : null}
                 {scheduleStep === 1 ? (
                   <label className={styles.filterField}>
@@ -1743,6 +1744,7 @@ export default function MaintenanceClient({
               {scheduleStep > 0 || !editingRecordId ? <button className={styles.secondaryButton} type="button" disabled={isSaving} onClick={() => { setNotice(null); if (scheduleStep > 0) setScheduleStep((step) => step - 1); else setModalMode('trigger-type'); }}>Back</button> : null}
               <button className={styles.secondaryButton} type="button" onClick={closeModal} disabled={isSaving}>Cancel</button>
               <button className={styles.primaryButton} data-primary-action type="button" disabled={isSaving} onClick={(event) => {
+                if (scheduleStep === 0 && draft.triggerType === 'date' && !draft.dueDate) { setNotice({ type: 'error', text: 'Choose a due date.' }); return; }
                 const fields = event.currentTarget.closest('section')?.querySelectorAll<HTMLInputElement>('input');
                 if (fields && Array.from(fields).some((field) => !field.reportValidity())) return;
                 setNotice(null);
