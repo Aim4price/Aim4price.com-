@@ -1707,7 +1707,7 @@ export default function MaintenanceClient({
                     </fieldset>
 
                     {draft.recurringEnabled ? (
-                      <label className={styles.filterField}>
+                      <label className={`${styles.filterField} ${styles.scheduleInterval}`}>
                         <span>Repeat every</span>
                         <div className={styles.maintenanceInlineFields}>
                           <input type="number" min="1" step="1" value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
@@ -1749,7 +1749,7 @@ export default function MaintenanceClient({
                     </fieldset>
 
                     {draft.recurringEnabled ? (
-                      <label className={styles.filterField}>
+                      <label className={`${styles.filterField} ${styles.scheduleInterval}`}>
                         <span>Repeat every</span>
                         <div className={styles.maintenanceInlineFields}>
                           <input type="number" min="0" step="0.01" value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
@@ -1760,12 +1760,14 @@ export default function MaintenanceClient({
                   </>
                 )}
 
+                <div className={styles.scheduleAssignee}>
                 <MaintenanceDropdown
                   label="Assign to (optional)"
                   value={draft.assignedFieldManagerId}
                   options={formAssigneeOptions}
                   onChange={(value) => updateDraft({ assignedFieldManagerId: value })}
                 />
+                </div>
 
                 <details className={`${styles.scheduleNotes} ${styles.maintenanceFieldFull}`} open={draft.notes ? true : undefined}>
                   <summary>Notes (optional)</summary>
