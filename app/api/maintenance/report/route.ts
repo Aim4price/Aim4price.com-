@@ -3,14 +3,13 @@ import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import {
-  assetMaintenanceProcedureKindFromNote,
+  assetMaintenanceRecordProcedureKind as maintenanceRecordProcedureKind,
   calculateAssetMaintenanceSummary,
   listAssetMaintenanceData,
   type AssetMaintenanceAssetOption,
   type AssetMaintenanceProcedureKind,
   type AssetMaintenanceRecord,
   type AssetMaintenanceListFilters,
-  type AssetMaintenanceType,
 } from '../../../../lib/asset-maintenance';
 import {
   buildAssetMaintenanceOwnerDetails,
@@ -39,28 +38,14 @@ function parseScope(value: string | null): ReportScope {
   return 'total';
 }
 
-function parseType(value: string | null): AssetMaintenanceType | 'all' | null {
-  if (value === 'service' || value === 'checkup') return value;
+function parseType(value: string | null): AssetMaintenanceListFilters['type'] {
+  if (value === 'service' || value === 'checkup' || value === 'repair') return value;
   return null;
 }
 
 function parseProcedureKind(value: string | null): AssetMaintenanceProcedureKind | null {
   if (value === 'checked' || value === 'serviced' || value === 'repaired') return value;
   return null;
-}
-
-function maintenanceRecordProcedureKind(record: AssetMaintenanceRecord): AssetMaintenanceProcedureKind | null {
-  if (record.status !== 'done') return null;
-
-  const savedKind = assetMaintenanceProcedureKindFromNote(record.completedNotes)
-    ?? assetMaintenanceProcedureKindFromNote(record.notes);
-  if (savedKind) return savedKind;
-
-  const title = String(record.title ?? '').trim().toLowerCase();
-  if (title.includes('repair')) return 'repaired';
-  if (title.includes('check')) return 'checked';
-  if (title.includes('service')) return 'serviced';
-  return record.maintenanceType === 'checkup' ? 'checked' : 'serviced';
 }
 
 function procedureKindLabel(value: AssetMaintenanceProcedureKind | null): string {

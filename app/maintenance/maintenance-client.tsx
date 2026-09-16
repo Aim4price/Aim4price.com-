@@ -124,7 +124,7 @@ type Notice = {
 
 type MaintenanceFilters = {
   assetId: string;
-  type: 'all' | MaintenanceType;
+  type: 'all' | MaintenanceType | 'repair';
   status: 'all' | 'upcoming' | 'done';
   assignedTo: 'all' | 'unassigned' | string;
 };
@@ -584,6 +584,7 @@ const FILTER_TYPE_OPTIONS: DropdownOption[] = [
   { value: 'all', label: 'All types' },
   { value: 'service', label: 'Service' },
   { value: 'checkup', label: 'Checkup' },
+  { value: 'repair', label: 'Repair' },
 ];
 
 const FILTER_STATUS_OPTIONS: DropdownOption[] = [
