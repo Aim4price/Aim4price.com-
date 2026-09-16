@@ -1,3 +1,4 @@
+import { listCostBudgetsWithProgress } from '../../../../lib/cost-budgets';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
@@ -185,7 +186,7 @@ export async function GET(request: NextRequest) {
     const format = ownerAppMode && requestedFormat !== 'xlsx' && requestedFormat !== 'html'
       ? 'pdf'
       : requestedFormat;
-    const [unfilteredData, profile, rawLogoUrl] = await Promise.all([
+    const [unfilteredData, profile, rawLogoUrl, budgets, budgetCostData] = await Promise.all([
       listMyInvoicesData(reportOwnerUserId, filters),
       getAccountProfile({
         id: reportOwnerUserId,
@@ -193,6 +194,8 @@ export async function GET(request: NextRequest) {
         email: String(ownerFallbackUser.email ?? ''),
       }),
       getAssetRegisterReportLogoUrl(reportOwnerUserId),
+      listCostBudgetsWithProgress(reportOwnerUserId, { recordAlerts: false }),
+      listMyInvoicesData(reportOwnerUserId, { assetId: filters.assetId, includeFuelSlipCosts: true }),
     ]);
     const workspaceData = await filterCostLedgerForWorkspace(workspace, unfilteredData);
     const groupMemberIds = new Set(group?.members.map((member) => member.assetId) ?? []);
@@ -208,6 +211,12 @@ export async function GET(request: NextRequest) {
     const reportLogoUrl = group ? String(profile.logoUrl ?? '').trim() || rawLogoUrl : rawLogoUrl;
     const logoUrl = await resolveReportLogoUrlForHtml(reportLogoUrl, request.url);
 
+    const allowedBudgetData = await filterCostLedgerForWorkspace(workspace, budgetCostData);
+    const allowedAssetIds = new Set(data.assets.map(asset => asset.id));
+    const reportBudgets = budgets.filter(budget => budget.assetId && allowedAssetIds.has(budget.assetId)
+      && (!filters.assetId || budget.assetId === filters.assetId));
+    const budgetInvoices = allowedBudgetData.invoices.filter(invoice => allowedAssetIds.has(invoice.assetId)
+      && (!filters.assetId || invoice.assetId === filters.assetId));
     const selectedAsset = group ? null : findSelectedAsset(data.assets, filters);
     const ownerDetails = buildMyInvoicesOwnerDetails(profile, ownerFallbackUser);
     const assetLabel = group?.name ?? selectedAsset?.title ?? 'All selected assets';
@@ -223,6 +232,8 @@ export async function GET(request: NextRequest) {
       selectedAsset,
       summary: data.summary,
       invoices: data.invoices,
+      budgets: reportBudgets,
+      budgetInvoices,
       includeFuelSlipCosts: filters.includeFuelSlipCosts !== false,
       xlsxUrl: buildFormatUrl(request, 'xlsx'),
       hideXlsx: ownerAppMode,

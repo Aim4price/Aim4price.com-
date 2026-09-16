@@ -371,7 +371,7 @@ async function recordCrossedBudgetAlerts(budgets: CostBudgetProgress[]): Promise
   );
 }
 
-export async function listCostBudgetsWithProgress(userId: string): Promise<CostBudgetProgress[]> {
+export async function listCostBudgetsWithProgress(userId: string, options: { recordAlerts?: boolean } = {}): Promise<CostBudgetProgress[]> {
   await ensureCostBudgetTables();
   const monthly = currentCostBudgetPeriodWindow('monthly');
   const annual = currentCostBudgetPeriodWindow('annual');
@@ -468,7 +468,7 @@ export async function listCostBudgetsWithProgress(userId: string): Promise<CostB
     } satisfies CostBudgetProgress;
   });
 
-  await recordCrossedBudgetAlerts(budgets);
+  if (options.recordAlerts !== false) await recordCrossedBudgetAlerts(budgets);
   return budgets;
 }
 
