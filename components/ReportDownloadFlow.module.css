@@ -2,8 +2,6 @@
 .surface { color: #12352d; }
 .body { min-height: 0; }
 .fields { display: grid; gap: 1rem; padding: 1rem; border: 1px solid #d2e3df; border-radius: 1rem; background: #f5faf7; }
-.summary { color: #64746a; margin-bottom: 1rem; }
-.summary p { margin: .4rem 0; }
 .error { color: #a52b2b; }
 .surface :focus-visible { outline: 2px solid #197454; outline-offset: 3px; }
 
@@ -14,3 +12,6 @@
 .surface { --download-icon-color: #145c43; }
 .surface svg,
 .surface [data-download-header] > button { color: var(--download-icon-color) !important; }
+.formatHeading { display: grid; gap: .28rem; margin-bottom: .9rem; }
+.formatHeading strong { color: #10352b; font-size: 1.05rem; font-weight: 900; line-height: 1.2; }
+.formatHeading span { color: #627386; font-size: .9rem; font-weight: 650; line-height: 1.4; }
