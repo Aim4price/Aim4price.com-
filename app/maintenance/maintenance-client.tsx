@@ -1788,7 +1788,7 @@ export default function MaintenanceClient({
 
       {modalMode === 'quick-clear' && recordPendingQuickClear ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-quick-clear-title" aria-describedby="maintenance-quick-clear-description">
-          <section className={`${styles.deleteConfirmModal} ${styles.maintenanceQuickClearModal}`}>
+          <section className={`${styles.deleteConfirmModal} ${styles.maintenanceQuickClearModal} ${styles.schedulingDialog}`}>
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-quick-clear-title">
@@ -1796,20 +1796,20 @@ export default function MaintenanceClient({
                 </h2>
               </div>
               <button
-                className={styles.closeButton}
+                className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
                 type="button"
                 onClick={closeModal}
                 disabled={busyCompleteId === recordPendingQuickClear.id}
                 aria-label="Close maintenance clear confirmation"
               >
-                <CloseIcon />
+                <span aria-hidden="true">×</span>
               </button>
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.deleteConfirmBody}>
               {quickClearStep === 'confirm' ? (
                 <p id="maintenance-quick-clear-description">
-                  Clear this {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} for <strong>{recordPendingQuickClear.assetTitle}</strong>?
+                  Clear this {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()}?
                 </p>
               ) : (
                 <>
@@ -1822,8 +1822,7 @@ export default function MaintenanceClient({
                 </>
               )}
               <div className={styles.deleteRecordSummary}>
-                <span>Selected maintenance</span>
-                <strong>{recordPendingQuickClear.assetTitle}</strong>
+                <strong>{cleanMaintenanceAssetTitle(recordPendingQuickClear.assetTitle)}</strong>
                 <small>{typeLabel(recordPendingQuickClear.maintenanceType)} · {maintenanceDueValue(recordPendingQuickClear)} · {recordPendingQuickClear.assignedName || 'Unassigned'}</small>
               </div>
             </div>
