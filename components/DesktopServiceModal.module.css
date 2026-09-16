@@ -616,5 +616,4 @@
   :global(:where(html:not(:has([data-website-canvas])))) .saveChoiceModal .saveChoices .choiceArrow { width: 1.4rem; height: 1.4rem; }
 }
 
-.stageProgress { margin: 0; color: #607168; font-size: .88rem; font-weight: 650; }
 .body[tabindex] { outline: none; }

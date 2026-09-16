@@ -52,7 +52,7 @@ test('Desktop completion uses the servicing form and server acknowledgement', ()
   assert.match(serviceModal, /End the schedule/);
   assert.match(serviceModal, /continueSchedule: continueSchedule === true/);
   assert.match(serviceModal, /linkToScheduledMaintenance: !standalone && scheduleDecision !== 'separate'/);
-  assert.match(serviceModal, /Save to history · schedule stays open/);
+  assert.match(serviceModal, /Save to history\. Keep this \{actionName\} open\./);
   assert.match(desktopClient, /confirmedComplete: true/);
   assert.match(completionRoute, /requestedStatus === 'done' && body\.confirmedComplete !== true/);
   assert.match(completionRoute, /Confirm that the maintenance has physically been completed/);

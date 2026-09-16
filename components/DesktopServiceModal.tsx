@@ -301,12 +301,6 @@ export default function DesktopServiceModal({
 
         <form noValidate onSubmit={(event) => void submit(event)}>
           <div className={styles.body} ref={stageRef} tabIndex={-1} aria-label={`Step ${stage} of ${stageCount}`}>
-            <p className={styles.stageProgress} role="status">Step {stage} of {stageCount}</p>
-            {!standalone ? <div className={styles.infoBanner}>
-              <strong>{isSeparateCompletion ? 'Save to history · schedule stays open' : `Completing “${record.title}”`}</strong>
-              <span>{isSeparateCompletion ? 'Use the date and usage when this work was actually done. Existing reminders will not change.' : asksRecurrence ? continueSchedule === null ? 'Choose whether to repeat this schedule in the final step.' : continueSchedule ? 'This occurrence will close and the next reminder will be created.' : 'This occurrence will close. No further reminder will be created.' : record.recurringEnabled ? 'The next reminder will be created automatically.' : 'This one-time schedule will close when you save.'}</span>
-            </div> : null}
-
             {stage === 1 ? <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <span>1</span>
