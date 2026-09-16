@@ -1,4 +1,6 @@
 'use client';
+import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
+import focusStyles from '../../components/LedgerCardFocus.module.css';
 import { downloadCanonicalReportFile } from '../../lib/report-open';
 import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import budgetModalStyles from '../../components/BudgetModal.module.css';
@@ -1021,7 +1023,7 @@ export default function MyInvoicesClient({
       ? invoiceDropAssetId
       : '';
   const visibleInvoiceDropCode = newInvoiceDropCode || revealedInvoiceDropCode;
-  const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
+  const [expandedInvoiceId, setExpandedInvoiceId] = useLedgerCardFocus('cost');
   const [managedInvoice, setManagedInvoice] = useState<InvoiceRecord | null>(null);
   const manageCostRef = useRef<HTMLDivElement>(null);
   const manageCostTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -3430,7 +3432,7 @@ export default function MyInvoicesClient({
               const expanded = expandedInvoiceId === invoice.id;
               const detailsId = `cost-details-${invoice.id}`;
               return (
-                <article className={styles.invoiceRow} key={invoice.id}>
+                <article data-ledger-card={`cost:${invoice.id}`} className={`${styles.invoiceRow} ${focusStyles.card} ${expandedInvoiceId && !expanded ? focusStyles.muted : ''}`} key={invoice.id}>
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
                       <h2 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h2>

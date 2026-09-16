@@ -1,0 +1,12 @@
+.card { transition: filter 190ms ease, opacity 190ms ease, transform 190ms ease; }
+.muted {
+  opacity: .3;
+  filter: blur(1.7px);
+  transform: scale(.987);
+  pointer-events: none;
+  user-select: none;
+}
+@media (max-width: 760px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .muted { opacity: .22; filter: blur(1.4px); }
+}
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }

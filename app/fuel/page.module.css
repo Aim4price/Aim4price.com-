@@ -7683,3 +7683,6 @@
 .fuelSlipFlowBackdrop .accountFuelModal.manualFuelSlipModal .modalFooter .primaryButton {
   background: linear-gradient(180deg, #1a5a45, #124233) !important;
 }
+
+.storageViewDetails { width: auto; justify-self: start; margin-top: 1rem; }
+.storageExpandedDetails { grid-column: 1 / -1; display: grid; gap: .5rem; padding-top: 1rem; border-top: 1px solid #d6e2df; overflow-wrap: anywhere; }

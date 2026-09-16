@@ -1,4 +1,6 @@
 'use client';
+import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
+import focusStyles from '../../components/LedgerCardFocus.module.css';
 import { downloadCanonicalReportFile } from '../../lib/report-open';
 import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import downloadStyles from "../../components/ReportDownload.module.css";
@@ -1628,7 +1630,8 @@ export default function FuelClient({
   const [storagePageSize, setStoragePageSize] = useState<ListPageSize>(6);
   const [storagePage, setStoragePage] = useState(1);
   const [currentFuelSlipManagerPage, setCurrentFuelSlipManagerPage] = useState(1);
-  const [expandedFuelSlipId, setExpandedFuelSlipId] = useState<string | null>(null);
+  const [expandedFuelSlipId, setExpandedFuelSlipId] = useLedgerCardFocus('fuel-slip');
+  const [expandedStorageId, setExpandedStorageId] = useLedgerCardFocus('fuel-storage');
   const [managedFuelSlip, setManagedFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [fuelSlipReturnToManager, setFuelSlipReturnToManager] = useState(false);
 
@@ -3454,7 +3457,8 @@ export default function FuelClient({
 
                     return (
                       <article
-                        className={`${styles.fuelSlipManagerRow} ${styles.slipLedgerCard}`}
+                        data-ledger-card={`fuel-slip:${slip.id}`}
+                        className={`${styles.fuelSlipManagerRow} ${styles.slipLedgerCard} ${focusStyles.card} ${expandedFuelSlipId && !isExpanded ? focusStyles.muted : ''}`}
                         data-needs-review={needsReview ? 'true' : undefined}
                         key={slip.id}
                         data-expanded={isExpanded ? 'true' : undefined}
@@ -3665,7 +3669,7 @@ export default function FuelClient({
                 const hasStorageWarning = storageIsLow || Boolean(dipstickNoteText) || balanceNeedsChecking;
 
                 return (
-                  <article key={storage.id} className={`${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
+                  <article key={storage.id} data-ledger-card={`fuel-storage:${storage.id}`} className={`${focusStyles.card} ${expandedStorageId && expandedStorageId !== storage.id ? focusStyles.muted : ''} ${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
                     <div className={styles.storageInfo}>
                       <div className={styles.storageHeadingRow}>
                         <div className={styles.storageTitleBlock}>
@@ -3687,6 +3691,9 @@ export default function FuelClient({
                           <span>{formatPercent(storage.stockPercent)}</span>
                         </div>
                       </div>
+                    <button type="button" className={`${styles.unitButton} ${styles.storageViewDetails}`} aria-expanded={expandedStorageId === storage.id} aria-controls={`fuel-storage-details-${storage.id}`} onClick={() => setExpandedStorageId(current => current === storage.id ? null : storage.id)}>
+                      <ChevronDownIcon className={styles.buttonIcon} /><span>{expandedStorageId === storage.id ? 'Hide details' : 'View details'}</span>
+                    </button>
                     </div>
 
                     {!isAccountantReadOnly ? <div className={styles.storageHeaderAside}>
@@ -3713,6 +3720,11 @@ export default function FuelClient({
                           <span>Archive Unit</span>
                         </button>
                       </div>
+                    </div> : null}
+
+                    {expandedStorageId === storage.id ? <div id={`fuel-storage-details-${storage.id}`} className={styles.storageExpandedDetails}>
+                      <span>Location: {storage.locationLabel || 'Not provided'}</span>
+                      <span>Notes: {storage.notes || 'No notes'}</span>
                     </div> : null}
 
                     {hasStorageWarning ? (
