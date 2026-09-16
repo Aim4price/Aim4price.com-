@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../../components/DateInput';
 
 import { useMemo, useState } from 'react';
 import {
@@ -552,9 +553,9 @@ export function InsurancePoliciesPanel({ workspace, assets, runCommand }: { work
         <label><span>Policy number *</span><input value={policyNumber} onChange={(event) => setPolicyNumber(event.target.value)} /></label>
         <label><span>Product name (optional)</span><input value={productName} onChange={(event) => setProductName(event.target.value)} /></label>
         <label><span>Where did you get this? *</span><input value={policySource} onChange={(event) => setPolicySource(event.target.value)} placeholder="Document name, email or schedule reference" /></label>
-        <label><span>Policy starts</span><input type="date" value={policyEffectiveFrom} onChange={(event) => setPolicyEffectiveFrom(event.target.value)} /></label>
-        <label><span>Policy ends</span><input type="date" value={policyEffectiveTo} onChange={(event) => setPolicyEffectiveTo(event.target.value)} /></label>
-        <label><span>Renewal date *</span><input type="date" value={policyRenewalDate} onChange={(event) => setPolicyRenewalDate(event.target.value)} /></label>
+        <label><span>Policy starts</span><DateInput value={policyEffectiveFrom} onValueChange={(value) => setPolicyEffectiveFrom(value)} /></label>
+        <label><span>Policy ends</span><DateInput value={policyEffectiveTo} onValueChange={(value) => setPolicyEffectiveTo(value)} /></label>
+        <label><span>Renewal date *</span><DateInput value={policyRenewalDate} onValueChange={(value) => setPolicyRenewalDate(value)} /></label>
       </div><button className={styles.primaryButton} type="button" disabled={!insurerName.trim() || !policyNumber.trim() || !policySource.trim() || (!policyRenewalDate && !policyEffectiveTo)} onClick={() => { const existing = workspace.policies.find((policy) => policy.id === editingPolicyId); void runCommand({ operation: 'save_policy', id: existing?.id, expectedVersion: existing?.version, insurerName, productName, policyNumber, status: 'current', effectiveFrom: policyEffectiveFrom, effectiveTo: policyEffectiveTo, renewalDate: policyRenewalDate, sourceType: 'policy_schedule', sourceReference: policySource }, editingPolicyId ? 'Policy and renewal details updated.' : 'Policy details saved.').then((ok) => { if (ok) { resetPolicyForm(); setPolicyView(editingPolicyId ? 'review' : 'section'); } }); }}>{editingPolicyId ? 'Save policy changes' : 'Save policy and continue →'}</button>{editingPolicyId ? <button className={styles.secondaryButton} type="button" onClick={() => { resetPolicyForm(); setPolicyView('review'); }}>Cancel editing</button> : null}</article> : null}
 
       {policyView === 'section' ? <article className={styles.card}><div className={styles.cardHeading}><span>Next</span><h2>Copy one section heading</h2><p>Keep the insurer&apos;s wording. Matching it to a cover is optional but useful.</p></div><div className={styles.formGrid}>

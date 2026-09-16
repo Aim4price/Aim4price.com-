@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../DateInput';
 
 import DropdownOverlay from '../DropdownOverlay';
 import {
@@ -511,7 +512,7 @@ export default function AssetDocumentUploadModal({
               ) : null}
               <label className={styles.field}>
                 <span>Expiry or renewal date <em>Optional</em></span>
-                <input type="date" value={expiryDate} onChange={(event) => setExpiryDate(event.target.value)} />
+                <DateInput value={expiryDate} onValueChange={(value) => setExpiryDate(value)} />
               </label>
               <label className={`${styles.field} ${styles.notes}`}>
                 <span>Notes {selectedType?.value === 'other' ? <b>*</b> : <em>Optional</em>}</span>

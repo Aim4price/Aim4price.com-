@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../components/DateInput';
 import manageStyles from '../../components/LedgerManageActions.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
 import focusStyles from '../../components/LedgerCardFocus.module.css';
@@ -4729,15 +4730,15 @@ export default function MyInvoicesClient({
                     <div className={styles.recurringDateGrid}>
                       <label className={styles.budgetField}>
                         <span>Start date</span>
-                        <input type="date" value={recurringDraft.startDate} onChange={(event) => setRecurringField('startDate', event.target.value)} required disabled={isSaving} />
+                        <DateInput value={recurringDraft.startDate} onValueChange={(value) => setRecurringField('startDate', value)} required disabled={isSaving} />
                       </label>
                       <label className={styles.budgetField}>
                         <span>End date <small>(optional)</small></span>
-                        <input type="date" min={recurringDraft.startDate || undefined} value={recurringDraft.endDate} onChange={(event) => setRecurringField('endDate', event.target.value)} disabled={isSaving} />
+                        <DateInput min={recurringDraft.startDate || undefined} value={recurringDraft.endDate} onValueChange={(value) => setRecurringField('endDate', value)} disabled={isSaving} />
                       </label>
                       <label className={styles.budgetField}>
                         <span>Renewal date <small>(optional)</small></span>
-                        <input type="date" value={recurringDraft.renewalDate} onChange={(event) => setRecurringField('renewalDate', event.target.value)} disabled={isSaving} />
+                        <DateInput value={recurringDraft.renewalDate} onValueChange={(value) => setRecurringField('renewalDate', value)} disabled={isSaving} />
                       </label>
                     </div>
 
@@ -5084,7 +5085,7 @@ export default function MyInvoicesClient({
                   </label>
                   <label>
                     <span>Invoice date</span>
-                    <input type="date" value={draft.invoiceDate} onChange={(event) => setDraftField('invoiceDate', event.target.value)} />
+                    <DateInput value={draft.invoiceDate} onValueChange={(value) => setDraftField('invoiceDate', value)} />
                   </label>
                   <div className={styles.costUsageMetricField}>
                     <span>Usage metric</span>

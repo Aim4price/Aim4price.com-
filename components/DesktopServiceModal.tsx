@@ -1,4 +1,5 @@
 'use client';
+import DateInput from './DateInput';
 
 import { useEffect, useRef, useMemo, useState, type KeyboardEvent, type FormEvent } from 'react';
 import {
@@ -353,7 +354,7 @@ export default function DesktopServiceModal({
               <div className={styles.fieldGrid}>
                 <label className={styles.field}>
                   <span>Completion date</span>
-                  <input type="date" value={completedAt} max={today} onChange={(event) => setCompletedAt(event.target.value)} required />
+                  <DateInput aria-label="Completion date" value={completedAt} max={today} onValueChange={(value) => setCompletedAt(value)} required />
                 </label>
                 <label className={styles.field}>
                   <span>Usage at completion <small>({unit}, {requiresUsageReading ? 'required' : 'optional'})</small></span>

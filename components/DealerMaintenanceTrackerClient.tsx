@@ -1,4 +1,5 @@
 'use client';
+import DateInput from './DateInput';
 
 import FilterFlow, { FilterQuestion, FilterThresholdQuestion } from './FilterFlow';
 
@@ -1688,21 +1689,19 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                   <div className={styles.historyDateRange}>
                     <label className={styles.historyDateField}>
                       <span>From date</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={historyFromDate}
                         max={historyToDate || undefined}
-                        onChange={(event) => setHistoryFromDate(event.target.value)}
+                        onValueChange={(value) => setHistoryFromDate(value)}
                         aria-label={`Maintenance history from date for ${historyAsset.assetTitle}`}
                       />
                     </label>
                     <label className={styles.historyDateField}>
                       <span>To date</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={historyToDate}
                         min={historyFromDate || undefined}
-                        onChange={(event) => setHistoryToDate(event.target.value)}
+                        onValueChange={(value) => setHistoryToDate(value)}
                         aria-label={`Maintenance history to date for ${historyAsset.assetTitle}`}
                       />
                     </label>

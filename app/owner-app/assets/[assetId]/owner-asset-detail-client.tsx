@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../../../components/DateInput';
 
 import { legacyValuationRecoveryReason } from '../../../../lib/asset-register-legacy-valuation';
 import Link from 'next/link';
@@ -844,6 +845,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     const value = extra(key, ...(options.fallbackKeys ?? []));
     const input = options.currency
       ? <GroupedCurrencyInput value={value} onValueChange={(nextValue) => updateSpec(key, nextValue)} />
+      : options.type === 'date' ? <DateInput value={value} onValueChange={(nextValue) => updateSpec(key, nextValue)} />
       : <input type={options.type} inputMode={options.inputMode} value={value} onChange={(event) => updateSpec(key, event.target.value)} />;
     return <label className={styles.field}><span>{label}</span>{options.currency ? <span className={styles.currencyInput}><span aria-hidden="true">R</span>{input}</span> : input}</label>;
   };
@@ -1421,7 +1423,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         {disposalWizardStep === 2 ? <div className={styles.disposalStep}>
           <div className={styles.disposalStepHeader}><strong>Add the {disposalReasonLabel(disposalDraft.reason).toLowerCase()} details</strong><span>Save what happened and when. The amount and reference are optional.</span></div>
           {disposalDraft.reason === 'mistake_duplicate' ? <div className={styles.disposalInformation}><strong>No disposal details are needed</strong><p>The final step will confirm the duplicate removal and retained audit.</p></div> : <div className={styles.formGrid}>
-            <label className={styles.field}><span>Effective date</span><input type="date" value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} disabled={Boolean(actionBusy)} /></label>
+            <label className={styles.field}><span>Effective date</span><DateInput value={disposalDraft.disposalDate} onValueChange={(value) => setDisposalDraft((current) => ({ ...current, disposalDate: value }))} disabled={Boolean(actionBusy)} /></label>
             <label className={styles.field}><span>{disposalAmountLabel(disposalDraft.reason)} excl. VAT (optional)</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={disposalDraft.disposalAmountExVat} onValueChange={(value) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: value }))} /></span></label>
             <label className={`${styles.field} ${styles.fieldFull}`}><span>Reference or note (optional)</span><textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Buyer, dealer, insurer or other useful reference" disabled={Boolean(actionBusy)} /></label>
           </div>}
@@ -1930,7 +1932,7 @@ function MaintenanceSection({ assetId, records, action, busy }: { assetId: strin
       ) : (
         <form className={styles.formGrid} onSubmit={(event) => void create(event)}>
           <label className={styles.field}><span>Type</span><select name="maintenanceType"><option value="service">Service</option><option value="checkup">Checkup</option></select></label>
-          <label className={styles.field}><span>Due date</span><input name="dueDate" type="date" required /></label>
+          <label className={styles.field}><span>Due date</span><DateInput name="dueDate" required /></label>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Title</span><input name="title" required placeholder="Next service" /></label>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Notes</span><textarea name="notes" /></label>
           <button className={`${styles.maintenanceAddButton} ${styles.fieldFull}`} type="submit" disabled={busy}>Add maintenance</button>

@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../components/DateInput';
 import manageStyles from '../../components/LedgerManageActions.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
 import focusStyles from '../../components/LedgerCardFocus.module.css';
@@ -3173,7 +3174,7 @@ export default function FuelClient({
           </label>
           <label className={fuelSlipFieldClassName('documentDate')}>
             <span>Slip date</span>
-            <input type="date" value={fuelSlipDraft.documentDate} onChange={(event) => setFuelSlipField('documentDate', event.target.value)} aria-invalid={fuelSlipAriaInvalid('documentDate')} data-fuel-slip-field="documentDate" />
+            <DateInput value={fuelSlipDraft.documentDate} onValueChange={(value) => setFuelSlipField('documentDate', value)} aria-invalid={fuelSlipAriaInvalid('documentDate')} data-fuel-slip-field="documentDate" />
             {fuelSlipRequiredHint('documentDate')}
           </label>
           <label className={fuelSlipFieldClassName('fuelType')}>

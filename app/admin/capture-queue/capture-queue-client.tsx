@@ -1,4 +1,5 @@
 "use client";
+import DateInput from '../../../components/DateInput';
 
 import DropdownOverlay from '../../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1364,7 +1365,7 @@ export default function CaptureQueueClient() {
                 ) : (
                   <label><span>Invoice number</span><input value={draft.invoiceNumber} onChange={(event) => updateDraft("invoiceNumber", event.target.value)} autoComplete="off" /></label>
                 )}
-                <label><span>Document date</span><input type="date" value={draft.documentDate} onChange={(event) => updateDraft("documentDate", event.target.value)} /></label>
+                <label><span>Document date</span><DateInput value={draft.documentDate} onValueChange={(value) => updateDraft("documentDate", value)} /></label>
                 {detail.requestType === "fuel_slip" ? (
                   <>
                     <label><span>Litres</span><input inputMode="decimal" value={draft.litres} onChange={(event) => updateDraft("litres", event.target.value)} /></label>

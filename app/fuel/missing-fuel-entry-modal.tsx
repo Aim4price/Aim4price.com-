@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../components/DateInput';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type SVGProps } from 'react';
@@ -550,7 +551,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
               {step === 'details' && selectedAsset ? (
                 <section className={styles.missingDetailsStep}>
                   <div className={styles.missingFormGrid}>
-                    <label><span>Fuel issue date *</span><input type="date" value={draft.issueDate} max={johannesburgDate()} onChange={(event) => setDraft({ ...draft, issueDate: event.target.value })} /></label>
+                    <label><span>Fuel issue date *</span><DateInput value={draft.issueDate} max={johannesburgDate()} onValueChange={(value) => setDraft({ ...draft, issueDate: value })} /></label>
                     <div className={`${styles.missingFormCard} ${styles.missingTimeField}`}>
                       <div className={styles.missingTimeHeader}>
                         <span>Fuel issue time</span>
@@ -686,7 +687,7 @@ export function ReconcileFuelBalanceModal({ storage, accountantShareId, accounta
           <div className={styles.reconcileCurrentCard}><span>Current book balance</span><strong>{formatLitres(storage.currentLitres)}</strong><small>Fixed capacity: {formatLitres(storage.capacityLitres)}</small></div>
           <div className={styles.missingFormGrid}>
             <label><span>Physically measured current litres *</span><div className={styles.inputWithSuffix}><input type="number" min="0" max={storage.capacityLitres ?? undefined} step="0.001" value={draft.currentLitres} onChange={(event) => setDraft({ ...draft, currentLitres: event.target.value })} /><em>L</em></div></label>
-            <label><span>Measurement date *</span><input type="date" max={johannesburgDate()} value={draft.measurementDate} onChange={(event) => setDraft({ ...draft, measurementDate: event.target.value })} /></label>
+            <label><span>Measurement date *</span><DateInput max={johannesburgDate()} value={draft.measurementDate} onValueChange={(value) => setDraft({ ...draft, measurementDate: value })} /></label>
             <label><span>Measurement time *</span><input type="time" value={draft.measurementTime} onChange={(event) => setDraft({ ...draft, measurementTime: event.target.value })} /></label>
             <label className={styles.fullWidthField}><span>Reconciliation note</span><textarea rows={3} value={draft.note} onChange={(event) => setDraft({ ...draft, note: event.target.value })} placeholder="Optional measurement or reconciliation note" /></label>
           </div>

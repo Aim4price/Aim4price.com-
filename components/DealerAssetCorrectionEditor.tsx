@@ -1,4 +1,5 @@
 'use client';
+import DateInput from './DateInput';
 
 import { useEffect, useId, useState } from 'react';
 import { createPortal } from './WebsitePortal';
@@ -280,9 +281,10 @@ export default function DealerAssetCorrectionEditor({
 
               <label className={styles.field}>
                 <span>{fieldIsSerial ? 'Correct serial number' : fieldIsLicenseRenewal ? 'New renewal date' : 'Correct replacement price (excl. VAT)'}</span>
+                {fieldIsLicenseRenewal ? <DateInput autoFocus value={draft} onValueChange={setDraft} /> : (
                 <input
                   autoFocus
-                  type={fieldIsSerial ? 'text' : fieldIsLicenseRenewal ? 'date' : 'number'}
+                  type={fieldIsSerial ? 'text' : 'number'}
                   inputMode={fieldIsSerial || fieldIsLicenseRenewal ? undefined : 'decimal'}
                   min={fieldIsSerial || fieldIsLicenseRenewal ? undefined : '1'}
                   step={fieldIsSerial || fieldIsLicenseRenewal ? undefined : '0.01'}
@@ -291,6 +293,7 @@ export default function DealerAssetCorrectionEditor({
                   onChange={(event) => setDraft(event.target.value)}
                   placeholder={fieldIsSerial ? 'Enter the serial number' : fieldIsLicenseRenewal ? undefined : 'Enter the VAT-exclusive amount'}
                 />
+                )}
               </label>
 
               <div className={styles.explainer}>
