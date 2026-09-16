@@ -5,6 +5,7 @@ import AdminWorkTrackerBar from '../components/AdminWorkTrackerBar';
 import AppFooter from '../components/AppFooter';
 import AppPatternBackground from '../components/AppPatternBackground';
 import SiteWorkspaceZoom from '../components/SiteWorkspaceZoom';
+import { BACKGROUND_PREFERENCE_SCRIPT } from '../lib/background-preference';
 import './globals.css';
 import './asset-register-view-tuning.css';
 
@@ -50,8 +51,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: BACKGROUND_PREFERENCE_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: APP_REQUEST_CONTEXT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

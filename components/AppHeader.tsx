@@ -17,6 +17,7 @@ import { isMiddlemanAccountSubtype } from '../lib/middleman-account';
 import { isViewportScrollbarInteraction } from '../lib/viewport-scrollbar';
 import DealerCostDecisionModal from './DealerCostDecisionModal';
 import styles from './AppHeader.module.css';
+import BackgroundToggle from './BackgroundToggle';
 import inboxStyles from './NotificationInboxModal.module.css';
 
 const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
@@ -2536,6 +2537,7 @@ export default function AppHeader({
 
           <div className={styles.actions}>
             <div className={styles.actionsRail}>
+              <BackgroundToggle className={styles.notificationButton} iconClassName={styles.notificationIcon} />
               {isLoadingSession ? null : session ? (
                 <>
                   {!isAccountantWorkspace ? <div className={styles.notificationMenu} ref={notificationMenuRef}>
