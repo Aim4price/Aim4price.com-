@@ -3209,11 +3209,11 @@ export default function FuelClient({
             <input value={fuelSlipDraft.cardLast4} onChange={(event) => handleFuelSlipCardLast4Change(event.target.value)} inputMode="numeric" maxLength={4} pattern="[0-9]{0,4}" placeholder="Last 4 only" />
           </label>
           <label>
-            <span>Slip/reference number</span>
+            <span>Reference Number</span>
             <input value={fuelSlipDraft.slipNumber} onChange={(event) => setFuelSlipField('slipNumber', event.target.value)} placeholder="Optional" />
           </label>
           <label>
-            <span>Transaction/reference number</span>
+            <span>Transaction Number</span>
             <input value={fuelSlipDraft.transactionNumber} onChange={(event) => setFuelSlipField('transactionNumber', event.target.value)} placeholder="Optional" />
           </label>
         </div>
@@ -4392,18 +4392,16 @@ export default function FuelClient({
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'manual-form' ? (
         <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay} ${styles.accountFuelBackdrop}`} data-website-overlay>
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manual-title">
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipWizardModal} ${styles.manualFuelSlipModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manual-title">
             <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="fuel-slip-manual-title">Enter fuel slip manually</h2>
-                <p>{fuelSlipFormSubtitle} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
+                <p>{selectedFuelSlipTargetName} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
               </div>
               <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><span aria-hidden="true">×</span></button>
             </div>
             <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
             <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
-              <p className={wizardStyles.intro}>Complete one short step at a time. Your fuel slip is saved on the final step.</p>
-              {renderFuelSlipWizardProgress()}
               <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
                 <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
                   <span className={wizardStyles.panelNumber} aria-hidden="true">{fuelSlipFormPage === 'details' ? 1 : 2}</span>
