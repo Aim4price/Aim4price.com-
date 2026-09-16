@@ -15,3 +15,12 @@
 .formatHeading { display: grid; gap: .28rem; margin-bottom: .9rem; }
 .formatHeading strong { color: #10352b; font-size: 1.05rem; font-weight: 900; line-height: 1.2; }
 .formatHeading span { color: #627386; font-size: .9rem; font-weight: 650; line-height: 1.4; }
+
+/* Match the typography and controls of the standard Aim4price report forms. */
+.fields { gap: 1.2rem; padding: 1.25rem; border-color: #d0dfea; background: linear-gradient(135deg, #f1f7f4, #fff); }
+.fields > div { gap: .5rem; }
+.fields > div > label { color: #426457; font-size: .78rem; font-weight: 800; line-height: 1.4; letter-spacing: .025em; text-transform: uppercase; }
+.fields button[role="combobox"] { font-family: inherit; font-size: 1rem; font-weight: 650; line-height: 1.4; border-color: #d0dfea; box-shadow: none; }
+.fields small, .fields > p { margin: 0; color: #64746a; font-size: .85rem; font-weight: 650; line-height: 1.5; }
+.timelineMenu { font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif; font-size: 1rem; }
+.timelineMenu button { font-family: inherit; font-size: 1rem; font-weight: 650; }
