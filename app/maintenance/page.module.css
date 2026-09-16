@@ -5186,3 +5186,21 @@
 .schedulingDialog.maintenanceQuickClearModal .deleteRecordSummary {
   background: linear-gradient(180deg, #ffffff, #f7fafb);
 }
+
+/* Simple scheduling: timing first, then repeat, assignment and optional notes. */
+.schedulingDialog.simpleScheduleDialog { width: min(52rem, 100%, calc(var(--website-visible-width, 100vw) - 2rem)); }
+.simpleScheduleDialog .modalHeader { border-bottom: 1px solid #e0e9e5; }
+.simpleScheduleDialog .scheduleSectionHeading { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.2rem; color: #12352d; }
+.scheduleSectionHeading svg { width: 1.4rem; height: 1.4rem; color: #197454; }
+.scheduleSectionHeading h3 { margin: 0; font-size: 1.1rem; font-weight: 800; }
+.simpleScheduleDialog .maintenanceFieldGrid { gap: 1.25rem; align-items: start; }
+.scheduleRepeat { grid-column: 1 / -1; margin: .25rem 0 0; padding: 0; border: 0; min-width: 0; }
+.scheduleRepeat legend { padding: 0; margin-bottom: .6rem; color: #425d51; font-size: .85rem; font-weight: 750; }
+.scheduleRepeat > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; padding: .4rem; border: 1px solid #d6e4dd; border-radius: 1rem; background: #f1f6f3; }
+.scheduleRepeat button { min-height: 3rem; padding: .7rem 1rem; border: 1px solid transparent; border-radius: .75rem; background: transparent; color: #526a5d; font: inherit; font-weight: 750; cursor: pointer; }
+.scheduleRepeat button[aria-pressed='true'] { background: #fff; color: #124b38; border-color: #a8d1bc; box-shadow: 0 3px 10px #163e2d0d; }
+.scheduleRepeat button:focus-visible, .scheduleNotes summary:focus-visible { outline: 3px solid #70b797; outline-offset: 3px; }
+.scheduleNotes { border-top: 1px solid #e0e9e5; padding-top: 1rem; }
+.scheduleNotes summary { color: #315b4a; font-size: .9rem; font-weight: 750; cursor: pointer; }
+.scheduleNotes > label { margin-top: .8rem; }
+.simpleScheduleDialog .scheduleNotes textarea { min-height: 5.5rem; }

@@ -730,21 +730,6 @@ function MaintenanceDropdown({
   );
 }
 
-function SwitchField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      className={`${styles.switchField} ${checked ? styles.switchFieldActive : ''}`}
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-    >
-      <span className={styles.switchTrack}><span /></span>
-      <strong>{label}</strong>
-    </button>
-  );
-}
-
 function ReadOnlyField({ label, value }: { label: string; value: string }) {
   return (
     <div className={styles.maintenanceCurrentUsage}>
@@ -1678,11 +1663,11 @@ export default function MaintenanceClient({
 
       {modalMode === 'form' && draft ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-form-title">
-          <section className={`${styles.formModal} ${styles.schedulingDialog}`}>
+          <section className={`${styles.formModal} ${styles.schedulingDialog} ${styles.simpleScheduleDialog}`}>
             <header className={styles.modalHeader}>
               <div>
                 <h2 id="maintenance-form-title">{`Schedule ${draft.maintenanceType}`}</h2>
-                <p>{`${triggerLabel(draft.triggerType)} · ${selectedAssetLabel(selectedDraftAsset)}`}</p>
+                <p>{cleanMaintenanceAssetTitle(selectedDraftAsset?.title || 'Selected asset')}</p>
               </div>
               <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance form">
                 <CloseIcon />
@@ -1690,7 +1675,7 @@ export default function MaintenanceClient({
             </header>
 
             <div className={`${styles.formModalScrollBody} ${dialogStyles.body}`}>
-              <div className={styles.maintenanceSectionTitle}>{draft.triggerType === 'date' ? 'Specific date setup' : 'Usage setup'}</div>
+              <div className={styles.scheduleSectionHeading}><ScheduleIcon /><h3>When is it due?</h3></div>
               <div className={styles.maintenanceFieldGrid}>
                 {draft.triggerType === 'date' ? (
                   <>
@@ -1700,11 +1685,11 @@ export default function MaintenanceClient({
                     </label>
 
                     <label className={styles.filterField}>
-                      <span>Alert before</span>
+                      <span>Remind me before</span>
                       <div className={styles.maintenanceInlineFields}>
                         <input type="number" min="0" step="1" value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
                         <MaintenanceDropdown
-                          label="Alert unit"
+                          label="Reminder unit"
                           hideLabel
                           value={draft.alertBeforeUnit}
                           options={DATE_UNIT_OPTIONS}
@@ -1713,15 +1698,21 @@ export default function MaintenanceClient({
                       </div>
                     </label>
 
-                    <SwitchField label="Recurring" checked={draft.recurringEnabled} onChange={(checked) => updateDraft({ recurringEnabled: checked })} />
+                    <fieldset className={styles.scheduleRepeat}>
+                      <legend>Repeat this schedule?</legend>
+                      <div>
+                        <button type="button" aria-pressed={!draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: false })}>Once only</button>
+                        <button type="button" aria-pressed={draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: true })}>Repeat</button>
+                      </div>
+                    </fieldset>
 
                     {draft.recurringEnabled ? (
                       <label className={styles.filterField}>
-                        <span>Recurring interval</span>
+                        <span>Repeat every</span>
                         <div className={styles.maintenanceInlineFields}>
                           <input type="number" min="1" step="1" value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
                           <MaintenanceDropdown
-                            label="Recurring unit"
+                            label="Repeat unit"
                             hideLabel
                             value={draft.recurringIntervalUnit}
                             options={DATE_UNIT_OPTIONS}
@@ -1737,23 +1728,29 @@ export default function MaintenanceClient({
                     <ReadOnlyField label="Usage metric" value={usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} />
 
                     <label className={styles.filterField}>
-                      <span>Due usage</span>
+                      <span>Due at ({usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)})</span>
                       <input type="number" min="0" step="0.01" value={draft.dueUsage} onChange={(event) => updateDraft({ dueUsage: event.target.value })} />
                     </label>
 
                     <label className={styles.filterField}>
-                      <span>Alert before</span>
+                      <span>Remind me before</span>
                       <div className={styles.maintenanceInlineFields}>
                         <input type="number" min="0" step="0.01" value={draft.alertBeforeValue} onChange={(event) => updateDraft({ alertBeforeValue: event.target.value })} />
                         <ReadOnlyField label="Unit" value={usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} />
                       </div>
                     </label>
 
-                    <SwitchField label="Recurring" checked={draft.recurringEnabled} onChange={(checked) => updateDraft({ recurringEnabled: checked })} />
+                    <fieldset className={styles.scheduleRepeat}>
+                      <legend>Repeat this schedule?</legend>
+                      <div>
+                        <button type="button" aria-pressed={!draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: false })}>Once only</button>
+                        <button type="button" aria-pressed={draft.recurringEnabled} onClick={() => updateDraft({ recurringEnabled: true })}>Repeat</button>
+                      </div>
+                    </fieldset>
 
                     {draft.recurringEnabled ? (
                       <label className={styles.filterField}>
-                        <span>Recurring interval</span>
+                        <span>Repeat every</span>
                         <div className={styles.maintenanceInlineFields}>
                           <input type="number" min="0" step="0.01" value={draft.recurringIntervalValue} onChange={(event) => updateDraft({ recurringIntervalValue: event.target.value })} />
                           <ReadOnlyField label="Unit" value={usageUnitLabel(selectedDraftAsset?.usageMetric ?? draft.usageMetric)} />
@@ -1764,23 +1761,25 @@ export default function MaintenanceClient({
                 )}
 
                 <MaintenanceDropdown
-                  label="Assigned to"
+                  label="Assign to (optional)"
                   value={draft.assignedFieldManagerId}
                   options={formAssigneeOptions}
                   onChange={(value) => updateDraft({ assignedFieldManagerId: value })}
                 />
 
-                <label className={`${styles.filterField} ${styles.maintenanceFieldFull}`}>
-                  <span>Notes</span>
-                  <textarea value={draft.notes} onChange={(event) => updateDraft({ notes: event.target.value })} placeholder="Add notes or reminders..." />
-                </label>
+                <details className={`${styles.scheduleNotes} ${styles.maintenanceFieldFull}`} open={draft.notes ? true : undefined}>
+                  <summary>Notes (optional)</summary>
+                  <label className={styles.filterField}>
+                    <textarea aria-label="Notes" value={draft.notes} onChange={(event) => updateDraft({ notes: event.target.value })} placeholder="Anything the team should know?" />
+                  </label>
+                </details>
               </div>
             </div>
             <footer className={styles.modalFooter}>
               {!editingRecordId ? <button className={styles.secondaryButton} type="button" onClick={() => setModalMode('trigger-type')}>Back</button> : null}
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
               <button className={styles.primaryButton} data-primary-action type="button" onClick={() => void submitDraft()} disabled={isSaving}>
-                {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : `Add ${draft.maintenanceType}`}
+                {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : `Schedule ${draft.maintenanceType}`}
               </button>
             </footer>
           </section>
