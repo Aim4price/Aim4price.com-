@@ -1,0 +1,72 @@
+/* Shared action cards matching Asset Register manage choices. */
+.grid.grid.grid.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+.grid.grid.grid.grid > button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1.2rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 8rem !important;
+  height: auto;
+  padding: 1.5rem;
+  border: 1px solid #d2deed;
+  border-radius: 1.4rem;
+  background: linear-gradient(180deg, #fff, #f4f7fa);
+  color: #12352d;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 12px 28px rgba(18, 53, 45, .055);
+  font-family: var(--font-heading, 'Montserrat'), sans-serif;
+}
+.grid.grid.grid.grid > button > svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: 0 0 1.5rem;
+  margin: 0;
+  color: #1d3b62;
+}
+.grid.grid.grid.grid .copy {
+  display: grid;
+  gap: .4rem;
+  min-width: 0;
+}
+.grid.grid.grid.grid .copy > span {
+  color: #12352d;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.grid.grid.grid.grid .copy > small {
+  color: #64746a;
+  font-size: .9rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+.grid.grid.grid.grid > .primary {
+  border-color: #b4dfcb;
+  background: radial-gradient(circle at top left, rgba(25, 116, 84, .08), transparent 50%), linear-gradient(180deg, #fff, #eef8f3);
+}
+.grid.grid.grid.grid > .primary > svg { color: #175441; }
+.grid.grid.grid.grid > .danger {
+  border-color: #ffb3b6;
+  background: linear-gradient(180deg, #fff, #fff2f3);
+}
+.grid.grid.grid.grid > .danger > svg,
+.grid.grid.grid.grid > .danger .copy > span { color: #a92c32; }
+.grid.grid.grid.grid > button:hover:not(:disabled) {
+  border-color: #8fb5a6;
+  box-shadow: 0 14px 30px rgba(18, 53, 45, .1);
+}
+.grid.grid.grid.grid > .danger:hover:not(:disabled) { border-color: #d8757b; }
+.grid.grid.grid.grid > button:focus-visible { outline: 3px solid #197454; outline-offset: 4px; }
+.grid.grid.grid.grid > button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .grid.grid.grid.grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+.action { cursor: pointer; }

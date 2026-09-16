@@ -1,4 +1,5 @@
 'use client';
+import manageStyles from '../../components/LedgerManageActions.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
 import focusStyles from '../../components/LedgerCardFocus.module.css';
 import { downloadCanonicalReportFile } from '../../lib/report-open';
@@ -1504,10 +1505,10 @@ export default function MaintenanceClient({
               <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeManage} aria-label="Close manage maintenance"><CloseIcon /></button>
             </header>
             <div className={styles.modalDivider} />
-            <div className={styles.ledgerManageActions}>
-              <button className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><EditIcon /><span>Edit</span></button>
-              {managedRecord.status === 'upcoming' ? <button className={`${styles.secondaryButtonSmall} ${styles.maintenanceQuickClearButton}`} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><CheckIcon /><span>Clear</span></button> : null}
-              <button className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><TrashIcon /><span>Delete</span></button>
+            <div className={`${styles.ledgerManageActions} ${manageStyles.grid}`}>
+              <button className={manageStyles.primary} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><EditIcon /><span className={manageStyles.copy}><span>Edit</span><small>Update maintenance details.</small></span></button>
+              {managedRecord.status === 'upcoming' ? <button className={manageStyles.action} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><CheckIcon /><span className={manageStyles.copy}><span>Clear</span><small>Confirm the work is complete.</small></span></button> : null}
+              <button className={manageStyles.danger} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><TrashIcon /><span className={manageStyles.copy}><span>Delete</span><small>Remove this maintenance record.</small></span></button>
             </div>
           </section>
         </div>

@@ -1,4 +1,5 @@
 'use client';
+import manageStyles from '../../components/LedgerManageActions.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
 import focusStyles from '../../components/LedgerCardFocus.module.css';
 import { downloadCanonicalReportFile } from '../../lib/report-open';
@@ -5332,9 +5333,9 @@ export default function MyInvoicesClient({
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeManageCost} aria-label="Close manage cost"><span aria-hidden="true">×</span></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.costManageActions}>
-              <button type="button" className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} onClick={() => { setManagedInvoice(null); editInvoice(managedInvoice); }}><EditIcon className={styles.buttonIcon} />Edit cost</button>
-              <button type="button" className={`${styles.dangerButtonSmall} ${styles.invoiceDeleteButton}`} onClick={() => { setManagedInvoice(null); openDeleteInvoiceDialog(managedInvoice); }}><TrashIcon className={styles.buttonIcon} />{dealerMode ? 'Remove cost' : 'Delete cost'}</button>
+            <div className={`${styles.costManageActions} ${manageStyles.grid}`}>
+              <button type="button" className={manageStyles.primary} onClick={() => { setManagedInvoice(null); editInvoice(managedInvoice); }}><EditIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>Edit cost</span><small>Update the cost details.</small></span></button>
+              <button type="button" className={manageStyles.danger} onClick={() => { setManagedInvoice(null); openDeleteInvoiceDialog(managedInvoice); }}><TrashIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>{dealerMode ? 'Remove cost' : 'Delete cost'}</span><small>Remove this cost record.</small></span></button>
             </div>
           </div>
         </div>
