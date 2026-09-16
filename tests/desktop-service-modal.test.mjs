@@ -70,8 +70,8 @@ test('Service and check-up validation follows the app rules', () => {
 });
 
 test('scheduled and separate work explain different outcomes before saving', () => {
-  assert.match(modal, /Existing reminders will not change/);
-  assert.match(modal, /record\.recurringEnabled \? 'The next reminder/);
+  assert.match(modal, /Save to history\. Keep this/);
+  assert.match(modal, /Mark this \{actionName\} as done/);
   assert.match(modal, /chooseSchedule\('separate'\)/);
   assert.match(modal, /chooseSchedule\('scheduled'\)/);
   assert.match(modal, /Complete scheduled \$\{actionName\}/);
