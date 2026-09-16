@@ -1631,7 +1631,6 @@ export default function FuelClient({
   const [storagePage, setStoragePage] = useState(1);
   const [currentFuelSlipManagerPage, setCurrentFuelSlipManagerPage] = useState(1);
   const [expandedFuelSlipId, setExpandedFuelSlipId] = useLedgerCardFocus('fuel-slip');
-  const [expandedStorageId, setExpandedStorageId] = useLedgerCardFocus('fuel-storage');
   const [managedFuelSlip, setManagedFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [fuelSlipReturnToManager, setFuelSlipReturnToManager] = useState(false);
 
@@ -3669,7 +3668,7 @@ export default function FuelClient({
                 const hasStorageWarning = storageIsLow || Boolean(dipstickNoteText) || balanceNeedsChecking;
 
                 return (
-                  <article key={storage.id} data-ledger-card={`fuel-storage:${storage.id}`} className={`${focusStyles.card} ${expandedStorageId && expandedStorageId !== storage.id ? focusStyles.muted : ''} ${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
+                  <article key={storage.id} className={`${styles.storageCard} ${hasStorageWarning ? styles.storageCardLow : ''}`}>
                     <div className={styles.storageInfo}>
                       <div className={styles.storageHeadingRow}>
                         <div className={styles.storageTitleBlock}>
@@ -3691,9 +3690,6 @@ export default function FuelClient({
                           <span>{formatPercent(storage.stockPercent)}</span>
                         </div>
                       </div>
-                    <button type="button" className={`${styles.unitButton} ${styles.storageViewDetails}`} aria-expanded={expandedStorageId === storage.id} aria-controls={`fuel-storage-details-${storage.id}`} onClick={() => setExpandedStorageId(current => current === storage.id ? null : storage.id)}>
-                      <ChevronDownIcon className={styles.buttonIcon} /><span>{expandedStorageId === storage.id ? 'Hide details' : 'View details'}</span>
-                    </button>
                     </div>
 
                     {!isAccountantReadOnly ? <div className={styles.storageHeaderAside}>
@@ -3722,10 +3718,6 @@ export default function FuelClient({
                       </div>
                     </div> : null}
 
-                    {expandedStorageId === storage.id ? <div id={`fuel-storage-details-${storage.id}`} className={styles.storageExpandedDetails}>
-                      <span>Location: {storage.locationLabel || 'Not provided'}</span>
-                      <span>Notes: {storage.notes || 'No notes'}</span>
-                    </div> : null}
 
                     {hasStorageWarning ? (
                       <div className={styles.storageWarningList}>
