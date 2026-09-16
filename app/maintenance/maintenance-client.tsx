@@ -1,4 +1,6 @@
 'use client';
+import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
+import focusStyles from '../../components/LedgerCardFocus.module.css';
 import { downloadCanonicalReportFile } from '../../lib/report-open';
 import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import downloadStyles from "../../components/ReportDownload.module.css";
@@ -808,7 +810,7 @@ export default function MaintenanceClient({
 
   const [pageSize, setPageSize] = useState<ListPageSize>(6);
   const [page, setPage] = useState(1);
-  const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
+  const [expandedRecordId, setExpandedRecordId] = useLedgerCardFocus('maintenance');
   const [managedRecord, setManagedRecord] = useState<MaintenanceRecord | null>(null);
   const manageRef = useRef<HTMLElement>(null);
   const manageTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -1401,7 +1403,8 @@ export default function MaintenanceClient({
 
                 return (
                   <article
-                    className={`${styles.invoiceRow} ${styles.ledgerCard} ${cardStatusClass} ${isUpcomingRecurringFollowUp && isDueSoon && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
+                    data-ledger-card={`maintenance:${record.id}`}
+                    className={`${focusStyles.card} ${expandedRecordId && !expanded ? focusStyles.muted : ''} ${styles.invoiceRow} ${styles.ledgerCard} ${cardStatusClass} ${isUpcomingRecurringFollowUp && isDueSoon && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
                     key={record.id}
                     data-maintenance-status={record.status === 'done' ? 'completed' : record.status === 'cancelled' ? 'cancelled' : needsAttention ? 'attention' : isDueSoon ? 'due-soon' : 'upcoming'}
                   >
