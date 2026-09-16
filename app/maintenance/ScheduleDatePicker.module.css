@@ -1,0 +1,17 @@
+.calendar { width: min(100%, 32rem); margin-inline: auto; padding: 1rem; border: 1px solid #dce8e2; border-radius: 1.2rem; background: linear-gradient(160deg, #fff, #f6faf8); color: #24483b; }
+.navigation { display: flex; align-items: center; gap: .6rem; margin-bottom: .85rem; }
+.calendar button, .calendar select { font: inherit; font-weight: 450; color: inherit; cursor: pointer; }
+.navigation > button { display: grid; place-items: center; flex: 0 0 2.75rem; height: 2.75rem; border: 1px solid #dce8e2; border-radius: .8rem; background: #fff; }
+.navigation svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.selectors { display: flex; flex: 1; justify-content: center; gap: .4rem; min-width: 0; }
+.selectors select { min-width: 0; max-width: 60%; min-height: 2.75rem; padding: .4rem; border: 0; border-radius: .6rem; background: transparent; font-weight: 550; }
+.days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
+.weekday { text-align: center; font-size: .75rem; font-weight: 500; color: #718479; padding-block: .35rem; }
+.days button { min-height: 2.75rem; padding: .4rem; border: 1px solid transparent; border-radius: .75rem; background: #fff; font-size: 1rem; }
+.days button:hover { background: #eaf4ee; border-color: #b7d7c6; }
+.days button[aria-current='date'] { border-color: #83b89e; }
+.days button[aria-pressed='true'] { background: #165540; border-color: #165540; color: #fff; font-weight: 550; }
+.calendar :is(button, select):focus-visible { outline: 2px solid #318969; outline-offset: 2px; }
+.summary { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .8rem; padding-top: .7rem; border-top: 1px solid #dce8e2; font-size: .85rem; font-weight: 450; }
+.summary button { border: 1px solid #c5ded1; border-radius: .7rem; background: #edf6f0; padding: .6rem .9rem; }
+@media(max-width: 480px) { .calendar { padding: .6rem; } .navigation { gap: .2rem; } .days { gap: .15rem; } }
