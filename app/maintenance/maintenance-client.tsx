@@ -899,7 +899,11 @@ export default function MaintenanceClient({
     ? initialReturnTo
     : '';
 
+  const refreshVersion = useRef(0);
+  useEffect(() => () => { refreshVersion.current += 1; }, []);
+
   const applyPayload = useCallback((payload: MaintenancePayload) => {
+    refreshVersion.current += 1; // A saved change invalidates older background reads.
     setAssets(Array.isArray(payload.assets) ? payload.assets : []);
     setFieldManagers(Array.isArray(payload.fieldManagers) ? payload.fieldManagers : []);
     setRecords(Array.isArray(payload.records) ? payload.records : []);
@@ -908,6 +912,7 @@ export default function MaintenanceClient({
 
   const loadData = useCallback(
     async (filters = activeFilters, options: { silent?: boolean } = {}) => {
+      const requestVersion = ++refreshVersion.current;
       const silent = options.silent === true;
       if (!silent) setIsLoading(true);
       try {
@@ -918,13 +923,15 @@ export default function MaintenanceClient({
           throw new Error(payload.error || 'Maintenance data could not be loaded.');
         }
 
+        if (requestVersion !== refreshVersion.current) return;
         applyPayload(payload);
+        setIsLoading(false);
       } catch (error) {
-        if (!silent) {
+        if (!silent && requestVersion === refreshVersion.current) {
           setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Maintenance data could not be loaded.' });
         }
       } finally {
-        if (!silent) setIsLoading(false);
+        if (requestVersion === refreshVersion.current) setIsLoading(false);
       }
     },
     [activeFilters, applyPayload],
@@ -963,10 +970,16 @@ export default function MaintenanceClient({
     };
     const interval = window.setInterval(refresh, 60_000);
     window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+    window.addEventListener('aim4price:asset-register-updated', refresh);
+    window.addEventListener('aim4price:asset-register-refreshed', refresh);
     document.addEventListener('visibilitychange', refresh);
     return () => {
       window.clearInterval(interval);
       window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+      window.removeEventListener('aim4price:asset-register-updated', refresh);
+      window.removeEventListener('aim4price:asset-register-refreshed', refresh);
       document.removeEventListener('visibilitychange', refresh);
     };
   }, [activeFilters, loadData]);
@@ -1480,6 +1493,7 @@ export default function MaintenanceClient({
                         </p> : null}
                         <div className={styles.ledgerBadges}>
                           <span className={`${styles.maintenanceStatusPill} ${statusPillClass}`}><span aria-hidden="true" className={styles.statusSymbol}>{isDone ? '✓' : record.status === 'cancelled' ? '−' : needsAttention ? '!' : '◷'}</span>{statusText}</span>
+                          {maintenanceTimingLabel(record) ? <span className={styles.timingLabel}>{maintenanceTimingLabel(record)}</span> : null}
                         </div>
                       </div>
 
@@ -1487,7 +1501,6 @@ export default function MaintenanceClient({
                         <div className={styles.invoiceValueBlock}>
                           <strong className={styles.invoicePrice}>{maintenanceCardValue(record)}</strong>
                           <span className={styles.invoiceVatLabel}>{maintenanceCardCaption(record)}</span>
-                          {maintenanceTimingLabel(record) ? <span className={styles.timingLabel}>{maintenanceTimingLabel(record)}</span> : null}
                         </div>
 
                         <div className={styles.rowActions}>
