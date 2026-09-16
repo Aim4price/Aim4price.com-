@@ -48,3 +48,16 @@
 .dateDialog .days button:disabled { background: #f7f8f7; color: #97a39b; border-color: #edf0ee; cursor: not-allowed; }
 .dateDialog .selectors select { border: 1px solid #d0dfd6; background: #f1f6f3; }
 @media (max-width: 480px) { :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .calendar { padding: .8rem; } :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .days { gap: .2rem; } :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .days button { min-height: 2.75rem; } }
+
+/* Calendar menus stay inside the date dialog's top layer. */
+.selectRoot { position: relative; min-width: 0; }
+.selectRoot:first-child { flex: 1; max-width: 11rem; }
+.selectRoot:last-child { flex: 0 0 6rem; }
+.calendar .selectTrigger { display: flex; align-items: center; justify-content: space-between; gap: .65rem; width: 100%; min-height: 2.9rem; padding: .65rem .8rem; border: 1px solid #c9dbd0; border-radius: .8rem; background: #f1f6f3; line-height: 1.3; font-weight: 500; }
+.selectTrigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.calendar .selectTrigger svg, .selectMenu svg { display: block; flex: 0 0 1rem; width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.selectTrigger[aria-expanded='true'] { border-color: #479575; box-shadow: 0 0 0 2px #e1eee7; }
+.selectMenu { position: absolute; top: calc(100% + .45rem); left: 0; z-index: 2; min-width: 100%; width: max-content; max-height: 14rem; overflow-y: auto; overscroll-behavior: contain; padding: .35rem; border: 1px solid #c9dbd0; border-radius: .9rem; background: #fff; box-shadow: 0 12px 28px #173f3026; scrollbar-width: thin; scrollbar-color: #82a995 #edf4f0; }
+.calendar .selectMenu button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.65rem; padding: .55rem .75rem; border: 0; border-radius: .6rem; background: #fff; text-align: left; white-space: nowrap; font-size: .95rem; font-weight: 450; }
+.calendar .selectMenu button:hover, .calendar .selectMenu button:focus-visible { background: #edf6f0; outline: none; }
+.calendar .selectMenu button[aria-selected='true'] { background: #dceee3; color: #165540; font-weight: 600; }

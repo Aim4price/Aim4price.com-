@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type InputHTMLAttributes } from 'react';
+import { useEffect, useId, useRef, useState, type InputHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './DateInput.module.css';
 
@@ -14,6 +14,51 @@ function parseDate(text: string) {
   const iso = `${match[3]}-${match[2]}-${match[1]}`;
   const parsed = new Date(`${iso}T12:00:00`);
   return !Number.isNaN(parsed.getTime()) && dateKey(parsed) === iso ? iso : '';
+}
+
+function CalendarSelect({ label, value, options, onChange }: {
+  label: string;
+  value: number;
+  options: { value: number; label: string }[];
+  onChange: (value: number) => void;
+}) {
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const selected = menu.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]');
+    selected?.focus();
+    selected?.scrollIntoView({ block: 'nearest' });
+    const outside = (event: PointerEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', outside);
+    return () => document.removeEventListener('pointerdown', outside);
+  }, [open]);
+  return <div ref={root} className={styles.selectRoot} onBlur={(event) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+  }}>
+    <button ref={trigger} className={styles.selectTrigger} type="button" aria-label={label} aria-haspopup="listbox" aria-expanded={open} aria-controls={id} onClick={() => setOpen((current) => !current)} onKeyDown={(event) => {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); setOpen(true); }
+    }}>
+      <span>{options.find((option) => option.value === value)?.label}</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+    </button>
+    {open ? <div id={id} ref={menu} role="listbox" aria-label={label} className={styles.selectMenu} onKeyDown={(event) => {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus(); return; }
+      const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
+      const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+      const next = event.key === 'ArrowDown' ? Math.min(index + 1, buttons.length - 1) : event.key === 'ArrowUp' ? Math.max(index - 1, 0) : event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : -1;
+      if (next >= 0) { event.preventDefault(); buttons[next]?.focus(); }
+    }}>
+      {options.map((option) => <button key={option.value} type="button" role="option" tabIndex={-1} aria-selected={option.value === value} onClick={() => { onChange(option.value); setOpen(false); trigger.current?.focus(); }}>
+        <span>{option.label}</span>{option.value === value ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4 10-10" /></svg> : null}
+      </button>)}
+    </div> : null}
+  </div>;
 }
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'value' | 'defaultValue' | 'onChange' | 'min' | 'max'> & {
@@ -102,12 +147,8 @@ export default function DateInput({ value, defaultValue = '', onValueChange, min
       <div className={styles.navigation}>
         <button type="button" aria-label="Previous month" onClick={() => setMonth(new Date(year, monthIndex - 1, 1))}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 6-6 6 6 6" /></svg></button>
         <div className={styles.selectors}>
-          <select aria-label="Month" value={monthIndex} onChange={(event) => setMonth(new Date(year, Number(event.target.value), 1))}>
-            {Array.from({ length: 12 }, (_, i) => <option key={i} value={i}>{new Date(2000, i, 1).toLocaleDateString('en-ZA', { month: 'long' })}</option>)}
-          </select>
-          <select aria-label="Year" value={year} onChange={(event) => setMonth(new Date(Number(event.target.value), monthIndex, 1))}>
-            {years.map((item) => <option key={item} value={item}>{item}</option>)}
-          </select>
+          <CalendarSelect label="Month" value={monthIndex} options={Array.from({ length: 12 }, (_, i) => ({ value: i, label: new Date(2000, i, 1).toLocaleDateString('en-ZA', { month: 'long' }) }))} onChange={(value) => setMonth(new Date(year, value, 1))} />
+          <CalendarSelect label="Year" value={year} options={years.map((item) => ({ value: item, label: String(item) }))} onChange={(value) => setMonth(new Date(value, monthIndex, 1))} />
         </div>
         <button type="button" aria-label="Next month" onClick={() => setMonth(new Date(year, monthIndex + 1, 1))}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 6 6 6-6 6" /></svg></button>
       </div>
