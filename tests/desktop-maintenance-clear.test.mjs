@@ -40,7 +40,7 @@ test('Desktop maintenance keeps quick clear in Manage and exposes expandable det
   const styles = source('app/maintenance/page.module.css');
   const refinements = styles.slice(styles.indexOf('/* Desktop maintenance cards and quick-clear spacing. */'));
 
-  assert.match(desktopClient, /Clear this \{typeLabel\(recordPendingQuickClear\.maintenanceType\)\.toLowerCase\(\)\} for/);
+  assert.match(desktopClient, /Clear this \{typeLabel\(recordPendingQuickClear\.maintenanceType\)\.toLowerCase\(\)\}\?/);
   assert.match(desktopClient, /aria-expanded=\{expanded\} aria-controls=\{detailsId\}/);
   assert.match(desktopClient, /setManagedRecord\(null\); openQuickClear\(managedRecord\)/);
   assert.match(desktopClient, /managedRecord\.status === 'upcoming'/);

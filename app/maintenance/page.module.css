@@ -5175,3 +5175,14 @@
     letter-spacing: -0.026em;
   }
 }
+
+/* Quick-clear uses the same compact confirmation surface as scheduling. */
+.schedulingDialog.maintenanceQuickClearModal .deleteConfirmBody > p,
+.schedulingDialog.maintenanceQuickClearModal .deleteRecordSummary strong,
+.schedulingDialog.maintenanceQuickClearModal .deleteRecordSummary small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.schedulingDialog.maintenanceQuickClearModal .deleteRecordSummary {
+  background: linear-gradient(180deg, #ffffff, #f7fafb);
+}
