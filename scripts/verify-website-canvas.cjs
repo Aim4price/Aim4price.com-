@@ -22,7 +22,7 @@ async function check(browser, url) {
   page.on('request', request=>{
     const target=new URL(request.url());
     if(target.pathname.startsWith('/api/')) {
-      const body = target.pathname==='/api/me' ? {ok:true,signedIn,user:signedIn?user:null} : target.pathname==='/api/account-profile' ? {ok:true,profile} : {ok:true,register:{id:'canvas-register',name:'Test farm'},items:[],assets:[],groups:[],registers:[{id:'canvas-register',name:'Test farm'}],notifications:[],listings:[],storages:[],recentEvents:[],recentFuelSlips:[],requests:[],budgets:[],scanPin:{enabled:false,hasPin:false,updatedAtIso:null},enabled:false,hasPin:false};
+      const body = target.pathname==='/api/me' ? {ok:true,signedIn,user:signedIn?user:null} : target.pathname==='/api/account-profile' ? {ok:true,profile} : {ok:true,register:{id:'canvas-register',name:'Test farm',businessName:'Test farm'},items:[],assets:[],groups:[],registers:[{id:'canvas-register',name:'Test farm',businessName:'Test farm'}],notifications:[],listings:[],storages:[],recentEvents:[],recentFuelSlips:[],requests:[],budgets:[],scanPin:{enabled:false,hasPin:false,updatedAtIso:null},enabled:false,hasPin:false};
       return request.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
     }
     // Marketing videos are irrelevant to layout and intentionally not downloaded for CI.
@@ -134,6 +134,20 @@ async function check(browser, url) {
   await visit('/canvas-validation?page=register',430,600);
   async function openAssetChoice() {
     await page.$$eval('button',elements=>elements.find(e=>e.textContent.trim()==='Add Asset')?.click());
+    const destination = '[aria-labelledby="add-asset-destination-title"]';
+    await page.waitForSelector(destination);
+    await page.$eval(`${destination} [aria-haspopup="listbox"]`, element=>element.click());
+    await page.waitForSelector('[role="option"]');
+    await page.$$eval('[role="option"]', elements=>{
+      const register=elements.find(element=>element.textContent.includes('Test farm'));
+      if(!register) throw new Error('Fixture Asset Register is missing from destination options');
+      register.click();
+    });
+    await page.$$eval(`${destination} button`, elements=>{
+      const next=elements.find(element=>element.textContent.trim()==='Continue');
+      if(!next || next.disabled) throw new Error('Selected register must enable Continue');
+      next.click();
+    });
     await page.waitForSelector('[aria-labelledby="add-asset-choice-title"]');
   }
   await openAssetChoice();
