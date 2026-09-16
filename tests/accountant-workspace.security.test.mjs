@@ -214,7 +214,7 @@ test('shared workspace reuses the real Asset Register, Fuel Ledger and Cost Ledg
 test('shared Fuel and Cost Ledgers reuse owner controls with register-scoped writes and reports', () => {
   assert.match(fuelUi, /const isAccountantReadOnly = false/);
   assert.match(fuelUi, /scopedApiUrl\('\/api\/capture-requests\/fuel-slip'\)/);
-  assert.match(fuelUi, /buildReportUrl\(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId, accountantRegisterId\)/);
+  assert.match(fuelUi, /buildReportUrl\(selection\.fields\.source,\s*selection\.year,\s*selection\.month,\s*selection\.format,\s*accountantShareId,\s*accountantRegisterId\)/);
   assert.match(fuelUi, /Fuel Slips/);
   assert.match(costUi, /accountScopedUrl\(editingInvoiceId \? `\$\{apiRoot\}\/\$\{editingInvoiceId\}` : apiRoot\)/);
   assert.match(costUi, /<span>Add Cost<\/span>/);

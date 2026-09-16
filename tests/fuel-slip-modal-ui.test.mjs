@@ -130,16 +130,12 @@ test('fuel slip filters use the Cost Ledger modal language without limiting mont
   assert.doesNotMatch(downloadModal, /styles\.fuelSlipManagerFilterModal/);
 });
 
-test('pagination only limits rendering while search, filters and downloads use the full loaded set', () => {
+test('pagination limits rendering while exports send independent filters to the full-history endpoint', () => {
   assert.match(client, /visibleFuelSlipManagerSlips\.slice\(startIndex, startIndex \+ fuelSlipLimit\)/);
-  assert.match(client, /recentFuelSlips\.filter\(\(slip\) => matchesFuelSlipManagerFilters\(slip, draftFuelSlipDownloadFilters, fuelSlipManagerSearchTerm\)\)/);
-
-  const downloadHandler = sliceBetween(
-    client,
-    'function handleFuelSlipDownload()',
-    'async function handleClearDipstickNote',
-  );
-  assert.doesNotMatch(downloadHandler, /paginatedFuelSlipManagerSlips/);
+  const downloadHandler = sliceBetween(client, '<ReportDownloadFlow title="Fuel slip reports"', 'historyFuelSlip ?');
+  assert.match(downloadHandler, /scopedApiUrl\('\/api\/fuel\/slips\/export'\)/);
+  assert.match(downloadHandler, /filters:\{assetId:selection\.assetId,year:selection\.year,month:selection\.month/);
+  assert.doesNotMatch(downloadHandler, /paginatedFuelSlipManagerSlips|recentFuelSlips|fuelSlipManagerSearchTerm/);
   assert.match(client, /setCurrentFuelSlipManagerPage\(1\);[\s\S]*?\}, \[fuelSlipManagerFilters, fuelSlipManagerSearch\]\)/);
   assert.match(client, /fuelSlipManagerListRef\.current\.scrollTop = 0/);
 });

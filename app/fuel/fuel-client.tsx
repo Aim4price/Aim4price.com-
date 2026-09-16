@@ -1,4 +1,6 @@
 'use client';
+import { downloadCanonicalReportFile } from '../../lib/report-open';
+import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
@@ -32,8 +34,6 @@ type ModalMode = 'create-storage' | 'edit-storage' | 'manage-storage-choice' | '
 type FuelSlipFlowStep = 'source-choice' | 'target-manual' | 'target-automatic' | 'manual-form' | 'upload' | 'review' | null;
 type FuelSlipFormPage = 'details' | 'extra';
 type ReportFormat = 'pdf' | 'xlsx';
-type ReportStep = 'format' | 'filters';
-type ReportSelectKey = 'storage' | 'year' | 'month';
 type FuelSlipManagerFilterKey = 'target' | 'capture' | 'year' | 'month';
 type FuelSlipCaptureFilter = 'all' | 'manual' | 'automatic' | 'needs_review';
 
@@ -390,7 +390,6 @@ const emptyStorageDraft: StorageDraft = {
   pin: '',
 };
 
-
 const emptyFuelSlipDraft: FuelSlipDraft = {
   id: '',
   mode: 'manual',
@@ -639,7 +638,6 @@ function TrashIcon(props: SVGProps<SVGSVGElement>) {
     </IconBase>
   );
 }
-
 
 function DownloadIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -942,7 +940,6 @@ function PlusIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-
 function UploadIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -977,7 +974,6 @@ function AutomaticFuelSlipIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-
 function formatLitres(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
   return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} L`;
@@ -994,7 +990,6 @@ function formatFuelType(value: string): string {
   if (!normalized) return 'Fuel';
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
-
 
 function formatCurrency(value: number | null | undefined): string {
   if (value === null || typeof value === 'undefined' || !Number.isFinite(value)) return '—';
@@ -1181,7 +1176,6 @@ function booleanToInput(value: boolean | null | undefined): string {
   if (value === false) return 'false';
   return '';
 }
-
 
 function numberInputToValue(value: string, decimals = 2): number | null {
   return parseFuelSlipDecimal(value, decimals);
@@ -1447,7 +1441,6 @@ function reportDateParts(entry: { createdAtIso?: string; documentDate?: string }
   };
 }
 
-
 function getMonthOptions(entries: Array<{ createdAtIso?: string; documentDate?: string }>, year: string): string[] {
   const months = new Set<string>();
 
@@ -1475,7 +1468,6 @@ function getYearOptions(entries: Array<{ createdAtIso?: string; documentDate?: s
 
   return Array.from(years).sort((a, b) => Number(b) - Number(a));
 }
-
 
 function buildReportUrl(sourceId: string, year: string, month: string, format: ReportFormat = 'pdf', accountantShareId?: string, accountantRegisterId?: string): string {
   const url = new URL('/api/fuel/report', window.location.origin);
@@ -1509,7 +1501,6 @@ function withAccountantShare(url: string, accountantShareId?: string, accountant
   return `${scopedUrl.pathname}${scopedUrl.search}`;
 }
 
-
 function toAbsoluteUrl(value?: string | null): string | null {
   const text = String(value ?? '').trim();
 
@@ -1541,7 +1532,6 @@ function buildFuelScanUrl(storage: FuelLedgerStorage): string | null {
 
   return toAbsoluteUrl(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`);
 }
-
 
 function buildFuelQrPrintUrl(storage: FuelLedgerStorage, accountantShareId?: string, accountantRegisterId?: string): string {
   return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`, accountantShareId, accountantRegisterId);
@@ -1612,12 +1602,7 @@ export default function FuelClient({
   const [storageDraft, setStorageDraft] = useState<StorageDraft>(emptyStorageDraft);
   const [pinDraft, setPinDraft] = useState('');
   const [searchText, setSearchText] = useState('');
-  const [reportStorageId, setReportStorageId] = useState(REPORT_SOURCE_ALL_WITH_SLIPS);
-  const [reportYear, setReportYear] = useState('all');
-  const [reportMonth, setReportMonth] = useState('all');
-  const [reportFormat, setReportFormat] = useState<ReportFormat>('pdf');
-  const [reportStep, setReportStep] = useState<ReportStep>('format');
-  const [openReportSelect, setOpenReportSelect] = useState<ReportSelectKey | null>(null);
+
   const [isStorageFuelSelectOpen, setIsStorageFuelSelectOpen] = useState(false);
   const [copiedScanLinkStorageId, setCopiedScanLinkStorageId] = useState<string | null>(null);
   const [fuelSlipDraft, setFuelSlipDraft] = useState<FuelSlipDraft>(emptyFuelSlipDraft);
@@ -1634,12 +1619,7 @@ export default function FuelClient({
   const [openFuelSlipManagerFilterSelect, setOpenFuelSlipManagerFilterSelect] = useState<FuelSlipManagerFilterKey | null>(null);
   const [fuelSlipManagerTargetSearch, setFuelSlipManagerTargetSearch] = useState('');
   const [fuelSlipDownloadOpen, setFuelSlipDownloadOpen] = useState(false);
-  const [fuelSlipDownloadFormat, setFuelSlipDownloadFormat] = useState<ReportFormat>('pdf');
-  const [fuelSlipDownloadStep, setFuelSlipDownloadStep] = useState(0);
-  const [draftFuelSlipDownloadFilters, setDraftFuelSlipDownloadFilters] = useState<FuelSlipManagerFilterState>(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
-  const [openFuelSlipDownloadSelect, setOpenFuelSlipDownloadSelect] = useState<FuelSlipManagerFilterKey | null>(null);
-  const [fuelSlipDownloadTargetSearch, setFuelSlipDownloadTargetSearch] = useState('');
-  const [fuelSlipDownloadError, setFuelSlipDownloadError] = useState('');
+
   const [fuelSlipPageSize, setFuelSlipPageSize] = useState<ListPageSize>(6);
   const [storagePageSize, setStoragePageSize] = useState<ListPageSize>(6);
   const [storagePage, setStoragePage] = useState(1);
@@ -1647,7 +1627,7 @@ export default function FuelClient({
   const [expandedFuelSlipId, setExpandedFuelSlipId] = useState<string | null>(null);
   const [managedFuelSlip, setManagedFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [fuelSlipReturnToManager, setFuelSlipReturnToManager] = useState(false);
-  const [isDownloadingFuelSlips, setIsDownloadingFuelSlips] = useState(false);
+
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [busyFuelSlipDeleteId, setBusyFuelSlipDeleteId] = useState<string | null>(null);
   const [exclusionSearch, setExclusionSearch] = useState('');
@@ -1720,7 +1700,7 @@ export default function FuelClient({
     [recentEvents, recentFuelSlips],
   );
   const yearOptions = useMemo(() => getYearOptions(reportDateEntries), [reportDateEntries]);
-  const reportMonthOptions = useMemo(() => getMonthOptions(reportDateEntries, reportYear), [reportDateEntries, reportYear]);
+
   const reportStorageOptions = useMemo<ReportSelectOption[]>(
     () => [
       { value: REPORT_SOURCE_ALL_WITH_SLIPS, label: 'All storage units + slips' },
@@ -1728,20 +1708,6 @@ export default function FuelClient({
       ...storages.map((storage) => ({ value: storage.id, label: storage.name })),
     ],
     [storages],
-  );
-  const reportYearOptions = useMemo<ReportSelectOption[]>(
-    () => [
-      { value: 'all', label: 'All years' },
-      ...yearOptions.map((year) => ({ value: year, label: year })),
-    ],
-    [yearOptions],
-  );
-  const reportMonthSelectOptions = useMemo<ReportSelectOption[]>(
-    () => [
-      { value: 'all', label: 'All months' },
-      ...reportMonthOptions.map((month) => ({ value: month, label: MONTH_LABELS[Number(month) - 1] })),
-    ],
-    [reportMonthOptions],
   );
 
   const fuelSlipTargetOptions = useMemo<ReportSelectOption[]>(
@@ -1884,7 +1850,6 @@ export default function FuelClient({
     || Boolean(deleteCandidateFuelSlip)
     || Boolean(managedFuelSlip);
 
-
   useEffect(() => {
     if (!isSlipsPage || (!isFuelSlipManagerChildDialogOpen && (!modalMode || modalMode === 'fuel-slip-manager'))) return;
     const page = fuelPageRef.current;
@@ -2003,20 +1968,6 @@ export default function FuelClient({
   }, [assets, hasLoadedLedger, initialAssetId, initialOpenAdd, isLoading]);
 
   useEffect(() => {
-    if (!openReportSelect) return undefined;
-
-    function handlePointerDown(event: MouseEvent) {
-      const target = event.target as HTMLElement | null;
-      if (!target?.closest('[data-report-select-root="true"]')) {
-        setOpenReportSelect(null);
-      }
-    }
-
-    document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [openReportSelect]);
-
-  useEffect(() => {
     if (!isStorageFuelSelectOpen) return undefined;
 
     function handlePointerDown(event: MouseEvent) {
@@ -2082,11 +2033,7 @@ export default function FuelClient({
           setOpenFuelSlipManagerFilterSelect(null);
           return;
         }
-        if (openFuelSlipDownloadSelect) {
-          event.preventDefault();
-          setOpenFuelSlipDownloadSelect(null);
-          return;
-        }
+
         if (deleteCandidateFuelSlip) {
           event.preventDefault();
           if (!busyFuelSlipDeleteId) setDeleteCandidateFuelSlip(null);
@@ -2142,7 +2089,6 @@ export default function FuelClient({
     isFuelSlipManagerChildDialogOpen,
     isSlipsPage,
     modalMode,
-    openFuelSlipDownloadSelect,
     openFuelSlipManagerFilterSelect,
   ]);
 
@@ -2153,26 +2099,25 @@ export default function FuelClient({
     );
     setFuelSlipManagerFilters(normalizeYear);
     setDraftFuelSlipManagerFilters(normalizeYear);
-    setDraftFuelSlipDownloadFilters(normalizeYear);
+
   }, [fuelSlipManagerYearOptions]);
 
   useEffect(() => {
     const managerDropdownOpen = fuelSlipManagerFilterOpen && Boolean(openFuelSlipManagerFilterSelect);
-    const downloadDropdownOpen = fuelSlipDownloadOpen && Boolean(openFuelSlipDownloadSelect);
 
-    if (!managerDropdownOpen && !downloadDropdownOpen) return undefined;
+    if (!managerDropdownOpen) return undefined;
 
     function handlePointerDown(event: MouseEvent) {
       const target = event.target as HTMLElement | null;
       if (!target?.closest('[data-fuel-slip-custom-select-root="true"]')) {
         setOpenFuelSlipManagerFilterSelect(null);
-        setOpenFuelSlipDownloadSelect(null);
+
       }
     }
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [fuelSlipDownloadOpen, fuelSlipManagerFilterOpen, openFuelSlipDownloadSelect, openFuelSlipManagerFilterSelect]);
+  }, [fuelSlipManagerFilterOpen, openFuelSlipManagerFilterSelect]);
 
   useEffect(() => {
     if (!fuelSlipFocusField) return undefined;
@@ -2262,9 +2207,7 @@ export default function FuelClient({
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
     setFuelSlipDownloadOpen(false);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setIsStorageFuelSelectOpen(false);
     setQuickLaunchAssetId(null);
     setNotice(null);
@@ -2289,9 +2232,7 @@ export default function FuelClient({
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
     setFuelSlipDownloadOpen(false);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setIsStorageFuelSelectOpen(false);
     setQuickLaunchAssetId(null);
     setNotice(null);
@@ -2307,9 +2248,7 @@ export default function FuelClient({
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
     setFuelSlipDownloadOpen(false);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setDeleteCandidateFuelSlip(null);
     setExpandedFuelSlipId(null);
     setFuelSlipFlow(null);
@@ -2333,9 +2272,7 @@ export default function FuelClient({
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
     setFuelSlipDownloadOpen(false);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setDeleteCandidateFuelSlip(null);
     setIsStorageFuelSelectOpen(false);
     setQuickLaunchAssetId(null);
@@ -2349,9 +2286,7 @@ export default function FuelClient({
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
     setFuelSlipDownloadOpen(false);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setDeleteCandidateFuelSlip(slip);
     setNotice(null);
   }
@@ -2385,12 +2320,7 @@ export default function FuelClient({
   }
 
   function openReportModal() {
-    setReportYear('all');
-    setReportMonth('all');
-    setReportStorageId(REPORT_SOURCE_ALL_WITH_SLIPS);
-    setReportFormat('pdf');
-    setReportStep('format');
-    setOpenReportSelect(null);
+
     setIsStorageFuelSelectOpen(false);
     setNotice(null);
     setModalMode('report');
@@ -2511,9 +2441,7 @@ export default function FuelClient({
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
     setPinDraft('');
-    setReportStep('format');
-    setReportFormat('pdf');
-    setOpenReportSelect(null);
+
     setIsStorageFuelSelectOpen(false);
     setCopiedScanLinkStorageId(null);
     setFuelSlipDraft(emptyFuelSlipDraft);
@@ -2527,12 +2455,10 @@ export default function FuelClient({
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
     setFuelSlipDownloadOpen(false);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setDeleteCandidateFuelSlip(null);
     setBusyFuelSlipDeleteId(null);
-    setIsDownloadingFuelSlips(false);
+
     setFuelSlipAttemptedSubmit(false);
     setFuelSlipValidationNotice('');
     setFuelSlipFocusField(null);
@@ -2564,9 +2490,7 @@ export default function FuelClient({
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipDownloadOpen(false);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setQuickLaunchAssetId(null);
     setFuelSlipReturnToManager(false);
     setModalMode('fuel-slip-manager');
@@ -2623,7 +2547,6 @@ export default function FuelClient({
       setIsSaving(false);
     }
   }
-
 
   function setFuelSlipField<K extends keyof FuelSlipDraft>(field: K, value: FuelSlipDraft[K]) {
     setFuelSlipDraft((current) => ({ ...current, [field]: value }));
@@ -2905,9 +2828,7 @@ export default function FuelClient({
       setFuelSlipManagerFilterOpen(false);
       setOpenFuelSlipManagerFilterSelect(null);
       setFuelSlipDownloadOpen(false);
-      setOpenFuelSlipDownloadSelect(null);
-      setFuelSlipDownloadTargetSearch('');
-      setFuelSlipDownloadError('');
+
       if (reviewingExistingSlip) {
         setExpandedFuelSlipId(fuelSlipDraft.id);
       } else {
@@ -2980,8 +2901,6 @@ export default function FuelClient({
       setIsSaving(false);
     }
   }
-
-
 
   async function handleCopyFuelScanLink(storage: FuelLedgerStorage) {
     const scanUrl = buildFuelScanUrl(storage);
@@ -3068,9 +2987,7 @@ export default function FuelClient({
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
     setFuelSlipDownloadOpen(false);
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setFuelSlipManagerFilterOpen(true);
   }
 
@@ -3108,13 +3025,9 @@ export default function FuelClient({
   }
 
   function openFuelSlipDownloadPanel() {
-    setFuelSlipDownloadFormat('pdf');
-    setFuelSlipDownloadStep(0);
+
     rememberFuelSlipManagerChildTrigger();
-    setDraftFuelSlipDownloadFilters({ ...fuelSlipManagerFilters, month: fuelSlipManagerFilters.year === 'all' ? 'all' : fuelSlipManagerFilters.month });
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
@@ -3122,44 +3035,8 @@ export default function FuelClient({
   }
 
   function closeFuelSlipDownloadPanel() {
-    setOpenFuelSlipDownloadSelect(null);
-    setFuelSlipDownloadTargetSearch('');
-    setFuelSlipDownloadError('');
+
     setFuelSlipDownloadOpen(false);
-  }
-
-  async function handleFuelSlipDownload() {
-    if (isDownloadingFuelSlips) return;
-
-    const downloadableSlips = recentFuelSlips.filter((slip) => matchesFuelSlipManagerFilters(slip, draftFuelSlipDownloadFilters, fuelSlipManagerSearchTerm));
-
-    if (!downloadableSlips.length) {
-      setFuelSlipDownloadError('No fuel slips match the selected download filters.');
-      return;
-    }
-
-    setIsDownloadingFuelSlips(true);
-    setFuelSlipDownloadError('');
-
-    try {
-      const response = await fetch(scopedApiUrl('/api/fuel/slips/export'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json', 'x-aim4price-client-realm': appRealmForPath(window.location.pathname) ?? 'website' },
-        body: JSON.stringify({ format: fuelSlipDownloadFormat, ids: downloadableSlips.map((slip) => slip.id) }),
-      });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Fuel slips could not be downloaded.');
-      }
-      downloadBlob(await response.blob(), `fuel-slips-${new Date().toISOString().slice(0, 10)}.${fuelSlipDownloadFormat}`);
-      setNotice({ tone: 'success', message: `Fuel slip ${fuelSlipDownloadFormat === 'pdf' ? 'PDF' : 'Excel workbook'} downloaded.` });
-      closeFuelSlipDownloadPanel();
-    } catch (error) {
-      setFuelSlipDownloadError(error instanceof Error ? error.message : 'Fuel slips could not be downloaded.');
-    } finally {
-      setIsDownloadingFuelSlips(false);
-    }
   }
 
   async function handleClearDipstickNote(storage: FuelLedgerStorage) {
@@ -3205,30 +3082,6 @@ export default function FuelClient({
     }
   }
 
-  function handleOpenReport() {
-    const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
-    const opened = openCanonicalReportUrl(buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'pdf', accountantShareId, accountantRegisterId));
-    if (!opened) {
-      setNotice({ tone: 'error', message: 'Please allow pop-ups to open the fuel report.' });
-      return;
-    }
-    closeModal();
-  }
-
-  function handleReportNext() {
-    setOpenReportSelect(null);
-    setReportStep('filters');
-  }
-
-  function handleReportBack() {
-    setOpenReportSelect(null);
-    setReportStep('format');
-  }
-
-  function toggleReportSelect(selectKey: ReportSelectKey) {
-    setOpenReportSelect((current) => (current === selectKey ? null : selectKey));
-  }
-
   function toggleStorageFuelSelect() {
     setIsStorageFuelSelectOpen((current) => !current);
   }
@@ -3236,43 +3089,6 @@ export default function FuelClient({
   function selectStorageFuelType(value: string) {
     setStorageDraft((current) => ({ ...current, fuelType: value }));
     setIsStorageFuelSelectOpen(false);
-  }
-
-  function selectReportStorage(value: string) {
-    setReportStorageId(value);
-    setOpenReportSelect(null);
-  }
-
-  function selectReportYear(value: string) {
-    setReportYear(value);
-    setReportMonth('all');
-    setOpenReportSelect(null);
-  }
-
-  function selectReportMonth(value: string) {
-    setReportMonth(value);
-    setOpenReportSelect(null);
-  }
-
-  function handleDownloadSelectedReport() {
-    if (reportFormat === 'xlsx') {
-      handleDownloadXlsxReport();
-      return;
-    }
-
-    handleOpenReport();
-  }
-
-  function handleDownloadXlsxReport() {
-    const normalizedMonth = reportYear === 'all' ? 'all' : reportMonth;
-    const downloadLink = document.createElement('a');
-    downloadLink.href = buildReportUrl(reportStorageId, reportYear, normalizedMonth, 'xlsx', accountantShareId, accountantRegisterId);
-    downloadLink.download = '';
-    downloadLink.rel = 'noreferrer';
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    downloadLink.remove();
-    closeModal();
   }
 
   const hasActiveSearch = searchText.trim().length > 0;
@@ -4268,7 +4084,7 @@ export default function FuelClient({
                     type="button"
                     className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`}
                     onClick={openFuelSlipDownloadPanel}
-                    disabled={!recentFuelSlips.length || isDownloadingFuelSlips}
+                    disabled={!recentFuelSlips.length}
                   >
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>Download</span>
@@ -4330,111 +4146,15 @@ export default function FuelClient({
         </FilterFlow>
       ) : null}
 
-      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? (
-        <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop} ${downloadStyles.backdrop}`} data-website-overlay>
-          <div className={`${styles.fuelSlipFilterModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${downloadStyles.dialog}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title" aria-busy={isDownloadingFuelSlips} data-download-dialog="true">
-            <div className={styles.modalHeader} data-download-header="true">
-              <div>
-                <h2 id="fuel-slip-download-title">{['Download fuel slips', 'Choose report timeline', 'Choose fuel slips'][fuelSlipDownloadStep]}</h2>
-                {fuelSlipDownloadStep > 0 ? <p>{fuelSlipDownloadStep === 1 ? 'Select a year and optional month.' : 'Choose asset, tank and status.'}</p> : null}
-              </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeFuelSlipDownloadPanel} aria-label="Close fuel slip download"><span aria-hidden="true">×</span></button>
-            </div>
-
-            <div className={styles.slipDownloadBody} data-download-body="true">
-              {fuelSlipDownloadStep > 0 ? <ol className={costStyles.downloadStageRail} aria-label="Fuel slip download progress">
-                {['Format', 'Timeline', 'Fuel slips'].map((label, index) => <li key={label} className={`${costStyles.downloadStageItem} ${index === fuelSlipDownloadStep ? costStyles.downloadStageItemActive : ''} ${index < fuelSlipDownloadStep ? costStyles.downloadStageItemComplete : ''}`} aria-current={index === fuelSlipDownloadStep ? 'step' : undefined}>
-                  <span className={costStyles.downloadStageNumber}>{index < fuelSlipDownloadStep ? '✓' : index + 1}</span><span>{label}</span>
-                </li>)}
-              </ol> : null}
-              {fuelSlipDownloadStep === 0 ? <div className={styles.exportChoices} data-download-grid="true">
-                {(['pdf', 'xlsx'] as const).map((format) => <button key={format} type="button" className={`${styles.exportOption} ${fuelSlipDownloadFormat === format ? styles.exportOptionActive : ''}`} onClick={() => setFuelSlipDownloadFormat(format)} aria-pressed={fuelSlipDownloadFormat === format} data-download-option="true">
-                  <span className={styles.exportGraphic} data-download-icon="true"><ExportGraphic src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" icon={format === 'pdf' ? <PdfIcon className={styles.exportOptionIcon} /> : <SpreadsheetIcon className={styles.exportOptionIcon} />} /></span>
-                  <span className={styles.exportOptionTitleBlock} data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Printable fuel slips.' : 'Fuel slips in Excel.'}</small></span>
-                </button>)}
-              </div> : <section className={styles.slipDownloadPanel} aria-label={fuelSlipDownloadStep === 1 ? 'Report timeline' : 'Fuel slip selection'}>
-                <div className={styles.slipDownloadFields}>
-                  {fuelSlipDownloadStep === 1 ? <>
-                    <FuelSlipFilterDropdown
-                      label="Year"
-                      dropdownKey="year"
-                      value={draftFuelSlipDownloadFilters.year}
-                      options={fuelSlipManagerYearOptions}
-                      openDropdown={openFuelSlipDownloadSelect}
-                      onOpenChange={setOpenFuelSlipDownloadSelect}
-                      onChange={(value) => {
-                        setFuelSlipDownloadError('');
-                        setDraftFuelSlipDownloadFilters((current) => ({ ...current, year: value, month: value === 'all' ? 'all' : current.month }));
-                      }}
-                    />
-
-                    <FuelSlipFilterDropdown
-                      label="Month"
-                      disabled={draftFuelSlipDownloadFilters.year === 'all'}
-                      dropdownKey="month"
-                      value={draftFuelSlipDownloadFilters.month}
-                      options={fuelSlipManagerMonthOptions}
-                      openDropdown={openFuelSlipDownloadSelect}
-                      onOpenChange={setOpenFuelSlipDownloadSelect}
-                      onChange={(value) => {
-                        setFuelSlipDownloadError('');
-                        setDraftFuelSlipDownloadFilters((current) => ({ ...current, month: value }));
-                      }}
-                    />
-
-                  </> : <>
-                    <FuelSlipFilterDropdown
-                      label="Target"
-                      dropdownKey="target"
-                      value={draftFuelSlipDownloadFilters.targetKey}
-                      options={fuelSlipManagerTargetOptions}
-                      openDropdown={openFuelSlipDownloadSelect}
-                      searchable
-                      searchValue={fuelSlipDownloadTargetSearch}
-                      searchPlaceholder="Search saved assets or storage tanks"
-                      noMatchesLabel="No matching targets found"
-                      onOpenChange={setOpenFuelSlipDownloadSelect}
-                      onSearchChange={setFuelSlipDownloadTargetSearch}
-                      onChange={(value) => {
-                        setFuelSlipDownloadError('');
-                        setDraftFuelSlipDownloadFilters((current) => ({ ...current, targetKey: value }));
-                      }}
-                    />
-
-                    <FuelSlipFilterDropdown
-                      label="Source / status"
-                      dropdownKey="capture"
-                      value={draftFuelSlipDownloadFilters.capture}
-                      options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
-                      openDropdown={openFuelSlipDownloadSelect}
-                      onOpenChange={setOpenFuelSlipDownloadSelect}
-                      onChange={(value) => {
-                        setFuelSlipDownloadError('');
-                        setDraftFuelSlipDownloadFilters((current) => ({ ...current, capture: value as FuelSlipCaptureFilter }));
-                      }}
-                    />
-
-
-                  </>}
-                </div>
-              </section>}
-              {fuelSlipDownloadStep === 2 ? <p className={styles.slipDownloadSummary}>
-                {recentFuelSlips.filter((slip) => matchesFuelSlipManagerFilters(slip, draftFuelSlipDownloadFilters, fuelSlipManagerSearchTerm)).length} loaded slips selected{fuelSlipManagerSearch.trim() ? ` matching “${fuelSlipManagerSearch.trim()}”` : ''}.
-              </p> : null}
-              {fuelSlipDownloadError ? <p className={styles.fuelSlipDownloadError} role="alert">{fuelSlipDownloadError}</p> : null}
-            </div>
-            <div className={`${styles.modalFooter} ${styles.slipDownloadFooter}`} data-download-footer="true">
-              {fuelSlipDownloadStep > 0 ? <button type="button" className={styles.secondaryButton} disabled={isDownloadingFuelSlips} onClick={() => { setOpenFuelSlipDownloadSelect(null); setFuelSlipDownloadError(''); setFuelSlipDownloadStep((step) => step - 1); }}>Back</button> : <span />}
-              <div className={styles.slipDownloadActions} data-download-footer="true">
-                <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipDownloadPanel}>Cancel</button>
-                {fuelSlipDownloadStep < 2 ? <button type="button" className={styles.primaryButton} onClick={() => { setOpenFuelSlipDownloadSelect(null); setFuelSlipDownloadStep((step) => step + 1); }} data-download-primary="true">Next</button> :
-                <button type="button" className={styles.primaryButton} onClick={() => void handleFuelSlipDownload()} disabled={isDownloadingFuelSlips} data-download-primary="true">{isDownloadingFuelSlips ? 'Preparing…' : fuelSlipDownloadFormat === 'pdf' ? 'Download PDF' : 'Download Excel'}</button>}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? <ReportDownloadFlow title="Fuel slip reports" allLabel="All fuel slips" assets={assets}
+        fields={[{key:'capture',label:'Source / status',initial:'all',options:FUEL_SLIP_CAPTURE_FILTER_OPTIONS},{key:'storage',allAssetsOnly:true,label:'Storage tank',initial:'all',options:[{value:'all',label:'All targets'},...storages.map(storage=>({value:storage.id,label:storage.name}))]}]}
+        onClose={closeFuelSlipDownloadPanel} onDownload={async selection => {
+          const response = await fetch(scopedApiUrl('/api/fuel/slips/export'), {method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-aim4price-client-realm':appRealmForPath(window.location.pathname) ?? 'website'},body:JSON.stringify({format:selection.format,filters:{assetId:selection.assetId,year:selection.year,month:selection.month,capture:selection.fields.capture,storageId:selection.assetId === 'all' ? selection.fields.storage : 'all'}})});
+          if(!response.ok) { const payload = await response.json(); throw new Error(payload.error || 'Unable to download fuel slips.'); }
+          const assetName = assets.find(asset=>asset.id === selection.assetId)?.title || 'all';
+          const filename = assetName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+          downloadBlob(await response.blob(), filename + '-fuel-slips.' + selection.format);
+        }} /> : null}
 
       {(modalMode === 'fuel-slip-manager' || isSlipsPage) && historyFuelSlip ? (
         <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay>
@@ -4899,108 +4619,14 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'report' ? (
-        <div className={`${styles.modalOverlay} ${styles.accountFuelBackdrop} ${downloadStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-report-title">
-          <div className={`${styles.modalCard} ${styles.exportModal} ${styles.accountFuelModal} ${accountStyles.modalTheme} ${downloadStyles.dialog}`} data-download-dialog="true">
-            <div className={`${styles.modalHeader} ${styles.exportModalHeader}`} data-download-header="true">
-              <div className={styles.modalHeaderText}>
-                <h2 id="fuel-report-title">Export fuel report</h2>
-              </div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close fuel report options"><span aria-hidden="true">×</span></button>
-            </div>
-
-            <div className={styles.exportModalScrollBody} data-download-body="true">
-              <div className={styles.exportModalBody} data-download-body="true">
-                {reportStep === 'format' ? (
-                  <>
-                    <div className={styles.exportChoices} data-download-grid="true">
-                      <button
-                        type="button"
-                        className={`${styles.exportOption} ${reportFormat === 'pdf' ? styles.exportOptionActive : ''}`}
-                        onClick={() => setReportFormat('pdf')}
-                        aria-pressed={reportFormat === 'pdf'} data-download-option="true"
-                      >
-                        <span className={styles.exportGraphic} data-download-icon="true">
-                          <ExportGraphic src="/brand/pdf.png" alt="PDF fuel report" icon={<PdfIcon className={styles.exportOptionIcon} />} />
-                        </span>
-
-                        <span className={styles.exportOptionTitleBlock} data-download-copy="true">
-                          <strong>PDF report</strong>
-                          <small>Printable fuel ledger.</small>
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={`${styles.exportOption} ${reportFormat === 'xlsx' ? styles.exportOptionActive : ''}`}
-                        onClick={() => setReportFormat('xlsx')}
-                        aria-pressed={reportFormat === 'xlsx'} data-download-option="true"
-                      >
-                        <span className={styles.exportGraphic} data-download-icon="true">
-                          <ExportGraphic src="/brand/sheet.png" alt="Fuel spreadsheet export" icon={<SpreadsheetIcon className={styles.exportOptionIcon} />} />
-                        </span>
-
-                        <span className={styles.exportOptionTitleBlock} data-download-copy="true">
-                          <strong>XLSX workbook</strong>
-                          <small>Fuel records in Excel.</small>
-                        </span>
-                      </button>
-                    </div>
-
-                    <div className={`${styles.modalActions} ${styles.exportActions}`} data-download-footer="true">
-                      <button type="button" className={`${styles.secondaryButton} ${styles.exportSecondaryButton}`} onClick={closeModal}>Cancel</button>
-                      <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton}`} onClick={handleReportNext} data-download-primary="true">
-                        <ChevronRightIcon className={styles.buttonIcon} />
-                        <span>Next</span>
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className={styles.reportFilterBox}>
-                      <ReportSelect
-                        label="Source"
-                        value={reportStorageId}
-                        options={reportStorageOptions}
-                        isOpen={openReportSelect === 'storage'}
-                        onToggle={() => toggleReportSelect('storage')}
-                        onChange={selectReportStorage}
-                      />
-
-                      <ReportSelect
-                        label="Year"
-                        value={reportYear}
-                        options={reportYearOptions}
-                        isOpen={openReportSelect === 'year'}
-                        onToggle={() => toggleReportSelect('year')}
-                        onChange={selectReportYear}
-                      />
-
-                      <ReportSelect
-                        label="Month"
-                        value={reportMonth}
-                        options={reportMonthSelectOptions}
-                        isOpen={openReportSelect === 'month'}
-                        disabled={reportYear === 'all'}
-                        onToggle={() => toggleReportSelect('month')}
-                        onChange={selectReportMonth}
-                      />
-                    </div>
-
-                    <div className={`${styles.modalActions} ${styles.exportActions}`} data-download-footer="true">
-                      <button type="button" className={`${styles.secondaryButton} ${styles.exportSecondaryButton}`} onClick={handleReportBack}>Back</button>
-                      <button type="button" className={`${styles.primaryButton} ${styles.exportPrimaryButton}`} onClick={handleDownloadSelectedReport} data-download-primary="true">
-                        <DownloadIcon className={styles.buttonIcon} />
-                        <span>{reportFormat === 'pdf' ? 'Download PDF' : 'Download XLSX'}</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {modalMode === 'report' ? <ReportDownloadFlow title="Fuel reports" allLabel="All fuel records" assets={assets} years={yearOptions}
+        fields={[{key:'source',label:'Fuel source',initial:REPORT_SOURCE_ALL_WITH_SLIPS,options:reportStorageOptions}]}
+        onClose={closeModal} onDownload={async selection => {
+          const url = new URL(buildReportUrl(selection.fields.source,selection.year,selection.month,selection.format,accountantShareId,accountantRegisterId),window.location.origin);
+          if(selection.assetId !== 'all') url.searchParams.set('assetId',selection.assetId);
+          if(selection.format === 'xlsx') await downloadCanonicalReportFile(url.toString());
+          else if(!openCanonicalReportUrl(url.toString())) throw new Error('Allow pop-ups to open your report.');
+        }} /> : null}
 
       {deleteCandidateStorage ? (
         <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.accountFuelBackdrop}`} data-website-overlay role="alertdialog" aria-modal="true" aria-labelledby="delete-fuel-title" aria-describedby="delete-fuel-copy">

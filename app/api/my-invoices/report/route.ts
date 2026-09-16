@@ -242,7 +242,7 @@ export async function GET(request: NextRequest) {
     const extension = format;
     const filename = group
       ? `${slugify(group.name)}-cost-of-ownership.${extension}`
-      : ownerAppMode
+      : ownerAppMode || selectedAsset
         ? `${slugify(options.assetLabel)}-cost-of-ownership.${extension}`
         : `${slugify(options.title)}.${extension}`;
 

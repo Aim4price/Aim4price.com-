@@ -133,8 +133,8 @@ test('normal PDF actions use canonical browser HTML instead of the server Chromi
   assert.match(assetRegisters, /function buildScopedSummaryUrl[\s\S]*?format: "html"/);
   assert.match(assetRegisters, /handleSummaryPdfExport[\s\S]*?openCanonicalReportUrl\(url\)/);
 
-  assert.match(maintenance, /format === 'pdf' \? 'html' : format/);
-  assert.match(invoices, /format === 'pdf' \? 'html' : format/);
+  assert.match(maintenance, /selection\.format === 'pdf' \? 'html' : 'xlsx'/);
+  assert.match(invoices, /selection\.format === 'pdf' \? 'html' : 'xlsx'/);
   assert.match(ownerPicker, /reportFormat === 'pdf' \? 'html' : reportFormat/);
   assert.match(ownerPicker, /openCanonicalReportHtml\('Aim4price asset valuation', valuationReportHtml\)/);
   assert.match(dealerMaintenance, /openCanonicalReportUrl\(buildReportUrl\('html'\)\)/);
