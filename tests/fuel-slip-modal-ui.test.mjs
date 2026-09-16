@@ -59,7 +59,8 @@ test('fuel entry and review surfaces share the canonical cost wizard shell', () 
     assert.match(modal, /aria-modal="true"/);
   }
 
-  assert.match(manualModal, /Complete one short step at a time\. Your fuel slip is saved on the final step\./);
+  assert.doesNotMatch(manualModal, /wizardStyles\.intro|renderFuelSlipWizardProgress/);
+  assert.match(manualModal, /styles\.manualFuelSlipModal/);
   assert.match(manualModal, /Add the slip details/);
   assert.match(manualModal, /Add usage and work details/);
   assert.match(reviewModal, /Extracted slip text/);
