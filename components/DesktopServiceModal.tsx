@@ -122,6 +122,8 @@ export default function DesktopServiceModal({
   const [customItems, setCustomItems] = useState<string[]>([]);
   const [inHouse, setInHouse] = useState(false);
   const [error, setError] = useState('');
+  const [stage, setStage] = useState(1);
+  const stageRef = useRef<HTMLDivElement>(null);
   const [clientEventId] = useState(() => globalThis.crypto.randomUUID());
   const [scheduleDecision, setScheduleDecision] = useState<
     'scheduled' | 'separate' | null
@@ -144,12 +146,14 @@ export default function DesktopServiceModal({
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
   }
   const previousChoice = useRef<'scheduled' | 'separate' | null>(null);
+  useEffect(() => { stageRef.current?.scrollTo(0, 0); stageRef.current?.focus(); }, [stage, scheduleDecision]);
   function chooseSchedule(value: 'scheduled' | 'separate') {
     if (value !== previousChoice.current) {
       setCompletedUsage('');
       if (value === 'separate' && completedAt === today) setCompletedAt('');
     }
     previousChoice.current = value;
+    setStage(1);
     setScheduleDecision(value);
     setError('');
   }
@@ -158,6 +162,7 @@ export default function DesktopServiceModal({
   const isSeparateCompletion = scheduleDecision === 'separate';
   const requiresUsageReading = !standalone && !isSeparateCompletion && record.triggerType === 'usage';
   const asksRecurrence = !dealerAppMode && !standalone && !isSeparateCompletion && !!record.recurringEnabled;
+  const stageCount = asksRecurrence ? 4 : 3;
   const dueLabel = record.triggerType === 'usage' && record.dueUsage != null ? `Due at ${record.dueUsage.toLocaleString('en-ZA')} ${unit}` : record.dueDate ? `Due ${new Date(record.dueDate.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'No due target set';
   const savedUsageLabel = record.currentUsage === null
     ? `No saved ${unit} reading`
@@ -169,48 +174,52 @@ export default function DesktopServiceModal({
       : [...current, label]);
   }
 
+  function stageError(current: number): string {
+    if (current === 1 && !selectedItems.length && !customItems.length && !ownItem.trim() && !notes.trim()) {
+      return 'Select completed work or add a note.';
+    }
+    if (current === 2) {
+      if (!completedAt || !Number.isFinite(new Date(completedAt).getTime())) return `Select the date the ${actionName} was completed.`;
+      if (completedAt > today) return 'The completion date cannot be in the future.';
+      const usage = completedUsage.trim() === '' ? null : Number(completedUsage);
+      if (requiresUsageReading && usage === null) return `Enter the final ${unit} reading for this usage-based maintenance.`;
+      if (usage !== null && (!Number.isFinite(usage) || usage < 0)) return 'Enter a valid non-negative usage reading.';
+      if (!standalone && !isSeparateCompletion && usage !== null && record.currentUsage !== null && usage < record.currentUsage) {
+        return `The completed reading cannot be lower than the saved ${record.currentUsage.toLocaleString('en-ZA')} ${unit}.`;
+      }
+    }
+    if (current === 3) {
+      if (mode === 'serviced' && !inHouse && !company.trim()) return `${copy.companyLabel} is required.`;
+      if (!mechanic.trim()) return mode === 'checked' ? 'Enter who completed the check-up.' : `${copy.mechanicLabel} is required.`;
+    }
+    if (current === 4 && asksRecurrence && continueSchedule === null) return 'Choose whether to continue or end this schedule.';
+    return '';
+  }
+
+  function nextStage() {
+    if (busy) return;
+    const message = stageError(stage);
+    setError(message);
+    if (!message) setStage(current => Math.min(current + 1, stageCount));
+  }
+
+  function previousStage() {
+    setError('');
+    if (stage > 1) setStage(current => current - 1);
+    else if (askScheduleLink) setScheduleDecision(null);
+    else onBack?.();
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
+    if (stage < stageCount) { nextStage(); return; }
     setError('');
-    if (asksRecurrence && continueSchedule === null) { setError('Choose whether to continue or end this schedule.'); return; }
-
-    if (!completedAt) {
-      setError(`Select the date the ${actionName} was completed.`);
-      return;
+    for (let current = 1; current <= stageCount; current++) {
+      const message = stageError(current);
+      if (message) { setStage(current); setError(message); return; }
     }
-    if (completedAt > today) {
-      setError('The completion date cannot be in the future.');
-      return;
-    }
-    if (!selectedItems.length && !customItems.length && !ownItem.trim() && !notes.trim()) {
-      setError(mode === 'checked'
-        ? 'Select at least one checked item or add notes/problems.'
-        : 'Select at least one completed service item or add notes/problems.');
-      return;
-    }
-    if (mode === 'serviced' && !inHouse && !company.trim()) {
-      setError(`${copy.companyLabel} is required.`);
-      return;
-    }
-    if (!mechanic.trim()) {
-      setError(mode === 'checked' ? 'Enter who completed the check-up.' : `${copy.mechanicLabel} is required.`);
-      return;
-    }
-
     const usage = completedUsage.trim() === '' ? null : Number(completedUsage);
-    if (requiresUsageReading && usage === null) {
-      setError(`Enter the final ${unit} reading for this usage-based maintenance.`);
-      return;
-    }
-    if (usage !== null && (!Number.isFinite(usage) || usage < 0)) {
-      setError('Enter a valid non-negative usage reading.');
-      return;
-    }
-    if (!standalone && !isSeparateCompletion && usage !== null && record.currentUsage !== null && usage < record.currentUsage) {
-      setError(`The completed reading cannot be lower than the saved ${record.currentUsage.toLocaleString('en-ZA')} ${unit}.`);
-      return;
-    }
 
     try {
       const ownWork = buildCustomMaintenanceWorkSnapshot(checklist, mode, [...customItems, ownItem]);
@@ -290,22 +299,15 @@ export default function DesktopServiceModal({
           </button>
         </header>
 
-        <form onSubmit={(event) => void submit(event)}>
-          <div className={styles.body}>
+        <form noValidate onSubmit={(event) => void submit(event)}>
+          <div className={styles.body} ref={stageRef} tabIndex={-1} aria-label={`Step ${stage} of ${stageCount}`}>
+            <p className={styles.stageProgress} role="status">Step {stage} of {stageCount}</p>
             {!standalone ? <div className={styles.infoBanner}>
               <strong>{isSeparateCompletion ? 'Save to history · schedule stays open' : `Completing “${record.title}”`}</strong>
-              <span>{isSeparateCompletion ? 'Use the date and usage when this work was actually done. Existing reminders will not change.' : asksRecurrence ? continueSchedule === null ? 'Choose below what happens after this completion.' : continueSchedule ? 'This occurrence will close and the next reminder will be created.' : 'This occurrence will close. No further reminder will be created.' : record.recurringEnabled ? 'The next reminder will be created automatically.' : 'This one-time schedule will close when you save.'}</span>
+              <span>{isSeparateCompletion ? 'Use the date and usage when this work was actually done. Existing reminders will not change.' : asksRecurrence ? continueSchedule === null ? 'Choose whether to repeat this schedule in the final step.' : continueSchedule ? 'This occurrence will close and the next reminder will be created.' : 'This occurrence will close. No further reminder will be created.' : record.recurringEnabled ? 'The next reminder will be created automatically.' : 'This one-time schedule will close when you save.'}</span>
             </div> : null}
 
-            {asksRecurrence ? <fieldset className={styles.recurrenceChoice}>
-              <legend>After this {actionName}, keep the schedule recurring?</legend>
-              <div>
-                <label><input type="radio" name="continue-schedule" checked={continueSchedule === true} onChange={() => setContinueSchedule(true)} required disabled={busy} /><span><strong>Continue the schedule</strong><small>Mark this work done and create the next reminder. {intervalLabel(record)}.</small></span></label>
-                <label><input type="radio" name="continue-schedule" checked={continueSchedule === false} onChange={() => setContinueSchedule(false)} required disabled={busy} /><span><strong>End the schedule</strong><small>Mark this work done without creating another reminder.</small></span></label>
-              </div>
-            </fieldset> : null}
-
-            <section className={styles.section}>
+            {stage === 1 ? <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <span>1</span>
                 <div>
@@ -345,9 +347,13 @@ export default function DesktopServiceModal({
                   );
                 })}
               </div>
-            </section>
+                <label className={`${styles.field} ${styles.fieldWide}`}>
+                  <span>Work details / notes <small>(optional if items are selected)</small></span>
+                  <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={mode === 'checked' ? copy.checkedNotePlaceholder : copy.servicedNotePlaceholder} rows={3} />
+                </label>
+            </section> : null}
 
-            <section className={styles.section}>
+            {stage === 2 ? <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <span>2</span>
                 <div><h3>When was it completed?</h3><p>Enter the date and reading at the time.</p></div>
@@ -366,9 +372,9 @@ export default function DesktopServiceModal({
                   <small className={styles.fieldHint}>{savedUsageLabel}</small>
                 </label>
               </div>
-            </section>
+            </section> : null}
 
-            <section className={styles.section}>
+            {stage === 3 ? <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <span>3</span>
                 <div>
@@ -388,21 +394,26 @@ export default function DesktopServiceModal({
                   <span>{mode === 'checked' ? 'Checked by' : copy.mechanicLabel}</span>
                   <input type="text" value={mechanic} onChange={(event) => setMechanic(event.target.value)} placeholder={mode === 'checked' ? 'Name of person who checked the asset' : copy.mechanicPlaceholder} required />
                 </label>
-                <label className={`${styles.field} ${styles.fieldWide}`}>
-                  <span>Work details / notes <small>(optional if items are selected)</small></span>
-                  <textarea value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={mode === 'checked' ? copy.checkedNotePlaceholder : copy.servicedNotePlaceholder} rows={3} />
-                </label>
+
               </div>
-            </section>
+            </section> : null}
+
+            {stage === 4 && asksRecurrence ? <fieldset className={styles.recurrenceChoice}>
+              <legend>After this {actionName}, keep the schedule recurring?</legend>
+              <div>
+                <label><input type="radio" name="continue-schedule" checked={continueSchedule === true} onChange={() => setContinueSchedule(true)} required disabled={busy} /><span><strong>Continue the schedule</strong><small>Mark this work done and create the next reminder. {intervalLabel(record)}.</small></span></label>
+                <label><input type="radio" name="continue-schedule" checked={continueSchedule === false} onChange={() => setContinueSchedule(false)} required disabled={busy} /><span><strong>End the schedule</strong><small>Mark this work done without creating another reminder.</small></span></label>
+              </div>
+            </fieldset> : null}
 
             {error ? <div className={styles.error} role="alert">{error}</div> : null}
           </div>
 
           <footer className={styles.footer}>
-            {onBack || askScheduleLink ? <button className={styles.cancelButton} type="button" disabled={busy} onClick={() => { if (askScheduleLink) setScheduleDecision(null); else onBack?.(); }}>Back</button> : null}
+            {stage > 1 || onBack || askScheduleLink ? <button className={styles.cancelButton} type="button" disabled={busy} onClick={previousStage}>Back</button> : null}
             <button className={styles.cancelButton} type="button" onClick={onClose} disabled={busy}>Cancel</button>
             <button className={styles.submitButton} type="submit" disabled={busy}>
-              {busy
+              {stage < stageCount ? 'Next' : busy
                 ? `Saving…`
                 : standalone || isSeparateCompletion
                   ? 'Save to history'

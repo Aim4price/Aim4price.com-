@@ -41,7 +41,26 @@ async function main() {
       await page.setViewport({width,height:900});await page.goto(`${url}?source=${source}`,{waitUntil:'networkidle0',timeout:120000});
       await page.waitForFunction(()=>document.body.textContent.includes('Frame and welds condition'));
       const options=await page.$$eval('button[aria-pressed]',els=>els.map(e=>e.textContent));assert.ok(options.some(t=>t.includes('Frame and welds condition')));assert.ok(!options.some(t=>t.includes('Engine oil')));assert.ok(!options.some(t=>t.includes('Ploughshares')));
-      await clickText('Frame and welds condition');await page.type('input[placeholder="Name of person who checked the asset"]','Test inspector');await clickText('Save completed check-up');
+      // Later stages must stay hidden until the current stage is complete.
+      assert.equal(await page.$('input[type="date"]'), null);
+      assert.equal(await page.$('input[placeholder="Name of person who checked the asset"]'), null);
+      await clickText('Next');
+      await page.waitForSelector('[role="alert"]');
+      assert.equal(await page.$('input[type="date"]'), null);
+      await clickText('Frame and welds condition');
+      await clickText('Next');
+      await page.waitForSelector('input[type="date"]');
+      assert.equal(await page.$('input[placeholder="Name of person who checked the asset"]'), null);
+      await clickText('Back');
+      await page.waitForSelector('button[aria-pressed="true"]');
+      assert.match(await page.$eval('button[aria-pressed="true"]', e => e.textContent), /Frame and welds condition/);
+      await clickText('Next');
+      await page.waitForSelector('input[type="date"]');
+      await clickText('Next');
+      await page.waitForSelector('input[placeholder="Name of person who checked the asset"]');
+      assert.equal(await page.$('input[type="date"]'), null);
+      await page.type('input[placeholder="Name of person who checked the asset"]','Test inspector');
+      await clickText('Save completed check-up');
       await page.waitForFunction(()=>document.querySelector('#result').textContent!=='null');
       const saved=JSON.parse(await page.$eval('#result',e=>e.textContent));assert.equal(saved.maintenanceWork[0].family.source,source);assert.equal(saved.maintenanceWork[0].items[0].id,'frame_and_welds');assert.match(saved.completedNotes,/Frame and welds condition/);assert.equal(saved.maintenanceWork[0].items[0].action,'checked');
       await page.screenshot({path:path.join(output,`desktop-${source}-${width}.png`)});
