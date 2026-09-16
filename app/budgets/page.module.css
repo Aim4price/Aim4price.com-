@@ -68,3 +68,11 @@
   :global(:where(html:not(:has([data-website-canvas])))) .costLine { flex-direction: column; gap: .5rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .progressLabels { flex-wrap: wrap; }
 }
+
+/* Text placed directly on the dark website background; light surfaces keep their own palette. */
+@media screen {
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .results,
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .results button {
+    color: #e2eee8;
+  }
+}

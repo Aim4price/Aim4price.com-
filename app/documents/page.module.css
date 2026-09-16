@@ -4050,3 +4050,12 @@
 @media (max-width: 620px) {
   :global(:where(html:not(:has([data-website-canvas])))) .accountUploadModal .modalFooter :is(.cancelButton, .uploadButton) { min-width: 0 !important; }
 }
+
+/* Text placed directly on the dark website background; light surfaces keep their own palette. */
+@media screen {
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .resultsHeading span,
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .resultsHeading strong,
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .resultsHeading button {
+    color: #e2eee8;
+  }
+}
