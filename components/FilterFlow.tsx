@@ -67,7 +67,7 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
           {assetPicker ? <>{currentStep > 0 ? <button type="button" onClick={()=>setStep(currentStep - 1)}>Back</button> : null}<button type="button" onClick={onClose}>Cancel</button></> : <>
           <button type="button" className={styles.clear} onClick={() => { onClear(); onClose(); }}>Clear filters</button>
           {currentStep > 0 ? <button type="button" onClick={() => setStep(currentStep - 1)}>Back</button> : null}
-          <button type="button" className={styles.apply} onClick={onApply}>Apply filters</button>
+          {currentStep === steps.length - 1 ? <button type="button" className={styles.apply} onClick={onApply}>Apply filters</button> : null}
           {currentStep < steps.length - 1 ? <button type="button" className={styles.next} onClick={() => setStep(currentStep + 1)}>Next</button> : null}
           </>}
         </footer>
