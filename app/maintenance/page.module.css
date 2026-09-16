@@ -5194,9 +5194,9 @@
 .scheduleSectionHeading svg { width: 1.4rem; height: 1.4rem; color: #197454; }
 .scheduleSectionHeading h3 { margin: 0; font-size: 1.1rem; font-weight: 800; }
 .simpleScheduleDialog .maintenanceFieldGrid { gap: 1.25rem; align-items: start; }
-.scheduleRepeat { grid-column: 1 / -1; margin: .25rem 0 0; padding: 0; border: 0; min-width: 0; }
-.scheduleRepeat legend { padding: 0; margin-bottom: .6rem; color: #425d51; font-size: .85rem; font-weight: 750; }
-.scheduleRepeat > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; padding: .4rem; border: 1px solid #d6e4dd; border-radius: 1rem; background: #f1f6f3; }
+.scheduleRepeat { order: 1; margin: 0; padding: 0; border: 0; min-width: 0; }
+.scheduleRepeat legend { padding: 0; margin-bottom: .5rem; color: #425d51; font-size: .85rem; font-weight: 750; }
+.scheduleRepeat > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .35rem; padding: .25rem; border: 1px solid #d6e4dd; border-radius: 1rem; background: #f1f6f3; }
 .scheduleRepeat button { min-height: 3rem; padding: .7rem 1rem; border: 1px solid transparent; border-radius: .75rem; background: transparent; color: #526a5d; font: inherit; font-weight: 750; cursor: pointer; }
 .scheduleRepeat button[aria-pressed='true'] { background: #fff; color: #124b38; border-color: #a8d1bc; box-shadow: 0 3px 10px #163e2d0d; }
 .scheduleRepeat button:focus-visible, .scheduleNotes summary:focus-visible { outline: 3px solid #70b797; outline-offset: 3px; }
@@ -5204,3 +5204,14 @@
 .scheduleNotes summary { color: #315b4a; font-size: .9rem; font-weight: 750; cursor: pointer; }
 .scheduleNotes > label { margin-top: .8rem; }
 .simpleScheduleDialog .scheduleNotes textarea { min-height: 5.5rem; }
+
+.simpleScheduleDialog .scheduleRepeat legend { font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .025em; }
+.simpleScheduleDialog .scheduleRepeat button { min-height: 2.65rem; padding: .5rem .75rem; }
+.simpleScheduleDialog .scheduleRepeat button[aria-pressed='true'] { background: #165540; color: #fff; border-color: #165540; }
+.simpleScheduleDialog .scheduleAssignee { order: 2; min-width: 0; }
+.simpleScheduleDialog .scheduleAssignee > .filterField { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.simpleScheduleDialog .scheduleAssignee > .filterField > span { color: #425d51; font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .025em; }
+.simpleScheduleDialog .scheduleInterval { order: 3; grid-column: 1 / -1; max-width: 100%; }
+.simpleScheduleDialog .scheduleNotes { order: 4; }
+.schedulingDialog.simpleScheduleDialog .formModalScrollBody { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+.simpleScheduleDialog .scheduleSectionHeading { margin-bottom: 1rem; }
