@@ -76,3 +76,14 @@
     color: #e2eee8;
   }
 }
+
+/* Match the other ledger Manage dialogs without changing budget deletion. */
+.dialog.manageDialog.manageDialog.manageDialog {
+  width: min(66rem, 100%) !important;
+}
+.dialog.manageDialog header h2 {
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
+  letter-spacing: -.04em;
+  line-height: 1.08;
+}
+.dialog.manageDialog header p { overflow-wrap: anywhere; }
