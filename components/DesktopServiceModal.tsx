@@ -165,7 +165,7 @@ export default function DesktopServiceModal({
   const stageCount = asksRecurrence ? 4 : 3;
   const dueLabel = record.triggerType === 'usage' && record.dueUsage != null ? `Due at ${record.dueUsage.toLocaleString('en-ZA')} ${unit}` : record.dueDate ? `Due ${new Date(record.dueDate.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })}` : 'No due target set';
   const savedUsageLabel = record.currentUsage === null
-    ? `No saved ${unit} reading`
+    ? null
     : `Saved reading: ${record.currentUsage.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} ${unit}`;
 
   function toggleItem(label: string) {
@@ -308,11 +308,9 @@ export default function DesktopServiceModal({
                   <h3>{mode === 'checked' ? copy.checkedHeader : copy.servicedHeader}</h3>
                   <p>{checklist.label} · {mode === 'checked' ? 'Inspect condition and safe operation.' : 'Select service work completed.'} Select only the work actually completed.</p>
                 </div>
-                <strong className={styles.selectedCount}>{selectedItems.length + customItems.length} selected</strong>
               </div>
               {savedChecklist.loading ? <p role="status">Loading your saved checklist items…</p> : null}
               {savedChecklist.error ? <p role="alert">Your saved checklist items could not be loaded. <button type="button" onClick={savedChecklist.reload}>Try again</button></p> : null}
-              <p className={styles.fieldHint}>Saved custom checklist items appear below. Extra items entered here are saved with this completion only.</p>
               <div className={styles.customWork}>
                 <label className={styles.field}>
                   <span>{mode === 'checked' ? 'Add a check completed' : 'Add other work completed'}</span>
@@ -363,7 +361,7 @@ export default function DesktopServiceModal({
                     <input type="number" min={standalone || isSeparateCompletion ? 0 : record.currentUsage ?? 0} step="0.1" value={completedUsage} onChange={(event) => setCompletedUsage(event.target.value)} placeholder={`Final ${unit} reading`} required={requiresUsageReading} />
                     <b>{unit}</b>
                   </div>
-                  <small className={styles.fieldHint}>{savedUsageLabel}</small>
+                  {savedUsageLabel ? <small className={styles.fieldHint}>{savedUsageLabel}</small> : null}
                 </label>
               </div>
             </section> : null}
