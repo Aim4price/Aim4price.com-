@@ -103,7 +103,7 @@ test('Admin catalogue writes require admin identity, same origin and a valid imp
   assert.equal((await route.PUT(request())).status, 200); assert.equal(writes, 1);
 });
 
-test('actual maintenance SQL saves snapshots, preserves them on retry and leaves recurring work empty', async () => {
+test('actual maintenance SQL saves snapshots, preserves them on retry and leaves recurring work empty', async (t) => {
   const pg = new PGlite();
   const owner = 'owner-one'; const assetId = '11111111-1111-4111-8111-111111111111';
   const query = (sql, params) => /create extension if not exists pgcrypto/.test(sql) ? Promise.resolve({ rows: [] }) : pg.query(sql, params);
@@ -120,7 +120,7 @@ test('actual maintenance SQL saves snapshots, preserves them on retry and leaves
   const mod = load('lib/asset-maintenance.ts', {
     './db': { getDb: () => db }, './maintenance-catalogue': shared,
     './asset-register-db': { getAssetRegisterItemById: async (user, id) => user === owner && id === assetId ? asset : null },
-    './asset-registers': {}, './asset-usage': { resolveAssetUsage: () => ({ metric: 'hours', reading: 100 }) },
+    './asset-registers': {}, './asset-usage': load('lib/asset-usage.ts'),
     './field-manager': { ensureFieldManagerTables: async () => {} }, './scan-assets': {},
     './database-schema-readiness': { isDatabaseSchemaReady: async f => { try { await f(); return true; } catch { return false; } } },
   });
@@ -161,6 +161,33 @@ test('actual maintenance SQL saves snapshots, preserves them on retry and leaves
       assert.deepEqual(replay.completed.maintenanceWork, customWork);
     }
     assert.equal((await pg.query('select count(*)::int as n from asset_maintenance_records where generated_from_maintenance_id=$1', [endedId])).rows[0].n, 0);
+    // The same saved schedule must use the latest asset meter on every read.
+    const meterId = '66666666-6666-4666-8666-666666666666';
+    await pg.query(`insert into asset_maintenance_records(id,user_id,asset_register_item_id,maintenance_type,trigger_type,status,title,due_usage,usage_metric) values($1,$2,$3,'service','usage','upcoming','Meter service',1000,'hours')`, [meterId, owner, assetId]);
+    for (const [reading, remaining, status] of [[100,900,'upcoming'],[980,20,'due_soon'],[1000,0,'due'],[1010,-10,'overdue']]) {
+      await pg.query('update asset_register_items set hours=$1 where id=$2', [reading, assetId]);
+      const card = await mod.getAssetMaintenanceRecordById(owner, meterId);
+      assert.equal(card.currentUsage, reading);
+      assert.equal(card.remainingUsage, remaining);
+      assert.equal(card.computedStatus, status);
+    }
+    await pg.query("update asset_maintenance_records set due_usage=20000, usage_metric='km' where id=$1", [meterId]);
+    await pg.query("update asset_register_items set kind='vehicle', hours=null, specs_json=$1 where id=$2", [JSON.stringify({usage_metric:'km',km:18500}),assetId]);
+    assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).remainingUsage,1500);
+    await pg.query("update asset_register_items set specs_json=$1 where id=$2", [JSON.stringify({usage_metric:'km',km:19250}),assetId]);
+    assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).remainingUsage,750);
+    await pg.query("update asset_maintenance_records set trigger_type='date',due_date='2026-09-20',alert_before_value=2 where id=$1", [meterId]);
+    t.mock.timers.enable({apis:['Date'],now:new Date('2026-09-16T21:59:00Z').getTime()});
+    assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).daysUntilDue,4);
+    t.mock.timers.tick(60000); // Midnight in South Africa, still 16 September UTC.
+    assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).daysUntilDue,3);
+    t.mock.timers.tick(3*86400000);
+    assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).computedStatus,'due');
+    t.mock.timers.tick(86400000);
+    assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).daysUntilDue,-1);
+    assert.equal((await mod.getAssetMaintenanceRecordById(owner,meterId)).computedStatus,'overdue');
+    t.mock.timers.reset();
+
 
   } finally { await pg.close(); }
 });

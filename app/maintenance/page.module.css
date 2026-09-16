@@ -5083,7 +5083,7 @@
 .invoiceRow.ledgerCard[data-maintenance-status='cancelled'] { --status-edge: #d2dadd; --status-wash: #eff2f3; --status-ink: #626e76; }
 .ledgerCard[data-maintenance-status] .maintenanceStatusPill { color: var(--status-ink); border-color: var(--status-edge); background: var(--status-wash); }
 .ledgerCard[data-maintenance-status] .invoiceHeaderAside { gap: 1.1rem; }
-.ledgerCard .timingLabel { display: block; color: var(--status-ink); font-size: 0.8rem; font-weight: 700; line-height: 1.5; margin-top: 0.4rem; }
+.ledgerCard .timingLabel { display: block; color: var(--status-ink); font-size: 0.8rem; font-weight: 700; line-height: 1.5; margin: 0; }
 .statusSymbol { display: inline-flex; align-items: center; justify-content: center; width: 1rem; height: 1rem; font-size: 0.9rem; font-weight: 800; }
 .ledgerCard[data-maintenance-status] .ledgerDetails { background: #fbfdfd; }
 .ledgerCard[data-maintenance-status] .ledgerDetailsGrid { grid-template-columns: minmax(0,1.45fr) minmax(0,1fr) minmax(0,0.7fr); }
