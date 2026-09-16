@@ -104,7 +104,7 @@ export type AssetMaintenanceSummary = {
 
 export type AssetMaintenanceListFilters = {
   assetId?: string | null;
-  type?: AssetMaintenanceType | 'all' | null;
+  type?: AssetMaintenanceType | 'repair' | 'all' | null;
   status?: 'all' | 'upcoming' | 'done' | null;
   assignedTo?: string | null;
 };
@@ -1014,7 +1014,8 @@ function buildMaintenanceFilterClause(filters: AssetMaintenanceListFilters, valu
   }
 
   if (filters.type && filters.type !== 'all') {
-    values.push(filters.type);
+    // Repairs are persisted under the service type; classify their work below.
+    values.push(filters.type === 'repair' ? 'service' : filters.type);
     clauses.push(`lower(coalesce(m.maintenance_type, 'service')) = $${values.length}`);
   }
 
@@ -1133,7 +1134,24 @@ export async function listAssetMaintenanceRecords(userId: string, filters: Asset
     values,
   );
 
-  return sortMaintenanceRecords(result.rows.map(mapMaintenanceRow));
+  const records = result.rows.map(mapMaintenanceRow);
+  return sortMaintenanceRecords(filters.type === 'repair'
+    ? records.filter((record) => assetMaintenanceRecordProcedureKind(record) === 'repaired')
+    : records);
+}
+
+export function assetMaintenanceRecordProcedureKind(record: AssetMaintenanceRecord): AssetMaintenanceProcedureKind | null {
+  if (record.status !== 'done') return null;
+
+  const savedKind = assetMaintenanceProcedureKindFromNote(record.completedNotes)
+    ?? assetMaintenanceProcedureKindFromNote(record.notes);
+  if (savedKind) return savedKind;
+
+  const title = String(record.title ?? '').trim().toLowerCase();
+  if (title.includes('repair')) return 'repaired';
+  if (title.includes('check')) return 'checked';
+  if (title.includes('service')) return 'serviced';
+  return record.maintenanceType === 'checkup' ? 'checked' : 'serviced';
 }
 
 export function calculateAssetMaintenanceSummary(records: AssetMaintenanceRecord[]): AssetMaintenanceSummary {
@@ -1262,7 +1280,9 @@ function mergeCompletedScanHistory(
     if (filters.assetId && asset.id !== filters.assetId) continue;
 
     const eventType: AssetMaintenanceType = event.kind === 'checked' ? 'checkup' : 'service';
-    if (filters.type && filters.type !== 'all' && filters.type !== eventType) continue;
+    if (filters.type === 'repair') {
+      if (event.kind !== 'repaired') continue;
+    } else if (filters.type && filters.type !== 'all' && filters.type !== eventType) continue;
     if (merged.some((record) => scanHistoryMatchesPersistedRecord(event, record))) continue;
 
     merged.push(completedScanHistoryRecord(userId, event, asset));

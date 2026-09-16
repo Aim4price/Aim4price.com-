@@ -7,7 +7,6 @@ import {
   listAssetMaintenanceData,
   type AssetMaintenanceDraftInput,
   type AssetMaintenanceListFilters,
-  type AssetMaintenanceType,
 } from '../../../lib/asset-maintenance';
 
 export const runtime = 'nodejs';
@@ -17,8 +16,8 @@ type ErrorWithMessage = {
   message?: string;
 };
 
-function parseType(value: string | null): AssetMaintenanceType | 'all' | null {
-  if (value === 'service' || value === 'checkup') return value;
+function parseType(value: string | null): AssetMaintenanceListFilters['type'] {
+  if (value === 'service' || value === 'checkup' || value === 'repair') return value;
   return null;
 }
 
