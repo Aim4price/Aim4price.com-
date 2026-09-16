@@ -324,7 +324,7 @@
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
   gap: 10px;
-  align-items: start;
+  align-items: center;
   min-height: 68px;
   padding: 12px;
   border: 1px solid #d6e2df;
@@ -365,7 +365,7 @@
 .checkOption strong,
 .checkOptionSelected strong {
   display: block;
-  margin-bottom: 3px;
+  margin-bottom: 0;
   font-size: .95rem;
   line-height: 1.4;
   font-weight: 700;
