@@ -22121,7 +22121,7 @@ export default function AssetRegisterClient({
                         <AssetReportTypeIcon kind="ownership" className={styles.buttonIcon} />
                         <span>
                           <strong>Cost of ownership</strong>
-                          <small>Ownership costs and VAT.</small>
+                          <small>Ownership costs and budgets.</small>
                         </span>
                       </button>
 
