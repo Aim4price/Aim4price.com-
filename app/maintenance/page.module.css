@@ -5215,3 +5215,14 @@
 .simpleScheduleDialog .scheduleNotes { order: 4; }
 .schedulingDialog.simpleScheduleDialog .formModalScrollBody { padding-top: 1.25rem; padding-bottom: 1.25rem; }
 .simpleScheduleDialog .scheduleSectionHeading { margin-bottom: 1rem; }
+
+/* One scheduling question at a time. */
+.simpleScheduleDialog .scheduleQuestion { display: grid; gap: 1.25rem; }
+.simpleScheduleDialog .scheduleQuestion .filterField { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.simpleScheduleDialog .scheduleQuestion .filterField > span { color: #425d51; font-size: .74rem; font-weight: 800; text-transform: uppercase; letter-spacing: .025em; }
+.simpleScheduleDialog .scheduleQuestion :is(input, textarea, .customFilterSelectButton) { width: 100%; min-width: 0; min-height: 3.2rem; border: 1px solid #dfe7ef; background: #fff; border-radius: .9rem; padding: .85rem 1rem; color: #20313b; font: inherit; }
+.simpleScheduleDialog .scheduleQuestion textarea { min-height: 6rem; }
+.simpleScheduleDialog .scheduleQuestion .customFilterSelectButtonText { font-weight: 500; }
+.simpleScheduleDialog .scheduleQuestion .scheduleRepeat { order: initial; }
+.simpleScheduleDialog .scheduleHiddenLabel { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.simpleScheduleDialog .scheduleSectionHeading h3:focus { outline: none; }
