@@ -235,18 +235,9 @@
   font-weight: 620;
 }
 
-.selectedCount {
-  align-self: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #eef6f3;
-  color: #25725b;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
 .fieldGrid {
   display: grid;
+  align-items: start;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
@@ -375,7 +366,10 @@
 .checkOptionSelected strong {
   display: block;
   margin-bottom: 3px;
-  font-size: 13px;
+  font-size: .95rem;
+  line-height: 1.4;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .checkOption small,
@@ -469,7 +463,6 @@
   :global(:where(html:not(:has([data-website-canvas])))) .section { padding: 15px; }
   :global(:where(html:not(:has([data-website-canvas])))) .fieldGrid, :global(:where(html:not(:has([data-website-canvas])))) .checklist, :global(:where(html:not(:has([data-website-canvas])))) .choiceComparison { grid-template-columns: 1fr; }
   :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { grid-template-columns: 30px minmax(0, 1fr); }
-  :global(:where(html:not(:has([data-website-canvas])))) .selectedCount { grid-column: 2; justify-self: start; }
   :global(:where(html:not(:has([data-website-canvas])))) .footer { padding: 14px 16px; }
   :global(:where(html:not(:has([data-website-canvas])))) .cancelButton, :global(:where(html:not(:has([data-website-canvas])))) .submitButton { flex: 1; padding: 0 12px; }
 }
