@@ -633,3 +633,13 @@
     transform: none;
   }
 }
+
+/* Text placed directly on the dark website background; light surfaces keep their own palette. */
+@media screen {
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .directionIntro h2,
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .directionIntro p,
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .valueHeading h2,
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .valueHeading p {
+    color: #e2eee8;
+  }
+}

@@ -5696,3 +5696,11 @@
   min-width: 0 !important;
   box-sizing: border-box;
 }
+
+/* Text placed directly on the dark website background; light surfaces keep their own palette. */
+@media screen {
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .leadResultSummary,
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .leadResultSummary strong {
+    color: #e2eee8;
+  }
+}

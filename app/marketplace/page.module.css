@@ -3840,3 +3840,11 @@
   transform: translateY(-1px);
   box-shadow: 0 8px 20px rgba(18, 53, 45, 0.08);
 }
+
+/* Text placed directly on the dark website background; light surfaces keep their own palette. */
+@media screen {
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .paginationSummary,
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .paginationEllipsis {
+    color: #e2eee8;
+  }
+}

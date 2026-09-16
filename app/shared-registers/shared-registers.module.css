@@ -203,3 +203,10 @@
 .modalActions button { min-height: 3.4rem; border: 1.5px solid #c9d6dd; border-radius: 1rem; color: #29443d; background: #ffffff; font-weight: 850; }
 .modalActions .confirmDeleteButton { border-color: #e8928e; color: #a82222; background: #fff0f0; }
 
+
+/* Text placed directly on the dark website background; light surfaces keep their own palette. */
+@media screen {
+  :global(html[data-background='dark']:has([data-website-canvas]):not(:has([data-home-page]))) .emptyState {
+    color: #e2eee8;
+  }
+}
