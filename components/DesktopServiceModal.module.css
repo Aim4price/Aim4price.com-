@@ -319,6 +319,11 @@
   gap: 9px;
 }
 
+.checklist + .field {
+  margin-top: 1.25rem;
+  gap: .6rem;
+}
+
 .checkOption,
 .checkOptionSelected {
   display: grid;
