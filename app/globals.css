@@ -466,3 +466,7 @@ body > [data-dropdown-overlay-portal='true'],
 /* The document remains the website scroll owner, including intentional manual overflow. */
 html:has([data-website-canvas]) { overflow-x: auto; }
 body:has([data-website-canvas]) { overflow-x: visible; }
+
+/* Match the outer gutters to the user's background preference. */
+html[data-background='dark'] body { background: #1d302b; }
+@media print { html[data-background='dark'] body { background: #fff; } }
