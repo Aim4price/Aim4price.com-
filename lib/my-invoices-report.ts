@@ -1,3 +1,4 @@
+import { buildOwnershipBudgetTracker, chronologicalCosts, BUDGET_TRACKER_NOTE, type OwnershipBudget, type OwnershipBudgetStep } from './ownership-budget-tracker.ts';
 import { REPORT_THEME_CSS } from './report-theme.ts';
 import type { AccountProfile } from './account-profile';
 import type { MyInvoiceAssetOption, MyInvoiceRecord, MyInvoiceSummary } from './my-invoices';
@@ -25,6 +26,8 @@ export type MyInvoicesReportOptions = {
   includeFuelSlipCosts: boolean;
   xlsxUrl: string;
   hideXlsx?: boolean;
+  budgets?: OwnershipBudget[];
+  budgetInvoices?: MyInvoiceRecord[];
 };
 
 type KeyValueRow = {
@@ -315,7 +318,21 @@ export function buildMyInvoicesAccountingCsv(invoices: MyInvoiceRecord[]): strin
   return `\uFEFF${rows.map((row) => row.map(csvCell).join(',')).join('\r\n')}\r\n`;
 }
 
-function renderInvoiceRecords(invoices: MyInvoiceRecord[]): string {
+function renderBudgetSteps(steps: OwnershipBudgetStep[] = []): string {
+  if (!steps.length) return '<div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide"><span>Budget tracker</span><strong>No asset budget available for this cost period.</strong></div>';
+  return steps.map(step => {
+    const colour = step.status === 'reached' ? '#b44242' : step.status === 'warning' ? '#a76b12' : '#197454';
+    const label = `${step.budget.periodLabel} · ${step.percent}% used · ${formatMoneyWithCents(step.spent)} of ${formatMoneyWithCents(step.budget.amount)}`;
+    return `<div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+      <span>${escapeHtml(step.budget.period === 'monthly' ? 'Monthly budget' : 'Annual budget')} · after this cost</span>
+      <strong>${escapeHtml(label)}</strong>
+      <svg viewBox="0 0 600 12" width="100%" height="12" role="img" aria-label="${escapeHtml(label)}"><rect width="600" height="12" rx="6" fill="#e5ecee"/><rect width="${Math.max(0, Math.min(100, step.percent)) * 6}" height="12" rx="6" fill="${colour}"/></svg>
+      <span>${escapeHtml(step.overBy > 0 ? `${formatMoneyWithCents(step.overBy)} over budget` : `${formatMoneyWithCents(step.remaining)} remaining`)}${step.excluded ? ' · Fuel excluded from this budget' : ''}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderInvoiceRecords(invoices: MyInvoiceRecord[], tracker: Map<string, OwnershipBudgetStep[]>): string {
   if (!invoices.length) {
     return '<div class="assetReportEmpty">No invoices have been saved for this report period.</div>';
   }
@@ -377,6 +394,7 @@ function renderInvoiceRecords(invoices: MyInvoiceRecord[]): string {
               </div>
 
               <div class="assetReportMaintenanceDetails assetReportInvoiceDetails">
+                ${renderBudgetSteps(tracker.get(invoice.id))}
                 ${costDetailsHtml}
                 <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
                   <span>Attached Document / Photo</span>
@@ -1197,7 +1215,8 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
               </div>
               <strong>${escapeHtml(invoiceRecordCountLabel(options.summary.invoiceCount))}</strong>
             </div>
-            ${renderInvoiceRecords(options.invoices)}
+            <p>${escapeHtml(BUDGET_TRACKER_NOTE)}</p>
+            ${renderInvoiceRecords(chronologicalCosts(options.invoices), buildOwnershipBudgetTracker(options.budgetInvoices ?? options.invoices, options.budgets ?? []))}
           </section>
         </div>
 
@@ -1300,6 +1319,23 @@ function buildSupplierSpendRows(invoices: MyInvoiceRecord[]): XlsxCellValue[][] 
 }
 
 export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxSheet[] {
+  const tracker = buildOwnershipBudgetTracker(options.budgetInvoices ?? options.invoices, options.budgets ?? []);
+  const budgetRows: XlsxCellValue[][] = [
+    [styled('Budget tracker after each cost', 'title')],
+    [styled(BUDGET_TRACKER_NOTE, 'note')],
+    [],
+    ['Date', 'Asset', 'Reference', 'Cost incl. VAT', 'Budget period', 'Budget incl. VAT', 'Spent after cost', 'Remaining', 'Over budget', 'Used', 'Status'].map(value => styled(value, 'tableHeader')),
+  ];
+  for (const invoice of chronologicalCosts(options.invoices)) {
+    const steps = tracker.get(invoice.id) ?? [];
+    const prefix = [styled(invoiceDateForExcel(invoice.invoiceDate), 'date'), styled(invoice.assetTitle, 'text'), styled(invoice.invoiceNumber || invoice.id, 'text'), styled(invoice.totalIncVat, 'currency')];
+    if (!steps.length) budgetRows.push([...prefix, styled('No asset budget for this period', 'note')]);
+    for (const step of steps) budgetRows.push([...prefix,
+      styled(step.budget.periodLabel, 'text'), styled(step.budget.amount, 'currency'), styled(step.spent, 'currency'),
+      styled(step.remaining, 'currency'), styled(step.overBy, 'currency'), styled(step.percent / 100, 'percent'),
+      styled(`${step.overBy > 0 ? 'Over budget' : step.status === 'reached' ? 'Budget reached' : step.status === 'warning' ? 'Approaching limit' : 'Within budget'}${step.excluded ? ' · Fuel excluded' : ''}`, step.status === 'reached' ? 'statusBad' : step.status === 'warning' ? 'statusWarn' : 'statusGood'),
+    ]);
+  }
   const fuelInvoices = fuelSlipInvoices(options);
   const assetSummaryRows: XlsxCellValue[][] = options.selectedAsset
     ? [
@@ -1454,6 +1490,16 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
         toColumn: ACCOUNTING_HEADERS.length,
       },
       tabColor: '2E7D5B',
+    },
+    {
+      name: 'Budget Tracker', rows: budgetRows, columns: [16, 32, 22, 18, 24, 18, 18, 18, 18, 16, 30],
+      merges: [{ fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 11 }, { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 11 }],
+      freezeRow: 4, orientation: 'landscape', tabColor: '197454', rowHeights: { 2: 48 }, fitToWidth: true,
+      dataBars: budgetRows.flatMap((row, index) => {
+        if (index < 4 || row.length < 11) return [];
+        const status = (row[10] as { style?: XlsxCellStyle }).style;
+        return [{ column: 10, fromRow: index + 1, toRow: index + 1, max: 1, color: status === 'statusBad' ? 'B44242' : status === 'statusWarn' ? 'A76B12' : '197454' }];
+      }),
     },
     {
       name: 'Invoices',

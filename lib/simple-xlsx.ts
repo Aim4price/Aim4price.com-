@@ -58,6 +58,9 @@ export type XlsxSheet = {
   tabColor?: string;
   orientation?: 'portrait' | 'landscape';
   protectedSnapshot?: boolean;
+  rowHeights?: Record<number, number>;
+  fitToWidth?: boolean;
+  dataBars?: Array<{ column: number; fromRow: number; toRow: number; max: number; color: string }>;
 };
 
 type ZipEntry = {
@@ -394,7 +397,8 @@ function buildWorksheetXml(sheet: XlsxSheet, hyperlinks: XlsxHyperlink[]): strin
   const rowsXml = rows
     .map((row, rowIndex) => {
       const rowNumber = rowIndex + 1;
-      const rowHeight = row.some((cell) => normalizeCell(cell).style === 'tableHeader') ? ' ht="42" customHeight="1"' : rowNumber === 1 ? ' ht="26" customHeight="1"' : '';
+      const customHeight = sheet.rowHeights?.[rowNumber];
+      const rowHeight = customHeight && Number.isFinite(customHeight) && customHeight > 0 ? ` ht="${customHeight}" customHeight="1"` : row.some((cell) => normalizeCell(cell).style === 'tableHeader') ? ' ht="42" customHeight="1"' : rowNumber === 1 ? ' ht="26" customHeight="1"' : '';
       const cells = row
         .map((value, colIndex) => toCellXml(value, cellReference(rowNumber, colIndex + 1)))
         .filter(Boolean)
@@ -415,9 +419,10 @@ function buildWorksheetXml(sheet: XlsxSheet, hyperlinks: XlsxHyperlink[]): strin
   ${sheet.protectedSnapshot ? '<sheetProtection sheet="1" objects="1" scenarios="1" selectLockedCells="0" selectUnlockedCells="0" autoFilter="0"/>' : ''}
   ${autoFilterXml}
   ${mergesXml}
+  ${(sheet.dataBars ?? []).filter(bar => Number.isInteger(bar.column) && bar.column > 0 && bar.fromRow > 0 && bar.toRow >= bar.fromRow && Number.isFinite(bar.max) && bar.max > 0 && /^[0-9A-Fa-f]{6}$/.test(bar.color)).map((bar, index) => `<conditionalFormatting sqref="${cellReference(bar.fromRow, bar.column)}:${cellReference(bar.toRow, bar.column)}"><cfRule type="dataBar" priority="${index + 1}"><dataBar><cfvo type="num" val="0"/><cfvo type="num" val="${bar.max}"/><color rgb="FF${bar.color}"/></dataBar></cfRule></conditionalFormatting>`).join('')}
   ${hyperlinksXml}
   <pageMargins left="0.35" right="0.35" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
-  <pageSetup orientation="${orientation}" paperSize="9" fitToWidth="${maxColumnCount > 10 ? 0 : 1}" fitToHeight="0" scale="100"/>
+  <pageSetup orientation="${orientation}" paperSize="9" fitToWidth="${sheet.fitToWidth || maxColumnCount <= 10 ? 1 : 0}" fitToHeight="0" scale="100"/>
 </worksheet>`;
 }
 

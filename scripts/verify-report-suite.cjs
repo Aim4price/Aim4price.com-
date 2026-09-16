@@ -17,7 +17,7 @@ const pure = new Set([
   'report-theme', 'report-print', 'simple-xlsx', 'usage-readings',
   'asset-groups-shared', 'admin-work-tracker-shared', 'report-chronology',
   'asset-depreciation-timeline', 'depreciation-umbrella-summary',
-  'insurance-cover-catalogue',
+  'insurance-cover-catalogue', 'ownership-budget-tracker',
 ]);
 const cache = new Map();
 function load(file, extra = []) {
@@ -117,7 +117,14 @@ async function fixtures() {
       createdAtIso: date.toISOString(), updatedAtIso: date.toISOString(),
     })),
   };
+  ownershipOptions.budgets = [{
+    id: 'demo-budget', assetId: asset.id, period: 'monthly', periodLabel: 'September 2026',
+    periodStart: '2026-09-01', periodEnd: '2026-10-01', amount: 20000,
+    warningPercent: 80, includeFuelSlipCosts: false,
+  }];
   reports.ownership = invoices.buildMyInvoicesReportHtml(ownershipOptions);
+  assert.ok(reports.ownership.includes('115% used'), 'ownership running budget includes all costs');
+  assert.ok(reports.ownership.includes('over budget'), 'ownership reports actual overspend');
   saveWorkbook('ownership', invoices.buildMyInvoicesWorkbook(ownershipOptions));
   const fuel = load('app/api/fuel/report/route.ts', ['buildReportHtml', 'buildFuelWorkbook']);
   const fuelTest = fs.readFileSync('tests/fuel-report.test.mjs', 'utf8');
