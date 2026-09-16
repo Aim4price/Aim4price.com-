@@ -15,3 +15,16 @@
 .summary { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .8rem; padding-top: .7rem; border-top: 1px solid #dce8e2; font-size: .85rem; font-weight: 450; }
 .summary button { border: 1px solid #c5ded1; border-radius: .7rem; background: #edf6f0; padding: .6rem .9rem; }
 @media(max-width: 480px) { .calendar { padding: .6rem; } .navigation { gap: .2rem; } .days { gap: .15rem; } }
+
+.dateLabel { display: grid; gap: .5rem; color: #425d51; font-size: .85rem; font-weight: 550; }
+.dateField { display: flex; align-items: center; position: relative; }
+.dateField input { padding-right: 4rem !important; }
+.dateField > button { position: absolute; right: .45rem; display: grid; place-items: center; width: 2.75rem; height: 2.5rem; border: 0; border-radius: .65rem; color: #247457; background: #edf5f0; cursor: pointer; }
+.dateField svg { width: 1.5rem; height: 1.5rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.dateDialog { width: min(34rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); padding: 0; border: 1px solid #dce8e2; border-radius: 1.4rem; background: #fff; color: #24483b; box-shadow: 0 24px 70px #102f3340; }
+.dateDialog::backdrop { background: #102b3266; backdrop-filter: blur(6px); }
+.dateDialog .calendar { width: 100%; margin: 0; border: 0; padding: 1.25rem; }
+.dialogHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #e0e9e5; }
+.dialogHeader h3 { margin: 0; font-size: 1.35rem; font-weight: 750; }
+.dialogHeader button { width: 2.75rem; height: 2.75rem; border: 1px solid #dce8e2; border-radius: .8rem; background: #f5f9f7; font-size: 1.4rem; }
+.dateField button:focus-visible { outline: 2px solid #318969; outline-offset: 2px; }
