@@ -28,11 +28,11 @@ test('Owner and Dealer desktop maintenance use one mobile-inspired service form'
   assert.match(modal, /Completion date/);
   assert.match(modal, /Usage at completion/);
   assert.match(modal, /Work details \/ notes/);
-  assert.match(modal, /Was this work for the scheduled/);
+  assert.match(modal, /Which work was done\?/);
   assert.match(modal, /Complete scheduled/);
-  assert.match(modal, /No, record previous or other work/);
+  assert.match(modal, /Other work/);
   assert.match(modal, /Record completed/);
-  assert.match(modalStyles, /\.saveChoices \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(modalStyles, /\.saveChoices \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
 });
 
 test('Dealer maintenance card actions stay in one row and use the copper service action', () => {

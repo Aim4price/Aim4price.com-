@@ -245,7 +245,7 @@ export default function DesktopServiceModal({
         <section className={`${styles.modal} ${styles.saveChoiceModal} ${!dealerAppMode ? dialogStyles.dialog : ''}`} ref={dialogRef} tabIndex={-1} onKeyDown={dialogKeys} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
           <header className={styles.header}>
             <div>
-              <h2 id="scheduled-service-choice-title">Was this work for the scheduled {actionName}?</h2>
+              <h2 id="scheduled-service-choice-title">Which work was done?</h2>
               <p>{record.assetTitle}</p>
             </div>
             <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
@@ -254,18 +254,17 @@ export default function DesktopServiceModal({
           </header>
           <div className={`${styles.body} ${!dealerAppMode ? dialogStyles.body : ''}`}>
             <div className={styles.scheduleSummary}>
-              <span>Scheduled {actionName}</span>
               <strong>{record.title}</strong>
-              <small>{dueLabel} · {intervalLabel(record) || 'One-time schedule'}</small>
+              <small>{dueLabel}{record.recurringEnabled && intervalLabel(record) ? ` · ${intervalLabel(record)}` : ''}</small>
             </div>
             <div className={styles.saveChoices}>
               <button type="button" onClick={() => chooseSchedule('scheduled')} disabled={busy}>
-                <strong>Yes, complete this schedule</strong>
-                <span>Save the work against this scheduled {actionName} and mark it done.{record.recurringEnabled && !dealerAppMode ? ' Next, choose whether to keep it recurring.' : ''}</span>
+                <strong>Scheduled {actionName}</strong>
+                <span>Mark this {actionName} as done.</span>
               </button>
               <button type="button" onClick={() => chooseSchedule('separate')} disabled={busy}>
-                <strong>No, record previous or other work</strong>
-                <span>Add completed work to the asset’s history. This schedule and its reminders stay open.</span>
+                <strong>Other work</strong>
+                <span>Save to history. Keep this {actionName} open.</span>
               </button>
             </div>
           </div>
