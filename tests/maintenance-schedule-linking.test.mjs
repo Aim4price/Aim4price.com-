@@ -43,7 +43,7 @@ test('Dealer service uses the same explicit choice and stable retry identifier',
   assert.match(desktopServiceModal, /linkToScheduledMaintenance\?: boolean/);
   assert.match(desktopServiceModal, /clientEventId: string/);
   assert.match(desktopServiceModal, /globalThis\.crypto\.randomUUID\(\)/);
-  assert.match(desktopServiceModal, /No, record previous or other work/);
+  assert.match(desktopServiceModal, /Other work/);
   assert.match(desktopServiceModal, /Complete scheduled/);
   assert.match(dealerApi, /body\.linkToScheduledMaintenance === false/);
   assert.match(dealerApi, /recordDealerStandaloneMaintenance/);

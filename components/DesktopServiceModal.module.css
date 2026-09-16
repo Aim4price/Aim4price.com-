@@ -535,8 +535,8 @@
 }
 
 /* Direct choices keep the scheduled-work decision short and easy to scan. */
-.saveChoiceModal.saveChoiceModal { width: min(700px, var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 2rem)) !important; }
-.saveChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+
+.saveChoices { display: grid; grid-template-columns: minmax(0, 1fr); gap: .7rem; }
 .saveChoices button { display: grid; align-content: center; gap: 8px; min-height: 118px; padding: 20px; border: 1px solid #cbded6; border-radius: 18px; background: linear-gradient(135deg, #f7faf9, #eef6f2); color: #173e31; text-align: left; font: inherit; cursor: pointer; }
 .saveChoices strong { font-size: 1.05rem; font-weight: 800; }
 .saveChoices span { color: #607168; font-size: .88rem; line-height: 1.45; }
@@ -556,10 +556,11 @@
 .inHouseChoice input { width: 1.15rem; height: 1.15rem; accent-color: #197454; }
 
 /* One visual language for the schedule decision and completed-work form. */
-.saveChoiceModal.saveChoiceModal { width: min(58rem, var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 2rem)) !important; }
-.saveChoiceModal .saveChoices button { align-content: start; padding: 1.4rem; gap: .7rem; min-height: 9rem; }
-.saveChoiceModal .saveChoices button:first-child { background: #edf8f2; border-color: #a8d0bc; }
-.saveChoiceModal .saveChoices button:last-child { background: #f4f8fc; border-color: #cbddea; }
+.saveChoiceModal.saveChoiceModal.saveChoiceModal { place-self: center; width: min(46rem, var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 2rem)) !important; }
+.saveChoiceModal .saveChoices button { align-content: center; padding: 1rem 1.15rem; gap: .3rem; min-height: 0; border-radius: .9rem; }
+.saveChoiceModal .saveChoices button { background: #f5f8fb; border-color: #d4e0ed; }
+.saveChoiceModal .saveChoices button:hover { background: #edf6f1; border-color: #8cbaa5; }
+.saveChoiceModal .scheduleSummary { padding: 0 0 1rem; border: 0; border-bottom: 1px solid #dce7e1; border-radius: 0; background: transparent; }
 .completionModal.completionModal { width: min(64rem, var(--website-dialog-reference-width, 100%)); max-height: calc(var(--website-visible-height, 100dvh) - 3rem); border-radius: 1.55rem; background: #fff; }
 .completionModal .header { padding: 2rem; align-items: start; gap: 1.5rem; }
 .completionModal .header h2 { font-size: 2rem; line-height: 1.15; font-weight: 850; letter-spacing: -.035em; }
