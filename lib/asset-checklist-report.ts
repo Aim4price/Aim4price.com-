@@ -3,11 +3,12 @@ import { REPORT_THEME_CSS } from './report-theme';
 
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
-export function buildAssetChecklistReportHtml(asset: { title: string; serialNumber?: string }, checklist: MaintenanceChecklist) {
+export function buildAssetChecklistReportHtml(asset: { title: string; serialNumber?: string }, checklist: MaintenanceChecklist, selectedKeys?: readonly string[]) {
+  const selected = selectedKeys ? new Set(selectedKeys) : null;
   const sections = ([['checked', 'Inspection checks'], ['serviced', 'Service items'], ['repaired', 'Maintenance & repairs']] as const)
     .map(([mode, title]) => {
       // The repair section contains the owner's specific tasks; standard service work is already listed above.
-      const items = checklistOptions(checklist, mode).filter(item => mode !== 'repaired' || item.id.startsWith('asset_custom_'));
+      const items = checklistOptions(checklist, mode).filter(item => (mode !== 'repaired' || item.id.startsWith('asset_custom_')) && (!selected || selected.has(`${mode}:${item.id}`)));
       if (!items.length) return '';
       return `<section><h2>${title}</h2><table><thead><tr><th class="boxCol">Done</th><th>Task / instructions</th><th class="notesCol">Faults / notes / N/A</th></tr></thead><tbody>${items.map(item => `<tr><td><span class="checkbox"></span></td><td><strong>${escape(item.label)}</strong>${item.description ? `<p>${escape(item.description)}</p>` : ''}</td><td></td></tr>`).join('')}</tbody></table></section>`;
     }).join('');

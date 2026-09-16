@@ -109,3 +109,44 @@ test('checklist and PDF routes reject unauthenticated callers and never accept a
   });
   assert.equal((await pdf.GET(new NextRequest('https://test/api/maintenance/checklist/pdf'))).status, 401);
 });
+
+test('PDF includes only selected items and keeps the same item ID separate across sections', () => {
+  const checklist = { ...catalogue.resolveMaintenanceChecklist(null), customItems: [{ ...item, id: A }, { ...item, id: B, mode: 'repaired', label: 'Replace bracket' }] };
+  const selected = [`checked:asset_custom_${A}`, `repaired:asset_custom_${B}`];
+  const html = report.buildAssetChecklistReportHtml({ title: 'Tractor' }, checklist, selected);
+  assert.ok(html.includes(item.label));
+  assert.ok(html.includes('Replace bracket'));
+  assert.ok(!html.includes('Visible damage and loose parts'));
+  assert.ok(!html.includes('<h2>Service items</h2>'));
+  const empty = report.buildAssetChecklistReportHtml({ title: 'Tractor' }, checklist, []);
+  assert.ok(!empty.includes('<span class="checkbox"></span>'));
+  const modeChecklist = { ...checklist, items: [{ id: 'hydraulic_hose', label: 'Hose', checkLabel: 'Inspect hose', serviceLabel: 'Replace hose', description: '' }] };
+  const oneMode = report.buildAssetChecklistReportHtml({ title: 'Tractor' }, modeChecklist, ['checked:hydraulic_hose']);
+  assert.ok(oneMode.includes('Inspect hose'));
+  assert.ok(!oneMode.includes('Replace hose'));
+});
+
+test('PDF endpoint validates selected IDs against the owned asset and rejects empty selections', async () => {
+  const { NextRequest, NextResponse } = require('next/server');
+  let rendered = '';
+  const api = load('app/api/maintenance/checklist/pdf/route.ts', {
+    'next/server': { NextRequest, NextResponse },
+    '../../../../../lib/auth-session': { getServerSession: async () => ({ user: { id: 'alice' } }) },
+    '../../../../../lib/asset-checklist-db': { listAssetChecklistItems: async (owner, assetId) => { assert.equal(owner, 'alice'); if(assetId !== A) throw Error('ASSET_NOT_FOUND'); return [{ ...item, id: A }]; } },
+    '../../../../../lib/asset-register-db': { getAssetRegisterItemById: async () => ({ title: 'Tractor' }) },
+    '../../../../../lib/maintenance-catalogue-db': { getMaintenanceCatalogue: async () => undefined },
+    '../../../../../lib/maintenance-catalogue': catalogue,
+    '../../../../../lib/asset-checklist-report': report,
+    '../../../../../lib/report-pdf': { renderReportHtmlToPdf: async html => { rendered = html; return Buffer.from('%PDF-fixture'); } },
+  });
+  for (const query of ['', '&item=checked:foreign-item']) {
+    assert.equal((await api.GET(new NextRequest(`https://test/api/maintenance/checklist/pdf?assetId=${A}${query}`))).status, 400);
+  }
+  assert.equal(rendered, '');
+  const result = await api.GET(new NextRequest(`https://test/api/maintenance/checklist/pdf?assetId=${A}&item=checked:asset_custom_${A}&item=checked:foreign-item`));
+  assert.equal(result.status, 200);
+  assert.equal(result.headers.get('Content-Type'), 'application/pdf');
+  assert.ok(rendered.includes(item.label));
+  assert.ok(!rendered.includes('Visible damage and loose parts'));
+  assert.equal((await api.GET(new NextRequest(`https://test/api/maintenance/checklist/pdf?assetId=${B}&item=checked:asset_custom_${A}`))).status, 404);
+});
