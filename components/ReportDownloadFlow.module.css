@@ -16,3 +16,8 @@
 
 .surface button, .surface input { font-family: inherit; }
 .surface h2:focus { outline: none; }
+
+/* One Aim4price green for icons in every step of the shared download flow. */
+.surface { --download-icon-color: #145c43; }
+.surface svg,
+.surface [data-download-header] > button { color: var(--download-icon-color) !important; }
