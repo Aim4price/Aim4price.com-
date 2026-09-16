@@ -61,8 +61,7 @@ test('Desktop and app servicing share the same equipment checklists and saved no
 });
 
 test('Service and check-up validation follows the app rules', () => {
-  assert.match(modal, /Select at least one checked item or add notes\/problems/);
-  assert.match(modal, /Select at least one completed service item or add notes\/problems/);
+  assert.match(modal, /Select completed work or add a note/);
   assert.match(modal, /copy\.companyLabel.*is required/);
   assert.match(modal, /copy\.mechanicLabel.*is required/);
   assert.match(modal, /cannot be lower than the saved/);
