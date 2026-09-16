@@ -2,7 +2,7 @@
 .surface.surface.surface {
   width: min(52rem, 100%) !important;
   max-width: 100% !important;
-  padding: clamp(1.25rem, 2.5vw, 2rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem);
   border: 1px solid #d4e2dd;
   border-radius: 1.5rem;
   background: linear-gradient(180deg, #fff, #f8fbfa);

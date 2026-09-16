@@ -1225,6 +1225,8 @@ export default function MaintenanceClient({
           ? 'Maintenance saved. The scheduled maintenance remains open.'
           : record.recurringEnabled && payload.nextRecord
           ? `Maintenance marked done. Next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
+          : completion.continueSchedule === false
+          ? 'Maintenance saved. The recurring schedule has ended.'
           : 'Maintenance marked done.',
       });
       closeModal();
@@ -1233,6 +1235,7 @@ export default function MaintenanceClient({
         type: 'error',
         text: error instanceof Error ? error.message : 'Maintenance record could not be marked done.',
       });
+      throw error;
     } finally {
       completeRequestInFlight.current = false;
       setBusyCompleteId(null);

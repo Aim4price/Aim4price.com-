@@ -47,9 +47,12 @@ test('Desktop completion uses the servicing form and server acknowledgement', ()
   assert.match(desktopClient, /function openComplete\(record: MaintenanceRecord\)/);
   assert.match(desktopClient, /<DesktopServiceModal/);
   assert.match(desktopClient, /Record service/);
-  assert.match(serviceModal, /Record completed work/);
-  assert.match(serviceModal, /The next reminder will be created automatically/);
-  assert.match(serviceModal, /The scheduled work stays open/);
+  assert.match(serviceModal, /Record completed \$\{actionName\}/);
+  assert.match(serviceModal, /Continue the schedule/);
+  assert.match(serviceModal, /End the schedule/);
+  assert.match(serviceModal, /continueSchedule: continueSchedule === true/);
+  assert.match(serviceModal, /linkToScheduledMaintenance: !standalone && scheduleDecision !== 'separate'/);
+  assert.match(serviceModal, /Save to history · schedule stays open/);
   assert.match(desktopClient, /confirmedComplete: true/);
   assert.match(completionRoute, /requestedStatus === 'done' && body\.confirmedComplete !== true/);
   assert.match(completionRoute, /Confirm that the maintenance has physically been completed/);

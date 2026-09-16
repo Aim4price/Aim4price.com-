@@ -553,3 +553,44 @@
 .customWorkList button { border: 0; background: transparent; color: #7b3933; font-size: 1.3rem; cursor: pointer; }
 .inHouseChoice { grid-column: 1 / -1; display: flex; align-items: center; gap: .65rem; color: #14553f; font-weight: 650; }
 .inHouseChoice input { width: 1.15rem; height: 1.15rem; accent-color: #197454; }
+
+/* One visual language for the schedule decision and completed-work form. */
+.saveChoiceModal.saveChoiceModal { width: min(58rem, var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 2rem)) !important; }
+.saveChoiceModal .saveChoices button { align-content: start; padding: 1.4rem; gap: .7rem; min-height: 9rem; }
+.saveChoiceModal .saveChoices button:first-child { background: #edf8f2; border-color: #a8d0bc; }
+.saveChoiceModal .saveChoices button:last-child { background: #f4f8fc; border-color: #cbddea; }
+.completionModal.completionModal { width: min(64rem, var(--website-dialog-reference-width, 100%)); max-height: calc(var(--website-visible-height, 100dvh) - 3rem); border-radius: 1.55rem; background: #fff; }
+.completionModal .header { padding: 2rem; align-items: start; gap: 1.5rem; }
+.completionModal .header h2 { font-size: 2rem; line-height: 1.15; font-weight: 850; letter-spacing: -.035em; }
+.completionModal .header p { font-size: .88rem; line-height: 1.5; margin-top: .5rem; }
+.squareClose.squareClose { width: 2.75rem; height: 2.75rem; border-radius: .65rem; }
+.completionModal .body { padding: 1.5rem 2rem; gap: 1.25rem; scrollbar-width: thin; scrollbar-color: #8bad9d #f0f6f3; scrollbar-gutter: stable; overscroll-behavior: contain; }
+.completionModal .body::-webkit-scrollbar { width: 10px; }
+.completionModal .body::-webkit-scrollbar-thumb { background: #8bad9d; border: 2px solid #f0f6f3; border-radius: 8px; }
+.completionModal .section { padding: 1.4rem; border-radius: 1.1rem; }
+.completionModal .sectionHeading { margin-bottom: 1.1rem; }
+.completionModal .infoBanner { padding: 1.1rem 1.25rem; gap: .45rem; border-radius: 1rem; }
+.completionModal .footer { padding: 1.1rem 2rem 1.5rem; gap: .75rem; }
+.completionModal .footer button { min-height: 3rem; border-radius: .85rem; font-size: .9rem; }
+.completionModal .submitButton { background: linear-gradient(#1a5a45, #124233); }
+.recurrenceChoice { margin: 0; padding: 1.25rem; border: 1px solid #cbded6; border-radius: 1rem; min-width: 0; }
+.recurrenceChoice legend { padding: 0 .4rem; font-size: 1rem; font-weight: 750; }
+.recurrenceChoice > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .85rem; }
+.recurrenceChoice label { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; background: #f7faf9; border: 1px solid #d6e4dd; border-radius: .8rem; cursor: pointer; }
+.recurrenceChoice label:has(input:checked) { background: #eaf7f0; border-color: #589e7c; }
+.recurrenceChoice input { flex-shrink: 0; width: 1.1rem; height: 1.1rem; margin: .1rem 0 0; accent-color: #14553f; }
+.recurrenceChoice strong, .recurrenceChoice small { display: block; }
+.recurrenceChoice strong { font-size: .95rem; }
+.recurrenceChoice small { color: #607168; line-height: 1.5; margin-top: .45rem; }
+.customTag { color: #197454 !important; font-weight: 700; }
+.completionModal button:focus-visible, .completionModal input:focus-visible, .completionModal textarea:focus-visible { outline: 3px solid #78b89b; outline-offset: 3px; }
+.modal:focus { outline: none; }
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .completionModal .header { padding: 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .completionModal .header h2 { font-size: 1.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .completionModal .body { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .completionModal .section { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .recurrenceChoice > div { grid-template-columns: minmax(0,1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .completionModal .footer { padding: 1rem; flex-wrap: wrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .completionModal .footer .submitButton { flex-basis: 100%; }
+}

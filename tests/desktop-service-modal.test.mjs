@@ -28,10 +28,10 @@ test('Owner and Dealer desktop maintenance use one mobile-inspired service form'
   assert.match(modal, /Completion date/);
   assert.match(modal, /Usage at completion/);
   assert.match(modal, /Work details \/ notes/);
-  assert.match(modal, /Which work was done\?/);
+  assert.match(modal, /Was this work for the scheduled/);
   assert.match(modal, /Complete scheduled/);
-  assert.match(modal, /Record other work/);
-  assert.match(modal, /Record completed work/);
+  assert.match(modal, /No, record previous or other work/);
+  assert.match(modal, /Record completed/);
   assert.match(modalStyles, /\.saveChoices \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });
 
@@ -71,10 +71,10 @@ test('Service and check-up validation follows the app rules', () => {
 });
 
 test('scheduled and separate work explain different outcomes before saving', () => {
-  assert.match(modal, /The scheduled work stays open/);
+  assert.match(modal, /Existing reminders will not change/);
   assert.match(modal, /record\.recurringEnabled \? 'The next reminder/);
-  assert.match(modal, /setScheduleDecision\('separate'\)/);
-  assert.match(modal, /setScheduleDecision\('scheduled'\)/);
+  assert.match(modal, /chooseSchedule\('separate'\)/);
+  assert.match(modal, /chooseSchedule\('scheduled'\)/);
   assert.match(modal, /Complete scheduled \$\{actionName\}/);
 });
 
