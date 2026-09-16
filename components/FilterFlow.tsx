@@ -66,7 +66,7 @@ export default function FilterFlow({ title, children, onClose, onClear, onApply,
   );
 }
 
-export function FilterQuestion({ label, value, options, onChange, disabled = false, searchable = false, searchPlaceholder = 'Search options', noMatchesLabel = 'No matches found' }: {
+export function FilterQuestion({ label, value, options, onChange, disabled = false, searchable = false, searchPlaceholder = 'Search options', noMatchesLabel = 'No matches found', menuClassName = '', disabledHint = 'Choose a specific option in the previous question to narrow this further, or continue with all.' }: {
   label: string;
   value: string;
   options: readonly { value: string; label: string }[];
@@ -75,6 +75,8 @@ export function FilterQuestion({ label, value, options, onChange, disabled = fal
   searchable?: boolean;
   searchPlaceholder?: string;
   noMatchesLabel?: string;
+  menuClassName?: string;
+  disabledHint?: string;
 }) {
   const id = useId();
   const [query, setQuery] = useState('');
@@ -139,7 +141,7 @@ export function FilterQuestion({ label, value, options, onChange, disabled = fal
       <span className={styles.selectedLabel}>{selected?.label ?? 'Choose an option'}</span>
       <span className={styles.chevronSlot} aria-hidden="true"><svg viewBox="0 0 24 24" className={open ? styles.chevronOpen : undefined}><path d="m6 9 6 6 6-6" /></svg></span>
     </button>
-    {open && !disabled ? <DropdownOverlay id={menuId} anchorRef={triggerRef} className={styles.selectMenu} role="listbox" aria-labelledby={`${id}-label`} maxHeight={280}>
+    {open && !disabled ? <DropdownOverlay id={menuId} anchorRef={triggerRef} className={`${styles.selectMenu} ${menuClassName}`} role="listbox" aria-labelledby={`${id}-label`} maxHeight={280}>
       {visible.map((option, index) => <button key={option.value} id={`${menuId}-${index}`} type="button" role="option" aria-selected={option.value === value} tabIndex={-1}
         className={`${styles.selectOption} ${index === activeIndex ? styles.optionFocused : ''}`}
         onMouseDown={(event) => event.preventDefault()} onClick={() => choose(option.value)}>
@@ -147,7 +149,7 @@ export function FilterQuestion({ label, value, options, onChange, disabled = fal
       </button>)}
     </DropdownOverlay> : null}
     {query.trim() && !matches.length ? <small role="status">{noMatchesLabel}</small> : null}
-    {disabled ? <small>Choose a specific option in the previous question to narrow this further, or continue with all.</small> : null}
+    {disabled ? <small>{disabledHint}</small> : null}
   </div>;
 }
 
