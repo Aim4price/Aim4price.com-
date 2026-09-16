@@ -9,6 +9,7 @@ function loadBuilder(path) {
   });
   return exports;
 }
+const { parseFuelSlipReportFilters, selectFuelSlipsForReport } = loadBuilder('../lib/fuel-slip-report-selection.ts');
 const { buildFuelSlipWorkbook, buildFuelSlipReportHtml } = loadBuilder('../lib/fuel-slip-export.ts');
 
 const slip = { documentDate: '2026-09-15', supplierName: '<script>alert(1)</script>', targetType: 'asset', assetTitle: 'Tractor', litres: 50.125, pricePerLitre: 20, totalAmount: 1002.50, vatAmount: null, reviewRequired: true, extractionStatus: 'needs_review', note: '=SUM(A1:A2) 4111 1111 1111 1111', cardLast4: '1111' };
@@ -44,16 +45,17 @@ function exportRoute({ authorized = true, slips = [] } = {}) {
     '../../../../../lib/report-logo': { resolveReportLogoUrlForHtml: async () => '' },
     '../../../../../lib/owner-workspace-access': {
       resolveOwnerWorkspaceContext: async () => authorized ? { ok: true, context: { ownerUserId: 'owner' } } : { ok: false, response: new Response('', { status: 401 }) },
-      filterFuelLedgerForWorkspace: async (_, ledger) => ({ recentFuelSlips: ledger.recentFuelSlips.filter((s) => s.allowed) }),
+      filterFuelLedgerForWorkspace: async (_, ledger) => ({ ...ledger, recentFuelSlips: ledger.recentFuelSlips.filter((s) => s.allowed) }),
     },
-    '../../../../../lib/fuel-ledger': { listFuelLedger: async () => ({ recentFuelSlips: slips }) },
+    '../../../../../lib/fuel-ledger': { listFuelLedger: async () => ({ assets: slips.filter(s=>s.allowed).map(s=>({id:s.assetId})), recentFuelSlips: slips.slice(0,1) }), listFuelSlipsForReport: async () => slips },
+    '../../../../../lib/fuel-slip-report-selection': { parseFuelSlipReportFilters, selectFuelSlipsForReport },
     '../../../../../lib/fuel-slip-export': { buildFuelSlipWorkbook: () => { rendered = true; return Buffer.from('PK'); }, buildFuelSlipReportHtml },
     '../../../../../lib/report-pdf': { renderReportHtmlToPdf: async () => { rendered = true; return Buffer.from('%PDF'); } },
   };
   const source = readFileSync(new URL('../app/api/fuel/slips/export/route.ts', import.meta.url), 'utf8');
   const exports = {};
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText, { exports, require: (name) => mocks[name], console, Buffer, Uint8Array, Set });
-  return { post: (ids, format = 'xlsx') => exports.POST(new Request('https://example.com/api/fuel/slips/export', { method: 'POST', body: JSON.stringify({ ids, format }) })), rendered: () => rendered };
+  return { post: (ids, format = 'xlsx') => exports.POST(new Request('https://example.com/api/fuel/slips/export', { method: 'POST', body: JSON.stringify({ ids, format }) })), postFilters: filters => exports.POST(new Request('https://example.com/api/fuel/slips/export', { method: 'POST', body: JSON.stringify({ filters, format:'xlsx' }) })), rendered: () => rendered };
 }
 test('export rejects unauthenticated requests before rendering', async () => {
   const route = exportRoute({ authorized: false });
@@ -80,4 +82,25 @@ test('PDF export renders authorized records with account context', async () => {
   const response = await route.post(['a'], 'pdf');
   assert.equal(response.status, 200);
   assert.match(response.headers.get('Content-Type'), /application\/pdf/);
+});
+
+test('filtered asset exports include matching slips beyond the loaded page, never other assets', async () => {
+  const slips = [
+    {id:'hidden',allowed:false,assetId:'other',targetType:'asset',documentDate:'2026-09-01'},
+    {id:'old-loaded-out',allowed:true,assetId:'tractor',targetType:'asset',documentDate:'2026-09-02'},
+  ];
+  const route=exportRoute({slips});
+  const response=await route.postFilters({assetId:'tractor',year:'2026',month:'9'});
+  assert.equal(response.status,200);
+  assert.equal((await route.postFilters({assetId:'other',year:'2026',month:'9'})).status,404);
+});
+test('fuel slip export dates, capture status and storage targets are independent',()=>{
+  const records=[{id:'a',assetId:'a',targetType:'asset',documentDate:'2026-09-01',extractionStatus:'extracted'},
+    {id:'b',assetId:'a',targetType:'asset',documentDate:'2026-08-31',extractionStatus:'manual'},
+    {id:'s',storageId:'tank',targetType:'storage_tank',documentDate:'2026-09-01',reviewRequired:true}];
+  const filter=parseFuelSlipReportFilters({assetId:'a',year:'2026',month:'9',capture:'automatic'});
+  assert.deepEqual(selectFuelSlipsForReport(records,filter).map(s=>s.id),['a']);
+  assert.deepEqual(selectFuelSlipsForReport(records,parseFuelSlipReportFilters({storageId:'tank',capture:'needs_review'})).map(s=>s.id),['s']);
+  assert.equal(parseFuelSlipReportFilters({month:'9'}),null);
+  assert.equal(parseFuelSlipReportFilters({year:'2026x'}),null);
 });

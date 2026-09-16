@@ -1,4 +1,6 @@
 'use client';
+import { downloadCanonicalReportFile } from '../../lib/report-open';
+import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import budgetModalStyles from '../../components/BudgetModal.module.css';
 import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
@@ -326,14 +328,6 @@ const RECURRING_FREQUENCY_OPTIONS: Array<{ value: CommitmentFrequency; label: st
 
 type ReportFormat = 'pdf' | 'xlsx';
 type ReportRouteFormat = ReportFormat | 'html';
-type DownloadExportFormat = ReportFormat;
-type DownloadStep = 'format' | 'timeline' | 'fuel';
-
-const STANDARD_DOWNLOAD_STEPS: Array<{ key: DownloadStep; label: string }> = [
-  { key: 'format', label: 'Format' },
-  { key: 'timeline', label: 'Timeline' },
-  { key: 'fuel', label: 'Fuel costs' },
-];
 
 const DEFAULT_FILTERS: InvoiceFilterState = {
   ownerId: 'all',
@@ -463,7 +457,6 @@ function ReportFileIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-
 function CostExportGraphic({ src }: { src: string }) {
   const [hasError, setHasError] = useState(false);
   return hasError
@@ -482,8 +475,6 @@ function LedgerIcon(props: SVGProps<SVGSVGElement>) {
     </IconBase>
   );
 }
-
-
 
 function OpenFileIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -827,7 +818,6 @@ function ownerStorageLabel(status: OwnerStorageStatus): string {
   return 'Owner Cost Ledger';
 }
 
-
 function captureMethodLabel(source: InvoiceSource): string {
   if (source === 'fuel_slip') return 'Fuel Slip';
   return source === 'automatic' ? 'Aim4price verified capture' : 'Manual entry';
@@ -1042,7 +1032,7 @@ export default function MyInvoicesClient({
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [activeFilters, setActiveFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
   const [draftFilters, setDraftFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
-  const [downloadFilters, setDownloadFilters] = useState<InvoiceFilterState>(DEFAULT_FILTERS);
+
   const [filterOpen, setFilterOpen] = useState(false);
   const [invoicePageSize, setInvoicePageSize] = useState<ListPageSize>(6);
   const [currentInvoicePage, setCurrentInvoicePage] = useState(1);
@@ -1051,9 +1041,7 @@ export default function MyInvoicesClient({
   const [filterAssetSearch, setFilterAssetSearch] = useState('');
   const [filterOwnerSearch, setFilterOwnerSearch] = useState('');
   const [downloadOpen, setDownloadOpen] = useState(false);
-  const [downloadStep, setDownloadStep] = useState<DownloadStep>('format');
-  const [downloadFormat, setDownloadFormat] = useState<DownloadExportFormat>('pdf');
-  const [includeFuelSlipCosts, setIncludeFuelSlipCosts] = useState(true);
+
   const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
   const [manualCostWizardStep, setManualCostWizardStep] = useState<ManualCostWizardStep>(1);
@@ -1537,12 +1525,12 @@ export default function MyInvoicesClient({
 
   const yearOptions = useMemo(() => {
     const years = new Set(availableYears);
-    for (const value of [activeFilters.year, draftFilters.year, downloadFilters.year]) {
+    for (const value of [activeFilters.year, draftFilters.year]) {
       const year = Number(value);
       if (Number.isInteger(year) && year >= 2000 && year <= 2100) years.add(year);
     }
     return Array.from(years).sort((a, b) => b - a);
-  }, [activeFilters.year, availableYears, downloadFilters.year, draftFilters.year]);
+  }, [activeFilters.year, availableYears, draftFilters.year]);
 
   const ownerFilterOptions = useMemo<FilterSelectOption[]>(() => {
     const owners = new Map<string, string>();
@@ -1616,7 +1604,7 @@ export default function MyInvoicesClient({
   const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
   const hasInvoiceSearch = invoiceSearch.trim().length > 0;
   const deleteConfirmOpen = Boolean(deleteCandidateInvoice);
-  const downloadSteps = STANDARD_DOWNLOAD_STEPS;
+
   const modalOpen = sourceChoiceOpen
     || assetPickerOpen
     || flow === 'upload'
@@ -2963,72 +2951,15 @@ export default function MyInvoicesClient({
   }
 
   function openDownloadModal() {
-    setIncludeFuelSlipCosts(true);
-    setDownloadFilters(activeFilters);
-    setDownloadStep('format');
-    setDownloadFormat('pdf');
+
     setOpenFilterDropdown(null);
     setDownloadOpen(true);
   }
 
   function closeDownloadModal() {
     setOpenFilterDropdown(null);
-    setDownloadStep('format');
+
     setDownloadOpen(false);
-  }
-
-  function chooseDownloadFormat(format: DownloadExportFormat) {
-    setDownloadFormat(format);
-  }
-
-  function showDownloadFormatStep() {
-    setOpenFilterDropdown(null);
-    setDownloadStep('format');
-  }
-
-  function showDownloadTimelineStep() {
-    setOpenFilterDropdown(null);
-    setDownloadStep('timeline');
-  }
-
-  function showNextStepAfterFormat() {
-    showDownloadTimelineStep();
-  }
-
-  function showPreviousStepBeforeTimeline() {
-    showDownloadFormatStep();
-  }
-
-  function showDownloadFuelStep() {
-    setOpenFilterDropdown(null);
-    setDownloadStep('fuel');
-  }
-
-  async function handleDownloadReport(format: ReportFormat) {
-    const routeFormat: ReportRouteFormat = format === 'pdf' ? 'html' : format;
-    const url = buildReportUrl(
-      downloadFilters,
-      routeFormat,
-      includeFuelSlipCosts,
-      accountantShareId,
-      accountantRegisterId,
-    );
-
-    if (format === 'xlsx') {
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = '';
-      link.rel = 'noreferrer';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      closeDownloadModal();
-      return;
-    }
-
-    const opened = openCanonicalReportUrl(url);
-    if (!opened) window.location.href = url;
-    closeDownloadModal();
   }
 
   async function uploadInvoiceFile(assetId: string, source: InvoiceSource, file: File): Promise<InvoiceDocument> {
@@ -3337,6 +3268,7 @@ export default function MyInvoicesClient({
         {budgetLaunchReturnTo ? <a className={styles.secondaryButton} href={budgetLaunchReturnTo}>Back to asset</a> : null}
         {budgetsPage && canManageBudgets ? <BudgetTracking
           scopeAssetId={budgetLaunchAssetId}
+          reportAssets={assets}
           budgets={budgetLaunchAssetId ? costBudgets.filter((budget) => budget.assetId === budgetLaunchAssetId) : costBudgets} loading={budgetsLoading} error={budgetLoadError}
           onRetry={() => { setBudgetsLoading(true); setBudgetLoadError(''); void reloadBudgets().catch(error => setBudgetLoadError(error instanceof Error ? error.message : 'Budgets could not be loaded.')).finally(() => setBudgetsLoading(false)); }}
           onAdd={openCreateBudget}
@@ -3932,7 +3864,6 @@ export default function MyInvoicesClient({
 
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
 
-
                 {budgetWizardStep === 1 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-coverage-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
@@ -4198,7 +4129,6 @@ export default function MyInvoicesClient({
             </div>
 
             <div ref={invoiceDropWizardBodyRef} className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
-
 
               {invoiceDropWizardStep === 1 ? (
                 <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-scope-title">
@@ -4639,7 +4569,6 @@ export default function MyInvoicesClient({
 
               <div ref={recurringWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody, wizardStyles.body].join(' ')}>
 
-
                 {recurringWizardStep === 1 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-coverage-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
@@ -4952,190 +4881,13 @@ export default function MyInvoicesClient({
         </FilterFlow>
       ) : null}
 
-      {!dealerMode && downloadOpen ? (
-        <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop} ${downloadStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Download cost records">
-          <div className={`${styles.downloadModal} ${styles.reportModal} ${styles.downloadExportModal} ${styles.accountCostModal} ${accountStyles.modalTheme} ${downloadStep === 'format' ? styles.downloadFormatModal : ''} ${downloadStyles.dialog}`} data-download-dialog="true">
-            <div className={styles.modalHeader} data-download-header="true">
-              <div>
-                <h2>
-                  {downloadStep === 'format'
-                    ? 'Download cost records'
-                    : downloadStep === 'timeline'
-                        ? 'Choose report timeline'
-                        : 'External fuel costs'}
-                </h2>
-                {downloadStep !== 'format' ? (
-                  <p>{downloadStep === 'timeline'
-                    ? 'Choose a year and month.'
-                    : 'Include fuel slips?'}</p>
-                ) : null}
-              </div>
-              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${styles.accountCostClose}`} onClick={closeDownloadModal} aria-label="Close download"><span aria-hidden="true">×</span></button>
-            </div>
-            <div className={styles.costDownloadBody} data-download-body="true">
-            {downloadStep !== 'format' ? (
-            <ol className={styles.downloadStageRail} aria-label="Cost ledger download progress">
-              {downloadSteps.map((step, index) => {
-                const activeIndex = downloadSteps.findIndex((item) => item.key === downloadStep);
-                const isActive = step.key === downloadStep;
-                const isComplete = index < activeIndex;
-
-                return (
-                  <li
-                    key={step.key}
-                    className={`${styles.downloadStageItem} ${isActive ? styles.downloadStageItemActive : ''} ${isComplete ? styles.downloadStageItemComplete : ''}`}
-                    aria-current={isActive ? 'step' : undefined}
-                  >
-                    <span className={styles.downloadStageNumber}>{isComplete ? '✓' : index + 1}</span>
-                    <span>{step.label}</span>
-                  </li>
-                );
-              })}
-            </ol>
-            ) : null}
-            {downloadStep === 'format' ? (
-              <div className={styles.downloadStageContent} data-download-body="true">
-                <div className={`${styles.reportChoiceGrid} ${styles.downloadFormatGrid}`} data-download-grid="true">
-                  <button
-                    type="button"
-                    className={`${styles.reportOption} ${downloadFormat === 'pdf' ? styles.reportOptionActive : ''}`}
-                    onClick={() => chooseDownloadFormat('pdf')}
-                    aria-pressed={downloadFormat === 'pdf'} data-download-option="true"
-                  >
-                    <span className={styles.reportGraphic} aria-hidden="true" data-download-icon="true">
-                      <CostExportGraphic src="/brand/pdf.png" />
-                    </span>
-                    <span className={styles.reportTitleBlock}>
-                      <strong>PDF report</strong>
-                      <small>Printable cost ledger.</small>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.reportOption} ${downloadFormat === 'xlsx' ? styles.reportOptionActive : ''}`}
-                    onClick={() => chooseDownloadFormat('xlsx')}
-                    aria-pressed={downloadFormat === 'xlsx'} data-download-option="true"
-                  >
-                    <span className={styles.reportGraphic} aria-hidden="true" data-download-icon="true">
-                      <CostExportGraphic src="/brand/sheet.png" />
-                    </span>
-                    <span className={styles.reportTitleBlock}>
-                      <strong>XLSX workbook</strong>
-                      <small>Cost records in Excel.</small>
-                    </span>
-                  </button>
-                </div>
-                <div className={`${styles.modalFooter} ${styles.downloadModalFooter} ${styles.downloadFormatFooter}`} data-download-footer="true">
-                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
-                  <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showNextStepAfterFormat} data-download-primary="true">
-                    <ChevronRightIcon className={styles.buttonIcon} />
-                    <span>Next</span>
-                  </button>
-                </div>
-              </div>
-            ) : downloadStep === 'timeline' ? (
-              <div className={styles.downloadStageContent} data-download-body="true">
-                <section className={styles.reportPeriodPanel} aria-label="Report timeline">
-                  <div className={styles.reportSectionHeading}>
-                    <strong>Report timeline</strong>
-                    <span>Choose a year and month.</span>
-                  </div>
-                  <div className={styles.reportPeriodGrid}>
-                    <FilterDropdown
-                      label="Year"
-                      dropdownKey="download-year"
-                      value={downloadFilters.year}
-                      options={yearFilterOptions}
-                      openDropdown={openFilterDropdown}
-                      onOpenChange={handleFilterDropdownOpenChange}
-                      onChange={(value) => setDownloadFilters((current) => ({
-                        ...current,
-                        year: value,
-                        month: value === 'all' ? 'all' : current.month,
-                      }))}
-                    />
-                    <FilterDropdown
-                      label="Month"
-                      dropdownKey="download-month"
-                      value={downloadFilters.month}
-                      options={monthFilterOptions}
-                      openDropdown={openFilterDropdown}
-                      onOpenChange={handleFilterDropdownOpenChange}
-                      onChange={(value) => setDownloadFilters((current) => ({ ...current, month: value }))}
-                      disabled={downloadFilters.year === 'all'}
-                    />
-                  </div>
-                </section>
-                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`} data-download-footer="true">
-                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showPreviousStepBeforeTimeline}>Back</button>
-                  <div className={styles.downloadFooterActions}>
-                    <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
-                    <button type="button" className={`${styles.primaryButton} ${styles.downloadNextButton}`} onClick={showDownloadFuelStep} data-download-primary="true">
-                      <span>Next</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className={styles.downloadStageContent} data-download-body="true">
-                <section className={styles.downloadFuelPanel} aria-label="External fuel costs">
-                  <div className={styles.reportSectionHeading}>
-                    <strong>Include external fuel costs?</strong>
-                    <span>Fuel Slip records can be included in the ledger and its totals, or left out completely.</span>
-                  </div>
-                  <div className={`${styles.reportChoiceGrid} ${styles.downloadFuelChoiceGrid}`} data-download-grid="true">
-                    <button
-                      type="button"
-                      className={`${styles.reportOption} ${includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
-                      onClick={() => setIncludeFuelSlipCosts(true)}
-                      aria-pressed={includeFuelSlipCosts} data-download-option="true"
-                    >
-                      <span className={styles.reportGraphic} data-download-icon="true">
-                        <ManualInvoiceIcon />
-                      </span>
-                      <span className={styles.reportTitleBlock}>
-                        <strong>Include fuel slip costs</strong>
-                        <small>Add fuel slips to totals.</small>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.reportOption} ${!includeFuelSlipCosts ? styles.reportOptionActive : ''}`}
-                      onClick={() => setIncludeFuelSlipCosts(false)}
-                      aria-pressed={!includeFuelSlipCosts} data-download-option="true"
-                    >
-                      <span className={styles.reportGraphic} data-download-icon="true">
-                        <AutomaticInvoiceIcon />
-                      </span>
-                      <span className={styles.reportTitleBlock}>
-                        <strong>Exclude fuel slip costs</strong>
-                        <small>Leave fuel slips out.</small>
-                      </span>
-                    </button>
-                  </div>
-                </section>
-                <div className={`${styles.modalFooter} ${styles.downloadModalFooter}`} data-download-footer="true">
-                  <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={showDownloadTimelineStep}>Back</button>
-                  <div className={styles.downloadFooterActions}>
-                    <button type="button" className={`${styles.secondaryButton} ${styles.downloadSecondaryButton}`} onClick={closeDownloadModal}>Cancel</button>
-                    <button
-                      type="button"
-                      className={`${styles.primaryButton} ${styles.downloadSubmitButton}`}
-                      onClick={() => void handleDownloadReport(downloadFormat)} data-download-primary="true"
-                    >
-                      <DownloadIcon className={styles.buttonIcon} />
-                      <span>
-                        {downloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {!dealerMode && downloadOpen ? <ReportDownloadFlow title="Cost reports" allLabel="All costs" assets={assets}
+        fields={[{key:'fuel',label:'External fuel costs',initial:'true',options:[{value:'true',label:'Include fuel costs'},{value:'false',label:'Exclude fuel costs'}]}]}
+        onClose={closeDownloadModal} onDownload={async selection => {
+          const url = buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', selection.fields.fuel === 'true', accountantShareId, accountantRegisterId);
+          if(selection.format === 'xlsx') await downloadCanonicalReportFile(url);
+          else if(!openCanonicalReportUrl(url)) throw new Error('Allow pop-ups to open your report.');
+        }} /> : null}
 
       {assetPickerOpen ? (
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label={flowTitle}>

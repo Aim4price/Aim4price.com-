@@ -1,4 +1,6 @@
 'use client';
+import { downloadCanonicalReportFile } from '../../lib/report-open';
+import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 
@@ -222,36 +224,6 @@ function DownloadIcon() {
   return (
     <svg className={styles.buttonIcon} viewBox="0 0 24 24" aria-hidden="true">
       <path fill="currentColor" d="M11 4a1 1 0 1 1 2 0v8.6l2.3-2.3a1 1 0 1 1 1.4 1.4l-4 4a1 1 0 0 1-1.4 0l-4-4a1 1 0 1 1 1.4-1.4l2.3 2.3V4Zm-5 14a1 1 0 0 1 1-1h10a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1Z" />
-    </svg>
-  );
-}
-
-
-function MaintenanceReportScopeIcon({ scope }: { scope: DownloadScope }) {
-  if (scope === 'asset') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="currentColor" d="M12 12a4.25 4.25 0 1 0 0-8.5 4.25 4.25 0 0 0 0 8.5Zm0 2c-4.5 0-8 2.2-8 5v1h16v-1c0-2.8-3.5-5-8-5Z" />
-      </svg>
-    );
-  }
-  if (scope === 'upcoming') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="currentColor" d="M7 2a1 1 0 0 1 1 1v1h8V3a1 1 0 1 1 2 0v1h1a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1V3a1 1 0 0 1 1-1Zm12 8H5v9h14v-9Zm-7 1.5a1 1 0 0 1 1 1v2.1l1.35.8a1 1 0 1 1-1 1.72l-1.85-1.08A1 1 0 0 1 11 15v-2.5a1 1 0 0 1 1-1Z" />
-      </svg>
-    );
-  }
-  if (scope === 'done') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm4.7 7.7-5.4 5.6a1 1 0 0 1-1.43.01l-2.58-2.5a1 1 0 1 1 1.4-1.43l1.86 1.8 4.71-4.88a1 1 0 1 1 1.44 1.4Z" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M5 3h10a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm4 6v10h10V9H9Zm2 3h6v1.75h-6V12Zm0 3.25h4.5V17H11v-1.75ZM5 5v10h2V9a2 2 0 0 1 2-2h6V5H5Z" />
     </svg>
   );
 }
@@ -602,7 +574,6 @@ function buildReportUrl(scope: DownloadScope, format: MaintenanceReportRouteForm
   return `/api/maintenance/report?${params.toString()}`;
 }
 
-
 const DATE_UNIT_OPTIONS: DropdownOption[] = [
   { value: 'days', label: 'days' },
   { value: 'weeks', label: 'weeks' },
@@ -619,18 +590,6 @@ const FILTER_STATUS_OPTIONS: DropdownOption[] = [
   { value: 'all', label: 'All statuses' },
   { value: 'upcoming', label: 'Upcoming' },
   { value: 'done', label: 'Done' },
-];
-
-const DOWNLOAD_FORMAT_OPTIONS: Array<{ value: DownloadFormat; title: string; description: string }> = [
-  { value: 'pdf', title: 'PDF report', description: 'Printable maintenance report.' },
-  { value: 'xlsx', title: 'XLSX workbook', description: 'Maintenance records in Excel.' },
-];
-
-const DOWNLOAD_SCOPE_OPTIONS: Array<{ value: DownloadScope; title: string; description: string }> = [
-  { value: 'total', title: 'All maintenance', description: 'All matching records.' },
-  { value: 'asset', title: 'Specific asset', description: 'One asset’s history.' },
-  { value: 'upcoming', title: 'Upcoming maintenance', description: 'Open and overdue work.' },
-  { value: 'done', title: 'Completed maintenance', description: 'Completed services and checks.' },
 ];
 
 type MaintenanceDropdownProps = {
@@ -845,11 +804,7 @@ export default function MaintenanceClient({
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
   const [busyCompleteId, setBusyCompleteId] = useState<string | null>(null);
   const completeRequestInFlight = useRef(false);
-  const [downloadAssetId, setDownloadAssetId] = useState('all');
-  const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('pdf');
-  const [downloadScope, setDownloadScope] = useState<DownloadScope>('total');
-  const [downloadStep, setDownloadStep] = useState<'scope' | 'asset' | 'format'>('scope');
-  const [downloadAssetSearch, setDownloadAssetSearch] = useState('');
+
   const [pageSize, setPageSize] = useState<ListPageSize>(6);
   const [page, setPage] = useState(1);
   const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null);
@@ -1019,12 +974,6 @@ export default function MaintenanceClient({
     ],
     [assets],
   );
-
-  const filteredDownloadAssets = useMemo(() => {
-    const query = downloadAssetSearch.trim().toLowerCase();
-    if (!query) return assets;
-    return assets.filter((asset) => [asset.title, asset.serialNumber, asset.meta, asset.kind, asset.categoryLabel].join(' ').toLowerCase().includes(query));
-  }, [assets, downloadAssetSearch]);
 
   const filterAssigneeOptions = useMemo<DropdownOption[]>(
     () => [
@@ -1346,34 +1295,8 @@ export default function MaintenanceClient({
 
   function openDownload() {
     const defaultAssetId = activeFilters.assetId !== 'all' ? activeFilters.assetId : 'all';
-    setDownloadAssetId(defaultAssetId);
-    setDownloadFormat('pdf');
-    setDownloadScope(scheduleView === 'all' ? 'total' : 'upcoming');
-    setDownloadStep('scope');
-    setDownloadAssetSearch('');
+
     setModalMode('download');
-  }
-
-  function downloadReport(scope: DownloadScope, format: DownloadFormat) {
-    const assetId = scope === 'asset' ? downloadAssetId : undefined;
-    const routeFormat: MaintenanceReportRouteFormat = format === 'pdf' ? 'html' : format;
-    const url = buildReportUrl(scope, routeFormat, activeFilters, assetId);
-
-    if (format === 'xlsx') {
-      window.location.href = url;
-      return;
-    }
-
-    openCanonicalReportUrl(url);
-  }
-
-  function submitDownload() {
-    if (downloadScope === 'asset' && downloadAssetId === 'all') {
-      setNotice({ type: 'error', text: 'Choose a saved asset before downloading a specific asset maintenance report.' });
-      return;
-    }
-
-    downloadReport(downloadScope, downloadFormat);
   }
 
   return (
@@ -1633,7 +1556,6 @@ export default function MaintenanceClient({
           </section>
         </div>
       ) : null}
-
 
       {modalMode === 'timing' && draft ? (
         <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-timing-title">
@@ -2000,157 +1922,17 @@ export default function MaintenanceClient({
         </FilterFlow>
       ) : null}
 
-      {modalMode === 'download' && downloadStep === 'scope' ? (
-        <div className={`${fuelStyles.fuelSlipFlowBackdrop} ${fuelStyles.accountFuelBackdrop} ${downloadStyles.backdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
-          <div className={`${fuelStyles.downloadModal} ${fuelStyles.sourceChoiceModal} ${fuelStyles.fuelSlipChoiceModal} ${fuelStyles.fuelSlipMenuModal} ${fuelStyles.accountFuelModal} ${accountStyles.modalTheme} ${chooserStyles.downloadScopeLayout} ${downloadStyles.dialog}`} data-download-dialog="true">
-            <div className={fuelStyles.modalHeader} data-download-header="true">
-              <div>
-                <h2 id="maintenance-download-title">Maintenance reports</h2>
-                <p>Choose the records to include.</p>
-              </div>
-              <button type="button" className={`${fuelStyles.closeButton} ${fuelStyles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} aria-label="Close download reports"><span aria-hidden="true">×</span></button>
-            </div>
-            <div className={`${fuelStyles.sourceChoiceGrid} ${chooserStyles.downloadScopeChoices}`} data-download-grid="true">
-              {DOWNLOAD_SCOPE_OPTIONS.map((option) => (
-                <button key={option.value} type="button" className={`${fuelStyles.sourceChoiceOption} ${fuelStyles.fuelSlipChoiceOption}`} onClick={() => {
-                  setDownloadScope(option.value);
-                  setDownloadStep(option.value === 'asset' ? 'asset' : 'format');
-                }} data-download-option="true">
-                  <span className={fuelStyles.choiceGraphic} aria-hidden="true" data-download-icon="true"><MaintenanceReportScopeIcon scope={option.value} /></span>
-                  <span className={fuelStyles.choiceTitleBlock} data-download-copy="true">
-                    <strong>{option.title}</strong>
-                    <small>{option.description}</small>
-                  </span>
-                  <span className={fuelStyles.fuelSlipChoiceArrow} aria-hidden="true" data-download-decoration="true">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
-                  </span>
-                </button>
-              ))}
-            </div>
-          <footer data-download-footer="true"><button type="button" onClick={closeModal}>Cancel</button></footer>
-</div>
-        </div>
-      ) : null}
-
-      {modalMode === 'download' && downloadStep !== 'scope' ? (
-        <div className={`${styles.modalBackdrop} ${dialogStyles.backdrop} ${downloadStep === 'asset' ? pickerStyles.overlay : ''} ${downloadStep !== 'asset' ? downloadStyles.backdrop : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
-          <section
-            className={`${styles.downloadModal} ${styles.maintenanceExportModal} ${downloadStep === 'asset' ? pickerStyles.modal : `${dialogStyles.dialog} ${dialogStyles.compactDownload}`}  ${downloadStep !== 'asset' ? downloadStyles.dialog : ''}`}
-            data-asset-choice-surface={downloadStep === 'asset' ? 'true' : undefined}
-            data-asset-choice-modal={downloadStep === 'asset' ? 'true' : undefined} data-download-dialog={downloadStep !== 'asset' ? 'true' : undefined}
-          >
-            <header className={styles.modalHeader} data-asset-choice-header="true" data-download-header="true">
-              <div>
-                <h2 id="maintenance-download-title">
-                  {downloadStep === 'asset'
-                      ? 'Choose asset for maintenance report'
-                      : 'Choose download format'}
-                </h2>
-                <div className={styles.maintenanceExportHeadingRow}>
-                  <p>
-                    {downloadStep === 'asset'
-                        ? 'Choose an asset.'
-                        : 'Choose PDF or Excel.'}
-                  </p>
-                </div>
-              </div>
-              <button className={dialogStyles.close} type="button" onClick={closeModal} aria-label="Close download reports">
-                {downloadStep === 'asset' ? <span aria-hidden="true">×</span> : <CloseIcon />}
-              </button>
-            </header>
-
-
-            {downloadStep === 'asset' ? (
-              <>
-                <div className={pickerStyles.contents}>
-                  <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
-                    <input
-                      value={downloadAssetSearch}
-                      onChange={(event) => setDownloadAssetSearch(event.target.value)}
-                      placeholder="Search assets..."
-                      aria-label="Search saved assets for maintenance report"
-                    />
-                    <button
-                      className={styles.secondaryButton}
-                      type="button"
-                      onClick={() => setDownloadAssetSearch('')}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <div className={styles.assetList} data-asset-choice-list="true">
-                    {filteredDownloadAssets.length ? (
-                      filteredDownloadAssets.map((asset) => (
-                        <button
-                          key={asset.id}
-                          className={`${styles.assetRow} ${downloadAssetId === asset.id ? styles.maintenanceScopeOptionActive : ''}`}
-                          data-asset-choice-row="true"
-                          data-asset-choice-selected={downloadAssetId === asset.id ? 'true' : undefined}
-                          type="button"
-                          onClick={() => {
-                            setDownloadAssetId(asset.id);
-                            setDownloadStep('format');
-                          }}
-                        >
-                          <span className={styles.assetInfo} data-asset-choice-copy="true">
-                            <strong>{asset.title}</strong>
-                            <small data-asset-choice-meta="true">{asset.meta}</small>
-                            <small data-asset-choice-secondary="true">{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
-                            <AssetSerialNumber value={asset.serialNumber} />
-                          </span>
-                          <span className={styles.assetValue} data-asset-choice-value="true">
-                            <span className={pickerStyles.select}><i aria-hidden="true" />Select</span>
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <div className={styles.emptyState}>No saved assets found.</div>
-                    )}
-                  </div>
-                </div>
-                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`} data-asset-choice-footer="true" data-download-footer="true">
-                  <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep('scope')}>Back</button>
-                  <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-                </footer>
-              </>
-            ) : (
-              <>
-                <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody} ${dialogStyles.body}`} data-download-body="true">
-                  <div className={styles.maintenanceFormatGrid} data-download-grid="true">
-                    {DOWNLOAD_FORMAT_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`${styles.maintenanceFormatOption} ${downloadFormat === option.value ? styles.maintenanceFormatOptionActive : ''}`}
-                        onClick={() => setDownloadFormat(option.value)}
-                        aria-pressed={downloadFormat === option.value} data-download-option="true"
-                      >
-                        <span className={styles.maintenanceFormatGraphic} data-download-icon="true">
-                          <img src={option.value === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" />
-                        </span>
-                        <span className={styles.maintenanceFormatCopy} data-download-copy="true">
-                          <strong>{option.title}</strong>
-                          <small>{option.description}</small>
-                        </span>
-                        <span className={styles.maintenanceSelectionMark} aria-hidden="true" data-download-decoration="true">
-                          <SelectedTickIcon />
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`} data-download-footer="true">
-                  <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep(downloadScope === 'asset' ? 'asset' : 'scope')}>Back</button>
-                  <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-                  <button className={styles.primaryButton} data-primary-action type="button" onClick={submitDownload} data-download-primary="true">
-                    {downloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}
-                  </button>
-                </footer>
-              </>
-            )}
-          </section>
-        </div>
-      ) : null}
+      {modalMode === 'download' ? <ReportDownloadFlow title="Maintenance reports" allLabel="All maintenance" assets={assets} years={records.flatMap(record=>[record.dueDate,record.completedAtIso].filter(Boolean).map(date=>String(date).slice(0,4)))}
+        scopes={[{label:'Upcoming maintenance',description:'Open and overdue work.',field:'status',value:'upcoming'},{label:'Completed maintenance',description:'Completed services and checks.',field:'status',value:'done'}]}
+        fields={[{key:'status',label:'Maintenance status',initial:'all',options:[{value:'all',label:'All maintenance'},{value:'upcoming',label:'Upcoming maintenance'},{value:'done',label:'Completed maintenance'}]}]}
+        onClose={closeModal} onDownload={async selection => {
+          const scope = selection.fields.status === 'upcoming' ? 'upcoming' : selection.fields.status === 'done' ? 'done' : selection.assetId !== 'all' ? 'asset' : 'total';
+          const url = new URL(buildReportUrl(scope, selection.format === 'pdf' ? 'html' : 'xlsx', {...EMPTY_FILTERS, assetId:selection.assetId}, selection.assetId), window.location.origin);
+          if(selection.year !== 'all') url.searchParams.set('year', selection.year);
+          if(selection.year !== 'all' && selection.month !== 'all') url.searchParams.set('month', selection.month);
+          if(selection.format === 'xlsx') await downloadCanonicalReportFile(url.toString());
+          else if(!openCanonicalReportUrl(url.toString())) throw new Error('Allow pop-ups to open your report.');
+        }} /> : null}
 
     </div>
   );

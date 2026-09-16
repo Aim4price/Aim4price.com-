@@ -1,4 +1,5 @@
 'use client';
+import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import budgetModalStyles from '../../components/BudgetModal.module.css';
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 import downloadStyles from '../../components/ReportDownload.module.css';
@@ -7,7 +8,7 @@ import BudgetCostDetails from './BudgetCostDetails';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 import { budgetStatusLabel, filterTrackedBudgets, EMPTY_BUDGET_FILTERS, type TrackedBudget } from '../../lib/budget-tracking';
-import { downloadCanonicalReportFile } from '../../lib/report-open';
+import { downloadCanonicalReportFile, openCanonicalReportUrl } from '../../lib/report-open';
 import ledger from '../my-invoices/page.module.css';
 import styles from './page.module.css';
 const money = (value: number) => `R ${value.toLocaleString('en-US', { maximumFractionDigits: 2 }).replace(/,/g, ' ').replace('.', ',')}`;
@@ -37,8 +38,9 @@ function Dialog({ title, onClose, children, report = false }: { report?: boolean
     }}><header className={report ? undefined : budgetModalStyles.header} data-download-header="true"><div className={budgetModalStyles.headerText}><h2>{title}</h2></div><button type="button" className={report ? undefined : budgetModalStyles.close} onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>{report ? '×' : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>}</button></header>{children}</div>
   </div>;
 }
-export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd, onEdit, onDelete, scopeAssetId = '' }: {
+export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd, onEdit, onDelete, scopeAssetId = '', reportAssets = [] }: {
   scopeAssetId?: string;
+  reportAssets?: Array<{ id: string; title: string; serialNumber?: string; meta?: string }>;
   budgets: TrackedBudget[]; loading: boolean; error: string; onRetry: () => void;
   onAdd: () => void; onEdit: (id: string) => void; onDelete: (id: string) => void;
 }) {
@@ -51,8 +53,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   const [filterOpen, setFilterOpen] = useState(false);
   const [manageId, setManageId] = useState<string | null>(null);
   const [downloadOpen, setDownloadOpen] = useState(false);
-  const [downloadError, setDownloadError] = useState('');
-  const [downloading, setDownloading] = useState(false);
+
   const visible = filterTrackedBudgets(budgets, query, filters);
   const pageLimit = pageSize === 'all' ? Math.max(1, visible.length) : pageSize;
   const pageCount = Math.max(1, Math.ceil(visible.length / pageLimit));
@@ -64,46 +65,14 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   const count = Object.values(filters).filter(v => v !== 'all').length;
   const selected = budgets.find(b => b.id === manageId);
   const ready = !loading && !error;
-  async function download(format: 'pdf' | 'xlsx') {
-    const params = new URLSearchParams({ format, q: query, ...filters });
-    if (scopeAssetId) params.set('asset', scopeAssetId);
-    const url = `/api/my-invoices/budgets/report?${params}`;
-    setDownloadError('');
-    const reportWindow = format === 'pdf' ? window.open('', '_blank') : null;
-    if (format === 'pdf' && !reportWindow) {
-      setDownloadError('Allow pop-ups to open your budget report.');
-      return;
-    }
-    if (reportWindow) {
-      reportWindow.opener = null;
-      reportWindow.document.title = 'Preparing budget report';
-      reportWindow.document.body.textContent = 'Preparing your budget report…';
-    }
-    setDownloading(true);
-    try {
-      if (format === 'xlsx') {
-        await downloadCanonicalReportFile(url);
-      } else {
-        const response = await fetch(url, { credentials: 'same-origin', headers: { 'x-aim4price-client-realm': 'website' } });
-        if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf')) throw new Error('Unable to prepare the budget PDF. Please try again.');
-        const objectUrl = URL.createObjectURL(await response.blob());
-        if (reportWindow && !reportWindow.closed) reportWindow.location.replace(objectUrl);
-        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
-      }
-      setDownloadOpen(false);
-    } catch (e) {
-      reportWindow?.close();
-      setDownloadError(e instanceof Error ? e.message : 'Download failed.');
-    }
-    finally { setDownloading(false); }
-  }
+
   return <div className={styles.page}>
     <section className={ledger.pageTitleBlock}><div><h1>BUDGET TRACKING SYSTEM</h1></div></section>
     <section className={ledger.costActionGrid} aria-label="Budget actions">
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionAdd}`} data-budget-trigger="add" onClick={onAdd} disabled={!ready}><Icon kind="add" />Add Budget</button>
       <Link className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionBudgets}`} href="/my-invoices"><Icon kind="ledger" />Cost Ledger</Link>
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready}><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
-      <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => setDownloadOpen(true)} disabled={!ready || !visible.length}><Icon kind="download" />Download</button>
+      <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => setDownloadOpen(true)} disabled={!ready || !budgets.length}><Icon kind="download" />Download</button>
     </section>
     <div className={`${ledger.invoiceToolbar} ${ledger.ownerInvoiceToolbar}`}>
       <label className={ledger.searchWrap}><Icon kind="search" /><input className={ledger.searchInput} type="search" placeholder="Search budgets by asset or period..." aria-label="Search budgets" value={query} onChange={e => setQuery(e.target.value)} /></label>
@@ -147,6 +116,13 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
       <FilterQuestion label="Which status?" value={draft.status} onChange={status => setDraft({ ...draft, status })} options={[{ value: 'all', label: 'All statuses' }, { value: 'on_track', label: 'Within budget' }, { value: 'warning', label: 'Approaching limit' }, { value: 'over_budget', label: 'Limit reached or exceeded' }, { value: 'attention', label: 'All alerts' }]} />
     </FilterFlow> : null}
     {selected ? <Dialog title="Manage budget" onClose={() => setManageId(null)}><div className={budgetModalStyles.context}><strong>{selected.assetTitle}</strong><span>{selected.periodLabel}</span></div><div className={`${styles.dialogActions} ${budgetModalStyles.actions}`}><button onClick={() => { setManageId(null); onEdit(selected.id); }}>Edit budget & alerts</button><button className={styles.deleteButton} onClick={() => { setManageId(null); onDelete(selected.id); }}>Delete budget</button></div></Dialog> : null}
-    {downloadOpen ? <Dialog report title="Download budgets" onClose={() => { if (!downloading) setDownloadOpen(false); }}><p>{visible.length} matching budgets · Amounts incl. VAT</p><div data-download-grid="true">{(['pdf', 'xlsx'] as const).map(format => <button type="button" key={format} data-download-option="true" disabled={downloading} onClick={() => void download(format)}><span data-download-icon="true"><img src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{format === 'pdf' ? 'PDF budget report' : 'XLSX budget workbook'}</strong><small>{format === 'pdf' ? 'Printable budget report.' : 'Matching budgets in Excel.'}</small></span></button>)}</div>{downloading ? <p role="status">Preparing budget report…</p> : null}<footer data-download-footer="true"><button disabled={downloading} onClick={() => setDownloadOpen(false)}>Cancel</button></footer>{downloadError ? <p role="alert">{downloadError}</p> : null}</Dialog> : null}
+    {downloadOpen ? <ReportDownloadFlow title="Budget reports" allLabel="All budgets" assets={Array.from(new Map(budgets.filter(b=>b.assetId).map(b=>[b.assetId!,{...reportAssets.find(asset=>asset.id === b.assetId),id:b.assetId!,title:b.assetTitle}])).values())} lockedAssetId={scopeAssetId || undefined} budgetPeriods
+      fields={[{key:'period',label:'Budget period',initial:'all',options:[{value:'all',label:'Current month and year'},{value:'monthly',label:'Current monthly budgets'},{value:'annual',label:'Current annual budgets'}]},{key:'status',label:'Budget status',initial:'all',options:[{value:'all',label:'All statuses'},{value:'attention',label:'Needs attention'},{value:'on_track',label:'Within budget'}]}]}
+      onClose={()=>setDownloadOpen(false)} onDownload={async selection=>{
+        const params=new URLSearchParams({format:selection.format === 'pdf' ? 'html' : 'xlsx',asset:selection.assetId,period:selection.fields.period,status:selection.fields.status});
+        const url='/api/my-invoices/budgets/report?'+params;
+        if(selection.format === 'xlsx') await downloadCanonicalReportFile(url);
+        else if(!openCanonicalReportUrl(url)) throw new Error('Allow pop-ups to open your report.');
+      }} /> : null}
   </div>;
 }

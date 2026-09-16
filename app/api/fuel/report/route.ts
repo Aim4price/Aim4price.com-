@@ -35,6 +35,7 @@ type SummaryCard = {
 };
 
 type FuelReportOptions = {
+  assetTitle?: string;
   title: string;
   subtitle: string;
   generatedAt: string;
@@ -572,28 +573,29 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
 
 function buildReportHtml(options: FuelReportOptions): string {
   const cards: SummaryCard[] = [
-    { label: 'Current Storage', value: formatLitres(options.currentLitres), subtext: 'Current ledger stock' },
+    { label: 'Current Storage', value: options.assetTitle ? 'Not applicable' : formatLitres(options.currentLitres), subtext: 'Current ledger stock' },
     { label: 'Fuel Issued', value: formatLitres(options.totalIssued), subtext: 'Issued to assets' },
     { label: 'Work-use Recorded', value: formatLitres(options.totalWorkUseIssued), subtext: 'Issued entries not excluded' },
     { label: 'Excluded', value: formatLitres(options.totalExcludedIssued), subtext: 'Marked not for work use' },
-    { label: 'Fuel Filled', value: formatLitres(options.totalStockIn), subtext: 'Opening balance and stock in' },
+    { label: 'Fuel Filled', value: options.assetTitle ? 'Not applicable' : formatLitres(options.totalStockIn), subtext: 'Opening balance and stock in' },
     { label: 'Entries', value: options.eventCount.toLocaleString('en-ZA'), subtext: options.eventCount === 1 ? 'Fuel movement' : 'Fuel movements' },
   ];
 
   const reportRows: KeyValueRow[] = [
     { label: 'Period', value: options.dateRangeLabel },
+    ...(options.assetTitle ? [{ label: 'Asset', value: options.assetTitle }] : []),
     { label: 'Storage', value: options.storageName },
     { label: 'Fuel Type', value: options.storageFuelType },
     { label: 'Storage Code', value: options.storageCode },
   ];
 
   const summaryRows: KeyValueRow[] = [
-    { label: 'Storage Units', value: options.storageCount.toLocaleString('en-ZA') },
+    { label: 'Storage Units', value: options.assetTitle ? 'Not applicable' : options.storageCount.toLocaleString('en-ZA') },
     { label: 'Fuel Issued', value: formatLitres(options.totalIssued) },
     { label: 'Work-use Recorded', value: formatLitres(options.totalWorkUseIssued) },
     { label: 'Excluded from Work Use', value: formatLitres(options.totalExcludedIssued) },
-    { label: 'Fuel Filled', value: formatLitres(options.totalStockIn) },
-    { label: 'Current Stock', value: formatLitres(options.currentLitres) },
+    { label: 'Fuel Filled', value: options.assetTitle ? 'Not applicable' : formatLitres(options.totalStockIn) },
+    { label: 'Current Stock', value: options.assetTitle ? 'Not applicable' : formatLitres(options.currentLitres) },
   ];
 
   return `<!doctype html>
@@ -1445,10 +1447,10 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     [],
     [styled('Storage units', 'tableHeader'), styled('Fuel issued', 'tableHeader'), styled('Fuel filled', 'tableHeader'), styled('Current stock', 'tableHeader'), styled('Entries', 'tableHeader')],
     [
-      styled(options.storageCount, 'integer'),
+      styled(options.assetTitle ? 'Not applicable' : options.storageCount, options.assetTitle ? 'text' : 'integer'),
       styled(roundLitres(options.totalIssued), 'decimal'),
-      styled(roundLitres(options.totalStockIn), 'decimal'),
-      styled(roundLitres(options.currentLitres), 'decimal'),
+      styled(options.assetTitle ? 'Not applicable' : roundLitres(options.totalStockIn), options.assetTitle ? 'text' : 'decimal'),
+      styled(options.assetTitle ? 'Not applicable' : roundLitres(options.currentLitres), options.assetTitle ? 'text' : 'decimal'),
       styled(options.eventCount, 'integer'),
     ],
   ];
@@ -1552,6 +1554,7 @@ export async function GET(request: NextRequest) {
 
   const params = request.nextUrl.searchParams;
   const storageId = asText(params.get('storageId'));
+  const assetId = asText(params.get('assetId'));
   const year = parseReportYear(asText(params.get('year')));
   const month = year ? parseReportMonth(asText(params.get('month'))) : null;
   const format = parseReportFormat(asText(params.get('format')));
@@ -1571,9 +1574,13 @@ export async function GET(request: NextRequest) {
       getWorkspaceAssetIds(workspace),
     ]);
     const ledger = await filterFuelLedgerForWorkspace(workspace, unfilteredLedger);
-    const events = workspaceAssetIds
+    const accessibleEvents = workspaceAssetIds
       ? unfilteredEvents.filter((event) => !event.assetId || workspaceAssetIds.has(event.assetId))
       : unfilteredEvents;
+
+    const selectedAsset = assetId ? ledger.assets.find(asset=>asset.id === assetId) : null;
+    if (assetId && !selectedAsset) return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+    const events = assetId ? accessibleEvents.filter(event=>event.assetId === assetId) : accessibleEvents;
 
     if (storageId && !storage) {
       return NextResponse.json({ ok: false, error: 'Fuel storage not found.' }, { status: 404 });
@@ -1609,8 +1616,8 @@ export async function GET(request: NextRequest) {
     const storageName = storage ? storage.name : includeFuelSlips ? 'All storage units + slips' : 'All storage units';
     const storageFuelType = storage ? storage.fuelType.toUpperCase() : 'All fuel types';
     const storageCode = storage ? storage.publicFuelStorageCode : includeFuelSlips ? 'All storage QR codes + slips' : 'All storage QR codes';
-    const title = storage ? `${storage.name} Fuel Report` : includeFuelSlips ? 'Fuel Ledger Report' : 'Fuel Storage Report';
-    const subtitle = storage
+    const title = selectedAsset ? `${selectedAsset.title} Fuel Report` : storage ? `${storage.name} Fuel Report` : includeFuelSlips ? 'Fuel Ledger Report' : 'Fuel Storage Report';
+    const subtitle = selectedAsset ? `${selectedAsset.title} · ${dateRange.label}. Fuel issued to this asset; storage balances do not apply.` : storage
       ? includeFuelSlips
         ? `${storage.fuelType.toUpperCase()} storage and linked fuel slip report for ${dateRange.label}.`
         : `${storage.fuelType.toUpperCase()} storage report for ${dateRange.label}.`
@@ -1620,6 +1627,7 @@ export async function GET(request: NextRequest) {
     const rawLogoUrl = await getAssetRegisterReportLogoUrl(workspace.ownerUserId).catch(() => '');
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const reportOptions: FuelReportOptions = {
+      assetTitle: selectedAsset?.title,
       title,
       subtitle,
       generatedAt,

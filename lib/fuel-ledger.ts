@@ -2887,10 +2887,10 @@ async function listFuelSlipEventsForReport(
   return result.rows.map(mapFuelSlipRow).map(mapFuelSlipToReportEvent);
 }
 
-async function listFuelSlips(userId: string, options: { limit?: number } = {}): Promise<FuelSlipTransaction[]> {
+async function listFuelSlips(userId: string, options: { limit?: number | null } = {}): Promise<FuelSlipTransaction[]> {
   await ensureFuelLedgerTables();
   const db = getDb();
-  const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 80)));
+  const limit = options.limit === null ? null : Math.max(1, Math.min(2000, Math.round(options.limit ?? 80)));
 
   const result = await db.query<FuelSlipRow>(
     `
@@ -2900,12 +2900,16 @@ async function listFuelSlips(userId: string, options: { limit?: number } = {}): 
       left join public.fuel_storage_units s on s.id = fs.storage_id
       where fs.user_id = $1 and fs.record_status = 'active'
       order by fs.created_at desc, fs.id desc
-      limit ${limit}
+      ${limit === null ? '' : `limit ${limit}`}
     `,
     [userId],
   );
 
   return result.rows.map(mapFuelSlipRow);
+}
+
+export async function listFuelSlipsForReport(userId: string): Promise<FuelSlipTransaction[]> {
+  return listFuelSlips(userId, { limit: null });
 }
 
 export async function getFuelSlipTransactionById(userId: string, fuelSlipId: string): Promise<FuelSlipTransaction | null> {
