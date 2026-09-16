@@ -354,7 +354,7 @@ export default function DesktopServiceModal({
               <div className={styles.fieldGrid}>
                 <label className={styles.field}>
                   <span>Completion date</span>
-                  <DateInput value={completedAt} max={today} onValueChange={(value) => setCompletedAt(value)} required />
+                  <DateInput aria-label="Completion date" value={completedAt} max={today} onValueChange={(value) => setCompletedAt(value)} required />
                 </label>
                 <label className={styles.field}>
                   <span>Usage at completion <small>({unit}, {requiresUsageReading ? 'required' : 'optional'})</small></span>
