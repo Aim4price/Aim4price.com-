@@ -4121,6 +4121,7 @@ export default function FuelClient({
       {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipManagerFilterOpen ? (
         <FilterFlow title="Filter fuel slips" onClose={closeFuelSlipManagerFilterPanel} onClear={clearFuelSlipManagerFilters} onApply={applyFuelSlipManagerFilters} dialogRef={fuelSlipManagerChildDialogRef}>
           <FilterQuestion
+            assetPicker={{title: "Choose asset for fuel slip filters", assets: reportAssets.map(asset=>({...asset,id:`asset:${asset.id}`}))}}
             label="Which asset or storage tank?"
             value={draftFuelSlipManagerFilters.targetKey}
             options={fuelSlipManagerTargetOptions}

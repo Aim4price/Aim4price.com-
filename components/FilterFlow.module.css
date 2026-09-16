@@ -63,3 +63,5 @@
 .optionCheck { flex: 0 0 1.25rem; text-align: center; color: #257052; }
 .selectMenu::-webkit-scrollbar { width: 10px; }
 .selectMenu::-webkit-scrollbar-thumb { background: #7ba28f; border: 3px solid #fff; border-radius: 8px; }
+
+.dialog button, .dialog input { font-family: inherit; }

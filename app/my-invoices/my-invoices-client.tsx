@@ -4850,6 +4850,7 @@ export default function MyInvoicesClient({
             />
           ) : null}
           <FilterQuestion
+            assetPicker={{title: "Choose asset for cost filters", assets: assets}}
             label="Which asset?"
             value={draftFilters.assetId}
             options={assetFilterOptions}
