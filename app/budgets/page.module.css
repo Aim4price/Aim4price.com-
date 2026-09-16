@@ -1,8 +1,7 @@
 .page { display: block; }
 .page svg { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
 .page a { text-decoration: none; }
-.alertButton { background: #fff8eb; border: 1px solid #edbd79; color: #86501b; }
-.alertButton[aria-pressed=true] { background: #ffebc7; box-shadow: 0 0 0 2px #edbd79; }
+.page .alertButton[aria-pressed=true] { background: #e6f7ed; border-color: #9fd1b4; box-shadow: 0 0 0 2px #9fd1b4; }
 .results, .progressLabels, .meta { display: flex; justify-content: space-between; gap: 1rem; color: #627386; }
 .results { margin-bottom: 1rem; }
 .results button { border: 0; background: transparent; color: #14583f; font: inherit; cursor: pointer; text-decoration: underline; }
