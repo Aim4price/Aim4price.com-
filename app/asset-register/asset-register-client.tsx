@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../components/DateInput';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 import downloadStyles from "../../components/ReportDownload.module.css";
 import ListPagination from '../../components/ListPagination';
@@ -18611,7 +18612,7 @@ export default function AssetRegisterClient({
                 <div className={styles.assetLifecycleFields}>
                   <label className={accountStyles.modalField}>
                     <span>Acquisition date</span>
-                    <input type="date" value={newAssetAcquisitionDraft.acquisitionDate} onChange={(event) => setNewAssetAcquisitionDraft((current) => ({ ...current, acquisitionDate: event.target.value }))} required />
+                    <DateInput value={newAssetAcquisitionDraft.acquisitionDate} onValueChange={(value) => setNewAssetAcquisitionDraft((current) => ({ ...current, acquisitionDate: value }))} required />
                   </label>
                   <label className={accountStyles.modalField}>
                     <span>Purchase or acquisition amount <small>Optional, excl. VAT</small></span>
@@ -19303,7 +19304,7 @@ export default function AssetRegisterClient({
                             <div className={styles.assetStatusAcquisitionGrid}>
                               <label className={styles.field}>
                                 <span>Acquisition date <small>(optional)</small></span>
-                                <input type="date" value={assetStatusDraft.financeBoughtWhen} onChange={(event) => updateAssetStatusDraftField('financeBoughtWhen', event.target.value)} />
+                                <DateInput value={assetStatusDraft.financeBoughtWhen} onValueChange={(value) => updateAssetStatusDraftField('financeBoughtWhen', value)} />
                               </label>
                               <label className={styles.field}>
                                 <span>Acquisition amount excl. VAT <small>(optional)</small></span>
@@ -19460,10 +19461,9 @@ export default function AssetRegisterClient({
 
                                 <label className={styles.field}>
                                   <span>Settlement / expiry date <small>(optional)</small></span>
-                                  <input
-                                    type="date"
+                                  <DateInput
                                     value={assetStatusDraft.financeSettlementDate}
-                                    onChange={(event) => updateAssetStatusDraftField('financeSettlementDate', event.target.value)}
+                                    onValueChange={(value) => updateAssetStatusDraftField('financeSettlementDate', value)}
                                   />
                                 </label>
 
@@ -19544,10 +19544,9 @@ export default function AssetRegisterClient({
 
                               <label className={styles.field}>
                                 <span>Renewal / expiry date <small>(optional)</small></span>
-                                <input
-                                  type="date"
+                                <DateInput
                                   value={assetStatusDraft.insuranceRenewalDate}
-                                  onChange={(event) => updateAssetStatusDraftField('insuranceRenewalDate', event.target.value)}
+                                  onValueChange={(value) => updateAssetStatusDraftField('insuranceRenewalDate', value)}
                                 />
                               </label>
 
@@ -19628,10 +19627,9 @@ export default function AssetRegisterClient({
 
                               <label className={styles.field}>
                                 <span>Renewal / expiry date <small>(optional)</small></span>
-                                <input
-                                  type="date"
+                                <DateInput
                                   value={assetStatusDraft.licenseRenewalDate}
-                                  onChange={(event) => updateAssetStatusDraftField('licenseRenewalDate', event.target.value)}
+                                  onValueChange={(value) => updateAssetStatusDraftField('licenseRenewalDate', value)}
                                 />
                               </label>
 
@@ -22347,7 +22345,7 @@ export default function AssetRegisterClient({
                   </div>
                 </div>
                 {disposalDraft.reason === 'mistake_duplicate' ? <p className={`${styles.assetLifecycleNotice} ${styles.assetDisposalDeleteNotice}`}>No price or disposal details are required. The final step will clearly confirm what is removed and what audit information is retained.</p> : <div className={`${styles.assetLifecycleFields} ${styles.assetDisposalFields}`}>
-                  <label className={styles.assetSettingsField}><span>Effective date</span><input type="date" required value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} /></label>
+                  <label className={styles.assetSettingsField}><span>Effective date</span><DateInput required value={disposalDraft.disposalDate} onValueChange={(value) => setDisposalDraft((current) => ({ ...current, disposalDate: value }))} /></label>
                   <label className={styles.assetSettingsField}><span>{disposalAmountLabel(disposalDraft.reason)} <small>Optional, excl. VAT</small></span><input inputMode="decimal" value={disposalDraft.disposalAmountExVat} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: event.target.value }))} placeholder="R 0" /></label>
                   <label className={`${styles.assetSettingsField} ${styles.assetDisposalNoteField}`}><span>Reference or note <small>Optional</small></span><textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Buyer, dealer, insurer or other useful reference" /></label>
                 </div>}

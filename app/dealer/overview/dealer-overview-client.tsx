@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../../components/DateInput';
 
 import { useEffect, useMemo, useState } from 'react';
 import type {
@@ -361,10 +362,9 @@ export default function DealerOverviewClient({ initialOverview }: { initialOverv
 
               <label>
                 <span>Due date</span>
-                <input
-                  type="date"
+                <DateInput
                   value={assignmentDraft.dueDate}
-                  onChange={(event) => setAssignmentDraft((current) => ({ ...current, dueDate: event.target.value }))}
+                  onValueChange={(value) => setAssignmentDraft((current) => ({ ...current, dueDate: value }))}
                 />
               </label>
             </div>

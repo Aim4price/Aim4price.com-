@@ -28,3 +28,23 @@
 .dialogHeader h3 { margin: 0; font-size: 1.35rem; font-weight: 750; }
 .dialogHeader button { width: 2.75rem; height: 2.75rem; border: 1px solid #dce8e2; border-radius: .8rem; background: #f5f9f7; font-size: 1.4rem; }
 .dateField button:focus-visible { outline: 2px solid #318969; outline-offset: 2px; }
+
+/* Explicit contrast and typography, isolated from each page's form styles. */
+.dateField.dateField { position: relative; display: flex; width: 100%; min-width: 0; align-items: center; text-transform: none; letter-spacing: normal; }
+.dateField .input.input { width: 100%; min-width: 0; min-height: 3.2rem; padding: .8rem 3.6rem .8rem 1rem; border: 1px solid #ceddd5; border-radius: .9rem; background: #fff; color: #294c3e; font: inherit; font-size: 1rem; font-weight: 450; }
+.dateField .input::placeholder { color: #718277; font-weight: 400; }
+.dateField.dateField > button { min-width: 0; padding: 0; margin: 0; font: inherit; box-shadow: none; }
+.dateField.dateField > button:disabled { opacity: .45; cursor: not-allowed; }
+.dateField .input:disabled { background: #f1f4f2; color: #78877e; }
+.dateDialog.dateDialog { font-family: var(--font-body, 'Montserrat'), sans-serif; font-size: 1rem; line-height: 1.4; }
+.dateDialog *, .dateDialog *::before, .dateDialog *::after { box-sizing: border-box; }
+.dateDialog .calendar { color: #173f30; background: #fff; }
+.dateDialog .days { gap: .4rem; }
+.dateDialog .weekday { color: #405c4e; font-size: .82rem; font-weight: 600; }
+.dateDialog .days button { border-color: #d0dfd6; background: #f1f6f3; font-size: 1.08rem; font-weight: 500; min-height: 3rem; }
+.dateDialog .days button:hover:not(:disabled) { background: #dceee3; border-color: #7bb396; }
+.dateDialog .days button[aria-current='date'] { border: 2px solid #398562; }
+.dateDialog .days button[aria-pressed='true'] { background: #165540; color: #fff; border-color: #165540; font-weight: 650; }
+.dateDialog .days button:disabled { background: #f7f8f7; color: #97a39b; border-color: #edf0ee; cursor: not-allowed; }
+.dateDialog .selectors select { border: 1px solid #d0dfd6; background: #f1f6f3; }
+@media (max-width: 480px) { .dateDialog .calendar { padding: .8rem; } .dateDialog .days { gap: .2rem; } .dateDialog .days button { min-height: 2.75rem; } }

@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../../../../components/DateInput';
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import FuelLocationModal, { type FuelLocationCoordinates } from '../../../../../components/FuelLocationModal';
@@ -525,7 +526,7 @@ export default function PetrolStationFuelClient({
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Litres filled</span><input type="number" min="0" step="0.001" value={litres} onChange={(event) => setLitres(event.target.value)} placeholder="0.00" /></label>
           <label className={styles.field}><span>Total paid (R)</span><input type="number" min="0" step="0.01" value={totalAmount} onChange={(event) => setTotalAmount(event.target.value)} placeholder="0.00" /></label>
-          <label className={styles.field}><span>Fuel date</span><input type="date" value={documentDate} onChange={(event) => setDocumentDate(event.target.value)} /></label>
+          <label className={styles.field}><span>Fuel date</span><DateInput value={documentDate} onValueChange={(value) => setDocumentDate(value)} /></label>
         </div>
       );
     }

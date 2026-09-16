@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../components/DateInput';
 
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 
@@ -1573,7 +1574,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   </div>
                   <label className={styles.field}>
                     <span>{selectedFiles.length > 1 ? 'Expiry for all files' : 'Expiry or renewal date'} <em>Optional</em></span>
-                    <input type="date" value={draft.expiryDate} onChange={(event) => updateDraft('expiryDate', event.target.value)} />
+                    <DateInput value={draft.expiryDate} onValueChange={(value) => updateDraft('expiryDate', value)} />
                   </label>
                   <label className={`${styles.field} ${styles.notesField}`}>
                     <span>

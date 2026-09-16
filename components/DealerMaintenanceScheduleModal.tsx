@@ -1,4 +1,5 @@
 'use client';
+import DateInput from './DateInput';
 
 import DropdownOverlay from './DropdownOverlay';
 import { useEffect, useRef, useState } from 'react';
@@ -608,7 +609,7 @@ export default function DealerMaintenanceScheduleModal({
               <>
                 <label className={styles.filterField}>
                   <span>Due date</span>
-                  <input type="date" value={draft.dueDate} onChange={(event) => updateDraft({ dueDate: event.target.value })} />
+                  <DateInput value={draft.dueDate} onValueChange={(value) => updateDraft({ dueDate: value })} />
                 </label>
                 <label className={styles.filterField}>
                   <span>Alert before</span>

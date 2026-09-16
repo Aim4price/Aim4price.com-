@@ -1,4 +1,5 @@
 'use client';
+import DateInput from '../../../../../components/DateInput';
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { resolveAssetUsage } from '../../../../../lib/asset-usage';
@@ -590,7 +591,7 @@ export default function FieldManagerMaintenanceClient({
                   <>
                     <label className={styles.maintenanceField}>
                       <span>Due date</span>
-                      <input type="date" required value={draft.dueDate} onChange={(event) => update('dueDate', event.target.value)} />
+                      <DateInput required value={draft.dueDate} onValueChange={(value) => update('dueDate', value)} />
                     </label>
                     <label className={styles.maintenanceField}>
                       <span>Notify days before {maintenanceTypeLabel(draft.maintenanceType)}</span>
