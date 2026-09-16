@@ -248,7 +248,7 @@ export default function DesktopServiceModal({
               <h2 id="scheduled-service-choice-title">Which work was done?</h2>
               <p>{record.assetTitle}</p>
             </div>
-            <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
+            <button className={`${styles.closeButton} ${!dealerAppMode ? dialogStyles.close : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
               <CloseIcon />
             </button>
           </header>
@@ -259,16 +259,18 @@ export default function DesktopServiceModal({
             </div>
             <div className={styles.saveChoices}>
               <button type="button" onClick={() => chooseSchedule('scheduled')} disabled={busy}>
-                <strong>Scheduled {actionName}</strong>
-                <span>Mark this {actionName} as done.</span>
+                <span className={styles.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4m10-4v4M3 10h18m-13 5 3 3 5-5" /></svg></span>
+                <span className={styles.choiceCopy}><strong>Scheduled {actionName}</strong><small>Mark this {actionName} as done.</small></span>
+                <span className={styles.choiceArrow} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg></span>
               </button>
               <button type="button" onClick={() => chooseSchedule('separate')} disabled={busy}>
-                <strong>Other work</strong>
-                <span>Save to history. Keep this {actionName} open.</span>
+                <span className={styles.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 11a9 9 0 1 1 2.7 7M3 4v7h7m2-4v5l3 2" /></svg></span>
+                <span className={styles.choiceCopy}><strong>Other work</strong><small>Save to history. Keep this {actionName} open.</small></span>
+                <span className={styles.choiceArrow} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" /></svg></span>
               </button>
             </div>
           </div>
-
+          <footer className={styles.footer}><button className={styles.cancelButton} type="button" onClick={onClose} disabled={busy}>Cancel</button></footer>
         </section>
       </div>
     );

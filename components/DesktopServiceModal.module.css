@@ -556,7 +556,7 @@
 .inHouseChoice input { width: 1.15rem; height: 1.15rem; accent-color: #197454; }
 
 /* One visual language for the schedule decision and completed-work form. */
-.saveChoiceModal.saveChoiceModal.saveChoiceModal { place-self: center; width: min(46rem, var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 2rem)) !important; }
+.saveChoiceModal.saveChoiceModal.saveChoiceModal { place-self: center; width: min(58rem, var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 2rem)) !important; }
 .saveChoiceModal .saveChoices button { align-content: center; padding: 1rem 1.15rem; gap: .3rem; min-height: 0; border-radius: .9rem; }
 .saveChoiceModal .saveChoices button { background: #f5f8fb; border-color: #d4e0ed; }
 .saveChoiceModal .saveChoices button:hover { background: #edf6f1; border-color: #8cbaa5; }
@@ -595,4 +595,23 @@
   :global(:where(html:not(:has([data-website-canvas])))) .recurrenceChoice > div { grid-template-columns: minmax(0,1fr); }
   :global(:where(html:not(:has([data-website-canvas])))) .completionModal .footer { padding: 1rem; flex-wrap: wrap; }
   :global(:where(html:not(:has([data-website-canvas])))) .completionModal .footer .submitButton { flex-basis: 100%; }
+}
+
+/* Match the Add asset cost chooser: icon tile, copy and a trailing arrow. */
+.saveChoiceModal .body { background: radial-gradient(circle at 100% 0%, rgba(25,116,84,.05), transparent 34%), linear-gradient(180deg,#fbfdfc,#f7faf9); }
+.saveChoiceModal .saveChoices { gap: .85rem; }
+.saveChoiceModal .saveChoices button { grid-template-columns: 3rem minmax(0,1fr) 1.75rem; align-items: center; gap: 1rem; min-height: 5.5rem; padding: 1rem; border: 1px solid #c2d3dc; border-radius: 1rem; background: #fff; box-shadow: 0 9px 20px rgba(18,55,45,.035); }
+.saveChoiceModal .saveChoices button:hover, .saveChoiceModal .saveChoices button:focus-visible { border-color: #7cb79c; background: linear-gradient(180deg,#fff,#f2faf6); }
+.saveChoiceModal .saveChoices .choiceIcon { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid #b2d2c3; border-radius: .9rem; background: linear-gradient(180deg,#f3fbf6,#e8f6ee); color: #126c4e; }
+.choiceIcon svg { width: 1.95rem; height: 1.95rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.saveChoiceModal .saveChoices .choiceCopy { display: grid; gap: .24rem; min-width: 0; }
+.saveChoiceModal .choiceCopy strong { color: #12352d; font-size: 1rem; font-weight: 800; line-height: 1.35; }
+.saveChoiceModal .choiceCopy small { color: #64746a; font-size: .88rem; font-weight: 650; line-height: 1.5; }
+.saveChoiceModal .saveChoices .choiceArrow { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border: 1px solid #cfdae0; border-radius: 50%; background: #fff; color: #197454; }
+.choiceArrow svg { width: .95rem; height: .95rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.saveChoiceModal .saveChoices button:hover .choiceArrow { color: #fff; background: #197454; border-color: #197454; }
+@media (max-width: 480px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .saveChoiceModal .saveChoices button { grid-template-columns: 2.5rem minmax(0,1fr) 1.4rem; gap: .65rem; padding: .85rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .saveChoiceModal .saveChoices .choiceIcon { width: 2.5rem; height: 2.5rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .saveChoiceModal .saveChoices .choiceArrow { width: 1.4rem; height: 1.4rem; }
 }
