@@ -1759,12 +1759,6 @@ export default function FuelClient({
     ? selectedFuelSlipTarget.storage?.name ?? 'Selected storage tank'
     : selectedFuelSlipTarget?.asset?.title ?? 'Selected asset or storage tank';
   const fuelSlipTargetPickerTitle = 'Choose Saved Asset';
-  const fuelSlipFormModeLabel = fuelSlipDraft.id
-    ? 'Saved slip review'
-    : fuelSlipFlow === 'review'
-      ? 'Aim4price verified capture'
-      : 'Manual entry';
-  const fuelSlipFormSubtitle = `${selectedFuelSlipTargetName} · ${fuelSlipFormModeLabel}`;
   const fuelSlipMissingFields = useMemo(
     () => getFuelSlipMissingFields(fuelSlipDraft, selectedFuelSlipTargetType, selectedFuelSlipUsageMetric, selectedFuelSlipAssetResolved),
     [fuelSlipDraft, selectedFuelSlipAssetResolved, selectedFuelSlipTargetType, selectedFuelSlipUsageMetric],
@@ -3273,42 +3267,6 @@ export default function FuelClient({
     );
   }
 
-  function renderFuelSlipWizardProgress() {
-    const steps = [
-      { page: 'details', label: 'Slip', step: 1 },
-      { page: 'extra', label: 'Usage & work', step: 2 },
-    ] as const;
-
-    return (
-      <ol
-        className={`${styles.fuelSlipWizardProgress} ${wizardStyles.progress}`}
-        aria-label={`Step ${fuelSlipFormPage === 'details' ? 1 : 2} of 2`}
-      >
-        {steps.map(({ page, label, step }) => {
-          const isCurrent = fuelSlipFormPage === page;
-          const isComplete = page === 'details' && fuelSlipFormPage === 'extra';
-
-          return (
-            <li
-              key={page}
-              className={[
-                styles.fuelSlipWizardProgressItem,
-                wizardStyles.progressItem,
-                isCurrent ? wizardStyles.progressItemCurrent : '',
-                isComplete ? wizardStyles.progressItemComplete : '',
-              ].join(' ')}
-              data-complete={isComplete ? 'true' : undefined}
-              aria-current={isCurrent ? 'step' : undefined}
-            >
-              <span aria-hidden="true">{isComplete ? '✓' : step}</span>
-              <strong>{label}</strong>
-            </li>
-          );
-        })}
-      </ol>
-    );
-  }
-
   function renderFuelSlipExtraFields() {
     const isAssetSlip = selectedFuelSlipTargetType === 'asset';
     const usageHelp = isAssetSlip && !selectedFuelSlipAssetResolved
@@ -4432,18 +4390,16 @@ export default function FuelClient({
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'review' ? (
         <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay} ${styles.accountFuelBackdrop}`} data-website-overlay>
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipReviewFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-review-title">
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.manualFuelSlipModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog} ${styles.accountFuelModal} ${accountStyles.modalTheme}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-review-title">
             <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="fuel-slip-review-title">{fuelSlipDraft.id ? 'Review / complete fuel slip' : 'Review fuel slip details'}</h2>
-                <p>{fuelSlipFormSubtitle} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
+                <p>{selectedFuelSlipTargetName} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
               </div>
               <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><span aria-hidden="true">×</span></button>
             </div>
             <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
             <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
-              <p className={wizardStyles.intro}>Check one short step at a time. Your changes are saved on the final step.</p>
-              {renderFuelSlipWizardProgress()}
               <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
                 <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
                   <span className={wizardStyles.panelNumber} aria-hidden="true">{fuelSlipFormPage === 'details' ? 1 : 2}</span>

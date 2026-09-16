@@ -87,15 +87,16 @@ test('Aim4price capture is an upload-only step with no operational-detail requir
   assert.match(styles, /\.fuelSlipFlowBackdrop \.costUploadModal\s*\{[\s\S]*?width:\s*min\(100%, 860px\)/);
 });
 
-test('fuel wizard keeps the canonical two-step progress and final-step save behavior', () => {
-  const progress = sliceBetween(client, 'function renderFuelSlipWizardProgress()', 'function renderFuelSlipExtraFields()');
-
-  assert.match(progress, /label: 'Slip', step: 1/);
-  assert.match(progress, /label: 'Usage & work', step: 2/);
-  assert.match(progress, /<li[\s\S]*?<span aria-hidden="true">[\s\S]*?<strong>\{label\}<\/strong>/);
-  assert.match(progress, /aria-current=\{isCurrent \? 'step' : undefined\}/);
-  assert.doesNotMatch(progress, /role="tab"/);
-  assert.match(manualModal, /fuelSlipFormPage === 'details'[\s\S]*?>Next<\/button>[\s\S]*?Save fuel slip/);
+test('manual and review forms share the compact layout and retain two-step saving', () => {
+  for (const modal of [manualModal, reviewModal]) {
+    assert.match(modal, /styles\.manualFuelSlipModal/);
+    assert.doesNotMatch(modal, /wizardStyles\.intro|renderFuelSlipWizardProgress/);
+    assert.match(modal, /fuelSlipFormPage === 'details' \? renderFuelSlipDetailsFields\(\) : renderFuelSlipExtraFields\(\)/);
+    assert.match(modal, /onClick=\{handleFuelSlipFormBack\}/);
+    assert.match(modal, /fuelSlipFormPage === 'details'[\s\S]*?onClick=\{handleFuelSlipNextPage\}[\s\S]*?>Next<\/button>[\s\S]*?onClick=\{handleFuelSlipSaveClick\}/);
+  }
+  assert.match(manualModal, /Save fuel slip/);
+  assert.match(reviewModal, /fuelSlipDraft\.id \? 'Save changes' : 'Save fuel slip'/);
   assert.match(client, /function handleFuelSlipStepSelect[\s\S]*?focusFuelSlipFirstEditableField\(\)/);
 });
 
