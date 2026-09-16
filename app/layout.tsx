@@ -8,7 +8,6 @@ import SiteWorkspaceZoom from '../components/SiteWorkspaceZoom';
 import { BACKGROUND_PREFERENCE_SCRIPT } from '../lib/background-preference';
 import './globals.css';
 import './asset-register-view-tuning.css';
-import './dark-theme.css';
 
 const brandTitle = 'Aim4price | Asset Intelligence, Management & Pricing';
 const brandDescription =
