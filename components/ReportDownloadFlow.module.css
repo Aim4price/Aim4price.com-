@@ -2,13 +2,6 @@
 .surface { color: #12352d; }
 .body { min-height: 0; }
 .fields { display: grid; gap: 1rem; padding: 1rem; border: 1px solid #d2e3df; border-radius: 1rem; background: #f5faf7; }
-.search { width: 100%; padding: 1rem; font: inherit; border: 1px solid #c8dcd2; border-radius: .8rem; margin-bottom: 1rem; }
-.assets { display: grid; gap: .65rem; max-height: calc(var(--website-visible-height, 100dvh) * .45); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #93b3a7 transparent; }
-.asset { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem; background: #fff; color: #12352d; border: 1px solid #c8dcd2; border-radius: .8rem; text-align: left; font: inherit; cursor: pointer; }
-.asset:hover { background: #edf8f2; }
-.asset strong, .asset small { display: block; }
-.asset small { margin-top: .3rem; color: #64746a; }
-.asset > span:last-child { flex-shrink: 0; font-weight: 700; }
 .summary { color: #64746a; margin-bottom: 1rem; }
 .summary p { margin: .4rem 0; }
 .error { color: #a52b2b; }
