@@ -182,8 +182,9 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(2, 29, 22, 0.58);
-  backdrop-filter: blur(4px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .replacementNoticeModal {
@@ -3264,8 +3265,9 @@
 .saveModalBackdrop {
   position: absolute;
   inset: 0;
-  background: rgba(10, 24, 19, 0.56);
-  backdrop-filter: blur(4px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .saveModal {
@@ -6625,8 +6627,9 @@
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(10, 24, 19, 0.48);
-  backdrop-filter: blur(5px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .detailsModal {
@@ -7664,8 +7667,9 @@
   align-items: center;
   justify-content: center;
   padding: 1.35rem;
-  background: rgba(20, 31, 36, 0.56);
-  backdrop-filter: blur(12px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .finalSaveModal {
@@ -9249,8 +9253,9 @@
   align-items: center;
   justify-content: center;
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 1.7rem);
-  background: rgba(18, 31, 36, 0.52);
-  backdrop-filter: blur(12px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .marketplaceIntroModal {
@@ -9360,8 +9365,9 @@
   align-items: center;
   justify-content: center;
   padding: 1.35rem;
-  background: rgba(20, 31, 36, 0.55);
-  backdrop-filter: blur(12px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .marketplacePublishModal {
@@ -14552,8 +14558,9 @@
 }
 
 .specificationModal::backdrop {
-  background: rgba(10, 29, 22, 0.48);
-  backdrop-filter: blur(4px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .specificationModalHeader {

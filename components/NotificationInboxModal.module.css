@@ -8,9 +8,9 @@
   box-sizing: border-box;
   padding: 1rem;
   overflow: hidden;
-  background: rgba(12, 24, 35, 0.42);
-  backdrop-filter: blur(12px) saturate(0.9);
-  -webkit-backdrop-filter: blur(12px) saturate(0.9);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modal {

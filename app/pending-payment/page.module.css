@@ -229,8 +229,9 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(9, 18, 31, 0.3);
-  backdrop-filter: blur(13px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modalCard {

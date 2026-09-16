@@ -1171,8 +1171,9 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(9, 18, 31, 0.36);
-  backdrop-filter: blur(14px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modalCard {
@@ -3085,8 +3086,9 @@
 /* === Restored account modal workflow: spacing and alignment refinement === */
 .modalBackdrop {
   padding: clamp(1rem, calc(var(--website-design-vw) * 2.5), 2rem) !important;
-  background: rgba(12, 24, 35, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(0.9) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 
 .accountScrollableModalCard {

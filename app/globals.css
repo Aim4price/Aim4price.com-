@@ -1,4 +1,6 @@
 :root {
+  --modal-backdrop-color: rgba(12, 24, 35, 0.42);
+  --modal-backdrop-filter: blur(12px) saturate(0.9);
   --font-body: 'Montserrat';
   --font-heading: 'Montserrat';
   --brand-700: #184d3d;

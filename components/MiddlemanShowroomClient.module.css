@@ -188,7 +188,10 @@
 .emptyStock h3 { max-width: 520px; margin: 0 0 .4rem; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem,calc(var(--website-design-vw, 1vw) * 2),1.45rem); font-weight: 850; letter-spacing: -.025em; }
 .emptyStock p { max-width: 520px; margin: 0 0 1.25rem; color: #6d8079; font-size: .82rem; line-height: 1.6; }
 
-.listingManagerBackdrop { position: fixed; inset: 0; z-index: 145; display: grid; place-items: center; padding: 1rem; background: rgba(7,25,20,.62); backdrop-filter: blur(10px); }
+.listingManagerBackdrop { position: fixed; inset: 0; z-index: 145; display: grid; place-items: center; padding: 1rem; background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .listingManagerDialog { width: min(700px,var(--website-dialog-reference-width, 100%)); max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem); overflow-y: auto; border: 1px solid #d5e3dd; border-radius: 28px; padding: 0; color: var(--ink); background: #fff; box-shadow: 0 30px 84px rgba(7,27,21,.28); outline: none; }
 .listingManagerHeader { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 1rem; padding: 1.5rem 1.6rem 1.2rem; border-bottom: 1px solid #e2ebe7; }
 .listingManagerHeader h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.55rem,calc(var(--website-design-vw, 1vw) * 3),1.8rem); font-weight: 850; letter-spacing: -.035em; }
@@ -218,7 +221,10 @@
 .listingManagerActions .listingManagerRemove .listingManagerActionIcon { border-color: #efd8d4; color: #a13b32; background: #fff1ef; }
 .listingManagerClose:focus-visible, .listingManagerActions > a:focus-visible, .listingManagerActions > button:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
 
-.deleteBackdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 1rem; background: rgba(7,25,20,.7); backdrop-filter: blur(8px); }
+.deleteBackdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 1rem; background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .deleteDialog { display: grid; justify-items: center; width: min(500px,var(--website-dialog-reference-width, 100%)); border: 1px solid #efc3bd; border-radius: 20px; padding: 1.5rem; background: #fffafa; box-shadow: 0 28px 80px rgba(12,34,27,.24); text-align: center; }
 .deleteIcon { display: grid; place-items: center; width: 50px; height: 50px; border-radius: 14px; color: #fff; background: #ba3c32; font-family: 'Montserrat', sans-serif; font-size: 1.3rem; font-weight: 900; }
 .deleteDialog h2 { margin: .95rem 0 .4rem; color: #72261f; font-family: 'Montserrat', sans-serif; font-size: 1.38rem; font-weight: 850; letter-spacing: -.035em; }

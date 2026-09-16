@@ -25,7 +25,10 @@
 .cardActions a, .cardActions button { min-width: 150px; gap: .55rem; }
 .cardActions .viewCosts { border-color: #8fc0ff; background: linear-gradient(180deg,#fff,#edf6ff); color: #164c77; }
 .meta { font-size: .8rem; font-weight: 650; margin-top: .85rem; }
-.overlay { position: fixed; inset: 0; z-index: 1500; display: grid; place-items: center; padding: 24px; background: #102f3266; backdrop-filter: blur(12px); }
+.overlay { position: fixed; inset: 0; z-index: 1500; display: grid; place-items: center; padding: 24px; background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .dialog { width: min(700px,100%); max-height: calc(var(--website-design-vh, 1dvh) * 90); overflow: auto; background: linear-gradient(#fff,#f5faf7); padding: 32px; border: 1px solid #d6e4dd; border-radius: 28px; box-shadow: 0 24px 70px #12352c33; }
 .dialog header { display: flex; align-items: start; justify-content: space-between; gap: 24px; }
 .dialog h2 { margin: 0; font-size: 30px; color: #173c32; }

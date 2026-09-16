@@ -1026,9 +1026,10 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(5, 28, 22, 0.63);
-  backdrop-filter: blur(9px);
+  background: var(--modal-backdrop-color);
   animation: fadeIn 150ms ease both;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 @keyframes fadeIn {
@@ -3958,8 +3959,9 @@
 
 /* Upload wizard follows the approved Change Password dialog design. */
 .modalBackdrop.accountUploadBackdrop {
-  background: rgba(12, 24, 35, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(0.9) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 .modal.accountUploadModal {
   --document-dialog-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);

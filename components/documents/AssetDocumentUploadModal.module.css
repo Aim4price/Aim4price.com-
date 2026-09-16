@@ -5,8 +5,9 @@
   display: grid;
   place-items: center;
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 2rem);
-  background: rgba(5, 32, 27, 0.56);
-  backdrop-filter: blur(8px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modal {
@@ -246,8 +247,9 @@
 
 /* Desktop Asset Register follows the approved account dialog design. */
 .accountBackdrop {
-  background: rgba(12, 24, 35, 0.42);
-  backdrop-filter: blur(12px) saturate(0.9);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 .accountModal {
   --document-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);

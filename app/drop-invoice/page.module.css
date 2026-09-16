@@ -223,8 +223,9 @@
   display: grid;
   place-items: center;
   padding: clamp(0.75rem, calc(var(--website-design-vw) * 2), 1.5rem);
-  background: rgba(5, 22, 17, 0.7);
-  backdrop-filter: blur(12px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modalDialog {

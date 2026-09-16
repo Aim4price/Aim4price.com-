@@ -1419,8 +1419,9 @@
 }
 
 .assetPreviewDialog::backdrop {
-  background: #062e24b3;
-  backdrop-filter: blur(6px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .assetPreviewDialogHeader {

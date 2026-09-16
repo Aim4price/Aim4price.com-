@@ -1,4 +1,7 @@
-.overlay { position: fixed; inset: 0; z-index: 1250; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background: rgba(15,35,30,.46); backdrop-filter: blur(9px); }
+.overlay { position: fixed; inset: 0; z-index: 1250; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .dialog { width: min(100%, 60rem); max-height: calc(var(--website-visible-height, 100dvh) - 2.5rem); display: flex; flex-direction: column; padding: 2rem; color: #123b30; border: 1px solid #d4e1dc; border-radius: 1.5rem; background: linear-gradient(#fff,#f7fbf9); box-shadow: 0 28px 80px #102b3540; outline: none; }
 .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding-bottom: 1.2rem; border-bottom: 1px solid #dce7e1; }
 .header h2 { margin: 0; font-size: 2rem; line-height: 1.15; letter-spacing: -.04em; }

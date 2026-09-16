@@ -1,7 +1,8 @@
 /* Shared maintenance shell follows the account Change Password dialog. */
 .backdrop.backdrop {
-  background: rgba(12, 24, 35, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(0.9) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 
 .dialog.dialog {

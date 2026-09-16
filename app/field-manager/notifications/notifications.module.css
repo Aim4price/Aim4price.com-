@@ -189,7 +189,9 @@
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(11, 30, 24, 0.5);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modal {

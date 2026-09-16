@@ -86,8 +86,9 @@
   display: grid;
   place-items: center;
   padding: clamp(1rem, 4vw, 1.3rem);
-  background: rgba(20, 34, 42, 0.48);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .locationPromptCard {
@@ -161,8 +162,9 @@
   display: grid;
   place-items: center;
   padding: clamp(1rem, 4vw, 1.3rem);
-  background: rgba(20, 34, 42, 0.48);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .confirmationCard {

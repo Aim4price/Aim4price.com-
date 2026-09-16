@@ -821,8 +821,9 @@
 .modalBackdrop {
   position: absolute;
   inset: 0;
-  background: rgba(12, 21, 32, 0.34);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modalCard,
@@ -5204,8 +5205,9 @@
 }
 
 .modalBackdrop {
-  background: rgba(14, 22, 32, 0.44);
-  backdrop-filter: blur(14px) saturate(0.9);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .assetFormModal,
@@ -14843,9 +14845,10 @@
   position: absolute !important;
   inset: 0 !important;
   border: 0 !important;
-  background: rgba(9, 22, 19, 0.34) !important;
-  backdrop-filter: blur(8px) !important;
+  background: var(--modal-backdrop-color) !important;
   cursor: pointer !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 
 .assetQuoteStepBackdrop:disabled {
@@ -24047,8 +24050,9 @@ button.documentOpenLink {
 .accountantManageBackdrop {
   position: fixed !important;
   inset: 0 !important;
-  background: rgba(15, 25, 31, 0.46) !important;
-  backdrop-filter: blur(14px) saturate(0.88) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 
 .optionsModal.accountantManageModal {
@@ -28750,8 +28754,9 @@ button.documentOpenLink {
 }
 
 .photoViewerOverlay .modalBackdrop {
-  background: rgba(7, 15, 24, 0.72) !important;
-  backdrop-filter: blur(14px) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 
 .photoViewerModal {
@@ -39860,8 +39865,9 @@ button.documentOpenLink {
 
 /* Asset entry dialogs follow the Change Password modal's visual language. */
 .assetEntryOverlay .modalBackdrop {
-  background: rgba(12, 24, 35, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(0.9) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 
 .modalCard.assetEntryModal {
@@ -40232,8 +40238,9 @@ button.documentOpenLink {
   box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12) !important;
 }
 :global([data-account-asset-modal]) > .modalBackdrop {
-  background: rgba(12, 24, 35, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(0.9) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 .managementAccountModal.ownerCommandModal { width: min(var(--website-dialog-reference-width, 100%), 84rem) !important; }
 .managementAccountModal.assetReportModal,

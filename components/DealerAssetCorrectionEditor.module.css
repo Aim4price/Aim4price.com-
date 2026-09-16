@@ -95,11 +95,9 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.26) 0%, rgba(8, 23, 18, 0.58) 70%),
-    rgba(8, 23, 18, 0.48);
-  backdrop-filter: blur(20px) saturate(0.9);
-  -webkit-backdrop-filter: blur(20px) saturate(0.9);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modal {

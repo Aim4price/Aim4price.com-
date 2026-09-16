@@ -496,11 +496,9 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   isolation: isolate;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.5) 0%, rgba(245, 249, 247, 0.2) 34%, rgba(11, 31, 25, 0.48) 100%),
-    rgba(11, 31, 25, 0.34);
-  backdrop-filter: blur(28px) saturate(0.86);
-  -webkit-backdrop-filter: blur(28px) saturate(0.86);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .notificationModal {
@@ -1129,11 +1127,9 @@
   padding: 2rem 1.25rem;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.4) 0%, rgba(239, 246, 243, 0.22) 34%, rgba(7, 27, 21, 0.54) 100%),
-    rgba(7, 27, 21, 0.38);
-  backdrop-filter: blur(26px) saturate(0.88);
-  -webkit-backdrop-filter: blur(26px) saturate(0.88);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .notificationDetailModal {

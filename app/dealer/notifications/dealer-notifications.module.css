@@ -46,8 +46,10 @@
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(10, 30, 23, 0.5);
+  background: var(--modal-backdrop-color);
   cursor: default;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modal {

@@ -598,9 +598,10 @@
   align-items: center;
   justify-content: center;
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 2rem);
-  background: rgba(12, 22, 25, 0.44);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
   overflow: hidden;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .assetModal,
@@ -2549,8 +2550,9 @@
 
 .confirmDeleteBackdrop {
   z-index: 220;
-  background: rgba(12, 22, 25, 0.56);
-  backdrop-filter: blur(12px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .deleteConfirmModal {
@@ -5056,7 +5058,9 @@
 
 .invoiceDropAssetPickerBackdrop {
   z-index: 105;
-  background: rgba(12, 22, 25, 0.5);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .invoiceDropAssetPickerModal {
@@ -6474,8 +6478,9 @@
 
 /* Cost tools share the Change Password dialog's spacing and controls. */
 .accountCostBackdrop {
-  background: rgba(12, 24, 35, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(0.9) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 .accountCostModal.accountCostModal {
   --cost-dialog-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);

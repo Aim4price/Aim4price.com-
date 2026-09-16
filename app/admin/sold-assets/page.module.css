@@ -559,8 +559,10 @@
   height: 100%;
   padding: 0;
   border: 0;
-  background: rgba(6, 28, 22, 0.56);
+  background: var(--modal-backdrop-color);
   cursor: pointer;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .detailModal {

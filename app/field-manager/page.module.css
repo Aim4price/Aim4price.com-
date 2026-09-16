@@ -1209,9 +1209,10 @@
   display: grid;
   place-items: center;
   overflow-y: auto;
-  background: rgba(9, 31, 25, 0.54);
+  background: var(--modal-backdrop-color);
   padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .overviewConfirmCard {
