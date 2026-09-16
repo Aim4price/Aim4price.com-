@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "deploy": {
+    "aptPackages": [
+      "...",
+      "libnspr4",
+      "libnss3",
+      "libexpat1",
+      "fontconfig",
+      "fonts-liberation"
+    ]
+  }
+}
