@@ -6,8 +6,9 @@
   align-items: center;
   justify-content: center;
   padding: clamp(1rem, calc(var(--website-design-vh, 1vh) * 3), 2rem);
-  background: rgba(14, 22, 32, 0.44);
-  backdrop-filter: blur(14px) saturate(0.9);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modal {
@@ -648,7 +649,10 @@
 }
 
 /* Match the account Change password dialog while retaining the selling-plan steps. */
-.backdrop { background: rgba(12,24,35,.42); backdrop-filter: blur(12px) saturate(.9); }
+.backdrop { background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .modal.modal {
   --dialog-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
   width: min(var(--website-dialog-reference-width, 100%), 68rem);

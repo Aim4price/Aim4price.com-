@@ -10,8 +10,9 @@
 .backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(12, 24, 35, .42);
-  backdrop-filter: blur(12px) saturate(.9);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .dialog.dialog {

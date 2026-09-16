@@ -5,8 +5,9 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(18, 37, 43, 0.48);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .dialog {

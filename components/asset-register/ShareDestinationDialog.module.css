@@ -1,5 +1,8 @@
 .overlay { position:fixed; inset:0; z-index:1200; display:grid; place-items:center; padding:1rem; font-family:Montserrat,Arial,sans-serif; }
-.backdrop { position:absolute; inset:0; background:rgba(29,46,48,.46); backdrop-filter:blur(10px); }
+.backdrop { position:absolute; inset:0; background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .dialog { position:relative; box-sizing:border-box; width:min(46rem,100%); padding:2rem; border:1px solid #dae4df; border-radius:1.55rem; background:linear-gradient(145deg,#fff 35%,#f5f9f7); box-shadow:0 24px 64px rgba(19,53,45,.24); color:#12352d; }
 .header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding-bottom:1.3rem; border-bottom:1px solid #e0e7e3; }
 .header h3 { margin:0; font:800 2rem/1.2 Montserrat,Arial,sans-serif; letter-spacing:-.04em; white-space:nowrap; }

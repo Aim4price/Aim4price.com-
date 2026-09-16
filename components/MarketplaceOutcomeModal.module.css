@@ -9,8 +9,9 @@
     max(1rem, env(safe-area-inset-right))
     max(1rem, env(safe-area-inset-bottom))
     max(1rem, env(safe-area-inset-left));
-  background: rgba(10, 28, 22, 0.58);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .dialog,
@@ -755,8 +756,9 @@
   }
 }
 .backdrop.accountConfirmBackdrop {
-  background: rgba(12, 24, 35, 0.42);
-  backdrop-filter: blur(12px) saturate(0.9);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 .dialog.accountConfirmDialog {
   width: min(var(--website-dialog-reference-width, 100%), 64rem);

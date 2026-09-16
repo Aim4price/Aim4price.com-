@@ -1246,7 +1246,10 @@
   place-items: center;
   padding: 12px;
 }
-.ownerPhotoViewerBackdrop { position: absolute; inset: 0; border: 0; background: rgba(5, 13, 20, 0.78); padding: 0; cursor: zoom-out; backdrop-filter: blur(10px); }
+.ownerPhotoViewerBackdrop { position: absolute; inset: 0; border: 0; background: var(--modal-backdrop-color); padding: 0; cursor: zoom-out;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .ownerPhotoViewerCard {
   position: relative;
   z-index: 1;
@@ -1584,9 +1587,10 @@
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(10, 31, 25, 0.56);
+  background: var(--modal-backdrop-color);
   cursor: pointer;
-  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 .ownerTrackingPickerModal {
   position: relative;
@@ -1689,7 +1693,10 @@
 .reportCard:active { transform: translateY(1px); }
 .reportCard:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1); }
 .reportFilterDialog { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 14px; }
-.reportFilterBackdrop { position: absolute; inset: 0; border: 0; background: rgba(8, 24, 18, 0.54); padding: 0; cursor: pointer; backdrop-filter: blur(5px); }
+.reportFilterBackdrop { position: absolute; inset: 0; border: 0; background: var(--modal-backdrop-color); padding: 0; cursor: pointer;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .reportFilterModal {
   position: relative;
   z-index: 1;

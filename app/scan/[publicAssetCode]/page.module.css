@@ -183,8 +183,9 @@
   display: grid;
   place-items: center;
   padding: clamp(1rem, 4vw, 1.3rem);
-  background: rgba(20, 34, 42, 0.48);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .locationPromptCard {
@@ -827,8 +828,9 @@
 .modalBackdrop {
   position: absolute;
   inset: 0;
-  background: rgba(14, 22, 32, 0.54);
-  backdrop-filter: blur(15px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .locationReminderModal {
@@ -867,8 +869,9 @@
 .editorOverlay {
   align-items: stretch;
   padding: 0;
-  background: rgba(14, 22, 32, 0.52);
-  backdrop-filter: blur(12px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .editorCard {
@@ -2226,9 +2229,10 @@
   position: absolute;
   inset: 0;
   border: 0;
-  background: rgba(10, 31, 25, 0.58);
+  background: var(--modal-backdrop-color);
   cursor: pointer;
-  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .shareTrackingPermissionModal {

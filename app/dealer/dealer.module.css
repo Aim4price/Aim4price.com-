@@ -1030,13 +1030,14 @@
   display: grid;
   place-items: center;
   overflow-y: auto;
-  background: rgba(8, 29, 23, 0.58);
+  background: var(--modal-backdrop-color);
   padding:
     max(14px, env(safe-area-inset-top))
     max(14px, env(safe-area-inset-right))
     max(14px, env(safe-area-inset-bottom))
     max(14px, env(safe-area-inset-left));
-  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .contactModal,

@@ -765,8 +765,9 @@
   display: grid;
   place-items: center;
   padding: clamp(0.75rem, 2vw, 1.4rem);
-  background: rgba(11, 28, 24, 0.44);
-  backdrop-filter: blur(8px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .qrModal {

@@ -778,8 +778,9 @@
   display: grid;
   place-items: center;
   padding: 1.25rem;
-  background: rgba(9, 20, 25, 0.42);
-  backdrop-filter: blur(8px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modalCard {
@@ -1047,8 +1048,9 @@
 
 .modalOverlay {
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.75rem);
-  background: rgba(8, 19, 23, 0.58);
-  backdrop-filter: blur(12px) saturate(120%);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modalCard {
@@ -3143,8 +3145,9 @@
   --action-primary-shadow: rgba(25, 116, 84, 0.2);
   z-index: 1200;
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.75rem);
-  background: rgba(8, 19, 23, 0.58);
-  backdrop-filter: blur(12px) saturate(120%);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .exportFlowModal {

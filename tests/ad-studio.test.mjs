@@ -402,7 +402,7 @@ test('owner and dealer showrooms reuse the seller-scoped Marketplace experience'
   assert.match(manager, /Hosted on Aim4price\.com/);
   assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
-  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]\)/);
+  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['notifications', 'valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]\)/);
   const dealerTools = dealerHome.match(/const allTools: DealerHomeTool\[\] = \[[\s\S]*?\n  \];/)?.[0];
   assert.ok(dealerTools, 'Dealer App launcher tools must be defined');
   assert.doesNotMatch(dealerTools, /capability: '(?:inventory|client_costs)'/);
@@ -1077,9 +1077,10 @@ test('Middleman installs with its own identity and blue icon set', async () => {
   }
 });
 
-test('Middleman shares Dealer launcher styling with its five tools and install handoff', async () => {
+test('Middleman shares Dealer launcher styling with notifications, its five tools and install handoff', async () => {
   const home = await read('app/middleman/page.tsx');
-  assert.match(home, /\['valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]/);
+  assert.match(home, /\['notifications', 'valuation', 'discovery', 'marketplace', 'ad_studio', 'showroom'\]/);
+  assert.match(home, /<AppNotificationsLink key=\{tool.href\} app="middleman"/);
   assert.doesNotMatch(home, /<header className=\{styles.middlemanHomeIntro\}/);
   assert.match(home, /styles.homeLauncher/);
   const access = await read('app/account/app-access-management-client.tsx');

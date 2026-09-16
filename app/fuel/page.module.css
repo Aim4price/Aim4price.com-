@@ -787,8 +787,9 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgba(9, 30, 24, 0.44);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modalCard,
@@ -1978,8 +1979,9 @@
 .modalBackdrop {
   position: absolute;
   inset: 0;
-  background: rgba(14, 22, 32, 0.44);
-  backdrop-filter: blur(14px) saturate(0.9);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modalCloseButton {
@@ -2582,9 +2584,10 @@
   align-items: center;
   justify-content: center;
   padding: clamp(1rem, calc(var(--website-design-vw) * 3), 2rem);
-  background: rgba(12, 22, 25, 0.44);
-  backdrop-filter: blur(10px);
+  background: var(--modal-backdrop-color);
   overflow: hidden;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .fuelSlipFlowBackdrop .assetModal,
@@ -4219,8 +4222,9 @@
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: rgba(8, 20, 18, 0.34);
-  backdrop-filter: blur(7px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .fuelSlipFilterModal {
@@ -5291,8 +5295,9 @@
 /* Fuel slip delete confirmation: mirror the Asset Register standard white delete modal. */
 .fuelSlipDeleteOverlay {
   z-index: 240 !important;
-  background: rgba(9, 30, 24, 0.44) !important;
-  backdrop-filter: blur(10px) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 
 .fuelSlipDeleteOverlay .deleteConfirmModal {
@@ -7321,8 +7326,9 @@
 
 /* Account dialog design shared across Fuel Ledger workflows. */
 .accountFuelBackdrop.accountFuelBackdrop {
-  background: rgba(12, 24, 35, 0.42) !important;
-  backdrop-filter: blur(12px) saturate(0.9) !important;
+  background: var(--modal-backdrop-color) !important;
+  -webkit-backdrop-filter: var(--modal-backdrop-filter) !important;
+  backdrop-filter: var(--modal-backdrop-filter) !important;
 }
 .accountFuelBackdrop > .modalBackdrop { background: transparent !important; backdrop-filter: none !important; }
 .accountFuelModal.accountFuelModal {
@@ -7556,7 +7562,10 @@
 .slipLedgerActions .slipManageButton { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; min-width: 9.5rem; min-height: 3.1rem; padding: .7rem 1rem; color: #0b563f; border: 1px solid #6fc997; border-radius: 1rem; background: linear-gradient(#fff,#eaf8f1); font-size: .95rem; font-weight: 700; }
 .slipLedgerActions .slipManageButton:hover { background: #e4f5ec; border-color: #40a875; }
 .slipLedgerActions .fuelSlipManagerExpandButton svg { width: 1.05rem; height: 1.05rem; padding: .15rem; box-sizing: content-box; border: 1px solid #bbdafa; border-radius: 50%; background: #e5f3ff; }
-.slipManageBackdrop { background: rgba(12,24,35,.42); backdrop-filter: blur(12px) saturate(.9); }
+.slipManageBackdrop { background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
 .accountFuelModal.slipManageModal { width: min(var(--website-dialog-reference-width,100%),66rem) !important; align-self: center; max-height: calc(var(--website-visible-height,100dvh) - 3rem); overflow-y: auto; }
 .slipManageOptions { display: flex; flex-wrap: wrap; gap: 1rem; padding-top: 1.6rem; }
 .slipManageOptions button { flex: 1 1 10rem; min-height: 3.6rem !important; min-width: 0; }

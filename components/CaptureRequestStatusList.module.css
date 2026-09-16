@@ -157,8 +157,9 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(11, 31, 24, 0.54);
-  backdrop-filter: blur(5px);
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
 }
 
 .modal {
