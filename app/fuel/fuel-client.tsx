@@ -1589,6 +1589,10 @@ export default function FuelClient({
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
+  const reportAssets = useMemo(() => assets.map(asset => ({
+    ...asset,
+    meta: [fuelSlipAssetMeta(asset), asset.assetTypeLabel].filter(Boolean).join(' · '),
+  })), [assets]);
   const [recentFuelSlips, setRecentFuelSlips] = useState<FuelSlipRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasLoadedLedger, setHasLoadedLedger] = useState(false);
@@ -4146,7 +4150,7 @@ export default function FuelClient({
         </FilterFlow>
       ) : null}
 
-      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? <ReportDownloadFlow title="Fuel slip reports" allLabel="All fuel slips" assets={assets}
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? <ReportDownloadFlow title="Fuel slip reports" allLabel="All fuel slips" assets={reportAssets}
         fields={[{key:'capture',label:'Source / status',initial:'all',options:FUEL_SLIP_CAPTURE_FILTER_OPTIONS},{key:'storage',allAssetsOnly:true,label:'Storage tank',initial:'all',options:[{value:'all',label:'All targets'},...storages.map(storage=>({value:storage.id,label:storage.name}))]}]}
         onClose={closeFuelSlipDownloadPanel} onDownload={async selection => {
           const response = await fetch(scopedApiUrl('/api/fuel/slips/export'), {method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-aim4price-client-realm':appRealmForPath(window.location.pathname) ?? 'website'},body:JSON.stringify({format:selection.format,filters:{assetId:selection.assetId,year:selection.year,month:selection.month,capture:selection.fields.capture,storageId:selection.assetId === 'all' ? selection.fields.storage : 'all'}})});
@@ -4619,7 +4623,7 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'report' ? <ReportDownloadFlow title="Fuel reports" allLabel="All fuel records" assets={assets} years={yearOptions}
+      {modalMode === 'report' ? <ReportDownloadFlow title="Fuel reports" allLabel="All fuel records" assets={reportAssets} years={yearOptions}
         fields={[{key:'source',label:'Fuel source',initial:REPORT_SOURCE_ALL_WITH_SLIPS,options:reportStorageOptions}]}
         onClose={closeModal} onDownload={async selection => {
           const url = new URL(buildReportUrl(selection.fields.source,selection.year,selection.month,selection.format,accountantShareId,accountantRegisterId),window.location.origin);
