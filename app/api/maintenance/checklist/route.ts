@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isTrustedRequestOrigin } from '../../../../lib/trusted-request-origin';
 import { getServerSession } from '../../../../lib/auth-session';
 import { addAssetChecklistItem, listAssetChecklistItems, removeAssetChecklistItem } from '../../../../lib/asset-checklist-db';
 
@@ -10,7 +11,7 @@ async function handle(request: NextRequest, action: 'read' | 'add' | 'remove') {
   const session = await getServerSession({ requireActive: true });
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: 'Sign in to manage your checklists.' }, { status: 401, headers });
-  if (action !== 'read' && request.headers.get('origin') !== request.nextUrl.origin) return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403, headers });
+  if (action !== 'read' && !isTrustedRequestOrigin(request.headers.get('origin'), request.nextUrl.origin)) return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403, headers });
   const assetId = request.nextUrl.searchParams.get('assetId') || '';
   try {
     if (action === 'add') {
