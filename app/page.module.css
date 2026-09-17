@@ -4004,18 +4004,14 @@
   .openingProgressFill { animation: none; }
 }
 
-/* Reveal letters without changing the headline width or line spacing. */
+/* Reserve both lines while typing whole text runs, preserving font kerning. */
+.typedLine { position: relative; }
+.typedReserve { visibility: hidden; }
+.typedText { position: absolute; inset: 0; }
+
+/* Keep the scroll prompt inside the visible viewport, including manual zoom. */
 @media (prefers-reduced-motion: no-preference) {
-  .heroSection[data-story-step='brand'] .typedCharacter {
-    animation: openingTypeCharacter 1ms step-end var(--typing-delay) both;
+  .heroStory .heroMedia.heroSticky {
+    height: min(calc(var(--website-design-vh) * 100 - 5.75rem), calc(var(--website-visible-height, 100dvh) - 5.75rem));
   }
-}
-
-.heroSection[data-motion-paused='true'] .typedCharacter {
-  animation-play-state: paused;
-}
-
-@keyframes openingTypeCharacter {
-  from { visibility: hidden; }
-  to { visibility: visible; }
 }

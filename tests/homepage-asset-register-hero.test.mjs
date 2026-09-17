@@ -68,7 +68,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
 
   assert.match(hero, /const FEATURE_START_INDEX = 3/);
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
-  assert.match(hero, /brand: 3800,[\s\S]*?promise: 4800,[\s\S]*?preview: 3600/);
+  assert.match(hero, /brand: 5200,[\s\S]*?promise: 4800,[\s\S]*?preview: 3600/);
   for (const question of featureSteps) {
     assert.match(hero, new RegExp(`${question}: HERO_FEATURE_DURATION_MS`));
   }

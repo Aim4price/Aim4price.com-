@@ -11,7 +11,6 @@ import {
   useRef,
   useState,
   type FocusEvent,
-  type CSSProperties,
 } from 'react';
 import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
@@ -45,7 +44,7 @@ type FeatureStory = {
 };
 
 const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
-  brand: 3800,
+  brand: 5200,
   promise: 4800,
   preview: 3600,
   have: HERO_FEATURE_DURATION_MS,
@@ -88,6 +87,7 @@ const clampStoryIndex = (index: number) =>
 
 export default function HomeHeroExperience() {
   const [storyStepIndex, setStoryStepIndex] = useState(0);
+  const [typedCount, setTypedCount] = useState(0);
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
   const [canAutoplay, setCanAutoplay] = useState(false);
   const [isAutoplaying, setIsAutoplaying] = useState(false);
@@ -348,6 +348,13 @@ export default function HomeHeroExperience() {
     });
   }, [claimManualControl, isDesktopStory, updateStoryStep]);
 
+  useEffect(() => {
+    const length = OPENING_TAGLINE.join('').length;
+    if (!canAutoplay || storyStepIndex !== 0 || isPaused || !isPageVisible || !isHeroVisible || typedCount >= length) return;
+    const timer = window.setTimeout(() => setTypedCount((count) => Math.min(count + 1, length)), typedCount === 0 ? 250 : 45);
+    return () => window.clearTimeout(timer);
+  }, [canAutoplay, storyStepIndex, isPaused, isPageVisible, isHeroVisible, typedCount]);
+
   const handleQuestionChange = (question: QuestionKey, index: number) => {
     claimManualControl();
     setActiveQuestion(question);
@@ -433,14 +440,11 @@ export default function HomeHeroExperience() {
                       </span>
                     </span>
                     {OPENING_TAGLINE.map((line, lineIndex) => (
-                      <span key={line}>
-                        {Array.from(line).map((character, index) => (
-                          <span
-                            key={index}
-                            className={styles.typedCharacter}
-                            style={{ '--typing-delay': `${300 + (index + (lineIndex ? OPENING_TAGLINE[0].length : 0)) * 45}ms` } as CSSProperties}
-                          >{character}</span>
-                        ))}
+                      <span key={line} className={styles.typedLine}>
+                        <span className={styles.typedReserve}>{line}</span>
+                        <span className={styles.typedText}>{isDesktopStory
+                          ? line.slice(0, Math.max(0, typedCount - (lineIndex ? OPENING_TAGLINE[0].length : 0)))
+                          : line}</span>
                       </span>
                     ))}
                   </p>
