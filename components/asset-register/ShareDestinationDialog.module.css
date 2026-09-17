@@ -7,7 +7,7 @@
 .header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; padding-bottom:1.3rem; border-bottom:1px solid #e0e7e3; }
 .header h3 { margin:0; font:800 2rem/1.2 Montserrat,Arial,sans-serif; letter-spacing:-.04em; white-space:nowrap; }
 .header p { margin:.5rem 0 0; color:#64746a; font-size:.9rem; font-weight:650; line-height:1.5; white-space:nowrap; }
-.close { flex:0 0 2.75rem; height:2.75rem; padding:0; border:1px solid #d5e0da; border-radius:.9rem; background:#f5f9f7; color:#264f3e; font:700 1.35rem/1 Arial,sans-serif; cursor:pointer; }
+.close { flex:0 0 2.75rem; height:2.75rem; padding:0; border:1px solid #d5e0da; border-radius:.9rem; background:#f5f9f7; color:#264f3e; font:700 1.35rem/1 var(--font-body, 'Montserrat'), sans-serif; cursor:pointer; }
 .choices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem; padding-top:1.3rem; }
 .choice { min-width:0; display:flex; align-items:center; gap:.75rem; padding:1rem; min-height:6.25rem; text-align:left; border:1px solid #addfce; border-radius:1rem; background:linear-gradient(135deg,#fff,#eff9f5); color:#10644e; font-family:inherit; cursor:pointer; box-shadow:0 8px 22px rgba(19,53,45,.04); transition:background .15s,box-shadow .15s,border-color .15s; }
 .outside { border-color:#b7d4fa; background:linear-gradient(135deg,#fff,#f0f6ff); color:#205c95; }
@@ -16,7 +16,7 @@
 .copy { min-width:0; display:grid; gap:.4rem; white-space:nowrap; }
 .copy strong { font-size:.95rem; line-height:1.35; font-weight:800; color:#12352d; }
 .copy small { font-size:.8rem; line-height:1.4; font-weight:650; color:#64746a; }
-.arrow { margin-left:auto; flex:none; font:400 1.5rem/1 Arial,sans-serif; }
+.arrow { margin-left:auto; flex:none; font:400 1.5rem/1 var(--font-body, 'Montserrat'), sans-serif; }
 .choice:hover:not(:disabled),.close:hover:not(:disabled) { background:#eaf4ef; border-color:#659886; box-shadow:0 6px 18px rgba(19,53,45,.12); }
 .outside:hover:not(:disabled) { background:#eaf2ff; border-color:#6b9acd; }
 .choice:focus-visible,.close:focus-visible { outline:3px solid #719e8f; outline-offset:3px; }

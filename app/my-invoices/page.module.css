@@ -4854,7 +4854,7 @@
   border-radius: 0.78rem;
   color: #2b6655;
   background: rgba(255, 255, 255, 0.82);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
   font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 1.22rem);
   font-weight: 900;
   letter-spacing: 0.045em;
@@ -4944,7 +4944,7 @@
 .invoiceDropCodeMasked code {
   overflow-wrap: anywhere;
   color: #123f34;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
   font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 1.28rem);
   font-weight: 900;
   letter-spacing: 0.045em;

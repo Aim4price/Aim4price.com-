@@ -4427,7 +4427,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         throw new Error('The PDF report window was blocked. Allow pop-ups for Aim4price, then try again.');
       }
 
-      reportWindow.document.write('<!doctype html><title>Preparing Aim4price report...</title><body style="font-family: Arial, sans-serif; padding: 24px; color: #111827;">Preparing Aim4price estimate report...</body>');
+      reportWindow.document.write('<!doctype html><title>Preparing Aim4price report...</title><style>@font-face{font-family:Montserrat;src:url(/field-manager/montserrat-latin.woff) format("woff");font-style:normal;font-weight:100 900;font-display:swap}</style><body style="font-family: Montserrat, sans-serif; padding: 24px; color: #111827;">Preparing Aim4price estimate report...</body>');
       reportWindow.document.close();
 
       const form = document.createElement('form');

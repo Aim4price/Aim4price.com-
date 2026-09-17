@@ -1278,7 +1278,7 @@
   cursor: pointer;
   backdrop-filter: blur(8px);
 }
-.ownerPhotoViewerClose { top: 12px; right: 12px; width: 43px; height: 43px; font: 700 1.65rem/1 Arial, sans-serif; }
+.ownerPhotoViewerClose { top: 12px; right: 12px; width: 43px; height: 43px; font: 700 1.65rem/1 var(--font-body, 'Montserrat'), sans-serif; }
 .ownerPhotoViewerNav { top: 50%; width: 48px; height: 48px; padding-bottom: 4px; font: 800 2rem/1 Montserrat, sans-serif; transform: translateY(-50%); }
 .ownerPhotoViewerPrevious { left: 12px; }
 .ownerPhotoViewerNext { right: 12px; }
@@ -1730,7 +1730,7 @@
   background: #f5f8f6;
   color: var(--owner-ink);
   padding: 0 0 2px;
-  font: 700 1.35rem/1 Arial, sans-serif;
+  font: 700 1.35rem/1 var(--font-body, 'Montserrat'), sans-serif;
   cursor: pointer;
 }
 .reportFilterActions { display: grid; grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: 9px; }

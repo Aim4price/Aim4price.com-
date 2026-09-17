@@ -1645,7 +1645,7 @@
 
 .qrAssetMain [data-asset-choice-value="true"] {
   color: #697973;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
   font-size: 0.8em;
 }
 
@@ -1846,7 +1846,7 @@
 }
 
 .namePreviewCode {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
   color: #60716a;
   font-size: 0.7rem;
   font-weight: 780;
