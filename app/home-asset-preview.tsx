@@ -87,7 +87,7 @@ const QUESTIONS: readonly Question[] = [
   },
   {
     key: 'attention',
-    label: 'Stay ahead of what’s due',
+    label: 'Keep maintenance on track',
     icon: (
       <>
         <path d="M12 3.3 2.9 19.1h18.2L12 3.3Z" />
