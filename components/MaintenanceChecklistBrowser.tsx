@@ -10,7 +10,7 @@ import { useMaintenanceChecklist } from '../lib/use-maintenance-checklist';
 import { checklistOptions, type MaintenanceIdentity } from '../lib/maintenance-catalogue';
 import styles from './MaintenanceChecklistBrowser.module.css';
 
-type ChecklistAsset = { id: string; title: string; serialNumber?: string; meta?: string; selectedMethod?: string; maintenanceIdentity?: MaintenanceIdentity };
+type ChecklistAsset = { id: string; title: string; serialNumber?: string; meta?: string; headerMeta?: string; selectedMethod?: string; maintenanceIdentity?: MaintenanceIdentity };
 
 export default function MaintenanceChecklistBrowser({ assets, initialAssetId, onClose, onStartWork }: {
   assets: ChecklistAsset[];
@@ -103,7 +103,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
       if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }}>
-      <header className={styles.header} data-asset-choice-header={choosingAsset ? 'true' : undefined}><div><h2 id="maintenance-checklists-title">Maintenance checklists</h2><p>{choosingAsset ? 'Choose an asset.' : 'Tick items to include in the PDF.'}</p></div><button type="button" className={dialogStyles.close} onClick={onClose} aria-label="Close maintenance checklists">×</button></header>
+      <header className={styles.header} data-asset-choice-header={choosingAsset ? 'true' : undefined}><div><h2 id="maintenance-checklists-title">{choosingAsset ? 'Maintenance checklists' : asset?.title}</h2><p>{choosingAsset ? 'Choose an asset.' : asset?.headerMeta || 'No key details saved yet'}</p></div><button type="button" className={dialogStyles.close} onClick={onClose} aria-label="Close maintenance checklists">×</button></header>
       {choosingAsset ? <>
         <div data-asset-choice-toolbar="true">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets..." aria-label="Search assets or serial numbers" />
@@ -126,7 +126,6 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
       </> : <>
       <div className={`${styles.body} ${dialogStyles.body}`}>
         {asset ? <>
-          <div className={styles.identity}><strong>{asset.title}</strong><AssetSerialNumber value={asset.serialNumber} /><span>{checklist.label}</span></div>
           <div className={styles.tabs} aria-label="Checklist type">
             {([['checked', 'Checks'], ['serviced', 'Service'], ['repaired', 'Repairs']] as const).map(([value, title]) => <button key={value} type="button" disabled={!!busy || editing} aria-pressed={mode === value} onClick={() => setMode(value)}>{title}</button>)}
           </div>
