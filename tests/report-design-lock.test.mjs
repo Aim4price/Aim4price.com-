@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { MAINTENANCE_REPORT_LAYOUT_CSS } from '../lib/maintenance-report-style.ts';
 
 const APPROVED_REPORT_STYLES = [
   {
@@ -66,7 +67,7 @@ function fingerprint(value) {
 }
 
 function styleBlocks(source) {
-  return [...source.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((match) => normaliseCss(match[1]));
+  return [...source.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((match) => normaliseCss(match[1].replace('${MAINTENANCE_REPORT_FONT_CSS}', '').replace('${MAINTENANCE_REPORT_LAYOUT_CSS}', MAINTENANCE_REPORT_LAYOUT_CSS)));
 }
 
 test('approved report CSS remains visually locked to the reference PDFs', async () => {
@@ -139,4 +140,17 @@ test('PDF generation cannot silently substitute a second report design', async (
 test('the shared Asset Map theme is locked alongside each structural report layout', async () => {
   const source = await readFile(new URL('../lib/report-theme.ts', import.meta.url), 'utf8');
   assert.equal(fingerprint(normaliseCss(source)), '8914:b2322cb713cbc345', 'Intentional report-theme changes require visual review.');
+});
+
+
+test('maintenance report and checklist share layout and embedded variable Montserrat', async () => {
+  for (const path of ['../lib/asset-maintenance-report.ts', '../lib/asset-checklist-report.ts']) {
+    const source = await readFile(new URL(path, import.meta.url), 'utf8');
+    assert.match(source, /\$\{MAINTENANCE_REPORT_FONT_CSS\}/);
+    assert.match(source, /\$\{MAINTENANCE_REPORT_LAYOUT_CSS\}/);
+    assert.doesNotMatch(source, /fonts\.googleapis\.com/);
+  }
+  const font = await readFile(new URL('../lib/maintenance-report-style.ts', import.meta.url), 'utf8');
+  assert.match(font, /font-weight: 100 900/);
+  assert.match(font, /data:font\/woff;base64,/);
 });

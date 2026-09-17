@@ -1,3 +1,5 @@
+// Shared Montserrat typography and layout also used by the checklist PDF.
+import { MAINTENANCE_REPORT_FONT_CSS, MAINTENANCE_REPORT_LAYOUT_CSS } from './maintenance-report-style.ts';
 import { REPORT_THEME_CSS, REPORT_TOOLBAR_CSS, REPORT_TOOLBAR_HTML } from './report-theme.ts';
 import type { AccountProfile } from './account-profile';
 import type {
@@ -386,83 +388,9 @@ export function buildAssetMaintenanceReportHtml(options: AssetMaintenanceReportO
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>${escapeHtml(reportTitle)}</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet" />
 <style>
-  :root { color-scheme:light; --ink:#111827; --strong:#070b12; --muted:#5f6b7a; --line:#d7dde5; --line-strong:#b9c2ce; --soft:#f5f6f8; --green:#0b4a3a; --green-soft:#eaf4f0; --amber:#815c12; --amber-soft:#fff7e3; --red:#8b2424; --red-soft:#fff0f0; }
-  * { box-sizing:border-box; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  @page { size:A4; margin:8mm 9mm; }
-  html,body { margin:0; padding:0; background:#eef1f4; color:var(--ink); font-family:"Montserrat","Segoe UI",Arial,Helvetica,sans-serif; font-size:9.6px; line-height:1.35; }
-  .reportPage { width:min(100%,210mm); min-height:297mm; margin:18px auto; padding:11mm 11mm 9mm; background:#fff; box-shadow:0 16px 44px rgba(17,24,39,.13); }
-  .topbar { display:grid; grid-template-columns:22mm minmax(0,1fr) 62mm; gap:12px; align-items:center; min-height:18mm; padding:0 0 10px; border-bottom:1px solid var(--line-strong); }
-  .brand { display:contents; }
-  .assetReportLogo { display:block; width:18mm; max-height:18mm; object-fit:contain; }
-  .assetReportLogoFallback { width:18mm; height:18mm; display:grid; place-items:center; border:1.5px solid var(--strong); border-radius:50%; font-weight:800; }
-  .brand h1 { margin:0; font-size:16px; line-height:1.05; font-weight:800; letter-spacing:-.025em; }
-  .brand p { margin:5px 0 0; color:var(--muted); font-size:8.9px; font-weight:600; }
-  .meta { display:grid; grid-template-columns:21mm minmax(0,1fr); gap:4px 7px; min-width:0; font-size:8.3px; }
-  .meta span { color:var(--muted); font-weight:700; }
-  .meta strong { color:var(--strong); text-align:right; word-break:break-word; }
-  .actions { position:fixed; z-index:10; top:12px; right:16px; display:flex; justify-content:flex-end; gap:8px; }
-  .action { min-height:42px; display:inline-flex; align-items:center; border:1px solid #cfd5dd; background:#fff; color:var(--ink); border-radius:999px; padding:0 16px; text-decoration:none; font:inherit; font-size:12.5px; font-weight:800; cursor:pointer; }
-  .action:last-child { min-width:150px; justify-content:center; border-color:var(--strong); background:var(--strong); color:#fff; }
-  .hero { display:grid; grid-template-columns:minmax(0,1fr) 62mm; margin-top:11px; border:1px solid var(--line-strong); }
-  .heroMain { min-height:34mm; padding:11px 13px 12px; border-right:1px solid var(--line-strong); }
-  .eyebrow { margin:0 0 6px; color:var(--muted); font-size:8.1px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
-  .heroTitle { margin:0; color:var(--strong); font-size:21.5px; line-height:1.05; font-weight:800; letter-spacing:-.045em; }
-  .heroMeta { margin:7px 0 0; color:#3f4652; font-size:9.2px; font-weight:600; }
-  .heroStatus { display:flex; flex-direction:column; justify-content:center; padding:11px 12px; background:#fafbfc; }
-  .heroStatus span { display:block; font-size:8.8px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; }
-  .heroStatus strong { display:block; margin:6px 0 4px; font-size:17px; line-height:1.05; }
-  .heroStatus p { margin:6px 0 0; padding-top:7px; border-top:1px solid var(--line); color:var(--muted); font-size:8.3px; font-weight:600; }
-  .detailsGrid { display:grid; grid-template-columns:minmax(0,1fr) 62mm; gap:12px; margin:12px 0 10px; align-items:start; }
-  .stack { display:grid; gap:10px; }
-  .panel { break-inside:avoid; border:1px solid var(--line-strong); padding:10px 11px 11px; }
-  .panel h2 { margin:0 0 8px; color:var(--strong); font-size:10.8px; }
-  .assetReportRows { border-top:1px solid var(--line); }
-  .assetReportRow { display:grid; grid-template-columns:31mm minmax(0,1fr); gap:7px; min-height:20px; align-items:center; border-bottom:1px solid var(--line); }
-  .assetReportRow span { color:#38404c; font-size:8.8px; font-weight:600; }
-  .assetReportRow strong { color:var(--strong); font-size:9px; overflow-wrap:anywhere; }
-  .detailsGrid > .panel .assetReportRow { grid-template-columns:21mm minmax(0,1fr); min-height:17.5px; }
-  .detailsGrid > .panel .assetReportRow strong { text-align:right; font-size:8.2px; }
-  .statusGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); border:1px solid var(--line-strong); margin-bottom:10px; }
-  .statusGrid div { padding:8px 10px; border-right:1px solid var(--line); }
-  .statusGrid div:last-child { border-right:0; }
-  .statusGrid span { display:block; color:var(--muted); font-size:7.3px; font-weight:800; text-transform:uppercase; letter-spacing:.045em; }
-  .statusGrid strong { display:block; margin-top:4px; font-size:14px; }
-  .recordsSection { margin-top:10px; border:1px solid var(--line-strong); padding:10px 11px 11px; break-inside:auto; }
-  .sectionHeading { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; margin-bottom:11px; }
-  .sectionHeading h2 { margin:0 0 4px; font-size:10.8px; }
-  .sectionHeading p { margin:0; color:var(--muted); font-size:8px; font-weight:600; }
-  .sectionHeading > strong { min-width:24mm; min-height:22px; display:inline-flex; align-items:center; justify-content:center; padding:3px 8px; border:1px solid var(--line); background:#fafbfc; font-size:8px; text-transform:uppercase; white-space:nowrap; }
-  .maintenanceList { display:grid; gap:8px; }
-  .maintenanceCard { border:1px solid var(--line); break-inside:avoid; }
-  .maintenanceCardHead { display:grid; grid-template-columns:minmax(0,1fr) 35mm; gap:0; padding:0; background:#fafbfc; border-bottom:1px solid var(--line); }
-  .maintenanceCardHead > div { padding:7px 8px; }
-  .maintenanceCardHead > div + div { border-left:1px solid var(--line); }
-  .maintenanceCardHead h3 { margin:5px 0 3px; font-size:9.4px; }
-  .maintenanceCardHead p { margin:0; color:#505d67; font-size:8px; font-weight:600; }
-  .maintenanceStatus { display:flex; align-items:baseline; gap:6px; width:fit-content; margin:0 0 5px; padding-left:7px; border-left:3px solid #7b8794; color:#39444d; }
-  .maintenanceStatus span { color:var(--muted); font-size:6.8px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
-  .maintenanceStatus strong { color:inherit; font-size:7.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
-  .status-overdue { color:var(--red); border-left-color:#b84a4a; }
-  .status-due,.status-due_soon { color:var(--amber); border-left-color:#b68a2c; }
-  .status-done { color:var(--green); border-left-color:#2f7a65; }
-  .maintenanceType { text-align:left; }
-  .maintenanceType span,.maintenanceType small { display:block; color:var(--muted); font-size:7.3px; font-weight:800; text-transform:uppercase; }
-  .maintenanceType strong { display:block; margin:4px 0; }
-  .maintenanceDetails { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .maintenanceDetail { min-height:37px; padding:7px 8px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
-  .maintenanceDetail:nth-child(2n) { border-right:0; }
-  .maintenanceDetail span { display:block; color:var(--muted); font-size:7.3px; font-weight:800; text-transform:uppercase; letter-spacing:.045em; }
-  .maintenanceDetail strong { display:block; margin-top:3px; color:var(--strong); font-size:8.6px; line-height:1.35; overflow-wrap:anywhere; }
-  .assetReportEmpty { padding:20px; border:1px dashed #bfc7cd; color:var(--muted); font-weight:700; }
-  .footer { display:grid; grid-template-columns:1fr auto; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line-strong); font-size:7.35px; color:#323a45; }
-  .footer strong { display:block; margin-bottom:4px; color:var(--strong); font-size:8.2px; }
-  .footer p { margin:0; font-style:italic; line-height:1.35; }
-  @media screen and (max-width:800px){ .topbar,.hero,.detailsGrid{grid-template-columns:1fr}.meta{min-width:0}.heroMain{border-right:0;border-bottom:1px solid #bfc7cd}.statusGrid{grid-template-columns:repeat(2,1fr)}.maintenanceCardHead{grid-template-columns:1fr}.maintenanceType{text-align:left}.maintenanceDetails{grid-template-columns:1fr}.maintenanceDetail{border-right:0}.actions{margin-left:0;margin-right:0}.reportPage{width:calc(100% - 20px)} }
-  @media print { html,body{background:#fff}.reportPage{width:auto;min-height:281mm;margin:0;padding:0;box-shadow:none}.actions{display:none}.footerPage:after{content:' - Page ' counter(page)} }
+  ${MAINTENANCE_REPORT_FONT_CSS}
+  ${MAINTENANCE_REPORT_LAYOUT_CSS}
   ${REPORT_TOOLBAR_CSS}
   ${REPORT_THEME_CSS}
     </style>

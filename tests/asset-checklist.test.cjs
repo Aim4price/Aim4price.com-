@@ -11,7 +11,7 @@ function load(file, mocks = {}) {
 }
 const shared = load('lib/asset-checklist.ts');
 const catalogue = load('lib/maintenance-catalogue.ts', { './maintenance-catalogue-seed': load('lib/maintenance-catalogue-seed.ts') });
-const report = load('lib/asset-checklist-report.ts', { './maintenance-catalogue': catalogue, './report-theme': load('lib/report-theme.ts') });
+const report = load('lib/asset-checklist-report.ts', { './maintenance-catalogue': catalogue, './report-theme': load('lib/report-theme.ts'), './maintenance-report-style.ts': load('lib/maintenance-report-style.ts') });
 const A = '10000000-0000-4000-8000-000000000001';
 const B = '10000000-0000-4000-8000-000000000002';
 const item = { mode: 'checked', label: 'Check replacement belt', description: 'Inspect for cracks.' };
@@ -152,7 +152,7 @@ test('PDF endpoint validates selected IDs against the owned asset and rejects em
   assert.equal(result.status, 200);
   assert.equal(result.headers.get('Content-Type'), 'application/pdf');
   assert.ok(rendered.includes(item.label));
-  assert.ok(rendered.includes('class="logo"'));
+  assert.ok(rendered.includes('class="assetReportLogo"'));
   assert.ok(rendered.includes('data:image/png;base64,AA=='));
   assert.ok(rendered.includes('Generated '));
   assert.ok(!rendered.includes('Visible damage and loose parts'));
