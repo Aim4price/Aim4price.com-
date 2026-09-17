@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import AssetReportTypeIcon from '../components/asset-register/AssetReportTypeIcon';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from '../components/WebsitePortal';
 import styles from './page.module.css';
@@ -716,11 +717,12 @@ function ManagePreview() {
 
 function CostPreview() {
   const reports = [
-    ['Open asset valuation', 'PDF value summary with notes and documents.'],
-    ['Download maintenance report', 'PDF or Excel service and repair costs.'],
-    ['Download fuel report', 'PDF or Excel fuel costs by month.'],
-    ['Download depreciation log', 'PDF or Excel log of saved value changes.'],
-    ['Download cost of ownership report', 'PDF or Excel ownership costs and VAT.'],
+    ['valuation', 'Asset valuation', 'Values, notes and documents.'],
+    ['maintenance', 'Maintenance report', 'Service and repair costs.'],
+    ['fuel', 'Fuel report', 'Monthly fuel costs.'],
+    ['depreciation', 'Depreciation log', 'Saved value changes.'],
+    ['ownership', 'Cost of ownership', 'Ownership costs and budgets.'],
+    ['map', 'Asset map', 'Saved asset location.'],
   ] as const;
 
   return (
@@ -734,16 +736,15 @@ function CostPreview() {
       </header>
 
       <div className={styles.reportList}>
-        {reports.map(([title, description], index) => (
+        {reports.map(([kind, title, description]) => (
           <div key={title} className={styles.reportRow}>
             <span className={styles.reportIcon}>
-              <MiniGlyph type={index === 2 ? 'fuel' : index === 4 ? 'cost' : 'reports'} />
+              <AssetReportTypeIcon kind={kind} />
             </span>
             <span>
               <strong>{title}</strong>
               <small>{description}</small>
             </span>
-            <b aria-hidden="true">›</b>
           </div>
         ))}
       </div>

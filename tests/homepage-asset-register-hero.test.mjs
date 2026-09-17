@@ -338,10 +338,10 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.doesNotMatch(costPreview, /previewEyebrow/);
   assert.doesNotMatch(costPreview, /See what the asset costs across fuel, maintenance and ownership\./);
   assert.doesNotMatch(costPreview, /reportRowHighlighted/);
-  assert.match(costPreview, /Download maintenance report/);
-  assert.match(costPreview, /Download fuel report/);
-  assert.match(costPreview, /Download depreciation log/);
-  assert.match(costPreview, /Download cost of ownership report/);
+  assert.match(costPreview, /Maintenance report/);
+  assert.match(costPreview, /Fuel report/);
+  assert.match(costPreview, /Depreciation log/);
+  assert.match(costPreview, /Cost of ownership/);
 
   // What needs attention? — the real open-issue presentation.
   const attentionPreview = preview.slice(
