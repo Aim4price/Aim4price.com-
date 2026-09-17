@@ -103,6 +103,8 @@ test('checklist and PDF routes reject unauthenticated callers and never accept a
   }
   const pdf = load('app/api/maintenance/checklist/pdf/route.ts', {
     'next/server': { NextRequest, NextResponse },
+    '../../../../../lib/asset-registers': { getAssetRegisterReportLogoUrl: async () => '/brand/example.png' },
+    '../../../../../lib/report-logo': { resolveReportLogoUrlForHtml: async () => 'data:image/png;base64,AA==' },
     '../../../../../lib/auth-session': { getServerSession: async () => null },
     '../../../../../lib/asset-checklist-db': {}, '../../../../../lib/asset-register-db': {},
     '../../../../../lib/maintenance-catalogue-db': {}, '../../../../../lib/maintenance-catalogue': {},
@@ -132,6 +134,8 @@ test('PDF endpoint validates selected IDs against the owned asset and rejects em
   let rendered = '';
   const api = load('app/api/maintenance/checklist/pdf/route.ts', {
     'next/server': { NextRequest, NextResponse },
+    '../../../../../lib/asset-registers': { getAssetRegisterReportLogoUrl: async () => '/brand/example.png' },
+    '../../../../../lib/report-logo': { resolveReportLogoUrlForHtml: async () => 'data:image/png;base64,AA==' },
     '../../../../../lib/auth-session': { getServerSession: async () => ({ user: { id: 'alice' } }) },
     '../../../../../lib/asset-checklist-db': { listAssetChecklistItems: async (owner, assetId) => { assert.equal(owner, 'alice'); if(assetId !== A) throw Error('ASSET_NOT_FOUND'); return [{ ...item, id: A }]; } },
     '../../../../../lib/asset-register-db': { getAssetRegisterItemById: async () => ({ title: 'Tractor' }) },
@@ -148,6 +152,9 @@ test('PDF endpoint validates selected IDs against the owned asset and rejects em
   assert.equal(result.status, 200);
   assert.equal(result.headers.get('Content-Type'), 'application/pdf');
   assert.ok(rendered.includes(item.label));
+  assert.ok(rendered.includes('class="logo"'));
+  assert.ok(rendered.includes('data:image/png;base64,AA=='));
+  assert.ok(rendered.includes('Generated '));
   assert.ok(!rendered.includes('Visible damage and loose parts'));
   assert.equal((await api.GET(new NextRequest(`https://test/api/maintenance/checklist/pdf?assetId=${B}&item=checked:asset_custom_${A}`))).status, 404);
 });
