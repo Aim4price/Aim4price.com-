@@ -80,6 +80,7 @@ test('checklist and PDF routes reject unauthenticated callers and never accept a
   let accessed = false;
   const mocks = {
     'next/server': { NextRequest, NextResponse },
+    '../../../../lib/trusted-request-origin': load('lib/trusted-request-origin.ts'),
     '../../../../lib/auth-session': { getServerSession: async () => null },
     '../../../../lib/asset-checklist-db': { listAssetChecklistItems: () => { accessed = true; } },
   };
@@ -149,4 +150,39 @@ test('PDF endpoint validates selected IDs against the owned asset and rejects em
   assert.ok(rendered.includes(item.label));
   assert.ok(!rendered.includes('Visible damage and loose parts'));
   assert.equal((await api.GET(new NextRequest(`https://test/api/maintenance/checklist/pdf?assetId=${B}&item=checked:asset_custom_${A}`))).status, 404);
+});
+
+
+test('checklist mutations accept public origins behind a proxy and reject untrusted origins before database access', async () => {
+  const { NextRequest, NextResponse } = require('next/server');
+  const calls = [];
+  const route = load('app/api/maintenance/checklist/route.ts', {
+    'next/server': { NextRequest, NextResponse },
+    '../../../../lib/trusted-request-origin': load('lib/trusted-request-origin.ts'),
+    '../../../../lib/auth-session': { getServerSession: async () => ({ user: { id: 'alice' } }) },
+    '../../../../lib/asset-checklist-db': {
+      addAssetChecklistItem: async (user, asset, input) => { calls.push(['add', user, asset]); return { ...input, id: B }; },
+      removeAssetChecklistItem: async (user, asset, id) => { calls.push(['remove', user, asset, id]); },
+    },
+  });
+  for (const origin of ['https://www.aim4price.com', 'https://aim4price.com']) {
+    for (const method of ['POST', 'DELETE']) {
+      const response = await route[method](new NextRequest(`http://localhost:3000/api/maintenance/checklist?assetId=${A}&itemId=${B}`, {
+        method, headers: { origin, 'content-type': 'application/json' },
+        ...(method === 'POST' ? { body: JSON.stringify(item) } : {}),
+      }));
+      assert.equal(response.status, method === 'POST' ? 201 : 200);
+    }
+  }
+  assert.equal(calls.length, 4);
+  assert.ok(calls.every(call => call[1] === 'alice' && call[2] === A));
+  for (const origin of [null, 'null', 'https://evil.example', 'https://www.aim4price.com.evil.example', 'https://www.aim4price.com/path', 'http://www.aim4price.com']) {
+    for (const method of ['POST', 'DELETE']) {
+      const response = await route[method](new NextRequest(`http://localhost:3000/api/maintenance/checklist?assetId=${A}`, {
+        method, headers: { ...(origin ? { origin } : {}), 'x-forwarded-host': 'evil.example', 'x-forwarded-proto': 'https' },
+      }));
+      assert.equal(response.status, 403, `${method}: ${origin}`);
+    }
+  }
+  assert.equal(calls.length, 4);
 });
