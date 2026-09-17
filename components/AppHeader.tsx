@@ -788,15 +788,33 @@ export default function AppHeader({
       const centre = (labelBox.left + labelBox.width / 2 - menuBox.left)
         * menu.offsetWidth / menuBox.width;
       menu.style.setProperty('--account-menu-anchor-x', `${centre}px`);
+      const popover = menu.querySelector<HTMLElement>(`.${styles.accountPopover}`);
+      if (popover) {
+        const scale = menuBox.width / menu.offsetWidth;
+        const viewport = window.visualViewport;
+        const viewportBottom = viewport
+          ? viewport.offsetTop + viewport.height
+          : window.innerHeight;
+        const availableHeight = Math.max(0, viewportBottom - popover.getBoundingClientRect().top - 12);
+        popover.style.maxHeight = `${availableHeight / scale}px`;
+      }
     };
     alignToManageLabel();
     const observer = new ResizeObserver(alignToManageLabel);
     observer.observe(menu);
     observer.observe(label);
     window.addEventListener('resize', alignToManageLabel);
+    window.addEventListener('scroll', alignToManageLabel, true);
+    window.addEventListener('aim4price:canvas-geometry', alignToManageLabel);
+    window.visualViewport?.addEventListener('resize', alignToManageLabel);
+    window.visualViewport?.addEventListener('scroll', alignToManageLabel);
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', alignToManageLabel);
+      window.removeEventListener('scroll', alignToManageLabel, true);
+      window.removeEventListener('aim4price:canvas-geometry', alignToManageLabel);
+      window.visualViewport?.removeEventListener('resize', alignToManageLabel);
+      window.visualViewport?.removeEventListener('scroll', alignToManageLabel);
       menu.style.removeProperty('--account-menu-anchor-x');
     };
   }, [menuOpen]);
