@@ -652,17 +652,34 @@ function WorthPreview() {
   );
 }
 
+function ManageActionGlyph({ type }: { type: ManageGlyph | 'budget' | 'pricing' }) {
+  const paths: Partial<Record<ManageGlyph | 'budget' | 'pricing', string>> = {
+    reports: 'M12 3v12m-5-5 5 5 5-5M4 21h16',
+    cost: 'M9 3h6l-2 4h-2L9 3ZM8 7h8M8 8c-2 3-5 5-5 9 0 5 18 5 18 0 0-4-3-6-5-9M14 12h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3m2-7v8',
+    budget: 'M9 3h6l-2 4h-2L9 3ZM8 7h8M8 8c-2 3-5 5-5 9 0 5 18 5 18 0 0-4-3-6-5-9M14 12h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3m2-7v8',
+    fuel: 'M12 5v14M5 12h14',
+    pricing: 'm3 17 6-6 4 4 8-10M15 5h6v6',
+    maintenance: 'm9 3 1-2h4l1 2 2 1 2 0 2 4-1 2v3l1 2-2 4h-2l-2 1-1 2h-4l-1-2-2-1H5l-2-4 1-2v-3L3 8l2-4h2l2-1ZM15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0',
+    map: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 0-6 0 3 3 0 0 0 6 0',
+    marketplace: 'M2 3h3l3 13h11l3-10H6M10 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2M18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
+  };
+  const path = paths[type];
+  return path ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d={path} /></svg> : <MiniGlyph type={type as ManageGlyph} />;
+}
+
 function ManagePreview() {
-  const actions: readonly { type: ManageGlyph; title: string; description: string }[] = [
+  const actions: readonly { type: ManageGlyph | 'budget' | 'pricing'; title: string; description: string }[] = [
     { type: 'edit', title: 'Update asset', description: 'Edit details, documents and photos.' },
     { type: 'reports', title: 'Reports', description: 'Choose and download asset reports.' },
     { type: 'cost', title: 'Add cost', description: 'Record an expense for this asset.' },
+    { type: 'budget', title: 'Add budget', description: 'Set a spending limit for this asset.' },
     { type: 'fuel', title: 'Add fuel', description: 'Capture a fuel record for this asset.' },
     { type: 'maintenance', title: 'Maintenance', description: 'Add or review maintenance records.' },
+    { type: 'pricing', title: 'Manage pricing', description: 'Refresh values or calculate future value.' },
     { type: 'map', title: 'Asset map', description: 'View this asset selected on the map.' },
     { type: 'qr', title: 'QR code', description: 'Copy, download or print the QR label.' },
     { type: 'marketplace', title: 'Marketplace', description: 'Create a listing for this asset.' },
-    { type: 'remove', title: 'Remove asset', description: 'Archive, sell, write off or remove.' },
+    { type: 'remove', title: 'Dispose or remove asset', description: 'Archive, sell, write off or remove.' },
   ];
 
   return (
@@ -685,7 +702,7 @@ function ManagePreview() {
               action.type === 'remove' ? styles.manageTileDanger : '',
             ].filter(Boolean).join(' ')}
           >
-            <span className={styles.manageTileIcon}><MiniGlyph type={action.type} /></span>
+            <span className={styles.manageTileIcon}><ManageActionGlyph type={action.type} /></span>
             <span>
               <strong>{action.title}</strong>
               <small>{action.description}</small>

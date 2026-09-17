@@ -315,7 +315,9 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     'Asset map',
     'QR code',
     'Marketplace',
-    'Remove asset',
+    'Add budget',
+    'Manage pricing',
+    'Dispose or remove asset',
   ]) {
     assert.match(preview, new RegExp(action));
   }
@@ -325,7 +327,6 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   );
   assert.doesNotMatch(preview, /function ManagePreview\(\)[\s\S]*?Manage asset/);
   assert.doesNotMatch(preview, /function ManagePreview\(\)[\s\S]*?Choose what you want to do with this asset\./);
-  assert.doesNotMatch(preview, /Dispose or remove asset/);
 
   // What does it cost me? — Fuel and ownership report choices.
   const costPreview = preview.slice(
