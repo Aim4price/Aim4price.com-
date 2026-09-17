@@ -66,18 +66,8 @@ const QUESTIONS: readonly Question[] = [
     ),
   },
   {
-    key: 'cost',
-    label: 'Know what it really costs',
-    icon: (
-      <>
-        <circle cx="12" cy="12" r="8.2" />
-        <path d="M14.8 8.5c-.8-.7-1.7-1-2.8-1-1.7 0-2.8.8-2.8 2 0 3.1 5.8 1.4 5.8 4.7 0 1.4-1.2 2.3-3 2.3-1.2 0-2.4-.4-3.2-1.2M12 5.8v12.4" />
-      </>
-    ),
-  },
-  {
     key: 'manage',
-    label: 'Manage its working life',
+    label: 'Take control of every asset',
     icon: (
       <>
         <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
@@ -86,8 +76,18 @@ const QUESTIONS: readonly Question[] = [
     ),
   },
   {
+    key: 'cost',
+    label: 'Know what it costs',
+    icon: (
+      <>
+        <circle cx="12" cy="12" r="8.2" />
+        <path d="M14.8 8.5c-.8-.7-1.7-1-2.8-1-1.7 0-2.8.8-2.8 2 0 3.1 5.8 1.4 5.8 4.7 0 1.4-1.2 2.3-3 2.3-1.2 0-2.4-.4-3.2-1.2M12 5.8v12.4" />
+      </>
+    ),
+  },
+  {
     key: 'attention',
-    label: 'See what needs attention',
+    label: 'Stay ahead of what’s due',
     icon: (
       <>
         <path d="M12 3.3 2.9 19.1h18.2L12 3.3Z" />

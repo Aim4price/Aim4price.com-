@@ -30,7 +30,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   const featureSteps = [...heroStages.matchAll(/^\s+'([^']+)',?$/gm)].map(
     (match) => match[1],
   );
-  assert.deepEqual(featureSteps, ['have', 'worth', 'cost', 'manage', 'attention']);
+  assert.deepEqual(featureSteps, ['have', 'worth', 'manage', 'cost', 'attention']);
 
   const storySteps = hero.slice(
     hero.indexOf('export const HERO_STORY_STEPS'),
@@ -55,7 +55,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /indicative value/);
   assert.match(hero, /documents, maintenance, fuel and ownership costs/);
 
-  assert.match(hero, /<a[\s\S]*?href="#choose-role"[\s\S]*?className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleRoleSkip\}[\s\S]*?See Aim4price in Action/);
+  assert.match(hero, /<a[\s\S]*?href="#choose-role"[\s\S]*?className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleRoleSkip\}[\s\S]*?Find your fit/);
   assert.match(hero, /<Link href="\/valuation" className=\{styles\.secondaryCta\}>[\s\S]*?Get a Free Estimate/);
   assert.doesNotMatch(hero, /heroAudienceCta|heroSectors|Choose how you’ll use Aim4price|Agriculture|Construction|Industrial|Motor/);
   assert.match(hero, /useState\(0\)/);
@@ -152,16 +152,13 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     hero.indexOf('const clampStoryIndex'),
   );
   for (const copy of [
-    'One complete record for every asset.',
-    'Understand what it’s worth.',
-    'See what it really costs.',
-    'Manage its entire working life.',
-    'Bring the next action forward.',
-    'serial or VIN',
-    'valuation changes and depreciation history',
-    'invoices, repairs, parts, fuel and recurring commitments',
-    'listing, disposal or transfer',
-    'overdue maintenance, licence and document dates',
+    'Know what you have.',
+    'Know what it’s worth.',
+    'Take control of every asset.',
+    'Know what it costs.',
+    'Stay ahead of what’s due.',
+    'set budgets',
+    'equipment-specific checklists',
   ]) {
     assert.match(featureStories, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
@@ -170,7 +167,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /data-active=\{isActive \? 'true' : 'false'\}/);
   assert.match(hero, /aria-hidden=\{!isActive \|\| storyMode !== 'features'\}/);
   assert.doesNotMatch(hero, /featureNarrativeEyebrow|feature\.eyebrow|eyebrow: string/);
-  assert.match(hero, /<span>\/ 05<\/span>/);
+  assert.match(hero, /<span>\/ 5<\/span>/);
   assert.match(hero, /aria-pressed=\{isPaused\}/);
   assert.match(hero, /\{isDesktopStory &&[\s\S]*?!isManuallyControlled &&[\s\S]*?!hasAutoplayFinished \? \(/);
   assert.match(hero, /data-story-pause-control/);
@@ -193,16 +190,16 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
 
   assert.deepEqual(
     [...preview.matchAll(/key: '([^']+)'/g)].map((match) => match[1]),
-    ['have', 'worth', 'cost', 'manage', 'attention'],
+    ['have', 'worth', 'manage', 'cost', 'attention'],
   );
   assert.deepEqual(
     [...preview.matchAll(/label: '([^']+)'/g)].map((match) => match[1]),
     [
       'Know what you have',
       'Know what it’s worth',
-      'Know what it really costs',
-      'Manage its working life',
-      'See what needs attention',
+      'Take control of every asset',
+      'Know what it costs',
+      'Stay ahead of what’s due',
     ],
   );
 
@@ -415,7 +412,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='features'\] \.assetStageMotion \{[\s\S]*?translate3d\(var\(--asset-stage-shift-x\), 0, 0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='features'\] \.featureNarrative \{[\s\S]*?opacity: 1;[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /data-autoplay='true'[\s\S]*?assetStoryProgressActive::after \{[\s\S]*?animation-duration: 4800ms/);
-  assert.match(storyHeroStyles, /\.featureNarrativeCount \{[\s\S]*?position: absolute;[\s\S]*?top: 0\.35rem;[\s\S]*?bottom: auto/);
+  assert.match(storyHeroStyles, /\.featureNarrativeCount \{[\s\S]*?position: relative;[\s\S]*?text-align: left/);
 
   const desktopStoryStyles = storyHeroStyles;
   assert.match(desktopStoryStyles, /\.heroStory \{[\s\S]*?min-height: calc\(var\(--website-design-vh\) \* 440\)/);
@@ -428,7 +425,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(desktopStoryStyles, /\.storyHeroLogo,[\s\S]*?\.assetStageMotion,[\s\S]*?\.featureNarrative \{[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1/);
   assert.match(desktopStoryStyles, /\.assetStageMotion \{[\s\S]*?--asset-preview-center-inset: 2\.325rem;[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 5rem\)\);[\s\S]*?justify-self: end/);
   assert.match(desktopStoryStyles, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: 7\.75rem/);
-  assert.match(desktopStoryStyles, /\.featureNarrativeLayer h2,[\s\S]*?\.featureNarrativeLayer > p:last-child \{[\s\S]*?inset-inline-start: calc\(0rem - var\(--feature-copy-inset\)\)/);
+  assert.match(desktopStoryStyles, /\.featureNarrativeLayer h2,[\s\S]*?\.featureNarrativeLayer > p:last-child,[\s\S]*?\.featureNarrativeCount \{[\s\S]*?inset-inline-start: calc\(0rem - var\(--feature-copy-inset\)\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetQuestionGroup,[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?top: var\(--asset-preview-center-inset\);[\s\S]*?bottom: var\(--asset-preview-center-inset\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: calc\(-4\.25rem \+ var\(--asset-preview-center-inset\)\);[\s\S]*?bottom: auto/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard,[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
