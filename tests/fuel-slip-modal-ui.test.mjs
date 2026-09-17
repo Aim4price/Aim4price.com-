@@ -106,7 +106,7 @@ test('fuel slip manager is compact, scalable and exposes secondary details on de
   assert.match(managerModal, /aria-expanded=\{isExpanded\}/);
   assert.match(managerModal, /aria-controls=\{detailsId\}/);
   assert.match(managerModal, /styles\.fuelSlipManagerExpanded/);
-  assert.match(managerModal, /<HistoryIcon className=\{styles\.buttonIcon\} \/>[\s\S]*?<span>Change history<\/span>/);
+  assert.doesNotMatch(managerModal, /<span>Change history<\/span>/);
   assert.match(managerModal, /<ListPagination\s+label="Fuel slips pagination"/);
   assert.match(managerModal, /Show all fuel slips/);
   assert.match(managerModal, /styles\.fuelSlipManagerBackdrop/);

@@ -4075,7 +4075,6 @@ export default function FuelClient({
             </div>
             <div className={`${styles.slipManageOptions} ${manageStyles.grid}`}>
               {!isAccountantReadOnly ? <button type="button" className={manageStyles.primary} onClick={() => { const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipReview(slip); }}><EditIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>{fuelSlipNeedsReview(managedFuelSlip) ? 'Review / complete' : 'Edit'}</span><small>Check and update slip details.</small></span></button> : null}
-              <button type="button" className={manageStyles.action} onClick={() => { const trigger = fuelSlipManagerChildTriggerRef.current; const slip = managedFuelSlip; setManagedFuelSlip(null); void openFuelSlipHistory(slip); fuelSlipManagerChildTriggerRef.current = trigger; }}><HistoryIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>Change history</span><small>See previous changes.</small></span></button>
               {!isAccountantReadOnly ? <button type="button" className={manageStyles.danger} onClick={() => { const trigger = fuelSlipManagerChildTriggerRef.current; const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipDeleteConfirm(slip); fuelSlipManagerChildTriggerRef.current = trigger; }}><TrashIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>Void</span><small>Void this fuel slip.</small></span></button> : null}
             </div>
           </section>
