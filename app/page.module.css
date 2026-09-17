@@ -3416,10 +3416,9 @@
 }
 
 .featureNarrativeCount {
-  position: absolute;
-  right: 0;
-  top: 0.35rem;
-  bottom: auto;
+  position: relative;
+  margin: 0;
+  text-align: left;
   display: inline-flex;
   align-items: baseline;
   gap: 0.35rem;
@@ -3587,7 +3586,8 @@
   }
 
 .featureNarrativeLayer h2,
-  .featureNarrativeLayer > p:last-child {
+  .featureNarrativeLayer > p:last-child,
+  .featureNarrativeCount {
     position: relative;
     inset-inline-start: calc(0rem - var(--feature-copy-inset));
   }
@@ -3779,8 +3779,8 @@
     position: relative;
     right: auto;
     bottom: auto;
-    justify-content: flex-end;
-    margin-top: 1.5rem;
+    justify-content: flex-start;
+    margin-top: 0;
   }
 
   .compactHeroActions {

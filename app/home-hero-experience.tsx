@@ -24,8 +24,8 @@ export const HERO_FEATURE_DURATION_MS = 4800;
 export const HERO_STAGES: readonly QuestionKey[] = [
   'have',
   'worth',
-  'cost',
   'manage',
+  'cost',
   'attention',
 ];
 
@@ -56,29 +56,24 @@ const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
 
 const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   have: {
-    title: 'One complete record for every asset.',
-    body:
-      'Keep its identity, serial or VIN, specifications, photos, documents, condition and last-known location together, so you always know what belongs where.',
+    title: 'Know what you have.',
+    body: 'Keep your assets, photos, documents and details together in one organised register.',
   },
   worth: {
-    title: 'Understand what it’s worth.',
-    body:
-      'Create an indicative estimate from year, usage, condition and replacement context, then keep valuation changes and depreciation history visible.',
-  },
-  cost: {
-    title: 'See what it really costs.',
-    body:
-      'Connect invoices, repairs, parts, fuel and recurring commitments to the asset that caused them, with budgets and supporting evidence.',
+    title: 'Know what it’s worth.',
+    body: 'Estimate asset values, track depreciation and plan when to replace or sell.',
   },
   manage: {
-    title: 'Manage its entire working life.',
-    body:
-      'Update details, plan maintenance, capture work and usage, organise documents and carry the same record through listing, disposal or transfer.',
+    title: 'Take control of every asset.',
+    body: 'Update details, record costs, add budgets and manage maintenance from one place.',
+  },
+  cost: {
+    title: 'Know what it costs.',
+    body: 'Track expenses and fuel, set budgets and see what each asset costs to own.',
   },
   attention: {
-    title: 'Bring the next action forward.',
-    body:
-      'Surface overdue maintenance, licence and document dates, budget pressure and reported problems before important work is missed.',
+    title: 'Stay ahead of what’s due.',
+    body: 'Schedule services, use equipment-specific checklists and keep a record of completed work.',
   },
 };
 
@@ -471,7 +466,7 @@ export default function HomeHeroExperience() {
                       className={styles.primaryCta}
                       onClick={handleRoleSkip}
                     >
-                      See Aim4price in Action
+                      Find your fit
                     </a>
                     <Link href="/valuation" className={styles.secondaryCta}>
                       Get a Free Estimate
@@ -517,16 +512,17 @@ export default function HomeHeroExperience() {
                       data-active={isActive ? 'true' : 'false'}
                       aria-hidden={!isActive || storyMode !== 'features'}
                     >
+                      <p className={styles.featureNarrativeCount} aria-hidden="true">
+                        <strong>{HERO_STAGES.indexOf(question) + 1}</strong>
+                        <span>/ 5</span>
+                      </p>
                       <h2>{feature.title}</h2>
                       <p>{feature.body}</p>
                     </div>
                   );
                 })}
 
-                <p className={styles.featureNarrativeCount} aria-hidden="true">
-                  <strong>{String(HERO_STAGES.indexOf(activeQuestion) + 1).padStart(2, '0')}</strong>
-                  <span>/ 05</span>
-                </p>
+
               </aside>
 
               <div className={styles.compactHeroActions}>
@@ -535,7 +531,7 @@ export default function HomeHeroExperience() {
                   className={styles.primaryCta}
                   onClick={handleRoleSkip}
                 >
-                  See Aim4price in Action
+                  Find your fit
                 </a>
                 <Link href="/valuation" className={styles.secondaryCta}>
                   Get a Free Estimate
