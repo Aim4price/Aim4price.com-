@@ -1497,6 +1497,7 @@ export default function MaintenanceClient({
             <div className={`${styles.ledgerManageActions} ${manageStyles.grid}`}>
               <button className={manageStyles.primary} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><EditIcon /><span className={manageStyles.copy}><span>Edit</span><small>Update maintenance details.</small></span></button>
               {managedRecord.status === 'upcoming' ? <button className={manageStyles.action} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><CheckIcon /><span className={manageStyles.copy}><span>Clear</span><small>Confirm the work is complete.</small></span></button> : null}
+              <button className={manageStyles.action} type="button" onClick={() => { setChecklistAssetId(managedRecord.assetId); setManagedRecord(null); setModalMode('checklists'); }}><ChecklistIcon /><span className={manageStyles.copy}><span>Download checklist</span><small>Choose PDF checklist items for this asset.</small></span></button>
               <button className={manageStyles.danger} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><TrashIcon /><span className={manageStyles.copy}><span>Delete</span><small>Remove this maintenance record.</small></span></button>
             </div>
           </section>
