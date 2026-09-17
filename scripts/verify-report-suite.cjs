@@ -14,7 +14,7 @@ const out = path.resolve(process.env.REPORT_EVIDENCE_DIR || 'report-evidence');
 fs.mkdirSync(out, { recursive: true });
 
 const pure = new Set([
-  'report-theme', 'report-print', 'simple-xlsx', 'usage-readings',
+  'report-theme', 'maintenance-report-style', 'report-print', 'simple-xlsx', 'usage-readings',
   'asset-groups-shared', 'admin-work-tracker-shared', 'report-chronology',
   'asset-depreciation-timeline', 'depreciation-umbrella-summary',
   'insurance-cover-catalogue', 'ownership-budget-tracker',

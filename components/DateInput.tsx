@@ -47,7 +47,8 @@ function CalendarSelect({ label, value, options, onChange }: {
       <span>{options.find((option) => option.value === value)?.label}</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
     </button>
-    {open ? <div id={id} ref={menu} role="listbox" aria-label={label} className={styles.selectMenu} onKeyDown={(event) => {
+    {/* Keep this menu inside the body-portalled modal dialog: a separate body overlay would sit below its top layer. */}
+    {open ? <div id={id} ref={menu} role="listbox" data-dropdown-overlay-contained="true" aria-label={label} className={styles.selectMenu} onKeyDown={(event) => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.current?.focus(); return; }
       const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'));
       const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
