@@ -51,11 +51,11 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /Know what you have\./);
   assert.match(hero, /Know what it’s worth\./);
   assert.match(hero, /Know what it costs\./);
-  assert.match(hero, /every important asset one living record, connecting its/);
-  assert.match(hero, /indicative value/);
-  assert.match(hero, /documents, maintenance, fuel and ownership costs/);
+  assert.match(hero, /Manage your vehicles, machinery and equipment in one place/);
+  assert.match(hero, /indicative asset values/);
+  assert.match(hero, /documents, maintenance, budgets and costs connected/);
 
-  assert.match(hero, /<a[\s\S]*?href="#choose-role"[\s\S]*?className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleRoleSkip\}[\s\S]*?Find your fit/);
+  assert.match(hero, /<a[\s\S]*?href="#choose-role"[\s\S]*?className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleRoleSkip\}[\s\S]*?Get started/);
   assert.match(hero, /<Link href="\/valuation" className=\{styles\.secondaryCta\}>[\s\S]*?Get a Free Estimate/);
   assert.doesNotMatch(hero, /heroAudienceCta|heroSectors|Choose how you’ll use Aim4price|Agriculture|Construction|Industrial|Motor/);
   assert.match(hero, /useState\(0\)/);
@@ -156,7 +156,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     'Know what it’s worth.',
     'Take control of every asset.',
     'Know what it costs.',
-    'Stay ahead of what’s due.',
+    'Keep maintenance on track.',
     'set budgets',
     'equipment-specific checklists',
   ]) {
@@ -199,7 +199,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
       'Know what it’s worth',
       'Take control of every asset',
       'Know what it costs',
-      'Stay ahead of what’s due',
+      'Keep maintenance on track',
     ],
   );
 

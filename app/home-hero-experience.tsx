@@ -57,23 +57,23 @@ const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
 const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   have: {
     title: 'Know what you have.',
-    body: 'Keep your assets, photos, documents and details together in one organised register.',
+    body: 'Keep your vehicles, machinery and equipment in one organised register, with photos, documents and key details.',
   },
   worth: {
     title: 'Know what it’s worth.',
-    body: 'Estimate asset values, track depreciation and plan when to replace or sell.',
+    body: 'Get indicative asset values, track depreciation and plan when to replace or sell.',
   },
   manage: {
     title: 'Take control of every asset.',
-    body: 'Update details, record costs, add budgets and manage maintenance from one place.',
+    body: 'Update details, add fuel and costs, set budgets and manage maintenance from one place.',
   },
   cost: {
     title: 'Know what it costs.',
-    body: 'Track expenses and fuel, set budgets and see what each asset costs to own.',
+    body: 'Track expenses and fuel against each asset, set budgets and download clear ownership cost reports.',
   },
   attention: {
-    title: 'Stay ahead of what’s due.',
-    body: 'Schedule services, use equipment-specific checklists and keep a record of completed work.',
+    title: 'Keep maintenance on track.',
+    body: 'Schedule services, follow equipment-specific checklists and keep track of reported problems and completed work.',
   },
 };
 
@@ -456,8 +456,8 @@ export default function HomeHeroExperience() {
                   </p>
 
                   <p className={styles.heroPromiseText}>
-                    Aim4price gives every important asset one living record, connecting its
-                    identity, indicative value, documents, maintenance, fuel and ownership costs.
+                    Manage your vehicles, machinery and equipment in one place. Keep asset details,
+                    estimated values, documents, maintenance, budgets and costs connected.
                   </p>
 
                   <div className={styles.heroActions}>
@@ -466,7 +466,7 @@ export default function HomeHeroExperience() {
                       className={styles.primaryCta}
                       onClick={handleRoleSkip}
                     >
-                      Find your fit
+                      Get started
                     </a>
                     <Link href="/valuation" className={styles.secondaryCta}>
                       Get a Free Estimate
@@ -531,7 +531,7 @@ export default function HomeHeroExperience() {
                   className={styles.primaryCta}
                   onClick={handleRoleSkip}
                 >
-                  Find your fit
+                  Get started
                 </a>
                 <Link href="/valuation" className={styles.secondaryCta}>
                   Get a Free Estimate
