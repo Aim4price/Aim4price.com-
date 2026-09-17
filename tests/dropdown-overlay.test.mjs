@@ -329,3 +329,13 @@ test('rendered anchor coordinates convert once into the website logical coordina
     if(originalWindow===undefined) delete globalThis.window; else globalThis.window=originalWindow;
   }
 });
+
+
+test('calendar listboxes remain inside their body-portalled top-layer dialog', async () => {
+  const source = await read('components/DateInput.tsx');
+  const css = await read('components/DateInput.module.css');
+  assert.match(source, /role="listbox" data-dropdown-overlay-contained="true"/);
+  assert.match(source, /createPortal\(<dialog[\s\S]*<CalendarSelect[\s\S]*<\/dialog>, document\.body\)/);
+  assert.match(source, /dialog\.current\?\.showModal\(\)/);
+  assert.match(css, /\.selectMenu\s*\{[^}]*max-height:[^}]*overflow-y:\s*auto/);
+});
