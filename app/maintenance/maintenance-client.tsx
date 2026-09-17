@@ -1863,7 +1863,15 @@ export default function MaintenanceClient({
         </div>
       ) : null}
 
-      {modalMode === 'checklists' ? <MaintenanceChecklistBrowser assets={assets.map((asset) => ({ ...asset, title: cleanMaintenanceAssetTitle(asset.title) }))} initialAssetId={checklistAssetId} onClose={closeModal} onStartWork={startChecklistWork} /> : null}
+      {modalMode === 'checklists' ? <MaintenanceChecklistBrowser assets={assets.map((asset) => ({
+        ...asset,
+        title: cleanMaintenanceAssetTitle(asset.title),
+        headerMeta: [
+          asset.yearModel ? `${assetYearLabelFromCategory(asset.categoryLabel)}: ${asset.yearModel}` : '',
+          formatAssetUsage(asset.usageReading, asset.usageMetric) ? `Usage: ${formatAssetUsage(asset.usageReading, asset.usageMetric)}` : '',
+          asset.condition ? `Condition: ${asset.condition}` : '',
+        ].filter(Boolean).join(' · '),
+      }))} initialAssetId={checklistAssetId} onClose={closeModal} onStartWork={startChecklistWork} /> : null}
 
       {modalMode === 'filter' ? (
         <FilterFlow title="Filter maintenance records" onClose={closeModal} onClear={clearFilters} onApply={applyFilters}>
