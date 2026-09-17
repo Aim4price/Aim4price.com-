@@ -2059,7 +2059,7 @@
   height: auto;
   flex: 1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
   gap: 0.52rem;
   padding-top: 0.68rem;
 }
@@ -2071,9 +2071,9 @@
   align-items: center;
   gap: 0.55rem;
   padding: 0.55rem 0.58rem;
-  border: 1px solid rgba(193, 212, 204, 0.78);
+  border: 1px solid #d1dfee;
   border-radius: 0.7rem;
-  background: #ffffff;
+  background: linear-gradient(180deg, #ffffff, #f5f8fa);
   box-shadow: 0 6px 14px rgba(24, 70, 55, 0.04);
 }
 
@@ -2131,8 +2131,7 @@
   font-size: 0.59rem;
   line-height: 1.12;
   font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .manageTile small {
@@ -4015,3 +4014,13 @@
     height: min(calc(var(--website-design-vh) * 100 - 5.75rem), calc(var(--website-visible-height, 100dvh) - 5.75rem));
   }
 }
+
+/* Match the asset register Manage actions without changing other previews. */
+.manageTile .manageTileIcon {
+  background: transparent;
+  color: #234877;
+}
+.manageTilePrimary .manageTileIcon { color: #195440; }
+.manageTileDanger .manageTileIcon,
+.manageTileDanger strong { color: #ac3035; }
+.manageTile svg { width: 1.1rem; height: 1.1rem; }
