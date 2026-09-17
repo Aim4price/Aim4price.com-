@@ -46,8 +46,8 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /^'use client';/);
   assert.match(hero, /Aim4price\.com asset management software built for South Africa/);
   assert.match(hero, /<span>\s*Aim4price\.com\s*<span className=\{styles\.openingProgress\}/);
-  assert.match(hero, /<span>Asset Management Software<\/span>/);
-  assert.match(hero, /<span>built for South Africa\.<\/span>/);
+  assert.match(hero, /'Asset Management Software'/);
+  assert.match(hero, /'built for South Africa\.'/);
   assert.match(hero, /Know what you have\./);
   assert.match(hero, /Know what it’s worth\./);
   assert.match(hero, /Know what it costs\./);

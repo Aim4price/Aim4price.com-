@@ -3873,7 +3873,7 @@
     animation: openingHaloBreathe 3.8s ease-in-out infinite;
   }
 
-  .storyScrollCue svg {
+  .storyScrollCue .scrollMouseWheel {
     animation: openingScrollNudge 1.8s ease-in-out infinite;
   }
 }
@@ -3882,18 +3882,17 @@
   position: absolute;
   z-index: 8;
   bottom: 1.1rem;
-  left: calc(50% + 3rem);
+  left: 50%;
   transform: translateX(-50%);
   display: grid;
   place-items: center;
   width: 3.25rem;
   height: 3.25rem;
   padding: 0;
-  border: 1px solid #8ecfb5;
-  border-radius: 50%;
-  color: #087553;
-  background: #eff9f4;
-  box-shadow: 0 0.5rem 1.5rem rgba(8, 75, 57, 0.1);
+  border: 0;
+  border-radius: 0.75rem;
+  color: #526f64;
+  background: transparent;
   cursor: pointer;
 }
 
@@ -3909,7 +3908,7 @@
 
 .heroSection[data-motion-paused='true'] .storyHeroLogoImage,
 .heroSection[data-motion-paused='true'] .storyHeroLogo::before,
-.heroSection[data-motion-paused='true'] .storyScrollCue svg {
+.heroSection[data-motion-paused='true'] .scrollMouseWheel {
   animation-play-state: paused;
 }
 
@@ -4003,4 +4002,20 @@
 
 @media (prefers-reduced-motion: reduce) {
   .openingProgressFill { animation: none; }
+}
+
+/* Reveal letters without changing the headline width or line spacing. */
+@media (prefers-reduced-motion: no-preference) {
+  .heroSection[data-story-step='brand'] .typedCharacter {
+    animation: openingTypeCharacter 1ms step-end var(--typing-delay) both;
+  }
+}
+
+.heroSection[data-motion-paused='true'] .typedCharacter {
+  animation-play-state: paused;
+}
+
+@keyframes openingTypeCharacter {
+  from { visibility: hidden; }
+  to { visibility: visible; }
 }

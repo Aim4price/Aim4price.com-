@@ -11,12 +11,14 @@ import {
   useRef,
   useState,
   type FocusEvent,
+  type CSSProperties,
 } from 'react';
 import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const FEATURE_START_INDEX = 3;
+const OPENING_TAGLINE = ['Asset Management Software', 'built for South Africa.'] as const;
 
 export const HERO_FEATURE_DURATION_MS = 4800;
 
@@ -430,8 +432,17 @@ export default function HomeHeroExperience() {
                         ) : null}
                       </span>
                     </span>
-                    <span>Asset Management Software</span>
-                    <span>built for South Africa.</span>
+                    {OPENING_TAGLINE.map((line, lineIndex) => (
+                      <span key={line}>
+                        {Array.from(line).map((character, index) => (
+                          <span
+                            key={index}
+                            className={styles.typedCharacter}
+                            style={{ '--typing-delay': `${300 + (index + (lineIndex ? OPENING_TAGLINE[0].length : 0)) * 45}ms` } as CSSProperties}
+                          >{character}</span>
+                        ))}
+                      </span>
+                    ))}
                   </p>
                 </div>
 
@@ -527,19 +538,6 @@ export default function HomeHeroExperience() {
                 </Link>
               </div>
 
-              {isDesktopStory && storyStep === 'brand' ? (
-                <button
-                  type="button"
-                  className={styles.storyScrollCue}
-                  aria-label="Scroll down to explore Aim4price"
-                  onClick={handleScrollCue}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path d="M12 4v15m-6-6 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              ) : null}
-
               {isDesktopStory &&
                 !isManuallyControlled &&
                 !hasAutoplayFinished ? (
@@ -555,6 +553,20 @@ export default function HomeHeroExperience() {
               ) : null}
             </div>
           </div>
+          {isDesktopStory && storyStep === 'brand' ? (
+            <button
+              type="button"
+              className={styles.storyScrollCue}
+              aria-label="Scroll down to explore Aim4price"
+              onClick={handleScrollCue}
+            >
+              <svg width="30" height="48" viewBox="0 0 30 48" fill="none" aria-hidden="true">
+                <rect x="3" y="2" width="24" height="44" rx="12" stroke="currentColor" strokeWidth="2" />
+                <path className={styles.scrollMouseWheel} d="M15 10v6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+            </button>
+          ) : null}
+
         </div>
       </div>
     </section>
