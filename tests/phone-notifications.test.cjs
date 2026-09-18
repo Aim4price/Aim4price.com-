@@ -257,6 +257,7 @@ test('Field Manager inbox and read writes exclude assets outside current access'
   const record = {id:'task',assetId:'allowed',computedStatus:'due',maintenanceType:'service',updatedAtIso:'2026-09-10',assignedFieldManagerId:'member'};
   const fixture = load('lib/field-manager-notifications.ts', {
     './field-manager': {listFieldManagerAssets:async()=>assets},
+    './asset-issue-notes': {listOpenIssueNoteGroupsForAssets:async()=>[]},
     './asset-maintenance': {listAssetMaintenanceRecords:async()=>[record,{...record,id:'private',assetId:'denied'}]},
     './app-notification-read-state': {listReadNotificationEventKeys:async()=>new Set(),markNotificationEventKeysRead:async(...args)=>writes.push(args)},
   });

@@ -1471,7 +1471,11 @@ export default function ScanClient({
     setActiveEditor(null);
     setShowLocationReminder(false);
     setNotice(null);
-    setDoneMessage(reportProblemMode ? "Problem reported successfully." : `${message} Returning to asset actions…`);
+    if (reportProblemMode) {
+      setDoneMessage("Problem reported successfully.");
+    } else {
+      setDoneMessage(`${message} Returning to asset actions…`);
+    }
     setIsDone(true);
 
     try {
@@ -1489,7 +1493,11 @@ export default function ScanClient({
     }, 80);
 
     window.setTimeout(() => {
-      window.location.replace(reportProblemMode ? appReturnHref : assetActionsHref);
+      if (reportProblemMode) {
+        window.location.replace(appReturnHref);
+      } else {
+        window.location.replace(assetActionsHref);
+      }
     }, FIELD_MANAGER_RETURN_DELAY_MS);
   }
 
