@@ -323,10 +323,10 @@ function renderBudgetSteps(steps: OwnershipBudgetStep[] = []): string {
   return steps.map(step => {
     const colour = step.status === 'reached' ? '#b44242' : step.status === 'warning' ? '#a76b12' : '#197454';
     const label = `${step.budget.periodLabel} · ${step.percent}% used · ${formatMoneyWithCents(step.spent)} of ${formatMoneyWithCents(step.budget.amount)}`;
-    return `<div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+    return `<div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide assetReportBudgetStep">
       <span>${escapeHtml(step.budget.period === 'monthly' ? 'Monthly budget' : 'Annual budget')} · after this cost</span>
       <strong>${escapeHtml(label)}</strong>
-      <svg viewBox="0 0 600 12" width="100%" height="12" role="img" aria-label="${escapeHtml(label)}"><rect width="600" height="12" rx="6" fill="#e5ecee"/><rect width="${Math.max(0, Math.min(100, step.percent)) * 6}" height="12" rx="6" fill="${colour}"/></svg>
+      <svg viewBox="0 0 600 12" preserveAspectRatio="none" width="100%" height="12" role="img" aria-label="${escapeHtml(label)}"><rect width="600" height="12" rx="6" fill="#e5ecee"/><rect width="${Math.max(0, Math.min(100, step.percent)) * 6}" height="12" rx="6" fill="${colour}"/></svg>
       <span>${escapeHtml(step.overBy > 0 ? `${formatMoneyWithCents(step.overBy)} over budget` : `${formatMoneyWithCents(step.remaining)} remaining`)}${step.excluded ? ' · Fuel excluded from this budget' : ''}</span>
     </div>`;
   }).join('');
@@ -1142,6 +1142,22 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
         }
       }
       ${REPORT_THEME_CSS}
+      /* Keep the budget track and its labels on the same inset at every report width. */
+      .assetReportInvoiceHeader > div,
+      .assetReportInvoiceDetails > .assetReportMaintenanceDetail { padding: 10px 12px; }
+      .assetReportBudgetStep { display: grid; gap: 6px; }
+      .assetReportBudgetStep > span { margin: 0; line-height: 1.4; }
+      .assetReportBudgetStep > svg { display: block; width: 100%; height: 12px; margin: 2px 0; }
+      .assetReportBudgetNote {
+        margin: 12px 0 16px;
+        padding: 10px 12px;
+        border-left: 3px solid var(--line-strong);
+        background: var(--soft-2);
+        color: var(--muted);
+        font-size: 9px;
+        line-height: 1.6;
+      }
+      @media screen { .assetReportScreenBar { background: #fff; } }
     </style>
   </head>
   <body>
@@ -1215,7 +1231,7 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
               </div>
               <strong>${escapeHtml(invoiceRecordCountLabel(options.summary.invoiceCount))}</strong>
             </div>
-            <p>${escapeHtml(BUDGET_TRACKER_NOTE)}</p>
+            <p class="assetReportBudgetNote">${escapeHtml(BUDGET_TRACKER_NOTE)}</p>
             ${renderInvoiceRecords(chronologicalCosts(options.invoices), buildOwnershipBudgetTracker(options.budgetInvoices ?? options.invoices, options.budgets ?? []))}
           </section>
         </div>

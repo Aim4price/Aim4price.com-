@@ -24,7 +24,7 @@ const APPROVED_REPORT_STYLES = [
   {
     path: '../lib/my-invoices-report.ts',
     styleIndexes: [0],
-    fingerprints: ['10415:1ce05b0b33a2ac45'],
+    fingerprints: ['10928:60fcc592d122a350'],
   },
   {
     path: '../app/api/fuel/report/route.ts',
