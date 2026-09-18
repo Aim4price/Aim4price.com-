@@ -11818,13 +11818,13 @@
   }
 }
 /* === Asset Options modal: centred option layout final pass === */
-.optionsModal .assetOptionsGrid {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid {
   justify-content: center !important;
   align-items: stretch !important;
   gap: 1rem !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -11834,14 +11834,14 @@
   padding: 1.18rem 1.25rem !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton > .buttonIcon {
   flex: 0 0 auto !important;
   width: 1.42rem !important;
   height: 1.42rem !important;
   margin: 0 !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton > span {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton > span {
   display: grid !important;
   justify-items: start !important;
   align-content: center !important;
@@ -11851,35 +11851,35 @@
   min-width: 0 !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton strong,
-.optionsModal .assetOptionsGrid .optionActionButton small {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton strong,
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton small {
   text-align: left !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton small {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton small {
   max-width: 24rem !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton:last-child:nth-child(odd) {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton:last-child:nth-child(odd) {
   grid-column: auto !important;
   justify-self: stretch !important;
   width: 100% !important;
 }
 
 @media (max-width: 900px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal .assetOptionsGrid .optionActionButton:last-child:nth-child(odd) {
+  :global(:where(html:not(:has([data-website-canvas])))) :is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton:last-child:nth-child(odd) {
     grid-column: auto !important;
     width: 100% !important;
   }
 }
 
 @media (max-width: 520px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal .assetOptionsGrid .optionActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) :is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton {
     justify-content: flex-start !important;
     align-items: center !important;
   }
 
-  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal .assetOptionsGrid .optionActionButton > span {
+  :global(:where(html:not(:has([data-website-canvas])))) :is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton > span {
     width: 100% !important;
   }
 }
@@ -12530,12 +12530,12 @@
   color: #124635;
 }
 
-.optionsModal .assetOptionsGrid {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid {
   align-items: stretch !important;
   gap: 1rem !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton {
   display: grid !important;
   grid-template-columns: 3.15rem minmax(0, 1fr) !important;
   align-items: center !important;
@@ -12547,7 +12547,7 @@
   padding: 1.15rem 1.25rem !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton > .buttonIcon {
   grid-column: 1 !important;
   width: 1.48rem !important;
   height: 1.48rem !important;
@@ -12556,7 +12556,7 @@
   margin: 0 !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton > span {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton > span {
   grid-column: 2 !important;
   width: 100% !important;
   max-width: none !important;
@@ -12567,12 +12567,12 @@
   gap: 0.32rem !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton strong,
-.optionsModal .assetOptionsGrid .optionActionButton small {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton strong,
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton small {
   text-align: left !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton small {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton small {
   max-width: 24rem !important;
 }
 
@@ -12596,7 +12596,7 @@
 
 @media (max-width: 520px) {
   :global(:where(html:not(:has([data-website-canvas])))) .addAssetChoiceButton,
-  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal .assetOptionsGrid .optionActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) :is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton {
     grid-template-columns: 2.65rem minmax(0, 1fr) !important;
     gap: 0.85rem !important;
   }
@@ -15276,14 +15276,14 @@
 
 
 /* 2026-05-15: quote option modal polish and Leaflet overlay stacking fix */
-.optionsModal .assetOptionsGrid .optionActionButton,
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton,
 .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard {
   justify-items: center !important;
   align-items: center !important;
   text-align: center !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton > span,
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton > span,
 .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard > span,
 .optionsModal .assetQuoteChoiceText {
   align-items: center !important;
@@ -15291,8 +15291,8 @@
   text-align: center !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton strong,
-.optionsModal .assetOptionsGrid .optionActionButton small,
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton strong,
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton small,
 .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard strong,
 .optionsModal .assetQuoteChoiceGrid .assetQuoteChoiceCard small,
 .assetQuoteChoiceText strong,
@@ -15323,7 +15323,7 @@
 
 
 /* === 2026-05-16: final modal spacing fixes === */
-.optionsModal .assetOptionsGrid .optionActionButton {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton {
   display: grid !important;
   grid-template-columns: 3.25rem minmax(0, 1fr) !important;
   align-items: center !important;
@@ -15335,7 +15335,7 @@
   text-align: left !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton > .buttonIcon {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton > .buttonIcon {
   grid-column: 1 !important;
   justify-self: center !important;
   align-self: center !important;
@@ -15343,7 +15343,7 @@
   height: 1.35rem !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton > span {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton > span {
   grid-column: 2 !important;
   min-width: 0 !important;
   display: flex !important;
@@ -15355,18 +15355,18 @@
   text-align: left !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton strong,
-.optionsModal .assetOptionsGrid .optionActionButton small {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton strong,
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton small {
   width: 100% !important;
   text-align: left !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton strong {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton strong {
   display: block !important;
   line-height: 1.12 !important;
 }
 
-.optionsModal .assetOptionsGrid .optionActionButton small {
+:is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton small {
   display: block !important;
   max-width: 26rem !important;
   line-height: 1.35 !important;
@@ -15426,7 +15426,7 @@
 }
 
 @media (max-width: 760px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal .assetOptionsGrid .optionActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) :is(.optionsModal, .assetUpdateMenuBody) .assetOptionsGrid .optionActionButton {
     grid-template-columns: 2.8rem minmax(0, 1fr) !important;
     min-height: 5.35rem !important;
     padding: 0.95rem !important;
@@ -41164,15 +41164,9 @@ button.documentOpenLink {
 /* Update asset opens a section menu; each section keeps its own form. */
 .managementAccountModal.assetUpdateMenuModal { height: auto !important; min-height: 0 !important; }
 .assetUpdateMenuBody { padding: 1.5rem 2rem !important; }
-.assetUpdateMenuGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.assetUpdateMenuOption { display: flex; align-items: center; gap: 1rem; padding: 1.4rem; min-height: 8rem; border: 1px solid #cfddd7; border-radius: 1.1rem; background: #f8fbf9; color: #173d32; text-align: left; font: inherit; cursor: pointer; }
-.assetUpdateMenuOption > span:nth-child(2) { flex: 1; min-width: 0; }
-.assetUpdateMenuOption strong { display: block; font-size: 1.05rem; font-weight: 800; }
-.assetUpdateMenuOption small { display: block; margin-top: .4rem; color: #64746a; font-size: .85rem; line-height: 1.5; }
-.assetUpdateMenuIcon { display: grid; place-items: center; width: 2.8rem; height: 2.8rem; flex-shrink: 0; background: #e8f3ed; border-radius: .85rem; }
-.assetUpdateMenuOption > svg { flex-shrink: 0; }
-.assetUpdateMenuOption:hover { border-color: #81b49d; background: #eef7f2; }
-.assetUpdateMenuOption:focus-visible { outline: 3px solid rgba(24,112,83,.35); outline-offset: 3px; }
-@media (max-width: 700px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .assetUpdateMenuGrid { grid-template-columns: 1fr; }
-}
+/* Read-only classification sits beside Settings with clear label/value hierarchy. */
+.assetClassificationSummary { display: flex; flex-wrap: wrap; align-items: center; gap: .85rem 1.5rem; min-width: 0; margin: 0; padding: .65rem 0; }
+.assetClassificationSummary > div { display: grid; gap: .25rem; min-width: 0; }
+.assetClassificationSummary > div + div { padding-left: 1.5rem; border-left: 1px solid #d8e4de; }
+.assetClassificationSummary dt { color: #64746a; font-size: .72rem; font-weight: 700; line-height: 1.4; }
+.assetClassificationSummary dd { margin: 0; color: #173d32; font-size: 1rem; font-weight: 750; line-height: 1.4; overflow-wrap: anywhere; }
