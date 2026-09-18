@@ -213,7 +213,7 @@
   border: 1px solid #e0e8ed;
   border-radius: 0.95rem;
   background: #f8fafb;
-  font: 600 0.84rem/1.56 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font: 600 0.84rem/1.56 var(--font-body, 'Montserrat'), sans-serif;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

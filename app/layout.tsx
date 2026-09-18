@@ -55,11 +55,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: BACKGROUND_PREFERENCE_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: APP_REQUEST_CONTEXT_SCRIPT }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Montserrat:wght@100..900&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          href="/field-manager/montserrat-latin.woff"
+          as="font"
+          type="font/woff"
+          crossOrigin="anonymous"
         />
       </head>
       <body>

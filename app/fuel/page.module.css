@@ -3129,7 +3129,7 @@
   border-top: 1px solid rgba(199, 211, 224, 0.96);
   background: #f8fbfd;
   color: #405164;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
   font-size: 0.8rem;
   line-height: 1.48;
   white-space: pre-wrap;

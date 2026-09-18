@@ -1,8 +1,18 @@
+/* Use the same bundled variable Montserrat face across every page and app. */
+@font-face {
+  font-family: 'Montserrat';
+  src: url('/field-manager/montserrat-latin.woff') format('woff');
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
   --modal-backdrop-color: rgba(12, 24, 35, 0.42);
   --modal-backdrop-filter: blur(12px) saturate(0.9);
   --font-body: 'Montserrat';
-  --font-heading: 'Montserrat';
+  --font-heading: var(--font-body);
+  --font-montserrat: var(--font-body);
   --brand-700: #184d3d;
   --brand-900: #123b30;
   --text-strong: #243c35;
@@ -44,7 +54,7 @@ html {
 }
 
 body {
-  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body, 'Montserrat'), ui-sans-serif, system-ui, sans-serif;
   background: linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
   color: var(--text-strong);
   -webkit-font-smoothing: antialiased;
@@ -80,6 +90,16 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+/* Textual codes and browser-default controls use the site typeface too. */
+code,
+kbd,
+samp,
+pre,
+option,
+optgroup {
+  font-family: inherit;
 }
 
 /* Shared asset-choice visual contract, aligned to Export Asset Register. */

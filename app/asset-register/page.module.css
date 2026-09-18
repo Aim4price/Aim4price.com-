@@ -1271,7 +1271,7 @@
 }
 
 .codeValue {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
   font-size: 0.92rem !important;
 }
 
