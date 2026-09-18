@@ -18704,17 +18704,14 @@ export default function AssetRegisterClient({
             </div>
 
             {showAssetUpdateMenu ? (
-              <div className={`${styles.modalScrollBody} ${styles.assetUpdateMenuBody}`}>
-                <div className={styles.assetUpdateMenuGrid}>
+              <div className={`${styles.modalScrollBody} ${styles.assetUpdateMenuBody} ${styles.ownerCommandModal}`}>
+                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
                   {ASSET_FORM_SECTION_TABS.map((section) => (
-                    <button key={section.step} type="button" className={styles.assetUpdateMenuOption}
+                    <button key={section.step} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${section.step === 2 ? styles.optionFeaturedButton : ''}`}
                       data-asset-update-section={section.step} onClick={() => openAssetFormSection(section.step)}
                       autoFocus={section.step === 2}>
-                      <span className={styles.assetUpdateMenuIcon} aria-hidden="true">
-                        {section.step === 2 ? <UpdateAssetIcon className={styles.buttonIcon} /> : section.step === 3 ? <ShieldIcon className={styles.buttonIcon} /> : <DocumentIcon className={styles.buttonIcon} />}
-                      </span>
+                      {section.step === 2 ? <UpdateAssetIcon className={styles.buttonIcon} /> : section.step === 3 ? <ShieldIcon className={styles.buttonIcon} /> : <DocumentIcon className={styles.buttonIcon} />}
                       <span><strong>{section.label}</strong><small>{section.step === 2 ? 'Edit asset details and usage.' : section.step === 3 ? 'Manage ownership, finance and insurance.' : 'Manage documents and photos.'}</small></span>
-                      <ChevronRightIcon className={styles.buttonIcon} />
                     </button>
                   ))}
                 </div>
@@ -18793,10 +18790,19 @@ export default function AssetRegisterClient({
                 {manualAssetStep === 2 ? (
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
                     <div className={styles.manualUtilityRow}>
-                      <div className={styles.manualSelectedTypeStrip}>
-                        <span>{editingAsset ? 'Type' : 'Type of Asset:'}</span>
-                        <strong>{selectedManualAssetType.label}</strong>
-                      </div>
+                      {editingAsset ? (
+                        <dl className={styles.assetClassificationSummary}>
+                          <div><dt>Asset type</dt><dd>{selectedManualAssetType.label}</dd></div>
+                          {editingAsset.equipmentFamilyLabel?.trim() ? (
+                            <div><dt>Family</dt><dd>{editingAsset.equipmentFamilyLabel}</dd></div>
+                          ) : null}
+                        </dl>
+                      ) : (
+                        <div className={styles.manualSelectedTypeStrip}>
+                          <span>Type of Asset:</span>
+                          <strong>{selectedManualAssetType.label}</strong>
+                        </div>
+                      )}
 
                       <button
                         type="button"
