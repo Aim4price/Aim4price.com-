@@ -1,5 +1,5 @@
 .page {
-  min-height: calc(var(--website-design-vh) * 100);
+  min-height: var(--website-visible-height, 100dvh);
   color: var(--text-strong);
   background: #eef1ef;
 }
@@ -11,7 +11,9 @@
 
 .heroSection {
   position: relative;
-  min-height: clamp(34rem, calc(calc(var(--website-design-vh) * 100) - 5.75rem), 48rem);
+  min-height: max(30rem, calc(var(--website-visible-height, 100dvh) - 5.75rem));
+  display: grid;
+  align-items: center;
   overflow: hidden;
   background: #e8ece9;
   isolation: isolate;
@@ -47,13 +49,12 @@
 .heroGrid {
   position: relative;
   z-index: 3;
-  min-height: clamp(34rem, calc(calc(var(--website-design-vh) * 100) - 5.75rem), 48rem);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(16rem, 19rem);
   align-items: center;
   justify-content: space-between;
   gap: clamp(2.25rem, calc(var(--website-design-vw) * 3), 3.5rem);
-  padding: clamp(3.5rem, calc(var(--website-design-vw) * 5), 5.25rem) 0;
+  padding: 3rem 0;
 }
 
 .heroCopy {
@@ -229,18 +230,16 @@
 }
 
 .modalDialog {
-  --modal-gutter: clamp(1.25rem, calc(var(--website-design-vw) * 2.5), 1.75rem);
+  --modal-gutter: 2rem;
 
-  width: min(var(--website-dialog-reference-width, 100%), 52rem);
-  max-height: min(calc(var(--website-visible-height) * 0.92), 56rem);
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 46rem);
+  max-height: calc(var(--website-visible-height, 100dvh) - 3rem);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: clamp(1.35rem, calc(var(--website-design-vw) * 2.5), 2rem);
-  background:
-    radial-gradient(circle at top right, rgba(35, 145, 104, 0.08), transparent 25rem),
-    linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+  border-radius: 1.5rem;
+  background: #ffffff;
   box-shadow:
     0 36px 90px rgba(2, 16, 12, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
@@ -249,10 +248,12 @@
 .modalHeader {
   flex: 0 0 auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1.45rem var(--modal-gutter) 1.15rem;
+  margin: 2rem var(--modal-gutter) 0;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.11);
 }
 
 .modalHeaderCopy {
@@ -273,7 +274,7 @@
   margin: 0;
   color: #14392e;
   font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: clamp(1.8rem, calc(var(--website-design-vw) * 3), 2.4rem);
+  font-size: 2rem;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.052em;
@@ -286,10 +287,10 @@
   width: 2.75rem;
   height: 2.75rem;
   border: 1px solid rgba(21, 69, 54, 0.1);
-  border-radius: 50%;
+  border-radius: 0.9rem;
   color: #34554a;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 8px 20px rgba(13, 51, 39, 0.07);
+  background: #f5f9f7;
+  box-shadow: none;
   cursor: pointer;
 }
 
@@ -307,7 +308,6 @@
 }
 
 .modalCloseButton:focus-visible,
-.wizardStep:focus-visible,
 .lookupToggle button:focus-visible,
 .chooseFileButton:focus-visible,
 .backButton:focus-visible,
@@ -316,107 +316,6 @@
 .secondaryButton:focus-visible {
   outline: 3px solid rgba(41, 151, 110, 0.22);
   outline-offset: 3px;
-}
-
-.wizardProgress {
-  position: relative;
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
-  padding: 0 var(--modal-gutter) 1.25rem;
-  border-bottom: 1px solid rgba(21, 69, 54, 0.09);
-}
-
-.wizardStep {
-  position: relative;
-  display: grid;
-  grid-template-columns: 2.2rem minmax(0, 1fr);
-  align-items: center;
-  gap: 0.65rem;
-  min-width: 0;
-  min-height: 3.65rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid rgba(22, 76, 58, 0.08);
-  border-radius: 0.95rem;
-  color: #73817b;
-  background: rgba(238, 244, 241, 0.72);
-  text-align: left;
-}
-
-.wizardStep:not(:disabled) {
-  cursor: pointer;
-}
-
-.wizardStep:disabled {
-  cursor: default;
-}
-
-.wizardStepActive {
-  color: #174d3c;
-  border-color: rgba(28, 123, 89, 0.16);
-  background: #ffffff;
-  box-shadow: 0 9px 22px rgba(17, 65, 49, 0.08);
-}
-
-.wizardStepComplete {
-  color: #1a6d51;
-  background: #eff8f3;
-}
-
-.wizardStepNumber {
-  display: grid;
-  place-items: center;
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 0.7rem;
-  color: #6e7f78;
-  background: rgba(255, 255, 255, 0.82);
-  font-size: 0.76rem;
-  font-weight: 800;
-}
-
-.wizardStepActive .wizardStepNumber {
-  color: #ffffff;
-  background: linear-gradient(180deg, #278b67 0%, #17664d 100%);
-  box-shadow: 0 7px 15px rgba(20, 104, 76, 0.17);
-}
-
-.wizardStepComplete .wizardStepNumber {
-  color: #ffffff;
-  background: #278b67;
-}
-
-.wizardStepNumber svg {
-  width: 1rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.wizardStepLabel {
-  display: grid;
-  gap: 0.18rem;
-  min-width: 0;
-}
-
-.wizardStepLabel small {
-  font-size: 0.63rem;
-  font-weight: 700;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.wizardStepLabel strong {
-  overflow: hidden;
-  font-size: 0.75rem;
-  font-weight: 750;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .modalForm {
@@ -470,7 +369,7 @@
   margin: 0;
   color: #173e31;
   font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: clamp(1.35rem, calc(var(--website-design-vw) * 2.5), 1.75rem);
+  font-size: 1.15rem;
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.04em;
@@ -487,7 +386,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.42rem;
-  max-width: 34rem;
+  width: 100%;
   margin-top: 1.45rem;
   padding: 0.35rem;
   border-radius: 0.95rem;
@@ -520,7 +419,7 @@
 }
 
 .wizardPanel > .fieldWide {
-  max-width: 44rem;
+  width: 100%;
   margin-top: 1.15rem;
 }
 
@@ -717,7 +616,7 @@
 
 .contributionCodeResult {
   display: grid;
-  max-width: 44rem;
+  width: 100%;
   margin-top: 0.8rem;
 }
 
@@ -1122,9 +1021,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
-  padding: 1.1rem var(--modal-gutter) 1.25rem;
+  padding: 1rem var(--modal-gutter) 1.6rem;
   border-top: 1px solid rgba(21, 69, 54, 0.09);
-  background: rgba(250, 252, 251, 0.94);
+  background: #ffffff;
 }
 
 .modalSecurity {
@@ -1176,9 +1075,9 @@
   justify-content: center;
   min-height: 3.15rem;
   padding: 0 1.2rem;
-  border-radius: 999px;
+  border-radius: 1rem;
   text-decoration: none;
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 800;
   line-height: 1;
   cursor: pointer;
@@ -1191,14 +1090,14 @@
 .backButton {
   border: 1px solid rgba(23, 105, 78, 0.14);
   color: #31564a;
-  background: #ffffff;
+  background: #f2f5f8;
 }
 
 .nextButton,
 .submitButton {
   border: 1px solid rgba(12, 75, 53, 0.28);
   color: #ffffff;
-  background: linear-gradient(180deg, #258a65 0%, #176348 100%);
+  background: #184d3d;
   box-shadow:
     0 12px 24px rgba(16, 97, 69, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -1340,3 +1239,16 @@
   }
 }
 
+
+/* Match the header's full-width surface without changing the content canvas. */
+:global(:where([data-website-canvas])) .heroSection {
+  width: max(var(--website-design-width), var(--website-visible-width, var(--website-design-width)));
+  margin-inline: min(0px, calc((var(--website-design-width) - var(--website-visible-width, var(--website-design-width))) / 2));
+}
+
+.modalHeaderCopy p { margin: .5rem 0 0; color: #64756c; font-size: .95rem; font-weight: 650; line-height: 1.45; }
+.modalBody { scrollbar-width: auto; scrollbar-color: #568572 #edf3ef; }
+.modalBody::-webkit-scrollbar { width: 12px; }
+.modalBody::-webkit-scrollbar-track { background: #edf3ef; }
+.modalBody::-webkit-scrollbar-thumb { background: #568572; border: 3px solid #edf3ef; border-radius: 8px; }
+.modalCloseButton:disabled, .backButton:disabled { opacity: .5; cursor: not-allowed; }

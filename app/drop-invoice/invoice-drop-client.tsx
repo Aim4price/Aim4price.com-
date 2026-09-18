@@ -31,12 +31,6 @@ type AssetSearchMatch = {
   meta: string;
 };
 
-const WIZARD_STEPS: Array<{ step: WizardStep; label: string }> = [
-  { step: 1, label: 'Identify asset' },
-  { step: 2, label: 'Add invoice' },
-  { step: 3, label: 'Your details' },
-];
-
 const SENDER_TYPE_OPTIONS: Array<{ value: SenderType; label: string; description: string }> = [
   { value: 'dealer', label: 'Dealer', description: 'Equipment or vehicle dealer' },
   { value: 'workshop', label: 'Workshop', description: 'Service or repair provider' },
@@ -372,13 +366,6 @@ export default function InvoiceDropClient() {
     modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function returnToCompletedStep(step: WizardStep) {
-    if (step >= currentStep) return;
-    setNotice(null);
-    setCurrentStep(step);
-    modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
   function resetSubmission() {
     formRef.current?.reset();
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -488,7 +475,7 @@ export default function InvoiceDropClient() {
             >
               <span className={styles.heroUploadIcon}><UploadIcon /></span>
               <span className={styles.heroUploadLabel}>Add invoice</span>
-              <span className={styles.heroUploadHint}>Open the secure 3-step form</span>
+              <span className={styles.heroUploadHint}>Send an invoice securely</span>
             </button>
           </div>
         </div>
@@ -510,6 +497,7 @@ export default function InvoiceDropClient() {
             <header className={styles.modalHeader}>
               <div className={styles.modalHeaderCopy}>
                 <h2 id="invoice-modal-title">{receipt ? 'Safely sent.' : 'Add an invoice'}</h2>
+                {!receipt ? <p>Identify the asset, attach an invoice and add your details.</p> : null}
               </div>
               <button
                 ref={closeButtonRef}
@@ -543,26 +531,6 @@ export default function InvoiceDropClient() {
               </div>
             ) : (
               <form ref={formRef} className={styles.modalForm} onSubmit={handleSubmit}>
-                <nav className={styles.wizardProgress} aria-label="Invoice submission steps">
-                  {WIZARD_STEPS.map(({ step, label }) => {
-                    const isActive = currentStep === step;
-                    const isComplete = currentStep > step;
-                    return (
-                      <button
-                        key={step}
-                        type="button"
-                        className={`${styles.wizardStep} ${isActive ? styles.wizardStepActive : ''} ${isComplete ? styles.wizardStepComplete : ''}`}
-                        onClick={() => returnToCompletedStep(step)}
-                        disabled={!isComplete}
-                        aria-current={isActive ? 'step' : undefined}
-                      >
-                        <span className={styles.wizardStepNumber}>{isComplete ? <CheckIcon /> : step}</span>
-                        <span className={styles.wizardStepLabel}><small>Step {step}</small><strong>{label}</strong></span>
-                      </button>
-                    );
-                  })}
-                </nav>
-
                 <div ref={modalBodyRef} className={styles.modalBody} aria-live="polite">
                   <section className={styles.wizardPanel} hidden={currentStep !== 1}>
                     <div className={styles.wizardHeading}>
@@ -870,7 +838,7 @@ export default function InvoiceDropClient() {
                     <span><strong>Private upload</strong><small>Verified by Aim4price before delivery.</small></span>
                   </div>
                   <div className={styles.modalActions}>
-                    {currentStep > 1 ? <button type="button" className={styles.backButton} onClick={goToPreviousStep}>Back</button> : null}
+                    {currentStep > 1 ? <button type="button" className={styles.backButton} onClick={goToPreviousStep} disabled={isSubmitting}>Back</button> : <button type="button" className={styles.backButton} onClick={closeModal}>Cancel</button>}
                     {currentStep < 3 ? (
                       <button
                         type="button"
@@ -878,7 +846,7 @@ export default function InvoiceDropClient() {
                         onClick={goToNextStep}
                         disabled={currentStep === 1 ? !stepOneComplete : !stepTwoComplete}
                       >
-                        Next
+                        Continue
                         <ArrowIcon />
                       </button>
                     ) : (
