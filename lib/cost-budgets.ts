@@ -1,3 +1,4 @@
+import { ensureCostBudgetHistory, readCostBudgetHistory } from './cost-budget-history';
 import { getAssetRegisterItemById } from './asset-register-db';
 import { getDb } from './db';
 import { ensureMyInvoiceTables } from './my-invoices';
@@ -295,6 +296,7 @@ async function ensureCostBudgetTablesOnce(): Promise<void> {
     create index if not exists asset_invoices_budget_lookup_idx
       on public.asset_invoices (user_id, asset_register_item_id, invoice_date)
   `);
+  await ensureCostBudgetHistory();
 }
 
 export async function ensureCostBudgetTables(): Promise<void> {
@@ -624,4 +626,9 @@ export async function deleteCostBudget(userId: string, budgetIdInput: unknown): 
     [budgetId, userId],
   );
   return Boolean(result.rows[0]?.id);
+}
+
+export async function listCostBudgetHistory(userId: string) {
+  await ensureCostBudgetTables();
+  return readCostBudgetHistory(userId);
 }

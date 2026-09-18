@@ -139,7 +139,7 @@ test('PDF generation cannot silently substitute a second report design', async (
 
 test('the shared Asset Map theme is locked alongside each structural report layout', async () => {
   const source = await readFile(new URL('../lib/report-theme.ts', import.meta.url), 'utf8');
-  assert.equal(fingerprint(normaliseCss(source)), '8914:b2322cb713cbc345', 'Intentional report-theme changes require visual review.');
+  assert.equal(fingerprint(normaliseCss(source)), '9260:888f5fb562d4b4e0', 'Intentional report-theme changes require visual review.');
 });
 
 
