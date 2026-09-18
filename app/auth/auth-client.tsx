@@ -823,7 +823,7 @@ export default function AuthClient() {
       setNotice({
         tone: "error",
         title: "Terms required",
-        text: "Accept the terms and privacy policy before continuing.",
+        text: "Accept the Terms of Service and acknowledge the Privacy Policy before continuing.",
       });
       return false;
     }
@@ -1434,7 +1434,9 @@ export default function AuthClient() {
                                 }))
                               }
                             />
-                            <span>I agree to the terms and privacy policy.</span>
+                            <span>
+                              I agree to the <a href="/terms-of-service" target="_blank" rel="noopener noreferrer">Terms of Service</a> and acknowledge the <a href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                            </span>
                           </label>
                         </div>
                       </section>
