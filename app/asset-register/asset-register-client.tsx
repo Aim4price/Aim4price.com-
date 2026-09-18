@@ -6738,6 +6738,8 @@ export default function AssetRegisterClient({
   const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
   const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
+  const [assetUpdateMenuEnabled, setAssetUpdateMenuEnabled] = useState(false);
+  const [showAssetUpdateMenu, setShowAssetUpdateMenu] = useState(false);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
   const [ownerAssetCommandPanel, setOwnerAssetCommandPanel] = useState<OwnerAssetCommandPanel>(null);
@@ -9104,7 +9106,7 @@ export default function AssetRegisterClient({
       }
 
       if (isAssetModalOpen) {
-        closeAssetModal();
+        navigateBackFromAssetForm();
       }
     };
 
@@ -9114,7 +9116,7 @@ export default function AssetRegisterClient({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map' || !quoteMapElementRef.current) {
@@ -10100,6 +10102,8 @@ export default function AssetRegisterClient({
     pendingPhotoFilesRef.current = [];
 
     setEditingAssetId(null);
+    setAssetUpdateMenuEnabled(false);
+    setShowAssetUpdateMenu(false);
     setAssetDraft(initialAssetDraft);
     setAssetStatusDraft(initialAssetStatusDraft);
     setAssetDetailFocusTarget(null);
@@ -10265,7 +10269,26 @@ export default function AssetRegisterClient({
     return true;
   }
 
+  function returnToAssetUpdateMenu() {
+    setShowAssetUpdateMenu(true);
+    setAssetStatusEditView('hub');
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>(`[data-asset-update-section="${manualAssetStep}"]`)?.focus({ preventScroll: true });
+    });
+  }
+
+  function navigateBackFromAssetForm() {
+    if (assetAutosaveState === 'pending' || assetAutosaveState === 'saving') return;
+    if (assetUpdateMenuEnabled && !showAssetUpdateMenu) {
+      returnToAssetUpdateMenu();
+      return;
+    }
+    closeAssetModal();
+  }
+
   function openUpdater(asset: RegisterAsset, focusTarget: AssetDetailEditTarget | null = null) {
+    setAssetUpdateMenuEnabled(!focusTarget);
+    setShowAssetUpdateMenu(!focusTarget);
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
 
@@ -11519,10 +11542,11 @@ export default function AssetRegisterClient({
   }
 
   function openAssetFormSection(step: ManualAssetStep) {
-    if (step === 1 || manualAssetStep === step) {
+    if (step === 1 || (manualAssetStep === step && !showAssetUpdateMenu)) {
       return;
     }
 
+    setShowAssetUpdateMenu(false);
     setAssetStatusEditView('hub');
     setAssetStatusError('');
     setManualAssetStep(step);
@@ -18635,16 +18659,21 @@ export default function AssetRegisterClient({
 
       {isAssetModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) closeAssetModal(); }} />
+          <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''}`}
+            className={`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${accountStyles.modalTheme} ${manualAssetStep > 1 ? styles.assetUpdateModal : ''} ${manualAssetStep === 1 ? styles.assetFormModalStepOne : ''} ${showAssetUpdateMenu ? styles.assetUpdateMenuModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-label={editingAsset ? 'Update asset' : 'Add asset'}
           >
             <div className={`${styles.modalHeader} ${styles.assetFormModalHeader} ${styles.manualWizardHeader} ${styles.assetFormModalChromeHeader}`}>
-              {manualAssetStep === 1 ? (
+              {showAssetUpdateMenu ? (
+                <div className={styles.modalHeaderText}>
+                  <h3>Update asset</h3>
+                  <p>{assetDraft.title.trim() || editingAsset?.title}</p>
+                </div>
+              ) : manualAssetStep === 1 ? (
                 <div className={styles.modalHeaderText}>
                   <h3>{editingAsset ? 'Update asset' : 'Add an asset'}</h3>
                   <p>
@@ -18658,7 +18687,7 @@ export default function AssetRegisterClient({
                       {assetDraft.title.trim() ||
                         (editingAsset ? editingAsset.title : `Add ${selectedManualAssetType.label.toLowerCase()}`)}
                     </h3>
-                    {!editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : null}
+                    {!editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : assetUpdateMenuEnabled ? <p>{ASSET_FORM_SECTION_TABS.find((section) => section.step === manualAssetStep)?.label}</p> : null}
                   </div>
                 </div>
               )}
@@ -18666,16 +18695,33 @@ export default function AssetRegisterClient({
               <button
                 type="button"
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
-                onClick={closeAssetModal}
-                aria-label="Close asset form"
+                onClick={navigateBackFromAssetForm}
+                aria-label={assetUpdateMenuEnabled ? showAssetUpdateMenu ? 'Close update asset menu' : 'Back to update asset menu' : 'Close asset form'}
                 disabled={isAssetAutosaveBusy}
               >
                 <span aria-hidden="true">×</span>
               </button>
             </div>
 
+            {showAssetUpdateMenu ? (
+              <div className={`${styles.modalScrollBody} ${styles.assetUpdateMenuBody}`}>
+                <div className={styles.assetUpdateMenuGrid}>
+                  {ASSET_FORM_SECTION_TABS.map((section) => (
+                    <button key={section.step} type="button" className={styles.assetUpdateMenuOption}
+                      data-asset-update-section={section.step} onClick={() => openAssetFormSection(section.step)}
+                      autoFocus={section.step === 2}>
+                      <span className={styles.assetUpdateMenuIcon} aria-hidden="true">
+                        {section.step === 2 ? <UpdateAssetIcon className={styles.buttonIcon} /> : section.step === 3 ? <ShieldIcon className={styles.buttonIcon} /> : <DocumentIcon className={styles.buttonIcon} />}
+                      </span>
+                      <span><strong>{section.label}</strong><small>{section.step === 2 ? 'Edit asset details and usage.' : section.step === 3 ? 'Manage ownership, finance and insurance.' : 'Manage documents and photos.'}</small></span>
+                      <ChevronRightIcon className={styles.buttonIcon} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
             <div className={`${styles.modalScrollBody} ${styles.manualStepScrollBody} ${manualAssetStep === 1 ? styles.manualStepScrollBodyNoScroll : ''}`}>
-              {manualAssetStep > 1 ? (
+              {manualAssetStep > 1 && !assetUpdateMenuEnabled ? (
                 <nav className={styles.assetFormSectionTabs} aria-label="Asset form sections">
                   {ASSET_FORM_SECTION_TABS.map((section, index) => {
                     const isActive = manualAssetStep === section.step;
@@ -19843,8 +19889,14 @@ export default function AssetRegisterClient({
 
               </form>
             </div>
+            )}
 
-            {manualAssetStep > 1 && !isAssetStatusFocusedView ? (
+            {showAssetUpdateMenu ? (
+              <div className={styles.assetUpdateFooter}>
+                <span className={styles.assetUpdateSaveText} role="status">{assetAutosaveLabel}</span>
+                <button type="button" className={styles.secondaryButton} onClick={navigateBackFromAssetForm} disabled={isAssetAutosaveBusy}>Exit</button>
+              </div>
+            ) : manualAssetStep > 1 && !isAssetStatusFocusedView ? (
               <div className={styles.assetUpdateFooter}>
                 <span
                   className={`${styles.assetUpdateSaveText} ${editingAsset && assetAutosaveState === 'error' ? styles.assetUpdateSaveTextError : ''}`}
@@ -19855,7 +19907,7 @@ export default function AssetRegisterClient({
                 </span>
 
                 <div className={styles.assetUpdateFooterActions}>
-                  {(editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1) ? (
+                  {!assetUpdateMenuEnabled && ((editingAsset && manualAssetStep > 2) || (!editingAsset && manualAssetStep > 1)) ? (
                     <button
                       type="button"
                       className={styles.secondaryButton}
@@ -19866,7 +19918,9 @@ export default function AssetRegisterClient({
                     </button>
                   ) : null}
 
-                  {manualAssetStep < 4 ? (
+                  {assetUpdateMenuEnabled ? (
+                    <button type="button" className={styles.primaryButton} onClick={returnToAssetUpdateMenu} disabled={isAssetAutosaveBusy || assetAutosaveState === 'error'}>Done</button>
+                  ) : manualAssetStep < 4 ? (
                     <button
                       type="button"
                       className={styles.primaryButton}
