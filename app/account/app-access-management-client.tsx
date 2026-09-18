@@ -430,6 +430,7 @@ function AppAccessModal({
   title,
   description,
   wide = false,
+  notificationStyle = false,
   closeDisabled = false,
   onClose,
   children,
@@ -438,6 +439,7 @@ function AppAccessModal({
   title: string;
   description: string;
   wide?: boolean;
+  notificationStyle?: boolean;
   closeDisabled?: boolean;
   onClose: () => void;
   children: ReactNode;
@@ -479,7 +481,7 @@ function AppAccessModal({
         onClick={() => { if (!closeDisabled) onClose(); }}
       />
       <section
-        className={`${styles.modal} ${wide ? styles.modalWide : ''}`}
+        className={`${styles.modal} ${wide ? styles.modalWide : ''} ${notificationStyle ? styles.notificationStyle : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -695,14 +697,14 @@ function AppAccessManagement({ kind, configOverride }: {
         <p>Choose once for all your apps. Existing logins will keep working.</p>
       </div>
       <form className={baseStyles.form} onSubmit={confirmAccountName}>
-        <label className={baseStyles.field}>
+        <label className={`${baseStyles.field} ${styles.field}`}>
           <span>Business name for logins</span>
           <input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
             autoCapitalize="none" autoComplete="off" minLength={3} maxLength={32} required disabled={namespaceBusy} />
           <small>Example: kuyler@{accountNameDraft || 'vasbyt'}. This stays the same if your business name changes.</small>
         </label>
         {namespaceError ? <p role="alert" className={baseStyles.fieldError}>{namespaceError}</p> : null}
-        <button type="submit" className={baseStyles.primaryButton} disabled={namespaceBusy}>
+        <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={namespaceBusy}>
           {namespaceBusy ? 'Loading…' : 'Confirm business login name'}
         </button>
         {namespaceError ? <button type="button" className={styles.emptyAction} onClick={() => void loadAccountName()}>Reload</button> : null}
@@ -955,13 +957,13 @@ function AppAccessManagement({ kind, configOverride }: {
   function renderRecordSummary(record: AccessRecord, includeManageButton: boolean) {
     const roleSummary = config.roleSummary(record);
     return (
-      <div className={baseStyles.managerSummary}>
+      <div className={`${baseStyles.managerSummary} ${styles.managerSummary}`}>
         <div className={baseStyles.managerIdentity}>
           <strong>{record.displayName}</strong>
           <span>{record.username}</span>
           {roleSummary ? <small className={baseStyles.rolePill}>{roleSummary}</small> : null}
         </div>
-        <div className={baseStyles.managerSummaryMeta} aria-label={`${config.itemLabel} dates`}>
+        <div className={`${baseStyles.managerSummaryMeta} ${styles.managerSummaryMeta}`} aria-label={`${config.itemLabel} dates`}>
           <span><b>Last login</b>{formatDateTime(record.lastLoginAtIso)}</span>
           <span><b>Updated</b>{formatDateTime(record.updatedAtIso)}</span>
         </div>
@@ -969,7 +971,7 @@ function AppAccessManagement({ kind, configOverride }: {
           {record.isActive ? 'Active' : 'Inactive'}
         </span>
         {includeManageButton ? (
-          <button type="button" className={baseStyles.manageButton} onClick={() => setSelectedId(record.id)}>
+          <button type="button" className={`${baseStyles.manageButton} ${styles.manageButton}`} onClick={() => setSelectedId(record.id)}>
             Manage <span aria-hidden="true">›</span>
           </button>
         ) : null}
@@ -1008,6 +1010,7 @@ function AppAccessManagement({ kind, configOverride }: {
 
       <AppAccessModal
         open={activeFlow === 'new'}
+        notificationStyle={kind === 'owner' || kind === 'field'}
         title={`New ${config.itemLabel}`}
         description="Enter the login details."
         closeDisabled={creating || namespaceBusy}
@@ -1017,7 +1020,7 @@ function AppAccessManagement({ kind, configOverride }: {
         {renderAccountNameSetup()}
         {accountName ? <section className={`${baseStyles.card} ${styles.surface}`}>
           <form className={baseStyles.form} onSubmit={createRecord}>
-            <label className={baseStyles.field}>
+            <label className={`${baseStyles.field} ${styles.field}`}>
               <span>{config.displayNameLabel}</span>
               <input
                 value={draft.displayName}
@@ -1026,7 +1029,7 @@ function AppAccessManagement({ kind, configOverride }: {
                 autoComplete="off"
               />
             </label>
-            <label className={baseStyles.field}>
+            <label className={`${baseStyles.field} ${styles.field}`}>
               <span>App username</span>
               <input
                 value={draft.username}
@@ -1044,8 +1047,8 @@ function AppAccessManagement({ kind, configOverride }: {
               {createUsernameError ? <small className={baseStyles.fieldError} role="alert">{createUsernameError}</small> : null}
             </label>
             {renderRoleSelect(draft.role, (role) => setDraft((current) => ({ ...current, role })))}
-            <div className={baseStyles.field}>
-              <label className={baseStyles.fieldLabel} htmlFor={`${kind}-create-password`}>{config.passwordLabel}</label>
+            <div className={`${baseStyles.field} ${styles.field}`}>
+              <label className={`${baseStyles.fieldLabel} ${styles.fieldLabel}`} htmlFor={`${kind}-create-password`}>{config.passwordLabel}</label>
               <div className={baseStyles.passwordInputWrap}>
                 <input
                   id={`${kind}-create-password`}
@@ -1062,15 +1065,19 @@ function AppAccessManagement({ kind, configOverride }: {
                 </button>
               </div>
             </div>
-            <button type="submit" className={baseStyles.primaryButton} disabled={creating}>
-              {creating ? 'Creating…' : 'Create login'}
-            </button>
+            <div className={kind !== 'dealer' ? styles.formActions : undefined}>
+              {kind !== 'dealer' ? <button type="button" className={styles.cancelButton} onClick={closeFlow} disabled={creating}>Cancel</button> : null}
+              <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={creating}>
+                {creating ? 'Creating…' : 'Create login'}
+              </button>
+            </div>
           </form>
         </section> : null}
       </AppAccessModal>
 
       <AppAccessModal
         open={activeFlow === 'manage'}
+        notificationStyle={kind === 'owner' || kind === 'field'}
         title={selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
         description={selectedRecord ? 'Edit this login.' : 'Choose a login to manage.'}
         wide
@@ -1111,23 +1118,23 @@ function AppAccessManagement({ kind, configOverride }: {
             <article className={`${baseStyles.managerCard} ${baseStyles.managerCardExpanded} ${styles.editorCard}`}>
               {renderRecordSummary(selectedRecord, false)}
               <div className={baseStyles.managerDropdown}>
-                <p className={refinementStyles.focusNote}>
+                <p className={`${refinementStyles.focusNote} ${styles.editorHint}`}>
                   <span className={refinementStyles.focusDot} aria-hidden="true" />
                   Update this login, save the changes, then return to the list.
                 </p>
                 <div className={refinementStyles.sectionHeading}>
-                  <span className={refinementStyles.stepNumber}>1</span>
+                  {kind === 'dealer' ? <span className={refinementStyles.stepNumber}>1</span> : null}
                   <div className={refinementStyles.sectionHeadingCopy}>
                     <h3>Login details and status</h3>
                     <p>Change the name, username, role or password without affecting other app users.</p>
                   </div>
                 </div>
                 <form className={baseStyles.inlineForm} onSubmit={(event) => void saveRecord(event, selectedRecord)}>
-                  <label className={baseStyles.compactField}>
+                  <label className={`${baseStyles.compactField} ${styles.compactField}`}>
                     <span>{config.displayNameLabel}</span>
                     <input value={selectedEdit.displayName} onChange={(event) => updateEditDraft(selectedRecord.id, { displayName: event.target.value })} />
                   </label>
-                  <label className={baseStyles.compactField}>
+                  <label className={`${baseStyles.compactField} ${styles.compactField}`}>
                     <span>App username</span>
                     <input
                       value={selectedEdit.username}
@@ -1147,8 +1154,8 @@ function AppAccessManagement({ kind, configOverride }: {
                     })}>Use business username</button>
                   ) : null}
                   {renderRoleSelect(selectedEdit.role, (role) => updateEditDraft(selectedRecord.id, { role }))}
-                  <div className={baseStyles.compactField}>
-                    <label className={baseStyles.fieldLabel} htmlFor={`${kind}-password-${selectedRecord.id}`}>New {config.passwordLabel.toLowerCase()}</label>
+                  <div className={`${baseStyles.compactField} ${styles.compactField}`}>
+                    <label className={`${baseStyles.fieldLabel} ${styles.fieldLabel}`} htmlFor={`${kind}-password-${selectedRecord.id}`}>New {config.passwordLabel.toLowerCase()}</label>
                     <div className={baseStyles.passwordInputWrap}>
                       <input
                         id={`${kind}-password-${selectedRecord.id}`}
@@ -1166,8 +1173,8 @@ function AppAccessManagement({ kind, configOverride }: {
                     </div>
                     <p className={baseStyles.fieldHint}>Leave blank to keep the current {config.passwordLabel.toLowerCase()}.</p>
                   </div>
-                  <div className={baseStyles.managerActions}>
-                    <button type="submit" className={baseStyles.secondaryButton} disabled={isSelectedBusy}>
+                  <div className={`${baseStyles.managerActions} ${styles.managerActions}`}>
+                    <button type="submit" className={`${baseStyles.secondaryButton} ${styles.primaryButton}`} disabled={isSelectedBusy}>
                       {busyId === selectedRecord.id ? 'Saving…' : 'Save changes'}
                     </button>
                     <button
@@ -1262,7 +1269,7 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
   return (
     <section className={styles.accessPanel} aria-label="Field Manager permissions">
       <div className={refinementStyles.sectionHeading}>
-        <span className={refinementStyles.stepNumber}>2</span>
+
         <div className={refinementStyles.sectionHeadingCopy}>
           <h3>App access</h3>
           <p>Choose what this manager can do and which assets or fuel tanks they may use.</p>
@@ -1279,6 +1286,7 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
           <label className={styles.permissionChoice} key={key}>
             <input type="checkbox" checked={settings[key]} onChange={(event) => setSettings((current) => current ? { ...current, [key]: event.target.checked } : current)} />
             <span>{label}</span>
+            <span className={styles.permissionSwitch} aria-hidden="true">{settings[key] ? 'On' : 'Off'}</span>
           </label>
         ))}
       </div>
@@ -1354,7 +1362,7 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
       </div>
 
       {message ? <p className={styles.accessMessage}>{message}</p> : null}
-      <button type="button" className={baseStyles.primaryButton} onClick={() => void saveAccess()} disabled={saving}>
+      <button type="button" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} onClick={() => void saveAccess()} disabled={saving}>
         {saving ? 'Saving access…' : 'Save access'}
       </button>
     </section>
@@ -1420,7 +1428,7 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
   return (
     <section className={styles.accessPanel} aria-label="Owner App asset access">
       <div className={refinementStyles.sectionHeading}>
-        <span className={refinementStyles.stepNumber}>2</span>
+
         <div className={refinementStyles.sectionHeadingCopy}>
           <h3>Asset access</h3>
           <p>Choose which umbrellas and individual assets this user may see in the Owner App.</p>
@@ -1475,7 +1483,7 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
       ) : null}
 
       {message ? <p className={styles.accessMessage}>{message}</p> : null}
-      <button type="button" className={baseStyles.primaryButton} onClick={() => void saveAccess()} disabled={saving}>
+      <button type="button" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} onClick={() => void saveAccess()} disabled={saving}>
         {saving ? 'Saving access…' : 'Save access'}
       </button>
     </section>
