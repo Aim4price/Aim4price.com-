@@ -1118,3 +1118,90 @@
     animation: none;
   }
 }
+
+/* Owner and Field Manager dialogs follow the account Notifications surface. */
+.notificationStyle.notificationStyle {
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 46rem);
+  background: #fff;
+  border: 1px solid #dce4df;
+  border-radius: 1.5rem;
+}
+.notificationStyle .modalHeader {
+  margin: 2rem 2rem 0;
+  padding: 0 3.75rem 1.25rem 0;
+  gap: .35rem;
+  background: #fff;
+  border-bottom: 1px solid rgba(18,45,37,.1);
+}
+.notificationStyle .modalHeader h2 {
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+  text-wrap: initial;
+}
+.notificationStyle .modalHeader p { font-size: .88rem; line-height: 1.5; }
+.notificationStyle .closeButton {
+  top: 0; right: 0; width: 2.75rem; height: 2.75rem; min-width: 2.75rem;
+  padding: 0; transform: none; border-radius: .9rem; line-height: 1;
+  border-color: rgba(37,71,51,.15); background: #f7faf8; color: #254733; font-weight: 650;
+}
+.notificationStyle .closeButton:hover { transform: none; background: #eef5f0; border-color: rgba(37,71,51,.28); }
+.notificationStyle button:focus-visible { outline: 3px solid rgba(43,138,99,.35); outline-offset: 3px; }
+.notificationStyle .modalBody { padding: 1.5rem 2rem 2rem; scrollbar-color: #aaa transparent; }
+.notificationStyle .surfaceHeader { border: 0; padding-bottom: .25rem; }
+.notificationStyle .surfaceHeader h3 { font-size: 1rem; font-weight: 750; letter-spacing: 0; }
+.notificationStyle .surfaceHeader p { font-size: .88rem; font-weight: 550; }
+.notificationStyle .businessLoginSetup { margin-bottom: 1.5rem; }
+.notificationStyle .field > span,
+.notificationStyle .compactField > span,
+.notificationStyle .fieldLabel { font-size: .9rem; font-weight: 700; text-transform: none; letter-spacing: 0; }
+.notificationStyle input:not([type=checkbox]) { border-radius: .9rem; background: #fff; box-shadow: none; }
+.notificationStyle .primaryButton,
+.notificationStyle .manageButton,
+.notificationStyle .emptyAction {
+  min-height: 3rem; padding: .7rem 1rem; border: 1px solid #195440; border-radius: 1rem;
+  background: #195440; color: #fff; font-size: 1rem; font-weight: 700;
+  box-shadow: none; transform: none;
+}
+.notificationStyle .primaryButton:hover,
+.notificationStyle .manageButton:hover { background: #123f30; transform: none; }
+.notificationStyle .cancelButton,
+.notificationStyle .secondaryButton,
+.notificationStyle .modalBackButton {
+  min-height: 3rem; padding: .7rem 1rem; border: 1px solid #d2dfea; border-radius: 1rem;
+  background: #f2f5f8; color: #17362c; font: inherit; font-weight: 700; cursor: pointer; box-shadow: none;
+}
+.notificationStyle .cancelButton:disabled { opacity: .5; cursor: not-allowed; }
+.notificationStyle .directoryHeader span,
+.notificationStyle .editorHint { display: none; }
+.notificationStyle .directoryCard,
+.notificationStyle .editorCard,
+.notificationStyle .accessPanel { background: #fff; border: 1px solid #d2dfea; border-radius: 1rem; box-shadow: none !important; }
+.notificationStyle .managerSummary { grid-template-columns: minmax(0, 1fr) auto auto; gap: .75rem; }
+.notificationStyle .managerSummaryMeta { grid-column: 1 / -1; grid-row: 2; font-size: .75rem; font-weight: 500; }
+.notificationStyle .managerActions { gap: .65rem; padding-top: 1rem; border-top: 1px solid #e0e6e3; }
+.notificationStyle .permissionGrid { grid-template-columns: minmax(0, 1fr); }
+.notificationStyle .permissionChoice { position: relative; padding: .8rem 1rem; min-height: 3.7rem; border-color: #d2dfea; border-radius: 1rem; }
+.notificationStyle .permissionChoice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.permissionSwitch { display: none; }
+.notificationStyle .permissionSwitch {
+  display: inline-flex; align-items: center; justify-content: space-between; gap: .5rem;
+  flex: 0 0 auto; margin-left: auto; padding: .2rem .25rem .2rem .6rem; min-width: 4.4rem;
+  border-radius: 999px; background: #b43b3b; color: #fff; font-size: .82rem;
+}
+.notificationStyle .permissionSwitch::after { content: ''; width: 1.55rem; height: 1.55rem; border-radius: 50%; background: #fff; }
+.notificationStyle .permissionChoice input:checked ~ .permissionSwitch { background: #238657; }
+.notificationStyle .permissionChoice:focus-within { outline: 3px solid rgba(43,138,99,.35); outline-offset: 2px; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationStyle.notificationStyle { width: 100%; }
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationStyle .modalHeader { margin: 1.1rem 1.1rem 0; padding: 0 3.5rem 1rem 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationStyle .modalBody { padding: 1rem 1.1rem 1.25rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationStyle .managerSummary { grid-template-columns: minmax(0, 1fr) auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationStyle .manageButton { grid-column: 1 / -1; }
+}
+.notificationStyle .formActions {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .65rem;
+  padding-top: 1rem; border-top: 1px solid rgba(18,45,37,.11);
+}
+.notificationStyle .formActions > button { width: auto; flex: 0 1 auto; min-width: 8.75rem; }
