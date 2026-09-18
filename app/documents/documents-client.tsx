@@ -1414,21 +1414,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 ) : null}
 
                 {modalMode === 'upload' ? (
-                  <>
-                    <p className={wizardStyles.intro}>Complete one short step at a time. Your documents are uploaded on the final step.</p>
-                    <ol className={`${styles.uploadSteps} ${wizardStyles.progress}`} aria-label="Upload progress">
-                      {UPLOAD_STEPS.map((item) => (
-                        <li
-                          key={item.step}
-                          className={`${wizardStyles.progressItem} ${item.step === uploadStep ? `${styles.uploadStepCurrent} ${wizardStyles.progressItemCurrent}` : item.step < uploadStep ? `${styles.uploadStepComplete} ${wizardStyles.progressItemComplete}` : ''}`}
-                          aria-current={item.step === uploadStep ? 'step' : undefined}
-                        >
-                          <span>{item.step < uploadStep ? '✓' : item.step}</span>
-                          <strong>{item.label}</strong>
-                        </li>
-                      ))}
-                    </ol>
-                  </>
+                  <p className={wizardStyles.intro}>Complete one short step at a time. Your documents are uploaded on the final step.</p>
                 ) : null}
 
                 <div className={modalMode === 'upload' ? `${styles.uploadWizardPanel} ${wizardStyles.panel}` : undefined}>
@@ -1544,7 +1530,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                         </button>
                       ) : null}
                       {showDocumentTypeOptions ? (
-                        <DropdownOverlay id="document-type-options" className={styles.documentTypeOptions} role="listbox">
+                        <DropdownOverlay
+                          id="document-type-options"
+                          anchorRef={documentTypeComboboxRef}
+                          minimumWidth={560}
+                          className={styles.documentTypeOptions}
+                          role="listbox"
+                        >
                           {filteredDocumentTypes.length ? filteredDocumentTypes.map((option, index) => (
                             <button
                               key={option.value}
