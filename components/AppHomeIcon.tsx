@@ -1,6 +1,7 @@
 import styles from './AppHomeLauncher.module.css';
 
 const ICON_PATHS: Record<string, string> = {
+  'report-problem': 'M12 3 2 21h20Z M12 9v5 M12 17h.01',
   notifications: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9 M10 21h4',
   overview: 'M3 10 12 3l9 7v11h-6v-7H9v7H3Z',
   assets: 'M12 2 3 7v10l9 5 9-5V7Z M3 7l9 5 9-5 M12 12v10',

@@ -8,6 +8,7 @@ type PageProps = {
     publicAssetCode: string;
   };
   searchParams?: {
+    reportProblem?: string;
     assetId?: string;
     scheduledMaintenanceId?: string;
     scheduledMaintenanceType?: string;
@@ -23,12 +24,13 @@ export default function FieldManagerAssetUpdatePage({ params, searchParams }: Pa
   return (
     <ScanClient
       publicAssetCode={params.publicAssetCode ?? ''}
+      reportProblemMode={searchParams?.reportProblem === '1'}
       fieldManagerMode
       fieldManagerAssetId={searchParams?.assetId ?? null}
       fieldManagerScheduledMaintenanceId={searchParams?.scheduledMaintenanceId ?? null}
       fieldManagerScheduledMaintenanceType={searchParams?.scheduledMaintenanceType ?? null}
       fieldManagerReturnTo={
-        openedFromOverview
+        searchParams?.reportProblem === '1' ? '/field-manager/report-problem' : openedFromOverview
           ? `/field-manager/overview?range=${overviewRange}`
           : '/field-manager/assets'
       }

@@ -1043,6 +1043,7 @@ function CloseIcon({ className }: IconProps) {
 
 export default function ScanClient({
   publicAssetCode,
+  reportProblemMode = false,
   fieldManagerMode = false,
   fieldManagerAssetId = null,
   fieldManagerScheduledMaintenanceId = null,
@@ -1056,6 +1057,7 @@ export default function ScanClient({
   ownerAppReturnTo = null,
 }: {
   publicAssetCode: string;
+  reportProblemMode?: boolean;
   fieldManagerMode?: boolean;
   fieldManagerAssetId?: string | null;
   fieldManagerScheduledMaintenanceId?: string | null;
@@ -1105,13 +1107,13 @@ export default function ScanClient({
       : "";
   const fieldManagerReturnHref = useMemo(() => {
     const requested = String(fieldManagerReturnTo ?? "").trim();
-    return requested.startsWith("/field-manager/overview")
+    return requested === "/field-manager/report-problem" || requested.startsWith("/field-manager/overview")
       ? requested
       : "/field-manager/assets";
   }, [fieldManagerReturnTo]);
   const ownerAppReturnHref = useMemo(() => {
     const requested = String(ownerAppReturnTo ?? "").trim();
-    return requested.startsWith("/owner-app/operations")
+    return requested === "/owner-app/report-problem" || requested.startsWith("/owner-app/operations")
       || requested.startsWith("/owner-app/attention")
       || requested.startsWith("/owner-app/assets/")
       ? requested
@@ -1289,6 +1291,7 @@ export default function ScanClient({
   }, [
     fieldManagerMode,
     ownerAppMode,
+    reportProblemMode,
     ownerAppOperatorName,
     normalizedCode,
     normalizedFieldManagerAssetId,
@@ -1352,6 +1355,7 @@ export default function ScanClient({
   }, [
     fieldManagerMode,
     ownerAppMode,
+    reportProblemMode,
     normalizedCode,
     normalizedFieldManagerAssetId,
     normalizedOwnerAppAssetId,
@@ -1467,7 +1471,7 @@ export default function ScanClient({
     setActiveEditor(null);
     setShowLocationReminder(false);
     setNotice(null);
-    setDoneMessage(`${message} Returning to asset actions…`);
+    setDoneMessage(reportProblemMode ? "Problem reported successfully." : `${message} Returning to asset actions…`);
     setIsDone(true);
 
     try {
@@ -1485,7 +1489,7 @@ export default function ScanClient({
     }, 80);
 
     window.setTimeout(() => {
-      window.location.replace(assetActionsHref);
+      window.location.replace(reportProblemMode ? appReturnHref : assetActionsHref);
     }, FIELD_MANAGER_RETURN_DELAY_MS);
   }
 
@@ -1627,13 +1631,15 @@ export default function ScanClient({
         latitude: restoredLatitude,
         longitude: restoredLongitude,
         hours: sessionUsage.hours,
-        hasUsage: sessionUsage.hasUsage,
+        hasUsage: reportProblemMode ? false : sessionUsage.hasUsage,
       });
       setIsDone(false);
 
       setShowLocationReminder(false);
       setActiveEditor(
-        shouldOpenScheduledMaintenance
+        reportProblemMode && isFieldManagerAccess
+          ? "notes"
+          : shouldOpenScheduledMaintenance
           ? "service"
           : null,
       );
@@ -3004,7 +3010,7 @@ export default function ScanClient({
                       draft.serviceMode === "repaired") &&
                     !showServiceDetailsStep
                   ? "Next"
-                  : "Add update";
+                  : reportProblemMode && activeEditor === "notes" ? "Report Problem" : "Add update";
   const selectedSharePartner = useMemo(
     () =>
       sharePartners.find(
@@ -3028,7 +3034,7 @@ export default function ScanClient({
     : activeEditor === "service"
       ? "Maintenance"
       : activeEditor === "notes"
-        ? "Notes"
+        ? reportProblemMode ? "Report Problem" : "Notes"
         : "Photos";
   const editorTitle = activeEditor === "usage"
     ? isFieldManagerMode
@@ -3051,7 +3057,7 @@ export default function ScanClient({
                 : serviceCopy.repairedTitle
               : "Maintenance"
       : activeEditor === "notes"
-        ? "Notes"
+        ? reportProblemMode ? "Report Problem" : "Notes"
         : isFieldManagerMode
           ? "Add Photos"
           : "Photos";
@@ -4677,7 +4683,7 @@ export default function ScanClient({
               {activeEditor === "notes" ? (
                 <div className={styles.modalStack}>
                   <label className={`${styles.field} ${styles.fieldManagerNotesField}`}>
-                    <span>Notes</span>
+                    <span>{reportProblemMode ? "Describe the problem" : "Notes"}</span>
                     <textarea
                       value={draft.note}
                       onChange={(event) =>

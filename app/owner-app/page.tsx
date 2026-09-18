@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 const TOOLS: Array<{ label: string; href: string; permission?: OwnerAppPermission }> = [
   { label: 'My Assets', href: '/owner-app/assets' },
   { label: 'Maintenance & Fuel', href: '/owner-app/operations', permission: 'operate' },
+  { label: 'Report Problem', href: '/owner-app/report-problem', permission: 'operate' },
   { label: 'Get Estimate', href: '/owner-app/valuation', permission: 'manage_assets' },
   { label: 'Discover Assets', href: '/owner-app/discovery' },
   { label: 'Marketplace', href: '/owner-app/marketplace', permission: 'manage_marketplace' },

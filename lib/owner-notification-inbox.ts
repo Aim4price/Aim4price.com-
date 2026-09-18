@@ -15,7 +15,8 @@ export async function listOwnerNotificationInbox(access:OwnerAppAccess):Promise<
   const inbox=await listNotificationInbox({userId:access.ownerUserId,accountType:'owner',viewerKey:access.viewerKey,
     includeCostBudgetNotifications:ownerAppCan(access,'manage_finance')&&access.assetScope==='all'});
   const result=inbox.filter(item=>visibleToOwner(access,item)).map(item=>({...item,
-    href:item.assetDiscoveryEnquiryId ? `/owner-app/notifications/enquiry/${encodeURIComponent(item.assetDiscoveryEnquiryId)}`
+    href:item.category === 'qr_scan' && item.title === 'Problem reported' ? '/owner-app/attention'
+      :item.assetDiscoveryEnquiryId ? `/owner-app/notifications/enquiry/${encodeURIComponent(item.assetDiscoveryEnquiryId)}`
       :item.marketplaceSourcingRequestId ? `/owner-app/notifications/sourcing/${encodeURIComponent(item.marketplaceSourcingRequestId)}`:item.href}));
   const who=await currentPushIdentity();
   if(who?.app==='owner' && who.accountId===access.ownerUserId && who.memberId===access.ownerAppUserId) {

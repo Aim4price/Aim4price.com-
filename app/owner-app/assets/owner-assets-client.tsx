@@ -88,7 +88,7 @@ export default function OwnerAssetsClient({
   canAddAssets = false,
 }: {
   initialQuery?: string;
-  mode?: 'assets' | 'maintenance';
+  mode?: 'assets' | 'maintenance' | 'problem';
   canAddAssets?: boolean;
 }) {
   const [query, setQuery] = useState(initialQuery);
@@ -193,7 +193,7 @@ export default function OwnerAssetsClient({
         assetTitle: asset.title,
         assetId: asset.id,
         publicAssetCode,
-        redirectTo: `/owner-app/operations/maintenance/${encodeURIComponent(asset.id)}`,
+        redirectTo: `/owner-app/operations/maintenance/${encodeURIComponent(asset.id)}${mode === 'problem' ? '?reportProblem=1' : ''}`,
       });
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : 'This service cannot be opened.');
@@ -231,14 +231,14 @@ export default function OwnerAssetsClient({
           </div>
         </div>
 
-        {mode === 'maintenance' ? (
+        {mode !== 'assets' ? (
           <button
             type="button"
             className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
             onClick={() => void handleOpenMaintenance(asset)}
             disabled={openingAssetId !== null}
           >
-            {openingAssetId === asset.id ? 'Opening…' : 'Record work'}
+            {openingAssetId === asset.id ? 'Opening…' : mode === 'problem' ? 'Report Problem' : 'Record work'}
           </button>
         ) : (
           <Link
