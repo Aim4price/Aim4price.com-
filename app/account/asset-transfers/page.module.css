@@ -109,9 +109,6 @@
   line-height: 1.45;
 }
 
-.transferProgress {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
 
 .successNotice {
   border: 1px solid #a8d9c1;
@@ -775,11 +772,6 @@
   background: linear-gradient(180deg, #ffffff 0%, #fffafa 100%) !important;
 }
 
-.cancelPanelNumber {
-  border-color: #ddb5b5 !important;
-  color: #914f4f !important;
-  background: linear-gradient(180deg, #fff8f8 0%, #fceeee 100%) !important;
-}
 
 .cancelDetails {
   width: 100%;
@@ -936,9 +928,6 @@
 }
 
 @media (max-width: 720px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .transferProgress.transferProgress {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
 
   :global(:where(html:not(:has([data-website-canvas])))) .footerOnlyAction {
     grid-column: 1 / -1;
@@ -983,4 +972,139 @@
   .registerPickerOption {
     transition: none;
   }
+}
+
+/* Incoming and outgoing dialogs share the account Notifications styling. */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--modal-backdrop-color);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter);
+  backdrop-filter: var(--modal-backdrop-filter);
+}
+.modalDialog {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 46rem);
+  max-height: calc(var(--website-visible-height, 100dvh) - 3rem);
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #dce4df;
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: 0 34px 90px rgba(7, 31, 38, .32);
+}
+.modalHeader {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 2rem 2rem 0;
+  padding: 0 3.75rem 1.25rem 0;
+  border-bottom: 1px solid rgba(18, 45, 37, .1);
+}
+.modalHeaderText { min-width: 0; }
+.modalHeader h2 {
+  margin: 0;
+  color: #10392e;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+.modalHeader p { margin: .35rem 0 0; color: #63766f; font-size: .88rem; font-weight: 620; line-height: 1.5; }
+.modalCloseButton {
+  appearance: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid rgba(37,71,51,.15);
+  border-radius: .9rem;
+  color: #254733;
+  background: #f7faf8;
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+}
+.modalCloseButton:hover:not(:disabled) { background: #eef5f0; border-color: rgba(37,71,51,.28); }
+.modalBody {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #aaa transparent;
+  padding: 1.5rem 2rem;
+}
+.modalPanel { display: grid; min-width: 0; gap: 1rem; }
+.modalPanelHeading { display: grid; min-width: 0; gap: .3rem; }
+.modalPanelHeading h3 { margin: 0; color: #17362c; font-size: 1rem; font-weight: 750; line-height: 1.3; letter-spacing: 0; overflow-wrap: anywhere; }
+.modalPanelHeading p { margin: 0; color: #63766f; font-size: .88rem; font-weight: 550; line-height: 1.5; }
+.modalFooter {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .65rem;
+  padding: 1rem 2rem max(1.6rem, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(18,45,37,.11);
+  background: #fff;
+}
+.modalPrimaryAction,
+.modalSecondaryAction {
+  box-sizing: border-box;
+  min-height: 3rem;
+  min-width: 8.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .7rem 1rem;
+  border: 1px solid #195440;
+  border-radius: 1rem;
+  background: #195440;
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+.modalSecondaryAction { border-color: #d2dfea; background: #f2f5f8; color: #17362c; }
+.modalPrimaryAction:hover:not(:disabled) { background: #123f30; }
+.modalSecondaryAction:hover:not(:disabled) { background: #e8eef3; }
+.modalDialog button:focus-visible,
+.modalDialog a:focus-visible { outline: 3px solid rgba(43,138,99,.35); outline-offset: 3px; }
+.modalPrimaryAction:disabled,
+.modalSecondaryAction:disabled,
+.modalCloseButton:disabled { opacity: .55; cursor: not-allowed; }
+.modalDialog .claimForm { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.modalDialog .claimForm label span,
+.modalDialog .registerPickerLabel { font-size: .9rem; font-weight: 700; }
+.modalDialog .claimForm input { border-radius: .9rem; background: #fff; font-weight: 600; }
+.modalDialog .transferCard { border-color: #d2dfea; border-radius: 1rem; background: #fff; box-shadow: none; }
+.modalDialog .secondaryButton { border-color: #d2dfea; border-radius: 1rem; background: #f2f5f8; color: #17362c; font-weight: 700; }
+.modalDialog .privacyNote { border-color: #d2dfea; background: #f7f9fb; color: #40564e; }
+.modalDialog .emptyState { min-height: 7rem; border: 1px solid #d2dfea; background: #fff; font-weight: 550; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalOverlay { padding: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modalDialog { width: 100%; max-height: calc(100dvh - 1.5rem); }
+  :global(:where(html:not(:has([data-website-canvas])))) .modalHeader { margin: 1.1rem 1.1rem 0; padding: 0 3.5rem 1rem 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modalBody { padding: 1rem 1.1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modalFooter { padding: 1rem 1.1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modalFooter > * { flex: 1 1 auto; }
 }

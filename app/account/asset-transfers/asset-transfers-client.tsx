@@ -12,7 +12,6 @@ import {
   type ReactNode,
 } from 'react';
 import AppHeader from '../../../components/AppHeader';
-import wizardStyles from '../../../components/AimWizardModal.module.css';
 import DropdownOverlay from '../../../components/DropdownOverlay';
 import launcherStyles from '../app-access-management.module.css';
 import styles from './page.module.css';
@@ -456,41 +455,6 @@ function ShieldIcon() {
   );
 }
 
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="m7 7 10 10M17 7 7 17" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function TransferProgress({
-  currentStep,
-  labels,
-}: {
-  currentStep: 1 | 2;
-  labels: readonly [string, string];
-}) {
-  return (
-    <ol className={`${wizardStyles.progress} ${styles.transferProgress}`} aria-label="Transfer progress">
-      {labels.map((label, index) => {
-        const step = (index + 1) as 1 | 2;
-        const stateClass = step < currentStep
-          ? wizardStyles.progressItemComplete
-          : step === currentStep
-            ? wizardStyles.progressItemCurrent
-            : '';
-        return (
-          <li key={label} className={`${wizardStyles.progressItem} ${stateClass}`} aria-current={step === currentStep ? 'step' : undefined}>
-            <span>{step < currentStep ? '✓' : step}</span>
-            <strong>{label}</strong>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
 function TransferModal({
   open,
   title,
@@ -544,17 +508,17 @@ function TransferModal({
   if (!open) return null;
 
   return (
-    <div className={wizardStyles.overlay} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget && !closeDisabled) onClose(); }}>
-      <section ref={modalRef} className={wizardStyles.dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
-        <header className={wizardStyles.header}>
-          <div className={wizardStyles.headerText}>
+    <div className={styles.modalOverlay} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget && !closeDisabled) onClose(); }}>
+      <section ref={modalRef} className={styles.modalDialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
+        <header className={styles.modalHeader}>
+          <div className={styles.modalHeaderText}>
             <h2 id={titleId}>{title}</h2>
             <p id={descriptionId}>{description}</p>
           </div>
-          <button ref={closeRef} type="button" className={wizardStyles.closeButton} onClick={onClose} disabled={closeDisabled} aria-label="Close dialog"><CloseIcon /></button>
+          <button ref={closeRef} type="button" className={styles.modalCloseButton} onClick={onClose} disabled={closeDisabled} aria-label="Close dialog">×</button>
         </header>
-        <div className={wizardStyles.body}>{children}</div>
-        {footer ? <footer className={wizardStyles.footer}>{footer}</footer> : null}
+        <div className={styles.modalBody}>{children}</div>
+        {footer ? <footer className={styles.modalFooter}>{footer}</footer> : null}
       </section>
     </div>
   );
@@ -801,30 +765,25 @@ export default function AssetTransfersClient({
         closeDisabled={Boolean(busyAction)}
         onClose={closeFlow}
         footer={claimed ? <>
-          <button type="button" className={wizardStyles.secondaryAction} onClick={() => {
+          <button type="button" className={styles.modalSecondaryAction} onClick={() => {
             setClaimed(null);
             setNotice(null);
             if (isDealerAccount) setClaimRegisterId(primaryClaimRegisterId(claimRegisters));
           }}>Claim another asset</button>
-          <Link className={`${wizardStyles.primaryAction} ${styles.footerLink}`} href={claimed.redirectTo}>Open asset</Link>
+          <Link className={`${styles.modalPrimaryAction} ${styles.footerLink}`} href={claimed.redirectTo}>Open asset</Link>
         </> : <>
-          <button type="button" className={wizardStyles.secondaryAction} onClick={closeFlow} disabled={Boolean(busyAction)}>Cancel</button>
+          <button type="button" className={styles.modalSecondaryAction} onClick={closeFlow} disabled={Boolean(busyAction)}>Cancel</button>
           <button
             type="submit"
             form="asset-transfer-claim-form"
-            className={wizardStyles.primaryAction}
+            className={styles.modalPrimaryAction}
             disabled={busyAction === 'claim' || !assetIdentifier.trim() || !transferCode.trim() || (isDealerAccount && (!claimRegisterId || claimRegistersLoading))}
           >{busyAction === 'claim' ? 'Claiming asset…' : 'Claim asset'}</button>
         </>}
       >
-        <p className={wizardStyles.intro}>{isDealerAccount
-          ? 'Select the destination first, then enter the shared transfer details. The chosen register is verified again before the asset moves.'
-          : 'Enter the shared transfer details first. The asset is saved to your selected register only after the code is verified.'}</p>
-        <TransferProgress currentStep={claimed ? 2 : 1} labels={['Transfer details', 'Asset received']} />
         {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice} role={notice.tone === 'error' ? 'alert' : 'status'}>{notice.message}</div> : null}
-        {claimed ? <section className={wizardStyles.panel}>
-          <div className={wizardStyles.panelHeading}>
-            <span className={wizardStyles.panelNumber}>2</span>
+        {claimed ? <section className={styles.modalPanel}>
+          <div className={styles.modalPanelHeading}>
             <h3>Asset received</h3>
             <p>The ownership transfer is complete.</p>
           </div>
@@ -832,9 +791,8 @@ export default function AssetTransfersClient({
             <span className={styles.resultIcon}>✓</span>
             <div><h3>{claimed.assetTitle}</h3><p>The asset is ready in {claimed.registerName}.</p></div>
           </div>
-        </section> : <section className={wizardStyles.panel}>
-          <div className={wizardStyles.panelHeading}>
-            <span className={wizardStyles.panelNumber}>1</span>
+        </section> : <section className={styles.modalPanel}>
+          <div className={styles.modalPanelHeading}>
             <h3>Enter the transfer details</h3>
             <p>Use the identifier and one-time code exactly as the sender shared them.</p>
           </div>
@@ -865,34 +823,29 @@ export default function AssetTransfersClient({
         closeDisabled={Boolean(busyAction)}
         onClose={closeFlow}
         footer={receipt ? <>
-          <button type="button" className={wizardStyles.secondaryAction} onClick={() => { setReceipt(null); setNotice(null); }}>Back to outgoing</button>
-          <button type="button" className={wizardStyles.primaryAction} onClick={() => void copyReceipt()}>Copy details</button>
+          <button type="button" className={styles.modalSecondaryAction} onClick={() => { setReceipt(null); setNotice(null); }}>Back to outgoing</button>
+          <button type="button" className={styles.modalPrimaryAction} onClick={() => void copyReceipt()}>Copy details</button>
         </> : cancelTransfer ? <>
-          <button type="button" className={wizardStyles.secondaryAction} onClick={() => { setConfirmingCancelId(''); setNotice(null); }} disabled={Boolean(busyAction)}>Keep transfer</button>
-          <button type="button" className={`${wizardStyles.primaryAction} ${styles.footerDangerAction}`} onClick={() => void cancel(cancelTransfer.id)} disabled={Boolean(busyAction)}>{busyAction === `cancel:${cancelTransfer.id}` ? 'Archiving asset…' : 'Cancel & archive'}</button>
-        </> : <button type="button" className={`${wizardStyles.primaryAction} ${styles.footerOnlyAction}`} onClick={closeFlow}>Done</button>}
+          <button type="button" className={styles.modalSecondaryAction} onClick={() => { setConfirmingCancelId(''); setNotice(null); }} disabled={Boolean(busyAction)}>Keep transfer</button>
+          <button type="button" className={`${styles.modalPrimaryAction} ${styles.footerDangerAction}`} onClick={() => void cancel(cancelTransfer.id)} disabled={Boolean(busyAction)}>{busyAction === `cancel:${cancelTransfer.id}` ? 'Archiving asset…' : 'Cancel & archive'}</button>
+        </> : <button type="button" className={`${styles.modalPrimaryAction} ${styles.footerOnlyAction}`} onClick={closeFlow}>Done</button>}
       >
-        <p className={wizardStyles.intro}>Review the assets still waiting to transfer, then manage one code at a time.</p>
-        <TransferProgress currentStep={receipt || cancelTransfer ? 2 : 1} labels={['Pending assets', 'Transfer action']} />
         {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice} role={notice.tone === 'error' ? 'alert' : 'status'}>{notice.message}</div> : null}
-        {receipt ? <section className={wizardStyles.panel}>
-          <div className={wizardStyles.panelHeading}>
-            <span className={wizardStyles.panelNumber}>2</span>
+        {receipt ? <section className={styles.modalPanel}>
+          <div className={styles.modalPanelHeading}>
             <h3>{receipt.assetTitle}</h3>
             <p>Copy and send both details. This code can only be used once.</p>
           </div>
           <div className={styles.receiptGrid}><div><span>{receipt.assetIdentifierLabel}</span><strong>{receipt.assetIdentifier}</strong></div><div><span>Transfer code</span><strong>{receipt.transferCode}</strong></div></div>
-        </section> : cancelTransfer ? <section className={`${wizardStyles.panel} ${styles.cancelPanel}`}>
-          <div className={wizardStyles.panelHeading}>
-            <span className={`${wizardStyles.panelNumber} ${styles.cancelPanelNumber}`}>2</span>
+        </section> : cancelTransfer ? <section className={`${styles.modalPanel} ${styles.cancelPanel}`}>
+          <div className={styles.modalPanelHeading}>
             <h3>{cancelTransfer.assetTitle}</h3>
             <p>The current one-time code will stop working and the asset will remain archived. This does not return it to the active register.</p>
           </div>
           <dl className={styles.cancelDetails}><div><dt>{cancelTransfer.assetIdentifierLabel}</dt><dd>{cancelTransfer.assetIdentifier}</dd></div><div><dt>Current status</dt><dd>{transferStatusLabel(cancelTransfer)}</dd></div></dl>
-        </section> : <section className={wizardStyles.panel}>
+        </section> : <section className={styles.modalPanel}>
           <div className={styles.outgoingHeading}>
-            <div className={wizardStyles.panelHeading}>
-              <span className={wizardStyles.panelNumber}>1</span>
+            <div className={styles.modalPanelHeading}>
               <h3>Sent assets</h3>
               <p>Select a pending transfer to replace its code or cancel and archive it.</p>
             </div>

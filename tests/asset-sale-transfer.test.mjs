@@ -196,12 +196,12 @@ test('Account exposes modal-based incoming and outgoing transfer management', ()
   assert.match(transferPage, /Replace code/);
   assert.match(transferPage, /Cancel & archive/);
   assert.match(transferPage, /autoComplete="one-time-code"/);
-  assert.match(transferPage, /AimWizardModal\.module\.css/);
-  assert.match(transferPage, /wizardStyles\.overlay/);
-  assert.match(transferPage, /wizardStyles\.dialog/);
-  assert.match(transferPage, /wizardStyles\.progress/);
-  assert.match(transferPage, /wizardStyles\.panel/);
-  assert.match(transferPage, /wizardStyles\.footer/);
+  assert.doesNotMatch(transferPage, /TransferProgress|panelNumber/);
+  assert.match(transferPage, /styles\.modalOverlay/);
+  assert.match(transferPage, /styles\.modalDialog/);
+  assert.doesNotMatch(transferPage, /Pending assets|Transfer action/);
+  assert.match(transferPage, /styles\.modalPanel/);
+  assert.match(transferPage, /styles\.modalFooter/);
   assert.doesNotMatch(transferPage, /<p>Incoming<\/p>/);
   assert.doesNotMatch(transferPage, /<p>Outgoing<\/p>/);
 });
