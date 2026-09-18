@@ -52,6 +52,14 @@ const USER_COMMUNICATION_TABLES = [
   'account_user_messages',
 ] as const;
 
+// These analytics tables use text identifiers, not auth-user foreign keys.
+// Deleting the auth profile alone does not remove their identifiable history.
+const USER_ANALYTICS_TABLES = [
+  'admin_usage_events',
+  'marketplace_listing_views',
+  'asset_discovery_views',
+] as const;
+
 const ASSISTED_CAPTURE_TABLES = [
   'document_capture_requests',
   'document_capture_files',
@@ -134,6 +142,7 @@ async function deleteUserWorkspaceDataInTransaction(
     ...USER_ID_TABLES,
     ...PARTNER_ACCESS_TABLES,
     ...USER_COMMUNICATION_TABLES,
+    ...USER_ANALYTICS_TABLES,
     ...ASSISTED_CAPTURE_TABLES,
     'app_push_devices', 'app_push_preferences', 'account_push_preferences',
   ]);
@@ -141,6 +150,15 @@ async function deleteUserWorkspaceDataInTransaction(
   for (const table of ['app_push_devices', 'app_push_preferences', 'account_push_preferences']) {
     await deleteByColumn(queryable, tableSet, table, 'account_id', userId);
   }
+
+  // Remove the whole account-linked event, including estimate-input metadata;
+  // nulling user_id would leave potentially identifying free-text information.
+  await deleteByColumn(queryable, tableSet, 'admin_usage_events', 'user_id', userId);
+  for (const table of ['marketplace_listing_views', 'asset_discovery_views']) {
+    await deleteByColumn(queryable, tableSet, table, 'viewer_user_id', userId);
+  }
+  await deleteByColumn(queryable, tableSet, 'marketplace_listing_views', 'seller_user_id', userId);
+  await deleteByColumn(queryable, tableSet, 'asset_discovery_views', 'owner_user_id', userId);
 
   // Capture requests point both to and from canonical ledger records. Unlink
   // their retry-safety provenance, then remove the owner's private workflow

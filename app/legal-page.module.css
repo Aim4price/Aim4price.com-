@@ -110,6 +110,10 @@
 .contents {
   position: sticky;
   top: 1rem;
+  max-height: calc(var(--website-design-vh) * 100 - 2rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(20, 76, 60, 0.32) transparent;
   display: grid;
   gap: 0.28rem;
   padding: 1.15rem;
@@ -301,4 +305,3 @@
     transition: none;
   }
 }
-
