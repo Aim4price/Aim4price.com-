@@ -16,6 +16,13 @@ export const REPORT_THEME_CSS = `
     --brand-dark: #103f35; --brand-mid: #197454;
   }
   html, body { background: #edf4f0; color: var(--ink); font-family: "Montserrat", "Segoe UI", Arial, sans-serif; }
+  @media screen {
+    html { scrollbar-gutter: stable; scrollbar-color: #4b806b #e6efe9; scrollbar-width: auto; }
+    ::-webkit-scrollbar { width: 14px; height: 14px; }
+    ::-webkit-scrollbar-track { background: #e6efe9; }
+    ::-webkit-scrollbar-thumb { background: #4b806b; border: 3px solid #e6efe9; border-radius: 10px; min-height: 48px; }
+    ::-webkit-scrollbar-thumb:hover { background: #245b46; }
+  }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .assetReportPage, .fullRegisterPage, .reportPage, .assetMapReportPage {
     border-radius: 10px; box-shadow: 0 16px 44px rgba(16,63,53,.13);

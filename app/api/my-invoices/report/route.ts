@@ -1,4 +1,5 @@
-import { listCostBudgetsWithProgress } from '../../../../lib/cost-budgets';
+import { expandOwnershipBudgetHistory } from '../../../../lib/ownership-budget-tracker';
+import { listCostBudgetHistory } from '../../../../lib/cost-budgets';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
@@ -194,7 +195,7 @@ export async function GET(request: NextRequest) {
         email: String(ownerFallbackUser.email ?? ''),
       }),
       getAssetRegisterReportLogoUrl(reportOwnerUserId),
-      listCostBudgetsWithProgress(reportOwnerUserId, { recordAlerts: false }),
+      listCostBudgetHistory(reportOwnerUserId),
       listMyInvoicesData(reportOwnerUserId, { assetId: filters.assetId, includeFuelSlipCosts: true }),
     ]);
     const workspaceData = await filterCostLedgerForWorkspace(workspace, unfilteredData);
@@ -232,7 +233,7 @@ export async function GET(request: NextRequest) {
       selectedAsset,
       summary: data.summary,
       invoices: data.invoices,
-      budgets: reportBudgets,
+      budgets: expandOwnershipBudgetHistory(budgetInvoices, reportBudgets),
       budgetInvoices,
       includeFuelSlipCosts: filters.includeFuelSlipCosts !== false,
       xlsxUrl: buildFormatUrl(request, 'xlsx'),

@@ -20,6 +20,7 @@ const USER_ID_TABLES = [
   // Budget alerts cascade from budgets; budgets must precede asset deletion
   // so all-assets rows without an asset foreign key are also removed.
   'asset_cost_budgets',
+  'asset_cost_budget_history',
   'asset_register_items',
   'valuation_runs',
   'marketplace_listings',

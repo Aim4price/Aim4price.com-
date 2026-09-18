@@ -25,7 +25,8 @@ test('single and umbrella routes scope budget history to authorized assets and d
     'next/server':{NextResponse},
     '../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{ownerUserId:'owner',actorName:'Example'}}),filterCostLedgerForWorkspace:async(_,data)=>({...data,assets:data.assets.filter(a=>a.id==='a'),invoices:data.invoices.filter(i=>i.assetId==='a')})},
     '../../../../lib/owner-app-access':{getOwnerAppAccess:async()=>null},
-    '../../../../lib/cost-budgets':{listCostBudgetsWithProgress:async(id,opts)=>{assert.equal(id,'owner');assert.equal(opts.recordAlerts,false);return [budget,{...budget,id:'private-budget',assetId:'private'}];}},
+    '../../../../lib/ownership-budget-tracker':tracker,
+    '../../../../lib/cost-budgets':{listCostBudgetHistory:async(id)=>{assert.equal(id,'owner');return [budget,{...budget,id:'private-budget',assetId:'private'}];}},
     '../../../../lib/account-profile':{getAccountProfile:async()=>({})},
     '../../../../lib/asset-registers':{getAssetRegisterReportLogoUrl:async()=>''},
     '../../../../lib/my-invoices':{listMyInvoicesData:async()=>({assets,invoices:[...costs,cost('private','2026-09-01',90000,{assetId:'private'})],summary:options.summary}),calculateMyInvoiceSummary:()=>options.summary},
@@ -36,5 +37,30 @@ test('single and umbrella routes scope budget history to authorized assets and d
     '../../../../lib/asset-groups':{getAssetGroupById:async()=>({name:'Umbrella',members:[{assetId:'a'}]})},
     '../../../../lib/report-pdf':{},
   });
-  for(const scope of ['assetId=a','groupId=group']){const url=new URL('https://example.com/api/my-invoices/report?format=xlsx&'+scope);const res=await route.GET(new NextRequest(url));assert.equal(res.status,200);assert.deepEqual(captured.budgets.map(b=>b.id),['b']);assert.ok(captured.budgetInvoices.every(i=>i.assetId==='a'));assert.equal(captured.budgetInvoices.length,3);}
+  for(const scope of ['assetId=a','groupId=group']){const url=new URL('https://example.com/api/my-invoices/report?format=xlsx&'+scope);const res=await route.GET(new NextRequest(url));assert.equal(res.status,200);assert.deepEqual(captured.budgets.map(b=>b.id),['b:2026-09-01']);assert.ok(captured.budgetInvoices.every(i=>i.assetId==='a'));assert.equal(captured.budgetInvoices.length,3);}
+});
+
+test('historical monthly and annual budgets follow cost dates and reset at calendar boundaries',()=>{
+ const rows=[cost('aug','2025-08-20',400),cost('sep','2025-09-02',300),cost('jan','2026-01-02',200)];
+ const versions=[{...budget,effectiveFrom:'2025-01-01',effectiveTo:null},{...budget,id:'annual',period:'annual',amount:5000,effectiveFrom:'2025-01-01'}];
+ const r=tracker.buildOwnershipBudgetTracker(rows,tracker.expandOwnershipBudgetHistory(rows,versions));
+ assert.deepEqual(r.get('sep').map(s=>s.spent),[300,700]);
+ assert.deepEqual(r.get('jan').map(s=>s.spent),[200,200]);
+ assert.equal(r.get('aug')[0].budget.periodLabel,'August 2025');
+});
+test('revision boundaries use the correct amount and fuel rule without resetting period spend',()=>{
+ const rows=[cost('early','2026-09-01',500),cost('fuel','2026-09-02',200,{source:'fuel_slip'}),cost('changed','2026-09-15',300),cost('deleted','2026-09-20',100)];
+ const versions=[{...budget,id:'b:1',effectiveFrom:'2026-09-01',effectiveTo:'2026-09-15'},
+ {...budget,id:'b:2',amount:2000,includeFuelSlipCosts:true,effectiveFrom:'2026-09-15',effectiveTo:'2026-09-20'}];
+ const r=tracker.buildOwnershipBudgetTracker(rows,tracker.expandOwnershipBudgetHistory(rows,versions));
+ assert.equal(r.get('fuel')[0].spent,500);assert.equal(r.get('fuel')[0].budget.amount,1000);
+ assert.equal(r.get('changed').length,1);assert.equal(r.get('changed')[0].spent,1000);assert.equal(r.get('changed')[0].budget.amount,2000);
+ assert.deepEqual(r.get('deleted'),[]);
+});
+test('unknown legacy periods and superseded same-day versions are not invented',()=>{
+ const rows=[cost('unknown','2026-08-15',100),cost('known','2026-09-15',200)];
+ const versions=[{...budget,id:'old',effectiveFrom:'2026-09-15',effectiveTo:'2026-09-15'},
+ {...budget,id:'known',effectiveFrom:'2026-09-15'}];
+ const r=tracker.buildOwnershipBudgetTracker(rows,tracker.expandOwnershipBudgetHistory(rows,versions));
+ assert.deepEqual(r.get('unknown'),[]);assert.equal(r.get('known').length,1);
 });
