@@ -1670,3 +1670,30 @@
 .accountModal .manageMenuGrid .manageMenuAction .menuOptionSubtitle {
   font-size: .88rem !important;
 }
+
+/* Use the same chooser shell as manual costs; only the list scrolls. */
+.assetPickerModal.assetPickerModal > form,
+.assetPickerModal.assetPickerModal .body,
+.assetPickerModal.assetPickerModal .wizardBody,
+.assetPickerModal.assetPickerModal .assetSection {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  gap: 0;
+  padding: 0 !important;
+  margin: 0;
+}
+.assetPickerModal.assetPickerModal .assetSection {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.pickerAssetItem { min-width: 0; }
+.assetPickerModal .memberControls {
+  margin: 0.5rem 1rem 0;
+}
+.assetPickerModal .error { margin: 0 var(--picker-padding) 1rem; }
+.pickerCountNote { display: block; font-size: 0.78rem; }
