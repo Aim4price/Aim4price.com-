@@ -3993,3 +3993,8 @@
     color: #e2eee8;
   }
 }
+
+.expiryFields { display: grid; align-content: start; gap: 0.85rem; }
+.expiryToggle { display: flex; align-items: center; gap: 0.65rem; min-height: 2.75rem; color: #23463e; font-weight: 650; cursor: pointer; }
+.expiryToggle input[type='checkbox'] { width: 1.2rem; height: 1.2rem; min-height: 0; flex: 0 0 auto; margin: 0; accent-color: #17563f; }
+.expiryToggle input:focus-visible { outline: 3px solid rgba(24,112,83,.35); outline-offset: 3px; }

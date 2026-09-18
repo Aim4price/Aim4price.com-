@@ -198,7 +198,7 @@ test('shared overlay uses a canvas-aware portal, logical viewport geometry and t
   ]);
 
   assert.match(component, /createPortal\([\s\S]*document\.body/);
-  assert.match(component, /new ResizeObserver\(schedulePositionUpdate\)/);
+  assert.match(component, /new ResizeObserver\(\(\) => schedulePositionUpdate\(\)\)/);
   assert.match(component, /window\.addEventListener\('scroll', schedulePositionUpdate, true\)/);
   assert.match(component, /window\.visualViewport\?\.addEventListener\('resize'/);
   assert.match(component, /resolveFallbackAnchor/);
