@@ -1,3 +1,4 @@
+import { listOpenIssueNoteGroupsForAssets } from './asset-issue-notes';
 import { listFieldManagerAssets } from './field-manager';
 import { listAssetMaintenanceRecords, type AssetMaintenanceRecord } from './asset-maintenance';
 import {
@@ -102,10 +103,23 @@ export async function listFieldManagerNotifications(input: {
   managerId: string;
 }): Promise<FieldManagerNotification[]> {
   const records = await currentNotificationRecords(input);
-  const keys = records.map(eventKey);
+  const assets = await listFieldManagerAssets(input.ownerUserId, input.managerId);
+  const problems = await listOpenIssueNoteGroupsForAssets(assets.map(asset => asset.id));
+  const problemNotifications: FieldManagerNotification[] = problems.map(group => ({
+    id: `field-manager-problem:${group.latest.id}`,
+    maintenanceRecordId: '',
+    assetId: group.assetRegisterItemId,
+    title: 'Problem reported',
+    body: `${assets.find(asset => asset.id === group.assetRegisterItemId)?.title || 'Asset'}: ${group.latest.note}`,
+    href: '/field-manager/overview',
+    createdAtIso: group.latest.createdAtIso,
+    isRead: false,
+    assignedToViewer: false,
+  }));
+  const keys = [...records.map(eventKey), ...problemNotifications.map(item => item.id)];
   const readKeys = await listReadNotificationEventKeys(viewerKey(input.managerId), keys);
 
-  return records.map((record) => {
+  const maintenanceNotifications = records.map((record) => {
     const key = eventKey(record);
     const maintenanceLabel = record.maintenanceType === 'checkup' ? 'Check-up' : 'Service';
     const assignedToViewer = record.assignedFieldManagerId === input.managerId;
@@ -123,6 +137,7 @@ export async function listFieldManagerNotifications(input: {
       assignedToViewer,
     };
   });
+  return [...problemNotifications.map(item => ({ ...item, isRead: readKeys.has(item.id) })), ...maintenanceNotifications];
 }
 
 export async function markFieldManagerNotificationsRead(input: {
@@ -135,7 +150,7 @@ export async function markFieldManagerNotificationsRead(input: {
   );
   if (!requested.size) return;
 
-  const records = await currentNotificationRecords(input);
-  const allowedKeys = records.map(eventKey).filter((key) => requested.has(key));
+  const notifications = await listFieldManagerNotifications(input);
+  const allowedKeys = notifications.map(item => item.id).filter((key) => requested.has(key));
   await markNotificationEventKeysRead(viewerKey(input.managerId), allowedKeys);
 }

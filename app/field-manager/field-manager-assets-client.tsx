@@ -108,7 +108,7 @@ function searchHaystack(asset: FieldManagerAssetSummary): string {
     .toLowerCase();
 }
 
-export default function FieldManagerAssetsClient() {
+export default function FieldManagerAssetsClient({ reportProblemMode = false }: { reportProblemMode?: boolean }) {
   const [assets, setAssets] = useState<FieldManagerAssetSummary[]>([]);
   const [groups, setGroups] = useState<AssetGroupSummary[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
@@ -221,7 +221,7 @@ export default function FieldManagerAssetsClient() {
         assetTitle: asset.title,
         assetId: payload.assetId,
         publicAssetCode: payload.publicAssetCode,
-        redirectTo: payload.redirectTo,
+        redirectTo: reportProblemMode ? `${payload.redirectTo}${payload.redirectTo.includes('?') ? '&' : '?'}reportProblem=1` : payload.redirectTo,
       });
       setOpeningAssetId(null);
     } catch (error) {
@@ -269,7 +269,7 @@ export default function FieldManagerAssetsClient() {
           onClick={() => void handleOpenAsset(asset)}
           disabled={Boolean(openingAssetId)}
         >
-          {isOpening ? 'Opening…' : 'Open'}
+          {isOpening ? 'Opening…' : reportProblemMode ? 'Report Problem' : 'Open'}
         </button>
       </article>
     );
@@ -284,6 +284,7 @@ export default function FieldManagerAssetsClient() {
 
         {notice ? <div className={styles.errorNotice}>{notice}</div> : null}
 
+        {reportProblemMode ? <section className={styles.searchCard}><h1>Report Problem</h1><p>Choose an asset to report a problem.</p></section> : null}
         <section className={styles.searchCard}>
           <div className={styles.searchField}>
             <input

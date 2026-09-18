@@ -222,7 +222,12 @@ export default function FieldManagerHomeClient() {
                 <AppHomeChevron />
               </button>
 
-
+              <button type="button" className={`${styles.homeActionCard} ${launcherStyles.card}`}
+                onClick={() => window.location.assign('/field-manager/report-problem')}>
+                <AppHomeIcon name="report-problem" />
+                <strong>Report Problem</strong>
+                <AppHomeChevron />
+              </button>
 
               <button
                 type="button"

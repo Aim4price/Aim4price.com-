@@ -862,7 +862,8 @@ async function listQrScanNotifications(userId: string): Promise<HeaderNotificati
         from public.asset_scan_events e
         inner join public.asset_register_items asset on asset.id = e.asset_id
         where to_jsonb(asset)->>'user_id' = $1
-          and e.actor_type in ('scan_pin', 'field_manager')
+          and (e.actor_type in ('scan_pin', 'field_manager')
+            or (e.actor_type = 'owner_session' and lower(coalesce(e.note, '')) like '%notes%problems:%'))
           and e.created_at >= now() - ($2::int * interval '1 day')
           and nullif(coalesce(to_jsonb(e)->>'fuel_storage_event_id', ''), '') is null
           and nullif(coalesce(to_jsonb(e)->>'fuel_storage_id', ''), '') is null
@@ -882,7 +883,7 @@ async function listQrScanNotifications(userId: string): Promise<HeaderNotificati
         id: `asset-update:${row.id}:${createdAtIso}`,
         category: 'qr_scan',
         tone: 'neutral',
-        title: 'Asset updated',
+        title: /notes\s*\/\s*problems:/i.test(row.note || '') ? 'Problem reported' : 'Asset updated',
         body: `${updaterName} updated ${assetTitle}. ${scanNotificationDetailText(row)}`,
         href: '/asset-register',
         createdAtIso,

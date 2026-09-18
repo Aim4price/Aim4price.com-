@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 type PageProps = {
   params: { assetId: string };
   searchParams?: {
+    reportProblem?: string;
     maintenanceId?: string | string[];
     maintenanceType?: string | string[];
     returnTo?: string | string[];
@@ -39,12 +40,13 @@ export default async function OwnerMaintenanceWorkPage({ params, searchParams }:
   return (
     <ScanClient
       publicAssetCode={context.asset.publicAssetCode}
+      reportProblemMode={searchParams?.reportProblem === '1'}
       ownerAppMode
       ownerAppAssetId={context.asset.id}
       ownerAppOperatorName={access.displayName}
       ownerAppScheduledMaintenanceId={maintenanceId || null}
       ownerAppScheduledMaintenanceType={maintenanceType}
-      ownerAppReturnTo={returnTo || '/owner-app/operations/maintenance'}
+      ownerAppReturnTo={searchParams?.reportProblem === '1' ? '/owner-app/report-problem' : returnTo || '/owner-app/operations/maintenance'}
     />
   );
 }
