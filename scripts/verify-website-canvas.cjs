@@ -48,6 +48,19 @@ async function check(browser, url) {
     });
     await delay(150);
   }
+  async function assertHeroFitsViewport() {
+    const result = await page.evaluate(() => {
+      const canvas = document.querySelector('[data-website-canvas]');
+      const hero = canvas?.querySelector('[class*="storyHeroGrid"]');
+      if (!hero) return null;
+      const scale = Number(canvas.dataset.websiteScale);
+      const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+      return { actual: hero.getBoundingClientRect().height / scale,
+        expected: Math.min(900, innerHeight / scale) - 5.75 * rem };
+    });
+    if (result) assert.ok(Math.abs(result.actual - result.expected) < 2,
+      `story hero must fit the visible viewport: ${result.actual} vs ${result.expected}`);
+  }
   async function geometry() {
     return page.evaluate(()=>{
       const canvas=document.querySelector('[data-website-canvas]'), scale=Number(canvas.dataset.websiteScale), origin=canvas.getBoundingClientRect();
@@ -71,6 +84,7 @@ async function check(browser, url) {
     for(const width of widths) {
       await visit(route,width);
       const actual=await geometry();
+      if (name === 'home') await assertHeroFitsViewport();
       assert.ok(Math.abs(actual.scale-Math.min(1.2,width/1440))<.012,`${name}/${width}: automatic scale`);
       assert.ok(Math.abs(actual.width-1440)<.1,`${name}/${width}: logical canvas width`);
       assert.ok(actual.headerFits,`${name}/${width}: header controls overlap or escape the canvas`);
@@ -80,7 +94,9 @@ async function check(browser, url) {
       actual.items.forEach((item,i)=>{
         assert.equal(item.display,reference[i].display,`${name}/${width}: display changed`);
         assert.ok(Math.abs(item.width-reference[i].width)<Math.max(item.rounding/actual.scale,reference[i].width*.015),`${name}/${width}: ${item.selector} width ${item.width} vs ${reference[i].width}`);
-        assert.ok(Math.abs(item.height-reference[i].height)<2/actual.scale,`${name}/${width}: ${item.selector} height ${item.height} vs ${reference[i].height}`);
+        // The story hero deliberately fits the visible viewport so its scroll prompt stays visible.
+        // Its exact height is checked separately; all other canvas geometry stays fixed.
+        if (item.selector !== '[class*="storyHeroGrid"]') assert.ok(Math.abs(item.height-reference[i].height)<2/actual.scale,`${name}/${width}: ${item.selector} height ${item.height} vs ${reference[i].height}`);
         assert.ok(Math.abs(item.font-reference[i].font)<.02,`${name}/${width}: typography changed`);
       });
       await page.screenshot({path:path.join(output,`${name}-${width}.png`)});
@@ -88,9 +104,12 @@ async function check(browser, url) {
     }
     console.log(`PASS ${name}: ${widths.length} widths`);
   }
-  // Height only controls visible area; it must not select a different composition.
+  // Height controls the visible story hero, without changing other composition.
   await visit('/',1366,768);const tall=await geometry();await page.setViewport({width:1366,height:600});await delay(150);const short=await geometry();
-  assert.equal(tall.scale,short.scale);assert.deepEqual(tall.items,short.items);
+  await assertHeroFitsViewport();
+  assert.equal(tall.scale,short.scale);
+  const withoutHeroHeight = items => items.map(item => item.selector === '[class*="storyHeroGrid"]' ? {...item, height: 0} : item);
+  assert.deepEqual(withoutHeroHeight(tall.items),withoutHeroHeight(short.items));
   // Autoplay may have advanced before visit() pauses it. Scrolling is absolute:
   // 80% of the eight-stage track selects Manage; the top selects Brand.
   // Do not use the incidental paused autoplay frame as the return-to-top target.
