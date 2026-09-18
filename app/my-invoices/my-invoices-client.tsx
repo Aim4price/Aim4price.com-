@@ -2113,7 +2113,7 @@ export default function MyInvoicesClient({
     budgetManagerReturnFocusRef.current = budget.id;
     setBudgetManagerNotice(null);
     setEditingBudgetId(budget.id);
-    setBudgetWizardStep(1);
+    setBudgetWizardStep(2);
     setBudgetDraft({
       assetId: budget.assetId || 'all',
       period: budget.period,
@@ -4077,10 +4077,10 @@ export default function MyInvoicesClient({
                 <button
                   type="button"
                   className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`}
-                  onClick={budgetWizardStep === 1 ? closeBudgetModal : goBackBudgetWizard}
+                  onClick={budgetWizardStep === (editingBudgetId ? 2 : 1) ? closeBudgetModal : goBackBudgetWizard}
                   disabled={budgetSaving}
                 >
-                  {budgetWizardStep === 1 ? 'Cancel' : 'Back'}
+                  {budgetWizardStep === (editingBudgetId ? 2 : 1) ? 'Cancel' : 'Back'}
                 </button>
                 {budgetWizardStep < 4 ? (
                   <button key="budget-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving}>

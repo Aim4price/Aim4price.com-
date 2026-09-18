@@ -12,6 +12,8 @@ import { budgetStatusLabel, filterTrackedBudgets, EMPTY_BUDGET_FILTERS, type Tra
 import { downloadCanonicalReportFile, openCanonicalReportUrl } from '../../lib/report-open';
 import ledger from '../my-invoices/page.module.css';
 import styles from './page.module.css';
+import maintenanceStyles from '../maintenance/page.module.css';
+import accountStyles from '../account/page.module.css';
 const money = (value: number) => `R ${value.toLocaleString('en-US', { maximumFractionDigits: 2 }).replace(/,/g, ' ').replace('.', ',')}`;
 function Icon({ kind }: { kind: string }) {
   if (kind === 'manage') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></svg>;
@@ -29,8 +31,8 @@ function Dialog({ title, onClose, children, report = false, subtitle }: { subtit
     ref.current?.focus();
     return () => { document.body.style.overflow = overflow; previous?.focus(); };
   }, []);
-  return <div className={`${styles.overlay} ${report ? downloadStyles.backdrop : ''}`} data-website-overlay onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <div ref={ref} tabIndex={-1} className={`${styles.dialog} ${report ? downloadStyles.dialog : budgetModalStyles.surface} ${subtitle ? styles.manageDialog : ''}`} data-download-dialog={report ? 'true' : undefined} role="dialog" aria-modal="true" aria-label={title} onKeyDown={e => {
+  return <div className={subtitle ? `${maintenanceStyles.modalBackdrop} ${maintenanceStyles.ledgerManageBackdrop}` : `${styles.overlay} ${report ? downloadStyles.backdrop : ''}`} data-website-overlay onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
+    <div ref={ref} tabIndex={-1} className={subtitle ? `${maintenanceStyles.schedulingDialog} ${maintenanceStyles.ledgerManageModal}` : `${styles.dialog} ${report ? downloadStyles.dialog : budgetModalStyles.surface}`} data-download-dialog={report ? 'true' : undefined} role="dialog" aria-modal="true" aria-label={title} onKeyDown={e => {
       if (e.key === 'Escape') { e.stopPropagation(); onClose(); }
       if (e.key === 'Tab') {
         const controls = Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') || []);
@@ -38,7 +40,7 @@ function Dialog({ title, onClose, children, report = false, subtitle }: { subtit
         if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) { e.preventDefault(); last?.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
-    }}><header className={report ? undefined : budgetModalStyles.header} data-download-header="true"><div className={budgetModalStyles.headerText}><h2>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div><button type="button" className={report ? undefined : budgetModalStyles.close} onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>{report ? '×' : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>}</button></header>{children}</div>
+    }}><header className={subtitle ? maintenanceStyles.modalHeader : report ? undefined : budgetModalStyles.header} data-download-header="true"><div className={budgetModalStyles.headerText}><h2>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div><button type="button" className={subtitle ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : report ? undefined : budgetModalStyles.close} onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>{report || subtitle ? <span aria-hidden="true">×</span> : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>}</button></header>{subtitle ? <div className={maintenanceStyles.modalDivider} /> : null}{children}</div>
   </div>;
 }
 export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd, onEdit, onDelete, scopeAssetId = '', reportAssets = [] }: {
@@ -120,7 +122,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     </FilterFlow> : null}
     {selected ? (
       <Dialog title="Manage budget" subtitle={`${selected.assetTitle} · ${selected.periodLabel}`} onClose={() => setManageId(null)}>
-        <div className={`${styles.dialogActions} ${manageStyles.grid}`}>
+        <div className={`${maintenanceStyles.ledgerManageActions} ${manageStyles.grid}`}>
           <button type="button" className={manageStyles.primary} onClick={() => { setManageId(null); onEdit(selected.id); }}>
             <Icon kind="edit" /><span className={manageStyles.copy}><span>Edit budget &amp; alerts</span><small>Update the limit and reminders.</small></span>
           </button>
