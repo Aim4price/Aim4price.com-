@@ -1,3 +1,4 @@
+import { CAPTURE_LIMIT_CODE, releaseFailedCaptureAllowance } from '../../../../lib/capture-allowance';
 import { randomBytes } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import {
@@ -328,6 +329,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     let requestSafelyClosed = !createdRequestId;
     if (createdRequestId) {
+      await releaseFailedCaptureAllowance(createdRequestId).catch(error => console.error('Capture allowance recovery failed', error));
       try {
         await transitionCaptureRequest(createdRequestId, 'rejected', {
           actor: INTAKE_RECOVERY_ACTOR,
@@ -341,6 +343,7 @@ export async function POST(request: NextRequest) {
     if (requestSafelyClosed) {
       await deleteStoredFiles(storedFiles.map((file) => file.storageKey));
     }
+    if (error instanceof Error && error.message === CAPTURE_LIMIT_CODE) return errorResponse('This account has reached today’s invoice capture allowance. Please ask the account owner to request assistance from their Cost Ledger.', 429);
     console.error('public invoice drop intake failed', error);
     return errorResponse('Invoice Drop is temporarily unavailable. Please try again shortly.', 503);
   }

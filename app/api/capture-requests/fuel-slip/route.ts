@@ -1,3 +1,5 @@
+import { getCaptureAdminActor } from '../../../../lib/capture-admin-actor';
+import { CAPTURE_LIMIT_CODE, releaseFailedCaptureAllowance } from '../../../../lib/capture-allowance';
 import { NextResponse } from 'next/server';
 import {
   addCaptureRequestFile,
@@ -104,7 +106,7 @@ export async function POST(request: Request) {
       category: 'assisted-fuel-slip-capture',
     });
     unlinkedUploadUrl = upload.url;
-    const actor: CaptureEventActor = {
+    const actor: CaptureEventActor = await getCaptureAdminActor() ?? {
       actorType: context.accountantAccess ? 'accountant' : 'owner',
       userId: context.actorUserId,
       displayName: context.actorName || (context.accountantAccess ? 'Accountant' : 'Asset owner'),
@@ -141,6 +143,7 @@ export async function POST(request: Request) {
     }, { status: 202 });
   } catch (error) {
     if (createdCaptureId && !captureFileLinked) {
+      await releaseFailedCaptureAllowance(createdCaptureId).catch(error => console.error('Capture allowance recovery failed', error));
       await transitionCaptureRequest(createdCaptureId, 'rejected', {
         actor: INTAKE_RECOVERY_ACTOR,
         reason: 'Assisted fuel slip intake did not finish attaching its verified source file.',
@@ -158,6 +161,7 @@ export async function POST(request: Request) {
     }
     console.error('Aim4price assisted fuel slip intake failed.', error);
     const message = error instanceof Error ? error.message : '';
+    if (message === CAPTURE_LIMIT_CODE) return NextResponse.json({ ok: false, code: CAPTURE_LIMIT_CODE, error: 'Today’s capture allowance has been used. Please request assistance or enter this manually.' }, { status: 429 });
     const safeMessage = message && !message.startsWith('CAPTURE_')
       ? message
       : 'The fuel slip could not be sent for capture. Please try again.';

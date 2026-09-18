@@ -1,4 +1,6 @@
 'use client';
+import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
+import { useCaptureAllowance } from '../../lib/use-capture-allowance';
 import DateInput from '../../components/DateInput';
 import manageStyles from '../../components/LedgerManageActions.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
@@ -1597,6 +1599,8 @@ export default function MyInvoicesClient({
   );
   const quickLaunchReturnTo = initialOpenAdd && initialAssetId ? initialReturnTo : '';
 
+  const allowanceEndpoint = accountScopedUrl(`/api/capture-allowance?type=invoice${dealerMode ? `&dealer=1&assetId=${encodeURIComponent(selectedAssetId)}` : ''}`);
+  const captureAllowance = useCaptureAllowance(flow === 'upload', allowanceEndpoint);
   const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
   const formOpen = flow === 'manual-form' || flow === 'review';
@@ -2986,7 +2990,7 @@ export default function MyInvoicesClient({
   }
 
   async function handleAutomaticExtract() {
-    if (isExtracting || !selectedAssetId || !automaticUploadFile) return;
+    if (isExtracting || !captureAllowance.ready || !selectedAssetId || !automaticUploadFile) return;
 
     setIsExtracting(true);
     setCaptureUploadError('');
@@ -3003,7 +3007,8 @@ export default function MyInvoicesClient({
         credentials: 'include',
         body: formData,
       });
-      const data = (await response.json()) as CaptureRequestResponse;
+      const data = (await response.json()) as CaptureRequestResponse & { code?: string };
+      if (data.code === 'CAPTURE_DAILY_LIMIT') { captureAllowance.markBlocked(); return; }
       if (!response.ok || !data.ok || !data.request) {
         throw new Error(data.error || 'The invoice/photo could not be sent for Aim4price capture.');
       }
@@ -4973,7 +4978,8 @@ export default function MyInvoicesClient({
         </div>
       ) : null}
 
-      {flow === 'upload' ? (
+      {captureAllowance.blocked ? <CaptureAllowanceModal endpoint={allowanceEndpoint} ledger="Cost" onClose={closeModal} /> : null}
+      {flow === 'upload' && !captureAllowance.blocked ? (
         <div className={`${styles.modalBackdrop} ${styles.accountCostBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
           <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.accountCostModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
@@ -5002,12 +5008,14 @@ export default function MyInvoicesClient({
                   <textarea value={captureNote} onChange={(event) => setCaptureNote(event.target.value)} maxLength={1000} rows={3} placeholder="For example, split between Tractor 1 and Tractor 2." disabled={isExtracting} />
                 </label>
                 <p>{dealerMode ? 'Aim4price checks the invoice within 24 hours, then the owner approves it.' : 'Aim4price will capture and verify it within 24 hours.'}</p>
+                <p role="status">{captureAllowance.label}</p>
+                {captureAllowance.error ? <p role="alert">{captureAllowance.error} <button type="button" className={styles.secondaryButton} onClick={captureAllowance.retry}>Try again</button></p> : null}
                 {captureUploadError ? <p className={styles.noticeError} role="alert">{captureUploadError}</p> : null}
               </section>
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} disabled={isExtracting} onClick={() => setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic')}>Back</button>
-              <button type="button" className={styles.primaryButton} onClick={handleAutomaticExtract} disabled={!automaticUploadFile || isExtracting}>
+              <button type="button" className={styles.primaryButton} onClick={handleAutomaticExtract} disabled={!captureAllowance.ready || !automaticUploadFile || isExtracting}>
                 {isExtracting ? 'Sending invoice/photo...' : 'Send for capture'}
               </button>
             </div>
