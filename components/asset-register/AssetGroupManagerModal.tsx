@@ -995,7 +995,7 @@ export default function AssetGroupManagerModal({
               className={styles.body}
             >
               <p className={styles.intro}>Complete one short step at a time. Your umbrella is saved on the final step.</p>
-              <AssetGroupEditorProgress currentStep={editorStep} />
+              {group ? <AssetGroupEditorProgress currentStep={editorStep} /> : null}
 
               <div className={styles.wizardBody}>
                 {editorStep === 1 ? (
