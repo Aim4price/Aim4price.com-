@@ -354,6 +354,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [editingDocument, setEditingDocument] = useState<VaultDocument | null>(null);
   const [documentPendingDelete, setDocumentPendingDelete] = useState<VaultDocument | null>(null);
   const [draft, setDraft] = useState<DocumentDraft>(createEmptyDraft);
+  const [documentExpires, setDocumentExpires] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [filePickerDragging, setFilePickerDragging] = useState(false);
@@ -615,6 +616,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   function openUploadModal() {
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setEditingDocument(null);
+    setDocumentExpires(false);
     setDraft({
       ...createEmptyDraft(),
       assetIds: initialAssetId ? [initialAssetId] : [],
@@ -635,6 +637,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   function openEditModal(document: VaultDocument) {
     returnFocusRef.current = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null;
     setEditingDocument(document);
+    setDocumentExpires(Boolean(document.expiryDate));
     setDraft({
       title: document.title,
       category: document.category,
@@ -1564,10 +1567,26 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                       </small>
                     ) : null}
                   </div>
-                  <label className={styles.field}>
-                    <span>{selectedFiles.length > 1 ? 'Expiry for all files' : 'Expiry or renewal date'} <em>Optional</em></span>
-                    <DateInput value={draft.expiryDate} onValueChange={(value) => updateDraft('expiryDate', value)} />
-                  </label>
+                  <div className={styles.expiryFields}>
+                    <label className={styles.expiryToggle}>
+                      <input
+                        type="checkbox"
+                        checked={documentExpires}
+                        aria-controls="document-expiry-date"
+                        onChange={(event) => {
+                          setDocumentExpires(event.target.checked);
+                          if (!event.target.checked) updateDraft('expiryDate', '');
+                        }}
+                      />
+                      <span>{selectedFiles.length > 1 ? 'Do these documents expire?' : 'Does this document expire?'}</span>
+                    </label>
+                    {documentExpires ? (
+                      <label id="document-expiry-date" className={styles.field}>
+                        <span>{selectedFiles.length > 1 ? 'Expiry for all files' : 'Expiry or renewal date'} <em>Optional</em></span>
+                        <DateInput value={draft.expiryDate} onValueChange={(value) => updateDraft('expiryDate', value)} />
+                      </label>
+                    ) : null}
+                  </div>
                   <label className={`${styles.field} ${styles.notesField}`}>
                     <span>
                       {selectedFiles.length > 1 ? 'Note for all files' : 'Notes'}{' '}

@@ -110,6 +110,7 @@ export default function DropdownOverlay({
     const anchor = anchorRef?.current ?? fallbackAnchorRef.current;
     if (!menu || !anchor || !anchor.isConnected) return;
 
+    const scrollTop = menu.scrollTop;
     const anchorRect = websiteLogicalRect(anchor.getBoundingClientRect());
     const visualViewport = websiteVisibleViewport();
     const viewportLeft = visualViewport.left;
@@ -177,10 +178,14 @@ export default function DropdownOverlay({
       maximumWidth: isWebsite ? maximumWidth : undefined,
       viewportGutter: VIEWPORT_GUTTER,
     });
+    menu.scrollTop = scrollTop;
     setPosition((current) => (samePosition(current, next) ? current : next));
   }, [anchorRef, gap, isWebsite, matchAnchorWidth, maxHeight, minimumWidth]);
 
-  const schedulePositionUpdate = useCallback(() => {
+  const schedulePositionUpdate = useCallback((event?: Event) => {
+    // Scrolling options does not move the anchor. Remeasuring here can clamp
+    // the scroll position while the menu temporarily uses its maximum height.
+    if (event?.type === 'scroll' && event.target instanceof Node && menuRef.current?.contains(event.target)) return;
     if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
     animationFrameRef.current = requestAnimationFrame(() => {
       animationFrameRef.current = null;
@@ -196,7 +201,7 @@ export default function DropdownOverlay({
     const anchor = anchorRef?.current ?? fallbackAnchorRef.current;
     const resizeObserver = typeof ResizeObserver === 'undefined'
       ? null
-      : new ResizeObserver(schedulePositionUpdate);
+      : new ResizeObserver(() => schedulePositionUpdate());
     if (menu) resizeObserver?.observe(menu);
     if (anchor) resizeObserver?.observe(anchor);
 
