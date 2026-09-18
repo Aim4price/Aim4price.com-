@@ -1392,14 +1392,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       </div>
 
       {modalMode && !showAssetPicker ? (
-        <div className={`${styles.modalBackdrop} ${modalMode === 'upload' ? `${wizardStyles.overlay} ${styles.accountUploadBackdrop}` : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
-          <section ref={modalRef} className={`${styles.modal} ${modalMode === 'upload' ? `${wizardStyles.dialog} ${styles.accountUploadModal} ${accountStyles.modalTheme}` : ''}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
+        <div className={`${styles.modalBackdrop} ${styles.accountDocumentBackdrop} ${modalMode === 'upload' ? wizardStyles.overlay : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
+          <section ref={modalRef} className={`${styles.modal} ${styles.accountDocumentModal} ${accountStyles.modalTheme} ${modalMode === 'upload' ? wizardStyles.dialog : styles.editDocumentModal}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
               <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
                 <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
                 <p>{modalMode === 'upload' ? 'Add files, details and links in three short steps.' : `Update the details and links for ${editingDocument?.fileName ?? 'this document'}.`}</p>
               </div>
-              <button type="button" className={modalMode === 'upload' ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : undefined} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true">{modalMode === 'upload' ? <span aria-hidden="true">×</span> : <Icon name="close" />}</button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><span aria-hidden="true">×</span></button>
             </header>
 
             <form onSubmit={submitDocument} className={styles.modalForm}>
@@ -1772,8 +1772,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       ) : null}
 
       {documentPendingDelete ? (
-        <div className={styles.modalBackdrop} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget && !busyRef.current) setDocumentPendingDelete(null); }}>
-          <section ref={deleteModalRef} className={styles.confirmationModal} role="dialog" aria-modal="true" aria-labelledby="document-delete-title">
+        <div className={`${styles.modalBackdrop} ${styles.accountDocumentBackdrop}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget && !busyRef.current) setDocumentPendingDelete(null); }}>
+          <section ref={deleteModalRef} className={`${styles.confirmationModal} ${styles.accountDocumentModal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="document-delete-title">
             <header className={`${styles.modalHeader} ${styles.compactModalHeader}`}>
               <div>
                 <h2 id="document-delete-title">
@@ -1782,7 +1782,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     : 'Are you sure you want to delete this document?'}
                 </h2>
               </div>
-              <button type="button" onClick={() => setDocumentPendingDelete(null)} disabled={busy} aria-label="Close delete confirmation" data-modal-initial-focus="true"><Icon name="close" /></button>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setDocumentPendingDelete(null)} disabled={busy} aria-label="Close delete confirmation" data-modal-initial-focus="true"><span aria-hidden="true">×</span></button>
             </header>
 
             <div className={styles.confirmationBody}>
