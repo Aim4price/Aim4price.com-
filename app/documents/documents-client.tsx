@@ -30,6 +30,8 @@ import {
 import styles from './page.module.css';
 import wizardStyles from '../../components/AimWizardModal.module.css';
 import accountStyles from '../account/page.module.css';
+import pickerStyles from '../../components/AssetPicker.module.css';
+import AssetSerialNumber from '../../components/AssetSerialNumber';
 
 type DocumentCategory = AccountDocumentCategory;
 type DocumentType = AccountDocumentType;
@@ -42,6 +44,7 @@ type AssetLink = {
   categoryLabel?: string;
   methodLabel?: string;
   currentValue?: number;
+  serialNumber?: string | null;
 };
 
 type VaultDocument = {
@@ -260,14 +263,6 @@ function formatBytes(value: number): string {
   if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${Math.round(bytes)} B`;
-}
-
-function formatAssetValue(value: number | null | undefined): string {
-  return new Intl.NumberFormat('en-ZA', {
-    style: 'currency',
-    currency: 'ZAR',
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0);
 }
 
 function formatDate(value: string | null, includeYear = true): string {
@@ -571,6 +566,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       asset.categoryLabel,
       asset.methodLabel,
       asset.currentValue,
+      asset.serialNumber,
     ].join(' ').toLowerCase().includes(needle));
   }, [assetSearch, assets]);
 
@@ -1683,16 +1679,19 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         >
           <section
             ref={assetPickerModalRef}
-            className={styles.assetSelectionModal}
+            className={`${styles.assetSelectionModal} ${pickerStyles.modal}`}
+            data-asset-choice-modal="true"
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-picker-title"
             aria-describedby="asset-picker-description"
           >
-            <header className={styles.assetSelectionHeader}>
-              <h2 id="asset-picker-title">Choose assets</h2>
-              <p id="asset-picker-description" className={styles.srOnly}>Select the assets these documents belong to, or leave the selection empty to keep them at account level.</p>
-              <button type="button" onClick={() => closeAssetPickerModal(false)} aria-label="Close asset chooser"><Icon name="close" /></button>
+            <header className={styles.assetSelectionHeader} data-asset-choice-header="true">
+              <div>
+                <h2 id="asset-picker-title">Choose assets</h2>
+                <p id="asset-picker-description">Select the saved assets these documents belong to.</p>
+              </div>
+              <button type="button" onClick={() => closeAssetPickerModal(false)} aria-label="Close asset chooser"><span aria-hidden="true">×</span></button>
             </header>
 
             <div className={styles.assetSelectionBody} data-asset-choice-surface="true">
@@ -1702,7 +1701,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   type="search"
                   value={assetSearch}
                   onChange={(event) => setAssetSearch(event.target.value)}
-                  placeholder="Search..."
+                  placeholder="Search assets..."
                   aria-label="Search assets"
                   data-modal-initial-focus="true"
                 />
@@ -1728,15 +1727,17 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                         data-asset-choice-selected={checked ? 'true' : undefined}
                       >
                         <input type="checkbox" checked={checked} onChange={() => toggleAsset(asset.id)} />
-                        <span className={styles.assetSelectionCheckbox} aria-hidden="true" />
                         <span className={styles.assetSelectionCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
-                          <span data-asset-choice-meta="true">{asset.detail || asset.meta || 'No key details saved yet'}</span>
-                          <small>{[asset.categoryLabel, asset.methodLabel].filter(Boolean).join(' · ') || 'Asset Register item'}</small>
+                          <small data-asset-choice-meta="true">{asset.detail || asset.meta || 'No key details saved yet'}</small>
+                          <small data-asset-choice-secondary="true">{[asset.categoryLabel, asset.methodLabel].filter(Boolean).join(' · ') || 'Asset Register item'}</small>
+                          <AssetSerialNumber value={asset.serialNumber} />
                         </span>
                         <span className={styles.assetSelectionValue} data-asset-choice-value="true">
-                          <strong>{formatAssetValue(asset.currentValue)}</strong>
-                          <small>current value</small>
+                          <span className={`${pickerStyles.select} ${pickerStyles.multi}`}>
+                            <i aria-hidden="true">{checked ? '✓' : ''}</i>
+                            <strong>{checked ? 'Selected' : 'Select'}</strong>
+                          </span>
                         </span>
                       </label>
                     );
@@ -1747,14 +1748,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               )}
             </div>
 
-            <footer className={styles.assetSelectionFooter}>
+            <footer className={styles.assetSelectionFooter} data-asset-choice-footer="true">
               <span className={styles.srOnly} role="status" aria-live="polite">
                 {draft.assetIds.length
                   ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset selected' : 'assets selected'}`
                   : 'Account-level document'}
               </span>
               <button type="button" className={styles.cancelButton} onClick={() => closeAssetPickerModal(false)}>Cancel</button>
-              <button type="button" className={styles.uploadButton} onClick={() => closeAssetPickerModal(true)}>
+              <button type="button" className={styles.uploadButton} data-asset-choice-action="primary" onClick={() => closeAssetPickerModal(true)}>
                 {draft.assetIds.length
                   ? `Done · ${draft.assetIds.length} selected`
                   : 'Done · Account level'}

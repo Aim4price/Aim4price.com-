@@ -29,6 +29,7 @@ export type AccountDocumentAssetLink = {
 };
 
 export type AccountDocumentAssetOption = AccountDocumentAssetLink & {
+  serialNumber: string | null;
   detail: string;
   categoryLabel: string;
   methodLabel: string;
@@ -455,6 +456,7 @@ export async function listAccountDocumentAssetOptions(userId: string): Promise<A
     title: cleanText(asset.title, 180) || 'Untitled asset',
     meta: buildAssetMeta(asset),
     detail: buildAssetPickerDetail(asset),
+    serialNumber: asset.serialNumber ?? null,
     categoryLabel: assetFamilyLabel(asset),
     methodLabel: asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price',
     currentValue: Math.round(

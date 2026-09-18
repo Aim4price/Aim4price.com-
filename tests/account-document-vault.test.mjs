@@ -79,7 +79,7 @@ test('documents may stay account-level or link to multiple owned assets', () => 
   assert.match(documentStore, /id::text = any\(\$2::text\[\]\)/);
   assert.match(client, /Account-level document/);
   assert.match(client, /Choose assets/);
-  assert.match(client, /Select the assets these documents belong to/i);
+  assert.match(client, /Select the saved assets these documents belong to/i);
 });
 
 test('specific document types use one shared searchable taxonomy and canonical broad categories', () => {
@@ -332,11 +332,11 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /className=\{styles\.linkedAssetNames\}/);
 
   assert.match(client, /className=\{styles\.assetLinkSummary\}/);
-  assert.match(client, /className=\{styles\.assetSelectionModal\}/);
+  assert.match(client, /className=\{`\$\{styles\.assetSelectionModal\} \$\{pickerStyles\.modal\}`\}/);
   assert.match(client, /className=\{styles\.assetSelectionHeader\}/);
   assert.match(client, /<input\s+className=\{styles\.assetSelectionSearch\}\s+type="search"/);
-  assert.match(client, /placeholder="Search\.\.\."/);
-  assert.match(client, /id="asset-picker-description" className=\{styles\.srOnly\}/);
+  assert.match(client, /placeholder="Search assets\.\.\."/);
+  assert.match(client, /<p id="asset-picker-description">Select the saved assets/);
   assert.match(client, />\s*Select all\s*</);
   assert.match(client, />\s*Clear\s*</);
   assert.match(client, /assetSelectionSnapshotRef\.current = \[\.\.\.draft\.assetIds\]/);
@@ -344,8 +344,8 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /closeAssetPickerModal\(true\)/);
   assert.match(client, /asset\.detail \|\| asset\.meta \|\| 'No key details saved yet'/);
   assert.match(client, /\[asset\.categoryLabel, asset\.methodLabel\]\.filter\(Boolean\)\.join\(' · '\)/);
-  assert.match(client, /formatAssetValue\(asset\.currentValue\)/);
-  assert.match(client, />current value<\/small>/);
+  assert.match(client, /AssetSerialNumber value=\{asset\.serialNumber\}/);
+  assert.match(client, /checked \? 'Selected' : 'Select'/);
   assert.match(documentStore, /listAssetRegisterItems/);
   assert.match(documentStore, /assets = await listAssetRegisterItems\(userId\)/);
   assert.match(documentStore, /error\.message === 'ASSET_REGISTER_NOT_FOUND'/);
