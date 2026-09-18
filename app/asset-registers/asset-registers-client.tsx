@@ -2966,7 +2966,7 @@ export default function AssetRegistersClient({
               exportStep === "single-picker" || exportStep === "combined-picker"
                 ? styles.exportPickerModal
                 : ""
-            } ${downloadStyles.dialog}`} data-download-dialog="true"
+            } ${exportStep === "single-picker" || exportStep === "combined-picker" ? "" : downloadStyles.dialog}`} data-download-dialog="true"
           >
             <div className={styles.modalHeader} data-download-header="true">
               <div>
@@ -3053,50 +3053,54 @@ export default function AssetRegistersClient({
             {exportStep === "single-picker" || exportStep === "combined-picker" ? (
               <>
                 <div className={`${styles.modalBody} ${styles.exportFlowBody} ${styles.registerPickerBody}`} data-download-body="true">
-                  <div className={styles.registerPickerToolbar}>
-                    <label className={styles.exportSearchWrap}>
-                      <SearchIcon className={styles.searchIcon} />
-                      <input
-                        value={exportRegisterSearch}
-                        onChange={(event) => setExportRegisterSearch(event.target.value)}
-                        placeholder="Search asset registers..."
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      className={styles.secondaryButton}
-                      onClick={() => setExportRegisterSearch("")}
-                      disabled={!exportRegisterSearch.trim() || isExporting}
-                    >
-                      Clear
-                    </button>
-                  </div>
-
-                  {exportStep === "combined-picker" ? (
-                    <div className={styles.registerPickerQuickActions}>
-                      <span className={styles.selectedCount}>
-                        {selectedExportRegisterCount} selected
-                      </span>
+                  <div className={styles.registerPickerControls}>
+                    <div className={styles.registerPickerToolbar}>
+                      <label className={styles.exportSearchWrap}>
+                        <SearchIcon className={styles.searchIcon} />
+                        <input
+                          value={exportRegisterSearch}
+                          aria-label="Search asset registers"
+                          type="search"
+                          onChange={(event) => setExportRegisterSearch(event.target.value)}
+                          placeholder="Search asset registers..."
+                        />
+                      </label>
                       <button
                         type="button"
                         className={styles.secondaryButton}
-                        onClick={selectAllVisibleCombinedRegisters}
-                        disabled={!exportPickerRegisters.length || isExporting}
+                        onClick={() => setExportRegisterSearch("")}
+                        disabled={!exportRegisterSearch.trim() || isExporting}
                       >
-                        Select all visible
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.secondaryButton}
-                        onClick={() => setSelectedExportRegisterIds([])}
-                        disabled={!selectedExportRegisterCount || isExporting}
-                      >
-                        Clear selected
+                        Clear
                       </button>
                     </div>
-                  ) : null}
 
-                  <div className={styles.registerPickerList}>
+                    {exportStep === "combined-picker" ? (
+                      <div className={styles.registerPickerQuickActions}>
+                        <span className={styles.selectedCount} role="status" aria-live="polite">
+                          {selectedExportRegisterCount} selected
+                        </span>
+                        <button
+                          type="button"
+                          className={styles.secondaryButton}
+                          onClick={selectAllVisibleCombinedRegisters}
+                          disabled={!exportPickerRegisters.length || isExporting}
+                        >
+                          Select all visible
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.secondaryButton}
+                          onClick={() => setSelectedExportRegisterIds([])}
+                          disabled={!selectedExportRegisterCount || isExporting}
+                        >
+                          Clear selected
+                        </button>
+                      </div>
+                    ) : null}
+
+                  </div>
+                  <div className={styles.registerPickerList} role="region" aria-label="Asset registers" tabIndex={0}>
                     {exportPickerRegisters.length ? (
                       exportPickerRegisters.map((register) => {
                         const isSelected = selectedExportRegisterIds.includes(register.id);
