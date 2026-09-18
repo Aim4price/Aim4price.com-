@@ -41160,3 +41160,19 @@ button.documentOpenLink {
   background: #ffe6df;
   color: #8c3e32;
 }
+
+/* Update asset opens a section menu; each section keeps its own form. */
+.managementAccountModal.assetUpdateMenuModal { height: auto !important; min-height: 0 !important; }
+.assetUpdateMenuBody { padding: 1.5rem 2rem !important; }
+.assetUpdateMenuGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.assetUpdateMenuOption { display: flex; align-items: center; gap: 1rem; padding: 1.4rem; min-height: 8rem; border: 1px solid #cfddd7; border-radius: 1.1rem; background: #f8fbf9; color: #173d32; text-align: left; font: inherit; cursor: pointer; }
+.assetUpdateMenuOption > span:nth-child(2) { flex: 1; min-width: 0; }
+.assetUpdateMenuOption strong { display: block; font-size: 1.05rem; font-weight: 800; }
+.assetUpdateMenuOption small { display: block; margin-top: .4rem; color: #64746a; font-size: .85rem; line-height: 1.5; }
+.assetUpdateMenuIcon { display: grid; place-items: center; width: 2.8rem; height: 2.8rem; flex-shrink: 0; background: #e8f3ed; border-radius: .85rem; }
+.assetUpdateMenuOption > svg { flex-shrink: 0; }
+.assetUpdateMenuOption:hover { border-color: #81b49d; background: #eef7f2; }
+.assetUpdateMenuOption:focus-visible { outline: 3px solid rgba(24,112,83,.35); outline-offset: 3px; }
+@media (max-width: 700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .assetUpdateMenuGrid { grid-template-columns: 1fr; }
+}
