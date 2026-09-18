@@ -18711,7 +18711,7 @@ export default function AssetRegisterClient({
                       data-asset-update-section={section.step} onClick={() => openAssetFormSection(section.step)}
                       autoFocus={section.step === 2}>
                       {section.step === 2 ? <UpdateAssetIcon className={styles.buttonIcon} /> : section.step === 3 ? <ShieldIcon className={styles.buttonIcon} /> : <DocumentIcon className={styles.buttonIcon} />}
-                      <span><strong>{section.label}</strong><small>{section.step === 2 ? 'Edit asset details and usage.' : section.step === 3 ? 'Manage ownership, finance and insurance.' : 'Manage documents and photos.'}</small></span>
+                      <span><strong>{section.label}</strong><small>{section.step === 2 ? 'Edit asset details and usage.' : section.step === 3 ? 'Ownership, finance and insurance.' : 'Manage documents and photos.'}</small></span>
                     </button>
                   ))}
                 </div>
