@@ -80,6 +80,8 @@ async function check(browser, url) {
   await visit('/', 1920, 1080);
   await page.click('[data-story-start]');
   await page.waitForFunction(() => document.querySelector('[data-story-step]')?.dataset.storyStep === 'promise');
+  // Feature navigation is mounted only after the opening story reaches a card.
+  await page.waitForSelector('#home-asset-question-worth', { visible: true });
   await page.evaluate(() => document.querySelector('#home-asset-question-worth').click());
   await page.waitForSelector('[data-feature-countdown]');
   await page.click('[data-feature-playback]');
