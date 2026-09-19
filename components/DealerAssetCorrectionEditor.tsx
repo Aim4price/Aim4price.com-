@@ -10,6 +10,7 @@ import type {
   DealerAssetCorrectionSource,
 } from '../lib/dealer-asset-corrections';
 import styles from './DealerAssetCorrectionEditor.module.css';
+import dialogStyles from './AccountDialog.module.css';
 
 type CorrectionResponse = {
   ok?: boolean;
@@ -262,18 +263,18 @@ export default function DealerAssetCorrectionEditor({
         <div className={styles.overlay} data-website-overlay role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget) closeEditor();
         }}>
-          <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <header className={styles.modalHeader}>
+          <section className={`${styles.modal} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
+            <header className={`${styles.modalHeader} ${dialogStyles.header}`}>
               <div className={styles.modalTitleGroup}>
                 <div className={styles.modalHeaderCopy}>
                   <h2 id={titleId}>{fieldIsSerial ? 'Update serial number' : fieldIsLicenseRenewal ? 'Update renewal date' : 'Update replacement price'}</h2>
                   <p>{assetTitle}</p>
                 </div>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeEditor} disabled={saving} aria-label="Close correction form">×</button>
+              <button type="button" className={`${styles.closeButton} ${dialogStyles.close}`} onClick={closeEditor} disabled={saving} aria-label="Close correction form">×</button>
             </header>
 
-            <div className={styles.modalBody}>
+            <div className={`${styles.modalBody} ${dialogStyles.body}`}>
               <div className={styles.currentValue}>
                 <span>Owner&apos;s current value</span>
                 <strong>{ownerValue}</strong>
@@ -304,7 +305,7 @@ export default function DealerAssetCorrectionEditor({
               {error ? <p className={styles.error} role="alert">{error}</p> : null}
             </div>
 
-            <footer className={styles.modalFooter}>
+            <footer className={`${styles.modalFooter} ${dialogStyles.footer}`}>
               <button type="button" className={styles.cancelButton} onClick={closeEditor} disabled={saving}>Cancel</button>
               <button type="button" className={styles.saveButton} onClick={() => void submitCorrection()} disabled={saving || !draft.trim()}>
                 {saving ? 'Sending…' : 'Send to owner'}

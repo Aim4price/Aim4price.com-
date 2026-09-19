@@ -5548,16 +5548,16 @@
 :global(:where([data-website-canvas])) .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
     overflow: visible !important;
     text-overflow: clip !important;
-    white-space: nowrap !important;
-    overflow-wrap: normal !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
   }
 
 @media (min-width: 901px) {
   :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
     overflow: visible !important;
     text-overflow: clip !important;
-    white-space: nowrap !important;
-    overflow-wrap: normal !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
   }
 }
 

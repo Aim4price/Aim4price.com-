@@ -382,3 +382,20 @@
   padding-top: 0;
   background: transparent;
 }
+
+/* Account-only showroom dialogs share the owner management rhythm. */
+.listingManagerDialog {
+  scrollbar-width: thin;
+  scrollbar-color: #93b3a7 transparent;
+  overscroll-behavior: contain;
+}
+.listingManagerSummary { margin: 1.3rem var(--account-dialog-padding); padding: 1rem; border: 1px solid #d8e5df; border-radius: 1rem; background: #f0f7f3; }
+.listingManagerSummary span { font-size: 0.82rem; }
+.listingManagerActions { gap: 0.85rem; padding: 0 var(--account-dialog-padding) var(--account-dialog-padding); }
+.listingManagerActions > a, .listingManagerActions > button { border-color: #d8e1ea; background: linear-gradient(180deg, #fff, #f5f8fa); }
+.listingManagerActions strong { font-size: 0.95rem; line-height: 1.35; }
+.listingManagerActions small { font-size: 0.82rem; line-height: 1.5; }
+.listingManagerActionIcon { color: #1d3b62; border-color: #d8e1ea; background: #fff; }
+.deleteDialog { max-height: calc(var(--website-visible-height, 100dvh) - 2rem); overflow-y: auto; overscroll-behavior: contain; }
+.deleteDialog h2 { font-size: 1.55rem; }
+.deleteDialog p { font-size: 0.88rem; }

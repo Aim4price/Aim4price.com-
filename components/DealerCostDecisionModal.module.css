@@ -75,7 +75,7 @@
   font-size: 0.94rem;
   font-weight: 620;
   line-height: 1.45;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .closeButton {
@@ -198,6 +198,7 @@
 }
 
 .total {
+  font-variant-numeric: tabular-nums;
   min-width: 180px;
   text-align: right;
 }
@@ -216,6 +217,7 @@
 }
 
 .amountBreakdown {
+  flex-wrap: wrap;
   grid-column: 1 / -1;
   display: flex;
   gap: 0.65rem;
@@ -551,11 +553,13 @@
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .total {
+  font-variant-numeric: tabular-nums;
     min-width: 0;
     text-align: left;
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .amountBreakdown {
+  flex-wrap: wrap;
     grid-column: 1;
   }
 

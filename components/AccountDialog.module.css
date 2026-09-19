@@ -1,0 +1,124 @@
+/* Shared account chrome. Workflow components retain their own widths and grids. */
+.surface.surface.surface.surface {
+  --account-dialog-padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
+  box-sizing: border-box;
+  max-width: 100% !important;
+  min-width: 0;
+  border: 1px solid rgba(18, 45, 37, 0.12) !important;
+  border-radius: 1.55rem !important;
+  background: linear-gradient(180deg, #fff, #f7faf8) !important;
+  color: #12352d;
+  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12) !important;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+}
+
+.surface .header.header.header.header {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 2.75rem !important;
+  align-items: start !important;
+  gap: 1.25rem !important;
+  flex-shrink: 0;
+  min-width: 0;
+  margin: 0 !important;
+  padding: var(--account-dialog-padding) !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(18, 45, 37, 0.1) !important;
+  background: transparent !important;
+}
+
+.surface .header > div { min-width: 0; }
+.surface .header.header.header.header :is(h2, h3) {
+  margin: 0 !important;
+  color: #12352d !important;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.12 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.surface .header.header.header.header p {
+  max-width: none !important;
+  margin: 0.4rem 0 0 !important;
+  color: #64746a !important;
+  font-size: 0.88rem !important;
+  font-weight: 650 !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+  text-wrap: wrap !important;
+  overflow-wrap: anywhere;
+}
+
+.close.close.close.close {
+  position: static !important;
+  flex: 0 0 auto;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  min-width: 2.75rem !important;
+  min-height: 2.75rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid #d5dfda !important;
+  border-radius: 0.9rem !important;
+  background: #f6faf8 !important;
+  color: #254b3b !important;
+  box-shadow: none !important;
+  font-size: 1.25rem !important;
+  line-height: 1 !important;
+  cursor: pointer;
+}
+.close.close.close.close svg { width: 1rem !important; height: 1rem !important; }
+.close.close.close.close:hover:not(:disabled) { background: #eaf3ee !important; border-color: #9abaaa !important; }
+.close:focus-visible { outline: 3px solid #187053; outline-offset: 3px; }
+.close:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.surface .body.body.body.body {
+  min-height: 0 !important;
+  min-width: 0;
+  margin: 0 !important;
+  padding: 1.3rem var(--account-dialog-padding) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #93b3a7 transparent;
+}
+.surface .footer.footer.footer.footer {
+  flex-shrink: 0;
+  gap: 0.75rem;
+  margin: 0 !important;
+  padding: 1rem var(--account-dialog-padding) var(--account-dialog-padding) !important;
+  border-top: 1px solid rgba(18, 45, 37, 0.1) !important;
+  background: transparent !important;
+}
+
+/* Opt in only where header and body are separate scroll regions. */
+.flush.flush.flush.flush { padding: 0 !important; }
+
+.surface.surface .actions.actions.actions > button {
+  gap: 1rem !important;
+  border: 1px solid #d8e1ea;
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #fff, #f5f8fa);
+}
+.surface.surface .actions.actions.actions > button > span { min-width: 0; }
+.surface.surface .actions.actions.actions > button strong {
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.surface.surface .actions.actions.actions > button small {
+  color: #64746a;
+  font-size: 0.82rem !important;
+  line-height: 1.5 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+/* Confirmation dialogs already inset their content as one group. */
+.surface .header.header.header.header.inset { padding: 0 0 1.15rem !important; }
