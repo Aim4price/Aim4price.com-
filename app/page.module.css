@@ -1544,74 +1544,177 @@
 .worthActions b { display: grid; width: 1.2rem; aspect-ratio: 1; place-items: center; border-radius: 50%; color: #315e47; background: #f0f5f2; font-size: 0.65rem; }
 
 /* Owner Manage command preview. */
-.managePreview,
 .costPreview,
 .attentionPreview {
   min-height: 0;
   height: 100%;
 }
 
-.managePreview,
 .costPreview {
   display: flex;
   flex-direction: column;
 }
 
-.managePreviewHeader,
 .costPreviewHeader {
   padding: 0.25rem 0.2rem 0.85rem;
 }
 
-.managePreviewHeader h2,
 .costPreviewHeader h2 {
   margin-top: 0;
   font-size: 1.1rem;
   line-height: 1.2;
 }
 
-.managePreviewHeader p,
 .costPreviewHeader p {
   margin-top: 0.38rem;
   font-size: 0.61rem;
   line-height: 1.4;
 }
 
+/* A proportionally scaled copy of the wide Asset Register Manage modal. */
+.managePreviewFrame {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  place-items: center;
+  overflow: hidden;
+}
+
+.managePreviewFrame > div {
+  position: relative;
+}
+
+.managePreview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 1344px;
+  height: 608px;
+  box-sizing: border-box;
+  flex-direction: column;
+  padding: 32px;
+  transform-origin: top left;
+}
+
+.managePreviewHeader {
+  flex: 0 0 auto;
+  align-items: start;
+  gap: 20px;
+  padding: 0 0 22px;
+  border-bottom: 1px solid #dfe6e2;
+}
+
+.managePreviewHeader h2 {
+  margin: 0;
+  color: #12382e;
+  font-size: 32px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -1.3px;
+  white-space: nowrap;
+}
+
+.managePreviewHeader p {
+  margin: 6px 0 0;
+  color: #64746a;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.managePreviewHeader .previewClose {
+  width: 44px;
+  height: 44px;
+  border-color: #d4dfda;
+  border-radius: 14px;
+  color: #294e3f;
+  background: #f7faf8;
+  font-size: 22px;
+  font-weight: 800;
+}
+
 .manageGrid {
   display: grid;
   min-height: 0;
-  height: auto;
   flex: 1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(4, minmax(0, 1fr));
-  gap: 0.6rem;
-  padding-top: 0.85rem;
+  gap: 14px;
+  padding-top: 20px;
 }
 
 .manageTile {
   display: grid;
   min-width: 0;
+  grid-template-columns: 52px minmax(0, 1fr);
   align-items: center;
+  gap: 16px;
+  padding: 16px;
   border: 1px solid #d1dfee;
-  background: linear-gradient(180deg, #ffffff, #f5f8fa);
-  box-shadow: 0 6px 14px rgba(24, 70, 55, 0.04);
-  border-color: rgba(140, 160, 169, 0.25);
-  grid-template-columns: 1.4rem minmax(0, 1fr);
-  gap: 0.55rem;
-  padding: 0.65rem 0.65rem;
-  border-radius: 0.8rem;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fff, #f5f8fa);
+  box-shadow: 0 12px 26px rgba(24, 70, 55, 0.04);
 }
 
 .manageTilePrimary {
-  border-color: rgba(78, 177, 133, 0.52);
-  background: linear-gradient(145deg, #eaf8f2, #f8fcfa);
+  border-color: #bee0ce;
+  background: radial-gradient(circle at top left, #1653401a, transparent 42%),
+    linear-gradient(180deg, #fff, #edf8f2);
 }
 
 .manageTileDanger {
-  border-color: rgba(213, 93, 84, 0.34);
-  background: #fff3f2;
+  border-color: #f1b8b8;
+  background: linear-gradient(180deg, #fffafa, #fff1f1);
 }
 
-.manageTileIcon,
+.manageTileIcon {
+  display: grid;
+  width: 52px;
+  place-items: center;
+  color: #234877;
+}
+
+.manageTileIcon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.manageTilePrimary .manageTileIcon { color: #195440; }
+.manageTileDanger .manageTileIcon,
+.manageTileDanger strong { color: #ac3035; }
+
+.manageTile > span:last-child {
+  min-width: 0;
+}
+
+.manageTile strong,
+.manageTile small {
+  display: block;
+  white-space: nowrap;
+}
+
+.manageTile strong {
+  color: #153d32;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -0.2px;
+}
+
+.manageTileDanger strong { color: #ac3035; }
+
+.manageTile small {
+  margin-top: 5px;
+  color: #64746a;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.5;
+  letter-spacing: -0.15px;
+}
+
 .reportIcon,
 .issueCardTitle > span {
   display: grid;
@@ -1623,12 +1726,6 @@
   background: #e8f7f1;
 }
 
-.manageTileDanger .manageTileIcon {
-  color: #b23a32;
-  background: #fee1df;
-}
-
-.manageTile svg,
 .reportIcon svg,
 .issueCardTitle svg {
   width: 0.9rem;
@@ -1638,33 +1735,6 @@
   stroke-width: 1.65;
   stroke-linecap: round;
   stroke-linejoin: round;
-}
-
-.manageTile > span:last-child {
-  min-width: 0;
-}
-
-.manageTile strong,
-.manageTile small {
-  display: block;
-}
-
-.manageTile strong {
-  overflow: hidden;
-  color: #153d32;
-  font-weight: 850;
-  white-space: normal;
-  font-size: 0.66rem;
-  line-height: 1.24;
-}
-
-.manageTile small {
-  color: #52645d;
-  display: block;
-  font-size: 0.55rem;
-  line-height: 1.45;
-  margin-top: 0.28rem;
-  overflow: visible;
 }
 
 /* Reports and cost preview. */
@@ -3479,15 +3549,6 @@
 }
 
 /* Match the asset register Manage actions without changing other previews. */
-.manageTile .manageTileIcon {
-  background: transparent;
-  color: #234877;
-  width: 1.4rem;
-}
-.manageTilePrimary .manageTileIcon { color: #195440; }
-.manageTileDanger .manageTileIcon,
-.manageTileDanger strong { color: #ac3035; }
-.manageTile svg { width: 1.1rem; height: 1.1rem; }
 
 .roleCta { display: block; margin-top: 0.4rem; color: #126247; font-size: 0.85rem; font-weight: 750; }
 .scrollCueLabel { font-size: 0.7rem; font-weight: 650; white-space: nowrap; }
@@ -3505,6 +3566,13 @@
 .attentionAside [data-tone='share'] { color: #804a22; border-color: #e3c7ad; background: #fff5e9; }
 .attentionAside [data-tone='details'] { color: #244e73; border-color: #b9d1e2; background: #f0f7fc; }
 .attentionAside [data-tone='manage'] { color: #185740; border-color: #bdd9cd; background: #eff9f4; }
+.heroStory .assetPreviewCard[data-active-question='manage'] {
+  top: 50%;
+  bottom: auto;
+  aspect-ratio: 1344 / 608;
+  padding: 0;
+  transform: translateY(-50%);
+}
 .heroStory .assetPreviewCard[data-active-question='attention'] { border-color: #dfb3ac; background: linear-gradient(145deg, #fff9f8, #fffdfc); }
 .featureNarrativeCopy p { margin: 0; }
 .featureNarrativeCopy p + p { margin-top: 0.8rem; }
