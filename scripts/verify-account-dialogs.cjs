@@ -23,6 +23,9 @@ async function main(){
     await page.setRequestInterception(true);
     page.on('request',r=>{
       const u=new URL(r.url());if(!u.pathname.startsWith('/api/'))return r.continue();
+      // The native shell renews its session on mount. Stub that lifecycle call
+      // separately; every business-data mutation must still fail this check.
+      if(u.pathname==='/api/owner-app/session')return r.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true})});
       if(r.method()!=='GET')mutations.push({path:u.pathname,method:r.method()});
       const body=u.pathname.startsWith('/api/dealer-cost-proposals/')?{ok:true,action:'store',invoice:data.invoice}:{ok:true,asset:data.asset,assets:[data.asset],items:[],notifications:[],permissions:data.asset.permissions};
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
