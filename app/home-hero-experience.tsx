@@ -60,8 +60,8 @@ const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
 const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   have: {
     title: 'Know what you have.',
-    body: 'Bring your vehicles, machinery and equipment into one organised asset register. Keep photos, documents, serial numbers and key details connected to each asset.',
-    detail: 'Group assets into umbrellas, see their combined value and share a clear, up-to-date record when you need it.',
+    body: 'Add your vehicles, machinery and equipment to one organised asset register through Get Estimate or manually. Review each asset’s value to make sure it makes sense for its age, usage and condition.',
+    detail: 'Keep photos, documents, serial numbers and key details connected to each asset. Group assets into umbrellas, see their combined value and share an up-to-date record when you need it.',
   },
   worth: {
     title: 'Know what it’s worth.',
