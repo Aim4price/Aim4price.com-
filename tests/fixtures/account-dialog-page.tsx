@@ -1,6 +1,6 @@
 'use client';
 // Temporary browser fixture, never a production route or connected to live accounts.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams, usePathname } from 'next/navigation';
 import dealerStyles from '../../app/dealer/dealer.module.css';
 import DealerCostDecisionModal from '../../components/DealerCostDecisionModal';
@@ -26,5 +26,9 @@ function FixtureContent() {
 
 export default function Page() {
   const nativeApp=usePathname().startsWith('/owner-app/');
+  // This is a client interaction/layout fixture, not an SSR hydration test.
+  const [mounted,setMounted]=useState(false);
+  useEffect(()=>setMounted(true),[]);
+  if (!mounted) return null;
   return nativeApp ? <div className={dealerStyles.module}><FixtureContent /></div> : <FixtureContent />;
 }
