@@ -14,6 +14,7 @@ import {
 } from '../lib/marketplace-ad-renderer';
 import type { MiddlemanShowroom, PublicMiddlemanShowroomData } from '../lib/middleman-showroom-db';
 import styles from './MiddlemanShowroomClient.module.css';
+import dialogStyles from './AccountDialog.module.css';
 
 type ManagerProps = {
   initialShowroom: MiddlemanShowroom;
@@ -617,20 +618,20 @@ export function MiddlemanShowroomManager({
         >
           <section
             ref={manageDialogRef}
-            className={styles.listingManagerDialog}
+            className={`${styles.listingManagerDialog} ${dialogStyles.surface}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="showroom-listing-manager-title"
             aria-describedby="showroom-listing-manager-description"
             tabIndex={-1}
           >
-            <header className={styles.listingManagerHeader}>
+            <header className={`${styles.listingManagerHeader} ${dialogStyles.header}`}>
               <div>
                 <h2 id="showroom-listing-manager-title">Manage advert</h2>
                 <p id="showroom-listing-manager-description">Update, share or remove this advert from one place.</p>
               </div>
               <button
-                className={styles.listingManagerClose}
+                className={`${styles.listingManagerClose} ${dialogStyles.close}`}
                 type="button"
                 onClick={() => setManageListingTarget(null)}
                 aria-label="Close advert manager"
@@ -718,7 +719,7 @@ export function MiddlemanShowroomManager({
 
       {deleteDialogOpen ? (
         <div className={styles.deleteBackdrop} data-website-overlay onClick={() => !deletingShowroom && setDeleteDialogOpen(false)}>
-          <section className={styles.deleteDialog} role="dialog" aria-modal="true" aria-labelledby="delete-showroom-title" onClick={(event) => event.stopPropagation()}>
+          <section className={`${styles.deleteDialog} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="delete-showroom-title" onClick={(event) => event.stopPropagation()}>
             <span className={styles.deleteIcon}>!</span>
             <h2 id="delete-showroom-title">Delete showroom?</h2>
             <p>This removes the public showroom. Advert history, valuations and assets stay saved.</p>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './DealerCostDecisionModal.module.css';
+import dialogStyles from './AccountDialog.module.css';
 
 type DealerCostAction = 'store' | 'delete';
 type DealerCostDecision = 'approve' | 'decline' | 'keep' | 'delete';
@@ -212,12 +213,12 @@ export default function DealerCostDecisionModal({
         disabled={Boolean(savingDecision)}
       />
       <section
-        className={`${styles.modal} ${isDeletion ? styles.deletionModal : ''}`}
+        className={`${styles.modal} ${dialogStyles.surface} ${isDeletion ? styles.deletionModal : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="dealer-cost-decision-title"
       >
-        <header className={styles.header}>
+        <header className={`${styles.header} ${dialogStyles.header}`}>
           <div className={styles.headerIntro}>
             <div>
               <h2 id="dealer-cost-decision-title">
@@ -232,7 +233,7 @@ export default function DealerCostDecisionModal({
           </div>
           <button
             type="button"
-            className={styles.closeButton}
+            className={`${styles.closeButton} ${dialogStyles.close}`}
             onClick={onClose}
             aria-label="Close dealer cost decision"
             disabled={Boolean(savingDecision)}
@@ -243,7 +244,7 @@ export default function DealerCostDecisionModal({
           </button>
         </header>
 
-        <div className={styles.body}>
+        <div className={`${styles.body} ${dialogStyles.body}`}>
           {loading ? (
             <div className={styles.state}>
               <span className={styles.spinner} aria-hidden="true" />
@@ -346,7 +347,7 @@ export default function DealerCostDecisionModal({
           ) : null}
         </div>
 
-        <footer className={styles.footer}>
+        <footer className={`${styles.footer} ${dialogStyles.footer}`}>
           {isDeletion ? (
             <>
               <button

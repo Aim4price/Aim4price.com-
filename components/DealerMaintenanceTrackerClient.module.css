@@ -2637,8 +2637,8 @@
   :global(:where([data-website-canvas])) .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] small {
     overflow: visible !important;
     text-overflow: clip !important;
-    white-space: nowrap !important;
-    overflow-wrap: normal !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
   }
 
 @media (min-width: 901px) {
@@ -2646,8 +2646,8 @@
   :global(:where(html:not(:has([data-website-canvas])))) .dealerApp .trackerManageModal.trackerManageModal [class*='optionActionButton'] small {
     overflow: visible !important;
     text-overflow: clip !important;
-    white-space: nowrap !important;
-    overflow-wrap: normal !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
   }
 }
 
@@ -2787,3 +2787,32 @@
 }
 
 
+/* Match the owner register's detail surfaces while retaining maintenance status colours. */
+.trackerExpandedCard.trackerExpandedCard {
+  border-color: rgba(174, 197, 207, 0.65) !important;
+  background: linear-gradient(180deg, #fff, #f7fafb) !important;
+  box-shadow: 0 16px 38px rgba(18, 45, 37, 0.075), inset 0 1px 0 #fff;
+}
+.trackerAssetBody [class*='assetDetailRow'] {
+  min-width: 0;
+  gap: 0.75rem;
+  border-color: #d8e1ea;
+  background: #f6f9fb;
+}
+.trackerAssetBody [class*='assetDetailRow'] strong {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+.trackerExpandedCard .section {
+  border: 1px solid #d8e1ea;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #fff, #f7faf9);
+}
+.trackerExpandedCard .section > summary:focus-visible {
+  outline: 3px solid #187053;
+  outline-offset: 3px;
+  border-radius: inherit;
+}

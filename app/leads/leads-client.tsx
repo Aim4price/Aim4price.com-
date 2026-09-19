@@ -1,4 +1,5 @@
 'use client';
+import dialogStyles from '../../components/AccountDialog.module.css';
 import downloadStyles from "../../components/ReportDownload.module.css";
 
 import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
@@ -4094,19 +4095,19 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`} data-website-overlay>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setManagedLead(null)} />
 
-          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
+          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
                 <p>{leadAssetMeta(managedLead)}</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={() => setManagedLead(null)} aria-label="Close lead management">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={() => setManagedLead(null)} aria-label="Close lead management">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${styles.manageOptionsGrid}`}>
                   {accountantWorkspaceMode ? (
@@ -4353,19 +4354,19 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoUploadOverlay}`} data-website-overlay>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadPhotoUploadModal} />
 
-          <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadPhotoUploadModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-photo-upload-title">
-            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
+          <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadPhotoUploadModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-photo-upload-title">
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-photo-upload-title">Photos</h3>
                 <p>{assetTitle(photoUploadLead)} · {assetPhotos(photoUploadLead).length} of {MAX_LEAD_ASSET_PHOTOS} photos saved</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeLeadPhotoUploadModal} aria-label="Close photos" disabled={isUploadingLeadPhotos}>
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={closeLeadPhotoUploadModal} aria-label="Close photos" disabled={isUploadingLeadPhotos}>
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadPhotoUploadBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadPhotoUploadBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}>
               {assetPhotos(photoUploadLead).length ? (
                 <section className={styles.leadSavedPhotos} aria-label="Saved asset photos">
                   <div className={styles.leadPhotoSectionHeading}>
@@ -4420,7 +4421,7 @@ export default function LeadsClient({
               ) : null}
             </div>
 
-            <div className={`${assetStyles.formActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadPhotoUploadActions}`}>
+            <div className={`${assetStyles.formActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadPhotoUploadActions} ${isDealerLeadsMode ? dialogStyles.footer : ''}`}>
               <button type="button" className={assetStyles.secondaryButton} onClick={closeLeadPhotoUploadModal} disabled={isUploadingLeadPhotos}>
                 Cancel
               </button>
@@ -4447,19 +4448,19 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`} data-website-overlay>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeEmailModal} />
 
-          <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadEmailModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-email-title">
-            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadEmailHeader}`}>
+          <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadEmailModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-email-title">
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''} ${styles.leadEmailHeader}`}>
               <div className={`${assetStyles.modalHeaderText} ${styles.leadModalTitleGroup}`}>
                 <h3 id="lead-email-title">Email client</h3>
                 <p>{assetTitle(emailLead)} · {ownerDisplayName(emailLead)}</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeEmailModal} aria-label="Close email draft">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={closeEmailModal} aria-label="Close email draft">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadEmailDraftPanel}`}>
+            <div className={`${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadEmailDraftPanel} ${isDealerLeadsMode ? dialogStyles.body : ''}`}>
               <div className={styles.leadEmailRecipientCard}>
                 <div>
                   <span>To</span>
@@ -4478,7 +4479,7 @@ export default function LeadsClient({
               </label>
             </div>
 
-            <div className={`${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadEmailActions}`}>
+            <div className={`${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadEmailActions} ${isDealerLeadsMode ? dialogStyles.footer : ''}`}>
               <button type="button" className={`${assetStyles.secondaryButton} ${styles.leadModalCancelButton}`} onClick={closeEmailModal}>
                 Cancel
               </button>
@@ -4599,14 +4600,14 @@ export default function LeadsClient({
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeDeleteLeadModal} />
 
           <div
-            className={`${assetStyles.deleteConfirmModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadDeleteModal}`}
+            className={`${assetStyles.deleteConfirmModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadDeleteModal} ${isDealerLeadsMode ? dialogStyles.surface : ''}`}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-lead-confirm-title"
             aria-describedby="delete-lead-confirm-copy"
           >
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
-              <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadDeleteHeader}`}>
+              <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''} ${styles.leadDeleteHeader}`}>
                 <div>
                   <h3 id="delete-lead-confirm-title">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'Remove Asset Register?' : 'Delete lead?'}</h3>
                   <p id="delete-lead-confirm-copy">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'This removes your access and the client from My Clients. It does not delete the owner’s Asset Register.' : 'This permanently removes the lead from your My Leads inbox.'}</p>
@@ -4614,7 +4615,7 @@ export default function LeadsClient({
 
                 <button
                   type="button"
-                  className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${styles.leadDeleteCloseButton}`}
+                  className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''} ${styles.leadDeleteCloseButton}`}
                   onClick={closeDeleteLeadModal}
                   aria-label="Close delete confirmation"
                   disabled={isDeletingLead}
@@ -4783,19 +4784,19 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadNoteOverlay}`} data-website-overlay>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeNoteModal} />
 
-          <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
-            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadNoteHeader}`}>
+          <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
+            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''} ${styles.leadNoteHeader}`}>
               <div className={`${assetStyles.modalHeaderText} ${styles.leadModalTitleGroup}`}>
                 <h3 id="lead-note-title">Send note or quote</h3>
                 <p>{assetTitle(noteLead)} · {ownerDisplayName(noteLead)}</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)}`} onClick={closeNoteModal} aria-label="Close note modal" disabled={isSavingNote}>
+              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={closeNoteModal} aria-label="Close note modal" disabled={isSavingNote}>
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={styles.leadNoteBody}>
+            <div className={`${styles.leadNoteBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}>
               <label className={`${assetStyles.field} ${assetStyles.sharedNoteField}`}>
                 <span>Note to asset owner</span>
                 <textarea
@@ -4848,7 +4849,7 @@ export default function LeadsClient({
               <p className={styles.leadNoteDeliveryHint}>This note and any attached quote will appear in the owner&apos;s Asset Register.</p>
             </div>
 
-            <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadNoteActions}`}>
+            <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadNoteActions} ${isDealerLeadsMode ? dialogStyles.footer : ''}`}>
               <button type="button" className={`${assetStyles.secondaryButton} ${styles.leadModalCancelButton}`} onClick={closeNoteModal} disabled={isSavingNote}>
                 Cancel
               </button>

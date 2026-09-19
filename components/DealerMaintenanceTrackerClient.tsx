@@ -1,4 +1,5 @@
 'use client';
+import dialogStyles from './AccountDialog.module.css';
 import DateInput from './DateInput';
 
 import FilterFlow, { FilterQuestion, FilterThresholdQuestion } from './FilterFlow';
@@ -1534,21 +1535,21 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay} ${workspaceStyles.modalOverlay}`} data-website-overlay>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeDeleteTrackingModal} />
           <div
-            className={`${assetStyles.deleteConfirmModal} ${workspaceStyles.modal} ${leadStyles.leadDeleteModal} ${styles.trackerDeleteModal}`}
+            className={`${assetStyles.deleteConfirmModal} ${workspaceStyles.modal} ${leadStyles.leadDeleteModal} ${styles.trackerDeleteModal} ${dialogStyles.surface}`}
             role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-tracking-title"
             aria-describedby="delete-tracking-copy"
           >
             <div className={`${assetStyles.deleteConfirmContent} ${leadStyles.leadDeleteContent}`}>
-              <div className={`${assetStyles.deleteConfirmHeader} ${workspaceStyles.modalHeader} ${leadStyles.leadDeleteHeader}`}>
+              <div className={`${assetStyles.deleteConfirmHeader} ${workspaceStyles.modalHeader} ${dialogStyles.header} ${leadStyles.leadDeleteHeader}`}>
                 <div>
                   <h3 id="delete-tracking-title">Delete tracking?</h3>
                   <p id="delete-tracking-copy">This removes the asset from your Maintenance Tracker.</p>
                 </div>
                 <button
                   type="button"
-                  className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${leadStyles.leadDeleteCloseButton}`}
+                  className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close} ${leadStyles.leadDeleteCloseButton}`}
                   onClick={closeDeleteTrackingModal}
                   aria-label="Close tracking delete confirmation"
                   disabled={isDeletingTracking}
@@ -1590,12 +1591,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay} ${styles.historyModalOverlay}`} data-website-overlay>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeHistory} />
           <section
-            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.historyModal} ${historyModalStep < 3 ? styles.historyChoiceModal : ''}`}
+            className={`${assetStyles.modalCard} ${workspaceStyles.modal} ${styles.historyModal} ${dialogStyles.surface} ${dialogStyles.flush} ${historyModalStep < 3 ? styles.historyChoiceModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="maintenance-history-title"
           >
-            <header className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${styles.historyModalHeader}`}>
+            <header className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${dialogStyles.header} ${styles.historyModalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <span className={styles.historyModalKicker}>Step {historyModalStep} of 3</span>
                 <div className={styles.historyProgress} aria-hidden="true">
@@ -1619,12 +1620,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       : 'Choose how far back the history should go.'
                     : `${historyAsset.assetTitle} · Newest records first.`}</p>
               </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={closeHistory} aria-label="Close maintenance history">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={closeHistory} aria-label="Close maintenance history">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </header>
 
-            <div className={`${assetStyles.modalScrollBody} ${workspaceStyles.modalBody} ${styles.historyModalBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${workspaceStyles.modalBody} ${styles.historyModalBody} ${dialogStyles.body}`}>
               {historyModalStep === 1 ? (
                 <section className={`${styles.historyStep} ${styles.historyChoiceStep}`} aria-label="Choose maintenance history information">
                 <div className={styles.historyTypeTabs} aria-label="Filter maintenance history by record type">
@@ -1787,7 +1788,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               ) : null}
             </div>
 
-            <footer className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${styles.historyModalFooter}`}>
+            <footer className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${styles.historyModalFooter} ${dialogStyles.footer}`}>
               {historyModalStep > 1 ? (
                 <button
                   type="button"
@@ -1818,18 +1819,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       {managedAsset ? (
         <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${workspaceStyles.modalOverlay} ${styles.trackerManageOverlay}`} data-website-overlay>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setManagedAccessId(null)} />
-          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${workspaceStyles.modal} ${leadStyles.leadManageModal} ${styles.trackerManageModal}`} role="dialog" aria-modal="true" aria-labelledby="tracking-manage-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${workspaceStyles.modalHeader}`}>
+          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${workspaceStyles.modal} ${leadStyles.leadManageModal} ${styles.trackerManageModal} ${dialogStyles.surface} ${dialogStyles.flush}`} role="dialog" aria-modal="true" aria-labelledby="tracking-manage-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${workspaceStyles.modalHeader} ${dialogStyles.header}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="tracking-manage-title">{managedAsset.assetTitle}</h3>
                 <p>{trackingAssetMeta(managedAsset)}</p>
               </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setManagedAccessId(null)} aria-label="Close tracking management">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={() => setManagedAccessId(null)} aria-label="Close tracking management">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${workspaceStyles.modalBody} ${styles.trackerManageBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${workspaceStyles.modalBody} ${styles.trackerManageBody} ${dialogStyles.body}`}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid}`}>
                   <button

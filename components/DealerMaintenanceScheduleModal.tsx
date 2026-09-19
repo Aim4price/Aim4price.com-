@@ -9,6 +9,7 @@ import type {
   DealerMaintenanceTrackedAsset,
 } from '../lib/dealer-maintenance-tracker';
 import styles from '../app/maintenance/page.module.css';
+import accountStyles from '../app/account/page.module.css';
 
 type Props = {
   accessId: string;
@@ -458,13 +459,13 @@ export default function DealerMaintenanceScheduleModal({
   if (loading || !asset) {
     return (
       <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-schedule-loading-title">
-        <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
+        <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
               <h2 id="dealer-schedule-loading-title">{initialRecord ? 'Edit schedule' : initialProposal ? 'Edit proposal' : 'Send a proposed schedule'}</h2>
               <p>{loading ? 'Loading the shared asset…' : 'The shared asset could not be opened.'}</p>
             </div>
-            <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close proposed schedule">
+            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close proposed schedule">
               <CloseIcon />
             </button>
           </header>
@@ -483,13 +484,13 @@ export default function DealerMaintenanceScheduleModal({
   if (step === 'maintenance-type') {
     return (
       <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-type-title">
-        <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
+        <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
               <h2 id="dealer-maintenance-type-title">What are you scheduling?</h2>
               <p>{selectedAssetLabel(asset)}</p>
             </div>
-            <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close maintenance type selection">
+            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close maintenance type selection">
               <CloseIcon />
             </button>
           </header>
@@ -534,13 +535,13 @@ export default function DealerMaintenanceScheduleModal({
   if (step === 'trigger-type') {
     return (
       <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-trigger-title">
-        <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
+        <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
               <h2 id="dealer-maintenance-trigger-title">When should it be due?</h2>
               <p>{titleCase(draft.maintenanceType)} • {selectedAssetLabel(asset)}</p>
             </div>
-            <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close maintenance trigger selection">
+            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close maintenance trigger selection">
               <CloseIcon />
             </button>
           </header>
@@ -584,7 +585,7 @@ export default function DealerMaintenanceScheduleModal({
 
   return (
     <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-form-title">
-      <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
+      <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
         <header className={styles.modalHeader}>
           <div>
             <h2 id="dealer-maintenance-form-title">
@@ -596,7 +597,7 @@ export default function DealerMaintenanceScheduleModal({
             </h2>
             <p>{`${triggerLabel(draft.triggerType)} • ${selectedAssetLabel(asset)}`}</p>
           </div>
-          <button className={styles.closeButton} type="button" onClick={onClose} disabled={saving} aria-label="Close maintenance form">
+          <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} disabled={saving} aria-label="Close maintenance form">
             <CloseIcon />
           </button>
         </header>
