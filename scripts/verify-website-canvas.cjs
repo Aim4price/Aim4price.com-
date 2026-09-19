@@ -76,7 +76,7 @@ async function check(browser, url) {
       return {headerFits,scale,width:origin.width/scale,scroll:document.documentElement.scrollWidth,viewport:innerWidth,items};
     });
   }
-  // Exercise the real homepage cards, including their enlarged views. Capture
+  // Exercise the real homepage cards as static previews. Capture
   // evidence before asserting so all five designs can be reviewed if one fails.
   const previewIssues = [];
   async function previewGeometry(hostSelector) {
@@ -124,20 +124,30 @@ async function check(browser, url) {
         return rect.top >= stage.top - 2 && rect.bottom <= stage.bottom + 2;
       });
       if (!narrativeFits) previewIssues.push(width + '/' + key + ': Feature explanation escapes the stage');
-      if (width === 1920) {
-        await page.click('#home-asset-preview button[aria-haspopup="dialog"]');
-        await page.waitForSelector('dialog[data-home-preview-dialog][open]');
-        await delay(150);
-        await page.screenshot({path:path.join(output, 'home-card-' + key + '-expanded.png')});
-        const expanded = await previewGeometry('dialog[data-home-preview-dialog] [class*="assetPreviewExpandedContent"]');
-        previewIssues.push(...expanded.map(issue => 'expanded/' + key + ': ' + issue));
-        await page.click('dialog[data-home-preview-dialog] button[aria-label="Close preview"]');
+      await page.click('#home-asset-preview');
+      await page.keyboard.press('Enter');
+      assert.equal(await page.$('[data-home-preview-dialog]'), null, 'Homepage cards must not open enlarged views');
+      assert.equal(await page.$('#home-asset-preview [aria-haspopup="dialog"]'), null, 'Homepage cards must have no open control');
+      if (key === 'attention') {
+        const heading = await page.$eval('[class*="featureNarrativeLayer"][data-active="true"] h2', element => {
+          const textNodes = [...element.childNodes].filter(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+          const lines = textNodes.flatMap(node => {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            return [...range.getClientRects()].filter(rect => rect.width > 0);
+          });
+          return { text: textNodes.map(node => node.textContent.trim()), count: lines.length,
+            fits: lines.every(rect => rect.left >= 0 && rect.right <= document.documentElement.clientWidth + 1) };
+        });
+        assert.deepEqual(heading.text, ['Keep maintenance', 'on track.']);
+        assert.equal(heading.count, 2, 'Maintenance heading must occupy exactly two lines');
+        assert.ok(heading.fits, 'Maintenance heading must fit the visible canvas');
       }
     }
     await fs.writeFile(path.join(output, 'home-card-layout-results.json'), JSON.stringify(previewIssues, null, 2));
   }
   assert.deepEqual(previewIssues, [], 'Homepage cards must fit without clipped text or overlapping valuation sections');
-  console.log('PASS five homepage cards: desktop, narrow viewport and enlarged previews');
+  console.log('PASS five static homepage cards and two-line maintenance heading: desktop and narrow viewport');
   for(const [name,route,auth] of (process.env.CANVAS_INTERACTIONS_ONLY?[]:[['home','/',false],['estimate','/valuation',false],['register','/canvas-validation?page=register',true],['marketplace','/canvas-validation?page=marketplace',true],['fuel','/canvas-validation?page=fuel',true],['account','/canvas-validation?page=account',true]])) {
     signedIn=auth;
     await page.goto(url,{waitUntil:'domcontentloaded'});
@@ -325,4 +335,3 @@ async function main() {
   }
 }
 main().catch(error=>{console.error(error);process.exitCode=1});
-

@@ -4,11 +4,8 @@ import { attachHomeStorySwipe } from '../lib/home-story-swipe.ts';
 
 class Target extends EventTarget { closest() { return null; } }
 globalThis.Element = Target;
-let dialogOpen = false;
-globalThis.document = { querySelector: () => dialogOpen ? {} : null };
 const point = (x, y, identifier = 1) => ({ clientX: x, clientY: y, identifier });
 function setup() {
-  dialogOpen = false;
   const element = new Target();
   const steps = [];
   const cleanup = attachHomeStorySwipe(element, (direction) => steps.push(direction));
@@ -61,7 +58,7 @@ test('a vertical gesture stays native even if the finger later moves sideways', 
   h.cleanup();
 });
 
-test('pinch, cancelled touches, open dialogs and form controls do not navigate', () => {
+test('pinch, cancelled touches and form controls do not navigate', () => {
   const h = setup();
   h.send('touchstart', [point(200, 200)]);
   assert.equal(h.send('touchmove', [point(100, 200), point(300, 200, 2)]), false);
@@ -70,9 +67,6 @@ test('pinch, cancelled touches, open dialogs and form controls do not navigate',
   h.send('touchmove', [point(100, 200)]);
   h.send('touchcancel');
   h.send('touchend', [], [point(100, 200)]);
-  dialogOpen = true;
-  assert.equal(h.swipe(100, 200), false);
-  dialogOpen = false;
   h.element.closest = () => ({});
   assert.equal(h.swipe(100, 200), false);
   assert.deepEqual(h.steps, []);

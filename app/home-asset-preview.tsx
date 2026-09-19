@@ -2,8 +2,7 @@
 
 import Image from 'next/image';
 import AssetReportTypeIcon from '../components/asset-register/AssetReportTypeIcon';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { createPortal } from '../components/WebsitePortal';
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import styles from './page.module.css';
 
 export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
@@ -12,7 +11,6 @@ type PreviewKey = QuestionKey | 'register';
 
 type HomeAssetPreviewProps = {
   showRegister?: boolean;
-  onOpenRegister?: () => void;
   activeQuestion: QuestionKey;
   onQuestionChange: (question: QuestionKey, index: number) => void;
   onInteraction?: (source: 'pointer' | 'focus') => void;
@@ -100,26 +98,11 @@ const QUESTIONS: readonly Question[] = [
 export default function HomeAssetPreview({
   activeQuestion,
   showRegister = false,
-  onOpenRegister,
   onQuestionChange,
   onInteraction,
 }: HomeAssetPreviewProps) {
   const [feedback, setFeedback] = useState('');
-  const [openedQuestion, setOpenedQuestion] = useState<PreviewKey | null>(null);
-  const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-
-  const closePreview = useCallback(() => {
-    setOpenedQuestion(null);
-    openButtonRef.current?.focus({ preventScroll: true });
-  }, []);
-
-  const openPreview = () => {
-    // Claim manual control so the story stays on the card being inspected.
-    if (showRegister) onOpenRegister?.();
-    else onQuestionChange(activeQuestion, QUESTIONS.findIndex(({ key }) => key === activeQuestion));
-    setOpenedQuestion(showRegister ? 'register' : activeQuestion);
-  };
 
   const selectQuestion = (index: number, moveFocus = false) => {
     const question = QUESTIONS[index];
@@ -208,24 +191,7 @@ export default function HomeAssetPreview({
         <div key={activeQuestion} className={styles.assetPreviewState}>
           <PreviewContent activeQuestion={showRegister ? 'register' : activeQuestion} />
         </div>
-        <button
-          ref={openButtonRef}
-          type="button"
-          className={styles.assetPreviewOpen}
-          aria-label={`Open preview: ${showRegister ? 'Asset Register' : QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}`}
-          aria-haspopup="dialog"
-          onClick={openPreview}
-        >
-          <span>Click to open ↗</span>
-        </button>
       </article>
-
-      {openedQuestion !== null && typeof document !== 'undefined'
-        ? createPortal(
-          <ExpandedPreview activeQuestion={openedQuestion} onClose={closePreview} />,
-          document.body,
-        )
-        : null}
 
       <span
         className={styles.assetQuestionFeedback}
@@ -236,85 +202,6 @@ export default function HomeAssetPreview({
         {feedback}
       </span>
     </div>
-  );
-}
-
-function ExpandedPreview({ activeQuestion, onClose }: {
-  activeQuestion: PreviewKey;
-  onClose: () => void;
-}) {
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
-
-  const dismiss = () => {
-    dialogRef.current?.close();
-    onClose();
-  };
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const previousOverflow = document.body.style.overflow;
-    const previousRootOverflow = document.documentElement.style.overflow;
-    dialog.showModal();
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-
-    // Fit the complete composition, including the header, within the visible
-    // viewport. Measuring rendered geometry also accounts for website zoom.
-    const fitPreview = () => {
-      dialog.style.zoom = '1';
-      const rect = dialog.getBoundingClientRect();
-      const viewport = window.visualViewport;
-      const width = viewport?.width ?? window.innerWidth;
-      const height = viewport?.height ?? window.innerHeight;
-      if (!rect.width || !rect.height) return;
-      const scale = Math.min(1, Math.max(1, width - 32) / rect.width,
-        Math.max(1, height - 32) / rect.height);
-      dialog.style.zoom = String(scale);
-    };
-
-    fitPreview();
-    window.addEventListener('resize', fitPreview);
-    window.addEventListener('aim4price:canvas-geometry', fitPreview);
-    window.visualViewport?.addEventListener('resize', fitPreview);
-    return () => {
-      window.removeEventListener('resize', fitPreview);
-      window.removeEventListener('aim4price:canvas-geometry', fitPreview);
-      window.visualViewport?.removeEventListener('resize', fitPreview);
-      dialog.close();
-      document.body.style.overflow = previousOverflow;
-      document.documentElement.style.overflow = previousRootOverflow;
-    };
-  }, []);
-
-  return (
-    <dialog
-      data-home-preview-dialog
-      ref={dialogRef}
-      className={styles.assetPreviewDialog}
-      aria-labelledby="home-expanded-preview-title"
-      onCancel={(event) => { event.preventDefault(); dismiss(); }}
-      onClick={(event) => {
-        if (event.target !== event.currentTarget) return;
-        const rect = event.currentTarget.getBoundingClientRect();
-        if (event.clientX < rect.left || event.clientX > rect.right ||
-            event.clientY < rect.top || event.clientY > rect.bottom) dismiss();
-      }}
-    >
-      <header className={styles.assetPreviewDialogHeader}>
-        <h2 id="home-expanded-preview-title">
-          {activeQuestion === 'register' ? 'Asset Register' : QUESTIONS.find(({ key }) => key === activeQuestion)?.label}
-        </h2>
-        <button type="button" onClick={dismiss} autoFocus aria-label="Close preview">
-          Close <span aria-hidden="true">×</span>
-        </button>
-      </header>
-      <div className={styles.assetPreviewDialogBody}>
-        <div className={styles.assetPreviewExpandedContent}>
-          <PreviewContent activeQuestion={activeQuestion} />
-        </div>
-      </div>
-    </dialog>
   );
 }
 
