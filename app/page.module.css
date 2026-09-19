@@ -3560,3 +3560,72 @@
   .issueCard, .serviceCard { color: CanvasText; background: Canvas; border: 1px solid CanvasText; }
   .serviceCard > p, .attentionByline { color: CanvasText; }
 }
+
+/* Feature scenes alternate sides, then settle so the content remains readable. */
+.featureNarrativeLayer h2 {
+  max-width: 100%;
+  font-size: 2.7rem;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+  text-wrap: pretty;
+}
+.featureNarrativeCopy {
+  max-width: 100%;
+  font-size: 1rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+}
+.worthAssetTitle {
+  text-wrap: initial;
+  letter-spacing: -0.035em;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .heroSection[data-story-mode='features'][data-card-side='right'] .assetStageMotion {
+    transform: translate3d(0, 0, 0);
+  }
+  .heroSection[data-story-mode='features'][data-card-side='right'] .featureNarrative {
+    transform: translate3d(var(--narrative-stage-shift-x, 0px), 0, 0);
+  }
+  .heroSection[data-story-mode='features'] .featureNarrative {
+    transition: transform 900ms cubic-bezier(0.76, 0, 0.24, 1), opacity 500ms ease, visibility 0s;
+  }
+  .heroSection[data-story-mode='features'] .featureNarrativeLayer[data-active='true'] > h2,
+  .heroSection[data-story-mode='features'] .featureNarrativeLayer[data-active='true'] .featureNarrativeCopy > p {
+    animation: featureTextArrive 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .heroSection[data-story-mode='features'] .featureNarrativeLayer[data-active='true'] > h2 { animation-delay: 160ms; }
+  .heroSection[data-story-mode='features'] .featureNarrativeLayer[data-active='true'] .featureNarrativeCopy > p:first-child { animation-delay: 240ms; }
+  .heroSection[data-story-mode='features'] .featureNarrativeLayer[data-active='true'] .featureNarrativeCopy > p:last-child { animation-delay: 320ms; }
+  .heroSection[data-story-mode='features'] .assetPreviewState {
+    animation: featureCardArrive 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .heroSection[data-story-mode='features'] .manageTile,
+  .heroSection[data-story-mode='features'] .reportRow,
+  .heroSection[data-story-mode='features'] .issueCard,
+  .heroSection[data-story-mode='features'] .serviceCard {
+    animation: featureTileArrive 540ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both;
+  }
+  .heroSection[data-story-mode='features'] .manageTile:nth-child(n+4),
+  .heroSection[data-story-mode='features'] .reportRow:nth-child(n+3) { animation-delay: 240ms; }
+  .heroSection[data-story-mode='features'] .manageTile:nth-child(n+7),
+  .heroSection[data-story-mode='features'] .reportRow:nth-child(n+5),
+  .heroSection[data-story-mode='features'] .serviceCard { animation-delay: 320ms; }
+}
+@keyframes featureTextArrive {
+  from { opacity: 0; translate: 0 0.65rem; }
+  to { opacity: 1; translate: 0 0; }
+}
+@keyframes featureCardArrive {
+  from { opacity: 0; transform: translateY(0.9rem) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes featureTileArrive {
+  from { opacity: 0; translate: 0 6px; }
+  to { opacity: 1; translate: 0 0; }
+}
+.heroSection[data-motion-paused='true'] :is(.assetPreviewState, .manageTile, .reportRow, .issueCard, .serviceCard, .featureNarrativeLayer h2, .featureNarrativeCopy p) {
+  animation-play-state: paused;
+}

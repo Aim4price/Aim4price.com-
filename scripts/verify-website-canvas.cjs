@@ -118,6 +118,26 @@ async function check(browser, url) {
       await page.screenshot({path:path.join(output, 'home-card-' + key + '-' + width + '.png')});
       const issues = await previewGeometry('#home-asset-preview');
       previewIssues.push(...issues.map(issue => width + '/' + key + ': ' + issue));
+      const scene = await page.evaluate(() => {
+        const card = document.querySelector('#home-asset-preview').getBoundingClientRect();
+        const layer = document.querySelector('[class*="featureNarrativeLayer"][data-active="true"]');
+        const blocks = [...layer.querySelectorAll('h2, [class*="featureNarrativeCopy"]')].map(el => el.getBoundingClientRect());
+        const heading = layer.querySelector('h2');
+        const range = document.createRange();
+        range.selectNodeContents(heading);
+        const lines = [...range.getClientRects()].filter(r => r.width > 0);
+        const lineTops = new Set(lines.map(r => Math.round(r.top)));
+        const right = document.querySelector('[data-card-side]')?.dataset.cardSide === 'right';
+        return {
+          fits: blocks.every(r => r.left >= -1 && r.right <= innerWidth + 1),
+          separate: blocks.every(r => right ? r.right <= card.left + 1 : r.left >= card.right - 1),
+          headingLines: lineTops.size,
+        };
+      });
+      assert.ok(scene.fits, `${key}: narrative must fit the viewport`);
+      assert.ok(scene.separate, `${key}: card and narrative must not overlap`);
+      assert.ok(scene.headingLines <= 2, `${key}: heading should use at most two lines`);
+
       const narrativeFits = await page.$eval('[class*="featureNarrativeLayer"][data-active="true"]', element => {
         const rect = element.getBoundingClientRect();
         const stage = element.closest('[class*="storyHeroGrid"]').getBoundingClientRect();
