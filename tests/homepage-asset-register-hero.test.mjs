@@ -214,8 +214,6 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /onOpenRegister=\{claimManualControl\}/);
   assert.match(preview, /case 'register':[\s\S]*?<RegisterPreview \/>/);
   assert.match(preview, /DEMO BUSINESS PTY LTD/);
-  assert.match(preview, /showRegister \? QUESTIONS\[0\]\.label/);
-  assert.match(preview, /index === \(showRegister \? 0 : activeIndex\)/);
   assert.doesNotMatch(preview, /visibility: 'hidden'/);
   assert.match(preview, /function RegisterActions/);
   assert.match(preview, /registerVat/);
@@ -227,17 +225,14 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(preview, /Register value[\s\S]*?R 359 550/);
   assert.match(preview, /tabIndex=\{0\}/);
   assert.match(preview, /className=\{styles\.assetHeroStage\}[\s\S]*?data-active-question=\{activeQuestion\}/);
-  assert.match(preview, /aria-labelledby=\{showRegister \? 'home-register-preview-label' : `home-asset-question-/);
+  assert.match(preview, /aria-label=\{showRegister \? 'Asset Register preview' : undefined\}/);
+  assert.match(preview, /aria-labelledby=\{showRegister \? undefined : `home-asset-question-/);
   assert.match(preview, /aria-label=\{question\.label\}/);
   assert.match(preview, /assetQuestionBubble} aria-hidden="true"/);
   assert.match(preview, /assetQuestionBubble[\s\S]*?question\.icon/);
   assert.doesNotMatch(preview, /styles\.assetQuestionLabel/);
-  assert.match(preview, /assetActiveQuestion/);
-  assert.match(preview, /assetActiveQuestionMain/);
-  assert.match(preview, /QUESTIONS\[activeIndex\]\?\.icon \?\? QUESTIONS\[0\]\.icon/);
   assert.match(preview, /QUESTIONS\[activeIndex\]\?\.label \?\? QUESTIONS\[0\]\.label/);
-  assert.match(preview, /assetStoryProgress/);
-  assert.match(preview, /assetStoryProgressActive/);
+  assert.doesNotMatch(preview, /assetActiveQuestion|assetStoryProgress|home-register-preview-label/);
   assert.doesNotMatch(preview, /assetStoryControls|assetPlaybackControl|feature animation|Show next feature/);
   assert.doesNotMatch(preview, /assetScrollCue|m7 9\.5 5 5 5-5/);
   assert.doesNotMatch(preview, /assetActiveQuestionAccent/);
@@ -410,7 +405,6 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='preview'\] \.assetStageMotion,[\s\S]*?\.heroSection\[data-story-mode='features'\] \.assetStageMotion \{[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='features'\] \.assetStageMotion \{[\s\S]*?translate3d\(var\(--asset-stage-shift-x\), 0, 0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='features'\] \.featureNarrative \{[\s\S]*?opacity: 1;[\s\S]*?filter: blur\(0\)/);
-  assert.match(storyHeroStyles, /data-autoplay='true'[\s\S]*?assetStoryProgressActive::after \{[\s\S]*?animation-duration: 4800ms/);
   assert.match(storyHeroStyles, /\.featureNarrativeCount \{[\s\S]*?position: relative;[\s\S]*?text-align: left/);
 
   const desktopStoryStyles = storyHeroStyles;
@@ -426,8 +420,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(desktopStoryStyles, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: 7\.75rem/);
   assert.match(desktopStoryStyles, /\.featureNarrativeLayer h2,[\s\S]*?\.featureNarrativeLayer > p:last-child,[\s\S]*?\.featureNarrativeCount \{[\s\S]*?inset-inline-start: calc\(0rem - var\(--feature-copy-inset\)\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetQuestionGroup,[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?top: var\(--asset-preview-center-inset\);[\s\S]*?bottom: var\(--asset-preview-center-inset\)/);
-  assert.match(desktopStoryStyles, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: calc\(-4\.25rem \+ var\(--asset-preview-center-inset\)\);[\s\S]*?bottom: auto/);
-  assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard,[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
+  assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
 
   const fontSizeFor = (selector) => {
     let start = styles.indexOf(`${selector} {`);
@@ -457,5 +450,3 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl \{[\s\S]*?border: 1px solid CanvasText/);
 });
-
-

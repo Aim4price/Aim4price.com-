@@ -196,7 +196,8 @@ export default function HomeAssetPreview({
       <article
         id="home-asset-preview"
         role={showRegister ? 'region' : 'tabpanel'}
-        aria-labelledby={showRegister ? 'home-register-preview-label' : `home-asset-question-${QUESTIONS[activeIndex]?.key ?? 'have'}`}
+        aria-label={showRegister ? 'Asset Register preview' : undefined}
+        aria-labelledby={showRegister ? undefined : `home-asset-question-${QUESTIONS[activeIndex]?.key ?? 'have'}`}
         tabIndex={0}
         className={styles.assetPreviewCard}
         data-active-question={activeQuestion}
@@ -224,23 +225,6 @@ export default function HomeAssetPreview({
           document.body,
         )
         : null}
-
-      <p id="home-register-preview-label" className={styles.assetActiveQuestion}>
-        <span className={styles.assetActiveQuestionMain}>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            {showRegister ? QUESTIONS[0].icon : QUESTIONS[activeIndex]?.icon ?? QUESTIONS[0].icon}
-          </svg>
-          <span>{showRegister ? QUESTIONS[0].label : QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}</span>
-        </span>
-        <span className={styles.assetStoryProgress} aria-hidden="true">
-          {QUESTIONS.map((question, index) => (
-            <span
-              key={question.key}
-              className={index === (showRegister ? 0 : activeIndex) ? styles.assetStoryProgressActive : undefined}
-            />
-          ))}
-        </span>
-      </p>
 
       <span
         className={styles.assetQuestionFeedback}
@@ -857,4 +841,3 @@ function MiniGlyph({ type }: { type: ManageGlyph }) {
 
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5" /></svg>;
 }
-
