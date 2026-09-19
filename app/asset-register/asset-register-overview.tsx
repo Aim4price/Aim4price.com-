@@ -102,6 +102,7 @@ type OverviewItem = {
   headline: string;
   detail: string;
   meta: string;
+  renewalDate?: string;
   sortPriority: number;
   sortTime: number;
 };
@@ -239,6 +240,7 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
       items.push({
         ...base,
         id: `licence:${licence.id}`,
+        renewalDate: licence.renewalDate,
         category: 'licence',
         section: sectionForAlert(licence.computedStatus),
         status: text(licence.computedStatusLabel) || 'Due soon',
@@ -298,6 +300,31 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
     if (left.sortTime && right.sortTime) return left.sortTime - right.sortTime;
     return left.assetTitle.localeCompare(right.assetTitle);
   });
+}
+
+async function clearOverviewItem(item: OverviewItem): Promise<void> {
+  const sourceId = encodeURIComponent(item.id.slice(item.id.indexOf(':') + 1));
+  const url = item.id.startsWith('maintenance-update:')
+    ? `/api/asset-maintenance-status/${sourceId}`
+    : item.category === 'maintenance'
+      ? `/api/maintenance/${sourceId}/alert`
+      : item.category === 'problem'
+        ? `/api/asset-issue-notes/${sourceId}`
+        : item.category === 'note'
+          ? `/api/asset-notes/${sourceId}`
+          : '/api/asset-register/license-alert';
+  const response = await fetch(url, {
+    method: 'PATCH',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(item.category === 'licence'
+      ? { status: 'noted', assetId: item.assetId, renewalDate: item.renewalDate }
+      : { status: 'noted' }),
+  });
+  const result = await response.json() as { ok?: boolean; error?: string };
+  if (!response.ok || !result.ok) {
+    throw new Error(result.error || 'This update could not be cleared. Please try again.');
+  }
 }
 
 function categoryLabel(category: OverviewCategory): string {
@@ -445,6 +472,10 @@ export default function AssetRegisterOverview() {
   const [groups, setGroups] = useState<OverviewGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [clearingId, setClearingId] = useState<string | null>(null);
+  const clearingRef = useRef(false);
+  const [clearError, setClearError] = useState('');
+  const [clearMessage, setClearMessage] = useState('');
   const overviewRequest = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -580,6 +611,26 @@ export default function AssetRegisterOverview() {
     };
   }, [loadOverview]);
 
+  async function handleClear(item: OverviewItem) {
+    if (clearingRef.current) return;
+    clearingRef.current = true;
+    setClearingId(item.id);
+    setClearError('');
+    setClearMessage('');
+    try {
+      await clearOverviewItem(item);
+      // Refresh from the server so older outstanding notes can surface as well.
+      overviewRequest.current?.abort();
+      setClearMessage(`${item.headline} cleared for ${item.assetTitle}.`);
+      window.dispatchEvent(new Event('aim4price:asset-register-updated'));
+    } catch (clearFailure) {
+      setClearError(clearFailure instanceof Error ? clearFailure.message : 'This update could not be cleared.');
+    } finally {
+      clearingRef.current = false;
+      setClearingId(null);
+    }
+  }
+
   const overviewItems = useMemo(() => buildOverviewItems(assets, groups), [assets, groups]);
   const attentionCount = useMemo(
     () => overviewItems.filter((item) => item.section === 'needs_attention').length,
@@ -634,6 +685,9 @@ export default function AssetRegisterOverview() {
 
       {activeView === 'overview' ? (
         <section className={styles.overview} aria-label="Asset Register overview">
+          <p className={styles.overviewHint}>Clear marks an update as noted. Its history stays saved; scheduled work is not marked completed.</p>
+          {clearError ? <p className={styles.actionError} role="alert">{clearError}</p> : null}
+          <span className={styles.screenReaderStatus} role="status">{clearMessage}</span>
           {loading ? (
             <div className={`${styles.stateCard} ${styles.loadingCard}`} role="status">
               <span className={styles.loadingDot} aria-hidden="true" />
@@ -656,8 +710,8 @@ export default function AssetRegisterOverview() {
             <div className={`${styles.stateCard} ${styles.clearCard}`}>
               <span className={styles.clearIcon} aria-hidden="true">✓</span>
               <div>
-                <strong>Nothing needs attention right now</strong>
-                <p>No open maintenance alerts, licence renewals, problem notes or partner notes were found.</p>
+                <strong>No open updates to show</strong>
+                <p>Cleared updates remain in the asset history. Check Maintenance and Licensing for any outstanding work.</p>
               </div>
             </div>
           ) : (
@@ -706,14 +760,26 @@ export default function AssetRegisterOverview() {
                     </div>
                   </div>
 
-                  <a
-                    className={styles.viewAssetButton}
-                    href={buildAssetHref(item.assetId)}
-                    onClick={() => selectView('assets')}
-                  >
-                    View asset
-                    <span aria-hidden="true">→</span>
-                  </a>
+                  <div className={styles.cardActions}>
+                    <a
+                      className={styles.viewAssetButton}
+                      href={buildAssetHref(item.assetId)}
+                      aria-label={`Open ${item.assetTitle}`}
+                      onClick={() => selectView('assets')}
+                    >
+                      Open
+                      <span aria-hidden="true">→</span>
+                    </a>
+                    <button
+                      type="button"
+                      className={styles.clearButton}
+                      disabled={clearingId !== null}
+                      aria-label={`Clear ${item.headline} for ${item.assetTitle}`}
+                      onClick={() => void handleClear(item)}
+                    >
+                      {clearingId === item.id ? 'Clearing…' : 'Clear'}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
