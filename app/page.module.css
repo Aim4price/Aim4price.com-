@@ -1493,62 +1493,26 @@
   border-radius: 0.9rem;
   background: linear-gradient(150deg, #edf2ef, #f8faf9);
 }
-.worthReportFrame { display: grid; width: 100%; height: 100%; min-height: 0; place-items: center; }
-.worthReportFrame > div { position: relative; }
-/* Typeset at document size and scale uniformly: no reflowed or cropped PDF rows. */
+.worthReportFrame {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  place-items: center;
+}
+/* Preserve the supplied screenshot in full, without cropping or recompression. */
 .worthReportPaper {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  width: 786px;
-  height: 777px;
-  box-sizing: border-box;
-  flex-direction: column;
-  gap: 12px;
-  padding: 36px;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 786 / 777;
+  object-fit: contain;
   border: 1px solid #d8e2dd;
   border-radius: 3px;
-  color: #084752;
   background: #fff;
-  box-shadow: 0 3px 8px #213e3214, 0 18px 36px #213e3224;
-  transform-origin: top left;
-  font-size: 9px;
-  line-height: 1.4;
+  box-shadow: 0 2px 5px #213e3214, 0 9px 18px #213e3224;
 }
-.worthReportHeader { display: flex; flex: 0 0 64px; align-items: center; gap: 12px; padding-bottom: 18px; border-bottom: 1px solid #accfc1; }
-.worthReportLogo { display: block; width: 60px; height: 47px; object-fit: contain; }
-.worthReportHeader strong { display: block; font-size: 16px; line-height: 1.3; font-weight: 750; white-space: nowrap; }
-.worthReportHeader small { display: block; margin-top: 4px; font-size: 9px; }
-.worthReportMetadata { width: 232px; margin: 0 0 0 auto; font-size: 8px; }
-.worthReportMetadata > div { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
-.worthReportMetadata dd { margin: 0; font-weight: 700; }
-.worthReportSummary { display: grid; flex: 0 0 112px; grid-template-columns: 2fr 1fr; overflow: hidden; border: 1px solid #accfc1; border-radius: 8px; background: #f8fbf9; }
-.worthReportIdentity { min-width: 0; padding: 12px; }
-.worthReportIdentity > small { display: block; font-size: 8px; font-weight: 750; text-transform: uppercase; letter-spacing: 0.7px; }
-.worthReportIdentity > strong { display: block; margin-top: 5px; font-size: 21px; line-height: 1.25; font-weight: 800; letter-spacing: -0.7px; white-space: nowrap; }
-.worthReportIdentity p { margin: 6px 0 0; font-size: 8.5px; white-space: nowrap; }
-.worthReportValuation { padding: 10px 12px; border-left: 1px solid #d8e7df; background: #eaf5ef; }
-.worthReportValuation > small { display: block; color: #57777b; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-.worthReportValuation > b { display: block; margin-top: 4px; font-size: 30px; line-height: 1.1; font-weight: 850; letter-spacing: -0.9px; white-space: nowrap; }
-.worthReportValuation > span { display: block; margin-top: 3px; font-size: 8px; }
-.worthReportValuation > div { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 7px; border-top: 1px solid #cee2d7; font-size: 7px; }
-.worthReportBody { display: grid; flex: 1; min-height: 0; grid-template-columns: 2fr 1fr; gap: 12px; }
-.worthReportFacts { display: flex; min-width: 0; flex-direction: column; gap: 10px; }
-.worthReportDetails, .worthReportPhotos { padding: 9px 11px; border: 1px solid #accfc1; border-radius: 8px; }
-.worthReportPaper h3 { margin: 0 0 7px; font-size: 11px; line-height: 1.3; font-weight: 750; }
-.worthReportDetails dl { margin: 0; }
-.worthReportDetails dl > div { display: grid; grid-template-columns: 125px minmax(0, 1fr); align-items: center; min-height: 20px; border-bottom: 1px solid #cfe0d8; font-size: 8.5px; line-height: 1.3; }
-.worthReportDetails dt { font-weight: 500; }
-.worthReportDetails dd { margin: 0; font-weight: 700; white-space: nowrap; }
-.worthReportRecord dl > div { display: flex; justify-content: space-between; min-height: 19px; gap: 6px; font-size: 8px; }
-.worthReportRecord dl > div:last-child { border-bottom: 0; }
-.worthReportPhotos > div { display: grid; gap: 8px; }
-.worthReportPhotos img { display: block; width: 100%; height: 88px; box-sizing: border-box; border: 1px solid #cfe0d8; border-radius: 6px; object-fit: contain; background: #f1f7f4; }
-.worthReportPhotos > small { display: block; margin-top: 7px; color: #698179; font-size: 7px; white-space: nowrap; }
-.worthReportFooter { flex: 0 0 auto; padding-top: 9px; border-top: 1px solid #accfc1; }
-.worthReportFooter strong { display: block; font-size: 8px; font-weight: 750; }
-.worthReportFooter p { margin: 4px 0 0; color: #70878a; font-size: 7px; line-height: 1.5; font-style: italic; }
 .worthReportCaption { display: inline-flex; align-items: center; gap: 0.3rem; color: #5e7267; font-size: 0.5rem; font-weight: 750; line-height: 1; }
 .worthReportCaption svg { width: 0.65rem; height: 0.65rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
