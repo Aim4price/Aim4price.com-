@@ -110,8 +110,8 @@ async function check(browser, url) {
       const travel = section.getBoundingClientRect().height - sticky.getBoundingClientRect().height;
       window.scrollTo({top: section.getBoundingClientRect().top + scrollY + travel * (3.5 / 8) - parseFloat(getComputedStyle(sticky).top) * scale, behavior: 'instant'});
     });
-    await page.waitForFunction(() => document.querySelector('section[data-story-step]')?.dataset.storyStep === 'have');
-    for (const key of ['have', 'worth', 'manage', 'cost', 'attention']) {
+    await page.waitForFunction(() => document.querySelector('section[data-story-step]')?.dataset.storyStep === 'worth');
+    for (const key of ['worth', 'have', 'manage', 'cost', 'attention']) {
       await page.click('#home-asset-question-' + key);
       await page.waitForFunction(key => document.querySelector('#home-asset-preview')?.dataset.activeQuestion === key, {}, key);
       await delay(1100);

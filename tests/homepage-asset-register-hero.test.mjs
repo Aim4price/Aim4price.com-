@@ -30,7 +30,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   const featureSteps = [...heroStages.matchAll(/^\s+'([^']+)',?$/gm)].map(
     (match) => match[1],
   );
-  assert.deepEqual(featureSteps, ['have', 'worth', 'manage', 'cost', 'attention']);
+  assert.deepEqual(featureSteps, ['worth', 'have', 'manage', 'cost', 'attention']);
 
   const storySteps = hero.slice(
     hero.indexOf('export const HERO_STORY_STEPS'),
@@ -52,14 +52,14 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /Know what it’s worth\./);
   assert.match(hero, /Know what it costs\./);
   assert.match(hero, /Manage your vehicles, machinery and equipment in one place/);
-  assert.match(hero, /indicative value based on the asset’s age, usage, condition and replacement price/);
+  assert.match(hero, /indicative estimate or enter a value you already have/);
   assert.match(hero, /documents, maintenance, budgets and costs connected/);
 
   assert.match(hero, /<a[\s\S]*?href="#choose-role"[\s\S]*?className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleRoleSkip\}[\s\S]*?Get started/);
   assert.match(hero, /<Link href="\/valuation" className=\{styles\.secondaryCta\}>[\s\S]*?Get a Free Estimate/);
   assert.doesNotMatch(hero, /heroAudienceCta|heroSectors|Choose how you’ll use Aim4price|Agriculture|Construction|Industrial|Motor/);
   assert.match(hero, /useState\(0\)/);
-  assert.match(hero, /useState<QuestionKey>\('have'\)/);
+  assert.match(hero, /useState<QuestionKey>\('worth'\)/);
   assert.match(hero, /data-story-step=\{storyStep\}/);
   assert.match(hero, /data-story-mode=\{storyMode\}/);
   assert.match(hero, /data-active-question=\{activeQuestion\}/);
@@ -152,16 +152,20 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     hero.indexOf('const clampStoryIndex'),
   );
   for (const copy of [
-    'Know what you have.',
-    'Know what it’s worth.',
-    'Take control of every asset.',
-    'Know what it costs.',
+    'Add your assets.',
+    'Follow their changing value.',
+    'Manage each asset in one place.',
+    'Know what ownership costs.',
     'Keep maintenance on track.',
     'set budgets',
+    'Get Estimate or manually',
+    'Automatic depreciation',
+    'updated usage',
     'equipment-specific checklists',
   ]) {
     assert.match(featureStories, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
+  assert.doesNotMatch(featureStories, /[—–]/);
   assert.match(hero, /<aside[\s\S]*?className=\{styles\.featureNarrative\}[\s\S]*?aria-label="What Aim4price helps you do"/);
   assert.match(hero, /HERO_STAGES\.map\(\(question\) =>/);
   assert.match(hero, /data-active=\{isActive \? 'true' : 'false'\}/);
@@ -190,15 +194,15 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
 
   assert.deepEqual(
     [...preview.matchAll(/key: '([^']+)'/g)].map((match) => match[1]),
-    ['have', 'worth', 'manage', 'cost', 'attention'],
+    ['worth', 'have', 'manage', 'cost', 'attention'],
   );
   assert.deepEqual(
     [...preview.matchAll(/label: '([^']+)'/g)].map((match) => match[1]),
     [
-      'Know what you have',
-      'Know what it’s worth',
-      'Take control of every asset',
-      'Know what it costs',
+      'Add your assets',
+      'Follow their changing value',
+      'Manage each asset in one place',
+      'Know what ownership costs',
       'Keep maintenance on track',
     ],
   );

@@ -43,18 +43,8 @@ const QUESTION_FEEDBACK: Readonly<Record<QuestionKey, string>> = {
 
 const QUESTIONS: readonly Question[] = [
   {
-    key: 'have',
-    label: 'Know what you have',
-    icon: (
-      <>
-        <path d="M4.7 5.6h6.8l7.8 7.8-5.9 5.9-7.8-7.8z" />
-        <circle cx="9.2" cy="9.1" r="1.25" />
-      </>
-    ),
-  },
-  {
     key: 'worth',
-    label: 'Know what it’s worth',
+    label: 'Add your assets',
     icon: (
       <>
         <path d="M4.5 18.5V14m5 4.5v-7m5 7V8m5 10.5V4.5" />
@@ -64,8 +54,18 @@ const QUESTIONS: readonly Question[] = [
     ),
   },
   {
+    key: 'have',
+    label: 'Follow their changing value',
+    icon: (
+      <>
+        <path d="M4.7 5.6h6.8l7.8 7.8-5.9 5.9-7.8-7.8z" />
+        <circle cx="9.2" cy="9.1" r="1.25" />
+      </>
+    ),
+  },
+  {
     key: 'manage',
-    label: 'Take control of every asset',
+    label: 'Manage each asset in one place',
     icon: (
       <>
         <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
@@ -75,7 +75,7 @@ const QUESTIONS: readonly Question[] = [
   },
   {
     key: 'cost',
-    label: 'Know what it costs',
+    label: 'Know what ownership costs',
     icon: (
       <>
         <circle cx="12" cy="12" r="8.2" />
