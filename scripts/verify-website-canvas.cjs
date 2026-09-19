@@ -76,6 +76,68 @@ async function check(browser, url) {
       return {headerFits,scale,width:origin.width/scale,scroll:document.documentElement.scrollWidth,viewport:innerWidth,items};
     });
   }
+  // Exercise the real homepage cards, including their enlarged views. Capture
+  // evidence before asserting so all five designs can be reviewed if one fails.
+  const previewIssues = [];
+  async function previewGeometry(hostSelector) {
+    return page.$eval(hostSelector, host => {
+      const bounds = host.getBoundingClientRect();
+      const issues = [];
+      const inside = (rect, parent) => rect.left >= parent.left - 2 && rect.top >= parent.top - 2 && rect.right <= parent.right + 2 && rect.bottom <= parent.bottom + 2;
+      const elements = host.querySelectorAll('h2,h3,p,dt,dd,strong,small,img,[class*="miniFact"],[class*="manageTile"],[class*="reportRow"],[class*="issueCard"],[class*="serviceCard"]');
+      for (const element of elements) {
+        const rect = element.getBoundingClientRect();
+        if (!rect.width || !rect.height || getComputedStyle(element).visibility === 'hidden') continue;
+        const label = element.textContent.trim().slice(0, 70) || element.getAttribute('alt') || element.tagName;
+        if (!inside(rect, bounds)) issues.push('Escapes card: ' + label);
+        if (element.children.length === 0 && element.scrollWidth > element.clientWidth + 2) issues.push('Clipped text: ' + label);
+        const paper = element.closest('[class*="worthReportPaper"]');
+        if (paper && !inside(rect, paper.getBoundingClientRect())) issues.push('Escapes report: ' + label);
+      }
+      const sections = [...host.querySelectorAll('[class*="worthHeading"],[class*="worthValueBlock"],[class*="worthFacts"],[class*="worthBasis"]')];
+      for (let index = 1; index < sections.length; index++) {
+        if (sections[index - 1].getBoundingClientRect().bottom > sections[index].getBoundingClientRect().top + 1) issues.push('Valuation sections overlap');
+      }
+      return issues;
+    });
+  }
+  for (const width of [1920, 430]) {
+    await visit('/', width, width === 430 ? 760 : 1080);
+    await page.evaluate(() => {
+      const section = document.querySelector('section[data-story-step]');
+      const sticky = section.querySelector('[class*="heroSticky"]');
+      const scale = Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);
+      const travel = section.getBoundingClientRect().height - sticky.getBoundingClientRect().height;
+      window.scrollTo({top: section.getBoundingClientRect().top + scrollY + travel * (3.5 / 8) - parseFloat(getComputedStyle(sticky).top) * scale, behavior: 'instant'});
+    });
+    await page.waitForFunction(() => document.querySelector('section[data-story-step]')?.dataset.storyStep === 'have');
+    for (const key of ['have', 'worth', 'manage', 'cost', 'attention']) {
+      await page.click('#home-asset-question-' + key);
+      await page.waitForFunction(key => document.querySelector('#home-asset-preview')?.dataset.activeQuestion === key, {}, key);
+      await delay(1100);
+      await page.screenshot({path:path.join(output, 'home-card-' + key + '-' + width + '.png')});
+      const issues = await previewGeometry('#home-asset-preview');
+      previewIssues.push(...issues.map(issue => width + '/' + key + ': ' + issue));
+      const narrativeFits = await page.$eval('[class*="featureNarrativeLayer"][data-active="true"]', element => {
+        const rect = element.getBoundingClientRect();
+        const stage = element.closest('[class*="storyHeroGrid"]').getBoundingClientRect();
+        return rect.top >= stage.top - 2 && rect.bottom <= stage.bottom + 2;
+      });
+      if (!narrativeFits) previewIssues.push(width + '/' + key + ': Feature explanation escapes the stage');
+      if (width === 1920) {
+        await page.click('#home-asset-preview button[aria-haspopup="dialog"]');
+        await page.waitForSelector('dialog[data-home-preview-dialog][open]');
+        await delay(150);
+        await page.screenshot({path:path.join(output, 'home-card-' + key + '-expanded.png')});
+        const expanded = await previewGeometry('dialog[data-home-preview-dialog] [class*="assetPreviewExpandedContent"]');
+        previewIssues.push(...expanded.map(issue => 'expanded/' + key + ': ' + issue));
+        await page.click('dialog[data-home-preview-dialog] button[aria-label="Close preview"]');
+      }
+    }
+    await fs.writeFile(path.join(output, 'home-card-layout-results.json'), JSON.stringify(previewIssues, null, 2));
+  }
+  assert.deepEqual(previewIssues, [], 'Homepage cards must fit without clipped text or overlapping valuation sections');
+  console.log('PASS five homepage cards: desktop, narrow viewport and enlarged previews');
   for(const [name,route,auth] of (process.env.CANVAS_INTERACTIONS_ONLY?[]:[['home','/',false],['estimate','/valuation',false],['register','/canvas-validation?page=register',true],['marketplace','/canvas-validation?page=marketplace',true],['fuel','/canvas-validation?page=fuel',true],['account','/canvas-validation?page=account',true]])) {
     signedIn=auth;
     await page.goto(url,{waitUntil:'domcontentloaded'});

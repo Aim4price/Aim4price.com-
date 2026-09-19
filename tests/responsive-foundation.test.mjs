@@ -51,7 +51,7 @@ test('website sign-out stays separate from installable app sessions and verifies
 test('Home retains its eight-step scroll story at every width and respects reduced motion', async () => {
   const [home, hero] = await Promise.all([read('app/page.module.css'), read('app/home-hero-experience.tsx')]);
   assert.match(hero, /HERO_STORY_STEPS = \[[\s\S]*?'brand',[\s\S]*?'promise',[\s\S]*?'preview',[\s\S]*?\.\.\.HERO_STAGES/);
-  assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
+  assert.match(hero, /HERO_FEATURE_DURATION_MS = 10000/);
   assert.match(hero, /supportsStory = !reducedMotionMedia\.matches/);
   assert.doesNotMatch(hero, /DESKTOP_STORY_QUERY|desktopStoryMedia/);
   assert.match(hero, /sectionRect\.height - stickyRect\.height/);

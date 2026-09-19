@@ -19,7 +19,8 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const FEATURE_START_INDEX = 3;
 const OPENING_TAGLINE = ['Asset Management Software', 'built for South Africa.'] as const;
 
-export const HERO_FEATURE_DURATION_MS = 4800;
+// Leave time to read both feature paragraphs before the next automatic card.
+export const HERO_FEATURE_DURATION_MS = 10000;
 
 export const HERO_STAGES: readonly QuestionKey[] = [
   'have',
@@ -41,6 +42,7 @@ type StoryStep = (typeof HERO_STORY_STEPS)[number];
 type FeatureStory = {
   title: string;
   body: string;
+  detail: string;
 };
 
 const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
@@ -57,23 +59,28 @@ const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
 const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   have: {
     title: 'Know what you have.',
-    body: 'Keep your vehicles, machinery and equipment in one organised register, with photos, documents and key details.',
+    body: 'Bring your vehicles, machinery and equipment into one organised asset register. Keep photos, documents, serial numbers and key details connected to each asset.',
+    detail: 'Group assets into umbrellas, see their combined value and share a clear, up-to-date record when you need it.',
   },
   worth: {
     title: 'Know what it’s worth.',
-    body: 'Get indicative asset values, track depreciation and plan when to replace or sell.',
+    body: 'Get an indicative value based on the asset’s age, usage, condition and replacement price. Refresh your estimates as the asset changes and track saved values over time.',
+    detail: 'Use valuation reports and future-value estimates to plan for insurance discussions, replacement or a possible sale.',
   },
   manage: {
     title: 'Take control of every asset.',
-    body: 'Update details, add fuel and costs, set budgets and manage maintenance from one place.',
+    body: 'Update asset details, capture fuel and costs, set budgets and record maintenance from one place. Keep the supporting photos and documents with the asset they belong to.',
+    detail: 'Refresh pricing, print a QR label, view the asset on a map or prepare a Marketplace listing when it is time to sell.',
   },
   cost: {
     title: 'Know what it costs.',
-    body: 'Track expenses and fuel against each asset, set budgets and download clear ownership cost reports.',
+    body: 'See more than the purchase price. Keep fuel, servicing, repairs and other expenses linked to the right asset, with budgets that help you follow its running costs.',
+    detail: 'Download fuel, maintenance and cost-of-ownership reports, review saved value changes and build a clearer picture of what each asset costs to keep.',
   },
   attention: {
     title: 'Keep maintenance on track.',
-    body: 'Schedule services, follow equipment-specific checklists and keep track of reported problems and completed work.',
+    body: 'Spot reported problems and completed maintenance directly on the asset record. See what needs attention, what work was done, who recorded it and when.',
+    detail: 'Schedule the next service, use equipment-specific checklists and keep the notes and repair history together for the next person who needs them.',
   },
 };
 
@@ -517,7 +524,10 @@ export default function HomeHeroExperience() {
                         <span>/ 5</span>
                       </p>
                       <h2>{feature.title}</h2>
-                      <p>{feature.body}</p>
+                      <div className={styles.featureNarrativeCopy}>
+                        <p>{feature.body}</p>
+                        <p>{feature.detail}</p>
+                      </div>
                     </div>
                   );
                 })}
@@ -573,5 +583,4 @@ export default function HomeHeroExperience() {
     </section>
   );
 }
-
 

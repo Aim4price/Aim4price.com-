@@ -52,7 +52,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /Know what it’s worth\./);
   assert.match(hero, /Know what it costs\./);
   assert.match(hero, /Manage your vehicles, machinery and equipment in one place/);
-  assert.match(hero, /indicative asset values/);
+  assert.match(hero, /indicative value based on the asset’s age, usage, condition and replacement price/);
   assert.match(hero, /documents, maintenance, budgets and costs connected/);
 
   assert.match(hero, /<a[\s\S]*?href="#choose-role"[\s\S]*?className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleRoleSkip\}[\s\S]*?Get started/);
@@ -67,7 +67,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}/);
 
   assert.match(hero, /const FEATURE_START_INDEX = 3/);
-  assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
+  assert.match(hero, /HERO_FEATURE_DURATION_MS = 10000/);
   assert.match(hero, /brand: 5200,[\s\S]*?promise: 4800,[\s\S]*?preview: 3600/);
   for (const question of featureSteps) {
     assert.match(hero, new RegExp(`${question}: HERO_FEATURE_DURATION_MS`));
@@ -269,7 +269,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(preview, /<AssetDetail label="Year" value="2023" \/>/);
   assert.match(preview, /<AssetDetail label="Licensed" value="✓" status \/>/);
 
-  // What is it worth? — the final estimate page.
+  // Valuation summary and report keep one consistent demo asset and VAT basis.
   const worthPreview = preview.slice(
     preview.indexOf('function WorthPreview()'),
     preview.indexOf('function ManagePreview()'),
@@ -280,7 +280,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.doesNotMatch(worthPreview, /R 239 454/);
   assert.match(worthPreview, /VAT excluded[\s\S]*?VAT included/);
   assert.match(worthPreview, /Estimate shown with VAT excluded\./);
-  assert.match(worthPreview, /<MiniFact label="Replacement" value="R 450 000 excl\. VAT" \/>/);
+  assert.match(worthPreview, /<MiniFact label="Replacement" value="R 450 000" \/>/);
   assert.doesNotMatch(worthPreview, /label="Replacement price"/);
   assert.match(worthPreview, /Asset Valuation Report preview/);
   assert.match(worthPreview, /Miniature Asset Valuation Report for the 2023 Toyota Hilux Single Cab/);
@@ -289,7 +289,6 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.doesNotMatch(worthPreview, /worthReportLogo\}>A4<\/span>/);
   assert.match(worthPreview, /Asset Details/);
   assert.match(worthPreview, /Record Summary/);
-  assert.match(worthPreview, /Client \/ Asset Owner/);
   assert.match(worthPreview, /Aim4price demo owner/);
   assert.match(worthPreview, /\/brand\/home-asset-hilux-thumb-side\.webp/);
   assert.match(worthPreview, /\/brand\/home-asset-hilux-thumb-rear\.webp/);
@@ -320,38 +319,32 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.doesNotMatch(preview, /function ManagePreview\(\)[\s\S]*?Manage asset/);
   assert.doesNotMatch(preview, /function ManagePreview\(\)[\s\S]*?Choose what you want to do with this asset\./);
 
-  // What does it cost me? — the signed-in Cost Ledger with isolated demo records.
+  // Reports use the actual asset report choices, not the Cost Ledger.
   const costPreview = preview.slice(
     preview.indexOf('function CostPreview()'),
     preview.indexOf('function AttentionPreview()'),
   );
-  assert.match(costPreview, /<h2>Cost tracking system<\/h2>/);
-  assert.match(costPreview, /Demo records/);
-  assert.match(costPreview, /2023 Toyota Hilux Single Cab/);
-  assert.match(costPreview, /Invoice \{entry.reference\}/);
-  assert.match(costPreview, /Incl\. VAT/);
-  assert.match(costPreview, /View details/);
-  assert.match(costPreview, /Manage/);
-  assert.match(preview, /\['plus', 'Add Cost'\], \['summary', 'Budgets'\], \['share', 'Invoice Drop'\], \['download', 'Download'\]/);
+  for (const label of ['Asset valuation', 'Maintenance report', 'Fuel report', 'Depreciation log', 'Cost of ownership', 'Asset map']) {
+    assert.ok(costPreview.includes(label));
+  }
+  assert.match(costPreview, /AssetReportTypeIcon/);
+  assert.match(costPreview, /Ownership costs and budgets/);
+  assert.doesNotMatch(costPreview, /Cost tracking system|Invoice Drop|workspacePreview/);
 
-  // Maintenance uses the real upcoming/completed card structure and coherent sample usage.
+  // Keep reported problems and completed work distinct on the same asset.
   const attentionPreview = preview.slice(
     preview.indexOf('function AttentionPreview()'),
     preview.indexOf('function MiniFact('),
   );
-  assert.match(attentionPreview, /<h2>Asset maintenance<\/h2>/);
   assert.match(attentionPreview, /Year Model: 2023 · Usage: 113 677 km · Condition: Good/);
-  assert.match(attentionPreview, /Demo records/);
-  assert.match(attentionPreview, /Record service[\s\S]*?View details[\s\S]*?Manage/);
-  assert.match(attentionPreview, /Upcoming/);
-  assert.match(attentionPreview, /120 000 km/);
-  assert.match(attentionPreview, /6 323 km remaining/);
-  assert.match(attentionPreview, /110 000 km/);
-  assert.match(attentionPreview, /Completed/);
-  const scheduledKm = Number(attentionPreview.match(/<strong>([\d ]+) km<\/strong><small>Scheduled usage/)?.[1].replaceAll(' ', ''));
-  const currentKm = Number(attentionPreview.match(/Usage: ([\d ]+) km/)?.[1].replaceAll(' ', ''));
-  const remainingKm = Number(attentionPreview.match(/([\d ]+) km remaining/)?.[1].replaceAll(' ', ''));
-  assert.equal(scheduledKm - currentKm, remainingKm);
+  assert.match(attentionPreview, /Maintenance serviced/);
+  assert.match(attentionPreview, /Open issue reported/);
+  assert.match(attentionPreview, /Maintenance has been done/);
+  assert.match(attentionPreview, /issueCard/);
+  assert.match(attentionPreview, /serviceCard/);
+  assert.match(attentionPreview, /Reported by Demo operator/);
+  assert.match(attentionPreview, /Serviced by Demo workshop/);
+  assert.doesNotMatch(attentionPreview, /workspacePreview|Scheduled usage|Record service/);
 
   assert.doesNotMatch(preview, /assetConnectors|connectorPath|connectorDots|assetConnectorActive/);
   assert.match(preview, /role="status"/);
@@ -418,21 +411,12 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(desktopStoryStyles, /\.storyHeroLogo,[\s\S]*?\.assetStageMotion,[\s\S]*?\.featureNarrative \{[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1/);
   assert.match(desktopStoryStyles, /\.assetStageMotion \{[\s\S]*?--asset-preview-center-inset: 2\.325rem;[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 5rem\)\);[\s\S]*?justify-self: end/);
   assert.match(desktopStoryStyles, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: 7\.75rem/);
-  assert.match(desktopStoryStyles, /\.featureNarrativeLayer h2,[\s\S]*?\.featureNarrativeLayer > p:last-child,[\s\S]*?\.featureNarrativeCount \{[\s\S]*?inset-inline-start: calc\(0rem - var\(--feature-copy-inset\)\)/);
+  assert.match(desktopStoryStyles, /\.featureNarrativeLayer h2,[\s\S]*?\.featureNarrativeCopy,[\s\S]*?\.featureNarrativeCount \{[\s\S]*?inset-inline-start: calc\(0rem - var\(--feature-copy-inset\)\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetQuestionGroup,[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?top: var\(--asset-preview-center-inset\);[\s\S]*?bottom: var\(--asset-preview-center-inset\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
 
-  const fontSizeFor = (selector) => {
-    let start = styles.indexOf(`${selector} {`);
-    while (start !== -1) {
-      const size = styles.slice(start, styles.indexOf('}', start)).match(/font-size: ([^;]+);/)?.[1];
-      if (size) return size;
-      start = styles.indexOf(`${selector} {`, start + 1);
-    }
-    assert.fail(`Missing font size for ${selector}`);
-  };
-  assert.equal(fontSizeFor('.featureNarrativeLayer h2'), fontSizeFor('.heroPromiseTitle'));
-  assert.equal(fontSizeFor('.featureNarrativeLayer > p:last-child'), fontSizeFor('.heroPromiseText'));
+  assert.match(hero, /<p>\{feature.body\}<\/p>[\s\S]*?<p>\{feature.detail\}<\/p>/);
+  assert.match(styles, /\.featureNarrativeCopy p \+ p/);
 
   assertNoWebsiteReflow(storyHeroStyles);
   assert.doesNotMatch(storyHeroStyles, /@media[^\{]*(?:width|height)\s*:/);

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import AssetReportTypeIcon from '../components/asset-register/AssetReportTypeIcon';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from '../components/WebsitePortal';
 import styles from './page.module.css';
@@ -37,9 +38,9 @@ type ManageGlyph =
 const QUESTION_FEEDBACK: Readonly<Record<QuestionKey, string>> = {
   have: 'Showing the complete asset record.',
   worth: 'Showing the indicative value and valuation report.',
-  cost: 'Showing fuel and ownership costs.',
+  cost: 'Showing the reports available for this asset.',
   manage: 'Showing the asset management tools.',
-  attention: 'Showing upcoming and completed maintenance.',
+  attention: 'Showing an open problem and completed maintenance.',
 };
 
 const QUESTIONS: readonly Question[] = [
@@ -479,6 +480,7 @@ function AssetCardPreview() {
             priority
             sizes="(min-width: 1181px) 17vw, (min-width: 761px) 32vw, 42vw"
           />
+          <span className={styles.assetPhotoCount} aria-hidden="true">1 / 3</span>
           <div className={styles.assetThumbnails} aria-hidden="true">
             <span />
             <span />
@@ -517,27 +519,30 @@ function WorthPreview() {
   return (
     <div className={styles.worthPreview}>
       <section className={styles.worthResult}>
-        <h2 className={styles.worthAssetTitle}>2023 Toyota Hilux Single Cab</h2>
+        <div className={styles.worthHeading}>
+          <span className={styles.previewEyebrow}>Indicative asset value</span>
+          <h2 className={styles.worthAssetTitle}>2023 Toyota Hilux Single Cab</h2>
+        </div>
 
-        <div className={styles.worthValueRow}>
-          <span>
+        <div className={styles.worthValueBlock}>
+          <div className={styles.worthValueRow}>
             <strong>R 237 150</strong>
             <small>Excl. VAT</small>
-          </span>
-        </div>
-        <span className={styles.previewSrOnly}>Estimate shown with VAT excluded.</span>
-
-        <div className={styles.worthVatToggle} aria-hidden="true">
-          <span>VAT excluded</span>
-          <span>VAT included</span>
+          </div>
+          <span className={styles.previewSrOnly}>Estimate shown with VAT excluded.</span>
+          <div className={styles.worthVatToggle} aria-hidden="true">
+            <span>VAT excluded</span>
+            <span>VAT included</span>
+          </div>
         </div>
 
         <div className={styles.worthFacts}>
           <MiniFact label="Year model" value="2023" />
           <MiniFact label="Usage" value="113 677 km" />
           <MiniFact label="Condition" value="Good" />
-          <MiniFact label="Replacement" value="R 450 000 excl. VAT" />
+          <MiniFact label="Replacement" value="R 450 000" />
         </div>
+        <p className={styles.worthBasis}>Replacement price and estimate exclude VAT.</p>
       </section>
 
       <aside className={styles.worthReportPreview} aria-label="Asset Valuation Report preview">
@@ -552,80 +557,46 @@ function WorthPreview() {
               alt=""
               width={660}
               height={515}
-              sizes="1.35rem"
+              sizes="1.65rem"
               className={styles.worthReportLogo}
               aria-hidden="true"
             />
-            <span>
-              <strong>Asset Valuation Report</strong>
-              <small>Aim4price asset register</small>
-            </span>
-            <span className={styles.worthReportGenerated}>
-              <small>Generated</small>
-              <strong>01 Sept 2026</strong>
-            </span>
+            <span><strong>Asset Valuation Report</strong><small>Aim4price asset register</small></span>
           </header>
-
           <div className={styles.worthReportSummary}>
-            <span>
-              <small>Bakkies / LDVs</small>
-              <strong>2023 Toyota Hilux Single Cab</strong>
-              <em>Year 2023 · Usage 113 677 km · Condition Good</em>
-            </span>
-            <span>
-              <small>Estimated value</small>
-              <strong>R 237 150</strong>
-              <em>VAT excluded</em>
-            </span>
+            <small>Bakkies / LDVs</small>
+            <strong>2023 Toyota Hilux Single Cab</strong>
+            <span><b>R 237 150</b><em>VAT excluded</em></span>
           </div>
-
           <div className={styles.worthReportBody}>
-            <section className={styles.worthReportDetails}>
-              <strong>Asset Details</strong>
-              <dl>
-                <div><dt>Category</dt><dd>Bakkies / LDVs</dd></div>
-                <div><dt>Brand</dt><dd>Toyota</dd></div>
-                <div><dt>Model</dt><dd>Hilux</dd></div>
-                <div><dt>Year</dt><dd>2023</dd></div>
-                <div><dt>Usage</dt><dd>113 677 km</dd></div>
-                <div><dt>Condition</dt><dd>Good</dd></div>
-                <div><dt>Replacement</dt><dd>R 450 000 excl. VAT</dd></div>
-              </dl>
-
-              <div className={styles.worthReportOwner}>
-                <strong>Client / Asset Owner</strong>
-                <span>Aim4price demo owner</span>
-              </div>
-            </section>
-
-            <section className={styles.worthReportSide}>
-              <div className={styles.worthReportRecord}>
+            <div className={styles.worthReportFacts}>
+              <section className={styles.worthReportDetails}>
+                <strong>Asset Details</strong>
+                <dl>
+                  <div><dt>Serial</dt><dd>SKB 5</dd></div>
+                  <div><dt>Year / Condition</dt><dd>2023 / Good</dd></div>
+                  <div><dt>Usage</dt><dd>113 677 km</dd></div>
+                  <div><dt>Replacement</dt><dd>R 450 000</dd></div>
+                </dl>
+              </section>
+              <section className={styles.worthReportRecord}>
                 <strong>Record Summary</strong>
-                <span>Insured <b>Yes</b></span>
-                <span>Financed <b>Yes</b></span>
-                <span>Documents <b>None</b></span>
-              </div>
-
-              <div className={styles.worthReportPhotos}>
-                <strong>Asset Photos</strong>
-                <Image
-                  src="/brand/home-asset-hilux-thumb-side.webp"
-                  alt="Side view of the Toyota Hilux in the valuation report"
-                  width={108}
-                  height={58}
-                  sizes="7rem"
-                />
-                <Image
-                  src="/brand/home-asset-hilux-thumb-rear.webp"
-                  alt="Rear view of the Toyota Hilux in the valuation report"
-                  width={108}
-                  height={58}
-                  sizes="7rem"
-                />
+                <span>Insured <b>Yes</b><i>·</i> Financed <b>Yes</b></span>
+              </section>
+            </div>
+            <section className={styles.worthReportPhotos}>
+              <strong>Asset Photos</strong>
+              <div>
+                <Image src="/brand/home-asset-hilux-thumb-side.webp" alt="Side view of the Toyota Hilux in the valuation report" width={108} height={72} sizes="6rem" />
+                <Image src="/brand/home-asset-hilux-thumb-rear.webp" alt="Rear view of the Toyota Hilux in the valuation report" width={108} height={72} sizes="6rem" />
               </div>
             </section>
           </div>
+          <footer className={styles.worthReportFooter}>
+            <span>Aim4price demo owner</span><span>01 Sept 2026 · 1 / 1</span>
+          </footer>
         </div>
+        <span className={styles.worthReportCaption}><RegisterIcon name="download" />Valuation report · PDF</span>
       </aside>
 
       <div className={styles.worthActions} aria-label="Estimate actions">
@@ -699,93 +670,71 @@ function ManagePreview() {
   );
 }
 
-// Static examples follow the signed-in ledger and maintenance layouts.
-// Keep these fixtures independent of customer records and account identifiers.
-function PreviewToolbar({ maintenance = false }: { maintenance?: boolean }) {
-  const actions = maintenance
-    ? [['plus', 'Add Maintenance'], ['summary', 'Scheduled'], ['assets', 'Checklists'], ['download', 'Download']]
-    : [['plus', 'Add Cost'], ['summary', 'Budgets'], ['share', 'Invoice Drop'], ['download', 'Download']];
-  return (
-    <div className={styles.workspacePreviewToolbar} aria-hidden="true">
-      {actions.map(([icon, label], index) => (
-        <span key={label} data-tone={['share', 'details', 'manage', 'primary'][index]}>
-          <RegisterIcon name={icon} />{label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
+// Homepage examples use the product's report choices and asset update cards.
+// Keep the records fictional and independent of signed-in customer data.
 function CostPreview() {
-  const entries = [
-    { supplier: 'Demo Service Centre', reference: 'DEMO-001', date: '01 Sept 2026', amount: 'R 3 450', source: 'Manual', file: 'No file' },
-    { supplier: 'Demo Fuel Station', reference: 'DEMO-002', date: '03 Sept 2026', amount: 'R 1 150', source: 'Fuel Slip', file: 'Open file' },
-  ];
+  const reports = [
+    { kind: 'valuation', title: 'Asset valuation', description: 'Values, notes and documents.' },
+    { kind: 'maintenance', title: 'Maintenance report', description: 'Service and repair costs.' },
+    { kind: 'fuel', title: 'Fuel report', description: 'Monthly fuel costs.' },
+    { kind: 'depreciation', title: 'Depreciation log', description: 'Saved value changes.' },
+    { kind: 'ownership', title: 'Cost of ownership', description: 'Ownership costs and budgets.' },
+    { kind: 'map', title: 'Asset map', description: 'Saved asset location.' },
+  ] as const;
+
   return (
-    <div className={styles.workspacePreview}>
-      <header className={styles.workspacePreviewTitle}>
-        <h2>Cost tracking system</h2><small>Demo records</small>
+    <div className={styles.costPreview}>
+      <header className={`${styles.previewModalHeader} ${styles.costPreviewHeader}`}>
+        <div>
+          <h2>2023 Toyota Hilux Single Cab</h2>
+          <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
+        </div>
+        <span className={styles.previewClose} aria-hidden="true">×</span>
       </header>
-      <PreviewToolbar />
-      <div className={styles.workspacePreviewSearch} aria-hidden="true">
-        <span><RegisterIcon name="search" />2023 Toyota Hilux Single Cab</span>
-        <span><RegisterIcon name="filter" />Filter</span>
-      </div>
-      <div className={styles.workspacePreviewRecords}>
-        {entries.map((entry) => (
-          <section key={entry.reference} className={styles.ledgerPreviewCard}>
-            <header>
-              <div><h3>{entry.supplier}</h3><p>Invoice {entry.reference} · {entry.date}</p></div>
-              <div className={styles.workspacePreviewAmount}><strong>{entry.amount}</strong><small>Incl. VAT</small></div>
-            </header>
-            <div className={styles.ledgerPreviewBottom}>
-              <div className={styles.ledgerPreviewPills}><span>2023 Toyota Hilux Single Cab</span><span>{entry.source}</span></div>
-              <div className={styles.workspacePreviewActions} aria-hidden="true">
-                <span data-tone="share">{entry.file}</span><span data-tone="details">View details</span><span data-tone="manage"><ManageActionGlyph type="maintenance" />Manage</span>
-              </div>
-            </div>
-          </section>
+      <div className={styles.reportList}>
+        {reports.map((report) => (
+          <div key={report.kind} className={styles.reportRow}>
+            <span className={styles.reportIcon}><AssetReportTypeIcon kind={report.kind} /></span>
+            <span><strong>{report.title}</strong><small>{report.description}</small></span>
+          </div>
         ))}
       </div>
-      <p className={styles.workspacePreviewCaption}>Sample costs linked to one asset · Amounts include VAT</p>
+      <div className={styles.reportFooter} aria-hidden="true"><span>Cancel</span></div>
     </div>
   );
 }
 
 function AttentionPreview() {
   return (
-    <div className={styles.workspacePreview}>
-      <header className={styles.workspacePreviewTitle}>
-        <h2>Asset maintenance</h2><small>Demo records</small>
+    <div className={styles.attentionPreview}>
+      <header className={styles.attentionHeader}>
+        <div className={styles.attentionIdentity}>
+          <div className={styles.attentionBadges}><span>Maintenance serviced</span><span>Open issue</span></div>
+          <h2>2023 Toyota Hilux Single Cab</h2>
+          <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
+          <strong className={styles.attentionValueLabel}>Aim4price value</strong>
+          <small className={styles.attentionUpdated}>Updated 01 Sept 2026</small>
+        </div>
+        <div className={styles.attentionAside}>
+          <strong className={styles.attentionPrice}>R 237 150<small>Excl. VAT</small></strong>
+          <RegisterActions />
+        </div>
       </header>
-      <PreviewToolbar maintenance />
-      <div className={styles.workspacePreviewSearch} aria-hidden="true">
-        <span><RegisterIcon name="search" />2023 Toyota Hilux Single Cab</span>
-        <span><RegisterIcon name="filter" />Filter</span>
-      </div>
-      <div className={styles.workspacePreviewRecords}>
-        <section className={styles.maintenancePreviewCard} data-status="upcoming">
-          <header>
-            <div><h3>2023 Toyota Hilux Single Cab</h3><p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p></div>
-            <div className={styles.workspacePreviewAmount}><strong>120 000 km</strong><small>Scheduled usage</small></div>
-          </header>
-          <div className={styles.ledgerPreviewBottom}>
-            <div className={styles.maintenancePreviewStatus}><span>◷ Upcoming</span><strong>6 323 km remaining</strong></div>
-            <div className={styles.workspacePreviewActions} aria-hidden="true"><span data-tone="share">✓ Record service</span><span data-tone="details">View details</span><span data-tone="manage"><ManageActionGlyph type="maintenance" />Manage</span></div>
-          </div>
+      <div className={styles.attentionBody}>
+        <section className={styles.issueCard}>
+          <div className={styles.issueCardTitle}><strong>Open issue reported</strong></div>
+          <ul><li>Licence disc has expired.</li><li>Driver’s seat needs attention.</li></ul>
+          <small className={styles.attentionByline}>Reported by Demo operator · 29 Aug 2026</small>
+          <span className={styles.issueNoted} aria-hidden="true">Noted</span>
         </section>
-        <section className={styles.maintenancePreviewCard} data-status="completed">
-          <header>
-            <div><h3>2023 Toyota Hilux Single Cab</h3><p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p></div>
-            <div className={styles.workspacePreviewAmount}><strong>110 000 km</strong><small>Completed at</small></div>
-          </header>
-          <div className={styles.ledgerPreviewBottom}>
-            <div className={styles.maintenancePreviewStatus}><span>✓ Completed</span></div>
-            <div className={styles.workspacePreviewActions} aria-hidden="true"><span data-tone="completed">✓ Completed</span><span data-tone="details">View details</span><span data-tone="manage"><ManageActionGlyph type="maintenance" />Manage</span></div>
-          </div>
+        <section className={styles.serviceCard}>
+          <div className={styles.issueCardTitle}><strong>Maintenance has been done</strong></div>
+          <p>Engine oil, oil filter and air filter changed. Vehicle greased and checked.</p>
+          <p><b>Notes:</b> Licence renewal still needs attention.</p>
+          <small className={styles.attentionByline}>Serviced by Demo workshop · 01 Sept 2026</small>
+          <span className={styles.serviceNoted} aria-hidden="true">Noted</span>
         </section>
       </div>
-      <p className={styles.workspacePreviewCaption}>Sample maintenance schedule · Track upcoming and completed work</p>
     </div>
   );
 }
