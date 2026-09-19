@@ -1,4 +1,5 @@
 "use client";
+import dialogStyles from "../../components/AccountDialog.module.css";
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 import website_mobileStyles from '../../components/website-styles/FieldManagerControls.module.css';
@@ -2494,13 +2495,13 @@ export default function AssetDiscoveryClient({
           onMouseDown={() => setActiveEnquiry(null)}
         >
           <section
-            className={`${workspaceStyles.modal} ${styles.contactModal}`}
+            className={`${workspaceStyles.modal} ${styles.contactModal} ${dialogStyles.surface} ${dialogStyles.flush}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="dealer-discovery-contact-title"
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <header className={`${workspaceStyles.modalHeader} ${styles.contactHeader}`}>
+            <header className={`${workspaceStyles.modalHeader} ${styles.contactHeader} ${dialogStyles.header}`}>
               <div className={styles.contactHeaderCopy}>
                 <span className={styles.contactKicker}>Open contact</span>
                 <h2 id="dealer-discovery-contact-title">
@@ -2516,7 +2517,7 @@ export default function AssetDiscoveryClient({
               </div>
               <button
                 type="button"
-                className={`${workspaceStyles.modalClose} ${styles.contactCloseButton}`}
+                className={`${workspaceStyles.modalClose} ${styles.contactCloseButton} ${dialogStyles.close}`}
                 onClick={() => setActiveEnquiry(null)}
                 aria-label="Close approved contact"
               >
@@ -2524,7 +2525,7 @@ export default function AssetDiscoveryClient({
               </button>
             </header>
 
-            <div className={`${workspaceStyles.modalBody} ${styles.contactBody}`}>
+            <div className={`${workspaceStyles.modalBody} ${styles.contactBody} ${dialogStyles.body}`}>
               <div className={styles.contactAccessNote}>
                 <span>Owner approved your enquiry</span>
                 <p>
@@ -2581,7 +2582,7 @@ export default function AssetDiscoveryClient({
               )}
             </div>
 
-            <div className={`${workspaceStyles.modalFooter} ${styles.contactActions}`}>
+            <div className={`${workspaceStyles.modalFooter} ${styles.contactActions} ${dialogStyles.footer}`}>
               {activeEnquiry.ownerContact?.phone && cleanPhoneForWhatsApp(activeEnquiry.ownerContact.phone) ? (
                 <a
                   className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.contactPrimaryAction}`}

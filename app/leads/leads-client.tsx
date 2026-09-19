@@ -4607,7 +4607,7 @@ export default function LeadsClient({
             aria-describedby="delete-lead-confirm-copy"
           >
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
-              <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''} ${styles.leadDeleteHeader}`}>
+              <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''} ${styles.leadDeleteHeader} ${isDealerLeadsMode ? dialogStyles.inset : ''}`}>
                 <div>
                   <h3 id="delete-lead-confirm-title">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'Remove Asset Register?' : 'Delete lead?'}</h3>
                   <p id="delete-lead-confirm-copy">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'This removes your access and the client from My Clients. It does not delete the owner’s Asset Register.' : 'This permanently removes the lead from your My Leads inbox.'}</p>

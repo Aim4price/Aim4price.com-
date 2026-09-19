@@ -1542,7 +1542,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             aria-describedby="delete-tracking-copy"
           >
             <div className={`${assetStyles.deleteConfirmContent} ${leadStyles.leadDeleteContent}`}>
-              <div className={`${assetStyles.deleteConfirmHeader} ${workspaceStyles.modalHeader} ${dialogStyles.header} ${leadStyles.leadDeleteHeader}`}>
+              <div className={`${assetStyles.deleteConfirmHeader} ${workspaceStyles.modalHeader} ${dialogStyles.header} ${leadStyles.leadDeleteHeader} ${dialogStyles.inset}`}>
                 <div>
                   <h3 id="delete-tracking-title">Delete tracking?</h3>
                   <p id="delete-tracking-copy">This removes the asset from your Maintenance Tracker.</p>
