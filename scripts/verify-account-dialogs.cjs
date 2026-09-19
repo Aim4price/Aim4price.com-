@@ -30,7 +30,11 @@ async function main(){
       const body=u.pathname.startsWith('/api/dealer-cost-proposals/')?{ok:true,action:'store',invoice:data.invoice}:{ok:true,asset:data.asset,assets:[data.asset],items:[],notifications:[],permissions:data.asset.permissions};
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
     });
-    await page.evaluateOnNewDocument(()=>localStorage.setItem('aim4price.website-canvas.v2.intro','seen'));
+    await page.evaluateOnNewDocument(()=>{
+      // Match the canonical canvas test: CDP changes innerWidth but not outerWidth.
+      Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth});
+      localStorage.setItem('aim4price.website-canvas.v2.intro','seen');
+    });
     async function clickText(text){await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===t||b.querySelector('strong')?.textContent===t),{},text);await page.evaluate(t=>[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===t||b.querySelector('strong')?.textContent===t).click(),text);}
     async function capture(name,closeSelector){
       await page.waitForSelector(closeSelector);
@@ -66,9 +70,9 @@ async function main(){
     }
     // Cover the website card as well as native app modals. The three actions,
     // long asset title and recurring schedule reproduce the reported layout pressure.
-    for (const width of [1920, 1440, 1024, 768, 430]) {
+    for (const [width,native] of [[1920,false],[1440,false],[1024,false],[768,false],[430,false],[768,true],[430,true]]) {
       await page.setViewport({width,height:1080});
-      await page.goto('http://127.0.0.1:3036/account-dialog-validation?view=tracker',{waitUntil:'networkidle0',timeout:120000});
+      await page.goto('http://127.0.0.1:3036'+(native?'/owner-app':'')+'/account-dialog-validation?view='+(native?'tracker-app':'tracker'),{waitUntil:'networkidle0',timeout:120000});
       await page.waitForSelector('button[aria-label^="Manage 2023"]');
       await page.evaluate(()=>document.fonts.ready);
       const result=await page.evaluate(()=>{
@@ -81,14 +85,15 @@ async function main(){
         const actionRects=[...header.querySelectorAll('button')].map(el=>el.getBoundingClientRect());
         const overlaps=actionRects.some((r,i)=>actionRects.slice(i+1).some(s=>r.left<s.right&&r.right>s.left&&r.top<s.bottom&&r.bottom>s.top));
         card.scrollIntoView({block:'start'});
-        return {clipped,cutValues,overlaps,actions:actionRects.length};
+        return {clipped,cutValues,overlaps,actions:actionRects.length,viewportFits:bounds.left>=-2&&bounds.right<=innerWidth+2};
       });
-      await page.screenshot({path:path.join(output,`tracking-card-${width}.png`),fullPage:false});
+      await page.screenshot({path:path.join(output,`tracking-card-${native?'app':'website'}-${width}.png`),fullPage:false});
+      assert.equal(result.viewportFits,true,`Tracking card must fit viewport at ${width}`);
       assert.deepEqual(result.clipped,[],`Tracking card overflow at ${width}`);
       assert.deepEqual(result.cutValues,[],`Tracking detail values clipped at ${width}`);
       assert.equal(result.overlaps,false,`Tracking actions overlap at ${width}`);
       assert.equal(result.actions,3,'Service, History and Manage must all be tested');
-      console.log(`PASS expanded website tracking card at ${width}px`);
+      console.log(`PASS expanded ${native?'app':'website'} tracking card at ${width}px`);
     }
     assert.deepEqual(errors,[],'Browser runtime errors');
     assert.deepEqual(mutations,[],'Read-only fixture review must not submit mutations');
