@@ -4531,8 +4531,8 @@
   }
 }
 
-/* The surface and arrow controls stay fixed while the complete link list moves. */
-.navRail.navRailScrollable {
+/* Four complete links share a fixed rail; each gesture advances one item. */
+.navRail.navRailWindowed {
   display: flex;
   width: 38rem;
 }
@@ -4541,36 +4541,26 @@
   display: contents;
 }
 
-.navRailScrollable .navViewport {
+.navRailWindowed .navViewport {
   position: relative;
   display: flex;
   align-items: center;
   flex: 1 1 auto;
   min-width: 0;
   gap: 0.44rem;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-width: none;
   touch-action: pan-y pinch-zoom;
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
 }
 
-.navRailScrollable .navViewport::-webkit-scrollbar {
-  display: none;
-}
-
-.navRailScrollable .navLink {
-  flex: 0 0 auto;
+.navRailWindowed .navLink {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-inline: 1rem;
   cursor: inherit;
 }
 
-.navRailScrollable .navViewport[data-dragging='true'] {
+.navRailWindowed .navViewport[data-dragging='true'] {
   cursor: grabbing;
-}
-
-/* Keep keyboard focus visible inside the clipped rail. */
-.navRailScrollable .navLink:focus-visible {
-  outline-offset: -3px;
 }
