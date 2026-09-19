@@ -1,3 +1,4 @@
+import { APP_SESSION_COOKIE_MAX_AGE, isAppSessionCurrent } from './app-session-policy';
 import { currentAppRealm } from './app-realm-server';
 import { isMiddlemanAccountSubtype } from './middleman-account';
 import { createHmac, timingSafeEqual } from 'node:crypto';
@@ -12,7 +13,7 @@ import {
 export const MIDDLEMAN_APP_COOKIE = 'aim4price_middleman_app_v1';
 export const DEALER_APP_COOKIE = 'aim4price_dealer_app_v2';
 export const DEALER_APP_LEGACY_COOKIE = 'aim4price_dealer_app';
-export const DEALER_APP_MAX_AGE = 60 * 60 * 24 * 30;
+export const DEALER_APP_MAX_AGE = APP_SESSION_COOKIE_MAX_AGE;
 
 const DEALER_STAFF_ROLES = new Set<DealerStaffRole>([
   'owner',
@@ -29,10 +30,11 @@ type Payload = {
   role?: DealerStaffRole;
   version: number;
   exp: number;
+  persistent?: true;
   realm?: 'dealer' | 'middleman';
 };
 
-type NewPayload = Omit<Payload, 'exp' | 'role'> & { role: DealerStaffRole };
+type NewPayload = Omit<Payload, 'exp' | 'role' | 'persistent'> & { role: DealerStaffRole };
 
 type DealerAppCookieOptions = {
   httpOnly: true;
@@ -95,6 +97,7 @@ export function dealerAppLegacyCookieOptions(maxAge = 0): DealerAppCookieOptions
 export function createDealerAppToken(payload: NewPayload): string {
   const raw = Buffer.from(JSON.stringify({
     ...payload,
+    persistent: true,
     exp: Math.floor(Date.now() / 1000) + DEALER_APP_MAX_AGE,
   })).toString('base64url');
   return `${raw}.${sign(raw)}`;
@@ -119,7 +122,7 @@ function parse(token: string): Payload | null {
       || !Number.isInteger(payload.version)
       || payload.version < 1
       || typeof payload.exp !== 'number'
-      || payload.exp <= Date.now() / 1000
+      || !isAppSessionCurrent(payload.exp * 1000, payload.persistent)
       || (payload.role !== undefined && !DEALER_STAFF_ROLES.has(payload.role))
     ) {
       return null;

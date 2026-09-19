@@ -1,3 +1,4 @@
+import { APP_SESSION_COOKIE_MAX_AGE, isAppSessionCurrent } from './app-session-policy';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { getAccountProfile } from './account-profile';
@@ -5,13 +6,14 @@ import { getOwnerAppUserById } from './owner-app';
 import { currentAppRealm } from './app-realm-server';
 
 export const OWNER_APP_COOKIE = 'aim4price_owner_app';
-export const OWNER_APP_MAX_AGE = 60 * 60 * 12;
+export const OWNER_APP_MAX_AGE = APP_SESSION_COOKIE_MAX_AGE;
 
 type OwnerAppTokenPayload = {
   ownerAppUserId: string;
   parentOwnerUserId: string;
   version: number;
   exp: number;
+  persistent?: true;
 };
 
 export type OwnerAppSession = {
@@ -34,9 +36,10 @@ function sign(raw: string): string {
   return createHmac('sha256', sessionSecret()).update(raw).digest('base64url');
 }
 
-export function createOwnerAppToken(payload: Omit<OwnerAppTokenPayload, 'exp'>): string {
+export function createOwnerAppToken(payload: Omit<OwnerAppTokenPayload, 'exp' | 'persistent'>): string {
   const raw = Buffer.from(JSON.stringify({
     ...payload,
+    persistent: true,
     exp: Math.floor(Date.now() / 1000) + OWNER_APP_MAX_AGE,
   })).toString('base64url');
   return `${raw}.${sign(raw)}`;
@@ -51,7 +54,11 @@ function parseOwnerAppToken(token: string): OwnerAppTokenPayload | null {
 
   try {
     const payload = JSON.parse(Buffer.from(raw, 'base64url').toString()) as OwnerAppTokenPayload;
-    return payload.exp > Date.now() / 1000 ? payload : null;
+    if (!payload || typeof payload.ownerAppUserId !== 'string'
+      || !payload.ownerAppUserId || typeof payload.parentOwnerUserId !== 'string'
+      || !payload.parentOwnerUserId || !Number.isInteger(payload.version) || payload.version < 1
+      || typeof payload.exp !== 'number') return null;
+    return isAppSessionCurrent(payload.exp * 1000, payload.persistent) ? payload : null;
   } catch {
     return null;
   }

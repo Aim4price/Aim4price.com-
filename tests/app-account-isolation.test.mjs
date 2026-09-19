@@ -8,6 +8,7 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 async function load(path, deps = {}) {
+  if (path !== 'lib/app-session-policy.ts') deps = { './app-session-policy': await load('lib/app-session-policy.ts'), ...deps };
   const output = ts.transpileModule(await read(path), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const module = { exports: {} };
   new Function('require', 'module', 'exports', output)(id => id in deps ? deps[id] : require(id), module, module.exports);
@@ -116,8 +117,8 @@ test('shared authentication and Marketplace use only the selected app account', 
   realm = 'middleman';
   const realNow = Date.now;
   try {
-    Date.now = () => realNow() + 31 * 24 * 60 * 60 * 1000;
-    assert.equal(await auth.getServerSession({ allowDealerApp: true }), null);
+    Date.now = () => realNow() + 800 * 24 * 60 * 60 * 1000;
+    assert.equal((await auth.getServerSession({ allowDealerApp: true })).user.id, 'middleman');
   } finally { Date.now = realNow; }
   version = 2;
   assert.equal(await auth.getServerSession({ allowDealerApp: true }), null);
@@ -137,7 +138,7 @@ test('shared authentication and Marketplace use only the selected app account', 
 
 test('production cannot issue Owner or Field Manager tokens with development secrets', async () => {
   const owner = await load('lib/owner-app-session.ts', { 'next/headers': {}, './app-realm-server': {}, './account-profile': {}, './owner-app': {} });
-  const field = await load('lib/field-manager-session.ts', { './field-manager': {}, './scan-assets': {} });
+  const field = await load('lib/field-manager-session.ts', { './field-manager': {}, './scan-assets': {}, './account-profile': {} });
   const keys = ['NODE_ENV', 'BETTER_AUTH_SECRET', 'OWNER_APP_SECRET', 'FIELD_MANAGER_COOKIE_SECRET', 'SCAN_COOKIE_SECRET'];
   const saved = Object.fromEntries(keys.map(key => [key, process.env[key]]));
   try {

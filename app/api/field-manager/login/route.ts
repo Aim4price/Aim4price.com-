@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
     }
 
     const profile = await getAccountProfile({ id: manager.ownerUserId, name: null, email: null });
+    if (profile.accountType !== 'owner' || profile.accountStatus !== 'active') {
+      return NextResponse.json({ ok: false, error: 'This account is inactive.' }, { status: 403 });
+    }
     await markFieldManagerLastLogin(manager.id);
 
     const response = NextResponse.json({
