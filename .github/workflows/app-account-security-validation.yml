@@ -5,6 +5,9 @@ on:
     paths:
       - 'middleware.ts'
       - 'app/layout.tsx'
+      - 'app/app-session-keeper.tsx'
+      - 'app/*/layout.tsx'
+      - 'app/dealer/dealer-session-keeper.tsx'
       - 'lib/app-*.ts'
       - 'lib/auth-session.ts'
       - 'lib/*session*.ts'
@@ -15,6 +18,8 @@ on:
       - 'app/api/marketplace/**'
       - 'tests/app-account-isolation.test.mjs'
       - 'tests/separate-app-sessions.test.mjs'
+      - 'tests/persistent-app-sessions.test.mjs'
+      - 'tests/dealer-app-session-hardening.test.mjs'
       - '.github/workflows/app-account-security-validation.yml'
   workflow_dispatch:
 
@@ -34,4 +39,4 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - name: Verify app sessions and account isolation
-        run: node --test tests/app-account-isolation.test.mjs tests/separate-app-sessions.test.mjs
+        run: node --test tests/app-account-isolation.test.mjs tests/separate-app-sessions.test.mjs tests/persistent-app-sessions.test.mjs tests/dealer-app-session-hardening.test.mjs

@@ -28,6 +28,7 @@ test('Dealer and Middleman cookies and signed tokens cannot substitute for each 
   const jar = new Map();
   const { isMiddlemanAccountSubtype } = await load('lib/middleman-account.ts');
   const sessions = await load('lib/dealer-app-session.ts', {
+    './app-session-policy': await load('lib/app-session-policy.ts'),
     'next/headers': { cookies: async () => ({ get: (name) => jar.has(name) ? { value: jar.get(name) } : undefined }) },
     './app-realm-server': { currentAppRealm: async () => realm },
     './middleman-account': { isMiddlemanAccountSubtype },

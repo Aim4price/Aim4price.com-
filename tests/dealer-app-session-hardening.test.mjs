@@ -4,12 +4,12 @@ import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Dealer App sessions are role-bound and use a rolling 30-day cookie', () => {
+test('Dealer App sessions are role-bound and use a persistent renewable cookie', () => {
   const session = read('lib/dealer-app-session.ts');
   const login = read('app/api/dealer/login/route.ts');
 
   assert.match(session, /DEALER_APP_COOKIE = 'aim4price_dealer_app_v2'/);
-  assert.match(session, /DEALER_APP_MAX_AGE = 60 \* 60 \* 24 \* 30/);
+  assert.match(session, /DEALER_APP_MAX_AGE = APP_SESSION_COOKIE_MAX_AGE/);
   assert.match(session, /role\?: DealerStaffRole/);
   assert.match(session, /payload\.role && payload\.role !== role/);
   assert.match(session, /Dealer App session secret is not configured/);
@@ -31,7 +31,7 @@ test('Dealer App sessions are shared safely across the Aim4price hostnames', () 
 
 test('Active Dealer App sessions renew without redirecting on temporary failures', () => {
   const route = read('app/api/dealer/session/route.ts');
-  const keeper = read('app/dealer/dealer-session-keeper.tsx');
+  const keeper = read('app/app-session-keeper.tsx');
   const layout = read('app/dealer/layout.tsx');
 
   assert.match(route, /export async function POST\(request: NextRequest\)/);

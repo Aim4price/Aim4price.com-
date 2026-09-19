@@ -1,3 +1,5 @@
+import { getAccountProfile } from './account-profile';
+import { APP_SESSION_COOKIE_MAX_AGE, isAppSessionCurrent } from './app-session-policy';
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import {
@@ -12,7 +14,7 @@ export const FIELD_MANAGER_SESSION_COOKIE_NAME = "aim4price_field_manager";
 export const FIELD_MANAGER_SCAN_COOKIE_NAME = "aim4price_field_manager_scan";
 export const FIELD_MANAGER_FUEL_SCAN_COOKIE_NAME =
   "aim4price_field_manager_fuel_scan";
-export const FIELD_MANAGER_SESSION_MAX_AGE_SECONDS = 60 * 60 * 12;
+export const FIELD_MANAGER_SESSION_MAX_AGE_SECONDS = APP_SESSION_COOKIE_MAX_AGE;
 export const FIELD_MANAGER_SCAN_MAX_AGE_SECONDS = 60 * 45;
 
 type FieldManagerSessionClaims = {
@@ -22,6 +24,7 @@ type FieldManagerSessionClaims = {
   displayName: string;
   sessionVersion: number;
   sessionId: string;
+  persistent?: true;
   issuedAtMs: number;
   expiresAtMs: number;
 };
@@ -189,6 +192,7 @@ function readSessionClaims(token: string): FieldManagerSessionClaims | null {
     displayName,
     sessionVersion: Math.round(sessionVersion),
     sessionId,
+    persistent: parsed.persistent === true ? true : undefined,
     issuedAtMs,
     expiresAtMs,
   };
@@ -293,7 +297,8 @@ function sessionFromManager(
 
 export function applyFieldManagerSessionCookie(
   response: NextResponse,
-  manager: FieldManagerRecord,
+  manager: Pick<FieldManagerRecord, 'id' | 'ownerUserId' | 'username' | 'displayName' | 'sessionVersion'>,
+  sessionId: string = randomUUID(),
 ): ActiveFieldManagerSession {
   const now = Date.now();
   const claims: FieldManagerSessionClaims = {
@@ -302,7 +307,8 @@ export function applyFieldManagerSessionCookie(
     username: manager.username,
     displayName: manager.displayName,
     sessionVersion: manager.sessionVersion,
-    sessionId: randomUUID(),
+    sessionId,
+    persistent: true,
     issuedAtMs: now,
     expiresAtMs: now + FIELD_MANAGER_SESSION_MAX_AGE_SECONDS * 1000,
   };
@@ -457,7 +463,7 @@ export async function getActiveFieldManagerSessionFromRequest(
   )?.value;
   const claims = rawCookie ? readSessionClaims(rawCookie) : null;
 
-  if (!claims || claims.expiresAtMs <= Date.now()) {
+  if (!claims || !isAppSessionCurrent(claims.expiresAtMs, claims.persistent)) {
     return null;
   }
 
@@ -467,7 +473,11 @@ export async function getActiveFieldManagerSessionFromRequest(
     return null;
   }
 
-  return sessionFromManager(manager, claims);
+  const session = sessionFromManager(manager, claims);
+  if (!session) return null;
+  const profile = await getAccountProfile({ id: session.ownerUserId, name: null, email: null });
+  if (profile.accountType !== 'owner' || profile.accountStatus !== 'active') return null;
+  return session;
 }
 
 export async function requireActiveFieldManagerSession(
