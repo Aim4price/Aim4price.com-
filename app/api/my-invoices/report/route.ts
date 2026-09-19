@@ -194,7 +194,7 @@ export async function GET(request: NextRequest) {
         name: String(ownerFallbackUser.name ?? ''),
         email: String(ownerFallbackUser.email ?? ''),
       }),
-      getAssetRegisterReportLogoUrl(reportOwnerUserId),
+      getAssetRegisterReportLogoUrl(reportOwnerUserId, group?.registerId || workspace.accountantRegisterId, filters.assetId),
       listCostBudgetHistory(reportOwnerUserId),
       listMyInvoicesData(reportOwnerUserId, { assetId: filters.assetId, includeFuelSlipCosts: true }),
     ]);

@@ -186,7 +186,7 @@ export async function GET(request: NextRequest) {
         },
       ),
       getAccountProfile({ id: userId, name: session.user.name, email: session.user.email }),
-      getAssetRegisterReportLogoUrl(userId),
+      getAssetRegisterReportLogoUrl(userId, group?.registerId, filters.assetId),
     ]);
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const groupMemberIds = groupMemberAssetIds ? new Set(groupMemberAssetIds) : null;

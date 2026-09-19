@@ -66,6 +66,7 @@ import {
   type ReportMethodCard,
 } from '../../lib/report-print';
 import { openCanonicalReportUrl } from '../../lib/report-open';
+import { selectReportLogoUrl } from '../../lib/report-branding';
 import {
   GENERAL_ASSET_CATEGORIES,
   PROPERTY_ASSET_SUBTYPES,
@@ -5763,6 +5764,7 @@ type PrintableImageOptions = {
   maxDimension?: number;
   mimeType?: 'image/jpeg' | 'image/png' | 'image/webp';
   quality?: number;
+  requireEmbedded?: boolean;
 };
 
 const PRINT_REGISTER_THUMB_MAX_DIMENSION = 420;
@@ -5865,7 +5867,7 @@ async function preparePrintableImageUrl(value?: string | null, options: Printabl
     return null;
   }
 
-  if (isDataUrl(url) || typeof fetch === 'undefined') {
+  if ((isDataUrl(url) && !options.requireEmbedded) || typeof fetch === 'undefined') {
     return url;
   }
 
@@ -5876,25 +5878,40 @@ async function preparePrintableImageUrl(value?: string | null, options: Printabl
     });
 
     if (!response.ok) {
-      return url;
+      return options.requireEmbedded ? null : url;
     }
 
     const blob = await response.blob();
 
     if (!blob.size) {
-      return url;
+      return options.requireEmbedded ? null : url;
     }
 
     const contentType = String(response.headers.get('content-type') || blob.type || '').toLowerCase();
 
     if (contentType && !contentType.startsWith('image/') && contentType !== 'application/octet-stream') {
-      return url;
+      return options.requireEmbedded ? null : url;
     }
 
-    return (await resizeImageBlobForPrint(blob, options)) ?? (await blobToDataUrl(blob)) ?? url;
+    const embedded = await resizeImageBlobForPrint(blob, options);
+    return embedded ?? (options.requireEmbedded ? null : (await blobToDataUrl(blob)) ?? url);
   } catch {
-    return url;
+    return options.requireEmbedded ? null : url;
   }
+}
+
+async function prepareReportLogo(businessLogoUrl: string | undefined, register: AssetRegisterSummary | null): Promise<string> {
+  const fallback = '/brand/aim4price-mark-black.png';
+  const candidates = [selectReportLogoUrl(businessLogoUrl, null), selectReportLogoUrl('', register), fallback];
+  for (const candidate of candidates.filter(Boolean)) {
+    const embedded = await preparePrintableImageUrl(candidate, {
+      maxDimension: PRINT_LOGO_MAX_DIMENSION,
+      mimeType: 'image/png',
+      requireEmbedded: true,
+    });
+    if (embedded) return embedded;
+  }
+  return toAbsoluteUrl(fallback) ?? fallback;
 }
 
 async function mapWithConcurrency<T, R>(
@@ -6269,17 +6286,13 @@ function mergeProfileWithRegister(profile: AccountProfile | null, register: Asse
     return profile;
   }
 
-  const registerLogoUrl = register.showLogosOnRegister !== false
-    ? (Array.isArray(register.logoUrls) ? String(register.logoUrls[0] ?? '').trim() : '')
-    : '';
-
   return {
     ...profile,
     businessName: register.businessName || profile.businessName,
     email: register.email || profile.marketplaceEmail || '',
     marketplaceEmail: register.email || profile.marketplaceEmail || '',
     phone: register.phone || profile.phone,
-    logoUrl: registerLogoUrl,
+    logoUrl: selectReportLogoUrl(profile.logoUrl, register),
     addressLine1: register.addressLine1 || profile.addressLine1,
     addressLine2: '',
   };
@@ -6287,11 +6300,7 @@ function mergeProfileWithRegister(profile: AccountProfile | null, register: Asse
 
 
 function getRegisterReportLogoUrl(register: AssetRegisterSummary | null): string {
-  const registerLogoUrl = register?.showLogosOnRegister !== false && Array.isArray(register?.logoUrls)
-    ? String(register.logoUrls[0] ?? '').trim()
-    : '';
-
-  return toAbsoluteUrl(registerLogoUrl) ?? '';
+  return toAbsoluteUrl(selectReportLogoUrl('', register)) ?? '';
 }
 
 function loadLeafletMarkerCluster(leaflet: any): Promise<any> {
@@ -14333,11 +14342,12 @@ export default function AssetRegisterClient({
       reportWindow.document.body.textContent = 'Preparing your Aim4price report…';
     }
 
+    const businessProfile = accountProfile ?? await ensureAccountProfile();
+    const assetRegister = assetRegisters.find((register) => register.id === asset.registerId)
+      ?? (activeRegister?.id === asset.registerId || (!asset.registerId && activeRegister?.id !== COMBINED_REGISTER_ID)
+        ? activeRegister : null);
     const [reportLogoUrl, assetPhotoUrls] = await Promise.all([
-      preparePrintableImageUrl(getRegisterReportLogoUrl(activeRegister), {
-        maxDimension: PRINT_LOGO_MAX_DIMENSION,
-        mimeType: 'image/png',
-      }),
+      prepareReportLogo(businessProfile?.logoUrl, assetRegister),
       preparePrintableImageUrls(asset.photos, {
         maxDimension: PRINT_ASSET_SHEET_PHOTO_MAX_DIMENSION,
         mimeType: 'image/jpeg',
@@ -14407,7 +14417,7 @@ export default function AssetRegisterClient({
         ];
 
     const reportPayload: AssetSheetPayload = {
-      logoUrl: reportLogoUrl ?? getRegisterReportLogoUrl(activeRegister),
+      logoUrl: reportLogoUrl,
       generatedAt: formatDate(new Date().toISOString()),
       assetBadge: familyLabel,
       heroTitle: asset.title,
@@ -15468,18 +15478,13 @@ export default function AssetRegisterClient({
     const ownerName = buildOwnerName(profile);
     const ownerEmail = profile?.marketplaceEmail?.trim() || '—';
     const ownerPhone = profile?.phone?.trim() || '—';
-    const accountLogoUrl = toAbsoluteUrl(accountProfile?.logoUrl || profile?.logoUrl || '') ?? '';
-    const savedReportLogoUrl = getRegisterReportLogoUrl(activeRegister) || accountLogoUrl;
     const [reportLogoUrl, reportPhotoUrlByAssetId] = await Promise.all([
-      preparePrintableImageUrl(savedReportLogoUrl, {
-        maxDimension: PRINT_LOGO_MAX_DIMENSION,
-        mimeType: 'image/png',
-      }),
+      prepareReportLogo(accountProfile?.logoUrl || profile?.logoUrl, activeRegister),
       buildPrintableAssetThumbnailMap(orderedReportAssets),
     ]);
 
     const reportPayload: AssetRegisterSummaryPayload = {
-      logoUrl: reportLogoUrl ?? savedReportLogoUrl,
+      logoUrl: reportLogoUrl,
       generatedAt: formatDate(new Date().toISOString()),
       reportTitle: `${reportName} - ${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',

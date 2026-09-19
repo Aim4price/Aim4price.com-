@@ -42,6 +42,7 @@ function exportRoute({ authorized = true, slips = [] } = {}) {
   const mocks = {
     'next/server': { NextResponse },
     '../../../../../lib/account-profile': { getAccountProfile: async () => ({ businessName: 'Owner Farm', logoUrl: '' }) },
+    '../../../../../lib/asset-registers': { getAssetRegisterReportLogoUrl: async () => '' },
     '../../../../../lib/report-logo': { resolveReportLogoUrlForHtml: async () => '' },
     '../../../../../lib/owner-workspace-access': {
       resolveOwnerWorkspaceContext: async () => authorized ? { ok: true, context: { ownerUserId: 'owner' } } : { ok: false, response: new Response('', { status: 401 }) },

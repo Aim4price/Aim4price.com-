@@ -1,3 +1,4 @@
+import { getAssetRegisterReportLogoUrl } from '../../../../../lib/asset-registers';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import { resolveReportLogoUrlForHtml } from '../../../../../lib/report-logo';
 import { NextResponse } from 'next/server';
@@ -35,8 +36,21 @@ export async function POST(request: Request) {
     if (!filters && slips.length !== ids.size) return NextResponse.json({ error: 'Some selected slips are no longer available. Refresh and try again.' }, { status: 409 });
     if (!slips.length) return NextResponse.json({ error: 'No fuel slips match this asset and timeline.' }, { status: 404 });
     const profile = payload.format === 'pdf' ? await getAccountProfile({ id: workspace.ownerUserId }) : null;
-    const context = profile ? { accountName: profile.businessName || profile.displayName || profile.name, logoUrl: await resolveReportLogoUrlForHtml(profile.logoUrl || '', request.url) } : {};
-    const data = payload.format === 'xlsx' ? buildFuelSlipWorkbook(slips) : await renderReportHtmlToPdf(buildFuelSlipReportHtml(slips, context), { baseUrl: request.url });
+    const rawLogoUrl = profile
+      ? profile.logoUrl || await getAssetRegisterReportLogoUrl(
+        workspace.ownerUserId,
+        workspace.accountantRegisterId,
+        filters?.assetId === 'all' ? null : filters?.assetId,
+      )
+      : '';
+    const context = profile ? {
+      accountName: profile.businessName || profile.displayName || profile.name,
+      logoUrl: await resolveReportLogoUrlForHtml(rawLogoUrl, request.url),
+    } : {};
+    const data = payload.format === 'xlsx' ? buildFuelSlipWorkbook(slips) : await renderReportHtmlToPdf(buildFuelSlipReportHtml(slips, context), {
+      baseUrl: request.url,
+      cookie: request.headers.get('cookie') ?? '',
+    });
     return new NextResponse(new Uint8Array(data), { headers: {
       'Content-Type': payload.format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'application/pdf',
       'Content-Disposition': `attachment; filename="fuel-slips-${new Date().toISOString().slice(0, 10)}.${payload.format}"`,

@@ -1624,7 +1624,7 @@ export async function GET(request: NextRequest) {
       : includeFuelSlips
         ? `All fuel storage and fuel slip transactions for ${dateRange.label}.`
         : `All fuel storage transactions for ${dateRange.label}.`;
-    const rawLogoUrl = await getAssetRegisterReportLogoUrl(workspace.ownerUserId).catch(() => '');
+    const rawLogoUrl = await getAssetRegisterReportLogoUrl(workspace.ownerUserId, workspace.accountantRegisterId, assetId).catch(() => '');
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const reportOptions: FuelReportOptions = {
       assetTitle: selectedAsset?.title,

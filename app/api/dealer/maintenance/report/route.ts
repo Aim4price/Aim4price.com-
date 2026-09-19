@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
     });
     const [ownerProfile, rawLogoUrl] = await Promise.all([
       getAccountProfile({ id: ownerUserId }),
-      getAssetRegisterReportLogoUrl(ownerUserId),
+      getAssetRegisterReportLogoUrl(ownerUserId, undefined, filters.assetId),
     ]);
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const selectedAsset = findSelectedAsset(data.assets, filters);

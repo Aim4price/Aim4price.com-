@@ -31,10 +31,13 @@ export async function GET(request: NextRequest) {
         .map(item => `${mode}:${item.id}`),
     );
     if (!selectedItems.length) return NextResponse.json({ error: 'Select at least one checklist item.' }, { status: 400, headers });
-    const rawLogoUrl = await getAssetRegisterReportLogoUrl(userId).catch(() => '');
+    const rawLogoUrl = await getAssetRegisterReportLogoUrl(userId, asset.registerId).catch(() => '');
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const generatedDate = new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeZone: 'Africa/Johannesburg' }).format(new Date());
-    const pdf = await renderReportHtmlToPdf(buildAssetChecklistReportHtml(asset, checklist, selectedItems, { logoUrl, generatedDate }));
+    const pdf = await renderReportHtmlToPdf(buildAssetChecklistReportHtml(asset, checklist, selectedItems, { logoUrl, generatedDate }), {
+      baseUrl: request.url,
+      cookie: request.headers.get('cookie') ?? '',
+    });
     return new NextResponse(pdf, { headers: { ...headers, 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="maintenance-checklist.pdf"' } });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') return NextResponse.json({ error: 'The asset could not be found for your account.' }, { status: 404, headers });

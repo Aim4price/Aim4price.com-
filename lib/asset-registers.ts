@@ -1,5 +1,6 @@
 import { getDb } from './db';
 import { isDatabaseSchemaReady } from './database-schema-readiness';
+import { selectReportLogoUrl } from './report-branding';
 
 export type AssetRegisterSummary = {
   id: string;
@@ -118,7 +119,8 @@ function normalizeLogoUrls(value: unknown): string[] {
       const parsed = JSON.parse(trimmed) as unknown;
       values = Array.isArray(parsed) ? parsed : [trimmed];
     } catch {
-      values = trimmed.split(/[\n,]+/);
+      // The comma separates a data URL's MIME header from its image bytes.
+      values = /^data:image\//i.test(trimmed) ? [trimmed] : trimmed.split(/[\n,]+/);
     }
   }
 
@@ -1566,13 +1568,29 @@ export function getVisibleAssetRegisterLogoUrl(
   return normalizeLogoUrls(register.logoUrls)[0] ?? '';
 }
 
-export async function getAssetRegisterReportLogoUrl(userId: string, registerId?: string | null): Promise<string> {
-  const cleanedRegisterId = cleanText(registerId);
+export async function getAssetRegisterReportLogoUrl(
+  userId: string,
+  registerId?: string | null,
+  assetId?: string | null,
+): Promise<string> {
+  const profile = await readProfileDefaults(userId);
+  const businessLogo = selectReportLogoUrl(profile.logoUrls[0], null);
+  if (businessLogo) return businessLogo;
+
+  let cleanedRegisterId = cleanText(registerId);
+  if (!cleanedRegisterId && cleanText(assetId) && assetId !== 'all') {
+    const asset = await getDb().query<{ register_id: string | null }>(
+      'select register_id from asset_register_items where user_id = $1 and id::text = $2 limit 1',
+      [userId, cleanText(assetId)],
+    );
+    if (!asset.rows[0]) return '';
+    cleanedRegisterId = cleanText(asset.rows[0].register_id);
+  }
   const register = cleanedRegisterId
     ? await getAssetRegisterForUser(userId, cleanedRegisterId)
     : await getSelectedAssetRegister(userId);
 
-  return getVisibleAssetRegisterLogoUrl(register);
+  return selectReportLogoUrl('', register);
 }
 
 export async function userOwnsAssetRegister(userId: string, registerId: string | null | undefined): Promise<boolean> {

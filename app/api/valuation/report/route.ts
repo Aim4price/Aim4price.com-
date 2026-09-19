@@ -1,6 +1,7 @@
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
+import { getServerSession } from '../../../../lib/auth-session';
+import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
+import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -56,30 +57,12 @@ const AIM4PRICE_EMAIL = 'aim4price@gmail.com';
 const AIM4PRICE_PHONE = '0625721650';
 const FOOTER_DISCLAIMER =
   'Values are indicative Aim4price estimates based on replacement price, saved asset information, age, usage, condition and available asset inputs. This is not a certified appraisal, inspection report or guarantee of selling price.';
-const VALUATION_REPORT_LOGO_PUBLIC_PATH = '/brand/aim4price-mark-black.png';
-let cachedValuationReportLogoDataUri: string | null | undefined;
-
 async function getValuationReportLogoUrl(request: NextRequest): Promise<string> {
-  const fallbackLogoUrl = new URL(VALUATION_REPORT_LOGO_PUBLIC_PATH, request.url).toString();
-
-  if (cachedValuationReportLogoDataUri) {
-    return cachedValuationReportLogoDataUri;
-  }
-
-  if (cachedValuationReportLogoDataUri === null) {
-    return fallbackLogoUrl;
-  }
-
-  try {
-    const logoPath = path.join(process.cwd(), 'public', 'brand', 'aim4price-mark-black.png');
-    const logoBuffer = await readFile(logoPath);
-    cachedValuationReportLogoDataUri = `data:image/png;base64,${logoBuffer.toString('base64')}`;
-    return cachedValuationReportLogoDataUri;
-  } catch (error) {
-    console.warn('valuation report logo fallback used', error);
-    cachedValuationReportLogoDataUri = null;
-    return fallbackLogoUrl;
-  }
+  const session = await getServerSession({ allowOwnerApp: true, allowDealerApp: true });
+  const rawLogoUrl = session?.user?.id
+    ? await getAssetRegisterReportLogoUrl(session.user.id).catch(() => '')
+    : '';
+  return resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

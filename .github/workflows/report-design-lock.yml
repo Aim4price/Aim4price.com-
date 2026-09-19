@@ -77,7 +77,7 @@ jobs:
         run: npm run test:report-design
 
       - name: Verify report access and opening regressions
-        run: node --experimental-strip-types --test tests/app-account-isolation.test.mjs tests/asset-register-summary-export.test.mjs tests/rich-report-template-parity.test.mjs tests/asset-map-report.test.mjs
+        run: node --experimental-strip-types --test tests/app-account-isolation.test.mjs tests/asset-register-summary-export.test.mjs tests/rich-report-template-parity.test.mjs tests/asset-map-report.test.mjs tests/report-branding.test.mjs
 
       - name: Verify accountant permissions
         run: npm run test:accountant-workspace

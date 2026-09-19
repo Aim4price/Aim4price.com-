@@ -1,3 +1,4 @@
+import { resolveReportLogoUrlForHtml } from '../../../../../lib/report-logo';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import {
@@ -104,7 +105,7 @@ async function loadDetail(ownerUserId: string, assetId: string) {
       province: profile.province,
       area: profile.marketplaceLocation || profile.townCity,
       address: [profile.addressLine1, profile.addressLine2, profile.townCity, profile.province].filter(Boolean).join(', '),
-      reportLogoUrl,
+      reportLogoUrl: await resolveReportLogoUrlForHtml(reportLogoUrl),
     },
   };
 }
