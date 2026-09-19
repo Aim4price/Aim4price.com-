@@ -465,7 +465,7 @@ export default function HomeHeroExperience() {
 
                   <p className={styles.heroPromiseText}>
                     Manage your vehicles, machinery and equipment in one place. Keep asset details,
-                    estimated values, documents, maintenance, budgets and costs connected.
+                    estimated values, documents, maintenance, budgets and costs connected to individual assets.
                   </p>
 
                   <div className={styles.heroActions}>
