@@ -3629,3 +3629,26 @@
 .heroSection[data-motion-paused='true'] :is(.assetPreviewState, .manageTile, .reportRow, .issueCard, .serviceCard, .featureNarrativeLayer h2, .featureNarrativeCopy p) {
   animation-play-state: paused;
 }
+
+/* The timer shares the card's moving container so it follows every scene. */
+.featureCountdown {
+  position: absolute;
+  z-index: 2;
+  top: 0.55rem;
+  left: 5rem;
+  right: 3.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #315c4d;
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.featureCountdown > span:first-child { min-width: 5.2rem; white-space: nowrap; }
+.featureCountdownTrack { height: 3px; flex: 1; overflow: hidden; border-radius: 3px; background: #d5e7df; }
+.featureCountdownTrack > span { display: block; width: 100%; height: 100%; background: #169a70; transform-origin: left; transition: transform 100ms linear; }
+.featureCountdown button { padding: 0.22rem 0.5rem; border: 1px solid #bcd9cd; border-radius: 0.4rem; color: #185a43; background: #f6fbf8; font: inherit; cursor: pointer; }
+button.storyHeroLogo { padding: 0; border: 0; background: transparent; cursor: pointer; }
+.heroSection[data-story-step='brand'] button.storyHeroLogo { pointer-events: auto; }
+button.storyHeroLogo:focus-visible, .featureCountdown button:focus-visible { outline: 3px solid #169a70; outline-offset: 5px; }

@@ -93,6 +93,8 @@ const clampStoryIndex = (index: number) =>
 export default function HomeHeroExperience() {
   const [storyStepIndex, setStoryStepIndex] = useState(0);
   const [typedCount, setTypedCount] = useState(0);
+  const [remainingMs, setRemainingMs] = useState(STORY_DURATIONS.brand);
+  const clockRef = useRef({ step: 0, remaining: STORY_DURATIONS.brand });
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('worth');
   const [canAutoplay, setCanAutoplay] = useState(false);
   const [isAutoplaying, setIsAutoplaying] = useState(false);
@@ -186,6 +188,11 @@ export default function HomeHeroExperience() {
   }, []);
 
   useEffect(() => {
+    const storyStep = HERO_STORY_STEPS[storyStepIndex] ?? HERO_STORY_STEPS[0];
+    if (clockRef.current.step !== storyStepIndex) {
+      clockRef.current = { step: storyStepIndex, remaining: STORY_DURATIONS[storyStep] };
+      setRemainingMs(clockRef.current.remaining);
+    }
     if (
       !canAutoplay ||
       !isPageVisible ||
@@ -198,8 +205,11 @@ export default function HomeHeroExperience() {
       return undefined;
     }
 
-    const storyStep = HERO_STORY_STEPS[storyStepIndex] ?? HERO_STORY_STEPS[0];
     setIsAutoplaying(true);
+    const deadline = performance.now() + clockRef.current.remaining;
+    const tick = () => setRemainingMs(Math.max(0, deadline - performance.now()));
+    tick();
+    const countdown = window.setInterval(tick, 100);
 
     const timer = window.setTimeout(() => {
       if (autoplayFinishedRef.current) return;
@@ -210,9 +220,13 @@ export default function HomeHeroExperience() {
       }
 
       updateStoryStep(storyStepIndex + 1);
-    }, STORY_DURATIONS[storyStep]);
+    }, clockRef.current.remaining);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(countdown);
+      clockRef.current.remaining = Math.max(0, deadline - performance.now());
+    };
   }, [
     canAutoplay,
     finishAutoplay,
@@ -366,6 +380,26 @@ export default function HomeHeroExperience() {
     return () => window.clearTimeout(timer);
   }, [canAutoplay, storyStepIndex, isPaused, isPageVisible, isHeroVisible, typedCount]);
 
+  const startStory = () => {
+    autoplayFinishedRef.current = false;
+    setHasAutoplayFinished(false);
+    setIsManuallyControlled(false);
+    setIsPaused(false);
+    // A click starts the product story immediately, after the floating logo.
+    updateStoryStep(canAutoplay ? 1 : FEATURE_START_INDEX);
+  };
+
+  const toggleFeaturePlayback = () => {
+    if (isAutoplaying) {
+      setIsPaused(true);
+      return;
+    }
+    autoplayFinishedRef.current = false;
+    setHasAutoplayFinished(false);
+    setIsManuallyControlled(false);
+    setIsPaused(false);
+  };
+
   const handleQuestionChange = (question: QuestionKey, index: number) => {
     claimManualControl();
     setActiveQuestion(question);
@@ -397,7 +431,7 @@ export default function HomeHeroExperience() {
 
   const handleStoryFocus = (event: FocusEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
-    if (target.closest('[data-story-pause-control]')) return;
+    if (target.closest('[data-story-pause-control], [data-story-start], [data-feature-playback]')) return;
 
     claimManualControl();
   };
@@ -492,7 +526,7 @@ export default function HomeHeroExperience() {
                 </div>
               </div>
 
-              <div className={styles.storyHeroLogo} aria-hidden="true">
+              <button type="button" className={styles.storyHeroLogo} data-story-start aria-label="Start homepage animation" onClick={startStory}>
                 <Image
                   src="/brand/aim4price-mark-black.png"
                   alt=""
@@ -502,9 +536,21 @@ export default function HomeHeroExperience() {
                   className={styles.storyHeroLogoImage}
                   priority
                 />
-              </div>
+              </button>
 
               <div ref={assetMotionRef} className={styles.assetStageMotion}>
+                {storyMode === 'features' && canAutoplay ? (
+                  <div className={styles.featureCountdown} data-feature-countdown>
+                    <span>{Math.ceil(remainingMs / 1000)}s {isAutoplaying ? 'remaining' : 'paused'}</span>
+                    <span className={styles.featureCountdownTrack} aria-hidden="true">
+                      <span style={{ transform: `scaleX(${remainingMs / HERO_FEATURE_DURATION_MS})` }} />
+                    </span>
+                    <button type="button" data-feature-playback onClick={toggleFeaturePlayback}
+                      aria-label={isAutoplaying ? 'Pause card animation' : 'Play card animation'}>
+                      {isAutoplaying ? 'Pause' : 'Play'}
+                    </button>
+                  </div>
+                ) : null}
                 <HomeAssetPreview
                   showRegister={storyStepIndex < FEATURE_START_INDEX}
                   activeQuestion={activeQuestion}
