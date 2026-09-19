@@ -1,43 +1,43 @@
 .page { display: block; }
 .page svg { width: 1.1rem; height: 1.1rem; flex-shrink: 0; }
 .page a { text-decoration: none; }
-.page .alertButton[aria-pressed=true] { background: #e6f7ed; border-color: #9fd1b4; box-shadow: 0 0 0 2px #9fd1b4; }
-.results, .progressLabels, .meta { display: flex; justify-content: space-between; gap: 1rem; color: #627386; }
+.page .alertButton[aria-pressed=true] { background: var(--app-surface-soft, #e6f7ed); border-color: var(--app-accent, #9fd1b4); box-shadow: 0 0 0 2px var(--app-shadow-colour, #9fd1b4); }
+.results, .progressLabels, .meta { display: flex; justify-content: space-between; gap: 1rem; color: var(--app-info, #627386); }
 .results { margin-bottom: 1rem; }
-.results button { border: 0; background: transparent; color: #14583f; font: inherit; cursor: pointer; text-decoration: underline; }
+.results button { border: 0; background: transparent; color: var(--app-text, #14583f); font: inherit; cursor: pointer; text-decoration: underline; }
 .card { --budget-color: #197454; margin-bottom: 1rem; }
 .card[data-status=warning] { --budget-color: #a76b12; }
 .card[data-status=over_budget] { --budget-color: #b44242; }
 .cardHeading { display: flex; justify-content: space-between; align-items: start; gap: 1.4rem; margin-bottom: 1.2rem; }
 .cardHeading > div { min-width: 0; display: grid; gap: .7rem; }
-.status { color: var(--budget-color); font-size: .86rem; font-weight: 750; line-height: 1.4; white-space: nowrap; padding: .35rem .75rem; border: 1px solid color-mix(in srgb, var(--budget-color) 25%, white); border-radius: 1.5rem; background: color-mix(in srgb, var(--budget-color) 7%, white); }
+.status { color: var(--app-danger, var(--budget-color)); font-size: .86rem; font-weight: 750; line-height: 1.4; white-space: nowrap; padding: .35rem .75rem; border: 1px solid color-mix(in srgb, var(--app-danger-line, var(--budget-color)) 25%, var(--app-line, white)); border-radius: 1.5rem; background: color-mix(in srgb, var(--app-danger-soft, var(--budget-color)) 7%, var(--app-surface, white)); }
 .cardBody { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: end; gap: 1.6rem; }
 .metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1.25rem; margin: 0 0 .9rem; }
-.metrics dt { color: #627386; font-size: .86rem; font-weight: 650; margin-bottom: .3rem; }
-.metrics dd { margin: 0; font-size: 1.45rem; font-weight: 800; line-height: 1.2; color: #073b30; overflow-wrap: anywhere; }
-.metrics div:last-child dd { color: var(--budget-color); }
-.track { position: relative; height: .5rem; background: #e5ecee; border-radius: 1rem; overflow: hidden; }
-.track span { display: block; height: 100%; background: var(--budget-color); border-radius: inherit; }
-.track i { position: absolute; top: 0; height: 100%; width: 2px; background: #6c7e76; }
+.metrics dt { color: var(--app-info, #627386); font-size: .86rem; font-weight: 650; margin-bottom: .3rem; }
+.metrics dd { margin: 0; font-size: 1.45rem; font-weight: 800; line-height: 1.2; color: var(--app-text, #073b30); overflow-wrap: anywhere; }
+.metrics div:last-child dd { color: var(--app-danger, var(--budget-color)); }
+.track { position: relative; height: .5rem; background: var(--app-info-soft, #e5ecee); border-radius: 1rem; overflow: hidden; }
+.track span { display: block; height: 100%; background: var(--app-danger-soft, var(--budget-color)); border-radius: inherit; }
+.track i { position: absolute; top: 0; height: 100%; width: 2px; background: var(--app-surface-soft, #6c7e76); }
 .progressLabels { margin-top: .45rem; font-size: .8rem; font-weight: 650; }
-.progressLabels strong { color: var(--budget-color); }
+.progressLabels strong { color: var(--app-danger, var(--budget-color)); }
 .cardActions { white-space: nowrap; display: flex; gap: .65rem; padding-bottom: .05rem; }
 .cardActions a, .cardActions button { min-width: 150px; gap: .55rem; }
-.cardActions .viewCosts { border-color: #8fc0ff; background: linear-gradient(180deg,#fff,#edf6ff); color: #164c77; }
+.cardActions .viewCosts { border-color: var(--app-info-line, #8fc0ff); background: linear-gradient(180deg,var(--app-surface, #fff),var(--app-info-soft, #edf6ff)); color: var(--app-info, #164c77); }
 .meta { font-size: .8rem; font-weight: 650; margin-top: .85rem; }
 .overlay { position: fixed; inset: 0; z-index: 1500; display: grid; place-items: center; padding: 24px; background: var(--modal-backdrop-color);
   -webkit-backdrop-filter: var(--modal-backdrop-filter);
   backdrop-filter: var(--modal-backdrop-filter);
 }
-.dialog { width: min(700px,100%); max-height: calc(var(--website-design-vh, 1dvh) * 90); overflow: auto; background: linear-gradient(#fff,#f5faf7); padding: 32px; border: 1px solid #d6e4dd; border-radius: 28px; box-shadow: 0 24px 70px #12352c33; }
+.dialog { width: min(700px,100%); max-height: calc(var(--website-design-vh, 1dvh) * 90); overflow: auto; background: linear-gradient(var(--app-surface, #fff),var(--app-surface, #f5faf7)); padding: 32px; border: 1px solid var(--app-line, #d6e4dd); border-radius: 28px; box-shadow: 0 24px 70px var(--app-shadow-colour, #12352c33); }
 .dialog header { display: flex; align-items: start; justify-content: space-between; gap: 24px; }
-.dialog h2 { margin: 0; font-size: 30px; color: #173c32; }
-.dialog p { color: #657b72; }
-.dialog button { font: inherit; font-weight: 700; padding: 16px 22px; border-radius: 16px; border: 1px solid #bfd7ca; background: #eef8f2; color: #173c32; cursor: pointer; }
+.dialog h2 { margin: 0; font-size: 30px; color: var(--app-text, #173c32); }
+.dialog p { color: var(--app-muted, #657b72); }
+.dialog button { font: inherit; font-weight: 700; padding: 16px 22px; border-radius: 16px; border: 1px solid var(--app-line, #bfd7ca); background: var(--app-surface-soft, #eef8f2); color: var(--app-text, #173c32); cursor: pointer; }
 .dialogActions { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
-.dialog .deleteButton { color: #ad3838; border-color: #edbbbb; background: #fff5f5; }
+.dialog .deleteButton { color: var(--app-danger, #ad3838); border-color: var(--app-danger-line, #edbbbb); background: var(--app-danger-soft, #fff5f5); }
 .page button:disabled { opacity: .55; cursor: not-allowed; }
-.page :is(button,a,input):focus-visible, .dialog button:focus-visible { outline: 3px solid #70b797; outline-offset: 3px; }
+.page :is(button,a,input):focus-visible, .dialog button:focus-visible { outline: 3px solid var(--app-accent, #70b797); outline-offset: 3px; }
 @media(max-width: 900px) {
   :global(:where(html:not(:has([data-website-canvas])))) .cardBody { grid-template-columns: 1fr; gap: 1rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .cardActions { justify-self: end; }
@@ -55,14 +55,14 @@
 
 .spentBlock { display: grid; gap: .25rem; justify-items: end; flex-shrink: 0; }
 .progressBlock { min-width: 0; max-width: 48rem; align-self: center; }
-.detailsNote { margin: .75rem 0 1rem; color: #697d8b; font-size: .85rem; }
+.detailsNote { margin: .75rem 0 1rem; color: var(--app-muted, #697d8b); font-size: .85rem; }
 .costList { list-style: none; padding: 0; margin: 0; }
-.costLine { display: flex; justify-content: space-between; align-items: start; gap: 1.5rem; padding: .9rem 0; border-top: 1px solid #e0e9e7; color: #304d46; font-size: .95rem; }
+.costLine { display: flex; justify-content: space-between; align-items: start; gap: 1.5rem; padding: .9rem 0; border-top: 1px solid var(--app-line, #e0e9e7); color: var(--app-text, #304d46); font-size: .95rem; }
 .costLine > div { min-width: 0; overflow-wrap: anywhere; }
 .costLine > strong { white-space: nowrap; }
-.costLine p { margin: .35rem 0 0; color: #697d8b; font-size: .85rem; }
-.costTotal { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid #dce7e7; color: #164d3f; }
-.retryButton { padding: .65rem 1rem; border: 1px solid #bdd7ca; border-radius: .8rem; color: #14583f; background: #f0faf5; font: inherit; cursor: pointer; }
+.costLine p { margin: .35rem 0 0; color: var(--app-muted, #697d8b); font-size: .85rem; }
+.costTotal { display: flex; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--app-line, #dce7e7); color: var(--app-text, #164d3f); }
+.retryButton { padding: .65rem 1rem; border: 1px solid var(--app-line, #bdd7ca); border-radius: .8rem; color: var(--app-text, #14583f); background: var(--app-surface-soft, #f0faf5); font: inherit; cursor: pointer; }
 @media(max-width: 600px) {
   :global(:where(html:not(:has([data-website-canvas])))) .spentBlock { justify-items: start; }
   :global(:where(html:not(:has([data-website-canvas])))) .costLine { flex-direction: column; gap: .5rem; }

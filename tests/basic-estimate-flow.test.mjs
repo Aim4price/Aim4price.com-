@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile } from './helpers/light-theme-source.mjs';
 import test from 'node:test';
 import { resolveCatalogueGuide } from '../lib/basic-catalogue-guide.ts';
 

@@ -11,13 +11,13 @@
   margin-top: 1rem;
   padding: 0.72rem 0.82rem;
   overflow: hidden;
-  border: 1px solid rgba(8, 96, 64, 0.92);
+  border: 1px solid var(--app-line, rgba(8, 96, 64, 0.92));
   border-radius: 1.05rem;
   color: #ffffff;
   background: linear-gradient(135deg, #168158 0%, #116d4b 58%, #0f6848 100%);
   box-shadow:
-    0 14px 28px rgba(13, 98, 67, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 14px 28px var(--app-shadow-colour, rgba(13, 98, 67, 0.18)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2));
   font-family: inherit;
   text-decoration: none;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
@@ -25,11 +25,11 @@
 
 .action:hover {
   transform: translateY(-1px);
-  border-color: #07593b;
+  border-color: var(--app-line, #07593b);
   background: linear-gradient(135deg, #147851 0%, #0f6847 58%, #0b5b3e 100%);
   box-shadow:
-    0 18px 34px rgba(13, 98, 67, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 18px 34px var(--app-shadow-colour, rgba(13, 98, 67, 0.24)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2));
 }
 
 .action:active {
@@ -37,7 +37,7 @@
 }
 
 .action:focus-visible {
-  outline: 3px solid #173f67;
+  outline: 3px solid var(--app-info-line, #173f67);
   outline-offset: 3px;
 }
 
@@ -47,8 +47,8 @@
   place-items: center;
   flex: 0 0 auto;
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: var(--app-surface-soft, rgba(255, 255, 255, 0.14));
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.22));
 }
 
 .iconSurface {

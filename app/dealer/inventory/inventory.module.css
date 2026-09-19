@@ -1,7 +1,7 @@
 .page {
   min-height: 100vh;
   padding-top: calc(68px + env(safe-area-inset-top));
-  background: #f3f6f8;
+  background: var(--app-info-soft, #f3f6f8);
 }
 
 .contextBar {
@@ -12,10 +12,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid #d8e8df;
+  border: 1px solid var(--app-line, #d8e8df);
   border-radius: 1.25rem;
-  background: #edf6f1;
-  color: #17362c;
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #17362c);
 }
 
 .contextBar > div {
@@ -24,7 +24,7 @@
 }
 
 .contextBar span {
-  color: #497064;
+  color: var(--app-accent, #497064);
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.08em;
@@ -37,7 +37,7 @@
 
 .contextBar p {
   margin: 0;
-  color: #5f746d;
+  color: var(--app-muted, #5f746d);
   font-size: 0.86rem;
 }
 

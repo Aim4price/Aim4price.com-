@@ -5,20 +5,20 @@
   display: grid;
   gap: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.8), 2.25rem);
-  border: 1px solid rgba(21, 75, 58, 0.12);
+  border: 1px solid var(--app-line, rgba(21, 75, 58, 0.12));
   border-radius: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2), 1.8rem);
   background:
-    radial-gradient(circle at 4% 0%, rgba(46, 166, 119, 0.16) 0%, transparent 28rem),
-    radial-gradient(circle at 100% 100%, rgba(67, 119, 210, 0.15) 0%, transparent 27rem),
-    linear-gradient(135deg, #ffffff 0%, #f5faf7 52%, #f4f8fd 100%);
+    radial-gradient(circle at 4% 0%, var(--app-surface-soft, rgba(46, 166, 119, 0.16)) 0%, transparent 28rem),
+    radial-gradient(circle at 100% 100%, var(--app-info-soft, rgba(67, 119, 210, 0.15)) 0%, transparent 27rem),
+    linear-gradient(135deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f5faf7) 52%, var(--app-info-soft, #f4f8fd) 100%);
   box-shadow:
-    0 26px 65px rgba(16, 49, 39, 0.09),
-    0 8px 22px rgba(16, 49, 39, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 26px 65px var(--app-shadow-colour, rgba(16, 49, 39, 0.09)),
+    0 8px 22px var(--app-shadow-colour, rgba(16, 49, 39, 0.045)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
 .usernamePreview {
-  color: #176b50;
+  color: var(--app-text, #176b50);
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -32,7 +32,7 @@
   width: 28rem;
   height: 28rem;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(32, 139, 100, 0.13), transparent 70%);
+  background: radial-gradient(circle, var(--app-surface-soft, rgba(32, 139, 100, 0.13)), transparent 70%);
   pointer-events: none;
 }
 
@@ -43,7 +43,7 @@
 }
 
 .loginLabel {
-  color: #237056;
+  color: var(--app-text, #237056);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.085em;
@@ -53,7 +53,7 @@
 
 .launcherIntro h1 {
   margin: 0;
-  color: #0d382d;
+  color: var(--app-text, #0d382d);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(2.15rem, calc(var(--website-design-vw, 1vw) * 4.5), 3.65rem);
   font-weight: 900;
@@ -65,7 +65,7 @@
 .launcherIntro p {
   max-width: 68ch;
   margin: 0;
-  color: #60746d;
+  color: var(--app-muted, #60746d);
   font-size: clamp(0.95rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.08rem);
   font-weight: 600;
   line-height: 1.58;
@@ -89,15 +89,15 @@
   align-items: center;
   gap: clamp(0.9rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.25rem);
   padding: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem);
-  border: 1px solid rgba(18, 72, 54, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 72, 54, 0.14));
   border-radius: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.55rem);
-  color: #123e31;
+  color: var(--app-text, #123e31);
   font: inherit;
   text-align: left;
   cursor: pointer;
   box-shadow:
-    0 16px 34px rgba(17, 58, 45, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 16px 34px var(--app-shadow-colour, rgba(17, 58, 45, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   transition:
     transform 170ms ease,
     border-color 170ms ease,
@@ -107,30 +107,30 @@
 
 .actionButtonNew {
   background:
-    radial-gradient(circle at 0 0, rgba(37, 151, 108, 0.12), transparent 45%),
-    linear-gradient(180deg, #ffffff 0%, #edf9f3 100%);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(37, 151, 108, 0.12)), transparent 45%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf9f3) 100%);
 }
 
 .actionButtonManage {
   background:
-    radial-gradient(circle at 100% 0, rgba(54, 104, 194, 0.11), transparent 45%),
-    linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
+    radial-gradient(circle at 100% 0, var(--app-info-soft, rgba(54, 104, 194, 0.11)), transparent 45%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #eef5fb) 100%);
 }
 
 .actionButton:hover {
   transform: translateY(-3px);
-  border-color: rgba(24, 112, 81, 0.28);
+  border-color: var(--app-line, rgba(24, 112, 81, 0.28));
   box-shadow:
-    0 22px 44px rgba(17, 58, 45, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 22px 44px var(--app-shadow-colour, rgba(17, 58, 45, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .actionButton:focus-visible {
   outline: none;
-  border-color: rgba(24, 112, 81, 0.42);
+  border-color: var(--app-accent, rgba(24, 112, 81, 0.42));
   box-shadow:
-    0 0 0 5px rgba(31, 138, 102, 0.12),
-    0 22px 44px rgba(17, 58, 45, 0.11);
+    0 0 0 5px var(--app-shadow-colour, rgba(31, 138, 102, 0.12)),
+    0 22px 44px var(--app-shadow-colour, rgba(17, 58, 45, 0.11));
 }
 
 .actionIcon {
@@ -138,18 +138,18 @@
   height: clamp(3.7rem, calc(var(--website-design-vw, 1vw) * 6), 4.8rem);
   display: grid;
   place-items: center;
-  border: 1px solid rgba(31, 138, 102, 0.16);
+  border: 1px solid var(--app-line, rgba(31, 138, 102, 0.16));
   border-radius: 1.25rem;
-  color: #176047;
-  background: rgba(255, 255, 255, 0.88);
+  color: var(--app-text, #176047);
+  background: var(--app-surface, rgba(255, 255, 255, 0.88));
   box-shadow:
-    0 12px 24px rgba(18, 73, 54, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 12px 24px var(--app-shadow-colour, rgba(18, 73, 54, 0.09)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .actionButtonManage .actionIcon {
-  color: #244f7d;
-  border-color: rgba(54, 104, 194, 0.16);
+  color: var(--app-info, #244f7d);
+  border-color: var(--app-info-line, rgba(54, 104, 194, 0.16));
 }
 
 .actionIcon svg {
@@ -164,7 +164,7 @@
 }
 
 .actionCopy strong {
-  color: #0f3b30;
+  color: var(--app-text, #0f3b30);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.7), 2.25rem);
   font-weight: 900;
@@ -174,7 +174,7 @@
 
 .actionCopy small {
   max-width: 38ch;
-  color: #60746d;
+  color: var(--app-muted, #60746d);
   font-size: clamp(0.82rem, calc(var(--website-design-vw, 1vw) * 1.15), 0.94rem);
   font-weight: 650;
   line-height: 1.48;
@@ -199,10 +199,10 @@
   align-items: center;
   justify-content: center;
   padding: 0 0.72rem;
-  border: 1px solid rgba(36, 79, 125, 0.14);
+  border: 1px solid var(--app-info-line, rgba(36, 79, 125, 0.14));
   border-radius: 999px;
-  color: #244f7d;
-  background: rgba(255, 255, 255, 0.88);
+  color: var(--app-info, #244f7d);
+  background: var(--app-surface, rgba(255, 255, 255, 0.88));
   font-size: 0.84rem;
   font-weight: 900;
   white-space: nowrap;
@@ -213,9 +213,9 @@
   height: 2.45rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(18, 72, 54, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 72, 54, 0.12));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--app-surface, rgba(255, 255, 255, 0.72));
   font-size: 1.45rem;
   line-height: 1;
   transition: transform 170ms ease;
@@ -232,10 +232,10 @@
   align-items: stretch;
   gap: 1rem;
   padding: 1rem 1.05rem;
-  border: 1px solid rgba(18, 72, 54, 0.11);
+  border: 1px solid var(--app-line, rgba(18, 72, 54, 0.11));
   border-radius: 1.15rem;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  background: var(--app-surface, rgba(255, 255, 255, 0.78));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.94));
 }
 
 .loginStripStreamlined {
@@ -260,25 +260,25 @@
   align-items: center;
   gap: 0.85rem;
   padding: 0.55rem;
-  border: 1px solid rgba(18, 72, 54, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 72, 54, 0.12));
   border-radius: 1rem;
   color: inherit;
-  background: linear-gradient(145deg, #ffffff 0%, #eff8f3 100%);
-  box-shadow: 0 10px 24px rgba(17, 58, 45, 0.06);
+  background: linear-gradient(145deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eff8f3) 100%);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(17, 58, 45, 0.06));
   text-decoration: none;
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .qrHandoff:hover {
   transform: translateY(-1px);
-  border-color: rgba(31, 138, 102, 0.3);
-  box-shadow: 0 14px 28px rgba(17, 58, 45, 0.09);
+  border-color: var(--app-line, rgba(31, 138, 102, 0.3));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(17, 58, 45, 0.09));
 }
 
 .qrHandoff:focus-visible {
   outline: none;
-  border-color: rgba(24, 112, 81, 0.44);
-  box-shadow: 0 0 0 5px rgba(31, 138, 102, 0.12);
+  border-color: var(--app-accent, rgba(24, 112, 81, 0.44));
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(31, 138, 102, 0.12));
 }
 
 .qrImageFrame {
@@ -288,9 +288,9 @@
   place-items: center;
   overflow: hidden;
   padding: 0.32rem;
-  border: 1px solid rgba(18, 72, 54, 0.11);
+  border: 1px solid var(--app-line, rgba(18, 72, 54, 0.11));
   border-radius: 0.82rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .qrImageFrame img {
@@ -301,7 +301,7 @@
 }
 
 .qrFallback {
-  color: #667a72;
+  color: var(--app-muted, #667a72);
   font-size: 0.72rem;
   font-weight: 850;
   line-height: 1.3;
@@ -315,14 +315,14 @@
 }
 
 .qrCopy strong {
-  color: #123e31;
+  color: var(--app-text, #123e31);
   font-size: 0.9rem;
   font-weight: 900;
   line-height: 1.2;
 }
 
 .qrCopy small {
-  color: #647870;
+  color: var(--app-muted, #647870);
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.42;
@@ -336,18 +336,18 @@
   align-items: center;
   gap: 0.85rem;
   padding: 0.9rem;
-  border: 1px solid rgba(30, 82, 111, 0.13);
+  border: 1px solid var(--app-info-line, rgba(30, 82, 111, 0.13));
   border-radius: 1rem;
   background:
-    radial-gradient(circle at 100% 0%, rgba(63, 115, 196, 0.09), transparent 58%),
-    linear-gradient(145deg, #ffffff 0%, #f1f7fb 100%);
-  box-shadow: 0 10px 24px rgba(24, 59, 80, 0.065);
+    radial-gradient(circle at 100% 0%, var(--app-info-soft, rgba(63, 115, 196, 0.09)), transparent 58%),
+    linear-gradient(145deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f1f7fb) 100%);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(24, 59, 80, 0.065));
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .loginLinkCard:focus-within {
-  border-color: rgba(44, 101, 151, 0.3);
-  box-shadow: 0 0 0 5px rgba(69, 124, 180, 0.1), 0 14px 28px rgba(24, 59, 80, 0.08);
+  border-color: var(--app-info-line, rgba(44, 101, 151, 0.3));
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(69, 124, 180, 0.1)), 0 14px 28px var(--app-shadow-colour, rgba(24, 59, 80, 0.08));
 }
 
 .loginLinkIcon {
@@ -355,11 +355,11 @@
   height: 3.25rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(44, 101, 151, 0.14);
+  border: 1px solid var(--app-info-line, rgba(44, 101, 151, 0.14));
   border-radius: 0.95rem;
-  color: #245883;
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 8px 18px rgba(29, 70, 100, 0.08);
+  color: var(--app-info, #245883);
+  background: var(--app-surface, rgba(255, 255, 255, 0.9));
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(29, 70, 100, 0.08));
 }
 
 .loginLinkIcon svg {
@@ -380,18 +380,18 @@
   align-items: center;
   gap: 0.65rem;
   padding: 0.72rem 0.78rem;
-  border: 1px solid rgba(30, 82, 111, 0.12);
+  border: 1px solid var(--app-info-line, rgba(30, 82, 111, 0.12));
   border-radius: 0.78rem;
-  color: #284b40;
-  background: rgba(255, 255, 255, 0.88);
+  color: var(--app-text, #284b40);
+  background: var(--app-surface, rgba(255, 255, 255, 0.88));
   text-decoration: none;
   transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
 }
 
 .loginUrl:hover {
   transform: translateY(-1px);
-  border-color: rgba(44, 101, 151, 0.28);
-  background: #ffffff;
+  border-color: var(--app-info-line, rgba(44, 101, 151, 0.28));
+  background: var(--app-surface, #ffffff);
 }
 
 .loginUrl:focus-visible {
@@ -401,7 +401,7 @@
 .loginUrl code {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #244b40;
+  color: var(--app-text, #244b40);
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.86rem;
   font-weight: 780;
@@ -414,8 +414,8 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  color: #245883;
-  background: #edf4fa;
+  color: var(--app-info, #245883);
+  background: var(--app-info-soft, #edf4fa);
   font-size: 0.88rem;
   font-weight: 900;
 }
@@ -436,13 +436,13 @@
   justify-items: center;
   gap: 0.58rem;
   padding: 0.9rem 0.75rem;
-  border: 1px solid rgba(18, 72, 54, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 72, 54, 0.13));
   border-radius: 1rem;
-  color: #174b3b;
+  color: var(--app-text, #174b3b);
   background:
-    radial-gradient(circle at 0 0, rgba(37, 151, 108, 0.1), transparent 58%),
-    linear-gradient(145deg, #ffffff 0%, #eff8f3 100%);
-  box-shadow: 0 10px 24px rgba(17, 58, 45, 0.065);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(37, 151, 108, 0.1)), transparent 58%),
+    linear-gradient(145deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eff8f3) 100%);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(17, 58, 45, 0.065));
   font: inherit;
   cursor: pointer;
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
@@ -450,28 +450,28 @@
 
 .linkButtonPrimary {
   color: #ffffff;
-  border-color: rgba(12, 67, 49, 0.25);
+  border-color: var(--app-line, rgba(12, 67, 49, 0.25));
   background:
-    radial-gradient(circle at 100% 0%, rgba(102, 221, 173, 0.22), transparent 58%),
+    radial-gradient(circle at 100% 0%, var(--app-surface-soft, rgba(102, 221, 173, 0.22)), transparent 58%),
     linear-gradient(145deg, #238c68 0%, #12553e 100%);
-  box-shadow: 0 12px 26px rgba(13, 82, 59, 0.18);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(13, 82, 59, 0.18));
 }
 
 .linkButton:hover {
   transform: translateY(-2px);
-  border-color: rgba(31, 138, 102, 0.32);
-  box-shadow: 0 15px 30px rgba(17, 58, 45, 0.1);
+  border-color: var(--app-line, rgba(31, 138, 102, 0.32));
+  box-shadow: 0 15px 30px var(--app-shadow-colour, rgba(17, 58, 45, 0.1));
 }
 
 .linkButton:focus-visible {
   outline: none;
-  border-color: rgba(24, 112, 81, 0.44);
-  box-shadow: 0 0 0 5px rgba(31, 138, 102, 0.12), 0 15px 30px rgba(17, 58, 45, 0.1);
+  border-color: var(--app-accent, rgba(24, 112, 81, 0.44));
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(31, 138, 102, 0.12)), 0 15px 30px var(--app-shadow-colour, rgba(17, 58, 45, 0.1));
 }
 
 .linkButtonPrimary:hover,
 .linkButtonPrimary:focus-visible {
-  box-shadow: 0 0 0 5px rgba(31, 138, 102, 0.11), 0 17px 34px rgba(13, 82, 59, 0.23);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(31, 138, 102, 0.11)), 0 17px 34px var(--app-shadow-colour, rgba(13, 82, 59, 0.23));
 }
 
 .linkButtonIcon {
@@ -479,11 +479,11 @@
   height: 2.7rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(31, 138, 102, 0.13);
+  border: 1px solid var(--app-line, rgba(31, 138, 102, 0.13));
   border-radius: 0.82rem;
-  color: #176047;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 8px 18px rgba(17, 58, 45, 0.075);
+  color: var(--app-text, #176047);
+  background: var(--app-surface, rgba(255, 255, 255, 0.88));
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(17, 58, 45, 0.075));
 }
 
 .linkButtonIcon svg {
@@ -493,8 +493,8 @@
 
 .linkButtonPrimary .linkButtonIcon {
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.24);
-  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--app-line, rgba(255, 255, 255, 0.24));
+  background: var(--app-surface-soft, rgba(255, 255, 255, 0.14));
   box-shadow: none;
 }
 
@@ -512,14 +512,14 @@
 }
 
 .linkButtonCopy small {
-  color: #6b7e76;
+  color: var(--app-muted, #6b7e76);
   font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.25;
 }
 
 .linkButtonPrimary .linkButtonCopy small {
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--app-text, rgba(255, 255, 255, 0.78));
 }
 
 .loginActions.loginActionsIconOnly {
@@ -588,14 +588,14 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid rgba(199, 218, 210, 0.98);
+  border: 1px solid var(--app-line, rgba(199, 218, 210, 0.98));
   border-radius: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2), 1.8rem);
   background:
-    radial-gradient(circle at top left, rgba(31, 138, 102, 0.06), transparent 32%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(31, 138, 102, 0.06)), transparent 32%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f8fbfa) 100%);
   box-shadow:
-    0 36px 100px rgba(5, 23, 18, 0.32),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 36px 100px var(--app-shadow-colour, rgba(5, 23, 18, 0.32)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   animation: modalIn 170ms ease-out both;
 }
 
@@ -609,13 +609,13 @@
   display: grid;
   gap: 0.38rem;
   padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.65rem) clamp(4.3rem, calc(var(--website-design-vw, 1vw) * 5), 5rem) clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.35rem) clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.65rem);
-  border-bottom: 1px solid rgba(207, 223, 217, 0.96);
-  background: rgba(255, 255, 255, 0.78);
+  border-bottom: 1px solid var(--app-line, rgba(207, 223, 217, 0.96));
+  background: var(--app-surface, rgba(255, 255, 255, 0.78));
 }
 
 .modalHeader h2 {
   margin: 0;
-  color: #10392e;
+  color: var(--app-text, #10392e);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 3), 2.35rem);
   font-weight: 900;
@@ -627,7 +627,7 @@
 .modalHeader p {
   max-width: 60rem;
   margin: 0;
-  color: #63766f;
+  color: var(--app-muted, #63766f);
   font-size: 1rem;
   font-weight: 620;
   line-height: 1.48;
@@ -643,10 +643,10 @@
   display: grid;
   place-items: center;
   transform: translateY(-50%);
-  border: 1px solid rgba(31, 105, 78, 0.14);
+  border: 1px solid var(--app-line, rgba(31, 105, 78, 0.14));
   border-radius: 999px;
-  color: #174b3b;
-  background: #f3f9f6;
+  color: var(--app-text, #174b3b);
+  background: var(--app-surface-soft, #f3f9f6);
   font: inherit;
   font-size: 1.35rem;
   font-weight: 800;
@@ -656,8 +656,8 @@
 
 .closeButton:hover {
   transform: translateY(-50%) rotate(4deg);
-  border-color: rgba(31, 105, 78, 0.28);
-  background: #e9f5ef;
+  border-color: var(--app-line, rgba(31, 105, 78, 0.28));
+  background: var(--app-surface-soft, #e9f5ef);
 }
 
 .closeButton:disabled {
@@ -693,12 +693,12 @@
 
 .surfaceHeader {
   padding-bottom: 0.95rem;
-  border-bottom: 1px solid rgba(18, 72, 54, 0.09);
+  border-bottom: 1px solid var(--app-line, rgba(18, 72, 54, 0.09));
 }
 
 .surfaceHeader h3 {
   margin: 0;
-  color: #123b30;
+  color: var(--app-text, #123b30);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 1.2rem;
   font-weight: 900;
@@ -707,7 +707,7 @@
 
 .surfaceHeader p {
   margin: 0.25rem 0 0;
-  color: #667970;
+  color: var(--app-muted, #667970);
   font-size: 0.92rem;
   font-weight: 620;
   line-height: 1.45;
@@ -726,13 +726,13 @@
 }
 
 .directoryHeader strong {
-  color: #143d32;
+  color: var(--app-text, #143d32);
   font-size: 1.05rem;
   font-weight: 900;
 }
 
 .directoryHeader span {
-  color: #6a7d75;
+  color: var(--app-muted, #6a7d75);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -745,13 +745,13 @@
 .directoryCard {
   padding: 0.9rem !important;
   border-radius: 1.05rem !important;
-  box-shadow: 0 10px 24px rgba(18, 55, 43, 0.045) !important;
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 55, 43, 0.045)) !important;
 }
 
 .editorCard {
   padding: 1rem !important;
   border-radius: 1.15rem !important;
-  box-shadow: 0 14px 34px rgba(18, 55, 43, 0.065) !important;
+  box-shadow: 0 14px 34px var(--app-shadow-colour, rgba(18, 55, 43, 0.065)) !important;
 }
 
 .modalBackButton {
@@ -761,10 +761,10 @@
   justify-content: center;
   margin-bottom: 0.85rem;
   padding: 0 0.9rem;
-  border: 1px solid rgba(31, 105, 78, 0.13);
+  border: 1px solid var(--app-line, rgba(31, 105, 78, 0.13));
   border-radius: 0.82rem;
-  color: #174b3b;
-  background: #f2f8f5;
+  color: var(--app-text, #174b3b);
+  background: var(--app-surface-soft, #f2f8f5);
   font: inherit;
   font-size: 0.92rem;
   font-weight: 850;
@@ -776,15 +776,15 @@
   justify-items: center;
   gap: 0.75rem;
   padding: 2.4rem 1.2rem;
-  border: 1px dashed rgba(31, 105, 78, 0.18);
+  border: 1px dashed var(--app-line, rgba(31, 105, 78, 0.18));
   border-radius: 1.1rem;
-  color: #657870;
-  background: rgba(247, 251, 249, 0.9);
+  color: var(--app-muted, #657870);
+  background: var(--app-surface, rgba(247, 251, 249, 0.9));
   text-align: center;
 }
 
 .emptyState strong {
-  color: #173f34;
+  color: var(--app-text, #173f34);
   font-size: 1.1rem;
   font-weight: 900;
 }
@@ -800,7 +800,7 @@
 .emptyAction {
   min-height: 2.7rem;
   padding: 0 0.95rem;
-  border: 1px solid rgba(12, 67, 49, 0.22);
+  border: 1px solid var(--app-line, rgba(12, 67, 49, 0.22));
   border-radius: 0.82rem;
   color: #ffffff;
   background: linear-gradient(180deg, #218a67 0%, #155b43 100%);
@@ -815,9 +815,9 @@
   gap: 1rem;
   margin-top: 1rem;
   padding: 1rem;
-  border: 1px solid rgba(28, 85, 62, 0.14);
+  border: 1px solid var(--app-line, rgba(28, 85, 62, 0.14));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, #f8fcfa 0%, #f2f8f5 100%);
+  background: linear-gradient(180deg, var(--app-surface, #f8fcfa) 0%, var(--app-surface-soft, #f2f8f5) 100%);
 }
 
 .permissionGrid {
@@ -833,10 +833,10 @@
   align-items: center;
   gap: 0.65rem;
   padding: 0.7rem 0.8rem;
-  border: 1px solid rgba(28, 85, 62, 0.13);
+  border: 1px solid var(--app-line, rgba(28, 85, 62, 0.13));
   border-radius: 0.85rem;
-  color: #244b3d;
-  background: #ffffff;
+  color: var(--app-text, #244b3d);
+  background: var(--app-surface, #ffffff);
   font-size: 0.92rem;
   font-weight: 760;
   cursor: pointer;
@@ -875,13 +875,13 @@
 }
 
 .accessChoiceGroup > strong {
-  color: #244b3d;
+  color: var(--app-text, #244b3d);
   font-size: 0.96rem;
   font-weight: 900;
 }
 
 .accessChoiceGroup > small {
-  color: #71837c;
+  color: var(--app-muted, #71837c);
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.4;
@@ -901,9 +901,9 @@
   align-items: center;
   gap: 0.65rem;
   padding: 0.68rem;
-  border: 1px solid rgba(28, 85, 62, 0.12);
+  border: 1px solid var(--app-line, rgba(28, 85, 62, 0.12));
   border-radius: 0.78rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   cursor: pointer;
 }
 
@@ -915,18 +915,18 @@
 
 .accessChecklist strong {
   overflow-wrap: anywhere;
-  color: #244b3d;
+  color: var(--app-text, #244b3d);
   font-size: 0.94rem;
 }
 
 .accessChecklist small {
-  color: #71837c;
+  color: var(--app-muted, #71837c);
   font-size: 0.8rem;
 }
 
 .accessMessage {
   margin: 0;
-  color: #315d4d;
+  color: var(--app-text, #315d4d);
   font-size: 0.9rem;
   font-weight: 750;
 }
@@ -1122,16 +1122,16 @@
 /* Owner and Field Manager dialogs follow the account Notifications surface. */
 .notificationStyle.notificationStyle {
   width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 46rem);
-  background: #fff;
-  border: 1px solid #dce4df;
+  background: var(--app-surface, #fff);
+  border: 1px solid var(--app-line, #dce4df);
   border-radius: 1.5rem;
 }
 .notificationStyle .modalHeader {
   margin: 2rem 2rem 0;
   padding: 0 3.75rem 1.25rem 0;
   gap: .35rem;
-  background: #fff;
-  border-bottom: 1px solid rgba(18,45,37,.1);
+  background: var(--app-surface, #fff);
+  border-bottom: 1px solid var(--app-line, rgba(18,45,37,.1));
 }
 .notificationStyle .modalHeader h2 {
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
@@ -1144,10 +1144,10 @@
 .notificationStyle .closeButton {
   top: 0; right: 0; width: 2.75rem; height: 2.75rem; min-width: 2.75rem;
   padding: 0; transform: none; border-radius: .9rem; line-height: 1;
-  border-color: rgba(37,71,51,.15); background: #f7faf8; color: #254733; font-weight: 650;
+  border-color: var(--app-line, rgba(37,71,51,.15)); background: var(--app-surface, #f7faf8); color: var(--app-text, #254733); font-weight: 650;
 }
-.notificationStyle .closeButton:hover { transform: none; background: #eef5f0; border-color: rgba(37,71,51,.28); }
-.notificationStyle button:focus-visible { outline: 3px solid rgba(43,138,99,.35); outline-offset: 3px; }
+.notificationStyle .closeButton:hover { transform: none; background: var(--app-surface-soft, #eef5f0); border-color: var(--app-line, rgba(37,71,51,.28)); }
+.notificationStyle button:focus-visible { outline: 3px solid var(--app-accent, rgba(43,138,99,.35)); outline-offset: 3px; }
 .notificationStyle .modalBody { padding: 1.5rem 2rem 2rem; scrollbar-color: #aaa transparent; }
 .notificationStyle .surfaceHeader { border: 0; padding-bottom: .25rem; }
 .notificationStyle .surfaceHeader h3 { font-size: 1rem; font-weight: 750; letter-spacing: 0; }
@@ -1156,11 +1156,11 @@
 .notificationStyle .field > span,
 .notificationStyle .compactField > span,
 .notificationStyle .fieldLabel { font-size: .9rem; font-weight: 700; text-transform: none; letter-spacing: 0; }
-.notificationStyle input:not([type=checkbox]) { border-radius: .9rem; background: #fff; box-shadow: none; }
+.notificationStyle input:not([type=checkbox]) { border-radius: .9rem; background: var(--app-surface, #fff); box-shadow: none; }
 .notificationStyle .primaryButton,
 .notificationStyle .manageButton,
 .notificationStyle .emptyAction {
-  min-height: 3rem; padding: .7rem 1rem; border: 1px solid #195440; border-radius: 1rem;
+  min-height: 3rem; padding: .7rem 1rem; border: 1px solid var(--app-line, #195440); border-radius: 1rem;
   background: #195440; color: #fff; font-size: 1rem; font-weight: 700;
   box-shadow: none; transform: none;
 }
@@ -1169,30 +1169,30 @@
 .notificationStyle .cancelButton,
 .notificationStyle .secondaryButton,
 .notificationStyle .modalBackButton {
-  min-height: 3rem; padding: .7rem 1rem; border: 1px solid #d2dfea; border-radius: 1rem;
-  background: #f2f5f8; color: #17362c; font: inherit; font-weight: 700; cursor: pointer; box-shadow: none;
+  min-height: 3rem; padding: .7rem 1rem; border: 1px solid var(--app-info-line, #d2dfea); border-radius: 1rem;
+  background: var(--app-info-soft, #f2f5f8); color: var(--app-text, #17362c); font: inherit; font-weight: 700; cursor: pointer; box-shadow: none;
 }
 .notificationStyle .cancelButton:disabled { opacity: .5; cursor: not-allowed; }
 .notificationStyle .directoryHeader span,
 .notificationStyle .editorHint { display: none; }
 .notificationStyle .directoryCard,
 .notificationStyle .editorCard,
-.notificationStyle .accessPanel { background: #fff; border: 1px solid #d2dfea; border-radius: 1rem; box-shadow: none !important; }
+.notificationStyle .accessPanel { background: var(--app-surface, #fff); border: 1px solid var(--app-info-line, #d2dfea); border-radius: 1rem; box-shadow: none !important; }
 .notificationStyle .managerSummary { grid-template-columns: minmax(0, 1fr) auto auto; gap: .75rem; }
 .notificationStyle .managerSummaryMeta { grid-column: 1 / -1; grid-row: 2; font-size: .75rem; font-weight: 500; }
-.notificationStyle .managerActions { gap: .65rem; padding-top: 1rem; border-top: 1px solid #e0e6e3; }
+.notificationStyle .managerActions { gap: .65rem; padding-top: 1rem; border-top: 1px solid var(--app-line, #e0e6e3); }
 .notificationStyle .permissionGrid { grid-template-columns: minmax(0, 1fr); }
-.notificationStyle .permissionChoice { position: relative; padding: .8rem 1rem; min-height: 3.7rem; border-color: #d2dfea; border-radius: 1rem; }
+.notificationStyle .permissionChoice { position: relative; padding: .8rem 1rem; min-height: 3.7rem; border-color: var(--app-info-line, #d2dfea); border-radius: 1rem; }
 .notificationStyle .permissionChoice input { position: absolute; opacity: 0; width: 1px; height: 1px; }
 .permissionSwitch { display: none; }
 .notificationStyle .permissionSwitch {
   display: inline-flex; align-items: center; justify-content: space-between; gap: .5rem;
   flex: 0 0 auto; margin-left: auto; padding: .2rem .25rem .2rem .6rem; min-width: 4.4rem;
-  border-radius: 999px; background: #b43b3b; color: #fff; font-size: .82rem;
+  border-radius: 999px; background: var(--app-danger-soft, #b43b3b); color: #fff; font-size: .82rem;
 }
-.notificationStyle .permissionSwitch::after { content: ''; width: 1.55rem; height: 1.55rem; border-radius: 50%; background: #fff; }
+.notificationStyle .permissionSwitch::after { content: ''; width: 1.55rem; height: 1.55rem; border-radius: 50%; background: var(--app-surface, #fff); }
 .notificationStyle .permissionChoice input:checked ~ .permissionSwitch { background: #238657; }
-.notificationStyle .permissionChoice:focus-within { outline: 3px solid rgba(43,138,99,.35); outline-offset: 2px; }
+.notificationStyle .permissionChoice:focus-within { outline: 3px solid var(--app-accent, rgba(43,138,99,.35)); outline-offset: 2px; }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .notificationStyle.notificationStyle { width: 100%; }
   :global(:where(html:not(:has([data-website-canvas])))) .notificationStyle .modalHeader { margin: 1.1rem 1.1rem 0; padding: 0 3.5rem 1rem 0; }
@@ -1202,6 +1202,6 @@
 }
 .notificationStyle .formActions {
   display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .65rem;
-  padding-top: 1rem; border-top: 1px solid rgba(18,45,37,.11);
+  padding-top: 1rem; border-top: 1px solid var(--app-line, rgba(18,45,37,.11));
 }
 .notificationStyle .formActions > button { width: auto; flex: 0 1 auto; min-width: 8.75rem; }

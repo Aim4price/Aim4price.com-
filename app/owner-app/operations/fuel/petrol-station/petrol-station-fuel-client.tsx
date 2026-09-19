@@ -430,7 +430,7 @@ export default function PetrolStationFuelClient({
           max="100"
           step="5"
           value={percent}
-          style={{ background: `linear-gradient(90deg, #236851 0%, #236851 ${percent}%, #dce8e4 ${percent}%, #dce8e4 100%)` }}
+          style={{ background: `linear-gradient(90deg, #236851 0%, #236851 ${percent}%, var(--app-line, #dce8e4) ${percent}%, var(--app-line, #dce8e4) 100%)` }}
           onChange={(event) => onChange(clampFuel(event.target.value))}
         />
         <div className={styles.gaugeScale}><span>Empty</span><span>Full</span></div>

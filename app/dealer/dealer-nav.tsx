@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import AppSettings from '../../components/AppSettings';
 import NotificationSettingsModal from '../../components/NotificationSettingsModal';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import { usePathname } from 'next/navigation';
@@ -70,6 +71,7 @@ export default function DealerNav({
       className={`${styles.nav} ${navLayoutClass} ${workspaceSurfaceClass} ${onBack ? styles.estimateNav : ''}`}
       aria-label="Dealer App navigation"
     >
+      {pathname === '/dealer' ? <AppSettings /> : null}
       {resolvedShowBack ? (
         <>
           {onBack ? (

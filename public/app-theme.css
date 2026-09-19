@@ -1,0 +1,39 @@
+/* App preferences are independent of the desktop background preference.
+   Tokens live on html so native dialogs and body-mounted portals inherit them. */
+@media screen {
+  html[data-app-theme='dark'] {
+    color-scheme: dark;
+    --app-page: #14251f;
+    --app-surface: #20382f;
+    --app-surface-soft: #294338;
+    --app-text: #edf5ef;
+    --app-muted: #b7cbbf;
+    --app-accent: #a0dfbb;
+    --app-line: #476354;
+    --app-shadow-colour: rgb(0 0 0 / 18%);
+    --app-danger: #ffb7b7;
+    --app-danger-soft: #4b2e30;
+    --app-danger-line: #845052;
+    --app-warning: #f3d28c;
+    --app-warning-soft: #463d29;
+    --app-warning-line: #806c42;
+    --app-info: #b1d5f5;
+    --app-info-soft: #2a3d50;
+    --app-info-line: #526f87;
+    --text-strong: var(--app-text);
+    --text-muted: var(--app-muted);
+    --surface: var(--app-page);
+    --surface-soft: var(--app-surface-soft);
+    --surface-card: var(--app-surface);
+    --line-soft: var(--app-line);
+    --line-strong: var(--app-line);
+    --modal-backdrop-color: rgb(3 13 9 / 72%);
+  }
+  html[data-app-theme='light'] { color-scheme: light; }
+  html[data-app-theme='dark'][data-app-theme] body { background: var(--app-page); color: var(--app-text); }
+  html[data-app-theme='light'][data-app-theme] body { background: #f7faf8; }
+  html[data-app-theme='dark'] :is(input, select, textarea) { accent-color: #a0dfbb; }
+  html[data-app-theme='dark'] :is(input, textarea)::placeholder { color: var(--app-muted); opacity: 1; }
+  html[data-app-theme='dark'] select option { background: var(--app-surface); color: var(--app-text); }
+  html[data-app-theme='dark'] :focus-visible { outline-color: var(--app-accent); }
+}

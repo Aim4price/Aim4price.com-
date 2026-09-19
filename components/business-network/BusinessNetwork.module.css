@@ -1,7 +1,7 @@
 .panel {
   width: 100%;
   min-width: 0;
-  color: #173f31;
+  color: var(--app-text, #173f31);
   font-family: inherit;
   display: grid;
   gap: 16px;
@@ -11,7 +11,7 @@
   display: grid;
   gap: 16px;
   padding: 4px 4px 16px;
-  border-bottom: 1px solid #dce5e1;
+  border-bottom: 1px solid var(--app-line, #dce5e1);
   font-size: 0.8rem;
   line-height: 1.45;
 }
@@ -21,7 +21,7 @@
 }
 .directoryTools .panel label {
   gap: 5px;
-  color: #617580;
+  color: var(--app-muted, #617580);
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -29,16 +29,16 @@
 .directoryTools .panel select {
   min-height: 2.5rem;
   padding: 9px 12px;
-  border-color: #cddae2;
+  border-color: var(--app-info-line, #cddae2);
   border-radius: 10px;
-  color: #173f31;
+  color: var(--app-text, #173f31);
   font-size: 0.8rem;
 }
 .directoryTools .panel button {
   min-height: 2.5rem;
   padding: 9px 12px;
-  border-color: #d3e1da;
-  background: #f4f8f6;
+  border-color: var(--app-line, #d3e1da);
+  background: var(--app-surface-soft, #f4f8f6);
   font-size: 0.78rem;
   line-height: 1.4;
   text-align: left;
@@ -47,17 +47,17 @@
     border-color 160ms ease;
 }
 .directoryTools .panel button:hover:not(:disabled) {
-  background: #e8f3ed;
-  border-color: #89b29d;
+  background: var(--app-surface-soft, #e8f3ed);
+  border-color: var(--app-line, #89b29d);
 }
 .directoryTools :is(button, input, select):focus-visible {
-  outline: 2px solid #21815b;
+  outline: 2px solid var(--app-accent, #21815b);
   outline-offset: 2px;
 }
 .directoryTools .card {
   padding: 12px;
-  border-color: #d3e1da;
-  background: #fafcfb;
+  border-color: var(--app-line, #d3e1da);
+  background: var(--app-surface, #fafcfb);
   box-shadow: none;
 }
 .directoryTools .muted {
@@ -97,19 +97,19 @@
   min-width: 0;
   box-sizing: border-box;
   padding: 12px;
-  border: 1px solid #a7c5b6;
+  border: 1px solid var(--app-line, #a7c5b6);
   border-radius: 10px;
-  background: #fff;
-  color: #173f31;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #173f31);
   font: inherit;
 }
 .panel button,
 .button {
   padding: 11px 16px;
-  border: 1px solid #96b7a6;
+  border: 1px solid var(--app-line, #96b7a6);
   border-radius: 10px;
-  background: #e8f3ec;
-  color: #174633;
+  background: var(--app-surface-soft, #e8f3ec);
+  color: var(--app-text, #174633);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -121,16 +121,16 @@
   cursor: wait;
 }
 .panel button[aria-pressed="true"] {
-  background: #cce5d5;
-  border-color: #2f7550;
+  background: var(--app-surface-soft, #cce5d5);
+  border-color: var(--app-accent, #2f7550);
 }
 .panel .primary {
   background: #286044;
   color: white;
 }
 .panel .danger {
-  background: #f9e4e0;
-  color: #833b30;
+  background: var(--app-danger-soft, #f9e4e0);
+  color: var(--app-danger, #833b30);
 }
 .panel .check {
   display: flex;
@@ -153,11 +153,11 @@
 }
 .card {
   padding: 16px;
-  border: 1px solid #b9cebf;
+  border: 1px solid var(--app-line, #b9cebf);
   border-radius: 14px;
   display: grid;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.5);
+  background: var(--app-surface-soft, rgba(255, 255, 255, 0.5));
   overflow-wrap: anywhere;
 }
 .details {
@@ -188,14 +188,14 @@
 }
 .notice {
   padding: 12px;
-  background: #e8f3ec;
+  background: var(--app-surface-soft, #e8f3ec);
   border-radius: 10px;
   overflow-wrap: anywhere;
 }
 .muted {
   font-size: 0.85rem;
   line-height: 1.5;
-  color: #496453;
+  color: var(--app-accent, #496453);
 }
 .message {
   white-space: pre-wrap;
@@ -219,7 +219,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  color: #173f31;
+  color: var(--app-text, #173f31);
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -232,7 +232,7 @@
   width: 18px;
   height: 18px;
   fill: none;
-  stroke: #318363;
+  stroke: var(--app-accent, #318363);
   stroke-width: 1.8;
   stroke-linecap: round;
 }
@@ -240,13 +240,13 @@
   padding: 4px 0;
   border: 0;
   background: transparent;
-  color: #38745d;
+  color: var(--app-accent, #38745d);
   font: inherit;
   font-size: 0.68rem;
   cursor: pointer;
 }
 .directorySelect > span {
-  color: #6a7e75;
+  color: var(--app-muted, #6a7e75);
   font-size: 0.66rem;
   letter-spacing: 0.07em;
 }
@@ -262,7 +262,7 @@
 }
 .directoryActions {
   padding-top: 14px;
-  border-top: 1px solid #e0e9e4;
+  border-top: 1px solid var(--app-line, #e0e9e4);
 }
 .directoryActions .panel button[aria-expanded] {
   display: flex;
@@ -272,7 +272,7 @@
   border: 0;
   border-radius: 10px;
   background: transparent;
-  color: #527065;
+  color: var(--app-accent, #527065);
   padding: 8px 10px;
   min-height: 2.2rem;
   font-size: 0.72rem;
@@ -285,8 +285,8 @@
   height: 22px;
   flex: 0 0 auto;
   border-radius: 7px;
-  background: #edf4f0;
-  color: #32765a;
+  background: var(--app-surface-soft, #edf4f0);
+  color: var(--app-accent, #32765a);
   font-size: 1rem;
   font-weight: 500;
 }
@@ -294,6 +294,6 @@
   content: "−";
 }
 .directoryActions .panel button[aria-expanded="true"] {
-  background: #edf5f0;
-  color: #215d43;
+  background: var(--app-surface-soft, #edf5f0);
+  color: var(--app-text, #215d43);
 }

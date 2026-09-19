@@ -36,7 +36,7 @@
   --action-blue-border-hover: #558fc6;
   min-height: calc(var(--website-design-vh, 1vh) * 100);
   background: transparent;
-  color: var(--text);
+  color: var(--app-text, var(--text));
 }
 
 .shell {
@@ -55,15 +55,15 @@
 }
 
 .noticeSuccess {
-  color: #116343;
-  background: #eaf7f1;
-  border-color: #d1ebdf;
+  color: var(--app-text, #116343);
+  background: var(--app-surface-soft, #eaf7f1);
+  border-color: var(--app-line, #d1ebdf);
 }
 
 .noticeError {
-  color: #9b2f2f;
-  background: #fff0f0;
-  border-color: #f1d2d2;
+  color: var(--app-danger, #9b2f2f);
+  background: var(--app-danger-soft, #fff0f0);
+  border-color: var(--app-danger-line, #f1d2d2);
 }
 
 .toastViewport {
@@ -84,12 +84,12 @@
   padding: 0.85rem 1rem;
   border: 1px solid transparent;
   border-radius: 1rem;
-  color: #12362c;
-  background: rgba(255, 255, 255, 0.98);
+  color: var(--app-text, #12362c);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
   box-shadow:
-    0 22px 46px rgba(5, 17, 20, 0.18),
-    0 8px 18px rgba(5, 17, 20, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 22px 46px var(--app-shadow-colour, rgba(5, 17, 20, 0.18)),
+    0 8px 18px var(--app-shadow-colour, rgba(5, 17, 20, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   font-size: 0.95rem;
   font-weight: 850;
   line-height: 1.35;
@@ -98,19 +98,19 @@
 }
 
 .toastSuccess {
-  color: #0f5840;
-  border-color: #bfe4cf;
+  color: var(--app-text, #0f5840);
+  border-color: var(--app-line, #bfe4cf);
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.12) 0%, rgba(25, 116, 84, 0) 42%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.12)) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
 }
 
 .toastError {
-  color: #9b2f2f;
-  border-color: #efcdcd;
+  color: var(--app-danger, #9b2f2f);
+  border-color: var(--app-danger-line, #efcdcd);
   background:
-    radial-gradient(circle at 0% 0%, rgba(157, 53, 53, 0.1) 0%, rgba(157, 53, 53, 0) 42%),
-    linear-gradient(180deg, #ffffff 0%, #fff0f0 100%);
+    radial-gradient(circle at 0% 0%, var(--app-danger-soft, rgba(157, 53, 53, 0.1)) 0%, rgba(157, 53, 53, 0) 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff0f0) 100%);
 }
 
 .toastDot {
@@ -118,11 +118,11 @@
   height: 0.72rem;
   border-radius: 999px;
   background: currentColor;
-  box-shadow: 0 0 0 0.25rem rgba(25, 116, 84, 0.1);
+  box-shadow: 0 0 0 0.25rem var(--app-shadow-colour, rgba(25, 116, 84, 0.1));
 }
 
 .toastError .toastDot {
-  box-shadow: 0 0 0 0.25rem rgba(157, 53, 53, 0.1);
+  box-shadow: 0 0 0 0.25rem var(--app-shadow-colour, rgba(157, 53, 53, 0.1));
 }
 
 @keyframes toastIn {
@@ -162,16 +162,16 @@
   justify-content: flex-start;
   margin: 0;
   padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem);
-  border: 1.5px solid rgba(193, 211, 218, 0.98);
+  border: 1.5px solid var(--app-info-line, rgba(193, 211, 218, 0.98));
   border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.7rem);
   background:
-    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
+    radial-gradient(circle at 3% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.08)) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(248, 252, 253, 0.98)) 100%);
   box-shadow:
-    0 18px 38px rgba(16, 36, 40, 0.06),
-    0 6px 16px rgba(16, 36, 40, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
-  color: #073b30;
+    0 18px 38px var(--app-shadow-colour, rgba(16, 36, 40, 0.06)),
+    0 6px 16px var(--app-shadow-colour, rgba(16, 36, 40, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
+  color: var(--app-text, #073b30);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(2.15rem, calc(var(--website-design-vw, 1vw) * 4), 3.55rem);
   font-weight: 900;
@@ -236,20 +236,20 @@
 .modalPrimaryButton {
   color: #ffffff;
   background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%);
-  border-color: var(--action-primary-border);
+  border-color: var(--app-line, var(--action-primary-border));
   box-shadow:
-    0 14px 26px var(--action-primary-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 14px 26px var(--app-shadow-colour, var(--action-primary-shadow)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .primaryButton:hover:not(:disabled),
 .modalPrimaryButton:hover:not(:disabled) {
   color: #ffffff;
   background: linear-gradient(180deg, #218462 0%, var(--action-primary-hover) 100%);
-  border-color: var(--action-primary-hover);
+  border-color: var(--app-line, var(--action-primary-hover));
   box-shadow:
-    0 18px 32px rgba(25, 116, 84, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 18px 32px var(--app-shadow-colour, rgba(25, 116, 84, 0.25)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2));
   transform: translateY(-1px);
 }
 
@@ -257,24 +257,24 @@
 .clearSearchButton,
 .unitButton,
 .modalCancelButton {
-  color: var(--action-blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg) 100%);
-  border-color: var(--action-blue-border);
+  color: var(--app-info, var(--action-blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, var(--action-blue-bg)) 100%);
+  border-color: var(--app-info-line, var(--action-blue-border));
   box-shadow:
-    0 10px 22px rgba(15, 59, 100, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(15, 59, 100, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .secondaryButton:hover:not(:disabled),
 .clearSearchButton:hover:not(:disabled),
 .unitButton:hover:not(:disabled),
 .modalCancelButton:hover:not(:disabled) {
-  color: var(--action-blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%);
-  border-color: var(--action-blue-border-hover);
+  color: var(--app-info, var(--action-blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, var(--action-blue-bg-hover)) 100%);
+  border-color: var(--app-info-line, var(--action-blue-border-hover));
   box-shadow:
-    0 14px 28px rgba(15, 59, 100, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(15, 59, 100, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   transform: translateY(-1px);
 }
 
@@ -285,21 +285,21 @@
 }
 
 .topAddButton {
-  color: var(--action-copper-soft-text);
-  background: linear-gradient(180deg, #fffaf6 0%, var(--action-copper-soft-bg) 100%);
-  border-color: var(--action-copper-soft-border);
+  color: var(--app-danger, var(--action-copper-soft-text));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf6) 0%, var(--app-danger-soft, var(--action-copper-soft-bg)) 100%);
+  border-color: var(--app-danger-line, var(--action-copper-soft-border));
   box-shadow:
-    0 10px 22px var(--action-copper-soft-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, var(--action-copper-soft-shadow)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .topAddButton:hover:not(:disabled) {
-  color: var(--action-copper-soft-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-copper-soft-bg-hover) 100%);
-  border-color: var(--action-copper-soft-border-hover);
+  color: var(--app-danger, var(--action-copper-soft-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--action-copper-soft-bg-hover)) 100%);
+  border-color: var(--app-danger-line, var(--action-copper-soft-border-hover));
   box-shadow:
-    0 14px 28px rgba(180, 107, 43, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(180, 107, 43, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .buttonIcon,
@@ -315,23 +315,23 @@
   align-items: center;
   min-height: 3.25rem;
   padding: 0 0.8rem 0 0.95rem;
-  border: 1px solid rgba(194, 211, 224, 0.98);
+  border: 1px solid var(--app-info-line, rgba(194, 211, 224, 0.98));
   border-radius: 1.1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow:
-    0 8px 18px rgba(30, 56, 66, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 8px 18px var(--app-shadow-colour, rgba(30, 56, 66, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9));
 }
 
 .searchWrap:focus-within {
-  border-color: rgba(25, 116, 84, 0.42);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.42));
   box-shadow:
-    0 0 0 4px rgba(25, 116, 84, 0.12),
-    0 10px 22px rgba(30, 56, 66, 0.055);
+    0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.12)),
+    0 10px 22px var(--app-shadow-colour, rgba(30, 56, 66, 0.055));
 }
 
 .searchIcon {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
 }
 
 .searchInput {
@@ -341,7 +341,7 @@
   padding: 0 0.65rem;
   border: 0;
   background: transparent;
-  color: #20313b;
+  color: var(--app-info, #20313b);
   font: inherit;
   font-weight: 620;
 }
@@ -351,7 +351,7 @@
 }
 
 .searchInput::placeholder {
-  color: #8a95a2;
+  color: var(--app-muted, #8a95a2);
   font-weight: 560;
 }
 
@@ -365,14 +365,14 @@
 }
 
 .emptyState {
-  border: 1px solid rgba(198, 216, 223, 0.98);
+  border: 1px solid var(--app-info-line, rgba(198, 216, 223, 0.98));
   border-radius: 1.65rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.04)) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(248, 252, 253, 0.99)) 100%);
   box-shadow:
-    0 14px 28px rgba(20, 43, 43, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 14px 28px var(--app-shadow-colour, rgba(20, 43, 43, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .emptyState {
@@ -385,19 +385,19 @@
 }
 
 .emptyState strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 1.1rem;
   font-weight: 900;
 }
 
 .emptyState span {
-  color: #657586;
+  color: var(--app-muted, #657586);
   font-weight: 650;
 }
 
 .loading {
   margin: 0;
-  color: #647587;
+  color: var(--app-muted, #647587);
   font-weight: 700;
 }
 
@@ -412,14 +412,14 @@
   align-items: stretch;
   gap: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.6rem);
   padding: clamp(1.3rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.58rem);
-  border: 1px solid rgba(198, 216, 223, 0.98);
+  border: 1px solid var(--app-info-line, rgba(198, 216, 223, 0.98));
   border-radius: 1.65rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.04)) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(248, 252, 253, 0.99)) 100%);
   box-shadow:
-    0 14px 28px rgba(20, 43, 43, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 14px 28px var(--app-shadow-colour, rgba(20, 43, 43, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -428,17 +428,17 @@
 
 .registerCard:hover {
   transform: translateY(-1px);
-  border-color: rgba(151, 205, 181, 0.9);
+  border-color: var(--app-line, rgba(151, 205, 181, 0.9));
   box-shadow:
-    0 18px 34px rgba(20, 43, 43, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 18px 34px var(--app-shadow-colour, rgba(20, 43, 43, 0.07)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .registerCardSelected {
-  border-color: rgba(111, 197, 150, 0.98);
+  border-color: var(--app-accent, rgba(111, 197, 150, 0.98));
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.09) 0%, rgba(25, 116, 84, 0) 38%),
-    linear-gradient(180deg, #ffffff 0%, #f4fbf7 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.09)) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f4fbf7) 100%);
 }
 
 .registerInfo {
@@ -456,7 +456,7 @@
 
 .registerTitleBlock h2 {
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem);
   font-weight: 900;
   line-height: 1.08;
@@ -467,7 +467,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
-  color: #5d6d7c;
+  color: var(--app-muted, #5d6d7c);
   font-size: 0.96rem;
   font-weight: 680;
   line-height: 1.45;
@@ -482,14 +482,14 @@
 .statGrid div {
   min-width: 0;
   padding: 0.95rem 1rem;
-  border: 1px solid rgba(216, 225, 234, 0.96);
+  border: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
   border-radius: 1rem;
-  background: linear-gradient(180deg, #fbfdff 0%, #f4f7fa 100%);
+  background: linear-gradient(180deg, var(--app-info-soft, #fbfdff) 0%, var(--app-info-soft, #f4f7fa) 100%);
 }
 
 .statGrid span {
   display: block;
-  color: #52697f;
+  color: var(--app-info, #52697f);
   font-size: 0.82rem;
   font-weight: 850;
   line-height: 1.2;
@@ -498,7 +498,7 @@
 .statGrid strong {
   display: block;
   margin-top: 0.22rem;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.25rem);
   font-weight: 900;
   line-height: 1.05;
@@ -538,15 +538,15 @@
 }
 
 .selectedBadge {
-  color: #14523d;
-  background: #e9f6ef;
-  border: 1px solid #cce7d7;
+  color: var(--app-text, #14523d);
+  background: var(--app-surface-soft, #e9f6ef);
+  border: 1px solid var(--app-line, #cce7d7);
 }
 
 .primaryBadge {
-  color: #29456b;
-  background: #eef3fb;
-  border: 1px solid #d8e1f0;
+  color: var(--app-info, #29456b);
+  background: var(--app-info-soft, #eef3fb);
+  border: 1px solid var(--app-info-line, #d8e1f0);
 }
 
 .unitActions {
@@ -569,31 +569,31 @@
 .openRegisterButton {
   color: #ffffff;
   background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%);
-  border-color: var(--action-primary-border);
+  border-color: var(--app-line, var(--action-primary-border));
   box-shadow:
-    0 14px 26px var(--action-primary-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 14px 26px var(--app-shadow-colour, var(--action-primary-shadow)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .openRegisterButton:hover:not(:disabled) {
   color: #ffffff;
   background: linear-gradient(180deg, #218462 0%, var(--action-primary-hover) 100%);
-  border-color: var(--action-primary-hover);
+  border-color: var(--app-line, var(--action-primary-hover));
 }
 
 .deleteUnitButton {
-  color: #9b2f2f;
-  background: linear-gradient(180deg, #fff9f9 0%, #fff0f0 100%);
-  border-color: #efcdcd;
+  color: var(--app-danger, #9b2f2f);
+  background: linear-gradient(180deg, var(--app-danger-soft, #fff9f9) 0%, var(--app-danger-soft, #fff0f0) 100%);
+  border-color: var(--app-danger-line, #efcdcd);
   box-shadow:
-    0 10px 22px rgba(157, 53, 53, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(157, 53, 53, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .deleteUnitButton:hover:not(:disabled) {
-  color: #8e2a2a;
-  background: linear-gradient(180deg, #ffffff 0%, #ffe6e6 100%);
-  border-color: #e5b8b8;
+  color: var(--app-danger, #8e2a2a);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #ffe6e6) 100%);
+  border-color: var(--app-danger-line, #e5b8b8);
 }
 
 .cardHeader,
@@ -608,7 +608,7 @@
 .cardHeader h2,
 .modalHeader h2 {
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.9rem);
   font-weight: 900;
   line-height: 1.08;
@@ -618,7 +618,7 @@
 .cardHeader p,
 .subHeader p {
   margin: 0.3rem 0 0;
-  color: #617284;
+  color: var(--app-info, #617284);
   line-height: 1.55;
   font-weight: 620;
 }
@@ -630,7 +630,7 @@
 
 .subHeader h3 {
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 1.2rem;
   font-weight: 900;
   letter-spacing: -0.025em;
@@ -649,7 +649,7 @@
 }
 
 .field span {
-  color: #4f5d68;
+  color: var(--app-muted, #4f5d68);
   font-size: 0.82rem;
   font-weight: 850;
 }
@@ -661,9 +661,9 @@
   width: 100%;
   min-height: 3rem;
   border-radius: 1rem;
-  border: 1px solid var(--line);
-  background: #ffffff;
-  color: #1f313a;
+  border: 1px solid var(--app-info-line, var(--line));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #1f313a);
   font: inherit;
   font-size: 0.95rem;
   padding: 0 0.9rem;
@@ -678,7 +678,7 @@
   appearance: none;
   -webkit-appearance: none;
   padding-right: 2.9rem;
-  background-color: #ffffff;
+  background-color: var(--app-surface, #ffffff);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231f313a' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 1.05rem center;
@@ -696,8 +696,8 @@
 .field textarea:focus,
 .field select:focus,
 .assetMoveControls select:focus {
-  border-color: #b9cad8;
-  box-shadow: 0 0 0 4px rgba(185, 202, 216, 0.22);
+  border-color: var(--app-info-line, #b9cad8);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(185, 202, 216, 0.22));
 }
 
 .fullField {
@@ -716,7 +716,7 @@
   display: grid;
   gap: 0.85rem;
   padding-top: 1rem;
-  border-top: 1px solid rgba(216, 225, 234, 0.96);
+  border-top: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
 }
 
 .assetMoveList {
@@ -730,9 +730,9 @@
   gap: 0.85rem;
   align-items: center;
   padding: 0.95rem;
-  border: 1px solid rgba(216, 225, 234, 0.96);
+  border: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
   border-radius: 1.1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .assetMoveCopy {
@@ -742,14 +742,14 @@
 }
 
 .assetMoveCopy strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-weight: 900;
 }
 
 .assetMoveCopy span,
 .assetMoveCopy small,
 .muted {
-  color: #647587;
+  color: var(--app-muted, #647587);
   font-weight: 650;
   line-height: 1.4;
 }
@@ -790,18 +790,18 @@
   display: grid;
   gap: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.22rem);
   padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.25), 1.75rem);
-  border: 1px solid rgba(216, 225, 234, 0.98);
+  border: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.98));
   border-radius: 1.55rem;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
   box-shadow:
-    0 30px 80px rgba(5, 17, 20, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 30px 80px var(--app-shadow-colour, rgba(5, 17, 20, 0.22)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .modalIntro {
   margin: 0.4rem 0 0;
   max-width: 62rem;
-  color: #607183;
+  color: var(--app-info, #607183);
   font-size: 0.98rem;
   font-weight: 620;
   line-height: 1.52;
@@ -818,12 +818,12 @@
 
 .manageModalCard .modalHeader {
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(216, 225, 234, 0.96);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
 }
 
 .manageModalCard .editForm {
   padding-bottom: 1.05rem;
-  border-bottom: 1px solid rgba(216, 225, 234, 0.96);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
 }
 
 .manageModalCard .formActions > * {
@@ -867,7 +867,7 @@
 .modalPrimaryButton {
   color: #ffffff;
   background: linear-gradient(180deg, var(--action-primary) 0%, var(--action-primary-deep) 100%);
-  border-color: var(--action-primary-border);
+  border-color: var(--app-line, var(--action-primary-border));
 }
 
 .modalPrimaryButton:disabled {
@@ -883,12 +883,12 @@
   width: min(680px, 100%);
   position: relative;
   padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.75rem);
-  border: 1px solid rgba(235, 203, 203, 0.98);
+  border: 1px solid var(--app-danger-line, rgba(235, 203, 203, 0.98));
   border-radius: 1.55rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(166, 58, 58, 0.06), rgba(166, 58, 58, 0) 36%),
-    linear-gradient(180deg, #ffffff 0%, #fff8f8 100%);
-  box-shadow: 0 30px 80px rgba(5, 17, 20, 0.22);
+    radial-gradient(circle at 0% 0%, var(--app-danger-soft, rgba(166, 58, 58, 0.06)), rgba(166, 58, 58, 0) 36%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff8f8) 100%);
+  box-shadow: 0 30px 80px var(--app-shadow-colour, rgba(5, 17, 20, 0.22));
 }
 
 .deleteConfirmCloseButton {
@@ -897,10 +897,10 @@
   right: 0.8rem;
   width: 2.55rem;
   height: 2.55rem;
-  border: 1px solid #efcdcd;
+  border: 1px solid var(--app-danger-line, #efcdcd);
   border-radius: 999px;
-  background: #ffffff;
-  color: #9b2f2f;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-danger, #9b2f2f);
   font: inherit;
   font-size: 1.45rem;
   font-weight: 850;
@@ -915,7 +915,7 @@
 
 .deleteConfirmContent h3 {
   margin: 0;
-  color: #7d2323;
+  color: var(--app-danger, #7d2323);
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -923,7 +923,7 @@
 
 .deleteConfirmContent p {
   margin: 0;
-  color: #596a7a;
+  color: var(--app-info, #596a7a);
   line-height: 1.6;
   font-weight: 620;
 }
@@ -932,13 +932,13 @@
   display: grid;
   gap: 0.22rem;
   padding: 0.95rem;
-  border: 1px solid rgba(235, 203, 203, 0.96);
+  border: 1px solid var(--app-danger-line, rgba(235, 203, 203, 0.96));
   border-radius: 1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .deleteConfirmAsset span {
-  color: #9b2f2f;
+  color: var(--app-danger, #9b2f2f);
   font-size: 0.78rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -946,21 +946,21 @@
 }
 
 .deleteConfirmAsset strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-weight: 900;
   font-size: 1.08rem;
 }
 
 .deleteConfirmAsset small {
-  color: #647587;
+  color: var(--app-muted, #647587);
   font-weight: 650;
 }
 
 .deleteMoveField {
   padding: 0.95rem;
-  border: 1px solid rgba(235, 203, 203, 0.96);
+  border: 1px solid var(--app-danger-line, rgba(235, 203, 203, 0.96));
   border-radius: 1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .deleteConfirmActions {
@@ -971,16 +971,16 @@
 }
 
 .deleteConfirmButton {
-  background: linear-gradient(180deg, #b84242 0%, #8f2929 100%);
-  border-color: #8f2929;
+  background: linear-gradient(180deg, var(--app-danger-soft, #b84242) 0%, #8f2929 100%);
+  border-color: var(--app-danger-line, #8f2929);
   box-shadow:
-    0 14px 26px rgba(166, 58, 58, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 14px 26px var(--app-shadow-colour, rgba(166, 58, 58, 0.2)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .deleteConfirmButton:hover:not(:disabled) {
-  background: linear-gradient(180deg, #c24a4a 0%, #812222 100%);
-  border-color: #812222;
+  background: linear-gradient(180deg, var(--app-danger-soft, #c24a4a) 0%, #812222 100%);
+  border-color: var(--app-danger-line, #812222);
 }
 
 
@@ -990,10 +990,10 @@
 .openRegisterButton:disabled,
 .deleteConfirmButton:disabled {
   opacity: 1;
-  color: #5f6f6a;
-  background: linear-gradient(180deg, #f5f8f7 0%, #e8efed 100%);
-  border-color: #cfdbd7;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  color: var(--app-muted, #5f6f6a);
+  background: linear-gradient(180deg, var(--app-surface, #f5f8f7) 0%, var(--app-surface-soft, #e8efed) 100%);
+  border-color: var(--app-line, #cfdbd7);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
 .secondaryButton:disabled,
@@ -1002,9 +1002,9 @@
 .closeButton:disabled,
 .clearSearchButton:disabled {
   opacity: 1;
-  color: #72807d;
-  background: linear-gradient(180deg, #f9fbfa 0%, #eef3f1 100%);
-  border-color: #d6e0dd;
+  color: var(--app-muted, #72807d);
+  background: linear-gradient(180deg, var(--app-surface, #f9fbfa) 0%, var(--app-surface-soft, #eef3f1) 100%);
+  border-color: var(--app-line, #d6e0dd);
   box-shadow: none;
 }
 
@@ -1017,33 +1017,33 @@
 }
 
 .manageUnitButton {
-  color: #0f3b64;
-  background: linear-gradient(180deg, #ffffff 0%, #e9f5ff 100%);
-  border-color: #7eb4df;
+  color: var(--app-info, #0f3b64);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #e9f5ff) 100%);
+  border-color: var(--app-info-line, #7eb4df);
   box-shadow:
-    0 12px 24px rgba(15, 59, 100, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 12px 24px var(--app-shadow-colour, rgba(15, 59, 100, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .manageUnitButton:hover:not(:disabled) {
-  color: #0c345a;
-  background: linear-gradient(180deg, #ffffff 0%, #dbeeff 100%);
-  border-color: #558fc6;
+  color: var(--app-info, #0c345a);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #dbeeff) 100%);
+  border-color: var(--app-info-line, #558fc6);
   box-shadow:
-    0 16px 30px rgba(15, 59, 100, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 16px 30px var(--app-shadow-colour, rgba(15, 59, 100, 0.14)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .deleteUnitButton {
-  color: #962c2c;
-  background: linear-gradient(180deg, #fffdfd 0%, #fff1f1 100%);
-  border-color: #e8bcbc;
+  color: var(--app-danger, #962c2c);
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffdfd) 0%, var(--app-danger-soft, #fff1f1) 100%);
+  border-color: var(--app-danger-line, #e8bcbc);
 }
 
 .deleteUnitButton:hover:not(:disabled) {
-  color: #812222;
-  background: linear-gradient(180deg, #ffffff 0%, #ffe4e4 100%);
-  border-color: #d99d9d;
+  color: var(--app-danger, #812222);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #ffe4e4) 100%);
+  border-color: var(--app-danger-line, #d99d9d);
 }
 
 .modalOverlay {
@@ -1058,15 +1058,15 @@
   overflow: auto;
   gap: 0;
   padding: 0;
-  border: 1px solid rgba(193, 211, 218, 0.98);
+  border: 1px solid var(--app-info-line, rgba(193, 211, 218, 0.98));
   border-radius: 1.55rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.055) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfb 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.055)) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f8fbfb) 100%);
   box-shadow:
-    0 34px 90px rgba(5, 17, 20, 0.28),
-    0 10px 24px rgba(5, 17, 20, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 34px 90px var(--app-shadow-colour, rgba(5, 17, 20, 0.28)),
+    0 10px 24px var(--app-shadow-colour, rgba(5, 17, 20, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .createModalCard {
@@ -1075,14 +1075,14 @@
 
 .modalHeader {
   padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.1), 1.7rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.9rem);
-  border-bottom: 1px solid rgba(216, 225, 234, 0.96);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.06) 0%, rgba(25, 116, 84, 0) 44%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 251, 0.96) 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.06)) 0%, rgba(25, 116, 84, 0) 44%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.98)) 0%, var(--app-surface, rgba(248, 251, 251, 0.96)) 100%);
 }
 
 .modalHeader h2 {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.35), 2.15rem);
   letter-spacing: -0.052em;
 }
@@ -1090,7 +1090,7 @@
 .modalIntro {
   margin-top: 0.45rem;
   max-width: 44rem;
-  color: #5f7080;
+  color: var(--app-muted, #5f7080);
   font-size: 1rem;
   font-weight: 700;
 }
@@ -1102,19 +1102,19 @@
 
 .closeButton,
 .deleteConfirmCloseButton {
-  border-color: rgba(216, 225, 234, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #f2f5f6 100%);
-  color: #111f23;
+  border-color: var(--app-info-line, rgba(216, 225, 234, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f2f5f6) 100%);
+  color: var(--app-info, #111f23);
   box-shadow:
-    0 10px 20px rgba(20, 43, 43, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 10px 20px var(--app-shadow-colour, rgba(20, 43, 43, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .closeButton:hover:not(:disabled),
 .deleteConfirmCloseButton:hover:not(:disabled) {
-  color: #073b30;
-  border-color: rgba(151, 205, 181, 0.95);
-  background: linear-gradient(180deg, #ffffff 0%, #edf6f1 100%);
+  color: var(--app-text, #073b30);
+  border-color: var(--app-line, rgba(151, 205, 181, 0.95));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf6f1) 100%);
   transform: translateY(-1px);
 }
 
@@ -1128,7 +1128,7 @@
 }
 
 .field span {
-  color: #3f4f59;
+  color: var(--app-info, #3f4f59);
   font-size: 0.82rem;
   font-weight: 900;
   letter-spacing: -0.01em;
@@ -1139,13 +1139,13 @@
 .field select,
 .assetMoveControls select {
   min-height: 3.25rem;
-  border: 1px solid #d7e1e7;
+  border: 1px solid var(--app-info-line, #d7e1e7);
   border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #fbfcfd) 100%);
   box-shadow:
-    0 8px 18px rgba(25, 47, 54, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-  color: #1f313a;
+    0 8px 18px var(--app-shadow-colour, rgba(25, 47, 54, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
+  color: var(--app-info, #1f313a);
   font-weight: 650;
 }
 
@@ -1157,16 +1157,16 @@
 .field textarea:focus,
 .field select:focus,
 .assetMoveControls select:focus {
-  border-color: rgba(25, 116, 84, 0.48);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.48));
   box-shadow:
-    0 0 0 4px rgba(25, 116, 84, 0.12),
-    0 10px 22px rgba(25, 47, 54, 0.055);
+    0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.12)),
+    0 10px 22px var(--app-shadow-colour, rgba(25, 47, 54, 0.055));
 }
 
 .modalFooter {
   padding: 1rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.9rem) clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.45rem);
-  border-top: 1px solid rgba(216, 225, 234, 0.96);
-  background: linear-gradient(180deg, rgba(247, 250, 252, 0.65) 0%, rgba(242, 247, 246, 0.95) 100%);
+  border-top: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
+  background: linear-gradient(180deg, var(--app-info-soft, rgba(247, 250, 252, 0.65)) 0%, var(--app-surface-soft, rgba(242, 247, 246, 0.95)) 100%);
   gap: 0.9rem;
 }
 
@@ -1179,26 +1179,26 @@
 }
 
 .modalCancelButton {
-  color: #17362c;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8f7 100%);
-  border-color: #9eb5ad;
+  color: var(--app-text, #17362c);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f4f8f7) 100%);
+  border-color: var(--app-line, #9eb5ad);
   box-shadow:
-    0 10px 22px rgba(20, 43, 43, 0.065),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 10px 22px var(--app-shadow-colour, rgba(20, 43, 43, 0.065)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .modalPrimaryButton {
   color: #ffffff;
   background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
-  border-color: #0f6248;
+  border-color: var(--app-line, #0f6248);
   box-shadow:
-    0 16px 30px rgba(25, 116, 84, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    0 16px 30px var(--app-shadow-colour, rgba(25, 116, 84, 0.24)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.22));
 }
 
 .modalPrimaryButton:hover:not(:disabled) {
   background: linear-gradient(180deg, #218462 0%, #0b4b37 100%);
-  border-color: #0b4b37;
+  border-color: var(--app-line, #0b4b37);
 }
 
 .manageModalCard {
@@ -1220,19 +1220,19 @@
 .manageModalCard::-webkit-scrollbar-track {
   margin: 1rem 0;
   border-radius: 999px;
-  border-left: 1px solid rgba(193, 211, 218, 0.56);
-  background: linear-gradient(180deg, #edf6f2 0%, #f8fbfb 100%);
-  box-shadow: inset 0 0 0 1px rgba(216, 225, 234, 0.72);
+  border-left: 1px solid var(--app-info-line, rgba(193, 211, 218, 0.56));
+  background: linear-gradient(180deg, var(--app-surface-soft, #edf6f2) 0%, var(--app-surface, #f8fbfb) 100%);
+  box-shadow: inset 0 0 0 1px var(--app-shadow-colour, rgba(216, 225, 234, 0.72));
 }
 
 .manageModalCard::-webkit-scrollbar-thumb {
   min-height: 3.5rem;
-  border: 3px solid #f8fbfb;
+  border: 3px solid var(--app-line, #f8fbfb);
   border-radius: 999px;
   background: linear-gradient(180deg, #24946d 0%, #197454 50%, #0f5840 100%);
   box-shadow:
-    0 6px 14px rgba(15, 88, 64, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    0 6px 14px var(--app-shadow-colour, rgba(15, 88, 64, 0.18)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.28));
 }
 
 .manageModalCard::-webkit-scrollbar-thumb:hover {
@@ -1259,8 +1259,8 @@
   align-items: start;
   padding: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.9rem);
   gap: 1.05rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.8rem);
-  border-bottom: 1px solid rgba(216, 225, 234, 0.96);
-  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
+  background: var(--app-surface, rgba(255, 255, 255, 0.72));
 }
 
 .manageModalCard .editForm .field {
@@ -1281,33 +1281,33 @@
 
 .manageSaveButton {
   color: #ffffff;
-  border-color: #0f6248;
+  border-color: var(--app-line, #0f6248);
   background: linear-gradient(135deg, #238764 0%, #197454 46%, #0f5840 100%);
   box-shadow:
-    0 18px 34px rgba(25, 116, 84, 0.28),
-    0 6px 14px rgba(15, 88, 64, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
-  text-shadow: 0 1px 1px rgba(5, 33, 24, 0.28);
+    0 18px 34px var(--app-shadow-colour, rgba(25, 116, 84, 0.28)),
+    0 6px 14px var(--app-shadow-colour, rgba(15, 88, 64, 0.16)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.24));
+  text-shadow: 0 1px 1px var(--app-shadow-colour, rgba(5, 33, 24, 0.28));
 }
 
 .manageSaveButton:hover:not(:disabled),
 .manageSaveButton:focus-visible:not(:disabled) {
   color: #ffffff;
-  border-color: #0b4b37;
+  border-color: var(--app-accent, #0b4b37);
   background: linear-gradient(135deg, #2b9a73 0%, #1f7d5d 46%, #0b4b37 100%);
   box-shadow:
-    0 22px 40px rgba(25, 116, 84, 0.34),
-    0 8px 18px rgba(15, 88, 64, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    0 22px 40px var(--app-shadow-colour, rgba(25, 116, 84, 0.34)),
+    0 8px 18px var(--app-shadow-colour, rgba(15, 88, 64, 0.2)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.26));
 }
 
 .manageSaveButton:disabled {
   color: #ffffff;
-  border-color: #3f8c70;
-  background: linear-gradient(135deg, #61a889 0%, #44876c 46%, #2d6f57 100%);
+  border-color: var(--app-line, #3f8c70);
+  background: linear-gradient(135deg, var(--app-surface-soft, #61a889) 0%, #44876c 46%, #2d6f57 100%);
   box-shadow:
-    0 10px 22px rgba(25, 116, 84, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 10px 22px var(--app-shadow-colour, rgba(25, 116, 84, 0.16)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
   text-shadow: none;
 }
 
@@ -1315,8 +1315,8 @@
   padding: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.9rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.65rem);
   border-top: 0;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.035) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, rgba(248, 252, 253, 0.96) 0%, rgba(255, 255, 255, 0.98) 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.035)) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, var(--app-info-soft, rgba(248, 252, 253, 0.96)) 0%, var(--app-surface, rgba(255, 255, 255, 0.98)) 100%);
 }
 
 .assetMovePanel .subHeader h3 {
@@ -1324,7 +1324,7 @@
 }
 
 .assetMovePanel .subHeader p {
-  color: #617284;
+  color: var(--app-info, #617284);
   font-size: 0.98rem;
   font-weight: 700;
 }
@@ -1333,13 +1333,13 @@
   grid-template-columns: minmax(0, 1fr) minmax(360px, 0.82fr);
   gap: 1rem;
   padding: 1rem;
-  border-color: rgba(199, 215, 226, 0.98);
+  border-color: var(--app-info-line, rgba(199, 215, 226, 0.98));
   border-radius: 1.15rem;
   background:
-    linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #fbfdff) 100%);
   box-shadow:
-    0 10px 22px rgba(25, 47, 54, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 10px 22px var(--app-shadow-colour, rgba(25, 47, 54, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   overflow: visible;
 }
 
@@ -1362,16 +1362,16 @@
 .assetMoveReadyButton {
   color: #ffffff;
   background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
-  border-color: #0f6248;
+  border-color: var(--app-line, #0f6248);
   box-shadow:
-    0 14px 26px rgba(25, 116, 84, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    0 14px 26px var(--app-shadow-colour, rgba(25, 116, 84, 0.22)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.22));
 }
 
 .assetMoveReadyButton:hover:not(:disabled) {
   color: #ffffff;
   background: linear-gradient(180deg, #218462 0%, #0b4b37 100%);
-  border-color: #0b4b37;
+  border-color: var(--app-line, #0b4b37);
 }
 
 .targetSelect {
@@ -1388,18 +1388,18 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0 0.95rem;
-  border: 1px solid #a7c9df;
+  border: 1px solid var(--app-info-line, #a7c9df);
   border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #edf7ff 100%);
-  color: #1f313a;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #edf7ff) 100%);
+  color: var(--app-info, #1f313a);
   font: inherit;
   font-size: 0.95rem;
   font-weight: 800;
   line-height: 1.15;
   text-align: left;
   box-shadow:
-    0 10px 22px rgba(15, 59, 100, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 10px 22px var(--app-shadow-colour, rgba(15, 59, 100, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   cursor: pointer;
   transition:
     border-color 160ms ease,
@@ -1411,24 +1411,24 @@
 
 .targetSelectButton:hover:not(:disabled),
 .targetSelectButtonOpen {
-  border-color: #558fc6;
-  background: linear-gradient(180deg, #ffffff 0%, #e2f1ff 100%);
+  border-color: var(--app-info-line, #558fc6);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #e2f1ff) 100%);
   box-shadow:
-    0 0 0 4px rgba(85, 143, 198, 0.14),
-    0 14px 28px rgba(15, 59, 100, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 0 0 4px var(--app-shadow-colour, rgba(85, 143, 198, 0.14)),
+    0 14px 28px var(--app-shadow-colour, rgba(15, 59, 100, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .targetSelectButton:disabled {
-  color: #74817e;
-  background: linear-gradient(180deg, #f9fbfa 0%, #edf2f0 100%);
-  border-color: #d7e1dd;
+  color: var(--app-muted, #74817e);
+  background: linear-gradient(180deg, var(--app-surface, #f9fbfa) 0%, var(--app-surface-soft, #edf2f0) 100%);
+  border-color: var(--app-line, #d7e1dd);
   box-shadow: none;
   cursor: not-allowed;
 }
 
 .targetSelectButtonPlaceholder {
-  color: #526170;
+  color: var(--app-info, #526170);
   font-weight: 760;
 }
 
@@ -1443,7 +1443,7 @@
   width: 1.05rem;
   height: 1.05rem;
   flex: 0 0 auto;
-  color: #29456b;
+  color: var(--app-info, #29456b);
   transition: transform 160ms ease;
 }
 
@@ -1460,13 +1460,13 @@
   max-height: 20rem;
   overflow: hidden;
   padding: 0.45rem;
-  border: 1px solid rgba(151, 184, 207, 0.98);
+  border: 1px solid var(--app-info-line, rgba(151, 184, 207, 0.98));
   border-radius: 1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow:
-    0 20px 44px rgba(5, 17, 20, 0.18),
-    0 6px 14px rgba(5, 17, 20, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 20px 44px var(--app-shadow-colour, rgba(5, 17, 20, 0.18)),
+    0 6px 14px var(--app-shadow-colour, rgba(5, 17, 20, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .targetSelectMenuContent {
@@ -1484,21 +1484,21 @@
   align-items: center;
   gap: 0.55rem;
   padding: 0.3rem 0.38rem 0.3rem 0.72rem;
-  border: 1px solid #c5d9e6;
+  border: 1px solid var(--app-info-line, #c5d9e6);
   border-radius: 0.78rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f8fb 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f3f8fb) 100%);
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .targetSelectSearch:focus-within {
-  border-color: #558fc6;
-  box-shadow: 0 0 0 3px rgba(85, 143, 198, 0.14);
+  border-color: var(--app-info-line, #558fc6);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(85, 143, 198, 0.14));
 }
 
 .targetSelectSearchIcon {
   width: 1.05rem;
   height: 1.05rem;
-  color: #456377;
+  color: var(--app-info, #456377);
 }
 
 .targetSelectSearchInput {
@@ -1507,14 +1507,14 @@
   border: 0;
   outline: none;
   background: transparent;
-  color: #173229;
+  color: var(--app-text, #173229);
   font: inherit;
   font-size: 0.88rem;
   font-weight: 720;
 }
 
 .targetSelectSearchInput::placeholder {
-  color: #7b8a96;
+  color: var(--app-muted, #7b8a96);
 }
 
 .targetSelectSearchInput::-webkit-search-cancel-button {
@@ -1531,8 +1531,8 @@
   padding: 0;
   border: 0;
   border-radius: 0.58rem;
-  background: #e8f1f5;
-  color: #29485c;
+  background: var(--app-info-soft, #e8f1f5);
+  color: var(--app-info, #29485c);
   font: inherit;
   font-size: 1.12rem;
   font-weight: 800;
@@ -1542,8 +1542,8 @@
 
 .targetSelectSearchClear:hover,
 .targetSelectSearchClear:focus-visible {
-  background: #dceaf1;
-  outline: 2px solid rgba(85, 143, 198, 0.34);
+  background: var(--app-info-soft, #dceaf1);
+  outline: 2px solid var(--app-info-line, rgba(85, 143, 198, 0.34));
   outline-offset: 1px;
 }
 
@@ -1567,7 +1567,7 @@
   place-content: center;
   gap: 0.22rem;
   padding: 0.85rem 0.7rem;
-  color: #29485c;
+  color: var(--app-info, #29485c);
   text-align: center;
 }
 
@@ -1577,13 +1577,13 @@
 }
 
 .targetSelectEmpty strong {
-  color: #173229;
+  color: var(--app-text, #173229);
   font-size: 0.9rem;
   font-weight: 850;
 }
 
 .targetSelectEmpty small {
-  color: #71808c;
+  color: var(--app-muted, #71808c);
   font-size: 0.76rem;
   font-weight: 680;
 }
@@ -1596,7 +1596,7 @@
   border: 0;
   border-radius: 0.78rem;
   background: transparent;
-  color: #1f313a;
+  color: var(--app-info, #1f313a);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -1611,7 +1611,7 @@
 }
 
 .targetSelectOption small {
-  color: #647587;
+  color: var(--app-muted, #647587);
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.35;
@@ -1619,34 +1619,34 @@
 
 .targetSelectOption:hover,
 .targetSelectOption:focus-visible {
-  background: #eef6f2;
-  color: #073b30;
+  background: var(--app-surface-soft, #eef6f2);
+  color: var(--app-text, #073b30);
   outline: none;
 }
 
 .targetSelectOptionSelected {
-  background: #e7f4ee;
-  color: #073b30;
+  background: var(--app-surface-soft, #e7f4ee);
+  color: var(--app-text, #073b30);
 }
 
 .deleteConfirmModal {
   width: min(820px, 100%);
   padding: 0;
   overflow: visible;
-  border-color: rgba(232, 188, 188, 0.98);
+  border-color: var(--app-danger-line, rgba(232, 188, 188, 0.98));
   background:
-    radial-gradient(circle at 0% 0%, rgba(166, 58, 58, 0.08), rgba(166, 58, 58, 0) 38%),
-    linear-gradient(180deg, #ffffff 0%, #fff8f8 100%);
+    radial-gradient(circle at 0% 0%, var(--app-danger-soft, rgba(166, 58, 58, 0.08)), rgba(166, 58, 58, 0) 38%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff8f8) 100%);
   box-shadow:
-    0 34px 90px rgba(5, 17, 20, 0.28),
-    0 10px 24px rgba(5, 17, 20, 0.12);
+    0 34px 90px var(--app-shadow-colour, rgba(5, 17, 20, 0.28)),
+    0 10px 24px var(--app-shadow-colour, rgba(5, 17, 20, 0.12));
 }
 
 .deleteConfirmCloseButton {
   top: 1.1rem;
   right: 1.1rem;
-  border-color: #e8bcbc;
-  color: #8e2a2a;
+  border-color: var(--app-danger-line, #e8bcbc);
+  color: var(--app-danger, #8e2a2a);
 }
 
 .deleteConfirmContent {
@@ -1662,7 +1662,7 @@
 
 .deleteConfirmContent p {
   max-width: 44rem;
-  color: #5f7080;
+  color: var(--app-muted, #5f7080);
   font-size: 1rem;
   font-weight: 700;
 }
@@ -1671,8 +1671,8 @@
 .deleteMoveField {
   padding: 1rem;
   border-radius: 1.05rem;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .deleteConfirmActions {
@@ -1690,14 +1690,14 @@
 
 .deleteConfirmButton {
   color: #ffffff;
-  background: linear-gradient(180deg, #b84242 0%, #8f2929 100%);
-  border-color: #8f2929;
+  background: linear-gradient(180deg, var(--app-danger-soft, #b84242) 0%, #8f2929 100%);
+  border-color: var(--app-danger-line, #8f2929);
 }
 
 .deleteConfirmButton:disabled {
-  color: #7f7474;
-  background: linear-gradient(180deg, #f8f1f1 0%, #eee1e1 100%);
-  border-color: #decaca;
+  color: var(--app-muted, #7f7474);
+  background: linear-gradient(180deg, var(--app-danger-soft, #f8f1f1) 0%, var(--app-danger-soft, #eee1e1) 100%);
+  border-color: var(--app-danger-line, #decaca);
   box-shadow: none;
 }
 
@@ -1732,13 +1732,13 @@
 
 /* === Combined register, owner QR labels and compact manage actions === */
 .combinedRegisterCard {
-  border-color: rgba(76, 133, 115, 0.48);
+  border-color: var(--app-line, rgba(76, 133, 115, 0.48));
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.13) 0%, rgba(25, 116, 84, 0) 42%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f3 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.13)) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f3) 100%);
   box-shadow:
-    0 20px 42px rgba(12, 83, 61, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 20px 42px var(--app-shadow-colour, rgba(12, 83, 61, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .combinedRegisterGraphic {
@@ -1746,15 +1746,15 @@
   aspect-ratio: 1 / 1;
   display: grid;
   place-items: center;
-  border: 1.6px solid rgba(25, 116, 84, 0.28);
+  border: 1.6px solid var(--app-line, rgba(25, 116, 84, 0.28));
   border-radius: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.65rem);
-  color: #0f684d;
+  color: var(--app-text, #0f684d);
   background:
-    radial-gradient(circle at 20% 0%, rgba(25, 116, 84, 0.13), transparent 48%),
-    linear-gradient(180deg, #ffffff 0%, #eaf7f0 100%);
+    radial-gradient(circle at 20% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.13)), transparent 48%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eaf7f0) 100%);
   box-shadow:
-    0 14px 28px rgba(16, 72, 55, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 14px 28px var(--app-shadow-colour, rgba(16, 72, 55, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .combinedRegisterGraphic svg {
@@ -1769,10 +1769,10 @@
   width: fit-content;
   min-height: 1.85rem;
   padding: 0 0.78rem;
-  border: 1px solid rgba(78, 151, 119, 0.34);
+  border: 1px solid var(--app-line, rgba(78, 151, 119, 0.34));
   border-radius: 999px;
-  color: #14523d;
-  background: #e6f5ed;
+  color: var(--app-text, #14523d);
+  background: var(--app-surface-soft, #e6f5ed);
   font-size: 0.72rem;
   font-weight: 880;
   letter-spacing: 0.035em;
@@ -1780,15 +1780,15 @@
 }
 
 .combinedDownloadButton {
-  color: #475762;
-  border-color: #b9c5cc;
-  background: linear-gradient(180deg, #ffffff 0%, #edf1f3 100%);
+  color: var(--app-info, #475762);
+  border-color: var(--app-info-line, #b9c5cc);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #edf1f3) 100%);
 }
 
 .combinedDownloadButton:hover:not(:disabled) {
-  color: #263843;
-  border-color: #929fa7;
-  background: linear-gradient(180deg, #ffffff 0%, #e2e8eb 100%);
+  color: var(--app-info, #263843);
+  border-color: var(--app-line, #929fa7);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #e2e8eb) 100%);
 }
 
 .manageActionGrid {
@@ -1804,17 +1804,17 @@
 }
 
 .manageQrAction {
-  color: #4b5963;
-  border-color: #aeb9c0;
+  color: var(--app-muted, #4b5963);
+  border-color: var(--app-line, #aeb9c0);
   background:
-    radial-gradient(circle at 0% 0%, rgba(95, 111, 121, 0.1), transparent 48%),
-    linear-gradient(180deg, #ffffff 0%, #edf1f3 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(95, 111, 121, 0.1)), transparent 48%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #edf1f3) 100%);
 }
 
 .manageQrAction:hover:not(:disabled) {
-  color: #263841;
-  border-color: #87969f;
-  background: linear-gradient(180deg, #ffffff 0%, #dfe6e9 100%);
+  color: var(--app-info, #263841);
+  border-color: var(--app-line, #87969f);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #dfe6e9) 100%);
 }
 
 .assetSourceRegister {
@@ -1825,15 +1825,15 @@
   max-width: 100%;
   min-height: 1.9rem;
   padding: 0.28rem 0.74rem 0.3rem 0.52rem;
-  border: 1px solid rgba(42, 129, 96, 0.3);
+  border: 1px solid var(--app-line, rgba(42, 129, 96, 0.3));
   border-radius: 999px;
-  color: #174f3e !important;
+  color: var(--app-text, #174f3e) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(215, 119, 40, 0.09), transparent 48%),
-    linear-gradient(180deg, #ffffff 0%, #e9f5ef 100%);
+    radial-gradient(circle at 0% 0%, var(--app-danger-soft, rgba(215, 119, 40, 0.09)), transparent 48%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e9f5ef) 100%);
   box-shadow:
-    0 6px 14px rgba(19, 75, 58, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 6px 14px var(--app-shadow-colour, rgba(19, 75, 58, 0.07)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   font-size: 0.78rem !important;
   font-weight: 850 !important;
   line-height: 1.15;
@@ -1846,8 +1846,8 @@
   height: 0.54rem;
   flex: 0 0 0.54rem;
   border-radius: 999px;
-  background: linear-gradient(135deg, #e49245 0%, #b65c1b 100%);
-  box-shadow: 0 0 0 3px rgba(204, 105, 31, 0.12);
+  background: linear-gradient(135deg, var(--app-danger-soft, #e49245) 0%, #b65c1b 100%);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(204, 105, 31, 0.12));
 }
 
 .qrLabelsOverlay {
@@ -1868,8 +1868,8 @@
 }
 
 .qrExportGraphic {
-  color: #174f40;
-  background: linear-gradient(180deg, #ffffff 0%, #eaf3ef 100%);
+  color: var(--app-text, #174f40);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eaf3ef) 100%);
 }
 
 .qrExportIcon {
@@ -1905,15 +1905,15 @@
   gap: 0.85rem;
   align-items: center;
   padding: 0.85rem 0.95rem;
-  border: 1px solid #d3dfe5;
+  border: 1px solid var(--app-info-line, #d3dfe5);
   border-radius: 1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   cursor: pointer;
 }
 
 .qrAssetRowSelected {
-  border-color: #72bd95;
-  background: #eff9f4;
+  border-color: var(--app-accent, #72bd95);
+  background: var(--app-surface-soft, #eff9f4);
 }
 
 .qrAssetRowDisabled {
@@ -1934,14 +1934,14 @@
 }
 
 .qrAssetCopy strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 0.98rem;
   font-weight: 850;
 }
 
 .qrAssetCopy small,
 .qrAssetStatus {
-  color: #627483;
+  color: var(--app-muted, #627483);
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -1955,10 +1955,10 @@
   display: grid;
   place-items: center;
   min-height: 9rem;
-  border: 1px dashed #c8d7df;
+  border: 1px dashed var(--app-info-line, #c8d7df);
   border-radius: 1rem;
-  color: #617382;
-  background: #f8fbfc;
+  color: var(--app-muted, #617382);
+  background: var(--app-info-soft, #f8fbfc);
   font-weight: 750;
 }
 
@@ -2062,13 +2062,13 @@
   display: block !important;
   padding: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 2.6), 2.55rem) !important;
   overflow: visible !important;
-  border: 1px solid rgba(203, 218, 230, 0.98) !important;
+  border: 1px solid var(--app-info-line, rgba(203, 218, 230, 0.98)) !important;
   border-radius: 2rem !important;
-  background: rgba(255, 255, 255, 0.99) !important;
+  background: var(--app-surface, rgba(255, 255, 255, 0.99)) !important;
   box-shadow:
-    0 34px 92px rgba(8, 27, 34, 0.28),
-    0 10px 26px rgba(8, 27, 34, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 34px 92px var(--app-shadow-colour, rgba(8, 27, 34, 0.28)),
+    0 10px 26px var(--app-shadow-colour, rgba(8, 27, 34, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .deleteConfirmCloseButton {
@@ -2080,13 +2080,13 @@
   justify-content: center !important;
   width: 3.15rem !important;
   height: 3.15rem !important;
-  border: 1px solid rgba(207, 223, 236, 0.98) !important;
+  border: 1px solid var(--app-info-line, rgba(207, 223, 236, 0.98)) !important;
   border-radius: 999px !important;
-  background: #f7fbff !important;
-  color: #13395d !important;
+  background: var(--app-info-soft, #f7fbff) !important;
+  color: var(--app-info, #13395d) !important;
   box-shadow:
-    0 10px 20px rgba(15, 59, 100, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 10px 20px var(--app-shadow-colour, rgba(15, 59, 100, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
   font-size: 1.35rem !important;
   font-weight: 760 !important;
   line-height: 1 !important;
@@ -2094,9 +2094,9 @@
 }
 
 .deleteConfirmCloseButton:hover:not(:disabled) {
-  color: #0c382f !important;
-  border-color: rgba(151, 205, 181, 0.95) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #edf6f1 100%) !important;
+  color: var(--app-text, #0c382f) !important;
+  border-color: var(--app-line, rgba(151, 205, 181, 0.95)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf6f1) 100%) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -2117,8 +2117,8 @@
   max-width: calc(100% - 3.75rem) !important;
   margin: 0 !important;
   padding-bottom: 1.08rem !important;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98) !important;
-  color: #0c382f !important;
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.98)) !important;
+  color: var(--app-text, #0c382f) !important;
   font-size: clamp(1.85rem, calc(var(--website-design-vw, 1vw) * 3.2), 2.75rem) !important;
   font-weight: 900 !important;
   line-height: 1.02 !important;
@@ -2128,14 +2128,14 @@
 .deleteConfirmContent p {
   max-width: 58rem !important;
   margin: 0 !important;
-  color: #647382 !important;
+  color: var(--app-muted, #647382) !important;
   font-size: 1.04rem !important;
   font-weight: 650 !important;
   line-height: 1.55 !important;
 }
 
 .deleteConfirmContent p strong {
-  color: #0c382f !important;
+  color: var(--app-text, #0c382f) !important;
   font-weight: 850 !important;
 }
 
@@ -2146,14 +2146,14 @@
   width: 100% !important;
   margin: 0 !important;
   padding: 1.05rem 1.15rem !important;
-  border: 1px solid rgba(207, 220, 231, 0.98) !important;
+  border: 1px solid var(--app-info-line, rgba(207, 220, 231, 0.98)) !important;
   border-radius: 1.2rem !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfd) 100%) !important;
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .deleteConfirmAsset span {
-  color: #68798b !important;
+  color: var(--app-muted, #68798b) !important;
   font-size: 0.78rem !important;
   font-weight: 820 !important;
   letter-spacing: 0.06em !important;
@@ -2161,21 +2161,21 @@
 }
 
 .deleteConfirmAsset strong {
-  color: #0c382f !important;
+  color: var(--app-text, #0c382f) !important;
   font-size: 1.2rem !important;
   font-weight: 850 !important;
   line-height: 1.12 !important;
 }
 
 .deleteConfirmAsset small {
-  color: #607084 !important;
+  color: var(--app-info, #607084) !important;
   font-size: 0.98rem !important;
   font-weight: 650 !important;
   line-height: 1.35 !important;
 }
 
 .deleteMoveField > span {
-  color: #253b4b !important;
+  color: var(--app-info, #253b4b) !important;
   font-size: 0.96rem !important;
   font-weight: 820 !important;
   line-height: 1.25 !important;
@@ -2198,46 +2198,46 @@
 }
 
 .deleteConfirmActions .secondaryButton {
-  border: 1px solid rgba(197, 214, 228, 0.98) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%) !important;
-  color: #11335a !important;
+  border: 1px solid var(--app-info-line, rgba(197, 214, 228, 0.98)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f9fd) 100%) !important;
+  color: var(--app-info, #11335a) !important;
   box-shadow:
-    0 10px 22px rgba(15, 59, 100, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(15, 59, 100, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .deleteConfirmActions .secondaryButton:hover:not(:disabled) {
-  border-color: rgba(126, 180, 223, 0.98) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #eef7ff 100%) !important;
-  color: #0f3b64 !important;
+  border-color: var(--app-info-line, rgba(126, 180, 223, 0.98)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #eef7ff) 100%) !important;
+  color: var(--app-info, #0f3b64) !important;
 }
 
 .deleteConfirmButton,
 .deleteConfirmActions .deleteConfirmButton {
   min-width: 12.65rem !important;
   color: #ffffff !important;
-  background: linear-gradient(180deg, #c94e4e 0%, #9b3333 100%) !important;
-  border: 1px solid rgba(155, 51, 51, 0.42) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #c94e4e) 0%, #9b3333 100%) !important;
+  border: 1px solid var(--app-danger-line, rgba(155, 51, 51, 0.42)) !important;
   box-shadow:
-    0 16px 30px rgba(155, 51, 51, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+    0 16px 30px var(--app-shadow-colour, rgba(155, 51, 51, 0.24)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.16)) !important;
 }
 
 .deleteConfirmButton:hover:not(:disabled),
 .deleteConfirmActions .deleteConfirmButton:hover:not(:disabled) {
   color: #ffffff !important;
-  background: linear-gradient(180deg, #d05656 0%, #8f2f2f 100%) !important;
-  border-color: rgba(143, 47, 47, 0.5) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #d05656) 0%, #8f2f2f 100%) !important;
+  border-color: var(--app-danger-line, rgba(143, 47, 47, 0.5)) !important;
   box-shadow:
-    0 20px 36px rgba(155, 51, 51, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 20px 36px var(--app-shadow-colour, rgba(155, 51, 51, 0.3)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18)) !important;
 }
 
 .deleteConfirmButton:disabled,
 .deleteConfirmActions .deleteConfirmButton:disabled {
-  color: #827878 !important;
-  background: linear-gradient(180deg, #f7f2f2 0%, #ebe3e3 100%) !important;
-  border-color: #d8caca !important;
+  color: var(--app-muted, #827878) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #f7f2f2) 0%, var(--app-danger-soft, #ebe3e3) 100%) !important;
+  border-color: var(--app-danger-line, #d8caca) !important;
   box-shadow: none !important;
   cursor: not-allowed !important;
 }
@@ -2292,14 +2292,14 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1.6px solid rgba(18, 54, 47, 0.18);
+  border: 1.6px solid var(--app-line, rgba(18, 54, 47, 0.18));
   border-radius: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.65rem);
   background:
-    radial-gradient(circle at 18% 0%, rgba(25, 116, 84, 0.07), transparent 46%),
-    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+    radial-gradient(circle at 18% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.07)), transparent 46%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f7fbf9) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 14px 28px rgba(16, 36, 40, 0.055);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96)),
+    0 14px 28px var(--app-shadow-colour, rgba(16, 36, 40, 0.055));
 }
 
 .registerLogoGrid {
@@ -2327,9 +2327,9 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(216, 225, 234, 0.92);
+  border: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.92));
   border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--app-surface, rgba(255, 255, 255, 0.94));
 }
 
 .registerLogoTile img {
@@ -2349,20 +2349,20 @@
   min-width: 2rem;
   min-height: 2rem;
   padding: 0 0.45rem;
-  border: 1px solid rgba(15, 88, 64, 0.24);
+  border: 1px solid var(--app-line, rgba(15, 88, 64, 0.24));
   border-radius: 999px;
-  color: #0f5840;
-  background: rgba(239, 249, 244, 0.96);
+  color: var(--app-text, #0f5840);
+  background: var(--app-surface-soft, rgba(239, 249, 244, 0.96));
   font-size: 0.78rem;
   font-weight: 950;
-  box-shadow: 0 8px 16px rgba(15, 88, 64, 0.12);
+  box-shadow: 0 8px 16px var(--app-shadow-colour, rgba(15, 88, 64, 0.12));
 }
 
 .registerLogoPlaceholder {
   display: grid;
   place-items: center;
   gap: 0.25rem;
-  color: #0b342c;
+  color: var(--app-text, #0b342c);
   text-align: center;
 }
 
@@ -2374,7 +2374,7 @@
 
 .registerLogoPlaceholder small {
   max-width: 8.8rem;
-  color: #6b7b87;
+  color: var(--app-muted, #6b7b87);
   font-size: 0.76rem;
   font-weight: 720;
   line-height: 1.25;
@@ -2413,7 +2413,7 @@
 }
 
 .statGrid span {
-  color: #1f313a;
+  color: var(--app-info, #1f313a);
   font-size: clamp(0.96rem, calc(var(--website-design-vw, 1vw) * 1.12), 1.08rem);
   font-weight: 880;
   letter-spacing: -0.02em;
@@ -2421,7 +2421,7 @@
 
 .statGrid strong {
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: clamp(1.02rem, calc(var(--website-design-vw, 1vw) * 1.28), 1.17rem);
   font-weight: 900;
 }
@@ -2444,11 +2444,11 @@
   display: grid;
   gap: 0.8rem;
   padding: 0.95rem;
-  border: 1px solid rgba(216, 225, 234, 0.98);
+  border: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.98));
   border-radius: 1.15rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.045) 0%, rgba(25, 116, 84, 0) 42%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.045)) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
 }
 
 .logoManagerHeader {
@@ -2465,7 +2465,7 @@
 }
 
 .logoManagerHeader span {
-  color: #0b342c;
+  color: var(--app-text, #0b342c);
   font-size: 0.92rem;
   font-weight: 920;
 }
@@ -2473,7 +2473,7 @@
 .logoManagerHeader small,
 .logoEmptyState {
   margin: 0;
-  color: #657586;
+  color: var(--app-muted, #657586);
   font-size: 0.84rem;
   font-weight: 650;
   line-height: 1.42;
@@ -2487,15 +2487,15 @@
   gap: 0.5rem;
   min-height: 2.75rem;
   padding: 0 0.92rem;
-  border: 1px solid var(--action-copper-soft-border);
+  border: 1px solid var(--app-danger-line, var(--action-copper-soft-border));
   border-radius: 999px;
-  color: var(--action-copper-soft-text);
-  background: linear-gradient(180deg, #fffdfb 0%, var(--action-copper-soft-bg) 100%);
+  color: var(--app-danger, var(--action-copper-soft-text));
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdfb) 0%, var(--app-danger-soft, var(--action-copper-soft-bg)) 100%);
   font-size: 0.88rem;
   font-weight: 900;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(180, 107, 43, 0.08);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(180, 107, 43, 0.08));
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -2505,8 +2505,8 @@
 
 .logoUploadButton:hover:not(.logoUploadButtonDisabled) {
   transform: translateY(-1px);
-  border-color: var(--action-copper-soft-border-hover);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-copper-soft-bg-hover) 100%);
+  border-color: var(--app-danger-line, var(--action-copper-soft-border-hover));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--action-copper-soft-bg-hover)) 100%);
 }
 
 .logoUploadButton input {
@@ -2537,9 +2537,9 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(216, 225, 234, 0.96);
+  border: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
   border-radius: 0.95rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .logoThumbCard img {
@@ -2556,10 +2556,10 @@
   width: 1.75rem;
   min-width: 1.75rem;
   min-height: 1.75rem;
-  border: 1px solid rgba(232, 188, 188, 0.96);
+  border: 1px solid var(--app-danger-line, rgba(232, 188, 188, 0.96));
   border-radius: 999px;
-  color: #962c2c;
-  background: rgba(255, 246, 246, 0.98);
+  color: var(--app-danger, #962c2c);
+  background: var(--app-danger-soft, rgba(255, 246, 246, 0.98));
   font-size: 1.15rem;
   font-weight: 900;
   line-height: 1;
@@ -2575,7 +2575,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  color: #3f4f59;
+  color: var(--app-info, #3f4f59);
   font-size: 0.86rem;
   font-weight: 800;
 }
@@ -2649,20 +2649,20 @@
 .manageModalCard::-webkit-scrollbar-track {
   margin: 1.15rem 0;
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(237, 247, 242, 0.98) 0%, rgba(248, 252, 251, 0.98) 100%);
+  background: linear-gradient(180deg, var(--app-surface-soft, rgba(237, 247, 242, 0.98)) 0%, var(--app-surface, rgba(248, 252, 251, 0.98)) 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(203, 221, 215, 0.92),
-    inset 0 0 0 4px rgba(255, 255, 255, 0.56);
+    inset 0 0 0 1px var(--app-shadow-colour, rgba(203, 221, 215, 0.92)),
+    inset 0 0 0 4px var(--app-shadow-colour, rgba(255, 255, 255, 0.56));
 }
 
 .manageModalCard::-webkit-scrollbar-thumb {
   min-height: 4.25rem;
-  border: 2px solid rgba(248, 252, 251, 0.98);
+  border: 2px solid var(--app-line, rgba(248, 252, 251, 0.98));
   border-radius: 999px;
   background: linear-gradient(180deg, #1f8a67 0%, #176f52 50%, #0e523d 100%);
   box-shadow:
-    0 7px 16px rgba(15, 88, 64, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.34);
+    0 7px 16px var(--app-shadow-colour, rgba(15, 88, 64, 0.16)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.34));
 }
 
 .manageModalCard::-webkit-scrollbar-thumb:hover {
@@ -2677,12 +2677,12 @@
 
 .registerCard {
   background:
-    radial-gradient(circle at 2% 0%, rgba(25, 116, 84, 0.055) 0%, rgba(25, 116, 84, 0) 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.995) 0%, rgba(249, 252, 252, 0.99) 100%);
+    radial-gradient(circle at 2% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.055)) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.995)) 0%, var(--app-surface, rgba(249, 252, 252, 0.99)) 100%);
 }
 
 .registerDetails {
-  color: #5f7080;
+  color: var(--app-muted, #5f7080);
   font-weight: 620;
 }
 
@@ -2697,14 +2697,14 @@
 }
 
 .statGrid span {
-  color: #42515b;
+  color: var(--app-info, #42515b);
   font-size: clamp(0.91rem, calc(var(--website-design-vw, 1vw) * 1.04), 1rem);
   font-weight: 700;
   letter-spacing: -0.012em;
 }
 
 .statGrid strong {
-  color: #0b3f35;
+  color: var(--app-text, #0b3f35);
   font-size: clamp(0.98rem, calc(var(--website-design-vw, 1vw) * 1.16), 1.08rem);
   font-weight: 760;
   letter-spacing: -0.014em;
@@ -2713,25 +2713,25 @@
 .logoManager {
   gap: 1rem;
   padding: clamp(0.95rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.2rem);
-  border: 1px solid rgba(193, 211, 218, 0.95);
+  border: 1px solid var(--app-info-line, rgba(193, 211, 218, 0.95));
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.07) 0%, rgba(25, 116, 84, 0) 38%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfb 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.07)) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f8fbfb) 100%);
   box-shadow:
-    0 10px 24px rgba(16, 36, 40, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 10px 24px var(--app-shadow-colour, rgba(16, 36, 40, 0.045)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .logoManagerHeader span {
-  color: #0b3b31;
+  color: var(--app-text, #0b3b31);
   font-size: 0.98rem;
   font-weight: 850;
 }
 
 .logoManagerHeader small,
 .logoEmptyState {
-  color: #667788;
+  color: var(--app-muted, #667788);
   font-weight: 600;
 }
 
@@ -2747,18 +2747,18 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1.4px dashed rgba(25, 116, 84, 0.38);
+  border: 1.4px dashed var(--app-line, rgba(25, 116, 84, 0.38));
   border-radius: 1.25rem;
   background:
-    radial-gradient(circle at 25% 0%, rgba(25, 116, 84, 0.08), transparent 50%),
-    linear-gradient(180deg, #ffffff 0%, #f3f8f6 100%);
+    radial-gradient(circle at 25% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.08)), transparent 50%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f3f8f6) 100%);
 }
 
 .logoChoicePreviewActive {
   border-style: solid;
-  border-color: rgba(25, 116, 84, 0.32);
-  background: #ffffff;
-  box-shadow: inset 0 0 0 5px rgba(246, 250, 249, 0.96);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.32));
+  background: var(--app-surface, #ffffff);
+  box-shadow: inset 0 0 0 5px var(--app-shadow-colour, rgba(246, 250, 249, 0.96));
 }
 
 .logoChoicePreview img {
@@ -2774,7 +2774,7 @@
   place-items: center;
   gap: 0.22rem;
   padding: 1rem;
-  color: #0f3e33;
+  color: var(--app-text, #0f3e33);
   text-align: center;
 }
 
@@ -2786,7 +2786,7 @@
 
 .logoChoiceEmpty small {
   max-width: 11rem;
-  color: #6c7b88;
+  color: var(--app-muted, #6c7b88);
   font-size: 0.78rem;
   font-weight: 620;
   line-height: 1.35;
@@ -2805,19 +2805,19 @@
   min-height: 3rem;
   padding: 0 1.05rem;
   color: #ffffff;
-  border-color: #0f6248;
+  border-color: var(--app-line, #0f6248);
   background: linear-gradient(135deg, #238764 0%, #197454 48%, #0f5840 100%);
   box-shadow:
-    0 12px 24px rgba(25, 116, 84, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+    0 12px 24px var(--app-shadow-colour, rgba(25, 116, 84, 0.22)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.24));
 }
 
 .logoUploadButton:hover:not(.logoUploadButtonDisabled) {
-  border-color: #0b4b37;
+  border-color: var(--app-line, #0b4b37);
   background: linear-gradient(135deg, #2b9a73 0%, #1f7d5d 48%, #0b4b37 100%);
   box-shadow:
-    0 15px 28px rgba(25, 116, 84, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    0 15px 28px var(--app-shadow-colour, rgba(25, 116, 84, 0.28)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.28));
 }
 
 .logoClearButton {
@@ -2826,10 +2826,10 @@
   justify-content: center;
   min-height: 3rem;
   padding: 0 1rem;
-  border: 1px solid rgba(232, 188, 188, 0.96);
+  border: 1px solid var(--app-danger-line, rgba(232, 188, 188, 0.96));
   border-radius: 999px;
-  color: #962c2c;
-  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
+  color: var(--app-danger, #962c2c);
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff1f1) 100%);
   font: inherit;
   font-size: 0.88rem;
   font-weight: 820;
@@ -2843,8 +2843,8 @@
 
 .logoClearButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(203, 110, 110, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #ffe9e9 100%);
+  border-color: var(--app-danger-line, rgba(203, 110, 110, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #ffe9e9) 100%);
 }
 
 .logoClearButton:disabled {
@@ -2857,26 +2857,26 @@
   width: fit-content;
   min-height: 2.35rem;
   padding: 0.45rem 0.72rem;
-  border: 1px solid rgba(216, 225, 234, 0.9);
+  border: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.9));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.82);
-  color: #3f505a;
+  background: var(--app-surface, rgba(255, 255, 255, 0.82));
+  color: var(--app-info, #3f505a);
   font-weight: 720;
 }
 
 .logoVisibilityToggle input:disabled + span {
-  color: #8a97a3;
+  color: var(--app-muted, #8a97a3);
 }
 
 .manageSaveButtonSaved,
 .manageSaveButtonSaved:hover:not(:disabled),
 .manageSaveButtonSaved:focus-visible:not(:disabled) {
   color: #ffffff;
-  border-color: #0b5f44;
+  border-color: var(--app-accent, #0b5f44);
   background: linear-gradient(135deg, #26a06f 0%, #17845d 50%, #0d6749 100%);
   box-shadow:
-    0 18px 34px rgba(25, 116, 84, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    0 18px 34px var(--app-shadow-colour, rgba(25, 116, 84, 0.3)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.28));
 }
 
 @media (max-width: 700px) {
@@ -2910,11 +2910,11 @@
 .registerLogoPanel:hover:not(.registerLogoPanelDisabled),
 .registerLogoPanel:focus-within:not(.registerLogoPanelDisabled) {
   transform: translateY(-2px);
-  border-color: rgba(25, 116, 84, 0.56);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.56));
   box-shadow:
-    0 18px 34px rgba(15, 88, 64, 0.13),
-    0 0 0 4px rgba(25, 116, 84, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 18px 34px var(--app-shadow-colour, rgba(15, 88, 64, 0.13)),
+    0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .registerLogoPanelDisabled {
@@ -2949,9 +2949,9 @@
   color: #ffffff;
   text-align: center;
   background:
-    radial-gradient(circle at 18% 0%, rgba(255, 255, 255, 0.18), transparent 40%),
+    radial-gradient(circle at 18% 0%, var(--app-surface-soft, rgba(255, 255, 255, 0.18)), transparent 40%),
     linear-gradient(135deg, rgba(15, 88, 64, 0.92) 0%, rgba(25, 116, 84, 0.88) 50%, rgba(8, 60, 43, 0.93) 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
   opacity: 0;
   transform: scale(0.985);
   pointer-events: none;
@@ -2980,7 +2980,7 @@
 }
 
 .cardLogoHoverOverlay > small {
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--app-text, rgba(255, 255, 255, 0.82));
   font-size: 0.72rem;
   font-weight: 750;
   line-height: 1.2;
@@ -3033,28 +3033,28 @@
 .manageModalScrollArea::-webkit-scrollbar-track-piece {
   margin: 0.82rem 0.12rem 0.82rem 0;
   border-radius: 999px;
-  background: rgba(239, 246, 243, 0.18);
+  background: var(--app-surface-soft, rgba(239, 246, 243, 0.18));
 }
 
 .manageModalScrollArea:hover::-webkit-scrollbar-track,
 .manageModalScrollArea:hover::-webkit-scrollbar-track-piece {
-  background: rgba(239, 246, 243, 0.38);
+  background: var(--app-surface-soft, rgba(239, 246, 243, 0.38));
 }
 
 .manageModalScrollArea::-webkit-scrollbar-thumb {
   min-height: 4.25rem;
-  border: 2px solid rgba(255, 255, 255, 0.92);
+  border: 2px solid var(--app-line, rgba(255, 255, 255, 0.92));
   border-radius: 999px;
   background: linear-gradient(
     180deg,
-    rgba(43, 154, 115, 0.48) 0%,
+    var(--app-surface-soft, rgba(43, 154, 115, 0.48)) 0%,
     rgba(25, 116, 84, 0.58) 54%,
     rgba(15, 88, 64, 0.62) 100%
   );
   background-clip: padding-box;
   box-shadow:
-    0 4px 12px rgba(15, 88, 64, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    0 4px 12px var(--app-shadow-colour, rgba(15, 88, 64, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.26));
 }
 
 .manageModalScrollArea:hover::-webkit-scrollbar-thumb {
@@ -3122,19 +3122,19 @@
 .topDownloadButton {
   color: #ffffff;
   background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
-  border-color: #0f6248;
+  border-color: var(--app-line, #0f6248);
   box-shadow:
-    0 14px 26px rgba(25, 116, 84, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 14px 26px var(--app-shadow-colour, rgba(25, 116, 84, 0.22)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2));
 }
 
 .topDownloadButton:hover:not(:disabled) {
   color: #ffffff;
   background: linear-gradient(180deg, #218462 0%, #0b4b37 100%);
-  border-color: #0b4b37;
+  border-color: var(--app-line, #0b4b37);
   box-shadow:
-    0 18px 32px rgba(25, 116, 84, 0.26),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    0 18px 32px var(--app-shadow-colour, rgba(25, 116, 84, 0.26)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.22));
 }
 
 .exportFlowOverlay {
@@ -3158,14 +3158,14 @@
   overflow: hidden;
   gap: 0;
   padding: 0;
-  border: 1px solid rgba(193, 211, 218, 0.98);
+  border: 1px solid var(--app-info-line, rgba(193, 211, 218, 0.98));
   border-radius: 1.75rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.07), rgba(25, 116, 84, 0) 34%),
-    rgba(255, 255, 255, 0.99);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.07)), rgba(25, 116, 84, 0) 34%),
+    var(--app-surface, rgba(255, 255, 255, 0.99));
   box-shadow:
-    0 34px 88px rgba(5, 17, 20, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 34px 88px var(--app-shadow-colour, rgba(5, 17, 20, 0.24)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .exportPickerModal {
@@ -3175,12 +3175,12 @@
 
 .exportFlowModal .modalHeader {
   padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem) 1rem;
-  border-bottom: 1px solid rgba(216, 225, 234, 0.96);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
 }
 
 .exportFlowModal .modalHeader h2 {
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.9rem, calc(var(--website-design-vw, 1vw) * 3), 2.75rem);
   font-weight: 900;
@@ -3214,13 +3214,13 @@
 .exportSetupBody::-webkit-scrollbar-track,
 .registerPickerList::-webkit-scrollbar-track {
   border-radius: 999px;
-  background: rgba(239, 246, 243, 0.9);
+  background: var(--app-surface-soft, rgba(239, 246, 243, 0.9));
 }
 
 .exportFlowBody::-webkit-scrollbar-thumb,
 .exportSetupBody::-webkit-scrollbar-thumb,
 .registerPickerList::-webkit-scrollbar-thumb {
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 2px solid var(--app-line, rgba(255, 255, 255, 0.9));
   border-radius: 999px;
   background: linear-gradient(180deg, #24946d 0%, #197454 55%, #0f5840 100%);
   background-clip: padding-box;
@@ -3247,18 +3247,18 @@
   gap: 1rem;
   min-height: 7rem;
   padding: 1.1rem 1.15rem;
-  border: 1px solid rgba(196, 217, 207, 0.98);
+  border: 1px solid var(--app-line, rgba(196, 217, 207, 0.98));
   border-radius: 1.25rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.055), rgba(25, 116, 84, 0) 48%),
-    linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
-  color: #10382f;
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.055)), rgba(25, 116, 84, 0) 48%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f7fbfa) 100%);
+  color: var(--app-text, #10382f);
   font: inherit;
   text-align: left;
   cursor: pointer;
   box-shadow:
-    0 12px 26px rgba(16, 36, 40, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 12px 26px var(--app-shadow-colour, rgba(16, 36, 40, 0.045)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -3269,13 +3269,13 @@
 .exportChoiceOption:hover:not(:disabled),
 .exportOption:hover:not(:disabled),
 .exportOptionActive {
-  border-color: rgba(25, 116, 84, 0.38);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.38));
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.10), rgba(25, 116, 84, 0) 48%),
-    linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.10)), rgba(25, 116, 84, 0) 48%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eef9f4) 100%);
   box-shadow:
-    0 16px 34px rgba(25, 116, 84, 0.11),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 16px 34px var(--app-shadow-colour, rgba(25, 116, 84, 0.11)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   transform: translateY(-1px);
 }
 
@@ -3292,16 +3292,16 @@
   height: 4.1rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(207, 220, 228, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 220, 228, 0.98));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f8f7 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f3f8f7) 100%);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .exportChoiceIcon {
   width: 1.75rem;
   height: 1.75rem;
-  color: #197454;
+  color: var(--app-text, #197454);
 }
 
 .exportGraphicImage {
@@ -3322,7 +3322,7 @@
 
 .exportChoiceTitleBlock strong,
 .exportOptionTitleBlock strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 1.05rem;
   font-weight: 900;
   letter-spacing: -0.03em;
@@ -3331,7 +3331,7 @@
 .exportChoiceTitleBlock small,
 .exportOptionTitleBlock small,
 .exportScopeSummary span {
-  color: #607183;
+  color: var(--app-info, #607183);
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.42;
@@ -3357,19 +3357,19 @@
   align-items: center;
   min-height: 3.4rem;
   padding: 0 0.85rem 0 1rem;
-  border: 1px solid rgba(194, 211, 224, 0.98);
+  border: 1px solid var(--app-info-line, rgba(194, 211, 224, 0.98));
   border-radius: 1.05rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow:
-    0 8px 18px rgba(30, 56, 66, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 8px 18px var(--app-shadow-colour, rgba(30, 56, 66, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .exportSearchWrap:focus-within {
-  border-color: rgba(25, 116, 84, 0.42);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.42));
   box-shadow:
-    0 0 0 4px rgba(25, 116, 84, 0.12),
-    0 10px 22px rgba(30, 56, 66, 0.055);
+    0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.12)),
+    0 10px 22px var(--app-shadow-colour, rgba(30, 56, 66, 0.055));
 }
 
 .exportSearchWrap input {
@@ -3378,14 +3378,14 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #1f313a;
+  color: var(--app-info, #1f313a);
   font: inherit;
   font-size: 1rem;
   font-weight: 750;
 }
 
 .exportSearchWrap input::placeholder {
-  color: #7d8a98;
+  color: var(--app-muted, #7d8a98);
   font-weight: 750;
 }
 
@@ -3400,10 +3400,10 @@
 .selectedCount {
   justify-self: start;
   padding: 0.72rem 0.9rem;
-  border: 1px solid rgba(190, 226, 207, 0.95);
+  border: 1px solid var(--app-line, rgba(190, 226, 207, 0.95));
   border-radius: 999px;
-  color: #0f5840;
-  background: #eef9f4;
+  color: var(--app-text, #0f5840);
+  background: var(--app-surface-soft, #eef9f4);
   font-size: 0.9rem;
   font-weight: 900;
 }
@@ -3427,16 +3427,16 @@
   gap: 1rem;
   align-items: center;
   padding: 0.95rem 1rem;
-  border: 1px solid rgba(202, 218, 229, 0.98);
+  border: 1px solid var(--app-info-line, rgba(202, 218, 229, 0.98));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdfd 100%);
-  color: #10382f;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #fbfdfd) 100%);
+  color: var(--app-text, #10382f);
   font: inherit;
   text-align: left;
   cursor: pointer;
   box-shadow:
-    0 8px 18px rgba(16, 36, 40, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 8px 18px var(--app-shadow-colour, rgba(16, 36, 40, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -3450,11 +3450,11 @@
 
 .registerPickerRow:hover:not(:disabled),
 .registerPickerRowSelected {
-  border-color: rgba(25, 116, 84, 0.42);
-  background: linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.42));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eef9f4) 100%);
   box-shadow:
-    0 12px 26px rgba(25, 116, 84, 0.11),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 12px 26px var(--app-shadow-colour, rgba(25, 116, 84, 0.11)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   transform: translateY(-1px);
 }
 
@@ -3469,21 +3469,21 @@
   height: 1.75rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(25, 116, 84, 0.38);
+  border: 1px solid var(--app-line, rgba(25, 116, 84, 0.38));
   border-radius: 0.55rem;
   color: #ffffff;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   font-size: 1rem;
   font-weight: 950;
 }
 
 .registerPickerRowSelected .registerPickerCheckbox {
   background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
-  border-color: #0f6248;
+  border-color: var(--app-accent, #0f6248);
 }
 
 .registerPickerInfo strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 1.04rem;
   font-weight: 900;
   letter-spacing: -0.02em;
@@ -3491,7 +3491,7 @@
 
 .registerPickerInfo small,
 .registerPickerValue small {
-  color: #607183;
+  color: var(--app-info, #607183);
   font-size: 0.86rem;
   font-weight: 720;
   line-height: 1.3;
@@ -3503,7 +3503,7 @@
 }
 
 .registerPickerValue strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 1.02rem;
   font-weight: 900;
   letter-spacing: -0.02em;
@@ -3515,20 +3515,20 @@
   place-items: center;
   gap: 0.85rem;
   padding: 1.25rem;
-  border: 1px dashed rgba(193, 211, 218, 0.98);
+  border: 1px dashed var(--app-info-line, rgba(193, 211, 218, 0.98));
   border-radius: 1.1rem;
-  color: #607183;
-  background: #fbfdfd;
+  color: var(--app-info, #607183);
+  background: var(--app-surface, #fbfdfd);
   text-align: center;
 }
 
 .exportValidation {
   margin: 0;
   padding: 0.75rem 0.9rem;
-  border: 1px solid rgba(222, 176, 78, 0.45);
+  border: 1px solid var(--app-warning-line, rgba(222, 176, 78, 0.45));
   border-radius: 0.9rem;
-  color: #7a530c;
-  background: #fff8e8;
+  color: var(--app-warning, #7a530c);
+  background: var(--app-warning-soft, #fff8e8);
   font-size: 0.92rem;
   font-weight: 820;
 }
@@ -3544,13 +3544,13 @@
 .exportScopeSummary {
   margin: 1rem 0;
   padding: 0.95rem 1rem;
-  border: 1px solid rgba(202, 218, 229, 0.95);
+  border: 1px solid var(--app-info-line, rgba(202, 218, 229, 0.95));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f7fbfa) 100%);
 }
 
 .exportScopeSummary strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 0.86rem;
   font-weight: 900;
   letter-spacing: 0.02em;
@@ -3564,8 +3564,8 @@
   flex-wrap: wrap;
   gap: 0.85rem;
   padding: 1rem clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem) clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.45rem);
-  border-top: 1px solid rgba(216, 225, 234, 0.96);
-  background: linear-gradient(180deg, rgba(247, 250, 252, 0.65) 0%, rgba(242, 247, 246, 0.95) 100%);
+  border-top: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
+  background: linear-gradient(180deg, var(--app-info-soft, rgba(247, 250, 252, 0.65)) 0%, var(--app-surface-soft, rgba(242, 247, 246, 0.95)) 100%);
 }
 
 .exportModalFooter > * {
@@ -3621,7 +3621,7 @@
 }
 
 .registerContactEmail {
-  color: #5d6d7c;
+  color: var(--app-muted, #5d6d7c);
 }
 
 .registerAside {
@@ -3690,7 +3690,7 @@
 }
 
 .registerPickerContact {
-  color: #607183;
+  color: var(--app-info, #607183);
   font-size: 0.86rem;
   font-weight: 720;
   line-height: 1.3;
@@ -3722,10 +3722,10 @@
 .exportModalFooter .exportNextButton:not(:disabled) {
   color: #ffffff !important;
   background: linear-gradient(180deg, #197454 0%, #0f5840 100%) !important;
-  border-color: #0f6248 !important;
+  border-color: var(--app-line, #0f6248) !important;
   box-shadow:
-    0 14px 26px rgba(25, 116, 84, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 14px 26px var(--app-shadow-colour, rgba(25, 116, 84, 0.22)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18)) !important;
   opacity: 1 !important;
 }
 
@@ -3733,10 +3733,10 @@
 .exportModalFooter .exportNextButton:hover:not(:disabled) {
   color: #ffffff !important;
   background: linear-gradient(180deg, #218462 0%, #0b4b37 100%) !important;
-  border-color: #0b4b37 !important;
+  border-color: var(--app-line, #0b4b37) !important;
   box-shadow:
-    0 18px 32px rgba(25, 116, 84, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    0 18px 32px var(--app-shadow-colour, rgba(25, 116, 84, 0.28)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2)) !important;
   transform: translateY(-1px);
 }
 
@@ -3868,31 +3868,31 @@
 }
 
 .topSummaryButton {
-  color: var(--action-blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg) 100%);
-  border: 1.5px solid var(--action-blue-border);
+  color: var(--app-info, var(--action-blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, var(--action-blue-bg)) 100%);
+  border: 1.5px solid var(--app-info-line, var(--action-blue-border));
   box-shadow:
-    0 10px 22px rgba(15, 59, 100, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(15, 59, 100, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .topSummaryButton:hover:not(:disabled) {
-  color: var(--action-blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%);
-  border-color: var(--action-blue-border-hover);
+  color: var(--app-info, var(--action-blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, var(--action-blue-bg-hover)) 100%);
+  border-color: var(--app-info-line, var(--action-blue-border-hover));
   box-shadow:
-    0 14px 28px rgba(15, 59, 100, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(15, 59, 100, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .manageActionPanel {
   display: grid;
   gap: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.4rem);
   padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2.15), 1.7rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.9rem) clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem);
-  border-bottom: 1px solid rgba(216, 225, 234, 0.96);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 225, 234, 0.96));
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(249, 252, 252, 0.96) 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.04)) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.88)) 0%, var(--app-surface, rgba(249, 252, 252, 0.96)) 100%);
 }
 
 .manageActionGrid {
@@ -3909,10 +3909,10 @@
   justify-content: center;
   gap: 0.65rem;
   padding: 1rem 1.25rem;
-  border: 1.8px solid rgba(17, 31, 35, 0.88);
+  border: 1.8px solid var(--app-info-line, rgba(17, 31, 35, 0.88));
   border-radius: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.65rem);
-  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
-  color: #101820;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #fbfcfd) 100%);
+  color: var(--app-info, #101820);
   font: inherit;
   font-size: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.62rem);
   font-weight: 900;
@@ -3920,8 +3920,8 @@
   letter-spacing: -0.035em;
   cursor: pointer;
   box-shadow:
-    0 12px 24px rgba(16, 36, 40, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 12px 24px var(--app-shadow-colour, rgba(16, 36, 40, 0.045)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -3933,14 +3933,14 @@
 
 .manageActionButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(25, 116, 84, 0.58);
+  border-color: var(--app-line, rgba(25, 116, 84, 0.58));
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.08), rgba(25, 116, 84, 0) 48%),
-    linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
-  color: #073b30;
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.08)), rgba(25, 116, 84, 0) 48%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eef9f4) 100%);
+  color: var(--app-text, #073b30);
   box-shadow:
-    0 18px 34px rgba(25, 116, 84, 0.11),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 18px 34px var(--app-shadow-colour, rgba(25, 116, 84, 0.11)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .manageActionButton:disabled {
@@ -3950,45 +3950,45 @@
 }
 
 .manageEditAction {
-  border-color: var(--action-copper-soft-border);
-  color: var(--action-copper-soft-text);
-  background: linear-gradient(180deg, #fffaf5 0%, var(--action-copper-soft-bg) 100%);
+  border-color: var(--app-danger-line, var(--action-copper-soft-border));
+  color: var(--app-danger, var(--action-copper-soft-text));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf5) 0%, var(--app-danger-soft, var(--action-copper-soft-bg)) 100%);
   box-shadow:
-    0 10px 22px var(--action-copper-soft-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, var(--action-copper-soft-shadow)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .manageEditAction:hover:not(:disabled) {
-  border-color: var(--action-copper-soft-border-hover);
-  color: var(--action-copper-soft-text);
-  background: linear-gradient(180deg, #fff7f0 0%, var(--action-copper-soft-bg-hover) 100%);
+  border-color: var(--app-danger-line, var(--action-copper-soft-border-hover));
+  color: var(--app-danger, var(--action-copper-soft-text));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fff7f0) 0%, var(--app-danger-soft, var(--action-copper-soft-bg-hover)) 100%);
   box-shadow:
-    0 14px 28px rgba(114, 59, 13, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(114, 59, 13, 0.15)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .manageSummaryAction {
-  border-color: var(--action-blue-border);
-  color: var(--action-blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg) 100%);
+  border-color: var(--app-info-line, var(--action-blue-border));
+  color: var(--app-info, var(--action-blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, var(--action-blue-bg)) 100%);
   box-shadow:
-    0 10px 22px rgba(15, 59, 100, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(15, 59, 100, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .manageSummaryAction:hover:not(:disabled) {
-  border-color: var(--action-blue-border-hover);
-  color: var(--action-blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, var(--action-blue-bg-hover) 100%);
+  border-color: var(--app-info-line, var(--action-blue-border-hover));
+  color: var(--app-info, var(--action-blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, var(--action-blue-bg-hover)) 100%);
   box-shadow:
-    0 14px 28px rgba(15, 59, 100, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(15, 59, 100, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .manageDownloadAction {
-  border-color: rgba(15, 88, 64, 0.72);
-  color: #0f5840;
-  background: linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
+  border-color: var(--app-line, rgba(15, 88, 64, 0.72));
+  color: var(--app-text, #0f5840);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eef9f4) 100%);
 }
 
 .manageActionIcon {
@@ -4058,25 +4058,25 @@
 }
 
 .manageEditAction {
-  border: 1.8px solid var(--action-copper-soft-border, #dc8c4a);
-  color: var(--action-copper-soft-text, #7a3f0c);
+  border: 1.8px solid var(--app-danger-line, var(--action-copper-soft-border, #dc8c4a));
+  color: var(--app-danger, var(--action-copper-soft-text, #7a3f0c));
   background:
-    radial-gradient(circle at 0% 0%, rgba(220, 140, 74, 0.14), rgba(220, 140, 74, 0) 48%),
-    linear-gradient(180deg, #fffaf6 0%, var(--action-copper-soft-bg, #fff3e8) 100%);
+    radial-gradient(circle at 0% 0%, var(--app-danger-soft, rgba(220, 140, 74, 0.14)), rgba(220, 140, 74, 0) 48%),
+    linear-gradient(180deg, var(--app-danger-soft, #fffaf6) 0%, var(--app-danger-soft, var(--action-copper-soft-bg, #fff3e8)) 100%);
   box-shadow:
-    0 10px 22px var(--action-copper-soft-shadow, rgba(180, 107, 43, 0.08)),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, var(--action-copper-soft-shadow, rgba(180, 107, 43, 0.08))),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .manageEditAction:hover:not(:disabled) {
-  border-color: var(--action-copper-soft-border-hover, #c97834);
-  color: var(--action-copper-soft-text, #7a3f0c);
+  border-color: var(--app-danger-line, var(--action-copper-soft-border-hover, #c97834));
+  color: var(--app-danger, var(--action-copper-soft-text, #7a3f0c));
   background:
-    radial-gradient(circle at 0% 0%, rgba(220, 140, 74, 0.18), rgba(220, 140, 74, 0) 48%),
-    linear-gradient(180deg, #ffffff 0%, var(--action-copper-soft-bg-hover, #ffe9d7) 100%);
+    radial-gradient(circle at 0% 0%, var(--app-danger-soft, rgba(220, 140, 74, 0.18)), rgba(220, 140, 74, 0) 48%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--action-copper-soft-bg-hover, #ffe9d7)) 100%);
   box-shadow:
-    0 14px 28px rgba(180, 107, 43, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(180, 107, 43, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .exportNameField + .exportFormatGrid {
@@ -4101,21 +4101,21 @@
 
 .openRegisterButton,
 .openRegisterButton:disabled {
-  color: #0d5a42;
-  background: linear-gradient(180deg, #ffffff 0%, #ecf9f1 100%);
-  border: 1.5px solid #75c79a;
+  color: var(--app-text, #0d5a42);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #ecf9f1) 100%);
+  border: 1.5px solid var(--app-line, #75c79a);
   box-shadow:
-    0 10px 22px rgba(13, 90, 66, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(13, 90, 66, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .openRegisterButton:hover:not(:disabled) {
-  color: #0d5a42;
-  background: linear-gradient(180deg, #ffffff 0%, #ddf3e6 100%);
-  border-color: #4daf78;
+  color: var(--app-text, #0d5a42);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #ddf3e6) 100%);
+  border-color: var(--app-line, #4daf78);
   box-shadow:
-    0 14px 28px rgba(13, 90, 66, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(13, 90, 66, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .openRegisterButton:disabled {
@@ -4137,13 +4137,13 @@
 
 /* Final cascade for the 2026-07-20 combined-register controls. */
 .registerCard.combinedRegisterCard {
-  border-color: rgba(76, 133, 115, 0.48);
+  border-color: var(--app-line, rgba(76, 133, 115, 0.48));
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.13) 0%, rgba(25, 116, 84, 0) 42%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f3 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.13)) 0%, rgba(25, 116, 84, 0) 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f3) 100%);
   box-shadow:
-    0 20px 42px rgba(12, 83, 61, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 20px 42px var(--app-shadow-colour, rgba(12, 83, 61, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .manageActionGrid {
@@ -4191,9 +4191,9 @@
  max-height:calc(var(--website-visible-height,100dvh) - 3rem) !important;
  display:flex !important; flex-direction:column !important; gap:0 !important;
  padding:0 !important; overflow:hidden !important; border-radius:1.55rem !important;
- border:1px solid rgba(18,45,37,.12) !important;
- background:linear-gradient(180deg,#fff,#f7faf8) !important;
- box-shadow:0 32px 90px rgba(7,25,20,.28),0 8px 24px rgba(7,25,20,.12) !important;
+ border:1px solid var(--app-line, rgba(18,45,37,.12)) !important;
+ background:linear-gradient(180deg,var(--app-surface, #fff),var(--app-surface, #f7faf8)) !important;
+ box-shadow:0 32px 90px var(--app-shadow-colour, rgba(7,25,20,.28)),0 8px 24px var(--app-shadow-colour, rgba(7,25,20,.12)) !important;
 }
 .accountRegisterModal.manageModalCard,.accountRegisterModal.qrLabelsModal,.accountRegisterModal.exportFormatModal {
  width:min(var(--website-dialog-reference-width,100%),calc(var(--website-visible-width,100vw) - 3rem),58rem) !important;
@@ -4202,15 +4202,15 @@
  flex:0 0 auto !important; display:grid !important; grid-template-columns:minmax(0,1fr) 2.75rem !important;
  align-items:start !important; gap:1.25rem !important;
  margin:var(--register-dialog-padding) var(--register-dialog-padding) 0 !important;
- padding:0 0 1.25rem !important; border-bottom:1px solid rgba(18,45,37,.11) !important; background:transparent !important;
+ padding:0 0 1.25rem !important; border-bottom:1px solid var(--app-line, rgba(18,45,37,.11)) !important; background:transparent !important;
 }
-.accountRegisterModal.accountRegisterModal .modalHeader h2 { margin:0 !important; color:#12352d !important; font-size:2rem !important; line-height:1.15 !important; font-weight:800 !important; letter-spacing:-.04em !important; overflow-wrap:anywhere; }
-.accountRegisterModal.accountRegisterModal .modalHeader p { margin:.4rem 0 0 !important; color:#64746a !important; font-size:.88rem !important; font-weight:650 !important; line-height:1.5 !important; }
+.accountRegisterModal.accountRegisterModal .modalHeader h2 { margin:0 !important; color:var(--app-text, #12352d) !important; font-size:2rem !important; line-height:1.15 !important; font-weight:800 !important; letter-spacing:-.04em !important; overflow-wrap:anywhere; }
+.accountRegisterModal.accountRegisterModal .modalHeader p { margin:.4rem 0 0 !important; color:var(--app-muted, #64746a) !important; font-size:.88rem !important; font-weight:650 !important; line-height:1.5 !important; }
 .accountRegisterModal.accountRegisterModal .closeButton {
  position:static !important; display:grid !important; place-items:center !important; margin:0 !important; padding:0 !important;
  width:2.75rem !important; min-width:2.75rem !important; height:2.75rem !important; min-height:2.75rem !important;
- border:1px solid #d4dfd9 !important; border-radius:.9rem !important; background:#f5f9f7 !important;
- color:#294c3c !important; font-size:1.25rem !important; font-weight:700 !important; line-height:1 !important;
+ border:1px solid var(--app-line, #d4dfd9) !important; border-radius:.9rem !important; background:var(--app-surface, #f5f9f7) !important;
+ color:var(--app-text, #294c3c) !important; font-size:1.25rem !important; font-weight:700 !important; line-height:1 !important;
 }
 .accountRegisterModal.accountRegisterModal > :is(.modalBody,.formGrid,.manageModalScrollArea) {
  flex:1 1 auto !important; min-height:0 !important; min-width:0 !important; margin:0 !important;
@@ -4220,32 +4220,32 @@
 .accountRegisterModal.accountRegisterModal > .modalFooter {
  flex:0 0 auto !important; display:flex !important; justify-content:flex-end !important; flex-wrap:wrap !important; gap:.65rem !important;
  margin:0 !important; padding:1rem var(--register-dialog-padding) 1.6rem !important;
- border-top:1px solid rgba(18,45,37,.11) !important; background:#fff !important;
+ border-top:1px solid var(--app-line, rgba(18,45,37,.11)) !important; background:var(--app-surface, #fff) !important;
 }
 .accountRegisterModal.accountRegisterModal .modalFooter > button { flex:0 1 auto !important; width:auto !important; min-width:8.75rem !important; }
 .accountRegisterModal.accountRegisterModal :is(.primaryButton,.secondaryButton,.modalPrimaryButton,.modalCancelButton) {
  min-height:3rem !important; padding:.75rem 1rem !important; border-radius:1rem !important; font-size:.95rem !important; font-weight:750 !important;
 }
 .accountRegisterModal.accountRegisterModal :is(.primaryButton,.modalPrimaryButton) { background:linear-gradient(180deg,#1a5946,#124635) !important; color:#fff !important; }
-.accountRegisterModal.accountRegisterModal :is(.secondaryButton,.modalCancelButton) { background:#f2f5f8 !important; color:#17362c !important; border:1px solid #d2dfea !important; }
+.accountRegisterModal.accountRegisterModal :is(.secondaryButton,.modalCancelButton) { background:var(--app-info-soft, #f2f5f8) !important; color:var(--app-text, #17362c) !important; border:1px solid var(--app-info-line, #d2dfea) !important; }
 .accountRegisterModal.accountRegisterModal button:disabled { opacity:.52 !important; }
-.accountRegisterModal.accountRegisterModal :is(.field,.exportNameField) > span { color:#405d51 !important; font-size:.75rem !important; font-weight:800 !important; text-transform:uppercase; }
+.accountRegisterModal.accountRegisterModal :is(.field,.exportNameField) > span { color:var(--app-text, #405d51) !important; font-size:.75rem !important; font-weight:800 !important; text-transform:uppercase; }
 .accountRegisterModal.accountRegisterModal :is(.field,.exportNameField) :is(input,textarea) {
- min-height:3.2rem !important; padding:.9rem !important; border:1px solid #d8e2ec !important; border-radius:.92rem !important;
- background:#fff !important; color:#17362c !important; font-size:1rem !important; font-weight:400 !important; box-shadow:none !important;
+ min-height:3.2rem !important; padding:.9rem !important; border:1px solid var(--app-info-line, #d8e2ec) !important; border-radius:.92rem !important;
+ background:var(--app-surface, #fff) !important; color:var(--app-text, #17362c) !important; font-size:1rem !important; font-weight:400 !important; box-shadow:none !important;
 }
 .accountRegisterModal.accountRegisterModal input::placeholder,.accountRegisterModal.accountRegisterModal textarea::placeholder { font-weight:400 !important; }
 .accountRegisterModal.accountRegisterModal :is(.exportChoiceOption,.exportOption) { padding:1rem !important; gap:1rem !important; border-radius:1rem !important; }
 .accountRegisterModal.accountRegisterModal :is(.exportChoiceTitleBlock,.exportOptionTitleBlock) strong { font-size:1rem !important; font-weight:800 !important; line-height:1.35 !important; }
-.accountRegisterModal.accountRegisterModal :is(.exportChoiceTitleBlock,.exportOptionTitleBlock) small { color:#64746a !important; font-size:.88rem !important; font-weight:650 !important; line-height:1.5 !important; }
+.accountRegisterModal.accountRegisterModal :is(.exportChoiceTitleBlock,.exportOptionTitleBlock) small { color:var(--app-muted, #64746a) !important; font-size:.88rem !important; font-weight:650 !important; line-height:1.5 !important; }
 .accountRegisterModal.accountRegisterModal :is(.exportGraphic,.exportChoiceGraphic) { width:3rem !important; height:3rem !important; min-width:3rem !important; border-radius:.9rem !important; }
 .accountRegisterModal.accountRegisterModal .manageActionPanel { padding:0 0 1rem !important; background:transparent !important; }
 .accountRegisterModal.accountRegisterModal .manageActionButton { min-height:3.5rem !important; padding:.75rem !important; border-radius:1rem !important; font-size:1rem !important; }
 .accountRegisterModal.accountRegisterModal .assetMovePanel { padding:1rem 0 0 !important; background:transparent !important; }
-.accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) { display:flex !important; align-items:center !important; gap:.65rem !important; padding:0 1rem !important; min-height:3.2rem !important; border:1px solid #d8e2ec !important; border-radius:.92rem !important; background:#fff !important; }
+.accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) { display:flex !important; align-items:center !important; gap:.65rem !important; padding:0 1rem !important; min-height:3.2rem !important; border:1px solid var(--app-info-line, #d8e2ec) !important; border-radius:.92rem !important; background:var(--app-surface, #fff) !important; }
 .accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) .searchIcon { position:static !important; transform:none !important; flex:0 0 1rem; }
 .accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap) input { flex:1 1 0 !important; width:0 !important; min-width:0 !important; min-height:3.2rem !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; font-size:1rem !important; font-weight:400 !important; }
-.accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap):focus-within { outline:3px solid rgba(22,83,64,.15); }
+.accountRegisterModal.accountRegisterModal :is(.searchWrap,.manageAssetSearchWrap):focus-within { outline:3px solid var(--app-accent, rgba(22,83,64,.15)); }
 .accountRegisterModal.accountRegisterModal .qrAssetList { min-height:0 !important; max-height:none !important; overflow:visible !important; }
 @media(max-width:600px) {
  :global(:where(html:not(:has([data-website-canvas])))) .accountRegisterModal.accountRegisterModal .formGrid { grid-template-columns:minmax(0,1fr) !important; }
@@ -4281,7 +4281,7 @@
 .accountRegisterModal.exportPickerModal .registerPickerInfo { gap: .4rem; }
 .accountRegisterModal.exportPickerModal .registerPickerInfo strong { font-weight: 800; overflow-wrap: anywhere; }
 .accountRegisterModal.exportPickerModal .registerPickerContact { overflow-wrap: anywhere; }
-.registerPickerSelect { color: #185d46; font-size: .9rem; font-weight: 800; white-space: nowrap; }
+.registerPickerSelect { color: var(--app-text, #185d46); font-size: .9rem; font-weight: 800; white-space: nowrap; }
 .accountRegisterModal.exportPickerModal .registerPickerValue {
   grid-column: 1 / -1;
   display: grid;
@@ -4289,7 +4289,7 @@
   gap: 1rem;
   justify-items: stretch;
   text-align: left;
-  border-top: 1px solid #e1e9e6;
+  border-top: 1px solid var(--app-line, #e1e9e6);
   padding-top: .85rem;
 }
 .accountRegisterModal.exportPickerModal .registerPickerValue > span { display: grid; gap: .3rem; }
@@ -4304,7 +4304,7 @@
 /* Keep picker controls in view and give the result list its own inset scrollbar. */
 .accountRegisterModal.exportPickerModal {
   width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 58rem) !important;
-  background: #fff !important;
+  background: var(--app-surface, #fff) !important;
 }
 .accountRegisterModal.exportPickerModal > .registerPickerBody {
   display: flex;
@@ -4335,31 +4335,31 @@
   scroll-padding-block: .5rem;
 }
 .accountRegisterModal.exportPickerModal .registerPickerList::-webkit-scrollbar { width: 14px; }
-.accountRegisterModal.exportPickerModal .registerPickerList::-webkit-scrollbar-track { background: #edf3f0; border-radius: 999px; }
-.accountRegisterModal.exportPickerModal .registerPickerList::-webkit-scrollbar-thumb { background: #759b8c; border: 3px solid #edf3f0; border-radius: 999px; }
+.accountRegisterModal.exportPickerModal .registerPickerList::-webkit-scrollbar-track { background: var(--app-surface-soft, #edf3f0); border-radius: 999px; }
+.accountRegisterModal.exportPickerModal .registerPickerList::-webkit-scrollbar-thumb { background: var(--app-surface-soft, #759b8c); border: 3px solid var(--app-line, #edf3f0); border-radius: 999px; }
 .accountRegisterModal.exportPickerModal .registerPickerList::-webkit-scrollbar-thumb:hover { background: #416f5c; }
 .accountRegisterModal.exportPickerModal .registerPickerList::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 .accountRegisterModal.exportPickerModal .registerPickerRow {
   padding: 1rem;
   gap: .75rem;
-  background: #fff;
+  background: var(--app-surface, #fff);
   box-shadow: none;
   transition: border-color 140ms ease, background 140ms ease;
 }
 .accountRegisterModal.exportPickerModal .registerPickerRow:hover:not(:disabled) {
   transform: none;
-  border-color: #6caa92;
-  background: #f5faf7;
+  border-color: var(--app-line, #6caa92);
+  background: var(--app-surface, #f5faf7);
   box-shadow: none;
 }
 .accountRegisterModal.exportPickerModal .registerPickerRowSelected {
-  border-color: #288361;
-  background: #edf8f2;
-  box-shadow: inset 3px 0 #288361;
+  border-color: var(--app-accent, #288361);
+  background: var(--app-surface-soft, #edf8f2);
+  box-shadow: inset 3px 0 var(--app-shadow-colour, #288361);
 }
 .accountRegisterModal.exportPickerModal .registerPickerRow:focus-visible,
 .accountRegisterModal.exportPickerModal .registerPickerList:focus-visible {
-  outline: 3px solid rgba(40,131,97,.4);
+  outline: 3px solid var(--app-accent, rgba(40,131,97,.4));
   outline-offset: -3px;
 }
 .accountRegisterModal.exportPickerModal .registerPickerInfo { gap: .3rem; }
@@ -4367,7 +4367,7 @@
 .accountRegisterModal.exportPickerModal .registerPickerSelect {
   padding: .5rem .7rem;
   border-radius: .7rem;
-  background: #edf5f1;
+  background: var(--app-surface-soft, #edf5f1);
 }
 .accountRegisterModal.exportPickerModal .exportValidation { flex: 0 0 auto; margin: 0; }
 @media(max-width:600px) {

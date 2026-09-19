@@ -1,63 +1,63 @@
-.calendar { width: min(100%, 32rem); margin-inline: auto; padding: 1rem; border: 1px solid #dce8e2; border-radius: 1.2rem; background: linear-gradient(160deg, #fff, #f6faf8); color: #24483b; }
+.calendar { width: min(100%, 32rem); margin-inline: auto; padding: 1rem; border: 1px solid var(--app-line, #dce8e2); border-radius: 1.2rem; background: linear-gradient(160deg, var(--app-surface, #fff), var(--app-surface, #f6faf8)); color: var(--app-text, #24483b); }
 .navigation { display: flex; align-items: center; gap: .6rem; margin-bottom: .85rem; }
 .calendar button, .calendar select { font: inherit; font-weight: 450; color: inherit; cursor: pointer; }
-.navigation > button { display: grid; place-items: center; flex: 0 0 2.75rem; height: 2.75rem; border: 1px solid #dce8e2; border-radius: .8rem; background: #fff; }
+.navigation > button { display: grid; place-items: center; flex: 0 0 2.75rem; height: 2.75rem; border: 1px solid var(--app-line, #dce8e2); border-radius: .8rem; background: var(--app-surface, #fff); }
 .navigation svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.7; }
 .selectors { display: flex; flex: 1; justify-content: center; gap: .4rem; min-width: 0; }
 .selectors select { min-width: 0; max-width: 60%; min-height: 2.75rem; padding: .4rem; border: 0; border-radius: .6rem; background: transparent; font-weight: 550; }
 .days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; }
-.weekday { text-align: center; font-size: .75rem; font-weight: 500; color: #718479; padding-block: .35rem; }
-.days button { min-height: 2.75rem; padding: .4rem; border: 1px solid transparent; border-radius: .75rem; background: #fff; font-size: 1rem; }
-.days button:hover { background: #eaf4ee; border-color: #b7d7c6; }
-.days button[aria-current='date'] { border-color: #83b89e; }
-.days button[aria-pressed='true'] { background: #165540; border-color: #165540; color: #fff; font-weight: 550; }
-.calendar :is(button, select):focus-visible { outline: 2px solid #318969; outline-offset: 2px; }
-.summary { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .8rem; padding-top: .7rem; border-top: 1px solid #dce8e2; font-size: .85rem; font-weight: 450; }
-.summary button { border: 1px solid #c5ded1; border-radius: .7rem; background: #edf6f0; padding: .6rem .9rem; }
+.weekday { text-align: center; font-size: .75rem; font-weight: 500; color: var(--app-muted, #718479); padding-block: .35rem; }
+.days button { min-height: 2.75rem; padding: .4rem; border: 1px solid transparent; border-radius: .75rem; background: var(--app-surface, #fff); font-size: 1rem; }
+.days button:hover { background: var(--app-surface-soft, #eaf4ee); border-color: var(--app-line, #b7d7c6); }
+.days button[aria-current='date'] { border-color: var(--app-line, #83b89e); }
+.days button[aria-pressed='true'] { background: #165540; border-color: var(--app-accent, #165540); color: #fff; font-weight: 550; }
+.calendar :is(button, select):focus-visible { outline: 2px solid var(--app-accent, #318969); outline-offset: 2px; }
+.summary { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .8rem; padding-top: .7rem; border-top: 1px solid var(--app-line, #dce8e2); font-size: .85rem; font-weight: 450; }
+.summary button { border: 1px solid var(--app-line, #c5ded1); border-radius: .7rem; background: var(--app-surface-soft, #edf6f0); padding: .6rem .9rem; }
 @media(max-width: 480px) { :global(:where(html:not(:has([data-website-canvas])))) .calendar { padding: .6rem; } :global(:where(html:not(:has([data-website-canvas])))) .navigation { gap: .2rem; } :global(:where(html:not(:has([data-website-canvas])))) .days { gap: .15rem; } }
 
-.dateLabel { display: grid; gap: .5rem; color: #425d51; font-size: .85rem; font-weight: 550; }
+.dateLabel { display: grid; gap: .5rem; color: var(--app-text, #425d51); font-size: .85rem; font-weight: 550; }
 .dateField { display: flex; align-items: center; position: relative; }
 .dateField input { padding-right: 4rem !important; }
-.dateField > button { position: absolute; right: .45rem; display: grid; place-items: center; width: 2.75rem; height: 2.5rem; border: 0; border-radius: .65rem; color: #247457; background: #edf5f0; cursor: pointer; }
+.dateField > button { position: absolute; right: .45rem; display: grid; place-items: center; width: 2.75rem; height: 2.5rem; border: 0; border-radius: .65rem; color: var(--app-text, #247457); background: var(--app-surface-soft, #edf5f0); cursor: pointer; }
 .dateField svg { width: 1.5rem; height: 1.5rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
-.dateDialog { width: min(34rem, calc(var(--website-visible-width, 100vw) - 2rem)); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); padding: 0; border: 1px solid #dce8e2; border-radius: 1.4rem; background: #fff; color: #24483b; box-shadow: 0 24px 70px #102f3340; }
+.dateDialog { width: min(34rem, calc(var(--website-visible-width, 100vw) - 2rem)); max-height: calc(var(--website-visible-height, 100dvh) - 2rem); padding: 0; border: 1px solid var(--app-line, #dce8e2); border-radius: 1.4rem; background: var(--app-surface, #fff); color: var(--app-text, #24483b); box-shadow: 0 24px 70px var(--app-shadow-colour, #102f3340); }
 .dateDialog::backdrop { background: #102b3266; backdrop-filter: blur(6px); }
 .dateDialog .calendar { width: 100%; margin: 0; border: 0; padding: 1.25rem; }
-.dialogHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid #e0e9e5; }
+.dialogHeader { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--app-line, #e0e9e5); }
 .dialogHeader h3 { margin: 0; font-size: 1.35rem; font-weight: 750; }
-.dialogHeader button { width: 2.75rem; height: 2.75rem; border: 1px solid #dce8e2; border-radius: .8rem; background: #f5f9f7; font-size: 1.4rem; }
-.dateField button:focus-visible { outline: 2px solid #318969; outline-offset: 2px; }
+.dialogHeader button { width: 2.75rem; height: 2.75rem; border: 1px solid var(--app-line, #dce8e2); border-radius: .8rem; background: var(--app-surface, #f5f9f7); font-size: 1.4rem; }
+.dateField button:focus-visible { outline: 2px solid var(--app-accent, #318969); outline-offset: 2px; }
 
 /* Explicit contrast and typography, isolated from each page's form styles. */
 .dateField.dateField { position: relative; display: flex; width: 100%; min-width: 0; align-items: center; text-transform: none; letter-spacing: normal; }
-.dateField .input.input { width: 100%; min-width: 0; min-height: 3.2rem; padding: .8rem 3.6rem .8rem 1rem; border: 1px solid #ceddd5; border-radius: .9rem; background: #fff; color: #294c3e; font: inherit; font-size: 1rem; font-weight: 450; }
-.dateField .input::placeholder { color: #718277; font-weight: 400; }
+.dateField .input.input { width: 100%; min-width: 0; min-height: 3.2rem; padding: .8rem 3.6rem .8rem 1rem; border: 1px solid var(--app-line, #ceddd5); border-radius: .9rem; background: var(--app-surface, #fff); color: var(--app-text, #294c3e); font: inherit; font-size: 1rem; font-weight: 450; }
+.dateField .input::placeholder { color: var(--app-muted, #718277); font-weight: 400; }
 .dateField.dateField > button { min-width: 0; padding: 0; margin: 0; font: inherit; box-shadow: none; }
 .dateField.dateField > button:disabled { opacity: .45; cursor: not-allowed; }
-.dateField .input:disabled { background: #f1f4f2; color: #78877e; }
+.dateField .input:disabled { background: var(--app-surface-soft, #f1f4f2); color: var(--app-muted, #78877e); }
 .dateDialog.dateDialog { font-family: var(--font-body, 'Montserrat'), sans-serif; font-size: 1rem; line-height: 1.4; }
 .dateDialog *, .dateDialog *::before, .dateDialog *::after { box-sizing: border-box; }
-.dateDialog .calendar { color: #173f30; background: #fff; }
+.dateDialog .calendar { color: var(--app-text, #173f30); background: var(--app-surface, #fff); }
 .dateDialog .days { gap: .4rem; }
-.dateDialog .weekday { color: #405c4e; font-size: .82rem; font-weight: 600; }
-.dateDialog .days button { border-color: #d0dfd6; background: #f1f6f3; font-size: 1.08rem; font-weight: 500; min-height: 3rem; }
-.dateDialog .days button:hover:not(:disabled) { background: #dceee3; border-color: #7bb396; }
-.dateDialog .days button[aria-current='date'] { border: 2px solid #398562; }
-.dateDialog .days button[aria-pressed='true'] { background: #165540; color: #fff; border-color: #165540; font-weight: 650; }
-.dateDialog .days button:disabled { background: #f7f8f7; color: #97a39b; border-color: #edf0ee; cursor: not-allowed; }
-.dateDialog .selectors select { border: 1px solid #d0dfd6; background: #f1f6f3; }
+.dateDialog .weekday { color: var(--app-text, #405c4e); font-size: .82rem; font-weight: 600; }
+.dateDialog .days button { border-color: var(--app-line, #d0dfd6); background: var(--app-surface-soft, #f1f6f3); font-size: 1.08rem; font-weight: 500; min-height: 3rem; }
+.dateDialog .days button:hover:not(:disabled) { background: var(--app-surface-soft, #dceee3); border-color: var(--app-line, #7bb396); }
+.dateDialog .days button[aria-current='date'] { border: 2px solid var(--app-line, #398562); }
+.dateDialog .days button[aria-pressed='true'] { background: #165540; color: #fff; border-color: var(--app-accent, #165540); font-weight: 650; }
+.dateDialog .days button:disabled { background: var(--app-surface, #f7f8f7); color: var(--app-muted, #97a39b); border-color: var(--app-line, #edf0ee); cursor: not-allowed; }
+.dateDialog .selectors select { border: 1px solid var(--app-line, #d0dfd6); background: var(--app-surface-soft, #f1f6f3); }
 @media (max-width: 480px) { :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .calendar { padding: .8rem; } :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .days { gap: .2rem; } :global(:where(html:not(:has([data-website-canvas])))) .dateDialog .days button { min-height: 2.75rem; } }
 
 /* Calendar menus stay inside the date dialog's top layer. */
 .selectRoot { position: relative; min-width: 0; }
 .selectRoot:first-child { flex: 1; max-width: 11rem; }
 .selectRoot:last-child { flex: 0 0 6rem; }
-.calendar .selectTrigger { display: flex; align-items: center; justify-content: space-between; gap: .65rem; width: 100%; min-height: 2.9rem; padding: .65rem .8rem; border: 1px solid #c9dbd0; border-radius: .8rem; background: #f1f6f3; line-height: 1.3; font-weight: 500; }
+.calendar .selectTrigger { display: flex; align-items: center; justify-content: space-between; gap: .65rem; width: 100%; min-height: 2.9rem; padding: .65rem .8rem; border: 1px solid var(--app-line, #c9dbd0); border-radius: .8rem; background: var(--app-surface-soft, #f1f6f3); line-height: 1.3; font-weight: 500; }
 .selectTrigger > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .calendar .selectTrigger svg, .selectMenu svg { display: block; flex: 0 0 1rem; width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.selectTrigger[aria-expanded='true'] { border-color: #479575; box-shadow: 0 0 0 2px #e1eee7; }
-.selectMenu { position: absolute; top: calc(100% + .45rem); left: 0; z-index: 2; min-width: 100%; width: max-content; max-height: 14rem; overflow-y: auto; overscroll-behavior: contain; padding: .35rem; border: 1px solid #c9dbd0; border-radius: .9rem; background: #fff; box-shadow: 0 12px 28px #173f3026; scrollbar-width: thin; scrollbar-color: #82a995 #edf4f0; }
-.calendar .selectMenu button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.65rem; padding: .55rem .75rem; border: 0; border-radius: .6rem; background: #fff; text-align: left; white-space: nowrap; font-size: .95rem; font-weight: 450; }
-.calendar .selectMenu button:hover, .calendar .selectMenu button:focus-visible { background: #edf6f0; outline: none; }
-.calendar .selectMenu button[aria-selected='true'] { background: #dceee3; color: #165540; font-weight: 600; }
+.selectTrigger[aria-expanded='true'] { border-color: var(--app-line, #479575); box-shadow: 0 0 0 2px var(--app-shadow-colour, #e1eee7); }
+.selectMenu { position: absolute; top: calc(100% + .45rem); left: 0; z-index: 2; min-width: 100%; width: max-content; max-height: 14rem; overflow-y: auto; overscroll-behavior: contain; padding: .35rem; border: 1px solid var(--app-line, #c9dbd0); border-radius: .9rem; background: var(--app-surface, #fff); box-shadow: 0 12px 28px var(--app-shadow-colour, #173f3026); scrollbar-width: thin; scrollbar-color: #82a995 #edf4f0; }
+.calendar .selectMenu button { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-height: 2.65rem; padding: .55rem .75rem; border: 0; border-radius: .6rem; background: var(--app-surface, #fff); text-align: left; white-space: nowrap; font-size: .95rem; font-weight: 450; }
+.calendar .selectMenu button:hover, .calendar .selectMenu button:focus-visible { background: var(--app-surface-soft, #edf6f0); outline: none; }
+.calendar .selectMenu button[aria-selected='true'] { background: var(--app-surface-soft, #dceee3); color: var(--app-text, #165540); font-weight: 600; }

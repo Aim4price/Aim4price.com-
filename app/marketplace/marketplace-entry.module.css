@@ -1,9 +1,9 @@
 .page {
   min-height: calc(var(--website-design-vh, 1vh) * 100);
-  color: #0a3f34;
+  color: var(--app-text, #0a3f34);
   background:
-    radial-gradient(circle at 50% 0%, rgba(221, 239, 233, 0.5), transparent 30rem),
-    linear-gradient(180deg, #fbfdfc 0%, #f1f7f5 100%);
+    radial-gradient(circle at 50% 0%, var(--app-surface-soft, rgba(221, 239, 233, 0.5)), transparent 30rem),
+    linear-gradient(180deg, var(--app-surface, #fbfdfc) 0%, var(--app-surface-soft, #f1f7f5) 100%);
 }
 
 .choiceSection {
@@ -32,10 +32,10 @@
   padding: 1.05rem;
   border: 1px solid;
   border-radius: 1.55rem;
-  color: #0a3f34;
+  color: var(--app-text, #0a3f34);
   box-shadow:
-    0 14px 30px rgba(18, 61, 51, 0.065),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 14px 30px var(--app-shadow-colour, rgba(18, 61, 51, 0.065)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   text-decoration: none;
   transition:
     background 170ms ease,
@@ -45,13 +45,13 @@
 }
 
 .discoveryCard {
-  border-color: #a9c9f7;
-  background: linear-gradient(180deg, #ffffff 0%, #f2f7ff 100%);
+  border-color: var(--app-info-line, #a9c9f7);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f2f7ff) 100%);
 }
 
 .marketplaceCard {
-  border-color: #a8dcc2;
-  background: linear-gradient(180deg, #ffffff 0%, #effaf5 100%);
+  border-color: var(--app-line, #a8dcc2);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #effaf5) 100%);
 }
 
 .choiceIcon {
@@ -63,7 +63,7 @@
   overflow: hidden;
   border: 1px solid;
   border-radius: 1.2rem;
-  background: rgba(255, 255, 255, 0.58);
+  background: var(--app-surface, rgba(255, 255, 255, 0.58));
 }
 
 .choiceIcon::after {
@@ -79,15 +79,15 @@
 }
 
 .discoveryCard .choiceIcon {
-  border-color: #b8d2fb;
-  color: #245fd6;
-  background: linear-gradient(180deg, #ffffff 0%, #edf4ff 100%);
+  border-color: var(--app-info-line, #b8d2fb);
+  color: var(--app-info, #245fd6);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #edf4ff) 100%);
 }
 
 .marketplaceCard .choiceIcon {
-  border-color: #b5e1ca;
-  color: #147554;
-  background: linear-gradient(180deg, #ffffff 0%, #eaf8f1 100%);
+  border-color: var(--app-line, #b5e1ca);
+  color: var(--app-text, #147554);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eaf8f1) 100%);
 }
 
 .choiceIcon svg {
@@ -129,10 +129,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(18, 61, 51, 0.16);
+  border: 1px solid var(--app-line, rgba(18, 61, 51, 0.16));
   border-radius: 50%;
-  color: #24453c;
-  background: rgba(255, 255, 255, 0.86);
+  color: var(--app-text, #24453c);
+  background: var(--app-surface, rgba(255, 255, 255, 0.86));
   font-family: var(--font-body, 'Montserrat'), sans-serif;
   font-size: 1.55rem;
   font-weight: 400;
@@ -158,32 +158,32 @@
 
 .discoveryCard:hover .choiceArrow,
 .discoveryCard:focus-visible .choiceArrow {
-  border-color: #245fd6;
-  background: #245fd6;
+  border-color: var(--app-info-line, #245fd6);
+  background: var(--app-info-soft, #245fd6);
 }
 
 .marketplaceCard:hover .choiceArrow,
 .marketplaceCard:focus-visible .choiceArrow {
-  border-color: #147554;
+  border-color: var(--app-accent, #147554);
   background: #147554;
 }
 
 .discoveryCard:hover,
 .discoveryCard:focus-visible {
-  border-color: #79a8ed;
-  background: linear-gradient(180deg, #ffffff 0%, #e9f2ff 100%);
+  border-color: var(--app-info-line, #79a8ed);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #e9f2ff) 100%);
   box-shadow:
-    0 18px 36px rgba(36, 95, 214, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 18px 36px var(--app-shadow-colour, rgba(36, 95, 214, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .marketplaceCard:hover,
 .marketplaceCard:focus-visible {
-  border-color: #78c89f;
-  background: linear-gradient(180deg, #ffffff 0%, #e4f6ed 100%);
+  border-color: var(--app-accent, #78c89f);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e4f6ed) 100%);
   box-shadow:
-    0 18px 36px rgba(20, 117, 84, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 18px 36px var(--app-shadow-colour, rgba(20, 117, 84, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 @media (max-width: 700px) {
@@ -256,14 +256,14 @@
 
 .entryTitle.entryTitle {
   max-width: none;
-  color: #123c32;
+  color: var(--app-text, #123c32);
   letter-spacing: -0.052em;
   white-space: nowrap;
 }
 
 .entryText.entryText {
   max-width: none;
-  color: #60736b;
+  color: var(--app-muted, #60736b);
   line-height: 1.5;
 }
 

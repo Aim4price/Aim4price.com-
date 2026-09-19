@@ -1,4 +1,4 @@
 .toggle { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.65rem; }
-.toggle button { appearance:none; font:inherit; font-size:.8rem; font-weight:750; line-height:1.3; padding:.55rem .8rem; border:1px solid #d5e2dc; border-radius:.7rem; background:#f4f8f6; color:#12352d; cursor:pointer; min-height:40px; }
-.toggle button[aria-pressed="true"] { background:#165340; color:white; border-color:#165340; }
-.toggle button:focus-visible { outline:2px solid #165340; outline-offset:3px; }
+.toggle button { appearance:none; font:inherit; font-size:.8rem; font-weight:750; line-height:1.3; padding:.55rem .8rem; border:1px solid var(--app-line, #d5e2dc); border-radius:.7rem; background:var(--app-surface-soft, #f4f8f6); color:var(--app-text, #12352d); cursor:pointer; min-height:40px; }
+.toggle button[aria-pressed="true"] { background:#165340; color:white; border-color:var(--app-accent, #165340); }
+.toggle button:focus-visible { outline:2px solid var(--app-accent, #165340); outline-offset:3px; }

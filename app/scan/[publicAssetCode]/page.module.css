@@ -15,10 +15,10 @@
   --red-soft: #fff2f2;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 12% 0%, rgba(23, 107, 79, 0.10), transparent 34%),
-    radial-gradient(circle at 100% 14%, rgba(22, 57, 95, 0.06), transparent 28%),
-    linear-gradient(180deg, #fbfdfd 0%, var(--bg) 100%);
-  color: var(--text);
+    radial-gradient(circle at 12% 0%, var(--app-surface-soft, rgba(23, 107, 79, 0.10)), transparent 34%),
+    radial-gradient(circle at 100% 14%, var(--app-info-soft, rgba(22, 57, 95, 0.06)), transparent 28%),
+    linear-gradient(180deg, var(--app-surface, #fbfdfd) 0%, var(--app-surface-soft, var(--bg)) 100%);
+  color: var(--app-text, var(--text));
 }
 
 .page *,
@@ -47,15 +47,15 @@
 .locationReminderModal,
 .editorCard,
 .thankYouScreen {
-  border: 1px solid rgba(200, 217, 228, 0.96);
+  border: 1px solid var(--app-info-line, rgba(200, 217, 228, 0.96));
   border-radius: 1.45rem;
   background:
-    radial-gradient(circle at top left, rgba(23, 107, 79, 0.06), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(23, 107, 79, 0.06)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
   box-shadow:
-    0 22px 50px rgba(11, 32, 48, 0.09),
-    0 8px 18px rgba(11, 32, 48, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 22px 50px var(--app-shadow-colour, rgba(11, 32, 48, 0.09)),
+    0 8px 18px var(--app-shadow-colour, rgba(11, 32, 48, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .assetPreviewCard,
@@ -101,7 +101,7 @@
 .locationReminderModal h3,
 .thankYouScreen h1 {
   margin: 0;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-weight: 900;
   line-height: 0.96;
   letter-spacing: -0.062em;
@@ -131,7 +131,7 @@
 .locationReminderModal p,
 .thankYouScreen p {
   margin: 0;
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(1.05rem, 3.6vw, 1.28rem);
   font-weight: 690;
   line-height: 1.36;
@@ -195,15 +195,15 @@
   gap: 0.85rem;
   padding: clamp(1.35rem, 5vw, 1.8rem);
   text-align: center;
-  border: 1px solid rgba(215, 228, 234, 0.96);
+  border: 1px solid var(--app-info-line, rgba(215, 228, 234, 0.96));
   border-radius: 1.45rem;
   background:
-    radial-gradient(circle at top left, rgba(23, 107, 79, 0.055), transparent 44%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 252, 251, 0.98) 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(23, 107, 79, 0.055)), transparent 44%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.98)) 0%, var(--app-surface, rgba(248, 252, 251, 0.98)) 100%);
   box-shadow:
-    0 28px 70px rgba(5, 23, 32, 0.28),
-    0 12px 28px rgba(5, 23, 32, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 28px 70px var(--app-shadow-colour, rgba(5, 23, 32, 0.28)),
+    0 12px 28px var(--app-shadow-colour, rgba(5, 23, 32, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .locationPromptIcon {
@@ -214,7 +214,7 @@
   border-radius: 1.35rem;
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  box-shadow: 0 18px 34px rgba(16, 68, 52, 0.22);
+  box-shadow: 0 18px 34px var(--app-shadow-colour, rgba(16, 68, 52, 0.22));
   font-size: 2.5rem;
   font-weight: 900;
   line-height: 1;
@@ -222,7 +222,7 @@
 
 .locationPromptCard h2 {
   margin: 0;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(2.2rem, 9vw, 3.35rem);
   font-weight: 900;
   line-height: 0.96;
@@ -232,14 +232,14 @@
 .locationPromptCard p {
   max-width: 27rem;
   margin: 0;
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(1rem, 3.5vw, 1.16rem);
   font-weight: 760;
   line-height: 1.35;
 }
 
 .locationPromptCard > span {
-  color: #5d7182;
+  color: var(--app-info, #5d7182);
   font-size: 0.9rem;
   font-weight: 820;
   line-height: 1.32;
@@ -257,14 +257,14 @@
   gap: 0.85rem;
   padding: 0.95rem;
   border-radius: 1.2rem;
-  background: linear-gradient(180deg, #fffafa 0%, #fff3f3 100%);
-  border: 1px solid rgba(239, 196, 196, 0.98);
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff3f3) 100%);
+  border: 1px solid var(--app-danger-line, rgba(239, 196, 196, 0.98));
   text-align: center;
 }
 
 .locationGateReady {
-  background: linear-gradient(180deg, #f1fbf6 0%, #e5f6ec 100%);
-  border-color: rgba(159, 218, 185, 0.98);
+  background: linear-gradient(180deg, var(--app-surface-soft, #f1fbf6) 0%, var(--app-surface-soft, #e5f6ec) 100%);
+  border-color: var(--app-line, rgba(159, 218, 185, 0.98));
 }
 
 .locationGate div {
@@ -276,14 +276,14 @@
 }
 
 .locationGate strong {
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: 1.08rem;
   font-weight: 900;
 }
 
 .locationGate span {
   max-width: 100%;
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.92rem;
   font-weight: 780;
   line-height: 1.3;
@@ -296,16 +296,16 @@
   justify-self: center;
   min-height: 3.3rem;
   border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.10);
-  background: #ffffff;
-  color: #17362c;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.10));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #17362c);
   padding: 0 1rem;
   font: inherit;
   font-size: 1rem;
   font-weight: 900;
   cursor: pointer;
   touch-action: manipulation;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.055));
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -338,15 +338,15 @@
   min-height: 5.15rem;
   padding: 1rem 1.1rem;
   border-radius: 1.2rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
-  border: 1px solid rgba(214, 226, 236, 0.96);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f4f8fb) 100%);
+  border: 1px solid var(--app-info-line, rgba(214, 226, 236, 0.96));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .previewDetailGrid span,
 .assetScanTitleBlock span,
 .field span {
-  color: #657789;
+  color: var(--app-info, #657789);
   font-size: clamp(0.78rem, 2.7vw, 0.92rem);
   font-weight: 900;
   letter-spacing: 0.065em;
@@ -355,7 +355,7 @@
 
 .previewDetailGrid strong {
   min-width: 0;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(1.05rem, 3.4vw, 1.32rem);
   font-weight: 880;
   line-height: 1.16;
@@ -382,15 +382,15 @@
 }
 
 .noticeSuccess {
-  color: #0f6040;
-  background: linear-gradient(180deg, #f1fbf6 0%, #e3f7ec 100%);
-  border-color: rgba(159, 218, 185, 0.98);
+  color: var(--app-text, #0f6040);
+  background: linear-gradient(180deg, var(--app-surface-soft, #f1fbf6) 0%, var(--app-surface-soft, #e3f7ec) 100%);
+  border-color: var(--app-line, rgba(159, 218, 185, 0.98));
 }
 
 .noticeError {
-  color: var(--red);
-  background: linear-gradient(180deg, #fffafa 0%, #fff0f0 100%);
-  border-color: rgba(239, 196, 196, 0.98);
+  color: var(--app-danger, var(--red));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff0f0) 100%);
+  border-color: var(--app-danger-line, rgba(239, 196, 196, 0.98));
 }
 
 .field {
@@ -418,16 +418,16 @@
 .field input,
 .field textarea {
   width: 100%;
-  border: 1px solid var(--line);
+  border: 1px solid var(--app-info-line, var(--line));
   border-radius: 1.22rem;
-  background: #ffffff;
-  color: #1e2f3d;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #1e2f3d);
   font: inherit;
   font-size: 1.16rem;
   font-weight: 720;
   box-shadow:
-    0 8px 18px rgba(23, 45, 75, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .field input {
@@ -445,15 +445,15 @@
 .field input:focus,
 .field textarea:focus {
   outline: none;
-  border-color: rgba(23, 107, 79, 0.55);
+  border-color: var(--app-accent, rgba(23, 107, 79, 0.55));
   box-shadow:
-    0 0 0 5px rgba(23, 107, 79, 0.11),
-    0 10px 24px rgba(23, 45, 75, 0.06);
+    0 0 0 5px var(--app-shadow-colour, rgba(23, 107, 79, 0.11)),
+    0 10px 24px var(--app-shadow-colour, rgba(23, 45, 75, 0.06));
 }
 
 .field input::placeholder,
 .field textarea::placeholder {
-  color: #9aa6b2;
+  color: var(--app-muted, #9aa6b2);
   font-weight: 640;
 }
 
@@ -519,20 +519,20 @@
 .doneButton {
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  border-color: rgba(16, 68, 52, 0.34);
+  border-color: var(--app-line, rgba(16, 68, 52, 0.34));
   box-shadow:
-    0 16px 32px rgba(16, 68, 52, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 16px 32px var(--app-shadow-colour, rgba(16, 68, 52, 0.22)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .secondaryButton,
 .choiceButton {
-  color: var(--blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, #eff5fb 100%);
-  border-color: #d5e2ef;
+  color: var(--app-info, var(--blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #eff5fb) 100%);
+  border-color: var(--app-info-line, #d5e2ef);
   box-shadow:
-    0 10px 22px rgba(23, 45, 75, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(23, 45, 75, 0.055)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .assetInfoCard {
@@ -555,13 +555,13 @@
   min-height: 4.7rem;
   padding: 0.92rem 1rem;
   border-radius: 1.14rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
-  border: 1px solid rgba(214, 226, 236, 0.96);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f4f8fb) 100%);
+  border: 1px solid var(--app-info-line, rgba(214, 226, 236, 0.96));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .assetInfoGrid span {
-  color: #657789;
+  color: var(--app-info, #657789);
   font-size: clamp(0.76rem, 2.5vw, 0.88rem);
   font-weight: 900;
   letter-spacing: 0.065em;
@@ -570,7 +570,7 @@
 
 .assetInfoGrid strong {
   min-width: 0;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(1rem, 3.1vw, 1.18rem);
   font-weight: 880;
   line-height: 1.16;
@@ -601,13 +601,13 @@
   gap: 0.58rem;
   min-height: 3.25rem;
   padding: 0 1.18rem;
-  border: 1px solid #d5e2ef;
+  border: 1px solid var(--app-info-line, #d5e2ef);
   border-radius: 999px;
-  color: var(--blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, #eff5fb 100%);
+  color: var(--app-info, var(--blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #eff5fb) 100%);
   box-shadow:
-    0 10px 20px rgba(23, 45, 75, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 10px 20px var(--app-shadow-colour, rgba(23, 45, 75, 0.06)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   font: inherit;
   font-size: 1rem;
   font-weight: 900;
@@ -616,15 +616,15 @@
 }
 
 .gpsButtonReady {
-  color: #124635;
-  background: var(--green-soft);
-  border-color: var(--green-line);
+  color: var(--app-text, #124635);
+  background: var(--app-surface-soft, var(--green-soft));
+  border-color: var(--app-line, var(--green-line));
 }
 
 .gpsButtonError {
-  color: var(--red);
-  background: var(--red-soft);
-  border-color: #efcaca;
+  color: var(--app-danger, var(--red));
+  background: var(--app-danger-soft, var(--red-soft));
+  border-color: var(--app-danger-line, #efcaca);
 }
 
 .gpsButton:disabled {
@@ -665,11 +665,11 @@
 
 .actionCard:hover {
   transform: translateY(-1px);
-  border-color: rgba(23, 107, 79, 0.30);
+  border-color: var(--app-line, rgba(23, 107, 79, 0.30));
   box-shadow:
-    0 22px 48px rgba(15, 30, 45, 0.11),
-    0 8px 18px rgba(15, 30, 45, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 22px 48px var(--app-shadow-colour, rgba(15, 30, 45, 0.11)),
+    0 8px 18px var(--app-shadow-colour, rgba(15, 30, 45, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .actionIconWrap {
@@ -679,14 +679,14 @@
   width: 5.35rem;
   height: 5.35rem;
   border-radius: 1.55rem;
-  color: #0f6040;
+  color: var(--app-text, #0f6040);
   background:
-    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.95), transparent 42%),
-    linear-gradient(180deg, #ecfaf4 0%, #dff4ea 100%);
-  border: 1px solid var(--green-line);
+    radial-gradient(circle at 30% 20%, var(--app-surface, rgba(255, 255, 255, 0.95)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface-soft, #ecfaf4) 0%, var(--app-surface-soft, #dff4ea) 100%);
+  border: 1px solid var(--app-line, var(--green-line));
   box-shadow:
-    0 10px 22px rgba(16, 68, 52, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(16, 68, 52, 0.10)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .actionIcon {
@@ -696,7 +696,7 @@
 
 .actionCard strong {
   width: 100%;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(1.42rem, 5.4vw, 1.86rem);
   font-weight: 900;
   line-height: 1;
@@ -711,7 +711,7 @@
   overflow: hidden;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(0.96rem, 3.3vw, 1.08rem);
   font-weight: 730;
   line-height: 1.22;
@@ -734,15 +734,15 @@
   display: grid;
   gap: 1rem;
   padding: clamp(1.15rem, 4.5vw, 1.7rem);
-  border: 1px solid rgba(200, 217, 228, 0.96);
+  border: 1px solid var(--app-info-line, rgba(200, 217, 228, 0.96));
   border-radius: 1.45rem;
   background:
-    radial-gradient(circle at top left, rgba(23, 107, 79, 0.06), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(23, 107, 79, 0.06)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
   box-shadow:
-    0 22px 50px rgba(11, 32, 48, 0.09),
-    0 8px 18px rgba(11, 32, 48, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 22px 50px var(--app-shadow-colour, rgba(11, 32, 48, 0.09)),
+    0 8px 18px var(--app-shadow-colour, rgba(11, 32, 48, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .usageGateTitleBlock {
@@ -752,7 +752,7 @@
 
 .usageGateTitleBlock span,
 .usageGateReadingCard span {
-  color: #657789;
+  color: var(--app-info, #657789);
   font-size: clamp(0.78rem, 2.7vw, 0.92rem);
   font-weight: 900;
   letter-spacing: 0.065em;
@@ -761,7 +761,7 @@
 
 .usageGateTitleBlock h2 {
   margin: 0;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(2.05rem, 8.5vw, 3.05rem);
   font-weight: 900;
   line-height: 0.96;
@@ -770,7 +770,7 @@
 
 .usageGateTitleBlock p {
   margin: 0;
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(1.05rem, 3.6vw, 1.28rem);
   font-weight: 690;
   line-height: 1.36;
@@ -784,16 +784,16 @@
   padding: 1.05rem 1.15rem;
   border-radius: 1.22rem;
   background:
-    radial-gradient(circle at top left, rgba(23, 107, 79, 0.08), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
-  border: 1px solid rgba(214, 226, 236, 0.96);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(23, 107, 79, 0.08)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f4f8fb) 100%);
+  border: 1px solid var(--app-info-line, rgba(214, 226, 236, 0.96));
   box-shadow:
-    0 10px 22px rgba(23, 45, 75, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(23, 45, 75, 0.045)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .usageGateReadingCard strong {
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(1.55rem, 6.5vw, 2.25rem);
   font-weight: 900;
   line-height: 1;
@@ -854,7 +854,7 @@
   border-radius: 1.45rem;
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  box-shadow: 0 16px 32px rgba(16, 68, 52, 0.20);
+  box-shadow: 0 16px 32px var(--app-shadow-colour, rgba(16, 68, 52, 0.20));
 }
 
 .locationReminderSvg {
@@ -882,15 +882,15 @@
   flex-direction: column;
   border-radius: 0;
   overflow: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
 }
 
 .fuelEditorCard {
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
 }
 
 .fuelEditorCard .editorHeader {
-  background: rgba(255, 255, 255, 0.99);
+  background: var(--app-surface, rgba(255, 255, 255, 0.99));
 }
 
 .fuelEditorCard .editorHeader h3 {
@@ -905,8 +905,8 @@
 .fuelEditorCard .editorBody {
   align-content: start;
   background:
-    radial-gradient(circle at 0% 0%, rgba(23, 107, 79, 0.045), transparent 38%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(23, 107, 79, 0.045)), transparent 38%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
 }
 
 .editorHeader {
@@ -915,8 +915,8 @@
   gap: 1rem;
   align-items: start;
   padding: 1.45rem 1.05rem 1.25rem;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.96);
-  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.96));
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
 }
 
 .editorTitleBlock {
@@ -931,9 +931,9 @@
   padding: 0;
   flex: 0 0 4.15rem;
   border-radius: 999px;
-  color: var(--blue-text);
-  background: linear-gradient(180deg, #ffffff 0%, #eff5fb 100%);
-  border-color: #d5e2ef;
+  color: var(--app-info, var(--blue-text));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #eff5fb) 100%);
+  border-color: var(--app-info-line, #d5e2ef);
 }
 
 .closeIcon {
@@ -976,11 +976,11 @@
   place-items: center;
   min-height: 8.3rem;
   border-radius: 1.45rem;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   background:
-    radial-gradient(circle at top left, rgba(23, 107, 79, 0.10), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  border: 1px solid var(--green-line);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(23, 107, 79, 0.10)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
+  border: 1px solid var(--app-line, var(--green-line));
   font-size: clamp(4rem, 20vw, 6rem);
   font-weight: 900;
   line-height: 1;
@@ -994,12 +994,12 @@
   padding: 1.08rem;
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at top left, rgba(23, 107, 79, 0.12), transparent 44%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f3 100%);
-  border: 1px solid rgba(23, 77, 62, 0.14);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(23, 107, 79, 0.12)), transparent 44%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f3) 100%);
+  border: 1px solid var(--app-line, rgba(23, 77, 62, 0.14));
   box-shadow:
-    0 12px 26px rgba(23, 45, 75, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 12px 26px var(--app-shadow-colour, rgba(23, 45, 75, 0.06)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .fuelValueRow {
@@ -1012,7 +1012,7 @@
   min-height: 3.8rem;
   display: grid;
   place-items: center;
-  color: #123b30;
+  color: var(--app-text, #123b30);
   font-size: clamp(3.35rem, 18vw, 5.25rem);
   font-weight: 900;
   line-height: 1;
@@ -1020,7 +1020,7 @@
 }
 
 .fuelValueRow span {
-  color: #66798a;
+  color: var(--app-muted, #66798a);
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -1043,8 +1043,8 @@
   appearance: none;
   -webkit-appearance: none;
   box-shadow:
-    inset 0 1px 3px rgba(9, 42, 32, 0.14),
-    0 6px 14px rgba(23, 45, 75, 0.045);
+    inset 0 1px 3px var(--app-shadow-colour, rgba(9, 42, 32, 0.14)),
+    0 6px 14px var(--app-shadow-colour, rgba(23, 45, 75, 0.045));
   touch-action: pan-x;
 }
 
@@ -1058,12 +1058,12 @@
   width: 2.35rem;
   height: 2.35rem;
   margin-top: -0.64rem;
-  border: 0.48rem solid var(--green);
+  border: 0.48rem solid var(--app-line, var(--green));
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow:
-    0 12px 24px rgba(16, 68, 52, 0.26),
-    0 0 0 0.45rem rgba(23, 107, 79, 0.08);
+    0 12px 24px var(--app-shadow-colour, rgba(16, 68, 52, 0.26)),
+    0 0 0 0.45rem var(--app-shadow-colour, rgba(23, 107, 79, 0.08));
   -webkit-appearance: none;
 }
 
@@ -1076,19 +1076,19 @@
 .rangeInput::-moz-range-thumb {
   width: 1.45rem;
   height: 1.45rem;
-  border: 0.48rem solid var(--green);
+  border: 0.48rem solid var(--app-line, var(--green));
   border-radius: 50%;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow:
-    0 12px 24px rgba(16, 68, 52, 0.26),
-    0 0 0 0.45rem rgba(23, 107, 79, 0.08);
+    0 12px 24px var(--app-shadow-colour, rgba(16, 68, 52, 0.26)),
+    0 0 0 0.45rem var(--app-shadow-colour, rgba(23, 107, 79, 0.08));
 }
 
 .fuelScale {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #6a7c8e;
+  color: var(--app-muted, #6a7c8e);
   font-size: 0.76rem;
   font-weight: 850;
   letter-spacing: 0.055em;
@@ -1134,14 +1134,14 @@
   min-height: 4.25rem;
   padding: 0.7rem 1rem;
   border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.10);
-  background: #ffffff;
-  color: #17362c;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.10));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #17362c);
   font-size: 1.08rem;
   font-weight: 900;
   line-height: 1.12;
   text-align: center;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.055));
 }
 
 .quickFuelButton:hover {
@@ -1157,8 +1157,8 @@
 .quickFuelButtonActive {
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  border-color: rgba(16, 68, 52, 0.34);
-  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.18);
+  border-color: var(--app-accent, rgba(16, 68, 52, 0.34));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(16, 68, 52, 0.18));
 }
 
 .choiceButton {
@@ -1173,10 +1173,10 @@
 .choiceButtonActive {
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  border-color: rgba(16, 68, 52, 0.32);
+  border-color: var(--app-accent, rgba(16, 68, 52, 0.32));
   box-shadow:
-    0 14px 28px rgba(16, 68, 52, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 14px 28px var(--app-shadow-colour, rgba(16, 68, 52, 0.18)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 
@@ -1188,12 +1188,12 @@
 .serviceModeCard,
 .mediaButton,
 .listOptionButton {
-  border: 1px solid #d5e2ef;
-  background: linear-gradient(180deg, #ffffff 0%, #f2f7fa 100%);
-  color: var(--blue-text);
+  border: 1px solid var(--app-info-line, #d5e2ef);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f2f7fa) 100%);
+  color: var(--app-info, var(--blue-text));
   box-shadow:
-    0 12px 26px rgba(23, 45, 75, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 12px 26px var(--app-shadow-colour, rgba(23, 45, 75, 0.06)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   cursor: pointer;
 }
 
@@ -1213,10 +1213,10 @@
 .serviceModeCardActive {
   color: #ffffff;
   background: linear-gradient(180deg, #1f7656 0%, var(--green-strong) 100%);
-  border-color: rgba(16, 68, 52, 0.34);
+  border-color: var(--app-accent, rgba(16, 68, 52, 0.34));
   box-shadow:
-    0 16px 32px rgba(16, 68, 52, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 16px 32px var(--app-shadow-colour, rgba(16, 68, 52, 0.18)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .serviceModeIcon,
@@ -1228,17 +1228,17 @@
   height: 4.55rem;
   border-radius: 1.3rem;
   background:
-    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.96), transparent 42%),
-    linear-gradient(180deg, #ecfaf4 0%, #dff4ea 100%);
-  border: 1px solid rgba(23, 107, 79, 0.18);
-  color: #0f6040;
-  box-shadow: 0 10px 22px rgba(16, 68, 52, 0.08);
+    radial-gradient(circle at 30% 20%, var(--app-surface, rgba(255, 255, 255, 0.96)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface-soft, #ecfaf4) 0%, var(--app-surface-soft, #dff4ea) 100%);
+  border: 1px solid var(--app-line, rgba(23, 107, 79, 0.18));
+  color: var(--app-text, #0f6040);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(16, 68, 52, 0.08));
 }
 
 .serviceModeCardActive .serviceModeIcon {
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: var(--app-surface-soft, rgba(255, 255, 255, 0.14));
+  border-color: var(--app-accent, rgba(255, 255, 255, 0.22));
 }
 
 .serviceModeSvg,
@@ -1265,14 +1265,14 @@
 
 .serviceModeText small,
 .mediaButton small {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(0.98rem, 3.7vw, 1.12rem);
   font-weight: 720;
   line-height: 1.24;
 }
 
 .serviceModeCardActive .serviceModeText small {
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--app-text, rgba(255, 255, 255, 0.82));
 }
 
 .serviceModeGridLocked {
@@ -1291,8 +1291,8 @@
 .serviceDetailsCard {
   padding: 1.15rem;
   border-radius: 1.42rem;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(216, 226, 236, 0.94);
+  background: var(--app-surface, rgba(255, 255, 255, 0.78));
+  border: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.94));
 }
 
 .serviceSectionHeader {
@@ -1302,7 +1302,7 @@
 }
 
 .serviceSectionHeader strong {
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(1.24rem, 5vw, 1.55rem);
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -1310,7 +1310,7 @@
 }
 
 .serviceSectionHeader small {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(1rem, 3.6vw, 1.14rem);
   font-weight: 720;
   line-height: 1.32;
@@ -1333,14 +1333,14 @@
 }
 
 .listOptionActive {
-  color: #123f32;
+  color: var(--app-text, #123f32);
   background:
-    radial-gradient(circle at left top, rgba(23, 107, 79, 0.14), transparent 38%),
-    linear-gradient(180deg, #f0fbf6 0%, #e5f6ee 100%);
-  border-color: rgba(112, 188, 148, 0.82);
+    radial-gradient(circle at left top, var(--app-surface-soft, rgba(23, 107, 79, 0.14)), transparent 38%),
+    linear-gradient(180deg, var(--app-surface-soft, #f0fbf6) 0%, var(--app-surface-soft, #e5f6ee) 100%);
+  border-color: var(--app-accent, rgba(112, 188, 148, 0.82));
   box-shadow:
-    0 14px 28px rgba(23, 107, 79, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 14px 28px var(--app-shadow-colour, rgba(23, 107, 79, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .listOptionText {
@@ -1358,7 +1358,7 @@
 }
 
 .listOptionText small {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(0.94rem, 3.3vw, 1.05rem);
   font-weight: 690;
   line-height: 1.32;
@@ -1370,9 +1370,9 @@
   width: 2.45rem;
   height: 2.45rem;
   border-radius: 999px;
-  border: 1px solid #d5e2ef;
-  background: #ffffff;
-  color: #0f6040;
+  border: 1px solid var(--app-info-line, #d5e2ef);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #0f6040);
   font-size: 1.22rem;
   font-weight: 950;
 }
@@ -1380,16 +1380,16 @@
 .listOptionActive .listOptionCheck {
   color: #ffffff;
   background: var(--green);
-  border-color: var(--green);
+  border-color: var(--app-accent, var(--green));
 }
 
 .selectedSummary {
   margin: 0;
   padding: 0.9rem 1rem;
   border-radius: 1rem;
-  color: #124635;
-  background: #edf8f2;
-  border: 1px solid var(--green-line);
+  color: var(--app-text, #124635);
+  background: var(--app-surface-soft, #edf8f2);
+  border: 1px solid var(--app-line, var(--green-line));
   font-size: 1rem;
   font-weight: 780;
   line-height: 1.32;
@@ -1400,17 +1400,17 @@
   min-height: 4.75rem;
   padding: 0.86rem 0.95rem;
   border-radius: 1.18rem;
-  border: 1px solid rgba(23, 107, 79, 0.22);
+  border: 1px solid var(--app-line, rgba(23, 107, 79, 0.22));
   background:
-    radial-gradient(circle at left top, rgba(23, 107, 79, 0.10), transparent 42%),
-    linear-gradient(180deg, #fbfffd 0%, #edf8f2 100%);
-  color: #124635;
+    radial-gradient(circle at left top, var(--app-surface-soft, rgba(23, 107, 79, 0.10)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #fbfffd) 0%, var(--app-surface-soft, #edf8f2) 100%);
+  color: var(--app-text, #124635);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.84rem;
   text-align: left;
-  box-shadow: 0 10px 22px rgba(16, 68, 52, 0.08);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(16, 68, 52, 0.08));
   cursor: pointer;
   transition:
     transform 160ms ease,
@@ -1421,8 +1421,8 @@
 
 .maintenancePhotoButton:hover {
   transform: translateY(-1px);
-  border-color: rgba(23, 107, 79, 0.36);
-  box-shadow: 0 14px 28px rgba(16, 68, 52, 0.11);
+  border-color: var(--app-line, rgba(23, 107, 79, 0.36));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(16, 68, 52, 0.11));
 }
 
 .maintenancePhotoButton:disabled {
@@ -1438,10 +1438,10 @@
   width: 3.35rem;
   height: 3.35rem;
   border-radius: 1rem;
-  color: #0f6040;
-  background: #ffffff;
-  border: 1px solid rgba(23, 107, 79, 0.16);
-  box-shadow: 0 8px 18px rgba(16, 68, 52, 0.06);
+  color: var(--app-text, #0f6040);
+  background: var(--app-surface, #ffffff);
+  border: 1px solid var(--app-line, rgba(23, 107, 79, 0.16));
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(16, 68, 52, 0.06));
 }
 
 .maintenancePhotoIconSvg {
@@ -1464,7 +1464,7 @@
 }
 
 .maintenancePhotoText small {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(0.88rem, 3.1vw, 0.98rem);
   font-weight: 720;
   line-height: 1.24;
@@ -1478,9 +1478,9 @@
   min-height: 8.8rem;
   padding: 1.1rem;
   border-radius: 1.18rem;
-  border: 1px dashed rgba(23, 107, 79, 0.30);
-  background: rgba(237, 248, 242, 0.62);
-  color: #124635;
+  border: 1px dashed var(--app-line, rgba(23, 107, 79, 0.30));
+  background: var(--app-surface-soft, rgba(237, 248, 242, 0.62));
+  color: var(--app-text, #124635);
   display: grid;
   place-items: center;
   gap: 0.36rem;
@@ -1490,18 +1490,18 @@
 .servicePhotoEmptyIcon {
   width: 2.35rem;
   height: 2.35rem;
-  color: #0f6040;
+  color: var(--app-text, #0f6040);
 }
 
 .servicePhotoEmptyState strong {
-  color: #123f32;
+  color: var(--app-text, #123f32);
   font-size: 1.02rem;
   font-weight: 900;
   letter-spacing: -0.02em;
 }
 
 .servicePhotoEmptyState span {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.94rem;
   font-weight: 720;
   line-height: 1.28;
@@ -1527,9 +1527,9 @@
   gap: 0.65rem;
   padding: 0.65rem;
   border-radius: 1.18rem;
-  background: #ffffff;
-  border: 1px solid rgba(216, 226, 236, 0.96);
-  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.045);
+  background: var(--app-surface, #ffffff);
+  border: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.96));
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.045));
 }
 
 .photoImage {
@@ -1542,9 +1542,9 @@
 
 .removePhotoButton {
   min-height: 3rem;
-  color: var(--red);
-  background: var(--red-soft);
-  border-color: #efcaca;
+  color: var(--app-danger, var(--red));
+  background: var(--app-danger-soft, var(--red-soft));
+  border-color: var(--app-danger-line, #efcaca);
   font-size: 0.95rem;
 }
 
@@ -1554,9 +1554,9 @@
   grid-template-columns: 1fr;
   gap: 0.78rem;
   padding: 1rem 1.1rem 1.15rem;
-  border-top: 1px solid rgba(216, 226, 236, 0.96);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 -12px 24px rgba(20, 38, 50, 0.045);
+  border-top: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.96));
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
+  box-shadow: 0 -12px 24px var(--app-shadow-colour, rgba(20, 38, 50, 0.045));
 }
 
 .editorFooter .primaryButton {
@@ -1782,11 +1782,11 @@
   border: 0;
   border-radius: 0;
   background:
-    radial-gradient(circle at top left, rgba(23, 107, 79, 0.065), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(23, 107, 79, 0.065)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
   box-shadow:
-    0 30px 80px rgba(5, 23, 32, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 30px 80px var(--app-shadow-colour, rgba(5, 23, 32, 0.28)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .shareHeader {
@@ -1796,8 +1796,8 @@
   justify-content: space-between;
   gap: 0.85rem;
   padding: clamp(1.05rem, 4vw, 1.45rem);
-  border-bottom: 1px solid rgba(216, 226, 236, 0.96);
-  background: rgba(255, 255, 255, 0.98);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.96));
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
 }
 
 .shareTitleBlock {
@@ -1811,7 +1811,7 @@
 .shareStepHeader span,
 .sharePopiaBox strong,
 .shareMessageField > span {
-  color: #657789;
+  color: var(--app-info, #657789);
   font-size: clamp(0.76rem, 2.5vw, 0.9rem);
   font-weight: 920;
   letter-spacing: 0.065em;
@@ -1821,7 +1821,7 @@
 
 .shareTitleBlock h3 {
   margin: 0;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(2.05rem, 8.4vw, 3.25rem);
   font-weight: 900;
   line-height: 0.96;
@@ -1831,7 +1831,7 @@
 .shareTitleBlock p {
   max-width: 44rem;
   margin: 0;
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: clamp(0.98rem, 3.2vw, 1.13rem);
   font-weight: 700;
   line-height: 1.34;
@@ -1858,25 +1858,25 @@
 .shareSearchBar input {
   width: 100%;
   min-height: 4.15rem;
-  border: 1px solid var(--line);
+  border: 1px solid var(--app-info-line, var(--line));
   border-radius: 1.18rem;
-  background: #ffffff;
-  color: #1e2f3d;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #1e2f3d);
   font: inherit;
   font-size: 1.02rem;
   font-weight: 720;
   padding: 0 1rem;
   box-shadow:
-    0 8px 18px rgba(23, 45, 75, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .shareSearchBar input:focus {
   outline: none;
-  border-color: rgba(23, 107, 79, 0.55);
+  border-color: var(--app-accent, rgba(23, 107, 79, 0.55));
   box-shadow:
-    0 0 0 5px rgba(23, 107, 79, 0.11),
-    0 10px 24px rgba(23, 45, 75, 0.06);
+    0 0 0 5px var(--app-shadow-colour, rgba(23, 107, 79, 0.11)),
+    0 10px 24px var(--app-shadow-colour, rgba(23, 45, 75, 0.06));
 }
 
 .shareSearchBar .secondaryButton {
@@ -1896,12 +1896,12 @@
 .shareMapShell {
   min-width: 0;
   min-height: 0;
-  border: 1px solid rgba(213, 226, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(213, 226, 236, 0.98));
   border-radius: 1.35rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f8fa 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f3f8fa) 100%);
   box-shadow:
-    0 12px 26px rgba(23, 45, 75, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 12px 26px var(--app-shadow-colour, rgba(23, 45, 75, 0.055)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   overflow: hidden;
 }
 
@@ -1921,15 +1921,15 @@
   align-items: center;
   gap: 0.72rem;
   min-height: 5.55rem;
-  border: 1px solid rgba(211, 225, 234, 0.98);
+  border: 1px solid var(--app-info-line, rgba(211, 225, 234, 0.98));
   border-radius: 1.12rem;
   padding: 0.72rem;
-  background: #ffffff;
-  color: var(--text);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--text));
   font: inherit;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.045);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.045));
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -1939,16 +1939,16 @@
 
 .shareDealerCard:hover {
   transform: translateY(-1px);
-  border-color: rgba(23, 107, 79, 0.28);
-  box-shadow: 0 14px 28px rgba(23, 45, 75, 0.08);
+  border-color: var(--app-line, rgba(23, 107, 79, 0.28));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(23, 45, 75, 0.08));
 }
 
 .shareDealerCardActive {
-  border-color: rgba(23, 107, 79, 0.52);
-  background: linear-gradient(180deg, #f4fbf8 0%, #eaf7f1 100%);
+  border-color: var(--app-accent, rgba(23, 107, 79, 0.52));
+  background: linear-gradient(180deg, var(--app-surface, #f4fbf8) 0%, var(--app-surface-soft, #eaf7f1) 100%);
   box-shadow:
-    0 16px 30px rgba(16, 68, 52, 0.13),
-    inset 0 0 0 1px rgba(23, 107, 79, 0.12);
+    0 16px 30px var(--app-shadow-colour, rgba(16, 68, 52, 0.13)),
+    inset 0 0 0 1px var(--app-shadow-colour, rgba(23, 107, 79, 0.12));
 }
 
 .shareDealerLogo {
@@ -1958,13 +1958,13 @@
   place-items: center;
   overflow: hidden;
   border-radius: 1rem;
-  border: 1px solid rgba(213, 226, 236, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #eff6f4 100%);
-  color: var(--green-strong);
+  border: 1px solid var(--app-info-line, rgba(213, 226, 236, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eff6f4) 100%);
+  color: var(--app-text, var(--green-strong));
   font-size: 1.22rem;
   font-weight: 950;
   line-height: 1;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .shareDealerLogo img {
@@ -1983,7 +1983,7 @@
 
 .shareDealerMeta strong {
   min-width: 0;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: 1.04rem;
   font-weight: 900;
   line-height: 1.12;
@@ -1995,7 +1995,7 @@
 .shareDealerMeta small,
 .shareDealerMeta em {
   min-width: 0;
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.88rem;
   font-style: normal;
   font-weight: 700;
@@ -2006,7 +2006,7 @@
 }
 
 .shareDealerMeta em {
-  color: #416454;
+  color: var(--app-accent, #416454);
   font-weight: 780;
 }
 
@@ -2014,9 +2014,9 @@
   align-self: center;
   border-radius: 999px;
   padding: 0.46rem 0.72rem;
-  color: #0f6040;
-  background: #edf8f2;
-  border: 1px solid var(--green-line);
+  color: var(--app-text, #0f6040);
+  background: var(--app-surface-soft, #edf8f2);
+  border: 1px solid var(--app-line, var(--green-line));
   font-size: 0.8rem;
   font-weight: 900;
   line-height: 1;
@@ -2026,7 +2026,7 @@
   position: relative;
   display: grid;
   min-height: 31rem;
-  background: #eaf1f4;
+  background: var(--app-info-soft, #eaf1f4);
 }
 
 .shareMapCanvas {
@@ -2045,7 +2045,7 @@
   gap: 0.4rem;
   padding: 1.2rem;
   text-align: center;
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.98rem;
   font-weight: 760;
   line-height: 1.32;
@@ -2054,8 +2054,8 @@
 .shareEmptyState {
   min-height: 7rem;
   border-radius: 1rem;
-  background: rgba(243, 248, 250, 0.82);
-  border: 1px dashed rgba(184, 202, 214, 0.98);
+  background: var(--app-info-soft, rgba(243, 248, 250, 0.82));
+  border: 1px dashed var(--app-info-line, rgba(184, 202, 214, 0.98));
 }
 
 .shareSelectedPanel {
@@ -2065,10 +2065,10 @@
   justify-content: space-between;
   gap: 0.85rem;
   padding: 0.92rem;
-  border: 1px solid var(--green-line);
+  border: 1px solid var(--app-accent, var(--green-line));
   border-radius: 1.22rem;
-  background: linear-gradient(180deg, #f4fbf8 0%, #e9f7f0 100%);
-  box-shadow: 0 10px 24px rgba(16, 68, 52, 0.08);
+  background: linear-gradient(180deg, var(--app-surface, #f4fbf8) 0%, var(--app-surface-soft, #e9f7f0) 100%);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(16, 68, 52, 0.08));
 }
 
 .shareSelectedPanel > div {
@@ -2080,7 +2080,7 @@
 .shareSelectedPanel strong,
 .shareStepHeader strong {
   min-width: 0;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-size: clamp(1.08rem, 3.8vw, 1.32rem);
   font-weight: 900;
   line-height: 1.13;
@@ -2088,7 +2088,7 @@
 }
 
 .shareSelectedPanel small {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.9rem;
   font-weight: 720;
   line-height: 1.24;
@@ -2112,17 +2112,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.7rem;
-  border: 1px solid rgba(213, 226, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(213, 226, 236, 0.98));
   border-radius: 1rem;
   padding: 0.72rem 0.92rem;
-  color: var(--blue-text);
-  background: #ffffff;
+  color: var(--app-info, var(--blue-text));
+  background: var(--app-surface, #ffffff);
   font-size: 0.96rem;
   font-weight: 820;
   line-height: 1.2;
   text-decoration: none;
   overflow-wrap: anywhere;
-  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.04);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.04));
 }
 
 .shareMessageField {
@@ -2140,11 +2140,11 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.85rem;
-  border: 1px solid rgba(184, 215, 202, 0.98);
+  border: 1px solid var(--app-line, rgba(184, 215, 202, 0.98));
   border-radius: 1.18rem;
   padding: 0.92rem 1rem;
-  background: linear-gradient(180deg, #f5fbf8 0%, #eaf7f1 100%);
-  color: var(--text);
+  background: linear-gradient(180deg, var(--app-surface, #f5fbf8) 0%, var(--app-surface-soft, #eaf7f1) 100%);
+  color: var(--app-text, var(--text));
 }
 
 .shareTrackingChoiceCopy {
@@ -2160,7 +2160,7 @@
 }
 
 .shareTrackingChoice small {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.88rem;
   font-weight: 720;
   line-height: 1.28;
@@ -2175,7 +2175,7 @@
 
 .shareTrackingChoice:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 5px rgba(23, 107, 79, 0.11);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(23, 107, 79, 0.11));
 }
 
 .shareTrackingCheckbox {
@@ -2185,9 +2185,9 @@
   place-items: center;
   box-sizing: border-box;
   margin: 0.1rem 0 0;
-  border: 1.5px solid rgba(23, 107, 79, 0.38);
+  border: 1.5px solid var(--app-line, rgba(23, 107, 79, 0.38));
   border-radius: 0.38rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   color: #ffffff;
   font-size: 0.78rem;
   font-weight: 900;
@@ -2195,12 +2195,12 @@
 }
 
 .shareTrackingCheckboxActive {
-  border-color: var(--green);
+  border-color: var(--app-accent, var(--green));
   background: var(--green);
 }
 
 .shareTrackingChoice em {
-  color: #246246;
+  color: var(--app-text, #246246);
   font-size: 0.78rem;
   font-style: normal;
   font-weight: 820;
@@ -2243,10 +2243,10 @@
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
-  border: 1px solid rgba(18, 53, 45, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14));
   border-radius: 22px;
-  background: #ffffff;
-  box-shadow: 0 28px 70px rgba(10, 31, 25, 0.3);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 28px 70px var(--app-shadow-colour, rgba(10, 31, 25, 0.3));
   --font-body: "Montserrat";
   --font-heading: "Montserrat";
 }
@@ -2257,8 +2257,8 @@
   justify-content: space-between;
   gap: 14px;
   padding: 17px 18px;
-  border-bottom: 1px solid rgba(18, 53, 45, 0.11);
-  background: #f7faf8;
+  border-bottom: 1px solid var(--app-line, rgba(18, 53, 45, 0.11));
+  background: var(--app-surface, #f7faf8);
 }
 
 .shareTrackingPermissionHeader > div {
@@ -2269,7 +2269,7 @@
 
 .shareTrackingPermissionHeader h3 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.3rem, 5vw, 1.65rem);
   font-weight: 850;
   letter-spacing: -0.035em;
@@ -2278,7 +2278,7 @@
 
 .shareTrackingPermissionHeader p {
   margin: 0;
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.4;
@@ -2291,16 +2291,16 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(18, 53, 45, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14));
   border-radius: 12px;
-  background: #ffffff;
-  color: #12352d;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #12352d);
   cursor: pointer;
 }
 
 .shareTrackingPermissionHeader > button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.11);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.11));
 }
 
 .shareTrackingPermissionBody {
@@ -2314,21 +2314,21 @@
 .shareTrackingPermissionIntro {
   display: grid;
   gap: 4px;
-  border: 1px solid rgba(37, 71, 51, 0.12);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.12));
   border-radius: 15px;
-  background: #f4f8f5;
+  background: var(--app-surface-soft, #f4f8f5);
   padding: 13px 14px;
 }
 
 .shareTrackingPermissionIntro strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 0.9rem;
   font-weight: 850;
 }
 
 .shareTrackingPermissionIntro p {
   margin: 0;
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.45;
@@ -2339,8 +2339,8 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 9px;
   padding: 14px 16px 16px;
-  border-top: 1px solid rgba(18, 53, 45, 0.1);
-  background: #ffffff;
+  border-top: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
+  background: var(--app-surface, #ffffff);
 }
 
 .shareTrackingPermissionFooter > button {
@@ -2386,9 +2386,9 @@
 
 .scheduleModalCard .field select {
   width: 100%;
-  border: 1px solid var(--line);
-  background: #ffffff;
-  color: var(--text);
+  border: 1px solid var(--app-info-line, var(--line));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--text));
   font: inherit;
   font-weight: 760;
   padding: 0 0.92rem;
@@ -2399,10 +2399,10 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 0.72rem;
-  border: 1px solid rgba(184, 215, 202, 0.98);
+  border: 1px solid var(--app-line, rgba(184, 215, 202, 0.98));
   border-radius: 1.05rem;
   padding: 0.92rem;
-  background: #f2faf6;
+  background: var(--app-surface-soft, #f2faf6);
   cursor: pointer;
 }
 
@@ -2417,7 +2417,7 @@
 }
 
 .scheduleRecurringChoice small {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.87rem;
   font-weight: 710;
   line-height: 1.28;
@@ -2427,14 +2427,14 @@
   display: grid;
   gap: 0.34rem;
   padding: 1rem;
-  border: 1px solid rgba(213, 226, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(213, 226, 236, 0.98));
   border-radius: 1.18rem;
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.04);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.04));
 }
 
 .shareStepHeader span {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.98rem;
   font-weight: 760;
   letter-spacing: 0;
@@ -2447,18 +2447,18 @@
   gap: 0.45rem;
   padding: 1rem;
   border-radius: 1.18rem;
-  border: 1px solid rgba(251, 219, 148, 0.98);
-  background: linear-gradient(180deg, #fffaf0 0%, #fff4dc 100%);
-  color: #614313;
+  border: 1px solid var(--app-warning-line, rgba(251, 219, 148, 0.98));
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffaf0) 0%, var(--app-warning-soft, #fff4dc) 100%);
+  color: var(--app-warning, #614313);
 }
 
 .sharePopiaBox strong {
-  color: #7a5414;
+  color: var(--app-warning, #7a5414);
 }
 
 .sharePopiaBox p {
   margin: 0;
-  color: #6c5124;
+  color: var(--app-warning, #6c5124);
   font-size: 0.98rem;
   font-weight: 710;
   line-height: 1.36;
@@ -2471,9 +2471,9 @@
   gap: 0.72rem;
   padding: 0.98rem;
   border-radius: 1.18rem;
-  border: 1px solid rgba(213, 226, 236, 0.98);
-  background: #ffffff;
-  color: var(--text);
+  border: 1px solid var(--app-info-line, rgba(213, 226, 236, 0.98));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--text));
   font-size: 0.98rem;
   font-weight: 800;
   line-height: 1.35;
@@ -2492,9 +2492,9 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.72rem;
   padding: 0.95rem clamp(0.9rem, 3.5vw, 1.18rem) clamp(1rem, 3.5vw, 1.2rem);
-  border-top: 1px solid rgba(216, 226, 236, 0.96);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 -12px 24px rgba(20, 38, 50, 0.045);
+  border-top: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.96));
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
+  box-shadow: 0 -12px 24px var(--app-shadow-colour, rgba(20, 38, 50, 0.045));
 }
 
 .shareFooter .primaryButton,
@@ -2509,8 +2509,8 @@
   border-radius: 999px;
   background: linear-gradient(180deg, #1f7656 0%, #0c4d3a 100%);
   color: #ffffff;
-  border: 3px solid #ffffff;
-  box-shadow: 0 10px 22px rgba(9, 43, 32, 0.26);
+  border: 3px solid var(--app-line, #ffffff);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(9, 43, 32, 0.26));
 }
 
 .shareMapShell :global(.scanShareMapMarker span) {
@@ -2523,12 +2523,12 @@
   display: grid;
   gap: 0.28rem;
   min-width: 13rem;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-family: inherit;
 }
 
 .shareMapShell :global(.scanSharePopup strong) {
-  color: #083c2e;
+  color: var(--app-text, #083c2e);
   font-size: 1rem;
   font-weight: 900;
   line-height: 1.16;
@@ -2536,7 +2536,7 @@
 
 .shareMapShell :global(.scanSharePopup span),
 .shareMapShell :global(.scanSharePopup small) {
-  color: #53677a;
+  color: var(--app-info, #53677a);
   font-size: 0.86rem;
   font-weight: 720;
   line-height: 1.22;
@@ -2545,7 +2545,7 @@
 .shareMapShell :global(.scanSharePopupChooseButton) {
   min-height: 2.55rem;
   margin-top: 0.38rem;
-  border: 1px solid rgba(16, 68, 52, 0.34);
+  border: 1px solid var(--app-line, rgba(16, 68, 52, 0.34));
   border-radius: 0.78rem;
   padding: 0 0.86rem;
   color: #ffffff;
@@ -2565,7 +2565,7 @@
   .shareModal {
     min-height: auto;
     max-height: min(92dvh, 820px);
-    border: 1px solid rgba(215, 228, 234, 0.96);
+    border: 1px solid var(--app-info-line, rgba(215, 228, 234, 0.96));
     border-radius: 1.7rem;
   }
 }
@@ -2771,9 +2771,9 @@
   place-items: center;
   gap: 0.48rem;
   text-align: center;
-  background: linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
-  border-color: rgba(198, 216, 228, 0.98);
-  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.045);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f6faf8) 100%);
+  border-color: var(--app-info-line, rgba(198, 216, 228, 0.98));
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.045));
 }
 
 .actionEditorCard .mediaButtonIcon,
@@ -2837,7 +2837,7 @@
   min-height: 4.3rem;
   padding: 0.78rem 0.88rem;
   border-radius: 1.05rem;
-  box-shadow: 0 8px 18px rgba(16, 68, 52, 0.055);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(16, 68, 52, 0.055));
 }
 
 .maintenancePhotoIcon {
@@ -2868,10 +2868,10 @@
   width: 100%;
   min-height: 4.35rem;
   padding: 0.82rem 0.95rem;
-  border: 1px solid rgba(23, 107, 79, 0.22);
+  border: 1px solid var(--app-line, rgba(23, 107, 79, 0.22));
   border-radius: 1.12rem;
-  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  color: #124635;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
+  color: var(--app-text, #124635);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
@@ -2879,7 +2879,7 @@
   text-align: left;
   font: inherit;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(16, 68, 52, 0.06);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(16, 68, 52, 0.06));
   transition:
     transform 160ms ease,
     box-shadow 160ms ease,
@@ -2889,8 +2889,8 @@
 
 .sharePhotoButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(23, 107, 79, 0.36);
-  box-shadow: 0 12px 24px rgba(16, 68, 52, 0.1);
+  border-color: var(--app-line, rgba(23, 107, 79, 0.36));
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(16, 68, 52, 0.1));
 }
 
 .sharePhotoButton:disabled {
@@ -2905,9 +2905,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #0f6040;
-  background: #ffffff;
-  border: 1px solid rgba(23, 107, 79, 0.16);
+  color: var(--app-text, #0f6040);
+  background: var(--app-surface, #ffffff);
+  border: 1px solid var(--app-line, rgba(23, 107, 79, 0.16));
 }
 
 .sharePhotoButtonSvg {
@@ -2928,7 +2928,7 @@
 }
 
 .sharePhotoButton small {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.86rem;
   font-weight: 760;
   line-height: 1.2;
@@ -2945,10 +2945,10 @@
   align-items: center;
   gap: 0.72rem;
   padding: 0.62rem;
-  border: 1px solid rgba(213, 226, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(213, 226, 236, 0.98));
   border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.04);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.04));
 }
 
 .sharePhotoPreviewCard img {
@@ -2956,7 +2956,7 @@
   height: 4.8rem;
   border-radius: 0.8rem;
   object-fit: cover;
-  background: #eef3f6;
+  background: var(--app-info-soft, #eef3f6);
 }
 
 .sharePhotoPreviewCard div {
@@ -2966,14 +2966,14 @@
 }
 
 .sharePhotoPreviewCard strong {
-  color: var(--blue-text);
+  color: var(--app-info, var(--blue-text));
   font-size: 0.96rem;
   font-weight: 900;
   line-height: 1.1;
 }
 
 .sharePhotoPreviewCard span {
-  color: var(--text-soft);
+  color: var(--app-muted, var(--text-soft));
   font-size: 0.82rem;
   font-weight: 720;
   line-height: 1.2;
@@ -2982,10 +2982,10 @@
 .sharePhotoPreviewCard button {
   min-height: 2.55rem;
   padding: 0 0.72rem;
-  border: 1px solid #efcaca;
+  border: 1px solid var(--app-danger-line, #efcaca);
   border-radius: 0.82rem;
-  background: var(--red-soft);
-  color: var(--red);
+  background: var(--app-danger-soft, var(--red-soft));
+  color: var(--app-danger, var(--red));
   font: inherit;
   font-size: 0.82rem;
   font-weight: 900;
@@ -3020,9 +3020,9 @@
   --green-strong: #174637;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at 12% 0%, rgba(78, 138, 108, 0.22), transparent 20rem),
-    linear-gradient(180deg, #eff5f1 0%, #f7faf7 42%, #edf4f0 100%);
-  color: #12352d;
+    radial-gradient(circle at 12% 0%, var(--app-surface-soft, rgba(78, 138, 108, 0.22)), transparent 20rem),
+    linear-gradient(180deg, var(--app-surface-soft, #eff5f1) 0%, var(--app-surface, #f7faf7) 42%, var(--app-surface-soft, #edf4f0) 100%);
+  color: var(--app-text, #12352d);
   font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -3047,25 +3047,25 @@
 
 .fieldManagerMobileSurface .primaryButton,
 .fieldManagerMobileSurface .doneButton {
-  border-color: #254733;
+  border-color: var(--app-line, #254733);
   background: #254733;
   color: #ffffff;
   font-weight: 900;
   box-shadow:
-    0 16px 32px rgba(37, 71, 51, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+    0 16px 32px var(--app-shadow-colour, rgba(37, 71, 51, 0.22)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.16));
 }
 
 .fieldManagerMobileSurface .primaryButton:hover:not(:disabled),
 .fieldManagerMobileSurface .doneButton:hover:not(:disabled) {
-  border-color: #1d3929;
+  border-color: var(--app-line, #1d3929);
   background: #1d3929;
 }
 
 .fieldManagerMobileSurface .assetScanTitleBlock span,
 .fieldManagerMobileSurface .stepTitleBlock span,
 .fieldManagerMobileSurface .field span {
-  color: #236851;
+  color: var(--app-text, #236851);
 }
 
 .fieldManagerMobileSurface .assetOpenedCard,
@@ -3074,8 +3074,8 @@
 .fieldManagerMobileSurface .actionCard,
 .fieldManagerMobileSurface .notice,
 .fieldManagerMobileSurface .thankYouScreen {
-  border-color: rgba(18, 53, 45, 0.12);
-  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+  border-color: var(--app-line, rgba(18, 53, 45, 0.12));
+  box-shadow: 0 20px 48px var(--app-shadow-colour, rgba(18, 53, 45, 0.1));
 }
 
 .fieldManagerMobileSurface .assetOpenedCard {
@@ -3102,24 +3102,24 @@
   justify-self: center;
   min-height: 3.55rem;
   padding: 0 1.25rem;
-  border-color: rgba(155, 48, 48, 0.18);
+  border-color: var(--app-danger-line, rgba(155, 48, 48, 0.18));
   border-radius: 1.1rem;
-  color: #9b3030;
-  background: linear-gradient(180deg, #fffafa 0%, #fff0f0 100%);
-  box-shadow: 0 10px 22px rgba(155, 48, 48, 0.08);
+  color: var(--app-danger, #9b3030);
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff0f0) 100%);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(155, 48, 48, 0.08));
 }
 
 .fieldManagerMobileSurface .gpsButtonReady {
-  color: #174637;
-  border-color: rgba(35, 104, 81, 0.2);
-  background: linear-gradient(180deg, #f7fffb 0%, #e8f8ef 100%);
-  box-shadow: 0 10px 22px rgba(35, 104, 81, 0.08);
+  color: var(--app-text, #174637);
+  border-color: var(--app-line, rgba(35, 104, 81, 0.2));
+  background: linear-gradient(180deg, var(--app-surface, #f7fffb) 0%, var(--app-surface-soft, #e8f8ef) 100%);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(35, 104, 81, 0.08));
 }
 
 .fieldManagerMobileSurface .gpsButtonError {
-  color: #9b3030;
-  border-color: rgba(155, 48, 48, 0.22);
-  background: linear-gradient(180deg, #fffafa 0%, #fff0f0 100%);
+  color: var(--app-danger, #9b3030);
+  border-color: var(--app-danger-line, rgba(155, 48, 48, 0.22));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff0f0) 100%);
 }
 
 .fieldManagerMobileSurface .actionGrid {
@@ -3160,7 +3160,7 @@
   display: block;
   -webkit-line-clamp: unset;
   -webkit-box-orient: initial;
-  color: rgba(18, 53, 45, 0.62);
+  color: var(--app-muted, rgba(18, 53, 45, 0.62));
   font-size: clamp(0.98rem, 3.8vw, 1.15rem);
   font-weight: 790;
   line-height: 1.16;
@@ -3203,8 +3203,8 @@
     12px
     max(28px, env(safe-area-inset-bottom));
   background:
-    radial-gradient(circle at 50% 0%, rgba(111, 197, 150, 0.12), transparent 30%),
-    linear-gradient(180deg, #f7fbf8 0%, #ffffff 52%, #f4f9f6 100%);
+    radial-gradient(circle at 50% 0%, var(--app-surface-soft, rgba(111, 197, 150, 0.12)), transparent 30%),
+    linear-gradient(180deg, var(--app-surface, #f7fbf8) 0%, var(--app-surface, #ffffff) 52%, var(--app-surface, #f4f9f6) 100%);
   backdrop-filter: none;
 }
 
@@ -3249,7 +3249,7 @@
 
 .fieldManagerMobileSurface .fieldManagerEditorEyebrow,
 .fieldManagerMobileSurface .fieldManagerShareModal .shareTitleBlock > span {
-  color: #236851;
+  color: var(--app-text, #236851);
   font-size: 0.7rem;
   font-weight: 950;
   letter-spacing: 0.12em;
@@ -3260,7 +3260,7 @@
 .fieldManagerMobileSurface .fieldManagerEditorCard .editorHeader h3,
 .fieldManagerMobileSurface .fieldManagerShareModal .shareTitleBlock h3 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.9rem, 8vw, 2.45rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -3272,7 +3272,7 @@
 .fieldManagerMobileSurface .fieldManagerShareModal .shareTitleBlock p {
   max-width: none;
   margin: 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.94rem;
   font-weight: 650;
   line-height: 1.48;
@@ -3289,10 +3289,10 @@
   justify-content: center;
   gap: 7px;
   box-sizing: border-box;
-  border: 1.5px solid #6fc596;
+  border: 1.5px solid var(--app-line, #6fc596);
   border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
-  color: #0a543d;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%);
+  color: var(--app-text, #0a543d);
   padding: 0 16px;
   font: inherit;
   font-size: 0.9rem;
@@ -3300,7 +3300,7 @@
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(10, 84, 61, 0.1);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(10, 84, 61, 0.1));
 }
 
 .fieldManagerPageBackButton > span:first-child {
@@ -3310,7 +3310,7 @@
 
 .fieldManagerPageBackButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 10px 24px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.12)), 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .fieldManagerPageBackButton:active {
@@ -3321,10 +3321,10 @@
 .fieldManagerMobileSurface .fieldManagerShareFlow {
   display: grid;
   overflow: hidden;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 16px 38px rgba(18, 53, 45, 0.08);
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .editorBody,
@@ -3342,7 +3342,7 @@
 
 .fieldManagerMobileSurface .fieldManagerScreenDescription {
   margin: 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.94rem;
   font-weight: 650;
   line-height: 1.48;
@@ -3356,7 +3356,7 @@
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .field > span,
 .fieldManagerMobileSurface .fieldManagerShareFlow .field > span {
-  color: rgba(18, 53, 45, 0.72);
+  color: var(--app-muted, rgba(18, 53, 45, 0.72));
   font-size: 0.78rem;
   font-weight: 850;
   letter-spacing: 0.025em;
@@ -3371,10 +3371,10 @@
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar input {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.16);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.16));
   border-radius: 14px;
-  background: #fbfdfb;
-  color: #12352d;
+  background: var(--app-surface, #fbfdfb);
+  color: var(--app-text, #12352d);
   font: inherit;
   font-size: 0.92rem;
   font-weight: 700;
@@ -3410,9 +3410,9 @@
 .fieldManagerMobileSurface .fieldManagerShareFlow .field select:focus,
 .fieldManagerMobileSurface .fieldManagerShareFlow .field textarea:focus,
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar input:focus {
-  border-color: rgba(37, 71, 51, 0.62);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09);
+  border-color: var(--app-accent, rgba(37, 71, 51, 0.62));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.09));
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .largeInput {
@@ -3437,9 +3437,9 @@
 .fieldManagerMobileSurface .fieldManagerEditorContent .listOptionButton,
 .fieldManagerMobileSurface .fieldManagerEditorContent .servicePanel,
 .fieldManagerMobileSurface .fieldManagerEditorContent .serviceDetailsCard {
-  border-color: rgba(18, 53, 45, 0.14);
+  border-color: var(--app-line, rgba(18, 53, 45, 0.14));
   border-radius: 15px;
-  background: #fbfdfb;
+  background: var(--app-surface, #fbfdfb);
   box-shadow: none;
 }
 
@@ -3471,18 +3471,18 @@
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter .primaryButton,
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter .primaryButton {
-  border: 1.5px solid #6fc596;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
-  color: #0a543d;
-  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.09);
+  border: 1.5px solid var(--app-line, #6fc596);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%);
+  color: var(--app-text, #0a543d);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.09));
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .editorFooter .secondaryButton,
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareFooter .secondaryButton,
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton {
-  border: 1px solid rgba(18, 53, 45, 0.16);
-  background: #ffffff;
-  color: #174637;
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.16));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #174637);
   box-shadow: none;
 }
 
@@ -3506,9 +3506,9 @@
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareDealerList {
   min-height: 0;
   overflow: visible;
-  border-color: rgba(18, 53, 45, 0.12);
+  border-color: var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 15px;
-  background: #f7fbf8;
+  background: var(--app-surface, #f7fbf8);
   box-shadow: none;
 }
 
@@ -3517,26 +3517,26 @@
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareConsentCheck,
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareSelectedPanel,
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareTrackingChoice {
-  border-color: rgba(18, 53, 45, 0.14);
+  border-color: var(--app-accent, rgba(18, 53, 45, 0.14));
   border-radius: 14px;
   box-shadow: none;
 }
 
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton {
-  border-color: #254733;
+  border-color: var(--app-line, #254733);
   background: #254733;
   color: #ffffff;
-  box-shadow: 0 10px 22px rgba(37, 71, 51, 0.18);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(37, 71, 51, 0.18));
 }
 
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton:hover:not(:disabled) {
-  border-color: #173f30;
+  border-color: var(--app-line, #173f30);
   background: #173f30;
 }
 
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareSearchBar .secondaryButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.14), 0 10px 22px rgba(37, 71, 51, 0.18);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.14)), 0 10px 22px var(--app-shadow-colour, rgba(37, 71, 51, 0.18));
 }
 
 @media (max-width: 560px) {
@@ -3562,7 +3562,7 @@
 .fieldManagerMobileSurface {
   --field-manager-line: rgba(18, 53, 45, 0.13);
   --field-manager-shadow: 0 12px 30px rgba(18, 53, 45, 0.07);
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .fieldManagerMobileSurface .shell {
@@ -3578,9 +3578,9 @@
 
 .fieldManagerMobileSurface .assetOpenedCard {
   gap: 12px;
-  border: 1px solid var(--field-manager-line);
+  border: 1px solid var(--app-line, var(--field-manager-line));
   border-radius: 20px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 18px 16px;
   box-shadow: var(--field-manager-shadow);
 }
@@ -3612,7 +3612,7 @@
 
 .fieldManagerMobileSurface .fieldManagerAssetMeta {
   margin: 7px 0 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.4;
@@ -3645,17 +3645,17 @@
   align-items: center;
   justify-items: stretch;
   gap: 14px;
-  border: 1px solid var(--field-manager-line);
+  border: 1px solid var(--app-line, var(--field-manager-line));
   border-radius: 18px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 13px 15px;
   text-align: left;
   box-shadow: var(--field-manager-shadow);
 }
 
 .fieldManagerMobileSurface .actionCard:hover {
-  border-color: rgba(35, 104, 81, 0.28);
-  box-shadow: 0 15px 32px rgba(18, 53, 45, 0.09);
+  border-color: var(--app-line, rgba(35, 104, 81, 0.28));
+  box-shadow: 0 15px 32px var(--app-shadow-colour, rgba(18, 53, 45, 0.09));
 }
 
 .fieldManagerMobileSurface .actionIconWrap {
@@ -3699,7 +3699,7 @@
 
 .fieldManagerMobileSurface .actionCard small,
 .fieldManagerMobileSurface .actionCard small.actionSubtitleNoWrap {
-  color: rgba(18, 53, 45, 0.62);
+  color: var(--app-muted, rgba(18, 53, 45, 0.62));
   font-size: clamp(0.76rem, 3.5vw, 0.88rem);
   font-weight: 680;
   line-height: 1.3;
@@ -3724,7 +3724,7 @@
   border-radius: 17px;
   font-size: 0.98rem;
   font-weight: 800;
-  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(37, 71, 51, 0.18));
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorOverlay,
@@ -3733,7 +3733,7 @@
     max(14px, env(safe-area-inset-top))
     12px
     max(24px, env(safe-area-inset-bottom));
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorCard,
@@ -3774,9 +3774,9 @@
 
 .fieldManagerMobileSurface .fieldManagerEditorContent,
 .fieldManagerMobileSurface .fieldManagerShareFlow {
-  border: 1px solid var(--field-manager-line);
+  border: 1px solid var(--app-line, var(--field-manager-line));
   border-radius: 20px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow: var(--field-manager-shadow);
 }
 
@@ -3864,27 +3864,27 @@
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .serviceModeCard.serviceModeCardActive {
-  border-color: rgba(35, 104, 81, 0.34);
-  background: #eaf7f0;
-  color: #12352d;
-  box-shadow: inset 4px 0 0 #236851;
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.34));
+  background: var(--app-surface-soft, #eaf7f0);
+  color: var(--app-text, #12352d);
+  box-shadow: inset 4px 0 0 var(--app-shadow-colour, #236851);
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .serviceModeCard.serviceModeCardActive .serviceModeIcon {
-  border-color: rgba(35, 104, 81, 0.2);
-  background: #ffffff;
-  color: #176b4f;
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.2));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #176b4f);
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .serviceModeCard.serviceModeCardActive .serviceModeText small {
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .servicePanel,
 .fieldManagerMobileSurface .fieldManagerEditorContent .serviceDetailsCard {
   gap: 11px;
   border-radius: 16px;
-  background: #fbfdfb;
+  background: var(--app-surface, #fbfdfb);
   padding: 13px;
 }
 
@@ -3895,9 +3895,9 @@
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .listOptionButton.listOptionActive {
-  border-color: rgba(35, 104, 81, 0.32);
-  background: #edf8f2;
-  box-shadow: inset 4px 0 0 #236851;
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.32));
+  background: var(--app-surface-soft, #edf8f2);
+  box-shadow: inset 4px 0 0 var(--app-shadow-colour, #236851);
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .listOptionText strong {
@@ -3934,7 +3934,7 @@
 
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareDealerList {
   border-radius: 15px;
-  background: #fbfdfb;
+  background: var(--app-surface, #fbfdfb);
 }
 
 .fieldManagerMobileSurface .fieldManagerShareFlow .shareDealerCard,
@@ -3986,21 +3986,21 @@
   grid-template-rows: auto auto;
   place-items: center;
   gap: 10px;
-  border-color: rgba(35, 104, 81, 0.16);
+  border-color: var(--app-line, rgba(35, 104, 81, 0.16));
   border-radius: 17px;
-  background: linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f4faf7) 100%);
   padding: 14px 10px;
   text-align: center;
-  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.055);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.055));
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .mediaButtonIcon {
   width: 52px;
   height: 52px;
   border-radius: 15px;
-  background: linear-gradient(180deg, #effaf5 0%, #def3e8 100%);
-  border-color: rgba(35, 104, 81, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  background: linear-gradient(180deg, var(--app-surface-soft, #effaf5) 0%, var(--app-surface-soft, #def3e8) 100%);
+  border-color: var(--app-line, rgba(35, 104, 81, 0.18));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
 }
 
 .fieldManagerMobileSurface .fieldManagerEditorContent .mediaButtonSvg {
@@ -4031,7 +4031,7 @@
   border-radius: 50%;
   color: #ffffff;
   background: linear-gradient(145deg, #25845e 0%, #15533d 100%);
-  box-shadow: 0 16px 32px rgba(21, 83, 61, 0.22);
+  box-shadow: 0 16px 32px var(--app-shadow-colour, rgba(21, 83, 61, 0.22));
 }
 
 .thankYouIcon svg {
@@ -4051,12 +4051,12 @@
   align-items: center;
   justify-content: center;
   margin-top: 0.45rem;
-  border: 1px solid #1f7655;
+  border: 1px solid var(--app-line, #1f7655);
   border-radius: 1rem;
   padding: 0.85rem 1.35rem;
   color: #ffffff;
   background: linear-gradient(180deg, #25845e 0%, #176044 100%);
-  box-shadow: 0 12px 25px rgba(23, 96, 68, 0.18);
+  box-shadow: 0 12px 25px var(--app-shadow-colour, rgba(23, 96, 68, 0.18));
   font-size: 1rem;
   font-weight: 850;
   text-decoration: none;

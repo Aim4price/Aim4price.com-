@@ -21,10 +21,10 @@
   flex-direction: column !important;
   gap: 1.3rem !important;
   padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem) !important;
-  border: 1px solid rgba(18,45,37,.12) !important;
+  border: 1px solid var(--app-line, rgba(18,45,37,.12)) !important;
   border-radius: 1.55rem !important;
-  background: linear-gradient(180deg,#fff,#f7faf8) !important;
-  box-shadow: 0 32px 90px rgba(7,25,20,.28),0 8px 24px rgba(7,25,20,.12) !important;
+  background: linear-gradient(180deg,var(--app-surface, #fff),var(--app-surface, #f7faf8)) !important;
+  box-shadow: 0 32px 90px var(--app-shadow-colour, rgba(7,25,20,.28)),0 8px 24px var(--app-shadow-colour, rgba(7,25,20,.12)) !important;
   font-family: var(--font-heading,"Montserrat"),var(--font-body,"Inter"),sans-serif;
   overflow-y: auto !important;
   overscroll-behavior: contain;
@@ -40,14 +40,14 @@
   padding: 0 0 1.15rem !important;
   margin: 0 !important;
   border: 0 !important;
-  border-bottom: 1px solid rgba(18,45,37,.1) !important;
+  border-bottom: 1px solid var(--app-line, rgba(18,45,37,.1)) !important;
   background: transparent !important;
   flex-shrink: 0;
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) :is(h2,h3) {
   margin: 0 !important;
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: clamp(1.55rem,calc(var(--website-design-vw,1vw) * 2.3),2rem) !important;
   font-weight: 800 !important;
   letter-spacing: -.04em !important;
@@ -57,7 +57,7 @@
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-header]) p {
   margin: .4rem 0 0 !important;
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: .88rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
@@ -72,10 +72,10 @@
   min-width: 2.75rem !important;
   min-height: 2.75rem !important;
   padding: 0 !important;
-  border: 1px solid #d5dfda !important;
+  border: 1px solid var(--app-line, #d5dfda) !important;
   border-radius: .9rem !important;
-  background: #f6faf8 !important;
-  color: #254b3b !important;
+  background: var(--app-surface, #f6faf8) !important;
+  color: var(--app-text, #254b3b) !important;
   font-size: 1.25rem !important;
   line-height: 1 !important;
   box-shadow: none !important;
@@ -116,28 +116,28 @@
   min-height: 5.9rem !important;
   height: auto !important;
   padding: 1rem !important;
-  border: 1px solid rgba(216,226,236,.98) !important;
+  border: 1px solid var(--app-info-line, rgba(216,226,236,.98)) !important;
   border-radius: 1rem !important;
-  background: linear-gradient(180deg,#fff,#f5f8fb) !important;
-  color: #10352b !important;
+  background: linear-gradient(180deg,var(--app-surface, #fff),var(--app-info-soft, #f5f8fb)) !important;
+  color: var(--app-text, #10352b) !important;
   text-align: left !important;
   text-decoration: none;
   white-space: normal !important;
-  box-shadow: 0 14px 28px rgba(16,36,40,.055),inset 0 1px 0 rgba(255,255,255,.96) !important;
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(16,36,40,.055)),inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.96)) !important;
   cursor: pointer;
   transform: none !important;
   transition: transform 160ms ease,border-color 160ms ease,background 160ms ease,box-shadow 160ms ease;
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option][aria-pressed="true"]) {
-  border-color: rgba(190,224,206,.98) !important;
-  background: radial-gradient(circle at top left,rgba(25,116,84,.08),transparent 42%),linear-gradient(180deg,#fff,#edf8f2) !important;
+  border-color: var(--app-accent, rgba(190,224,206,.98)) !important;
+  background: radial-gradient(circle at top left,var(--app-surface-soft, rgba(25,116,84,.08)),transparent 42%),linear-gradient(180deg,var(--app-surface, #fff),var(--app-surface-soft, #edf8f2)) !important;
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]):is(:hover,:focus-visible):not(:disabled) {
-  border-color: rgba(190,224,206,.98) !important;
-  background: radial-gradient(circle at top left,rgba(25,116,84,.07),transparent 44%),linear-gradient(180deg,#fff,#edf8f2) !important;
-  box-shadow: 0 18px 34px rgba(16,36,40,.085),inset 0 1px 0 #fff !important;
+  border-color: var(--app-accent, rgba(190,224,206,.98)) !important;
+  background: radial-gradient(circle at top left,var(--app-surface-soft, rgba(25,116,84,.07)),transparent 44%),linear-gradient(180deg,var(--app-surface, #fff),var(--app-surface-soft, #edf8f2)) !important;
+  box-shadow: 0 18px 34px var(--app-shadow-colour, rgba(16,36,40,.085)),inset 0 1px 0 var(--app-shadow-colour, #fff) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -147,9 +147,9 @@
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border: 1px solid rgba(216,226,236,.98) !important;
+  border: 1px solid var(--app-info-line, rgba(216,226,236,.98)) !important;
   border-radius: 1rem !important;
-  background: #fff !important;
+  background: var(--app-surface, #fff) !important;
   padding: 0 !important;
 }
 
@@ -169,7 +169,7 @@
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) strong {
   display: block !important;
   margin: 0 !important;
-  color: #10352b !important;
+  color: var(--app-text, #10352b) !important;
   font-size: .95rem !important;
   font-weight: 800 !important;
   line-height: 1.35 !important;
@@ -179,7 +179,7 @@
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-option]) small {
   display: block !important;
   margin: 0 !important;
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: .88rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
@@ -213,7 +213,7 @@
 }
 
 .dialog button:focus-visible,.dialog a:focus-visible {
-  outline: 3px solid #79ad97 !important;
+  outline: 3px solid var(--app-accent, #79ad97) !important;
   outline-offset: 3px;
 }
 
@@ -223,10 +223,10 @@
 }
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) :global([data-download-footer]) :is(button, a) {
-  color: #17362c !important;
-  border: 1px solid #d8e1ea !important;
-  background: #f2f5f8 !important;
-  box-shadow: 0 9px 18px rgba(16,36,40,.04),inset 0 1px 0 rgba(255,255,255,.96) !important;
+  color: var(--app-text, #17362c) !important;
+  border: 1px solid var(--app-info-line, #d8e1ea) !important;
+  background: var(--app-info-soft, #f2f5f8) !important;
+  box-shadow: 0 9px 18px var(--app-shadow-colour, rgba(16,36,40,.04)),inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.96)) !important;
   letter-spacing: -.018em !important;
 }
 
@@ -264,7 +264,7 @@
 
 .dialog.dialog.dialog:global([data-download-dialog="true"]) > p {
   margin: 0 !important;
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-size: .88rem;
   font-weight: 650;
   line-height: 1.5;

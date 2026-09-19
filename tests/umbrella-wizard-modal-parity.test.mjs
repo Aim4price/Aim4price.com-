@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync } from './helpers/light-theme-source.mjs';
 import test from "node:test";
 
 const read = (path) =>

@@ -5,7 +5,7 @@
 }
 
 .shell {
-  color: #073b30;
+  color: var(--app-text, #073b30);
 }
 
 .controlsPanel {
@@ -38,7 +38,7 @@
 }
 
 .searchIcon {
-  color: #607286;
+  color: var(--app-info, #607286);
 }
 
 .clearSearchButton {
@@ -49,10 +49,10 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid #c5d5e2;
+  border: 1px solid var(--app-info-line, #c5d5e2);
   border-radius: 999px;
-  color: #1d3142;
-  background: #f7fafc;
+  color: var(--app-info, #1d3142);
+  background: var(--app-info-soft, #f7fafc);
 }
 
 .customFilter,
@@ -69,11 +69,11 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0 1.15rem;
-  border: 1px solid rgba(194, 211, 224, 0.98);
+  border: 1px solid var(--app-info-line, rgba(194, 211, 224, 0.98));
   border-radius: 1.1rem;
-  color: #073b30;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
-  box-shadow: 0 8px 18px rgba(31, 51, 71, 0.04);
+  color: var(--app-text, #073b30);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfd) 100%);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(31, 51, 71, 0.04));
   font: inherit;
   font-size: 0.94rem;
   font-weight: 760;
@@ -82,12 +82,12 @@
 
 .customFilterButton:hover,
 .customFilterOpen .customFilterButton {
-  border-color: rgba(25, 116, 84, 0.42);
-  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.1);
+  border-color: var(--app-line, rgba(25, 116, 84, 0.42));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.1));
 }
 
 .customFilterChevron {
-  color: #315348;
+  color: var(--app-text, #315348);
   transition: transform 160ms ease;
 }
 
@@ -107,10 +107,10 @@
   gap: 0.3rem;
   overflow-y: auto;
   padding: 0.5rem;
-  border: 1px solid rgba(194, 211, 224, 0.98);
+  border: 1px solid var(--app-info-line, rgba(194, 211, 224, 0.98));
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.99);
-  box-shadow: 0 20px 44px rgba(16, 36, 40, 0.14);
+  background: var(--app-surface, rgba(255, 255, 255, 0.99));
+  box-shadow: 0 20px 44px var(--app-shadow-colour, rgba(16, 36, 40, 0.14));
 }
 
 .customFilterOption,
@@ -123,7 +123,7 @@
   padding: 0 0.75rem;
   border: 1px solid transparent;
   border-radius: 0.72rem;
-  color: #315348;
+  color: var(--app-text, #315348);
   background: transparent;
   font: inherit;
   font-size: 0.82rem;
@@ -135,13 +135,13 @@
 .discoveryPageSizeOption:hover,
 .customFilterOptionSelected,
 .discoveryPageSizeOptionSelected {
-  color: #0d5f43;
-  border-color: rgba(25, 116, 84, 0.14);
-  background: #edf8f2;
+  color: var(--app-text, #0d5f43);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.14));
+  background: var(--app-surface-soft, #edf8f2);
 }
 
 .customFilterOption small {
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.74rem;
 }
 
@@ -156,16 +156,16 @@
 }
 
 .noticeSuccess {
-  color: #116343;
-  background: #eaf7f1;
-  border-color: #d1ebdf;
+  color: var(--app-text, #116343);
+  background: var(--app-surface-soft, #eaf7f1);
+  border-color: var(--app-line, #d1ebdf);
 }
 
 .noticeError,
 .errorPanel {
-  color: #9b2f2f;
-  background: #fff0f0;
-  border-color: #f1d2d2;
+  color: var(--app-danger, #9b2f2f);
+  background: var(--app-danger-soft, #fff0f0);
+  border-color: var(--app-danger-line, #f1d2d2);
 }
 
 .cardStack {
@@ -185,37 +185,37 @@
 
 .assetCard:hover {
   transform: translateY(-1px);
-  border-color: rgba(25, 116, 84, 0.3);
-  box-shadow: 0 18px 34px rgba(20, 43, 43, 0.075);
+  border-color: var(--app-line, rgba(25, 116, 84, 0.3));
+  box-shadow: 0 18px 34px var(--app-shadow-colour, rgba(20, 43, 43, 0.075));
 }
 
 .dealerAssetCardOpen {
   background:
-    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.075), transparent 36%),
-    linear-gradient(180deg, #ffffff 0%, #f3faf6 100%);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(25, 116, 84, 0.075)), transparent 36%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f3faf6) 100%);
 }
 
 .dealerAssetCardPending {
   background:
-    radial-gradient(circle at 0 0, rgba(200, 117, 52, 0.055), transparent 36%),
-    linear-gradient(180deg, #ffffff 0%, #fffaf4 100%);
+    radial-gradient(circle at 0 0, var(--app-danger-soft, rgba(200, 117, 52, 0.055)), transparent 36%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-warning-soft, #fffaf4) 100%);
 }
 
 .discoveryAssetCardDenied {
-  border-color: rgba(218, 118, 118, 0.72) !important;
+  border-color: var(--app-danger-line, rgba(218, 118, 118, 0.72)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(201, 61, 61, 0.08), transparent 38%),
-    linear-gradient(180deg, #fffafa 0%, #ffeded 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-danger-soft, rgba(201, 61, 61, 0.08)), transparent 38%),
+    linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #ffeded) 100%) !important;
   box-shadow:
-    inset 4px 0 0 rgba(199, 61, 61, 0.72),
-    0 14px 28px rgba(111, 42, 42, 0.055) !important;
+    inset 4px 0 0 var(--app-shadow-colour, rgba(199, 61, 61, 0.72)),
+    0 14px 28px var(--app-shadow-colour, rgba(111, 42, 42, 0.055)) !important;
 }
 
 .discoveryAssetCardDenied:hover {
-  border-color: rgba(202, 84, 84, 0.82) !important;
+  border-color: var(--app-danger-line, rgba(202, 84, 84, 0.82)) !important;
   box-shadow:
-    inset 4px 0 0 rgba(187, 49, 49, 0.82),
-    0 18px 34px rgba(111, 42, 42, 0.075) !important;
+    inset 4px 0 0 var(--app-shadow-colour, rgba(187, 49, 49, 0.82)),
+    0 18px 34px var(--app-shadow-colour, rgba(111, 42, 42, 0.075)) !important;
 }
 
 .assetCardHeader,
@@ -236,7 +236,7 @@
 
 .assetIdentity h2 {
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem);
   font-weight: 850;
@@ -247,14 +247,14 @@
 
 .dealerAssetMeta {
   margin: 0;
-  color: #516678;
+  color: var(--app-info, #516678);
   font-size: 0.92rem;
   font-weight: 680;
   line-height: 1.35;
 }
 
 .dealerAssetProvince {
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.82rem;
   font-weight: 680;
 }
@@ -274,11 +274,11 @@
   align-items: center;
   justify-content: center;
   padding: 0 1.1rem;
-  border: 1.5px solid #0f6248;
+  border: 1.5px solid var(--app-line, #0f6248);
   border-radius: 1rem;
   color: #ffffff;
   background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
-  box-shadow: 0 14px 26px rgba(25, 116, 84, 0.18);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(25, 116, 84, 0.18));
   font: inherit;
   font-size: 0.9rem;
   font-weight: 760;
@@ -311,21 +311,21 @@
 
 .statusPillWarning,
 .retractEnquiryButton {
-  color: #8a4b0d;
-  border-color: rgba(196, 130, 32, 0.38);
-  background: #fff7eb;
+  color: var(--app-danger, #8a4b0d);
+  border-color: var(--app-warning-line, rgba(196, 130, 32, 0.38));
+  background: var(--app-warning-soft, #fff7eb);
 }
 
 .statusPillDanger {
-  color: #8d2d2d;
-  border-color: rgba(228, 178, 178, 0.82);
-  background: #fff7f7;
+  color: var(--app-danger, #8d2d2d);
+  border-color: var(--app-danger-line, rgba(228, 178, 178, 0.82));
+  background: var(--app-danger-soft, #fff7f7);
 }
 
 .unlockedPill {
-  color: #0d5f43;
-  border-color: rgba(186, 222, 201, 0.92);
-  background: #f2fbf6;
+  color: var(--app-text, #0d5f43);
+  border-color: var(--app-line, rgba(186, 222, 201, 0.92));
+  background: var(--app-surface, #f2fbf6);
 }
 
 .retractEnquiryButton {
@@ -346,18 +346,18 @@
 }
 
 .pendingRequestButton {
-  color: #7d4b0a !important;
-  border-color: rgba(211, 137, 31, 0.48) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #ffedcc 100%) !important;
+  color: var(--app-warning, #7d4b0a) !important;
+  border-color: var(--app-warning-line, rgba(211, 137, 31, 0.48)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-warning-soft, #ffedcc) 100%) !important;
   box-shadow:
-    0 9px 20px rgba(125, 75, 10, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 9px 20px var(--app-shadow-colour, rgba(125, 75, 10, 0.09)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .pendingRequestButton:hover:not(:disabled) {
-  color: #693d07 !important;
-  border-color: rgba(211, 137, 31, 0.66) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #ffe4b6 100%) !important;
+  color: var(--app-warning, #693d07) !important;
+  border-color: var(--app-warning-line, rgba(211, 137, 31, 0.66)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-warning-soft, #ffe4b6) 100%) !important;
   transform: translateY(-1px);
 }
 
@@ -367,9 +367,9 @@
 }
 
 .discoveryDeniedAction {
-  color: #8d2d2d !important;
-  border-color: rgba(204, 58, 58, 0.28) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #ffe8e8 100%) !important;
+  color: var(--app-danger, #8d2d2d) !important;
+  border-color: var(--app-danger-line, rgba(204, 58, 58, 0.28)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #ffe8e8) 100%) !important;
 }
 
 .discoveryPublicAction,
@@ -377,9 +377,9 @@
 .discoveryPublicAction:focus {
   min-width: 10.5rem !important;
   cursor: not-allowed !important;
-  color: #5d6f69 !important;
-  border-color: #cbd8d3 !important;
-  background: #f2f6f4 !important;
+  color: var(--app-muted, #5d6f69) !important;
+  border-color: var(--app-accent, #cbd8d3) !important;
+  background: var(--app-surface-soft, #f2f6f4) !important;
   box-shadow: none !important;
   opacity: 1 !important;
   transform: none !important;
@@ -387,7 +387,7 @@
 }
 
 .emptyState {
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.9rem;
   font-weight: 680;
 }
@@ -400,10 +400,10 @@
   gap: 1rem;
   margin-top: 1rem;
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(198, 216, 223, 0.98);
+  border: 1px solid var(--app-info-line, rgba(198, 216, 223, 0.98));
   border-radius: 1.2rem;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 10px 22px rgba(20, 43, 43, 0.035);
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(20, 43, 43, 0.035));
 }
 
 .discoveryPaginationInfo,
@@ -417,18 +417,18 @@
 
 .discoveryPaginationSummary,
 .discoveryPageSizeField {
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.78rem;
   font-weight: 650;
 }
 
 .discoveryPaginationSummary strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-weight: 820;
 }
 
 .discoveryPaginationDivider {
-  color: #a0afba;
+  color: var(--app-info, #a0afba);
 }
 
 .discoveryPageSizeButton,
@@ -440,10 +440,10 @@
   justify-content: center;
   gap: 0.35rem;
   padding: 0 0.9rem;
-  border: 1px solid #c5d5e2;
+  border: 1px solid var(--app-info-line, #c5d5e2);
   border-radius: 0.85rem;
-  color: #1d3142;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%);
+  color: var(--app-info, #1d3142);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f9fb) 100%);
   font: inherit;
   font-size: 0.8rem;
   font-weight: 760;
@@ -455,9 +455,9 @@
 }
 
 .discoveryPaginationPageButtonActive {
-  color: #0a543d;
-  border-color: #86d0a8;
-  background: linear-gradient(180deg, #f7fffa 0%, #e4f7ec 100%);
+  color: var(--app-text, #0a543d);
+  border-color: var(--app-accent, #86d0a8);
+  background: linear-gradient(180deg, var(--app-surface, #f7fffa) 0%, var(--app-surface-soft, #e4f7ec) 100%);
 }
 
 .discoveryPaginationButton:disabled {
@@ -484,7 +484,7 @@
 .discoveryFutureCard {
   position: relative;
   opacity: 0.78;
-  background-image: linear-gradient(135deg, rgba(247, 249, 251, 0.82), rgba(238, 243, 246, 0.72)) !important;
+  background-image: linear-gradient(135deg, var(--app-info-soft, rgba(247, 249, 251, 0.82)), var(--app-info-soft, rgba(238, 243, 246, 0.72))) !important;
 }
 
 .discoveryFutureCard [class*='clientIdentity'] h3,
@@ -506,10 +506,10 @@
   align-items: center;
   margin-top: 0.45rem;
   padding: 0.32rem 0.65rem;
-  border: 1px solid #d7e0e6;
+  border: 1px solid var(--app-info-line, #d7e0e6);
   border-radius: 999px;
-  color: #607286;
-  background: rgba(255, 255, 255, 0.82);
+  color: var(--app-info, #607286);
+  background: var(--app-surface, rgba(255, 255, 255, 0.82));
   font-size: 0.73rem;
   font-weight: 760;
 }
@@ -532,10 +532,10 @@
   align-items: center;
   margin-bottom: 0.65rem;
   padding: 0.32rem 0.66rem;
-  border: 1px solid rgba(186, 222, 201, 0.92);
+  border: 1px solid var(--app-line, rgba(186, 222, 201, 0.92));
   border-radius: 999px;
-  color: #0d5f43;
-  background: #f2fbf6;
+  color: var(--app-text, #0d5f43);
+  background: var(--app-surface, #f2fbf6);
   font-size: 0.7rem;
   font-weight: 820;
   letter-spacing: 0.05em;
@@ -567,21 +567,21 @@
 .contactAccessNote,
 .contactGrid > div,
 .contactEmpty {
-  border: 1px solid rgba(207, 223, 233, 0.9);
+  border: 1px solid var(--app-info-line, rgba(207, 223, 233, 0.9));
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--app-surface, rgba(255, 255, 255, 0.86));
 }
 
 .contactAccessNote {
   padding: 1rem 1.1rem;
-  border-color: rgba(186, 222, 201, 0.92);
-  background: #eef8f3;
+  border-color: var(--app-line, rgba(186, 222, 201, 0.92));
+  background: var(--app-surface-soft, #eef8f3);
 }
 
 .contactAccessNote span,
 .contactGrid span {
   display: block;
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.7rem;
   font-weight: 840;
   letter-spacing: 0.05em;
@@ -590,7 +590,7 @@
 
 .contactAccessNote p {
   margin: 0.35rem 0 0;
-  color: #315348;
+  color: var(--app-text, #315348);
   font-size: 0.88rem;
   font-weight: 650;
 }
@@ -615,14 +615,14 @@
 .contactGrid a {
   display: block;
   margin-top: 0.38rem;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 0.96rem;
   font-weight: 780;
   overflow-wrap: anywhere;
 }
 
 .contactGrid a {
-  color: #0d5f43;
+  color: var(--app-text, #0d5f43);
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }
@@ -636,7 +636,7 @@
 .contactEmpty {
   margin: 0;
   padding: 1rem;
-  color: #607286;
+  color: var(--app-info, #607286);
   line-height: 1.5;
 }
 
@@ -661,15 +661,15 @@
 .discoveryRefreshButton:focus-visible,
 .discoveryRefreshButton:active,
 .discoveryRefreshButton:disabled {
-  color: #173c33 !important;
-  border-color: #c4d4ce !important;
-  background: #ffffff !important;
+  color: var(--app-text, #173c33) !important;
+  border-color: var(--app-accent, #c4d4ce) !important;
+  background: var(--app-surface, #ffffff) !important;
   background-image: none !important;
-  box-shadow: 0 7px 18px rgba(16, 50, 42, 0.06) !important;
+  box-shadow: 0 7px 18px var(--app-shadow-colour, rgba(16, 50, 42, 0.06)) !important;
 }
 
 .discoveryRefreshButton:focus-visible {
-  outline: 3px solid rgba(25, 116, 84, 0.22) !important;
+  outline: 3px solid var(--app-accent, rgba(25, 116, 84, 0.22)) !important;
   outline-offset: 2px;
 }
 
@@ -683,9 +683,9 @@
 .ownerDiscoveryRefreshButton:focus-visible,
 .ownerDiscoveryRefreshButton:active,
 .ownerDiscoveryRefreshButton:disabled {
-  color: #173c33 !important;
-  border-color: #c4d4ce !important;
-  background: #ffffff !important;
+  color: var(--app-text, #173c33) !important;
+  border-color: var(--app-accent, #c4d4ce) !important;
+  background: var(--app-surface, #ffffff) !important;
   background-image: none !important;
 }
 
@@ -781,11 +781,11 @@
   gap: 0.38rem;
   min-height: 0;
   padding: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.72));
   border-radius: 0.9rem;
-  color: #173f35;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 12px 28px rgba(20, 43, 43, 0.1);
+  color: var(--app-text, #173f35);
+  background: var(--app-surface, rgba(255, 255, 255, 0.86));
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(20, 43, 43, 0.1));
   text-align: center;
 }
 
@@ -795,7 +795,7 @@
 }
 
 .discoveryPreviewLocked > .discoveryLockedMedia span {
-  color: #60756d;
+  color: var(--app-muted, #60756d);
   font-size: 0.72rem;
   font-weight: 680;
   line-height: 1.4;
@@ -805,20 +805,20 @@
   display: grid;
   gap: 0.28rem;
   padding: 0.85rem 0.95rem;
-  border: 1px solid rgba(186, 222, 201, 0.92);
+  border: 1px solid var(--app-line, rgba(186, 222, 201, 0.92));
   border-radius: 0.96rem;
-  color: #315f50;
-  background: linear-gradient(180deg, #ffffff 0%, #eef8f3 100%);
+  color: var(--app-text, #315f50);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eef8f3) 100%);
 }
 
 .discoveryAccessNote strong {
-  color: #0c5d43;
+  color: var(--app-text, #0c5d43);
   font-size: 0.82rem;
   font-weight: 850;
 }
 
 .discoveryAccessNote span {
-  color: #587068;
+  color: var(--app-muted, #587068);
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.45;
@@ -833,8 +833,8 @@
   gap: 1rem;
   margin-top: 0.9rem;
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.35rem);
-  border-top: 1px solid #d9e5e0;
-  background: #f8fbfa;
+  border-top: 1px solid var(--app-line, #d9e5e0);
+  background: var(--app-surface, #f8fbfa);
 }
 
 .discoveryDetailsLoading,
@@ -842,18 +842,18 @@
 .discoveryNoPhotos {
   margin: 0;
   padding: 1rem;
-  border: 1px solid #d4e1dc;
+  border: 1px solid var(--app-line, #d4e1dc);
   border-radius: 0.75rem;
-  color: #526b62;
-  background: #ffffff;
+  color: var(--app-muted, #526b62);
+  background: var(--app-surface, #ffffff);
   font-size: 0.88rem;
   font-weight: 680;
 }
 
 .discoveryDetailsError {
-  color: #8d2d2d;
-  border-color: #edcccc;
-  background: #fff7f7;
+  color: var(--app-danger, #8d2d2d);
+  border-color: var(--app-danger-line, #edcccc);
+  background: var(--app-danger-soft, #fff7f7);
 }
 
 .discoveryDetailGrid,
@@ -867,16 +867,16 @@
 .discoveryInlineContact > div {
   min-width: 0;
   padding: 0.85rem;
-  border: 1px solid #d6e3de;
+  border: 1px solid var(--app-line, #d6e3de);
   border-radius: 0.65rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .discoveryDetailGrid span,
 .discoveryInlineContact span {
   display: block;
   margin-bottom: 0.32rem;
-  color: #6a7d76;
+  color: var(--app-muted, #6a7d76);
   font-size: 0.67rem;
   font-weight: 820;
   letter-spacing: 0.04em;
@@ -886,7 +886,7 @@
 .discoveryDetailGrid strong,
 .discoveryInlineContact strong {
   display: block;
-  color: #123f34;
+  color: var(--app-text, #123f34);
   font-size: 0.86rem;
   font-weight: 760;
   overflow-wrap: anywhere;
@@ -907,10 +907,10 @@
   grid-column: 1 / -1;
   margin: 0;
   padding: 0.72rem 0.85rem;
-  border: 1px solid #d6e3de;
+  border: 1px solid var(--app-line, #d6e3de);
   border-radius: 0.65rem;
-  color: #587068;
-  background: #f7faf8;
+  color: var(--app-muted, #587068);
+  background: var(--app-surface, #f7faf8);
   font-size: 0.76rem;
   font-weight: 700;
   line-height: 1.4;
@@ -927,9 +927,9 @@
   aspect-ratio: 4 / 3;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #c8d9d2;
+  border: 1px solid var(--app-line, #c8d9d2);
   border-radius: 0.7rem;
-  background: #e7efeb;
+  background: var(--app-surface-soft, #e7efeb);
 }
 
 .discoveryPhoto img {
@@ -946,9 +946,9 @@
   align-items: center;
   gap: 1.2rem;
   padding: 1rem;
-  border: 1px solid #d3dfda;
+  border: 1px solid var(--app-line, #d3dfda);
   border-radius: 0.8rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .discoveryLockedArtwork {
@@ -957,15 +957,15 @@
   overflow: hidden;
   border-radius: 0.65rem;
   background:
-    radial-gradient(circle at 72% 30%, rgba(255, 255, 255, 0.65), transparent 20%),
-    linear-gradient(135deg, #d9e1de, #aebcb7);
+    radial-gradient(circle at 72% 30%, var(--app-surface, rgba(255, 255, 255, 0.65)), transparent 20%),
+    linear-gradient(135deg, var(--app-surface-soft, #d9e1de), var(--app-surface-soft, #aebcb7));
   filter: blur(0.7px);
 }
 
 .discoveryLockedArtwork::after {
   position: absolute;
   inset: 0;
-  background: rgba(244, 247, 246, 0.34);
+  background: var(--app-surface-soft, rgba(244, 247, 246, 0.34));
   backdrop-filter: blur(11px);
   content: "";
 }
@@ -975,7 +975,7 @@
   z-index: 1;
   height: 0.7rem;
   border-radius: 0.2rem;
-  background: rgba(72, 93, 85, 0.27);
+  background: var(--app-surface-soft, rgba(72, 93, 85, 0.27));
 }
 
 .discoveryLockedArtwork span:nth-child(1) {
@@ -999,7 +999,7 @@
 }
 
 .discoveryLockedMedia strong {
-  color: #173f35;
+  color: var(--app-text, #173f35);
   font-family: var(--font-heading, "Montserrat"), sans-serif;
   font-size: 1.05rem;
 }
@@ -1007,7 +1007,7 @@
 .discoveryLockedMedia p {
   max-width: 35rem;
   margin: 0.45rem 0 0;
-  color: #657a72;
+  color: var(--app-muted, #657a72);
   font-size: 0.84rem;
   line-height: 1.5;
 }
@@ -1026,12 +1026,12 @@
 }
 
 .discoveryExpandedActions strong {
-  color: #173f35;
+  color: var(--app-text, #173f35);
   font-size: 0.86rem;
 }
 
 .discoveryExpandedActions span {
-  color: #657a72;
+  color: var(--app-muted, #657a72);
   font-size: 0.78rem;
 }
 
@@ -1044,12 +1044,12 @@
   gap: 1.05rem;
   margin: 1.5rem auto 0;
   padding: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.6rem) clamp(1rem, calc(var(--website-design-vw, 1vw) * 4), 4rem);
-  border: 1px solid #cadbd4;
+  border: 1px solid var(--app-line, #cadbd4);
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 50% 0%, rgba(25, 116, 84, 0.075), transparent 33%),
-    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
-  box-shadow: 0 18px 40px rgba(14, 54, 45, 0.075);
+    radial-gradient(circle at 50% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.075)), transparent 33%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #fbfdfc) 100%);
+  box-shadow: 0 18px 40px var(--app-shadow-colour, rgba(14, 54, 45, 0.075));
   text-align: center;
 }
 
@@ -1058,14 +1058,14 @@
   height: 4.6rem;
   display: grid;
   place-items: center;
-  border: 1.5px solid #71ad96;
+  border: 1.5px solid var(--app-line, #71ad96);
   border-radius: 50%;
-  color: #086046;
+  color: var(--app-text, #086046);
   background:
-    radial-gradient(circle at 32% 22%, #ffffff 0%, #f0fbf6 36%, #d7f0e4 100%);
+    radial-gradient(circle at 32% 22%, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f0fbf6) 36%, var(--app-surface-soft, #d7f0e4) 100%);
   box-shadow:
-    0 14px 30px rgba(13, 101, 73, 0.18),
-    inset 0 0 0 7px rgba(255, 255, 255, 0.7);
+    0 14px 30px var(--app-shadow-colour, rgba(13, 101, 73, 0.18)),
+    inset 0 0 0 7px var(--app-shadow-colour, rgba(255, 255, 255, 0.7));
 }
 
 .discoveryAccessIconGraphic {
@@ -1075,7 +1075,7 @@
 
 .discoveryAccessPanel h2 {
   margin: 0;
-  color: #0d4939;
+  color: var(--app-text, #0d4939);
   font-family: var(--font-heading, "Montserrat"), sans-serif;
   font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.8rem);
 }
@@ -1083,13 +1083,13 @@
 .discoveryAccessPanel p {
   max-width: 52rem;
   margin: 0.55rem auto 0;
-  color: #5e746b;
+  color: var(--app-muted, #5e746b);
   line-height: 1.58;
 }
 
 .discoveryAccessPanel > small {
   max-width: 50rem;
-  color: #71857d;
+  color: var(--app-muted, #71857d);
   font-size: 0.75rem;
   line-height: 1.5;
 }
@@ -1110,31 +1110,31 @@
   width: min(100%, 22rem);
   min-height: 3.65rem;
   color: #ffffff;
-  border-color: #075c43;
+  border-color: var(--app-line, #075c43);
   background: linear-gradient(180deg, #1b805d 0%, #0d6045 100%);
   box-shadow:
-    0 15px 28px rgba(13, 96, 69, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 15px 28px var(--app-shadow-colour, rgba(13, 96, 69, 0.24)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
   font-weight: 850;
 }
 
 .discoveryAccessActions .discoveryParticipationButton:hover:not(:disabled) {
-  border-color: #064d38;
+  border-color: var(--app-line, #064d38);
   background: linear-gradient(180deg, #197756 0%, #0a513b 100%);
   box-shadow:
-    0 18px 32px rgba(13, 96, 69, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 18px 32px var(--app-shadow-colour, rgba(13, 96, 69, 0.28)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .discoveryAccessActions .discoveryParticipationButton:focus-visible {
-  outline: 3px solid rgba(25, 128, 93, 0.25);
+  outline: 3px solid var(--app-accent, rgba(25, 128, 93, 0.25));
   outline-offset: 3px;
 }
 
 .discoveryAccessActions .discoveryParticipationButton:disabled {
   color: rgba(255, 255, 255, 0.92);
-  border-color: #6a9c89;
-  background: linear-gradient(180deg, #77a997 0%, #628f7f 100%);
+  border-color: var(--app-line, #6a9c89);
+  background: linear-gradient(180deg, var(--app-surface-soft, #77a997) 0%, var(--app-surface-soft, #628f7f) 100%);
   opacity: 0.78;
 }
 
@@ -1157,22 +1157,22 @@
   gap: 0.42rem 0.8rem;
   box-sizing: border-box;
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(137, 195, 168, 0.7);
+  border: 1px solid var(--app-line, rgba(137, 195, 168, 0.7));
   border-radius: 0.9rem;
-  color: #315f50;
-  background: rgba(235, 248, 241, 0.88);
+  color: var(--app-text, #315f50);
+  background: var(--app-surface-soft, rgba(235, 248, 241, 0.88));
   text-align: left;
 }
 
 .discoveryAccessPrivacy strong {
-  color: #0c5d43;
+  color: var(--app-text, #0c5d43);
   font-size: 0.82rem;
   font-weight: 850;
   white-space: nowrap;
 }
 
 .discoveryAccessPrivacy span {
-  color: #49695f;
+  color: var(--app-accent, #49695f);
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.5;
@@ -1190,16 +1190,16 @@
   width: min(100%, 50rem);
   box-sizing: border-box;
   padding: 1rem 1.1rem;
-  border: 1px solid #d4dfdb;
+  border: 1px solid var(--app-line, #d4dfdb);
   border-radius: 0.9rem;
-  color: #405f55;
-  background: rgba(248, 251, 250, 0.96);
+  color: var(--app-text, #405f55);
+  background: var(--app-surface, rgba(248, 251, 250, 0.96));
   text-align: left;
 }
 
 .discoveryExclusions > strong {
   display: block;
-  color: #173f35;
+  color: var(--app-text, #173f35);
   font-size: 0.84rem;
   font-weight: 850;
 }
@@ -1216,7 +1216,7 @@
 .discoveryExclusions li {
   position: relative;
   padding-left: 1.1rem;
-  color: #5c746b;
+  color: var(--app-muted, #5c746b);
   font-size: 0.78rem;
   font-weight: 660;
   line-height: 1.45;
@@ -1229,7 +1229,7 @@
   width: 0.42rem;
   height: 0.42rem;
   border-radius: 50%;
-  background: #c65a5a;
+  background: var(--app-danger-soft, #c65a5a);
   content: "";
 }
 
@@ -1242,9 +1242,9 @@
 }
 
 .discoverySettingsStatusIcon {
-  color: #176d50;
-  border: 1px solid #b8dece;
-  background: #e5f6ee;
+  color: var(--app-text, #176d50);
+  border: 1px solid var(--app-line, #b8dece);
+  background: var(--app-surface-soft, #e5f6ee);
 }
 
 .discoverySettingsDialogIcon {
@@ -1469,7 +1469,7 @@
   min-height: auto !important;
   padding-top: 8px !important;
   padding-bottom: max(28px, env(safe-area-inset-bottom)) !important;
-  color: #12352d;
+  color: var(--app-text, #12352d);
 }
 
 .discoveryOverviewIntro {
@@ -1481,7 +1481,7 @@
 
 .discoveryOverviewIntro h1 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.9rem, calc(var(--website-design-vw, 1vw) * 8), 2.45rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -1490,7 +1490,7 @@
 
 .discoveryOverviewIntro p {
   margin: 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.94rem;
   font-weight: 650;
   line-height: 1.4;
@@ -1513,19 +1513,19 @@
   grid-template-columns: 22px minmax(0, 1fr) auto;
   gap: 11px;
   padding: 0 10px 0 16px;
-  border: 1px solid rgba(18, 53, 45, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14));
   border-radius: 17px;
-  background: rgba(255, 255, 255, 0.96);
-  color: rgba(18, 53, 45, 0.56);
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  color: var(--app-muted, rgba(18, 53, 45, 0.56));
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .compactAppSurface .discoveryOverviewSearch:focus-within {
-  border-color: rgba(35, 104, 81, 0.42);
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.42));
   box-shadow:
-    0 0 0 4px rgba(35, 104, 81, 0.1),
-    0 12px 28px rgba(18, 53, 45, 0.07);
+    0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.1)),
+    0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .compactAppSurface .discoveryOverviewSearch input {
@@ -1535,7 +1535,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   padding: 0;
   font: inherit;
   font-size: 0.9rem;
@@ -1543,7 +1543,7 @@
 }
 
 .compactAppSurface .discoveryOverviewSearch input::placeholder {
-  color: rgba(18, 53, 45, 0.48);
+  color: var(--app-muted, rgba(18, 53, 45, 0.48));
   opacity: 1;
 }
 
@@ -1551,9 +1551,9 @@
   width: 2.35rem;
   min-width: 2.35rem;
   height: 2.35rem;
-  border-color: rgba(183, 59, 59, 0.2);
-  color: #a33b3b;
-  background: #fff6f6;
+  border-color: var(--app-danger-line, rgba(183, 59, 59, 0.2));
+  color: var(--app-danger, #a33b3b);
+  background: var(--app-danger-soft, #fff6f6);
   box-shadow: none;
 }
 
@@ -1566,19 +1566,19 @@
 .compactAppSurface .customFilterButton {
   min-height: 50px;
   padding: 0 12px;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.13));
   border-radius: 15px;
-  color: #174637;
-  background: #ffffff;
-  box-shadow: 0 10px 22px rgba(18, 53, 45, 0.055);
+  color: var(--app-text, #174637);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(18, 53, 45, 0.055));
   font-size: 0.82rem;
   font-weight: 800;
 }
 
 .compactAppSurface .customFilterButton:hover,
 .compactAppSurface .customFilterOpen .customFilterButton {
-  border-color: rgba(35, 104, 81, 0.42);
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1);
+  border-color: var(--app-line, rgba(35, 104, 81, 0.42));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.1));
 }
 
 .compactAppSurface .customFilterButton > span {
@@ -1593,9 +1593,9 @@
   right: auto;
   left: 0;
   padding: 0.42rem;
-  border-color: rgba(18, 53, 45, 0.15);
+  border-color: var(--app-line, rgba(18, 53, 45, 0.15));
   border-radius: 15px;
-  box-shadow: 0 18px 38px rgba(18, 53, 45, 0.15);
+  box-shadow: 0 18px 38px var(--app-shadow-colour, rgba(18, 53, 45, 0.15));
 }
 
 .compactAppSurface .discoveryFilterRow > .customFilter:last-child .customFilterMenu {
@@ -1621,7 +1621,7 @@
 
 .discoverySectionHeading h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 5), 1.42rem);
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -1633,10 +1633,10 @@
   min-height: 29px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
-  color: rgba(18, 53, 45, 0.68);
+  background: var(--app-surface, rgba(255, 255, 255, 0.84));
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -1649,17 +1649,17 @@
 .compactAppSurface .assetCard {
   min-width: 0;
   padding: 15px;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.07);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 12px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .compactAppSurface .assetCard:hover {
   transform: none;
-  border-color: rgba(35, 104, 81, 0.28);
-  box-shadow: 0 14px 34px rgba(18, 53, 45, 0.09);
+  border-color: var(--app-line, rgba(35, 104, 81, 0.28));
+  box-shadow: 0 14px 34px var(--app-shadow-colour, rgba(18, 53, 45, 0.09));
 }
 
 .compactAppSurface .assetCardHeader,
@@ -1696,16 +1696,16 @@
 }
 
 .discoveryTypeLabel {
-  color: #285443;
+  color: var(--app-text, #285443);
 }
 
 .discoveryLocationLabel {
-  color: #64746a;
+  color: var(--app-muted, #64746a);
 }
 
 .compactAppSurface .assetIdentity h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.16rem, calc(var(--website-design-vw, 1vw) * 4.8), 1.38rem);
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -1715,7 +1715,7 @@
 
 .compactAppSurface .dealerAssetMeta {
   margin: 0;
-  color: rgba(18, 53, 45, 0.66);
+  color: var(--app-muted, rgba(18, 53, 45, 0.66));
   font-size: 0.88rem !important;
   font-weight: 720;
   line-height: 1.42 !important;
@@ -1741,15 +1741,15 @@
 .compactAppSurface .discoveryOverviewOpenButton:focus,
 .compactAppSurface .discoveryOverviewOpenButton:focus-visible,
 .compactAppSurface .discoveryOverviewOpenButton:active {
-  border: 1.5px solid #6fc596 !important;
-  color: #0a543d !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
-  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1) !important;
+  border: 1.5px solid var(--app-accent, #6fc596) !important;
+  color: var(--app-text, #0a543d) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%) !important;
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.1)) !important;
 }
 
 .compactAppSurface .discoveryOverviewOpenButton:hover:not(:disabled) {
-  border-color: #43ad73 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%) !important;
+  border-color: var(--app-line, #43ad73) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #d9f1e5) 100%) !important;
 }
 
 .discoveryCloseButton,
@@ -1758,9 +1758,9 @@
 .discoveryCloseButton:focus-visible,
 .discoveryCloseButton:active {
   color: #ffffff !important;
-  border-color: #a93232 !important;
-  background: linear-gradient(180deg, #cf4e4e 0%, #a92f2f 100%) !important;
-  box-shadow: 0 9px 20px rgba(155, 42, 42, 0.2) !important;
+  border-color: var(--app-danger-line, #a93232) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #cf4e4e) 0%, #a92f2f 100%) !important;
+  box-shadow: 0 9px 20px var(--app-shadow-colour, rgba(155, 42, 42, 0.2)) !important;
 }
 
 .discoveryCloseButton:focus-visible,
@@ -1768,7 +1768,7 @@
 .contactCloseButton:focus-visible,
 .contactSecondaryAction:focus-visible,
 .discoveryPhotoCloseButton:focus-visible {
-  outline: 3px solid rgba(194, 57, 57, 0.25) !important;
+  outline: 3px solid var(--app-danger-line, rgba(194, 57, 57, 0.25)) !important;
   outline-offset: 3px;
 }
 
@@ -1777,7 +1777,7 @@
   padding: 14px 0 0 !important;
   overflow: visible;
   border: 0 !important;
-  border-top: 1px solid rgba(18, 53, 45, 0.11) !important;
+  border-top: 1px solid var(--app-line, rgba(18, 53, 45, 0.11)) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
@@ -1797,7 +1797,7 @@
 
 .compactExpandedTop > div > span {
   display: block;
-  color: #1d5b46;
+  color: var(--app-text, #1d5b46);
   font-size: 0.7rem;
   font-weight: 950;
   letter-spacing: 0.07em;
@@ -1806,7 +1806,7 @@
 
 .compactExpandedTop p {
   margin: 5px 0 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.42;
@@ -1834,9 +1834,9 @@
 .compactAppSurface .discoveryPreviewStage {
   min-height: 9.5rem;
   overflow: hidden;
-  border: 1px solid rgba(18, 53, 45, 0.11);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.11));
   border-radius: 17px;
-  background: #f2f6f3;
+  background: var(--app-surface-soft, #f2f6f3);
 }
 
 .compactAppSurface .discoveryPreviewLocked > .discoveryLockedMedia {
@@ -1861,9 +1861,9 @@
   display: grid !important;
   align-content: start;
   overflow: hidden;
-  border: 1px solid rgba(18, 53, 45, 0.11);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.11));
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .compactAppSurface .discoveryDetailRow {
@@ -1874,7 +1874,7 @@
   gap: 4px;
   padding: 9px 10px !important;
   border: 0 !important;
-  border-bottom: 1px solid rgba(18, 53, 45, 0.08) !important;
+  border-bottom: 1px solid var(--app-line, rgba(18, 53, 45, 0.08)) !important;
   border-radius: 0 !important;
   background: transparent !important;
 }
@@ -1885,7 +1885,7 @@
 
 .compactAppSurface .discoveryDetailRow span {
   margin: 0 !important;
-  color: rgba(18, 53, 45, 0.55) !important;
+  color: var(--app-muted, rgba(18, 53, 45, 0.55)) !important;
   font-size: 0.61rem !important;
   font-weight: 900 !important;
   letter-spacing: 0.05em;
@@ -1895,7 +1895,7 @@
 
 .compactAppSurface .discoveryDetailRow strong {
   min-width: 0;
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: 0.78rem !important;
   font-weight: 800 !important;
   line-height: 1.32;
@@ -1905,9 +1905,9 @@
 .compactAppSurface .discoveryAccessNote {
   gap: 4px;
   padding: 12px 13px;
-  border-color: rgba(35, 104, 81, 0.18);
+  border-color: var(--app-line, rgba(35, 104, 81, 0.18));
   border-radius: 16px;
-  background: #f3faf6;
+  background: var(--app-surface, #f3faf6);
 }
 
 .compactAppSurface .discoveryAccessNote strong {
@@ -1933,18 +1933,18 @@
   justify-content: center;
   gap: 8px;
   padding: 0 14px;
-  border: 1px solid #b73b3b;
+  border: 1px solid var(--app-danger-line, #b73b3b);
   border-radius: 15px;
   color: #ffffff;
-  background: linear-gradient(180deg, #cf4e4e 0%, #a92f2f 100%);
-  box-shadow: 0 8px 18px rgba(155, 42, 42, 0.17);
+  background: linear-gradient(180deg, var(--app-danger-soft, #cf4e4e) 0%, #a92f2f 100%);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(155, 42, 42, 0.17));
   font: inherit;
   font-size: 0.9rem;
   font-weight: 850;
 }
 
 .discoveryCloseDetailsButton:hover {
-  background: linear-gradient(180deg, #c34646 0%, #962929 100%);
+  background: linear-gradient(180deg, var(--app-danger-soft, #c34646) 0%, #962929 100%);
 }
 
 .contactCloseButton,
@@ -1957,9 +1957,9 @@
 .discoveryPhotoCloseButton:active {
   position: relative;
   color: #ffffff !important;
-  border-color: #b73b3b !important;
-  background: #b93636 !important;
-  box-shadow: 0 7px 16px rgba(155, 42, 42, 0.2) !important;
+  border-color: var(--app-danger-line, #b73b3b) !important;
+  background: var(--app-danger-soft, #b93636) !important;
+  box-shadow: 0 7px 16px var(--app-shadow-colour, rgba(155, 42, 42, 0.2)) !important;
 }
 
 .contactSecondaryAction,
@@ -1967,8 +1967,8 @@
 .contactSecondaryAction:focus,
 .contactSecondaryAction:active {
   color: #ffffff !important;
-  border-color: #b73b3b !important;
-  background: linear-gradient(180deg, #cf4e4e 0%, #a92f2f 100%) !important;
+  border-color: var(--app-danger-line, #b73b3b) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #cf4e4e) 0%, #a92f2f 100%) !important;
 }
 
 :global(:where([data-website-canvas])) .compactAppSurface {
@@ -2064,12 +2064,12 @@
   gap: 18px;
   margin: 0 0 clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.5), 1.3rem);
   padding: 16px 18px;
-  border: 1px solid rgba(18, 83, 63, 0.16);
+  border: 1px solid var(--app-line, rgba(18, 83, 63, 0.16));
   border-radius: 22px;
   background:
-    radial-gradient(circle at 0 0, rgba(35, 104, 81, 0.08), transparent 42%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(244, 250, 247, 0.98) 100%);
-  box-shadow: 0 14px 30px rgba(18, 53, 45, 0.055);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(35, 104, 81, 0.08)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.98)) 0%, var(--app-surface, rgba(244, 250, 247, 0.98)) 100%);
+  box-shadow: 0 14px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.055));
 }
 
 .discoveryViewSwitchCopy {
@@ -2079,7 +2079,7 @@
 }
 
 .discoveryViewSwitchCopy strong {
-  color: #0d4c3b;
+  color: var(--app-text, #0d4c3b);
   font-size: 0.96rem;
   font-weight: 850;
   line-height: 1.2;
@@ -2088,7 +2088,7 @@
 .discoveryViewSwitchCopy span {
   max-width: 48rem;
   overflow: hidden;
-  color: rgba(18, 53, 45, 0.76);
+  color: var(--app-text, rgba(18, 53, 45, 0.76));
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.42;
@@ -2102,9 +2102,9 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   padding: 5px;
-  border: 1px solid rgba(18, 83, 63, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 83, 63, 0.14));
   border-radius: 16px;
-  background: rgba(233, 243, 238, 0.9);
+  background: var(--app-surface-soft, rgba(233, 243, 238, 0.9));
 }
 
 .discoveryViewSwitchButtons button {
@@ -2113,7 +2113,7 @@
   padding: 0 15px;
   border: 1px solid transparent;
   border-radius: 12px;
-  color: rgba(18, 53, 45, 0.68);
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   background: transparent;
   font: inherit;
   font-size: 0.84rem;
@@ -2124,20 +2124,20 @@
 }
 
 .discoveryViewSwitchButtons button:hover {
-  color: #0d4c3b;
-  background: rgba(255, 255, 255, 0.72);
+  color: var(--app-text, #0d4c3b);
+  background: var(--app-surface, rgba(255, 255, 255, 0.72));
 }
 
 .discoveryViewSwitchButtons .discoveryViewSwitchActive,
 .discoveryViewSwitchButtons .discoveryViewSwitchActive:hover {
   color: #ffffff;
-  border-color: #0f6248;
+  border-color: var(--app-accent, #0f6248);
   background: linear-gradient(180deg, #197454 0%, #0f5840 100%);
-  box-shadow: 0 9px 20px rgba(25, 116, 84, 0.2);
+  box-shadow: 0 9px 20px var(--app-shadow-colour, rgba(25, 116, 84, 0.2));
 }
 
 .discoveryViewSwitchButtons button:focus-visible {
-  outline: 3px solid rgba(35, 104, 81, 0.2);
+  outline: 3px solid var(--app-accent, rgba(35, 104, 81, 0.2));
   outline-offset: 2px;
 }
 
@@ -2169,12 +2169,12 @@
   margin-bottom: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.4), 1.2rem);
   padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem) clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.75rem);
   overflow: hidden;
-  border: 1px solid rgba(205, 150, 69, 0.3);
+  border: 1px solid var(--app-warning-line, rgba(205, 150, 69, 0.3));
   border-radius: 24px;
   background:
-    radial-gradient(circle at 3% 0%, rgba(221, 146, 42, 0.15), transparent 44%),
-    linear-gradient(135deg, #fffdf8 0%, #fff7e9 100%);
-  box-shadow: 0 16px 34px rgba(91, 58, 15, 0.07);
+    radial-gradient(circle at 3% 0%, var(--app-warning-soft, rgba(221, 146, 42, 0.15)), transparent 44%),
+    linear-gradient(135deg, var(--app-warning-soft, #fffdf8) 0%, var(--app-warning-soft, #fff7e9) 100%);
+  box-shadow: 0 16px 34px var(--app-shadow-colour, rgba(91, 58, 15, 0.07));
 }
 
 .recentAdvertIntro > div:first-child {
@@ -2184,7 +2184,7 @@
 }
 
 .recentAdvertIntro > div:first-child > span {
-  color: #915315;
+  color: var(--app-warning, #915315);
   font-size: 0.7rem;
   font-weight: 950;
   letter-spacing: 0.075em;
@@ -2194,7 +2194,7 @@
 
 .recentAdvertIntro h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   font-weight: 850;
@@ -2205,7 +2205,7 @@
 .recentAdvertIntro p {
   max-width: 53rem;
   margin: 0;
-  color: rgba(18, 53, 45, 0.68);
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   font-size: 0.9rem;
   font-weight: 640;
   line-height: 1.5;
@@ -2219,11 +2219,11 @@
   place-items: center;
   align-content: center;
   gap: 2px;
-  border: 1px solid rgba(199, 122, 26, 0.28);
+  border: 1px solid var(--app-warning-line, rgba(199, 122, 26, 0.28));
   border-radius: 999px;
-  color: #7a430e;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 12px 24px rgba(123, 76, 18, 0.09);
+  color: var(--app-danger, #7a430e);
+  background: var(--app-surface, rgba(255, 255, 255, 0.82));
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(123, 76, 18, 0.09));
 }
 
 .recentAdvertIntroBadge strong {
@@ -2248,7 +2248,7 @@
   gap: 4px;
   margin-top: 7px;
   overflow: hidden;
-  color: rgba(18, 53, 45, 0.78) !important;
+  color: var(--app-text, rgba(18, 53, 45, 0.78)) !important;
   font-size: 0.78rem !important;
   font-weight: 650 !important;
   line-height: 1.35 !important;
@@ -2260,7 +2260,7 @@
   max-width: 100%;
   margin: 0;
   overflow: hidden;
-  color: var(--owner-ink, #12352d);
+  color: var(--app-text, var(--owner-ink, #12352d));
   font-size: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.52rem);
   font-weight: 800;
   line-height: 1.15;
@@ -2272,7 +2272,7 @@
 .recentAdvertByline strong {
   min-width: 0;
   overflow: hidden;
-  color: #155941;
+  color: var(--app-text, #155941);
   font-weight: 850;
   text-overflow: ellipsis;
 }
@@ -2303,30 +2303,30 @@
 }
 
 .recentAdvertStatus_available {
-  color: #0b5d42;
-  border-color: rgba(66, 173, 115, 0.46);
-  background: #edf9f2;
+  color: var(--app-text, #0b5d42);
+  border-color: var(--app-line, rgba(66, 173, 115, 0.46));
+  background: var(--app-surface-soft, #edf9f2);
 }
 
 .recentAdvertStatus_sold {
-  color: #83500c;
-  border-color: rgba(213, 149, 45, 0.48);
-  background: #fff6e6;
+  color: var(--app-warning, #83500c);
+  border-color: var(--app-warning-line, rgba(213, 149, 45, 0.48));
+  background: var(--app-warning-soft, #fff6e6);
 }
 
 .recentAdvertStatus_ended {
-  color: #68717b;
-  border-color: rgba(120, 132, 143, 0.32);
-  background: #f4f6f7;
+  color: var(--app-muted, #68717b);
+  border-color: var(--app-line, rgba(120, 132, 143, 0.32));
+  background: var(--app-info-soft, #f4f6f7);
 }
 
 .recentAdvertContactDenied,
 .recentAdvertContactDenied:hover,
 .recentAdvertContactDenied:focus {
   cursor: not-allowed !important;
-  color: #5f706a !important;
-  border-color: #cbd8d3 !important;
-  background: #f2f6f4 !important;
+  color: var(--app-muted, #5f706a) !important;
+  border-color: var(--app-accent, #cbd8d3) !important;
+  background: var(--app-surface-soft, #f2f6f4) !important;
   box-shadow: none !important;
   opacity: 1 !important;
   transform: none !important;
@@ -2337,24 +2337,24 @@
 }
 
 .recentAdvertCard_available {
-  border-color: rgba(66, 173, 115, 0.38) !important;
+  border-color: var(--app-line, rgba(66, 173, 115, 0.38)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.075), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f2faf6 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(43, 138, 99, 0.075)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f2faf6) 100%) !important;
 }
 
 .recentAdvertCard_sold {
-  border-color: rgba(213, 149, 45, 0.38) !important;
+  border-color: var(--app-warning-line, rgba(213, 149, 45, 0.38)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.08), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #fff9ee 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-warning-soft, rgba(230, 161, 55, 0.08)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-warning-soft, #fff9ee) 100%) !important;
 }
 
 .recentAdvertCard_ended {
-  border-color: rgba(120, 132, 143, 0.28) !important;
+  border-color: var(--app-line, rgba(120, 132, 143, 0.28)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(112, 126, 136, 0.055), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f6f8f8 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(112, 126, 136, 0.055)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f6f8f8) 100%) !important;
 }
 
 .recentAdvertOpenAction,
@@ -2367,30 +2367,30 @@
 .recentAdvertOpenAction:hover:not(:disabled),
 .recentAdvertOpenAction:focus {
   color: #ffffff !important;
-  border-color: #0f6248 !important;
+  border-color: var(--app-accent, #0f6248) !important;
   background: linear-gradient(180deg, #1e7054 0%, #174f3c 100%) !important;
-  box-shadow: 0 12px 24px rgba(17, 80, 59, 0.18) !important;
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(17, 80, 59, 0.18)) !important;
 }
 
 .recentAdvertCloseAction,
 .recentAdvertCloseAction:hover:not(:disabled),
 .recentAdvertCloseAction:focus {
-  color: #173c33 !important;
-  border-color: #c4d4ce !important;
-  background: #ffffff !important;
-  box-shadow: 0 7px 18px rgba(16, 50, 42, 0.06) !important;
+  color: var(--app-text, #173c33) !important;
+  border-color: var(--app-accent, #c4d4ce) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 7px 18px var(--app-shadow-colour, rgba(16, 50, 42, 0.06)) !important;
 }
 
 .recentAdvertExpanded {
   min-width: 0;
   margin: 0 20px 20px;
   padding: 16px;
-  border: 1px solid rgba(18, 83, 63, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 83, 63, 0.14));
   border-radius: 21px;
   background:
-    radial-gradient(circle at 0 0, rgba(35, 104, 81, 0.045), transparent 35%),
-    #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(35, 104, 81, 0.045)), transparent 35%),
+    var(--app-surface, #ffffff);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .recentAdvertExpandedGrid {
@@ -2410,9 +2410,9 @@
   min-height: 220px;
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 18px;
-  background: #edf3f0;
+  background: var(--app-surface-soft, #edf3f0);
 }
 
 .recentAdvertMedia img {
@@ -2428,10 +2428,10 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border: 1px solid rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 13px;
-  color: rgba(18, 53, 45, 0.72);
-  background: #f8fbf9;
+  color: var(--app-muted, rgba(18, 53, 45, 0.72));
+  background: var(--app-surface, #f8fbf9);
 }
 
 .recentAdvertPhotoNote > span:last-child {
@@ -2441,7 +2441,7 @@
 }
 
 .recentAdvertPhotoNote strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 0.78rem;
   font-weight: 820;
 }
@@ -2459,8 +2459,8 @@
   display: grid;
   place-items: center;
   border-radius: 10px;
-  color: #527168;
-  background: #eaf2ee;
+  color: var(--app-accent, #527168);
+  background: var(--app-surface-soft, #eaf2ee);
 }
 
 .recentAdvertPhotoNoteIcon svg {
@@ -2492,16 +2492,16 @@
   gap: 5px;
   min-height: 64px;
   padding: 10px 12px;
-  border: 1px solid rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 14px;
-  background: #f8fbf9;
+  background: var(--app-surface, #f8fbf9);
 }
 
 .recentAdvertDetailGrid dt,
 .recentAdvertContactGrid span,
 .recentAdvertContactAsset span {
   margin: 0;
-  color: rgba(18, 53, 45, 0.74);
+  color: var(--app-text, rgba(18, 53, 45, 0.74));
   font-size: 0.64rem;
   font-weight: 920;
   letter-spacing: 0.065em;
@@ -2514,7 +2514,7 @@
 .recentAdvertContactAsset strong {
   min-width: 0;
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 0.84rem;
   font-weight: 820;
   line-height: 1.35;
@@ -2522,7 +2522,7 @@
 }
 
 .recentAdvertPriceDetail dd {
-  color: #0f6248;
+  color: var(--app-text, #0f6248);
   font-size: 0.92rem;
   font-weight: 900;
 }
@@ -2535,20 +2535,20 @@
   display: grid;
   gap: 5px;
   padding: 13px 15px;
-  border: 1px solid rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 15px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .recentAdvertDescription > strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 0.78rem;
   font-weight: 850;
 }
 
 .recentAdvertDescription p {
   margin: 0;
-  color: rgba(18, 53, 45, 0.68);
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   font-size: 0.8rem;
   font-weight: 620;
   line-height: 1.48;
@@ -2566,15 +2566,15 @@
 }
 
 .recentAdvertAvailabilityNote {
-  color: #155941;
-  border-color: rgba(66, 173, 115, 0.28);
-  background: #f1faf5;
+  color: var(--app-text, #155941);
+  border-color: var(--app-line, rgba(66, 173, 115, 0.28));
+  background: var(--app-surface-soft, #f1faf5);
 }
 
 .recentAdvertSourcingNote {
-  color: #77460f;
-  border-color: rgba(209, 145, 47, 0.3);
-  background: #fff8ec;
+  color: var(--app-warning, #77460f);
+  border-color: var(--app-warning-line, rgba(209, 145, 47, 0.3));
+  background: var(--app-warning-soft, #fff8ec);
 }
 
 .recentAdvertExpandedActions {
@@ -2598,7 +2598,7 @@
 }
 
 .recentAdvertPageLabel {
-  color: rgba(18, 53, 45, 0.76);
+  color: var(--app-text, rgba(18, 53, 45, 0.76));
   font-size: 0.76rem;
   font-weight: 760;
   white-space: nowrap;
@@ -2663,8 +2663,8 @@
   align-items: baseline;
   gap: 0.75rem;
   padding: 0.9rem 1rem;
-  border-color: rgba(205, 150, 69, 0.27);
-  background: #fffaf0;
+  border-color: var(--app-warning-line, rgba(205, 150, 69, 0.27));
+  background: var(--app-warning-soft, #fffaf0);
 }
 
 .recentAdvertContactAsset span {
@@ -2690,10 +2690,10 @@
 
 .recentAdvertContactUnavailable {
   padding: 13px 15px;
-  border: 1px solid rgba(185, 54, 54, 0.22);
+  border: 1px solid var(--app-danger-line, rgba(185, 54, 54, 0.22));
   border-radius: 14px;
-  color: #8d3434;
-  background: #fff5f5;
+  color: var(--app-danger, #8d3434);
+  background: var(--app-danger-soft, #fff5f5);
   font-size: 0.82rem;
   font-weight: 720;
   line-height: 1.45;
@@ -2705,10 +2705,10 @@
   align-items: start;
   gap: 14px;
   padding: 16px;
-  border: 1px solid rgba(66, 173, 115, 0.3);
+  border: 1px solid var(--app-line, rgba(66, 173, 115, 0.3));
   border-radius: 14px;
-  color: #174637;
-  background: #f1faf5;
+  color: var(--app-text, #174637);
+  background: var(--app-surface-soft, #f1faf5);
 }
 
 .recentAdvertRequestConfirmation > span:last-child {
@@ -2724,14 +2724,14 @@
 
 .recentAdvertRequestConfirmation p {
   margin: 0;
-  color: rgba(18, 53, 45, 0.78);
+  color: var(--app-text, rgba(18, 53, 45, 0.78));
   font-size: 0.8rem;
   font-weight: 650;
   line-height: 1.5;
 }
 
 .recentAdvertRequestConfirmation small {
-  color: rgba(18, 53, 45, 0.66);
+  color: var(--app-muted, rgba(18, 53, 45, 0.66));
   font-size: 0.72rem;
   font-weight: 650;
 }
@@ -2769,7 +2769,7 @@
 
 .recentAdvertCardCompact h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.16rem, calc(var(--website-design-vw, 1vw) * 4.8), 1.38rem);
   font-weight: 820;
   letter-spacing: -0.025em;
@@ -2789,8 +2789,8 @@
   overflow: hidden;
   padding: 6px 9px;
   border-radius: 999px;
-  color: #175e47;
-  background: #edf8f2;
+  color: var(--app-text, #175e47);
+  background: var(--app-surface-soft, #edf8f2);
   font-size: 0.64rem;
   font-weight: 920;
   letter-spacing: 0.055em;
@@ -2832,7 +2832,7 @@
 
 .recentAdvertMeta {
   margin: 0;
-  color: rgba(18, 53, 45, 0.66);
+  color: var(--app-muted, rgba(18, 53, 45, 0.66));
   font-size: 0.86rem;
   font-weight: 710;
   line-height: 1.4;
@@ -2849,7 +2849,7 @@
   margin: 5px 0 0;
   padding: 13px 0 0;
   border: 0;
-  border-top: 1px solid rgba(18, 53, 45, 0.1);
+  border-top: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 0;
   background: transparent;
 }
@@ -3106,28 +3106,28 @@
 .compactAppSurface.compactAppSurface .discoveryOverviewOpenButton,
 .compactAppSurface.compactAppSurface .discoveryViewSwitchActive,
 .discoveryAppOverlay .contactPrimaryAction {
-  color: #165740 !important;
-  border: 1px solid #9ed4b9 !important;
-  background: linear-gradient(180deg, #f5fcf8 0%, #dcf2e5 100%) !important;
-  box-shadow: 0 4px 10px rgba(32, 106, 74, .07) !important;
+  color: var(--app-text, #165740) !important;
+  border: 1px solid var(--app-accent, #9ed4b9) !important;
+  background: linear-gradient(180deg, var(--app-surface, #f5fcf8) 0%, var(--app-surface-soft, #dcf2e5) 100%) !important;
+  box-shadow: 0 4px 10px var(--app-shadow-colour, rgba(32, 106, 74, .07)) !important;
 }
 .compactAppSurface.compactAppSurface .primaryButton:hover:not(:disabled),
 .compactAppSurface.compactAppSurface .discoveryOverviewOpenButton:hover:not(:disabled),
 .compactAppSurface.compactAppSurface .discoveryViewSwitchActive:hover {
-  background: #d2ecdd !important;
+  background: var(--app-surface-soft, #d2ecdd) !important;
 }
 .compactAppSurface.compactAppSurface .discoveryCloseButton,
 .compactAppSurface.compactAppSurface .discoveryCloseDetailsButton,
 .compactAppSurface.compactAppSurface .retractEnquiryButton,
 .discoveryAppOverlay .contactCloseButton {
-  color: #913d43 !important;
-  border: 1px solid #e9b5b8 !important;
-  background: linear-gradient(180deg, #fffafa 0%, #fbe4e6 100%) !important;
-  box-shadow: 0 4px 10px rgba(145, 61, 67, .06) !important;
+  color: var(--app-danger, #913d43) !important;
+  border: 1px solid var(--app-danger-line, #e9b5b8) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fbe4e6) 100%) !important;
+  box-shadow: 0 4px 10px var(--app-shadow-colour, rgba(145, 61, 67, .06)) !important;
 }
 .compactAppSurface.compactAppSurface .discoveryCloseButton:hover:not(:disabled),
 .compactAppSurface.compactAppSurface .discoveryCloseDetailsButton:hover:not(:disabled) {
-  background: #f6dadd !important;
+  background: var(--app-danger-soft, #f6dadd) !important;
 }
 
 /* Plain, compact metadata above each app Discovery asset name. */
@@ -3138,7 +3138,7 @@
 .discoverySettingsImpactList {
   margin: 0;
   padding-left: 1.15rem;
-  color: #607168;
+  color: var(--app-muted, #607168);
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.5;
@@ -3158,15 +3158,15 @@
 }
 .discoveryOpenButton.discoveryOpenButton,
 .discoveryOpenButton.discoveryOpenButton:focus {
-  color: #19543f !important;
-  background: #edf7f1 !important;
-  border: 1px solid #bad9c8 !important;
-  box-shadow: 0 3px 8px rgba(24, 76, 55, .05) !important;
+  color: var(--app-text, #19543f) !important;
+  background: var(--app-surface-soft, #edf7f1) !important;
+  border: 1px solid var(--app-accent, #bad9c8) !important;
+  box-shadow: 0 3px 8px var(--app-shadow-colour, rgba(24, 76, 55, .05)) !important;
 }
 .discoveryOpenButton.discoveryOpenButton:hover:not(:disabled) {
-  background: #dcefe3 !important;
+  background: var(--app-surface-soft, #dcefe3) !important;
 }
-.discoveryOpenButton:focus-visible { outline: 3px solid #4c8a6e; outline-offset: 3px; }
+.discoveryOpenButton:focus-visible { outline: 3px solid var(--app-accent, #4c8a6e); outline-offset: 3px; }
 
 /* Shared Discovery details: readable values and a quieter label hierarchy. */
 .discoveryLeadAssetCard.discoveryLeadAssetCard {
@@ -3191,7 +3191,7 @@
 }
 .discoveryLeadAssetCard .discoveryDetailRow > span {
   font-weight: 600;
-  color: #607583;
+  color: var(--app-info, #607583);
   font-size: .75rem;
 }
 .discoveryLeadAssetCard .discoveryDetailRow > strong { font-weight: 600; }

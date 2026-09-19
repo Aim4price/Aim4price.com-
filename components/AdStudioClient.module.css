@@ -8,7 +8,7 @@
   min-height: calc(var(--website-design-vh, 1vh) * 100);
   padding: 108px clamp(18px, calc(var(--website-design-vw, 1vw) * 4), 64px) 80px;
   background: transparent;
-  color: var(--studio-ink);
+  color: var(--app-text, var(--studio-ink));
   font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -41,10 +41,10 @@
   min-height: 0;
   margin-bottom: 24px;
   padding: clamp(24px, calc(var(--website-design-vw, 1vw) * 2.4), 40px);
-  border: 1px solid var(--studio-line);
+  border: 1px solid var(--app-line, var(--studio-line));
   border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 16px 44px rgba(23, 54, 44, .06);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 16px 44px var(--app-shadow-colour, rgba(23, 54, 44, .06));
 }
 
 .hero::after {
@@ -54,7 +54,7 @@
   right: 15%;
   width: 20rem;
   height: 20rem;
-  border: 2.6rem solid rgba(22, 95, 73, .035);
+  border: 2.6rem solid var(--app-line, rgba(22, 95, 73, .035));
   border-radius: 50%;
   pointer-events: none;
 }
@@ -63,7 +63,7 @@
 
 .reviewGrid article > span {
   display: block;
-  color: var(--studio-muted);
+  color: var(--app-muted, var(--studio-muted));
   font-family: "Montserrat", sans-serif;
   font-size: .76rem;
   font-weight: 800;
@@ -83,24 +83,24 @@
 .notice {
   margin-bottom: 14px;
   padding: 14px 17px;
-  border: 1px solid var(--studio-line);
+  border: 1px solid var(--app-line, var(--studio-line));
   border-radius: 13px;
-  background: #fff;
-  box-shadow: 0 8px 22px rgba(23,54,44,.04);
-  color: #39564e;
+  background: var(--app-surface, #fff);
+  box-shadow: 0 8px 22px var(--app-shadow-colour, rgba(23,54,44,.04));
+  color: var(--app-text, #39564e);
   font-weight: 650;
 }
 
-.error { border-color: #edc0ba; color: #8a2d24; background: #fff6f4; }
-.success { border-color: #aad7c1; color: #17613f; background: #f2fff8; }
+.error { border-color: var(--app-danger-line, #edc0ba); color: var(--app-danger, #8a2d24); background: var(--app-danger-soft, #fff6f4); }
+.success { border-color: var(--app-line, #aad7c1); color: var(--app-text, #17613f); background: var(--app-surface, #f2fff8); }
 
 .libraryPanel,
 .formPanel,
 .previewPanel {
-  border: 1px solid var(--studio-line);
+  border: 1px solid var(--app-line, var(--studio-line));
   border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 16px 42px rgba(23,54,44,.055);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 16px 42px var(--app-shadow-colour, rgba(23,54,44,.055));
 }
 
 .libraryPanel { margin-bottom: 20px; padding: clamp(19px, calc(var(--website-design-vw, 1vw) * 2.2), 27px); }
@@ -119,7 +119,7 @@
 .sectionHeader h2,
 .editorHeader h2 { font-size: clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.7rem); letter-spacing: -.032em; }
 .sectionHeader p,
-.editorHeader p { margin: 7px 0 0; color: var(--studio-muted); font-size: .9rem; line-height: 1.6; }
+.editorHeader p { margin: 7px 0 0; color: var(--app-muted, var(--studio-muted)); font-size: .9rem; line-height: 1.6; }
 
 .primaryButton,
 .secondaryButton,
@@ -148,15 +148,15 @@
 }
 
 .studioIcon { display: block; width: 17px; height: 17px; flex: 0 0 auto; }
-.primaryButton { color: #fff; background: var(--studio-green); border-color: var(--studio-green); box-shadow: 0 9px 22px rgba(22,95,73,.18); }
-.secondaryButton { color: var(--studio-green); background: #fff; border-color: #cddbd5; }
+.primaryButton { color: #fff; background: var(--studio-green); border-color: var(--app-line, var(--studio-green)); box-shadow: 0 9px 22px var(--app-shadow-colour, rgba(22,95,73,.18)); }
+.secondaryButton { color: var(--app-text, var(--studio-green)); background: var(--app-surface, #fff); border-color: var(--app-line, #cddbd5); }
 .ghostButton,
-.backButton { color: var(--studio-green); background: #fff; border-color: #cddbd5; }
-.smallButton { color: #17362c; background: #f8fbfa; border-color: rgba(18,45,37,.1); }
+.backButton { color: var(--app-text, var(--studio-green)); background: var(--app-surface, #fff); border-color: var(--app-line, #cddbd5); }
+.smallButton { color: var(--app-text, #17362c); background: var(--app-surface, #f8fbfa); border-color: var(--app-line, rgba(18,45,37,.1)); }
 .iconDangerButton,
-.dangerButton { color: #a63832; background: #fff7f6; border-color: rgba(198,75,75,.2); }
-.logoRemove { color: #a63832; background: #fff; border-color: rgba(198,75,75,.18); }
-.primaryButton:hover { background: var(--studio-green-dark); border-color: var(--studio-green-dark); }
+.dangerButton { color: var(--app-danger, #a63832); background: var(--app-danger-soft, #fff7f6); border-color: var(--app-danger-line, rgba(198,75,75,.2)); }
+.logoRemove { color: var(--app-danger, #a63832); background: var(--app-surface, #fff); border-color: var(--app-danger-line, rgba(198,75,75,.18)); }
+.primaryButton:hover { background: var(--studio-green-dark); border-color: var(--app-line, var(--studio-green-dark)); }
 .primaryButton:hover,
 .secondaryButton:hover,
 .ghostButton:hover,
@@ -164,7 +164,7 @@
 .iconDangerButton:hover,
 .dangerButton:hover,
 .backButton:hover,
-.logoRemove:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(18,45,37,.11); }
+.logoRemove:hover { transform: translateY(-1px); box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(18,45,37,.11)); }
 .primaryButton:disabled,
 .ghostButton:disabled,
 .iconDangerButton:disabled { cursor: wait; opacity: .55; }
@@ -186,70 +186,70 @@
 }
 
 .kitGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 360px)); gap: 14px; }
-.kitCard { overflow: hidden; border: 1px solid rgba(18,45,37,.09); border-radius: 16px; background: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.85); transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
-.kitCard:hover { transform: translateY(-2px); border-color: #a9c4b9; box-shadow: 0 14px 28px rgba(18,45,37,.09); }
-.kitCardSelected { border-color: var(--studio-green); box-shadow: 0 0 0 3px rgba(22,95,73,.11); }
+.kitCard { overflow: hidden; border: 1px solid var(--app-line, rgba(18,45,37,.09)); border-radius: 16px; background: var(--app-surface, #fff); box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.85)); transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
+.kitCard:hover { transform: translateY(-2px); border-color: var(--app-line, #a9c4b9); box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(18,45,37,.09)); }
+.kitCardSelected { border-color: var(--app-accent, var(--studio-green)); box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22,95,73,.11)); }
 .kitVisual { position: relative; padding: 14px; background: color-mix(in srgb, var(--brand-primary) 12%, #f4f8f6); }
-.kitColourStrip { position: absolute; right: 14px; bottom: 13px; display: flex; overflow: hidden; border: 2px solid #fff; border-radius: 4px; box-shadow: 0 4px 12px rgba(18,45,37,.1); }
+.kitColourStrip { position: absolute; right: 14px; bottom: 13px; display: flex; overflow: hidden; border: 2px solid var(--app-line, #fff); border-radius: 4px; box-shadow: 0 4px 12px var(--app-shadow-colour, rgba(18,45,37,.1)); }
 .kitColourStrip i { width: 22px; height: 10px; }
 .kitCardBody { padding: 14px; }
 .kitCardTitle { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .kitCardTitle > div { display: grid; gap: 4px; min-width: 0; }
 .kitCardTitle strong { overflow: hidden; font-family: var(--font-heading, "Montserrat", sans-serif); font-size: .95rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-.kitCardTitle span { color: #71857e; font-size: .78rem; }
-.kitCardTitle > b { flex: 0 0 auto; color: #176247; font: 800 .7rem var(--font-heading, "Montserrat", sans-serif); }
+.kitCardTitle span { color: var(--app-muted, #71857e); font-size: .78rem; }
+.kitCardTitle > b { flex: 0 0 auto; color: var(--app-text, #176247); font: 800 .7rem var(--font-heading, "Montserrat", sans-serif); }
 .kitCardActions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 15px; }
 .kitCardActions button { min-height: 44px; padding: 8px 11px; font-size: .72rem; }
 .kitCardActions .studioIcon { width: 15px; height: 15px; }
 
 .workspace { display: grid; grid-template-columns: minmax(0, .94fr) minmax(520px, 1.06fr); gap: 24px; align-items: flex-start; scroll-margin-top: 110px; }
 .formPanel { overflow: hidden; }
-.editorHeader { padding: 24px 26px; border-bottom: 1px solid #e1e9e6; }
+.editorHeader { padding: 24px 26px; border-bottom: 1px solid var(--app-line, #e1e9e6); }
 
-.stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0 18px; border-bottom: 1px solid #e1e9e6; background: #fff; }
-.stepButton { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 52px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 10px 12px 7px; color: #60776f; background: transparent; text-align: left; cursor: pointer; }
-.stepButton > span:first-child { display: grid; flex: 0 0 auto; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 0; color: #5d766d; background: transparent; box-shadow: none; }
+.stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; padding: 0 18px; border-bottom: 1px solid var(--app-line, #e1e9e6); background: var(--app-surface, #fff); }
+.stepButton { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 52px; border: 0; border-bottom: 3px solid transparent; border-radius: 0; padding: 10px 12px 7px; color: var(--app-muted, #60776f); background: transparent; text-align: left; cursor: pointer; }
+.stepButton > span:first-child { display: grid; flex: 0 0 auto; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 0; color: var(--app-muted, #5d766d); background: transparent; box-shadow: none; }
 .stepButton > span:first-child .studioIcon { width: 17px; height: 17px; }
 .stepButton > span:last-child { display: grid; min-width: 0; }
 .stepButton strong { font: 800 .78rem "Montserrat", sans-serif; }
-.stepButtonActive { border-bottom-color: var(--studio-green); color: var(--studio-ink); background: #f7fbf9; box-shadow: none; }
-.stepButtonActive > span:first-child { color: var(--studio-green); background: transparent; }
-.stepButtonComplete > span:first-child { color: var(--studio-green); background: transparent; }
+.stepButtonActive { border-bottom-color: var(--app-accent, var(--studio-green)); color: var(--app-text, var(--studio-ink)); background: var(--app-surface, #f7fbf9); box-shadow: none; }
+.stepButtonActive > span:first-child { color: var(--app-text, var(--studio-green)); background: transparent; }
+.stepButtonComplete > span:first-child { color: var(--app-text, var(--studio-green)); background: transparent; }
 
 .stepContent { min-height: 480px; padding: 24px 25px 22px; }
 .stepIntro { margin-bottom: 21px; }
 .stepIntro h2 { max-width: 680px; font-size: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 1.85), 1.8rem); line-height: 1.12; letter-spacing: -.032em; }
-.stepIntro p { margin: 9px 0 0; color: #71857e; font-size: .9rem; line-height: 1.6; }
+.stepIntro p { margin: 9px 0 0; color: var(--app-muted, #71857e); font-size: .9rem; line-height: 1.6; }
 .stepFieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .stepFieldset:disabled { opacity: .7; }
 .srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
 
 .fieldGrid,
 .styleGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
-.formPanel label { display: grid; gap: 8px; min-width: 0; color: #294f44; font: 800 .8rem "Montserrat", sans-serif; }
+.formPanel label { display: grid; gap: 8px; min-width: 0; color: var(--app-text, #294f44); font: 800 .8rem "Montserrat", sans-serif; }
 .formPanel input:not([type="color"]):not([type="checkbox"]):not([type="file"]),
-  .formPanel select { width: 100%; min-height: 48px; border: 1px solid #c9d9d2; border-radius: 12px; padding: 11px 14px; color: #143b31; background: #fff; font: 650 .88rem var(--font-body, "Montserrat"), "Montserrat", sans-serif; }
+  .formPanel select { width: 100%; min-height: 48px; border: 1px solid var(--app-line, #c9d9d2); border-radius: 12px; padding: 11px 14px; color: var(--app-text, #143b31); background: var(--app-surface, #fff); font: 650 .88rem var(--font-body, "Montserrat"), "Montserrat", sans-serif; }
 .formPanel input:focus,
-.formPanel select:focus { outline: 3px solid rgba(45,111,85,.16); border-color: #32765c; }
+.formPanel select:focus { outline: 3px solid var(--app-accent, rgba(45,111,85,.16)); border-color: var(--app-accent, #32765c); }
 
-.logoField { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 22px; margin-top: 20px; padding: 18px; border: 1px solid #dce8e3; border-radius: 16px; background: #f8fbfa; }
+.logoField { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 22px; margin-top: 20px; padding: 18px; border: 1px solid var(--app-line, #dce8e3); border-radius: 16px; background: var(--app-surface, #f8fbfa); }
 .logoCopy { min-width: 0; display: flex; align-items: center; gap: 12px; }
 .logoCopy > div { min-width: 0; display: grid; gap: 4px; }
 .logoCopy strong { font: 850 .83rem var(--font-heading, "Montserrat", sans-serif); }
-.logoCopy > div > span { max-width: 34rem; color: #6f847c; font-size: .75rem; line-height: 1.55; }
+.logoCopy > div > span { max-width: 34rem; color: var(--app-muted, #6f847c); font-size: .75rem; line-height: 1.55; }
 .logoControls { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
-.logoPreviewCard { position: relative; overflow: hidden; display: grid; place-items: center; width: 176px; height: 104px; border: 1px dashed #9ebdaf; border-radius: 13px; background: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 8px 20px rgba(18,45,37,.06); cursor: pointer; transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
-.logoPreviewReady { border-style: solid; border-color: rgba(31,138,102,.2); }
-.logoPreviewCard img { display: block; width: 100%; height: 100%; padding: 14px; object-fit: contain; background: #fff; }
-.logoPreviewCard:focus-visible { outline: 3px solid rgba(31,138,102,.2); outline-offset: 3px; }
+.logoPreviewCard { position: relative; overflow: hidden; display: grid; place-items: center; width: 176px; height: 104px; border: 1px dashed var(--app-line, #9ebdaf); border-radius: 13px; background: var(--app-surface, #fff); box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.9)), 0 8px 20px var(--app-shadow-colour, rgba(18,45,37,.06)); cursor: pointer; transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
+.logoPreviewReady { border-style: solid; border-color: var(--app-line, rgba(31,138,102,.2)); }
+.logoPreviewCard img { display: block; width: 100%; height: 100%; padding: 14px; object-fit: contain; background: var(--app-surface, #fff); }
+.logoPreviewCard:focus-visible { outline: 3px solid var(--app-accent, rgba(31,138,102,.2)); outline-offset: 3px; }
 .logoPreviewCard[aria-disabled='true'] { cursor: not-allowed; }
-.logoPreviewDragging { transform: translateY(-2px) scale(1.02); border-style: solid; border-color: #1f8a66; box-shadow: 0 0 0 5px rgba(31,138,102,.13), 0 15px 28px rgba(18,45,37,.12); }
+.logoPreviewDragging { transform: translateY(-2px) scale(1.02); border-style: solid; border-color: var(--app-line, #1f8a66); box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(31,138,102,.13)), 0 15px 28px var(--app-shadow-colour, rgba(18,45,37,.12)); }
 .logoDropHint { position: absolute; right: 6px; bottom: 6px; border-radius: 6px; padding: 4px 7px; color: #fff; background: rgba(13,51,41,.82); font-size: .62rem; font-weight: 800; }
-.logoPreviewEmpty { display: grid; place-items: center; gap: 5px; color: #718981; }
+.logoPreviewEmpty { display: grid; place-items: center; gap: 5px; color: var(--app-muted, #718981); }
 .logoPreviewEmpty .studioIcon { width: 22px; height: 22px; }
 .logoPreviewEmpty small { font: 750 .64rem var(--font-heading, "Montserrat", sans-serif); }
 .logoButtons { display: grid; gap: 7px; }
-.logoUpload { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 142px; min-height: 44px; color: var(--studio-green); background: #fff; border-color: #c7d9d2; }
+.logoUpload { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 142px; min-height: 44px; color: var(--app-text, var(--studio-green)); background: var(--app-surface, #fff); border-color: var(--app-line, #c7d9d2); }
 .logoUpload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .logoRemove { min-width: 142px; min-height: 44px; }
 
@@ -261,7 +261,7 @@
 .templateTitle strong { font: 850 .78rem var(--font-heading, "Montserrat", sans-serif); }
 .templateTitle b { color: #526e64; font: 800 .7rem "Montserrat", sans-serif; }
 .templateChoice > small { min-height: 36px; color: #748881; font-size: .72rem; line-height: 1.35; }
-.photoCountBadge { justify-self: start; color: #526e64; font: 800 .7rem "Montserrat", sans-serif; }
+.photoCountBadge { justify-self: start; color: var(--app-muted, #526e64); font: 800 .7rem "Montserrat", sans-serif; }
 
 .miniTemplate { position: relative; display: block; overflow: hidden; width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 9px; background: #edf2ef; }
 .miniTemplate i,
@@ -322,7 +322,7 @@
 .templateCatalogueGrid u { left: 34.5%; bottom: 6%; width: 28.5%; height: 41%; }
 
 .styleGrid > label,
-.checkField { padding: 15px; border: 1px solid #d8e3df; border-radius: 14px; background: #fbfdfc; }
+.checkField { padding: 15px; border: 1px solid var(--app-line, #d8e3df); border-radius: 14px; background: var(--app-surface, #fbfdfc); }
 .fieldLabel { display: block; }
 .selectField { align-content: start; }
 .selectControl { position: relative; display: block; min-width: 0; }
@@ -331,50 +331,50 @@
   -webkit-appearance: none;
   min-height: 54px;
   padding: 12px 48px 12px 50px;
-  border-color: #c4d8d0;
-  color: #173f34;
-  background: #fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 7px 18px rgba(18,45,37,.055);
+  border-color: var(--app-line, #c4d8d0);
+  color: var(--app-text, #173f34);
+  background: var(--app-surface, #fff);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.95)), 0 7px 18px var(--app-shadow-colour, rgba(18,45,37,.055));
   font: 750 .84rem var(--font-heading, "Montserrat", sans-serif);
   cursor: pointer;
   transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
 }
-.selectControl select:hover { border-color: #8fb3a6; background: #fff; }
-.selectControl select:focus { border-color: #1f8a66; box-shadow: 0 0 0 4px rgba(31,138,102,.12), 0 8px 20px rgba(18,45,37,.07); }
+.selectControl select:hover { border-color: var(--app-line, #8fb3a6); background: var(--app-surface, #fff); }
+.selectControl select:focus { border-color: var(--app-accent, #1f8a66); box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(31,138,102,.12)), 0 8px 20px var(--app-shadow-colour, rgba(18,45,37,.07)); }
 .selectLeadingIcon,
 .selectChevron { position: absolute; z-index: 1; top: 50%; display: grid; place-items: center; pointer-events: none; transform: translateY(-50%); }
-.selectLeadingIcon { left: 11px; width: 31px; height: 31px; border: 1px solid rgba(31,138,102,.13); border-radius: 9px; color: #176247; background: #edf7f3; }
+.selectLeadingIcon { left: 11px; width: 31px; height: 31px; border: 1px solid var(--app-line, rgba(31,138,102,.13)); border-radius: 9px; color: var(--app-text, #176247); background: var(--app-surface-soft, #edf7f3); }
 .selectLeadingIcon .studioIcon { width: 16px; height: 16px; }
-.selectChevron { right: 14px; color: #4e6f64; }
+.selectChevron { right: 14px; color: var(--app-accent, #4e6f64); }
 .selectChevron .studioIcon { width: 17px; height: 17px; }
 .selectControl:focus-within .selectLeadingIcon { color: #fff; background: #1f8a66; }
-.selectControl:focus-within .selectChevron { color: #176247; }
+.selectControl:focus-within .selectChevron { color: var(--app-text, #176247); }
 .colorField > span { display: flex; align-items: center; gap: 10px; }
-.colorField input { width: 55px; height: 43px; border: 1px solid #c7d7d0; border-radius: 10px; padding: 5px; background: #fff; }
-.colorField code { color: #536d64; font-size: .72rem; }
+.colorField input { width: 55px; height: 43px; border: 1px solid var(--app-line, #c7d7d0); border-radius: 10px; padding: 5px; background: var(--app-surface, #fff); }
+.colorField code { color: var(--app-muted, #536d64); font-size: .72rem; }
 .checkField { grid-template-columns: auto 1fr; align-items: center; }
 .checkField input { width: 20px; height: 20px; accent-color: #176247; }
 .checkField span { display: grid; gap: 3px; }
-.checkField small { color: #748981; font: 500 .68rem var(--font-body, "Montserrat"), "Montserrat", sans-serif; }
+.checkField small { color: var(--app-muted, #748981); font: 500 .68rem var(--font-body, "Montserrat"), "Montserrat", sans-serif; }
 
 .reviewGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.reviewGrid article { display: grid; align-content: start; gap: 6px; min-height: 126px; padding: 17px; border: 1px solid #d9e4df; border-radius: 14px; background: #fbfdfc; }
-.reviewGrid article > span { color: #5a746b; }
+.reviewGrid article { display: grid; align-content: start; gap: 6px; min-height: 126px; padding: 17px; border: 1px solid var(--app-line, #d9e4df); border-radius: 14px; background: var(--app-surface, #fbfdfc); }
+.reviewGrid article > span { color: var(--app-muted, #5a746b); }
 .reviewGrid strong { font: 850 .95rem var(--font-heading, "Montserrat", sans-serif); }
-.reviewGrid small { color: #71857e; line-height: 1.4; }
+.reviewGrid small { color: var(--app-muted, #71857e); line-height: 1.4; }
 .reviewBrandSummary { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 11px; }
 .reviewBrandSummary > div { display: grid; gap: 4px; min-width: 0; }
 .reviewBrandSummary > div:only-child { grid-column: 1 / -1; }
 .reviewBrandSummary small { overflow-wrap: anywhere; }
-.reviewLogo { display: grid; place-items: center; width: 86px; height: 58px; border: 1px solid #d7e3de; border-radius: 9px; background: #fff; }
+.reviewLogo { display: grid; place-items: center; width: 86px; height: 58px; border: 1px solid var(--app-line, #d7e3de); border-radius: 9px; background: var(--app-surface, #fff); }
 .reviewLogo img { display: block; width: 100%; height: 100%; padding: 8px; object-fit: contain; }
 .reviewColours div { display: flex; gap: 8px; }
-.reviewColours i { width: 35px; height: 35px; border: 3px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #c9d7d2; }
-.reviewCallout { margin-top: 13px; padding: 17px 19px; border-left: 4px solid var(--studio-green); border-radius: 12px; background: #f3f9f6; }
+.reviewColours i { width: 35px; height: 35px; border: 3px solid var(--app-line, #fff); border-radius: 50%; box-shadow: 0 0 0 1px var(--app-shadow-colour, #c9d7d2); }
+.reviewCallout { margin-top: 13px; padding: 17px 19px; border-left: 4px solid var(--app-line, var(--studio-green)); border-radius: 12px; background: var(--app-surface-soft, #f3f9f6); }
 .reviewCallout strong { font: 850 .82rem var(--font-heading, "Montserrat", sans-serif); }
-.reviewCallout p { margin: 5px 0 0; color: #506b62; font-size: .8rem; line-height: 1.5; }
+.reviewCallout p { margin: 5px 0 0; color: var(--app-muted, #506b62); font-size: .8rem; line-height: 1.5; }
 
-.actions { padding: 16px 24px; border-top: 1px solid #e1e9e6; background: #fbfcfc; }
+.actions { padding: 16px 24px; border-top: 1px solid var(--app-line, #e1e9e6); background: var(--app-surface, #fbfcfc); }
 .actions > div { display: flex; gap: 9px; }
 
 .previewPanel { position: sticky; top: 104px; padding: 22px; }
@@ -388,23 +388,23 @@
   gap: 10px;
   margin-bottom: 14px;
   padding: 12px;
-  border: 1px solid #dce8e3;
+  border: 1px solid var(--app-line, #dce8e3);
   border-radius: 15px;
-  background: #f7fbf9;
+  background: var(--app-surface, #f7fbf9);
   transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
 }
 
 .previewPhotoLabActive {
   border-style: solid;
-  border-color: #1f8a66;
-  background: #edf9f3;
-  box-shadow: 0 0 0 4px rgba(31,138,102,.1);
+  border-color: var(--app-accent, #1f8a66);
+  background: var(--app-surface-soft, #edf9f3);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(31,138,102,.1));
 }
 
 .previewPhotoHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .previewPhotoHeader > div:first-child { display: grid; gap: 3px; min-width: 0; }
-.previewPhotoHeader strong { color: #214b3f; font: 850 .8rem "Montserrat", sans-serif; }
-.previewPhotoHeader span { max-width: 34rem; color: #748881; font-size: .72rem; line-height: 1.5; }
+.previewPhotoHeader strong { color: var(--app-text, #214b3f); font: 850 .8rem "Montserrat", sans-serif; }
+.previewPhotoHeader span { max-width: 34rem; color: var(--app-muted, #748881); font-size: .72rem; line-height: 1.5; }
 .previewPhotoHeader > div:last-child { display: flex; flex: 0 0 auto; gap: 6px; }
 .previewPhotoHeader button {
   display: inline-flex;
@@ -412,16 +412,16 @@
   justify-content: center;
   gap: 5px;
   min-height: 44px;
-  border: 1px solid #c7d9d2;
+  border: 1px solid var(--app-line, #c7d9d2);
   border-radius: 10px;
   padding: 6px 9px;
-  color: #1b5946;
-  background: #fff;
+  color: var(--app-text, #1b5946);
+  background: var(--app-surface, #fff);
   font-size: .72rem;
   font-weight: 800;
   cursor: pointer;
 }
-.previewPhotoHeader button:first-child { color: #fff; border-color: #176247; background: #176247; }
+.previewPhotoHeader button:first-child { color: #fff; border-color: var(--app-line, #176247); background: #176247; }
 .previewPhotoHeader .studioIcon { width: 13px; height: 13px; }
 
 .previewPhotoEmpty {
@@ -430,22 +430,22 @@
   justify-content: center;
   gap: 10px;
   min-height: 92px;
-  border: 1px solid rgba(31,138,102,.1);
+  border: 1px solid var(--app-line, rgba(31,138,102,.1));
   border-radius: 12px;
-  color: #2a5d4e;
-  background: #fff;
+  color: var(--app-text, #2a5d4e);
+  background: var(--app-surface, #fff);
   text-align: left;
   cursor: pointer;
 }
 .previewPhotoEmpty > .studioIcon { width: 23px; height: 23px; }
 .previewPhotoEmpty > span { display: grid; gap: 2px; }
 .previewPhotoEmpty strong { font: 850 .78rem "Montserrat", sans-serif; }
-.previewPhotoEmpty small { color: #748881; font-size: .7rem; }
+.previewPhotoEmpty small { color: var(--app-muted, #748881); font-size: .7rem; }
 
 .previewPhotoTray { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
-.previewPhotoThumb { position: relative; overflow: hidden; min-width: 0; aspect-ratio: 4 / 3; border: 2px solid #fff; border-radius: 11px; background: #e6efeb; box-shadow: 0 5px 13px rgba(18,45,37,.09); cursor: grab; transition: opacity 150ms ease, transform 150ms ease, border-color 150ms ease; }
+.previewPhotoThumb { position: relative; overflow: hidden; min-width: 0; aspect-ratio: 4 / 3; border: 2px solid var(--app-line, #fff); border-radius: 11px; background: var(--app-surface-soft, #e6efeb); box-shadow: 0 5px 13px var(--app-shadow-colour, rgba(18,45,37,.09)); cursor: grab; transition: opacity 150ms ease, transform 150ms ease, border-color 150ms ease; }
 .previewPhotoThumb:active { cursor: grabbing; }
-.previewPhotoThumb:first-child { border-color: #1f8a66; }
+.previewPhotoThumb:first-child { border-color: var(--app-line, #1f8a66); }
 .previewPhotoThumb img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .previewPhotoThumb > span { position: absolute; top: 5px; left: 5px; border-radius: 7px; padding: 4px 6px; color: #fff; background: rgba(13,51,41,.86); font: 800 .52rem var(--font-heading, "Montserrat", sans-serif); }
 .previewPhotoDragging { transform: scale(.96); opacity: .48; }
@@ -478,7 +478,7 @@
 .adBrand { grid-column: 2; display: flex; align-items: center; gap: 10px; padding: 13px 18px; color: var(--brand-secondary); background: #fff; }
 .adBrand img { width: 36px; height: 31px; object-fit: contain; }
 .adBrand strong { overflow: hidden; font: 850 .78rem var(--font-heading, "Montserrat", sans-serif); text-overflow: ellipsis; white-space: nowrap; }
-.logoPlaceholder { display: grid; place-items: center; width: 42px; height: 27px; border: 1px dashed #aebeb8; border-radius: 5px; color: #70857d; font-size: .39rem; }
+.logoPlaceholder { display: grid; place-items: center; width: 42px; height: 27px; border: 1px dashed var(--app-line, #aebeb8); border-radius: 5px; color: var(--app-muted, #70857d); font-size: .39rem; }
 .adPhotos { grid-column: 1; grid-row: 1 / -1; display: grid; gap: 5px; padding: 5px; background: #dbe6e1; }
 .adPhoto { position: relative; overflow: hidden; display: grid; place-items: center; min-width: 0; min-height: 0; color: rgba(15,56,45,.5); background: linear-gradient(145deg, color-mix(in srgb, var(--brand-primary) 24%, #f0f5f2), #d5e2dc); }
 .adPhotoOne,
@@ -493,7 +493,7 @@
 .adContact { color: rgba(255,255,255,.78); font-size: clamp(.5rem, calc(var(--website-design-vw, 1vw) * 0.8), .7rem); }
 .adPrice { margin-top: 3px; border-radius: 9px; padding: 10px 12px; color: var(--brand-secondary); background: var(--brand-accent); font: 900 clamp(.92rem, calc(var(--website-design-vw, 1vw) * 2), 1.45rem) var(--font-heading, "Montserrat", sans-serif); white-space: nowrap; }
 .adPrice small { font-size: .45em; }
-.aimFooter { position: absolute; right: 12px; bottom: 8px; color: rgba(255,255,255,.67); font-size: .42rem; }
+.aimFooter { position: absolute; right: 12px; bottom: 8px; color: var(--app-muted, rgba(255,255,255,.67)); font-size: .42rem; }
 
 .adPreview.templateShowcase .adPhotos { grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 29%; }
 .adPreview.templateShowcase .adPhotoOne { grid-column: 1 / -1; }
@@ -528,9 +528,9 @@
 .adPreview.templateGalleryThree .adInfo,
 .adPreview.templateCatalogueGrid .adInfo { grid-column: 2; grid-row: 2; }
 
-.previewNote { margin-top: 15px; border: 1px solid #dce8e3; border-radius: 12px; padding: 13px 15px; background: #f8fbfa; }
-.previewNote p { margin: 0; color: #6f837b; font-size: .82rem; line-height: 1.5; }
-.previewNote strong { color: #325d50; font: 850 .82rem "Montserrat", sans-serif; }
+.previewNote { margin-top: 15px; border: 1px solid var(--app-line, #dce8e3); border-radius: 12px; padding: 13px 15px; background: var(--app-surface, #f8fbfa); }
+.previewNote p { margin: 0; color: var(--app-muted, #6f837b); font-size: .82rem; line-height: 1.5; }
+.previewNote strong { color: var(--app-text, #325d50); font: 850 .82rem "Montserrat", sans-serif; }
 
 @media (max-width: 1180px) {
   :global(:where(html:not(:has([data-website-canvas])))) .kitGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -667,6 +667,6 @@
   font-size: 0.85rem;
 }
 .logoUpload:focus-visible {
-  outline: 3px solid #43836a;
+  outline: 3px solid var(--app-accent, #43836a);
   outline-offset: 3px;
 }

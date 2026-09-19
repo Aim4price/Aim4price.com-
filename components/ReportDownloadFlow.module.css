@@ -1,9 +1,9 @@
 .overlay { position: fixed; inset: 0; z-index: 1800; display: grid; place-items: center; padding: 1.5rem; }
-.surface { color: #12352d; }
+.surface { color: var(--app-text, #12352d); }
 .body { min-height: 0; }
-.fields { display: grid; gap: 1rem; padding: 1rem; border: 1px solid #d2e3df; border-radius: 1rem; background: #f5faf7; }
-.error { color: #a52b2b; }
-.surface :focus-visible { outline: 2px solid #197454; outline-offset: 3px; }
+.fields { display: grid; gap: 1rem; padding: 1rem; border: 1px solid var(--app-line, #d2e3df); border-radius: 1rem; background: var(--app-surface, #f5faf7); }
+.error { color: var(--app-danger, #a52b2b); }
+.surface :focus-visible { outline: 2px solid var(--app-accent, #197454); outline-offset: 3px; }
 
 .surface button, .surface input { font-family: inherit; }
 .surface h2:focus { outline: none; }
@@ -11,16 +11,16 @@
 /* One Aim4price green for icons in every step of the shared download flow. */
 .surface { --download-icon-color: #145c43; }
 .surface svg,
-.surface [data-download-header] > button { color: var(--download-icon-color) !important; }
+.surface [data-download-header] > button { color: var(--app-text, var(--download-icon-color)) !important; }
 .formatHeading { display: grid; gap: .28rem; margin-bottom: .9rem; }
-.formatHeading strong { color: #10352b; font-size: 1.05rem; font-weight: 900; line-height: 1.2; }
-.formatHeading span { color: #627386; font-size: .9rem; font-weight: 650; line-height: 1.4; }
+.formatHeading strong { color: var(--app-text, #10352b); font-size: 1.05rem; font-weight: 900; line-height: 1.2; }
+.formatHeading span { color: var(--app-info, #627386); font-size: .9rem; font-weight: 650; line-height: 1.4; }
 
 /* Match the typography and controls of the standard Aim4price report forms. */
-.fields { gap: 1.2rem; padding: 1.25rem; border-color: #d0dfea; background: linear-gradient(135deg, #f1f7f4, #fff); }
+.fields { gap: 1.2rem; padding: 1.25rem; border-color: var(--app-info-line, #d0dfea); background: linear-gradient(135deg, var(--app-surface-soft, #f1f7f4), var(--app-surface, #fff)); }
 .fields > div { gap: .5rem; }
-.fields > div > label { color: #426457; font-size: .78rem; font-weight: 800; line-height: 1.4; letter-spacing: .025em; text-transform: uppercase; }
-.fields button[role="combobox"] { font-family: inherit; font-size: 1rem; font-weight: 650; line-height: 1.4; border-color: #d0dfea; box-shadow: none; }
-.fields small, .fields > p { margin: 0; color: #64746a; font-size: .85rem; font-weight: 650; line-height: 1.5; }
+.fields > div > label { color: var(--app-accent, #426457); font-size: .78rem; font-weight: 800; line-height: 1.4; letter-spacing: .025em; text-transform: uppercase; }
+.fields button[role="combobox"] { font-family: inherit; font-size: 1rem; font-weight: 650; line-height: 1.4; border-color: var(--app-info-line, #d0dfea); box-shadow: none; }
+.fields small, .fields > p { margin: 0; color: var(--app-muted, #64746a); font-size: .85rem; font-weight: 650; line-height: 1.5; }
 .timelineMenu { font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif; font-size: 1rem; }
 .timelineMenu button { font-family: inherit; font-size: 1rem; font-weight: 650; }
