@@ -23,8 +23,8 @@ const OPENING_TAGLINE = ['Asset Management Software', 'built for South Africa.']
 export const HERO_FEATURE_DURATION_MS = 10000;
 
 export const HERO_STAGES: readonly QuestionKey[] = [
-  'have',
   'worth',
+  'have',
   'manage',
   'cost',
   'attention',
@@ -58,31 +58,31 @@ const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
 };
 
 const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
+  worth: {
+    title: 'Add your assets.',
+    body: 'Add your vehicles, machinery and equipment through Get Estimate or manually. Get an indicative estimate or enter a value you already have, then review it to make sure it makes sense for the asset.',
+    detail: 'Save the asset to your register to start keeping its details, documents, maintenance and costs together. You can update its information as things change.',
+  },
   have: {
-    title: 'Know what you have.',
-    body: 'Add your vehicles, machinery and equipment to one organised asset register through Get Estimate or manually. Review each asset’s value to make sure it makes sense for its age, usage and condition.',
+    title: 'Follow their changing value.',
+    body: 'Bring your assets together in a register that changes with them. Automatic depreciation reflects the passing of time, while updated usage helps adjust estimated values as assets work more.',
     detail: 'Keep photos, documents, serial numbers and key details connected to each asset. Group assets into umbrellas, see their combined value and share an up-to-date record when you need it.',
   },
-  worth: {
-    title: 'Know what it’s worth.',
-    body: 'Get an indicative value based on the asset’s age, usage, condition and replacement price. Refresh your estimates as the asset changes and track saved values over time.',
-    detail: 'Use valuation reports and future-value estimates to plan for insurance discussions, replacement or a possible sale.',
-  },
   manage: {
-    title: 'Take control of every asset.',
-    body: 'Update asset details, capture fuel and costs, set budgets and record maintenance from one place. Keep the supporting photos and documents with the asset they belong to.',
-    detail: 'Refresh pricing, print a QR label, view the asset on a map or prepare a Marketplace listing when it is time to sell.',
+    title: 'Manage each asset in one place.',
+    body: 'Update asset details, refresh values, record fuel and expenses, and set budgets from one place. Keep the supporting photos and documents with the asset they belong to.',
+    detail: 'Access reports, share records, print a QR label or view the asset on a map. Prepare a Marketplace listing when it is time to sell.',
   },
   cost: {
-    title: 'Know what it costs.',
-    body: 'See more than the purchase price. Keep fuel, servicing, repairs and other expenses linked to the right asset, with budgets that help you follow its running costs.',
-    detail: 'Download fuel, maintenance and cost-of-ownership reports, review saved value changes and build a clearer picture of what each asset costs to keep.',
+    title: 'Know what ownership costs.',
+    body: 'Understand the money going into each asset. Keep fuel, servicing, repairs and other expenses linked to the right asset, and compare spending with its budgets.',
+    detail: 'Use fuel, maintenance and cost-of-ownership reports to review spending over time and build a clearer picture of what each asset costs to keep.',
   },
   attention: {
     title: 'Keep maintenance on track.',
     titleLines: ['Keep maintenance', 'on track.'],
-    body: 'Spot reported problems and completed maintenance directly on the asset record. See what needs attention, what work was done, who recorded it and when.',
-    detail: 'Schedule the next service, use equipment-specific checklists and keep the notes and repair history together for the next person who needs them.',
+    body: 'See what needs attention, what work has been completed and what is due next. Follow reported problems and maintenance updates directly on the asset record.',
+    detail: 'Schedule services, use equipment-specific checklists and keep repair notes and maintenance history together. See who recorded the work and when it was done.',
   },
 };
 
@@ -92,7 +92,7 @@ const clampStoryIndex = (index: number) =>
 export default function HomeHeroExperience() {
   const [storyStepIndex, setStoryStepIndex] = useState(0);
   const [typedCount, setTypedCount] = useState(0);
-  const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
+  const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('worth');
   const [canAutoplay, setCanAutoplay] = useState(false);
   const [isAutoplaying, setIsAutoplaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -118,9 +118,9 @@ export default function HomeHeroExperience() {
 
     if (safeIndex >= FEATURE_START_INDEX) {
       const questionIndex = safeIndex - FEATURE_START_INDEX;
-      setActiveQuestion(HERO_STAGES[questionIndex] ?? 'have');
+      setActiveQuestion(HERO_STAGES[questionIndex] ?? 'worth');
     } else {
-      setActiveQuestion('have');
+      setActiveQuestion('worth');
     }
   }, []);
 
