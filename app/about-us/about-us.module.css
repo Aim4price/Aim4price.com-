@@ -150,12 +150,63 @@
   line-height: 1.5;
 }
 
-.featuresSection {
-  padding: 0.5rem 0 2.5rem;
+.storyText {
+  margin-top: 1.65rem;
+  color: #52645d;
+  font-size: 1.025rem;
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+.storyText p {
+  margin: 0;
+}
+
+.storyText p + p {
+  margin-top: 1rem;
+}
+
+.storyText .storyFocus {
+  margin-top: 1.3rem;
+  padding-left: 1.1rem;
+  border-left: 3px solid #6caa8e;
+  color: var(--brand-900);
+  font-weight: 600;
+}
+
+.storyFounder {
+  box-shadow: 0 5px 18px rgba(16, 42, 34, 0.04);
+}
+
+.storyPortrait {
+  aspect-ratio: 4 / 5;
+}
+
+.storyFounder .founderCaption {
+  padding: 1.25rem 1.4rem;
+}
+
+.storyFounder .founderRole {
+  margin: 0 0 0.35rem;
+}
+
+.directionSection {
+  padding-bottom: 2.5rem;
+}
+
+.directionPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 3rem;
+  padding: 2.5rem 3rem;
+  border: 1px solid rgba(24, 77, 61, 0.13);
+  border-radius: 1.5rem;
+  background: #edf5f0;
 }
 
 .sectionTitle {
-  margin: 0 0 1.25rem;
+  margin: 0 0 1rem;
   color: var(--brand-900);
   font-size: 1.75rem;
   line-height: 1.2;
@@ -163,53 +214,31 @@
   font-weight: 750;
 }
 
-.featureGrid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-.featureCard {
-  padding: 1.5rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 1rem;
-  background: rgba(252, 253, 252, 0.96);
-  box-shadow: 0 4px 12px rgba(16, 42, 34, 0.025);
-}
-
-.featureCard h3 {
+.directionCopy > p {
   margin: 0;
-  max-width: 12rem;
-  min-height: 2.6em;
-  color: var(--brand-700);
-  font-size: 1.2rem;
-  line-height: 1.3;
+  color: #52645d;
+  font-size: 1rem;
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+.directionClosing {
+  padding-left: 3rem;
+  border-left: 1px solid rgba(24, 77, 61, 0.18);
+}
+
+.directionClosing > p {
+  margin: 0;
+  color: var(--brand-900);
+  font-size: 1.4rem;
+  line-height: 1.4;
   letter-spacing: -0.025em;
-  font-weight: 750;
-  text-wrap: balance;
+  font-weight: 650;
+  text-wrap: pretty;
 }
 
-.featureCard p {
-  margin: 0.85rem 0 0;
-  color: #52645d;
-  font-size: 0.95rem;
-  line-height: 1.65;
-}
-
-.aboutClosing {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem 2rem;
-  margin-top: 1.5rem;
-  color: #52645d;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.aboutClosing p {
-  margin: 0;
+.directionClosing .heroActions {
+  margin-top: 1.3rem;
 }
 
 .textLink {
@@ -307,18 +336,5 @@
   .secondaryAction,
   .contactLink {
     transition: none;
-  }
-}
-
-/* Only text outside the light cards changes with the website background. */
-@media screen {
-  :global(html[data-background='dark']) .sectionTitle,
-  :global(html[data-background='dark']) .aboutClosing,
-  :global(html[data-background='dark']) .aboutClosing .textLink {
-    color: #e2eee8;
-  }
-
-  :global(html[data-background='dark']) .aboutClosing .textLink {
-    text-decoration-color: currentColor;
   }
 }

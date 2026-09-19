@@ -11,27 +11,8 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Asset management software built for South Africa. Organise your assets, estimate their value and track costs, fuel, budgets and maintenance with Aim4price.",
+    "Discover why Aim4price started: from helping machinery dealers value second-hand tractors to helping owners understand and manage their assets.",
 };
-
-const features = [
-  {
-    title: "Know what you have.",
-    text: "Keep asset details, photos and documents together. Group related assets and share or download your records.",
-  },
-  {
-    title: "Know what it’s worth.",
-    text: "Get indicative values for supported vehicles and equipment, and explore how age and usage affect their estimated value.",
-  },
-  {
-    title: "Know what it costs.",
-    text: "Record expenses and fuel against each asset, track budgets and download cost of ownership reports.",
-  },
-  {
-    title: "Keep work on track.",
-    text: "Schedule maintenance, use checklists and keep a record of reported problems and completed work.",
-  },
-];
 
 export default async function AboutUsPage() {
   await redirectAdminToAdmin();
@@ -46,29 +27,39 @@ export default async function AboutUsPage() {
             <div className={styles.heroCopy}>
               <p className={styles.pageLabel}>About Aim4price</p>
               <h1 id="about-title" className={styles.heroTitle}>
-                Know your assets.
-                <span>Manage them better.</span>
+                Why we started
+                <span>Aim4price.</span>
               </h1>
-              <p className={styles.heroText}>
-                Asset management software built for South Africa. Keep your
-                vehicles, machinery and equipment organised, with their details,
-                estimated values and ownership costs in one place.
-              </p>
-              <div className={styles.heroActions}>
-                <Link href="/auth#signup" className={styles.primaryAction}>
-                  Get started
-                </Link>
-                <Link href="/valuation" className={styles.secondaryAction}>
-                  Get a free estimate
-                </Link>
+              <div className={styles.storyText}>
+                <p>
+                  We started with a simple problem: machinery dealers struggled
+                  to determine trade-in values. Our first tool helped value
+                  second-hand tractors, bringing a clearer approach to pricing
+                  used equipment.
+                </p>
+                <p>
+                  We soon saw a bigger need. Owners needed to understand their
+                  assets, from what they owned and what it was worth to what it
+                  cost to keep running.
+                </p>
+                <p>
+                  We also saw a gap between accounting records and everyday
+                  ownership. Invoices, budgets, running costs and maintenance
+                  needed to connect to each individual asset.
+                </p>
+                <p className={styles.storyFocus}>
+                  That became our focus: bringing this information together so
+                  owners can make better decisions, plan ahead and look after
+                  what they have.
+                </p>
               </div>
             </div>
 
-            <figure className={styles.founderPanel}>
-              <div className={styles.portraitFrame}>
+            <figure className={`${styles.founderPanel} ${styles.storyFounder}`}>
+              <div className={`${styles.portraitFrame} ${styles.storyPortrait}`}>
                 <Image
                   src="/about/kuyler-geldenhuys.jpg"
-                  alt="Kuyler Chris Geldenhuys"
+                  alt="Kuyler Geldenhuys, founder of Aim4price"
                   fill
                   priority
                   sizes="420px"
@@ -76,34 +67,42 @@ export default async function AboutUsPage() {
                 />
               </div>
               <figcaption className={styles.founderCaption}>
-                <p className={styles.founderName}>Kuyler Chris Geldenhuys</p>
-                <p className={styles.founderRole}>Founder · South Africa</p>
+                <p className={styles.founderRole}>From our founder</p>
+                <p className={styles.founderName}>Kuyler Geldenhuys</p>
               </figcaption>
             </figure>
           </div>
         </div>
       </section>
 
-      <section className={styles.featuresSection} aria-labelledby="features-title">
+      <section className={styles.directionSection} aria-labelledby="direction-title">
         <div className={styles.shell}>
-          <h2 id="features-title" className={styles.sectionTitle}>
-            Practical tools for everyday ownership.
-          </h2>
-          <div className={styles.featureGrid}>
-            {features.map((feature) => (
-              <article key={feature.title} className={styles.featureCard}>
-                <h3>{feature.title}</h3>
-                <p>{feature.text}</p>
-              </article>
-            ))}
-          </div>
-          <div className={styles.aboutClosing}>
-            <p>
-              Aim4price stands for Asset Intelligence, Management &amp; Pricing.
-            </p>
-            <Link href="/contact-us" className={styles.textLink}>
-              Get in touch <span aria-hidden="true">↗</span>
-            </Link>
+          <div className={styles.directionPanel}>
+            <div className={styles.directionCopy}>
+              <h2 id="direction-title" className={styles.sectionTitle}>
+                Where we’re heading
+              </h2>
+              <p>
+                We believe better asset information could help lenders assess
+                risk and give insurers a clearer basis for offering fairer
+                premiums. That is our longer-term ambition, built on reliable,
+                up-to-date records.
+              </p>
+            </div>
+            <div className={styles.directionClosing}>
+              <p>
+                It starts with something practical: helping owners understand
+                and manage their assets better.
+              </p>
+              <div className={styles.heroActions}>
+                <Link href="/auth#signup" className={styles.primaryAction}>
+                  Get started
+                </Link>
+                <Link href="/contact-us" className={styles.secondaryAction}>
+                  Get in touch
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
