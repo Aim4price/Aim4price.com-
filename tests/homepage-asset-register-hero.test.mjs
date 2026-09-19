@@ -79,7 +79,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncStoryCapability\)/);
   assert.match(hero, /if \(!supportsStory\) \{[\s\S]*?setIsAutoplaying\(false\)[\s\S]*?setIsManuallyControlled\(true\)[\s\S]*?updateStoryStep\(FEATURE_START_INDEX\)/);
   assert.match(hero, /const storyStep = HERO_STORY_STEPS\[storyStepIndex\]/);
-  assert.match(hero, /window\.setTimeout\([\s\S]*?STORY_DURATIONS\[storyStep\]/);
+  assert.match(hero, /window\.setTimeout\([\s\S]*?clockRef\.current\.remaining/);
   assert.match(hero, /const finishAutoplay = useCallback\(\(\) => \{[\s\S]*?autoplayFinishedRef\.current = true;[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsAutoplaying\(false\);[\s\S]*?setIsPaused\(false\);[\s\S]*?updateStoryStep\(0\)/);
   assert.match(hero, /storyStepIndex >= HERO_STORY_STEPS\.length - 1[\s\S]*?finishAutoplay\(\)/);
   assert.match(hero, /const timer = window\.setTimeout\(\(\) => \{[\s\S]*?if \(autoplayFinishedRef\.current\) return/);
@@ -90,6 +90,9 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.doesNotMatch(terminalAutoplay, /completeStory\(/);
   assert.match(hero, /updateStoryStep\(storyStepIndex \+ 1\)/);
   assert.match(hero, /window\.clearTimeout\(timer\)/);
+  assert.match(hero, /window\.clearInterval\(countdown\)/);
+  assert.match(hero, /data-feature-countdown/);
+  assert.match(hero, /data-story-start aria-label="Start homepage animation" onClick=\{startStory\}/);
   assert.match(hero, /document\.addEventListener\('visibilitychange', syncVisibility\)/);
   assert.match(hero, /document\.removeEventListener\('visibilitychange', syncVisibility\)/);
   assert.match(hero, /if \(!section \|\| !\('IntersectionObserver' in window\)\) return undefined/);
@@ -139,7 +142,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     hero.indexOf('const handleStoryFocus'),
   );
   assert.doesNotMatch(roleSkip, /updateStoryStep|scrollIntoView|completeStory/);
-  assert.match(hero, /const handleStoryFocus = \(event: FocusEvent<HTMLDivElement>\)[\s\S]*?target\.closest\('\[data-story-pause-control\]'\)[\s\S]*?claimManualControl\(\)/);
+  assert.match(hero, /const handleStoryFocus = \(event: FocusEvent<HTMLDivElement>\)[\s\S]*?target\.closest\('\[data-story-pause-control\], \[data-story-start\], \[data-feature-playback\]'\)[\s\S]*?claimManualControl\(\)/);
   assert.match(hero, /className=\{styles\.storyHeroGrid\}[\s\S]*?onFocusCapture=\{handleStoryFocus\}/);
 
   assert.equal((hero.match(/className=\{styles\.storyHeroLogo\}/g) ?? []).length, 1);

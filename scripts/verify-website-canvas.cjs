@@ -76,6 +76,26 @@ async function check(browser, url) {
       return {headerFits,scale,width:origin.width/scale,scroll:document.documentElement.scrollWidth,viewport:innerWidth,items};
     });
   }
+  // The logo starts the tour; the visible clock uses the same remaining time.
+  await visit('/', 1920, 1080);
+  await page.click('[data-story-start]');
+  await page.waitForFunction(() => document.querySelector('[data-story-step]')?.dataset.storyStep === 'promise');
+  await page.evaluate(() => document.querySelector('#home-asset-question-worth').click());
+  await page.waitForSelector('[data-feature-countdown]');
+  await page.click('[data-feature-playback]');
+  await delay(1200);
+  const readSeconds = () => page.$eval('[data-feature-countdown] > span', el => parseInt(el.textContent));
+  assert.ok(await readSeconds() < 10, 'Card countdown must decrease while playing');
+  await page.click('[data-feature-playback]');
+  await delay(150);
+  const pausedSeconds = await readSeconds();
+  await delay(1100);
+  assert.equal(await readSeconds(), pausedSeconds, 'Pause must freeze the remaining time');
+  await page.click('[data-feature-playback]');
+  await delay(1200);
+  assert.ok(await readSeconds() < pausedSeconds, 'Play must resume without resetting the countdown');
+  console.log('PASS homepage logo start and card countdown pause/resume');
+
   // Exercise the real homepage cards as static previews. Capture
   // evidence before asserting so all five designs can be reviewed if one fails.
   const previewIssues = [];
