@@ -64,6 +64,32 @@ async function main(){
       await capture(`showroom-${width}`,'[aria-label="Close advert manager"]');
       console.log(`PASS real account dialogs at ${width}x${height}`);
     }
+    // Cover the website card as well as native app modals. The three actions,
+    // long asset title and recurring schedule reproduce the reported layout pressure.
+    for (const width of [1920, 1440, 1024, 768, 430]) {
+      await page.setViewport({width,height:1080});
+      await page.goto('http://127.0.0.1:3036/account-dialog-validation?view=tracker',{waitUntil:'networkidle0',timeout:120000});
+      await page.waitForSelector('button[aria-label^="Manage 2023"]');
+      await page.evaluate(()=>document.fonts.ready);
+      const result=await page.evaluate(()=>{
+        const card=document.querySelector('[class*="trackerExpandedCard"]');
+        const header=card.querySelector('[class*="trackerExpandedHeader"]');
+        const bounds=card.getBoundingClientRect();
+        const targets=[header,...header.querySelectorAll('button,[class*="trackerStatusValue"]'),...card.querySelectorAll('[class*="assetDetailRow"]')];
+        const clipped=targets.filter(el=>{const r=el.getBoundingClientRect();return r.left<bounds.left-2||r.right>bounds.right+2||el.scrollWidth>el.clientWidth+2;}).map(el=>el.textContent.trim());
+        const cutValues=[...card.querySelectorAll('[class*="assetDetailRow"] > strong')].filter(el=>el.scrollHeight>el.clientHeight+2).map(el=>el.textContent);
+        const actionRects=[...header.querySelectorAll('button')].map(el=>el.getBoundingClientRect());
+        const overlaps=actionRects.some((r,i)=>actionRects.slice(i+1).some(s=>r.left<s.right&&r.right>s.left&&r.top<s.bottom&&r.bottom>s.top));
+        card.scrollIntoView({block:'start'});
+        return {clipped,cutValues,overlaps,actions:actionRects.length};
+      });
+      await page.screenshot({path:path.join(output,`tracking-card-${width}.png`),fullPage:false});
+      assert.deepEqual(result.clipped,[],`Tracking card overflow at ${width}`);
+      assert.deepEqual(result.cutValues,[],`Tracking detail values clipped at ${width}`);
+      assert.equal(result.overlaps,false,`Tracking actions overlap at ${width}`);
+      assert.equal(result.actions,3,'Service, History and Manage must all be tested');
+      console.log(`PASS expanded website tracking card at ${width}px`);
+    }
     assert.deepEqual(errors,[],'Browser runtime errors');
     assert.deepEqual(mutations,[],'Read-only fixture review must not submit mutations');
   } finally {
