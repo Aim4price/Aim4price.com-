@@ -15,6 +15,7 @@ import {
 } from '../lib/header-session-cache';
 import { isMiddlemanAccountSubtype } from '../lib/middleman-account';
 import { isViewportScrollbarInteraction } from '../lib/viewport-scrollbar';
+import { attachHeaderNavDrag } from '../lib/header-nav-drag';
 import DealerCostDecisionModal from './DealerCostDecisionModal';
 import styles from './AppHeader.module.css';
 import BackgroundToggle from './BackgroundToggle';
@@ -1102,13 +1103,9 @@ export default function AppHeader({
     : isAccountantWorkspace
       ? navItems.length
       : NAV_WINDOW_SIZE;
-  const [navWindowStart, setNavWindowStart] = useState(0);
-  const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
+  const navViewportRef = useRef<HTMLDivElement>(null);
+  const [navEdges, setNavEdges] = useState({ previous: false, next: false });
   const showNavWindowControls = navItems.length > navWindowSize;
-  const visibleNavItems = useMemo(
-    () => navItems.slice(navWindowStart, navWindowStart + navWindowSize),
-    [navItems, navWindowSize, navWindowStart],
-  );
   const activeNotifications = useMemo(
     () => notifications.filter((item) => item.state !== 'history'),
     [notifications],
@@ -1167,30 +1164,56 @@ export default function AppHeader({
     setNotificationPage((current) => Math.min(current, notificationPageCount));
   }, [notificationPageCount]);
 
-  useEffect(() => {
-    if (!showNavWindowControls) {
-      setNavWindowStart(0);
-      return;
+  useBrowserLayoutEffect(() => {
+    const viewport = navViewportRef.current;
+    if (!viewport || !showNavWindowControls) return;
+
+    const syncEdges = () => {
+      const previous = viewport.scrollLeft > 1;
+      const next = viewport.scrollLeft < viewport.scrollWidth - viewport.clientWidth - 1;
+      setNavEdges((current) => current.previous === previous && current.next === next
+        ? current : { previous, next });
+    };
+    const stopDragging = attachHeaderNavDrag(viewport);
+    const observer = new ResizeObserver(syncEdges);
+    observer.observe(viewport);
+    for (const link of Array.from(viewport.children)) observer.observe(link);
+    viewport.addEventListener('scroll', syncEdges, { passive: true });
+    syncEdges();
+    return () => {
+      stopDragging();
+      observer.disconnect();
+      viewport.removeEventListener('scroll', syncEdges);
+    };
+  }, [navItems, showNavWindowControls]);
+
+  function revealNavLink(link: HTMLElement) {
+    const viewport = navViewportRef.current;
+    if (!viewport || !showNavWindowControls) return;
+    const left = link.offsetLeft;
+    const right = left + link.offsetWidth;
+    if (left < viewport.scrollLeft) viewport.scrollLeft = left;
+    else if (right > viewport.scrollLeft + viewport.clientWidth) {
+      viewport.scrollLeft = right - viewport.clientWidth;
     }
+  }
 
-    const activeIndex = navItems.findIndex((item) => item.key === activeNavKey);
-
-    if (activeIndex < 0) {
-      setNavWindowStart((current) => Math.min(current, navMaxWindowStart));
-      return;
-    }
-
-    setNavWindowStart((current) => {
-      if (activeIndex >= current && activeIndex < current + navWindowSize) {
-        return Math.min(current, navMaxWindowStart);
-      }
-
-      return Math.min(navMaxWindowStart, Math.max(0, activeIndex - navWindowSize + 1));
-    });
-  }, [activeNavKey, navItems, navMaxWindowStart, navWindowSize, showNavWindowControls]);
+  useBrowserLayoutEffect(() => {
+    const activeLink = navViewportRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (activeLink) revealNavLink(activeLink);
+  }, [activeNavKey, navItems, showNavWindowControls]);
 
   function moveNavWindow(direction: -1 | 1) {
-    setNavWindowStart((current) => Math.min(navMaxWindowStart, Math.max(0, current + direction)));
+    const viewport = navViewportRef.current;
+    if (!viewport) return;
+    const positions = Array.from(viewport.children, (link) => (link as HTMLElement).offsetLeft);
+    const left = direction > 0
+      ? positions.find((position) => position > viewport.scrollLeft + 2) ?? viewport.scrollWidth
+      : positions.reverse().find((position) => position < viewport.scrollLeft - 2) ?? 0;
+    viewport.scrollTo({
+      left,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
   }
 
   useEffect(() => {
@@ -2514,7 +2537,7 @@ export default function AppHeader({
                 type="button"
                 className={`${styles.navWindowButton} ${styles.navWindowButtonPrevious}`}
                 onClick={() => moveNavWindow(-1)}
-                disabled={navWindowStart <= 0}
+                disabled={!navEdges.previous}
                 aria-label="Show previous navigation items"
                 data-tooltip="Previous"
               >
@@ -2522,21 +2545,31 @@ export default function AppHeader({
               </button>
             ) : null}
 
-            <div className={styles.navRail}>
-              {visibleNavItems.map((item) => {
-                const isActive = activeNavKey === item.key;
+            <div className={`${styles.navRail} ${showNavWindowControls ? styles.navRailScrollable : ''}`}>
+              <div
+                ref={navViewportRef}
+                className={styles.navViewport}
+                data-header-nav-viewport
+                onFocusCapture={(event) => {
+                  if (event.target instanceof HTMLElement) revealNavLink(event.target);
+                }}
+              >
+                {navItems.map((item) => {
+                  const isActive = activeNavKey === item.key;
 
-                return (
-                  <Link
-                    key={`${item.key}-${item.href}`}
-                    href={item.href}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
+                  return (
+                    <Link
+                      key={`${item.key}-${item.href}`}
+                      href={item.href}
+                      aria-current={isActive ? 'page' : undefined}
+                      draggable={false}
+                      className={`${styles.navLink} ${isActive ? styles.navLinkActive : ''}`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
 
             {showNavWindowControls ? (
@@ -2544,7 +2577,7 @@ export default function AppHeader({
                 type="button"
                 className={`${styles.navWindowButton} ${styles.navWindowButtonNext}`}
                 onClick={() => moveNavWindow(1)}
-                disabled={navWindowStart >= navMaxWindowStart}
+                disabled={!navEdges.next}
                 aria-label="Show next navigation items"
                 data-tooltip="Next"
               >

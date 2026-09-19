@@ -4530,3 +4530,47 @@
     left: var(--account-menu-anchor-x, 50%);
   }
 }
+
+/* The surface and arrow controls stay fixed while the complete link list moves. */
+.navRail.navRailScrollable {
+  display: flex;
+  width: 38rem;
+}
+
+.navViewport {
+  display: contents;
+}
+
+.navRailScrollable .navViewport {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.44rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  touch-action: pan-y pinch-zoom;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.navRailScrollable .navViewport::-webkit-scrollbar {
+  display: none;
+}
+
+.navRailScrollable .navLink {
+  flex: 0 0 auto;
+  cursor: inherit;
+}
+
+.navRailScrollable .navViewport[data-dragging='true'] {
+  cursor: grabbing;
+}
+
+/* Keep keyboard focus visible inside the clipped rail. */
+.navRailScrollable .navLink:focus-visible {
+  outline-offset: -3px;
+}
