@@ -5704,3 +5704,97 @@
     color: #e2eee8;
   }
 }
+
+/* Desktop leads are nested cards, so size their contents against the card,
+   not the register's three-action header or the device viewport. */
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetCard {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  container: dealer-lead / inline-size;
+  box-shadow: 0 10px 26px rgba(22, 52, 44, .055) !important;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadHeader.expandedLeadHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 22rem) !important;
+  align-items: start !important;
+  gap: 1.5rem !important;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadIdentity {
+  grid-area: 1 / 1 !important;
+  min-width: 0;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadIdentity :is(h2, p) {
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadAside.expandedLeadAside {
+  grid-area: 1 / 2 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100%;
+  gap: 1.05rem !important;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadValueBlock,
+.dealerDesktopLeads:not(.dealerAppLeads) .leadValueBlock strong {
+  max-width: 100%;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadAside .leadAssetHeaderActions {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  gap: .75rem !important;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadAside .leadAssetHeaderActions > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100%;
+  margin: 0 !important;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody.leadAssetBody {
+  grid-template-columns: minmax(0, 17rem) 1px minmax(0, 1fr) !important;
+  gap: 1rem;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody > * {
+  min-width: 0;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody [class*='assetDetailsGrid'] {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)) !important;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody [class*='assetDetailRow'] {
+  grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
+  min-height: 3.08rem;
+  height: auto;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody [class*='assetDetailRow'] > :is(span, strong) {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetIdentifier {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+@container dealer-lead (max-width: 58rem) {
+  .dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadHeader.expandedLeadHeader {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadAside.expandedLeadAside {
+    grid-area: 2 / 1 !important;
+    justify-items: start !important;
+  }
+  .dealerDesktopLeads:not(.dealerAppLeads) .leadValueBlock {
+    justify-items: start !important;
+    text-align: left !important;
+  }
+  .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody.leadAssetBody {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody > [aria-hidden='true'] {
+    display: none;
+  }
+}

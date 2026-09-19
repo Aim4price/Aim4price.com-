@@ -96,6 +96,32 @@ async function main(){
       assert.equal(result.actions,3,'Service, History and Manage must all be tested');
       console.log(`PASS expanded ${native?'app':'website'} tracking card at ${width}px`);
     }
+    // Regression for desktop Leads nested inside a narrower outer card.
+    for (const width of [1920,1440,1024,768,430]) {
+      await page.setViewport({width,height:1080});
+      await page.goto('http://127.0.0.1:3036/account-dialog-validation?view=leads',{waitUntil:'networkidle0',timeout:120000});
+      await clickText('Open');
+      await page.waitForSelector('[class*="expandedLeadHeader"]');
+      await page.evaluate(()=>document.fonts.ready);
+      const result=await page.evaluate(()=>{
+        const card=document.querySelector('[class*="leadAssetCard"]');
+        const outer=card.closest('article').getBoundingClientRect();
+        const bounds=card.getBoundingClientRect();
+        const targets=[card.querySelector('[class*="expandedLeadHeader"]'),...card.querySelectorAll('[class*="leadValueBlock"], [class*="leadAssetHeaderActions"] > button, [class*="assetDetailRow"]')];
+        const clipped=targets.filter(el=>{const r=el.getBoundingClientRect();return r.left<bounds.left-2||r.right>bounds.right+2||el.scrollWidth>el.clientWidth+2||el.scrollHeight>el.clientHeight+2;}).map(el=>el.textContent.trim());
+        const buttons=[...card.querySelectorAll('[class*="leadAssetHeaderActions"] > button')];
+        const rects=buttons.map(el=>el.getBoundingClientRect());
+        const overlaps=rects.some((r,i)=>rects.slice(i+1).some(s=>r.left<s.right&&r.right>s.left&&r.top<s.bottom&&r.bottom>s.top));
+        card.scrollIntoView({block:'start'});
+        return {clipped,overlaps,actions:buttons.length,contained:bounds.left>=outer.left-2&&bounds.right<=outer.right+2};
+      });
+      await page.screenshot({path:path.join(output,`lead-card-website-${width}.png`),fullPage:false});
+      assert.deepEqual(result.clipped,[],`Lead content clipped at ${width}`);
+      assert.equal(result.overlaps,false,`Lead actions overlap at ${width}`);
+      assert.equal(result.contained,true,`Lead card exceeds its outer card at ${width}`);
+      assert.equal(result.actions,2,'Send and Manage must both fit');
+      console.log(`PASS expanded desktop lead at ${width}px`);
+    }
     assert.deepEqual(errors,[],'Browser runtime errors');
     assert.deepEqual(mutations,[],'Read-only fixture review must not submit mutations');
   } finally {
