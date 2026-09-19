@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Contact Us",
   description:
-    "Contact Kuyler Chris Geldenhuys and Aim4price to discuss better asset management, valuation and collaboration.",
+    "Contact Aim4price for help getting started, using your account or managing your assets. Call 062 572 1650 or email aim4price@gmail.com.",
 };
 
 function PhoneIcon() {
@@ -38,119 +38,66 @@ export default async function ContactUsPage() {
     <main className={styles.page}>
       <AppHeader active="none" />
 
-      <section className={styles.heroSection}>
+      <section className={styles.heroSection} aria-labelledby="contact-title">
         <div className={styles.shell}>
           <div className={styles.heroPanel}>
             <div className={styles.heroCopy}>
-              <p className={styles.eyebrow}>CONTACT AIM4PRICE</p>
-              <h1 className={styles.heroTitle}>
-                Let&apos;s build a better
-                <span>asset economy.</span>
+              <p className={styles.pageLabel}>Contact us</p>
+              <h1 id="contact-title" className={styles.heroTitle}>
+                Let&apos;s talk.
               </h1>
               <p className={styles.heroText}>
-                Whether you own, service, finance or insure assets, Aim4price is
-                building a clearer way to manage information, work together and
-                make better decisions.
+                Need help getting started, using Aim4price or choosing the right
+                workspace? Get in touch.
               </p>
 
-              <div
-                className={`${styles.contactDetails} ${styles.heroContactDetails}`}
-              >
-                <p className={styles.contactName}>Kuyler Chris Geldenhuys</p>
+              <address className={styles.contactDetails}>
                 <a href="tel:+27625721650" className={styles.contactLink}>
                   <span className={styles.contactIcon}>
                     <PhoneIcon />
                   </span>
-                  <span>
-                    <small>PHONE</small>
+                  <span className={styles.contactValue}>
+                    <span className={styles.contactLabel}>Call</span>
                     062 572 1650
                   </span>
+                  <span className={styles.contactArrow} aria-hidden="true">↗</span>
                 </a>
-                <a
-                  href="mailto:aim4price@gmail.com"
-                  className={styles.contactLink}
-                >
+                <a href="mailto:aim4price@gmail.com" className={styles.contactLink}>
                   <span className={styles.contactIcon}>
                     <EmailIcon />
                   </span>
-                  <span>
-                    <small>EMAIL</small>
+                  <span className={styles.contactValue}>
+                    <span className={styles.contactLabel}>Email</span>
                     aim4price@gmail.com
                   </span>
+                  <span className={styles.contactArrow} aria-hidden="true">↗</span>
                 </a>
-              </div>
+              </address>
 
-              <div className={styles.heroActions}>
-                <Link href="/valuation" className={styles.primaryAction}>
-                  Get free estimate
+              <p className={styles.contactNote}>
+                New to Aim4price?{" "}
+                <Link href="/about-us" className={styles.textLink}>
+                  See what it does <span aria-hidden="true">↗</span>
                 </Link>
-                <Link href="/about-us" className={styles.secondaryAction}>
-                  About Aim4price
-                </Link>
-              </div>
-
-              <div className={styles.heroPrinciple}>
-                <span className={styles.principleLine} aria-hidden="true" />
-                <p>
-                  South African asset intelligence, built around real ownership.
-                </p>
-              </div>
+              </p>
             </div>
 
-            <div className={styles.portraitColumn}>
+            <figure className={styles.founderPanel}>
               <div className={styles.portraitFrame}>
                 <Image
                   src="/about/kuyler-geldenhuys.jpg"
                   alt="Kuyler Chris Geldenhuys"
                   fill
                   priority
-                  sizes="(max-width: 900px) 88vw, 420px"
+                  sizes="420px"
                   className={styles.portrait}
                 />
-                <div className={styles.founderCard}>
-                  <p className={styles.founderLabel}>FOUNDER</p>
-                  <p className={styles.founderName}>Kuyler Chris Geldenhuys</p>
-                  <p className={styles.founderLocation}>Built in South Africa</p>
-                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.directionSection}>
-        <div className={styles.shell}>
-          <div className={styles.directionIntro}>
-            <p className={styles.sectionEyebrow}>WHY AIM4PRICE EXISTS</p>
-            <h2>Clear information. Stronger partnerships.</h2>
-            <p>
-              Better records should help every trusted role make faster, fairer
-              and more informed decisions.
-            </p>
-          </div>
-
-          <div className={styles.directionGrid}>
-            <article className={styles.directionCard}>
-              <span className={styles.cardIndex}>01</span>
-              <p className={styles.cardLabel}>WHAT AIM4PRICE IS</p>
-              <h3>One trusted asset record.</h3>
-              <p>
-                Aim4price connects owners, dealers, service providers, insurers,
-                financiers and accountants around useful information that stays
-                with the asset throughout its lifecycle.
-              </p>
-            </article>
-
-            <article className={`${styles.directionCard} ${styles.visionCard}`}>
-              <span className={styles.cardIndex}>02</span>
-              <p className={styles.cardLabel}>OUR DIRECTION</p>
-              <h3>Better decisions create better competition.</h3>
-              <p>
-                Transparent asset information can support fairer financing, more
-                accurate insurance pricing, better cover, improved operational
-                efficiency and stronger partnerships.
-              </p>
-            </article>
+              <figcaption className={styles.founderCaption}>
+                <p className={styles.founderName}>Kuyler Chris Geldenhuys</p>
+                <p className={styles.founderRole}>Founder · South Africa</p>
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>
