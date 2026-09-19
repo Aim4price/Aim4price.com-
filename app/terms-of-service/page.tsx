@@ -6,7 +6,7 @@ import styles from '../legal-page.module.css';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const LAST_UPDATED = '18 September 2026';
+const LAST_UPDATED = '19 September 2026';
 const CONTACT_EMAIL = 'aim4price@gmail.com';
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ const contents = [
   ['estimates', 'Estimates and reports'],
   ['records', 'Asset records and documents'],
   ['marketplace', 'Marketplace and Discovery'],
-  ['integrations', 'Imports and integrations'],
+  ['integrations', 'Invoice Drop and connected services'],
   ['content', 'User content and platform rights'],
   ['processing', 'Processing customer records'],
   ['acceptable-use', 'Acceptable use'],
@@ -41,7 +41,7 @@ const prohibitedUse = [
   'access, share or use an Asset Register outside the permissions and purpose given by its owner or administrator;',
   'upload information, documents, images or listings you do not have authority to use;',
   'present an Aim4price estimate or report as a certified valuation, guaranteed price, approval or professional opinion;',
-  'probe security, gain unauthorized access, introduce harmful code or interfere with normal operation;',
+  'probe security, gain unauthorised access, introduce harmful code or interfere with normal operation;',
   'scrape, copy, reverse engineer or commercially exploit the platform or its data except where law or a written agreement permits it; or',
   'use Aim4price to send spam, conduct unlawful direct marketing or facilitate an unlawful transaction.',
 ];
@@ -59,11 +59,6 @@ export default async function TermsOfServicePage() {
             The rules for using Aim4price across owner-controlled Asset Registers, detailed reports,
             permission-based collaboration and market opportunities.
           </p>
-          <div className={styles.heroPills} aria-label="Terms of Service principles">
-            <span>The owner stays in control</span>
-            <span>Every role remains accountable</span>
-            <span>Statutory rights remain protected</span>
-          </div>
         </div>
       </section>
 
@@ -149,17 +144,17 @@ export default async function TermsOfServicePage() {
             </section>
 
             <section id="accounts" className={styles.section}>
-              <h2>3. Accounts, organizations and roles</h2>
+              <h2>3. Accounts, organisations and roles</h2>
               <p>
                 You must provide accurate account information, protect your login credentials and
-                promptly report suspected unauthorized use. Use individual authorised access and do not share an Owner password with a Dealer.
+                promptly report suspected unauthorised use. Use individual authorised access and do not share an Owner password with a Dealer.
                 You must take reasonable steps to prevent misuse; you are not automatically liable
                 for an incident caused by Aim4price's failure to meet its own obligations.
               </p>
               <p>
-                An organization or account administrator may invite staff and professionals, assign
+                An organisation or account administrator may invite staff and professionals, assign
                 roles, change permissions and remove access. Each person must use an individual
-                account where required and may access only the information and functions authorized
+                account where required and may access only the information and functions authorised
                 for that role.
               </p>
             </section>
@@ -167,7 +162,7 @@ export default async function TermsOfServicePage() {
             <section id="control" className={styles.section}>
               <h2>4. Owner-controlled Asset Registers</h2>
               <p>
-                The owner or authorized administrator controls the Asset Register and decides who may
+                The owner or authorised administrator controls the Asset Register and decides who may
                 view or contribute to it. Granting access does not transfer ownership of the asset or
                 make Aim4price the owner, custodian, agent or manager of the underlying asset.
               </p>
@@ -205,7 +200,7 @@ export default async function TermsOfServicePage() {
             <section id="estimates" className={styles.section}>
               <h2>6. Estimates, values and reports</h2>
               <p>
-                Estimated values, ranges, averages, confidence indicators and reports depend on the
+                Estimated values, ranges, projections and reports depend on the
                 information supplied, available comparison data, assumptions, asset condition and
                 market conditions at the time. They may be incomplete, delayed or incorrect.
               </p>
@@ -219,7 +214,7 @@ export default async function TermsOfServicePage() {
             <section id="records" className={styles.section}>
               <h2>7. Asset records, maintenance and reports</h2>
               <p>
-                An Asset Register organizes information supplied by users and connected services. It
+                An Asset Register organises information supplied by users and connected services. It
                 is not by itself proof of legal ownership, registration, title, security interests,
                 settlement balance, licence validity, insurance cover, compliance or the authenticity
                 of an uploaded document.
@@ -314,8 +309,8 @@ export default async function TermsOfServicePage() {
               <p>
                 We may use relevant information to improve catalogues, estimate methods,
                 replacement-price assumptions, data quality and product performance within the
-                purposes, lawful bases and safeguards explained in the Privacy Policy, especially
-                section 4.1. Reusable research, statistics and benchmarks should use genuinely
+                purposes, lawful bases and safeguards explained in the Privacy Policy, especially{' '}
+                <Link href="/privacy-policy#improvement">section 4.1 on data improvement</Link>. Reusable research, statistics and benchmarks should use genuinely
                 de-identified or aggregated information. Account IDs and hashes alone do not
                 establish de-identification. Private documents are not licensed for a third party's
                 own general-purpose AI training.
@@ -417,7 +412,7 @@ export default async function TermsOfServicePage() {
             <section id="availability" className={styles.section}>
               <h2>13. Availability, changes and third-party services</h2>
               <p>
-                Aim4price is provided on an available basis. We use reasonable efforts to maintain a
+                We use reasonable efforts to maintain a
                 reliable and secure service, but cannot promise uninterrupted access, permanent
                 storage or error-free operation. Keep independent copies of records that are legally
                 or operationally critical.
@@ -500,10 +495,10 @@ export default async function TermsOfServicePage() {
               </p>
 
               <div className={styles.linkRow}>
-                <Link href="/privacy-policy" className={styles.linkPill}>
+                <Link href="/privacy-policy" className={styles.documentLink}>
                   Read Privacy Policy
                 </Link>
-                <Link href="/" className={styles.linkPill}>
+                <Link href="/" className={styles.documentLink}>
                   Return Home
                 </Link>
               </div>
