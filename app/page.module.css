@@ -998,14 +998,16 @@
 .assetPreviewHeader {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.75rem;
   align-items: start;
-  padding-bottom: 0.72rem;
   border-bottom: 1px solid rgba(199, 216, 223, 0.86);
+  gap: 0.8rem;
+  padding: 0.15rem 0.15rem 0.8rem;
 }
 
 .assetPreviewIdentity {
   min-width: 0;
+  width: auto;
+  padding-top: 0.15rem;
 }
 
 .assetPreviewIdentity h2,
@@ -1021,16 +1023,15 @@
 .assetPreviewIdentity h2 {
   overflow: hidden;
   color: #073b30;
-  font-size: 1rem;
-  line-height: 1.08;
-  font-weight: 850;
   letter-spacing: -0.038em;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 1.05rem;
+  line-height: 1.2;
+  font-weight: 850;
 }
 
 .assetPreviewIdentity p {
-  margin-top: 0.35rem;
   overflow: hidden;
   color: #5d6d7c;
   font-size: 0.58rem;
@@ -1038,22 +1039,23 @@
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-top: 0.4rem;
 }
 
 .assetPreviewIdentity strong {
-  margin-top: 0.52rem;
   color: #233f36;
   font-size: 0.65rem;
   line-height: 1.1;
   font-weight: 850;
+  margin-top: 0.55rem;
 }
 
 .assetPreviewIdentity small {
-  margin-top: 0.18rem;
   color: #667783;
   font-size: 0.56rem;
   line-height: 1.1;
   font-weight: 700;
+  margin-top: 0.2rem;
 }
 
 .assetPreviewAside {
@@ -1146,8 +1148,8 @@
   min-height: 0;
   flex: 1;
   grid-template-columns: minmax(0, 1.23fr) minmax(0, 1fr);
-  gap: 0.65rem;
-  padding-top: 0.55rem;
+  gap: 0.85rem;
+  padding-top: 0.8rem;
 }
 
 .assetPhotoPanel {
@@ -1156,6 +1158,8 @@
   border: 1px solid rgba(201, 216, 223, 0.92);
   border-radius: 0.9rem;
   background: #eef3f6;
+  padding: 0.5rem;
+  gap: 0.5rem;
 }
 
 .assetPhotoPanel {
@@ -1163,11 +1167,11 @@
   display: grid;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr) 2.35rem;
-  gap: 0.42rem;
-  padding: 0.42rem;
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease;
+  padding: 0.5rem;
+  gap: 0.5rem;
 }
 
 .assetPhotoPanel img {
@@ -1434,10 +1438,6 @@
   display: none;
 }
 
-.assetPreviewExpandedContent .worthReportPhotos {
-  grid-template-columns: minmax(0, 1fr);
-}
-
 .previewEyebrow {
   display: block;
   color: #1b8061;
@@ -1465,8 +1465,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.25rem 0.35rem 0.65rem;
   border-bottom: 1px solid rgba(199, 216, 223, 0.86);
+  padding: 0.2rem 0.2rem 0.85rem;
 }
 
 .previewModalHeader h2,
@@ -1493,493 +1493,162 @@
 
 .previewClose {
   display: grid;
-  width: 1.65rem;
   aspect-ratio: 1;
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid rgba(174, 197, 188, 0.68);
-  border-radius: 0.5rem;
   color: #31594c;
   background: #f7faf9;
   font-size: 1rem;
   line-height: 1;
+  width: 1.8rem;
+  border-radius: 0.55rem;
 }
 
-/* Estimate final page preview. */
+/* Value, evidence and actions each have their own visual space. */
 .worthPreview {
   display: grid;
   min-height: 0;
   height: 100%;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
   grid-template-rows: minmax(0, 1fr) 2.7rem;
-  gap: 0.75rem 0.55rem;
-}
-
-.worthResult {
-  min-width: 0;
-  border: 1px solid rgba(117, 196, 161, 0.45);
-  border-radius: 0.9rem;
+  gap: 0.85rem;
 }
 
 .worthResult {
   display: flex;
+  min-width: 0;
   min-height: 0;
   flex-direction: column;
-  padding: 0.85rem 0.9rem;
-  background:
-    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.8), transparent 36%),
-    linear-gradient(145deg, #e8f8f0 0%, #f8fcfa 100%);
+  padding: 1rem;
+  border: 1px solid rgba(117, 169, 146, 0.25);
+  border-radius: 0.9rem;
+  background: linear-gradient(145deg, #eef8f2, #f8fcfa);
+  box-shadow: inset 0 1px 0 #fff;
 }
 
+.worthHeading .previewEyebrow { font-size: 0.53rem; letter-spacing: 0.08em; }
 .worthAssetTitle {
-  margin: 0;
-  overflow: hidden;
-  color: #0a4a38;
-  font-size: 1.02rem;
-  line-height: 1.08;
+  margin: 0.5rem 0 0;
+  color: #0a4535;
+  font-size: 1.04rem;
+  line-height: 1.24;
   font-weight: 850;
-  letter-spacing: -0.034em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 
-.worthValueRow {
-  display: block;
-  margin-top: 1.1rem;
-}
-
-.worthValueRow > span {
-  display: block;
-  min-width: 0;
-}
-
-.worthValueRow > span > strong,
-.worthValueRow > span > small {
-  display: block;
-}
-
-.worthValueRow > span > strong {
-  color: #0d5a3c;
-  font-size: clamp(2.05rem, calc(var(--website-design-vw) * 3), 2.5rem);
-  line-height: 0.92;
+.worthValueBlock { margin-top: 0.95rem; }
+.worthValueRow { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.65rem; }
+.worthValueRow > strong {
+  color: #09543c;
+  font-size: 2.55rem;
+  line-height: 1.05;
   font-weight: 900;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.055em;
   white-space: nowrap;
 }
-
-.worthValueRow > span > small {
-  margin-top: 0.42rem;
-  color: #60736c;
-  font-size: 0.56rem;
-  line-height: 1;
-  font-weight: 750;
-}
-
+.worthValueRow > small { color: #5a7066; font-size: 0.57rem; font-weight: 750; white-space: nowrap; }
 .worthVatToggle {
   display: inline-grid;
-  width: min(100%, 13rem);
-  align-self: flex-start;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 0.8rem;
-  padding: 0.16rem;
-  border: 1px solid rgba(82, 160, 126, 0.35);
-  border-radius: 0.62rem;
-  background: rgba(255, 255, 255, 0.72);
-  font-size: 0.49rem;
-  line-height: 1;
-  font-weight: 800;
+  width: min(100%, 12.8rem);
+  margin-top: 0.65rem;
+  padding: 0.18rem;
+  border: 1px solid #d4e4db;
+  border-radius: 0.6rem;
+  background: #fff;
+  color: #4c675c;
+  font-size: 0.52rem;
+  line-height: 1.2;
+  font-weight: 750;
 }
-
-.worthVatToggle span {
-  padding: 0.48rem 0.58rem;
-  border-radius: 0.45rem;
-  white-space: nowrap;
-}
-
-.worthVatToggle span:first-child {
-  color: #ffffff;
-  background: #176c51;
-}
-
+.worthVatToggle span { padding: 0.4rem 0.5rem; border-radius: 0.42rem; text-align: center; white-space: nowrap; }
+.worthVatToggle span:first-child { color: #fff; background: #176c51; box-shadow: 0 2px 5px #185b4224; }
 .worthFacts {
   display: grid;
-  min-height: 0;
-  flex: 1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: center;
   gap: 0.5rem;
-  margin-top: 0.8rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
 }
-
 .miniFact {
   display: flex;
   min-width: 0;
-  min-height: 3.35rem;
+  min-height: 2.7rem;
   flex-direction: column;
   justify-content: center;
   gap: 0.3rem;
-  padding: 0.55rem 0.6rem;
-  border: 1px solid rgba(184, 211, 199, 0.72);
-  border-radius: 0.68rem;
-  background: rgba(255, 255, 255, 0.82);
+  padding: 0.55rem 0.62rem;
+  border: 1px solid #dbe7e0;
+  border-radius: 0.6rem;
+  background: #ffffffd9;
 }
-
-.miniFact span {
-  color: #577069;
-  font-size: 0.49rem;
-  line-height: 1;
-  font-weight: 850;
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
-}
-
-.miniFact strong {
-  overflow: hidden;
-  color: #103e31;
-  font-size: 0.68rem;
-  line-height: 1.1;
-  font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.worthFacts .miniFact:last-child strong {
-  overflow: visible;
-  font-size: 0.54rem;
-  line-height: 1.15;
-  text-overflow: clip;
-  white-space: normal;
-}
+.miniFact span { color: #65796f; font-size: 0.48rem; line-height: 1.1; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.miniFact strong { color: #153f30; font-size: 0.75rem; line-height: 1.15; font-weight: 800; white-space: nowrap; }
+.worthBasis { margin: 0.55rem 0 0; color: #65796f; font-size: 0.48rem; line-height: 1.4; }
 
 .worthReportPreview {
   display: grid;
   min-width: 0;
   min-height: 0;
-  place-items: center;
-  padding: 0.4rem;
-  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr) auto;
+  justify-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.7rem 0.55rem;
+  border: 1px solid #e3eae6;
   border-radius: 0.9rem;
-  background: linear-gradient(145deg, #eef5f2, #f8fbfa);
+  background: linear-gradient(150deg, #edf2ef, #f8faf9);
 }
-
 .worthReportPaper {
   display: flex;
-  width: min(100%, 14rem);
-  height: auto;
+  height: 100%;
+  width: auto;
   max-width: 100%;
-  max-height: 100%;
   min-width: 0;
   min-height: 0;
   aspect-ratio: 210 / 297;
   flex-direction: column;
-  padding: 0.62rem;
-  overflow: hidden;
-  border: 1px solid rgba(191, 204, 211, 0.82);
-  border-radius: 0.25rem;
-  background: #ffffff;
-  box-shadow: 0 7px 16px rgba(37, 55, 65, 0.1);
+  gap: 0.4rem;
+  padding: 0.65rem;
+  border: 1px solid #d8dfdb;
+  border-radius: 0.18rem;
+  background: #fff;
+  box-shadow: 0 2px 4px #213e3210, 0 9px 18px #213e3219;
 }
-
-.worthReportHeader {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: 1.35rem minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.3rem;
-  padding-bottom: 0.34rem;
-  border-bottom: 1px solid #bdc8d2;
-}
-
-.worthReportHeader > span:not(.worthReportLogo),
-.worthReportHeader strong,
-.worthReportHeader small {
-  display: block;
-  min-width: 0;
-}
-
-.worthReportLogo {
-  display: block;
-  width: 1.35rem;
-  height: auto;
-  object-fit: contain;
-}
-
-.worthReportHeader > span:nth-child(2) strong {
-  overflow: hidden;
-  color: #111b21;
-  font-size: 0.41rem;
-  line-height: 1.08;
-  font-weight: 900;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.worthReportHeader > span:nth-child(2) small {
-  margin-top: 0.1rem;
-  color: #73808a;
-  font-size: 0.25rem;
-  line-height: 1;
-}
-
-.worthReportGenerated {
-  text-align: right;
-}
-
-.worthReportGenerated small {
-  color: #7b858c;
-  font-size: 0.22rem;
-  line-height: 1;
-}
-
-.worthReportGenerated strong {
-  margin-top: 0.1rem;
-  color: #263139;
-  font-size: 0.25rem;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.worthReportSummary {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1.5fr) minmax(3.55rem, 0.85fr);
-  margin-top: 0.35rem;
-  border: 1px solid #bcc8d2;
-}
-
-.worthReportSummary > span {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0.34rem;
-}
-
-.worthReportSummary > span + span {
-  border-left: 1px solid #bcc8d2;
-}
-
-.worthReportSummary small,
-.worthReportSummary strong,
-.worthReportSummary em {
-  display: block;
-  min-width: 0;
-}
-
-.worthReportSummary small {
-  color: #44535e;
-  font-size: 0.22rem;
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.worthReportSummary strong {
-  margin-top: 0.2rem;
-  overflow: hidden;
-  color: #11191f;
-  font-size: 0.45rem;
-  line-height: 1.05;
-  font-weight: 950;
-  letter-spacing: -0.02em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.worthReportSummary > span:last-child strong {
-  font-size: 0.54rem;
-}
-
-.worthReportSummary em {
-  margin-top: 0.16rem;
-  overflow: hidden;
-  color: #697680;
-  font-size: 0.21rem;
-  line-height: 1.1;
-  font-style: normal;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.worthReportBody {
-  display: grid;
-  min-width: 0;
-  min-height: 0;
-  flex: 1;
-  grid-template-columns: minmax(0, 1.42fr) minmax(3.85rem, 0.76fr);
-  gap: 0.32rem;
-  margin-top: 0.32rem;
-}
-
-.worthReportDetails,
-.worthReportRecord,
-.worthReportPhotos {
-  min-width: 0;
-  border: 1px solid #c2cdd5;
-}
-
-.worthReportDetails {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  padding: 0.3rem;
-}
-
+.worthReportHeader { display: flex; align-items: center; gap: 0.4rem; padding-bottom: 0.45rem; border-bottom: 1px solid #b8c8c0; }
+.worthReportLogo { display: block; width: 1.65rem; height: auto; object-fit: contain; }
+.worthReportHeader strong { display: block; color: #153c30; font-size: 0.46rem; line-height: 1.25; font-weight: 850; }
+.worthReportHeader small { display: block; margin-top: 0.15rem; color: #687971; font-size: 0.32rem; line-height: 1.2; }
+.worthReportSummary { padding: 0.48rem; border: 1px solid #dce8e1; border-radius: 0.2rem; background: #f2f8f4; }
+.worthReportSummary > small { display: block; color: #526b5d; font-size: 0.3rem; line-height: 1.2; }
+.worthReportSummary > strong { display: block; margin-top: 0.18rem; color: #153c30; font-size: 0.44rem; line-height: 1.3; font-weight: 850; }
+.worthReportSummary > span { display: flex; align-items: baseline; justify-content: space-between; gap: 0.3rem; margin-top: 0.4rem; }
+.worthReportSummary b { color: #143f2e; font-size: 0.76rem; line-height: 1; font-weight: 900; letter-spacing: -0.025em; white-space: nowrap; }
+.worthReportSummary em { color: #536c5f; font-size: 0.28rem; font-style: normal; white-space: nowrap; }
+.worthReportBody { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 0.45rem; }
+.worthReportFacts { display: flex; min-width: 0; flex-direction: column; gap: 0.65rem; }
 .worthReportDetails > strong,
 .worthReportRecord > strong,
-.worthReportPhotos > strong,
-.worthReportOwner > strong {
-  display: block;
-  color: #18252c;
-  font-size: 0.27rem;
-  line-height: 1;
-  font-weight: 900;
-}
+.worthReportPhotos > strong { display: block; margin-bottom: 0.28rem; color: #213e32; font-size: 0.38rem; line-height: 1.2; font-weight: 850; }
+.worthReportDetails dl { margin: 0; }
+.worthReportDetails dl > div { display: flex; justify-content: space-between; gap: 0.2rem; padding: 0.2rem 0; border-bottom: 1px solid #e7ece9; font-size: 0.33rem; line-height: 1.15; }
+.worthReportDetails dt { color: #697b71; }
+.worthReportDetails dd { margin: 0; color: #1f3b2f; font-weight: 700; text-align: right; }
+.worthReportRecord > span { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem; color: #697b71; font-size: 0.33rem; }
+.worthReportRecord b { color: #214c37; }
+.worthReportRecord i { color: #9aafa2; font-style: normal; }
+.worthReportPhotos { min-height: 0; }
+.worthReportPhotos > div { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+.worthReportPhotos img { width: 100%; height: auto; aspect-ratio: 3 / 2; border-radius: 0.2rem; object-fit: cover; }
+.worthReportFooter { display: flex; justify-content: space-between; gap: 0.3rem; margin-top: auto; padding-top: 0.3rem; border-top: 1px solid #dce4df; color: #6c7b73; font-size: 0.26rem; line-height: 1.2; }
+.worthReportCaption { display: inline-flex; align-items: center; gap: 0.3rem; color: #5e7267; font-size: 0.5rem; font-weight: 750; line-height: 1; }
+.worthReportCaption svg { width: 0.65rem; height: 0.65rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
-.worthReportDetails dl {
-  margin: 0.25rem 0 0;
-}
-
-.worthReportDetails dl > div {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 0.2rem;
-  padding: 0.12rem 0.06rem;
-  border-top: 1px solid #d6dee4;
-}
-
-.worthReportDetails dt,
-.worthReportDetails dd {
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  color: #4b5963;
-  font-size: 0.21rem;
-  line-height: 1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.worthReportDetails dd {
-  color: #17242a;
-  font-weight: 800;
-}
-
-.worthReportOwner {
-  margin-top: auto;
-  padding: 0.3rem 0.06rem 0;
-  border-top: 1px solid #c2cdd5;
-}
-
-.worthReportOwner span {
-  display: block;
-  margin-top: 0.18rem;
-  overflow: hidden;
-  color: #25343c;
-  font-size: 0.22rem;
-  line-height: 1;
-  font-weight: 750;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.worthReportSide {
-  display: grid;
-  min-width: 0;
-  min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 0.32rem;
-}
-
-.worthReportRecord,
-.worthReportPhotos {
-  padding: 0.3rem;
-}
-
-.worthReportRecord > span {
-  display: flex;
-  min-width: 0;
-  justify-content: space-between;
-  gap: 0.2rem;
-  margin-top: 0.18rem;
-  padding-top: 0.15rem;
-  border-top: 1px solid #d6dee4;
-  color: #4c5a64;
-  font-size: 0.2rem;
-  line-height: 1;
-}
-
-.worthReportRecord b {
-  color: #17242a;
-  font-weight: 850;
-  white-space: nowrap;
-}
-
-.worthReportPhotos {
-  display: grid;
-  min-height: 0;
-  grid-template-rows: auto repeat(2, minmax(0, 1fr));
-  gap: 0.22rem;
-}
-
-.worthReportPhotos img {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  border-radius: 0.12rem;
-  object-fit: cover;
-}
-
-.worthActions {
-  display: grid;
-  min-width: 0;
-  grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.26fr) minmax(0, 0.98fr);
-  gap: 0.85rem;
-}
-
-.worthActions > span {
-  display: flex;
-  min-width: 0;
-  min-height: 2.7rem;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
-  padding: 0.45rem 0.72rem;
-  border: 1px solid rgba(177, 203, 193, 0.72);
-  border-radius: 0.68rem;
-  color: #174b3c;
-  background: #ffffff;
-  font-size: 0.64rem;
-  line-height: 1.15;
-  font-weight: 850;
-  text-align: left;
-}
-
-.worthActions > span:nth-child(2) {
-  color: #ffffff;
-  border-color: #176c51;
-  background: linear-gradient(145deg, #1a6d52, #103f34);
-  justify-content: center;
-  box-shadow: 0 8px 18px rgba(16, 80, 59, 0.16);
-}
-
-.worthActions b {
-  display: grid;
-  width: 1.2rem;
-  aspect-ratio: 1;
-  place-items: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  font-size: 0.68rem;
-}
-
-.worthActions > span:not(:nth-child(2)) b {
-  color: #174b3c;
-  background: #edf4f1;
-}
+.worthActions { display: grid; min-width: 0; grid-column: 1 / -1; grid-template-columns: 1fr 1.35fr 1.1fr; gap: 0.65rem; }
+.worthActions > span { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: 0.4rem; padding: 0.55rem 0.7rem; border: 1px solid #d3dfd9; border-radius: 0.65rem; color: #214b39; background: #fff; font-size: 0.65rem; line-height: 1.15; font-weight: 800; white-space: nowrap; }
+.worthActions > span:nth-child(2) { justify-content: center; color: #fff; border-color: #15573f; background: linear-gradient(145deg, #1a6d52, #103f34); box-shadow: 0 5px 12px #145e4321; }
+.worthActions b { display: grid; width: 1.2rem; aspect-ratio: 1; place-items: center; border-radius: 50%; color: #315e47; background: #f0f5f2; font-size: 0.65rem; }
 
 /* Owner Manage command preview. */
 .managePreview,
@@ -1997,20 +1666,21 @@
 
 .managePreviewHeader,
 .costPreviewHeader {
-  padding: 0.45rem 0.4rem 0.78rem;
+  padding: 0.25rem 0.2rem 0.85rem;
 }
 
 .managePreviewHeader h2,
 .costPreviewHeader h2 {
   margin-top: 0;
-  font-size: 1.04rem;
+  font-size: 1.1rem;
+  line-height: 1.2;
 }
 
 .managePreviewHeader p,
 .costPreviewHeader p {
   margin-top: 0.38rem;
-  font-size: 0.58rem;
-  line-height: 1.25;
+  font-size: 0.61rem;
+  line-height: 1.4;
 }
 
 .manageGrid {
@@ -2020,22 +1690,22 @@
   flex: 1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(4, minmax(0, 1fr));
-  gap: 0.52rem;
-  padding-top: 0.68rem;
+  gap: 0.6rem;
+  padding-top: 0.85rem;
 }
 
 .manageTile {
   display: grid;
   min-width: 0;
-  grid-template-columns: 1.75rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.55rem 0.58rem;
   border: 1px solid #d1dfee;
-  border-radius: 0.7rem;
   background: linear-gradient(180deg, #ffffff, #f5f8fa);
   box-shadow: 0 6px 14px rgba(24, 70, 55, 0.04);
   border-color: rgba(140, 160, 169, 0.25);
+  grid-template-columns: 1.4rem minmax(0, 1fr);
+  gap: 0.55rem;
+  padding: 0.65rem 0.65rem;
+  border-radius: 0.8rem;
 }
 
 .manageTilePrimary {
@@ -2089,21 +1759,19 @@
 .manageTile strong {
   overflow: hidden;
   color: #153d32;
-  font-size: 0.59rem;
-  line-height: 1.12;
   font-weight: 850;
   white-space: normal;
+  font-size: 0.66rem;
+  line-height: 1.24;
 }
 
 .manageTile small {
-  display: -webkit-box;
-  margin-top: 0.2rem;
-  overflow: hidden;
   color: #52645d;
-  font-size: 0.48rem;
-  line-height: 1.35;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: block;
+  font-size: 0.55rem;
+  line-height: 1.45;
+  margin-top: 0.28rem;
+  overflow: visible;
 }
 
 /* Reports and cost preview. */
@@ -2114,28 +1782,29 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: 0.65rem;
-  padding-top: 0.75rem;
+  padding-top: 0.85rem;
 }
 
 .reportRow {
   display: grid;
   min-width: 0;
-  grid-template-columns: 2.4rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem;
   border: 1px solid #d4e1ef;
   border-radius: 0.9rem;
   background: linear-gradient(145deg, #ffffff, #f4f8fb);
-  box-shadow: 0 0.5rem 1rem rgba(25, 57, 47, 0.04);
+  grid-template-columns: 2.65rem minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 0.75rem;
+  border-color: #d6e1e9;
+  box-shadow: 0 6px 14px rgba(24, 63, 47, 0.045);
 }
 
 .reportRow .reportIcon {
-  width: 2.4rem;
   border: 1px solid #d4e1ef;
   border-radius: 0.7rem;
   color: #234570;
   background: #ffffff;
+  width: 2.65rem;
 }
 
 .reportRow .reportIcon svg {
@@ -2155,16 +1824,17 @@
 
 .reportRow strong {
   color: #163e33;
-  font-size: 0.64rem;
-  line-height: 1.25;
   font-weight: 850;
+  font-size: 0.77rem;
+  line-height: 1.25;
 }
 
 .reportRow small {
-  margin-top: 0.25rem;
-  color: #6b7b76;
-  font-size: 0.5rem;
+  color: #61736a;
+  font-size: 0.6rem;
   line-height: 1.4;
+  font-weight: 600;
+  margin-top: 0.35rem;
 }
 
 /* Open issue / attention preview. */
@@ -2179,11 +1849,12 @@
 
 .attentionHeader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 15rem);
   align-items: start;
   gap: 0.75rem;
-  padding: 0.35rem 0.5rem 0.72rem;
   border-bottom: 1px solid rgba(221, 166, 160, 0.58);
+  grid-template-columns: minmax(0, 1fr) 13.6rem;
+  padding: 0.2rem 0.2rem 0.85rem;
+  border-color: #e5c9c5;
 }
 
 .attentionIdentity {
@@ -2196,20 +1867,20 @@
 }
 
 .attentionHeader h2 {
-  margin-top: 0.42rem;
   color: #0a4a38;
-  font-size: 1rem;
-  line-height: 1.08;
   font-weight: 850;
   letter-spacing: -0.03em;
+  font-size: 1.04rem;
+  line-height: 1.2;
+  margin-top: 0.5rem;
 }
 
 .attentionHeader p {
   margin-top: 0.28rem;
-  color: #7b645f;
-  font-size: 0.52rem;
-  line-height: 1.2;
   font-weight: 650;
+  font-size: 0.54rem;
+  line-height: 1.4;
+  color: #62756a;
 }
 
 .attentionValueLabel,
@@ -2245,21 +1916,22 @@
 .attentionPrice {
   align-self: flex-end;
   color: #0a4a38;
-  font-size: 1.38rem;
   line-height: 1;
   font-weight: 900;
   letter-spacing: -0.045em;
   text-align: right;
   white-space: nowrap;
+  font-size: 1.48rem;
+  padding-top: 0.15rem;
 }
 
 .attentionPrice small {
   display: block;
   margin-top: 0.2rem;
-  color: #806b67;
   font-size: 0.52rem;
   font-weight: 750;
   letter-spacing: 0;
+  color: #63756c;
 }
 
 .attentionActions {
@@ -2273,15 +1945,15 @@
 }
 
 .attentionBadges span {
-  padding: 0.28rem 0.42rem;
   border-radius: 999px;
   color: #237056;
   background: #e9f6f1;
-  font-size: 0.43rem;
   line-height: 1;
   font-weight: 900;
-  letter-spacing: 0.035em;
   text-transform: uppercase;
+  font-size: 0.44rem;
+  padding: 0.32rem 0.48rem;
+  letter-spacing: 0.02em;
 }
 
 .attentionBadges span:last-child {
@@ -2294,32 +1966,30 @@
   min-height: 0;
   flex: 1;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  gap: 0.58rem;
-  padding-top: 0.6rem;
+  gap: 0.7rem;
+  padding-top: 0.8rem;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1.1fr);
 }
 
 .issueCard,
 .serviceCard {
   position: relative;
   min-width: 0;
-  padding: 0.75rem 4.8rem 0.75rem 0.85rem;
-  border-radius: 0.76rem;
+  padding: 0.85rem 4.5rem 0.85rem 0.95rem;
+  border-radius: 0.85rem;
 }
 
 .issueCard {
   color: #ffffff;
-  background:
-    radial-gradient(circle at 90% 0, rgba(255, 255, 255, 0.16), transparent 36%),
-    linear-gradient(145deg, #d94b43, #ad2822);
-  box-shadow: 0 10px 24px rgba(160, 43, 34, 0.18);
+  background: linear-gradient(125deg, #d84940, #b2352f);
+  box-shadow: 0 6px 14px rgba(153, 39, 31, 0.12);
 }
 
 .serviceCard {
   color: #ffffff;
   border: 0;
-  background: linear-gradient(145deg, #404956, #5c6775);
-  box-shadow: 0 10px 24px rgba(45, 55, 68, 0.16);
+  background: linear-gradient(125deg, #424d5b, #566371);
+  box-shadow: 0 6px 14px rgba(37, 49, 61, 0.12);
 }
 
 .issueCardTitle {
@@ -2327,34 +1997,35 @@
 }
 
 .issueCardTitle strong {
-  font-size: 0.74rem;
-  line-height: 1.1;
   font-weight: 850;
+  font-size: 0.85rem;
+  line-height: 1.2;
 }
 
 .issueCard ul {
   margin: 0.48rem 0 0;
   padding: 0;
   list-style: none;
-  font-size: 0.58rem;
-  line-height: 1.45;
-  font-weight: 700;
+  font-size: 0.65rem;
+  line-height: 1.5;
+  font-weight: 650;
 }
 
 .serviceCard > p {
   margin: 0.42rem 0 0;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 0.5rem;
-  line-height: 1.4;
+  font-size: 0.6rem;
+  line-height: 1.5;
+  margin-top: 0.45rem;
 }
 
 .attentionByline {
   display: block;
-  margin-top: 0.42rem;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.5rem;
-  line-height: 1.2;
-  font-weight: 750;
+  font-size: 0.51rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: #ffffffcf;
+  margin-top: 0.55rem;
 }
 
 .issueNoted,
@@ -2609,28 +2280,28 @@
   }
 .assetPreviewHeader {
     grid-template-columns: minmax(0, 1fr) auto;
-    padding-right: 0.3rem;
-    padding-bottom: 0.45rem;
-    padding-left: 0.55rem;
+    gap: 0.8rem;
+    padding: 0.15rem 0.15rem 0.8rem;
   }
 .assetPreviewIdentity {
-    width: 18rem;
-    padding-top: 0.3rem;
+    width: auto;
+    padding-top: 0.15rem;
   }
 .assetPreviewIdentity h2 {
-    font-size: 1rem;
-    font-weight: 800;
     letter-spacing: -0.025em;
+    font-size: 1.05rem;
+    line-height: 1.2;
+    font-weight: 850;
   }
 .assetPreviewIdentity p {
-    margin-top: 0.45rem;
+  margin-top: 0.4rem;
   }
 .assetPreviewIdentity strong {
-    margin-top: 0.72rem;
     font-size: 0.6rem;
+    margin-top: 0.55rem;
   }
 .assetPreviewIdentity small {
-    margin-top: 0.23rem;
+  margin-top: 0.2rem;
   }
 .assetPreviewAside {
     min-width: 0;
@@ -2680,11 +2351,13 @@
   }
 .assetPreviewBody {
     margin-left: -0.1rem;
-    gap: 0.65rem;
+    gap: 0.85rem;
+    padding-top: 0.8rem;
   }
 .assetPhotoPanel {
-    gap: 0.68rem;
     padding-bottom: 0.58rem;
+    padding: 0.5rem;
+    gap: 0.5rem;
   }
 .assetThumbnails {
     max-width: 14rem;
@@ -3259,11 +2932,11 @@
     filter 820ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 820ms cubic-bezier(0.22, 1, 0.36, 1),
     visibility 0s linear 820ms;
+  display: grid;
+  min-height: 23.5rem;
 }
 
 .featureNarrativeLayer {
-  position: absolute;
-  inset: 0 0 auto;
   min-width: 0;
   opacity: 0;
   visibility: hidden;
@@ -3274,6 +2947,10 @@
     filter 700ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
     visibility 0s linear 700ms;
+  position: relative;
+  inset: auto;
+  grid-area: 1 / 1;
+  align-self: center;
 }
 
 .featureNarrativeLayer[data-active='true'] {
@@ -3287,22 +2964,22 @@
 .featureNarrativeLayer h2 {
   max-width: 29rem;
   color: #084b39;
-  line-height: 1.08;
   font-weight: 900;
   letter-spacing: -0.058em;
   text-wrap: balance;
-  margin-top: 1rem;
-  font-size: clamp(3.2rem, calc(var(--website-design-vw) * 3.55), 3.55rem);
+  font-size: 3.1rem;
+  line-height: 1.08;
+  margin-top: 0.9rem;
 }
 
-.featureNarrativeLayer > p:last-child {
+.featureNarrativeCopy {
   max-width: 28rem;
   color: #566a62;
-  font-size: clamp(1.2rem, calc(var(--website-design-vw) * 1.27), 1.34rem);
   letter-spacing: -0.012em;
   text-wrap: pretty;
-  margin-top: 1rem;
-  line-height: 1.6;
+  font-size: 1.04rem;
+  line-height: 1.58;
+  margin-top: 1.05rem;
 }
 
 .featureNarrativeCount {
@@ -3468,11 +3145,12 @@
 .featureNarrative {
   --feature-copy-inset: 7.75rem;
   width: min(100%, 27rem);
-  min-height: 324px;
+  display: grid;
+  min-height: 23.5rem;
   }
 
 .featureNarrativeLayer h2,
-  .featureNarrativeLayer > p:last-child,
+  .featureNarrativeCopy,
   .featureNarrativeCount {
     position: relative;
     inset-inline-start: calc(0rem - var(--feature-copy-inset));
@@ -3844,7 +3522,7 @@
 
 /* Identity and status columns mirror the register, without a documents panel. */
 .assetPreviewBody:has(.assetDetailsPanel) {
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr);
 }
 
 .assetDetailsPanel {
@@ -3858,7 +3536,7 @@
   display: grid;
   min-width: 0;
   grid-template-rows: repeat(4, minmax(0, 1fr));
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .assetIdentityColumn .assetDetailRow {
@@ -3866,7 +3544,7 @@
 }
 
 .assetStatusColumn .assetDetailRow {
-  grid-template-columns: minmax(0, 1fr) 2.1rem;
+  grid-template-columns: minmax(0, 1fr) 1.9rem;
 }
 
 .assetDetailsPanel .assetDetailRow > span,
@@ -3905,136 +3583,35 @@
 .manageTile .manageTileIcon {
   background: transparent;
   color: #234877;
+  width: 1.4rem;
 }
 .manageTilePrimary .manageTileIcon { color: #195440; }
 .manageTileDanger .manageTileIcon,
 .manageTileDanger strong { color: #ac3035; }
 .manageTile svg { width: 1.1rem; height: 1.1rem; }
 
-/* Homepage samples mirror the signed-in Cost Ledger and Maintenance pages. */
-.workspacePreview {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  gap: 0.65rem;
-}
-
-.workspacePreviewTitle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.6rem 0.65rem;
-  border: 1px solid #dce6e1;
-  border-radius: 0.75rem;
-  background: linear-gradient(#fff, #f7faf9);
-}
-
-.workspacePreviewTitle h2 {
-  margin: 0;
-  color: #084b39;
-  font-size: 1.25rem;
-  font-weight: 900;
-  letter-spacing: -0.035em;
-  text-transform: uppercase;
-}
-
-.workspacePreviewTitle small,
-.workspacePreviewCaption {
-  color: #52645d;
-  font-size: 0.54rem;
-  font-weight: 650;
-}
-
-.workspacePreviewToolbar {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
-}
-
-.workspacePreviewToolbar > span,
-.workspacePreviewActions > span,
-.workspacePreviewSearch > span {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  min-width: 0;
-  padding: 0.55rem 0.35rem;
-  border: 1px solid #d7e1e4;
-  border-radius: 0.55rem;
-  color: #234570;
-  background: #fff;
-  font-size: 0.55rem;
-  font-weight: 750;
-}
-
-.workspacePreview svg {
-  width: 0.75rem;
-  height: 0.75rem;
-  flex-shrink: 0;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.workspacePreview [data-tone='share'] { color: #804a22; border-color: #e3c7ad; background: linear-gradient(#fff, #fff5e9); }
-.workspacePreview [data-tone='details'] { color: #244e73; border-color: #b9d1e2; background: linear-gradient(#fff, #f0f7fc); }
-.workspacePreview [data-tone='manage'] { color: #185740; border-color: #bdd9cd; background: linear-gradient(#fff, #eff9f4); }
-.workspacePreview [data-tone='primary'] { color: #fff; border-color: #126043; background: linear-gradient(#21755a, #07543f); }
-.workspacePreview [data-tone='completed'] { color: #236148; background: #edf7f1; }
-
-.workspacePreviewSearch { display: grid; grid-template-columns: 1fr 5rem; gap: 0.5rem; }
-.workspacePreviewSearch > span:first-child { justify-content: flex-start; padding-inline: 0.7rem; color: #52645d; font-weight: 600; }
-.workspacePreviewRecords { display: grid; flex: 1; min-height: 0; grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 0.7rem; }
-
-.ledgerPreviewCard,
-.maintenancePreviewCard {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.8rem;
-  min-width: 0;
-  border: 1px solid #d3dfdb;
-  border-radius: 0.9rem;
-  background: linear-gradient(145deg, #fff, #f6faf8);
-  box-shadow: 0 6px 15px rgba(25, 64, 48, 0.05);
-}
-
-.ledgerPreviewCard header,
-.maintenancePreviewCard header { display: flex; align-items: start; justify-content: space-between; gap: 0.6rem; }
-.ledgerPreviewCard h3,
-.maintenancePreviewCard h3 { margin: 0; color: #113f31; font-size: 0.9rem; line-height: 1.2; font-weight: 850; letter-spacing: -0.025em; }
-.ledgerPreviewCard p,
-.maintenancePreviewCard p { margin: 0.4rem 0 0; font-size: 0.53rem; color: #52645d; line-height: 1.3; font-weight: 600; }
-.workspacePreviewAmount { flex-shrink: 0; text-align: right; }
-.workspacePreviewAmount strong { display: block; color: #0b493a; font-size: 1.05rem; font-weight: 900; letter-spacing: -0.035em; white-space: nowrap; }
-.workspacePreviewAmount small { display: block; margin-top: 0.1rem; color: #52645d; font-size: 0.53rem; font-weight: 650; }
-.ledgerPreviewBottom { display: flex; justify-content: space-between; align-items: end; gap: 0.6rem; }
-.ledgerPreviewPills { display: flex; flex-wrap: wrap; gap: 0.3rem; max-width: 50%; }
-.ledgerPreviewPills span { padding: 0.3rem 0.4rem; border-radius: 1rem; background: #e4f4ec; color: #235c47; font-size: 0.49rem; font-weight: 750; }
-.ledgerPreviewPills span:last-child { color: #865453; background: #faeaea; }
-.workspacePreviewActions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.3rem; min-width: 15.5rem; }
-.workspacePreviewActions > span { padding: 0.42rem 0.3rem; font-size: 0.49rem; white-space: nowrap; }
-.maintenancePreviewCard[data-status='upcoming'] { border-color: #e1c79f; background: linear-gradient(#fff, #fffcf7); }
-.maintenancePreviewCard[data-status='completed'] { border-color: #c9dfd3; }
-.maintenancePreviewStatus { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; font-size: 0.53rem; color: #85541b; }
-.maintenancePreviewStatus > span { padding: 0.32rem 0.45rem; border: 1px solid #e2c99f; border-radius: 1rem; background: #fff2db; font-weight: 750; white-space: nowrap; }
-[data-status='completed'] .maintenancePreviewStatus > span { color: #276247; background: #e9f6ee; border-color: #bedac8; }
-.workspacePreviewCaption { margin: 0; text-align: center; line-height: 1.3; }
 .roleCta { display: block; margin-top: 0.4rem; color: #126247; font-size: 0.85rem; font-weight: 750; }
 .scrollCueLabel { font-size: 0.7rem; font-weight: 650; white-space: nowrap; }
 .storyScrollCue svg { width: 1.35rem; height: 2.2rem; }
 
+
+
+/* Quiet, consistent finishing details for the five product previews. */
+.assetPhotoCount { position: absolute; right: 0.95rem; bottom: 3.7rem; padding: 0.25rem 0.5rem; border-radius: 1rem; color: #fff; background: #263c46b8; font-size: 0.56rem; font-weight: 800; }
+.reportFooter { display: flex; justify-content: flex-end; padding-top: 0.75rem; }
+.reportFooter > span { display: grid; min-width: 6rem; min-height: 1.85rem; place-items: center; border: 1px solid #d6e1e9; border-radius: 0.65rem; background: #f3f6f8; color: #234337; font-size: 0.65rem; font-weight: 800; }
+.attentionAside .registerActions { min-width: 0; width: 100%; height: auto; margin-top: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.3rem; }
+.attentionAside .registerActions span { min-width: 0; padding: 0.5rem 0.35rem; font-size: 0.5rem; }
+.attentionAside .registerActions svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.attentionAside [data-tone='share'] { color: #804a22; border-color: #e3c7ad; background: #fff5e9; }
+.attentionAside [data-tone='details'] { color: #244e73; border-color: #b9d1e2; background: #f0f7fc; }
+.attentionAside [data-tone='manage'] { color: #185740; border-color: #bdd9cd; background: #eff9f4; }
+.heroStory .assetPreviewCard[data-active-question='attention'] { border-color: #dfb3ac; background: linear-gradient(145deg, #fff9f8, #fffdfc); }
+.featureNarrativeCopy p { margin: 0; }
+.featureNarrativeCopy p + p { margin-top: 0.8rem; }
+.featureNarrativeCopy p:last-child { color: #63766d; }
 @media (forced-colors: active) {
-  .workspacePreviewTitle,
-  .ledgerPreviewCard,
-  .maintenancePreviewCard,
-  .workspacePreviewToolbar > span,
-  .workspacePreviewActions > span,
-  .maintenancePreviewStatus > span { border-color: CanvasText; }
+  .worthReportPaper, .miniFact, .reportFooter > span { border: 1px solid CanvasText; }
+  .issueCard, .serviceCard { color: CanvasText; background: Canvas; border: 1px solid CanvasText; }
+  .serviceCard > p, .attentionByline { color: CanvasText; }
 }
