@@ -495,22 +495,115 @@ function WorthPreview() {
   );
 }
 
+// Use the exact SVG geometry and stroke styles from the Asset Register Manage modal.
 function ManageActionGlyph({ type }: { type: ManageGlyph | 'budget' | 'pricing' }) {
-  const paths: Partial<Record<ManageGlyph | 'budget' | 'pricing', string>> = {
-    reports: 'M12 3v12m-5-5 5 5 5-5M4 21h16',
-    cost: 'M9 3h6l-2 4h-2L9 3ZM8 7h8M8 8c-2 3-5 5-5 9 0 5 18 5 18 0 0-4-3-6-5-9M14 12h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3m2-7v8',
-    budget: 'M9 3h6l-2 4h-2L9 3ZM8 7h8M8 8c-2 3-5 5-5 9 0 5 18 5 18 0 0-4-3-6-5-9M14 12h-3a1.5 1.5 0 0 0 0 3h2a1.5 1.5 0 0 1 0 3h-3m2-7v8',
-    fuel: 'M12 5v14M5 12h14',
-    pricing: 'm3 17 6-6 4 4 8-10M15 5h6v6',
-    maintenance: 'm9 3 1-2h4l1 2 2 1 2 0 2 4-1 2v3l1 2-2 4h-2l-2 1-1 2h-4l-1-2-2-1H5l-2-4 1-2v-3L3 8l2-4h2l2-1ZM15 12a3 3 0 1 0-6 0 3 3 0 0 0 6 0',
-    map: 'M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0ZM15 10a3 3 0 1 0-6 0 3 3 0 0 0 6 0',
-    marketplace: 'M2 3h3l3 13h11l3-10H6M10 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2M18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
+  const glyphs: Record<ManageGlyph | 'pricing', ReactNode> = {
+    edit: (<svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.15"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 20h9" />
+      <path d="m16.5 3.5 4 4L8 20l-5 1 1-5z" />
+    </svg>),
+    reports: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M12 3v10" />
+      <path d="m8 9 4 4 4-4" />
+      <path d="M4 20h16" />
+    </svg>),
+    cost: (<svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M8.2 4.2c.55 1.35 1.7 2.1 3.8 2.1s3.25-.75 3.8-2.1" />
+      <path d="M9.15 3.2h5.7l1.55 2.25-1.85 1.85h-5.1L7.6 5.45z" />
+      <path d="M7.35 8.05c-2.65 2.2-4.1 5.15-4.1 8.25 0 3.15 2.5 4.5 8.75 4.5s8.75-1.35 8.75-4.5c0-3.1-1.45-6.05-4.1-8.25" />
+      <path d="M12 10.1v7.1" />
+      <path d="M14.4 11.65h-3.2c-.9 0-1.55.52-1.55 1.25s.58 1.12 1.55 1.32l1.6.34c.97.2 1.55.6 1.55 1.32s-.65 1.25-1.55 1.25H9.45" />
+    </svg>),
+    fuel: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>),
+    maintenance: (<svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>),
+    pricing: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M3 17 9 11l4 4 8-8" />
+      <path d="M14 7h7v7" />
+    </svg>),
+    map: (<svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>),
+    qr: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="3" y="3" width="6" height="6" rx="1" />
+      <rect x="15" y="3" width="6" height="6" rx="1" />
+      <rect x="3" y="15" width="6" height="6" rx="1" />
+      <path d="M15 15h3v3" />
+      <path d="M21 15v6h-3" />
+      <path d="M15 21v-3" />
+      <path d="M12 7h1" />
+      <path d="M12 12h1" />
+      <path d="M7 12h1" />
+      <path d="M12 17h1" />
+    </svg>),
+    marketplace: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M3 4h2l2.2 10.4a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.95-1.56L20 8H6.2" />
+      <path d="M8 8h12" />
+      <circle cx="9" cy="20" r="1.4" />
+      <circle cx="18" cy="20" r="1.4" />
+    </svg>),
+    remove: (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="m6 6 1 14h10l1-14" />
+      <path d="M10 10v6" />
+      <path d="M14 10v6" />
+    </svg>),
   };
-  const path = paths[type];
-  return path ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d={path} /></svg> : <MiniGlyph type={type as ManageGlyph} />;
+  return glyphs[type === 'budget' ? 'cost' : type];
 }
 
 function ManagePreview() {
+  // Preserve the real modal's wide composition instead of wrapping its tile copy.
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const [scale, setScale] = useState(0);
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const fit = () => setScale(Math.min(frame.clientWidth / 1344, frame.clientHeight / 608));
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, []);
   const actions: readonly { type: ManageGlyph | 'budget' | 'pricing'; title: string; description: string }[] = [
     { type: 'edit', title: 'Update asset', description: 'Edit details, documents and photos.' },
     { type: 'reports', title: 'Reports', description: 'Choose and download asset reports.' },
@@ -526,32 +619,36 @@ function ManagePreview() {
   ];
 
   return (
-    <div className={styles.managePreview}>
-      <header className={`${styles.previewModalHeader} ${styles.managePreviewHeader}`}>
-        <div>
-          <h2>2023 Toyota Hilux Single Cab</h2>
-          <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
-        </div>
-        <span className={styles.previewClose} aria-hidden="true">×</span>
-      </header>
+    <div ref={frameRef} className={styles.managePreviewFrame}>
+      <div style={{ width: 1344 * scale, height: 608 * scale }}>
+        <div className={styles.managePreview} style={{ transform: `scale(${scale})` }}>
+          <header className={`${styles.previewModalHeader} ${styles.managePreviewHeader}`}>
+            <div>
+              <h2>2023 Toyota Hilux Single Cab</h2>
+              <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
+            </div>
+            <span className={styles.previewClose} aria-hidden="true">×</span>
+          </header>
 
-      <div className={styles.manageGrid}>
-        {actions.map((action, index) => (
-          <div
-            key={action.title}
-            className={[
-              styles.manageTile,
-              index === 0 ? styles.manageTilePrimary : '',
-              action.type === 'remove' ? styles.manageTileDanger : '',
-            ].filter(Boolean).join(' ')}
-          >
-            <span className={styles.manageTileIcon}><ManageActionGlyph type={action.type} /></span>
-            <span>
-              <strong>{action.title}</strong>
-              <small>{action.description}</small>
-            </span>
+          <div className={styles.manageGrid}>
+            {actions.map((action, index) => (
+              <div
+                key={action.title}
+                className={[
+                  styles.manageTile,
+                  index === 0 ? styles.manageTilePrimary : '',
+                  action.type === 'remove' ? styles.manageTileDanger : '',
+                ].filter(Boolean).join(' ')}
+              >
+                <span className={styles.manageTileIcon}><ManageActionGlyph type={action.type} /></span>
+                <span>
+                  <strong>{action.title}</strong>
+                  <small>{action.description}</small>
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </div>
   );
@@ -647,33 +744,4 @@ function AssetDetail({ label, value, status = false }: { label: string; value: s
       </strong>
     </div>
   );
-}
-
-function MiniGlyph({ type }: { type: ManageGlyph }) {
-  if (type === 'edit') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16-.7 4.2 4.2-.7L18.8 8.2l-3.5-3.5L4 16Z" /><path d="m13.8 6.2 3.5 3.5" /></svg>;
-  }
-  if (type === 'reports') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3.5h10l4 4V20.5H5z" /><path d="M15 3.5v4h4M8 16v-3m4 3V9m4 7v-5" /></svg>;
-  }
-  if (type === 'cost') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M14.8 8.6c-.8-.7-1.7-1-2.8-1-1.7 0-2.8.8-2.8 2 0 3 5.8 1.3 5.8 4.6 0 1.4-1.2 2.3-3 2.3-1.2 0-2.4-.4-3.2-1.2M12 5.8v12.4" /></svg>;
-  }
-  if (type === 'fuel') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V5.5A2.5 2.5 0 0 1 7.5 3h6A2.5 2.5 0 0 1 16 5.5V20M4 20h13M7.5 7h6v4h-6z" /><path d="m16 8 3 3v6.2a1.8 1.8 0 0 0 3.6 0V9.5l-2-2" /></svg>;
-  }
-  if (type === 'maintenance') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 5.1a4.6 4.6 0 0 0-5.7 5.7l-5 5a2.2 2.2 0 0 0 3.1 3.1l5-5a4.6 4.6 0 0 0 5.7-5.7l-2.7 2.7-2.1-.5-.5-2.1z" /></svg>;
-  }
-  if (type === 'map') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3.5 6.5 5-2.5 7 2.5 5-2.5v13.5l-5 2.5-7-2.5-5 2.5zM8.5 4v13.5M15.5 6.5V20" /></svg>;
-  }
-  if (type === 'qr') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v6h-4v-2h-2v2" /></svg>;
-  }
-  if (type === 'marketplace') {
-    return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16l-1.2-5H5.2L4 9Z" /><path d="M5.5 9v11h13V9M9 20v-6h6v6" /><path d="M4 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0" /></svg>;
-  }
-
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5" /></svg>;
 }

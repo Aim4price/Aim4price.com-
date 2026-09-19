@@ -128,6 +128,16 @@ async function check(browser, url) {
       await page.keyboard.press('Enter');
       assert.equal(await page.$('[data-home-preview-dialog]'), null, 'Homepage cards must not open enlarged views');
       assert.equal(await page.$('#home-asset-preview [aria-haspopup="dialog"]'), null, 'Homepage cards must have no open control');
+      if (key === 'manage') {
+        const wrapped = await page.$$eval('#home-asset-preview [class*="manageTile"] strong, #home-asset-preview [class*="manageTile"] small', elements => elements.filter(element => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          const lines = [...range.getClientRects()].filter(rect => rect.width > 0);
+          const tile = element.closest('[class*="manageTile"]').getBoundingClientRect();
+          return lines.length !== 1 || lines.some(rect => rect.left < tile.left || rect.right > tile.right);
+        }).map(element => element.textContent));
+        assert.deepEqual(wrapped, [], 'Manage action titles and descriptions must remain complete on one line');
+      }
       if (key === 'attention') {
         const heading = await page.$eval('[class*="featureNarrativeLayer"][data-active="true"] h2', element => {
           const textNodes = [...element.childNodes].filter(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
@@ -177,7 +187,18 @@ async function check(browser, url) {
     console.log(`PASS ${name}: ${widths.length} widths`);
   }
   // Height controls the visible story hero, without changing other composition.
-  await visit('/',1366,768);const tall=await geometry();await page.setViewport({width:1366,height:600});await delay(150);const short=await geometry();
+  await visit('/',1366,768);const tall=await geometry();await page.setViewport({width:1366,height:600});
+  // Wait for the visual viewport resize event and React layout effect to settle.
+  // A fixed 150ms delay intermittently measured the previous viewport height.
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector('[data-website-canvas]');
+    const hero = canvas?.querySelector('[class*="storyHeroGrid"]');
+    if (!hero) return false;
+    const scale = Number(canvas.dataset.websiteScale);
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return Math.abs(hero.getBoundingClientRect().height / scale - (Math.min(900, innerHeight / scale) - 5.75 * rem)) < 2;
+  }, { timeout: 5000 });
+  const short=await geometry();
   await assertHeroFitsViewport();
   assert.equal(tall.scale,short.scale);
   const withoutHeroHeight = items => items.map(item => item.selector === '[class*="storyHeroGrid"]' ? {...item, height: 0} : item);
