@@ -6,7 +6,7 @@ import styles from '../legal-page.module.css';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const LAST_UPDATED = '18 September 2026';
+const LAST_UPDATED = '19 September 2026';
 const PRIVACY_EMAIL = 'aim4price@gmail.com';
 
 export const metadata: Metadata = {
@@ -25,21 +25,21 @@ const contents = [
   ['visibility', 'Marketplace and QR visibility'],
   ['sharing', 'Service providers and sharing'],
   ['integrations', 'Connected services'],
-  ['communications', 'Messages and marketing'],
+  ['communications', 'Messages, storage and tracking'],
   ['security', 'Security and incidents'],
   ['retention', 'Retention and deletion'],
   ['devices', 'Offline copies and location'],
-  ['transfers', 'Cross-border processing'],
+  ['transfers', 'Cross-border processing and automated tools'],
   ['rights', 'Your privacy rights'],
   ['contact', 'Contact and complaints'],
 ] as const;
 
 const collectedInformation = [
-  'Account and profile information, including names, contact details, organization details, account type, role and authentication information.',
+  'Account and profile information, including names, contact details, organisation details, account type, role and authentication information.',
   'Asset information, including descriptions, serial or registration details, location, condition, values, photos, documents and ownership-related records you choose to add.',
   'Operational records, including estimates, fuel and cost entries, invoices, maintenance, licensing, finance, accounting, insurance and supporting reports.',
   'Collaboration activity, including invitations, permissions, approvals, notes, messages, contact requests, contributions and audit history.',
-  'Marketplace and Discovery information, including listings, seller-authorized details, enquiries and transaction-related communications.',
+  'Marketplace and Discovery information, including listings, seller-authorised details, enquiries and transaction-related communications.',
   'Support, billing and communication information, including subscription or transaction references and payment details that may appear on uploaded receipts; source files may still contain unmasked information.',
   'Estimate inputs and outputs, replacement-price assumptions, listing views, sale outcomes supplied by users, and account-linked product activity used for administration and product improvement.',
   'Push notification subscriptions, delivery and read status, device permissions and location readings submitted through enabled features.',
@@ -49,7 +49,7 @@ const collectedInformation = [
 const rightsList = [
   'ask whether we hold personal information about you and request access to it;',
   'request correction or updating of inaccurate, incomplete or outdated information;',
-  'request deletion or destruction where we are no longer authorized or required to keep the information;',
+  'request deletion or destruction where we are no longer authorised or required to keep the information;',
   'object to processing where applicable, or withdraw consent where processing depends on consent;',
   'opt out of direct marketing communications at any time; and',
   'complain to the Information Regulator if you believe your information has been handled unlawfully.',
@@ -68,11 +68,6 @@ export default async function PrivacyPolicyPage() {
             How personal information moves through owner-controlled Asset Registers,
             permission-based collaboration and the services that support Aim4price.
           </p>
-          <div className={styles.heroPills} aria-label="Privacy policy principles">
-            <span>Owner-controlled access</span>
-            <span>Purpose-limited use</span>
-            <span>Your POPIA rights</span>
-          </div>
         </div>
       </section>
 
@@ -96,7 +91,7 @@ export default async function PrivacyPolicyPage() {
             <div className={styles.rolePanel}>
               <strong>The key privacy distinction</strong>
               <p>
-                Aim4price operates the platform, while an owner or organization controls who may
+                Aim4price operates the platform, while an owner or organisation controls who may
                 access its Asset Register. A professional invited into a record is also responsible
                 for using that information lawfully and only for the agreed purpose.
               </p>
@@ -302,7 +297,7 @@ export default async function PrivacyPolicyPage() {
               <p>
                 Infrastructure providers support hosting, databases and file storage; messaging
                 providers deliver email and push notifications; and development services support
-                deployment and diagnostics. The current code uses Railway infrastructure, private
+                deployment and diagnostics. These services include Railway infrastructure, private
                 S3-compatible file storage, Resend email delivery and browser push services. GitHub
                 supports source and deployment workflows; it is not the intended repository for
                 customer asset documents. Public maps or links may also contact external providers.
@@ -360,7 +355,7 @@ export default async function PrivacyPolicyPage() {
               <p>
                 Direct marketing is separate from service messages. Electronic marketing requires
                 consent or a permitted existing-customer exception that satisfies the applicable
-                conditions. A public email address, referral, enquiry or acceptance of these terms
+                conditions. A public email address, referral, enquiry or agreement to our Terms of Service
                 is not blanket marketing consent. You can object or opt out without losing access to
                 unrelated paid features; contact aim4price@gmail.com if a message lacks a working
                 opt-out.
@@ -529,10 +524,10 @@ export default async function PrivacyPolicyPage() {
               </p>
 
               <div className={styles.linkRow}>
-                <Link href="/terms-of-service" className={styles.linkPill}>
+                <Link href="/terms-of-service" className={styles.documentLink}>
                   Read Terms of Service
                 </Link>
-                <Link href="/" className={styles.linkPill}>
+                <Link href="/" className={styles.documentLink}>
                   Return Home
                 </Link>
               </div>
