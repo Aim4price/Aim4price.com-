@@ -66,7 +66,7 @@ const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   have: {
     title: 'Follow their changing value.',
     body: 'Bring your assets together in a register that changes with them. Automatic depreciation reflects the passing of time, while updated usage helps adjust estimated values as assets work more.',
-    detail: 'Keep photos, documents, serial numbers and key details connected to each asset. Group assets into umbrellas, see their combined value and share an up-to-date record when you need it.',
+    detail: 'Keep photos, documents, serial numbers and key details connected to each asset. Group assets into umbrellas, see their combined value and share a current record when you need it.',
   },
   manage: {
     title: 'Manage each asset in one place.',
