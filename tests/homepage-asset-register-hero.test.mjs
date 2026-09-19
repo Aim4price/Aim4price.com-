@@ -116,7 +116,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\),[\s\S]*?\)/);
   assert.match(hero, /if \(nextIndex !== storyStepRef\.current\) updateStoryStep\(nextIndex\)/);
   assert.match(hero, /if \(shouldClaimControl\) \{[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsManuallyControlled\(true\);[\s\S]*?setIsPaused\(false\);[\s\S]*?setIsAutoplaying\(false\)/);
-  assert.match(hero, /const handleScroll = \(\) => \{[\s\S]*?data-home-preview-dialog[\s\S]*?scheduleStorySync\(true\)/);
+  assert.match(hero, /const handleScroll = \(\) => \{\s*scheduleStorySync\(true\)/);
   assert.match(hero, /window\.addEventListener\('resize', handleResize\)/);
   assert.match(hero, /window\.addEventListener\('pageshow', handlePageShow\)/);
   assert.match(hero, /if \(window\.scrollY > 4\) scheduleStorySync\(true\)/);
@@ -211,7 +211,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(preview, /tabIndex=\{isActive \? 0 : -1\}/);
   assert.match(preview, /role=\{showRegister \? 'region' : 'tabpanel'\}/);
   assert.match(hero, /showRegister=\{storyStepIndex < FEATURE_START_INDEX\}/);
-  assert.match(hero, /onOpenRegister=\{claimManualControl\}/);
+  assert.doesNotMatch(preview, /ExpandedPreview|openedQuestion|openPreview|aria-haspopup="dialog"|Click to open/);
   assert.match(preview, /case 'register':[\s\S]*?<RegisterPreview \/>/);
   assert.match(preview, /DEMO BUSINESS PTY LTD/);
   assert.doesNotMatch(preview, /visibility: 'hidden'/);
@@ -231,7 +231,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(preview, /assetQuestionBubble} aria-hidden="true"/);
   assert.match(preview, /assetQuestionBubble[\s\S]*?question\.icon/);
   assert.doesNotMatch(preview, /styles\.assetQuestionLabel/);
-  assert.match(preview, /QUESTIONS\[activeIndex\]\?\.label \?\? QUESTIONS\[0\]\.label/);
+
   assert.doesNotMatch(preview, /assetActiveQuestion|assetStoryProgress|home-register-preview-label/);
   assert.doesNotMatch(preview, /assetStoryControls|assetPlaybackControl|feature animation|Show next feature/);
   assert.doesNotMatch(preview, /assetScrollCue|m7 9\.5 5 5 5-5/);

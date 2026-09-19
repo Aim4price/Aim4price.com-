@@ -41,6 +41,7 @@ type StoryStep = (typeof HERO_STORY_STEPS)[number];
 
 type FeatureStory = {
   title: string;
+  titleLines?: readonly [string, string];
   body: string;
   detail: string;
 };
@@ -79,6 +80,7 @@ const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   },
   attention: {
     title: 'Keep maintenance on track.',
+    titleLines: ['Keep maintenance', 'on track.'],
     body: 'Spot reported problems and completed maintenance directly on the asset record. See what needs attention, what work was done, who recorded it and when.',
     detail: 'Schedule the next service, use equipment-specific checklists and keep the notes and repair history together for the next person who needs them.',
   },
@@ -275,7 +277,6 @@ export default function HomeHeroExperience() {
     };
 
     const handleScroll = () => {
-      if (document.querySelector('[data-home-preview-dialog][open]')) return;
       scheduleStorySync(true);
     };
     const handleResize = () => {
@@ -497,7 +498,6 @@ export default function HomeHeroExperience() {
               <div ref={assetMotionRef} className={styles.assetStageMotion}>
                 <HomeAssetPreview
                   showRegister={storyStepIndex < FEATURE_START_INDEX}
-                  onOpenRegister={claimManualControl}
                   activeQuestion={activeQuestion}
                   onQuestionChange={handleQuestionChange}
                   onInteraction={handlePreviewInteraction}
@@ -523,7 +523,11 @@ export default function HomeHeroExperience() {
                         <strong>{HERO_STAGES.indexOf(question) + 1}</strong>
                         <span>/ 5</span>
                       </p>
-                      <h2>{feature.title}</h2>
+                      <h2 className={feature.titleLines ? styles.featureNarrativeFixedTitle : undefined}>
+                        {feature.titleLines
+                          ? <>{feature.titleLines[0]}<br />{feature.titleLines[1]}</>
+                          : feature.title}
+                      </h2>
                       <div className={styles.featureNarrativeCopy}>
                         <p>{feature.body}</p>
                         <p>{feature.detail}</p>
@@ -583,4 +587,3 @@ export default function HomeHeroExperience() {
     </section>
   );
 }
-

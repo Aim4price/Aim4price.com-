@@ -5,11 +5,10 @@ export function attachHomeStorySwipe(element: HTMLElement, onSwipe: (direction: 
   let suppressClickUntil = 0;
 
   const reset = () => { start = null; axis = null; };
-  const blocked = () => Boolean(document.querySelector('[data-home-preview-dialog][open]'));
   const handleStart = (event: TouchEvent) => {
     reset();
     suppressClickUntil = 0;
-    if (event.touches.length !== 1 || blocked()) return;
+    if (event.touches.length !== 1) return;
     const target = event.target;
     if (target instanceof Element && target.closest('input, textarea, select, [contenteditable], [role="slider"]')) return;
     const touch = event.touches[0];
@@ -17,7 +16,7 @@ export function attachHomeStorySwipe(element: HTMLElement, onSwipe: (direction: 
   };
   const handleMove = (event: TouchEvent) => {
     if (!start) return;
-    if (event.touches.length !== 1 || blocked()) { reset(); return; }
+    if (event.touches.length !== 1) { reset(); return; }
     const touch = event.touches[0];
     if (touch.identifier !== start.id) { reset(); return; }
     const dx = Math.abs(touch.clientX - start.x);
@@ -31,10 +30,10 @@ export function attachHomeStorySwipe(element: HTMLElement, onSwipe: (direction: 
     const origin = start;
     const horizontal = axis === 'horizontal';
     reset();
-    if (!origin || !horizontal || event.touches.length || blocked()) return;
+    if (!origin || !horizontal || event.touches.length) return;
     const touch = Array.from(event.changedTouches).find((item) => item.identifier === origin.id);
     if (!touch) return;
-    // A swipe beginning on a preview card must not open its dialog on release.
+    // A swipe ending on a navigation icon must not trigger a second selection.
     suppressClickUntil = Date.now() + 700;
     if (event.cancelable) event.preventDefault();
     const dx = touch.clientX - origin.x;
