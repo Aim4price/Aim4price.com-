@@ -5980,7 +5980,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setBrandSlug(UNKNOWN_BRAND_SLUG);
                 resetResult();
               }}
-              placeholder="e.g. John Deere"
+              placeholder="e.g. Test Brand"
               autoComplete="off"
             />
           </label>
@@ -5996,7 +5996,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setGenericModelMode(normalizeText(value) ? 'manual' : '');
                 resetResult();
               }}
-              placeholder="e.g. 6155M"
+              placeholder="e.g. Test Model"
               autoComplete="off"
             />
           </label>

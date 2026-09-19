@@ -1104,6 +1104,7 @@ test('installed Ad Studio routes keep Middleman and Dealer sessions separate wit
     accountSubtype: id === 'middleman' ? 'equipment-middleman' : 'equipment-dealer',
   });
   const sessions = await loadTypeScriptModule('lib/dealer-app-session.ts', {
+    './app-session-policy': await loadTypeScriptModule('lib/app-session-policy.ts'),
     'node:crypto': crypto,
     'next/headers': { cookies: async () => ({ get: (name) => jar.has(name) ? { value: jar.get(name) } : undefined }) },
     './app-realm-server': { currentAppRealm: async () => realm },
