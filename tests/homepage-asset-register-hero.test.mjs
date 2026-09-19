@@ -213,7 +213,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /showRegister=\{storyStepIndex < FEATURE_START_INDEX\}/);
   assert.match(hero, /onOpenRegister=\{claimManualControl\}/);
   assert.match(preview, /case 'register':[\s\S]*?<RegisterPreview \/>/);
-  assert.match(preview, /TEST BUSINESS PTY LTD/);
+  assert.match(preview, /DEMO BUSINESS PTY LTD/);
   assert.match(preview, /showRegister \? QUESTIONS\[0\]\.label/);
   assert.match(preview, /index === \(showRegister \? 0 : activeIndex\)/);
   assert.doesNotMatch(preview, /visibility: 'hidden'/);
@@ -224,7 +224,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(preview, /Updated \{asset.updated\}/);
   assert.match(preview, /observer.disconnect\(\)/);
 
-  assert.match(preview, /Register value[\s\S]*?R 11 450 567/);
+  assert.match(preview, /Register value[\s\S]*?R 359 550/);
   assert.match(preview, /tabIndex=\{0\}/);
   assert.match(preview, /className=\{styles\.assetHeroStage\}[\s\S]*?data-active-question=\{activeQuestion\}/);
   assert.match(preview, /aria-labelledby=\{showRegister \? 'home-register-preview-label' : `home-asset-question-/);
@@ -325,39 +325,38 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.doesNotMatch(preview, /function ManagePreview\(\)[\s\S]*?Manage asset/);
   assert.doesNotMatch(preview, /function ManagePreview\(\)[\s\S]*?Choose what you want to do with this asset\./);
 
-  // What does it cost me? — Fuel and ownership report choices.
+  // What does it cost me? — the signed-in Cost Ledger with isolated demo records.
   const costPreview = preview.slice(
     preview.indexOf('function CostPreview()'),
     preview.indexOf('function AttentionPreview()'),
   );
-  assert.match(costPreview, /<h2>2023 Toyota Hilux Single Cab<\/h2>/);
-  assert.match(costPreview, /Year Model: 2023 · Usage: 113 677 km · Condition: Good/);
-  assert.doesNotMatch(costPreview, /previewEyebrow/);
-  assert.doesNotMatch(costPreview, /See what the asset costs across fuel, maintenance and ownership\./);
-  assert.doesNotMatch(costPreview, /reportRowHighlighted/);
-  assert.match(costPreview, /Maintenance report/);
-  assert.match(costPreview, /Fuel report/);
-  assert.match(costPreview, /Depreciation log/);
-  assert.match(costPreview, /Cost of ownership/);
+  assert.match(costPreview, /<h2>Cost tracking system<\/h2>/);
+  assert.match(costPreview, /Demo records/);
+  assert.match(costPreview, /2023 Toyota Hilux Single Cab/);
+  assert.match(costPreview, /Invoice \{entry.reference\}/);
+  assert.match(costPreview, /Incl\. VAT/);
+  assert.match(costPreview, /View details/);
+  assert.match(costPreview, /Manage/);
+  assert.match(preview, /\['plus', 'Add Cost'\], \['summary', 'Budgets'\], \['share', 'Invoice Drop'\], \['download', 'Download'\]/);
 
-  // What needs attention? — the real open-issue presentation.
+  // Maintenance uses the real upcoming/completed card structure and coherent sample usage.
   const attentionPreview = preview.slice(
     preview.indexOf('function AttentionPreview()'),
     preview.indexOf('function MiniFact('),
   );
-  assert.match(attentionPreview, /<h2>2023 Toyota Hilux Single Cab<\/h2>/);
+  assert.match(attentionPreview, /<h2>Asset maintenance<\/h2>/);
   assert.match(attentionPreview, /Year Model: 2023 · Usage: 113 677 km · Condition: Good/);
-  assert.match(attentionPreview, /R 237 150[\s\S]*?Excl\. VAT/);
-  assert.match(attentionPreview, /Aim4price value[\s\S]*?Updated 01 Sept 2026/);
-  assert.match(attentionPreview, /Share[\s\S]*?View details[\s\S]*?Manage/);
-  assert.match(attentionPreview, /Open issue reported/);
-  assert.match(attentionPreview, /Lisensie disk het verval 2025/);
-  assert.match(attentionPreview, /Sitplek kort aandag/);
-  assert.match(attentionPreview, /Maintenance has been done/);
-  assert.match(attentionPreview, /Changed engine oil/);
-  assert.match(attentionPreview, /By Gerald · 29 Aug 2026/);
-  assert.doesNotMatch(attentionPreview, /2024 Landini Super 110 \+ Front Loader/);
-  assert.doesNotMatch(attentionPreview, /20 741 hours|R 446 250/);
+  assert.match(attentionPreview, /Demo records/);
+  assert.match(attentionPreview, /Record service[\s\S]*?View details[\s\S]*?Manage/);
+  assert.match(attentionPreview, /Upcoming/);
+  assert.match(attentionPreview, /120 000 km/);
+  assert.match(attentionPreview, /6 323 km remaining/);
+  assert.match(attentionPreview, /110 000 km/);
+  assert.match(attentionPreview, /Completed/);
+  const scheduledKm = Number(attentionPreview.match(/<strong>([\d ]+) km<\/strong><small>Scheduled usage/)?.[1].replaceAll(' ', ''));
+  const currentKm = Number(attentionPreview.match(/Usage: ([\d ]+) km/)?.[1].replaceAll(' ', ''));
+  const remainingKm = Number(attentionPreview.match(/([\d ]+) km remaining/)?.[1].replaceAll(' ', ''));
+  assert.equal(scheduledKm - currentKm, remainingKm);
 
   assert.doesNotMatch(preview, /assetConnectors|connectorPath|connectorDots|assetConnectorActive/);
   assert.match(preview, /role="status"/);

@@ -56,6 +56,7 @@ export default function HomeRoleSelector() {
             <span>
               <strong>I own or manage assets</strong>
               <small>Farmers, contractors, fleet operators and business owners.</small>
+              <span className={styles.roleCta}>Get started as an owner</span>
             </span>
             <span className={styles.roleArrow} aria-hidden="true">
               →
@@ -70,6 +71,7 @@ export default function HomeRoleSelector() {
             <span>
               <strong>I sell, service or support assets</strong>
               <small>Dealers, workshops and service providers.</small>
+              <span className={styles.roleCta}>Get started as a business</span>
             </span>
             <span className={styles.roleArrow} aria-hidden="true">
               →
@@ -80,3 +82,4 @@ export default function HomeRoleSelector() {
     </section>
   );
 }
+

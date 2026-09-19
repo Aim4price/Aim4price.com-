@@ -560,6 +560,7 @@ export default function HomeHeroExperience() {
               aria-label="Scroll down to explore Aim4price"
               onClick={handleScrollCue}
             >
+              <span className={styles.scrollCueLabel}>Scroll to explore</span>
               <svg width="30" height="48" viewBox="0 0 30 48" fill="none" aria-hidden="true">
                 <rect x="3" y="2" width="24" height="44" rx="12" stroke="currentColor" strokeWidth="2" />
                 <path className={styles.scrollMouseWheel} d="M15 10v6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
@@ -572,4 +573,5 @@ export default function HomeHeroExperience() {
     </section>
   );
 }
+
 

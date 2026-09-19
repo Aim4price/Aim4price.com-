@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import AssetReportTypeIcon from '../components/asset-register/AssetReportTypeIcon';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from '../components/WebsitePortal';
 import styles from './page.module.css';
@@ -40,7 +39,7 @@ const QUESTION_FEEDBACK: Readonly<Record<QuestionKey, string>> = {
   worth: 'Showing the indicative value and valuation report.',
   cost: 'Showing fuel and ownership costs.',
   manage: 'Showing the asset management tools.',
-  attention: 'Showing an open issue that needs attention.',
+  attention: 'Showing upcoming and completed maintenance.',
 };
 
 const QUESTIONS: readonly Question[] = [
@@ -180,6 +179,7 @@ export default function HomeAssetPreview({
               ].filter(Boolean).join(' ')}
               aria-selected={isActive}
               aria-label={question.label}
+              title={question.label}
               aria-controls="home-asset-preview"
               tabIndex={isActive ? 0 : -1}
               onClick={() => selectQuestion(index)}
@@ -375,7 +375,7 @@ function RegisterActions({ expanded = false }: { expanded?: boolean }) {
   return <div className={styles.registerActions} aria-hidden="true">
     <span data-tone="share"><RegisterIcon name="share"/>Share</span>
     <span data-tone="details"><RegisterIcon name="details"/>{expanded ? 'Hide details' : 'View details'}</span>
-    <span data-tone="manage"><svg viewBox="0 0 24 24" aria-hidden="true">{QUESTIONS[3].icon}</svg>Manage</span>
+    <span data-tone="manage"><svg viewBox="0 0 24 24" aria-hidden="true">{QUESTIONS.find(({ key }) => key === 'manage')?.icon}</svg>Manage</span>
   </div>;
 }
 
@@ -401,22 +401,22 @@ function RegisterPreview() {
       <div style={{ width: 768 * scale, height: 676 * scale }}>
         <div className={styles.registerPreview} style={{ transform: `scale(${scale})`, left: 12 * scale }}>
           <header className={styles.registerPreviewTitle}>
-            <h2>TEST BUSINESS PTY LTD</h2>
-            <span className={styles.registerTransfer} aria-hidden="true"><RegisterIcon name="transfer"/><b>15</b></span>
+            <h2>DEMO BUSINESS PTY LTD</h2>
+            <span className={styles.registerTransfer} aria-hidden="true"><RegisterIcon name="transfer"/></span>
           </header>
           <div className={styles.registerPreviewToolbar} aria-hidden="true">
             <span data-tone="share"><RegisterIcon name="share"/>Share</span><span data-tone="details"><RegisterIcon name="summary"/>Summary</span><span data-tone="manage"><RegisterIcon name="filter"/>Filters</span><span data-tone="primary"><RegisterIcon name="download"/>Download</span>
           </div>
           <div className={styles.registerPreviewStats}>
             <span className={styles.registerPrevious} aria-hidden="true">‹</span>
-            <div><small>Register value</small><strong>R 11 450 567<small>+ VAT</small></strong><div className={styles.registerStatFooter}><div className={styles.registerVat}><b>Excl. VAT</b><span>Incl. VAT</span></div></div></div>
-            <div><small>Aim4price valued equipment</small><strong>58</strong><div className={styles.registerStatFooter}/></div>
-            <div><small>Total assets</small><strong>101</strong><div className={styles.registerStatFooter}>1 umbrella always shown　No standalone assets</div></div>
+            <div><small>Register value</small><strong>R 359 550<small>+ VAT</small></strong><div className={styles.registerStatFooter}><div className={styles.registerVat}><b>Excl. VAT</b><span>Incl. VAT</span></div></div></div>
+            <div><small>Aim4price valued equipment</small><strong>2</strong><div className={styles.registerStatFooter}/></div>
+            <div><small>Total assets</small><strong>2</strong><div className={styles.registerStatFooter}>1 umbrella always shown　No standalone assets</div></div>
             <span className={styles.registerNext} aria-hidden="true">›</span>
           </div>
           <div className={styles.registerPreviewTabs} aria-hidden="true">
-            <div><i><RegisterIcon name="overview"/></i><span><strong>Overview</strong><small>Checking updates...</small></span><b>›</b></div>
-            <div data-selected="true"><i><RegisterIcon name="assets"/></i><span><strong>Assets</strong><small>Loading register...</small></span><b>✓</b></div>
+            <div><i><RegisterIcon name="overview"/></i><span><strong>Overview</strong><small>No open updates</small></span><b>›</b></div>
+            <div data-selected="true"><i><RegisterIcon name="assets"/></i><span><strong>Assets</strong><small>2 assets</small></span><b>✓</b></div>
           </div>
           <div className={styles.registerPreviewSearch} aria-hidden="true">
             <span><RegisterIcon name="search"/>Toyota Hilux<i><RegisterIcon name="close"/></i></span>
@@ -424,8 +424,8 @@ function RegisterPreview() {
           </div>
           <section className={styles.registerPreviewGroup}>
             <header>
-              <div className={styles.registerGroupIdentity}><i><RegisterIcon name="umbrella"/></i><div><strong>Vehicles</strong><small>9 grouped assets · Every asset counted · Combined umbrella</small></div></div>
-              <div className={styles.registerGroupAside}><strong>Counted value R 3 305 000</strong><small>Excl. VAT</small><RegisterActions expanded/></div>
+              <div className={styles.registerGroupIdentity}><i><RegisterIcon name="umbrella"/></i><div><strong>Vehicles</strong><small>2 grouped assets · Every asset counted</small></div></div>
+              <div className={styles.registerGroupAside}><strong>Combined value R 359 550</strong><small>Excl. VAT</small><RegisterActions expanded/></div>
             </header>
             <div className={styles.registerPreviewAssets}>
               {assets.map((asset, index) => (
@@ -478,7 +478,7 @@ function AssetCardPreview() {
               Hide details
             </span>
             <span className={styles.assetManageAction}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">{QUESTIONS[3].icon}</svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true">{QUESTIONS.find(({ key }) => key === 'manage')?.icon}</svg>
               Manage
             </span>
           </div>
@@ -617,8 +617,8 @@ function WorthPreview() {
             <section className={styles.worthReportSide}>
               <div className={styles.worthReportRecord}>
                 <strong>Record Summary</strong>
-                <span>Insured <b>Not sure</b></span>
-                <span>Financed <b>Not sure</b></span>
+                <span>Insured <b>Yes</b></span>
+                <span>Financed <b>Yes</b></span>
                 <span>Documents <b>None</b></span>
               </div>
 
@@ -715,115 +715,93 @@ function ManagePreview() {
   );
 }
 
-function CostPreview() {
-  const reports = [
-    ['valuation', 'Asset valuation', 'Values, notes and documents.'],
-    ['maintenance', 'Maintenance report', 'Service and repair costs.'],
-    ['fuel', 'Fuel report', 'Monthly fuel costs.'],
-    ['depreciation', 'Depreciation log', 'Saved value changes.'],
-    ['ownership', 'Cost of ownership', 'Ownership costs and budgets.'],
-    ['map', 'Asset map', 'Saved asset location.'],
-  ] as const;
-
+// Static examples follow the signed-in ledger and maintenance layouts.
+// Keep these fixtures independent of customer records and account identifiers.
+function PreviewToolbar({ maintenance = false }: { maintenance?: boolean }) {
+  const actions = maintenance
+    ? [['plus', 'Add Maintenance'], ['summary', 'Scheduled'], ['assets', 'Checklists'], ['download', 'Download']]
+    : [['plus', 'Add Cost'], ['summary', 'Budgets'], ['share', 'Invoice Drop'], ['download', 'Download']];
   return (
-    <div className={styles.costPreview}>
-      <header className={`${styles.previewModalHeader} ${styles.costPreviewHeader}`}>
-        <div>
-          <h2>2023 Toyota Hilux Single Cab</h2>
-          <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
-        </div>
-        <span className={styles.previewClose} aria-hidden="true">×</span>
-      </header>
+    <div className={styles.workspacePreviewToolbar} aria-hidden="true">
+      {actions.map(([icon, label], index) => (
+        <span key={label} data-tone={['share', 'details', 'manage', 'primary'][index]}>
+          <RegisterIcon name={icon} />{label}
+        </span>
+      ))}
+    </div>
+  );
+}
 
-      <div className={styles.reportList}>
-        {reports.map(([kind, title, description]) => (
-          <div key={title} className={styles.reportRow}>
-            <span className={styles.reportIcon}>
-              <AssetReportTypeIcon kind={kind} />
-            </span>
-            <span>
-              <strong>{title}</strong>
-              <small>{description}</small>
-            </span>
-          </div>
+function CostPreview() {
+  const entries = [
+    { supplier: 'Demo Service Centre', reference: 'DEMO-001', date: '01 Sept 2026', amount: 'R 3 450', source: 'Manual', file: 'No file' },
+    { supplier: 'Demo Fuel Station', reference: 'DEMO-002', date: '03 Sept 2026', amount: 'R 1 150', source: 'Fuel Slip', file: 'Open file' },
+  ];
+  return (
+    <div className={styles.workspacePreview}>
+      <header className={styles.workspacePreviewTitle}>
+        <h2>Cost tracking system</h2><small>Demo records</small>
+      </header>
+      <PreviewToolbar />
+      <div className={styles.workspacePreviewSearch} aria-hidden="true">
+        <span><RegisterIcon name="search" />2023 Toyota Hilux Single Cab</span>
+        <span><RegisterIcon name="filter" />Filter</span>
+      </div>
+      <div className={styles.workspacePreviewRecords}>
+        {entries.map((entry) => (
+          <section key={entry.reference} className={styles.ledgerPreviewCard}>
+            <header>
+              <div><h3>{entry.supplier}</h3><p>Invoice {entry.reference} · {entry.date}</p></div>
+              <div className={styles.workspacePreviewAmount}><strong>{entry.amount}</strong><small>Incl. VAT</small></div>
+            </header>
+            <div className={styles.ledgerPreviewBottom}>
+              <div className={styles.ledgerPreviewPills}><span>2023 Toyota Hilux Single Cab</span><span>{entry.source}</span></div>
+              <div className={styles.workspacePreviewActions} aria-hidden="true">
+                <span data-tone="share">{entry.file}</span><span data-tone="details">View details</span><span data-tone="manage"><ManageActionGlyph type="maintenance" />Manage</span>
+              </div>
+            </div>
+          </section>
         ))}
       </div>
+      <p className={styles.workspacePreviewCaption}>Sample costs linked to one asset · Amounts include VAT</p>
     </div>
   );
 }
 
 function AttentionPreview() {
   return (
-    <div className={styles.attentionPreview}>
-      <header className={styles.attentionHeader}>
-        <div className={styles.attentionIdentity}>
-          <div className={styles.attentionBadges}>
-            <span>Maintenance serviced</span>
-            <span>Open issue</span>
-          </div>
-          <h2>2023 Toyota Hilux Single Cab</h2>
-          <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
-          <strong className={styles.attentionValueLabel}>Aim4price value</strong>
-          <small className={styles.attentionUpdated}>Updated 01 Sept 2026</small>
-        </div>
-
-        <div className={styles.attentionAside}>
-          <strong className={styles.attentionPrice}>
-            R 237 150
-            <small>Excl. VAT</small>
-          </strong>
-
-          <div className={`${styles.assetPreviewActions} ${styles.attentionActions}`} aria-hidden="true">
-            <span className={styles.assetShareAction}>
-              <svg viewBox="0 0 24 24">
-                <circle cx="18" cy="5" r="2.2" />
-                <circle cx="6" cy="12" r="2.2" />
-                <circle cx="18" cy="19" r="2.2" />
-                <path d="m8 11 7.8-4.6M8 13l7.8 4.6" />
-              </svg>
-              Share
-            </span>
-            <span className={styles.assetDetailsAction}>
-              <svg viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="9" />
-                <path d="m8.5 10.3 3.5 3.5 3.5-3.5" />
-              </svg>
-              View details
-            </span>
-            <span className={styles.assetManageAction}>
-              <svg viewBox="0 0 24 24" aria-hidden="true">{QUESTIONS[3].icon}</svg>
-              Manage
-            </span>
-          </div>
-        </div>
+    <div className={styles.workspacePreview}>
+      <header className={styles.workspacePreviewTitle}>
+        <h2>Asset maintenance</h2><small>Demo records</small>
       </header>
-
-      <div className={styles.attentionBody}>
-        <section className={styles.issueCard}>
-          <div className={styles.issueCardTitle}>
-            <strong>Open issue reported</strong>
+      <PreviewToolbar maintenance />
+      <div className={styles.workspacePreviewSearch} aria-hidden="true">
+        <span><RegisterIcon name="search" />2023 Toyota Hilux Single Cab</span>
+        <span><RegisterIcon name="filter" />Filter</span>
+      </div>
+      <div className={styles.workspacePreviewRecords}>
+        <section className={styles.maintenancePreviewCard} data-status="upcoming">
+          <header>
+            <div><h3>2023 Toyota Hilux Single Cab</h3><p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p></div>
+            <div className={styles.workspacePreviewAmount}><strong>120 000 km</strong><small>Scheduled usage</small></div>
+          </header>
+          <div className={styles.ledgerPreviewBottom}>
+            <div className={styles.maintenancePreviewStatus}><span>◷ Upcoming</span><strong>6 323 km remaining</strong></div>
+            <div className={styles.workspacePreviewActions} aria-hidden="true"><span data-tone="share">✓ Record service</span><span data-tone="details">View details</span><span data-tone="manage"><ManageActionGlyph type="maintenance" />Manage</span></div>
           </div>
-          <ul>
-            <li>Lisensie disk het verval 2025</li>
-            <li>Sitplek kort aandag</li>
-          </ul>
-          <small className={styles.attentionByline}>By Gerald · 29 Aug 2026</small>
-          <span className={styles.issueNoted}>Noted</span>
         </section>
-
-        <section className={styles.serviceCard}>
-          <div className={styles.issueCardTitle}>
-            <strong>Maintenance has been done</strong>
+        <section className={styles.maintenancePreviewCard} data-status="completed">
+          <header>
+            <div><h3>2023 Toyota Hilux Single Cab</h3><p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p></div>
+            <div className={styles.workspacePreviewAmount}><strong>110 000 km</strong><small>Completed at</small></div>
+          </header>
+          <div className={styles.ledgerPreviewBottom}>
+            <div className={styles.maintenancePreviewStatus}><span>✓ Completed</span></div>
+            <div className={styles.workspacePreviewActions} aria-hidden="true"><span data-tone="completed">✓ Completed</span><span data-tone="details">View details</span><span data-tone="manage"><ManageActionGlyph type="maintenance" />Manage</span></div>
           </div>
-          <p>
-            Serviced: Changed engine oil, Changed air filters, Changed oil filters,
-            Changed diesel filters, Greased machine · By Skimmelkrans · Gerald
-          </p>
-          <p>Notes/Problems: Lisensie disk het verval 2025</p>
-          <small className={styles.attentionByline}>By Gerald · 29 Aug 2026</small>
-          <span className={styles.serviceNoted}>Noted</span>
         </section>
       </div>
+      <p className={styles.workspacePreviewCaption}>Sample maintenance schedule · Track upcoming and completed work</p>
     </div>
   );
 }
@@ -879,3 +857,4 @@ function MiniGlyph({ type }: { type: ManageGlyph }) {
 
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v5M14 11v5" /></svg>;
 }
+
