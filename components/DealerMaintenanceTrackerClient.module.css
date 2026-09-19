@@ -2903,3 +2903,14 @@
     display: none;
   }
 }
+
+/* Native app actions retain compact grid rows instead of inheriting a column flex basis. */
+.trackerPage.dealerApp .trackerExpandedAside .trackerHeaderActions.trackerHeaderActions {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr)) !important;
+}
+@container tracking-card (max-width: 28rem) {
+  .trackerPage.dealerApp .trackerExpandedAside .trackerHeaderActions.trackerHeaderActions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

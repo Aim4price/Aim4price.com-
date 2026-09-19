@@ -85,13 +85,14 @@ async function main(){
         const actionRects=[...header.querySelectorAll('button')].map(el=>el.getBoundingClientRect());
         const overlaps=actionRects.some((r,i)=>actionRects.slice(i+1).some(s=>r.left<s.right&&r.right>s.left&&r.top<s.bottom&&r.bottom>s.top));
         card.scrollIntoView({block:'start'});
-        return {clipped,cutValues,overlaps,actions:actionRects.length,viewportFits:bounds.left>=-2&&bounds.right<=innerWidth+2};
+        return {clipped,cutValues,overlaps,actions:actionRects.length,compactActions:actionRects.every(r=>r.height<=96),viewportFits:bounds.left>=-2&&bounds.right<=innerWidth+2};
       });
       await page.screenshot({path:path.join(output,`tracking-card-${native?'app':'website'}-${width}.png`),fullPage:false});
       assert.equal(result.viewportFits,true,`Tracking card must fit viewport at ${width}`);
       assert.deepEqual(result.clipped,[],`Tracking card overflow at ${width}`);
       assert.deepEqual(result.cutValues,[],`Tracking detail values clipped at ${width}`);
       assert.equal(result.overlaps,false,`Tracking actions overlap at ${width}`);
+      assert.equal(result.compactActions,true,`Tracking actions must remain compact at ${width}`);
       assert.equal(result.actions,3,'Service, History and Manage must all be tested');
       console.log(`PASS expanded ${native?'app':'website'} tracking card at ${width}px`);
     }
