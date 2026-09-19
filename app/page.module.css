@@ -1852,7 +1852,7 @@
   align-items: start;
   gap: 0.75rem;
   border-bottom: 1px solid rgba(221, 166, 160, 0.58);
-  grid-template-columns: minmax(0, 1fr) 13.6rem;
+  grid-template-columns: minmax(0, 1fr) 15rem;
   padding: 0.2rem 0.2rem 0.85rem;
   border-color: #e5c9c5;
 }
@@ -3601,7 +3601,7 @@
 .reportFooter { display: flex; justify-content: flex-end; padding-top: 0.75rem; }
 .reportFooter > span { display: grid; min-width: 6rem; min-height: 1.85rem; place-items: center; border: 1px solid #d6e1e9; border-radius: 0.65rem; background: #f3f6f8; color: #234337; font-size: 0.65rem; font-weight: 800; }
 .attentionAside .registerActions { min-width: 0; width: 100%; height: auto; margin-top: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.3rem; }
-.attentionAside .registerActions span { min-width: 0; padding: 0.5rem 0.35rem; font-size: 0.5rem; }
+.attentionAside .registerActions span { min-width: 0; padding: 0.5rem 0.35rem; font-size: 0.5rem; white-space: nowrap; }
 .attentionAside .registerActions svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .attentionAside [data-tone='share'] { color: #804a22; border-color: #e3c7ad; background: #fff5e9; }
 .attentionAside [data-tone='details'] { color: #244e73; border-color: #b9d1e2; background: #f0f7fc; }

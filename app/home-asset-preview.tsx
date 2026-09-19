@@ -569,28 +569,28 @@ function WorthPreview() {
             <span><b>R 237 150</b><em>VAT excluded</em></span>
           </div>
           <div className={styles.worthReportBody}>
-          <div className={styles.worthReportFacts}>
-          <section className={styles.worthReportDetails}>
-            <strong>Asset Details</strong>
-            <dl>
-              <div><dt>Serial</dt><dd>SKB 5</dd></div>
-              <div><dt>Year / Condition</dt><dd>2023 / Good</dd></div>
-              <div><dt>Usage</dt><dd>113 677 km</dd></div>
-              <div><dt>Replacement</dt><dd>R 450 000 excl. VAT</dd></div>
-            </dl>
-          </section>
-          <section className={styles.worthReportRecord}>
-            <strong>Record Summary</strong>
-            <span>Insured <b>Yes</b><i>·</i> Financed <b>Yes</b></span>
-          </section>
-          </div>
-          <section className={styles.worthReportPhotos}>
-            <strong>Asset Photos</strong>
-            <div>
-              <Image src="/brand/home-asset-hilux-thumb-side.webp" alt="Side view of the Toyota Hilux in the valuation report" width={108} height={72} sizes="6rem" />
-              <Image src="/brand/home-asset-hilux-thumb-rear.webp" alt="Rear view of the Toyota Hilux in the valuation report" width={108} height={72} sizes="6rem" />
+            <div className={styles.worthReportFacts}>
+              <section className={styles.worthReportDetails}>
+                <strong>Asset Details</strong>
+                <dl>
+                  <div><dt>Serial</dt><dd>SKB 5</dd></div>
+                  <div><dt>Year / Condition</dt><dd>2023 / Good</dd></div>
+                  <div><dt>Usage</dt><dd>113 677 km</dd></div>
+                  <div><dt>Replacement</dt><dd>R 450 000</dd></div>
+                </dl>
+              </section>
+              <section className={styles.worthReportRecord}>
+                <strong>Record Summary</strong>
+                <span>Insured <b>Yes</b><i>·</i> Financed <b>Yes</b></span>
+              </section>
             </div>
-          </section>
+            <section className={styles.worthReportPhotos}>
+              <strong>Asset Photos</strong>
+              <div>
+                <Image src="/brand/home-asset-hilux-thumb-side.webp" alt="Side view of the Toyota Hilux in the valuation report" width={108} height={72} sizes="6rem" />
+                <Image src="/brand/home-asset-hilux-thumb-rear.webp" alt="Rear view of the Toyota Hilux in the valuation report" width={108} height={72} sizes="6rem" />
+              </div>
+            </section>
           </div>
           <footer className={styles.worthReportFooter}>
             <span>Aim4price demo owner</span><span>01 Sept 2026 · 1 / 1</span>

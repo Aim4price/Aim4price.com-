@@ -102,7 +102,7 @@ async function check(browser, url) {
     });
   }
   for (const width of [1920, 430]) {
-    await visit('/', width, 1080);
+    await visit('/', width, width === 430 ? 760 : 1080);
     await page.evaluate(() => {
       const section = document.querySelector('section[data-story-step]');
       const sticky = section.querySelector('[class*="heroSticky"]');
@@ -134,8 +134,8 @@ async function check(browser, url) {
         await page.click('dialog[data-home-preview-dialog] button[aria-label="Close preview"]');
       }
     }
+    await fs.writeFile(path.join(output, 'home-card-layout-results.json'), JSON.stringify(previewIssues, null, 2));
   }
-  await fs.writeFile(path.join(output, 'home-card-layout-results.json'), JSON.stringify(previewIssues, null, 2));
   assert.deepEqual(previewIssues, [], 'Homepage cards must fit without clipped text or overlapping valuation sections');
   console.log('PASS five homepage cards: desktop, narrow viewport and enlarged previews');
   for(const [name,route,auth] of (process.env.CANVAS_INTERACTIONS_ONLY?[]:[['home','/',false],['estimate','/valuation',false],['register','/canvas-validation?page=register',true],['marketplace','/canvas-validation?page=marketplace',true],['fuel','/canvas-validation?page=fuel',true],['account','/canvas-validation?page=account',true]])) {
@@ -325,5 +325,4 @@ async function main() {
   }
 }
 main().catch(error=>{console.error(error);process.exitCode=1});
-
 

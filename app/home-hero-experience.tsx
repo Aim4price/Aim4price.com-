@@ -19,7 +19,8 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const FEATURE_START_INDEX = 3;
 const OPENING_TAGLINE = ['Asset Management Software', 'built for South Africa.'] as const;
 
-export const HERO_FEATURE_DURATION_MS = 4800;
+// Leave time to read both feature paragraphs before the next automatic card.
+export const HERO_FEATURE_DURATION_MS = 10000;
 
 export const HERO_STAGES: readonly QuestionKey[] = [
   'have',
@@ -582,5 +583,4 @@ export default function HomeHeroExperience() {
     </section>
   );
 }
-
 
