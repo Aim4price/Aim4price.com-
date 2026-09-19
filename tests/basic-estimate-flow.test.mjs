@@ -124,8 +124,8 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
 });
 
 test('typed Brand and optional Model stay simple and user-facing', () => {
-  assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="e\.g\. John Deere"/);
-  assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="e\.g\. 6155M"/);
+  assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="e\.g\. Test Brand"/);
+  assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="e\.g\. Test Model"/);
   assert.match(client, /Add as much brand and model detail as you can\. Aim4price will use it to build the strongest estimate possible\./);
   assert.match(client, /styles\.basicIdentityIntro/);
   assert.doesNotMatch(client, /I don&apos;t know the model/);
