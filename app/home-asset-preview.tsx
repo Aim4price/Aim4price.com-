@@ -403,27 +403,6 @@ function AssetCardPreview() {
 }
 
 function WorthPreview() {
-  const reportFrameRef = useRef<HTMLDivElement | null>(null);
-  const [reportScale, setReportScale] = useState(0);
-  useLayoutEffect(() => {
-    const frame = reportFrameRef.current;
-    if (!frame) return;
-    const fit = () => setReportScale(Math.min(frame.clientWidth / 786, frame.clientHeight / 777));
-    fit();
-    const observer = new ResizeObserver(fit);
-    observer.observe(frame);
-    return () => observer.disconnect();
-  }, []);
-  const assetDetails = [
-    ['Category', 'Bakkies / LDVs'], ['Brand', 'Toyota'], ['Model', 'Hilux Single Cab'],
-    ['Year', '2023'], ['Usage', '113 677 km'], ['Condition', 'Good'],
-    ['Replacement Price', 'R 450 000 excl. VAT'], ['Serial Number', 'SKB 5'],
-    ['Insured Value', 'Not set'], ['Licensed', 'Yes'], ['Registration', 'Demo vehicle'],
-  ];
-  const ownerDetails = [
-    ['Business Name', 'Aim4price demo owner'], ['Contact Details', 'Demo account'],
-    ['Business Email', 'owner@example.com'], ['Location / Address', 'George, Western Cape'],
-  ];
   return (
     <div className={styles.worthPreview}>
       <section className={styles.worthResult}>
@@ -454,73 +433,15 @@ function WorthPreview() {
       </section>
 
       <aside className={styles.worthReportPreview} aria-label="Asset Valuation Report preview">
-        <div ref={reportFrameRef} className={styles.worthReportFrame}>
-          <div style={{ width: 786 * reportScale, height: 777 * reportScale }}>
-            <div
-              className={styles.worthReportPaper}
-              style={{ transform: `scale(${reportScale})` }}
-              role="img"
-              aria-label="Miniature Asset Valuation Report for the 2023 Toyota Hilux Single Cab"
-            >
-              <header className={styles.worthReportHeader}>
-                <Image src="/brand/aim4price-mark-black.png" alt="" width={660} height={515}
-                  sizes="40px" className={styles.worthReportLogo} aria-hidden="true" />
-                <span><strong>Asset Valuation Report</strong><small>Aim4price asset register</small></span>
-                <dl className={styles.worthReportMetadata}>
-                  <div><dt>Generated</dt><dd>19 Sept 2026</dd></div>
-                  <div><dt>Email</dt><dd>owner@example.com</dd></div>
-                </dl>
-              </header>
-              <div className={styles.worthReportSummary}>
-                <div className={styles.worthReportIdentity}>
-                  <small>Bakkies / LDVs</small>
-                  <strong>2023 Toyota Hilux Single Cab</strong>
-                  <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
-                </div>
-                <div className={styles.worthReportValuation}>
-                  <small>Estimated value</small>
-                  <b>R 237 150</b>
-                  <span>VAT excluded</span>
-                  <div><span>Updated</span><strong>01 Sept 2026</strong></div>
-                </div>
-              </div>
-              <div className={styles.worthReportBody}>
-                <div className={styles.worthReportFacts}>
-                  <section className={styles.worthReportDetails}>
-                    <h3>Asset Details</h3>
-                    <dl>{assetDetails.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-                  </section>
-                  <section className={styles.worthReportDetails}>
-                    <h3>Client / Asset Owner</h3>
-                    <dl>{ownerDetails.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
-                  </section>
-                </div>
-                <div className={styles.worthReportFacts}>
-                  <section className={`${styles.worthReportDetails} ${styles.worthReportRecord}`}>
-                    <h3>Record Summary</h3>
-                    <dl>
-                      <div><dt>Insured</dt><dd>Yes</dd></div>
-                      <div><dt>Financed</dt><dd>Yes</dd></div>
-                      <div><dt>Documents</dt><dd>None</dd></div>
-                      <div><dt>Updated</dt><dd>01 Sept 2026</dd></div>
-                    </dl>
-                  </section>
-                  <section className={styles.worthReportPhotos}>
-                    <h3>Asset Photos</h3>
-                    <div>
-                      <Image src="/brand/home-asset-hilux-thumb-side.webp" alt="Side view of the Toyota Hilux in the valuation report" width={108} height={72} sizes="120px" />
-                      <Image src="/brand/home-asset-hilux-thumb-rear.webp" alt="Rear view of the Toyota Hilux in the valuation report" width={108} height={72} sizes="120px" />
-                    </div>
-                    <small>1 additional photo saved in the asset register.</small>
-                  </section>
-                </div>
-              </div>
-              <footer className={styles.worthReportFooter}>
-                <strong>Powered by Aim4price.com</strong>
-                <p>Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition and live market demand.</p>
-              </footer>
-            </div>
-          </div>
+        <div className={styles.worthReportFrame}>
+          <Image
+            src="/brand/home-asset-valuation-report.png"
+            alt="Asset Valuation Report for a 2023 Toyota Hilux, showing an estimated value of R 247 050 excluding VAT, asset details, owner information, record summary and photos."
+            width={786}
+            height={777}
+            unoptimized
+            className={styles.worthReportPaper}
+          />
         </div>
         <span className={styles.worthReportCaption}><RegisterIcon name="download" />Valuation report · PDF</span>
       </aside>

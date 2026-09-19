@@ -269,7 +269,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(preview, /<AssetDetail label="Year" value="2023" \/>/);
   assert.match(preview, /<AssetDetail label="Licensed" value="✓" status \/>/);
 
-  // Valuation summary and report keep one consistent demo asset and VAT basis.
+  // Keep the valuation summary and use the exact supplied report screenshot.
   const worthPreview = preview.slice(
     preview.indexOf('function WorthPreview()'),
     preview.indexOf('function ManagePreview()'),
@@ -283,15 +283,9 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(worthPreview, /<MiniFact label="Replacement" value="R 450 000" \/>/);
   assert.doesNotMatch(worthPreview, /label="Replacement price"/);
   assert.match(worthPreview, /Asset Valuation Report preview/);
-  assert.match(worthPreview, /Miniature Asset Valuation Report for the 2023 Toyota Hilux Single Cab/);
-  assert.match(worthPreview, /src="\/brand\/aim4price-mark-black\.png"/);
-  assert.match(worthPreview, /width=\{660\}[\s\S]*?height=\{515\}[\s\S]*?className=\{styles\.worthReportLogo\}/);
-  assert.doesNotMatch(worthPreview, /worthReportLogo\}>A4<\/span>/);
-  assert.match(worthPreview, /Asset Details/);
-  assert.match(worthPreview, /Record Summary/);
-  assert.match(worthPreview, /Aim4price demo owner/);
-  assert.match(worthPreview, /\/brand\/home-asset-hilux-thumb-side\.webp/);
-  assert.match(worthPreview, /\/brand\/home-asset-hilux-thumb-rear\.webp/);
+  assert.match(worthPreview, /src="\/brand\/home-asset-valuation-report\.png"/);
+  assert.match(worthPreview, /width=\{786\}[\s\S]*?height=\{777\}[\s\S]*?unoptimized/);
+  assert.doesNotMatch(worthPreview, /worthReportDetails|worthReportSummary|reportFrameRef/);
   assert.match(worthPreview, /Create Ad/);
   assert.match(worthPreview, /Save to Asset Register/);
   assert.match(worthPreview, /Download PDF/);
