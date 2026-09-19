@@ -1440,8 +1440,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
                         <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
 
-                        <div className={assetStyles.assetDetailsPanel}>
-                          <div className={assetStyles.assetDetailsGrid}>
+                        <div className={`${assetStyles.assetDetailsPanel} ${styles.trackerDetailsPanel}`}>
+                          <div className={`${assetStyles.assetDetailsGrid} ${styles.trackerDetailsGrid}`}>
                             <div className={assetStyles.assetPrimaryDetails}>
                               <div className={assetStyles.assetDetailRow}><span>Serial</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Registration</span><strong>{asset.registrationNumber || 'Not saved'}</strong></div>
