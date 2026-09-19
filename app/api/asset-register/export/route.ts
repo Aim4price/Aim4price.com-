@@ -11,8 +11,9 @@ import {
   type AssetGroupExportMeta,
 } from '../../../../lib/asset-groups-shared';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
-import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegisterLogoUrl, listAssetRegisters, type AssetRegisterSummary } from '../../../../lib/asset-registers';
+import { getAssetRegisterForUser, getSelectedAssetRegister, listAssetRegisters, type AssetRegisterSummary } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
+import { selectReportLogoUrl } from '../../../../lib/report-branding';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
 import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
@@ -2631,7 +2632,6 @@ function buildScopedExportProfile(
   entityName: string,
 ): AccountProfileResult {
   const selectedRegister = scope === 'single' ? registers[0] ?? null : null;
-  const selectedRegisterLogoUrl = selectedRegister ? getVisibleAssetRegisterLogoUrl(selectedRegister) : '';
   const exportEmail = selectedRegister?.email || profile.marketplaceEmail || profile.email || '';
 
   return {
@@ -2640,7 +2640,7 @@ function buildScopedExportProfile(
     phone: selectedRegister?.phone || profile.phone,
     email: exportEmail,
     marketplaceEmail: exportEmail,
-    logoUrl: selectedRegisterLogoUrl || profile.logoUrl,
+    logoUrl: selectReportLogoUrl(profile.logoUrl, selectedRegister),
     addressLine1: selectedRegister?.addressLine1 || profile.addressLine1,
     addressLine2: selectedRegister ? '' : profile.addressLine2,
   };
@@ -3361,15 +3361,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Asset register not found.' }, { status: 404 });
     }
 
-    const registerLogoUrl = getVisibleAssetRegisterLogoUrl(register);
-
     const exportProfile: AccountProfileResult = {
       ...profile,
       businessName: register.businessName || profile.businessName,
       phone: register.phone || profile.phone,
       email: register.email || profile.marketplaceEmail || profile.email || '',
       marketplaceEmail: register.email || profile.marketplaceEmail || profile.email || '',
-      logoUrl: registerLogoUrl || profile.logoUrl,
+      logoUrl: selectReportLogoUrl(profile.logoUrl, register),
       addressLine1: register.addressLine1 || profile.addressLine1,
       addressLine2: '',
     };
