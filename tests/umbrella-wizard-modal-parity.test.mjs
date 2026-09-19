@@ -77,7 +77,8 @@ test("all five wizards retain shared structure with their approved close control
       assert.doesNotMatch(wizard, /wizardStyles\.progress/);
       assert.doesNotMatch(wizard, /Your cost record is saved on the final step/);
     } else {
-      assert.match(wizard, /wizardStyles\.progress/);
+      assert.match(wizard, /wizardStyles\.panelNumber[\s\S]*?\{uploadStep\}/);
+      assert.match(wizard, /uploadStep === 1/);
     }
     assert.match(wizard, /wizardStyles\.panel/);
     assert.match(wizard, /wizardStyles\.panelNumber/);
@@ -237,7 +238,7 @@ test("Create umbrella reuses the export asset picker hierarchy with one modal sc
   assert.match(assetRegister, /conditionLabel:\s*asset\.condition \? conditionLabel\(asset\.condition\) : ''/);
   assert.match(assetRegister, /sourceLabel:\s*methodLabel\(asset\.selectedMethod\)/);
 
-  assert.match(umbrella, /placeholder="Search\.\.\."/);
+  assert.match(umbrella, /type="search"[\s\S]*?value=\{search\}[\s\S]*?onChange=\{\(event\) => setSearch\(event\.target\.value\)\}/);
   assert.match(umbrella, />\s*Select all\s*</);
   assert.match(umbrella, />\s*Clear\s*</);
   assert.match(umbrella, /assetDetailLine\(asset\)/);
@@ -307,7 +308,7 @@ test("Manage umbrella explicitly removes deselected assets before save", () => {
   );
   assert.match(
     umbrella,
-    /Select assets to add, or clear a selected asset to remove it from this umbrella\./,
+    /onChange=\{\(\) => toggleAsset\(asset\)\}/,
   );
   assert.match(
     umbrellaStyles,
