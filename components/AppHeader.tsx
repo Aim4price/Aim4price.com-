@@ -1104,7 +1104,10 @@ export default function AppHeader({
       ? navItems.length
       : NAV_WINDOW_SIZE;
   const navViewportRef = useRef<HTMLDivElement>(null);
-  const [navEdges, setNavEdges] = useState({ previous: false, next: false });
+  const [navWindowStart, setNavWindowStart] = useState(0);
+  const maxNavWindowStart = Math.max(0, navItems.length - navWindowSize);
+  const visibleNavStart = Math.min(navWindowStart, maxNavWindowStart);
+  const visibleNavItems = navItems.slice(visibleNavStart, visibleNavStart + navWindowSize);
   const showNavWindowControls = navItems.length > navWindowSize;
   const activeNotifications = useMemo(
     () => notifications.filter((item) => item.state !== 'history'),
@@ -1168,52 +1171,24 @@ export default function AppHeader({
     const viewport = navViewportRef.current;
     if (!viewport || !showNavWindowControls) return;
 
-    const syncEdges = () => {
-      const previous = viewport.scrollLeft > 1;
-      const next = viewport.scrollLeft < viewport.scrollWidth - viewport.clientWidth - 1;
-      setNavEdges((current) => current.previous === previous && current.next === next
-        ? current : { previous, next });
-    };
-    const stopDragging = attachHeaderNavDrag(viewport);
-    const observer = new ResizeObserver(syncEdges);
-    observer.observe(viewport);
-    for (const link of Array.from(viewport.children)) observer.observe(link);
-    viewport.addEventListener('scroll', syncEdges, { passive: true });
-    syncEdges();
-    return () => {
-      stopDragging();
-      observer.disconnect();
-      viewport.removeEventListener('scroll', syncEdges);
-    };
-  }, [navItems, showNavWindowControls]);
-
-  function revealNavLink(link: HTMLElement) {
-    const viewport = navViewportRef.current;
-    if (!viewport || !showNavWindowControls) return;
-    const left = link.offsetLeft;
-    const right = left + link.offsetWidth;
-    if (left < viewport.scrollLeft) viewport.scrollLeft = left;
-    else if (right > viewport.scrollLeft + viewport.clientWidth) {
-      viewport.scrollLeft = right - viewport.clientWidth;
-    }
-  }
+    return attachHeaderNavDrag(viewport, (direction) => {
+      setNavWindowStart((current) => Math.max(0, Math.min(maxNavWindowStart, current + direction)));
+    });
+  }, [maxNavWindowStart, showNavWindowControls]);
 
   useBrowserLayoutEffect(() => {
-    const activeLink = navViewportRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (activeLink) revealNavLink(activeLink);
-  }, [activeNavKey, navItems, showNavWindowControls]);
+    const activeIndex = navItems.findIndex((item) => item.key === activeNavKey);
+    setNavWindowStart((current) => {
+      const start = Math.min(current, maxNavWindowStart);
+      if (activeIndex < 0) return start;
+      if (activeIndex < start) return activeIndex;
+      if (activeIndex >= start + navWindowSize) return activeIndex - navWindowSize + 1;
+      return start;
+    });
+  }, [activeNavKey, maxNavWindowStart, navItems, navWindowSize]);
 
   function moveNavWindow(direction: -1 | 1) {
-    const viewport = navViewportRef.current;
-    if (!viewport) return;
-    const positions = Array.from(viewport.children, (link) => (link as HTMLElement).offsetLeft);
-    const left = direction > 0
-      ? positions.find((position) => position > viewport.scrollLeft + 2) ?? viewport.scrollWidth
-      : positions.reverse().find((position) => position < viewport.scrollLeft - 2) ?? 0;
-    viewport.scrollTo({
-      left,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
+    setNavWindowStart((current) => Math.max(0, Math.min(maxNavWindowStart, current + direction)));
   }
 
   useEffect(() => {
@@ -2537,7 +2512,7 @@ export default function AppHeader({
                 type="button"
                 className={`${styles.navWindowButton} ${styles.navWindowButtonPrevious}`}
                 onClick={() => moveNavWindow(-1)}
-                disabled={!navEdges.previous}
+                disabled={visibleNavStart === 0}
                 aria-label="Show previous navigation items"
                 data-tooltip="Previous"
               >
@@ -2545,16 +2520,13 @@ export default function AppHeader({
               </button>
             ) : null}
 
-            <div className={`${styles.navRail} ${showNavWindowControls ? styles.navRailScrollable : ''}`}>
+            <div className={`${styles.navRail} ${showNavWindowControls ? styles.navRailWindowed : ''}`}>
               <div
                 ref={navViewportRef}
                 className={styles.navViewport}
                 data-header-nav-viewport
-                onFocusCapture={(event) => {
-                  if (event.target instanceof HTMLElement) revealNavLink(event.target);
-                }}
               >
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const isActive = activeNavKey === item.key;
 
                   return (
@@ -2577,7 +2549,7 @@ export default function AppHeader({
                 type="button"
                 className={`${styles.navWindowButton} ${styles.navWindowButtonNext}`}
                 onClick={() => moveNavWindow(1)}
-                disabled={!navEdges.next}
+                disabled={visibleNavStart === maxNavWindowStart}
                 aria-label="Show next navigation items"
                 data-tooltip="Next"
               >
@@ -2766,5 +2738,4 @@ export default function AppHeader({
     </>
   );
 }
-
 
