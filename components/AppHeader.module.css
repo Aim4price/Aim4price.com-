@@ -4531,7 +4531,7 @@
   }
 }
 
-/* Four complete links share a fixed rail; each gesture advances one item. */
+/* Stable slots let the rail move freely, then settle on four complete links. */
 .navRail.navRailWindowed {
   display: flex;
   width: 38rem;
@@ -4542,12 +4542,17 @@
 }
 
 .navRailWindowed .navViewport {
+  --header-nav-gap: 0.44rem;
   position: relative;
   display: flex;
   align-items: center;
   flex: 1 1 auto;
   min-width: 0;
-  gap: 0.44rem;
+  gap: var(--header-nav-gap);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
   touch-action: pan-y pinch-zoom;
   cursor: grab;
   user-select: none;
@@ -4555,12 +4560,22 @@
 }
 
 .navRailWindowed .navLink {
-  flex: 1 1 auto;
+  flex: 0 0 calc((100% - 3 * var(--header-nav-gap)) / 4);
   min-width: 0;
-  padding-inline: 1rem;
+  padding-inline: 0.5rem;
+  scroll-snap-align: start;
   cursor: inherit;
 }
 
+.navRailWindowed .navViewport::-webkit-scrollbar {
+  display: none;
+}
+
 .navRailWindowed .navViewport[data-dragging='true'] {
+  scroll-snap-type: none;
   cursor: grabbing;
+}
+
+.navRailWindowed .navLink:focus-visible {
+  outline-offset: -3px;
 }
