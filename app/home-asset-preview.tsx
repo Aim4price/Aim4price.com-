@@ -408,7 +408,7 @@ function WorthPreview() {
       <section className={styles.worthResult}>
         <div className={styles.worthHeading}>
           <span className={styles.previewEyebrow}>Indicative asset value</span>
-          <h2 className={styles.worthAssetTitle}>2023 Toyota Hilux Single Cab</h2>
+          <h2 className={styles.worthAssetTitle}>2023 Toyota Hilux Single&#160;Cab</h2>
         </div>
 
         <div className={styles.worthValueBlock}>

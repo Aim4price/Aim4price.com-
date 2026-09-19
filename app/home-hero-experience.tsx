@@ -66,10 +66,11 @@ const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   have: {
     title: 'Follow their changing value.',
     body: 'Bring your assets together in a register that changes with them. Automatic depreciation reflects the passing of time, while updated usage helps adjust estimated values as assets work more.',
-    detail: 'Keep photos, documents, serial numbers and key details connected to each asset. Group assets into umbrellas, see their combined value and share an up-to-date record when you need it.',
+    detail: 'Keep photos, documents, serial numbers and key details connected to each asset. Group assets into umbrellas, see their combined value and share a current record when you need it.',
   },
   manage: {
     title: 'Manage each asset in one place.',
+    titleLines: ['Manage each asset', 'in one place.'],
     body: 'Update asset details, refresh values, record fuel and expenses, and set budgets from one place. Keep the supporting photos and documents with the asset they belong to.',
     detail: 'Access reports, share records, print a QR label or view the asset on a map. Prepare a Marketplace listing when it is time to sell.',
   },
@@ -106,6 +107,7 @@ export default function HomeHeroExperience() {
   const stickyRef = useRef<HTMLDivElement | null>(null);
   const storyGridRef = useRef<HTMLDivElement | null>(null);
   const assetMotionRef = useRef<HTMLDivElement | null>(null);
+  const narrativeRef = useRef<HTMLElement | null>(null);
   const storyStepRef = useRef(0);
   const autoplayFinishedRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
@@ -313,6 +315,12 @@ export default function HomeHeroExperience() {
 
     const measureAssetShift = () => {
       assetMotion.style.setProperty('--asset-stage-shift-x', `${-assetMotion.offsetLeft}px`);
+      const narrative = narrativeRef.current;
+      if (narrative) {
+        const inset = parseFloat(getComputedStyle(narrative).getPropertyValue('--feature-copy-inset'));
+        const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+        narrative.style.setProperty('--narrative-stage-shift-x', `${-narrative.offsetLeft + inset * rem}px`);
+      }
     };
 
     measureAssetShift();
@@ -407,6 +415,7 @@ export default function HomeHeroExperience() {
       data-motion-paused={isPaused ? 'true' : 'false'}
       data-story-mode={storyMode}
       data-active-question={activeQuestion}
+      data-card-side={activeQuestion === 'have' || activeQuestion === 'cost' ? 'right' : 'left'}
       data-autoplay={
         isAutoplaying && storyStepIndex >= FEATURE_START_INDEX ? 'true' : 'false'
       }
@@ -505,6 +514,7 @@ export default function HomeHeroExperience() {
               </div>
 
               <aside
+                ref={narrativeRef}
                 className={styles.featureNarrative}
                 aria-label="What Aim4price helps you do"
               >

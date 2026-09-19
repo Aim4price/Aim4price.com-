@@ -279,7 +279,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     preview.indexOf('function ManagePreview()'),
   );
   assert.doesNotMatch(worthPreview, /Aim4price estimate|Confidence: High|Updated 01 Sept 2026/);
-  assert.match(worthPreview, /2023 Toyota Hilux Single Cab/);
+  assert.match(worthPreview, /2023 Toyota Hilux Single&#160;Cab/);
   assert.match(worthPreview, /R 237 150/);
   assert.doesNotMatch(worthPreview, /R 239 454/);
   assert.match(worthPreview, /VAT excluded[\s\S]*?VAT included/);
