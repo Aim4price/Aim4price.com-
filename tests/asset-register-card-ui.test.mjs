@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import ts from 'typescript';
 
 const client = readFileSync(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
 const assetMapClient = readFileSync(new URL('../app/asset-map/asset-map-client.tsx', import.meta.url), 'utf8');
@@ -450,3 +451,57 @@ test('successful asset reports close only the report child and preserve Manage',
   assert.doesNotMatch(ownershipHandler, /closeActionDialog\(\)/);
 });
 
+
+
+test('outside interactions dismiss asset details before their umbrella', () => {
+  const source = ts.createSourceFile('register.tsx', client, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  let handler;
+  function visit(node) {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === 'handleOutsideCardPointerDown') handler = node;
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assert.ok(handler, 'outside pointer handler exists');
+  const compiled = ts.transpileModule(handler.getText(source), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  let expandedAssetId = 'asset-1';
+  let focusedAssetGroupId = 'umbrella-1';
+  class Target {
+    constructor({ group = null, card = false, overlay = false } = {}) {
+      Object.assign(this, { group, card, overlay });
+    }
+    closest(selector) {
+      return selector.includes('role=')
+        ? (this.overlay ? this : null)
+        : (this.group ? { dataset: { assetGroupId: this.group } } : null);
+    }
+  }
+  function pointer(target, scrollbar = false) {
+    const run = new Function('Element', 'document', 'isViewportScrollbarInteraction',
+      'expandedAssetId', 'focusedAssetGroupId', 'setExpandedAssetId', 'setExpandedAssetGroupIds',
+      compiled + '; return handleOutsideCardPointerDown;');
+    run(Target, { getElementById: () => ({ contains: node => node.card }) },
+      event => event.scrollbar, expandedAssetId, focusedAssetGroupId,
+      id => { expandedAssetId = id; },
+      ids => { focusedAssetGroupId = ids.values().next().value ?? null; })({ target, scrollbar });
+  }
+  const outside = new Target();
+  pointer(new Target({ group: 'umbrella-1', card: true }));
+  pointer(new Target({ overlay: true }));
+  pointer(outside, true);
+  assert.equal(expandedAssetId, 'asset-1');
+  assert.equal(focusedAssetGroupId, 'umbrella-1');
+  pointer(outside);
+  assert.equal(expandedAssetId, null, 'first outside click closes details');
+  assert.equal(focusedAssetGroupId, 'umbrella-1', 'first outside click preserves umbrella');
+  pointer(new Target({ group: 'umbrella-1' }));
+  assert.equal(focusedAssetGroupId, 'umbrella-1', 'inside umbrella stays open');
+  pointer(outside);
+  assert.equal(focusedAssetGroupId, null, 'next outside click closes umbrella');
+  expandedAssetId = 'asset-1';
+  focusedAssetGroupId = 'umbrella-1';
+  pointer(new Target({ group: 'umbrella-1' }));
+  assert.equal(expandedAssetId, null, 'click beside details inside umbrella closes details');
+  assert.equal(focusedAssetGroupId, 'umbrella-1');
+});
