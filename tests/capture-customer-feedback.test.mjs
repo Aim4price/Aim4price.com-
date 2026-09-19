@@ -26,6 +26,10 @@ function fixture(overrides = {}, locked = true) {
   vm.runInNewContext(compiled, { exports, Buffer, process, require(id) {
     if (id === './db') return { getDb: () => ({ connect: async () => client }) };
     if (id === './asset-usage') return {};
+    if (id === './capture-allowance') return {
+      ensureCaptureAllowanceSchema() { throw new Error('Feedback must not change capture allowances'); },
+      reserveCaptureAllowance() { throw new Error('Feedback must not change capture allowances'); },
+    };
     return require(id);
   } });
   const input = { actor: { actorType: 'owner', userId: 'owner-one', displayName: 'Owner' }, action: 'reply', message: 'Use Tractor 2',

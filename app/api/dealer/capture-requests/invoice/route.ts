@@ -1,3 +1,5 @@
+import { getCaptureAdminActor } from '../../../../../lib/capture-admin-actor';
+import { CAPTURE_LIMIT_CODE, releaseFailedCaptureAllowance } from '../../../../../lib/capture-allowance';
 import { NextResponse } from 'next/server';
 import {
   addCaptureRequestFile,
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
       category: 'dealer-assisted-invoice-capture',
     });
     unlinkedUploadUrl = upload.url;
-    const actor = {
+    const actor: CaptureEventActor = await getCaptureAdminActor() ?? {
       actorType: 'dealer' as const,
       userId: context.actor.dealerUserId,
       displayName: context.actor.displayName || context.actor.supplierName || 'Dealer',
@@ -92,6 +94,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, request: toCaptureRequestStatusView(capture) }, { status: 202 });
   } catch (error) {
     if (createdCaptureId && !captureFileLinked) {
+      await releaseFailedCaptureAllowance(createdCaptureId).catch(error => console.error('Capture allowance recovery failed', error));
       await transitionCaptureRequest(createdCaptureId, 'rejected', {
         actor: INTAKE_RECOVERY_ACTOR,
         reason: 'Dealer assisted invoice intake did not finish attaching its verified source file.',
@@ -109,6 +112,7 @@ export async function POST(request: Request) {
     }
     console.error('Dealer assisted invoice intake failed.', error);
     const message = error instanceof Error ? error.message : '';
+    if (message === CAPTURE_LIMIT_CODE) return NextResponse.json({ ok: false, code: CAPTURE_LIMIT_CODE, error: 'Today’s capture allowance has been used. Please request assistance or enter this manually.' }, { status: 429 });
     const safeMessage = message && !message.startsWith('CAPTURE_')
       ? message
       : 'The invoice could not be sent for capture. Please try again.';

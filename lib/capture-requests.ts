@@ -1,3 +1,4 @@
+import { ensureCaptureAllowanceSchema, reserveCaptureAllowance } from './capture-allowance';
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { resolveAssetUsage } from './asset-usage';
@@ -758,6 +759,7 @@ function assertCreationActor(
   input: { submissionChannel: CaptureSubmissionChannel; ownerUserId: string | null },
   actor: Required<CaptureEventActor>,
 ): void {
+  if (actor.actorType === 'admin' && actor.userId) return;
   if (input.submissionChannel === 'owner_upload') {
     if (actor.actorType !== 'owner' || !actor.userId || actor.userId !== input.ownerUserId) {
       throw new Error('CAPTURE_OWNER_SCOPE_FORBIDDEN');
@@ -837,6 +839,7 @@ export async function createCaptureRequest(
   if ((assetId || fuelStorageId) && !ownerUserId) throw new Error('CAPTURE_OWNER_REQUIRED');
   if (invoiceDropCodeId && requestType !== 'invoice') throw new Error('CAPTURE_DROP_CODE_INVALID');
 
+  await ensureCaptureAllowanceSchema();
   const publicReference = generateReference(requestType);
   const initialStatus: CaptureRequestStatus = ownerUserId && (assetId || fuelStorageId)
     ? 'submitted'
@@ -924,6 +927,9 @@ export async function createCaptureRequest(
     );
     const row = result.rows[0];
     if (!row) throw new Error('CAPTURE_CREATE_FAILED');
+    if (ownerUserId && actor.actorType !== 'admin') {
+      await reserveCaptureAllowance(client, ownerUserId, requestType, String(row.id));
+    }
 
     await insertEvent(client, {
       requestId: row.id,

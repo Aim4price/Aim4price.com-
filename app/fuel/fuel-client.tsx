@@ -1,4 +1,6 @@
 'use client';
+import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
+import { useCaptureAllowance } from '../../lib/use-capture-allowance';
 import DateInput from '../../components/DateInput';
 import manageStyles from '../../components/LedgerManageActions.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
@@ -2632,8 +2634,11 @@ export default function FuelClient({
     event.target.value = '';
   }
 
+  const allowanceEndpoint = scopedApiUrl('/api/capture-allowance?type=fuel_slip');
+  const captureAllowance = useCaptureAllowance(modalMode === 'fuel-slip' && fuelSlipFlow === 'upload', allowanceEndpoint);
+
   async function handleFuelSlipExtract() {
-    if (isExtractingFuelSlip) return;
+    if (isExtractingFuelSlip || !captureAllowance.ready) return;
 
     if (!fuelSlipUploadFile) {
       setNotice({ tone: 'error', message: 'Choose a fuel slip photo or PDF first.' });
@@ -2662,9 +2667,10 @@ export default function FuelClient({
         credentials: 'include',
         body: formData,
       });
-      const data = (await response.json()) as FuelCaptureRequestResponse;
+      const data = (await response.json()) as FuelCaptureRequestResponse & { code?: string };
 
       if (fuelSlipExtractionRequestRef.current !== extractionRequest) return;
+      if (data.code === 'CAPTURE_DAILY_LIMIT') { captureAllowance.markBlocked(); return; }
 
       if (!response.ok || !data.ok || !data.request) {
         throw new Error(data.error || 'The fuel slip could not be sent for Aim4price capture.');
@@ -4318,7 +4324,8 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'fuel-slip' && fuelSlipFlow === 'upload' ? (
+      {captureAllowance.blocked ? <CaptureAllowanceModal endpoint={allowanceEndpoint} ledger="Fuel" onClose={() => closeFuelSlipFlow()} /> : null}
+      {modalMode === 'fuel-slip' && fuelSlipFlow === 'upload' && !captureAllowance.blocked ? (
         <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
           <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
@@ -4339,13 +4346,15 @@ export default function FuelClient({
                     <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp" onChange={handleFuelSlipUploadChange} disabled={isSaving || isExtractingFuelSlip} />
                   </label>
                   <span className={styles.uploadCounter}>{fuelSlipUploadReady ? '1 / 1' : '0 / 1'}</span>
+                <p role="status">{captureAllowance.label}</p>
+                {captureAllowance.error ? <p role="alert">{captureAllowance.error} <button type="button" className={styles.secondaryButton} onClick={captureAllowance.retry}>Try again</button></p> : null}
                   {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
                 </div>
               </section>
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={handleFuelSlipUploadBack} disabled={isExtractingFuelSlip}>Back</button>
-              <button type="button" className={styles.primaryButton} onClick={handleFuelSlipExtract} disabled={!fuelSlipUploadFile || isExtractingFuelSlip}>
+              <button type="button" className={styles.primaryButton} onClick={handleFuelSlipExtract} disabled={!captureAllowance.ready || !fuelSlipUploadFile || isExtractingFuelSlip}>
                 {isExtractingFuelSlip ? 'Sending fuel slip/photo...' : 'Send for capture'}
               </button>
             </div>

@@ -1,4 +1,5 @@
 "use client";
+import AdminCaptureAssistance from "../../../components/AdminCaptureAssistance";
 import DateInput from '../../../components/DateInput';
 
 import DropdownOverlay from '../../../components/DropdownOverlay';
@@ -1003,6 +1004,7 @@ export default function CaptureQueueClient() {
 
   return (
     <>
+      <AdminCaptureAssistance />
       <section className={styles.kpiGrid} aria-label="Capture queue summary">
         {kpis.map((kpi) => (
           <button

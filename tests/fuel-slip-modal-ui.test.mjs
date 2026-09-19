@@ -32,9 +32,10 @@ const downloadModal = sliceBetween(
   "(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen",
   "(modalMode === 'fuel-slip-manager' || isSlipsPage) && historyFuelSlip",
 );
+// Anchor the JSX block: the allowance hook uses the same flow condition.
 const uploadModal = sliceBetween(
   client,
-  "modalMode === 'fuel-slip' && fuelSlipFlow === 'upload'",
+  "{modalMode === 'fuel-slip' && fuelSlipFlow === 'upload'",
   "modalMode === 'fuel-slip' && fuelSlipFlow === 'manual-form'",
 );
 const manualModal = sliceBetween(
@@ -172,7 +173,7 @@ test('manager-origin cancellation and same-target backtracking preserve user con
 
 test('upload capture cannot navigate away or let a stale response close a newer flow', () => {
   const extraction = sliceBetween(client, 'async function handleFuelSlipExtract()', 'function preventFuelSlipImplicitSubmit');
-  assert.match(extraction, /if \(isExtractingFuelSlip\) return/);
+  assert.match(extraction, /if \(isExtractingFuelSlip \|\| !captureAllowance\.ready\) return/);
   assert.match(extraction, /fuelSlipExtractionRequestRef\.current !== extractionRequest/);
   assert.match(extraction, /closeFuelSlipFlow\(\{ force: true \}\)/);
   assert.match(uploadModal, /aria-label="Close" disabled=\{isExtractingFuelSlip\}/);

@@ -1,0 +1,11 @@
+.panel { margin: 16px 0; border: 1px solid #d5e3de; border-radius: 18px; background: #fff; overflow: hidden; color: #173f31; }
+.toggle { display: flex; align-items: center; gap: 18px; width: 100%; border: 0; padding: 20px 24px; background: #edf5f1; color: inherit; font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.toggle strong { margin-left: auto; font-size: 14px; }
+.body { padding: 20px 24px; }
+.tableWrap { overflow-x: auto; margin: 18px 0; }
+.tableWrap table { width: 100%; border-collapse: collapse; text-align: left; }
+.tableWrap th, .tableWrap td { padding: 14px; border-bottom: 1px solid #e1eae5; vertical-align: top; overflow-wrap: anywhere; min-width: 130px; }
+.body button, .panel > p button { border: 1px solid #d5e3de; border-radius: 10px; padding: 10px 16px; color: #173f31; background: #f3f7f5; font: inherit; cursor: pointer; }
+.body button:disabled { opacity: .5; cursor: default; }
+.pages { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+@media (max-width: 600px) { .toggle { flex-wrap: wrap; padding: 16px; } .toggle strong { margin-left: 0; } .body { padding: 16px; } }
