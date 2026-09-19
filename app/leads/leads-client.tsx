@@ -4109,7 +4109,7 @@ export default function LeadsClient({
 
             <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}>
               <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${styles.manageOptionsGrid}`}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${styles.manageOptionsGrid} ${isDealerLeadsMode ? dialogStyles.actions : ''}`}>
                   {accountantWorkspaceMode ? (
                     <>
                       <button

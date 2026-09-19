@@ -38,10 +38,10 @@ async function main(){
         const surface=dialog?.matches('[data-website-overlay]')?dialog.firstElementChild:dialog;
         return {x:r.x,y:r.y,right:r.right,bottom:r.bottom,vw:innerWidth,vh:innerHeight,radius:parseFloat(s.borderRadius),size:parseFloat(s.width),overflow:surface?surface.scrollWidth-surface.clientWidth:0};
       });
+      await page.screenshot({path:path.join(output,name+'.png'),fullPage:true});
       assert.ok(geometry.x>=-1&&geometry.y>=-1&&geometry.right<=geometry.vw+1&&geometry.bottom<=geometry.vh+1,`${name}: close button reachable ${JSON.stringify(geometry)}`);
       assert.ok(geometry.radius<geometry.size/2,`${name}: owner-style square close button`);
       assert.ok(geometry.overflow<=2,`${name}: horizontal dialog overflow ${geometry.overflow}`);
-      await page.screenshot({path:path.join(output,name+'.png'),fullPage:true});
     }
     for(const [route,width,height] of [['/account-dialog-validation',1440,900],['/owner-app/account-dialog-validation',430,740],['/owner-app/account-dialog-validation',768,700]]){
       await page.setViewport({width,height});

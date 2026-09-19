@@ -1832,7 +1832,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
             <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${workspaceStyles.modalBody} ${styles.trackerManageBody} ${dialogStyles.body}`}>
               <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid}`}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid} ${dialogStyles.actions}`}>
                   <button
                     type="button"
                     className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton} ${leadStyles.whatsAppActionButton}`}
