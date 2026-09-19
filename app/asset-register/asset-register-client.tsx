@@ -10008,7 +10008,11 @@ export default function AssetRegisterClient({
       const insideFocusedUmbrella = focusedAssetGroupId
         && clickedUmbrella?.dataset.assetGroupId === focusedAssetGroupId;
       const expandedCard = expandedAssetId ? document.getElementById(`asset-card-${expandedAssetId}`) : null;
-      if (expandedAssetId && !expandedCard?.contains(target)) setExpandedAssetId(null);
+      if (expandedAssetId && !expandedCard?.contains(target)) {
+        setExpandedAssetId(null);
+        // Dismiss one layer per outside interaction, keeping the umbrella open.
+        return;
+      }
       if (focusedAssetGroupId && !insideFocusedUmbrella) {
         setExpandedAssetGroupIds(new Set());
       }
