@@ -119,6 +119,40 @@ test('overview keeps Asset Register card styling with loading, error and respons
   assertNoWebsiteReflow(styles);
   assert.match(overview, /Checking the register/);
   assert.match(overview, /Overview unavailable/);
-  assert.match(overview, /Nothing needs attention right now/);
+  assert.match(overview, /No open updates to show/);
 });
 
+
+test('Clear persists acknowledgements through the matching existing endpoint and surfaces failures', async () => {
+  const { default: ts } = await import('typescript');
+  const parsed = ts.createSourceFile('overview.tsx', overview, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const handler = parsed.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === 'clearOverviewItem');
+  assert.ok(handler);
+  const compiled = ts.transpileModule(handler.getText(parsed), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+  const calls = [];
+  let response = { ok: true, json: async () => ({ ok: true }) };
+  const clear = new Function('fetch', compiled + '; return clearOverviewItem;')(async (url, init) => {
+    calls.push({ url, ...init, body: JSON.parse(init.body) });
+    return response;
+  });
+  for (const [id, category, url] of [
+    ['problem:p1', 'problem', '/api/asset-issue-notes/p1'],
+    ['note:n1', 'note', '/api/asset-notes/n1'],
+    ['maintenance:m1', 'maintenance', '/api/maintenance/m1/alert'],
+    ['maintenance-update:u1', 'maintenance', '/api/asset-maintenance-status/u1'],
+    ['licence:l1', 'licence', '/api/asset-register/license-alert'],
+  ]) {
+    await clear({ id, category, assetId: 'asset-1', renewalDate: '2026-10-01' });
+    const request = calls.at(-1);
+    assert.equal(request.url, url);
+    assert.equal(request.method, 'PATCH');
+    assert.equal(request.credentials, 'include');
+    assert.deepEqual(request.body, category === 'licence'
+      ? { status: 'noted', assetId: 'asset-1', renewalDate: '2026-10-01' }
+      : { status: 'noted' });
+  }
+  response = { ok: false, json: async () => ({ ok: false, error: 'Access denied' }) };
+  await assert.rejects(clear({ id: 'problem:p1', category: 'problem' }), /Access denied/);
+  response = { ok: true, json: async () => ({ ok: false }) };
+  await assert.rejects(clear({ id: 'problem:p1', category: 'problem' }), /could not be cleared/);
+});

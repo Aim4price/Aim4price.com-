@@ -236,7 +236,7 @@
 
 .cardBody {
   display: grid;
-  gap: 0.28rem;
+  gap: 0.4rem;
   min-width: 0;
 }
 
@@ -295,7 +295,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 0.8rem;
-  margin-top: 0.08rem;
+  margin-top: 0.25rem;
   color: var(--text-muted);
   font-size: 0.79rem;
   font-weight: 700;
@@ -487,3 +487,76 @@
   }
 }
 
+
+.cardActions {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 7rem;
+  margin-left: 0.5rem;
+}
+
+.viewAssetButton {
+  border-color: var(--brand-mid);
+  background: linear-gradient(135deg, var(--brand-mid), var(--brand-dark));
+  color: #fff;
+  border-radius: 0.7rem;
+}
+
+.viewAssetButton:hover {
+  border-color: var(--brand-dark);
+  box-shadow: 0 6px 14px rgba(16, 56, 47, 0.12);
+}
+
+.clearButton {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--brand-soft-border);
+  border-radius: 0.7rem;
+  background: var(--brand-soft);
+  color: var(--brand-mid);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.clearButton:hover:not(:disabled) {
+  border-color: var(--brand-mid);
+}
+
+.clearButton:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.viewAssetButton:focus-visible,
+.clearButton:focus-visible,
+.retryButton:focus-visible {
+  outline: 3px solid var(--brand-mid);
+  outline-offset: 3px;
+}
+
+.overviewHint {
+  margin: 0 0 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.83rem;
+  line-height: 1.5;
+}
+
+.actionError {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--danger-line);
+  border-radius: 0.7rem;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+}
+
+.screenReaderStatus {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
