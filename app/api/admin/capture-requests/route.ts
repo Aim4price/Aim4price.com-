@@ -11,12 +11,15 @@ import {
   CAPTURE_SUBMISSION_CHANNELS,
   getCaptureQueueCounts,
   listCaptureRequests,
+  countCaptureRequests,
   type CaptureRequest,
   type CaptureRequestListFilters,
   type CaptureRequestStatus,
   type CaptureRequestType,
   type CaptureSubmissionChannel,
 } from "../../../../lib/capture-requests";
+
+import { ADMIN_CAPTURE_PAGE_SIZE, johannesburgDayBounds } from "../../../../lib/admin-operations-shared";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -89,57 +92,46 @@ function enumQueryValue<T extends string>(
   return value && allowed.includes(value as T) ? (value as T) : null;
 }
 
-function buildFilters(request: NextRequest): {
-  filters: CaptureRequestListFilters;
-  completedTodayOnly: boolean;
-} {
+function buildFilters(request: NextRequest): { filters: CaptureRequestListFilters; page: number } {
   const { searchParams } = request.nextUrl;
   const now = new Date();
   const statusValue = searchParams.get("status")?.trim().toLowerCase() || "open";
-  const requestType = enumQueryValue<CaptureRequestType>(
-    searchParams.get("requestType"),
-    CAPTURE_REQUEST_TYPES,
-  );
-  const submissionChannel = enumQueryValue<CaptureSubmissionChannel>(
-    searchParams.get("submissionChannel"),
-    CAPTURE_SUBMISSION_CHANNELS,
-  );
+  const page = Number(searchParams.get("page") || 1);
+  if (!Number.isSafeInteger(page) || page < 1 || page > 2001) throw new Error("CAPTURE_PAGE_INVALID");
+  const requestType = enumQueryValue<CaptureRequestType>(searchParams.get("requestType"), CAPTURE_REQUEST_TYPES);
+  const submissionChannel = enumQueryValue<CaptureSubmissionChannel>(searchParams.get("submissionChannel"), CAPTURE_SUBMISSION_CHANNELS);
+  if ((searchParams.has("requestType") && !requestType) || (searchParams.has("submissionChannel") && !submissionChannel)) throw new Error("CAPTURE_FILTER_INVALID");
   const filters: CaptureRequestListFilters = {
-    limit: 100,
+    limit: ADMIN_CAPTURE_PAGE_SIZE,
+    offset: (page - 1) * ADMIN_CAPTURE_PAGE_SIZE,
+    ownerUserId: searchParams.get("owner"),
     search: searchParams.get("search"),
     requestTypes: requestType ? [requestType] : undefined,
     submissionChannels: submissionChannel ? [submissionChannel] : undefined,
   };
-  let completedTodayOnly = false;
-
-  if (statusValue === "open") {
+  if (statusValue === "open" || statusValue === "unassigned") {
     filters.statuses = [...OPEN_STATUSES];
+    filters.unassignedOnly = statusValue === "unassigned";
   } else if (statusValue === "overdue") {
     filters.statuses = [...SLA_STATUSES];
+    // Counts use a strict past deadline; keep the list boundary identical.
     filters.dueBefore = now;
+    filters.dueBeforeExclusive = true;
   } else if (statusValue === "due_today") {
     filters.statuses = [...SLA_STATUSES];
     filters.dueAfter = now;
     filters.dueBefore = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   } else if (statusValue === "completed_today") {
     filters.statuses = ["completed"];
-    filters.limit = 200;
-    completedTodayOnly = true;
+    const day = johannesburgDayBounds(now);
+    filters.completedAfter = day.start;
+    filters.completedBefore = day.end;
   } else if (statusValue !== "all") {
     const status = enumQueryValue<CaptureRequestStatus>(statusValue, CAPTURE_REQUEST_STATUSES);
     if (!status) throw new Error("CAPTURE_STATUS_INVALID");
     filters.statuses = [status];
   }
-
-  return { filters, completedTodayOnly };
-}
-
-function isCompletedToday(request: CaptureRequest, now: Date): boolean {
-  if (!request.completedAtIso) return false;
-  const completed = new Date(request.completedAtIso);
-  return completed.getFullYear() === now.getFullYear()
-    && completed.getMonth() === now.getMonth()
-    && completed.getDate() === now.getDate();
+  return { filters, page };
 }
 
 export async function GET(request: NextRequest) {
@@ -147,14 +139,13 @@ export async function GET(request: NextRequest) {
   if (!access.ok) return access.response;
 
   try {
-    const { filters, completedTodayOnly } = buildFilters(request);
-    const [captureRequests, queueCounts] = await Promise.all([
+    const { filters, page } = buildFilters(request);
+    const [captureRequests, queueCounts, total] = await Promise.all([
       listCaptureRequests(filters),
       getCaptureQueueCounts(),
+      countCaptureRequests(filters),
     ]);
-    const visibleRequests = completedTodayOnly
-      ? captureRequests.filter((entry) => isCompletedToday(entry, new Date()))
-      : captureRequests;
+    const visibleRequests = captureRequests;
     const matchedTargets = await getAdminCaptureTargets(
       visibleRequests.map((entry) => ({
         ownerUserId: entry.ownerUserId,
@@ -165,6 +156,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      pagination: { page, pageSize: ADMIN_CAPTURE_PAGE_SIZE, total, hasNextPage: page * ADMIN_CAPTURE_PAGE_SIZE < total },
       requests: visibleRequests.map((entry) => {
         const targetKey = adminCaptureTargetKey({
           ownerUserId: entry.ownerUserId,

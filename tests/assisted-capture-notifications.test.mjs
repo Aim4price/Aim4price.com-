@@ -38,10 +38,12 @@ test('notification clients keep capture approval as a generic navigation link', 
     read('app/owner-app/notifications/owner-notifications-client.tsx'),
   ]);
 
-  assert.match(header, /'dealer_cost' \| 'capture' \| 'dealer_correction'/);
+  for (const category of ['dealer_cost', 'capture', 'dealer_correction']) {
+    assert.ok(header.includes(`'${category}'`), `Header supports ${category}`);
+  }
   assert.match(header, /captureRequestId\?: string/);
   assert.doesNotMatch(header, /captureRequestId[\s\S]{0,180}notificationApproveButton/);
   assert.match(ownerNotifications, /captureRequestId\?: string/);
-  assert.match(ownerNotifications, /item\.category === 'capture' && item\.href/);
+  assert.match(ownerNotifications, /\(item\.category === 'capture' \|\| item\.category === 'cost_budget'\) && item\.href/);
   assert.match(ownerNotifications, /item\.category === 'dealer_cost' \|\| item\.category === 'capture'/);
 });

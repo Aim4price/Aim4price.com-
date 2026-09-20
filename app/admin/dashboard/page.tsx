@@ -2,6 +2,8 @@ import Link from "next/link";
 import AdminNavigation from "../../../components/AdminNavigation";
 import { requireAdminPageAccess } from "../../../lib/account-access";
 import { getAdminDashboardStats } from "../../../lib/admin-dashboard";
+import { getAdminAttention } from "../../../lib/admin-attention";
+import DashboardRefreshButton from "./refresh-button";
 import styles from "./page.module.css";
 
 export const runtime = "nodejs";
@@ -29,7 +31,7 @@ function cardTitle(id: string, fallback: string): string {
 
 export default async function AdminDashboardPage() {
   await requireAdminPageAccess();
-  const dashboard = await getAdminDashboardStats();
+  const [dashboard, attention] = await Promise.all([getAdminDashboardStats(), getAdminAttention()]);
   const overviewIds = new Set([
     "free-estimates",
     "paid-estimates",
@@ -66,6 +68,24 @@ export default async function AdminDashboardPage() {
 
           <AdminNavigation active="dashboard" />
         </header>
+
+        <section className={styles.dashboardSection} aria-labelledby="attention-heading">
+          <div className={styles.sectionHeading}>
+            <h2 id="attention-heading">Needs attention</h2>
+            <DashboardRefreshButton />
+          </div>
+          <p className={styles.attentionHint}>Open a queue to review it. Capture groups can overlap. Counts update when you refresh.</p>
+          <div className={styles.attentionGrid}>
+            {attention.map((item) => (
+              <Link key={item.label} href={item.href} className={`${styles.attentionCard} ${item.urgent && item.count ? styles.attentionUrgent : ""}`}>
+                <span>{item.label}</span>
+                <strong>{item.count === null ? "Unavailable" : item.count.toLocaleString("en-ZA")}</strong>
+                <small>{item.count === null ? "Open this page to retry loading." : item.description}</small>
+                <span className={styles.attentionAction}>Review →</span>
+              </Link>
+            ))}
+          </div>
+        </section>
 
         <section className={styles.dashboardSection} aria-labelledby="overview-heading">
           <div className={styles.sectionHeading}>

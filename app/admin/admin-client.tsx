@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { adminAccountStatusFilter, type AdminAccountStatusFilter } from "../../lib/admin-operations-shared";
 import AdminNavigation from "../../components/AdminNavigation";
 import { clearCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
@@ -641,11 +643,17 @@ function getAssetNameStatusClassName(status: AssetNamePreviewStatus): string {
 
 export default function AdminClient({
   initialUsers,
+  initialStatus = "all",
+  initialAccountId = "",
 }: {
   initialUsers: AdminUserRow[];
+  initialStatus?: string;
+  initialAccountId?: string;
 }) {
   const [users, setUsers] = useState<AdminUserRow[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<AdminAccountStatusFilter>(() => adminAccountStatusFilter(initialStatus));
+  const [accountIdFilter, setAccountIdFilter] = useState(initialAccountId);
   const [signupDateFilter, setSignupDateFilter] =
     useState<SignupDateFilter>("all");
   const [provinceFilter, setProvinceFilter] = useState<ProvinceFilter>("all");
@@ -656,7 +664,7 @@ export default function AdminClient({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [accountActionModal, setAccountActionModal] =
-    useState<AdminUserRow | null>(null);
+    useState<AdminUserRow | null>(() => initialUsers.find(user => user.userId === initialAccountId) ?? null);
   const [notificationComposer, setNotificationComposer] =
     useState<NotificationComposerState>(null);
   const [groupNotificationComposer, setGroupNotificationComposer] =
@@ -682,18 +690,20 @@ export default function AdminClient({
       sortAdminUsers(
         users.filter(
           (user) =>
+            (statusFilter === "all" || user.accountStatus === statusFilter) &&
+            (!accountIdFilter || user.userId === accountIdFilter) &&
             matchesSearch(user, searchTerm) &&
             matchesSignupDateFilter(user, signupDateFilter) &&
             matchesProvinceFilter(user, provinceFilter),
         ),
         accountSort,
       ),
-    [users, searchTerm, signupDateFilter, provinceFilter, accountSort],
+    [users, searchTerm, signupDateFilter, provinceFilter, accountSort, statusFilter, accountIdFilter],
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, signupDateFilter, provinceFilter, accountSort]);
+  }, [searchTerm, signupDateFilter, provinceFilter, accountSort, statusFilter, accountIdFilter]);
 
   useEffect(() => {
     if (!isAccountActionModalOpen || typeof window === "undefined") {
@@ -816,6 +826,7 @@ export default function AdminClient({
       : Math.min(pageStartIndex + ADMIN_PAGE_SIZE, visibleUsers.length);
   const paginatedUsers = visibleUsers.slice(pageStartIndex, pageEndIndex);
   const hasActiveFilters =
+    statusFilter !== "all" || Boolean(accountIdFilter) ||
     searchTerm.trim().length > 0 ||
     signupDateFilter !== "all" ||
     provinceFilter !== "all";
@@ -1624,22 +1635,22 @@ export default function AdminClient({
       </section>
 
       <section className={styles.userSummary} aria-label="Account summary">
-        <article>
+        <button type="button" aria-pressed={statusFilter === "all"} onClick={() => { setStatusFilter("all"); setAccountIdFilter(""); setSearchTerm(""); setSignupDateFilter("all"); setProvinceFilter("all"); }}>
           <span>All accounts</span>
           <strong>{accountSummary.total}</strong>
-        </article>
-        <article className={styles.summaryActive}>
+        </button>
+        <button type="button" className={styles.summaryActive} aria-pressed={statusFilter === "active"} onClick={() => { setStatusFilter("active"); setAccountIdFilter(""); setSearchTerm(""); setSignupDateFilter("all"); setProvinceFilter("all"); }}>
           <span>Active</span>
           <strong>{accountSummary.active}</strong>
-        </article>
-        <article className={styles.summaryPending}>
+        </button>
+        <button type="button" className={styles.summaryPending} aria-pressed={statusFilter === "pending_payment"} onClick={() => { setStatusFilter("pending_payment"); setAccountIdFilter(""); setSearchTerm(""); setSignupDateFilter("all"); setProvinceFilter("all"); }}>
           <span>Pending</span>
           <strong>{accountSummary.pending}</strong>
-        </article>
-        <article className={styles.summarySuspended}>
+        </button>
+        <button type="button" className={styles.summarySuspended} aria-pressed={statusFilter === "suspended"} onClick={() => { setStatusFilter("suspended"); setAccountIdFilter(""); setSearchTerm(""); setSignupDateFilter("all"); setProvinceFilter("all"); }}>
           <span>Suspended</span>
           <strong>{accountSummary.suspended}</strong>
-        </article>
+        </button>
         <article className={styles.summaryStorage}>
           <span>Client storage</span>
           <strong>{accountSummary.storageLabel} · {accountSummary.storageFileCount.toLocaleString("en-ZA")} files</strong>
@@ -1658,6 +1669,8 @@ export default function AdminClient({
               className={styles.clearFiltersButton}
               onClick={() => {
                 setSearchTerm("");
+                setStatusFilter("all");
+                setAccountIdFilter("");
                 setSignupDateFilter("all");
                 setProvinceFilter("all");
               }}
@@ -1677,6 +1690,12 @@ export default function AdminClient({
             />
           </label>
 
+          <label className={styles.signupFilter}>
+            <span>Status</span>
+            <select value={statusFilter} onChange={event => setStatusFilter(adminAccountStatusFilter(event.target.value))}>
+              <option value="all">All statuses</option><option value="pending_payment">Pending payment</option><option value="active">Active</option><option value="suspended">Suspended</option>
+            </select>
+          </label>
           <label className={styles.signupFilter}>
             <span>Signups</span>
             <select
@@ -2177,7 +2196,13 @@ export default function AdminClient({
               </button>
             </div>
 
+            <nav className={styles.accountWorkspaceLinks} aria-label="Account workspaces">
+              <Link href={`/admin/capture-queue?owner=${encodeURIComponent(accountActionModal.userId)}`}>Capture requests</Link>
+              <Link href={`/admin/work-tracker?account=${encodeURIComponent(accountActionModal.userId)}`}>Work history</Link>
+              <Link href={`/admin/discovery?owner=${encodeURIComponent(accountActionModal.userId)}`}>Discovery assets</Link>
+            </nav>
             <div className={styles.accountActionSummary}>
+              <div><span>Email</span><strong>{accountActionModal.email || "Not saved"}</strong></div>
               <div>
                 <span>Account</span>
                 <strong>

@@ -6,13 +6,14 @@ import styles from "./page.module.css";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AdminWorkTrackerPage() {
+export default async function AdminWorkTrackerPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams;
   await requireAdminPageAccess();
   const clients = await listAdminWorkClients();
 
   return (
     <main className={styles.page}>
-      <WorkTrackerClient initialClients={clients} />
+      <WorkTrackerClient key={String(params.account ?? "")} initialClients={clients} initialAccountId={typeof params.account === "string" ? params.account : ""} />
     </main>
   );
 }

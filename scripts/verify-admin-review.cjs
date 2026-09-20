@@ -5,6 +5,7 @@ const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
 const stubs={
  'lib/account-access':'exports.requireAdminPageAccess=async()=>{};',
+ 'lib/admin-attention':'exports.getAdminAttention=async()=>[{label:"Pending accounts",count:3,href:"/admin?status=pending_payment",description:"Review access before activating."},{label:"Overdue capture",count:5,href:"/admin/capture-queue?status=overdue",description:"Open requests past their deadline.",urgent:true},{label:"Unclaimed capture",count:2,href:"/admin/capture-queue?status=unassigned",description:"Open requests without an assigned admin."},{label:"Needs matching",count:1,href:"/admin/capture-queue?status=needs_matching",description:"Confirm the customer and destination."},{label:"Needs information",count:0,href:"/admin/capture-queue?status=needs_information",description:"Follow up on missing details."},{label:"Awaiting owner",count:2,href:"/admin/capture-queue?status=awaiting_owner",description:"Documents awaiting owner review."}];',
  'lib/admin-dashboard':'exports.getAdminDashboardStats=async()=>window.fixtureDashboard;',
 };
 function cssModule(file){
@@ -74,7 +75,8 @@ const evidence=path.join(root,'.next/admin-review-validation');
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"],headless:true,pipe:true});
  try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
-  let failBusiness=false,failReport=false,captureMode=false;
+  let failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
+  const queueRequests=[],workRequests=[];
   await page.setRequestInterception(true);
   page.on('request',request=>{
    const url=request.url(),respond=(body,status=200)=>request.respond({status,contentType:'application/json',body:JSON.stringify(body)});
@@ -82,8 +84,15 @@ const evidence=path.join(root,'.next/admin-review-validation');
    if(url.includes('/api/admin/maintenance-catalogue'))return respond({catalogue});
    if(url.includes('/api/admin/capture-assistance'))return respond({rows:[],total:0,pending:0});
    if(captureMode && url.includes('/api/admin/capture-requests/request-one'))return respond({ok:true,request:capture,files:[],events:[{id:'match',eventType:'matched',metadata:{ownerUserId:'owner',assetId:'one',fuelStorageId:''}}],matchedTarget:{targetType:'asset',ownerUserId:'owner',ownerDisplayName:user.name,targetId:'one',targetDisplayName:asset.title,reference:'ABC123',meta:'Tractor',assetUsageMetric:'hours',assetUsageReading:1250}});
-   if(url.includes('/api/admin/capture-requests'))return respond({ok:true,requests:captureMode?[capture]:[],counts:{}});
-   if(url.includes('/api/admin/work-tracker'))return respond({ok:true,activeSession:null,history:{startIso:'2026-09-14T00:00:00Z',endIso:'2026-09-21T00:00:00Z',sessions:[]}});
+   if(url.includes('/api/admin/capture-requests')) {
+    const params=new URL(url).searchParams;queueRequests.push(params);
+    const queuePage=Number(params.get('page')||1);
+    return respond({ok:true,requests:queuePaging?[{...capture,publicReference:'PAGE-'+queuePage}]:captureMode?[capture]:[],counts:{},pagination:{page:queuePage,pageSize:50,total:queuePaging?101:captureMode?1:0,hasNextPage:queuePaging&&queuePage<3}});
+   }
+   if(url.includes('/api/admin/work-tracker')) {
+    workRequests.push(new URL(url).searchParams);
+    return respond({ok:true,activeSession:null,history:{startIso:'2026-09-14T00:00:00Z',endIso:'2026-09-21T00:00:00Z',sessions:workMode?[{id:'work-one',clientUserId:'owner',clientName:user.name,clientEmail:user.email,clientAccountType:'owner',startedAtIso:now,stoppedAtIso:now,durationSeconds:3600,note:'Original note',includeInReport:true,showTimesInReport:true,showNoteInReport:true,pages:[]}]:[]}});
+   }
    if(url.includes('/api/admin/discovery'))return failReport?respond({error:'Report unavailable'},503):respond({ok:true,report:discovery});
    if(url.includes('/api/admin/valuations'))return failReport?respond({error:'Report unavailable'},503):respond({ok:true,report:valuations});
    if(url.startsWith('https://admin.test/'))return request.respond({contentType:'text/html',body:'<html><body></body></html>'});
@@ -115,7 +124,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    assert.equal(overflow,false,section+' page must contain its horizontal scrolling');
    console.log('PASS render and page width: '+section);
   }
-  for(const width of [980,1920])for(const section of ['accounts','marketplace','discovery','valuations','maintenance']){
+  for(const width of [980,1920])for(const section of ['accounts','dashboard','capture-queue','marketplace','discovery','valuations','maintenance']){
    await open(section,width);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,section+' '+width);
    await page.screenshot({path:path.join(evidence,section+'-'+width+'.png'),fullPage:true});
@@ -126,6 +135,36 @@ const evidence=path.join(root,'.next/admin-review-validation');
   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-haspopup')),'dialog');
   console.log('PASS 12-section navigation, Escape and focus restoration');
+  await page.$$eval('[aria-label="Account summary"] button',els=>els.find(e=>e.textContent.includes('Pending')).click());
+  await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===1);
+  assert.ok(await page.$eval('tbody',e=>e.textContent.includes('Example Dealer')));
+  assert.equal(await page.$eval('tbody',e=>e.textContent.includes('Western Cape Agricultural')),false);
+  await page.$$eval('[aria-label="Account summary"] button',els=>els.find(e=>e.textContent.includes('All accounts')).click());
+  await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===2);
+  props.accounts.initialStatus='pending_payment';await open('accounts');
+  assert.equal(await page.$$eval('tbody tr',els=>els.length),1);delete props.accounts.initialStatus;
+  props.accounts.initialAccountId='owner';await open('accounts');await page.waitForSelector('[aria-label="Account workspaces"]');
+  assert.ok(await page.$('a[href="/admin/capture-queue?owner=owner"]'));
+  assert.ok(await page.$('a[href="/admin/work-tracker?account=owner"]'));
+  assert.ok(await page.$('a[href="/admin/discovery?owner=owner"]'));delete props.accounts.initialAccountId;
+  console.log('PASS account status filters, deep links and account workspaces');
+  queuePaging=true;await open('capture-queue');await page.waitForFunction(()=>document.body.textContent.includes('PAGE-1'));
+  await page.$$eval('[aria-label="Capture queue pages"] button',els=>els.find(e=>e.textContent==='Next').click());
+  await page.waitForFunction(()=>document.body.textContent.includes('PAGE-2'));
+  assert.equal(queueRequests.at(-1).get('page'),'2');
+  await page.select('select','all');await page.waitForFunction(()=>document.body.textContent.includes('PAGE-1'));
+  assert.equal(queueRequests.at(-1).get('status'),'all');assert.equal(queueRequests.at(-1).get('page'),'1');
+  props['capture-queue']={initialStatus:'unassigned',initialOwnerId:'owner'};await open('capture-queue');await page.waitForFunction(()=>document.body.textContent.includes('PAGE-1'));
+  assert.equal(queueRequests.at(-1).get('owner'),'owner');assert.equal(queueRequests.at(-1).get('status'),'unassigned');
+  delete props['capture-queue'];queuePaging=false;
+  console.log('PASS queue pagination, explicit All requests, page reset and scoped deep links');
+  workMode=true;props['work-tracker'].initialAccountId='owner';await open('work-tracker');await page.waitForSelector('textarea');
+  assert.equal(workRequests.at(-1).get('clientUserId'),'owner');
+  await page.type('textarea',' updated');const editedNote=await page.$eval('textarea',e=>e.value);await page.click('button[aria-haspopup="dialog"]');
+  page.once('dialog',dialog=>dialog.dismiss());await page.click('a[href="/admin"]');
+  assert.equal(await page.$eval('textarea',e=>e.value),editedNote);
+  console.log('PASS scoped work history and unsaved note navigation protection');
+  page.once('dialog',dialog=>dialog.accept());workMode=false;delete props['work-tracker'].initialAccountId;
   failBusiness=true;await open('businesses');await page.waitForSelector('[role="alert"]');
   assert.equal(await page.evaluate(()=>document.body.textContent.includes('No businesses added yet')),false);
   failBusiness=false;await page.$$eval('button',els=>els.find(e=>e.textContent==='Try again').click());

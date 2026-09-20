@@ -1,4 +1,6 @@
 "use client";
+import Link from "next/link";
+import { adminQueueFilter, ADMIN_CAPTURE_PAGE_SIZE } from "../../../lib/admin-operations-shared";
 import AdminCaptureAssistance from "../../../components/AdminCaptureAssistance";
 import DateInput from '../../../components/DateInput';
 
@@ -24,6 +26,8 @@ type CaptureStatus =
   | "cancelled";
 
 type QueueCounts = {
+  unassigned: number;
+  needsMatching: number;
   pending: number;
   dueToday: number;
   overdue: number;
@@ -139,6 +143,7 @@ type CaptureTarget = {
 type QueueResponse = {
   ok: boolean;
   requests?: CaptureRow[];
+  pagination?: { page: number; pageSize: number; total: number; hasNextPage: boolean };
   counts?: Partial<QueueCounts>;
   error?: string;
 };
@@ -169,6 +174,8 @@ type BusyAction =
   | null;
 
 const EMPTY_COUNTS: QueueCounts = {
+  unassigned: 0,
+  needsMatching: 0,
   pending: 0,
   dueToday: 0,
   overdue: 0,
@@ -316,21 +323,6 @@ function dueState(row: CaptureRow): "overdue" | "today" | "future" {
   return "future";
 }
 
-function sortOverdueFirst(rows: CaptureRow[]): CaptureRow[] {
-  const priority = (row: CaptureRow) => {
-    const state = dueState(row);
-    if (state === "overdue") return 0;
-    if (state === "today") return 1;
-    return 2;
-  };
-
-  return [...rows].sort((left, right) => {
-    const difference = priority(left) - priority(right);
-    if (difference) return difference;
-    return new Date(left.dueAtIso).getTime() - new Date(right.dueAtIso).getTime();
-  });
-}
-
 function normaliseDraft(request: CaptureDetail): CaptureDraft {
   const payload = request.capturedPayload ?? EMPTY_DRAFT;
   const candidate = request.candidatePayload ?? {};
@@ -417,11 +409,15 @@ function targetKey(input: {
   return [ownerUserId, assetId, fuelStorageId].join(":");
 }
 
-export default function CaptureQueueClient() {
+export default function CaptureQueueClient({ initialStatus = "open", initialOwnerId = "" }: { initialStatus?: string; initialOwnerId?: string } = {}) {
+  const [ownerId, setOwnerId] = useState(initialOwnerId);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [rows, setRows] = useState<CaptureRow[]>([]);
   const [queueError, setQueueError] = useState("");
   const [counts, setCounts] = useState<QueueCounts>(EMPTY_COUNTS);
-  const [statusFilter, setStatusFilter] = useState("open");
+  const [statusFilter, setStatusFilter] = useState(() => adminQueueFilter(initialStatus));
   const [typeFilter, setTypeFilter] = useState("all");
   const [channelFilter, setChannelFilter] = useState("all");
   const [search, setSearch] = useState("");
@@ -595,7 +591,9 @@ export default function CaptureQueueClient() {
     setQueueError("");
     try {
       const params = new URLSearchParams();
-      if (statusFilter !== "all") params.set("status", statusFilter);
+      params.set("status", statusFilter);
+      params.set("page", String(page));
+      if (ownerId) params.set("owner", ownerId);
       if (typeFilter !== "all") params.set("requestType", typeFilter);
       if (channelFilter !== "all") params.set("submissionChannel", channelFilter);
       if (search.trim()) params.set("search", search.trim());
@@ -605,7 +603,11 @@ export default function CaptureQueueClient() {
       const data = (await response.json()) as QueueResponse;
       if (!response.ok || !data.ok) throw new Error(data.error || "Failed to load capture requests.");
       if (generation !== queueLoadGenerationRef.current) return;
-      const nextRows = sortOverdueFirst(data.requests ?? []);
+      const nextRows = data.requests ?? [];
+      const nextTotal = data.pagination?.total ?? nextRows.length;
+      if (!nextRows.length && page > 1) { setPage(Math.max(1, Math.ceil(nextTotal / ADMIN_CAPTURE_PAGE_SIZE))); return; }
+      setTotal(nextTotal);
+      setHasNextPage(data.pagination?.hasNextPage ?? false);
       setRows(nextRows);
       setCounts({ ...EMPTY_COUNTS, ...(data.counts ?? {}) });
       setSelectedId((current) =>
@@ -623,7 +625,7 @@ export default function CaptureQueueClient() {
     } finally {
       if (generation === queueLoadGenerationRef.current) setIsLoading(false);
     }
-  }, [channelFilter, search, statusFilter, typeFilter]);
+  }, [channelFilter, search, statusFilter, typeFilter, page, ownerId]);
 
   const loadDetail = useCallback(async (requestId: string) => {
     const generation = ++detailLoadGenerationRef.current;
@@ -997,7 +999,9 @@ export default function CaptureQueueClient() {
   }
 
   const kpis = [
-    { key: "pending", label: "Pending", value: counts.pending, filter: "open" },
+    { key: "unassigned", label: "Unclaimed", value: counts.unassigned, filter: "unassigned" },
+    { key: "needsMatching", label: "Needs matching", value: counts.needsMatching, filter: "needs_matching" },
+    { key: "pending", label: "All open", value: counts.pending, filter: "open" },
     { key: "dueToday", label: "Due in 24 hours", value: counts.dueToday, filter: "due_today" },
     { key: "overdue", label: "Overdue", value: counts.overdue, filter: "overdue" },
     { key: "needsInformation", label: "Needs information", value: counts.needsInformation, filter: "needs_information" },
@@ -1005,7 +1009,7 @@ export default function CaptureQueueClient() {
     { key: "completedToday", label: "Completed today", value: counts.completedToday, filter: "completed_today" },
   ] as const;
   const hasActiveFilters =
-    search.trim().length > 0 ||
+    Boolean(ownerId) || search.trim().length > 0 ||
     statusFilter !== "open" ||
     typeFilter !== "all" ||
     channelFilter !== "all";
@@ -1019,7 +1023,7 @@ export default function CaptureQueueClient() {
             key={kpi.key}
             type="button"
             className={`${styles.kpiCard} ${statusFilter === kpi.filter ? styles.kpiSelected : ""} ${kpi.key === "overdue" && kpi.value ? styles.kpiOverdue : ""}`}
-            onClick={() => setStatusFilter(kpi.filter)}
+            onClick={() => { setPage(1); setStatusFilter(kpi.filter); }}
             aria-pressed={statusFilter === kpi.filter}
           >
             <span>{kpi.label}</span>
@@ -1037,23 +1041,27 @@ export default function CaptureQueueClient() {
 
       <section className={styles.queueCard}>
         <div className={styles.queueHeading}>
-          <h2>Documents · {rows.length}</h2>
+          <h2>Documents{!isLoading && !queueError ? ` · ${total}` : ""}</h2>
+          <button type="button" className={styles.clearButton} disabled={isLoading || Boolean(busyAction)} onClick={() => void loadQueue()}>Refresh queue</button>
         </div>
 
+        {ownerId ? <div className={styles.accountScope}><span>Showing requests for this account</span><Link href={`/admin?account=${encodeURIComponent(ownerId)}`}>Account details</Link><button type="button" onClick={() => { setOwnerId(""); setPage(1); }}>Show all accounts</button></div> : null}
+        <p className={styles.queueHint}>Summary counts cover all accounts. Documents below follow your filters. Times are South African time.</p>
         <div className={styles.filters} aria-label="Capture queue filters">
           <label className={styles.searchField}>
             <span>Search</span>
             <input
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => { setPage(1); setSearch(event.target.value); }}
               placeholder="Reference or asset"
             />
           </label>
           <label>
             <span>Status</span>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <select value={statusFilter} onChange={(event) => { setPage(1); setStatusFilter(event.target.value); }}>
               <option value="open">All open</option>
+              <option value="unassigned">Unclaimed</option>
               <option value="all">All requests</option>
               <option value="submitted">New</option>
               <option value="needs_matching">Needs matching</option>
@@ -1064,13 +1072,14 @@ export default function CaptureQueueClient() {
               <option value="due_today">Due in 24 hours</option>
               <option value="completed_today">Completed today</option>
               <option value="completed">Completed</option>
+              <option value="declined">Declined by owner</option>
               <option value="rejected">Rejected</option>
               <option value="cancelled">Deleted</option>
             </select>
           </label>
           <label>
             <span>Document</span>
-            <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+            <select value={typeFilter} onChange={(event) => { setPage(1); setTypeFilter(event.target.value); }}>
               <option value="all">Invoices and fuel slips</option>
               <option value="invoice">Invoices</option>
               <option value="fuel_slip">Fuel slips</option>
@@ -1078,7 +1087,7 @@ export default function CaptureQueueClient() {
           </label>
           <label>
             <span>Source</span>
-            <select value={channelFilter} onChange={(event) => setChannelFilter(event.target.value)}>
+            <select value={channelFilter} onChange={(event) => { setPage(1); setChannelFilter(event.target.value); }}>
               <option value="all">All sources</option>
               <option value="owner_upload">Owner uploads</option>
               <option value="accountant_upload">Accountant uploads</option>
@@ -1091,6 +1100,8 @@ export default function CaptureQueueClient() {
               type="button"
               className={styles.clearButton}
               onClick={() => {
+                setPage(1);
+                setOwnerId("");
                 setSearch("");
                 setStatusFilter("open");
                 setTypeFilter("all");
@@ -1135,7 +1146,7 @@ export default function CaptureQueueClient() {
                     <td><strong>{row.ownerDisplayName || "Unmatched customer"}</strong><span>· {row.assetDisplayName || row.fuelStorageDisplayName || "Needs matching"}</span></td>
                     <td><strong>{row.senderDisplayName || "Not provided"}</strong><span>· {CHANNEL_LABELS[row.submissionChannel] ?? row.submissionChannel}</span></td>
                     <td><span className={`${styles.statusText} ${styles[`status_${row.status}`]}`}>{STATUS_LABELS[row.status] ?? row.status}</span></td>
-                    <td><strong className={timing === "overdue" ? styles.overdueText : ""}>{row.status === "awaiting_owner" ? "Owner review" : timing === "overdue" ? "Overdue" : formatDateTime(row.dueAtIso)}</strong><span>· Received {formatDateTime(row.submittedAtIso)}</span></td>
+                    <td><strong className={timing === "overdue" ? styles.overdueText : ""}>{row.status === "awaiting_owner" ? "Owner review" : `${timing === "overdue" ? "Overdue · " : ""}${formatDateTime(row.dueAtIso)}`}</strong><span>· Received {formatDateTime(row.submittedAtIso)}</span></td>
                     <td><strong>{row.assignedAdminDisplayName || "Unclaimed"}</strong></td>
                   </tr>
                 );
@@ -1146,6 +1157,11 @@ export default function CaptureQueueClient() {
           </table> : <div className={styles.emptyCell}>No documents to capture.</div>}
         </div>
       </section>
+
+      {!queueError ? <nav className={styles.pagination} aria-label="Capture queue pages">
+        <span role="status">{isLoading ? "Loading documents…" : total ? `${(page - 1) * ADMIN_CAPTURE_PAGE_SIZE + 1}–${Math.min(page * ADMIN_CAPTURE_PAGE_SIZE, total)} of ${total} documents` : "0 documents"}</span>
+        <div><button type="button" disabled={isLoading || page <= 1} onClick={() => setPage(current => current - 1)}>Previous</button><button type="button" disabled={isLoading || !hasNextPage} onClick={() => setPage(current => current + 1)}>Next</button></div>
+      </nav> : null}
 
       {selectedId && isDetailLoading ? (
         <section
@@ -1163,6 +1179,7 @@ export default function CaptureQueueClient() {
           <div className={styles.workbenchHeader}>
             <div className={styles.workbenchTitle}>
               <h2 id="capture-workbench-title">{detail.publicReference || detail.id}</h2>
+              {detail.ownerUserId ? <nav className={styles.workbenchLinks} aria-label="Capture account links"><Link href={`/admin?account=${encodeURIComponent(detail.ownerUserId)}`}>Account details</Link><Link href={`/admin/work-tracker?account=${encodeURIComponent(detail.ownerUserId)}`}>Work history</Link></nav> : null}
             </div>
             <div className={styles.workbenchHeaderActions}>
               <span className={`${styles.statusText} ${styles[`status_${detail.status}`]}`}>{STATUS_LABELS[detail.status]}</span>

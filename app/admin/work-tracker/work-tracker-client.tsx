@@ -95,7 +95,8 @@ function sortClients(clients: WorkClient[]): WorkClient[] {
   );
 }
 
-export default function WorkTrackerClient({ initialClients }: { initialClients: WorkClient[] }) {
+export default function WorkTrackerClient({ initialClients, initialAccountId = "" }: { initialClients: WorkClient[]; initialAccountId?: string }) {
+  const initialClientId = initialClients.some(client => client.userId === initialAccountId) ? initialAccountId : "";
   const clients = useMemo(() => sortClients(initialClients), [initialClients]);
   const clientOptions = useMemo<AdminAccountPickerOption[]>(
     () => clients.map((client) => ({
@@ -108,8 +109,8 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   );
   const [period, setPeriod] = useState<AdminWorkPeriod>("week");
   const [anchor, setAnchor] = useState(() => getJohannesburgDateKey());
-  const [clientUserId, setClientUserId] = useState("");
-  const [startClientUserId, setStartClientUserId] = useState("");
+  const [clientUserId, setClientUserId] = useState(initialClientId);
+  const [startClientUserId, setStartClientUserId] = useState(initialClientId);
   const [activeSession, setActiveSession] = useState<AdminWorkSessionView | null>(null);
   const [history, setHistory] = useState<AdminWorkHistory | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -120,7 +121,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
   const [recentClientIds, setRecentClientIds] = useState<string[]>([]);
-  const [notice, setNotice] = useState<Notice>(null);
+  const [notice, setNotice] = useState<Notice>(initialAccountId && !initialClientId ? { tone: "error", message: "That account is no longer available. Showing all accounts." } : null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const draftNotesRef = useRef(draftNotes);
   const loadGenerationRef = useRef(0);
@@ -128,6 +129,31 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   const deleteInFlightRef = useRef(false);
 
   draftNotesRef.current = draftNotes;
+  const hasUnsavedNotes = Object.keys(draftNotes).length > 0;
+  useEffect(() => {
+    if (!hasUnsavedNotes) return;
+    const protectUnload = (event: BeforeUnloadEvent) => {
+      if (!Object.keys(draftNotesRef.current).length) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const protectLink = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !(event.target instanceof Element)) return;
+      const link = event.target.closest<HTMLAnchorElement>("a[href]");
+      if (!link || link.target === "_blank" || link.hasAttribute("download") || link.getAttribute("href")?.startsWith("#")) return;
+      if (!Object.keys(draftNotesRef.current).length) return;
+      if (window.confirm("Leave this page and discard unsaved work notes?")) {
+        draftNotesRef.current = {};
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    window.addEventListener("beforeunload", protectUnload);
+    document.addEventListener("click", protectLink, true);
+    return () => { window.removeEventListener("beforeunload", protectUnload); document.removeEventListener("click", protectLink, true); };
+  }, [hasUnsavedNotes]);
+
 
   const loadTracker = useCallback(async () => {
     const generation = ++loadGenerationRef.current;
