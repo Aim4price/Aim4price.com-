@@ -141,6 +141,7 @@ export type AssetMaintenanceDraftInput = {
 };
 
 export type AssetMaintenanceCompleteInput = {
+  offlineEventId?: string;
   continueSchedule?: unknown;
   completedAt?: unknown;
   completedUsage?: unknown;
@@ -1985,11 +1986,20 @@ export async function completeAssetMaintenanceRecord(
 ): Promise<{ completed: AssetMaintenanceRecord; nextRecord: AssetMaintenanceRecord | null }> {
   if (input.continueSchedule !== undefined && typeof input.continueSchedule !== 'boolean') throw new Error('COMPLETION_SCHEDULE_CHOICE_INVALID');
   await ensureAssetMaintenanceTables();
+  if (input.offlineEventId) {
+    if (!/^[a-f0-9]{64}$/.test(input.offlineEventId)) throw new Error('COMPLETION_EVENT_INVALID');
+    await getDb().query('create table if not exists public.app_offline_completions (user_id text not null, maintenance_id uuid not null, event_id text not null, primary key (user_id, event_id))');
+  }
   const client = await getDb().connect();
 
   try {
     await client.query('begin');
 
+    if (input.offlineEventId) {
+      await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [userId + ':maintenance:' + input.offlineEventId]);
+      const prior = await client.query<{ maintenance_id: string }>('select maintenance_id::text from public.app_offline_completions where user_id = $1 and event_id = $2', [userId, input.offlineEventId]);
+      if (prior.rows[0] && prior.rows[0].maintenance_id !== maintenanceId) throw new Error('COMPLETION_EVENT_REUSED');
+    }
     const existing = await getAssetMaintenanceRecordByIdWithClient(
       client,
       userId,
@@ -2010,6 +2020,10 @@ export async function completeAssetMaintenanceRecord(
       throw new Error('MAINTENANCE_NOT_FOUND');
     }
 
+    if (input.offlineEventId && existing.status === 'done') {
+      const receipt = await client.query('select 1 from public.app_offline_completions where user_id = $1 and event_id = $2 and maintenance_id = $3::uuid', [userId, input.offlineEventId, maintenanceId]);
+      if (!receipt.rowCount) throw new Error('COMPLETION_ALREADY_RECORDED');
+    }
     let completed = existing;
 
     if (existing.status !== 'done') {
@@ -2098,6 +2112,7 @@ export async function completeAssetMaintenanceRecord(
     }
 
     const nextRecord = await createNextRecurringRecord(client, userId, completed);
+    if (input.offlineEventId) await client.query('insert into public.app_offline_completions (user_id, maintenance_id, event_id) values ($1,$2::uuid,$3) on conflict do nothing', [userId, maintenanceId, input.offlineEventId]);
     await client.query('commit');
     return { completed, nextRecord };
   } catch (error) {

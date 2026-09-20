@@ -25,6 +25,7 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
 
   async function signOut() {
     if (signingOut) return;
+    if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-' + ('owner') + '-session'); channel.postMessage('lock'); channel.close(); }
     setSigningOut(true);
     await Promise.allSettled([
       fetch('/api/owner-app/logout', { method: 'POST', credentials: 'include' }),
@@ -36,7 +37,7 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
 
   return (
     <header className={`${styles.assetsHeader} ${headerLayoutClass} ${className}`} aria-label="Aim4price Owner account controls">
-      {!showBack ? <AppSettings /> : null}
+      {!showBack ? <AppSettings offlineHref="/owner-app/offline.html" /> : null}
       {showBack ? (
         <>
           {backAction ? (

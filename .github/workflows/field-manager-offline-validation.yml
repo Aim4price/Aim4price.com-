@@ -1,8 +1,28 @@
-name: Field Manager offline validation
+name: App offline validation
 on:
   pull_request:
     paths:
       - 'app/field-manager/**'
+      - 'app/owner-app/**'
+      - 'app/dealer/**'
+      - 'app/middleman/**'
+      - 'app/api/app-offline/**'
+      - 'components/AppOfflineEntry.tsx'
+      - 'components/AppSettings*'
+      - 'public/app-theme.css'
+      - 'database/migrations/109-app-offline-work.sql'
+      - 'lib/app-offline*.ts'
+      - 'lib/offline-mutation-queue.ts'
+      - 'lib/asset-maintenance.ts'
+      - 'lib/fuel-ledger.ts'
+      - 'public/app-offline/**'
+      - 'public/owner-app/**'
+      - 'public/dealer/**'
+      - 'public/middleman/**'
+      - 'public/*-sw.js'
+      - 'tests/app-offline.test.cjs'
+      - 'tests/offline-maintenance-retry.test.cjs'
+      - 'scripts/verify-app-offline.cjs'
       - 'app/api/field-manager/offline/**'
       - 'lib/field-manager*.ts'
       - 'public/field-manager/**'
@@ -25,11 +45,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/field-manager-offline.test.cjs tests/app-account-isolation.test.mjs tests/separate-app-sessions.test.mjs
+      - run: node --test tests/app-offline.test.cjs tests/offline-maintenance-retry.test.cjs tests/field-manager-offline.test.cjs tests/app-account-isolation.test.mjs tests/separate-app-sessions.test.mjs
       - run: node scripts/verify-field-manager-offline.cjs
+      - run: node scripts/verify-app-offline.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: field-manager-offline-browser
-          path: .next/field-offline-validation
+          path: |
+            .next/field-offline-validation
+            .next/app-offline-validation
           if-no-files-found: ignore

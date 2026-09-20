@@ -70,13 +70,17 @@ test('storage failures retain the current-session choice and external resets cle
 
 test('offline entry uses the same pre-paint preference and caches its theme stylesheet', () => {
   const { api } = runtime();
-  const html = readFileSync(new URL('../public/field-manager/offline.html', import.meta.url), 'utf8');
-  const worker = readFileSync(new URL('../public/field-manager-sw.js', import.meta.url), 'utf8');
-  const entry = readFileSync(new URL('../public/field-manager/offline.mjs', import.meta.url), 'utf8');
-  const cache = worker.match(/const SHELL_CACHE = '([^']+)'/)[1];
-  assert.ok(entry.includes(`cacheName: '${cache}'`), 'offline preparation must check the cache installed by the worker');
-  assert.ok(html.includes(api.APP_THEME_SCRIPT));
-  assert.ok(html.includes('href="/app-theme.css"'));
+  const worker = readFileSync(new URL('../public/app-offline/worker.js', import.meta.url), 'utf8');
+  const config = readFileSync(new URL('../public/app-offline/config.mjs', import.meta.url), 'utf8');
+  const entry = readFileSync(new URL('../public/app-offline/offline.mjs', import.meta.url), 'utf8');
+  assert.ok(worker.includes("'-offline-shell-v5'"));
+  assert.ok(config.includes("'-offline-shell-v5'"));
+  assert.ok(entry.includes('cacheName: config.cache'));
+  for (const root of ['owner-app', 'field-manager', 'dealer', 'middleman']) {
+    const html = readFileSync(new URL('../public/' + root + '/offline.html', import.meta.url), 'utf8');
+    assert.ok(html.includes(api.APP_THEME_SCRIPT));
+    assert.ok(html.includes('href="/app-theme.css"'));
+  }
   assert.ok(worker.includes("'/app-theme.css'"));
 });
 

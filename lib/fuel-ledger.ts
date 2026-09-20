@@ -4716,6 +4716,7 @@ export async function getFuelLateEntryEvidence(userId: string, eventId: string):
 
 
 type SaveFuelSlipInput = {
+  offlineEventId?: string;
   captureRequestId?: unknown;
   id?: unknown;
   slipId?: unknown;
@@ -5147,6 +5148,12 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   await ensureFuelLedgerTables();
 
   const db = getDb();
+  const offlineEventId = input.offlineEventId || '';
+  if (offlineEventId) {
+    if (!/^[a-f0-9]{64}$/.test(offlineEventId)) throw new Error('Invalid offline event ID.');
+    await db.query('alter table public.fuel_slips add column if not exists offline_event_id text');
+    await db.query('create unique index if not exists fuel_slips_offline_event_idx on public.fuel_slips(user_id, offline_event_id) where offline_event_id is not null');
+  }
   const captureRequestId = normalizeCaptureRequestId(input.captureRequestId);
   if (captureRequestId) {
     const existingCapture = await db.query<{ id: string }>(
@@ -5255,6 +5262,17 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   try {
     await client.query('BEGIN');
 
+    if (offlineEventId) {
+      await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [userId + ':fuel-slip:' + offlineEventId]);
+      const prior = await client.query<{ id: string }>('select id::text from public.fuel_slips where user_id = $1 and offline_event_id = $2', [userId, offlineEventId]);
+      if (prior.rows[0]) {
+        const row = await loadFuelSlipRowForUpdate(client, userId, prior.rows[0].id);
+        if (!row) throw new Error('Saved fuel slip could not be loaded.');
+        const fuelSlip = mapFuelSlipRow(row);
+        await client.query('COMMIT'); committed = true;
+        return { fuelSlip, storage: null, event: null, assets: [], pendingReview: fuelSlip.reviewRequired, message: 'Fuel slip already synced.' };
+      }
+    }
     const existingSlip = existingFuelSlipId ? await loadFuelSlipRowForUpdate(client, userId, existingFuelSlipId) : null;
     if (existingSlip) {
       await removeFuelSlipSideEffects(client, userId, existingSlip);
@@ -5563,6 +5581,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
 
     const fuelSlipId = savedSlip.rows[0]?.id;
     if (!fuelSlipId) throw new Error(existingFuelSlipId ? 'Fuel slip not found.' : 'Fuel slip could not be saved.');
+    if (offlineEventId) await client.query('update public.fuel_slips set offline_event_id = $3 where user_id = $1 and id::text = $2', [userId, fuelSlipId, offlineEventId]);
 
     await client.query(
       `

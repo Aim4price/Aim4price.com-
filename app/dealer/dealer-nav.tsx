@@ -31,7 +31,7 @@ export default function DealerNav({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const isLeadsPage = pathname.startsWith('/dealer/leads');
   const isMaintenancePage = pathname.startsWith('/dealer/maintenance');
-  const resolvedShowBack = showBack ?? pathname !== '/dealer';
+  const resolvedShowBack = showBack ?? pathname !== appRoot;
   const isMaintenanceDetail = pathname.startsWith('/dealer/maintenance/');
   const isInventoryDetail = pathname.startsWith('/dealer/inventory/');
   const resolvedBackHref = backHref === '/dealer' && isMaintenanceDetail
@@ -58,6 +58,7 @@ export default function DealerNav({
 
   async function signOut() {
     if (isSigningOut) return;
+    if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-' + (appRoot === '/middleman' ? 'middleman' : 'dealer') + '-session'); channel.postMessage('lock'); channel.close(); }
     setIsSigningOut(true);
 
     await fetch(`/api${appRoot}/logout`, { method: 'POST', credentials: 'include' });
@@ -71,7 +72,7 @@ export default function DealerNav({
       className={`${styles.nav} ${navLayoutClass} ${workspaceSurfaceClass} ${onBack ? styles.estimateNav : ''}`}
       aria-label="Dealer App navigation"
     >
-      {pathname === '/dealer' ? <AppSettings /> : null}
+      {pathname === appRoot ? <AppSettings offlineHref={`${appRoot}/offline.html`} /> : null}
       {resolvedShowBack ? (
         <>
           {onBack ? (

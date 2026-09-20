@@ -84,17 +84,21 @@ async function check(browser, url) {
   await page.waitForSelector('#home-asset-question-worth', { visible: true });
   await page.evaluate(() => document.querySelector('#home-asset-question-worth').click());
   await page.waitForSelector('[data-feature-countdown]');
-  await page.click('[data-feature-playback]');
-  await delay(1200);
+  // Avoid Puppeteer's implicit scroll: scrolling deliberately takes manual control of the story.
+  await page.evaluate(() => document.querySelector('[data-feature-playback]').click());
+  await page.waitForFunction(() => document.querySelector('[data-feature-playback]')?.getAttribute('aria-label') === 'Pause card animation');
+  await page.waitForFunction(() => parseInt(document.querySelector('[data-feature-countdown] > span')?.textContent) < 10);
   const readSeconds = () => page.$eval('[data-feature-countdown] > span', el => parseInt(el.textContent));
   assert.ok(await readSeconds() < 10, 'Card countdown must decrease while playing');
-  await page.click('[data-feature-playback]');
+  // Avoid Puppeteer's implicit scroll: scrolling deliberately takes manual control of the story.
+  await page.evaluate(() => document.querySelector('[data-feature-playback]').click());
   await delay(150);
   const pausedSeconds = await readSeconds();
   await delay(1100);
   assert.equal(await readSeconds(), pausedSeconds, 'Pause must freeze the remaining time');
-  await page.click('[data-feature-playback]');
-  await delay(1200);
+  // Avoid Puppeteer's implicit scroll: scrolling deliberately takes manual control of the story.
+  await page.evaluate(() => document.querySelector('[data-feature-playback]').click());
+  await page.waitForFunction(seconds => parseInt(document.querySelector('[data-feature-countdown] > span')?.textContent) < seconds, {}, pausedSeconds);
   assert.ok(await readSeconds() < pausedSeconds, 'Play must resume without resetting the countdown');
   console.log('PASS homepage logo start and card countdown pause/resume');
 

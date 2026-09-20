@@ -1,3 +1,4 @@
+import { appRealmForPath, type AppRealm } from './app-realm';
 export type OfflineMutationKind =
   | 'asset-scan-update'
   | 'fuel-ledger-issue'
@@ -7,6 +8,8 @@ export type OfflineMutationKind =
 export type OfflineMutationMethod = 'POST';
 
 export type OfflineMutation = {
+  app?: AppRealm;
+  identity?: string;
   id: string;
   kind: OfflineMutationKind;
   endpoint: string;
@@ -44,6 +47,30 @@ const DB_VERSION = 1;
 const STORE_NAME = 'mutations';
 const LOCAL_STORAGE_KEY = 'aim4price_offline_mutation_queue_v1';
 
+let preparedIdentity: { app: AppRealm; identity: string } | null = null;
+function currentQueueApp(): AppRealm | null {
+  return typeof window !== 'undefined' ? appRealmForPath(window.location?.pathname || '') : null;
+}
+export async function prepareOfflineMutationIdentity(): Promise<boolean> {
+  const app = currentQueueApp();
+  if (!app) return false;
+  try {
+    const response = await fetch(`/api/app-offline/${app}?identityOnly=1`, { credentials: 'include', cache: 'no-store', headers: { 'x-aim4price-client-realm': app } });
+    const data = await response.json();
+    if (!response.ok || !data?.ok || typeof data.identity !== 'string') { return false; }
+    if (preparedIdentity?.app === app && preparedIdentity.identity !== data.identity) return false;
+    preparedIdentity = { app, identity: data.identity };
+    return true;
+  } catch { return false; /* Keep the last verified identity only for capture, never for replay. */ }
+}
+function belongsToCurrentApp(entry: OfflineMutation): boolean {
+  const app = currentQueueApp();
+  if (entry.app) return entry.app === app;
+  // Legacy app entries have no trustworthy actor binding. Keep them for review,
+  // but never replay them under whichever account happens to be signed in now.
+  if (/[?&](ownerApp|fieldManager)=1/.test(entry.endpoint)) return false;
+  return !app;
+}
 function canUseBrowserStorage(): boolean {
   return typeof window !== 'undefined';
 }
@@ -238,10 +265,13 @@ async function removeMutation(id: string): Promise<void> {
 }
 
 export async function enqueueOfflineMutation(input: EnqueueOfflineMutationInput): Promise<OfflineMutation> {
+  const app = currentQueueApp();
+  if (app && preparedIdentity?.app !== app) throw new Error('This update has not been saved. Keep this form open and reconnect, or open Offline work from Settings.');
   const id = input.id || createOfflineClientEventId(input.kind);
   const existing = (await getAllMutations()).find((entry) => entry.id === id);
   const timestamp = nowIso();
   const mutation: OfflineMutation = {
+    ...(app && preparedIdentity ? { app, identity: preparedIdentity.identity } : {}),
     id,
     kind: input.kind,
     endpoint: input.endpoint,
@@ -259,7 +289,7 @@ export async function enqueueOfflineMutation(input: EnqueueOfflineMutationInput)
 
 export async function getOfflineMutationCount(kinds?: OfflineMutationKind[]): Promise<number> {
   const kindSet = kinds?.length ? new Set(kinds) : null;
-  const queue = await getAllMutations();
+  const queue = (await getAllMutations()).filter(belongsToCurrentApp);
   return kindSet ? queue.filter((entry) => kindSet.has(entry.kind)).length : queue.length;
 }
 
@@ -291,7 +321,7 @@ export function isOfflineNetworkError(error: unknown): boolean {
   return false;
 }
 
-export async function syncOfflineMutations(options: SyncOfflineMutationsOptions = {}): Promise<SyncOfflineMutationsResult> {
+async function syncOfflineMutationsUnlocked(options: SyncOfflineMutationsOptions = {}): Promise<SyncOfflineMutationsResult> {
   const kindSet = options.kinds?.length ? new Set(options.kinds) : null;
 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -302,7 +332,9 @@ export async function syncOfflineMutations(options: SyncOfflineMutationsOptions 
     };
   }
 
+  if (currentQueueApp() && !await prepareOfflineMutationIdentity()) return { syncedCount: 0, droppedCount: 0, pendingCount: await getOfflineMutationCount(options.kinds) };
   const queue = (await getAllMutations())
+    .filter(belongsToCurrentApp)
     .filter((entry) => !kindSet || kindSet.has(entry.kind))
     .sort((a, b) => a.createdAtIso.localeCompare(b.createdAtIso));
 
@@ -310,11 +342,12 @@ export async function syncOfflineMutations(options: SyncOfflineMutationsOptions 
   let droppedCount = 0;
 
   for (const mutation of queue) {
+    if (mutation.app && (!mutation.identity || preparedIdentity?.identity !== mutation.identity || preparedIdentity.app !== mutation.app)) break;
     try {
       const response = await fetch(mutation.endpoint, {
         method: mutation.method,
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(mutation.app ? { 'x-aim4price-client-realm': mutation.app, 'x-aim4price-offline-identity': mutation.identity || '' } : {}) },
         body: JSON.stringify(mutation.payload),
       });
 
@@ -335,6 +368,7 @@ export async function syncOfflineMutations(options: SyncOfflineMutationsOptions 
         lastError: reason,
       });
       options.onRetry?.(mutation, reason);
+      break;
     } catch (error) {
       const reason = error instanceof Error ? error.message : 'Network unavailable.';
       await saveMutation({
@@ -344,6 +378,7 @@ export async function syncOfflineMutations(options: SyncOfflineMutationsOptions 
         lastError: reason,
       });
       options.onRetry?.(mutation, reason);
+      break;
     }
   }
 
@@ -352,4 +387,18 @@ export async function syncOfflineMutations(options: SyncOfflineMutationsOptions 
     droppedCount,
     pendingCount: await getOfflineMutationCount(options.kinds),
   };
+}
+
+export async function syncOfflineMutations(options: SyncOfflineMutationsOptions = {}): Promise<SyncOfflineMutationsResult> {
+  if (typeof navigator !== 'undefined' && navigator.locks) {
+    return navigator.locks.request('aim4price-scan-queue-sync', () => syncOfflineMutationsUnlocked(options));
+  }
+  return syncOfflineMutationsUnlocked(options);
+}
+
+export async function getLegacyAppOfflineCount(): Promise<number> {
+  const app = currentQueueApp();
+  if (app !== 'owner' && app !== 'field') return 0;
+  const hint = app === 'owner' ? 'ownerApp' : 'fieldManager';
+  return (await getAllMutations()).filter(m => !m.identity && new RegExp(`[?&]${hint}=1(?:&|$)`).test(m.endpoint)).length;
 }
