@@ -112,6 +112,10 @@ function randCents(value: number): string {
   return preciseRand.format(Number.isFinite(value) ? value : 0);
 }
 
+function FieldHelp({ text }: { text?: string }) {
+  return text ? <details className={styles.fieldHelp}><summary>Details</summary><p>{text}</p></details> : null;
+}
+
 function NumericField({
   label,
   value,
@@ -121,6 +125,7 @@ function NumericField({
   min = 0,
   max,
   step = 1,
+  help,
 }: {
   label: string;
   value: number;
@@ -198,6 +203,7 @@ function NumericField({
         />
         {suffix ? <b>{suffix}</b> : null}
       </div>
+      <FieldHelp text={help} />
     </label>
   );
 }
@@ -233,6 +239,7 @@ function SelectField<T extends string>({
   value,
   onChange,
   options,
+  help,
 }: {
   label: string;
   value: T;
@@ -252,6 +259,7 @@ function SelectField<T extends string>({
           ))}
         </select>
       </div>
+      <FieldHelp text={help} />
     </label>
   );
 }
@@ -260,6 +268,7 @@ function ToggleField({
   label,
   checked,
   onChange,
+  help,
 }: {
   label: string;
   checked: boolean;
@@ -267,7 +276,7 @@ function ToggleField({
   help?: string;
 }) {
   return (
-    <label className={styles.toggleRow}>
+    <label className={styles.toggleRow} title={help}>
       <input
         type="checkbox"
         checked={checked}
@@ -332,6 +341,7 @@ function Metric({
   label,
   value,
   tone,
+  detail,
 }: {
   label: string;
   value: string;
@@ -342,6 +352,7 @@ function Metric({
     <div className={`${styles.metric} ${tone ? styles[`metric${tone}`] : ""}`}>
       <span>{label}</span>
       <strong>{value}</strong>
+      <FieldHelp text={detail} />
     </div>
   );
 }

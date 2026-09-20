@@ -67,6 +67,10 @@ on:
       - 'tests/admin-marketplace-outcomes.test.mjs'
       - 'tests/admin-simplification.test.mjs'
       - 'tests/admin-experience.test.mjs'
+      - 'tests/admin-review.test.mjs'
+      - 'scripts/verify-admin-review.cjs'
+      - 'middleware.ts'
+      - 'lib/trusted-request-origin.ts'
       - 'tests/ad-studio.test.mjs'
       - 'tests/asset-discovery-filter-modal.test.mjs'
       - 'tests/asset-sale-transfer.test.mjs'
@@ -134,6 +138,16 @@ jobs:
         with:
           name: discovery-focus-evidence
           path: .next/discovery-focus-validation
+
+      - name: Verify Admin layouts and recovery
+        run: node scripts/verify-admin-review.cjs
+
+      - name: Save Admin browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-review-evidence
+          path: .next/admin-review-validation
 
       - name: Test Admin navigation
         run: npm run test:admin-accounts

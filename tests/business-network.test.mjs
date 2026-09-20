@@ -484,6 +484,7 @@ test("manual business API refuses non-admin callers and cross-origin writes", as
   let session = null,
     writes = 0;
   const route = load("app/api/admin/business-network/route.ts", {
+    "../../../../lib/trusted-request-origin": load("lib/trusted-request-origin.ts"),
     "next/server": {},
     "../../../../lib/auth-session": {
       getAnyServerSession: async () => session,
@@ -509,7 +510,8 @@ test("manual business API refuses non-admin callers and cross-origin writes", as
     },
   });
   const request = {
-    headers: new Headers({ origin: "https://aim4price.test" }),
+    url: "http://internal:3000/api/admin/business-network",
+    headers: new Headers({ origin: "https://aim4price.com" }),
   };
   assert.equal((await route.POST(request)).status, 403);
   session = { user: { id: "owner", email: "owner@example.com" } };
@@ -519,10 +521,11 @@ test("manual business API refuses non-admin callers and cross-origin writes", as
   assert.equal(
     (
       await route.POST({
+        url: "http://internal:3000/api/admin/business-network",
         headers: new Headers({ origin: "https://other.test" }),
       })
     ).status,
-    400,
+    403,
   );
   assert.equal(writes, 0);
   assert.equal((await route.POST(request)).status, 200);

@@ -91,6 +91,7 @@ test('Admin catalogue writes require admin identity, same origin and a valid imp
   const { NextRequest } = require('next/server');
   let user = null, writes = 0;
   const route = load('app/api/admin/maintenance-catalogue/route.ts', {
+    '../../../../lib/trusted-request-origin': load('lib/trusted-request-origin.ts'),
     '../../../../lib/auth-session': { getAnyServerSession: async () => user ? { user } : null },
     '../../../../lib/account-constants': { isAim4priceAdminEmail: email => email === 'admin@example.invalid' },
     '../../../../lib/maintenance-catalogue-db': { getMaintenanceCatalogue: async () => seed, saveMaintenanceCatalogue: async input => { shared.validateMaintenanceCatalogue(input); writes++; return input; } },

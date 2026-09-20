@@ -1,7 +1,7 @@
 .page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 28px 20px 64px;
+  width: 100%;
+  min-width: 0;
+  padding: 0;
   color: #173c2d;
   font-family: inherit;
 }
@@ -163,3 +163,23 @@
 .toolbar {
   align-items: center;
 }
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 0.8rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 0.75rem;
+  background: #fff;
+  margin: 0;
+}
+.page .saveButton {
+  background: #176c50;
+  color: #fff;
+  border-color: #176c50;
+}
+.list button { background: #fff; }
+.list button:hover { border-color: #478661; }
+.list button strong { white-space: normal; overflow-wrap: anywhere; }
+.panel { background: #fff; border-radius: 0.8rem; }

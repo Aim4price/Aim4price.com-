@@ -293,6 +293,8 @@ export default function AdminDiscoveryClient({
       );
     } catch (loadError) {
       if (sequence !== requestSequenceRef.current) return;
+      setFilters(report.filters);
+      setSearchDraft(report.filters.search);
       setError(
         loadError instanceof Error ? loadError.message : "Admin Discovery could not be loaded.",
       );
@@ -478,7 +480,7 @@ export default function AdminDiscoveryClient({
           <strong>{report.summary.repeatInterestAssets.toLocaleString("en-ZA")}</strong>
         </article>
         <article>
-          <span>Value</span>
+          <span>Value excl. VAT</span>
           <strong>{formatAdminAssetMoney(report.summary.totalValueExVat)}</strong>
         </article>
         <article>
@@ -657,7 +659,7 @@ export default function AdminDiscoveryClient({
           </div>
         </header>
 
-        {error ? <p className={styles.errorNotice}>{error}</p> : null}
+        {error ? <p className={styles.errorNotice} role="alert">{error}</p> : null}
         {loading ? <div className={styles.loadingBar} aria-label="Loading filtered assets" /> : null}
 
         <div className={styles.tableScroller} aria-busy={loading}>
@@ -668,7 +670,7 @@ export default function AdminDiscoveryClient({
                 <th>Owner</th>
                 <th>Contact</th>
                 <th>Location</th>
-                <th>Value</th>
+                <th>Value excl. VAT</th>
                 <th>Views</th>
                 <th>Access</th>
                 <th>Updated</th>
@@ -682,7 +684,7 @@ export default function AdminDiscoveryClient({
                   <tr key={asset.id}>
                     <td>
                       <strong>{asset.title}</strong>
-                      <span>· {assetIdentity(asset)} · {asset.sectorLabel}</span>
+                      <span>{asset.assetTypeLabel} · {asset.sectorLabel}</span>
                     </td>
                     <td>
                       <strong>{asset.owner.label}</strong>
@@ -691,7 +693,7 @@ export default function AdminDiscoveryClient({
                       {asset.owner.email ? (
                         <a href={`mailto:${asset.owner.email}`}>{asset.owner.email}</a>
                       ) : null}
-                      {asset.owner.phone ? <a href={`tel:${asset.owner.phone}`}> · {asset.owner.phone}</a> : null}
+                      {asset.owner.phone ? <a href={`tel:${asset.owner.phone}`}>{asset.owner.phone}</a> : null}
                       {!asset.owner.email && !asset.owner.phone ? <span>—</span> : null}
                     </td>
                     <td>

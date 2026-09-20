@@ -718,3 +718,34 @@
     grid-template-rows: 1fr;
   }
 }
+
+/* Let filter controls reflow before their labels become clipped. */
+.filterBar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  align-items: end;
+  overflow: visible;
+  gap: 0.75rem;
+}
+.filterBar > label,
+.filterBar .searchField {
+  min-width: 0;
+}
+.filterBar .searchField {
+  grid-column: span 2;
+}
+@media (max-width: 600px) {
+  .filterBar { grid-template-columns: minmax(0, 1fr); }
+  .filterBar .searchField { grid-column: auto; }
+}
+
+.assetRowCopy {
+  display: grid;
+  gap: 0.3rem;
+}
+.assetRowCopy strong,
+.assetRowCopy small {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.assetRow { align-items: start; }

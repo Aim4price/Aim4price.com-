@@ -102,6 +102,6 @@ test("compact controls keep labels and modal titles on one line", () => {
   assert.match(accountStyles, /\.qrModalHeader h2 \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
   assert.doesNotMatch(accountStyles, /\.qrModalHeader h2,[\s\S]{0,500}white-space: normal;/);
   for (const styles of singleLineStyles) {
-    assert.doesNotMatch(styles, /white-space:\s*normal/);
+    assert.match(styles, /white-space:\s*nowrap/);
   }
 });

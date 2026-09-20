@@ -33,7 +33,10 @@ export async function POST(request: NextRequest) {
   const access = await requireAdminApiAccess();
   if (!access.ok) return access.response;
   try {
-    const body = await request.json() as Record<string, unknown>;
+    const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ ok: false, error: "Invalid request body." }, { status: 400 });
+    }
     const action = value(body, 'action');
     const lifecycleEventId = value(body, 'lifecycleEventId');
     const assetId = value(body, 'assetId');

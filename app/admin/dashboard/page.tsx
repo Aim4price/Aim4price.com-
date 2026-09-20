@@ -17,7 +17,7 @@ const CARD_TITLES: Record<string, string> = {
   "dealer-accounts-created": "Dealer accounts",
   "finance-accounts-created": "Finance accounts",
   "insurer-accounts-created": "Insurer accounts",
-  "average-user-time": "Weekly user time",
+  "average-user-time": "Estimated weekly user time",
   "aim4price-assets-saved": "Aim4price assets",
   "marketplace-advertised": "Marketplace listings",
   "asset-registers-created": "Asset registers",
@@ -106,6 +106,7 @@ export default async function AdminDashboardPage() {
                   <dl className={styles.values}>{card.values.map((item) => (
                     <div key={`${card.id}-${item.label}`} className={styles.valueRow}><dt>{item.label}</dt><dd><strong>{item.value}</strong></dd></div>
                   ))}</dl>
+                  {card.href ? <Link href={card.href} className={styles.cardLink}>{card.linkLabel ?? "Open details"}</Link> : null}
                 </article>
               ))}
             </div>
@@ -145,6 +146,7 @@ export default async function AdminDashboardPage() {
                   <dl className={styles.values}>{card.values.map((item) => (
                     <div key={`${card.id}-${item.label}`} className={styles.valueRow}><dt>{item.label}</dt><dd><strong>{item.value}</strong></dd></div>
                   ))}</dl>
+                  {card.href ? <Link href={card.href} className={styles.cardLink}>{card.linkLabel ?? "Open details"}</Link> : null}
                 </article>
               ))}
             </div>

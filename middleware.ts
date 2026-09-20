@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isTrustedRequestOrigin } from './lib/trusted-request-origin';
 import { requestAppRealm, appRealmForPath } from './lib/app-realm';
 import { isolateAppCookies, hasAppCookies } from './lib/app-cookie-isolation';
 
 export function middleware(request: NextRequest) {
+  const isAdminApi = request.nextUrl.pathname === '/api/admin' || request.nextUrl.pathname.startsWith('/api/admin/');
+  if (isAdminApi && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)
+    && !isTrustedRequestOrigin(request.headers.get('origin'), request.nextUrl.origin)) {
+    return NextResponse.json({ ok: false, error: 'Invalid request origin.' }, { status: 403 });
+  }
   const requestHeaders = new Headers(request.headers);
   // Always replace client-supplied realm hints. A realm selects a cookie; the
   // signed token and active account subtype still authorize every request.
@@ -26,7 +32,7 @@ export function middleware(request: NextRequest) {
     requestHeaders.set('cookie', isolateAppCookies(cookie, null));
   }
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-  if (realm || ambiguousApi) response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+  if (isAdminApi || realm || ambiguousApi) response.headers.set('Cache-Control', 'private, no-store, max-age=0');
   return response;
 }
 

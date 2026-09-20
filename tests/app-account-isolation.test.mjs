@@ -43,6 +43,7 @@ test('middleware strips sibling, website and support cookies and replaces forged
     'next/server': { NextResponse: { next: options => ({ request: options.request, headers: new Headers() }) } },
     './lib/app-realm': realmModule,
     './lib/app-cookie-isolation': cookieModule,
+    './lib/trusted-request-origin': await load('lib/trusted-request-origin.ts'),
   });
   const cookies = 'better-auth.session_token=website; __Secure-better-auth.session_token=website; aim4price_admin_support_user_id=admin; aim4price_dealer_app_v2=dealer; aim4price_middleman_app_v1=middleman; aim4price_owner_app=owner; aim4price_field_manager=field';
   for (const [realm, ownCookie] of Object.entries({dealer:'aim4price_dealer_app_v2=dealer', middleman:'aim4price_middleman_app_v1=middleman', owner:'aim4price_owner_app=owner', field:'aim4price_field_manager=field'})) {

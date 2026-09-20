@@ -147,6 +147,9 @@ export async function POST(request: Request) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonError("Invalid request body.");
+    }
   } catch {
     return jsonError("Invalid request body.");
   }
@@ -226,6 +229,9 @@ export async function PATCH(request: Request) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonError("Invalid request body.");
+    }
   } catch {
     return jsonError("Invalid request body.");
   }
@@ -252,6 +258,9 @@ export async function DELETE(request: Request) {
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonError("Invalid request body.");
+    }
   } catch {
     return jsonError("Invalid request body.");
   }

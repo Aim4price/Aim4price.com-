@@ -55,7 +55,9 @@ function formatDateTime(value: string | null): string {
 }
 
 function formatLocation(area: string, province: string): string {
-  return [area, province].filter(Boolean).join(', ') || 'Location not recorded';
+  const region = province.trim();
+  if (region && area.toLowerCase().includes(region.toLowerCase())) return area;
+  return [area, region].filter(Boolean).join(', ') || 'Location not recorded';
 }
 
 function formatAccountType(value: string): string {
@@ -517,7 +519,6 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
             <tbody>
               {pageAssets.map((asset) => {
                 const assetDetails = [
-                  [asset.brandName, asset.modelName].filter(Boolean).join(' '),
                   asset.familyLabel || asset.sectorLabel,
                   shortReference(asset.sourceAssetId),
                 ].filter(Boolean);
@@ -525,7 +526,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                   <tr key={asset.assetKey} className={asset.hasRepeatInterest ? styles.flaggedRow : undefined}>
                     <td className={styles.assetCell}>
                       <strong>{asset.title}</strong>
-                      <span>· {[...assetDetails, formatLocation(asset.area, asset.province)].filter(Boolean).join(' · ')}</span>
+                      <span>{[...assetDetails, formatLocation(asset.area, asset.province)].filter(Boolean).join(' · ')}</span>
                     </td>
                     <td className={styles.sellerCell}>
                       <strong>{asset.sellerLabel}</strong>

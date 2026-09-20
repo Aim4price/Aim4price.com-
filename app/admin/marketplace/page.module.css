@@ -1109,3 +1109,38 @@
     display: none !important;
   }
 }
+
+/* Let filter controls reflow before their labels become clipped. */
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  align-items: end;
+  overflow: visible;
+  gap: 0.75rem;
+}
+.filters > label,
+.filters .searchField {
+  min-width: 0;
+}
+.filters .searchField {
+  grid-column: span 2;
+}
+@media (max-width: 600px) {
+  .filters { grid-template-columns: minmax(0, 1fr); }
+  .filters .searchField { grid-column: auto; }
+}
+
+/* Constrain long asset names so remaining columns stay reachable. */
+.tableScroller table { table-layout: fixed; }
+.tableScroller td { white-space: normal; overflow-wrap: anywhere; }
+.tableScroller td > strong,
+.tableScroller td > span,
+.tableScroller td > small,
+.tableScroller td > em {
+  display: block;
+  margin-left: 0;
+}
+.assetCell { width: 28%; }
+.sellerCell { width: 15%; }
+.tableScroller th:first-child { width: 28%; }
+.tableScroller td > span { margin-top: 0.25rem; }

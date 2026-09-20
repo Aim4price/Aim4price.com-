@@ -84,7 +84,7 @@ test('Asset register outcomes retain correction actions with compact pagination'
   assert.match(assetClient, /event\.key === 'Escape'/);
 });
 
-test('Outcome styles cover both ledgers without pills or wrapped record text', () => {
+test('Outcome styles cover both ledgers with readable record text and no pills', () => {
   assert.match(styles, /\.sourceSwitch\s*\{/);
   assert.match(styles, /\.assetButton\s*\{/);
   assert.match(styles, /\.rowActions\s*\{/);
@@ -97,7 +97,7 @@ test('Outcome styles cover both ledgers without pills or wrapped record text', (
   assert.match(styles, /@media \(max-width: 680px\)[\s\S]*?\.detailGrid\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/);
   assert.match(styles, /@media \(max-width: 680px\)[\s\S]*?\.detailGrid \.detailWide\s*\{[\s\S]*?grid-column:\s*auto/);
   assert.doesNotMatch(styles, /border-radius:\s*999px/);
-  assert.doesNotMatch(styles, /white-space:\s*normal/);
+  assert.match(styles, /\.tableScroller td \{ white-space: normal; overflow-wrap: anywhere;/);
 });
 
 test('Admin Asset Outcomes keeps the white responsive Aim4price layout', () => {

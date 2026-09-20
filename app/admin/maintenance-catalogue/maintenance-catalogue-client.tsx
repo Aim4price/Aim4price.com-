@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import AdminNavigation from "../../../components/AdminNavigation";
+import adminStyles from "../page.module.css";
 import {
   familyAssignmentKey,
   validateMaintenanceCatalogue,
@@ -29,8 +30,21 @@ export default function MaintenanceCatalogueClient() {
         e.returnValue = "";
       }
     };
+    const protectNavigation = (event: MouseEvent) => {
+      if (!dirty || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !(event.target instanceof Element)) return;
+      const link = event.target.closest("a[href]");
+      if (!link || link.getAttribute("target") === "_blank") return;
+      if (!window.confirm("Discard unsaved checklist changes and leave this page?")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
     window.addEventListener("beforeunload", prevent);
-    return () => window.removeEventListener("beforeunload", prevent);
+    document.addEventListener("click", protectNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", prevent);
+      document.removeEventListener("click", protectNavigation, true);
+    };
   }, [dirty]);
   async function load() {
     setBusy(true);
@@ -102,6 +116,8 @@ export default function MaintenanceCatalogueClient() {
   }
   async function importCatalogue(file?: File) {
     if (!file || busy) return;
+    if (dirty && !window.confirm("Replace your unsaved checklist changes with this import?")) return;
+    setBusy(true);
     try {
       if (file.size > 2500000)
         throw Error("Import must be smaller than 2.5 MB.");
@@ -110,6 +126,8 @@ export default function MaintenanceCatalogueClient() {
       setMessage("Import loaded for review. Save to apply.");
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Invalid import.");
+    } finally {
+      setBusy(false);
     }
   }
   const families =
@@ -121,18 +139,19 @@ export default function MaintenanceCatalogueClient() {
           .includes(query.toLowerCase()),
     ) || [];
   return (
-    <main className={styles.page}>
-      <Link href="/admin">Back to Admin</Link>
-      <header className={styles.header}>
-        <div>
+    <main className={adminStyles.page}>
+      <section className={adminStyles.shell}>
+      <header className={adminStyles.topBar}>
+        <div className={adminStyles.titleBlock}>
           <h1>Maintenance checklists</h1>
-          <p>Manage work choices for Basic and Advanced assets.</p>
         </div>
-        <button disabled={busy || !dirty} onClick={save}>
+        <AdminNavigation active="maintenance-catalogue" />
+      </header>
+      <div className={styles.page}>
+      <div className={styles.toolbar}>
+        <button className={styles.saveButton} disabled={busy || !dirty} onClick={save}>
           {busy ? "Please wait…" : "Save changes"}
         </button>
-      </header>
-      <div className={styles.toolbar}>
         <button disabled={!data || busy} onClick={exportCatalogue}>
           Export catalogue
         </button>
@@ -185,6 +204,7 @@ export default function MaintenanceCatalogueClient() {
             ))}
           </div>
           <p>{families.length} families</p>
+          {data && !families.length ? <p>No families match these filters.</p> : null}
           <div className={styles.list}>
             {families.map((f) => (
               <button
@@ -360,6 +380,8 @@ export default function MaintenanceCatalogueClient() {
           )}
         </section>
       </div>
+      </div>
+      </section>
     </main>
   );
 }

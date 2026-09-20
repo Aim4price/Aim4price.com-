@@ -14,9 +14,11 @@ export default function AdminBusinesses() {
     ),
     [notice, setNotice] = useState(""),
     [loading, setLoading] = useState(true),
+    [loadError, setLoadError] = useState(""),
     [search, setSearch] = useState("");
   async function load() {
     setLoading(true);
+    setLoadError("");
     try {
       const r = await fetch("/api/admin/business-network", {
           cache: "no-store",
@@ -25,7 +27,7 @@ export default function AdminBusinesses() {
       if (!r.ok) throw new Error(d.error);
       setRows(d.businesses);
     } catch (e) {
-      setNotice(e instanceof Error ? e.message : "Unable to load businesses.");
+      setLoadError(e instanceof Error ? e.message : "Unable to load businesses.");
     } finally {
       setLoading(false);
     }
@@ -99,9 +101,10 @@ export default function AdminBusinesses() {
                   {notice}
                 </p>
               ) : null}
+              {loadError ? <div role="alert" className={layout.emptyState}><p>{loadError}</p><button type="button" className={layout.secondary} onClick={() => void load()}>Try again</button></div> : null}
               {loading ? (
                 <p role="status">Loading businesses…</p>
-              ) : (
+              ) : !loadError ? (
                 <>
                   <p className={layout.count}>
                     {visible.length}{" "}
@@ -129,14 +132,14 @@ export default function AdminBusinesses() {
                     </article>
                   ))}
                   {!visible.length ? (
-                    <p>
+                    <div className={layout.emptyState}><p>
                       {search
                         ? "No businesses match your search."
                         : "No businesses added yet."}
-                    </p>
+                    </p>{search ? <button type="button" className={layout.secondary} onClick={() => setSearch("")}>Clear search</button> : <p>Add a business to manage its directory listing and contact details.</p>}</div>
                   ) : null}
                 </>
-              )}
+              ) : null}
             </>
           )}
         </div>

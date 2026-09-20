@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import {
   isAim4priceAdminEmail,
-  normalizeAccountStatus,
   type AccountStatus,
 } from "../../../../lib/account-constants";
 import {
@@ -172,6 +171,9 @@ export async function POST(request: Request) {
 
   try {
     body = (await request.json()) as Record<string, unknown>;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonError("Invalid request body.");
+    }
   } catch {
     return jsonError("Invalid request body.");
   }
@@ -290,8 +292,8 @@ export async function POST(request: Request) {
 
     const actionStatus = readActionStatus(action);
     const bodyStatus =
-      typeof body.status === "string"
-        ? normalizeAccountStatus(body.status)
+      typeof body.status === "string" && ALLOWED_STATUSES.has(body.status as AccountStatus)
+        ? body.status as AccountStatus
         : null;
     const nextStatus = actionStatus || bodyStatus;
 

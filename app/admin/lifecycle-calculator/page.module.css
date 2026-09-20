@@ -2976,3 +2976,13 @@
     min-width: 0;
   }
 }
+
+.fieldHelp {
+  color: #52685e;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: normal;
+}
+.fieldHelp summary { cursor: pointer; color: #176047; }
+.fieldHelp p { margin: 0.4rem 0 0; }
