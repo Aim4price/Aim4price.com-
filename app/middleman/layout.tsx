@@ -1,3 +1,4 @@
+import AppOfflineEntry from '../../components/AppOfflineEntry';
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
@@ -19,6 +20,7 @@ export default function DealerLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <DealerSessionKeeper />
+      <AppOfflineEntry appRoot="/middleman" worker="/middleman-sw.js" />
       <div className={styles.dealerLayout} data-app-shell="dealer">
         <DealerNav />
         <div className={styles.patternPageContent}>{children}</div>

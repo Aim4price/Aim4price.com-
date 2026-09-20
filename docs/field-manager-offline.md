@@ -1,12 +1,14 @@
 # Field Manager offline work
 
+The current four-app implementation and fuel support are documented in [App offline work](app-offline-work.md). The original Field Manager encrypted copy remains compatible.
+
 One account can have a saved offline copy in a browser at a time. Sync its queue and remove that copy before preparing another account.
 
 Open **Offline work** from Field Manager while connected, choose an offline PIN (at least eight digits), and prepare the saved copy. This downloads the current accessible assets and upcoming maintenance assigned to that manager or unassigned on those assets. The public offline screens are installed before preparation reports success.
 
 Without signal, Field Manager navigation falls back to the offline screen. Enter the PIN to view saved assets and tasks, record maintenance or notes/problems, capture current hours/km within maintenance, add up to four JPG/PNG/WEBP photos (5 MB each), and capture GPS at the asset. Save commits the encrypted update to the phone before showing success.
 
-While offline work is open and unlocked, it syncs on reconnect, on unlock, every minute when pending work exists, or through Sync now. Keep it open until the pending count reaches zero. It is not an OS background-sync service: a closed or locked app does not retain the encryption key. Update saved copy refreshes assets and tasks; successful queue draining also refreshes them. Financial changes, scheduling new maintenance and fuel capture use the normal online flows.
+While offline work is open and unlocked, it syncs on reconnect, on unlock, every minute when pending work exists, or through Sync now. Keep it open until the pending count reaches zero. It is not an OS background-sync service: a closed or locked app does not retain the encryption key. Update saved copy refreshes assets and tasks; successful queue draining also refreshes them. Financial changes and scheduling new maintenance use the normal online flows. Fuel issues, tank refills/dipstick notes and petrol-station slips are now supported in the shared offline workspace.
 
 ## Privacy and correctness
 
@@ -22,7 +24,7 @@ While offline work is open and unlocked, it syncs on reconnect, on unlock, every
 
 Run `node --test tests/field-manager-offline.test.cjs` and `node scripts/verify-field-manager-offline.cjs`. The browser harness uses fake authenticated APIs and real Chromium storage/crypto/service-worker behaviour, including disconnected reload, account switching and retry after an unconfirmed write. It does not access production data. TypeScript and app isolation checks remain required.
 
-When changing public offline shell files, bump `SHELL_CACHE` in `public/field-manager-sw.js` and the matching preparation readiness check in `offline.mjs`, so an installed worker updates the complete shell atomically. Keep schema migrations explicit before changing the encrypted vault structure.
+When changing public offline shell files, bump `SHELL_CACHE` in `public/app-offline/worker.js` and the matching version in `public/app-offline/config.mjs`, so an installed worker updates the complete shell atomically. Keep schema migrations explicit before changing the encrypted vault structure.
 
 ### Offline work appearance and entry point
 

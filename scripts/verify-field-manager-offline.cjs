@@ -21,11 +21,11 @@ async function main() {
         if (req.headers['x-aim4price-offline-identity'] !== identity) { res.writeHead(409, { 'Content-Type': 'application/json' }); res.end('{"ok":false,"error":"Wrong account"}'); return; }
         let body = ''; for await (const part of req) body += part;
         if (url.pathname.endsWith('/upload')) { uploads++; res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ ok: true, uploads: [{ url: '/api/asset-register/uploads/photo-' + uploads }] })); return; }
-        const data = JSON.parse(body); attempts++; events.set(data.clientEventId, data);
+        const data = JSON.parse(body).payload; attempts++; events.set(data.clientEventId, data);
         if (dropNext) { dropNext = false; res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"ok":false,"error":"Confirmation interrupted"}'); return; }
         res.setHeader('Content-Type', 'application/json'); res.end('{"ok":true,"asset":{"id":"asset"},"scheduledMaintenanceCompletion":{"completed":true}}'); return;
       }
-      const allowed = ['/field-manager/offline.html', '/field-manager/offline.css', '/field-manager/montserrat-latin.woff', '/field-manager/offline.mjs', '/field-manager/offline-store.mjs', '/field-manager-sw.js', '/app-push-worker.js'];
+      const allowed = ['/app-offline/worker.js', '/app-offline/config.mjs', '/app-offline/store.mjs', '/app-offline/offline.mjs', '/app-offline/offline.css', '/field-manager/offline.html', '/field-manager/offline.css', '/field-manager/montserrat-latin.woff', '/field-manager/offline.mjs', '/field-manager/offline-store.mjs', '/field-manager-sw.js', '/app-push-worker.js'];
       if (!allowed.includes(url.pathname)) { req.socket.destroy(); return; }
       const file = path.join(root, 'public', url.pathname);
       res.setHeader('Content-Type', url.pathname.endsWith('.woff') ? 'font/woff' : url.pathname.endsWith('.html') ? 'text/html' : url.pathname.endsWith('.css') ? 'text/css' : 'application/javascript');
@@ -36,7 +36,7 @@ async function main() {
   const origin = `http://127.0.0.1:${server.address().port}`;
   let browser;
   try {
-    browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args, headless: true, pipe: true });
+    browser = await puppeteer.launch({ executablePath: process.env.OFFLINE_TEST_CHROMIUM || await chromium.executablePath(), args: chromium.args, headless: true, pipe: true });
     const context = browser.defaultBrowserContext(); await context.overridePermissions(origin, ['geolocation']);
     const page = await browser.newPage(); const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
@@ -49,11 +49,12 @@ async function main() {
     await page.waitForFunction(() => !document.querySelector('#sync').disabled);
     assert.match(await page.$eval('#assets', n => n.textContent), /Test tractor/);
     await page.waitForFunction(async () => !(await caches.keys()).includes('aim4price-field-offline-shell-v1'));
-    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v3' })), true);
+    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v4' })), true);
     console.log('PASS preparation, snapshot, upgraded shell and locally cached font');
     await page.setOfflineMode(true);
     await page.click('.asset'); await page.select('#action', 'Serviced'); await page.select('#task', 'task');
     await page.click('#checklist-items input[value="oil_filter"]');
+    await page.type('#company', 'Test Workshop'); await page.type('#mechanic', 'Test Mechanic');
     await page.type('#usage', '105'); await page.type('#notes', 'Changed engine oil offline');
     await page.evaluate(() => {
       const bytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII='), c => c.charCodeAt(0));

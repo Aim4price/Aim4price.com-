@@ -1,3 +1,4 @@
+import { verifyOfflineReplayIdentity } from '../../../../../../lib/app-offline-access';
 import { NextRequest, NextResponse } from 'next/server';
 import { fieldManagerCan } from '../../../../../../lib/field-manager';
 import { authorizeFuelStorageScanAccess, getFuelScanPayload, recordFuelStorageStock } from '../../../../../../lib/fuel-ledger';
@@ -46,6 +47,9 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const offlineDenied = await verifyOfflineReplayIdentity(request);
+  if (offlineDenied) return offlineDenied;
+
   const publicFuelStorageCode = normalizeFuelCode(context.params.publicFuelStorageCode);
   const isFieldManagerHint = request.nextUrl.searchParams.get('fieldManager') === '1';
   const isOwnerAppHint = request.nextUrl.searchParams.get('ownerApp') === '1';

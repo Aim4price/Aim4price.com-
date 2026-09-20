@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import styles from './field-manager-settings.module.css';
-export default function FieldManagerSettings() {
+export default function FieldManagerSettings({ appRoot = '/field-manager' }: { appRoot?: string }) {
   const menu = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const close = (event: PointerEvent) => { if (menu.current && !menu.current.contains(event.target as Node)) menu.current.open = false; };
@@ -18,7 +18,7 @@ export default function FieldManagerSettings() {
       </svg>
     </summary>
     <nav className={styles.panel} aria-label="App settings">
-      <a href="/field-manager/offline.html"><strong>Offline work</strong><span>Saved assets and updates</span></a>
+      <a href={`${appRoot}/offline.html`}><strong>Offline work</strong><span>Saved assets and updates</span></a>
     </nav>
   </details>;
 }

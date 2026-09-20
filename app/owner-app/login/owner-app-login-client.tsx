@@ -94,6 +94,7 @@ export default function OwnerAppLoginClient({ hasAccountSession = false }: { has
         companyName: payload.welcome?.companyName || 'Aim4price',
         logoUrl: payload.welcome?.logoUrl || '/icon.png',
       });
+    if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-' + ('owner') + '-session'); channel.postMessage('lock'); channel.close(); }
       window.setTimeout(() => window.location.replace(redirectTo), 1400);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to sign in.'); setBusy(false); }
   }

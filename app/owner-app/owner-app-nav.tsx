@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import FieldManagerSettings from '../field-manager/field-manager-settings';
 import { useState, type ReactNode } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './owner-app.module.css';
@@ -24,6 +25,7 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
 
   async function signOut() {
     if (signingOut) return;
+    if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-' + ('owner') + '-session'); channel.postMessage('lock'); channel.close(); }
     setSigningOut(true);
     await Promise.allSettled([
       fetch('/api/owner-app/logout', { method: 'POST', credentials: 'include' }),
@@ -35,6 +37,7 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
 
   return (
     <header className={`${styles.assetsHeader} ${headerLayoutClass} ${className}`} aria-label="Aim4price Owner account controls">
+      {!showBack ? <FieldManagerSettings appRoot="/owner-app" /> : null}
       {showBack ? (
         <>
           {backAction ? (

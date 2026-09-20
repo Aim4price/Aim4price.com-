@@ -1,3 +1,4 @@
+import { verifyOfflineReplayIdentity } from '../../../../../../lib/app-offline-access';
 import { NextRequest, NextResponse } from "next/server";
 import {
   recordAdminUsageEventsSafely,
@@ -146,6 +147,9 @@ function hasMeaningfulUpdate(body: {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
+  const offlineDenied = await verifyOfflineReplayIdentity(request);
+  if (offlineDenied) return offlineDenied;
+
   const publicAssetCode = normalizePublicAssetCode(
     context.params?.publicAssetCode,
   );

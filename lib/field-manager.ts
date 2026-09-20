@@ -1188,7 +1188,7 @@ function fieldManagerAssetOwnerFromRow(
   return resolved.ok ? resolved.ownerUserId : null;
 }
 
-async function ensureFieldManagerAssetPublicCodes(
+export async function ensureFieldManagerAssetPublicCodes(
   ownerUserId: string,
 ): Promise<void> {
   const normalizedOwnerUserId = asText(ownerUserId);

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import FieldManagerSettings from '../field-manager/field-manager-settings';
 import NotificationSettingsModal from '../../components/NotificationSettingsModal';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import { usePathname } from 'next/navigation';
@@ -57,6 +58,7 @@ export default function DealerNav({
 
   async function signOut() {
     if (isSigningOut) return;
+    if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-' + (appRoot === '/middleman' ? 'middleman' : 'dealer') + '-session'); channel.postMessage('lock'); channel.close(); }
     setIsSigningOut(true);
 
     await fetch(`/api${appRoot}/logout`, { method: 'POST', credentials: 'include' });
@@ -70,6 +72,7 @@ export default function DealerNav({
       className={`${styles.nav} ${navLayoutClass} ${workspaceSurfaceClass} ${onBack ? styles.estimateNav : ''}`}
       aria-label="Dealer App navigation"
     >
+      {!resolvedShowBack ? <FieldManagerSettings appRoot={appRoot} /> : null}
       {resolvedShowBack ? (
         <>
           {onBack ? (

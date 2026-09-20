@@ -188,6 +188,7 @@ export default function DealerLoginClient({ hasAccountSession = false, middleman
         companyName: payload.welcome?.companyName || 'Aim4price',
         logoUrl: payload.welcome?.logoUrl || '/icon.png',
       });
+    if ('BroadcastChannel' in window) { const channel = new BroadcastChannel('aim4price-' + (middlemanMode ? 'middleman' : 'dealer') + '-session'); channel.postMessage('lock'); channel.close(); }
       window.setTimeout(() => window.location.replace(redirectTo), 1400);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to sign in.');
