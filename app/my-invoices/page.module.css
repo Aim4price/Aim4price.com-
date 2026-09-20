@@ -21,8 +21,8 @@
   --ledger-inline-gutter: clamp(0.7rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
   --ledger-panel-inset: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.7rem);
   min-height: calc(var(--website-design-vh, 1vh) * 100);
-  background: linear-gradient(180deg, #f7faf9 0%, #edf4f5 100%);
-  color: var(--text);
+  background: linear-gradient(180deg, var(--app-surface, #f7faf9) 0%, var(--app-info-soft, #edf4f5) 100%);
+  color: var(--app-text, var(--text));
 }
 
 .shell {
@@ -47,15 +47,15 @@
 }
 
 .noticeSuccess {
-  color: #116343;
-  background: #eaf7f1;
-  border-color: #d1ebdf;
+  color: var(--app-text, #116343);
+  background: var(--app-surface-soft, #eaf7f1);
+  border-color: var(--app-line, #d1ebdf);
 }
 
 .noticeError {
-  color: #9b2f2f;
-  background: #fff0f0;
-  border-color: #f1d2d2;
+  color: var(--app-danger, #9b2f2f);
+  background: var(--app-danger-soft, #fff0f0);
+  border-color: var(--app-danger-line, #f1d2d2);
 }
 
 .pageTitleBlock {
@@ -69,21 +69,21 @@
   display: flex;
   align-items: center;
   padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem);
-  border: 1.5px solid rgba(193, 211, 218, 0.98);
+  border: 1.5px solid var(--app-info-line, rgba(193, 211, 218, 0.98));
   border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.7rem);
   background:
-    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
+    radial-gradient(circle at 3% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.08)) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(248, 252, 253, 0.98)) 100%);
   box-shadow:
-    0 18px 38px rgba(16, 36, 40, 0.06),
-    0 6px 16px rgba(16, 36, 40, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 18px 38px var(--app-shadow-colour, rgba(16, 36, 40, 0.06)),
+    0 6px 16px var(--app-shadow-colour, rgba(16, 36, 40, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .pageTitleBlock h1 {
   min-width: 0;
   margin: 0;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(2.35rem, calc(var(--website-design-vw, 1vw) * 4.15), 3.55rem);
   font-weight: 900;
@@ -96,7 +96,7 @@
 
 .pageTitleBlock p {
   margin: 0.7rem 0 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: clamp(0.9rem, calc(var(--website-design-vw, 1vw) * 1.3), 1.02rem);
   font-weight: 720;
 }
@@ -134,7 +134,7 @@
   font-size: clamp(0.98rem, calc(var(--website-design-vw, 1vw) * 1.15), 1.08rem);
   font-weight: 860;
   letter-spacing: -0.015em;
-  box-shadow: 0 14px 28px rgba(18, 35, 39, 0.065), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(18, 35, 39, 0.065)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .costActionGrid .costActionButton svg {
@@ -152,51 +152,51 @@
 }
 
 .costActionCopy small {
-  color: #5f766f;
+  color: var(--app-muted, #5f766f);
   font-size: 0.7rem;
   font-weight: 720;
   line-height: 1.2;
 }
 
 .costActionButton.costActionAdd {
-  color: var(--copper-text);
-  border-color: var(--copper-border);
-  background: linear-gradient(180deg, #fffdfb 0%, #fff4ea 100%);
+  color: var(--app-danger, var(--copper-text));
+  border-color: var(--app-danger-line, var(--copper-border));
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdfb) 0%, var(--app-danger-soft, #fff4ea) 100%);
 }
 
 .costActionButton.costActionAdd:hover:not(:disabled) {
-  border-color: #dc8b48;
-  background: linear-gradient(180deg, #ffffff 0%, #ffead7 100%);
-  box-shadow: 0 18px 34px rgba(180, 107, 43, 0.12), inset 0 1px 0 #ffffff;
+  border-color: var(--app-danger-line, #dc8b48);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #ffead7) 100%);
+  box-shadow: 0 18px 34px var(--app-shadow-colour, rgba(180, 107, 43, 0.12)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .costActionButton.costActionBudgets {
-  color: #123b62;
-  border-color: rgba(137, 190, 239, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #f1f7fd 100%);
+  color: var(--app-info, #123b62);
+  border-color: var(--app-info-line, rgba(137, 190, 239, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f1f7fd) 100%);
 }
 
 .costActionButton.costActionBudgets:hover:not(:disabled) {
-  border-color: #6daee8;
-  background: linear-gradient(180deg, #ffffff 0%, #e7f3fd 100%);
-  box-shadow: 0 18px 34px rgba(42, 112, 170, 0.12), inset 0 1px 0 #ffffff;
+  border-color: var(--app-info-line, #6daee8);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #e7f3fd) 100%);
+  box-shadow: 0 18px 34px var(--app-shadow-colour, rgba(42, 112, 170, 0.12)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .costActionButton.costActionContribution {
-  color: #145d43;
-  border-color: rgba(123, 207, 159, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #f0fbf5 100%);
+  color: var(--app-text, #145d43);
+  border-color: var(--app-line, rgba(123, 207, 159, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f0fbf5) 100%);
 }
 
 .costActionButton.costActionContribution:hover:not(:disabled) {
-  border-color: #60bd88;
-  background: linear-gradient(180deg, #ffffff 0%, #e4f8ed 100%);
-  box-shadow: 0 18px 34px rgba(25, 116, 84, 0.12), inset 0 1px 0 #ffffff;
+  border-color: var(--app-line, #60bd88);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e4f8ed) 100%);
+  box-shadow: 0 18px 34px var(--app-shadow-colour, rgba(25, 116, 84, 0.12)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .costActionButton.costActionDownload {
-  border-color: #0f6248;
-  box-shadow: 0 16px 30px rgba(25, 116, 84, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  border-color: var(--app-line, #0f6248);
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(25, 116, 84, 0.2)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .costActionAlert {
@@ -209,11 +209,11 @@
   align-items: center;
   justify-content: center;
   padding: 0 0.28rem;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--app-line, #ffffff);
   border-radius: 999px;
   color: #ffffff;
-  background: #d94a43;
-  box-shadow: 0 5px 12px rgba(151, 39, 35, 0.22);
+  background: var(--app-danger-soft, #d94a43);
+  box-shadow: 0 5px 12px var(--app-shadow-colour, rgba(151, 39, 35, 0.22));
   font-size: 0.8rem;
   font-weight: 950;
 }
@@ -232,13 +232,13 @@
   justify-items: center;
   gap: 0.75rem;
   padding: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 3), 2.5rem);
-  border: 2px solid rgba(193, 211, 218, 0.95);
+  border: 2px solid var(--app-info-line, rgba(193, 211, 218, 0.95));
   border-radius: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.5), 2.25rem);
   background:
-    radial-gradient(circle at 50% 0%, rgba(25, 116, 84, 0.08), transparent 55%),
-    #ffffff;
-  box-shadow: 0 18px 42px rgba(18, 35, 39, 0.08);
-  color: var(--brand-dark);
+    radial-gradient(circle at 50% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.08)), transparent 55%),
+    var(--app-surface, #ffffff);
+  box-shadow: 0 18px 42px var(--app-shadow-colour, rgba(18, 35, 39, 0.08));
+  color: var(--app-text, var(--brand-dark));
   text-align: center;
   cursor: pointer;
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
@@ -246,8 +246,8 @@
 
 .optionCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(25, 116, 84, 0.38);
-  box-shadow: 0 26px 56px rgba(18, 35, 39, 0.13);
+  border-color: var(--app-line, rgba(25, 116, 84, 0.38));
+  box-shadow: 0 26px 56px var(--app-shadow-colour, rgba(18, 35, 39, 0.13));
 }
 
 .optionCard span {
@@ -281,26 +281,26 @@
   align-items: center;
   min-height: 3.75rem;
   padding: 0 0.78rem 0 1rem;
-  border: 1px solid rgba(194, 211, 224, 0.98);
+  border: 1px solid var(--app-info-line, rgba(194, 211, 224, 0.98));
   border-radius: 1.18rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow:
-    0 8px 18px rgba(30, 56, 66, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 8px 18px var(--app-shadow-colour, rgba(30, 56, 66, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9));
 }
 
 .searchWrap:focus-within {
-  border-color: rgba(25, 116, 84, 0.42);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.42));
   box-shadow:
-    0 0 0 4px rgba(25, 116, 84, 0.12),
-    0 10px 22px rgba(30, 56, 66, 0.055);
+    0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.12)),
+    0 10px 22px var(--app-shadow-colour, rgba(30, 56, 66, 0.055));
 }
 
 .searchIcon {
   width: 1.08rem;
   height: 1.08rem;
   flex: 0 0 auto;
-  color: #7b8a99;
+  color: var(--app-muted, #7b8a99);
 }
 
 .searchInput {
@@ -310,7 +310,7 @@
   padding: 0 0.72rem;
   border: 0;
   background: transparent;
-  color: #1d303a;
+  color: var(--app-info, #1d303a);
   font: inherit;
   font-size: 1rem;
   font-weight: 650;
@@ -321,7 +321,7 @@
 }
 
 .searchInput::placeholder {
-  color: #8594a4;
+  color: var(--app-muted, #8594a4);
   opacity: 1;
   font-weight: 560;
 }
@@ -389,26 +389,26 @@
   padding: 0 1.15rem;
   color: #ffffff;
   background: linear-gradient(180deg, var(--brand-mid) 0%, var(--brand-deep) 100%);
-  border-color: #0f6248;
-  box-shadow: 0 14px 26px rgba(25, 116, 84, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  border-color: var(--app-line, #0f6248);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(25, 116, 84, 0.2)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .primaryButton:hover:not(:disabled) {
   background: linear-gradient(180deg, #218462 0%, #0c4a37 100%);
-  box-shadow: 0 18px 32px rgba(25, 116, 84, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 18px 32px var(--app-shadow-colour, rgba(25, 116, 84, 0.25)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2));
 }
 
 .secondaryButton {
   padding: 0 1.05rem;
-  color: #183143;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
-  border-color: var(--line-strong);
-  box-shadow: 0 10px 20px rgba(18, 35, 39, 0.045), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: var(--app-info, #183143);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f4f8fc) 100%);
+  border-color: var(--app-info-line, var(--line-strong));
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(18, 35, 39, 0.045)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .secondaryButton:hover:not(:disabled) {
-  border-color: rgba(160, 184, 202, 0.96);
-  box-shadow: 0 14px 28px rgba(18, 35, 39, 0.07), inset 0 1px 0 rgba(255, 255, 255, 1);
+  border-color: var(--app-info-line, rgba(160, 184, 202, 0.96));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(18, 35, 39, 0.07)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .clearSearchButton {
@@ -417,10 +417,10 @@
   min-height: 2.4rem;
   padding: 0;
   border-radius: 999px;
-  color: #16314a;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
-  border-color: var(--line-strong);
-  box-shadow: 0 10px 22px rgba(15, 59, 100, 0.085), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: var(--app-info, #16314a);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f4f8fc) 100%);
+  border-color: var(--app-info-line, var(--line-strong));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(15, 59, 100, 0.085)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   font-size: 1.35rem;
 }
 
@@ -439,36 +439,36 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.82);
+  background: var(--app-surface, rgba(255, 255, 255, 0.82));
   color: currentColor;
   font-size: 0.78rem;
   font-weight: 900;
 }
 
 .toolbarAddButton {
-  color: var(--copper-text);
-  background: linear-gradient(180deg, #fffaf6 0%, var(--copper-bg) 100%);
-  border-color: var(--copper-border);
-  box-shadow: 0 10px 22px rgba(180, 107, 43, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: var(--app-danger, var(--copper-text));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf6) 0%, var(--app-warning-soft, var(--copper-bg)) 100%);
+  border-color: var(--app-danger-line, var(--copper-border));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(180, 107, 43, 0.09)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .toolbarAddButton:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ffffff 0%, #ffead7 100%);
-  border-color: #dc8b48;
-  box-shadow: 0 14px 28px rgba(180, 107, 43, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #ffead7) 100%);
+  border-color: var(--app-danger-line, #dc8b48);
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(180, 107, 43, 0.12)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .toolbarFilterButton {
-  color: var(--brand-deep);
-  background: linear-gradient(180deg, #fbfffd 0%, var(--brand-light) 100%);
-  border-color: var(--brand-light-border);
-  box-shadow: 0 10px 22px rgba(25, 116, 84, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: var(--app-text, var(--brand-deep));
+  background: linear-gradient(180deg, var(--app-surface, #fbfffd) 0%, var(--app-surface-soft, var(--brand-light)) 100%);
+  border-color: var(--app-line, var(--brand-light-border));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(25, 116, 84, 0.08)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .toolbarFilterButton:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ffffff 0%, #e6f7ed 100%);
-  border-color: #9fd1b4;
-  box-shadow: 0 14px 28px rgba(25, 116, 84, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f7ed) 100%);
+  border-color: var(--app-line, #9fd1b4);
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(25, 116, 84, 0.12)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .toolbarDownloadButton {
@@ -510,7 +510,7 @@
 .modalHeader h2,
 .uploadPanel h3 {
   margin: 0;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -519,7 +519,7 @@
 .modalHeader p,
 .helperText {
   margin: 0.35rem 0 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-weight: 750;
 }
 
@@ -530,10 +530,10 @@
 
 .emptyState {
   padding: 1.25rem;
-  border: 1px dashed var(--line-strong);
+  border: 1px dashed var(--app-info-line, var(--line-strong));
   border-radius: 1rem;
-  background: var(--surface-soft);
-  color: var(--text-muted);
+  background: var(--app-info-soft, var(--surface-soft));
+  color: var(--app-muted, var(--text-muted));
   font-weight: 850;
   text-align: center;
 }
@@ -554,10 +554,10 @@
   align-items: center;
   justify-content: center;
   padding: 0 1.02rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--app-info-line, var(--line-strong));
   border-radius: 0.88rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
-  color: #2f4150;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f8fb) 100%);
+  color: var(--app-info, #2f4150);
   font: inherit;
   font-size: 0.88rem;
   font-weight: 850;
@@ -568,8 +568,8 @@
 
 .paginationButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(160, 184, 202, 0.96);
-  box-shadow: 0 10px 22px rgba(18, 35, 39, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  border-color: var(--app-info-line, rgba(160, 184, 202, 0.96));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(18, 35, 39, 0.06)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .paginationButton:disabled {
@@ -578,12 +578,12 @@
 }
 
 .paginationButton:focus-visible {
-  outline: 2px solid rgba(20, 112, 82, 0.22);
+  outline: 2px solid var(--app-accent, rgba(20, 112, 82, 0.22));
   outline-offset: 0.2rem;
 }
 
 .paginationStatus {
-  color: #6d7d8d;
+  color: var(--app-muted, #6d7d8d);
   font-size: 0.88rem;
   font-weight: 790;
   line-height: 1.2;
@@ -611,12 +611,12 @@
   width: min(100%, 1120px);
   max-height: min(calc(var(--website-visible-height, 100vh) * 0.9), calc(calc(var(--website-visible-height, 100dvh) * 1) - 2.5rem));
   overflow: hidden;
-  border: 1px solid rgba(207, 224, 234, 0.95);
+  border: 1px solid var(--app-info-line, rgba(207, 224, 234, 0.95));
   border-radius: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-  box-shadow: 0 30px 80px rgba(16, 28, 45, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.06)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfc) 100%);
+  box-shadow: 0 30px 80px var(--app-shadow-colour, rgba(16, 28, 45, 0.24)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.94));
 }
 
 .assetModal {
@@ -641,9 +641,9 @@
   width: 3.6rem;
   height: 3.6rem;
   padding: 0;
-  color: #16314a;
-  background: #f5f9fd;
-  border-color: var(--line-strong);
+  color: var(--app-info, #16314a);
+  background: var(--app-info-soft, #f5f9fd);
+  border-color: var(--app-info-line, var(--line-strong));
 }
 
 .modalHeader {
@@ -662,7 +662,7 @@
 .modalDivider {
   height: 1px;
   margin: 1.15rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
-  background: var(--line);
+  background: var(--app-info-soft, var(--line));
 }
 
 .formModalScrollBody {
@@ -699,7 +699,7 @@
 .assetList::-webkit-scrollbar-track {
   margin: 0.3rem 0 0.5rem;
   border-radius: 999px;
-  background: rgba(239, 244, 247, 0.98);
+  background: var(--app-info-soft, rgba(239, 244, 247, 0.98));
   border-left: 0.24rem solid transparent;
   border-right: 0.24rem solid transparent;
   background-clip: padding-box;
@@ -733,15 +733,15 @@
 .filterGrid select {
   width: 100%;
   min-height: 3.25rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--app-info-line, var(--line-strong));
   border-radius: 1.05rem;
-  background: rgba(255, 255, 255, 0.96);
-  color: var(--text);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  color: var(--app-text, var(--text));
   font: inherit;
   font-weight: 750;
   padding: 0 1rem;
   outline: none;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
@@ -757,15 +757,15 @@
 .formGrid select:focus,
 .textAreaGrid textarea:focus,
 .filterGrid select:focus {
-  border-color: rgba(22, 83, 64, 0.38);
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.38));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.09)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
 .formGrid input:disabled,
 .formGrid select:disabled,
 .filterGrid select:disabled {
-  background: #f4f6f8;
-  color: #7c8794;
+  background: var(--app-info-soft, #f4f6f8);
+  color: var(--app-muted, #7c8794);
 }
 
 .assetRow {
@@ -775,16 +775,16 @@
   align-items: center;
   gap: 1rem;
   padding: 0.95rem 1rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--app-info-line, var(--line-strong));
   border-radius: 1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   text-align: left;
   cursor: pointer;
 }
 
 .assetRow:hover {
-  border-color: rgba(25, 116, 84, 0.38);
-  box-shadow: 0 12px 26px rgba(18, 35, 39, 0.07);
+  border-color: var(--app-line, rgba(25, 116, 84, 0.38));
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(18, 35, 39, 0.07));
 }
 
 .assetInfo {
@@ -795,14 +795,14 @@
 
 .assetInfo strong,
 .assetValue strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 1.04rem;
   font-weight: 900;
 }
 
 .assetInfo small,
 .assetValue small {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-weight: 800;
 }
 
@@ -817,26 +817,26 @@
   display: grid;
   gap: 1rem;
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.35rem);
-  border: 1px solid rgba(221, 229, 237, 0.96);
+  border: 1px solid var(--app-info-line, rgba(221, 229, 237, 0.96));
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 36%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
-  box-shadow: 0 10px 24px rgba(16, 28, 45, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.04)), transparent 36%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(16, 28, 45, 0.035)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.94));
 }
 
 .dealerDetailsCard {
   display: grid;
   gap: 0.28rem;
   padding: 1rem 1.1rem;
-  border: 1px solid var(--brand-light-border);
+  border: 1px solid var(--app-line, var(--brand-light-border));
   border-radius: 1rem;
-  background: var(--brand-light);
-  color: var(--brand-dark);
+  background: var(--app-surface-soft, var(--brand-light));
+  color: var(--app-text, var(--brand-dark));
 }
 
 .dealerDetailsCard span {
-  color: var(--brand-mid);
+  color: var(--app-text, var(--brand-mid));
   font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.045em;
@@ -849,24 +849,24 @@
 }
 
 .dealerDetailsCard small {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.8rem;
   font-weight: 680;
 }
 
 .uploadPanel h3 {
   padding-bottom: 1rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--app-info-line, var(--line));
   font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.8rem);
 }
 
 .warningBox {
   margin-bottom: 1rem;
   padding: 0.9rem 1rem;
-  border: 1px solid #ead9a9;
+  border: 1px solid var(--app-warning-line, #ead9a9);
   border-radius: 1rem;
-  background: #fff8e7;
-  color: #73510c;
+  background: var(--app-warning-soft, #fff8e7);
+  color: var(--app-warning, #73510c);
   font-weight: 800;
 }
 
@@ -903,7 +903,7 @@
 .filterField {
   display: grid;
   gap: 0.52rem;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-weight: 900;
 }
 
@@ -912,7 +912,7 @@
 .textAreaGrid span,
 .filterGrid span,
 .uploadInline span {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.82rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -928,15 +928,15 @@
   align-items: center;
   gap: 1rem;
   padding: 1.25rem;
-  border: 1px dashed var(--line-strong);
+  border: 1px dashed var(--app-info-line, var(--line-strong));
   border-radius: 1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .uploadBox p {
   grid-column: 1 / -1;
   margin: 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-weight: 800;
   text-align: center;
 }
@@ -950,13 +950,13 @@
   gap: 0.55rem;
   min-height: 3.75rem;
   padding: 0 1.6rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--app-info-line, var(--line-strong));
   border-radius: 1rem;
-  background: #ffffff;
-  color: #183143;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #183143);
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 14px 24px rgba(18, 35, 39, 0.06);
+  box-shadow: 0 14px 24px var(--app-shadow-colour, rgba(18, 35, 39, 0.06));
 }
 
 .uploadButtonSmall {
@@ -979,10 +979,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--app-info-line, var(--line-strong));
   border-radius: 1rem;
-  background: #f4f8fc;
-  color: #183143;
+  background: var(--app-info-soft, #f4f8fc);
+  color: var(--app-info, #183143);
   font-size: 1.2rem;
   font-weight: 900;
 }
@@ -997,14 +997,14 @@
   align-items: center;
   gap: 0.85rem;
   padding: 0.95rem;
-  border: 1px dashed var(--line-strong);
+  border: 1px dashed var(--app-info-line, var(--line-strong));
   border-radius: 1rem;
-  background: var(--surface-soft);
+  background: var(--app-info-soft, var(--surface-soft));
 }
 
 .uploadInline strong {
   min-width: 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.9rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1012,22 +1012,22 @@
 }
 
 .fileLink {
-  color: var(--brand-mid);
+  color: var(--app-text, var(--brand-mid));
   font-weight: 900;
   text-decoration: none;
 }
 
 .rawPreview {
-  border: 1px solid var(--line);
+  border: 1px solid var(--app-info-line, var(--line));
   border-radius: 1rem;
-  background: #fbfdfe;
+  background: var(--app-info-soft, #fbfdfe);
   overflow: hidden;
 }
 
 .rawPreview summary {
   padding: 0.85rem 1rem;
   cursor: pointer;
-  color: var(--text);
+  color: var(--app-text, var(--text));
   font-weight: 900;
 }
 
@@ -1036,8 +1036,8 @@
   margin: 0;
   overflow: auto;
   padding: 1rem;
-  border-top: 1px solid var(--line);
-  color: #405164;
+  border-top: 1px solid var(--app-info-line, var(--line));
+  color: var(--app-info, #405164);
   white-space: pre-wrap;
 }
 
@@ -1057,24 +1057,24 @@
   white-space: normal;
   text-align: left;
   padding: 1rem;
-  border-color: var(--line-strong);
-  background: linear-gradient(180deg, #ffffff 0%, #f5f9fb 100%);
-  color: var(--text);
-  box-shadow: 0 12px 26px rgba(18, 35, 39, 0.055);
+  border-color: var(--app-info-line, var(--line-strong));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f9fb) 100%);
+  color: var(--app-text, var(--text));
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(18, 35, 39, 0.055));
 }
 
 .downloadChoiceButton svg {
-  color: var(--brand-mid);
+  color: var(--app-text, var(--brand-mid));
 }
 
 .downloadChoiceButton strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 1.05rem;
   font-weight: 900;
 }
 
 .downloadChoiceButton span {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.92rem;
   font-weight: 760;
   line-height: 1.35;
@@ -1108,11 +1108,11 @@
   align-items: center;
   gap: 0.9rem;
   padding: 1rem 1.05rem;
-  border: 1px solid rgba(216, 226, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.98));
   border-radius: 1.18rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
-  color: #1d3b62;
-  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f8fb) 100%);
+  color: var(--app-info, #1d3b62);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.04)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -1122,21 +1122,21 @@
 .sourceChoiceOption:hover,
 .reportOption:hover {
   transform: translateY(-1px);
-  border-color: rgba(184, 202, 218, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #eef5fb 100%);
-  box-shadow: 0 16px 30px rgba(16, 31, 28, 0.065), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  border-color: var(--app-info-line, rgba(184, 202, 218, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #eef5fb) 100%);
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(16, 31, 28, 0.065)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .sourceChoiceOption:focus-visible,
 .reportOption:focus-visible {
   outline: none;
-  border-color: rgba(25, 116, 84, 0.45);
-  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.12), 0 16px 30px rgba(16, 31, 28, 0.065);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.45));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.12)), 0 16px 30px var(--app-shadow-colour, rgba(16, 31, 28, 0.065));
 }
 
 .reportOptionActive {
-  background: radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 42%), linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  border-color: rgba(190, 224, 206, 0.98);
+  background: radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.1)), transparent 42%), linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
+  border-color: var(--app-accent, rgba(190, 224, 206, 0.98));
 }
 
 .choiceGraphic,
@@ -1147,17 +1147,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(216, 226, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.98));
   border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 0 9px 18px rgba(16, 31, 28, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 9px 18px var(--app-shadow-colour, rgba(16, 31, 28, 0.035)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .choiceGraphic svg,
 .reportGraphic svg {
   width: 2rem;
   height: 2rem;
-  color: var(--brand-mid);
+  color: var(--app-text, var(--brand-mid));
 }
 
 .choiceTitleBlock,
@@ -1170,7 +1170,7 @@
 
 .choiceTitleBlock strong,
 .reportTitleBlock strong {
-  color: #10352b;
+  color: var(--app-text, #10352b);
   font-size: 1rem;
   font-weight: 850;
   line-height: 1.18;
@@ -1179,7 +1179,7 @@
 
 .choiceTitleBlock small,
 .reportTitleBlock small {
-  color: #627386;
+  color: var(--app-info, #627386);
   font-size: 0.83rem;
   font-weight: 620;
   line-height: 1.32;
@@ -1213,11 +1213,11 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0 1rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--app-info-line, var(--line-strong));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
-  color: var(--text);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #fbfdfe) 100%);
+  color: var(--app-text, var(--text));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
   font: inherit;
   font-size: 1rem;
   font-weight: 780;
@@ -1231,16 +1231,16 @@
 .customFilterSelectButton:hover,
 .customFilterSelectButtonOpen,
 .customFilterSelectButton:focus-visible {
-  border-color: rgba(22, 83, 64, 0.38);
-  background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.38));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f5fbf8) 100%);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.09)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
 .customFilterSelectButton:disabled {
-  background: #f4f6f8;
-  color: #7c8794;
+  background: var(--app-info-soft, #f4f6f8);
+  color: var(--app-muted, #7c8794);
   cursor: not-allowed;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
 .filterGrid .customFilterSelectButtonText,
@@ -1260,7 +1260,7 @@
   width: 1.05rem;
   height: 1.05rem;
   flex: 0 0 auto;
-  color: #17364b;
+  color: var(--app-info, #17364b);
   transition: transform 160ms ease, color 160ms ease;
 }
 
@@ -1269,7 +1269,7 @@
 }
 
 .customFilterSelectButton:disabled .customFilterSelectChevron {
-  color: #a2adb9;
+  color: var(--app-muted, #a2adb9);
 }
 
 .customFilterSelectMenu {
@@ -1282,10 +1282,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.35rem;
-  border: 1px solid rgba(187, 211, 224, 0.98);
+  border: 1px solid var(--app-info-line, rgba(187, 211, 224, 0.98));
   border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 0 18px 36px rgba(20, 36, 33, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 18px 36px var(--app-shadow-colour, rgba(20, 36, 33, 0.14)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   scrollbar-width: thin;
   scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
 }
@@ -1297,7 +1297,7 @@
 .customFilterSelectMenu::-webkit-scrollbar-track {
   margin: 0.3rem 0;
   border-radius: 999px;
-  background: rgba(239, 244, 247, 0.98);
+  background: var(--app-info-soft, rgba(239, 244, 247, 0.98));
 }
 
 .customFilterSelectMenu::-webkit-scrollbar-thumb {
@@ -1313,19 +1313,19 @@
   z-index: 2;
   margin: -0.35rem -0.35rem 0.25rem;
   padding: 0.35rem;
-  border-bottom: 1px solid rgba(227, 235, 241, 0.96);
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+  border-bottom: 1px solid var(--app-info-line, rgba(227, 235, 241, 0.96));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #fbfdfe) 100%);
 }
 
 .customFilterSearchInput {
   width: 100%;
   min-height: 2.8rem;
   padding: 0 0.85rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--app-info-line, var(--line-strong));
   border-radius: 0.82rem;
-  background: #ffffff;
-  color: var(--text);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--text));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
   font: inherit;
   font-size: 0.95rem;
   font-weight: 760;
@@ -1334,13 +1334,13 @@
 }
 
 .customFilterSearchInput:focus {
-  border-color: rgba(22, 83, 64, 0.38);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.38));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.09)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
 .customFilterSearchInput::placeholder {
-  color: #7c8997;
+  color: var(--app-muted, #7c8997);
   opacity: 1;
   font-weight: 650;
 }
@@ -1354,7 +1354,7 @@
   border: 1px solid transparent;
   border-radius: 0.78rem;
   background: transparent;
-  color: #18382f;
+  color: var(--app-text, #18382f);
   font: inherit;
   font-size: 0.98rem;
   font-weight: 760;
@@ -1366,23 +1366,23 @@
 
 .customFilterSelectOption:hover,
 .customFilterSelectOption:focus-visible {
-  border-color: rgba(207, 223, 236, 0.9);
-  background: #f3f8fb;
+  border-color: var(--app-info-line, rgba(207, 223, 236, 0.9));
+  background: var(--app-info-soft, #f3f8fb);
   outline: none;
 }
 
 .customFilterSelectOptionActive {
-  border-color: rgba(90, 188, 130, 0.45);
-  background: #eaf8f1;
-  color: #0d5a42;
+  border-color: var(--app-accent, rgba(90, 188, 130, 0.45));
+  background: var(--app-surface-soft, #eaf8f1);
+  color: var(--app-text, #0d5a42);
 }
 
 .customFilterSelectEmptyOption,
 .customFilterSelectEmptyOption:hover,
 .customFilterSelectEmptyOption:focus-visible {
   border-color: transparent;
-  background: #f7fafc;
-  color: #738191;
+  background: var(--app-info-soft, #f7fafc);
+  color: var(--app-muted, #738191);
   cursor: default;
   outline: none;
 }
@@ -1406,8 +1406,8 @@
   gap: 0.8rem;
   margin-top: auto;
   padding: 1.15rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
-  border-top: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(248, 251, 252, 0) 0%, rgba(248, 251, 252, 0.98) 34%, rgba(248, 251, 252, 1) 100%);
+  border-top: 1px solid var(--app-info-line, var(--line));
+  background: linear-gradient(180deg, rgba(248, 251, 252, 0) 0%, var(--app-info-soft, rgba(248, 251, 252, 0.98)) 34%, var(--app-info-soft, rgba(248, 251, 252, 1)) 100%);
 }
 
 @media (max-width: 1180px) {
@@ -1589,7 +1589,7 @@
   gap: 1.15rem;
   margin: 0;
   padding: 0 0 1.18rem;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.9));
 }
 
 .filterModal .modalHeader > div,
@@ -1604,7 +1604,7 @@
 .sourceChoiceModal .modalHeader h2,
 .reportModal .modalHeader h2 {
   margin: 0;
-  color: #0f3329;
+  color: var(--app-text, #0f3329);
   font-size: clamp(1.86rem, calc(var(--website-design-vw, 1vw) * 2.65), 2.38rem);
   font-weight: 760;
   line-height: 1.03;
@@ -1615,7 +1615,7 @@
 .reportModal .modalHeader p,
 .sourceChoiceModal .modalHeader p {
   margin: 0;
-  color: #627386;
+  color: var(--app-info, #627386);
   font-size: 0.98rem;
   font-weight: 720;
   line-height: 1.38;
@@ -1629,8 +1629,8 @@
   height: 3.15rem;
   min-height: 3.15rem;
   border-radius: 999px;
-  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
-  border-color: rgba(210, 222, 237, 0.98);
+  background: linear-gradient(180deg, var(--app-info-soft, #f7fbff) 0%, var(--app-info-soft, #eef5fb) 100%);
+  border-color: var(--app-info-line, rgba(210, 222, 237, 0.98));
 }
 
 .filterModal .modalDivider,
@@ -1737,11 +1737,11 @@
   display: grid;
   gap: 0.9rem;
   padding: 1rem;
-  border: 1px solid rgba(207, 224, 234, 0.92);
+  border: 1px solid var(--app-info-line, rgba(207, 224, 234, 0.92));
   border-radius: 1.25rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.07)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f6faf8) 100%);
 }
 
 .reportSectionHeading {
@@ -1751,14 +1751,14 @@
 }
 
 .reportSectionHeading strong {
-  color: #10352b;
+  color: var(--app-text, #10352b);
   font-size: 1rem;
   font-weight: 900;
   line-height: 1.2;
 }
 
 .reportSectionHeading span {
-  color: #627386;
+  color: var(--app-info, #627386);
   font-size: 0.86rem;
   font-weight: 680;
   line-height: 1.4;
@@ -1775,7 +1775,7 @@
 }
 
 .reportPeriodGrid .filterField > span {
-  color: #687a8d;
+  color: var(--app-info, #687a8d);
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -1858,8 +1858,8 @@
   padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.85rem);
   border-radius: 2rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.055)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfc) 100%);
 }
 
 .costUploadModal {
@@ -1875,13 +1875,13 @@
   gap: 1rem;
   margin: 0 0 1rem;
   padding: 0 0 1rem;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.9));
 }
 
 .costFormModal .modalHeader h2,
 .costUploadModal .modalHeader h2 {
   margin: 0;
-  color: #0f3329;
+  color: var(--app-text, #0f3329);
   font-size: clamp(1.85rem, calc(var(--website-design-vw, 1vw) * 2.45), 2.35rem);
   font-weight: 720;
   line-height: 1.04;
@@ -1893,7 +1893,7 @@
 .costUploadModal .modalHeader p {
   max-width: 46rem;
   margin: 0.38rem 0 0;
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 1.04rem;
   font-weight: 590;
   line-height: 1.4;
@@ -1906,8 +1906,8 @@
   height: 3.25rem;
   min-height: 3.25rem;
   border-radius: 999px;
-  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
-  border-color: rgba(210, 222, 237, 0.98);
+  background: linear-gradient(180deg, var(--app-info-soft, #f7fbff) 0%, var(--app-info-soft, #eef5fb) 100%);
+  border-color: var(--app-info-line, rgba(210, 222, 237, 0.98));
 }
 
 .costFormModal .modalDivider,
@@ -1954,19 +1954,19 @@
   min-width: 0;
   gap: 0.5rem;
   padding: 1rem;
-  border: 1px solid rgba(216, 226, 236, 0.96);
+  border: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.96));
   border-radius: 1.18rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfc) 100%);
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.028),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.028)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .costFormModal .formGrid label > span,
 .costFormModal .formGrid .costUsageMetricField > span,
 .costFormModal .textAreaGrid label > span,
 .costFormModal .uploadInline > span {
-  color: #263845;
+  color: var(--app-info, #263845);
   font-size: 0.96rem;
   font-weight: 700;
   letter-spacing: -0.006em;
@@ -1979,7 +1979,7 @@
 .costFormModal .textAreaGrid textarea {
   min-height: 3.75rem;
   border-radius: 1.08rem;
-  color: #20313b;
+  color: var(--app-info, #20313b);
   font-size: 1.12rem;
   font-weight: 560;
 }
@@ -1987,7 +1987,7 @@
 .costFormModal .formGrid .customFilterSelectButton {
   min-height: 3.75rem;
   border-radius: 1.08rem;
-  color: #20313b;
+  color: var(--app-info, #20313b);
   font-size: 1.12rem;
   font-weight: 560;
 }
@@ -2005,15 +2005,15 @@
 .costFormModal .formGrid input::placeholder,
 .costFormModal .textAreaGrid textarea::placeholder,
 .costFormModal .invoiceCurrencyInput input::placeholder {
-  color: #708094;
+  color: var(--app-muted, #708094);
   opacity: 1;
   font-weight: 560;
 }
 
 .costFormModal .formGrid input:disabled,
 .costFormModal .formGrid select:disabled {
-  color: #798695;
-  background: #f4f6f8;
+  color: var(--app-muted, #798695);
+  background: var(--app-info-soft, #f4f6f8);
 }
 
 .costFormModal .textAreaGrid textarea {
@@ -2023,10 +2023,10 @@
 }
 
 .costFormModal .invoiceCurrencyField {
-  border-color: rgba(190, 224, 206, 0.98);
+  border-color: var(--app-line, rgba(190, 224, 206, 0.98));
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f3fbf6 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.06)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f3fbf6) 100%);
 }
 
 .costFormModal .invoiceCurrencyInput {
@@ -2036,21 +2036,21 @@
   gap: 0.48rem;
   min-height: 3.75rem;
   padding: 0 0.95rem;
-  border: 1px solid rgba(190, 224, 206, 0.98);
+  border: 1px solid var(--app-line, rgba(190, 224, 206, 0.98));
   border-radius: 1.08rem;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .costFormModal .invoiceCurrencyInput:focus-within {
-  border-color: rgba(22, 83, 64, 0.44);
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.44));
   box-shadow:
-    0 0 0 4px rgba(22, 83, 64, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.09)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .costFormModal .invoiceCurrencyInput > span {
-  color: #124635;
+  color: var(--app-text, #124635);
   font-size: 1.15rem;
   font-weight: 780;
   letter-spacing: -0.02em;
@@ -2065,7 +2065,7 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  color: #20313b;
+  color: var(--app-info, #20313b);
   font-size: 1.12rem;
   font-weight: 560;
 }
@@ -2082,41 +2082,41 @@
   gap: 1rem;
   min-height: 5.7rem;
   padding: 1rem 1.1rem;
-  border: 1px dashed rgba(210, 222, 237, 0.98);
+  border: 1px dashed var(--app-info-line, rgba(210, 222, 237, 0.98));
   border-radius: 1.18rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
   box-shadow:
-    0 8px 18px rgba(16, 31, 28, 0.028),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 8px 18px var(--app-shadow-colour, rgba(16, 31, 28, 0.028)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .costFormModal .uploadInlineReady {
   border-style: solid;
-  border-color: rgba(190, 224, 206, 0.98);
+  border-color: var(--app-line, rgba(190, 224, 206, 0.98));
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.07)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #effaf4) 100%);
 }
 
 .costFormModal .uploadButtonSmall,
 .costUploadModal .uploadButton {
-  border-color: rgba(210, 222, 237, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+  border-color: var(--app-info-line, rgba(210, 222, 237, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f8fb) 100%);
   box-shadow:
-    0 10px 20px rgba(16, 31, 28, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 20px var(--app-shadow-colour, rgba(16, 31, 28, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .costFormModal .uploadInlineReady .uploadButtonSmall,
 .costUploadModal .uploadBoxReady .uploadButton {
-  color: #124635;
-  border-color: rgba(190, 224, 206, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  color: var(--app-text, #124635);
+  border-color: var(--app-line, rgba(190, 224, 206, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
 }
 
 .costFormModal .uploadInline strong {
   min-width: 0;
-  color: #617286;
+  color: var(--app-info, #617286);
   font-size: 0.95rem;
   font-weight: 660;
   overflow: hidden;
@@ -2125,7 +2125,7 @@
 }
 
 .costFormModal .uploadInlineReady strong {
-  color: #124635;
+  color: var(--app-text, #124635);
   font-weight: 760;
 }
 
@@ -2136,10 +2136,10 @@
   max-width: 100%;
   min-height: 2.65rem;
   padding: 0 0.9rem;
-  border: 1px solid rgba(190, 224, 206, 0.98);
+  border: 1px solid var(--app-line, rgba(190, 224, 206, 0.98));
   border-radius: 0.9rem;
-  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  color: #124635;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
+  color: var(--app-text, #124635);
   font-size: 0.92rem;
   font-weight: 760;
   overflow: hidden;
@@ -2159,7 +2159,7 @@
   gap: 0.72rem;
   margin-top: 1rem;
   padding: 1rem 0 0;
-  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  border-top: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.88));
   background: transparent;
 }
 
@@ -2188,7 +2188,7 @@
 .costUploadModal .uploadPanel h3 {
   margin: 0;
   padding-bottom: 0.85rem;
-  color: #10352b;
+  color: var(--app-text, #10352b);
   font-size: clamp(1.38rem, calc(var(--website-design-vw, 1vw) * 1.85), 1.68rem);
   font-weight: 720;
   letter-spacing: -0.028em;
@@ -2206,17 +2206,17 @@
   width: 100%;
   margin: 0 auto;
   padding: 1.2rem;
-  border: 1px dashed rgba(210, 222, 237, 0.98);
+  border: 1px dashed var(--app-info-line, rgba(210, 222, 237, 0.98));
   border-radius: 1.16rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafb) 100%);
 }
 
 .costUploadModal .uploadBoxReady {
   border-style: solid;
-  border-color: rgba(190, 224, 206, 0.98);
+  border-color: var(--app-line, rgba(190, 224, 206, 0.98));
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #effaf4 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.07)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #effaf4) 100%);
 }
 
 .costUploadModal .uploadButton,
@@ -2229,22 +2229,22 @@
 }
 
 .costUploadModal .uploadCounter {
-  color: #21394a;
-  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
-  border-color: rgba(210, 222, 237, 0.98);
+  color: var(--app-info, #21394a);
+  background: linear-gradient(180deg, var(--app-info-soft, #f7fbff) 0%, var(--app-info-soft, #edf4fb) 100%);
+  border-color: var(--app-info-line, rgba(210, 222, 237, 0.98));
   font-size: 0.98rem;
   font-weight: 820;
 }
 
 .costUploadModal .uploadBoxReady .uploadCounter {
-  color: #124635;
-  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  border-color: rgba(190, 224, 206, 0.98);
+  color: var(--app-text, #124635);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
+  border-color: var(--app-line, rgba(190, 224, 206, 0.98));
 }
 
 .costUploadModal .uploadBox p {
   grid-column: 1 / -1;
-  color: #124635;
+  color: var(--app-text, #124635);
   font-size: 0.92rem;
   font-weight: 760;
   overflow-wrap: anywhere;
@@ -2252,7 +2252,7 @@
 
 .costUploadModal .helperText {
   margin: 0;
-  color: #617286;
+  color: var(--app-info, #617286);
   font-size: 0.92rem;
   font-weight: 560;
   line-height: 1.45;
@@ -2315,12 +2315,12 @@
   padding: 1.3rem 1.38rem;
   border-radius: 1.58rem;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.04) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%);
-  border: 1px solid rgba(198, 216, 223, 0.98);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.04)) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(248, 252, 253, 0.99)) 100%);
+  border: 1px solid var(--app-info-line, rgba(198, 216, 223, 0.98));
   box-shadow:
-    0 14px 28px rgba(20, 43, 43, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 14px 28px var(--app-shadow-colour, rgba(20, 43, 43, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -2329,10 +2329,10 @@
 
 .invoiceRow:hover {
   transform: translateY(-1px);
-  border-color: rgba(197, 211, 223, 0.98);
+  border-color: var(--app-info-line, rgba(197, 211, 223, 0.98));
   box-shadow:
-    0 18px 34px rgba(16, 31, 28, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 18px 34px var(--app-shadow-colour, rgba(16, 31, 28, 0.055)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .invoiceHeader {
@@ -2362,7 +2362,7 @@
 .invoiceTitle {
   margin: 0;
   overflow-wrap: anywhere;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem);
   font-weight: 760;
@@ -2374,7 +2374,7 @@
 .invoiceAsset {
   margin: 0;
   overflow-wrap: anywhere;
-  color: #5d6d7c;
+  color: var(--app-muted, #5d6d7c);
   font-size: 0.96rem;
   font-weight: 650;
   line-height: 1.45;
@@ -2386,7 +2386,7 @@
   grid-template-columns: 1fr;
   gap: 0.22rem;
   margin-top: 0.02rem;
-  color: #5d6d7c;
+  color: var(--app-muted, #5d6d7c);
   font-size: 0.92rem;
   font-weight: 760;
   line-height: 1.3;
@@ -2407,12 +2407,12 @@
 }
 
 .invoiceValueMethodLabel {
-  color: #3e4d61 !important;
+  color: var(--app-info, #3e4d61) !important;
   font-weight: 880 !important;
 }
 
 .invoiceSavedDateLabel {
-  color: #68798a !important;
+  color: var(--app-muted, #68798a) !important;
   font-size: 0.9rem !important;
   font-weight: 720 !important;
 }
@@ -2439,7 +2439,7 @@
 .invoicePrice {
   display: block;
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-family: inherit;
   font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.05), 1.9rem);
   font-weight: 900;
@@ -2452,7 +2452,7 @@
 .invoiceVatLabel {
   display: block;
   margin: 0;
-  color: #5d6d7c;
+  color: var(--app-muted, #5d6d7c);
   font-size: 0.9rem;
   font-weight: 780;
   line-height: 1.15;
@@ -2484,8 +2484,8 @@
   font-size: 0.96rem;
   font-weight: 700;
   box-shadow:
-    0 10px 22px rgba(31, 51, 71, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(31, 51, 71, 0.07)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .rowActions .buttonIcon,
@@ -2495,57 +2495,57 @@
 }
 
 .invoiceOpenButton {
-  color: #0b4635;
-  background: linear-gradient(180deg, #ffffff 0%, #eaf8f1 100%);
-  border-color: rgba(91, 196, 139, 0.88);
+  color: var(--app-text, #0b4635);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eaf8f1) 100%);
+  border-color: var(--app-line, rgba(91, 196, 139, 0.88));
   box-shadow:
-    0 10px 22px rgba(15, 90, 67, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(15, 90, 67, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .invoiceOpenButton:hover:not(:disabled) {
-  color: #0b4635;
-  background: linear-gradient(180deg, #ffffff 0%, #dff3ea 100%);
-  border-color: rgba(66, 177, 116, 0.94);
+  color: var(--app-text, #0b4635);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #dff3ea) 100%);
+  border-color: var(--app-line, rgba(66, 177, 116, 0.94));
   box-shadow:
-    0 14px 28px rgba(15, 90, 67, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(15, 90, 67, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .invoiceEditButton {
-  color: #0f3b64;
-  background: linear-gradient(180deg, #ffffff 0%, #eaf5ff 100%);
-  border-color: #7eb4df;
+  color: var(--app-info, #0f3b64);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #eaf5ff) 100%);
+  border-color: var(--app-info-line, #7eb4df);
   box-shadow:
-    0 9px 20px rgba(18, 61, 102, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 9px 20px var(--app-shadow-colour, rgba(18, 61, 102, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .invoiceEditButton:hover:not(:disabled) {
-  color: #0f3b64;
-  background: linear-gradient(180deg, #ffffff 0%, #daecff 100%);
-  border-color: #558fc6;
+  color: var(--app-info, #0f3b64);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #daecff) 100%);
+  border-color: var(--app-info-line, #558fc6);
   box-shadow:
-    0 13px 26px rgba(18, 61, 102, 0.095),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 13px 26px var(--app-shadow-colour, rgba(18, 61, 102, 0.095)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .invoiceDeleteButton {
-  color: #b42318;
-  background: linear-gradient(180deg, #ffffff 0%, #fff1f1 100%);
-  border-color: #f2b8b5;
+  color: var(--app-danger, #b42318);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff1f1) 100%);
+  border-color: var(--app-danger-line, #f2b8b5);
   box-shadow:
-    0 10px 22px rgba(154, 51, 51, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(154, 51, 51, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .invoiceDeleteButton:hover:not(:disabled) {
-  color: #981b12;
-  background: linear-gradient(180deg, #ffffff 0%, #ffe7e7 100%);
-  border-color: #ee9e99;
+  color: var(--app-danger, #981b12);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #ffe7e7) 100%);
+  border-color: var(--app-danger-line, #ee9e99);
   box-shadow:
-    0 14px 28px rgba(154, 51, 51, 0.105),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
+    0 14px 28px var(--app-shadow-colour, rgba(154, 51, 51, 0.105)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1));
 }
 
 .confirmDeleteBackdrop {
@@ -2560,10 +2560,10 @@
   width: min(calc(var(--website-design-vw, 1vw) * 96), 58rem);
   display: block;
   padding: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 2.55), 2.35rem);
-  border: 1px solid rgba(203, 218, 230, 0.98);
+  border: 1px solid var(--app-info-line, rgba(203, 218, 230, 0.98));
   border-radius: 1.8rem;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 26px 70px rgba(8, 27, 34, 0.22);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
+  box-shadow: 0 26px 70px var(--app-shadow-colour, rgba(8, 27, 34, 0.22));
 }
 
 .deleteConfirmCloseButton {
@@ -2576,10 +2576,10 @@
   width: 3rem;
   height: 3rem;
   padding: 0;
-  border: 1px solid rgba(207, 223, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 223, 236, 0.98));
   border-radius: 999px;
-  background: #f7fbff;
-  color: #13395d;
+  background: var(--app-info-soft, #f7fbff);
+  color: var(--app-info, #13395d);
   cursor: pointer;
 }
 
@@ -2597,8 +2597,8 @@
 .deleteConfirmContent h3 {
   margin: 0;
   padding: 0 3.35rem 1.1rem 0;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98);
-  color: #0c382f;
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.98));
+  color: var(--app-text, #0c382f);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.25rem);
   font-weight: 760;
@@ -2609,14 +2609,14 @@
 .deleteConfirmContent p {
   max-width: 100%;
   margin: 0;
-  color: #647382;
+  color: var(--app-muted, #647382);
   font-size: 1rem;
   font-weight: 560;
   line-height: 1.45;
 }
 
 .deleteConfirmContent p strong {
-  color: #0c382f;
+  color: var(--app-text, #0c382f);
   font-weight: 760;
 }
 
@@ -2626,13 +2626,13 @@
   width: 100%;
   margin: 0;
   padding: 1.05rem 1.15rem;
-  border: 1px solid rgba(207, 220, 231, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 220, 231, 0.98));
   border-radius: 1.2rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfd) 100%);
 }
 
 .deleteConfirmAsset span {
-  color: #68798b;
+  color: var(--app-muted, #68798b);
   font-size: 0.78rem;
   font-weight: 820;
   letter-spacing: 0.06em;
@@ -2641,7 +2641,7 @@
 
 .deleteConfirmAsset strong {
   overflow-wrap: anywhere;
-  color: #0c382f;
+  color: var(--app-text, #0c382f);
   font-size: 1.2rem;
   font-weight: 780;
   line-height: 1.1;
@@ -2649,7 +2649,7 @@
 
 .deleteConfirmAsset small {
   overflow-wrap: anywhere;
-  color: #607084;
+  color: var(--app-info, #607084);
   font-size: 0.98rem;
   font-weight: 650;
   line-height: 1.35;
@@ -2674,9 +2674,9 @@
 }
 
 .deleteConfirmActions .secondaryButton {
-  border: 1px solid rgba(197, 214, 228, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%);
-  color: #11335a;
+  border: 1px solid var(--app-info-line, rgba(197, 214, 228, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f9fd) 100%);
+  color: var(--app-info, #11335a);
 }
 
 .deleteConfirmButton,
@@ -2684,21 +2684,21 @@
 .deleteConfirmActions .deleteConfirmButton:disabled {
   min-width: 0;
   color: #ffffff;
-  background: linear-gradient(180deg, #dc3f3f 0%, #b42318 100%);
-  border: 1px solid rgba(180, 35, 24, 0.78);
+  background: linear-gradient(180deg, var(--app-danger-soft, #dc3f3f) 0%, #b42318 100%);
+  border: 1px solid var(--app-danger-line, rgba(180, 35, 24, 0.78));
   box-shadow:
-    0 14px 26px rgba(180, 35, 24, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    0 14px 26px var(--app-shadow-colour, rgba(180, 35, 24, 0.22)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .deleteConfirmButton:hover:not(:disabled),
 .deleteConfirmActions .deleteConfirmButton:hover:not(:disabled) {
   color: #ffffff;
-  background: linear-gradient(180deg, #e34f4f 0%, #a91f16 100%);
-  border-color: rgba(169, 31, 22, 0.86);
+  background: linear-gradient(180deg, var(--app-danger-soft, #e34f4f) 0%, #a91f16 100%);
+  border-color: var(--app-danger-line, rgba(169, 31, 22, 0.86));
   box-shadow:
-    0 18px 32px rgba(180, 35, 24, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 18px 32px var(--app-shadow-colour, rgba(180, 35, 24, 0.28)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2));
 }
 
 @media (max-width: 960px) {
@@ -2832,25 +2832,25 @@
   align-items: center;
   gap: 0.58rem;
   padding: 0.48rem 0.68rem;
-  border: 1px solid rgba(215, 226, 234, 0.92);
+  border: 1px solid var(--app-info-line, rgba(215, 226, 234, 0.92));
   border-radius: 0.9rem;
-  color: #738294;
-  background: #f7fafb;
+  color: var(--app-muted, #738294);
+  background: var(--app-info-soft, #f7fafb);
   font-size: 0.8rem;
   font-weight: 760;
   line-height: 1.2;
 }
 
 .downloadStageItemActive {
-  color: #123f31;
-  border-color: rgba(163, 207, 185, 0.96);
-  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  color: var(--app-text, #123f31);
+  border-color: var(--app-accent, rgba(163, 207, 185, 0.96));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
 }
 
 .downloadStageItemComplete {
-  color: #2f6754;
-  border-color: rgba(199, 221, 210, 0.94);
-  background: #f4faf7;
+  color: var(--app-text, #2f6754);
+  border-color: var(--app-line, rgba(199, 221, 210, 0.94));
+  background: var(--app-surface, #f4faf7);
 }
 
 .downloadStageNumber {
@@ -2859,10 +2859,10 @@
   height: 1.55rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(190, 205, 216, 0.98);
+  border: 1px solid var(--app-info-line, rgba(190, 205, 216, 0.98));
   border-radius: 999px;
-  color: #637689;
-  background: #ffffff;
+  color: var(--app-info, #637689);
+  background: var(--app-surface, #ffffff);
   font-size: 0.7rem;
   font-weight: 900;
 }
@@ -2870,7 +2870,7 @@
 .downloadStageItemActive .downloadStageNumber,
 .downloadStageItemComplete .downloadStageNumber {
   color: #ffffff;
-  border-color: #197454;
+  border-color: var(--app-accent, #197454);
   background: #197454;
 }
 
@@ -2893,8 +2893,8 @@
 .reportFileGraphic {
   position: relative;
   overflow: visible;
-  color: #197454;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f9f7 100%);
+  color: var(--app-text, #197454);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f4f9f7) 100%);
 }
 
 .reportFileGraphic svg {
@@ -2914,7 +2914,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 0.24rem;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--app-line, #ffffff);
   border-radius: 0.3rem;
   color: #ffffff;
   background: #197454;
@@ -2925,8 +2925,8 @@
 }
 
 .pdfReportGraphic {
-  color: #c4453b;
-  background: linear-gradient(180deg, #ffffff 0%, #fff5f3 100%);
+  color: var(--app-danger, #c4453b);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff5f3) 100%);
 }
 
 .pdfReportGraphic .reportFormatBadge {
@@ -2934,8 +2934,8 @@
 }
 
 .xlsxReportGraphic {
-  color: #1a724b;
-  background: linear-gradient(180deg, #ffffff 0%, #f1faf5 100%);
+  color: var(--app-text, #1a724b);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f1faf5) 100%);
 }
 
 .xlsxReportGraphic .reportFormatBadge {
@@ -2947,11 +2947,11 @@
   display: grid;
   gap: 0.9rem;
   padding: 1rem;
-  border: 1px solid rgba(207, 224, 234, 0.92);
+  border: 1px solid var(--app-info-line, rgba(207, 224, 234, 0.92));
   border-radius: 1.25rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.07)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f6faf8) 100%);
 }
 
 .downloadFuelChoiceGrid {
@@ -2963,16 +2963,16 @@
 }
 
 .downloadSecondaryButton {
-  color: #143a65 !important;
-  border: 1px solid rgba(91, 164, 224, 0.88) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f1f8ff 100%) !important;
-  box-shadow: 0 9px 20px rgba(48, 119, 180, 0.07) !important;
+  color: var(--app-info, #143a65) !important;
+  border: 1px solid var(--app-info-line, rgba(91, 164, 224, 0.88)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f1f8ff) 100%) !important;
+  box-shadow: 0 9px 20px var(--app-shadow-colour, rgba(48, 119, 180, 0.07)) !important;
 }
 
 .downloadSecondaryButton:hover:not(:disabled) {
-  color: #0c2d52 !important;
-  border-color: rgba(55, 139, 211, 0.98) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e8f4ff 100%) !important;
+  color: var(--app-info, #0c2d52) !important;
+  border-color: var(--app-info-line, rgba(55, 139, 211, 0.98)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #e8f4ff) 100%) !important;
 }
 
 .downloadExportModal .downloadModalFooter {
@@ -3094,12 +3094,12 @@
   display: grid;
   gap: 1.15rem;
   padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.7rem);
-  border: 1px solid rgba(210, 224, 232, 0.96);
+  border: 1px solid var(--app-info-line, rgba(210, 224, 232, 0.96));
   border-radius: 1.55rem;
   background:
-    radial-gradient(circle at top left, rgba(25, 116, 84, 0.055), transparent 32%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-  box-shadow: 0 16px 38px rgba(16, 41, 36, 0.055), inset 0 1px 0 #ffffff;
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(25, 116, 84, 0.055)), transparent 32%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfc) 100%);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(16, 41, 36, 0.055)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .budgetSectionHeader {
@@ -3127,11 +3127,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(190, 224, 206, 0.98);
+  border: 1px solid var(--app-line, rgba(190, 224, 206, 0.98));
   border-radius: 1.05rem;
-  color: var(--brand-mid);
-  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  box-shadow: 0 10px 22px rgba(18, 72, 55, 0.06), inset 0 1px 0 #ffffff;
+  color: var(--app-text, var(--brand-mid));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(18, 72, 55, 0.06)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .budgetSectionIcon svg {
@@ -3143,7 +3143,7 @@
 .budgetDeleteEyebrow {
   display: block;
   margin-bottom: 0.28rem;
-  color: var(--brand-mid);
+  color: var(--app-text, var(--brand-mid));
   font-size: 0.72rem;
   font-weight: 950;
   letter-spacing: 0.09em;
@@ -3153,7 +3153,7 @@
 .budgetSectionHeader h2,
 .budgetDeleteDialog h2 {
   margin: 0;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.8rem);
   line-height: 1.12;
 }
@@ -3161,7 +3161,7 @@
 .budgetSectionHeader p {
   max-width: 50rem;
   margin: 0.42rem 0 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.9rem;
   font-weight: 650;
   line-height: 1.5;
@@ -3181,12 +3181,12 @@
   gap: 0.68rem;
   min-width: 0;
   padding: 0.95rem;
-  border: 1px solid var(--budget-accent-border);
+  border: 1px solid var(--app-warning-line, var(--budget-accent-border));
   border-radius: 1.2rem;
   background:
-    radial-gradient(circle at top right, var(--budget-accent-soft), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
-  box-shadow: 0 10px 24px rgba(16, 41, 36, 0.045), inset 0 3px 0 var(--budget-accent);
+    radial-gradient(circle at top right, var(--app-warning-soft, var(--budget-accent-soft)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #fbfdfc) 100%);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(16, 41, 36, 0.045)), inset 0 3px 0 var(--app-shadow-colour, var(--budget-accent));
   scroll-margin: 7rem;
   transition: box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease;
 }
@@ -3195,24 +3195,24 @@
   --budget-accent: #b42318;
   --budget-accent-soft: #fff0ef;
   --budget-accent-border: #e8aaa6;
-  box-shadow: 0 14px 30px rgba(180, 35, 24, 0.14), inset 0 3px 0 var(--budget-accent);
+  box-shadow: 0 14px 30px var(--app-shadow-colour, rgba(180, 35, 24, 0.14)), inset 0 3px 0 var(--app-shadow-colour, var(--budget-accent));
 }
 
 .budgetCardOver {
   --budget-accent: #941f1b;
   --budget-accent-soft: #ffeceb;
   --budget-accent-border: #df918c;
-  box-shadow: 0 16px 34px rgba(148, 31, 27, 0.17), inset 0 3px 0 var(--budget-accent);
+  box-shadow: 0 16px 34px var(--app-shadow-colour, rgba(148, 31, 27, 0.17)), inset 0 3px 0 var(--app-shadow-colour, var(--budget-accent));
 }
 
 .budgetCardFocused {
-  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.16), 0 18px 38px rgba(20, 73, 56, 0.14);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.16)), 0 18px 38px var(--app-shadow-colour, rgba(20, 73, 56, 0.14));
   transform: translateY(-1px);
 }
 
 .budgetCardWarning.budgetCardFocused,
 .budgetCardOver.budgetCardFocused {
-  box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.2), 0 18px 38px rgba(148, 31, 27, 0.2);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(180, 35, 24, 0.2)), 0 18px 38px var(--app-shadow-colour, rgba(148, 31, 27, 0.2));
 }
 
 .budgetCardTop {
@@ -3230,7 +3230,7 @@
 
 .budgetCardTop strong {
   overflow: hidden;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 1rem;
   font-weight: 920;
   text-overflow: ellipsis;
@@ -3247,7 +3247,7 @@
 .budgetCardContext > span {
   min-width: 0;
   overflow: hidden;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.76rem;
   font-weight: 730;
   text-overflow: ellipsis;
@@ -3270,10 +3270,10 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid rgba(191, 210, 215, 0.98);
+  border: 1px solid var(--app-info-line, rgba(191, 210, 215, 0.98));
   border-radius: 0.75rem;
-  color: #31564c;
-  background: #f7fbf9;
+  color: var(--app-text, #31564c);
+  background: var(--app-surface, #f7fbf9);
   cursor: pointer;
 }
 
@@ -3284,20 +3284,20 @@
 }
 
 .budgetEditButton:hover {
-  border-color: rgba(25, 116, 84, 0.55);
-  background: #edf8f3;
+  border-color: var(--app-line, rgba(25, 116, 84, 0.55));
+  background: var(--app-surface-soft, #edf8f3);
 }
 
 .budgetCardDeleteButton {
-  color: #9e302a;
-  border-color: #ebc9c6;
-  background: #fff8f7;
+  color: var(--app-danger, #9e302a);
+  border-color: var(--app-danger-line, #ebc9c6);
+  background: var(--app-danger-soft, #fff8f7);
 }
 
 .budgetCardDeleteButton:hover {
-  color: #7e211d;
-  border-color: #df9c97;
-  background: #fff0ef;
+  color: var(--app-danger, #7e211d);
+  border-color: var(--app-danger-line, #df9c97);
+  background: var(--app-danger-soft, #fff0ef);
 }
 
 .budgetEditButton:focus-visible,
@@ -3306,7 +3306,7 @@
 .budgetError button:focus-visible,
 .budgetPeriodControl button:focus-visible,
 .budgetDeleteButton:focus-visible {
-  outline: 3px solid rgba(25, 116, 84, 0.2);
+  outline: 3px solid var(--app-accent, rgba(25, 116, 84, 0.2));
   outline-offset: 0.16rem;
 }
 
@@ -3316,14 +3316,14 @@
 }
 
 .budgetAmount strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 2.7), 2rem);
   font-weight: 950;
   letter-spacing: -0.035em;
 }
 
 .budgetAmount span {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -3332,8 +3332,8 @@
   height: 0.65rem;
   overflow: hidden;
   border-radius: 999px;
-  background: #e7eeeb;
-  box-shadow: inset 0 1px 2px rgba(19, 48, 40, 0.1);
+  background: var(--app-surface-soft, #e7eeeb);
+  box-shadow: inset 0 1px 2px var(--app-shadow-colour, rgba(19, 48, 40, 0.1));
 }
 
 .budgetProgressFill {
@@ -3352,24 +3352,24 @@
 }
 
 .budgetStatusRow {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.78rem;
   font-weight: 730;
 }
 
 .budgetStatusRow strong {
-  color: var(--budget-accent);
+  color: var(--app-warning, var(--budget-accent));
   font-weight: 930;
 }
 
 .budgetMeta {
   align-items: flex-end;
   padding-top: 0.58rem;
-  border-top: 1px solid rgba(216, 227, 223, 0.9);
+  border-top: 1px solid var(--app-line, rgba(216, 227, 223, 0.9));
 }
 
 .budgetMeta span {
-  color: #60756f;
+  color: var(--app-muted, #60756f);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.35;
@@ -3386,10 +3386,10 @@
   justify-content: space-between;
   gap: 0.8rem;
   padding: 0.95rem 1rem;
-  border: 1px dashed rgba(181, 203, 195, 0.96);
+  border: 1px dashed var(--app-line, rgba(181, 203, 195, 0.96));
   border-radius: 0.95rem;
-  color: var(--text-muted);
-  background: rgba(250, 252, 251, 0.94);
+  color: var(--app-muted, var(--text-muted));
+  background: var(--app-surface, rgba(250, 252, 251, 0.94));
   font-size: 0.86rem;
   font-weight: 700;
 }
@@ -3401,19 +3401,19 @@
 }
 
 .budgetEmpty strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
 }
 
 .budgetError {
-  color: #8c3430;
-  border-color: #e6c2c0;
-  background: #fff6f5;
+  color: var(--app-danger, #8c3430);
+  border-color: var(--app-danger-line, #e6c2c0);
+  background: var(--app-danger-soft, #fff6f5);
 }
 
 .budgetError button,
 .budgetFocusBar button {
   border: 0;
-  color: var(--brand-deep);
+  color: var(--app-text, var(--brand-deep));
   background: transparent;
   font: inherit;
   font-weight: 900;
@@ -3428,10 +3428,10 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.78rem 0.95rem;
-  border: 1px solid rgba(167, 207, 190, 0.96);
+  border: 1px solid var(--app-line, rgba(167, 207, 190, 0.96));
   border-radius: 0.9rem;
-  color: #365f53;
-  background: #eef9f4;
+  color: var(--app-text, #365f53);
+  background: var(--app-surface-soft, #eef9f4);
   font-size: 0.84rem;
   font-weight: 690;
 }
@@ -3456,7 +3456,7 @@
   gap: 1rem;
   margin: 0 0 0.72rem;
   padding: 0 0 0.72rem;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.9));
 }
 
 .budgetModal .modalHeader > div,
@@ -3467,7 +3467,7 @@
 .budgetModal .modalHeader h2,
 .budgetManagerModal .modalHeader h2 {
   margin: 0;
-  color: #0f3329;
+  color: var(--app-text, #0f3329);
   font-size: clamp(1.7rem, calc(var(--website-design-vw, 1vw) * 2.2), 2.1rem);
   font-weight: 720;
   line-height: 1.04;
@@ -3479,7 +3479,7 @@
 .budgetManagerModal .modalHeader p {
   max-width: 46rem;
   margin: 0.28rem 0 0;
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.94rem;
   font-weight: 590;
   line-height: 1.4;
@@ -3492,8 +3492,8 @@
   height: 2.8rem;
   min-height: 2.8rem;
   border-radius: 999px;
-  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
-  border-color: rgba(210, 222, 237, 0.98);
+  background: linear-gradient(180deg, var(--app-info-soft, #f7fbff) 0%, var(--app-info-soft, #eef5fb) 100%);
+  border-color: var(--app-info-line, rgba(210, 222, 237, 0.98));
 }
 
 .budgetModal .modalDivider,
@@ -3529,20 +3529,20 @@
   align-items: center;
   gap: 0.65rem;
   padding: 0 0.85rem;
-  border: 1px solid rgba(184, 207, 216, 0.98);
+  border: 1px solid var(--app-info-line, rgba(184, 207, 216, 0.98));
   border-radius: 0.9rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .budgetManagerSearch:focus-within {
-  border-color: rgba(25, 116, 84, 0.54);
-  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.08);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.54));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(25, 116, 84, 0.08));
 }
 
 .budgetManagerSearch svg {
   width: 1.05rem;
   height: 1.05rem;
-  color: #6a7e78;
+  color: var(--app-muted, #6a7e78);
 }
 
 .budgetManagerSearch input {
@@ -3552,7 +3552,7 @@
   padding: 0;
   border: 0;
   outline: 0;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   background: transparent;
   font: inherit;
   font-size: 0.9rem;
@@ -3562,7 +3562,7 @@
 .budgetManagerSearch button {
   padding: 0.35rem 0;
   border: 0;
-  color: var(--brand-mid);
+  color: var(--app-text, var(--brand-mid));
   background: transparent;
   font: inherit;
   font-size: 0.78rem;
@@ -3577,7 +3577,7 @@
 }
 
 .budgetManagerToolbar strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 1rem;
   font-weight: 850;
 }
@@ -3592,15 +3592,15 @@
 }
 
 .budgetManagerNoticeSuccess {
-  color: #125d43;
-  border-color: #b8dfcc;
-  background: #ecf8f2;
+  color: var(--app-text, #125d43);
+  border-color: var(--app-line, #b8dfcc);
+  background: var(--app-surface-soft, #ecf8f2);
 }
 
 .budgetManagerNoticeError {
-  color: #8e3531;
-  border-color: #e5c3c0;
-  background: #fff4f3;
+  color: var(--app-danger, #8e3531);
+  border-color: var(--app-danger-line, #e5c3c0);
+  background: var(--app-danger-soft, #fff4f3);
 }
 
 .budgetAssetPickerBackdrop {
@@ -3626,7 +3626,7 @@
 
 .budgetAssetPickerModal .modalHeader h2 {
   margin: 0;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 3), 2.55rem);
   font-weight: 760;
   line-height: 1.02;
@@ -3636,7 +3636,7 @@
 
 .budgetAssetPickerModal .modalHeader p {
   margin: 0;
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 1.04rem;
   font-weight: 650;
   line-height: 1.4;
@@ -3662,18 +3662,18 @@
 }
 
 .budgetSelectAllButton {
-  color: #0a543d;
-  border-color: #6fc596;
-  background: linear-gradient(180deg, #f7fdf9 0%, #e6f8ef 100%);
-  box-shadow: 0 10px 22px rgba(18, 89, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: var(--app-text, #0a543d);
+  border-color: var(--app-line, #6fc596);
+  background: linear-gradient(180deg, var(--app-surface, #f7fdf9) 0%, var(--app-surface-soft, #e6f8ef) 100%);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(18, 89, 64, 0.08)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .budgetSelectAllButton:hover:not(:disabled),
 .budgetSelectAllButton[aria-pressed='true'] {
-  color: #073f30;
-  border-color: #43ad73;
-  background: linear-gradient(180deg, #f1fbf5 0%, #d9f1e5 100%);
-  box-shadow: 0 12px 24px rgba(18, 89, 64, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: var(--app-text, #073f30);
+  border-color: var(--app-accent, #43ad73);
+  background: linear-gradient(180deg, var(--app-surface-soft, #f1fbf5) 0%, var(--app-surface-soft, #d9f1e5) 100%);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 89, 64, 0.12)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .budgetAssetList {
@@ -3712,7 +3712,7 @@
 }
 
 .budgetScopeRow:focus-visible {
-  outline: 3px solid rgba(25, 116, 84, 0.16);
+  outline: 3px solid var(--app-accent, rgba(25, 116, 84, 0.16));
   outline-offset: 0.12rem;
 }
 
@@ -3723,7 +3723,7 @@
 }
 
 .budgetScopeRowUnavailable:hover {
-  border-color: var(--line-strong);
+  border-color: var(--app-info-line, var(--line-strong));
   box-shadow: none;
 }
 
@@ -3732,7 +3732,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.58rem;
-  color: #536b63;
+  color: var(--app-muted, #536b63);
   font-size: 0.86rem;
   font-weight: 880;
   line-height: 1.2;
@@ -3744,24 +3744,24 @@
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
-  border: 2px solid #b7c9c2;
+  border: 2px solid var(--app-line, #b7c9c2);
   border-radius: 0.52rem;
   color: #ffffff;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   font-size: 0.98rem;
   font-weight: 950;
   line-height: 1;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
 }
 
 .budgetAssetChoiceSelected {
-  color: #0d4b39;
+  color: var(--app-text, #0d4b39);
 }
 
 .budgetAssetChoiceSelected .budgetAssetCheck {
-  border-color: #176448;
+  border-color: var(--app-accent, #176448);
   background: linear-gradient(180deg, #1f7858 0%, #14553f 100%);
-  box-shadow: 0 7px 16px rgba(18, 89, 64, 0.2);
+  box-shadow: 0 7px 16px var(--app-shadow-colour, rgba(18, 89, 64, 0.2));
 }
 
 .budgetAssetPickerFooter {
@@ -3770,7 +3770,7 @@
   gap: 0.72rem;
   margin: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   padding: 1rem 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.75rem);
-  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  border-top: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.88));
   background: transparent;
 }
 
@@ -3785,7 +3785,7 @@
 
 .budgetAssetSelectionCount {
   margin-right: auto;
-  color: #5f706a;
+  color: var(--app-muted, #5f706a);
   font-size: 0.88rem;
   font-weight: 820;
 }
@@ -3811,12 +3811,12 @@
   align-content: start;
   gap: 1rem;
   padding: 1.1rem;
-  border: 1px solid rgba(216, 226, 236, 0.96);
+  border: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.96));
   border-radius: 1.3rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 36%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
-  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.032), inset 0 1px 0 #ffffff;
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.045)), transparent 36%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfc) 100%);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.032)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .budgetSetupCardHeader {
@@ -3835,7 +3835,7 @@
 
 .budgetSetupCardHeader h3 {
   margin: 0;
-  color: #10352b;
+  color: var(--app-text, #10352b);
   font-size: 1.06rem;
   font-weight: 850;
   line-height: 1.2;
@@ -3844,7 +3844,7 @@
 
 .budgetSetupCardHeader p {
   margin: 0;
-  color: #627386;
+  color: var(--app-info, #627386);
   font-size: 0.82rem;
   font-weight: 620;
   line-height: 1.38;
@@ -3856,11 +3856,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(207, 224, 234, 0.96);
+  border: 1px solid var(--app-info-line, rgba(207, 224, 234, 0.96));
   border-radius: 1rem;
-  color: var(--brand-mid);
-  background: #ffffff;
-  box-shadow: 0 8px 18px rgba(16, 31, 28, 0.035), inset 0 1px 0 #ffffff;
+  color: var(--app-text, var(--brand-mid));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(16, 31, 28, 0.035)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .budgetSetupIcon svg {
@@ -3877,11 +3877,11 @@
   align-items: center;
   gap: 0.9rem;
   padding: 0.82rem 0.95rem;
-  border: 1px solid rgba(184, 207, 216, 0.98);
+  border: 1px solid var(--app-info-line, rgba(184, 207, 216, 0.98));
   border-radius: 1.05rem;
-  color: var(--brand-dark);
-  background: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: var(--app-text, var(--brand-dark));
+  background: var(--app-surface, #ffffff);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -3890,15 +3890,15 @@
 
 .budgetScopeTrigger:hover,
 .budgetScopeTrigger:focus-visible {
-  border-color: rgba(22, 83, 64, 0.42);
-  background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 #ffffff;
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.42));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f5fbf8) 100%);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.09)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
   outline: none;
 }
 
 .budgetScopeTrigger:disabled {
-  color: #7c8794;
-  background: #f4f6f8;
+  color: var(--app-muted, #7c8794);
+  background: var(--app-info-soft, #f4f6f8);
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -3910,7 +3910,7 @@
 }
 
 .budgetScopeCopy > span {
-  color: #5f7184;
+  color: var(--app-info, #5f7184);
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.045em;
@@ -3920,7 +3920,7 @@
 .budgetScopeCopy strong {
   min-width: 0;
   overflow: hidden;
-  color: #103f32;
+  color: var(--app-text, #103f32);
   font-size: 1rem;
   font-weight: 850;
   line-height: 1.25;
@@ -3931,7 +3931,7 @@
 .budgetScopeCopy small {
   min-width: 0;
   overflow: hidden;
-  color: #697a8d;
+  color: var(--app-muted, #697a8d);
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.35;
@@ -3943,7 +3943,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  color: var(--brand-mid);
+  color: var(--app-text, var(--brand-mid));
   font-size: 0.8rem;
   font-weight: 900;
 }
@@ -3975,7 +3975,7 @@
 .budgetPeriodField legend,
 .budgetPeriodLabel {
   padding: 0;
-  color: #263845;
+  color: var(--app-info, #263845);
   font-size: 0.86rem;
   font-weight: 760;
 }
@@ -3985,10 +3985,10 @@
 .budgetPercentInput {
   width: 100%;
   min-height: 3.65rem;
-  border: 1px solid rgba(184, 207, 216, 0.98);
+  border: 1px solid var(--app-info-line, rgba(184, 207, 216, 0.98));
   border-radius: 1.05rem;
-  color: var(--brand-dark);
-  background: #ffffff;
+  color: var(--app-text, var(--brand-dark));
+  background: var(--app-surface, #ffffff);
   font: inherit;
   font-size: 1.05rem;
   font-weight: 650;
@@ -4004,7 +4004,7 @@
 .budgetMoneyInput > span,
 .budgetPercentInput > span {
   padding: 0 0.95rem;
-  color: #124635;
+  color: var(--app-text, #124635);
   font-size: 1.05rem;
   font-weight: 900;
 }
@@ -4026,12 +4026,12 @@
 .budgetMoneyInput:focus-within,
 .budgetPercentInput:focus-within {
   outline: 0;
-  border-color: rgba(25, 116, 84, 0.52);
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 #ffffff;
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.52));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.09)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .budgetField small {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.74rem;
   font-weight: 650;
   line-height: 1.4;
@@ -4043,15 +4043,15 @@
   gap: 0.35rem;
   min-height: 3.65rem;
   padding: 0.32rem;
-  border: 1px solid rgba(184, 207, 216, 0.98);
+  border: 1px solid var(--app-info-line, rgba(184, 207, 216, 0.98));
   border-radius: 1.05rem;
-  background: #f0f5f3;
+  background: var(--app-surface-soft, #f0f5f3);
 }
 
 .budgetPeriodControl button {
   border: 0;
   border-radius: 0.78rem;
-  color: #536a64;
+  color: var(--app-muted, #536a64);
   background: transparent;
   font: inherit;
   font-size: 0.92rem;
@@ -4062,7 +4062,7 @@
 .budgetPeriodControl button.budgetPeriodOptionActive {
   color: #ffffff;
   background: var(--brand-mid);
-  box-shadow: 0 6px 14px rgba(25, 116, 84, 0.2);
+  box-shadow: 0 6px 14px var(--app-shadow-colour, rgba(25, 116, 84, 0.2));
 }
 
 .budgetFuelToggle {
@@ -4071,12 +4071,12 @@
   align-items: center;
   gap: 0.85rem;
   padding: 1rem 1.1rem;
-  border: 1px solid rgba(190, 224, 206, 0.98);
+  border: 1px solid var(--app-line, rgba(190, 224, 206, 0.98));
   border-radius: 1.15rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  box-shadow: 0 8px 18px rgba(18, 72, 55, 0.035), inset 0 1px 0 #ffffff;
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.055)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf8f2) 100%);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 72, 55, 0.035)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
   cursor: pointer;
 }
 
@@ -4091,7 +4091,7 @@
   width: 2.75rem;
   height: 1.55rem;
   border-radius: 999px;
-  background: #b8c6c1;
+  background: var(--app-surface-soft, #b8c6c1);
   transition: background 160ms ease;
 }
 
@@ -4103,8 +4103,8 @@
   width: 1.15rem;
   height: 1.15rem;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 2px 5px rgba(20, 44, 37, 0.24);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 2px 5px var(--app-shadow-colour, rgba(20, 44, 37, 0.24));
   transition: transform 160ms ease;
 }
 
@@ -4117,7 +4117,7 @@
 }
 
 .budgetFuelToggle input:focus-visible + span {
-  outline: 3px solid rgba(25, 116, 84, 0.2);
+  outline: 3px solid var(--app-accent, rgba(25, 116, 84, 0.2));
   outline-offset: 0.16rem;
 }
 
@@ -4127,13 +4127,13 @@
 }
 
 .budgetFuelToggle strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 0.94rem;
   font-weight: 900;
 }
 
 .budgetFuelToggle small {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.8rem;
   font-weight: 650;
 }
@@ -4148,15 +4148,15 @@
 }
 
 .budgetHelper {
-  border: 1px solid #d0e5dc;
-  color: #3f695d;
-  background: #f2faf6;
+  border: 1px solid var(--app-line, #d0e5dc);
+  color: var(--app-accent, #3f695d);
+  background: var(--app-surface-soft, #f2faf6);
 }
 
 .budgetFormError {
-  border: 1px solid #e8c6c3;
-  color: #8d3531;
-  background: #fff4f3;
+  border: 1px solid var(--app-danger-line, #e8c6c3);
+  color: var(--app-danger, #8d3531);
+  background: var(--app-danger-soft, #fff4f3);
 }
 
 .budgetModalFooter,
@@ -4166,7 +4166,7 @@
   gap: 0.8rem;
   margin: 0.72rem 0 0;
   padding: 0.72rem 0 0;
-  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  border-top: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.88));
   background: transparent;
 }
 
@@ -4193,10 +4193,10 @@
 .budgetDeleteButton {
   min-height: 3rem;
   padding: 0 1rem;
-  border: 1px solid #dfb4b1;
+  border: 1px solid var(--app-danger-line, #dfb4b1);
   border-radius: 0.9rem;
-  color: #982f2a;
-  background: #fff5f4;
+  color: var(--app-danger, #982f2a);
+  background: var(--app-danger-soft, #fff5f4);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 900;
@@ -4213,15 +4213,15 @@
   display: grid;
   gap: 1rem;
   padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 3), 1.7rem);
-  border: 1px solid #e2c8c5;
+  border: 1px solid var(--app-danger-line, #e2c8c5);
   border-radius: 1.35rem;
-  background: #ffffff;
-  box-shadow: 0 30px 80px rgba(25, 28, 36, 0.25);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 30px 80px var(--app-shadow-colour, rgba(25, 28, 36, 0.25));
 }
 
 .budgetDeleteDialog p {
   margin: 0.55rem 0 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.86rem;
   font-weight: 650;
   line-height: 1.48;
@@ -4231,18 +4231,18 @@
   display: grid;
   gap: 0.22rem;
   padding: 0.85rem 0.95rem;
-  border: 1px solid #e5d4d2;
+  border: 1px solid var(--app-danger-line, #e5d4d2);
   border-radius: 0.9rem;
-  background: #fff9f8;
+  background: var(--app-danger-soft, #fff9f8);
 }
 
 .budgetDeleteSummary strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-weight: 900;
 }
 
 .budgetDeleteSummary span {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -4384,7 +4384,7 @@
 
 /* === Owner Invoice Drop contribution code wizard === */
 .invoiceDropCodeEyebrow {
-  color: var(--brand-mid);
+  color: var(--app-text, var(--brand-mid));
   font-size: 0.7rem;
   font-weight: 950;
   letter-spacing: 0.09em;
@@ -4398,7 +4398,7 @@
 
 .invoiceDropCodeHeader {
   padding: 1.4rem 1.5rem 1.05rem;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--app-info-line, var(--line));
 }
 
 .invoiceDropCodeHeader > div {
@@ -4419,17 +4419,17 @@
 .invoiceDropAssetPickerHeader .closeButton {
   width: 3.1rem;
   height: 3.1rem;
-  border: 1px solid #cfe0eb;
+  border: 1px solid var(--app-info-line, #cfe0eb);
   border-radius: 999px;
-  color: #16314a;
-  background: #f5f9fd;
-  box-shadow: 0 8px 20px rgba(22, 49, 74, 0.07);
+  color: var(--app-info, #16314a);
+  background: var(--app-info-soft, #f5f9fd);
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(22, 49, 74, 0.07));
 }
 
 .invoiceDropCodeHeader .closeButton:hover:not(:disabled),
 .invoiceDropAssetPickerHeader .closeButton:hover:not(:disabled) {
-  border-color: #b8d3e3;
-  background: #edf6fc;
+  border-color: var(--app-info-line, #b8d3e3);
+  background: var(--app-info-soft, #edf6fc);
 }
 
 .invoiceDropCodeBody {
@@ -4467,8 +4467,8 @@
   padding: 0.45rem 0.62rem;
   border: 1px solid transparent;
   border-radius: 0.9rem;
-  color: #718079;
-  background: #f1f5f3;
+  color: var(--app-muted, #718079);
+  background: var(--app-surface-soft, #f1f5f3);
 }
 
 .invoiceDropWizardProgressItem > span {
@@ -4478,8 +4478,8 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  color: #617069;
-  background: #ffffff;
+  color: var(--app-muted, #617069);
+  background: var(--app-surface, #ffffff);
   font-size: 0.72rem;
   font-weight: 950;
 }
@@ -4494,10 +4494,10 @@
 }
 
 .invoiceDropWizardProgressItemActive {
-  border-color: rgba(25, 116, 84, 0.28);
-  color: var(--brand-dark);
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(17, 67, 52, 0.07);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.28));
+  color: var(--app-text, var(--brand-dark));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(17, 67, 52, 0.07));
 }
 
 .invoiceDropWizardProgressItemActive > span,
@@ -4507,20 +4507,20 @@
 }
 
 .invoiceDropWizardProgressItemComplete {
-  color: #176247;
-  background: #eaf7f0;
+  color: var(--app-text, #176247);
+  background: var(--app-surface-soft, #eaf7f0);
 }
 
 .invoiceDropWizardPanel {
   display: grid;
   gap: 0.9rem;
   padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.25rem);
-  border: 1px solid rgba(203, 219, 225, 0.98);
+  border: 1px solid var(--app-info-line, rgba(203, 219, 225, 0.98));
   border-radius: 1.25rem;
   background:
-    radial-gradient(circle at top left, rgba(25, 116, 84, 0.055), transparent 34%),
-    #ffffff;
-  box-shadow: 0 14px 32px rgba(20, 54, 46, 0.055);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(25, 116, 84, 0.055)), transparent 34%),
+    var(--app-surface, #ffffff);
+  box-shadow: 0 14px 32px var(--app-shadow-colour, rgba(20, 54, 46, 0.055));
 }
 
 .invoiceDropWizardHeading {
@@ -4531,7 +4531,7 @@
 .invoiceDropWizardHeading h3,
 .invoiceDropRouteReview h3 {
   margin: 0;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.3rem, calc(var(--website-design-vw, 1vw) * 2.6), 1.55rem);
   font-weight: 900;
@@ -4542,7 +4542,7 @@
 .invoiceDropWizardHeading p,
 .invoiceDropRouteReview p {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.84rem;
   font-weight: 690;
   line-height: 1.42;
@@ -4562,10 +4562,10 @@
   align-items: center;
   gap: 0.68rem;
   padding: 0.85rem;
-  border: 1px solid rgba(194, 212, 220, 0.98);
+  border: 1px solid var(--app-info-line, rgba(194, 212, 220, 0.98));
   border-radius: 1.05rem;
-  color: var(--brand-dark);
-  background: #f8fbfc;
+  color: var(--app-text, var(--brand-dark));
+  background: var(--app-info-soft, #f8fbfc);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -4575,15 +4575,15 @@
 .invoiceDropScopeOption:hover,
 .invoiceDropScopeOption:focus-visible {
   transform: translateY(-1px);
-  border-color: rgba(25, 116, 84, 0.46);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.46));
   outline: none;
-  box-shadow: 0 10px 24px rgba(20, 88, 65, 0.08);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(20, 88, 65, 0.08));
 }
 
 .invoiceDropScopeOptionActive {
-  border-color: rgba(25, 116, 84, 0.62);
-  background: #eef9f4;
-  box-shadow: 0 12px 26px rgba(20, 88, 65, 0.1);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.62));
+  background: var(--app-surface-soft, #eef9f4);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(20, 88, 65, 0.1));
 }
 
 .invoiceDropScopeIcon,
@@ -4592,8 +4592,8 @@
   display: grid;
   place-items: center;
   border-radius: 0.9rem;
-  color: #176a4c;
-  background: #e7f6ee;
+  color: var(--app-text, #176a4c);
+  background: var(--app-surface-soft, #e7f6ee);
 }
 
 .invoiceDropScopeIcon {
@@ -4620,7 +4620,7 @@
 }
 
 .invoiceDropScopeCopy small {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.74rem;
   font-weight: 680;
   line-height: 1.32;
@@ -4631,16 +4631,16 @@
   height: 1.45rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(154, 184, 174, 0.9);
+  border: 1px solid var(--app-line, rgba(154, 184, 174, 0.9));
   border-radius: 999px;
   color: #ffffff;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   font-size: 0.7rem;
   font-weight: 950;
 }
 
 .invoiceDropScopeOptionActive .invoiceDropScopeCheck {
-  border-color: #197454;
+  border-color: var(--app-accent, #197454);
   background: #197454;
 }
 
@@ -4650,10 +4650,10 @@
   gap: 0.62rem;
   min-width: 0;
   padding: 0.7rem 0.8rem;
-  border: 1px solid rgba(188, 219, 205, 0.92);
+  border: 1px solid var(--app-line, rgba(188, 219, 205, 0.92));
   border-radius: 0.9rem;
-  color: #3f695d;
-  background: #f0faf5;
+  color: var(--app-accent, #3f695d);
+  background: var(--app-surface-soft, #f0faf5);
   font-size: 0.78rem;
   font-weight: 720;
   line-height: 1.35;
@@ -4663,11 +4663,11 @@
   width: 1.2rem;
   height: 1.2rem;
   flex: 0 0 auto;
-  color: #197454;
+  color: var(--app-text, #197454);
 }
 
 .invoiceDropPrivacyRow strong {
-  color: #125a42;
+  color: var(--app-text, #125a42);
   font-weight: 920;
 }
 
@@ -4678,9 +4678,9 @@
   gap: 1rem;
   min-height: 8rem;
   padding: 1.1rem;
-  border: 1px solid rgba(188, 216, 204, 0.96);
+  border: 1px solid var(--app-line, rgba(188, 216, 204, 0.96));
   border-radius: 1.1rem;
-  background: linear-gradient(135deg, #f4fbf7 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--app-surface, #f4fbf7) 0%, var(--app-surface, #ffffff) 100%);
 }
 
 .invoiceDropRouteReview > div {
@@ -4708,7 +4708,7 @@
 .invoiceDropCodeCardHeader > div > span,
 .invoiceDropLinkCard > div > span,
 .invoiceDropSelectionSummary > div > span {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.69rem;
   font-weight: 920;
   letter-spacing: 0.07em;
@@ -4723,14 +4723,14 @@
   align-items: center;
   gap: 1rem;
   padding: 0.78rem 0.82rem 0.78rem 1rem;
-  border: 1px solid rgba(184, 207, 216, 0.98);
+  border: 1px solid var(--app-info-line, rgba(184, 207, 216, 0.98));
   border-radius: 1rem;
-  color: var(--brand-dark);
-  background: #ffffff;
+  color: var(--app-text, var(--brand-dark));
+  background: var(--app-surface, #ffffff);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 9px 22px rgba(20, 54, 46, 0.045);
+  box-shadow: 0 9px 22px var(--app-shadow-colour, rgba(20, 54, 46, 0.045));
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -4738,8 +4738,8 @@
 .invoiceDropAssetPickerTrigger:focus-visible {
   transform: translateY(-1px);
   outline: none;
-  border-color: rgba(25, 116, 84, 0.52);
-  box-shadow: 0 12px 28px rgba(20, 88, 65, 0.1);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.52));
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(20, 88, 65, 0.1));
 }
 
 .invoiceDropAssetPickerCopy {
@@ -4750,7 +4750,7 @@
 
 .invoiceDropAssetPickerCopy strong {
   overflow: hidden;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 0.92rem;
   font-weight: 920;
   text-overflow: ellipsis;
@@ -4758,7 +4758,7 @@
 }
 
 .invoiceDropAssetPickerCopy small {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.75rem;
   font-weight: 700;
 }
@@ -4771,8 +4771,8 @@
   gap: 0.42rem;
   padding: 0 0.78rem;
   border-radius: 0.82rem;
-  color: #126247;
-  background: #e8f6ef;
+  color: var(--app-text, #126247);
+  background: var(--app-surface-soft, #e8f6ef);
   font-size: 0.78rem;
   font-weight: 920;
   white-space: nowrap;
@@ -4789,9 +4789,9 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.72rem 0.82rem;
-  border: 1px solid rgba(194, 216, 206, 0.94);
+  border: 1px solid var(--app-line, rgba(194, 216, 206, 0.94));
   border-radius: 0.95rem;
-  background: #f2faf6;
+  background: var(--app-surface-soft, #f2faf6);
 }
 
 .invoiceDropSelectionIcon {
@@ -4811,7 +4811,7 @@
 .invoiceDropSelectionSummary > div > strong {
   min-width: 0;
   overflow: hidden;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 0.9rem;
   font-weight: 920;
   text-overflow: ellipsis;
@@ -4820,7 +4820,7 @@
 
 .invoiceDropSelectionSummary > div > small {
   grid-column: 1 / -1;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.75rem;
   font-weight: 690;
 }
@@ -4828,10 +4828,10 @@
 .invoiceDropCodeLoading {
   margin: 0;
   padding: 0.82rem 0.9rem;
-  border: 1px dashed rgba(181, 203, 213, 0.98);
+  border: 1px dashed var(--app-info-line, rgba(181, 203, 213, 0.98));
   border-radius: 0.9rem;
-  color: var(--text-muted);
-  background: #f8fbfc;
+  color: var(--app-muted, var(--text-muted));
+  background: var(--app-info-soft, #f8fbfc);
   font-size: 0.82rem;
   font-weight: 730;
 }
@@ -4842,18 +4842,18 @@
   align-items: center;
   gap: 0.72rem 1rem;
   padding: 0.9rem;
-  border: 1px solid rgba(168, 210, 191, 0.98);
+  border: 1px solid var(--app-line, rgba(168, 210, 191, 0.98));
   border-radius: 0.95rem;
-  background: linear-gradient(135deg, #eef9f4 0%, #ffffff 100%);
+  background: linear-gradient(135deg, var(--app-surface-soft, #eef9f4) 0%, var(--app-surface, #ffffff) 100%);
 }
 
 .invoiceDropCodeCreateState > code {
   grid-column: 1 / -1;
   padding: 0.72rem 0.8rem;
-  border: 1px dashed rgba(25, 116, 84, 0.38);
+  border: 1px dashed var(--app-line, rgba(25, 116, 84, 0.38));
   border-radius: 0.78rem;
-  color: #2b6655;
-  background: rgba(255, 255, 255, 0.82);
+  color: var(--app-text, #2b6655);
+  background: var(--app-surface, rgba(255, 255, 255, 0.82));
   font-family: var(--font-body, 'Montserrat'), sans-serif;
   font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 1.22rem);
   font-weight: 900;
@@ -4867,14 +4867,14 @@
 }
 
 .invoiceDropCodeCreateState strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 0.9rem;
   font-weight: 920;
 }
 
 .invoiceDropCodeCreateState p {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.76rem;
   font-weight: 690;
   line-height: 1.4;
@@ -4892,10 +4892,10 @@
   display: grid;
   gap: 0.72rem;
   padding: 0.9rem;
-  border: 1px solid rgba(202, 218, 225, 0.98);
+  border: 1px solid var(--app-info-line, rgba(202, 218, 225, 0.98));
   border-radius: 1rem;
-  background: #ffffff;
-  box-shadow: 0 8px 22px rgba(20, 54, 46, 0.04);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 8px 22px var(--app-shadow-colour, rgba(20, 54, 46, 0.04));
 }
 
 .invoiceDropCodeCardHeader {
@@ -4911,7 +4911,7 @@
 }
 
 .invoiceDropCodeCardHeader > div > strong {
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 0.93rem;
   font-weight: 920;
 }
@@ -4919,8 +4919,8 @@
 .invoiceDropCodeActiveBadge {
   padding: 0.3rem 0.55rem;
   border-radius: 999px;
-  color: #0e6849;
-  background: #e2f6eb;
+  color: var(--app-text, #0e6849);
+  background: var(--app-surface-soft, #e2f6eb);
   font-size: 0.68rem;
   font-weight: 930;
 }
@@ -4930,20 +4930,20 @@
   display: grid;
   gap: 0.48rem;
   padding: 0.8rem;
-  border: 1px solid rgba(205, 220, 227, 0.98);
+  border: 1px solid var(--app-info-line, rgba(205, 220, 227, 0.98));
   border-radius: 0.85rem;
-  background: #f8fbfc;
+  background: var(--app-info-soft, #f8fbfc);
 }
 
 .invoiceDropCodeReveal {
-  border-color: rgba(227, 171, 111, 0.96);
-  background: #fff8ef;
+  border-color: var(--app-warning-line, rgba(227, 171, 111, 0.96));
+  background: var(--app-warning-soft, #fff8ef);
 }
 
 .invoiceDropCodeReveal code,
 .invoiceDropCodeMasked code {
   overflow-wrap: anywhere;
-  color: #123f34;
+  color: var(--app-text, #123f34);
   font-family: var(--font-body, 'Montserrat'), sans-serif;
   font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 1.28rem);
   font-weight: 900;
@@ -4953,7 +4953,7 @@
 .invoiceDropCodeReveal p,
 .invoiceDropCodeMasked small {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.76rem;
   font-weight: 690;
   line-height: 1.4;
@@ -4980,10 +4980,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e4bcbc;
+  border: 1px solid var(--app-danger-line, #e4bcbc);
   border-radius: 0.86rem;
-  color: #972f2f;
-  background: #fff5f5;
+  color: var(--app-danger, #972f2f);
+  background: var(--app-danger-soft, #fff5f5);
   font: inherit;
   font-size: 0.82rem;
   font-weight: 900;
@@ -5002,9 +5002,9 @@
   align-items: center;
   gap: 0.85rem;
   padding: 0.82rem 0.9rem;
-  border: 1px solid rgba(205, 219, 226, 0.98);
+  border: 1px solid var(--app-info-line, rgba(205, 219, 226, 0.98));
   border-radius: 0.95rem;
-  background: #f8fbfd;
+  background: var(--app-info-soft, #f8fbfd);
 }
 
 .invoiceDropLinkCard > div:first-child {
@@ -5016,7 +5016,7 @@
 .invoiceDropLinkCard > div > strong {
   min-width: 0;
   overflow: hidden;
-  color: #17473b;
+  color: var(--app-text, #17473b);
   font-size: 0.8rem;
   font-weight: 820;
   text-overflow: ellipsis;
@@ -5034,15 +5034,15 @@
 }
 
 .invoiceDropCodeError {
-  color: #932f2f;
-  border-color: #edcaca;
-  background: #fff3f3;
+  color: var(--app-danger, #932f2f);
+  border-color: var(--app-danger-line, #edcaca);
+  background: var(--app-danger-soft, #fff3f3);
 }
 
 .invoiceDropCodeSuccess {
-  color: #116343;
-  border-color: #cce8da;
-  background: #ebf8f1;
+  color: var(--app-text, #116343);
+  border-color: var(--app-line, #cce8da);
+  background: var(--app-surface-soft, #ebf8f1);
 }
 
 .invoiceDropWizardFooter {
@@ -5099,7 +5099,7 @@
   left: 1rem;
   width: 1.08rem;
   height: 1.08rem;
-  color: #4f7469;
+  color: var(--app-accent, #4f7469);
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -5108,10 +5108,10 @@
   width: 100%;
   min-height: 3.25rem;
   padding: 0 1rem 0 2.75rem;
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--app-info-line, var(--line-strong));
   border-radius: 1rem;
-  color: var(--text);
-  background: #ffffff;
+  color: var(--app-text, var(--text));
+  background: var(--app-surface, #ffffff);
   font: inherit;
   font-size: 0.92rem;
   font-weight: 760;
@@ -5119,8 +5119,8 @@
 }
 
 .invoiceDropAssetPickerToolbar input:focus {
-  border-color: rgba(22, 83, 64, 0.42);
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09);
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.42));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.09));
 }
 
 .invoiceDropAssetPickerToolbar .secondaryButton {
@@ -5136,9 +5136,9 @@
 }
 
 .invoiceDropAssetPickerRowSelected {
-  border-color: rgba(25, 116, 84, 0.58);
-  background: #eef9f4;
-  box-shadow: 0 12px 28px rgba(20, 88, 65, 0.09);
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.58));
+  background: var(--app-surface-soft, #eef9f4);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(20, 88, 65, 0.09));
 }
 
 .invoiceDropAssetPickerRowAside {
@@ -5155,16 +5155,16 @@
   align-items: center;
   justify-content: center;
   padding: 0 0.62rem;
-  border: 1px solid rgba(177, 207, 195, 0.92);
+  border: 1px solid var(--app-line, rgba(177, 207, 195, 0.92));
   border-radius: 999px;
-  color: #176247;
-  background: #f2faf6;
+  color: var(--app-text, #176247);
+  background: var(--app-surface-soft, #f2faf6);
   font-size: 0.72rem;
   font-weight: 920;
 }
 
 .invoiceDropAssetPickerRowSelected .invoiceDropAssetPickerSelection {
-  border-color: #197454;
+  border-color: var(--app-accent, #197454);
   color: #ffffff;
   background: #197454;
 }
@@ -5176,7 +5176,7 @@
 }
 
 .invoiceDropAssetPickerFooter > span {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.78rem;
   font-weight: 820;
 }
@@ -5393,11 +5393,11 @@
     width: 100%;
     height: 2px;
     align-self: center;
-    background: #dce8e3;
+    background: var(--app-surface-soft, #dce8e3);
   }
 
 :global(:where([data-website-canvas])) .budgetWizardProgressConnectorComplete {
-    background: #83c8ae;
+    background: var(--app-surface-soft, #83c8ae);
   }
 
 @media (min-width: 1000px) {
@@ -5431,11 +5431,11 @@
     width: 100%;
     height: 2px;
     align-self: center;
-    background: #dce8e3;
+    background: var(--app-surface-soft, #dce8e3);
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardProgressConnectorComplete {
-    background: #83c8ae;
+    background: var(--app-surface-soft, #83c8ae);
   }
 }
 
@@ -5443,7 +5443,7 @@
   gap: 0.85rem;
   padding: 1rem;
   border-radius: 1.05rem;
-  box-shadow: 0 10px 24px rgba(20, 54, 46, 0.045);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(20, 54, 46, 0.045));
 }
 
 .budgetWizardModal .budgetScopeTrigger {
@@ -5479,30 +5479,30 @@
   gap: 0.9rem;
   align-items: center;
   padding: 1.1rem 1.2rem;
-  border: 1px solid rgba(184, 207, 216, 0.98);
+  border: 1px solid var(--app-info-line, rgba(184, 207, 216, 0.98));
   border-radius: 1.05rem;
-  color: var(--brand-dark);
-  background: #ffffff;
+  color: var(--app-text, var(--brand-dark));
+  background: var(--app-surface, #ffffff);
   font: inherit;
   text-align: left;
-  box-shadow: 0 8px 20px rgba(17, 67, 52, 0.045);
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(17, 67, 52, 0.045));
   cursor: pointer;
   transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
 .budgetWizardPeriodChoice:hover:not(:disabled),
 .budgetWizardPeriodChoice:focus-visible {
-  border-color: rgba(22, 134, 96, 0.58);
-  background: #f7fcf9;
-  box-shadow: 0 0 0 4px rgba(22, 134, 96, 0.09), 0 10px 24px rgba(17, 67, 52, 0.07);
+  border-color: var(--app-accent, rgba(22, 134, 96, 0.58));
+  background: var(--app-surface, #f7fcf9);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 134, 96, 0.09)), 0 10px 24px var(--app-shadow-colour, rgba(17, 67, 52, 0.07));
   outline: none;
   transform: translateY(-1px);
 }
 
 .budgetWizardPeriodChoiceActive {
-  border-color: #168660;
-  background: linear-gradient(180deg, #f5fcf8 0%, #ebf8f2 100%);
-  box-shadow: 0 0 0 3px rgba(22, 134, 96, 0.1), 0 10px 24px rgba(17, 67, 52, 0.065);
+  border-color: var(--app-accent, #168660);
+  background: linear-gradient(180deg, var(--app-surface, #f5fcf8) 0%, var(--app-surface-soft, #ebf8f2) 100%);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22, 134, 96, 0.1)), 0 10px 24px var(--app-shadow-colour, rgba(17, 67, 52, 0.065));
 }
 
 .budgetWizardPeriodChoice:disabled {
@@ -5510,9 +5510,9 @@
 }
 
 .budgetWizardPeriodChoiceUnavailable {
-  border-color: #d9e2df;
-  color: #60726c;
-  background: #f5f7f6;
+  border-color: var(--app-line, #d9e2df);
+  color: var(--app-muted, #60726c);
+  background: var(--app-surface-soft, #f5f7f6);
   box-shadow: none;
   opacity: 0.78;
 }
@@ -5522,16 +5522,16 @@
   height: 2.1rem;
   display: grid;
   place-items: center;
-  border: 1px solid #b8d3c8;
+  border: 1px solid var(--app-line, #b8d3c8);
   border-radius: 999px;
   color: transparent;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   font-size: 0.9rem;
   font-weight: 950;
 }
 
 .budgetWizardPeriodChoiceActive .budgetWizardPeriodChoiceIndicator {
-  border-color: #168660;
+  border-color: var(--app-accent, #168660);
   color: #ffffff;
   background: #168660;
 }
@@ -5550,7 +5550,7 @@
 }
 
 .budgetWizardPeriodChoiceCopy small {
-  color: #667b73;
+  color: var(--app-muted, #667b73);
   font-size: 0.8rem;
   font-weight: 650;
   line-height: 1.45;
@@ -5580,9 +5580,9 @@
   display: grid;
   gap: 0.18rem;
   padding: 0.78rem 0.85rem;
-  border: 1px solid rgba(200, 218, 209, 0.96);
+  border: 1px solid var(--app-line, rgba(200, 218, 209, 0.96));
   border-radius: 0.95rem;
-  background: #f6fbf8;
+  background: var(--app-surface, #f6fbf8);
 }
 
 .budgetReviewGrid > div:last-child {
@@ -5590,7 +5590,7 @@
 }
 
 .budgetReviewGrid dt {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.76rem;
   font-weight: 730;
 }
@@ -5599,7 +5599,7 @@
   min-width: 0;
   overflow: hidden;
   margin: 0;
-  color: var(--brand-dark);
+  color: var(--app-text, var(--brand-dark));
   font-size: 0.94rem;
   font-weight: 900;
   text-overflow: ellipsis;
@@ -5682,11 +5682,11 @@
   width: 100%;
   min-height: 3.65rem;
   padding: 0.78rem 0.95rem;
-  border: 1px solid rgba(184, 207, 216, 0.98);
+  border: 1px solid var(--app-info-line, rgba(184, 207, 216, 0.98));
   border-radius: 1.05rem;
   outline: 0;
-  color: var(--brand-dark);
-  background: #ffffff;
+  color: var(--app-text, var(--brand-dark));
+  background: var(--app-surface, #ffffff);
   font: inherit;
   font-size: 0.96rem;
   font-weight: 650;
@@ -5700,8 +5700,8 @@
 }
 
 .recurringWizardField textarea:focus {
-  border-color: rgba(25, 116, 84, 0.52);
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 #ffffff;
+  border-color: var(--app-accent, rgba(25, 116, 84, 0.52));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.09)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .recurringCategorySelect {
@@ -5711,10 +5711,10 @@
 .recurringCategoryButton {
   min-height: 3.65rem;
   padding: 0.28rem 0.55rem 0.28rem 1.05rem;
-  border-color: rgba(184, 207, 216, 0.98);
+  border-color: var(--app-info-line, rgba(184, 207, 216, 0.98));
   border-radius: 1.05rem;
-  color: var(--brand-dark);
-  background: #ffffff;
+  color: var(--app-text, var(--brand-dark));
+  background: var(--app-surface, #ffffff);
   font-size: 0.96rem;
   font-weight: 700;
 }
@@ -5736,10 +5736,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(195, 218, 208, 0.92);
+  border: 1px solid var(--app-line, rgba(195, 218, 208, 0.92));
   border-radius: 0.78rem;
-  color: #155c45;
-  background: #eef8f3;
+  color: var(--app-text, #155c45);
+  background: var(--app-surface-soft, #eef8f3);
 }
 
 .recurringCategoryChevron .customFilterSelectChevron {
@@ -5751,10 +5751,10 @@
 .recurringCategoryMenu {
   z-index: 180;
   padding: 0.45rem;
-  border-color: rgba(178, 207, 195, 0.98);
+  border-color: var(--app-line, rgba(178, 207, 195, 0.98));
   border-radius: 1.08rem;
-  background: #ffffff;
-  box-shadow: 0 22px 48px rgba(13, 49, 39, 0.2), 0 4px 12px rgba(13, 49, 39, 0.08);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 22px 48px var(--app-shadow-colour, rgba(13, 49, 39, 0.2)), 0 4px 12px var(--app-shadow-colour, rgba(13, 49, 39, 0.08));
 }
 
 .recurringCategoryOption {
@@ -5790,15 +5790,15 @@
 }
 
 .recurringCategoryOptionMarkSelected {
-  border-color: #197454;
+  border-color: var(--app-accent, #197454);
   color: #ffffff;
   background: #197454;
-  box-shadow: 0 5px 12px rgba(25, 116, 84, 0.2);
+  box-shadow: 0 5px 12px var(--app-shadow-colour, rgba(25, 116, 84, 0.2));
 }
 
 .recurringWizardField small,
 .recurringDateGrid small {
-  color: var(--text-muted);
+  color: var(--app-muted, var(--text-muted));
   font-size: 0.72rem;
   font-weight: 680;
 }
@@ -5879,10 +5879,10 @@
 .recurringReviewNotice {
   margin: 0;
   padding: 0.72rem 0.82rem;
-  border: 1px solid rgba(185, 213, 201, 0.95);
+  border: 1px solid var(--app-line, rgba(185, 213, 201, 0.95));
   border-radius: 0.9rem;
-  color: #185942;
-  background: #f2faf6;
+  color: var(--app-text, #185942);
+  background: var(--app-surface-soft, #f2faf6);
   font-size: 0.78rem;
   font-weight: 760;
   line-height: 1.38;
@@ -5942,12 +5942,12 @@
 .manualCostWizardModal .manualCostWizardPanel {
   gap: 1.1rem;
   padding: 1.3rem 1.4rem 1.4rem;
-  border: 1px solid rgba(203, 219, 225, 0.98);
+  border: 1px solid var(--app-info-line, rgba(203, 219, 225, 0.98));
   border-radius: 1.25rem;
   background:
-    radial-gradient(circle at top left, rgba(25, 116, 84, 0.055), transparent 34%),
-    #ffffff;
-  box-shadow: 0 14px 32px rgba(20, 54, 46, 0.055);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(25, 116, 84, 0.055)), transparent 34%),
+    var(--app-surface, #ffffff);
+  box-shadow: 0 14px 32px var(--app-shadow-colour, rgba(20, 54, 46, 0.055));
 }
 
 .manualCostWizardModal .invoiceDropWizardHeading h3:focus {
@@ -5971,12 +5971,12 @@
 }
 
 .manualCostReviewGrid .manualCostReviewTotal {
-  border-color: rgba(164, 207, 188, 0.98);
-  background: #ebf8f1;
+  border-color: var(--app-line, rgba(164, 207, 188, 0.98));
+  background: var(--app-surface-soft, #ebf8f1);
 }
 
 .manualCostReviewTotal dd {
-  color: #0f6848;
+  color: var(--app-text, #0f6848);
   font-size: 1.04rem;
 }
 
@@ -6014,10 +6014,10 @@
   overflow-x: hidden;
   overflow-y: auto;
   padding: 0;
-  border: 1px solid rgba(193, 211, 220, 0.96);
+  border: 1px solid var(--app-info-line, rgba(193, 211, 220, 0.96));
   border-radius: 1.65rem;
-  background: #ffffff;
-  box-shadow: 0 30px 80px rgba(10, 31, 35, 0.24);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 30px 80px var(--app-shadow-colour, rgba(10, 31, 35, 0.24));
 }
 
 .costChoiceModal .modalHeader {
@@ -6027,10 +6027,10 @@
   margin: 0;
   padding: 1.45rem 1.7rem 1.2rem;
   text-align: left;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.88);
+  border-bottom: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.88));
   background:
-    radial-gradient(circle at 6% 0%, rgba(29, 130, 91, 0.085), transparent 34%),
-    #ffffff;
+    radial-gradient(circle at 6% 0%, var(--app-surface-soft, rgba(29, 130, 91, 0.085)), transparent 34%),
+    var(--app-surface, #ffffff);
 }
 
 .costChoiceModal .modalHeader > div {
@@ -6053,7 +6053,7 @@
 .costChoiceModal .modalHeader p {
   max-width: none;
   margin: 0;
-  color: #5f7186;
+  color: var(--app-info, #5f7186);
   font-size: clamp(0.96rem, calc(var(--website-design-vw, 1vw) * 1.3), 1.02rem);
   font-weight: 620;
   line-height: 1.42;
@@ -6079,8 +6079,8 @@
   gap: 0.9rem;
   padding: 1.35rem 1.7rem 1.55rem;
   background:
-    radial-gradient(circle at 100% 0%, rgba(25, 116, 84, 0.05), transparent 34%),
-    linear-gradient(180deg, #fbfdfc 0%, #f7faf9 100%);
+    radial-gradient(circle at 100% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.05)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #fbfdfc) 0%, var(--app-surface, #f7faf9) 100%);
 }
 
 .costChoiceModal .aim4priceCaptureChoiceOption {
@@ -6096,11 +6096,11 @@
   gap: 0.95rem;
   overflow: hidden;
   padding: 0.95rem 1.08rem;
-  border-color: rgba(194, 211, 220, 0.96);
+  border-color: var(--app-info-line, rgba(194, 211, 220, 0.96));
   border-radius: 1.16rem;
-  background: #ffffff;
-  color: #0e4637;
-  box-shadow: 0 9px 20px rgba(18, 55, 45, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #0e4637);
+  box-shadow: 0 9px 20px var(--app-shadow-colour, rgba(18, 55, 45, 0.035)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   text-align: left;
 }
 
@@ -6115,9 +6115,9 @@
 
 .costChoiceModal .costChoiceOption:hover,
 .costChoiceModal .costChoiceOption:focus-visible {
-  border-color: rgba(75, 166, 124, 0.62);
-  background: linear-gradient(180deg, #ffffff 0%, #f2faf6 100%);
-  box-shadow: 0 13px 26px rgba(18, 55, 45, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  border-color: var(--app-accent, rgba(75, 166, 124, 0.62));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f2faf6) 100%);
+  box-shadow: 0 13px 26px var(--app-shadow-colour, rgba(18, 55, 45, 0.06)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .costChoiceModal .costChoiceOption:hover::before,
@@ -6133,10 +6133,10 @@
   min-width: 4.1rem;
   height: 4.1rem;
   padding: 0;
-  border-color: rgba(178, 210, 195, 0.96);
+  border-color: var(--app-line, rgba(178, 210, 195, 0.96));
   border-radius: 1rem;
-  background: linear-gradient(180deg, #f3fbf6 0%, #e8f6ee 100%);
-  color: #126c4e;
+  background: linear-gradient(180deg, var(--app-surface, #f3fbf6) 0%, var(--app-surface-soft, #e8f6ee) 100%);
+  color: var(--app-text, #126c4e);
 }
 
 .costChoiceModal .choiceGraphic svg {
@@ -6156,7 +6156,7 @@
 
 .costChoiceModal .choiceTitleBlock strong {
   max-width: none;
-  color: #0d4537;
+  color: var(--app-text, #0d4537);
   font-size: 1.08rem;
   font-weight: 850;
   line-height: 1.18;
@@ -6166,7 +6166,7 @@
 
 .costChoiceModal .choiceTitleBlock small {
   display: block;
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.92rem;
   font-weight: 620;
   line-height: 1.36;
@@ -6180,10 +6180,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #cfdae0;
+  border: 1px solid var(--app-info-line, #cfdae0);
   border-radius: 999px;
-  background: #ffffff;
-  color: #197454;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #197454);
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
 
@@ -6195,7 +6195,7 @@
 .costChoiceModal .costChoiceOption:hover .costChoiceArrow,
 .costChoiceModal .costChoiceOption:focus-visible .costChoiceArrow {
   transform: translateX(2px);
-  border-color: #197454;
+  border-color: var(--app-accent, #197454);
   background: #197454;
   color: #ffffff;
 }
@@ -6203,8 +6203,8 @@
 .costChoiceModal .modalFooter {
   margin: 0;
   padding: 1rem 1.7rem;
-  border-top: 1px solid rgba(205, 218, 224, 0.92);
-  background: #ffffff;
+  border-top: 1px solid var(--app-info-line, rgba(205, 218, 224, 0.92));
+  background: var(--app-surface, #ffffff);
 }
 
 :global(:where([data-website-canvas])) .costChoiceModal .choiceTitleBlock strong,
@@ -6294,9 +6294,9 @@
 
 
 .captureNoteField { display: grid; gap: 8px; margin-top: 16px; }
-.captureNoteField span { color: #173f31; font-weight: 600; }
+.captureNoteField span { color: var(--app-text, #173f31); font-weight: 600; }
 .captureNoteField small { font-weight: 400; }
-.captureNoteField textarea { box-sizing: border-box; width: 100%; min-height: 88px; padding: 12px; border: 1px solid #c9ddd2; border-radius: 12px; font: inherit; resize: vertical; }
+.captureNoteField textarea { box-sizing: border-box; width: 100%; min-height: 88px; padding: 12px; border: 1px solid var(--app-line, #c9ddd2); border-radius: 12px; font: inherit; resize: vertical; }
 
 /* Keep long client directories inside the picker, with a visible green thumb. */
 .assetModal > .modalHeader,
@@ -6322,12 +6322,12 @@
   margin-block: 0.25rem;
   border: 0;
   border-radius: 999px;
-  background: #edf3ef;
+  background: var(--app-surface-soft, #edf3ef);
 }
 
 .assetModal .assetList::-webkit-scrollbar-thumb {
   min-height: 2.5rem;
-  border: 2px solid #edf3ef;
+  border: 2px solid var(--app-line, #edf3ef);
   border-radius: 999px;
   background: #487c68;
 }
@@ -6395,7 +6395,7 @@
 }
 
 .costUploadModal .uploadButton:focus-within {
-  outline: 2px solid #487c68;
+  outline: 2px solid var(--app-accent, #487c68);
   outline-offset: 3px;
 }
 
@@ -6408,14 +6408,14 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.9rem;
   font-weight: 600;
   text-align: center;
 }
 
 .costUploadModal .uploadBox > small {
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: 0.85rem;
   line-height: 1.5;
   text-align: center;
@@ -6451,7 +6451,7 @@
 }
 
 .costUploadModal .captureNoteField textarea:focus {
-  outline: 2px solid #487c68;
+  outline: 2px solid var(--app-accent, #487c68);
   outline-offset: 2px;
 }
 
@@ -6492,10 +6492,10 @@
   gap: 0 !important;
   padding: 0 !important;
   overflow: hidden !important;
-  border: 1px solid rgba(18, 45, 37, 0.12) !important;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12)) !important;
   border-radius: 1.55rem !important;
-  background: linear-gradient(180deg, #fff, #f7faf8) !important;
-  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12) !important;
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface, #f7faf8)) !important;
+  box-shadow: 0 32px 90px var(--app-shadow-colour, rgba(7, 25, 20, 0.28)), 0 8px 24px var(--app-shadow-colour, rgba(7, 25, 20, 0.12)) !important;
 }
 .accountCostModal.accountCostModal > .modalHeader {
   flex: 0 0 auto !important;
@@ -6506,12 +6506,12 @@
   width: auto !important;
   margin: var(--cost-dialog-padding) var(--cost-dialog-padding) 0 !important;
   padding: 0 0 1.15rem !important;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.1) !important;
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.1)) !important;
   background: transparent !important;
 }
 .accountCostModal.accountCostModal .modalHeader h2 {
   margin: 0 !important;
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
   font-weight: 800 !important;
   letter-spacing: -0.04em !important;
@@ -6522,7 +6522,7 @@
 .accountCostModal.accountCostModal .modalHeader p {
   margin: 0.35rem 0 0 !important;
   max-width: none !important;
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: 0.88rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
@@ -6557,8 +6557,8 @@
   gap: 0.65rem !important;
   margin: 0 !important;
   padding: 1rem var(--cost-dialog-padding) 1.6rem !important;
-  border-top: 1px solid rgba(18, 45, 37, 0.11) !important;
-  background: rgba(255, 255, 255, 0.97) !important;
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.11)) !important;
+  background: var(--app-surface, rgba(255, 255, 255, 0.97)) !important;
 }
 .accountCostModal.accountCostModal > .costDownloadBody { padding-bottom: 0 !important; }
 .accountCostModal.accountCostModal .downloadModalFooter {
@@ -6584,24 +6584,24 @@
   background: linear-gradient(180deg, #1a5a45, #124233) !important;
 }
 .accountCostModal.accountCostModal .secondaryButton {
-  color: #17362c !important;
-  border: 1px solid #d8e1ea !important;
-  background: #f2f5f8 !important;
+  color: var(--app-text, #17362c) !important;
+  border: 1px solid var(--app-info-line, #d8e1ea) !important;
+  background: var(--app-info-soft, #f2f5f8) !important;
 }
 .accountCostModal :is(.primaryButton, .secondaryButton):disabled { opacity: 0.52 !important; cursor: not-allowed; }
-.accountCostModal :is(.primaryButton, .secondaryButton):focus-visible { outline: 3px solid rgba(24, 112, 83, 0.35); outline-offset: 3px; }
+.accountCostModal :is(.primaryButton, .secondaryButton):focus-visible { outline: 3px solid var(--app-accent, rgba(24, 112, 83, 0.35)); outline-offset: 3px; }
 .accountCostModal.accountCostModal :is(.invoiceDropWizardPanel, .budgetManagerSection, .reportPeriodPanel, .downloadFuelPanel) {
   padding: 1rem !important;
   border-radius: 1rem !important;
 }
 .accountCostModal.accountCostModal :is(.invoiceDropWizardPanel h3, .reportTitleBlock strong, .reportSectionHeading strong, .downloadFuelHeading strong) {
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: 1rem !important;
   font-weight: 800 !important;
   line-height: 1.35 !important;
 }
 .accountCostModal.accountCostModal :is(.invoiceDropWizardPanel p, .reportTitleBlock small, .reportSectionHeading > span, .downloadFuelHeading > span) {
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: 0.88rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
@@ -6649,7 +6649,7 @@
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
   font-weight: 800 !important;
   letter-spacing: -0.04em !important;
@@ -6657,7 +6657,7 @@
   overflow-wrap: anywhere;
 }
 .accountCostModal.accountCostModal .choiceTitleBlock strong {
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: 1rem !important;
   font-weight: 800 !important;
   line-height: 1.35 !important;
@@ -6665,7 +6665,7 @@
 .accountCostModal.accountCostModal .choiceTitleBlock small,
 .accountCostModal.accountCostModal .deleteConfirmContent p,
 .accountCostModal.accountCostModal .deleteConfirmAsset small {
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: 0.88rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
@@ -6698,7 +6698,7 @@
 .accountCostModal.accountCostModal .formGrid > label > span,
 .accountCostModal.accountCostModal .costUsageMetricField > span,
 .accountCostModal.accountCostModal .filterField > span {
-  color: #405c50 !important;
+  color: var(--app-text, #405c50) !important;
   font-size: 0.7rem !important;
   font-weight: 850 !important;
   letter-spacing: 0.045em !important;
@@ -6715,14 +6715,14 @@
 }
 .accountCostModal.accountCostModal .formGrid input:is([type="text"], [type="number"], [type="date"], :not([type])),
 .accountCostModal.accountCostModal .formGrid textarea {
-  color: #17362c !important;
+  color: var(--app-text, #17362c) !important;
 }
 .accountCostModal.accountCostModal .deleteConfirmAsset {
   padding: 1rem !important;
   border-radius: 1rem !important;
 }
 .accountCostModal.accountCostModal .deleteConfirmAsset strong {
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: 1rem !important;
   font-weight: 800 !important;
   line-height: 1.35 !important;
@@ -6733,12 +6733,12 @@
   gap: 0.65rem !important;
   margin: 0 calc(-1 * var(--cost-dialog-padding)) !important;
   padding: 1rem var(--cost-dialog-padding) 1.6rem !important;
-  border-top: 1px solid rgba(18, 45, 37, 0.11) !important;
-  background: rgba(255, 255, 255, 0.97) !important;
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.11)) !important;
+  background: var(--app-surface, rgba(255, 255, 255, 0.97)) !important;
 }
 .accountCostModal.accountCostModal .deleteConfirmButton {
   color: #fff !important;
-  background: linear-gradient(180deg, #b54747, #9e3434) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #b54747), #9e3434) !important;
 }
 
 .accountCostModal.accountCostModal .choiceTitleBlock strong { white-space: normal !important; overflow-wrap: anywhere; }
@@ -6775,8 +6775,8 @@
   min-width: 3.8rem !important;
   height: 3.8rem !important;
   border-radius: 1rem !important;
-  background: #fff !important;
-  border: 1px solid #d8e2ec !important;
+  background: var(--app-surface, #fff) !important;
+  border: 1px solid var(--app-info-line, #d8e2ec) !important;
 }
 .accountCostModal.downloadFormatModal .reportGraphic .costExportImage {
   width: 2.38rem !important;
@@ -6803,10 +6803,10 @@
   width: auto !important;
   min-width: 0 !important;
   min-height: 3.2rem !important;
-  border: 1px solid #d8e2ec !important;
+  border: 1px solid var(--app-info-line, #d8e2ec) !important;
   border-radius: 0.92rem !important;
-  background: #fff !important;
-  color: #17362c !important;
+  background: var(--app-surface, #fff) !important;
+  color: var(--app-text, #17362c) !important;
 }
 .accountCostModal.accountAssetPickerModal [data-asset-choice-toolbar] > input {
   padding: 0.75rem 1rem !important;
@@ -6843,18 +6843,18 @@
   align-items: center !important;
   gap: 1rem !important;
   padding: 1rem !important;
-  border: 1px solid #d0dfea !important;
+  border: 1px solid var(--app-info-line, #d0dfea) !important;
   border-radius: 1rem !important;
-  background: #fff !important;
+  background: var(--app-surface, #fff) !important;
   text-align: left !important;
 }
 .accountCostModal.accountAssetPickerModal[data-asset-choice-modal] [data-asset-choice-row]:hover:not(:disabled),
 .accountCostModal.accountAssetPickerModal[data-asset-choice-modal] [data-asset-choice-selected="true"] {
-  border-color: #98cbb7 !important;
-  background: #f0f8f4 !important;
+  border-color: var(--app-line, #98cbb7) !important;
+  background: var(--app-surface-soft, #f0f8f4) !important;
 }
 .accountCostModal.accountAssetPickerModal [data-asset-choice-row]:focus-visible {
-  outline: 3px solid rgba(24, 112, 83, 0.35);
+  outline: 3px solid var(--app-accent, rgba(24, 112, 83, 0.35));
   outline-offset: -3px;
 }
 .accountCostModal.accountAssetPickerModal [data-asset-choice-copy] {
@@ -6863,7 +6863,7 @@
   gap: 0.25rem !important;
 }
 .accountCostModal.accountAssetPickerModal[data-asset-choice-modal] [data-asset-choice-copy] strong {
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: 1rem !important;
   font-weight: 800 !important;
   line-height: 1.35 !important;
@@ -6871,7 +6871,7 @@
   overflow-wrap: anywhere;
 }
 .accountCostModal.accountAssetPickerModal[data-asset-choice-modal] [data-asset-choice-copy] small {
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: 0.88rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
@@ -6887,7 +6887,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  color: #12352d;
+  color: var(--app-text, #12352d);
 }
 .accountCostModal.accountAssetPickerModal [data-asset-choice-value] strong {
   font-size: 0.95rem !important;
@@ -6898,9 +6898,9 @@
   place-items: center;
   width: 1.4rem;
   height: 1.4rem;
-  border: 1px solid #a9c2b8;
+  border: 1px solid var(--app-line, #a9c2b8);
   border-radius: 50%;
-  background: #f7faf8;
+  background: var(--app-surface, #f7faf8);
 }
 .accountCostModal.accountAssetPickerModal[data-asset-choice-modal] > [data-asset-choice-footer] {
   flex: 0 0 auto !important;
@@ -6910,7 +6910,7 @@
 }
 .accountCostModal.accountAssetPickerModal [data-asset-choice-footer] > span {
   margin-right: auto;
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-size: 0.88rem;
   font-weight: 650;
 }
@@ -6942,8 +6942,8 @@
   line-height: 1.5 !important;
 }
 .accountCostModal.accountAssetPickerModal .invoiceDropAssetPickerToolbar > label:focus-within {
-  border-color: #789e8e !important;
-  box-shadow: 0 0 0 3px rgba(22, 83, 64, 0.12) !important;
+  border-color: var(--app-accent, #789e8e) !important;
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22, 83, 64, 0.12)) !important;
 }
 
 /* Assisted invoice upload follows the Change Password dialog rhythm. */
@@ -6970,7 +6970,7 @@
 .accountCostModal.accountCostModal.costUploadModal .captureNoteField > span {
   margin: 0 !important;
   padding: 0 !important;
-  color: #405d51 !important;
+  color: var(--app-text, #405d51) !important;
   font-size: 0.75rem !important;
   font-weight: 800 !important;
   line-height: 1.5 !important;
@@ -6985,7 +6985,7 @@
   padding: 1rem !important;
   gap: 0.65rem !important;
   border-radius: 1rem !important;
-  background: linear-gradient(120deg, #edf3f8, #f0f7f3) !important;
+  background: linear-gradient(120deg, var(--app-info-soft, #edf3f8), var(--app-surface-soft, #f0f7f3)) !important;
 }
 .accountCostModal.accountCostModal.costUploadModal .uploadButton {
   min-height: 3.2rem !important;
@@ -6993,13 +6993,13 @@
   border-radius: 0.92rem !important;
   font-size: 1rem !important;
   font-weight: 750 !important;
-  color: #17362c !important;
+  color: var(--app-text, #17362c) !important;
 }
 .accountCostModal.accountCostModal.costUploadModal .uploadCounter,
 .accountCostModal.accountCostModal.costUploadModal .uploadBox small,
 .accountCostModal.accountCostModal.costUploadModal .uploadPanel > p {
   margin: 0 !important;
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: 0.88rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
@@ -7007,15 +7007,15 @@
 .accountCostModal.accountCostModal.costUploadModal .captureNoteField { margin: 0 !important; gap: 0.4rem !important; }
 .accountCostModal.accountCostModal.costUploadModal .captureNoteField textarea {
   padding: 0.9rem !important;
-  border: 1px solid #d8e2ec !important;
+  border: 1px solid var(--app-info-line, #d8e2ec) !important;
   border-radius: 0.92rem !important;
-  background: #fff !important;
-  color: #17362c !important;
+  background: var(--app-surface, #fff) !important;
+  color: var(--app-text, #17362c) !important;
   font: inherit;
   font-size: 1rem !important;
   font-weight: 400 !important;
 }
-.accountCostModal.accountCostModal.costUploadModal .uploadPanel > .noticeError { color: #a12f2f !important; }
+.accountCostModal.accountCostModal.costUploadModal .uploadPanel > .noticeError { color: var(--app-danger, #a12f2f) !important; }
 
 /* Budget overview: compact cards with clearly labelled spending figures. */
 .accountCostModal.accountCostModal .budgetManagerSection {
@@ -7063,29 +7063,29 @@
   gap: 0.8rem;
   margin: 0.3rem 0 0;
   padding: 0.9rem 0;
-  border-top: 1px solid #e1e9e5;
+  border-top: 1px solid var(--app-line, #e1e9e5);
 }
 .budgetMetrics > div { min-width: 0; }
 .budgetMetrics dt {
   margin-bottom: 0.3rem;
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-size: 0.76rem;
   font-weight: 650;
 }
 .budgetMetrics dd {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 1.3rem;
   font-weight: 800;
   line-height: 1.2;
   overflow-wrap: anywhere;
 }
-.budgetMetrics > div:last-child dd { color: var(--budget-accent); }
+.budgetMetrics > div:last-child dd { color: var(--app-warning, var(--budget-accent)); }
 .budgetManagerModal .budgetCardWarning {
   --budget-accent: #946000;
   --budget-accent-soft: #fff8e9;
   --budget-accent-border: #e8d3a4;
-  box-shadow: 0 10px 24px rgba(16, 41, 36, 0.045), inset 0 3px 0 var(--budget-accent);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(16, 41, 36, 0.045)), inset 0 3px 0 var(--app-shadow-colour, var(--budget-accent));
 }
 .budgetManagerModal .budgetMeta { flex-wrap: wrap; }
 .budgetManagerModal .budgetProgressTrack { height: 0.5rem; }
@@ -7098,39 +7098,39 @@
 .invoiceAssetPill {
   display: inline-flex; align-items: center; justify-self: start; gap: 0.45rem;
   max-width: 100%; min-width: 0; margin: 0; padding: 0.4rem 0.8rem; border-radius: 1.5rem;
-  border: 1px solid #acd9c3; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-  background: #d8f2e5; color: #12573f; font-size: 0.86rem; font-weight: 750;
+  border: 1px solid var(--app-line, #acd9c3); box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.65));
+  background: var(--app-surface-soft, #d8f2e5); color: var(--app-text, #12573f); font-size: 0.86rem; font-weight: 750;
   line-height: 1.4; overflow-wrap: anywhere;
 }
 .invoiceAssetPill svg, .invoiceSourceBadge svg { width: 0.95rem; height: 0.95rem; flex: 0 0 auto; }
-.invoiceReference { display: flex; flex-wrap: wrap; gap: 0.3rem 0.65rem; margin: 0; color: #627386; font-size: 0.9rem; font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
+.invoiceReference { display: flex; flex-wrap: wrap; gap: 0.3rem 0.65rem; margin: 0; color: var(--app-info, #627386); font-size: 0.9rem; font-weight: 650; line-height: 1.45; overflow-wrap: anywhere; }
 .invoiceReference span + span::before { content: '·'; margin-right: 0.65rem; }
-.invoiceOwner { margin: 0; color: #627386; font-size: 0.86rem; font-weight: 650; }
+.invoiceOwner { margin: 0; color: var(--app-info, #627386); font-size: 0.86rem; font-weight: 650; }
 .invoiceBadges { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin: 0.35rem 0 0; }
 .invoiceBadges > span { box-sizing: border-box; min-height: 2.15rem; max-width: 100%; }
-.invoiceSourceBadge { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.75rem; border-radius: 1.5rem; border: 1px solid #edc0bf; background: #fce9e7; color: #934b47; font-size: 0.8rem; font-weight: 650; line-height: 1.4; }
+.invoiceSourceBadge { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.75rem; border-radius: 1.5rem; border: 1px solid var(--app-danger-line, #edc0bf); background: var(--app-danger-soft, #fce9e7); color: var(--app-danger, #934b47); font-size: 0.8rem; font-weight: 650; line-height: 1.4; }
 .invoiceRow .rowActions { flex-wrap: nowrap; }
-.invoiceRow .rowActions > a, .invoiceRow .rowActions > button { min-width: 150px; box-shadow: inset 0 1px 0 #fff, 0 8px 18px rgba(26, 57, 46, 0.035); }
-.invoiceRow .invoiceOpenButton { color: #824013; border-color: #d59160; background: linear-gradient(180deg, #fff, #fff4e9); }
-.invoiceRow .invoiceOpenButton:hover:not(:disabled) { color: #70320d; border-color: #b86e39; background: #fff0df; }
+.invoiceRow .rowActions > a, .invoiceRow .rowActions > button { min-width: 150px; box-shadow: inset 0 1px 0 var(--app-shadow-colour, #fff), 0 8px 18px var(--app-shadow-colour, rgba(26, 57, 46, 0.035)); }
+.invoiceRow .invoiceOpenButton { color: var(--app-danger, #824013); border-color: var(--app-danger-line, #d59160); background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-warning-soft, #fff4e9)); }
+.invoiceRow .invoiceOpenButton:hover:not(:disabled) { color: var(--app-danger, #70320d); border-color: var(--app-danger-line, #b86e39); background: var(--app-warning-soft, #fff0df); }
 .invoiceRow .invoiceOpenButton:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-.invoiceManageButton { color: #0b563f; border-color: #6fc997; background: linear-gradient(180deg, #fff, #eaf8f1); }
-.invoiceManageButton:hover:not(:disabled) { color: #09432f; border-color: #40a875; background: #e4f5ec; }
-.invoiceDetailsChevron { padding: 0.15rem; box-sizing: content-box; border-radius: 50%; border: 1px solid #bbdafa; background: #e5f3ff; transition: transform 160ms ease; }
+.invoiceManageButton { color: var(--app-text, #0b563f); border-color: var(--app-line, #6fc997); background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #eaf8f1)); }
+.invoiceManageButton:hover:not(:disabled) { color: var(--app-text, #09432f); border-color: var(--app-line, #40a875); background: var(--app-surface-soft, #e4f5ec); }
+.invoiceDetailsChevron { padding: 0.15rem; box-sizing: content-box; border-radius: 50%; border: 1px solid var(--app-info-line, #bbdafa); background: var(--app-info-soft, #e5f3ff); transition: transform 160ms ease; }
 button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg); }
-.invoiceRow :is(button, a):focus-visible, .costManageActions button:focus-visible { outline: 3px solid #176f9e; outline-offset: 4px; }
-.invoiceDetails { margin-top: 1.5rem; padding-top: 1.35rem; border-top: 1px solid #dce7e7; }
-.invoiceDetails h3 { margin: 0 0 1rem; color: #164d3f; font-size: 1rem; }
+.invoiceRow :is(button, a):focus-visible, .costManageActions button:focus-visible { outline: 3px solid var(--app-info-line, #176f9e); outline-offset: 4px; }
+.invoiceDetails { margin-top: 1.5rem; padding-top: 1.35rem; border-top: 1px solid var(--app-line, #dce7e7); }
+.invoiceDetails h3 { margin: 0 0 1rem; color: var(--app-text, #164d3f); font-size: 1rem; }
 .invoiceDetailsGrid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr) minmax(0, 0.55fr); gap: 1.2rem 1.5rem; margin: 0; }
 .invoiceDetailsGrid div { min-width: 0; }
-.invoiceDetailsGrid dt { color: #697d8b; font-size: 0.8rem; margin-bottom: 0.25rem; }
-.invoiceDetailsGrid dd { color: #304d46; font-size: 0.9rem; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
-.invoiceBreakdown { margin-top: 1.25rem; border-top: 1px solid #dce7e7; }
-.invoiceBreakdown > div { display: block; padding: 0.95rem 0; border-bottom: 1px solid #e4ebeb; font-size: 0.9rem; color: #304d46; }
+.invoiceDetailsGrid dt { color: var(--app-muted, #697d8b); font-size: 0.8rem; margin-bottom: 0.25rem; }
+.invoiceDetailsGrid dd { color: var(--app-text, #304d46); font-size: 0.9rem; font-weight: 600; margin: 0; overflow-wrap: anywhere; }
+.invoiceBreakdown { margin-top: 1.25rem; border-top: 1px solid var(--app-line, #dce7e7); }
+.invoiceBreakdown > div { display: block; padding: 0.95rem 0; border-bottom: 1px solid var(--app-line, #e4ebeb); font-size: 0.9rem; color: var(--app-text, #304d46); }
 .invoiceBreakdown > div > div { min-width: 0; }
-.invoiceBreakdown p { margin: 0.3rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #617486; }
-.invoiceNotes, .invoiceLegacyDetails p { color: #617486; font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
-.invoiceNotes strong, .invoiceLegacyDetails strong { display: block; color: #304d46; margin-bottom: 0.3rem; }
+.invoiceBreakdown p { margin: 0.3rem 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--app-info, #617486); }
+.invoiceNotes, .invoiceLegacyDetails p { color: var(--app-info, #617486); font-size: 0.9rem; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+.invoiceNotes strong, .invoiceLegacyDetails strong { display: block; color: var(--app-text, #304d46); margin-bottom: 0.3rem; }
 .accountCostModal.accountCostModal.costManageModal {
   width: min(var(--website-dialog-reference-width, 100%), 66rem) !important;
   align-self: center;

@@ -25,7 +25,7 @@ async function main() {
         if (dropNext) { dropNext = false; res.writeHead(503, { 'Content-Type': 'application/json' }); res.end('{"ok":false,"error":"Confirmation interrupted"}'); return; }
         res.setHeader('Content-Type', 'application/json'); res.end('{"ok":true,"asset":{"id":"asset"},"scheduledMaintenanceCompletion":{"completed":true}}'); return;
       }
-      const allowed = ['/field-manager/offline.html', '/field-manager/offline.css', '/field-manager/montserrat-latin.woff', '/field-manager/offline.mjs', '/field-manager/offline-store.mjs', '/field-manager-sw.js', '/app-push-worker.js'];
+      const allowed = ['/app-theme.css', '/field-manager/offline.html', '/field-manager/offline.css', '/field-manager/montserrat-latin.woff', '/field-manager/offline.mjs', '/field-manager/offline-store.mjs', '/field-manager-sw.js', '/app-push-worker.js'];
       if (!allowed.includes(url.pathname)) { req.socket.destroy(); return; }
       const file = path.join(root, 'public', url.pathname);
       res.setHeader('Content-Type', url.pathname.endsWith('.woff') ? 'font/woff' : url.pathname.endsWith('.html') ? 'text/html' : url.pathname.endsWith('.css') ? 'text/css' : 'application/javascript');
@@ -36,12 +36,13 @@ async function main() {
   const origin = `http://127.0.0.1:${server.address().port}`;
   let browser;
   try {
-    browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args, headless: true, pipe: true });
+    browser = await puppeteer.launch({ executablePath: process.env.FIELD_OFFLINE_BROWSER_PATH || await chromium.executablePath(), args: chromium.args, headless: true, pipe: true });
     const context = browser.defaultBrowserContext(); await context.overridePermissions(origin, ['geolocation']);
     const page = await browser.newPage(); const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
     await page.setGeolocation({ latitude: -25.7, longitude: 28.2, accuracy: 10 });
     const notice = () => page.$eval('#notice', n => n.textContent);
+    await page.evaluateOnNewDocument(() => localStorage.setItem('aim4price-app-theme:field-manager', 'dark'));
     await page.goto(origin + '/field-manager/offline.html');
     await page.evaluate(async () => { const old = await caches.open('aim4price-field-offline-shell-v1'); await old.put('/old-shell-marker', new Response('old')); });
     await page.type('#pin', '12345678'); await page.type('#confirm-pin', '12345678'); await page.click('#unlock-button');
@@ -49,7 +50,8 @@ async function main() {
     await page.waitForFunction(() => !document.querySelector('#sync').disabled);
     assert.match(await page.$eval('#assets', n => n.textContent), /Test tractor/);
     await page.waitForFunction(async () => !(await caches.keys()).includes('aim4price-field-offline-shell-v1'));
-    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v3' })), true);
+    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v4' })), true);
+    assert.equal(await page.evaluate(async () => !!await caches.match('/app-theme.css', { cacheName: 'aim4price-field-offline-shell-v4' })), true);
     console.log('PASS preparation, snapshot, upgraded shell and locally cached font');
     await page.setOfflineMode(true);
     await page.click('.asset'); await page.select('#action', 'Serviced'); await page.select('#task', 'task');
@@ -74,6 +76,8 @@ async function main() {
     await page.waitForFunction(() => document.querySelector('#unlock-button')?.textContent === 'Unlock');
     await page.evaluate(() => document.fonts.ready);
     assert.equal(await page.evaluate(() => document.fonts.check('800 16px Montserrat')), true);
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.appTheme), 'dark');
+    assert.equal(await page.evaluate(() => getComputedStyle(document.body).backgroundColor), 'rgb(20, 37, 31)');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.type('#pin', '99999999'); await page.click('#unlock-button');
     await page.waitForFunction(() => document.querySelector('#notice').textContent.includes('could not unlock'));

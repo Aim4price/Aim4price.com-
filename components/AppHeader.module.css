@@ -3,10 +3,10 @@
   top: 0;
   z-index: 90;
   width: 100%;
-  background: rgba(250, 251, 250, 0.94);
+  background: var(--app-surface, rgba(250, 251, 250, 0.94));
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(18, 45, 37, 0.075);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.075));
+  box-shadow: 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.8));
 }
 
 .inner {
@@ -31,7 +31,7 @@
   justify-self: start;
   min-width: 0;
   text-decoration: none;
-  color: var(--text-strong);
+  color: var(--app-text, var(--text-strong));
 }
 
 .brandLogo {
@@ -59,11 +59,11 @@
   gap: 0.44rem;
   padding: 0.38rem;
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.93);
-  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: var(--app-surface, rgba(255, 255, 255, 0.93));
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.07));
   box-shadow:
-    0 14px 32px rgba(18, 45, 37, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    0 14px 32px var(--app-shadow-colour, rgba(18, 45, 37, 0.05)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.86));
 }
 
 .navLink {
@@ -80,7 +80,7 @@
   font-size: 0.98rem;
   font-weight: 700;
   letter-spacing: -0.008em;
-  color: #42514b;
+  color: var(--app-text, #42514b);
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -90,16 +90,16 @@
 }
 
 .navLink:hover {
-  color: #17362c;
-  background: rgba(23, 77, 62, 0.06);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface-soft, rgba(23, 77, 62, 0.06));
   transform: translateY(-1px);
 }
 
 .navLinkActive {
-  color: #163f32;
-  background: #ffffff;
-  border-color: rgba(23, 77, 62, 0.1);
-  box-shadow: 0 10px 22px rgba(18, 45, 37, 0.055);
+  color: var(--app-text, #163f32);
+  background: var(--app-surface, #ffffff);
+  border-color: var(--app-accent, rgba(23, 77, 62, 0.1));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(18, 45, 37, 0.055));
 }
 
 .navWindowButton {
@@ -117,7 +117,7 @@
   flex: 0 0 auto;
   border: 0;
   background: transparent;
-  color: rgba(7, 59, 48, 0.32);
+  color: var(--app-muted, rgba(7, 59, 48, 0.32));
   font: inherit;
   font-size: clamp(1.56rem, calc(var(--website-design-vw, 1vw) * 1.92), 1.96rem);
   font-weight: 820;
@@ -143,7 +143,7 @@
   border-radius: 0.55rem;
   color: #ffffff;
   background: #124c3c;
-  box-shadow: 0 10px 22px rgba(10, 47, 37, 0.2);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(10, 47, 37, 0.2));
   font-size: 0.72rem;
   font-weight: 800;
   line-height: 1;
@@ -168,7 +168,7 @@
 }
 
 .navWindowButton:hover:not(:disabled) {
-  color: rgba(7, 59, 48, 0.58);
+  color: var(--app-muted, rgba(7, 59, 48, 0.58));
   opacity: 0.86;
 }
 
@@ -210,11 +210,11 @@
   gap: 0.42rem;
   padding: 0.38rem;
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.93);
-  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: var(--app-surface, rgba(255, 255, 255, 0.93));
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.07));
   box-shadow:
-    0 14px 32px rgba(18, 45, 37, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    0 14px 32px var(--app-shadow-colour, rgba(18, 45, 37, 0.05)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.86));
 }
 
 .actionDivider {
@@ -224,7 +224,7 @@
   padding: 0 0.18rem;
   font-size: 1rem;
   font-weight: 700;
-  color: rgba(23, 54, 44, 0.38);
+  color: var(--app-muted, rgba(23, 54, 44, 0.38));
   user-select: none;
 }
 
@@ -267,7 +267,7 @@
 .loginButton,
 .accountButton,
 .notificationButton {
-  color: #42514b;
+  color: var(--app-text, #42514b);
   background: transparent;
 }
 
@@ -276,24 +276,24 @@
 .accountButtonActive,
 .notificationButton:hover,
 .menuLink:hover {
-  color: #17362c;
-  background: rgba(23, 77, 62, 0.06);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface-soft, rgba(23, 77, 62, 0.06));
 }
 
 .signupButton,
 .accountButton,
 .notificationButton {
-  border-color: rgba(23, 77, 62, 0.1);
+  border-color: var(--app-line, rgba(23, 77, 62, 0.1));
 }
 
 .signupButton {
-  color: #163f32;
-  background: #ffffff;
-  box-shadow: 0 10px 22px rgba(18, 45, 37, 0.055);
+  color: var(--app-text, #163f32);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(18, 45, 37, 0.055));
 }
 
 .signupButton:hover {
-  background: rgba(23, 77, 62, 0.06);
+  background: var(--app-surface-soft, rgba(23, 77, 62, 0.06));
 }
 
 .accountMenu,
@@ -314,15 +314,15 @@
   padding-left: 1rem;
   padding-right: 0.92rem;
   text-align: left;
-  background: #ffffff;
-  color: #17315c;
-  border-color: rgba(62, 110, 213, 0.16);
-  box-shadow: 0 10px 20px rgba(41, 72, 145, 0.08);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #17315c);
+  border-color: var(--app-info-line, rgba(62, 110, 213, 0.16));
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(41, 72, 145, 0.08));
 }
 
 .accountButtonActive {
-  border-color: rgba(15, 104, 79, 0.24);
-  box-shadow: 0 12px 24px rgba(15, 104, 79, 0.1);
+  border-color: var(--app-accent, rgba(15, 104, 79, 0.24));
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(15, 104, 79, 0.1));
 }
 
 .accountAvatar,
@@ -336,10 +336,10 @@
   border-radius: 999px;
   font-weight: 800;
   line-height: 1;
-  color: #17362c;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.1);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.1));
   overflow: hidden;
 }
 
@@ -359,7 +359,7 @@
   width: 1.72rem;
   height: 1.72rem;
   flex: 0 0 1.72rem;
-  box-shadow: 0 6px 14px rgba(18, 45, 37, 0.08);
+  box-shadow: 0 6px 14px var(--app-shadow-colour, rgba(18, 45, 37, 0.08));
 }
 
 .accountAvatarLogo {
@@ -371,7 +371,7 @@
   object-fit: cover;
   object-position: center;
   border-radius: inherit;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .accountAvatarInitials {
@@ -381,8 +381,8 @@
   align-items: center;
   justify-content: center;
   border-radius: inherit;
-  color: #17362c;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(239, 250, 245, 0.98) 100%);
+  color: var(--app-text, #17362c);
+  background: linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.98)) 0%, var(--app-surface-soft, rgba(239, 250, 245, 0.98)) 100%);
   font-size: 0.72em;
   line-height: 1;
   font-weight: 900;
@@ -447,16 +447,16 @@
   min-width: 3.28rem;
   padding: 0;
   cursor: pointer;
-  background: #ffffff;
-  color: #17315c;
-  border-color: rgba(62, 110, 213, 0.16);
-  box-shadow: 0 10px 20px rgba(41, 72, 145, 0.08);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #17315c);
+  border-color: var(--app-info-line, rgba(62, 110, 213, 0.16));
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(41, 72, 145, 0.08));
 }
 
 .notificationButtonActive {
-  color: #163f32;
-  border-color: rgba(23, 77, 62, 0.18);
-  box-shadow: 0 12px 24px rgba(18, 45, 37, 0.1);
+  color: var(--app-text, #163f32);
+  border-color: var(--app-accent, rgba(23, 77, 62, 0.18));
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 45, 37, 0.1));
 }
 
 .notificationIcon {
@@ -481,7 +481,7 @@
   font-size: 0.62rem;
   line-height: 1;
   font-weight: 850;
-  box-shadow: 0 0 0 2px #ffffff;
+  box-shadow: 0 0 0 2px var(--app-shadow-colour, #ffffff);
 }
 
 .notificationModalBackdrop {
@@ -511,12 +511,12 @@
   overflow: hidden;
   padding: 1.08rem;
   border-radius: 1.95rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(250, 252, 251, 0.98) 100%);
-  border: 1px solid rgba(18, 45, 37, 0.11);
+  background: linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-surface, rgba(250, 252, 251, 0.98)) 100%);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.11));
   box-shadow:
-    0 34px 90px rgba(8, 25, 20, 0.24),
-    0 14px 34px rgba(18, 45, 37, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 34px 90px var(--app-shadow-colour, rgba(8, 25, 20, 0.24)),
+    0 14px 34px var(--app-shadow-colour, rgba(18, 45, 37, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
 .notificationHeaderRow {
@@ -526,8 +526,8 @@
   gap: 1.35rem;
   padding: 1.18rem 1.22rem;
   border-radius: 1.42rem;
-  background: rgba(247, 249, 248, 0.78);
-  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: var(--app-surface, rgba(247, 249, 248, 0.78));
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.07));
 }
 
 .notificationHeaderText {
@@ -536,7 +536,7 @@
 
 .notificationTitle {
   display: block;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: clamp(1.56rem, calc(var(--website-design-vw, 1vw) * 2.08), 1.86rem);
   line-height: 1.02;
   font-weight: 900;
@@ -547,7 +547,7 @@
   display: block;
   max-width: 38rem;
   margin-top: 0.56rem;
-  color: #5d6b66;
+  color: var(--app-muted, #5d6b66);
   font-size: 0.96rem;
   line-height: 1.42;
   font-weight: 650;
@@ -562,15 +562,15 @@
 .notificationClearButton,
 .notificationCloseButton {
   min-height: 2.68rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
   border-radius: 0.95rem;
-  background: rgba(255, 255, 255, 0.9);
-  color: #42514b;
+  background: var(--app-surface, rgba(255, 255, 255, 0.9));
+  color: var(--app-text, #42514b);
   font-size: 0.84rem;
   font-weight: 850;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.035);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.035));
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -594,25 +594,25 @@
 
 .notificationClearButton:hover,
 .notificationCloseButton:hover {
-  color: #17362c;
-  background: rgba(23, 77, 62, 0.06);
-  border-color: rgba(23, 77, 62, 0.16);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface-soft, rgba(23, 77, 62, 0.06));
+  border-color: var(--app-line, rgba(23, 77, 62, 0.16));
   transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(18, 45, 37, 0.07);
+  box-shadow: 0 12px 22px var(--app-shadow-colour, rgba(18, 45, 37, 0.07));
 }
 
 .notificationClearButtonNew {
-  color: #6f1f1f;
-  background: #ffe4e4;
-  border-color: rgba(204, 58, 58, 0.3);
-  box-shadow: 0 10px 22px rgba(204, 58, 58, 0.12);
+  color: var(--app-danger, #6f1f1f);
+  background: var(--app-danger-soft, #ffe4e4);
+  border-color: var(--app-danger-line, rgba(204, 58, 58, 0.3));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(204, 58, 58, 0.12));
 }
 
 .notificationClearButtonNew:hover {
-  color: #5f1717;
-  background: #ffd9d9;
-  border-color: rgba(204, 58, 58, 0.42);
-  box-shadow: 0 13px 26px rgba(204, 58, 58, 0.16);
+  color: var(--app-danger, #5f1717);
+  background: var(--app-danger-soft, #ffd9d9);
+  border-color: var(--app-danger-line, rgba(204, 58, 58, 0.42));
+  box-shadow: 0 13px 26px var(--app-shadow-colour, rgba(204, 58, 58, 0.16));
 }
 
 .notificationClearButton:disabled {
@@ -628,7 +628,7 @@
   justify-content: space-between;
   gap: 0.9rem;
   padding: 0.05rem 0.55rem 0;
-  color: #74817c;
+  color: var(--app-muted, #74817c);
   font-size: 0.82rem;
   line-height: 1.2;
   font-weight: 820;
@@ -643,7 +643,7 @@
 }
 
 .notificationListHeader strong {
-  color: #42514b;
+  color: var(--app-text, #42514b);
   font-size: 0.82rem;
   font-weight: 880;
 }
@@ -679,16 +679,16 @@
 .notificationPaginationButton {
   min-height: 2.55rem;
   padding: 0 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
   border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.92);
-  color: #42514b;
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
+  color: var(--app-text, #42514b);
   font-size: 0.82rem;
   font-weight: 850;
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.035);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.035));
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -699,11 +699,11 @@
 }
 
 .notificationPaginationButton:hover:not(:disabled) {
-  color: #17362c;
-  background: rgba(23, 77, 62, 0.06);
-  border-color: rgba(23, 77, 62, 0.16);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface-soft, rgba(23, 77, 62, 0.06));
+  border-color: var(--app-line, rgba(23, 77, 62, 0.16));
   transform: translateY(-1px);
-  box-shadow: 0 12px 22px rgba(18, 45, 37, 0.07);
+  box-shadow: 0 12px 22px var(--app-shadow-colour, rgba(18, 45, 37, 0.07));
 }
 
 .notificationPaginationButton:disabled {
@@ -714,7 +714,7 @@
 }
 
 .notificationPaginationText {
-  color: #5d6b66;
+  color: var(--app-muted, #5d6b66);
   font-size: 0.82rem;
   font-weight: 850;
   line-height: 1;
@@ -728,13 +728,13 @@
   align-items: start;
   padding: 1.14rem 1.28rem;
   border-radius: 1.32rem;
-  border: 1px solid rgba(18, 45, 37, 0.085);
-  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.085));
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
   text-decoration: none;
-  color: #25342e;
+  color: var(--app-text, #25342e);
   box-shadow:
-    0 14px 32px rgba(18, 45, 37, 0.052),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    0 14px 32px var(--app-shadow-colour, rgba(18, 45, 37, 0.052)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.85));
   transition:
     background 180ms ease,
     border-color 180ms ease,
@@ -744,119 +744,119 @@
 
 .notificationItem:hover {
   transform: translateY(-1px);
-  background: #ffffff;
-  border-color: rgba(23, 77, 62, 0.16);
+  background: var(--app-surface, #ffffff);
+  border-color: var(--app-line, rgba(23, 77, 62, 0.16));
   box-shadow:
-    0 18px 38px rgba(18, 45, 37, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 18px 38px var(--app-shadow-colour, rgba(18, 45, 37, 0.09)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9));
 }
 
 .notificationItemMessage {
-  border-color: rgba(30, 133, 91, 0.26);
+  border-color: var(--app-line, rgba(30, 133, 91, 0.26));
   background:
-    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.095), transparent 34%),
-    linear-gradient(180deg, rgba(246, 253, 249, 0.98) 0%, rgba(239, 250, 245, 0.98) 100%);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(25, 116, 84, 0.095)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, rgba(246, 253, 249, 0.98)) 0%, var(--app-surface-soft, rgba(239, 250, 245, 0.98)) 100%);
   box-shadow:
-    0 16px 36px rgba(15, 104, 79, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    0 16px 36px var(--app-shadow-colour, rgba(15, 104, 79, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.88));
 }
 
 .notificationItemMessage:hover {
   background:
-    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.13), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #effaf5 100%);
-  border-color: rgba(30, 133, 91, 0.36);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(25, 116, 84, 0.13)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #effaf5) 100%);
+  border-color: var(--app-line, rgba(30, 133, 91, 0.36));
 }
 
 .notificationItemNew {
-  border-color: rgba(204, 58, 58, 0.24);
+  border-color: var(--app-danger-line, rgba(204, 58, 58, 0.24));
   background:
-    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.11), transparent 34%),
-    linear-gradient(180deg, #fff2f2 0%, #ffe7e7 100%);
+    radial-gradient(circle at 0 0, var(--app-danger-soft, rgba(204, 58, 58, 0.11)), transparent 34%),
+    linear-gradient(180deg, var(--app-danger-soft, #fff2f2) 0%, var(--app-danger-soft, #ffe7e7) 100%);
   box-shadow:
-    0 16px 36px rgba(157, 42, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    0 16px 36px var(--app-shadow-colour, rgba(157, 42, 42, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.88));
 }
 
 .notificationItemNew:hover {
   background:
-    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.15), transparent 34%),
-    linear-gradient(180deg, #fff7f7 0%, #ffe2e2 100%);
-  border-color: rgba(204, 58, 58, 0.34);
+    radial-gradient(circle at 0 0, var(--app-danger-soft, rgba(204, 58, 58, 0.15)), transparent 34%),
+    linear-gradient(180deg, var(--app-danger-soft, #fff7f7) 0%, var(--app-danger-soft, #ffe2e2) 100%);
+  border-color: var(--app-danger-line, rgba(204, 58, 58, 0.34));
   box-shadow:
-    0 18px 38px rgba(157, 42, 42, 0.11),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 18px 38px var(--app-shadow-colour, rgba(157, 42, 42, 0.11)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9));
 }
 
 .notificationItemNew .notificationDot {
   background: #c93a3a;
-  box-shadow: 0 0 0 5px rgba(201, 58, 58, 0.13);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(201, 58, 58, 0.13));
 }
 
 .notificationItemNew .notificationCopy strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
 }
 
 .notificationItemNew .notificationCopy span {
-  color: #52615c;
+  color: var(--app-muted, #52615c);
 }
 
 .notificationItemNew .notificationCopy small {
-  color: #7d8a85;
+  color: var(--app-muted, #7d8a85);
 }
 
 .notificationItemPriority,
 .notificationItemPriority:hover {
   order: -1;
-  border-color: rgba(211, 137, 31, 0.42);
+  border-color: var(--app-warning-line, rgba(211, 137, 31, 0.42));
   background:
-    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.18), transparent 36%),
-    linear-gradient(180deg, #fffdf8 0%, #fff0cf 100%);
+    radial-gradient(circle at 0 0, var(--app-warning-soft, rgba(230, 161, 55, 0.18)), transparent 36%),
+    linear-gradient(180deg, var(--app-warning-soft, #fffdf8) 0%, var(--app-warning-soft, #fff0cf) 100%);
   box-shadow:
-    0 18px 38px rgba(153, 94, 12, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    0 18px 38px var(--app-shadow-colour, rgba(153, 94, 12, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
 }
 
 .notificationItemPriority .notificationDot {
   background: #d28116;
-  box-shadow: 0 0 0 5px rgba(210, 129, 22, 0.16);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(210, 129, 22, 0.16));
 }
 
 .notificationItemPriority .notificationCopy strong {
-  color: #76450b;
+  color: var(--app-warning, #76450b);
 }
 .notificationDot {
   width: 0.74rem;
   height: 0.74rem;
   margin-top: 0.42rem;
   border-radius: 999px;
-  background: #6f7b76;
-  box-shadow: 0 0 0 5px rgba(111, 123, 118, 0.1);
+  background: var(--app-surface-soft, #6f7b76);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(111, 123, 118, 0.1));
 }
 
 .notificationToneNeutral .notificationDot {
-  background: #6f7b76;
-  box-shadow: 0 0 0 5px rgba(111, 123, 118, 0.1);
+  background: var(--app-surface-soft, #6f7b76);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(111, 123, 118, 0.1));
 }
 
 .notificationToneInfo .notificationDot {
   background: #3d5fc8;
-  box-shadow: 0 0 0 5px rgba(61, 95, 200, 0.12);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(61, 95, 200, 0.12));
 }
 
 .notificationToneSuccess .notificationDot {
   background: #1f7a4d;
-  box-shadow: 0 0 0 5px rgba(31, 122, 77, 0.12);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(31, 122, 77, 0.12));
 }
 
 .notificationToneWarning .notificationDot {
   background: #b85c1b;
-  box-shadow: 0 0 0 5px rgba(184, 92, 27, 0.13);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(184, 92, 27, 0.13));
 }
 
 .notificationItemMessage .notificationDot {
   background: #15805d;
-  box-shadow: 0 0 0 5px rgba(21, 128, 93, 0.14);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(21, 128, 93, 0.14));
 }
 
 .notificationCopy {
@@ -877,7 +877,7 @@
 }
 
 .notificationCopy strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 1.03rem;
   line-height: 1.25;
   font-weight: 900;
@@ -885,7 +885,7 @@
 }
 
 .notificationCopy span {
-  color: #52615c;
+  color: var(--app-muted, #52615c);
   font-size: 0.93rem;
   line-height: 1.48;
   font-weight: 650;
@@ -893,7 +893,7 @@
 
 .notificationCopy small {
   margin-top: 0.04rem;
-  color: #8a9691;
+  color: var(--app-muted, #8a9691);
   font-size: 0.8rem;
   line-height: 1.2;
   font-weight: 800;
@@ -909,9 +909,9 @@
   place-items: center;
   padding: 1.8rem;
   border-radius: 1.25rem;
-  border: 1px dashed rgba(18, 45, 37, 0.16);
-  background: rgba(247, 249, 248, 0.76);
-  color: #66736e;
+  border: 1px dashed var(--app-line, rgba(18, 45, 37, 0.16));
+  background: var(--app-surface, rgba(247, 249, 248, 0.76));
+  color: var(--app-muted, #66736e);
   font-size: 0.96rem;
   line-height: 1.46;
   font-weight: 750;
@@ -936,12 +936,12 @@
   text-align: left;
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 0 0, rgba(62, 110, 213, 0.075), transparent 34%),
-    rgba(255, 255, 255, 0.985);
-  border: 1px solid rgba(18, 45, 37, 0.09);
+    radial-gradient(circle at 0 0, var(--app-info-soft, rgba(62, 110, 213, 0.075)), transparent 34%),
+    var(--app-surface, rgba(255, 255, 255, 0.985));
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.09));
   box-shadow:
-    0 24px 54px rgba(18, 45, 37, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+    0 24px 54px var(--app-shadow-colour, rgba(18, 45, 37, 0.15)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.94));
 }
 
 .accountSummary {
@@ -954,7 +954,7 @@
   padding: 0.65rem;
   text-align: left;
   border-radius: 0.95rem;
-  background: rgba(62, 110, 213, 0.08);
+  background: var(--app-info-soft, rgba(62, 110, 213, 0.08));
 }
 
 .accountSummaryText {
@@ -968,7 +968,7 @@
 .accountName {
   display: block;
   max-width: 100%;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 0.92rem;
   line-height: 1.25;
   font-weight: 800;
@@ -987,10 +987,10 @@
   padding: 0 1rem;
   text-align: center;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.94);
-  color: #25342e;
-  border-color: rgba(18, 45, 37, 0.085);
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.042);
+  background: var(--app-surface, rgba(255, 255, 255, 0.94));
+  color: var(--app-text, #25342e);
+  border-color: var(--app-line, rgba(18, 45, 37, 0.085));
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.042));
 }
 
 .menuLink > span {
@@ -1005,23 +1005,23 @@
 }
 
 .menuLinkActive {
-  color: #0f684f;
-  border-color: rgba(15, 104, 79, 0.22);
-  background: rgba(239, 250, 245, 0.98);
-  box-shadow: 0 10px 22px rgba(15, 104, 79, 0.08);
+  color: var(--app-text, #0f684f);
+  border-color: var(--app-accent, rgba(15, 104, 79, 0.22));
+  background: var(--app-surface-soft, rgba(239, 250, 245, 0.98));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(15, 104, 79, 0.08));
 }
 
 .menuDangerButton {
   cursor: pointer;
-  color: #8a1f1f;
-  border-color: rgba(138, 31, 31, 0.12);
-  background: rgba(255, 255, 255, 0.92);
+  color: var(--app-danger, #8a1f1f);
+  border-color: var(--app-danger-line, rgba(138, 31, 31, 0.12));
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
 }
 
 .menuDangerButton:hover {
-  color: #7a1717;
-  border-color: rgba(138, 31, 31, 0.18);
-  background: rgba(255, 246, 246, 0.96);
+  color: var(--app-danger, #7a1717);
+  border-color: var(--app-danger-line, rgba(138, 31, 31, 0.18));
+  background: var(--app-danger-soft, rgba(255, 246, 246, 0.96));
 }
 
 .brand:focus-visible,
@@ -1045,7 +1045,7 @@
 .notificationMediaNavButton:focus-visible,
 .menuLink:focus-visible,
 .menuDangerButton:focus-visible {
-  outline: 3px solid rgba(23, 77, 62, 0.18);
+  outline: 3px solid var(--app-accent, rgba(23, 77, 62, 0.18));
   outline-offset: 3px;
 }
 
@@ -1053,18 +1053,18 @@
 .notificationItemButton {
   width: 100%;
   appearance: none;
-  border: 1px solid rgba(18, 45, 37, 0.085);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.085));
   cursor: pointer;
   font: inherit;
   text-align: left;
 }
 
 .notificationItemButton.notificationItemMessage {
-  border-color: rgba(30, 133, 91, 0.26);
+  border-color: var(--app-line, rgba(30, 133, 91, 0.26));
 }
 
 .notificationItemButton.notificationItemMessage:hover {
-  border-color: rgba(30, 133, 91, 0.36);
+  border-color: var(--app-line, rgba(30, 133, 91, 0.36));
 }
 
 .notificationItemButton:disabled {
@@ -1083,10 +1083,10 @@
   gap: 0.45rem;
   padding: 0 0.72rem;
   border-radius: 0.72rem;
-  color: #0f684f !important;
-  background: rgba(231, 247, 239, 0.92);
-  border: 1px solid rgba(15, 104, 79, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  color: var(--app-text, #0f684f) !important;
+  background: var(--app-surface-soft, rgba(231, 247, 239, 0.92));
+  border: 1px solid var(--app-line, rgba(15, 104, 79, 0.18));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.88));
   font-size: 0.77rem !important;
   line-height: 1 !important;
   font-weight: 860 !important;
@@ -1110,9 +1110,9 @@
 }
 
 .notificationItemButton:hover .notificationOpenHint {
-  color: #0b5943 !important;
-  background: #dff3e9;
-  border-color: rgba(15, 104, 79, 0.28);
+  color: var(--app-text, #0b5943) !important;
+  background: var(--app-surface-soft, #dff3e9);
+  border-color: var(--app-line, rgba(15, 104, 79, 0.28));
   transform: translateX(0.08rem);
 }
 
@@ -1140,12 +1140,12 @@
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border-radius: 1.7rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
-  border: 1px solid rgba(18, 45, 37, 0.12);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #fbfdfc) 100%);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12));
   box-shadow:
-    0 32px 84px rgba(7, 27, 21, 0.28),
-    0 14px 36px rgba(18, 45, 37, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 32px 84px var(--app-shadow-colour, rgba(7, 27, 21, 0.28)),
+    0 14px 36px var(--app-shadow-colour, rgba(18, 45, 37, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .leaveAccountModal {
@@ -1245,14 +1245,14 @@
 
 .notificationRenewalDetailModal {
   width: min(52rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
-  border-color: rgba(109, 40, 217, 0.18);
+  border-color: var(--app-info-line, rgba(109, 40, 217, 0.18));
   background:
-    radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.11), transparent 20rem),
-    linear-gradient(180deg, #ffffff 0%, #fcfbff 100%);
+    radial-gradient(circle at 100% 0%, var(--app-info-soft, rgba(139, 92, 246, 0.11)), transparent 20rem),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #fcfbff) 100%);
 }
 
 .notificationRenewalDetailModal .notificationDetailHeader {
-  background: linear-gradient(135deg, rgba(248, 245, 255, 0.9) 0%, rgba(255, 255, 255, 0.96) 72%);
+  background: linear-gradient(135deg, var(--app-info-soft, rgba(248, 245, 255, 0.9)) 0%, var(--app-surface, rgba(255, 255, 255, 0.96)) 72%);
 }
 
 .notificationRenewalEyebrow {
@@ -1260,10 +1260,10 @@
   width: fit-content;
   margin-bottom: 0.55rem;
   padding: 0.38rem 0.68rem;
-  border: 1px solid rgba(109, 40, 217, 0.16);
+  border: 1px solid var(--app-info-line, rgba(109, 40, 217, 0.16));
   border-radius: 999px;
-  color: #6426bd;
-  background: #f5efff;
+  color: var(--app-info, #6426bd);
+  background: var(--app-info-soft, #f5efff);
   font-size: 0.72rem;
   font-weight: 850;
   letter-spacing: 0.05em;
@@ -1272,14 +1272,14 @@
 }
 
 .notificationRenewalDateCard {
-  border-color: rgba(109, 40, 217, 0.2) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f7f1ff 100%) !important;
-  box-shadow: 0 12px 26px rgba(109, 40, 217, 0.07) !important;
+  border-color: var(--app-info-line, rgba(109, 40, 217, 0.2)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7f1ff) 100%) !important;
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(109, 40, 217, 0.07)) !important;
 }
 
 .notificationRenewalDateCard span,
 .notificationRenewalDateCard strong {
-  color: #6426bd !important;
+  color: var(--app-info, #6426bd) !important;
 }
 
 .notificationRenewalShareNote {
@@ -1288,20 +1288,20 @@
   gap: 0.35rem 0.85rem;
   align-items: center;
   padding: 1rem 1.1rem;
-  border: 1px solid rgba(109, 40, 217, 0.14);
+  border: 1px solid var(--app-info-line, rgba(109, 40, 217, 0.14));
   border-radius: 1.05rem;
-  background: rgba(248, 245, 255, 0.86);
+  background: var(--app-info-soft, rgba(248, 245, 255, 0.86));
 }
 
 .notificationRenewalShareNote strong {
-  color: #542099;
+  color: var(--app-info, #542099);
   font-size: 0.82rem;
   white-space: nowrap;
 }
 
 .notificationRenewalShareNote p {
   margin: 0;
-  color: #5d6572;
+  color: var(--app-muted, #5d6572);
   font-size: 0.86rem;
   font-weight: 650;
   line-height: 1.45;
@@ -1331,7 +1331,7 @@
   gap: 1rem;
   align-items: start;
   padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.62rem);
-  border-bottom: 1px solid rgba(18, 45, 37, 0.09);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.09));
 }
 
 .notificationDetailHeaderText {
@@ -1346,12 +1346,12 @@
   justify-content: center;
   margin-bottom: 0.72rem;
   border-radius: 0.9rem;
-  color: #a53838;
-  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
-  border: 1px solid rgba(165, 56, 56, 0.18);
+  color: var(--app-danger, #a53838);
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff1f1) 100%);
+  border: 1px solid var(--app-danger-line, rgba(165, 56, 56, 0.18));
   box-shadow:
-    0 10px 22px rgba(151, 38, 38, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 10px 22px var(--app-shadow-colour, rgba(151, 38, 38, 0.07)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .notificationDetailErrorIcon svg {
@@ -1365,13 +1365,13 @@
 }
 
 .notificationDetailOutcomeSuccess {
-  border-color: rgba(25, 125, 92, 0.24);
-  background: linear-gradient(180deg, #f5fff9 0%, #ffffff 100%);
+  border-color: var(--app-line, rgba(25, 125, 92, 0.24));
+  background: linear-gradient(180deg, var(--app-surface, #f5fff9) 0%, var(--app-surface, #ffffff) 100%);
 }
 
 .notificationDetailOutcomeWarning {
-  border-color: rgba(181, 119, 20, 0.28);
-  background: linear-gradient(180deg, #fffaf0 0%, #ffffff 100%);
+  border-color: var(--app-warning-line, rgba(181, 119, 20, 0.28));
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffaf0) 0%, var(--app-surface, #ffffff) 100%);
 }
 
 .notificationOutcomeModal {
@@ -1399,7 +1399,7 @@
 
 .notificationOutcomeModal .notificationDetailActions {
   padding: 1rem clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.15rem) clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 2.6), 1.8rem);
-  border-top: 1px solid rgba(18, 45, 37, 0.08);
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
 }
 
 .notificationOutcomeModal .notificationPrimaryButton {
@@ -1408,7 +1408,7 @@
 
 .notificationDetailHeader h2 {
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.7), 2.08rem);
   line-height: 1.04;
   font-weight: 920;
@@ -1417,7 +1417,7 @@
 
 .notificationDetailHeader p {
   margin: 0.5rem 0 0;
-  color: #5d6b66;
+  color: var(--app-muted, #5d6b66);
   font-size: 0.98rem;
   line-height: 1.42;
   font-weight: 660;
@@ -1430,13 +1430,13 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  border: 1px solid rgba(62, 110, 213, 0.16);
-  background: #f7fbff;
-  color: #17315c;
+  border: 1px solid var(--app-info-line, rgba(62, 110, 213, 0.16));
+  background: var(--app-info-soft, #f7fbff);
+  color: var(--app-info, #17315c);
   font-size: 1.55rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(41, 72, 145, 0.08);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(41, 72, 145, 0.08));
   transition:
     transform 180ms ease,
     background 180ms ease,
@@ -1446,9 +1446,9 @@
 
 .notificationDetailCloseButton:hover {
   transform: translateY(-1px);
-  background: #ffffff;
-  border-color: rgba(23, 77, 62, 0.16);
-  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.1);
+  background: var(--app-surface, #ffffff);
+  border-color: var(--app-line, rgba(23, 77, 62, 0.16));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(18, 45, 37, 0.1));
 }
 
 .notificationDetailBody {
@@ -1480,12 +1480,12 @@
 .notificationDetailMessageBox,
 .notificationDetailStatusBox,
 .notificationDocumentLink {
-  border: 1px solid rgba(206, 218, 229, 0.94);
+  border: 1px solid var(--app-info-line, rgba(206, 218, 229, 0.94));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfc) 100%);
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .notificationDetailMetaCard {
@@ -1496,7 +1496,7 @@
 
 .notificationDetailMetaCard span,
 .notificationDocumentLink span {
-  color: #68798b;
+  color: var(--app-muted, #68798b);
   font-size: 0.76rem;
   line-height: 1.15;
   font-weight: 820;
@@ -1507,7 +1507,7 @@
 .notificationDetailMetaCard strong,
 .notificationDocumentLink strong {
   min-width: 0;
-  color: #123b31;
+  color: var(--app-text, #123b31);
   font-size: 0.98rem;
   line-height: 1.25;
   font-weight: 850;
@@ -1523,7 +1523,7 @@
 
 .notificationDetailMessageBox strong,
 .notificationDetailStatusBox strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 0.98rem;
   line-height: 1.22;
   font-weight: 900;
@@ -1532,7 +1532,7 @@
 .notificationDetailMessageBox p,
 .notificationDetailStatusBox p {
   margin: 0;
-  color: #43524c;
+  color: var(--app-text, #43524c);
   font-size: 0.96rem;
   line-height: 1.5;
   font-weight: 630;
@@ -1540,17 +1540,17 @@
 }
 
 .notificationDetailStatusBox {
-  border-color: rgba(23, 126, 91, 0.22);
-  background: linear-gradient(180deg, rgba(240, 251, 246, 0.98) 0%, rgba(250, 253, 251, 0.98) 100%);
+  border-color: var(--app-line, rgba(23, 126, 91, 0.22));
+  background: linear-gradient(180deg, var(--app-surface-soft, rgba(240, 251, 246, 0.98)) 0%, var(--app-surface, rgba(250, 253, 251, 0.98)) 100%);
 }
 
 .notificationDetailStatusBoxDenied {
-  border-color: rgba(109, 40, 217, 0.2);
-  background: linear-gradient(135deg, rgba(249, 246, 255, 0.98) 0%, rgba(255, 251, 252, 0.98) 100%);
+  border-color: var(--app-info-line, rgba(109, 40, 217, 0.2));
+  background: linear-gradient(135deg, var(--app-info-soft, rgba(249, 246, 255, 0.98)) 0%, var(--app-danger-soft, rgba(255, 251, 252, 0.98)) 100%);
 }
 
 .notificationDetailStatusBoxDenied strong {
-  color: #5d249f;
+  color: var(--app-info, #5d249f);
 }
 
 .notificationRenewalDetailModal .notificationDetailBody {
@@ -1567,8 +1567,8 @@
   justify-content: flex-end;
   gap: 0.7rem;
   padding: 1rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.62rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.62rem);
-  border-top: 1px solid rgba(18, 45, 37, 0.08);
-  background: rgba(250, 252, 251, 0.92);
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
+  background: var(--app-surface, rgba(250, 252, 251, 0.92));
 }
 
 .notificationPrimaryButton,
@@ -1595,23 +1595,23 @@
 
 .notificationPrimaryButton {
   color: #ffffff;
-  border: 1px solid rgba(15, 104, 79, 0.95);
+  border: 1px solid var(--app-line, rgba(15, 104, 79, 0.95));
   background: linear-gradient(180deg, #1a8664 0%, #0f684f 100%);
-  box-shadow: 0 14px 26px rgba(15, 104, 79, 0.18);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(15, 104, 79, 0.18));
 }
 
 .notificationSoftDangerButton {
-  color: #972626;
-  border: 1px solid rgba(151, 38, 38, 0.18);
-  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
-  box-shadow: 0 12px 22px rgba(151, 38, 38, 0.06);
+  color: var(--app-danger, #972626);
+  border: 1px solid var(--app-danger-line, rgba(151, 38, 38, 0.18));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff1f1) 100%);
+  box-shadow: 0 12px 22px var(--app-shadow-colour, rgba(151, 38, 38, 0.06));
 }
 
 .notificationSecondaryButton {
-  color: #1f3347;
-  border: 1px solid rgba(206, 218, 229, 0.98);
-  background: #ffffff;
-  box-shadow: 0 10px 20px rgba(16, 31, 28, 0.04);
+  color: var(--app-info, #1f3347);
+  border: 1px solid var(--app-info-line, rgba(206, 218, 229, 0.98));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(16, 31, 28, 0.04));
 }
 
 .notificationPrimaryButton:hover:not(:disabled),
@@ -1640,11 +1640,11 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(206, 218, 229, 0.94);
+  border: 1px solid var(--app-info-line, rgba(206, 218, 229, 0.94));
   border-radius: 1.14rem;
   background:
-    linear-gradient(90deg, rgba(247, 250, 251, 0.96) 0%, rgba(255, 255, 255, 0.98) 50%, rgba(247, 250, 251, 0.96) 100%);
-  box-shadow: 0 12px 28px rgba(16, 31, 28, 0.055);
+    linear-gradient(90deg, var(--app-info-soft, rgba(247, 250, 251, 0.96)) 0%, var(--app-surface, rgba(255, 255, 255, 0.98)) 50%, var(--app-info-soft, rgba(247, 250, 251, 0.96)) 100%);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(16, 31, 28, 0.055));
 }
 
 .notificationMediaContent {
@@ -1670,7 +1670,7 @@
   width: 100%;
   min-height: clamp(16rem, calc(var(--website-design-vh, 1vh) * 42), 27rem);
   border: 0;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .notificationDocumentPlaceholder {
@@ -1682,25 +1682,25 @@
   gap: 0.38rem;
   padding: 1.5rem;
   text-align: center;
-  color: #43524c;
+  color: var(--app-text, #43524c);
 }
 
 .notificationDocumentPlaceholder strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 1.05rem;
   font-weight: 900;
 }
 
 .notificationDocumentPlaceholder span {
   max-width: 100%;
-  color: #52615c;
+  color: var(--app-muted, #52615c);
   font-size: 0.92rem;
   font-weight: 720;
   overflow-wrap: anywhere;
 }
 
 .notificationDocumentPlaceholder small {
-  color: #74817c;
+  color: var(--app-muted, #74817c);
   font-size: 0.8rem;
   font-weight: 720;
 }
@@ -1714,16 +1714,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(15, 104, 79, 0.2);
+  border: 1px solid var(--app-line, rgba(15, 104, 79, 0.2));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #0f684f;
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
+  color: var(--app-text, #0f684f);
   font-size: 1.55rem;
   font-weight: 900;
   line-height: 1;
   cursor: pointer;
   transform: translateY(-50%);
-  box-shadow: 0 12px 26px rgba(15, 104, 79, 0.13);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(15, 104, 79, 0.13));
   transition:
     transform 180ms ease,
     background 180ms ease,
@@ -1732,10 +1732,10 @@
 }
 
 .notificationMediaNavButton:hover {
-  background: #ffffff;
-  border-color: rgba(15, 104, 79, 0.34);
+  background: var(--app-surface, #ffffff);
+  border-color: var(--app-line, rgba(15, 104, 79, 0.34));
   transform: translateY(-50%) scale(1.035);
-  box-shadow: 0 16px 30px rgba(15, 104, 79, 0.18);
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(15, 104, 79, 0.18));
 }
 
 .notificationMediaNavPrevious {
@@ -1752,12 +1752,12 @@
   align-items: center;
   gap: 0.85rem;
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(206, 218, 229, 0.94);
+  border: 1px solid var(--app-info-line, rgba(206, 218, 229, 0.94));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfc) 100%);
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .notificationMediaMeta {
@@ -1767,7 +1767,7 @@
 }
 
 .notificationMediaMeta strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 0.95rem;
   font-weight: 900;
   line-height: 1.16;
@@ -1775,7 +1775,7 @@
 
 .notificationMediaMeta span,
 .notificationMediaMeta small {
-  color: #68798b;
+  color: var(--app-muted, #68798b);
   font-size: 0.82rem;
   font-weight: 760;
   line-height: 1.24;
@@ -1795,16 +1795,16 @@
   align-items: center;
   justify-content: center;
   padding: 0 0.95rem;
-  border: 1px solid rgba(15, 104, 79, 0.2);
+  border: 1px solid var(--app-line, rgba(15, 104, 79, 0.2));
   border-radius: 0.86rem;
-  background: #ffffff;
-  color: #0f684f;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #0f684f);
   font-size: 0.84rem;
   font-weight: 880;
   line-height: 1;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: 0 8px 18px rgba(15, 104, 79, 0.055);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(15, 104, 79, 0.055));
   transition:
     transform 180ms ease,
     border-color 180ms ease,
@@ -1814,9 +1814,9 @@
 
 .notificationMediaActionButton:hover {
   transform: translateY(-1px);
-  border-color: rgba(15, 104, 79, 0.32);
-  background: rgba(239, 250, 245, 0.95);
-  box-shadow: 0 12px 22px rgba(15, 104, 79, 0.09);
+  border-color: var(--app-line, rgba(15, 104, 79, 0.32));
+  background: var(--app-surface-soft, rgba(239, 250, 245, 0.95));
+  box-shadow: 0 12px 22px var(--app-shadow-colour, rgba(15, 104, 79, 0.09));
 }
 
 .notificationDocumentLink {
@@ -1835,8 +1835,8 @@
 
 .notificationDocumentLink:hover {
   transform: translateY(-1px);
-  border-color: rgba(23, 77, 62, 0.18);
-  box-shadow: 0 14px 28px rgba(16, 31, 28, 0.07);
+  border-color: var(--app-line, rgba(23, 77, 62, 0.18));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(16, 31, 28, 0.07));
 }
 
 .notificationDocumentLink span,
@@ -1848,7 +1848,7 @@
   grid-column: 2;
   grid-row: 1 / span 2;
   justify-self: end;
-  color: #68798b;
+  color: var(--app-muted, #68798b);
   font-size: 0.82rem;
   font-weight: 820;
 }
@@ -1929,9 +1929,9 @@
   :global(:where(html:not(:has([data-website-canvas])))) .navLink {
     min-height: 3.2rem;
     padding: 0 0.95rem;
-    background: rgba(255, 255, 255, 0.94);
-    border-color: rgba(18, 45, 37, 0.08);
-    box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
+    background: var(--app-surface, rgba(255, 255, 255, 0.94));
+    border-color: var(--app-line, rgba(18, 45, 37, 0.08));
+    box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
@@ -1961,9 +1961,9 @@
     width: 3.2rem;
     min-width: 3.2rem;
     min-height: 3.2rem;
-    background: rgba(255, 255, 255, 0.94);
-    border-color: rgba(18, 45, 37, 0.08);
-    box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
+    background: var(--app-surface, rgba(255, 255, 255, 0.94));
+    border-color: var(--app-line, rgba(18, 45, 37, 0.08));
+    box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .actionDivider {
@@ -1977,9 +1977,9 @@
     flex: 1 1 0;
     min-height: 3.2rem;
     padding: 0 0.95rem;
-    background: rgba(255, 255, 255, 0.94);
-    border-color: rgba(18, 45, 37, 0.08);
-    box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
+    background: var(--app-surface, rgba(255, 255, 255, 0.94));
+    border-color: var(--app-line, rgba(18, 45, 37, 0.08));
+    box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
@@ -2132,15 +2132,15 @@
 
 .notificationApproveButton {
   color: #ffffff;
-  border: 1px solid rgba(15, 104, 79, 0.95);
+  border: 1px solid var(--app-line, rgba(15, 104, 79, 0.95));
   background: linear-gradient(180deg, #1a8664 0%, #0f684f 100%);
-  box-shadow: 0 8px 16px rgba(15, 104, 79, 0.16);
+  box-shadow: 0 8px 16px var(--app-shadow-colour, rgba(15, 104, 79, 0.16));
 }
 
 .notificationDenyButton {
-  color: #8a1f1f;
-  border: 1px solid rgba(138, 31, 31, 0.18);
-  background: #fff7f7;
+  color: var(--app-danger, #8a1f1f);
+  border: 1px solid var(--app-danger-line, rgba(138, 31, 31, 0.18));
+  background: var(--app-danger-soft, #fff7f7);
 }
 
 .notificationApproveButton:hover,
@@ -2158,7 +2158,7 @@
 
 .notificationApproveButton:focus-visible,
 .notificationDenyButton:focus-visible {
-  outline: 3px solid rgba(23, 77, 62, 0.18);
+  outline: 3px solid var(--app-accent, rgba(23, 77, 62, 0.18));
   outline-offset: 3px;
 }
 
@@ -2282,10 +2282,10 @@
   gap: 0.5rem;
   min-height: 2.95rem;
   padding: 0 0.92rem;
-  border: 1px solid rgba(23, 77, 62, 0.12);
+  border: 1px solid var(--app-line, rgba(23, 77, 62, 0.12));
   border-radius: 0.95rem;
-  background: #ffffff;
-  color: #17362c;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #17362c);
   font: inherit;
   font-size: 0.9rem;
   font-weight: 850;
@@ -2293,7 +2293,7 @@
   letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 10px 20px rgba(18, 45, 37, 0.055);
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(18, 45, 37, 0.055));
   transition:
     transform 180ms ease,
     box-shadow 180ms ease,
@@ -2304,10 +2304,10 @@
 
 .mobileMenuButton:hover,
 .mobileMenuButtonActive {
-  color: #0f684f;
-  border-color: rgba(15, 104, 79, 0.24);
-  background: rgba(239, 250, 245, 0.96);
-  box-shadow: 0 12px 24px rgba(15, 104, 79, 0.09);
+  color: var(--app-text, #0f684f);
+  border-color: var(--app-accent, rgba(15, 104, 79, 0.24));
+  background: var(--app-surface-soft, rgba(239, 250, 245, 0.96));
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(15, 104, 79, 0.09));
 }
 
 .mobileMenuButton:hover {
@@ -2395,14 +2395,14 @@
   overscroll-behavior: contain;
   padding: 0.86rem;
   border-radius: 1.42rem;
-  border: 1px solid rgba(18, 45, 37, 0.09);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.09));
   background:
-    radial-gradient(circle at 0 0, rgba(30, 133, 91, 0.085), transparent 32%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.992) 0%, rgba(248, 251, 249, 0.986) 100%);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(30, 133, 91, 0.085)), transparent 32%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.992)) 0%, var(--app-surface, rgba(248, 251, 249, 0.986)) 100%);
   box-shadow:
-    0 24px 62px rgba(8, 25, 20, 0.18),
-    0 18px 44px rgba(18, 45, 37, 0.13),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    0 24px 62px var(--app-shadow-colour, rgba(8, 25, 20, 0.18)),
+    0 18px 44px var(--app-shadow-colour, rgba(18, 45, 37, 0.13)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
 }
 
 .mobileMenuNav::-webkit-scrollbar {
@@ -2421,8 +2421,8 @@
   gap: 0.8rem;
   padding: 0.78rem 0.82rem;
   border-radius: 1.05rem;
-  background: rgba(247, 249, 248, 0.82);
-  border: 1px solid rgba(18, 45, 37, 0.07);
+  background: var(--app-surface, rgba(247, 249, 248, 0.82));
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.07));
 }
 
 .mobileMenuHeaderCopy {
@@ -2432,7 +2432,7 @@
 }
 
 .mobileMenuKicker {
-  color: #62716b;
+  color: var(--app-muted, #62716b);
   font-size: 0.72rem;
   line-height: 1.1;
   font-weight: 900;
@@ -2444,7 +2444,7 @@
 }
 
 .mobileMenuTitle {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 1.08rem;
   line-height: 1.15;
   font-weight: 900;
@@ -2455,7 +2455,7 @@
 .mobileMenuAccountName {
   display: block;
   max-width: 100%;
-  color: #62716b;
+  color: var(--app-muted, #62716b);
   font-size: 0.86rem;
   line-height: 1.2;
   font-weight: 760;
@@ -2471,14 +2471,14 @@
   width: 2.75rem;
   min-width: 2.75rem;
   height: 2.75rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
   border-radius: 0.95rem;
-  background: #ffffff;
-  color: #42514b;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #42514b);
   font-size: 1.45rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
   transition:
     transform 180ms ease,
     background 180ms ease,
@@ -2489,10 +2489,10 @@
 
 .mobileMenuCloseButton:hover {
   transform: translateY(-1px);
-  color: #17362c;
-  border-color: rgba(23, 77, 62, 0.18);
-  background: rgba(23, 77, 62, 0.055);
-  box-shadow: 0 12px 22px rgba(18, 45, 37, 0.08);
+  color: var(--app-text, #17362c);
+  border-color: var(--app-line, rgba(23, 77, 62, 0.18));
+  background: var(--app-surface-soft, rgba(23, 77, 62, 0.055));
+  box-shadow: 0 12px 22px var(--app-shadow-colour, rgba(18, 45, 37, 0.08));
 }
 
 .mobileMenuNav {
@@ -2521,16 +2521,16 @@
   min-height: 3.55rem;
   padding: 0 1.08rem;
   border-radius: 1.08rem;
-  border: 1px solid rgba(18, 45, 37, 0.085);
-  background: rgba(255, 255, 255, 0.94);
-  color: #25342e;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.085));
+  background: var(--app-surface, rgba(255, 255, 255, 0.94));
+  color: var(--app-text, #25342e);
   text-decoration: none;
   font-size: 1rem;
   line-height: 1.16;
   font-weight: 850;
   letter-spacing: -0.012em;
   overflow-wrap: anywhere;
-  box-shadow: 0 9px 18px rgba(18, 45, 37, 0.045);
+  box-shadow: 0 9px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
   transition:
     transform 180ms ease,
     background 180ms ease,
@@ -2544,17 +2544,17 @@
 .mobileMenuActionButton:hover:not(:disabled),
 .mobileMenuDangerButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  color: #17362c;
-  border-color: rgba(23, 77, 62, 0.16);
-  background: #ffffff;
-  box-shadow: 0 12px 24px rgba(18, 45, 37, 0.075);
+  color: var(--app-text, #17362c);
+  border-color: var(--app-line, rgba(23, 77, 62, 0.16));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 45, 37, 0.075));
 }
 
 .mobileMenuNavLinkActive {
-  color: #0f684f;
-  border-color: rgba(15, 104, 79, 0.22);
-  background: #effaf5;
-  box-shadow: 0 12px 24px rgba(15, 104, 79, 0.08);
+  color: var(--app-text, #0f684f);
+  border-color: var(--app-accent, rgba(15, 104, 79, 0.22));
+  background: var(--app-surface-soft, #effaf5);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(15, 104, 79, 0.08));
 }
 
 .mobileMenuAuthActions,
@@ -2562,7 +2562,7 @@
   display: grid;
   gap: 0.58rem;
   padding-top: 0.78rem;
-  border-top: 1px solid rgba(18, 45, 37, 0.08);
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
 }
 
 .mobileMenuAuthActions {
@@ -2581,25 +2581,25 @@
 .mobileMenuDangerButton {
   width: 100%;
   cursor: pointer;
-  color: #8a1f1f;
-  border-color: rgba(138, 31, 31, 0.14);
-  background: rgba(255, 255, 255, 0.94);
+  color: var(--app-danger, #8a1f1f);
+  border-color: var(--app-danger-line, rgba(138, 31, 31, 0.14));
+  background: var(--app-surface, rgba(255, 255, 255, 0.94));
   font: inherit;
 }
 
 .mobileMenuActionButton {
   width: 100%;
   cursor: pointer;
-  color: #17362c;
-  border-color: rgba(15, 104, 79, 0.16);
-  background: rgba(244, 252, 248, 0.98);
+  color: var(--app-text, #17362c);
+  border-color: var(--app-line, rgba(15, 104, 79, 0.16));
+  background: var(--app-surface, rgba(244, 252, 248, 0.98));
   font: inherit;
 }
 
 .mobileMenuDangerButton:hover:not(:disabled) {
-  color: #7a1717;
-  border-color: rgba(138, 31, 31, 0.2);
-  background: rgba(255, 246, 246, 0.98);
+  color: var(--app-danger, #7a1717);
+  border-color: var(--app-danger-line, rgba(138, 31, 31, 0.2));
+  background: var(--app-danger-soft, rgba(255, 246, 246, 0.98));
 }
 
 .mobileMenuDangerButton:disabled {
@@ -2611,16 +2611,16 @@
 
 .mobileMenuAuthLinkPrimary {
   color: #ffffff;
-  border-color: rgba(15, 104, 79, 0.96);
+  border-color: var(--app-line, rgba(15, 104, 79, 0.96));
   background: linear-gradient(180deg, #24956f 0%, #0f684f 100%);
-  box-shadow: 0 12px 24px rgba(15, 104, 79, 0.17);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(15, 104, 79, 0.17));
 }
 
 .mobileMenuAuthLinkPrimary:hover {
   color: #ffffff;
-  border-color: rgba(15, 104, 79, 1);
+  border-color: var(--app-line, rgba(15, 104, 79, 1));
   background: linear-gradient(180deg, #2ba078 0%, #0f684f 100%);
-  box-shadow: 0 14px 28px rgba(15, 104, 79, 0.22);
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(15, 104, 79, 0.22));
 }
 
 .mobileMenuButton:focus-visible,
@@ -2628,7 +2628,7 @@
 .mobileMenuNavLink:focus-visible,
 .mobileMenuAuthLink:focus-visible,
 .mobileMenuDangerButton:focus-visible {
-  outline: 3px solid rgba(23, 77, 62, 0.18);
+  outline: 3px solid var(--app-accent, rgba(23, 77, 62, 0.18));
   outline-offset: 3px;
 }
 
@@ -2738,8 +2738,8 @@
 @media (min-width: 901px) and (max-width: 1180px) {
   :global(:where(html:not(:has([data-website-canvas])))) .navRail {
     box-shadow:
-      0 12px 28px rgba(18, 45, 37, 0.048),
-      inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      0 12px 28px var(--app-shadow-colour, rgba(18, 45, 37, 0.048)),
+      inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.86));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .navLink {
@@ -2821,7 +2821,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
     min-height: 2.9rem;
     border-radius: 0.9rem;
-    box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
+    box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.055));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
@@ -2886,11 +2886,11 @@
     gap: 0.52rem;
     border-radius: 1.55rem;
     background:
-      radial-gradient(circle at 0 0, rgba(62, 110, 213, 0.09), transparent 38%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.992) 0%, rgba(249, 252, 250, 0.985) 100%);
+      radial-gradient(circle at 0 0, var(--app-info-soft, rgba(62, 110, 213, 0.09)), transparent 38%),
+      linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.992)) 0%, var(--app-surface, rgba(249, 252, 250, 0.985)) 100%);
     box-shadow:
-      0 24px 60px rgba(8, 25, 20, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+      0 24px 60px var(--app-shadow-colour, rgba(8, 25, 20, 0.18)),
+      inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .accountSummary {
@@ -3362,12 +3362,12 @@
     gap: 0.72rem;
     padding: 0.72rem;
     border-radius: 1.42rem;
-    border-color: rgba(10, 50, 38, 0.14);
-    background: linear-gradient(180deg, #f9fbfa 0%, #f1f6f3 100%);
+    border-color: var(--app-line, rgba(10, 50, 38, 0.14));
+    background: linear-gradient(180deg, var(--app-surface, #f9fbfa) 0%, var(--app-surface-soft, #f1f6f3) 100%);
     box-shadow:
-      0 28px 70px rgba(4, 24, 18, 0.28),
-      0 12px 30px rgba(11, 45, 35, 0.16),
-      inset 0 1px 0 rgba(255, 255, 255, 0.95);
+      0 28px 70px var(--app-shadow-colour, rgba(4, 24, 18, 0.28)),
+      0 12px 30px var(--app-shadow-colour, rgba(11, 45, 35, 0.16)),
+      inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
     animation: mobileMenuPanelIn 210ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
@@ -3375,13 +3375,13 @@
     min-height: 5.25rem;
     padding: 0.9rem 0.95rem;
     border-radius: 1.08rem;
-    border-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--app-line, rgba(255, 255, 255, 0.1));
     background:
-      radial-gradient(circle at 92% 8%, rgba(67, 174, 132, 0.22), transparent 9rem),
+      radial-gradient(circle at 92% 8%, var(--app-surface-soft, rgba(67, 174, 132, 0.22)), transparent 9rem),
       linear-gradient(135deg, #155843 0%, #0a382d 100%);
     box-shadow:
-      0 12px 28px rgba(8, 49, 37, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      0 12px 28px var(--app-shadow-colour, rgba(8, 49, 37, 0.18)),
+      inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.08));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuHeaderCopy {
@@ -3389,7 +3389,7 @@
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuKicker {
-    color: #a9dfca;
+    color: var(--app-accent, #a9dfca);
     font-size: 0.67rem;
     letter-spacing: 0.1em;
   }
@@ -3402,7 +3402,7 @@
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAccountName {
-    color: rgba(232, 245, 239, 0.74);
+    color: var(--app-accent, rgba(232, 245, 239, 0.74));
     font-size: 0.78rem;
   }
 
@@ -3410,11 +3410,11 @@
     width: 2.7rem;
     min-width: 2.7rem;
     height: 2.7rem;
-    border-color: rgba(255, 255, 255, 0.17);
+    border-color: var(--app-line, rgba(255, 255, 255, 0.17));
     border-radius: 0.92rem;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--app-surface-soft, rgba(255, 255, 255, 0.1));
     color: #ffffff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.08));
     backdrop-filter: blur(10px);
   }
 
@@ -3429,8 +3429,8 @@
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuCloseButton:hover {
     color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.16);
+    border-color: var(--app-line, rgba(255, 255, 255, 0.3));
+    background: var(--app-surface-soft, rgba(255, 255, 255, 0.16));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNav {
@@ -3443,11 +3443,11 @@
     gap: 0.72rem;
     padding: 0.48rem 0.62rem;
     border-radius: 1rem;
-    border-color: rgba(16, 59, 46, 0.08);
-    background: rgba(255, 255, 255, 0.86);
-    color: #234238;
+    border-color: var(--app-line, rgba(16, 59, 46, 0.08));
+    background: var(--app-surface, rgba(255, 255, 255, 0.86));
+    color: var(--app-text, #234238);
     font-size: 0.94rem;
-    box-shadow: 0 7px 18px rgba(15, 54, 42, 0.045);
+    box-shadow: 0 7px 18px var(--app-shadow-colour, rgba(15, 54, 42, 0.045));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavIcon {
@@ -3458,9 +3458,9 @@
     align-items: center;
     justify-content: center;
     border-radius: 0.78rem;
-    color: #176b50;
-    background: #e8f3ee;
-    border: 1px solid rgba(23, 107, 80, 0.09);
+    color: var(--app-text, #176b50);
+    background: var(--app-surface-soft, #e8f3ee);
+    border: 1px solid var(--app-line, rgba(23, 107, 80, 0.09));
     transition:
       color 180ms ease,
       background 180ms ease,
@@ -3486,8 +3486,8 @@
     align-items: center;
     justify-content: center;
     border-radius: 999px;
-    color: rgba(23, 107, 80, 0.58);
-    background: rgba(23, 107, 80, 0.06);
+    color: var(--app-muted, rgba(23, 107, 80, 0.58));
+    background: var(--app-surface-soft, rgba(23, 107, 80, 0.06));
     transition:
       color 180ms ease,
       background 180ms ease,
@@ -3510,29 +3510,29 @@
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLinkActive {
     color: #ffffff;
-    border-color: rgba(12, 80, 59, 0.85);
+    border-color: var(--app-accent, rgba(12, 80, 59, 0.85));
     background: linear-gradient(180deg, #1e7e5e 0%, #125d47 100%);
     box-shadow:
-      0 13px 26px rgba(14, 88, 64, 0.18),
-      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      0 13px 26px var(--app-shadow-colour, rgba(14, 88, 64, 0.18)),
+      inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.14));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLinkActive .mobileMenuNavIcon {
     color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.13);
+    border-color: var(--app-accent, rgba(255, 255, 255, 0.14));
+    background: var(--app-surface-soft, rgba(255, 255, 255, 0.13));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLinkActive .mobileMenuNavArrow {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--app-surface-soft, rgba(255, 255, 255, 0.12));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAuthActions,
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAccountActions {
     gap: 0.5rem;
     padding-top: 0.68rem;
-    border-top-color: rgba(16, 59, 46, 0.1);
+    border-top-color: var(--app-line, rgba(16, 59, 46, 0.1));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAuthLink,
@@ -3719,9 +3719,9 @@
 .notificationInboxControls {
   display: grid;
   gap: 10px;
-  border-bottom: 1px solid rgba(18, 53, 45, 0.09);
+  border-bottom: 1px solid var(--app-line, rgba(18, 53, 45, 0.09));
   padding: 12px 16px;
-  background: rgba(247, 251, 249, 0.86);
+  background: var(--app-surface, rgba(247, 251, 249, 0.86));
 }
 
 .notificationSearchBox {
@@ -3730,16 +3730,16 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
-  border: 1px solid rgba(18, 53, 45, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14));
   border-radius: 14px;
-  background: #fff;
+  background: var(--app-surface, #fff);
   padding: 0 11px;
-  color: rgba(18, 53, 45, 0.55);
+  color: var(--app-muted, rgba(18, 53, 45, 0.55));
 }
 
 .notificationSearchBox:focus-within {
-  border-color: rgba(35, 104, 81, 0.4);
-  box-shadow: 0 0 0 3px rgba(35, 104, 81, 0.08);
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.4));
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(35, 104, 81, 0.08));
 }
 
 .notificationSearchBox svg {
@@ -3757,13 +3757,13 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font: inherit;
   font-size: 0.82rem;
   font-weight: 700;
 }
 
-.notificationSearchBox input::placeholder { color: rgba(18, 53, 45, 0.46); }
+.notificationSearchBox input::placeholder { color: var(--app-muted, rgba(18, 53, 45, 0.46)); }
 
 .notificationSearchBox button {
   width: 29px;
@@ -3772,8 +3772,8 @@
   place-items: center;
   border: 0;
   border-radius: 9px;
-  background: rgba(18, 53, 45, 0.07);
-  color: #12352d;
+  background: var(--app-surface-soft, rgba(18, 53, 45, 0.07));
+  color: var(--app-text, #12352d);
   font: inherit;
   font-size: 1rem;
   cursor: pointer;
@@ -3791,10 +3791,10 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 12px;
-  background: #fff;
-  color: rgba(18, 53, 45, 0.66);
+  background: var(--app-surface, #fff);
+  color: var(--app-muted, rgba(18, 53, 45, 0.66));
   font: inherit;
   font-size: 0.75rem;
   font-weight: 800;
@@ -3807,18 +3807,18 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: rgba(18, 53, 45, 0.08);
+  background: var(--app-surface-soft, rgba(18, 53, 45, 0.08));
   font-size: 0.65rem;
 }
 
 .notificationViewTabs .notificationViewTabActive {
-  border-color: #176f51;
-  background: #e3f4eb;
-  color: #12553e;
+  border-color: var(--app-accent, #176f51);
+  background: var(--app-surface-soft, #e3f4eb);
+  color: var(--app-text, #12553e);
 }
 
 .notificationViewTabs .notificationViewTabActive span {
-  background: rgba(23, 111, 81, 0.13);
+  background: var(--app-surface-soft, rgba(23, 111, 81, 0.13));
 }
 
 /* === Notification modal spacing and alignment refinement === */
@@ -3855,11 +3855,11 @@
 .notificationInboxControls {
   gap: 0.8rem;
   padding: 1rem;
-  border: 1px solid rgba(18, 53, 45, 0.09);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.09));
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 100% 0, rgba(34, 122, 91, 0.06), transparent 16rem),
-    rgba(247, 251, 249, 0.92);
+    radial-gradient(circle at 100% 0, var(--app-surface-soft, rgba(34, 122, 91, 0.06)), transparent 16rem),
+    var(--app-surface, rgba(247, 251, 249, 0.92));
 }
 
 .notificationSearchBox {
@@ -3941,7 +3941,7 @@
   gap: 0.8rem;
   margin-top: 0.25rem;
   padding-top: 0.6rem;
-  border-top: 1px solid rgba(18, 53, 45, 0.08);
+  border-top: 1px solid var(--app-line, rgba(18, 53, 45, 0.08));
 }
 
 .notificationOpenHint {
@@ -3953,7 +3953,7 @@
 .notificationPagination {
   gap: 1rem;
   padding: 0.75rem 0.4rem 0.05rem;
-  border-top: 1px solid rgba(18, 53, 45, 0.08);
+  border-top: 1px solid var(--app-line, rgba(18, 53, 45, 0.08));
 }
 
 .notificationPaginationButton {
@@ -4391,13 +4391,13 @@
 }
 
 .accountPopover::-webkit-scrollbar-track {
-  background: #edf4f1;
+  background: var(--app-surface-soft, #edf4f1);
   border-radius: 999px;
 }
 
 .accountPopover::-webkit-scrollbar-thumb {
-  background: #759f91;
-  border: 2px solid #edf4f1;
+  background: var(--app-surface-soft, #759f91);
+  border: 2px solid var(--app-line, #edf4f1);
   border-radius: 999px;
 }
 

@@ -26,11 +26,11 @@
   max-height: calc(calc(var(--website-visible-height, 100vh) * 1) - 56px);
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #d5e2df;
+  border: 1px solid var(--app-line, #d5e2df);
   border-radius: 30px;
-  background: #f8fbfa;
-  box-shadow: 0 34px 90px rgb(3 35 29 / 30%);
-  color: #14362e;
+  background: var(--app-surface, #f8fbfa);
+  box-shadow: 0 34px 90px var(--app-shadow-colour, rgb(3 35 29 / 30%));
+  color: var(--app-text, #14362e);
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -40,8 +40,8 @@
   gap: 16px;
   align-items: center;
   padding: 24px 28px;
-  border-bottom: 1px solid #dce7e4;
-  background: #fff;
+  border-bottom: 1px solid var(--app-line, #dce7e4);
+  background: var(--app-surface, #fff);
 }
 
 .closeButton svg,
@@ -58,7 +58,7 @@
 
 .header h2 {
   margin: 0;
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.72rem, calc(var(--website-design-vw, 1vw) * 2.55), 2.28rem);
   font-weight: 780;
@@ -68,7 +68,7 @@
 
 .header p {
   margin: .35rem 0 0;
-  color: #607286;
+  color: var(--app-info, #607286);
   font-size: .98rem;
   font-weight: 640;
   line-height: 1.45;
@@ -79,10 +79,10 @@
   width: 46px;
   height: 46px;
   place-items: center;
-  border: 1px solid #d8e5e1;
+  border: 1px solid var(--app-line, #d8e5e1);
   border-radius: 50%;
-  background: #f5faf8;
-  color: #153f36;
+  background: var(--app-surface, #f5faf8);
+  color: var(--app-text, #153f36);
   cursor: pointer;
 }
 
@@ -106,9 +106,9 @@
   gap: 12px;
   align-items: flex-start;
   padding: 15px 17px;
-  border: 1px solid #c8e4da;
+  border: 1px solid var(--app-line, #c8e4da);
   border-radius: 16px;
-  background: #edf8f4;
+  background: var(--app-surface-soft, #edf8f4);
 }
 
 .infoBanner {
@@ -120,13 +120,13 @@
   display: grid;
   gap: 5px;
   padding: 18px 20px;
-  border: 1px solid #c8e4da;
+  border: 1px solid var(--app-line, #c8e4da);
   border-radius: 18px;
-  background: #edf8f4;
+  background: var(--app-surface-soft, #edf8f4);
 }
 
 .scheduleSummary > span {
-  color: #25725b;
+  color: var(--app-text, #25725b);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: .08em;
@@ -134,14 +134,14 @@
 }
 
 .scheduleSummary > strong {
-  color: #123f35;
+  color: var(--app-text, #123f35);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 1.02rem;
   font-weight: 800;
 }
 
 .scheduleSummary > small {
-  color: #627770;
+  color: var(--app-muted, #627770);
   font-size: 12px;
   font-weight: 650;
 }
@@ -157,26 +157,26 @@
   align-content: start;
   gap: 6px;
   padding: 16px 18px;
-  border: 1px solid #d9e5e2;
+  border: 1px solid var(--app-line, #d9e5e2);
   border-radius: 16px;
-  background: #fff;
+  background: var(--app-surface, #fff);
 }
 
 .choiceComparison strong {
-  color: #173f36;
+  color: var(--app-text, #173f36);
   font-size: 14px;
 }
 
 .choiceComparison span {
-  color: #657871;
+  color: var(--app-muted, #657871);
   font-size: 12px;
   font-weight: 620;
   line-height: 1.5;
 }
 
 .separateBanner {
-  border-color: #efcf99;
-  background: #fff8e9;
+  border-color: var(--app-warning-line, #efcf99);
+  background: var(--app-warning-soft, #fff8e9);
 }
 
 .infoBanner strong,
@@ -186,7 +186,7 @@
 
 .infoBanner span,
 .recurringBanner span {
-  color: #5b716a;
+  color: var(--app-muted, #5b716a);
   font-size: 13px;
   font-weight: 650;
   line-height: 1.45;
@@ -194,9 +194,9 @@
 
 .section {
   padding: 19px;
-  border: 1px solid #dbe6e3;
+  border: 1px solid var(--app-line, #dbe6e3);
   border-radius: 20px;
-  background: #fff;
+  background: var(--app-surface, #fff);
 }
 
 .sectionHeading {
@@ -221,7 +221,7 @@
 
 .sectionHeading h3 {
   margin: 1px 0 3px;
-  color: #14362e;
+  color: var(--app-text, #14362e);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 1rem;
   font-weight: 780;
@@ -230,7 +230,7 @@
 
 .sectionHeading p {
   margin: 0;
-  color: #6b7e78;
+  color: var(--app-muted, #6b7e78);
   font-size: .82rem;
   font-weight: 620;
 }
@@ -245,18 +245,18 @@
 .field {
   display: grid;
   gap: 7px;
-  color: #294b43;
+  color: var(--app-text, #294b43);
   font-size: .9rem;
   font-weight: 720;
 }
 
 .field > span small {
-  color: #7c8e89;
+  color: var(--app-muted, #7c8e89);
   font-weight: 650;
 }
 
 .fieldHint {
-  color: #71837d;
+  color: var(--app-muted, #71837d);
   font-size: 11px;
   font-weight: 650;
 }
@@ -264,11 +264,11 @@
 .field input,
 .field textarea {
   width: 100%;
-  border: 1px solid #cadad6;
+  border: 1px solid var(--app-line, #cadad6);
   border-radius: 13px;
   outline: none;
-  background: #fbfdfc;
-  color: #103b32;
+  background: var(--app-surface, #fbfdfc);
+  color: var(--app-text, #103b32);
   font: inherit;
   font-size: 1rem;
   font-weight: 620;
@@ -288,8 +288,8 @@
 
 .field input:focus,
 .field textarea:focus {
-  border-color: #2c9874;
-  box-shadow: 0 0 0 3px rgb(44 152 116 / 13%);
+  border-color: var(--app-accent, #2c9874);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgb(44 152 116 / 13%));
 }
 
 .fieldWide {
@@ -308,7 +308,7 @@
   position: absolute;
   top: 50%;
   right: 13px;
-  color: #6b7f78;
+  color: var(--app-muted, #6b7f78);
   font-size: 12px;
   transform: translateY(-50%);
 }
@@ -332,18 +332,18 @@
   align-items: center;
   min-height: 68px;
   padding: 12px;
-  border: 1px solid #d6e2df;
+  border: 1px solid var(--app-accent, #d6e2df);
   border-radius: 14px;
-  background: #fbfdfc;
-  color: #173f36;
+  background: var(--app-surface, #fbfdfc);
+  color: var(--app-text, #173f36);
   text-align: left;
   cursor: pointer;
 }
 
 .checkOptionSelected {
-  border-color: #49aa87;
-  background: #e9f7f1;
-  box-shadow: inset 0 0 0 1px #8acdb4;
+  border-color: var(--app-accent, #49aa87);
+  background: var(--app-surface-soft, #e9f7f1);
+  box-shadow: inset 0 0 0 1px var(--app-shadow-colour, #8acdb4);
 }
 
 .checkbox {
@@ -351,14 +351,14 @@
   width: 22px;
   height: 22px;
   place-items: center;
-  border: 1.5px solid #9eb5ae;
+  border: 1.5px solid var(--app-line, #9eb5ae);
   border-radius: 7px;
-  background: #fff;
+  background: var(--app-surface, #fff);
   color: #fff;
 }
 
 .checkOptionSelected .checkbox {
-  border-color: #197657;
+  border-color: var(--app-accent, #197657);
   background: #197657;
 }
 
@@ -380,7 +380,7 @@
 .checkOption small,
 .checkOptionSelected small {
   display: block;
-  color: #70817c;
+  color: var(--app-muted, #70817c);
   font-size: 11px;
   font-weight: 600;
   line-height: 1.35;
@@ -389,7 +389,7 @@
 .recurringBanner svg {
   flex: 0 0 auto;
   width: 22px;
-  color: #177557;
+  color: var(--app-text, #177557);
 }
 
 .recurringBanner div {
@@ -412,10 +412,10 @@
 
 .error {
   padding: 13px 15px;
-  border: 1px solid #efaaa6;
+  border: 1px solid var(--app-danger-line, #efaaa6);
   border-radius: 13px;
-  background: #fff0ef;
-  color: #a52f2b;
+  background: var(--app-danger-soft, #fff0ef);
+  color: var(--app-danger, #a52f2b);
   font-size: 13px;
   font-weight: 800;
 }
@@ -425,8 +425,8 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 18px 28px;
-  border-top: 1px solid #dce7e4;
-  background: #fff;
+  border-top: 1px solid var(--app-line, #dce7e4);
+  background: var(--app-surface, #fff);
 }
 
 .cancelButton,
@@ -440,16 +440,16 @@
 }
 
 .cancelButton {
-  border: 1px solid #cddbd8;
-  background: #fff;
-  color: #244840;
+  border: 1px solid var(--app-line, #cddbd8);
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #244840);
 }
 
 .submitButton {
-  border: 1px solid #174f3e;
+  border: 1px solid var(--app-line, #174f3e);
   background: #174f3e;
   color: #fff;
-  box-shadow: 0 10px 24px rgb(19 79 61 / 20%);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgb(19 79 61 / 20%));
 }
 
 .cancelButton:disabled,
@@ -482,7 +482,7 @@
 .dealerChoiceOverlay .modal {
   width: min(560px, 100%);
   max-height: calc(var(--website-visible-height, 100dvh) - 32px);
-  border: 1px solid #d5e2df;
+  border: 1px solid var(--app-line, #d5e2df);
   border-radius: 24px;
 }
 .dealerChoiceOverlay .header {
@@ -535,55 +535,55 @@
 /* Direct choices keep the scheduled-work decision short and easy to scan. */
 
 .saveChoices { display: grid; grid-template-columns: minmax(0, 1fr); gap: .7rem; }
-.saveChoices button { display: grid; align-content: center; gap: 8px; min-height: 118px; padding: 20px; border: 1px solid #cbded6; border-radius: 18px; background: linear-gradient(135deg, #f7faf9, #eef6f2); color: #173e31; text-align: left; font: inherit; cursor: pointer; }
+.saveChoices button { display: grid; align-content: center; gap: 8px; min-height: 118px; padding: 20px; border: 1px solid var(--app-line, #cbded6); border-radius: 18px; background: linear-gradient(135deg, var(--app-surface, #f7faf9), var(--app-surface-soft, #eef6f2)); color: var(--app-text, #173e31); text-align: left; font: inherit; cursor: pointer; }
 .saveChoices strong { font-size: 1.05rem; font-weight: 800; }
-.saveChoices span { color: #607168; font-size: .88rem; line-height: 1.45; }
-.saveChoices button:hover { border-color: #6a9d88; background: #eaf5ef; }
-.saveChoices button:focus-visible { outline: 3px solid #7db99d; outline-offset: 3px; }
+.saveChoices span { color: var(--app-muted, #607168); font-size: .88rem; line-height: 1.45; }
+.saveChoices button:hover { border-color: var(--app-line, #6a9d88); background: var(--app-surface-soft, #eaf5ef); }
+.saveChoices button:focus-visible { outline: 3px solid var(--app-accent, #7db99d); outline-offset: 3px; }
 .saveChoices button:disabled { opacity: .6; cursor: wait; }
 .dealerChoiceOverlay .saveChoices { grid-template-columns: 1fr; }
 @media (max-width: 600px) { :global(:where(html:not(:has([data-website-canvas])))) .saveChoices { grid-template-columns: 1fr; } }
 
-.customWork { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid #bcdcca; border-radius: 1rem; background: #f3faf6; }
+.customWork { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; padding: 1rem; margin-bottom: 1rem; border: 1px solid var(--app-line, #bcdcca); border-radius: 1rem; background: var(--app-surface, #f3faf6); }
 .customWork > label { flex: 1 1 20rem; }
 .customWork > button { padding: .8rem 1rem; }
 .customWorkList { flex: 1 0 100%; margin: 0; padding: 0; list-style: none; display: grid; gap: .5rem; }
-.customWorkList li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem .85rem; border: 1px solid #d0e4d8; border-radius: .65rem; background: white; overflow-wrap: anywhere; }
-.customWorkList button { border: 0; background: transparent; color: #7b3933; font-size: 1.3rem; cursor: pointer; }
-.inHouseChoice { grid-column: 1 / -1; display: flex; align-items: center; gap: .65rem; color: #14553f; font-weight: 650; }
+.customWorkList li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .65rem .85rem; border: 1px solid var(--app-line, #d0e4d8); border-radius: .65rem; background: var(--app-surface, white); overflow-wrap: anywhere; }
+.customWorkList button { border: 0; background: transparent; color: var(--app-danger, #7b3933); font-size: 1.3rem; cursor: pointer; }
+.inHouseChoice { grid-column: 1 / -1; display: flex; align-items: center; gap: .65rem; color: var(--app-text, #14553f); font-weight: 650; }
 .inHouseChoice input { width: 1.15rem; height: 1.15rem; accent-color: #197454; }
 
 /* One visual language for the schedule decision and completed-work form. */
 .saveChoiceModal.saveChoiceModal.saveChoiceModal { place-self: center; width: min(58rem, var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 2rem)) !important; }
 .saveChoiceModal .saveChoices button { align-content: center; padding: 1rem 1.15rem; gap: .3rem; min-height: 0; border-radius: .9rem; }
-.saveChoiceModal .saveChoices button { background: #f5f8fb; border-color: #d4e0ed; }
-.saveChoiceModal .saveChoices button:hover { background: #edf6f1; border-color: #8cbaa5; }
-.saveChoiceModal .scheduleSummary { padding: 0 0 1rem; border: 0; border-bottom: 1px solid #dce7e1; border-radius: 0; background: transparent; }
-.completionModal.completionModal { width: min(64rem, var(--website-dialog-reference-width, 100%)); max-height: calc(var(--website-visible-height, 100dvh) - 3rem); border-radius: 1.55rem; background: #fff; }
+.saveChoiceModal .saveChoices button { background: var(--app-info-soft, #f5f8fb); border-color: var(--app-info-line, #d4e0ed); }
+.saveChoiceModal .saveChoices button:hover { background: var(--app-surface-soft, #edf6f1); border-color: var(--app-line, #8cbaa5); }
+.saveChoiceModal .scheduleSummary { padding: 0 0 1rem; border: 0; border-bottom: 1px solid var(--app-line, #dce7e1); border-radius: 0; background: transparent; }
+.completionModal.completionModal { width: min(64rem, var(--website-dialog-reference-width, 100%)); max-height: calc(var(--website-visible-height, 100dvh) - 3rem); border-radius: 1.55rem; background: var(--app-surface, #fff); }
 .completionModal .header { padding: 2rem; align-items: start; gap: 1.5rem; }
 .completionModal .header h2 { font-size: 2rem; line-height: 1.15; font-weight: 850; letter-spacing: -.035em; }
 .completionModal .header p { font-size: .88rem; line-height: 1.5; margin-top: .5rem; }
 .squareClose.squareClose { width: 2.75rem; height: 2.75rem; border-radius: .65rem; }
 .completionModal .body { padding: 1.5rem 2rem; gap: 1.25rem; scrollbar-width: thin; scrollbar-color: #8bad9d #f0f6f3; scrollbar-gutter: stable; overscroll-behavior: contain; }
 .completionModal .body::-webkit-scrollbar { width: 10px; }
-.completionModal .body::-webkit-scrollbar-thumb { background: #8bad9d; border: 2px solid #f0f6f3; border-radius: 8px; }
+.completionModal .body::-webkit-scrollbar-thumb { background: var(--app-surface-soft, #8bad9d); border: 2px solid var(--app-line, #f0f6f3); border-radius: 8px; }
 .completionModal .section { padding: 1.4rem; border-radius: 1.1rem; }
 .completionModal .sectionHeading { margin-bottom: 1.1rem; }
 .completionModal .infoBanner { padding: 1.1rem 1.25rem; gap: .45rem; border-radius: 1rem; }
 .completionModal .footer { padding: 1.1rem 2rem 1.5rem; gap: .75rem; }
 .completionModal .footer button { min-height: 3rem; border-radius: .85rem; font-size: .9rem; }
 .completionModal .submitButton { background: linear-gradient(#1a5a45, #124233); }
-.recurrenceChoice { margin: 0; padding: 1.25rem; border: 1px solid #cbded6; border-radius: 1rem; min-width: 0; }
+.recurrenceChoice { margin: 0; padding: 1.25rem; border: 1px solid var(--app-line, #cbded6); border-radius: 1rem; min-width: 0; }
 .recurrenceChoice legend { padding: 0 .4rem; font-size: 1rem; font-weight: 750; }
 .recurrenceChoice > div { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .85rem; }
-.recurrenceChoice label { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; background: #f7faf9; border: 1px solid #d6e4dd; border-radius: .8rem; cursor: pointer; }
-.recurrenceChoice label:has(input:checked) { background: #eaf7f0; border-color: #589e7c; }
+.recurrenceChoice label { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; background: var(--app-surface, #f7faf9); border: 1px solid var(--app-line, #d6e4dd); border-radius: .8rem; cursor: pointer; }
+.recurrenceChoice label:has(input:checked) { background: var(--app-surface-soft, #eaf7f0); border-color: var(--app-accent, #589e7c); }
 .recurrenceChoice input { flex-shrink: 0; width: 1.1rem; height: 1.1rem; margin: .1rem 0 0; accent-color: #14553f; }
 .recurrenceChoice strong, .recurrenceChoice small { display: block; }
 .recurrenceChoice strong { font-size: .95rem; }
-.recurrenceChoice small { color: #607168; line-height: 1.5; margin-top: .45rem; }
-.customTag { color: #197454 !important; font-weight: 700; }
-.completionModal button:focus-visible, .completionModal input:focus-visible, .completionModal textarea:focus-visible { outline: 3px solid #78b89b; outline-offset: 3px; }
+.recurrenceChoice small { color: var(--app-muted, #607168); line-height: 1.5; margin-top: .45rem; }
+.customTag { color: var(--app-text, #197454) !important; font-weight: 700; }
+.completionModal button:focus-visible, .completionModal input:focus-visible, .completionModal textarea:focus-visible { outline: 3px solid var(--app-accent, #78b89b); outline-offset: 3px; }
 .modal:focus { outline: none; }
 @media (max-width: 700px) {
   :global(:where(html:not(:has([data-website-canvas])))) .completionModal .header { padding: 1.25rem; }
@@ -596,18 +596,18 @@
 }
 
 /* Match the Add asset cost chooser: icon tile, copy and a trailing arrow. */
-.saveChoiceModal .body { background: radial-gradient(circle at 100% 0%, rgba(25,116,84,.05), transparent 34%), linear-gradient(180deg,#fbfdfc,#f7faf9); }
+.saveChoiceModal .body { background: radial-gradient(circle at 100% 0%, var(--app-surface-soft, rgba(25,116,84,.05)), transparent 34%), linear-gradient(180deg,var(--app-surface, #fbfdfc),var(--app-surface, #f7faf9)); }
 .saveChoiceModal .saveChoices { gap: .85rem; }
-.saveChoiceModal .saveChoices button { grid-template-columns: 3rem minmax(0,1fr) 1.75rem; align-items: center; gap: 1rem; min-height: 5.5rem; padding: 1rem; border: 1px solid #c2d3dc; border-radius: 1rem; background: #fff; box-shadow: 0 9px 20px rgba(18,55,45,.035); }
-.saveChoiceModal .saveChoices button:hover, .saveChoiceModal .saveChoices button:focus-visible { border-color: #7cb79c; background: linear-gradient(180deg,#fff,#f2faf6); }
-.saveChoiceModal .saveChoices .choiceIcon { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid #b2d2c3; border-radius: .9rem; background: linear-gradient(180deg,#f3fbf6,#e8f6ee); color: #126c4e; }
+.saveChoiceModal .saveChoices button { grid-template-columns: 3rem minmax(0,1fr) 1.75rem; align-items: center; gap: 1rem; min-height: 5.5rem; padding: 1rem; border: 1px solid var(--app-info-line, #c2d3dc); border-radius: 1rem; background: var(--app-surface, #fff); box-shadow: 0 9px 20px var(--app-shadow-colour, rgba(18,55,45,.035)); }
+.saveChoiceModal .saveChoices button:hover, .saveChoiceModal .saveChoices button:focus-visible { border-color: var(--app-accent, #7cb79c); background: linear-gradient(180deg,var(--app-surface, #fff),var(--app-surface-soft, #f2faf6)); }
+.saveChoiceModal .saveChoices .choiceIcon { display: grid; place-items: center; width: 3rem; height: 3rem; border: 1px solid var(--app-line, #b2d2c3); border-radius: .9rem; background: linear-gradient(180deg,var(--app-surface, #f3fbf6),var(--app-surface-soft, #e8f6ee)); color: var(--app-text, #126c4e); }
 .choiceIcon svg { width: 1.95rem; height: 1.95rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .saveChoiceModal .saveChoices .choiceCopy { display: grid; gap: .24rem; min-width: 0; }
-.saveChoiceModal .choiceCopy strong { color: #12352d; font-size: 1rem; font-weight: 800; line-height: 1.35; }
-.saveChoiceModal .choiceCopy small { color: #64746a; font-size: .88rem; font-weight: 650; line-height: 1.5; }
-.saveChoiceModal .saveChoices .choiceArrow { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border: 1px solid #cfdae0; border-radius: 50%; background: #fff; color: #197454; }
+.saveChoiceModal .choiceCopy strong { color: var(--app-text, #12352d); font-size: 1rem; font-weight: 800; line-height: 1.35; }
+.saveChoiceModal .choiceCopy small { color: var(--app-muted, #64746a); font-size: .88rem; font-weight: 650; line-height: 1.5; }
+.saveChoiceModal .saveChoices .choiceArrow { display: grid; place-items: center; width: 1.75rem; height: 1.75rem; border: 1px solid var(--app-info-line, #cfdae0); border-radius: 50%; background: var(--app-surface, #fff); color: var(--app-text, #197454); }
 .choiceArrow svg { width: .95rem; height: .95rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.saveChoiceModal .saveChoices button:hover .choiceArrow { color: #fff; background: #197454; border-color: #197454; }
+.saveChoiceModal .saveChoices button:hover .choiceArrow { color: #fff; background: #197454; border-color: var(--app-line, #197454); }
 @media (max-width: 480px) {
   :global(:where(html:not(:has([data-website-canvas])))) .saveChoiceModal .saveChoices button { grid-template-columns: 2.5rem minmax(0,1fr) 1.4rem; gap: .65rem; padding: .85rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .saveChoiceModal .saveChoices .choiceIcon { width: 2.5rem; height: 2.5rem; }

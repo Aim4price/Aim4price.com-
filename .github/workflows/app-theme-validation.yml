@@ -1,0 +1,38 @@
+name: App dark mode validation
+
+on:
+  pull_request:
+    paths:
+      - 'lib/app-theme.ts'
+      - 'components/AppSettings*'
+      - 'components/AppThemeSync.tsx'
+      - 'app/**/*.css'
+      - 'components/**/*.css'
+      - 'app/layout.tsx'
+      - 'app/owner-app/owner-app-nav.tsx'
+      - 'app/dealer/dealer-nav.tsx'
+      - 'app/field-manager/field-manager-settings.tsx'
+      - 'public/app-theme.css'
+      - 'public/field-manager/**'
+      - 'public/field-manager-sw.js'
+      - 'tests/app-theme.test.mjs'
+      - 'tests/helpers/light-theme-source.mjs'
+      - '.github/workflows/app-theme-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:app-theme
+      - run: npm run typecheck

@@ -21,20 +21,20 @@
 
 .mobilePrimaryButton {
   width: 100%;
-  border: 1px solid #254733;
+  border: 1px solid var(--app-line, #254733);
   background: #254733;
   color: #fff;
-  box-shadow: 0 16px 30px rgba(37, 71, 51, 0.24);
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(37, 71, 51, 0.24));
 }
 
 .mobilePrimaryButton:hover:not(:disabled) {
-  border-color: #1d3929;
+  border-color: var(--app-line, #1d3929);
   background: #1d3929;
 }
 
 .mobilePrimaryButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 16px 30px rgba(35, 104, 81, 0.18);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.12)), 0 16px 30px var(--app-shadow-colour, rgba(35, 104, 81, 0.18));
 }
 
 .mobilePrimaryButton:active {
@@ -49,15 +49,15 @@
 }
 
 .overviewOpenButton {
-  border: 1.5px solid #6fc596;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
-  color: #0a543d;
+  border: 1.5px solid var(--app-line, #6fc596);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%);
+  color: var(--app-text, #0a543d);
   font-weight: 800;
 }
 
 .overviewOpenButton:hover:not(:disabled) {
-  border-color: #43ad73;
-  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%);
+  border-color: var(--app-line, #43ad73);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #d9f1e5) 100%);
 }
 
 .overviewIntro {
@@ -66,7 +66,7 @@
 
 .overviewIntro > span {
   display: block;
-  color: #236851;
+  color: var(--app-text, #236851);
   font-size: 0.7rem;
   font-weight: 950;
   letter-spacing: 0.12em;
@@ -75,7 +75,7 @@
 
 .overviewIntro h1 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.9rem, calc(var(--website-design-vw) * 8), 2.45rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -84,7 +84,7 @@
 
 .overviewIntro p {
   margin: 8px 0 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.94rem;
   font-weight: 650;
   line-height: 1.4;
@@ -97,18 +97,18 @@
   align-items: center;
   gap: 11px;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14));
   border-radius: 17px;
-  background: rgba(255, 255, 255, 0.96);
-  color: rgba(18, 53, 45, 0.56);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  color: var(--app-muted, rgba(18, 53, 45, 0.56));
   padding: 0 16px;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .overviewSearch:focus-within {
-  border-color: rgba(35, 104, 81, 0.42);
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1), 0 12px 28px rgba(18, 53, 45, 0.07);
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.42));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.1)), 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .overviewSearch svg {
@@ -125,7 +125,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   padding: 0;
   font: inherit;
   font-size: 0.9rem;
@@ -133,7 +133,7 @@
 }
 
 .overviewSearch input::placeholder {
-  color: rgba(18, 53, 45, 0.48);
+  color: var(--app-muted, rgba(18, 53, 45, 0.48));
   opacity: 1;
 }
 
@@ -147,7 +147,7 @@
 
 .overviewSectionHeading h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.2rem, calc(var(--website-design-vw) * 5), 1.42rem);
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -159,10 +159,10 @@
   min-height: 29px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
-  color: rgba(18, 53, 45, 0.68);
+  background: var(--app-surface, rgba(255, 255, 255, 0.84));
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -174,31 +174,31 @@
 
 .overviewCard {
   min-width: 0;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
   padding: 16px;
-  box-shadow: 0 16px 38px rgba(18, 53, 45, 0.09);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(18, 53, 45, 0.09));
 }
 
 .overviewCard.overviewRecurringCard {
-  border-color: rgba(193, 123, 51, 0.46);
+  border-color: var(--app-warning-line, rgba(193, 123, 51, 0.46));
   background:
-    radial-gradient(circle at 0 0, rgba(230, 148, 61, 0.1), transparent 42%),
-    linear-gradient(180deg, #fffdf9 0%, #fff8ee 100%);
-  box-shadow: 0 16px 38px rgba(182, 111, 38, 0.13);
+    radial-gradient(circle at 0 0, var(--app-warning-soft, rgba(230, 148, 61, 0.1)), transparent 42%),
+    linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-warning-soft, #fff8ee) 100%);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(182, 111, 38, 0.13));
 }
 
 .overviewCard.overviewCardNeedsAttention {
-  border-color: rgba(162, 48, 48, 0.2);
-  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
-  box-shadow: 0 16px 38px rgba(162, 48, 48, 0.1);
+  border-color: var(--app-danger-line, rgba(162, 48, 48, 0.2));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff1f1) 100%);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(162, 48, 48, 0.1));
 }
 
 .overviewCard.overviewCardDueSoon {
-  border-color: rgba(161, 105, 16, 0.22);
-  background: linear-gradient(180deg, #fffdf8 0%, #fff6e5 100%);
-  box-shadow: 0 16px 38px rgba(161, 105, 16, 0.1);
+  border-color: var(--app-warning-line, rgba(161, 105, 16, 0.22));
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf8) 0%, var(--app-warning-soft, #fff6e5) 100%);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(161, 105, 16, 0.1));
 }
 
 .overviewCardLabels {
@@ -224,19 +224,19 @@
 }
 
 .overviewType {
-  background: rgba(35, 104, 81, 0.09);
-  color: #1d5b46;
+  background: var(--app-surface-soft, rgba(35, 104, 81, 0.09));
+  color: var(--app-text, #1d5b46);
 }
 
 .overviewType.overviewRecurringType {
-  border: 1px solid rgba(193, 123, 51, 0.22);
-  background: #fff0dc;
-  color: #8b4f12;
+  border: 1px solid var(--app-warning-line, rgba(193, 123, 51, 0.22));
+  background: var(--app-warning-soft, #fff0dc);
+  color: var(--app-warning, #8b4f12);
 }
 
 .overviewCard h3 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.16rem, calc(var(--website-design-vw) * 4.8), 1.38rem);
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -249,7 +249,7 @@
   margin-top: 15px;
   border-radius: 15px;
   font-size: 0.96rem;
-  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.1));
 }
 
 .overviewCardActions .overviewOpenButton {
@@ -257,9 +257,9 @@
 }
 
 .overviewCard {
-  border-color: rgba(18, 53, 45, 0.12);
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.07);
+  border-color: var(--app-line, rgba(18, 53, 45, 0.12));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 12px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .overviewIntro {
@@ -335,7 +335,7 @@
   gap: 11px;
   border-radius: 17px;
   padding-inline: 16px;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .overviewPage .overviewSearch input {
@@ -358,8 +358,8 @@
   place-items: center;
   border: 0;
   border-radius: 11px;
-  background: rgba(18, 53, 45, 0.08);
-  color: #12352d;
+  background: var(--app-surface-soft, rgba(18, 53, 45, 0.08));
+  color: var(--app-text, #12352d);
   padding: 0;
   font: inherit;
   font-size: 1.12rem;
@@ -369,7 +369,7 @@
 
 .overviewSearch button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.12));
 }
 
 .overviewPage .overviewSectionHeading {

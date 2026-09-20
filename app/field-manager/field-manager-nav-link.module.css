@@ -6,10 +6,10 @@
   justify-content: center;
   box-sizing: border-box;
   gap: 7px;
-  border: 1.5px solid #6fc596;
+  border: 1.5px solid var(--app-line, #6fc596);
   border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
-  color: #0a543d;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%);
+  color: var(--app-text, #0a543d);
   padding: 0 16px;
   font-family: inherit;
   font-size: 0.9rem;
@@ -18,7 +18,7 @@
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(10, 84, 61, 0.1);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(10, 84, 61, 0.1));
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
@@ -33,18 +33,18 @@
 
 .navLink:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 10px 24px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.12)), 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .homeLink {
-  border-color: rgba(198, 55, 55, 0.24);
-  background: linear-gradient(180deg, #fff8f8 0%, #fde8e8 100%);
-  color: #9b3030;
-  box-shadow: 0 12px 26px rgba(155, 48, 48, 0.1);
+  border-color: var(--app-danger-line, rgba(198, 55, 55, 0.24));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fff8f8) 0%, var(--app-danger-soft, #fde8e8) 100%);
+  color: var(--app-danger, #9b3030);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(155, 48, 48, 0.1));
 }
 
 .homeLink:focus-visible {
-  box-shadow: 0 0 0 4px rgba(155, 48, 48, 0.1), 0 12px 26px rgba(155, 48, 48, 0.1);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(155, 48, 48, 0.1)), 0 12px 26px var(--app-shadow-colour, rgba(155, 48, 48, 0.1));
 }
 
 @media (max-width: 390px) {

@@ -1,6 +1,7 @@
 import { typescript, nativeFile } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
-import { readdir, readFile } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
+import { readFile } from './helpers/light-theme-source.mjs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';

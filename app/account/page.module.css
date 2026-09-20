@@ -1,18 +1,18 @@
 .page {
   min-height: calc(var(--website-design-vh) * 100);
-  color: var(--text-strong);
+  color: var(--app-text, var(--text-strong));
   background:
     radial-gradient(
       circle at 12% 7%,
-      rgba(31, 108, 83, 0.08) 0,
+      var(--app-surface-soft, rgba(31, 108, 83, 0.08)) 0,
       transparent 28rem
     ),
     radial-gradient(
       circle at 88% 12%,
-      rgba(62, 110, 213, 0.1) 0,
+      var(--app-info-soft, rgba(62, 110, 213, 0.1)) 0,
       transparent 30rem
     ),
-    linear-gradient(180deg, #f7f9f8 0%, #eef3f6 46%, #fbfcfb 100%);
+    linear-gradient(180deg, var(--app-surface, #f7f9f8) 0%, var(--app-info-soft, #eef3f6) 46%, var(--app-surface, #fbfcfb) 100%);
 }
 
 .shell {
@@ -26,11 +26,11 @@
 .card,
 .accountHero,
 .modalCard {
-  border: 1px solid rgba(18, 45, 37, 0.08);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
   box-shadow:
-    0 22px 50px rgba(18, 45, 37, 0.075),
-    0 7px 18px rgba(18, 45, 37, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    0 22px 50px var(--app-shadow-colour, rgba(18, 45, 37, 0.075)),
+    0 7px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.82));
 }
 
 .card {
@@ -38,7 +38,7 @@
   overflow: hidden;
   padding: clamp(1.05rem, calc(var(--website-design-vw) * 1.75), 1.35rem);
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
 }
 
 .accountHero {
@@ -56,12 +56,12 @@
   background:
     radial-gradient(
       circle at 10% 0%,
-      rgba(49, 197, 142, 0.28) 0,
+      var(--app-surface-soft, rgba(49, 197, 142, 0.28)) 0,
       transparent 23rem
     ),
     radial-gradient(
       circle at 92% 105%,
-      rgba(86, 136, 229, 0.3) 0,
+      var(--app-info-soft, rgba(86, 136, 229, 0.3)) 0,
       transparent 21rem
     ),
     linear-gradient(135deg, #102a23 0%, #15392f 48%, #17385d 100%);
@@ -82,7 +82,7 @@
   height: 24rem;
   background: radial-gradient(
     circle,
-    rgba(51, 185, 131, 0.26) 0%,
+    var(--app-surface-soft, rgba(51, 185, 131, 0.26)) 0%,
     rgba(51, 185, 131, 0) 70%
   );
   filter: blur(8px);
@@ -94,7 +94,7 @@
   height: 26rem;
   background: radial-gradient(
     circle,
-    rgba(98, 154, 255, 0.26) 0%,
+    var(--app-info-soft, rgba(98, 154, 255, 0.26)) 0%,
     rgba(98, 154, 255, 0) 70%
   );
   filter: blur(12px);
@@ -117,10 +117,10 @@
   justify-content: center;
   overflow: hidden;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.18));
   color: #ffffff;
-  background: linear-gradient(135deg, #2ea978 0%, #4777d7 100%);
-  box-shadow: 0 16px 30px rgba(3, 15, 24, 0.22);
+  background: linear-gradient(135deg, #2ea978 0%, var(--app-info-soft, #4777d7) 100%);
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(3, 15, 24, 0.22));
   cursor: pointer;
 }
 
@@ -170,7 +170,7 @@
   height: 100%;
   object-fit: contain;
   padding: 0.34rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .heroCopy {
@@ -194,14 +194,14 @@
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
-  color: rgba(235, 244, 241, 0.88);
+  color: var(--app-accent, rgba(235, 244, 241, 0.88));
   font-size: 1rem;
   line-height: 1.4;
 }
 
 .heroCopy small {
   margin-top: 0.75rem;
-  color: rgba(235, 244, 241, 0.86);
+  color: var(--app-accent, rgba(235, 244, 241, 0.86));
   font-size: 0.82rem;
   font-weight: 760;
   line-height: 1.4;
@@ -218,8 +218,8 @@
   border-radius: 0.62rem;
   color: #ffffff;
   background: linear-gradient(180deg, #2aae7b 0%, #1f8a66 100%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 10px 22px rgba(5, 26, 20, 0.18);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.18));
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(5, 26, 20, 0.18));
   font-size: 0.72rem;
   font-weight: 900;
 }
@@ -232,19 +232,19 @@
   min-height: 3rem;
   padding: 0.82rem 1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
   font-weight: 850;
-  box-shadow: 0 12px 26px rgba(18, 45, 37, 0.055);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(18, 45, 37, 0.055));
 }
 
 .noticeSuccess {
-  color: #176047;
-  background: rgba(44, 173, 126, 0.12);
+  color: var(--app-text, #176047);
+  background: var(--app-surface-soft, rgba(44, 173, 126, 0.12));
 }
 
 .noticeError {
-  color: #8f3333;
-  background: rgba(198, 75, 75, 0.12);
+  color: var(--app-danger, #8f3333);
+  background: var(--app-danger-soft, rgba(198, 75, 75, 0.12));
 }
 
 .noticeDismissButton {
@@ -265,11 +265,11 @@
 }
 
 .noticeDismissButton:hover {
-  background: rgba(143, 51, 51, 0.08);
+  background: var(--app-danger-soft, rgba(143, 51, 51, 0.08));
 }
 
 .noticeDismissButton:focus-visible {
-  outline: 3px solid rgba(49, 95, 190, 0.26);
+  outline: 3px solid var(--app-info-line, rgba(49, 95, 190, 0.26));
   outline-offset: 1px;
 }
 
@@ -293,7 +293,7 @@
 .cardTitleRow h2,
 .modalHeader h2 {
   margin: 0;
-  color: #12362d;
+  color: var(--app-text, #12362d);
   font-size: clamp(1.05rem, calc(var(--website-design-vw) * 1.25), 1.22rem);
   line-height: 1.1;
   letter-spacing: -0.032em;
@@ -306,7 +306,7 @@
 .loading,
 .fieldHint {
   margin: 0.22rem 0 0;
-  color: #65756f;
+  color: var(--app-muted, #65756f);
   line-height: 1.55;
 }
 
@@ -332,8 +332,8 @@
   gap: 0.35rem;
   padding: 0.9rem;
   border-radius: 0.95rem;
-  border: 1px solid rgba(18, 45, 37, 0.055);
-  background: linear-gradient(135deg, #ffffff 0%, #f8faf9 100%);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.055));
+  background: linear-gradient(135deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f8faf9) 100%);
 }
 
 .metricTile span,
@@ -341,7 +341,7 @@
 .field span,
 .modalField span,
 .partnerMapHeader span {
-  color: #40564e;
+  color: var(--app-text, #40564e);
   font-size: 0.67rem;
   font-weight: 950;
   letter-spacing: 0.045em;
@@ -351,14 +351,14 @@
 .metricTile strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #102f28;
+  color: var(--app-text, #102f28);
   font-size: 1.02rem;
   line-height: 1.24;
   font-weight: 900;
 }
 
 .metricTile small {
-  color: #667971;
+  color: var(--app-muted, #667971);
   font-size: 0.75rem;
   font-weight: 760;
 }
@@ -369,7 +369,7 @@
   height: 0.33rem;
   margin-top: 0.1rem;
   border-radius: 999px;
-  background: rgba(18, 45, 37, 0.09);
+  background: var(--app-surface-soft, rgba(18, 45, 37, 0.09));
 }
 
 .progressTrack > span {
@@ -377,7 +377,7 @@
   height: 100%;
   min-width: 0.5rem;
   border-radius: inherit;
-  background: linear-gradient(90deg, #1f8a66 0%, #31c58e 48%, #6f8eff 100%);
+  background: linear-gradient(90deg, #1f8a66 0%, var(--app-surface-soft, #31c58e) 48%, var(--app-info-soft, #6f8eff) 100%);
 }
 
 .quickActionList {
@@ -394,9 +394,9 @@
   gap: 0.82rem;
   padding: 0.72rem 0.82rem;
   border-radius: 0.86rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
-  color: #17362c;
-  background: #ffffff;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.07));
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, #ffffff);
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -408,23 +408,23 @@
 }
 
 .quickActionButton:focus-visible {
-  outline: 3px solid rgba(31, 138, 102, 0.3);
+  outline: 3px solid var(--app-accent, rgba(31, 138, 102, 0.3));
   outline-offset: 2px;
 }
 
 .quickActionButton:hover {
   transform: translateY(-1px);
-  border-color: rgba(31, 138, 102, 0.16);
-  background: #f9fcfb;
-  box-shadow: 0 12px 24px rgba(18, 45, 37, 0.06);
+  border-color: var(--app-line, rgba(31, 138, 102, 0.16));
+  background: var(--app-surface, #f9fcfb);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 45, 37, 0.06));
 }
 
 .quickActionButton:hover .quickActionIcon {
-  color: #123f33;
+  color: var(--app-text, #123f33);
   background:
-    linear-gradient(135deg, rgba(31, 138, 102, 0.18), rgba(62, 110, 213, 0.1)),
-    #f2faf7;
-  border-color: rgba(31, 138, 102, 0.18);
+    linear-gradient(135deg, var(--app-surface-soft, rgba(31, 138, 102, 0.18)), var(--app-info-soft, rgba(62, 110, 213, 0.1))),
+    var(--app-surface-soft, #f2faf7);
+  border-color: var(--app-line, rgba(31, 138, 102, 0.18));
 }
 
 .quickActionButton strong {
@@ -441,14 +441,14 @@
   display: inline-grid;
   place-items: center;
   border-radius: 0.72rem;
-  color: #174a3b;
+  color: var(--app-text, #174a3b);
   background:
-    linear-gradient(135deg, rgba(31, 138, 102, 0.14), rgba(62, 110, 213, 0.08)),
-    #f5faf8;
-  border: 1px solid rgba(31, 138, 102, 0.12);
+    linear-gradient(135deg, var(--app-surface-soft, rgba(31, 138, 102, 0.14)), var(--app-info-soft, rgba(62, 110, 213, 0.08))),
+    var(--app-surface, #f5faf8);
+  border: 1px solid var(--app-line, rgba(31, 138, 102, 0.12));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.86),
-    0 8px 16px rgba(18, 45, 37, 0.045);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.86)),
+    0 8px 16px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
 }
 
 .quickActionIcon svg {
@@ -459,15 +459,15 @@
 
 
 .quickActionDanger {
-  color: #ab3a3a;
+  color: var(--app-danger, #ab3a3a);
 }
 
 .quickActionDanger .quickActionIcon {
-  color: #b13b3b;
+  color: var(--app-danger, #b13b3b);
   background:
-    linear-gradient(135deg, rgba(198, 75, 75, 0.13), rgba(198, 75, 75, 0.045)),
-    #fff8f8;
-  border-color: rgba(198, 75, 75, 0.14);
+    linear-gradient(135deg, var(--app-danger-soft, rgba(198, 75, 75, 0.13)), var(--app-danger-soft, rgba(198, 75, 75, 0.045))),
+    var(--app-danger-soft, #fff8f8);
+  border-color: var(--app-danger-line, rgba(198, 75, 75, 0.14));
 }
 
 .smallButton,
@@ -498,9 +498,9 @@
   min-height: 2.38rem;
   padding: 0 0.78rem;
   border-radius: 0.72rem;
-  color: #17362c;
-  background: #f8fbfa;
-  border-color: rgba(18, 45, 37, 0.1);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, #f8fbfa);
+  border-color: var(--app-line, rgba(18, 45, 37, 0.1));
   font-size: 0.78rem;
 }
 
@@ -516,30 +516,30 @@
 .primaryButton {
   color: #ffffff;
   background: linear-gradient(180deg, #1f8a66 0%, #155942 100%);
-  border-color: rgba(9, 49, 37, 0.28);
+  border-color: var(--app-line, rgba(9, 49, 37, 0.28));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 13px 25px rgba(12, 55, 41, 0.18);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2)),
+    0 13px 25px var(--app-shadow-colour, rgba(12, 55, 41, 0.18));
 }
 
 .secondaryButton,
 .ghostButton {
-  color: #173b62;
-  background: rgba(62, 110, 213, 0.08);
-  border-color: rgba(62, 110, 213, 0.13);
+  color: var(--app-info, #173b62);
+  background: var(--app-info-soft, rgba(62, 110, 213, 0.08));
+  border-color: var(--app-info-line, rgba(62, 110, 213, 0.13));
 }
 
 .ghostButton {
-  color: #17362c;
-  background: rgba(18, 45, 37, 0.035);
-  border-color: rgba(18, 45, 37, 0.08);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface-soft, rgba(18, 45, 37, 0.035));
+  border-color: var(--app-line, rgba(18, 45, 37, 0.08));
 }
 
 .dangerButton {
   color: #ffffff;
-  background: linear-gradient(180deg, #d45a5a 0%, #b53e3e 100%);
-  border-color: rgba(137, 43, 43, 0.22);
-  box-shadow: 0 12px 24px rgba(166, 54, 54, 0.16);
+  background: linear-gradient(180deg, var(--app-danger-soft, #d45a5a) 0%, var(--app-danger-soft, #b53e3e) 100%);
+  border-color: var(--app-danger-line, rgba(137, 43, 43, 0.22));
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(166, 54, 54, 0.16));
 }
 
 .smallButton:hover,
@@ -590,7 +590,7 @@
 .detailRow strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #243c35;
+  color: var(--app-text, #243c35);
   font-size: 0.86rem;
   line-height: 1.48;
   font-weight: 650;
@@ -604,20 +604,20 @@
   gap: 0.38rem;
   padding: 1rem;
   border-radius: 0.95rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
   background:
     radial-gradient(
       circle at 100% 0%,
-      rgba(31, 138, 102, 0.08),
+      var(--app-surface-soft, rgba(31, 138, 102, 0.08)),
       transparent 14rem
     ),
-    linear-gradient(180deg, #ffffff 0%, #f6faf8 100%);
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f6faf8) 100%);
 }
 
 .pinSummaryCard h3,
 .profileStatusCard h3 {
   margin: 0;
-  color: #12362d;
+  color: var(--app-text, #12362d);
   font-size: 0.95rem;
   line-height: 1.16;
   letter-spacing: -0.02em;
@@ -627,14 +627,14 @@
 .pinSummaryCard p,
 .profileStatusCard p {
   margin: 0;
-  color: #65756f;
+  color: var(--app-muted, #65756f);
   font-size: 0.78rem;
   line-height: 1.45;
 }
 
 .pinSummaryCard > strong {
   margin-top: 0.55rem;
-  color: #102f28;
+  color: var(--app-text, #102f28);
   font-size: clamp(1.7rem, calc(var(--website-design-vw) * 3), 2.3rem);
   line-height: 1;
   letter-spacing: -0.055em;
@@ -642,7 +642,7 @@
 }
 
 .pinSummaryCard > small {
-  color: #6a7a74;
+  color: var(--app-muted, #6a7a74);
   font-size: 0.75rem;
   font-weight: 760;
 }
@@ -659,10 +659,10 @@
   background:
     radial-gradient(
       circle at 100% 0%,
-      rgba(31, 138, 102, 0.09),
+      var(--app-surface-soft, rgba(31, 138, 102, 0.09)),
       transparent 14rem
     ),
-    linear-gradient(180deg, #f6fbf8 0%, #edf7f3 100%);
+    linear-gradient(180deg, var(--app-surface, #f6fbf8) 0%, var(--app-surface-soft, #edf7f3) 100%);
 }
 
 .profileStatusCard ul {
@@ -676,7 +676,7 @@
 .profileStatusCard li {
   position: relative;
   padding-left: 1.2rem;
-  color: #20443a;
+  color: var(--app-text, #20443a);
   font-size: 0.8rem;
   line-height: 1.4;
 }
@@ -686,7 +686,7 @@
   position: absolute;
   left: 0;
   top: 0;
-  color: #1f8a66;
+  color: var(--app-accent, #1f8a66);
   font-weight: 950;
 }
 
@@ -720,12 +720,12 @@
   min-height: 3.05rem;
   padding: 0.75rem 0.9rem;
   border-radius: 0.86rem;
-  border: 1px solid rgba(18, 45, 37, 0.12);
-  background: #ffffff;
-  color: #132f2a;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #132f2a);
   font: inherit;
   line-height: 1.35;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.8));
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
@@ -743,15 +743,15 @@
 .field textarea:focus,
 .modalField input:focus,
 .modalField textarea:focus {
-  border-color: rgba(23, 77, 62, 0.35);
-  box-shadow: 0 0 0 4px rgba(23, 77, 62, 0.12);
+  border-color: var(--app-accent, rgba(23, 77, 62, 0.35));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(23, 77, 62, 0.12));
   outline: none;
 }
 
 .field input:disabled,
 .readOnlyValue {
-  background: #f2f6f5;
-  color: #5f6d76;
+  background: var(--app-surface-soft, #f2f6f5);
+  color: var(--app-muted, #5f6d76);
 }
 
 .readOnlyValue {
@@ -821,21 +821,21 @@
   background:
     radial-gradient(
       circle at 0% 0%,
-      rgba(31, 138, 102, 0.065),
+      var(--app-surface-soft, rgba(31, 138, 102, 0.065)),
       transparent 22rem
     ),
     radial-gradient(
       circle at 100% 8%,
-      rgba(62, 110, 213, 0.055),
+      var(--app-info-soft, rgba(62, 110, 213, 0.055)),
       transparent 22rem
     ),
-    rgba(255, 255, 255, 0.98);
+    var(--app-surface, rgba(255, 255, 255, 0.98));
 }
 
 .partnerDirectoryHeader {
   align-items: center;
   padding-bottom: 0.95rem;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.08);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
 }
 
 .sectionEyebrow {
@@ -844,9 +844,9 @@
   margin-bottom: 0.42rem;
   padding: 0.3rem 0.58rem;
   border-radius: 999px;
-  color: #174a3b;
-  background: rgba(31, 138, 102, 0.1);
-  border: 1px solid rgba(31, 138, 102, 0.12);
+  color: var(--app-text, #174a3b);
+  background: var(--app-surface-soft, rgba(31, 138, 102, 0.1));
+  border: 1px solid var(--app-line, rgba(31, 138, 102, 0.12));
   font-size: 0.66rem;
   font-weight: 950;
   letter-spacing: 0.07em;
@@ -868,15 +868,15 @@
 }
 
 .directoryStatusOn {
-  color: #176047;
-  background: rgba(31, 138, 102, 0.12);
-  border: 1px solid rgba(31, 138, 102, 0.18);
+  color: var(--app-text, #176047);
+  background: var(--app-surface-soft, rgba(31, 138, 102, 0.12));
+  border: 1px solid var(--app-line, rgba(31, 138, 102, 0.18));
 }
 
 .directoryStatusOff {
-  color: #647481;
-  background: rgba(100, 116, 129, 0.08);
-  border: 1px solid rgba(100, 116, 129, 0.14);
+  color: var(--app-muted, #647481);
+  background: var(--app-surface-soft, rgba(100, 116, 129, 0.08));
+  border: 1px solid var(--app-line, rgba(100, 116, 129, 0.14));
 }
 
 .toggleField {
@@ -886,15 +886,15 @@
   min-height: 3.45rem;
   padding: 1rem;
   border-radius: 1.05rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
   background:
     linear-gradient(
       135deg,
-      rgba(31, 138, 102, 0.08),
-      rgba(62, 110, 213, 0.055)
+      var(--app-surface-soft, rgba(31, 138, 102, 0.08)),
+      var(--app-info-soft, rgba(62, 110, 213, 0.055))
     ),
-    #ffffff;
-  color: #17362c;
+    var(--app-surface, #ffffff);
+  color: var(--app-text, #17362c);
   font-weight: 850;
 }
 
@@ -913,14 +913,14 @@
 }
 
 .toggleField strong {
-  color: #12362d;
+  color: var(--app-text, #12362d);
   font-size: 1rem;
   line-height: 1.18;
   letter-spacing: -0.02em;
 }
 
 .toggleField small {
-  color: #687871;
+  color: var(--app-muted, #687871);
   font-size: 0.84rem;
   font-weight: 700;
   line-height: 1.35;
@@ -932,11 +932,11 @@
   min-width: 0;
   padding: 1rem;
   border-radius: 1.2rem;
-  border: 1px solid rgba(18, 45, 37, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
   background: linear-gradient(
     180deg,
-    rgba(248, 252, 250, 0.98) 0%,
-    rgba(241, 247, 245, 0.98) 100%
+    var(--app-surface, rgba(248, 252, 250, 0.98)) 0%,
+    var(--app-surface-soft, rgba(241, 247, 245, 0.98)) 100%
   );
 }
 
@@ -954,7 +954,7 @@
 }
 
 .partnerMapHeader strong {
-  color: #12362d;
+  color: var(--app-text, #12362d);
   font-size: clamp(1.08rem, calc(var(--website-design-vw) * 1.35), 1.24rem);
   line-height: 1.12;
   letter-spacing: -0.026em;
@@ -963,7 +963,7 @@
 .partnerMapHeader p {
   max-width: 44rem;
   margin: 0;
-  color: #667771;
+  color: var(--app-muted, #667771);
   font-size: 0.9rem;
   line-height: 1.45;
 }
@@ -991,17 +991,17 @@
   height: clamp(16rem, calc(var(--website-design-vw) * 27), 21rem);
   min-height: 16rem;
   border-radius: 1.08rem;
-  border: 1px solid rgba(18, 45, 37, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12));
   background:
     radial-gradient(
       circle at 50% 45%,
-      rgba(31, 138, 102, 0.075),
+      var(--app-surface-soft, rgba(31, 138, 102, 0.075)),
       transparent 10rem
     ),
-    #eaf2ef;
+    var(--app-surface-soft, #eaf2ef);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 10px 22px rgba(18, 45, 37, 0.045);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.78)),
+    0 10px 22px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
 }
 
 .partnerMapCanvas::before {
@@ -1011,7 +1011,7 @@
   z-index: 0;
   transform: translate(-50%, -50%);
   width: min(100% - 2rem, 18rem);
-  color: #70817a;
+  color: var(--app-muted, #70817a);
   font-size: 0.92rem;
   font-weight: 850;
   line-height: 1.35;
@@ -1024,29 +1024,29 @@
   z-index: 1;
   width: 100% !important;
   height: 100% !important;
-  background: #dfe9e5;
+  background: var(--app-surface-soft, #dfe9e5);
   font-family: inherit;
   outline: 0;
 }
 
 .partnerMapCanvas :global(.leaflet-control-zoom) {
   overflow: hidden;
-  border: 1px solid rgba(18, 45, 37, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12));
   border-radius: 0.8rem;
-  box-shadow: 0 10px 24px rgba(18, 45, 37, 0.12);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 45, 37, 0.12));
 }
 
 .partnerMapCanvas :global(.leaflet-control-zoom a) {
   border: 0;
-  color: #173b62;
+  color: var(--app-info, #173b62);
   font-weight: 900;
 }
 
 .partnerMapCanvas :global(.leaflet-control-attribution) {
   padding: 0.25rem 0.45rem;
   border-radius: 0.65rem 0 0 0;
-  color: #61716b;
-  background: rgba(255, 255, 255, 0.86);
+  color: var(--app-muted, #61716b);
+  background: var(--app-surface, rgba(255, 255, 255, 0.86));
   font-size: 0.64rem;
 }
 
@@ -1066,8 +1066,8 @@
   border-radius: 999px 999px 999px 0;
   color: #ffffff;
   background: linear-gradient(135deg, #1f8a66 0%, #155942 100%);
-  border: 0.22rem solid #ffffff;
-  box-shadow: 0 14px 26px rgba(15, 59, 45, 0.3);
+  border: 0.22rem solid var(--app-line, #ffffff);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(15, 59, 45, 0.3));
   transform: rotate(-45deg);
 }
 
@@ -1076,8 +1076,8 @@
   position: absolute;
   inset: 0.52rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.42));
+  background: var(--app-surface-soft, rgba(255, 255, 255, 0.12));
 }
 
 .partnerMapCanvas :global(.accountPartnerMapMarkerPin b) {
@@ -1099,14 +1099,14 @@
   gap: 0.7rem;
   padding: 0.68rem 0.8rem;
   border-radius: 0.78rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
-  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
+  background: var(--app-surface, rgba(255, 255, 255, 0.84));
 }
 
 .partnerMapFooter span {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #5f6d76;
+  color: var(--app-muted, #5f6d76);
   font-size: 0.8rem;
   font-weight: 850;
   line-height: 1.28;
@@ -1114,7 +1114,7 @@
 
 .partnerMapFooter strong {
   flex: 0 0 auto;
-  color: #1f6c53;
+  color: var(--app-text, #1f6c53);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -1127,19 +1127,19 @@
   align-items: center;
   gap: 1rem;
   padding: clamp(1rem, calc(var(--website-design-vw) * 1.65), 1.3rem);
-  border-color: rgba(198, 75, 75, 0.16);
+  border-color: var(--app-danger-line, rgba(198, 75, 75, 0.16));
   background:
     radial-gradient(
       circle at 100% 0%,
-      rgba(198, 75, 75, 0.08),
+      var(--app-danger-soft, rgba(198, 75, 75, 0.08)),
       transparent 18rem
     ),
-    rgba(255, 255, 255, 0.97);
+    var(--app-surface, rgba(255, 255, 255, 0.97));
 }
 
 .accountDeleteCard h2 {
   margin: 0;
-  color: #913636;
+  color: var(--app-danger, #913636);
   font-size: clamp(1.18rem, calc(var(--website-design-vw) * 1.75), 1.55rem);
   line-height: 1.1;
   letter-spacing: -0.04em;
@@ -1148,7 +1148,7 @@
 
 .accountDeleteCard p {
   margin: 0.35rem 0 0;
-  color: #7b6a6a;
+  color: var(--app-muted, #7b6a6a);
   font-weight: 760;
   line-height: 1.45;
 }
@@ -1160,8 +1160,8 @@
 .loading {
   padding: 1rem;
   border-radius: 0.95rem;
-  background: rgba(23, 77, 62, 0.055);
-  border: 1px solid rgba(23, 77, 62, 0.07);
+  background: var(--app-surface-soft, rgba(23, 77, 62, 0.055));
+  border: 1px solid var(--app-line, rgba(23, 77, 62, 0.07));
 }
 
 .modalBackdrop {
@@ -1180,7 +1180,7 @@
   width: min(var(--website-dialog-reference-width, 100%), 36rem);
   padding: 1.3rem;
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
 }
 
 .modalHeader {
@@ -1203,18 +1203,18 @@
   gap: 0.55rem;
   padding: 0.95rem 1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(198, 75, 75, 0.14);
-  background: rgba(198, 75, 75, 0.055);
+  border: 1px solid var(--app-danger-line, rgba(198, 75, 75, 0.14));
+  background: var(--app-danger-soft, rgba(198, 75, 75, 0.055));
 }
 
 .confirmBox strong {
-  color: #7f2f2f;
+  color: var(--app-danger, #7f2f2f);
   font-size: 0.95rem;
 }
 
 .confirmBox p {
   margin: 0;
-  color: #6b3f3f;
+  color: var(--app-danger, #6b3f3f);
   line-height: 1.6;
 }
 
@@ -1234,34 +1234,34 @@
   --owner-ink: #12352d;
   --owner-muted: #64746a;
   --owner-line: rgba(37, 71, 51, 0.15);
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   background:
-    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
-    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%);
+    radial-gradient(circle at 50% 4%, var(--app-surface-soft, rgba(111, 197, 150, 0.13)), transparent 31rem),
+    linear-gradient(180deg, var(--app-surface, #f6faf7) 0%, var(--app-surface, #ffffff) 42%, var(--app-surface-soft, #f4f8f6) 100%);
   font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .dealerAccountPage .accountHero {
   min-height: 9rem;
   padding: 1.35rem 1.5rem;
-  border: 1px solid rgba(37, 71, 51, 0.2);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
   border-radius: 22px;
   background:
-    radial-gradient(circle at 6% 0%, rgba(111, 197, 150, 0.32), transparent 20rem),
-    radial-gradient(circle at 96% 100%, rgba(191, 122, 53, 0.18), transparent 18rem),
+    radial-gradient(circle at 6% 0%, var(--app-surface-soft, rgba(111, 197, 150, 0.32)), transparent 20rem),
+    radial-gradient(circle at 96% 100%, var(--app-warning-soft, rgba(191, 122, 53, 0.18)), transparent 18rem),
     linear-gradient(135deg, #1d3929 0%, #254733 62%, #2f5740 100%);
-  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.14);
+  box-shadow: 0 18px 42px var(--app-shadow-colour, rgba(18, 53, 45, 0.14));
 }
 
 .dealerAccountPage .accountHero::after {
-  background: radial-gradient(circle, rgba(191, 122, 53, 0.18) 0%, rgba(191, 122, 53, 0) 70%);
+  background: radial-gradient(circle, var(--app-warning-soft, rgba(191, 122, 53, 0.18)) 0%, rgba(191, 122, 53, 0) 70%);
 }
 
 .dealerAccountPage .heroAvatar {
   width: 6.45rem;
   height: 6.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  box-shadow: 0 14px 30px rgba(8, 24, 18, 0.24);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.24));
+  box-shadow: 0 14px 30px var(--app-shadow-colour, rgba(8, 24, 18, 0.24));
 }
 
 .dealerAccountPage .heroAvatar img {
@@ -1305,26 +1305,26 @@
 
 .directoryHeroBadge {
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: var(--app-line, rgba(255, 255, 255, 0.18)) !important;
   background: rgba(47, 119, 91, 0.72) !important;
 }
 
 .dealerAccountPage .card {
-  border: 1px solid var(--owner-line);
+  border: 1px solid var(--app-line, var(--owner-line));
   border-radius: 22px;
-  background: #ffffff;
-  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.07);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 14px 32px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .dealerAccountPage .compactCardHeader h2 {
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: clamp(1.35rem, calc(var(--website-design-vw) * 2), 1.7rem);
   font-weight: 800;
   letter-spacing: -0.035em;
 }
 
 .dealerAccountPage .compactCardHeader p {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.9rem;
   font-weight: 650;
 }
@@ -1336,25 +1336,25 @@
 .dealerAccountPage .metricTile {
   min-height: 5.5rem;
   padding: 0.85rem;
-  border: 1px solid rgba(37, 71, 51, 0.11);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.11));
   border-radius: 14px;
-  background: #f7faf8;
+  background: var(--app-surface, #f7faf8);
 }
 
 .dealerAccountPage .metricTile span {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.67rem;
   font-weight: 800;
 }
 
 .dealerAccountPage .metricTile strong {
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: 0.98rem;
   font-weight: 800;
 }
 
 .dealerAccountPage .metricTile small {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.73rem;
   font-weight: 650;
 }
@@ -1371,17 +1371,17 @@
 .dealerAccountPage .quickActionButton {
   min-height: 3.75rem;
   padding: 0.78rem 0.9rem;
-  border: 1px solid var(--owner-line);
+  border: 1px solid var(--app-line, var(--owner-line));
   border-radius: 17px;
-  color: var(--owner-ink);
-  background: #ffffff;
-  box-shadow: 0 9px 24px rgba(18, 53, 45, 0.055);
+  color: var(--app-text, var(--owner-ink));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 9px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.055));
 }
 
 .dealerAccountPage .quickActionButton:hover {
-  border-color: rgba(37, 71, 51, 0.28);
-  background: #f7faf8;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.08);
+  border-color: var(--app-line, rgba(37, 71, 51, 0.28));
+  background: var(--app-surface, #f7faf8);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .dealerAccountPage .quickActionButton strong {
@@ -1391,15 +1391,15 @@
 
 .dealerAccountPage .quickActionIcon {
   border-radius: 14px;
-  color: var(--owner-green);
-  background: var(--owner-soft);
-  border-color: rgba(37, 71, 51, 0.13);
+  color: var(--app-text, var(--owner-green));
+  background: var(--app-surface-soft, var(--owner-soft));
+  border-color: var(--app-line, rgba(37, 71, 51, 0.13));
 }
 
 .dealerAccountPage .quickActionDanger {
   margin-top: 0.4rem;
-  border-color: rgba(150, 56, 56, 0.18);
-  background: #fff9f9;
+  border-color: var(--app-danger-line, rgba(150, 56, 56, 0.18));
+  background: var(--app-danger-soft, #fff9f9);
 }
 
 .partnerDirectoryModalCard {
@@ -1410,16 +1410,16 @@
   --owner-muted: #64746a;
   --owner-line: rgba(37, 71, 51, 0.15);
   width: min(var(--website-dialog-reference-width, 100%), 64rem) !important;
-  border: 1px solid var(--owner-line) !important;
+  border: 1px solid var(--app-line, var(--owner-line)) !important;
   border-radius: 22px !important;
-  background: #ffffff !important;
-  box-shadow: 0 28px 80px rgba(8, 24, 18, 0.28) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 28px 80px var(--app-shadow-colour, rgba(8, 24, 18, 0.28)) !important;
   font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .partnerDirectoryModalCard .accountModalScrollShell,
 .partnerDirectoryModalCard .accountModalScrollContent {
-  background: #ffffff !important;
+  background: var(--app-surface, #ffffff) !important;
 }
 
 .partnerDirectoryModalCard .accountModalScrollContent {
@@ -1433,11 +1433,11 @@
 .partnerDirectoryModalCard .modalHeader {
   margin-bottom: 0.9rem;
   padding-bottom: 0.9rem;
-  border-bottom: 1px solid var(--owner-line);
+  border-bottom: 1px solid var(--app-line, var(--owner-line));
 }
 
 .partnerDirectoryModalCard .modalHeader h2 {
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: clamp(1.65rem, calc(var(--website-design-vw) * 2.5), 2.1rem);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -1445,7 +1445,7 @@
 
 .partnerDirectoryModalCard .modalHeader p {
   max-width: 46rem;
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.9rem;
   font-weight: 650;
   line-height: 1.5;
@@ -1461,9 +1461,9 @@
   min-height: 100%;
   align-items: center;
   padding: 1rem;
-  border: 1px solid var(--owner-line);
+  border: 1px solid var(--app-line, var(--owner-line));
   border-radius: 17px;
-  background: #f7faf8;
+  background: var(--app-surface, #f7faf8);
 }
 
 .partnerVisibilityToggle input {
@@ -1472,9 +1472,9 @@
   width: 2.8rem;
   height: 1.55rem;
   margin: 0;
-  border: 1px solid rgba(37, 71, 51, 0.2);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
   border-radius: 999px;
-  background: #dfe7e2;
+  background: var(--app-surface-soft, #dfe7e2);
   cursor: pointer;
   transition: background 160ms ease, border-color 160ms ease;
 }
@@ -1487,13 +1487,13 @@
   width: 1.1rem;
   height: 1.1rem;
   border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 3px 8px rgba(18, 53, 45, 0.18);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 3px 8px var(--app-shadow-colour, rgba(18, 53, 45, 0.18));
   transition: transform 160ms ease;
 }
 
 .partnerVisibilityToggle input:checked {
-  border-color: var(--owner-green);
+  border-color: var(--app-accent, var(--owner-green));
   background: var(--owner-green);
 }
 
@@ -1502,13 +1502,13 @@
 }
 
 .partnerVisibilityToggle strong {
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: 0.94rem;
   font-weight: 800;
 }
 
 .partnerVisibilityToggle small {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.76rem;
   font-weight: 650;
 }
@@ -1518,16 +1518,16 @@
   display: grid;
   gap: 0.7rem;
   padding: 1rem;
-  border: 1px solid rgba(37, 71, 51, 0.16);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.16));
   border-radius: 17px;
   background:
-    radial-gradient(circle at 100% 0%, rgba(111, 197, 150, 0.16), transparent 12rem),
-    #ffffff;
-  box-shadow: 0 9px 22px rgba(18, 53, 45, 0.055);
+    radial-gradient(circle at 100% 0%, var(--app-surface-soft, rgba(111, 197, 150, 0.16)), transparent 12rem),
+    var(--app-surface, #ffffff);
+  box-shadow: 0 9px 22px var(--app-shadow-colour, rgba(18, 53, 45, 0.055));
 }
 
 .partnerPreviewEyebrow {
-  color: #2c6c55;
+  color: var(--app-text, #2c6c55);
   font-size: 0.66rem;
   font-weight: 900;
   letter-spacing: 0.1em;
@@ -1549,7 +1549,7 @@
 }
 
 .partnerPreviewIdentity > div:last-child > strong {
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.25;
@@ -1557,7 +1557,7 @@
 }
 
 .partnerPreviewIdentity small {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.74rem;
   font-weight: 650;
   line-height: 1.35;
@@ -1569,10 +1569,10 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid var(--owner-line);
+  border: 1px solid var(--app-line, var(--owner-line));
   border-radius: 14px;
-  color: var(--owner-green);
-  background: var(--owner-soft);
+  color: var(--app-text, var(--owner-green));
+  background: var(--app-surface-soft, var(--owner-soft));
 }
 
 .partnerPreviewLogo img {
@@ -1580,7 +1580,7 @@
   height: 100%;
   object-fit: contain;
   padding: 0.25rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .partnerPreviewLogo strong {
@@ -1598,8 +1598,8 @@
   min-width: 0;
   padding: 0.65rem 0.7rem;
   border-radius: 12px;
-  color: #315348;
-  background: #f2f6f3;
+  color: var(--app-text, #315348);
+  background: var(--app-surface-soft, #f2f6f3);
   font-size: 0.72rem;
   font-weight: 750;
   line-height: 1.35;
@@ -1608,7 +1608,7 @@
 
 .partnerDirectoryPreview p {
   margin: 0;
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.45;
@@ -1616,19 +1616,19 @@
 
 .partnerDirectoryModalCard .partnerMapField {
   padding: 0.9rem;
-  border: 1px solid var(--owner-line);
+  border: 1px solid var(--app-line, var(--owner-line));
   border-radius: 17px;
-  background: #f7faf8;
+  background: var(--app-surface, #f7faf8);
 }
 
 .partnerDirectoryModalCard .partnerMapHeader strong {
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: 1.08rem;
   font-weight: 800;
 }
 
 .partnerDirectoryModalCard .partnerMapHeader p {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.8rem;
   font-weight: 650;
 }
@@ -1650,7 +1650,7 @@
 .partnerServicesField { grid-column: 1 / -1; }
 
 .partnerDirectoryModalCard .field > span {
-  color: #315348;
+  color: var(--app-text, #315348);
   font-size: 0.72rem;
   font-weight: 800;
 }
@@ -1658,10 +1658,10 @@
 .partnerDirectoryModalCard .field input,
 .partnerDirectoryModalCard .field textarea {
   min-height: 50px;
-  border: 1px solid var(--owner-line);
+  border: 1px solid var(--app-line, var(--owner-line));
   border-radius: 14px;
-  color: var(--owner-ink);
-  background: #ffffff;
+  color: var(--app-text, var(--owner-ink));
+  background: var(--app-surface, #ffffff);
   font-weight: 650;
 }
 
@@ -1671,7 +1671,7 @@
 
 .partnerDescriptionCount {
   justify-self: end;
-  color: var(--owner-muted) !important;
+  color: var(--app-muted, var(--owner-muted)) !important;
   font-size: 0.68rem !important;
   font-weight: 650 !important;
   letter-spacing: 0 !important;
@@ -1688,16 +1688,16 @@
 
 .partnerDirectoryModalCard .primaryButton {
   color: #ffffff;
-  border-color: var(--owner-green);
+  border-color: var(--app-line, var(--owner-green));
   background: var(--owner-green);
-  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(37, 71, 51, 0.18));
 }
 
 .partnerDirectoryModalCard .secondaryButton,
 .partnerDirectoryModalCard .ghostButton {
-  color: var(--owner-green);
-  border-color: var(--owner-line);
-  background: #ffffff;
+  color: var(--app-text, var(--owner-green));
+  border-color: var(--app-line, var(--owner-line));
+  background: var(--app-surface, #ffffff);
 }
 
 .partnerDirectoryModalCard .directoryForm .actionsRow {
@@ -1706,8 +1706,8 @@
   z-index: 5;
   margin: 0 -1.25rem -1.25rem;
   padding: 0.9rem 1.25rem 1.25rem;
-  border-top: 1px solid var(--owner-line);
-  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--app-line, var(--owner-line));
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
   backdrop-filter: blur(12px);
 }
 
@@ -1719,7 +1719,7 @@
 }
 
 .heroAvatarWithLogo {
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .directoryForm {
@@ -1746,8 +1746,8 @@
   --account-blue-text: #29456b;
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
-  color: var(--account-text);
-  background: linear-gradient(180deg, #f5f7f8 0%, #eef3f5 100%);
+  color: var(--app-text, var(--account-text));
+  background: linear-gradient(180deg, var(--app-info-soft, #f5f7f8) 0%, var(--app-info-soft, #eef3f5) 100%);
 }
 
 .shell {
@@ -1759,17 +1759,17 @@
 
 .card,
 .modalCard {
-  border: 1px solid rgba(225, 233, 241, 0.95);
+  border: 1px solid var(--app-info-line, rgba(225, 233, 241, 0.95));
   box-shadow:
-    0 28px 70px rgba(16, 31, 28, 0.06),
-    0 10px 22px rgba(16, 31, 28, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    0 28px 70px var(--app-shadow-colour, rgba(16, 31, 28, 0.06)),
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.86));
 }
 
 .card {
   padding: 1.35rem;
   border-radius: 2rem;
-  background: rgba(255, 255, 255, 0.94);
+  background: var(--app-surface, rgba(255, 255, 255, 0.94));
 }
 
 .accountHero {
@@ -1777,9 +1777,9 @@
   padding: 1.45rem 1.65rem;
   border-radius: 1.55rem;
   box-shadow:
-    0 28px 70px rgba(16, 31, 28, 0.06),
-    0 10px 22px rgba(16, 31, 28, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 28px 70px var(--app-shadow-colour, rgba(16, 31, 28, 0.06)),
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2));
 }
 
 .topGrid {
@@ -1798,7 +1798,7 @@
 .accountDeleteCard h2,
 .pinSummaryCard h3,
 .profileStatusCard h3 {
-  color: var(--account-text);
+  color: var(--app-text, var(--account-text));
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   letter-spacing: -0.045em;
@@ -1815,7 +1815,7 @@
 .modalHeader p,
 .loading,
 .fieldHint {
-  color: var(--account-muted);
+  color: var(--app-muted, var(--account-muted));
 }
 
 .metricGrid {
@@ -1826,11 +1826,11 @@
   min-height: 7.3rem;
   padding: 1rem 1.05rem;
   border-radius: 1.2rem;
-  border: 1px solid var(--account-line);
-  background: linear-gradient(180deg, #f9fbfc 0%, #f2f5f8 100%);
+  border: 1px solid var(--app-info-line, var(--account-line));
+  background: linear-gradient(180deg, var(--app-info-soft, #f9fbfc) 0%, var(--app-info-soft, #f2f5f8) 100%);
   box-shadow:
-    0 16px 30px rgba(16, 31, 28, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88);
+    0 16px 30px var(--app-shadow-colour, rgba(16, 31, 28, 0.04)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.88));
 }
 
 .metricTile span,
@@ -1838,7 +1838,7 @@
 .field span,
 .modalField span,
 .partnerMapHeader span {
-  color: #40564e;
+  color: var(--app-text, #40564e);
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 0.74rem;
@@ -1848,7 +1848,7 @@
 }
 
 .metricTile strong {
-  color: var(--account-text);
+  color: var(--app-text, var(--account-text));
   font-size: 1.12rem;
   line-height: 1.18;
 }
@@ -1861,7 +1861,7 @@
   min-height: 3.45rem;
   padding: 0.78rem 0.9rem;
   border-radius: 1.05rem;
-  border-color: var(--account-line);
+  border-color: var(--app-info-line, var(--account-line));
   font-weight: 700;
 }
 
@@ -1883,28 +1883,28 @@
 .smallButton {
   min-height: 2.75rem;
   padding: 0 1rem;
-  color: var(--account-text);
-  background: var(--account-surface-soft);
-  border-color: var(--account-line);
+  color: var(--app-text, var(--account-text));
+  background: var(--app-info-soft, var(--account-surface-soft));
+  border-color: var(--app-info-line, var(--account-line));
 }
 
 .primaryButton {
   background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
-  border-color: rgba(18, 66, 51, 0.2);
-  box-shadow: 0 12px 24px rgba(18, 66, 51, 0.16);
+  border-color: var(--app-line, rgba(18, 66, 51, 0.2));
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 66, 51, 0.16));
 }
 
 .secondaryButton,
 .ghostButton {
-  color: var(--account-blue-text);
-  background: var(--account-blue-soft);
-  border-color: var(--account-blue-border);
+  color: var(--app-info, var(--account-blue-text));
+  background: var(--app-info-soft, var(--account-blue-soft));
+  border-color: var(--app-info-line, var(--account-blue-border));
 }
 
 .ghostButton {
-  color: var(--account-text);
-  background: var(--account-surface-muted);
-  border-color: var(--account-line-strong);
+  color: var(--app-text, var(--account-text));
+  background: var(--app-info-soft, var(--account-surface-muted));
+  border-color: var(--app-info-line, var(--account-line-strong));
 }
 
 .detailGrid,
@@ -1923,9 +1923,9 @@
   gap: 0.85rem;
   padding: 1rem 1.05rem;
   border-radius: 1.2rem;
-  border: 1px solid var(--account-line);
-  background: linear-gradient(180deg, #f9fbfc 0%, #f4f7f9 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--app-info-line, var(--account-line));
+  background: linear-gradient(180deg, var(--app-info-soft, #f9fbfc) 0%, var(--app-info-soft, #f4f7f9) 100%);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.88));
 }
 
 .detailRow {
@@ -1935,7 +1935,7 @@
 }
 
 .detailRow strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 0.93rem;
   font-weight: 750;
   line-height: 1.5;
@@ -1945,7 +1945,7 @@
 .profileStatusCard {
   padding: 1.15rem;
   border-radius: 1.25rem;
-  border-color: var(--account-line);
+  border-color: var(--app-info-line, var(--account-line));
 }
 
 .pinSummaryCard > strong {
@@ -1965,9 +1965,9 @@
 .readOnlyValue {
   min-height: 3.25rem;
   border-radius: 1.1rem;
-  border-color: var(--account-line);
-  color: #20313b;
-  background: var(--account-surface);
+  border-color: var(--app-info-line, var(--account-line));
+  color: var(--app-info, #20313b);
+  background: var(--app-surface, var(--account-surface));
 }
 
 .field textarea,
@@ -1988,7 +1988,7 @@
 .partnerDirectoryHeader {
   align-items: center;
   padding-bottom: 1.1rem;
-  border-bottom-color: var(--account-line);
+  border-bottom-color: var(--app-info-line, var(--account-line));
 }
 
 .sectionEyebrow {
@@ -1997,7 +1997,7 @@
 
 .toggleField,
 .partnerMapField {
-  border-color: var(--account-line);
+  border-color: var(--app-info-line, var(--account-line));
   border-radius: 1.25rem;
 }
 
@@ -2015,13 +2015,13 @@
   height: clamp(18rem, calc(var(--website-design-vw) * 30), 24rem);
   min-height: 18rem;
   border-radius: 1.15rem;
-  border-color: var(--account-line-strong);
+  border-color: var(--app-info-line, var(--account-line-strong));
 }
 
 .partnerMapFooter {
   min-height: 3rem;
   border-radius: 1rem;
-  border-color: var(--account-line);
+  border-color: var(--app-info-line, var(--account-line));
 }
 
 .partnerDescriptionField {
@@ -2037,7 +2037,7 @@
 }
 
 .accountDeleteCard {
-  border-color: rgba(198, 75, 75, 0.16);
+  border-color: var(--app-danger-line, rgba(198, 75, 75, 0.16));
 }
 
 /* === Account page edit-button + typography refinements === */
@@ -2048,12 +2048,12 @@
   min-height: 2.78rem;
   padding: 0 1.18rem;
   border-radius: 999px;
-  border: 1px solid rgba(18, 66, 51, 0.2);
+  border: 1px solid var(--app-line, rgba(18, 66, 51, 0.2));
   color: #ffffff;
   background: linear-gradient(180deg, #1f8a66 0%, #155942 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 12px 22px rgba(12, 55, 41, 0.16);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.22)),
+    0 12px 22px var(--app-shadow-colour, rgba(12, 55, 41, 0.16));
   font: inherit;
   font-size: 0.8rem;
   font-weight: 800;
@@ -2073,8 +2073,8 @@
 .sectionActionButton:hover {
   transform: translateY(-1px);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 14px 24px rgba(12, 55, 41, 0.2);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.22)),
+    0 14px 24px var(--app-shadow-colour, rgba(12, 55, 41, 0.2));
 }
 
 .sectionActionButton:disabled {
@@ -2098,17 +2098,17 @@
 
 .metricTile span,
 .detailRow span {
-  color: #7a8792;
+  color: var(--app-muted, #7a8792);
   font-weight: 780;
 }
 
 .metricTile strong {
-  color: #41525f;
+  color: var(--app-info, #41525f);
   font-weight: 760;
 }
 
 .detailRow strong {
-  color: #61727d;
+  color: var(--app-muted, #61727d);
   font-weight: 600;
 }
 
@@ -2119,9 +2119,9 @@
   min-width: 0;
   padding: 1rem;
   border-radius: 1.25rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.09));
-  background: linear-gradient(180deg, #f9fbfc 0%, #f3f7f9 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--app-info-line, var(--account-line, rgba(18, 45, 37, 0.09)));
+  background: linear-gradient(180deg, var(--app-info-soft, #f9fbfc) 0%, var(--app-info-soft, #f3f7f9) 100%);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.88));
 }
 
 .mediaUploadHeader {
@@ -2138,7 +2138,7 @@
 }
 
 .mediaUploadHeader span {
-  color: #7a8792;
+  color: var(--app-muted, #7a8792);
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 0.74rem;
@@ -2150,7 +2150,7 @@
 .mediaUploadHeader strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 0.98rem;
   line-height: 1.22;
   font-weight: 820;
@@ -2159,7 +2159,7 @@
 .mediaUploadHeader p,
 .businessLogoPanel small {
   margin: 0;
-  color: #667586;
+  color: var(--app-muted, #667586);
   font-size: 0.8rem;
   line-height: 1.45;
   font-weight: 650;
@@ -2181,8 +2181,8 @@
   gap: clamp(0.95rem, calc(var(--website-design-vw) * 2), 1.35rem);
   padding: clamp(1.05rem, calc(var(--website-design-vw) * 2), 1.45rem);
   border-radius: 1.1rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
-  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid var(--app-info-line, var(--account-line, rgba(18, 45, 37, 0.08)));
+  background: var(--app-surface, rgba(255, 255, 255, 0.86));
 }
 
 .businessLogoPreview {
@@ -2193,10 +2193,10 @@
   display: inline-grid;
   place-items: center;
   border-radius: 1.25rem;
-  border: 1px solid var(--account-line-strong, rgba(18, 45, 37, 0.11));
+  border: 1px solid var(--app-info-line, var(--account-line-strong, rgba(18, 45, 37, 0.11)));
   color: #ffffff;
-  background: linear-gradient(135deg, #1f8a66 0%, #4777d7 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  background: linear-gradient(135deg, #1f8a66 0%, var(--app-info-soft, #4777d7) 100%);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.34));
 }
 
 .businessLogoPreview span {
@@ -2211,7 +2211,7 @@
   height: 100%;
   object-fit: contain;
   padding: 0.72rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .businessLogoPanel small {
@@ -2232,10 +2232,10 @@
   justify-content: center;
   padding: 0 1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(18, 66, 51, 0.18);
+  border: 1px solid var(--app-line, rgba(18, 66, 51, 0.18));
   color: #ffffff;
   background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
-  box-shadow: 0 12px 24px rgba(18, 66, 51, 0.14);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 66, 51, 0.14));
   font: inherit;
   font-weight: 760;
   line-height: 1;
@@ -2249,7 +2249,7 @@
 
 .uploadButton:hover {
   transform: translateY(-1px);
-  box-shadow: 0 14px 26px rgba(18, 66, 51, 0.18);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(18, 66, 51, 0.18));
 }
 
 .uploadButton:has(input:disabled) {
@@ -2292,8 +2292,8 @@
   aspect-ratio: 4 / 3;
   margin: 0;
   border-radius: 1rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
-  background: #eef3f5;
+  border: 1px solid var(--app-info-line, var(--account-line, rgba(18, 45, 37, 0.08)));
+  background: var(--app-info-soft, #eef3f5);
 }
 
 .businessPhotoThumb img {
@@ -2312,7 +2312,7 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.38));
   color: #ffffff;
   background: rgba(9, 18, 31, 0.68);
   font: inherit;
@@ -2341,16 +2341,16 @@
   place-items: center;
   padding: 1rem;
   border-radius: 1rem;
-  border: 1px dashed var(--account-line-strong, rgba(18, 45, 37, 0.16));
-  color: #667586;
-  background: rgba(255, 255, 255, 0.65);
+  border: 1px dashed var(--app-info-line, var(--account-line-strong, rgba(18, 45, 37, 0.16)));
+  color: var(--app-muted, #667586);
+  background: var(--app-surface, rgba(255, 255, 255, 0.65));
   font-size: 0.86rem;
   font-weight: 650;
   text-align: center;
 }
 
 .websiteLink {
-  color: #1a5a45;
+  color: var(--app-text, #1a5a45);
   font-weight: 720;
   text-decoration: none;
 }
@@ -2384,8 +2384,8 @@
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: 0.82rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
-  background: #eef3f5;
+  border: 1px solid var(--app-info-line, var(--account-line, rgba(18, 45, 37, 0.08)));
+  background: var(--app-info-soft, #eef3f5);
 }
 
 /* === Account quick-action icon refinements === */
@@ -2394,23 +2394,23 @@
   gap: 0.86rem;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(248, 251, 250, 0.98) 100%
+    var(--app-surface, rgba(255, 255, 255, 0.98)) 0%,
+    var(--app-surface, rgba(248, 251, 250, 0.98)) 100%
   );
   box-shadow:
-    0 12px 26px rgba(18, 45, 37, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    0 12px 26px var(--app-shadow-colour, rgba(18, 45, 37, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
 }
 
 .quickActionButton:hover {
-  border-color: rgba(31, 138, 102, 0.22);
+  border-color: var(--app-line, rgba(31, 138, 102, 0.22));
   background:
     radial-gradient(
       circle at 0% 0%,
-      rgba(31, 138, 102, 0.075),
+      var(--app-surface-soft, rgba(31, 138, 102, 0.075)),
       transparent 12rem
     ),
-    linear-gradient(180deg, #ffffff 0%, #f4faf7 100%);
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f4faf7) 100%);
 }
 
 .quickActionIcon {
@@ -2422,18 +2422,18 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.86rem;
-  color: #155942;
+  color: var(--app-text, #155942);
   background:
     radial-gradient(
       circle at 24% 18%,
-      rgba(255, 255, 255, 0.95),
+      var(--app-surface, rgba(255, 255, 255, 0.95)),
       transparent 1.15rem
     ),
-    linear-gradient(135deg, rgba(31, 138, 102, 0.18), rgba(31, 138, 102, 0.075));
-  border: 1px solid rgba(31, 138, 102, 0.18);
+    linear-gradient(135deg, var(--app-surface-soft, rgba(31, 138, 102, 0.18)), var(--app-surface-soft, rgba(31, 138, 102, 0.075)));
+  border: 1px solid var(--app-line, rgba(31, 138, 102, 0.18));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 9px 18px rgba(18, 45, 37, 0.06);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9)),
+    0 9px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.06));
 }
 
 .quickActionIcon svg {
@@ -2446,40 +2446,40 @@
 }
 
 .quickActionButton:hover .quickActionIcon {
-  color: #103f33;
+  color: var(--app-text, #103f33);
   background:
     radial-gradient(
       circle at 24% 18%,
-      rgba(255, 255, 255, 0.98),
+      var(--app-surface, rgba(255, 255, 255, 0.98)),
       transparent 1.25rem
     ),
-    linear-gradient(135deg, rgba(31, 138, 102, 0.24), rgba(62, 110, 213, 0.1));
-  border-color: rgba(31, 138, 102, 0.24);
+    linear-gradient(135deg, var(--app-surface-soft, rgba(31, 138, 102, 0.24)), var(--app-info-soft, rgba(62, 110, 213, 0.1)));
+  border-color: var(--app-line, rgba(31, 138, 102, 0.24));
 }
 
 
 .quickActionDanger:hover {
-  border-color: rgba(198, 75, 75, 0.22);
+  border-color: var(--app-danger-line, rgba(198, 75, 75, 0.22));
   background:
     radial-gradient(
       circle at 0% 0%,
-      rgba(198, 75, 75, 0.07),
+      var(--app-danger-soft, rgba(198, 75, 75, 0.07)),
       transparent 12rem
     ),
-    linear-gradient(180deg, #ffffff 0%, #fff8f8 100%);
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff8f8) 100%);
 }
 
 .quickActionDanger .quickActionIcon,
 .quickActionDanger:hover .quickActionIcon {
-  color: #9d3434;
+  color: var(--app-danger, #9d3434);
   background:
     radial-gradient(
       circle at 24% 18%,
-      rgba(255, 255, 255, 0.96),
+      var(--app-surface, rgba(255, 255, 255, 0.96)),
       transparent 1.15rem
     ),
-    linear-gradient(135deg, rgba(198, 75, 75, 0.18), rgba(198, 75, 75, 0.075));
-  border-color: rgba(198, 75, 75, 0.18);
+    linear-gradient(135deg, var(--app-danger-soft, rgba(198, 75, 75, 0.18)), var(--app-danger-soft, rgba(198, 75, 75, 0.075)));
+  border-color: var(--app-danger-line, rgba(198, 75, 75, 0.18));
 }
 
 /* === Account quick-action modal layout === */
@@ -2518,13 +2518,13 @@
   background:
     radial-gradient(
       circle at 0% 0%,
-      rgba(31, 138, 102, 0.028),
+      var(--app-surface-soft, rgba(31, 138, 102, 0.028)),
       transparent 18rem
     ),
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.995) 0%,
-      rgba(248, 251, 250, 0.995) 100%
+      var(--app-surface, rgba(255, 255, 255, 0.995)) 0%,
+      var(--app-surface, rgba(248, 251, 250, 0.995)) 100%
     );
 }
 
@@ -2561,17 +2561,17 @@
   z-index: 4;
   width: 0.64rem;
   border-radius: 999px;
-  border: 1px solid rgba(202, 219, 213, 0.82);
+  border: 1px solid var(--app-line, rgba(202, 219, 213, 0.82));
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0.2)),
+    linear-gradient(90deg, var(--app-surface, rgba(255, 255, 255, 0.76)), var(--app-surface-soft, rgba(255, 255, 255, 0.2))),
     linear-gradient(
       180deg,
-      rgba(238, 246, 243, 0.96) 0%,
-      rgba(224, 236, 231, 0.96) 100%
+      var(--app-surface-soft, rgba(238, 246, 243, 0.96)) 0%,
+      var(--app-surface-soft, rgba(224, 236, 231, 0.96)) 100%
     );
   box-shadow:
-    inset 0 1px 3px rgba(18, 45, 37, 0.06),
-    0 0 0 1px rgba(255, 255, 255, 0.54);
+    inset 0 1px 3px var(--app-shadow-colour, rgba(18, 45, 37, 0.06)),
+    0 0 0 1px var(--app-shadow-colour, rgba(255, 255, 255, 0.54));
   opacity: 0;
   pointer-events: none;
   transition:
@@ -2587,7 +2587,7 @@
   inset: 0.38rem 50% 0.38rem auto;
   width: 1px;
   border-radius: 999px;
-  background: rgba(31, 108, 83, 0.08);
+  background: var(--app-surface-soft, rgba(31, 108, 83, 0.08));
   transform: translateX(50%);
 }
 
@@ -2602,13 +2602,13 @@
   background:
     linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.86),
-      rgba(255, 255, 255, 0.26)
+      var(--app-surface, rgba(255, 255, 255, 0.86)),
+      var(--app-surface-soft, rgba(255, 255, 255, 0.26))
     ),
     linear-gradient(
       180deg,
-      rgba(233, 244, 240, 0.98) 0%,
-      rgba(215, 232, 226, 0.98) 100%
+      var(--app-surface-soft, rgba(233, 244, 240, 0.98)) 0%,
+      var(--app-surface-soft, rgba(215, 232, 226, 0.98)) 100%
     );
 }
 
@@ -2628,8 +2628,8 @@
     rgba(21, 89, 66, 0.98) 100%
   );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    0 7px 16px rgba(18, 45, 37, 0.18);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.32)),
+    0 7px 16px var(--app-shadow-colour, rgba(18, 45, 37, 0.18));
   transition:
     width 160ms ease,
     margin-left 160ms ease,
@@ -2647,8 +2647,8 @@
     rgba(13, 67, 49, 1) 100%
   );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.36),
-    0 8px 18px rgba(18, 45, 37, 0.22);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.36)),
+    0 8px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.22));
 }
 
 .accountModalScrollThumb:active {
@@ -2679,16 +2679,16 @@
   margin-top: 1rem;
   padding: 1rem 1.05rem;
   border-radius: 1.15rem;
-  border: 1px solid var(--account-line, rgba(18, 45, 37, 0.09));
-  background: linear-gradient(180deg, #f9fbfc 0%, #f3f7f9 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--app-info-line, var(--account-line, rgba(18, 45, 37, 0.09)));
+  background: linear-gradient(180deg, var(--app-info-soft, #f9fbfc) 0%, var(--app-info-soft, #f3f7f9) 100%);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9));
 }
 
 .accountActionIntro strong,
 .pinModalStatus strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: clamp(1.08rem, calc(var(--website-design-vw) * 1.45), 1.25rem);
   line-height: 1.15;
   font-weight: 850;
@@ -2702,7 +2702,7 @@
 }
 
 .pinModalStatus span {
-  color: #7a8792;
+  color: var(--app-muted, #7a8792);
   font-size: 0.74rem;
   font-weight: 780;
   letter-spacing: 0.045em;
@@ -2712,7 +2712,7 @@
 .accountActionIntro p,
 .pinModalStatus p {
   margin: 0;
-  color: #667586;
+  color: var(--app-muted, #667586);
   font-size: 0.86rem;
   line-height: 1.48;
   font-weight: 650;
@@ -2743,12 +2743,12 @@
   gap: 0.75rem;
   padding: 1rem;
   border-radius: 1.15rem;
-  border: 1px solid rgba(18, 45, 37, 0.09);
-  background: linear-gradient(180deg, #f8fbf9 0%, #ffffff 100%);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.09));
+  background: linear-gradient(180deg, var(--app-surface, #f8fbf9) 0%, var(--app-surface, #ffffff) 100%);
 }
 
 .securitySidePanel strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 1rem;
   line-height: 1.25;
   font-weight: 850;
@@ -2756,7 +2756,7 @@
 
 .securitySidePanel p {
   margin: 0;
-  color: #68786f;
+  color: var(--app-muted, #68786f);
   font-size: 0.88rem;
   line-height: 1.55;
 }
@@ -2879,13 +2879,13 @@
 }
 
 .modalHeader h2 {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-weight: 800 !important;
   letter-spacing: -0.04em;
 }
 
 .modalHeader p {
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-weight: 650 !important;
 }
 
@@ -2900,10 +2900,10 @@
   display: grid;
   place-items: center;
   padding: 0;
-  border: 1px solid rgba(37, 71, 51, 0.15);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.15));
   border-radius: 14px;
-  color: #254733;
-  background: #f7faf8;
+  color: var(--app-text, #254733);
+  background: var(--app-surface, #f7faf8);
   font: inherit;
   font-size: 1.35rem;
   font-weight: 650;
@@ -2912,12 +2912,12 @@
 }
 
 .modalCloseButton:hover {
-  border-color: rgba(37, 71, 51, 0.28);
-  background: #eef5f0;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.28));
+  background: var(--app-surface-soft, #eef5f0);
 }
 
 .modalCloseButton:focus-visible {
-  outline: 3px solid rgba(43, 138, 99, 0.2);
+  outline: 3px solid var(--app-accent, rgba(43, 138, 99, 0.2));
   outline-offset: 3px;
 }
 
@@ -2931,8 +2931,8 @@
   margin-bottom: -1.45rem;
   margin-left: -1.45rem;
   padding: 0.9rem 1.45rem 1.45rem;
-  border-top: 1px solid rgba(37, 71, 51, 0.13);
-  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid var(--app-line, rgba(37, 71, 51, 0.13));
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
   backdrop-filter: blur(12px);
 }
 
@@ -2943,35 +2943,35 @@
 /* === Dealer account uses the same visual hierarchy as the Owner account === */
 .dealerAccountPage {
   background:
-    radial-gradient(circle at 12% 7%, rgba(31, 108, 83, 0.08) 0, transparent 28rem),
-    radial-gradient(circle at 88% 12%, rgba(62, 110, 213, 0.1) 0, transparent 30rem),
-    linear-gradient(180deg, #f7f9f8 0%, #eef3f6 46%, #fbfcfb 100%);
+    radial-gradient(circle at 12% 7%, var(--app-surface-soft, rgba(31, 108, 83, 0.08)) 0, transparent 28rem),
+    radial-gradient(circle at 88% 12%, var(--app-info-soft, rgba(62, 110, 213, 0.1)) 0, transparent 30rem),
+    linear-gradient(180deg, var(--app-surface, #f7f9f8) 0%, var(--app-info-soft, #eef3f6) 46%, var(--app-surface, #fbfcfb) 100%);
 }
 
 .dealerAccountPage .accountHero {
   min-height: clamp(8.1rem, calc(var(--website-design-vw) * 11), 9.7rem);
   padding: clamp(1.25rem, calc(var(--website-design-vw) * 2), 1.6rem);
-  border: 1px solid rgba(18, 45, 37, 0.08);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
   border-radius: 1.12rem;
   background:
-    radial-gradient(circle at 10% 0%, rgba(49, 197, 142, 0.28) 0, transparent 23rem),
-    radial-gradient(circle at 92% 105%, rgba(86, 136, 229, 0.3) 0, transparent 21rem),
+    radial-gradient(circle at 10% 0%, var(--app-surface-soft, rgba(49, 197, 142, 0.28)) 0, transparent 23rem),
+    radial-gradient(circle at 92% 105%, var(--app-info-soft, rgba(86, 136, 229, 0.3)) 0, transparent 21rem),
     linear-gradient(135deg, #102a23 0%, #15392f 48%, #17385d 100%);
   box-shadow:
-    0 22px 50px rgba(18, 45, 37, 0.075),
-    0 7px 18px rgba(18, 45, 37, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    0 22px 50px var(--app-shadow-colour, rgba(18, 45, 37, 0.075)),
+    0 7px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.82));
 }
 
 .dealerAccountPage .accountHero::after {
-  background: radial-gradient(circle, rgba(98, 154, 255, 0.26) 0%, rgba(98, 154, 255, 0) 70%);
+  background: radial-gradient(circle, var(--app-info-soft, rgba(98, 154, 255, 0.26)) 0%, rgba(98, 154, 255, 0) 70%);
 }
 
 .dealerAccountPage .heroAvatar {
   width: clamp(5.4rem, calc(var(--website-design-vw) * 7.4), 6.75rem);
   height: clamp(5.4rem, calc(var(--website-design-vw) * 7.4), 6.75rem);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 16px 30px rgba(3, 15, 24, 0.22);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.18));
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(3, 15, 24, 0.22));
 }
 
 .dealerAccountPage .heroCopy h1 {
@@ -2992,30 +2992,30 @@
 
 .dealerAccountPage .directoryHeroBadge {
   color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  border-color: var(--app-line, rgba(255, 255, 255, 0.18)) !important;
   background: rgba(47, 119, 91, 0.72) !important;
 }
 
 .dealerAccountPage .card {
   padding: clamp(1.05rem, calc(var(--website-design-vw) * 1.75), 1.35rem);
-  border: 1px solid rgba(18, 45, 37, 0.08);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
   border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
   box-shadow:
-    0 22px 50px rgba(18, 45, 37, 0.075),
-    0 7px 18px rgba(18, 45, 37, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    0 22px 50px var(--app-shadow-colour, rgba(18, 45, 37, 0.075)),
+    0 7px 18px var(--app-shadow-colour, rgba(18, 45, 37, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.82));
 }
 
 .dealerAccountPage .compactCardHeader h2 {
-  color: #12362d;
+  color: var(--app-text, #12362d);
   font-size: clamp(1.05rem, calc(var(--website-design-vw) * 1.25), 1.22rem);
   font-weight: 900;
   letter-spacing: -0.032em;
 }
 
 .dealerAccountPage .compactCardHeader p {
-  color: #65756f;
+  color: var(--app-muted, #65756f);
   font-size: inherit;
   font-weight: inherit;
 }
@@ -3027,25 +3027,25 @@
   grid-column: auto;
   min-height: 6.05rem;
   padding: 0.9rem;
-  border: 1px solid rgba(18, 45, 37, 0.055);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.055));
   border-radius: 0.95rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f8faf9 100%);
+  background: linear-gradient(135deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f8faf9) 100%);
 }
 
 .dealerAccountPage .metricTile span {
-  color: #40564e;
+  color: var(--app-text, #40564e);
   font-size: 0.67rem;
   font-weight: 950;
 }
 
 .dealerAccountPage .metricTile strong {
-  color: #102f28;
+  color: var(--app-text, #102f28);
   font-size: 1.02rem;
   font-weight: 900;
 }
 
 .dealerAccountPage .metricTile small {
-  color: #667971;
+  color: var(--app-muted, #667971);
   font-size: 0.75rem;
   font-weight: 760;
 }
@@ -3055,10 +3055,10 @@
 .dealerAccountPage .quickActionButton {
   min-height: 3.65rem;
   padding: 0.72rem 0.82rem;
-  border: 1px solid rgba(18, 45, 37, 0.07);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.07));
   border-radius: 0.86rem;
-  color: #17362c;
-  background: #ffffff;
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, #ffffff);
   box-shadow: none;
 }
 
@@ -3069,18 +3069,18 @@
 
 .dealerAccountPage .quickActionIcon {
   border-radius: 0.72rem;
-  color: #174a3b;
+  color: var(--app-text, #174a3b);
   background:
-    linear-gradient(135deg, rgba(31, 138, 102, 0.14), rgba(62, 110, 213, 0.08)),
-    #f5faf8;
-  border-color: rgba(31, 138, 102, 0.12);
+    linear-gradient(135deg, var(--app-surface-soft, rgba(31, 138, 102, 0.14)), var(--app-info-soft, rgba(62, 110, 213, 0.08))),
+    var(--app-surface, #f5faf8);
+  border-color: var(--app-line, rgba(31, 138, 102, 0.12));
 }
 
 .dealerAccountPage .quickActionDanger {
   margin-top: 0;
-  color: #ab3a3a;
-  border-color: rgba(198, 75, 75, 0.14);
-  background: #fff8f8;
+  color: var(--app-danger, #ab3a3a);
+  border-color: var(--app-danger-line, rgba(198, 75, 75, 0.14));
+  background: var(--app-danger-soft, #fff8f8);
 }
 
 /* === Restored account modal workflow: spacing and alignment refinement === */
@@ -3093,12 +3093,12 @@
 
 .accountScrollableModalCard {
   max-height: min(54rem, calc(calc(var(--website-visible-height) * 1) - 3rem)) !important;
-  border: 1px solid rgba(18, 45, 37, 0.12) !important;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12)) !important;
   border-radius: 1.55rem !important;
-  background: #ffffff !important;
+  background: var(--app-surface, #ffffff) !important;
   box-shadow:
-    0 32px 90px rgba(7, 25, 20, 0.28),
-    0 8px 24px rgba(7, 25, 20, 0.12) !important;
+    0 32px 90px var(--app-shadow-colour, rgba(7, 25, 20, 0.28)),
+    0 8px 24px var(--app-shadow-colour, rgba(7, 25, 20, 0.12)) !important;
 }
 
 .businessDetailsModalCard {
@@ -3132,7 +3132,7 @@
   gap: 0.35rem;
   margin: 0 0 1.3rem !important;
   padding: 0 4rem 1.15rem 0 !important;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.1);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
 }
 
 .accountScrollableModalCard .modalHeader h2 {
@@ -3169,20 +3169,20 @@
   gap: 0.18rem;
   margin-top: 0.15rem;
   padding: 0.78rem 0.95rem;
-  border: 1px solid rgba(18, 45, 37, 0.08);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.08));
   border-radius: 1rem;
-  background: linear-gradient(120deg, #f6faf8, #f6f8fb);
+  background: linear-gradient(120deg, var(--app-surface, #f6faf8), var(--app-info-soft, #f6f8fb));
 }
 
 .modalSectionHeading strong {
-  color: #173e33;
+  color: var(--app-text, #173e33);
   font-size: 0.86rem;
   font-weight: 850;
 }
 
 .modalSectionHeading p {
   margin: 0;
-  color: #708079;
+  color: var(--app-muted, #708079);
   font-size: 0.72rem;
   font-weight: 620;
   line-height: 1.45;
@@ -3195,7 +3195,7 @@
 
 .accountScrollableModalCard .field > span,
 .accountScrollableModalCard .modalField > span {
-  color: #405950;
+  color: var(--app-text, #405950);
   font-size: 0.7rem;
   font-weight: 850;
   letter-spacing: 0.045em;
@@ -3293,9 +3293,9 @@
   gap: 0.65rem;
   margin: 0.4rem clamp(-2.35rem, calc(var(--website-design-vw) * -2.6), -1.75rem) clamp(-2rem, calc(var(--website-design-vw) * -2.2), -1.35rem) -2rem !important;
   padding: 1rem clamp(2.35rem, calc(var(--website-design-vw) * 2.6), 2.35rem) clamp(1.35rem, calc(var(--website-design-vw) * 1.8), 1.7rem) 2rem !important;
-  border-top: 1px solid rgba(18, 45, 37, 0.11);
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 -12px 28px rgba(18, 45, 37, 0.045);
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.11));
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
+  box-shadow: 0 -12px 28px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
 }
 
 .accountScrollableModalCard .modalActions > button,
@@ -3335,7 +3335,7 @@
   display: flex;
   align-items: center;
   gap: 0.58rem;
-  color: #819088;
+  color: var(--app-muted, #819088);
 }
 
 .modalStep:not(:last-child)::after {
@@ -3346,7 +3346,7 @@
   right: 0.8rem;
   left: 3rem;
   height: 1px;
-  background: rgba(37, 71, 51, 0.14);
+  background: var(--app-surface-soft, rgba(37, 71, 51, 0.14));
 }
 
 .modalStep > span {
@@ -3357,10 +3357,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(37, 71, 51, 0.14);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.14));
   border-radius: 999px;
-  color: #62746c;
-  background: #f7faf8;
+  color: var(--app-muted, #62746c);
+  background: var(--app-surface, #f7faf8);
   font-size: 0.76rem;
   font-weight: 900;
 }
@@ -3369,7 +3369,7 @@
   position: relative;
   z-index: 1;
   padding-right: 0.65rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   font-size: 0.76rem;
   font-weight: 850;
   line-height: 1.25;
@@ -3377,24 +3377,24 @@
 
 .modalStepCurrent,
 .modalStepComplete {
-  color: #185d46;
+  color: var(--app-text, #185d46);
 }
 
 .modalStepCurrent > span {
-  border-color: #1f8a66;
+  border-color: var(--app-line, #1f8a66);
   color: #ffffff;
   background: #1f8a66;
-  box-shadow: 0 0 0 0.3rem rgba(31, 138, 102, 0.1);
+  box-shadow: 0 0 0 0.3rem var(--app-shadow-colour, rgba(31, 138, 102, 0.1));
 }
 
 .modalStepComplete > span {
-  border-color: rgba(31, 138, 102, 0.26);
-  color: #176047;
-  background: #e8f6ef;
+  border-color: var(--app-line, rgba(31, 138, 102, 0.26));
+  color: var(--app-text, #176047);
+  background: var(--app-surface-soft, #e8f6ef);
 }
 
 .modalStepComplete:not(:last-child)::after {
-  background: rgba(31, 138, 102, 0.36);
+  background: var(--app-surface-soft, rgba(31, 138, 102, 0.36));
 }
 
 .wizardForm {
@@ -3439,14 +3439,14 @@
 }
 
 .businessLogoCopy > strong {
-  color: #173e33;
+  color: var(--app-text, #173e33);
   font-size: 1rem;
   font-weight: 900;
 }
 
 .businessLogoCopy > p {
   margin: 0;
-  color: #6d7d76;
+  color: var(--app-muted, #6d7d76);
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.5;
@@ -3485,7 +3485,7 @@
   right: 0.42rem;
   width: 0.46rem;
   border: 0;
-  background: rgba(37, 71, 51, 0.07);
+  background: var(--app-surface-soft, rgba(37, 71, 51, 0.07));
   box-shadow: none;
 }
 
@@ -3500,7 +3500,7 @@
 .accountScrollableModalCard .accountModalScrollRailVisible:hover {
   right: 0.4rem;
   width: 0.54rem;
-  background: rgba(37, 71, 51, 0.1);
+  background: var(--app-surface-soft, rgba(37, 71, 51, 0.1));
 }
 
 .accountScrollableModalCard .accountModalScrollThumb {
@@ -3531,9 +3531,9 @@
 .securityPanel {
   min-height: 100%;
   padding: 1.15rem;
-  border: 1px solid rgba(18, 45, 37, 0.09);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.09));
   border-radius: 1.15rem;
-  background: linear-gradient(180deg, #fbfdfc 0%, #f7faf8 100%);
+  background: linear-gradient(180deg, var(--app-surface, #fbfdfc) 0%, var(--app-surface, #f7faf8) 100%);
 }
 
 .securityPanelHeader {
@@ -3550,14 +3550,14 @@
 }
 
 .securityPanelHeader strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 1rem;
   font-weight: 900;
 }
 
 .securityPanelHeader p {
   margin: 0;
-  color: #6b7c74;
+  color: var(--app-muted, #6b7c74);
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.4;
@@ -3569,10 +3569,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(31, 138, 102, 0.14);
+  border: 1px solid var(--app-line, rgba(31, 138, 102, 0.14));
   border-radius: 0.82rem;
-  color: #176047;
-  background: #eaf6f0;
+  color: var(--app-text, #176047);
+  background: var(--app-surface-soft, #eaf6f0);
   font-size: 0.82rem;
   font-weight: 950;
   letter-spacing: 0.08em;
@@ -3580,14 +3580,14 @@
 
 .securityFieldHint,
 .securityFieldError {
-  color: #708079;
+  color: var(--app-muted, #708079);
   font-size: 0.72rem;
   font-weight: 650;
   line-height: 1.4;
 }
 
 .securityFieldError {
-  color: #a33a3a;
+  color: var(--app-danger, #a33a3a);
 }
 
 .securityEmail {
@@ -3596,10 +3596,10 @@
   min-height: 3rem;
   overflow-wrap: anywhere;
   padding: 0.72rem 0.85rem;
-  border: 1px solid rgba(18, 45, 37, 0.09);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.09));
   border-radius: 0.86rem;
-  color: #234c3e;
-  background: #ffffff;
+  color: var(--app-text, #234c3e);
+  background: var(--app-surface, #ffffff);
   font-size: 0.84rem;
   font-weight: 800;
 }
@@ -3654,11 +3654,11 @@
   height: 2rem;
   display: grid;
   place-items: center;
-  border: 3px solid #ffffff;
+  border: 3px solid var(--app-line, #ffffff);
   border-radius: 999px;
   color: #ffffff;
   background: linear-gradient(180deg, #5587eb 0%, #315fbf 100%);
-  box-shadow: 0 8px 18px rgba(28, 66, 141, 0.34);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(28, 66, 141, 0.34));
   pointer-events: none;
 }
 
@@ -3668,7 +3668,7 @@
 }
 
 .heroAvatar:focus-within {
-  outline: 3px solid rgba(115, 159, 255, 0.72);
+  outline: 3px solid var(--app-info-line, rgba(115, 159, 255, 0.72));
   outline-offset: 4px;
 }
 
@@ -3725,9 +3725,9 @@
 .quickActionGroup {
   min-width: 0;
   padding: 0.82rem;
-  border: 1px solid rgba(18, 45, 37, 0.075);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.075));
   border-radius: 1.15rem;
-  background: linear-gradient(180deg, #f8fbfa 0%, #f4f8f6 100%);
+  background: linear-gradient(180deg, var(--app-surface, #f8fbfa) 0%, var(--app-surface-soft, #f4f8f6) 100%);
 }
 
 .quickActionGroupHeader {
@@ -3737,7 +3737,7 @@
 
 .quickActionGroupHeader h3 {
   margin: 0;
-  color: #173a30;
+  color: var(--app-text, #173a30);
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 0.94rem;
@@ -3754,7 +3754,7 @@
   min-height: 4rem;
   padding: 0.72rem 0.8rem;
   border-radius: 0.95rem;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
 }
 
 .quickActionGroup .quickActionButton strong {
@@ -3777,10 +3777,10 @@
   align-items: center;
   gap: 0.82rem;
   padding: 0.72rem 0.9rem;
-  border: 1px solid rgba(18, 45, 37, 0.085);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.085));
   border-radius: 1rem;
-  color: #17362c;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
+  color: var(--app-text, #17362c);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f8fbfa) 100%);
   text-align: left;
   cursor: pointer;
   transition:
@@ -3792,9 +3792,9 @@
 
 .securityActionCard:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(31, 138, 102, 0.2);
-  background: #ffffff;
-  box-shadow: 0 12px 24px rgba(18, 45, 37, 0.06);
+  border-color: var(--app-line, rgba(31, 138, 102, 0.2));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 45, 37, 0.06));
 }
 
 .securityActionCard:disabled {
@@ -3807,7 +3807,7 @@
 .secondaryButton:focus-visible,
 .ghostButton:focus-visible,
 .dangerButton:focus-visible {
-  outline: 3px solid rgba(62, 110, 213, 0.28);
+  outline: 3px solid var(--app-info-line, rgba(62, 110, 213, 0.28));
   outline-offset: 3px;
 }
 
@@ -3818,7 +3818,7 @@
 
 .securityActionCopy strong {
   overflow: hidden;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 0.9rem;
   font-weight: 850;
   line-height: 1.25;
@@ -3829,12 +3829,12 @@
 .dangerZone {
   grid-template-columns: minmax(0, 1fr) auto;
   padding: 1rem 1.2rem;
-  border-color: rgba(190, 58, 58, 0.15);
+  border-color: var(--app-danger-line, rgba(190, 58, 58, 0.15));
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 100% 0%, rgba(202, 66, 66, 0.075), transparent 18rem),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #fffafa 100%);
-  box-shadow: 0 14px 32px rgba(90, 29, 29, 0.045);
+    radial-gradient(circle at 100% 0%, var(--app-danger-soft, rgba(202, 66, 66, 0.075)), transparent 18rem),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.98)) 0%, var(--app-danger-soft, #fffafa) 100%);
+  box-shadow: 0 14px 32px var(--app-shadow-colour, rgba(90, 29, 29, 0.045));
 }
 
 .dangerZoneCopy {
@@ -3842,14 +3842,14 @@
 }
 
 .dangerZone h2 {
-  color: #7f3030;
+  color: var(--app-danger, #7f3030);
   font-size: 1.08rem;
   letter-spacing: -0.025em;
 }
 
 .dangerZone p {
   margin-top: 0.28rem;
-  color: #765f5f;
+  color: var(--app-muted, #765f5f);
   font-size: 0.8rem;
   font-weight: 650;
 }
@@ -3860,13 +3860,13 @@
   justify-content: flex-start;
   gap: 0.72rem;
   padding: 0.4rem 1rem 0.4rem 0.48rem;
-  border: 1px solid rgba(179, 55, 55, 0.24);
+  border: 1px solid var(--app-danger-line, rgba(179, 55, 55, 0.24));
   border-radius: 0.95rem;
-  color: #9f3434;
-  background: linear-gradient(180deg, #ffffff 0%, #fff6f6 100%);
+  color: var(--app-danger, #9f3434);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff6f6) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    0 10px 22px rgba(117, 38, 38, 0.08);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9)),
+    0 10px 22px var(--app-shadow-colour, rgba(117, 38, 38, 0.08));
   font-weight: 850;
 }
 
@@ -3876,10 +3876,10 @@
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgba(179, 55, 55, 0.14);
+  border: 1px solid var(--app-danger-line, rgba(179, 55, 55, 0.14));
   border-radius: 0.72rem;
-  color: #a63a3a;
-  background: rgba(198, 75, 75, 0.09);
+  color: var(--app-danger, #a63a3a);
+  background: var(--app-danger-soft, rgba(198, 75, 75, 0.09));
   transition:
     color 160ms ease,
     background 160ms ease,
@@ -3892,20 +3892,20 @@
 }
 
 .dangerZoneButton:hover:not(:disabled) {
-  border-color: rgba(151, 43, 43, 0.34);
+  border-color: var(--app-danger-line, rgba(151, 43, 43, 0.34));
   color: #ffffff;
-  background: linear-gradient(180deg, #c94d4d 0%, #a93636 100%);
-  box-shadow: 0 13px 26px rgba(142, 43, 43, 0.18);
+  background: linear-gradient(180deg, var(--app-danger-soft, #c94d4d) 0%, #a93636 100%);
+  box-shadow: 0 13px 26px var(--app-shadow-colour, rgba(142, 43, 43, 0.18));
 }
 
 .dangerZoneButton:hover:not(:disabled) .dangerZoneButtonIcon {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--app-line, rgba(255, 255, 255, 0.2));
   color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--app-surface-soft, rgba(255, 255, 255, 0.12));
 }
 
 .dangerZoneButton:focus-visible {
-  outline-color: rgba(179, 55, 55, 0.28);
+  outline-color: var(--app-danger-line, rgba(179, 55, 55, 0.28));
 }
 
 .passwordModalCard {
@@ -3918,9 +3918,9 @@
   gap: 0.85rem;
   margin: 1rem 0;
   padding: 0.9rem;
-  border: 1px solid rgba(62, 110, 213, 0.12);
+  border: 1px solid var(--app-info-line, rgba(62, 110, 213, 0.12));
   border-radius: 1rem;
-  background: linear-gradient(135deg, rgba(62, 110, 213, 0.075), rgba(31, 138, 102, 0.06));
+  background: linear-gradient(135deg, var(--app-info-soft, rgba(62, 110, 213, 0.075)), var(--app-surface-soft, rgba(31, 138, 102, 0.06)));
 }
 
 .passwordModalIntro > div {
@@ -3929,14 +3929,14 @@
 
 .passwordModalIntro strong {
   display: block;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 0.92rem;
   font-weight: 850;
 }
 
 .passwordModalIntro p {
   margin: 0.18rem 0 0;
-  color: #607168;
+  color: var(--app-muted, #607168);
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.42;
@@ -3958,25 +3958,25 @@
 }
 
 .modalInlineNoticeError {
-  color: #8f3333;
-  border-color: rgba(198, 75, 75, 0.18);
-  background: rgba(198, 75, 75, 0.1);
+  color: var(--app-danger, #8f3333);
+  border-color: var(--app-danger-line, rgba(198, 75, 75, 0.18));
+  background: var(--app-danger-soft, rgba(198, 75, 75, 0.1));
 }
 
 .modalInlineNoticeSuccess {
-  color: #176047;
-  border-color: rgba(44, 173, 126, 0.18);
-  background: rgba(44, 173, 126, 0.1);
+  color: var(--app-text, #176047);
+  border-color: var(--app-line, rgba(44, 173, 126, 0.18));
+  background: var(--app-surface-soft, rgba(44, 173, 126, 0.1));
 }
 
 .securityFieldHint,
 .securityFieldError {
-  color: #607168;
+  color: var(--app-muted, #607168);
   font-size: 0.76rem;
 }
 
 .securityFieldError {
-  color: #963737;
+  color: var(--app-danger, #963737);
 }
 
 .accountScrollableModalCard .modalCloseButton:disabled {
@@ -4019,17 +4019,17 @@
 .discoveryModalCard .toggleField,
 .discoveryModalCard .confirmBox {
   padding: .85rem 1rem;
-  border: 1px solid var(--account-line, #dce6ec);
+  border: 1px solid var(--app-info-line, var(--account-line, #dce6ec));
   border-radius: .92rem;
-  background: var(--account-surface, #fff);
+  background: var(--app-surface, var(--account-surface, #fff));
   font-family: inherit;
   font-weight: 400;
-  color: #20313b;
+  color: var(--app-info, #20313b);
 }
 .discoveryModalCard .toggleField strong,
 .discoveryModalCard .confirmBox strong {
   font-family: inherit;
-  color: #405950;
+  color: var(--app-text, #405950);
   font-size: .7rem;
   font-weight: 850;
   line-height: 1.4;
@@ -4039,7 +4039,7 @@
 .discoveryModalCard .toggleField small,
 .discoveryModalCard .confirmBox p {
   font: inherit;
-  color: #20313b;
+  color: var(--app-info, #20313b);
   line-height: 1.35;
   letter-spacing: normal;
 }
@@ -4074,9 +4074,9 @@
 .notificationModalCard.notificationModalCard .modalCloseButton { width:2.75rem; height:2.75rem; min-width:2.75rem; border-radius:.9rem; }
 .notificationModalCard.notificationModalCard .marketplaceActions {
  flex:0 0 auto; margin:0 !important; padding:1rem 2rem 1.6rem !important;
- border-top:1px solid rgba(18,45,37,.11); background:#fff;
+ border-top:1px solid var(--app-line, rgba(18,45,37,.11)); background:var(--app-surface, #fff);
 }
-.notificationModalCard.notificationModalCard .marketplaceActions .ghostButton { background:#f2f5f8 !important; border:1px solid #d2dfea !important; color:#17362c !important; border-radius:1rem !important; }
+.notificationModalCard.notificationModalCard .marketplaceActions .ghostButton { background:var(--app-info-soft, #f2f5f8) !important; border:1px solid var(--app-info-line, #d2dfea) !important; color:var(--app-text, #17362c) !important; border-radius:1rem !important; }
 
 /* Business details: keep the three steps spread across the available width. */
 .businessDetailsModalCard .accountModalScrollRail {

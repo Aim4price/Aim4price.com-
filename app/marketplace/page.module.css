@@ -3,8 +3,8 @@
   --marketplace-sidebar-width: 340px;
 
   min-height: calc(var(--website-design-vh, 1vh) * 100);
-  background: #f3f6f8;
-  color: #17362c;
+  background: var(--app-info-soft, #f3f6f8);
+  color: var(--app-text, #17362c);
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -12,8 +12,8 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(255, 255, 255, 0.96);
-  border-bottom: 1px solid #dadde1;
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  border-bottom: 1px solid var(--app-line, #dadde1);
   backdrop-filter: blur(14px);
 }
 
@@ -22,7 +22,7 @@
   grid-template-columns: var(--marketplace-sidebar-width) minmax(0, 1fr);
   align-items: stretch;
   min-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - var(--marketplace-header-height));
-  background: linear-gradient(90deg, #ffffff 0 var(--marketplace-sidebar-width), transparent var(--marketplace-sidebar-width) 100%);
+  background: linear-gradient(90deg, var(--app-surface, #ffffff) 0 var(--marketplace-sidebar-width), transparent var(--marketplace-sidebar-width) 100%);
 }
 
 .sidebar {
@@ -33,9 +33,9 @@
   max-height: none;
   overflow: visible;
   padding: 1.05rem 1rem 1.4rem;
-  background: #ffffff;
-  border-right: 1px solid #dde5eb;
-  box-shadow: 4px 0 16px rgba(16, 31, 28, 0.035);
+  background: var(--app-surface, #ffffff);
+  border-right: 1px solid var(--app-info-line, #dde5eb);
+  box-shadow: 4px 0 16px var(--app-shadow-colour, rgba(16, 31, 28, 0.035));
 }
 
 .sidebarHeader {
@@ -46,7 +46,7 @@
 .resultsTitleBlock p,
 .shareHeader span {
   display: block;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.15;
@@ -58,7 +58,7 @@
 .shareHeader h2,
 .emptyState h2 {
   margin: 0.16rem 0 0;
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: 1.54rem;
   line-height: 1.05;
   letter-spacing: -0.035em;
@@ -72,15 +72,15 @@
   min-height: 2.85rem;
   padding: 0 0.92rem;
   border-radius: 999px;
-  background: #f0f2f5;
+  background: var(--app-info-soft, #f0f2f5);
   border: 1px solid transparent;
   transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
 .searchBox:focus-within {
-  background: #ffffff;
-  border-color: #165340;
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.12);
+  background: var(--app-surface, #ffffff);
+  border-color: var(--app-accent, #165340);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.12));
 }
 
 .searchIcon,
@@ -103,7 +103,7 @@
 .searchClearButton {
   width: 1.35rem;
   height: 1.35rem;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
 }
 
 .searchIcon svg,
@@ -131,13 +131,13 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: 0.98rem;
   font-weight: 500;
 }
 
 .searchBox input::placeholder {
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-weight: 500;
 }
 
@@ -148,8 +148,8 @@
 }
 
 .searchClearButton:hover {
-  background: #e4e6eb;
-  color: #050505;
+  background: var(--app-info-soft, #e4e6eb);
+  color: var(--app-text, #050505);
 }
 
 .createButton,
@@ -160,8 +160,8 @@
   gap: 0.55rem;
   border: 0;
   border-radius: 0.78rem;
-  background: #edf6f1;
-  color: #165340;
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #165340);
   font-size: 0.98rem;
   font-weight: 650;
   text-decoration: none;
@@ -169,7 +169,7 @@
 
 .createButton:hover,
 .desktopCreateButton:hover {
-  background: #dceee4;
+  background: var(--app-surface-soft, #dceee4);
 }
 
 .createIcon {
@@ -180,7 +180,7 @@
 .sidebarDivider {
   height: 1px;
   margin: 0.9rem 0;
-  background: #dde5eb;
+  background: var(--app-info-soft, #dde5eb);
 }
 
 .sidebarSection {
@@ -188,7 +188,7 @@
 }
 
 .sidebarSection + .sidebarSection {
-  border-top: 1px solid #edf0f2;
+  border-top: 1px solid var(--app-info-line, #edf0f2);
 }
 
 .sidebarSectionHead {
@@ -203,7 +203,7 @@
 .modalSection h3,
 .ownerActions h3 {
   margin: 0;
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: 1.04rem;
   line-height: 1.16;
   letter-spacing: -0.02em;
@@ -221,7 +221,7 @@
   width: 100%;
   border: 0;
   text-align: left;
-  color: #050505;
+  color: var(--app-text, #050505);
   background: transparent;
 }
 
@@ -239,7 +239,7 @@
 .categoryButtonActive,
 .familyButton:hover,
 .familyButtonActive {
-  background: #f0f2f5;
+  background: var(--app-info-soft, #f0f2f5);
 }
 
 .categoryButtonActive .categoryIcon,
@@ -255,8 +255,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: #e4e6eb;
-  color: #050505;
+  background: var(--app-info-soft, #e4e6eb);
+  color: var(--app-text, #050505);
   font-size: 0.9rem;
   font-weight: 700;
   transition: background 160ms ease, color 160ms ease;
@@ -269,7 +269,7 @@
 .categoryText strong {
   display: block;
   overflow: hidden;
-  color: #050505;
+  color: var(--app-text, #050505);
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.98rem;
@@ -279,7 +279,7 @@
 .categoryText small {
   display: block;
   margin-top: 0.08rem;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.8rem;
   line-height: 1.12;
 }
@@ -293,7 +293,7 @@
 }
 
 .familyButtonActive {
-  color: #165340;
+  color: var(--app-text, #165340);
 }
 
 .ratingFilterList {
@@ -313,16 +313,16 @@
   border: 0;
   border-radius: 0.68rem;
   background: transparent;
-  color: #050505;
+  color: var(--app-text, #050505);
   text-align: left;
 }
 
 .ratingFilterButton:hover {
-  background: #f6f7f8;
+  background: var(--app-surface, #f6f7f8);
 }
 
 .ratingFilterButtonActive {
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .ratingFilterCheck {
@@ -331,9 +331,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid #8fa0b5;
+  border: 1.5px solid var(--app-info-line, #8fa0b5);
   border-radius: 0.18rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   color: #ffffff;
   font-size: 0.92rem;
   font-weight: 850;
@@ -341,8 +341,8 @@
 }
 
 .ratingFilterButtonActive .ratingFilterCheck {
-  border-color: #1589e8;
-  background: #1589e8;
+  border-color: var(--app-info-line, #1589e8);
+  background: var(--app-info-soft, #1589e8);
 }
 
 .ratingFilterButtonActive .ratingFilterCheck::after {
@@ -350,7 +350,7 @@
 }
 
 .ratingFilterAnyLabel {
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: 1rem;
   font-weight: 750;
   line-height: 1.1;
@@ -379,8 +379,8 @@
   min-width: 2.45rem;
   padding: 0.26rem 0.5rem;
   border-radius: 999px;
-  background: #f1f5ff;
-  color: #0066d9;
+  background: var(--app-info-soft, #f1f5ff);
+  color: var(--app-info, #0066d9);
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1;
@@ -391,7 +391,7 @@
   min-height: 2.1rem;
   padding: 0.48rem 0.94rem;
   font-size: 1rem;
-  box-shadow: 0 12px 22px rgba(5, 5, 5, 0.12);
+  box-shadow: 0 12px 22px var(--app-shadow-colour, rgba(5, 5, 5, 0.12));
 }
 
 .cardDealRatingBadge {
@@ -425,7 +425,7 @@
 }
 
 .dealRatingBadgeNone {
-  background: #69788a;
+  background: var(--app-surface-soft, #69788a);
 }
 
 .filterSelect {
@@ -446,11 +446,11 @@
   width: 100%;
   min-height: 2.72rem;
   padding: 0.62rem 0.78rem 0.62rem 0.86rem;
-  border: 1px solid #cdd8d3;
+  border: 1px solid var(--app-line, #cdd8d3);
   border-radius: 0.78rem;
-  color: #050505;
-  background: #ffffff;
-  box-shadow: 0 2px 8px rgba(14, 55, 43, 0.035);
+  color: var(--app-text, #050505);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 2px 8px var(--app-shadow-colour, rgba(14, 55, 43, 0.035));
   font: inherit;
   font-size: 0.96rem;
   font-weight: 600;
@@ -461,21 +461,21 @@
 }
 
 .filterSelectButton:hover:not(:disabled) {
-  border-color: #9ab9ac;
-  background: #fbfdfc;
+  border-color: var(--app-line, #9ab9ac);
+  background: var(--app-surface, #fbfdfc);
 }
 
 .filterSelectButton:focus-visible,
 .filterSelectButtonOpen {
-  border-color: #17694f;
+  border-color: var(--app-accent, #17694f);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(23, 105, 79, 0.12), 0 5px 14px rgba(14, 55, 43, 0.08);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(23, 105, 79, 0.12)), 0 5px 14px var(--app-shadow-colour, rgba(14, 55, 43, 0.08));
 }
 
 .filterSelectButton:disabled {
-  color: #8a8d91;
-  border-color: #dde3e0;
-  background: #f1f3f2;
+  color: var(--app-muted, #8a8d91);
+  border-color: var(--app-line, #dde3e0);
+  background: var(--app-surface-soft, #f1f3f2);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -507,10 +507,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.42rem;
-  border: 1px solid #d1ded8;
+  border: 1px solid var(--app-line, #d1ded8);
   border-radius: 0.9rem;
-  background: #ffffff;
-  box-shadow: 0 18px 46px rgba(14, 55, 43, 0.18), 0 4px 12px rgba(14, 55, 43, 0.08);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 18px 46px var(--app-shadow-colour, rgba(14, 55, 43, 0.18)), 0 4px 12px var(--app-shadow-colour, rgba(14, 55, 43, 0.08));
 }
 
 .filterSelectMenu::-webkit-scrollbar {
@@ -520,7 +520,7 @@
 .filterSelectMenu::-webkit-scrollbar-thumb {
   border: 0.11rem solid transparent;
   border-radius: 999px;
-  background: #b8c9c1;
+  background: var(--app-surface-soft, #b8c9c1);
   background-clip: padding-box;
 }
 
@@ -534,7 +534,7 @@
   padding: 0.5rem 0.58rem 0.5rem 0.72rem;
   border: 1px solid transparent;
   border-radius: 0.7rem;
-  color: #1d2925;
+  color: var(--app-text, #1d2925);
   background: transparent;
   font: inherit;
   font-size: 0.93rem;
@@ -546,15 +546,15 @@
 
 .filterSelectOption:hover,
 .filterSelectOption:focus-visible {
-  color: #123d31;
-  background: #f0f6f3;
+  color: var(--app-text, #123d31);
+  background: var(--app-surface-soft, #f0f6f3);
   outline: 0;
 }
 
 .filterSelectOptionActive {
-  color: #165340;
-  border-color: #c6ded3;
-  background: #e8f3ee;
+  color: var(--app-text, #165340);
+  border-color: var(--app-accent, #c6ded3);
+  background: var(--app-surface-soft, #e8f3ee);
   font-weight: 750;
 }
 
@@ -598,15 +598,15 @@
   margin-top: 0.08rem;
   padding: 0.52rem 0.68rem;
   border-radius: 0.55rem;
-  background: #f0f2f5;
-  color: #165340;
+  background: var(--app-info-soft, #f0f2f5);
+  color: var(--app-text, #165340);
   font-size: 0.88rem;
   font-weight: 650;
   text-align: center;
 }
 
 .resetButton:hover {
-  background: #e4e6eb;
+  background: var(--app-info-soft, #e4e6eb);
 }
 
 .resultsArea {
@@ -629,7 +629,7 @@
 .resultsTitleBlock span {
   display: block;
   margin-top: 0.34rem;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.96rem;
   font-weight: 600;
 }
@@ -653,8 +653,8 @@
   padding: 0.32rem 0.62rem 0.32rem 0.74rem;
   border: 0;
   border-radius: 999px;
-  background: #edf6f1;
-  color: #165340;
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #165340);
   font-size: 0.86rem;
   font-weight: 600;
 }
@@ -666,7 +666,7 @@
   width: 1.22rem;
   height: 1.22rem;
   border-radius: 999px;
-  background: rgba(22, 83, 64, 0.12);
+  background: var(--app-surface-soft, rgba(22, 83, 64, 0.12));
   font-size: 0.95rem;
   line-height: 1;
 }
@@ -684,17 +684,17 @@
   min-width: 0;
   padding: 0.68rem;
   border-radius: 1.15rem;
-  background: #ffffff;
-  border: 1px solid rgba(205, 213, 218, 0.74);
-  box-shadow: 0 12px 28px rgba(16, 31, 28, 0.045);
+  background: var(--app-surface, #ffffff);
+  border: 1px solid var(--app-info-line, rgba(205, 213, 218, 0.74));
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(16, 31, 28, 0.045));
   cursor: pointer;
   transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .listingCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(22, 83, 64, 0.22);
-  box-shadow: 0 18px 36px rgba(16, 31, 28, 0.075);
+  border-color: var(--app-line, rgba(22, 83, 64, 0.22));
+  box-shadow: 0 18px 36px var(--app-shadow-colour, rgba(16, 31, 28, 0.075));
 }
 
 .cardImageFrame {
@@ -702,7 +702,7 @@
   overflow: hidden;
   aspect-ratio: 4 / 3;
   border-radius: 0.95rem;
-  background: #e4e6eb;
+  background: var(--app-info-soft, #e4e6eb);
 }
 
 .cardImage {
@@ -724,9 +724,9 @@
   place-items: center;
   padding: 1rem;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.07), transparent 38%),
-    linear-gradient(180deg, #fbfdfd 0%, #edf4f1 100%);
-  border: 1px solid rgba(205, 229, 216, 0.98);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.07)), transparent 38%),
+    linear-gradient(180deg, var(--app-surface, #fbfdfd) 0%, var(--app-surface-soft, #edf4f1) 100%);
+  border: 1px solid var(--app-line, rgba(205, 229, 216, 0.98));
   text-align: center;
 }
 
@@ -738,10 +738,10 @@
   min-height: 2.65rem;
   padding: 0.48rem 1rem;
   border-radius: 999px;
-  color: #66758d;
-  background: #eef2f8;
-  border: 1px solid #dde4ee;
-  box-shadow: 0 10px 20px rgba(16, 31, 28, 0.04);
+  color: var(--app-muted, #66758d);
+  background: var(--app-info-soft, #eef2f8);
+  border: 1px solid var(--app-info-line, #dde4ee);
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(16, 31, 28, 0.04));
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.075em;
@@ -785,7 +785,7 @@
 }
 
 .sharePreviewCardNoMedia .sharePlaceholder {
-  background: #f8fbfa;
+  background: var(--app-surface, #f8fbfa);
 }
 
 .photoPill {
@@ -808,13 +808,13 @@
   height: 2.35rem;
   border: 0;
   border-radius: 999px;
-  color: #050505;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  color: var(--app-text, #050505);
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
+  box-shadow: 0 4px 12px var(--app-shadow-colour, rgba(0, 0, 0, 0.12));
 }
 
 .cardShareButton:hover {
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .cardBody {
@@ -826,7 +826,7 @@
   align-items: baseline;
   flex-wrap: nowrap;
   gap: 0.5rem;
-  color: #050505;
+  color: var(--app-text, #050505);
   white-space: nowrap;
 }
 
@@ -857,7 +857,7 @@
   display: -webkit-box;
   margin: 0.18rem 0 0;
   overflow: hidden;
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: 1.04rem;
   line-height: 1.26;
   font-weight: 600;
@@ -869,7 +869,7 @@
 .cardMeta {
   margin: 0.28rem 0 0;
   overflow: hidden;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.91rem;
   line-height: 1.38;
   text-overflow: ellipsis;
@@ -891,15 +891,15 @@
   min-height: 26rem;
   padding: 2.4rem;
   border-radius: 0.85rem;
-  background: #ffffff;
-  border: 1px solid #dadde1;
+  background: var(--app-surface, #ffffff);
+  border: 1px solid var(--app-line, #dadde1);
   text-align: center;
 }
 
 .emptyState p {
   max-width: 28rem;
   margin: 0.55rem auto 0;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   line-height: 1.6;
 }
 
@@ -928,7 +928,7 @@
 
 .paginationSummary {
   margin: 0;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.91rem;
   font-weight: 650;
   text-align: center;
@@ -950,13 +950,13 @@
   min-width: 2.45rem;
   min-height: 2.45rem;
   padding: 0 0.78rem;
-  border: 1px solid #ccd0d5;
+  border: 1px solid var(--app-line, #ccd0d5);
   border-radius: 999px;
-  background: #ffffff;
-  color: #17362c;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #17362c);
   font-size: 0.9rem;
   font-weight: 700;
-  box-shadow: 0 8px 18px rgba(16, 31, 28, 0.045);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(16, 31, 28, 0.045));
   transition: background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
 }
 
@@ -969,21 +969,21 @@
 
 .paginationButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(22, 83, 64, 0.32);
-  background: #edf6f1;
-  color: #165340;
+  border-color: var(--app-line, rgba(22, 83, 64, 0.32));
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #165340);
 }
 
 .paginationButton:disabled {
   cursor: not-allowed;
-  color: #8a8d91;
-  background: #f0f2f5;
+  color: var(--app-muted, #8a8d91);
+  background: var(--app-info-soft, #f0f2f5);
   box-shadow: none;
 }
 
 .paginationButtonActive,
 .paginationButtonActive:hover:not(:disabled) {
-  border-color: #165340;
+  border-color: var(--app-accent, #165340);
   background: #165340;
   color: #ffffff;
 }
@@ -994,7 +994,7 @@
   justify-content: center;
   min-width: 1.65rem;
   min-height: 2.45rem;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-weight: 800;
 }
 
@@ -1020,8 +1020,8 @@
   max-height: min(720px, calc(calc(var(--website-visible-height, 100dvh) * 1) - 2.5rem));
   overflow: hidden;
   border-radius: 1.15rem;
-  background: #ffffff;
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.34);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 30px 90px var(--app-shadow-colour, rgba(0, 0, 0, 0.34));
 }
 
 .shareOverlay {
@@ -1047,14 +1047,14 @@
   height: 2.55rem;
   border: 0;
   border-radius: 0.35rem;
-  color: #050505;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  color: var(--app-text, #050505);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(0, 0, 0, 0.18));
 }
 
 .modalCloseButton:hover,
 .shareCloseButton:hover {
-  background: #f0f2f5;
+  background: var(--app-info-soft, #f0f2f5);
 }
 
 .modalCloseButton {
@@ -1062,9 +1062,9 @@
   right: 2.5rem;
   width: 2.75rem;
   height: 2.75rem;
-  border: 1px solid #e2e8e5;
-  background: #f7faf8;
-  box-shadow: 0 3px 10px rgba(16, 44, 35, 0.1);
+  border: 1px solid var(--app-line, #e2e8e5);
+  background: var(--app-surface, #f7faf8);
+  box-shadow: 0 3px 10px var(--app-shadow-colour, rgba(16, 44, 35, 0.1));
 }
 
 .accountManageModal .marketplaceSquareClose.marketplaceSquareClose {
@@ -1074,7 +1074,7 @@
 .modalCloseButton:focus-visible,
 .shareCloseButton:focus-visible,
 .accountManageModal .marketplaceSquareClose:focus-visible {
-  outline: 3px solid #377e68;
+  outline: 3px solid var(--app-accent, #377e68);
   outline-offset: 2px;
 }
 
@@ -1087,7 +1087,7 @@
 }
 
 .listingModalNoMedia .modalGallery {
-  background: #f6faf8;
+  background: var(--app-surface, #f6faf8);
 }
 
 .modalImageFrame {
@@ -1118,7 +1118,7 @@
 }
 
 .modalImageOpenButton:focus-visible {
-  outline: 3px solid rgba(111, 197, 150, 0.82);
+  outline: 3px solid var(--app-accent, rgba(111, 197, 150, 0.82));
   outline-offset: -3px;
 }
 
@@ -1130,12 +1130,12 @@
   transform: translateY(-50%);
   border: 0;
   border-radius: 999px;
-  color: #050505;
-  background: rgba(255, 255, 255, 0.92);
+  color: var(--app-text, #050505);
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
 }
 
 .galleryArrow:hover {
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .galleryArrowLeft {
@@ -1186,10 +1186,10 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.28));
   border-radius: 1.25rem;
   background: #07121b;
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.46);
+  box-shadow: 0 30px 90px var(--app-shadow-colour, rgba(0, 0, 0, 0.46));
 }
 
 .marketplacePhotoViewerImage {
@@ -1205,7 +1205,7 @@
   z-index: 2;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.5));
   border-radius: 999px;
   background: rgba(7, 18, 27, 0.7);
   color: #fff;
@@ -1244,7 +1244,7 @@
   gap: 0.5rem;
   padding: 0.75rem;
   overflow-x: auto;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
 }
 
 .thumbnailButton {
@@ -1259,7 +1259,7 @@
 }
 
 .thumbnailButtonActive {
-  border-color: #165340;
+  border-color: var(--app-accent, #165340);
 }
 
 .thumbnailButton img {
@@ -1277,14 +1277,14 @@
   overscroll-behavior: contain;
   scroll-padding: 1.4rem;
   padding: 1.45rem 3.15rem 1.65rem 1.65rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   scrollbar-gutter: stable;
   scrollbar-width: auto;
   scrollbar-color: #377e68 #eaf1ed;
 }
 
 .modalDetails:focus-visible {
-  outline: 3px solid #377e68;
+  outline: 3px solid var(--app-accent, #377e68);
   outline-offset: -3px;
 }
 
@@ -1294,7 +1294,7 @@
 }
 
 .modalDetails::-webkit-scrollbar-track {
-  background: #eaf1ed;
+  background: var(--app-surface-soft, #eaf1ed);
   background-clip: padding-box;
   border: 4px solid transparent;
   border-radius: 999px;
@@ -1343,7 +1343,7 @@
   display: inline-flex;
   align-items: baseline;
   gap: 0.72rem;
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: clamp(3.15rem, calc(var(--website-design-vw, 1vw) * 4.5), 4.95rem);
   line-height: 0.9;
 }
@@ -1360,7 +1360,7 @@
 
 .modalTitleArea p {
   margin: 0.42rem 0 0;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.98rem;
   font-weight: 500;
   line-height: 1.42;
@@ -1379,8 +1379,8 @@
   gap: 0.5rem;
   border: 0;
   border-radius: 0.74rem;
-  background: #edf6f1;
-  color: #165340;
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #165340);
   font-size: 1rem;
   font-weight: 650;
   text-decoration: none;
@@ -1390,16 +1390,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #f0f2f5;
-  color: #050505;
+  background: var(--app-info-soft, #f0f2f5);
+  color: var(--app-text, #050505);
 }
 
 .modalShareButton:hover {
-  background: #dceee4;
+  background: var(--app-surface-soft, #dceee4);
 }
 
 .modalSourceButton:hover {
-  background: #e4e6eb;
+  background: var(--app-info-soft, #e4e6eb);
 }
 
 .detailGrid {
@@ -1414,14 +1414,14 @@
   min-height: 4.15rem;
   padding: 0.82rem 0.92rem;
   border-radius: 0.82rem;
-  background: #f0f2f5;
+  background: var(--app-info-soft, #f0f2f5);
 }
 
 .detailItem span,
 .contactRow span,
 .shareLinkField span {
   display: block;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.055em;
@@ -1432,7 +1432,7 @@
   display: block;
   margin-top: 0.26rem;
   overflow: visible;
-  color: #050505;
+  color: var(--app-text, #050505);
   text-overflow: clip;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -1443,24 +1443,24 @@
 .modalSection {
   margin-top: 1.08rem;
   padding-top: 1.08rem;
-  border-top: 1px solid #dadde1;
+  border-top: 1px solid var(--app-line, #dadde1);
 }
 
 .modalSection p {
   margin: 0.46rem 0 0;
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: 0.99rem;
   line-height: 1.5;
 }
 
 .modalSection p + p {
-  color: #65676b;
+  color: var(--app-muted, #65676b);
 }
 
 .modalSection small {
   display: block;
   margin-top: 0.58rem;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.86rem;
   font-weight: 600;
 }
@@ -1477,20 +1477,20 @@
   align-items: center;
   gap: 1.2rem;
   padding: 0.68rem 0;
-  border-bottom: 1px solid #edf0f2;
+  border-bottom: 1px solid var(--app-info-line, #edf0f2);
 }
 
 .contactRow strong {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: 0.96rem;
   line-height: 1.35;
   text-align: right;
 }
 
 .contactRow a {
-  color: #165340;
+  color: var(--app-text, #165340);
   text-decoration: none;
 }
 
@@ -1503,7 +1503,7 @@
   overflow: hidden;
   margin-top: 0.52rem;
   border-radius: 0.72rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .contactRowsBlurred {
@@ -1524,12 +1524,12 @@
   gap: 0.28rem;
   padding: 1rem 1.4rem;
   text-align: center;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.88));
+  background: linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.68)), var(--app-surface, rgba(255, 255, 255, 0.88)));
   backdrop-filter: blur(1.5px);
 }
 
 .contactBlurOverlay strong {
-  color: #050505;
+  color: var(--app-text, #050505);
   font-size: 0.92rem;
   line-height: 1.2;
 }
@@ -1537,7 +1537,7 @@
 .contactBlurOverlay p {
   max-width: none;
   margin: 0;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   font-size: 0.84rem;
   line-height: 1.35;
   white-space: nowrap;
@@ -1556,12 +1556,12 @@
   margin-top: 0.65rem;
   padding: 0.85rem;
   border-radius: 0.65rem;
-  background: #f0f2f5;
+  background: var(--app-info-soft, #f0f2f5);
 }
 
 .lockedContact p {
   margin: 0;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   line-height: 1.55;
 }
 
@@ -1590,8 +1590,8 @@
 .lockedActions a + a {
   min-width: 8.9rem;
   padding-inline: 1.16rem;
-  background: #e4e6eb;
-  color: #050505;
+  background: var(--app-info-soft, #e4e6eb);
+  color: var(--app-text, #050505);
 }
 
 .ownerActions {
@@ -1602,13 +1602,13 @@
   margin-top: 1.1rem;
   padding: 1rem;
   border-radius: 0.85rem;
-  background: linear-gradient(180deg, #f0f8f4 0%, #ffffff 100%);
-  border: 1px solid rgba(190, 222, 207, 0.98);
+  background: linear-gradient(180deg, var(--app-surface-soft, #f0f8f4) 0%, var(--app-surface, #ffffff) 100%);
+  border: 1px solid var(--app-line, rgba(190, 222, 207, 0.98));
 }
 
 .ownerActions p {
   margin: 0.25rem 0 0;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
 }
 
 .ownerActions button {
@@ -1621,7 +1621,7 @@
   color: #ffffff;
   font-weight: 760;
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(22, 83, 64, 0.18);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(22, 83, 64, 0.18));
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
 
@@ -1629,7 +1629,7 @@
 .ownerActions button:focus-visible {
   transform: translateY(-1px);
   background: #0f4434;
-  box-shadow: 0 15px 28px rgba(22, 83, 64, 0.23);
+  box-shadow: 0 15px 28px var(--app-shadow-colour, rgba(22, 83, 64, 0.23));
   outline: none;
 }
 
@@ -1640,8 +1640,8 @@
   overflow: hidden;
   padding: 0;
   border-radius: 1.15rem;
-  background: #ffffff;
-  box-shadow: 0 26px 76px rgba(0, 0, 0, 0.3);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 26px 76px var(--app-shadow-colour, rgba(0, 0, 0, 0.3));
 }
 
 .shareDialogScroll {
@@ -1658,7 +1658,7 @@
 .shareCloseButton {
   top: 0.8rem;
   right: 0.8rem;
-  background: #f0f2f5;
+  background: var(--app-info-soft, #f0f2f5);
   box-shadow: none;
 }
 
@@ -1675,7 +1675,7 @@
 .shareHeader p {
   max-width: 52rem;
   margin: 0.56rem 0 0;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   line-height: 1.5;
 }
 
@@ -1687,7 +1687,7 @@
   margin-top: 1.22rem;
   padding: 1rem;
   border-radius: 0.95rem;
-  background: #f0f2f5;
+  background: var(--app-info-soft, #f0f2f5);
 }
 
 .sharePreviewImage,
@@ -1709,7 +1709,7 @@
 
 .sharePreviewCard strong {
   overflow: hidden;
-  color: #050505;
+  color: var(--app-text, #050505);
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 1.02rem;
@@ -1731,7 +1731,7 @@
 .sharePreviewCard small {
   margin-top: 0.16rem;
   overflow: hidden;
-  color: #65676b;
+  color: var(--app-muted, #65676b);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1750,13 +1750,13 @@
   gap: 0.48rem;
   border: 0;
   border-radius: 0.78rem;
-  background: #f0f2f5;
-  color: #050505;
+  background: var(--app-info-soft, #f0f2f5);
+  color: var(--app-text, #050505);
   font-weight: 650;
 }
 
 .shareGrid button:hover {
-  background: #e4e6eb;
+  background: var(--app-info-soft, #e4e6eb);
 }
 
 .shareGrid button:disabled {
@@ -1781,10 +1781,10 @@
   min-height: 2.85rem;
   margin-top: 0.42rem;
   padding: 0 0.9rem;
-  border: 1px solid #ccd0d5;
+  border: 1px solid var(--app-line, #ccd0d5);
   border-radius: 0.66rem;
-  color: #050505;
-  background: #ffffff;
+  color: var(--app-text, #050505);
+  background: var(--app-surface, #ffffff);
   font-weight: 500;
 }
 
@@ -1792,8 +1792,8 @@
   margin: 0.75rem 0 0;
   padding: 0.62rem 0.75rem;
   border-radius: 0.55rem;
-  background: #edf6f1;
-  color: #165340;
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #165340);
   font-weight: 600;
 }
 
@@ -1834,7 +1834,7 @@
     max-height: none;
     overflow: visible;
     border-right: 0;
-    border-bottom: 1px solid #dadde1;
+    border-bottom: 1px solid var(--app-line, #dadde1);
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .listingGrid {
@@ -2006,10 +2006,10 @@
   overflow: hidden;
   width: min(calc(var(--website-design-vw, 1vw) * 96), 50rem);
   padding: clamp(2.05rem, calc(var(--website-design-vw, 1vw) * 3), 2.65rem);
-  border: 1px solid rgba(206, 224, 235, 0.92);
+  border: 1px solid var(--app-info-line, rgba(206, 224, 235, 0.92));
   border-radius: 1.85rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(250, 253, 252, 0.98) 100%);
-  box-shadow: 0 34px 96px rgba(8, 25, 31, 0.32);
+  background: linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-surface, rgba(250, 253, 252, 0.98)) 100%);
+  box-shadow: 0 34px 96px var(--app-shadow-colour, rgba(8, 25, 31, 0.32));
 }
 
 .marketplaceManageModal::before {
@@ -2019,8 +2019,8 @@
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 12% 0%, rgba(22, 83, 64, 0.08), transparent 31%),
-    radial-gradient(circle at 100% 0%, rgba(72, 127, 158, 0.08), transparent 28%);
+    radial-gradient(circle at 12% 0%, var(--app-surface-soft, rgba(22, 83, 64, 0.08)), transparent 31%),
+    radial-gradient(circle at 100% 0%, var(--app-info-soft, rgba(72, 127, 158, 0.08)), transparent 28%);
 }
 
 .marketplaceManageCloseButton {
@@ -2032,21 +2032,21 @@
   justify-content: center;
   width: 3rem;
   height: 3rem;
-  border: 1px solid rgba(199, 218, 232, 0.95);
+  border: 1px solid var(--app-info-line, rgba(199, 218, 232, 0.95));
   border-radius: 999px;
-  background: rgba(247, 251, 255, 0.92);
-  color: #153c34;
+  background: var(--app-info-soft, rgba(247, 251, 255, 0.92));
+  color: var(--app-text, #153c34);
   cursor: pointer;
-  box-shadow: 0 12px 26px rgba(16, 44, 56, 0.08);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(16, 44, 56, 0.08));
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .marketplaceManageCloseButton:hover,
 .marketplaceManageCloseButton:focus-visible {
   transform: translateY(-1px);
-  border-color: rgba(22, 83, 64, 0.25);
-  background: #ffffff;
-  box-shadow: 0 16px 32px rgba(16, 44, 56, 0.13);
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.25));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 16px 32px var(--app-shadow-colour, rgba(16, 44, 56, 0.13));
   outline: none;
 }
 
@@ -2064,13 +2064,13 @@
   max-width: 42rem;
   padding-right: clamp(2.6rem, calc(var(--website-design-vw, 1vw) * 7), 4.1rem);
   padding-bottom: 1.35rem;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98);
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.98));
 }
 
 .marketplaceManageHeader h3 {
   max-width: 40rem;
   margin: 0;
-  color: #0c3f33;
+  color: var(--app-text, #0c3f33);
   font-size: clamp(1.95rem, calc(var(--website-design-vw, 1vw) * 4.2), 2.75rem);
   font-weight: 820;
   line-height: 1.04;
@@ -2083,27 +2083,27 @@
   gap: 0.28rem;
   margin-top: 1.25rem;
   padding: 1rem 1.1rem;
-  border: 1px solid rgba(198, 222, 211, 0.96);
+  border: 1px solid var(--app-line, rgba(198, 222, 211, 0.96));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, rgba(237, 248, 242, 0.92) 0%, rgba(255, 255, 255, 0.96) 100%);
+  background: linear-gradient(180deg, var(--app-surface-soft, rgba(237, 248, 242, 0.92)) 0%, var(--app-surface, rgba(255, 255, 255, 0.96)) 100%);
 }
 
 .marketplaceManageSummary span {
-  color: #68798b;
+  color: var(--app-muted, #68798b);
   font-size: 0.76rem;
   font-weight: 820;
   letter-spacing: 0;
 }
 
 .marketplaceManageSummary strong {
-  color: #0c3f33;
+  color: var(--app-text, #0c3f33);
   font-size: 1.08rem;
   font-weight: 800;
   line-height: 1.22;
 }
 
 .marketplaceManageSummary small {
-  color: #5d7283;
+  color: var(--app-info, #5d7283);
   font-size: 0.94rem;
   font-weight: 620;
   line-height: 1.35;
@@ -2124,23 +2124,23 @@
   justify-content: space-between;
   gap: 1.25rem;
   padding: 1rem 1.15rem;
-  border: 1px solid rgba(190, 211, 224, 0.92);
+  border: 1px solid var(--app-info-line, rgba(190, 211, 224, 0.92));
   border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
-  color: #143d34;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f7fbf9) 100%);
+  color: var(--app-text, #143d34);
   font: inherit;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(16, 45, 57, 0.035);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(16, 45, 57, 0.035));
   transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease, background 170ms ease;
 }
 
 .marketplaceManageChoiceCard:hover,
 .marketplaceManageChoiceCard:focus-visible {
   transform: translateY(-2px);
-  border-color: rgba(22, 83, 64, 0.38);
-  background: linear-gradient(180deg, #ffffff 0%, #f2f9f5 100%);
-  box-shadow: 0 20px 42px rgba(10, 43, 33, 0.12);
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.38));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f2f9f5) 100%);
+  box-shadow: 0 20px 42px var(--app-shadow-colour, rgba(10, 43, 33, 0.12));
   outline: none;
 }
 
@@ -2151,7 +2151,7 @@
 }
 
 .marketplaceManageChoiceCopy strong {
-  color: #0c3f33;
+  color: var(--app-text, #0c3f33);
   font-size: 1rem;
   font-weight: 820;
   letter-spacing: -0.015em;
@@ -2159,7 +2159,7 @@
 }
 
 .marketplaceManageChoiceCopy small {
-  color: #63776f;
+  color: var(--app-muted, #63776f);
   font-size: 0.76rem;
   font-weight: 580;
   line-height: 1.45;
@@ -2167,7 +2167,7 @@
 
 .marketplaceManageChoiceArrow {
   flex: 0 0 auto;
-  color: #23634f;
+  color: var(--app-text, #23634f);
   font-size: 1.1rem;
   font-weight: 800;
 }
@@ -2180,29 +2180,29 @@
 
 .marketplaceManageFeedback {
   margin: 0.85rem 0 0;
-  border: 1px solid #d4e6de;
+  border: 1px solid var(--app-line, #d4e6de);
   border-radius: 0.85rem;
   padding: 0.72rem 0.8rem;
-  color: #315e4f;
-  background: #f3f9f6;
+  color: var(--app-text, #315e4f);
+  background: var(--app-surface-soft, #f3f9f6);
   font-size: 0.74rem;
   font-weight: 650;
   line-height: 1.45;
 }
 
 .marketplaceManageDeleteChoice {
-  background: linear-gradient(180deg, #ffffff 0%, #fff8f7 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff8f7) 100%);
 }
 
 .marketplaceManageDeleteChoice:hover,
 .marketplaceManageDeleteChoice:focus-visible {
-  border-color: rgba(211, 47, 47, 0.32);
-  background: linear-gradient(180deg, #ffffff 0%, #fff2f1 100%);
-  box-shadow: 0 20px 42px rgba(150, 25, 20, 0.1);
+  border-color: var(--app-danger-line, rgba(211, 47, 47, 0.32));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff2f1) 100%);
+  box-shadow: 0 20px 42px var(--app-shadow-colour, rgba(150, 25, 20, 0.1));
 }
 
 .marketplaceManageDeleteChoice .marketplaceManageChoiceCopy strong,
-.marketplaceManageDeleteChoice .marketplaceManageChoiceArrow { color: #9d3027; }
+.marketplaceManageDeleteChoice .marketplaceManageChoiceArrow { color: var(--app-danger, #9d3027); }
 
 /* === Standard white delete confirmation modal === */
 .marketplaceDeleteBackdrop {
@@ -2221,10 +2221,10 @@
 .marketplaceDeleteModal {
   width: min(calc(var(--website-design-vw, 1vw) * 96), 60rem);
   padding: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.1rem);
-  border: 1px solid rgba(203, 218, 230, 0.98);
+  border: 1px solid var(--app-info-line, rgba(203, 218, 230, 0.98));
   border-radius: 1.8rem;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 26px 70px rgba(8, 27, 34, 0.22);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
+  box-shadow: 0 26px 70px var(--app-shadow-colour, rgba(8, 27, 34, 0.22));
 }
 
 .marketplaceDeleteHeader {
@@ -2233,12 +2233,12 @@
   align-items: start;
   gap: 1rem;
   padding-bottom: 1.1rem;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98);
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.98));
 }
 
 .marketplaceDeleteHeader h3 {
   margin: 0;
-  color: #0c382f;
+  color: var(--app-text, #0c382f);
   font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.25rem);
   font-weight: 760;
   line-height: 1.02;
@@ -2247,7 +2247,7 @@
 
 .marketplaceDeleteHeader p {
   margin: 0.45rem 0 0;
-  color: #647382;
+  color: var(--app-muted, #647382);
   font-size: 1rem;
   font-weight: 560;
   line-height: 1.45;
@@ -2259,10 +2259,10 @@
   justify-content: center;
   width: 3rem;
   height: 3rem;
-  border: 1px solid rgba(207, 223, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 223, 236, 0.98));
   border-radius: 999px;
-  background: #f7fbff;
-  color: #13395d;
+  background: var(--app-info-soft, #f7fbff);
+  color: var(--app-info, #13395d);
   font-size: 1.35rem;
   line-height: 1;
   cursor: pointer;
@@ -2280,13 +2280,13 @@
   gap: 0.35rem;
   margin-top: 1.15rem;
   padding: 1.05rem 1.15rem;
-  border: 1px solid rgba(207, 220, 231, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 220, 231, 0.98));
   border-radius: 1.2rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfd) 100%);
 }
 
 .marketplaceDeleteSelected span {
-  color: #68798b;
+  color: var(--app-muted, #68798b);
   font-size: 0.78rem;
   font-weight: 820;
   letter-spacing: 0.06em;
@@ -2294,7 +2294,7 @@
 }
 
 .marketplaceDeleteSelected strong {
-  color: #0c382f;
+  color: var(--app-text, #0c382f);
   font-size: 1.2rem;
   font-weight: 780;
   line-height: 1.1;
@@ -2302,7 +2302,7 @@
 
 .marketplaceDeleteSelected p {
   margin: 0;
-  color: #607084;
+  color: var(--app-info, #607084);
   font-size: 0.98rem;
   font-weight: 650;
   line-height: 1.35;
@@ -2311,10 +2311,10 @@
 .marketplaceDeleteError {
   margin: 1rem 0 0;
   padding: 0.82rem 0.95rem;
-  border: 1px solid #efcaca;
+  border: 1px solid var(--app-danger-line, #efcaca);
   border-radius: 1rem;
-  background: #fff5f4;
-  color: #a13a3a;
+  background: var(--app-danger-soft, #fff5f4);
+  color: var(--app-danger, #a13a3a);
   font-size: 0.95rem;
   font-weight: 720;
   line-height: 1.4;
@@ -2348,20 +2348,20 @@
 }
 
 .marketplaceDeleteSecondaryButton {
-  border: 1px solid rgba(197, 214, 228, 0.98);
-  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%);
-  color: #11335a;
-  box-shadow: 0 12px 24px rgba(20, 48, 70, 0.04);
+  border: 1px solid var(--app-info-line, rgba(197, 214, 228, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f9fd) 100%);
+  color: var(--app-info, #11335a);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(20, 48, 70, 0.04));
 }
 
 .marketplaceDeleteDangerButton {
-  border: 1px solid #efcaca;
-  background: #fff5f4;
-  color: #a13a3a;
+  border: 1px solid var(--app-danger-line, #efcaca);
+  background: var(--app-danger-soft, #fff5f4);
+  color: var(--app-danger, #a13a3a);
 }
 
 .marketplaceDeleteDangerButton:hover {
-  background: #ffecec;
+  background: var(--app-danger-soft, #ffecec);
 }
 
 @media (max-width: 720px) {
@@ -2443,10 +2443,10 @@
   overflow: hidden;
   width: min(calc(var(--website-design-vw, 1vw) * 96), 60rem);
   padding: clamp(2.05rem, calc(var(--website-design-vw, 1vw) * 3), 2.75rem);
-  border: 1px solid rgba(206, 224, 235, 0.92);
+  border: 1px solid var(--app-info-line, rgba(206, 224, 235, 0.92));
   border-radius: 1.85rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(250, 253, 252, 0.98) 100%);
-  box-shadow: 0 34px 96px rgba(8, 25, 31, 0.32);
+  background: linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-surface, rgba(250, 253, 252, 0.98)) 100%);
+  box-shadow: 0 34px 96px var(--app-shadow-colour, rgba(8, 25, 31, 0.32));
 }
 
 .createListingDialog {
@@ -2462,8 +2462,8 @@
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 12% 0%, rgba(22, 83, 64, 0.08), transparent 31%),
-    radial-gradient(circle at 100% 0%, rgba(72, 127, 158, 0.08), transparent 28%);
+    radial-gradient(circle at 12% 0%, var(--app-surface-soft, rgba(22, 83, 64, 0.08)), transparent 31%),
+    radial-gradient(circle at 100% 0%, var(--app-info-soft, rgba(72, 127, 158, 0.08)), transparent 28%);
 }
 
 .marketplaceAccessDialog {
@@ -2479,20 +2479,20 @@
   justify-content: center;
   width: 3rem;
   height: 3rem;
-  border: 1px solid rgba(199, 218, 232, 0.95);
+  border: 1px solid var(--app-info-line, rgba(199, 218, 232, 0.95));
   border-radius: 999px;
-  background: rgba(247, 251, 255, 0.92);
-  color: #153c34;
+  background: var(--app-info-soft, rgba(247, 251, 255, 0.92));
+  color: var(--app-text, #153c34);
   cursor: pointer;
-  box-shadow: 0 12px 26px rgba(16, 44, 56, 0.08);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(16, 44, 56, 0.08));
   transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .createListingCloseButton:hover {
   transform: translateY(-1px);
-  border-color: rgba(22, 83, 64, 0.25);
-  background: #ffffff;
-  box-shadow: 0 16px 32px rgba(16, 44, 56, 0.13);
+  border-color: var(--app-line, rgba(22, 83, 64, 0.25));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 16px 32px var(--app-shadow-colour, rgba(16, 44, 56, 0.13));
 }
 
 .createListingCloseButton svg {
@@ -2509,13 +2509,13 @@
   max-width: 42rem;
   padding-right: clamp(2.6rem, calc(var(--website-design-vw, 1vw) * 7), 4.1rem);
   padding-bottom: 1.35rem;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98);
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.98));
 }
 
 .createListingHeader h2 {
   max-width: 40rem;
   margin: 0;
-  color: #0c3f33;
+  color: var(--app-text, #0c3f33);
   font-size: clamp(1.95rem, calc(var(--website-design-vw, 1vw) * 4.2), 2.75rem);
   font-weight: 820;
   line-height: 1.04;
@@ -2525,7 +2525,7 @@
 .createListingHeader p {
   max-width: 48rem;
   margin: 1rem 0 0;
-  color: #5d7283;
+  color: var(--app-info, #5d7283);
   font-size: clamp(0.98rem, calc(var(--website-design-vw, 1vw) * 1.55), 1.08rem);
   font-weight: 560;
   line-height: 1.58;
@@ -2547,15 +2547,15 @@
   justify-content: center;
   gap: 1rem;
   padding: 1.35rem;
-  border: 1px solid rgba(190, 211, 224, 0.92);
+  border: 1px solid var(--app-info-line, rgba(190, 211, 224, 0.92));
   border-radius: 1.32rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
-  color: #143d34;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f7fbf9) 100%);
+  color: var(--app-text, #143d34);
   font: inherit;
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 16px 30px rgba(16, 45, 57, 0.04);
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(16, 45, 57, 0.04));
   transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease, background 170ms ease;
 }
 
@@ -2569,10 +2569,10 @@
   justify-content: center;
   width: 3.35rem;
   height: 3.35rem;
-  border: 1px solid rgba(181, 220, 203, 0.98);
+  border: 1px solid var(--app-line, rgba(181, 220, 203, 0.98));
   border-radius: 1.05rem;
-  background: #eef8f3;
-  color: #165340;
+  background: var(--app-surface-soft, #eef8f3);
+  color: var(--app-text, #165340);
 }
 
 .createListingChoiceIcon svg {
@@ -2586,7 +2586,7 @@
 }
 
 .createListingChoiceCard strong {
-  color: #0c3f33;
+  color: var(--app-text, #0c3f33);
   font-size: clamp(1.38rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.72rem);
   font-weight: 850;
   letter-spacing: -0.025em;
@@ -2595,7 +2595,7 @@
 
 .createListingChoiceCard > span:not(.createListingChoiceIcon) {
   max-width: 18.5rem;
-  color: #5d7283;
+  color: var(--app-info, #5d7283);
   font-size: 0.96rem;
   font-weight: 560;
   line-height: 1.5;
@@ -2604,14 +2604,14 @@
 .createListingChoiceCard:hover,
 .createListingChoiceCard:focus-visible {
   transform: translateY(-2px);
-  border-color: rgba(22, 83, 64, 0.38);
-  background: linear-gradient(180deg, #ffffff 0%, #f2f9f5 100%);
-  box-shadow: 0 20px 42px rgba(10, 43, 33, 0.12);
+  border-color: var(--app-accent, rgba(22, 83, 64, 0.38));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f2f9f5) 100%);
+  box-shadow: 0 20px 42px var(--app-shadow-colour, rgba(10, 43, 33, 0.12));
   outline: none;
 }
 
 .createListingChoiceCard:focus-visible {
-  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.12), 0 20px 42px rgba(10, 43, 33, 0.12);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(22, 83, 64, 0.12)), 0 20px 42px var(--app-shadow-colour, rgba(10, 43, 33, 0.12));
 }
 
 .createListingGuestPanel {
@@ -2619,20 +2619,20 @@
   gap: 0.34rem;
   margin-top: 1.35rem;
   padding: 1rem 1.1rem;
-  border: 1px solid rgba(198, 222, 211, 0.96);
+  border: 1px solid var(--app-line, rgba(198, 222, 211, 0.96));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, rgba(237, 248, 242, 0.92) 0%, rgba(255, 255, 255, 0.96) 100%);
+  background: linear-gradient(180deg, var(--app-surface-soft, rgba(237, 248, 242, 0.92)) 0%, var(--app-surface, rgba(255, 255, 255, 0.96)) 100%);
 }
 
 .createListingGuestPanel strong {
-  color: #0c3f33;
+  color: var(--app-text, #0c3f33);
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.25;
 }
 
 .createListingGuestPanel span {
-  color: #5d7283;
+  color: var(--app-info, #5d7283);
   font-size: 0.96rem;
   font-weight: 590;
   line-height: 1.45;
@@ -2666,13 +2666,13 @@
 .createListingPrimaryAction {
   background: #165340;
   color: #ffffff;
-  box-shadow: 0 14px 28px rgba(22, 83, 64, 0.18);
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(22, 83, 64, 0.18));
 }
 
 .createListingSecondaryAction {
-  border: 1px solid rgba(190, 211, 224, 0.92);
-  background: #ffffff;
-  color: #153c34;
+  border: 1px solid var(--app-info-line, rgba(190, 211, 224, 0.92));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #153c34);
 }
 
 .createListingPrimaryAction:hover,
@@ -2705,9 +2705,9 @@
 }
 
 .marketplaceAccessSecondary {
-  border: 1px solid rgba(187, 207, 220, 0.95);
-  background: #f7fbff;
-  color: #153c34;
+  border: 1px solid var(--app-info-line, rgba(187, 207, 220, 0.95));
+  background: var(--app-info-soft, #f7fbff);
+  color: var(--app-text, #153c34);
 }
 
 @media (max-width: 720px) {
@@ -2835,7 +2835,7 @@
     position: static;
     min-height: 0;
     border-right: 0;
-    border-bottom: 1px solid #dde5eb;
+    border-bottom: 1px solid var(--app-info-line, #dde5eb);
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .categoryList,
@@ -3103,7 +3103,7 @@
   --marketplace-sidebar-width: 300px;
 
   min-height: 0;
-  background: #fff;
+  background: var(--app-surface, #fff);
   font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -3158,30 +3158,30 @@
   max-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 2rem);
   overflow-y: auto;
   padding: 1.15rem;
-  border: 1px solid rgba(200, 218, 210, 0.92);
+  border: 1px solid var(--app-line, rgba(200, 218, 210, 0.92));
   border-radius: 1rem;
-  background: #fff;
-  box-shadow: 0 10px 30px rgba(14, 55, 43, 0.055);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 10px 30px var(--app-shadow-colour, rgba(14, 55, 43, 0.055));
   scrollbar-color: rgba(22, 83, 64, 0.24) transparent;
   scrollbar-width: thin;
 }
 
 .showroomSidebar .searchBox {
   min-height: 3.15rem;
-  border-color: #dbe7e1;
+  border-color: var(--app-line, #dbe7e1);
   border-radius: 0.95rem;
-  background: #f5f8f7;
+  background: var(--app-surface, #f5f8f7);
 }
 
 .showroomSidebar .searchBox:focus-within {
-  border-color: #1b6b51;
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(27, 107, 81, 0.1);
+  border-color: var(--app-accent, #1b6b51);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(27, 107, 81, 0.1));
 }
 
 .showroomSidebar .sidebarDivider {
   margin: 1rem 0 0.55rem;
-  background: #e3ebe7;
+  background: var(--app-surface-soft, #e3ebe7);
 }
 
 .showroomSidebar .sidebarSection {
@@ -3189,7 +3189,7 @@
 }
 
 .showroomSidebar .sidebarSection + .sidebarSection {
-  border-color: #e9efec;
+  border-color: var(--app-line, #e9efec);
 }
 
 .showroomSidebar .sidebarSectionHead {
@@ -3197,7 +3197,7 @@
 }
 
 .showroomSidebar .sidebarSectionHead h2 {
-  color: #123d31;
+  color: var(--app-text, #123d31);
   font-size: 0.98rem;
   font-weight: 800;
   letter-spacing: -0.015em;
@@ -3214,13 +3214,13 @@
 .showroomSidebar .categoryButtonActive,
 .showroomSidebar .familyButton:hover,
 .showroomSidebar .familyButtonActive {
-  border-color: #dceae3;
-  background: #edf6f1;
+  border-color: var(--app-accent, #dceae3);
+  background: var(--app-surface-soft, #edf6f1);
 }
 
 .showroomSidebar .categoryIcon {
-  background: #e8efec;
-  color: #285548;
+  background: var(--app-surface-soft, #e8efec);
+  color: var(--app-text, #285548);
 }
 
 .showroomSidebar .categoryButtonActive .categoryIcon,
@@ -3230,17 +3230,17 @@
 }
 
 .showroomSidebar .categoryText strong {
-  color: #143c32;
+  color: var(--app-text, #143c32);
   font-weight: 750;
 }
 
 .showroomSidebar .categoryText small {
-  color: #71817b;
+  color: var(--app-muted, #71817b);
 }
 
 .showroomSidebar .familyButton {
   border: 1px solid transparent;
-  color: #294e43;
+  color: var(--app-text, #294e43);
 }
 
 .showroomSidebar .ratingFilterButton {
@@ -3250,16 +3250,16 @@
 
 .showroomSidebar .ratingFilterButton:hover,
 .showroomSidebar .ratingFilterButtonActive {
-  background: #f5f8f7;
+  background: var(--app-surface, #f5f8f7);
 }
 
 .showroomSidebar .ratingFilterCheck {
-  border-color: #9eb2aa;
+  border-color: var(--app-line, #9eb2aa);
   border-radius: 0.38rem;
 }
 
 .showroomSidebar .ratingFilterButtonActive .ratingFilterCheck {
-  border-color: #17694f;
+  border-color: var(--app-accent, #17694f);
   background: #17694f;
 }
 
@@ -3269,31 +3269,31 @@
 }
 
 .showroomSidebar .ratingFilterCount {
-  background: #edf3f0;
-  color: #2d6454;
+  background: var(--app-surface-soft, #edf3f0);
+  color: var(--app-text, #2d6454);
 }
 
 .showroomSidebar .filterSelectButton {
   min-height: 3rem;
-  border-color: #d2dfd9;
+  border-color: var(--app-line, #d2dfd9);
   border-radius: 0.85rem;
-  color: #173d32;
+  color: var(--app-text, #173d32);
   font-weight: 650;
 }
 
 .showroomSidebar .filterSelectButton:focus-visible,
 .showroomSidebar .filterSelectButtonOpen {
-  border-color: #1b6b51;
-  outline: 3px solid rgba(27, 107, 81, 0.1);
+  border-color: var(--app-accent, #1b6b51);
+  outline: 3px solid var(--app-accent, rgba(27, 107, 81, 0.1));
 }
 
 .showroomSidebar .resetButton {
   min-height: 2.75rem;
   margin-top: 0.65rem;
-  border: 1px solid #d8e6df;
+  border: 1px solid var(--app-line, #d8e6df);
   border-radius: 0.75rem;
-  background: #edf6f1;
-  color: #17694f;
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #17694f);
 }
 
 .showroomResults {
@@ -3307,10 +3307,10 @@
 
 .showroomResults .filterChip {
   min-height: 2.35rem;
-  border: 1px solid #d8e7df;
+  border: 1px solid var(--app-line, #d8e7df);
   border-radius: 0.7rem;
-  background: #ffffff;
-  box-shadow: 0 6px 18px rgba(14, 55, 43, 0.04);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 6px 18px var(--app-shadow-colour, rgba(14, 55, 43, 0.04));
 }
 
 .showroomResults .listingGrid {
@@ -3319,20 +3319,20 @@
 
 .showroomResults .listingCard {
   padding: 0.6rem;
-  border-color: rgba(198, 215, 207, 0.9);
+  border-color: var(--app-line, rgba(198, 215, 207, 0.9));
   border-radius: 1rem;
-  box-shadow: 0 14px 38px rgba(14, 55, 43, 0.065);
+  box-shadow: 0 14px 38px var(--app-shadow-colour, rgba(14, 55, 43, 0.065));
 }
 
 .showroomResults .listingCard:hover {
   transform: translateY(-3px);
-  border-color: rgba(23, 105, 79, 0.34);
-  box-shadow: 0 20px 46px rgba(14, 55, 43, 0.11);
+  border-color: var(--app-line, rgba(23, 105, 79, 0.34));
+  box-shadow: 0 20px 46px var(--app-shadow-colour, rgba(14, 55, 43, 0.11));
 }
 
 .showroomResults .cardImageFrame {
   border-radius: 0.75rem;
-  background: #e9f0ed;
+  background: var(--app-surface-soft, #e9f0ed);
 }
 
 .showroomResults .cardBody {
@@ -3341,7 +3341,7 @@
 
 .showroomResults .cardPrice,
 .showroomResults .cardBody h3 {
-  color: #103d31;
+  color: var(--app-text, #103d31);
 }
 
 .showroomResults .cardBody h3 {
@@ -3352,12 +3352,12 @@
 
 .showroomResults .cardLocation,
 .showroomResults .cardMeta {
-  color: #687a74;
+  color: var(--app-muted, #687a74);
 }
 
 .showroomResults .cardShareButton {
-  color: #165e48;
-  border: 1px solid rgba(218, 231, 225, 0.95);
+  color: var(--app-text, #165e48);
+  border: 1px solid var(--app-line, rgba(218, 231, 225, 0.95));
   border-radius: 0.65rem;
 }
 
@@ -3370,15 +3370,15 @@
   min-height: clamp(12rem, calc(var(--website-design-vw, 1vw) * 22), 15rem);
   margin: 0 auto;
   padding: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 3), 2.5rem);
-  border-color: rgba(197, 216, 207, 0.92);
+  border-color: var(--app-line, rgba(197, 216, 207, 0.92));
   border-radius: 1rem;
-  background: #fff;
+  background: var(--app-surface, #fff);
   box-shadow: none;
 }
 
 .showroomEmptyState h2 {
   margin-top: 0;
-  color: #103d31;
+  color: var(--app-text, #103d31);
   font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.5), 1.85rem);
   font-weight: 850;
   letter-spacing: -0.035em;
@@ -3387,7 +3387,7 @@
 .showroomEmptyState p {
   max-width: 34rem;
   margin-top: 0.65rem;
-  color: #687a74;
+  color: var(--app-muted, #687a74);
   font-size: 0.98rem;
   line-height: 1.6;
 }
@@ -3402,7 +3402,7 @@
 .showroomPage .listingModal,
 .showroomPage .listingModalNoMedia,
 .showroomPage .shareDialog {
-  border: 1px solid rgba(208, 223, 216, 0.9);
+  border: 1px solid var(--app-line, rgba(208, 223, 216, 0.9));
   border-radius: 1.1rem;
 }
 
@@ -3441,16 +3441,16 @@
     align-items: center;
     min-height: 3rem;
     overflow: hidden;
-    border: 1px solid #d7e4de;
+    border: 1px solid var(--app-line, #d7e4de);
     border-radius: 0.85rem;
-    color: #5d726a;
-    background: #f5f8f7;
+    color: var(--app-muted, #5d726a);
+    background: var(--app-surface, #f5f8f7);
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .showroomMobileSearch:focus-within {
-    border-color: #1b6b51;
-    background: #fff;
-    box-shadow: 0 0 0 4px rgba(27, 107, 81, 0.1);
+    border-color: var(--app-accent, #1b6b51);
+    background: var(--app-surface, #fff);
+    box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(27, 107, 81, 0.1));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .showroomMobileSearch > span {
@@ -3475,7 +3475,7 @@
     min-height: 2.9rem;
     border: 0;
     padding: 0 0.7rem;
-    color: #173d32;
+    color: var(--app-text, #173d32);
     background: transparent;
     font: inherit;
     font-size: 0.78rem;
@@ -3488,7 +3488,7 @@
     width: 2.75rem;
     height: 2.75rem;
     border: 0;
-    color: #547067;
+    color: var(--app-muted, #547067);
     background: transparent;
     cursor: pointer;
   }
@@ -3499,11 +3499,11 @@
     justify-content: center;
     gap: 0.45rem;
     min-height: 3rem;
-    border: 1px solid #c9ddd4;
+    border: 1px solid var(--app-line, #c9ddd4);
     border-radius: 0.85rem;
     padding: 0 0.95rem;
-    color: #165e48;
-    background: #edf6f2;
+    color: var(--app-text, #165e48);
+    background: var(--app-surface-soft, #edf6f2);
     font: inherit;
     font-size: 0.72rem;
     font-weight: 800;
@@ -3523,7 +3523,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .showroomMobileFilterButton:focus-visible,
   :global(:where(html:not(:has([data-website-canvas])))) .showroomCloseFilters:focus-visible,
   :global(:where(html:not(:has([data-website-canvas])))) .showroomMobileSearch button:focus-visible {
-    outline: 3px solid rgba(243, 182, 64, 0.55);
+    outline: 3px solid var(--app-warning-line, rgba(243, 182, 64, 0.55));
     outline-offset: 2px;
   }
 
@@ -3542,8 +3542,8 @@
     max-height: none;
     overflow: visible;
     padding: 1rem;
-    border-right: 1px solid rgba(200, 218, 210, 0.92);
-    border-bottom: 1px solid rgba(200, 218, 210, 0.92);
+    border-right: 1px solid var(--app-line, rgba(200, 218, 210, 0.92));
+    border-bottom: 1px solid var(--app-line, rgba(200, 218, 210, 0.92));
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .showroomPage .showroomSidebar {
@@ -3571,7 +3571,7 @@
   :global(:where(html:not(:has([data-website-canvas])))) .showroomSidebar .sidebarSection,
   :global(:where(html:not(:has([data-website-canvas])))) .showroomSidebar .sidebarSection + .sidebarSection {
     padding: 0.8rem;
-    border: 1px solid #e3ebe7;
+    border: 1px solid var(--app-line, #e3ebe7);
     border-radius: 1rem;
   }
 
@@ -3683,10 +3683,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
-  border: 1px solid rgba(18, 45, 37, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12));
   border-radius: 1.55rem;
-  background: linear-gradient(180deg, #fff, #f7faf8);
-  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface, #f7faf8));
+  box-shadow: 0 32px 90px var(--app-shadow-colour, rgba(7, 25, 20, 0.28)), 0 8px 24px var(--app-shadow-colour, rgba(7, 25, 20, 0.12));
 }
 
 .accountManageModal::before { display: none; }
@@ -3697,10 +3697,10 @@
   gap: 1.25rem;
   max-width: none;
   padding: 0 0 1.15rem;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.1);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
 }
 .accountManageModal .marketplaceManageHeader h3 {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -3708,15 +3708,15 @@
 }
 .accountManageModal .marketplaceManageSummary {
   padding: 0.9rem;
-  border-color: rgba(62, 110, 213, 0.12);
+  border-color: var(--app-info-line, rgba(62, 110, 213, 0.12));
   border-radius: 1rem;
-  background: linear-gradient(135deg, rgba(62, 110, 213, 0.075), rgba(31, 138, 102, 0.06));
+  background: linear-gradient(135deg, var(--app-info-soft, rgba(62, 110, 213, 0.075)), var(--app-surface-soft, rgba(31, 138, 102, 0.06)));
   overflow-wrap: anywhere;
 }
 .accountManageModal .marketplaceManageSummary strong,
 .accountManageModal .marketplaceManageChoiceCopy strong { font-size: 0.95rem; font-weight: 800; line-height: 1.35; }
 .accountManageModal .marketplaceManageSummary small,
-.accountManageModal .marketplaceManageChoiceCopy small { color: #64746a; font-size: 0.88rem; font-weight: 650; line-height: 1.5; }
+.accountManageModal .marketplaceManageChoiceCopy small { color: var(--app-muted, #64746a); font-size: 0.88rem; font-weight: 650; line-height: 1.5; }
 .accountManageModal .marketplaceManageChoiceCard { min-height: 5rem; padding: 1rem 1.1rem; border-radius: 1rem; }
 
 /* Create listing follows the shared Change Password modal design. */
@@ -3727,10 +3727,10 @@
   max-height: calc(var(--website-visible-height, 100dvh) - 3rem);
   overflow-y: auto;
   padding: var(--create-dialog-padding) !important;
-  border: 1px solid rgba(18, 45, 37, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12));
   border-radius: 1.55rem;
-  background: linear-gradient(180deg, #fff, #f7faf8);
-  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface, #f7faf8));
+  box-shadow: 0 32px 90px var(--app-shadow-colour, rgba(7, 25, 20, 0.28)), 0 8px 24px var(--app-shadow-colour, rgba(7, 25, 20, 0.12));
 }
 .accountCreateListingDialog::before { display: none; }
 .accountCreateListingDialog .accountCreateListingClose {
@@ -3749,11 +3749,11 @@
   max-width: none;
   min-height: 4rem;
   padding: 0 4rem 1.3rem 0;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.1);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
 }
 .accountCreateListingDialog .createListingHeader h2 {
   max-width: none;
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
   font-weight: 800 !important;
   letter-spacing: -0.04em !important;
@@ -3762,7 +3762,7 @@
 }
 .accountCreateListingDialog .createListingHeader p,
 .accountCreateListingDialog .createListingGuestPanel span {
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-size: 0.88rem;
   font-weight: 650;
   line-height: 1.5;
@@ -3782,10 +3782,10 @@
   gap: 1rem;
   text-align: left;
   border-radius: 1rem;
-  border-color: #d5e1ea;
+  border-color: var(--app-info-line, #d5e1ea);
 }
 .accountCreateListingDialog .createListingChoiceCard strong {
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: 1rem !important;
   font-weight: 800 !important;
   line-height: 1.3 !important;
@@ -3804,8 +3804,8 @@
   gap: 0.65rem;
   margin: 1.6rem calc(-1 * var(--create-dialog-padding)) calc(-1 * var(--create-dialog-padding));
   padding: 1rem var(--create-dialog-padding) 1.6rem;
-  border-top: 1px solid rgba(18, 45, 37, 0.1);
-  background: #fff;
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
+  background: var(--app-surface, #fff);
 }
 .accountCreateListingDialog .createListingActionRow a {
   border-radius: 0.95rem;
@@ -3818,7 +3818,7 @@
   max-width: none;
 }
 .accountCreateListingDialog .createListingChoiceCopy small {
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-size: 0.88rem;
   font-weight: 650;
   line-height: 1.45;
@@ -3828,17 +3828,17 @@
   place-items: center;
   width: 1.75rem;
   height: 1.75rem;
-  border: 1px solid #d0e0d8;
+  border: 1px solid var(--app-line, #d0e0d8);
   border-radius: 50%;
-  color: #24684f;
-  background: #fff;
+  color: var(--app-text, #24684f);
+  background: var(--app-surface, #fff);
 }
 .createListingChoiceArrow svg { width: 1rem; height: 1rem; }
 .accountCreateListingDialog .createListingChoiceCard:hover {
-  border-color: #78aa96;
-  background: #f0f8f4;
+  border-color: var(--app-line, #78aa96);
+  background: var(--app-surface-soft, #f0f8f4);
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 /* Text placed directly on the dark website background; light surfaces keep their own palette. */

@@ -11,13 +11,13 @@
   --dealer-danger: #963838;
   min-height: 100vh;
   min-height: 100dvh;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-family: Montserrat, var(--font-body, Inter), Arial, sans-serif;
 }
 
 .dealerLayout {
   position: relative;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .dealerLayout:has(.navUnifiedSurface),
@@ -25,8 +25,8 @@
 .dealerLayout:has(.maintenanceModule),
 .dealerLayout:has(.workspaceLoading) {
   background:
-    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
-    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%);
+    radial-gradient(circle at 50% 4%, var(--app-surface-soft, rgba(111, 197, 150, 0.13)), transparent 31rem),
+    linear-gradient(180deg, var(--app-surface, #f6faf7) 0%, var(--app-surface, #ffffff) 42%, var(--app-surface-soft, #f4f8f6) 100%);
 }
 
 .loadingPage {
@@ -34,9 +34,9 @@
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 20px;
-  color: var(--dealer-ink, #12352d);
+  color: var(--app-text, var(--dealer-ink, #12352d));
   font-family: Montserrat, var(--font-body, Inter), Arial, sans-serif;
 }
 
@@ -45,11 +45,11 @@
   display: grid;
   justify-items: center;
   gap: 13px;
-  border: 1px solid rgba(37, 71, 51, 0.13);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13));
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
   padding: 26px;
-  box-shadow: 0 20px 46px rgba(18, 53, 45, 0.1);
+  box-shadow: 0 20px 46px var(--app-shadow-colour, rgba(18, 53, 45, 0.1));
 }
 
 .loadingCard strong {
@@ -60,8 +60,8 @@
 .loadingSpinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(37, 71, 51, 0.14);
-  border-top-color: #254733;
+  border: 3px solid var(--app-line, rgba(37, 71, 51, 0.14));
+  border-top-color: var(--app-line, #254733);
   border-radius: 999px;
   animation: dealerSpin 750ms linear infinite;
 }
@@ -72,7 +72,7 @@
 
 .shell,
 .loginPage {
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .shell {
@@ -101,9 +101,9 @@
     max(14px, env(safe-area-inset-right))
     10px
     max(14px, env(safe-area-inset-left));
-  border-bottom: 1px solid rgba(37, 71, 51, 0.11);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 10px 28px rgba(18, 53, 45, 0.055);
+  border-bottom: 1px solid var(--app-line, rgba(37, 71, 51, 0.11));
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  box-shadow: 0 10px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.055));
   backdrop-filter: blur(16px) saturate(1.08);
 }
 
@@ -111,7 +111,7 @@
   min-height: 46px;
   display: inline-flex;
   align-items: center;
-  color: var(--dealer-green);
+  color: var(--app-text, var(--dealer-green));
   font-size: 0.84rem;
   font-weight: 900;
   letter-spacing: 0.055em;
@@ -136,10 +136,10 @@
 }
 
 .navButton {
-  border: 1px solid var(--dealer-line);
-  background: rgba(255, 255, 255, 0.96);
-  color: var(--dealer-green);
-  box-shadow: 0 8px 20px rgba(18, 53, 45, 0.065);
+  border: 1px solid var(--app-line, var(--dealer-line));
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  color: var(--app-text, var(--dealer-green));
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(18, 53, 45, 0.065));
 }
 
 .navArrow {
@@ -148,16 +148,16 @@
 }
 
 .signOut {
-  border: 1px solid rgba(150, 56, 56, 0.22);
-  background: linear-gradient(180deg, #fffafa 0%, #fcecec 100%);
-  color: var(--dealer-danger);
-  box-shadow: 0 8px 20px rgba(150, 56, 56, 0.075);
+  border: 1px solid var(--app-danger-line, rgba(150, 56, 56, 0.22));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fcecec) 100%);
+  color: var(--app-danger, var(--dealer-danger));
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(150, 56, 56, 0.075));
 }
 
 .navButton:hover,
 .signOut:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(18, 53, 45, 0.1);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.1));
 }
 
 .navButton:active,
@@ -196,7 +196,7 @@
 
 .eyebrow,
 .loginEyebrow {
-  color: #2c6c55;
+  color: var(--app-text, #2c6c55);
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.13em;
@@ -205,7 +205,7 @@
 
 .brand {
   margin: 0;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: clamp(1.75rem, 8vw, 2.25rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -214,7 +214,7 @@
 
 .helper {
   margin: 3px 0 0;
-  color: var(--dealer-muted);
+  color: var(--app-muted, var(--dealer-muted));
   font-size: 0.86rem;
   font-weight: 680;
 }
@@ -223,10 +223,10 @@
   display: grid;
   gap: 10px;
   padding: 10px;
-  border: 1px solid rgba(37, 71, 51, 0.1);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.1));
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.44);
-  box-shadow: 0 18px 46px rgba(18, 53, 45, 0.075);
+  background: var(--app-surface-soft, rgba(255, 255, 255, 0.44));
+  box-shadow: 0 18px 46px var(--app-shadow-colour, rgba(18, 53, 45, 0.075));
 }
 
 .card {
@@ -235,10 +235,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(37, 71, 51, 0.13);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13));
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.97);
-  color: var(--dealer-green);
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
+  color: var(--app-text, var(--dealer-green));
   padding: 18px 52px 18px 24px;
   font-size: clamp(1.15rem, 5vw, 1.4rem);
   font-weight: 900;
@@ -246,28 +246,28 @@
   line-height: 1;
   text-align: center;
   text-decoration: none;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.075);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.075));
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 .cardArrow {
   position: absolute;
   right: 20px;
-  color: rgba(37, 71, 51, 0.48);
+  color: var(--app-muted, rgba(37, 71, 51, 0.48));
   font-size: 1.4rem;
   font-weight: 700;
   transition: transform 160ms ease, color 160ms ease;
 }
 
 .card:hover {
-  border-color: rgba(37, 71, 51, 0.32);
-  background: #ffffff;
-  box-shadow: 0 18px 38px rgba(18, 53, 45, 0.115);
+  border-color: var(--app-line, rgba(37, 71, 51, 0.32));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 18px 38px var(--app-shadow-colour, rgba(18, 53, 45, 0.115));
   transform: translateY(-2px);
 }
 
 .card:hover .cardArrow {
-  color: var(--dealer-green);
+  color: var(--app-text, var(--dealer-green));
   transform: translateX(2px);
 }
 
@@ -283,11 +283,11 @@
 
 .loginCard {
   width: min(100%, 430px);
-  border: 1px solid rgba(37, 71, 51, 0.13);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13));
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
   padding: clamp(20px, 5vw, 28px);
-  box-shadow: 0 24px 58px rgba(18, 53, 45, 0.12);
+  box-shadow: 0 24px 58px var(--app-shadow-colour, rgba(18, 53, 45, 0.12));
 }
 
 .loginHeader {
@@ -295,13 +295,13 @@
   justify-items: center;
   gap: 7px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(37, 71, 51, 0.09);
+  border-bottom: 1px solid var(--app-line, rgba(37, 71, 51, 0.09));
   text-align: center;
 }
 
 .loginCard h1 {
   margin: 0;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: clamp(1.85rem, 8vw, 2.25rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -311,7 +311,7 @@
 .loginIntro {
   max-width: 30rem;
   margin: 0;
-  color: var(--dealer-muted);
+  color: var(--app-muted, var(--dealer-muted));
   font-size: 0.86rem;
   font-weight: 650;
   line-height: 1.5;
@@ -330,7 +330,7 @@
 }
 
 .fieldLabel {
-  color: rgba(18, 53, 45, 0.78);
+  color: var(--app-text, rgba(18, 53, 45, 0.78));
   font-size: 0.79rem;
   font-weight: 850;
 }
@@ -345,10 +345,10 @@
   min-width: 0;
   min-height: 56px;
   box-sizing: border-box;
-  border: 1px solid rgba(37, 71, 51, 0.2);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
   border-radius: 16px;
-  background: #fbfdfb;
-  color: var(--dealer-ink);
+  background: var(--app-surface, #fbfdfb);
+  color: var(--app-text, var(--dealer-ink));
   padding: 0 15px;
   font: 750 1rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
   outline: none;
@@ -356,9 +356,9 @@
 }
 
 .field input:focus {
-  border-color: rgba(37, 71, 51, 0.62);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1);
+  border-color: var(--app-accent, rgba(37, 71, 51, 0.62));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.1));
 }
 
 .passwordInput {
@@ -372,10 +372,10 @@
   min-width: 62px;
   min-height: 44px;
   transform: translateY(-50%);
-  border: 1px solid rgba(37, 71, 51, 0.13);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13));
   border-radius: 12px;
-  background: var(--dealer-green-soft);
-  color: var(--dealer-green);
+  background: var(--app-surface-soft, var(--dealer-green-soft));
+  color: var(--app-text, var(--dealer-green));
   font: 850 0.78rem Montserrat, Arial, sans-serif;
   cursor: pointer;
 }
@@ -383,29 +383,29 @@
 .primary {
   width: 100%;
   min-height: 54px;
-  border: 1px solid var(--dealer-green);
+  border: 1px solid var(--app-line, var(--dealer-green));
   border-radius: 16px;
   background: var(--dealer-green);
   color: #ffffff;
   padding: 0 18px;
   font: 900 0.9rem Montserrat, var(--font-body, Inter), Arial, sans-serif;
   cursor: pointer;
-  box-shadow: 0 15px 28px rgba(37, 71, 51, 0.2);
+  box-shadow: 0 15px 28px var(--app-shadow-colour, rgba(37, 71, 51, 0.2));
   transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
 }
 
 .primary:hover:not(:disabled) {
-  border-color: var(--dealer-green-dark);
+  border-color: var(--app-line, var(--dealer-green-dark));
   background: var(--dealer-green-dark);
-  box-shadow: 0 18px 32px rgba(29, 57, 41, 0.24);
+  box-shadow: 0 18px 32px var(--app-shadow-colour, rgba(29, 57, 41, 0.24));
 }
 
 .error {
   margin: 0;
-  border: 1px solid rgba(150, 56, 56, 0.16);
+  border: 1px solid var(--app-danger-line, rgba(150, 56, 56, 0.16));
   border-radius: 14px;
-  background: rgba(150, 56, 56, 0.08);
-  color: #862f2f;
+  background: var(--app-danger-soft, rgba(150, 56, 56, 0.08));
+  color: var(--app-danger, #862f2f);
   padding: 11px 12px;
   font-size: 0.79rem;
   font-weight: 750;
@@ -414,10 +414,10 @@
 
 .sessionNotice {
   margin: 0;
-  border: 1px solid rgba(143, 105, 29, 0.18);
+  border: 1px solid var(--app-warning-line, rgba(143, 105, 29, 0.18));
   border-radius: 14px;
-  background: #fff8e8;
-  color: #785719;
+  background: var(--app-warning-soft, #fff8e8);
+  color: var(--app-warning, #785719);
   padding: 11px 12px;
   font-size: 0.76rem;
   font-weight: 720;
@@ -428,7 +428,7 @@
   display: grid;
   justify-items: center;
   gap: 12px;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
 }
 
 .installLoadingCard strong {
@@ -439,11 +439,11 @@
 .installCard {
   width: min(100%, 390px);
   box-sizing: border-box;
-  border: 1px solid rgba(37, 71, 51, 0.12);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.12));
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
   padding: clamp(26px, 7vw, 36px);
-  box-shadow: 0 24px 58px rgba(18, 53, 45, 0.12);
+  box-shadow: 0 24px 58px var(--app-shadow-colour, rgba(18, 53, 45, 0.12));
 }
 
 .installHeader {
@@ -476,7 +476,7 @@
 
 .installCard h1 {
   margin: 0;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: clamp(1.9rem, 8vw, 2.25rem);
   font-weight: 900;
   letter-spacing: -0.05em;
@@ -507,28 +507,28 @@
 }
 
 .installPrimary {
-  border: 1px solid var(--dealer-green);
+  border: 1px solid var(--app-line, var(--dealer-green));
   background: var(--dealer-green);
   color: #ffffff;
-  box-shadow: 0 14px 26px rgba(37, 71, 51, 0.2);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(37, 71, 51, 0.2));
 }
 
 .installPrimary:hover:not(:disabled) {
-  border-color: var(--dealer-green-dark);
+  border-color: var(--app-line, var(--dealer-green-dark));
   background: var(--dealer-green-dark);
-  box-shadow: 0 17px 30px rgba(29, 57, 41, 0.24);
+  box-shadow: 0 17px 30px var(--app-shadow-colour, rgba(29, 57, 41, 0.24));
   transform: translateY(-1px);
 }
 
 .installSecondary {
-  border: 1px solid rgba(37, 71, 51, 0.2);
-  background: #ffffff;
-  color: var(--dealer-green);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--dealer-green));
 }
 
 .installSecondary:hover {
-  border-color: rgba(37, 71, 51, 0.38);
-  background: var(--dealer-green-soft);
+  border-color: var(--app-line, rgba(37, 71, 51, 0.38));
+  background: var(--app-surface-soft, var(--dealer-green-soft));
   transform: translateY(-1px);
 }
 
@@ -549,16 +549,16 @@
   display: grid;
   gap: 11px;
   margin-top: 14px;
-  border: 1px solid rgba(37, 71, 51, 0.13);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13));
   border-radius: 16px;
-  background: var(--dealer-green-soft);
+  background: var(--app-surface-soft, var(--dealer-green-soft));
   padding: 13px;
   text-align: center;
 }
 
 .installInstructions p {
   margin: 0;
-  color: var(--dealer-green);
+  color: var(--app-text, var(--dealer-green));
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1.4;
@@ -566,15 +566,15 @@
 
 .installContinue {
   min-height: 46px;
-  border: 1px solid rgba(37, 71, 51, 0.2);
-  background: #ffffff;
-  color: var(--dealer-green);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--dealer-green));
   font-size: 0.8rem;
 }
 
 .installContinue:hover {
-  border-color: rgba(37, 71, 51, 0.38);
-  background: #f9fcfa;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.38));
+  background: var(--app-surface, #f9fcfa);
   transform: translateY(-1px);
 }
 
@@ -598,7 +598,7 @@
   padding-top: calc(68px + env(safe-area-inset-top));
   padding-bottom: max(24px, env(safe-area-inset-bottom));
   overflow-x: clip;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .module > main,
@@ -640,9 +640,9 @@
 }
 
 .dealerValuationSurface [class*='wizardCard'] {
-  border-color: rgba(37, 71, 51, 0.12) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.12)) !important;
   border-radius: 24px !important;
-  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.085) !important;
+  box-shadow: 0 18px 42px var(--app-shadow-colour, rgba(18, 53, 45, 0.085)) !important;
 }
 
 .dealerValuationSurface [class*='wizardFooter'] {
@@ -666,7 +666,7 @@
 .dealerValuationSurface [class*='stepTitle'],
 .dealerDiscoverySurface [class*='heroPanel'] h1,
 .dealerLeadsSurface [class*='leadsHeroTitleBlock'] h1 {
-  color: var(--dealer-ink) !important;
+  color: var(--app-text, var(--dealer-ink)) !important;
   font-size: clamp(1.75rem, 7.8vw, 2.35rem) !important;
   font-weight: 900 !important;
   letter-spacing: -0.05em !important;
@@ -680,7 +680,7 @@
 .dealerValuationSurface [class*='currentHint'],
 .dealerValuationSurface [class*='choiceCardNote'],
 .dealerValuationSurface [class*='detailsModalText'] {
-  color: var(--dealer-muted) !important;
+  color: var(--app-muted, var(--dealer-muted)) !important;
   font-size: 0.9rem !important;
   font-weight: 620 !important;
   line-height: 1.48 !important;
@@ -694,8 +694,8 @@
 
 .dealerValuationSurface [class*='equipmentPickerCard'],
 .dealerValuationSurface [class*='currentCard'] {
-  border-color: rgba(37, 71, 51, 0.12) !important;
-  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.06) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.12)) !important;
+  box-shadow: 0 12px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.06)) !important;
 }
 
 .dealerValuationSurface [class*='equipmentDropdownMenu'],
@@ -718,7 +718,7 @@
 }
 
 .dealerValuationSurface [class*='preEstimateDisclaimer'] {
-  color: var(--dealer-muted) !important;
+  color: var(--app-muted, var(--dealer-muted)) !important;
   font-size: 0.82rem !important;
   line-height: 1.46 !important;
 }
@@ -846,10 +846,10 @@
 .dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:hover,
 .dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:focus,
 .dealerDiscoverySurface [class*='discoveryOverviewOpenButton']:active {
-  border: 1.5px solid #6fc596 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
-  color: #0a543d !important;
-  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1) !important;
+  border: 1.5px solid var(--app-accent, #6fc596) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%) !important;
+  color: var(--app-text, #0a543d) !important;
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.1)) !important;
 }
 
 .dealerLeadsSurface {
@@ -864,9 +864,9 @@
 
 .dealerLeadsSurface [class*='registerPanel'] {
   margin-top: 0 !important;
-  border-color: rgba(37, 71, 51, 0.12) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.12)) !important;
   border-radius: 24px !important;
-  box-shadow: 0 18px 42px rgba(18, 53, 45, 0.075) !important;
+  box-shadow: 0 18px 42px var(--app-shadow-colour, rgba(18, 53, 45, 0.075)) !important;
 }
 
 .dealerLeadsSurface [class*='leadsRegisterHeader'] {
@@ -874,7 +874,7 @@
 }
 
 .dealerLeadsSurface [class*='leadsHeroTitleBlock'] h1 {
-  color: var(--dealer-ink) !important;
+  color: var(--app-text, var(--dealer-ink)) !important;
   font-size: clamp(1.75rem, 7vw, 2.35rem) !important;
   font-weight: 900 !important;
 }
@@ -897,11 +897,11 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   margin: 0;
-  border: 1px solid var(--dealer-line);
+  border: 1px solid var(--app-line, var(--dealer-line));
   border-radius: 17px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
   padding: 6px;
-  box-shadow: 0 10px 26px rgba(18, 53, 45, 0.065);
+  box-shadow: 0 10px 26px var(--app-shadow-colour, rgba(18, 53, 45, 0.065));
 }
 
 .marketplaceQuickActions {
@@ -916,18 +916,18 @@
   min-height: 50px;
   display: flex;
   align-items: center;
-  border: 1px solid var(--dealer-line);
+  border: 1px solid var(--app-line, var(--dealer-line));
   border-radius: 15px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 0 52px 0 44px;
-  box-shadow: 0 8px 20px rgba(18, 53, 45, 0.055);
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(18, 53, 45, 0.055));
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 .marketplaceQuickSearch:focus-within {
-  border-color: rgba(37, 71, 51, 0.58);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1), 0 10px 24px rgba(18, 53, 45, 0.08);
+  border-color: var(--app-accent, rgba(37, 71, 51, 0.58));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.1)), 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .marketplaceQuickSearch > span {
@@ -937,7 +937,7 @@
   height: 20px;
   display: grid;
   place-items: center;
-  color: var(--dealer-green);
+  color: var(--app-text, var(--dealer-green));
 }
 
 .marketplaceQuickSearch input {
@@ -945,7 +945,7 @@
   min-width: 0;
   border: 0;
   background: transparent;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: 1rem;
   font-weight: 720;
   outline: none;
@@ -960,8 +960,8 @@
   place-items: center;
   border: 0;
   border-radius: 10px;
-  background: var(--dealer-green-soft);
-  color: var(--dealer-green);
+  background: var(--app-surface-soft, var(--dealer-green-soft));
+  color: var(--app-text, var(--dealer-green));
 }
 
 .marketplaceQuickSearch > button svg {
@@ -985,13 +985,13 @@
 
 .marketplaceFilterButton,
 .marketplaceCloseFilters {
-  border: 1px solid var(--dealer-line);
-  background: #ffffff;
-  color: var(--dealer-green);
+  border: 1px solid var(--app-line, var(--dealer-line));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--dealer-green));
 }
 
 .marketplaceCreateButton {
-  border: 1px solid var(--dealer-green);
+  border: 1px solid var(--app-line, var(--dealer-green));
   background: var(--dealer-green);
   color: #ffffff;
 }
@@ -1005,10 +1005,10 @@
 .marketplaceLoadStatus {
   width: min(calc(100% - 16px), 860px);
   margin: 0 auto 10px;
-  border: 1px solid rgba(37, 71, 51, 0.12);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.12));
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--dealer-muted);
+  background: var(--app-surface, rgba(255, 255, 255, 0.92));
+  color: var(--app-muted, var(--dealer-muted));
   padding: 11px 13px;
   font-size: 0.76rem;
   font-weight: 720;
@@ -1017,9 +1017,9 @@
 }
 
 .marketplaceLoadStatusError {
-  border-color: rgba(143, 105, 29, 0.18);
-  background: #fff8e8;
-  color: #785719;
+  border-color: var(--app-warning-line, rgba(143, 105, 29, 0.18));
+  background: var(--app-warning-soft, #fff8e8);
+  color: var(--app-warning, #785719);
 }
 
 .contactOverlay,
@@ -1045,10 +1045,10 @@
   width: min(100%, 650px);
   max-height: calc(100dvh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow-y: auto;
-  border: 1px solid rgba(37, 71, 51, 0.13);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13));
   border-radius: 24px;
-  background: #ffffff;
-  box-shadow: 0 30px 80px rgba(8, 29, 23, 0.3);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 30px 80px var(--app-shadow-colour, rgba(8, 29, 23, 0.3));
 }
 
 .contactModal {
@@ -1070,7 +1070,7 @@
 
 .contactHeader span,
 .editListingHeader span {
-  color: #2b6b54;
+  color: var(--app-text, #2b6b54);
   font-size: 0.68rem;
   font-weight: 900;
   letter-spacing: 0.11em;
@@ -1080,7 +1080,7 @@
 .contactHeader h2,
 .editListingHeader h2 {
   margin: 5px 0 0;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: clamp(1.35rem, 5vw, 1.8rem);
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -1089,7 +1089,7 @@
 
 .contactHeader p {
   margin: 6px 0 0;
-  color: var(--dealer-muted);
+  color: var(--app-muted, var(--dealer-muted));
   font-size: 0.76rem;
   font-weight: 650;
 }
@@ -1099,10 +1099,10 @@
   width: 44px;
   min-width: 44px;
   height: 44px;
-  border: 1px solid var(--dealer-line);
+  border: 1px solid var(--app-line, var(--dealer-line));
   border-radius: 999px;
-  background: #ffffff;
-  color: var(--dealer-green);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--dealer-green));
   font-size: 1.35rem;
   font-weight: 700;
 }
@@ -1118,30 +1118,30 @@
   min-width: 0;
   display: grid;
   gap: 4px;
-  border: 1px solid rgba(37, 71, 51, 0.1);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.1));
   border-radius: 15px;
-  background: #f8fbf9;
+  background: var(--app-surface, #f8fbf9);
   padding: 12px;
 }
 
 .contactGrid span,
 .editListingField > span {
-  color: var(--dealer-muted);
+  color: var(--app-muted, var(--dealer-muted));
   font-size: 0.68rem;
   font-weight: 800;
 }
 
 .contactGrid strong {
   overflow-wrap: anywhere;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: 0.84rem;
 }
 
 .contactEmpty {
   margin: 16px 0 0;
   border-radius: 15px;
-  background: #f8fbf9;
-  color: var(--dealer-muted);
+  background: var(--app-surface, #f8fbf9);
+  color: var(--app-muted, var(--dealer-muted));
   padding: 13px;
   font-size: 0.8rem;
   font-weight: 680;
@@ -1163,7 +1163,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--dealer-green);
+  border: 1px solid var(--app-line, var(--dealer-green));
   border-radius: 13px;
   background: var(--dealer-green);
   color: #ffffff;
@@ -1175,9 +1175,9 @@
 
 .contactActions button:last-child,
 .editListingActions button:first-child {
-  border-color: var(--dealer-line);
-  background: #ffffff;
-  color: var(--dealer-green);
+  border-color: var(--app-line, var(--dealer-line));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--dealer-green));
 }
 
 .editListingModal {
@@ -1189,7 +1189,7 @@
 .editListingHeader {
   flex: 0 0 auto;
   padding: 18px;
-  border-bottom: 1px solid rgba(37, 71, 51, 0.09);
+  border-bottom: 1px solid var(--app-line, rgba(37, 71, 51, 0.09));
 }
 
 .editListingBody {
@@ -1215,10 +1215,10 @@
 .editListingField textarea {
   width: 100%;
   min-width: 0;
-  border: 1px solid rgba(37, 71, 51, 0.2);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
   border-radius: 13px;
-  background: #fbfdfb;
-  color: var(--dealer-ink);
+  background: var(--app-surface, #fbfdfb);
+  color: var(--app-text, var(--dealer-ink));
   padding: 11px 12px;
   font: 700 1rem Montserrat, Arial, sans-serif;
   outline: none;
@@ -1230,16 +1230,16 @@
 
 .editListingField input:focus,
 .editListingField textarea:focus {
-  border-color: rgba(37, 71, 51, 0.6);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.1);
+  border-color: var(--app-accent, rgba(37, 71, 51, 0.6));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.1));
 }
 
 .editListingError {
   margin: 0;
   border-radius: 13px;
-  background: #fff1f1;
-  color: #8d3030;
+  background: var(--app-danger-soft, #fff1f1);
+  color: var(--app-danger, #8d3030);
   padding: 11px 12px;
   font-size: 0.76rem;
   font-weight: 750;
@@ -1249,8 +1249,8 @@
   flex: 0 0 auto;
   margin: 0;
   padding: 14px 16px max(14px, env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(37, 71, 51, 0.09);
-  background: #ffffff;
+  border-top: 1px solid var(--app-line, rgba(37, 71, 51, 0.09));
+  background: var(--app-surface, #ffffff);
 }
 
 .editListingSave {
@@ -1263,7 +1263,7 @@
   border: 0;
   border-radius: 12px;
   background: transparent;
-  color: var(--dealer-muted);
+  color: var(--app-muted, var(--dealer-muted));
   padding: 0 12px;
   font-weight: 850;
   cursor: pointer;
@@ -1272,7 +1272,7 @@
 .marketplaceModeTabs .marketplaceModeActive {
   background: var(--dealer-green);
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(37, 71, 51, 0.2);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(37, 71, 51, 0.2));
 }
 
 @media (max-width: 900px) {
@@ -1285,10 +1285,10 @@
   .dealerMarketplaceSidebar {
     display: none !important;
     min-height: auto !important;
-    border: 1px solid var(--dealer-line) !important;
+    border: 1px solid var(--app-line, var(--dealer-line)) !important;
     border-radius: 20px !important;
     margin: 0 10px 12px !important;
-    box-shadow: 0 12px 30px rgba(18, 53, 45, 0.08) !important;
+    box-shadow: 0 12px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.08)) !important;
   }
 
   .dealerMarketplaceSidebarOpen {
@@ -1320,7 +1320,7 @@
 .editListingHeader button:focus-visible,
 .editListingActions button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.13), 0 10px 24px rgba(18, 53, 45, 0.09);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.13)), 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.09));
 }
 
 @media (max-width: 520px) {
@@ -1618,9 +1618,9 @@
 }
 
 .dealerValuationSurface [class*='selectedSummaryPill'][data-selection-status='pending'] {
-  border: 1px dashed rgba(37, 71, 51, 0.28) !important;
-  background: #ffffff !important;
-  color: var(--dealer-muted) !important;
+  border: 1px dashed var(--app-line, rgba(37, 71, 51, 0.28)) !important;
+  background: var(--app-surface, #ffffff) !important;
+  color: var(--app-muted, var(--dealer-muted)) !important;
   box-shadow: none !important;
 }
 
@@ -1701,9 +1701,9 @@
   grid-row: 1;
   margin: 0 !important;
   padding: 10px 12px;
-  border: 1px solid rgba(37, 71, 51, 0.1);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.1));
   border-radius: 12px;
-  background: #f4f8f5;
+  background: var(--app-surface-soft, #f4f8f5);
   text-align: center;
 }
 
@@ -1783,8 +1783,8 @@
 
 /* Dealer valuation: large touch targets and unmistakable selected states. */
 .dealerValuationSurface [class*='wizardHeader'] {
-  border-bottom-color: rgba(37, 71, 51, 0.1) !important;
-  background: linear-gradient(180deg, #f7faf8 0%, #eef5f0 100%) !important;
+  border-bottom-color: var(--app-line, rgba(37, 71, 51, 0.1)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #f7faf8) 0%, var(--app-surface-soft, #eef5f0) 100%) !important;
 }
 
 .dealerValuationSurface [class*='wizardHeader'] > [class*='stepper'] {
@@ -1804,17 +1804,17 @@
 
 .dealerValuationSurface [class*='stepperBulletActive'],
 .dealerValuationSurface [class*='stepperBulletComplete'] {
-  border-color: var(--dealer-green) !important;
+  border-color: var(--app-accent, var(--dealer-green)) !important;
   background: var(--dealer-green) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 0 5px rgba(37, 71, 51, 0.1) !important;
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(37, 71, 51, 0.1)) !important;
 }
 
 .dealerValuationSurface [class*='selectedSummaryPill'] {
-  border-color: rgba(37, 71, 51, 0.22) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.22)) !important;
   background: var(--dealer-green) !important;
   color: #ffffff !important;
-  box-shadow: 0 8px 18px rgba(37, 71, 51, 0.14) !important;
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(37, 71, 51, 0.14)) !important;
 }
 
 .dealerValuationSurface [class*='equipmentDropdownTrigger'] {
@@ -1824,12 +1824,12 @@
 }
 
 .dealerValuationSurface [class*='equipmentDropdownTrigger'][data-selected='true'] {
-  border-color: rgba(37, 71, 51, 0.48) !important;
-  background: linear-gradient(180deg, #f7fbf8 0%, #e7f1eb 100%) !important;
-  color: var(--dealer-green-dark) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.48)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #f7fbf8) 0%, var(--app-surface-soft, #e7f1eb) 100%) !important;
+  color: var(--app-text, var(--dealer-green-dark)) !important;
   box-shadow:
-    0 12px 26px rgba(37, 71, 51, 0.09),
-    inset 4px 0 0 var(--dealer-green) !important;
+    0 12px 26px var(--app-shadow-colour, rgba(37, 71, 51, 0.09)),
+    inset 4px 0 0 var(--app-shadow-colour, var(--dealer-green)) !important;
 }
 
 .dealerValuationSurface [class*='equipmentDropdownOption'] {
@@ -1841,10 +1841,10 @@
 }
 
 .dealerValuationSurface [class*='equipmentDropdownOptionActive'] {
-  border-color: var(--dealer-green) !important;
+  border-color: var(--app-accent, var(--dealer-green)) !important;
   background: var(--dealer-green) !important;
   color: #ffffff !important;
-  box-shadow: 0 10px 22px rgba(37, 71, 51, 0.17) !important;
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(37, 71, 51, 0.17)) !important;
 }
 
 .dealerValuationSurface [class*='equipmentDropdownOptionActive'] :is(span, strong, small) {
@@ -1859,12 +1859,12 @@
 }
 
 .dealerValuationSurface [class*='pathChoiceCard'][class*='choiceCardActive'] {
-  border-color: var(--dealer-green) !important;
+  border-color: var(--app-accent, var(--dealer-green)) !important;
   background: var(--dealer-green) !important;
   color: #ffffff !important;
   box-shadow:
-    0 14px 30px rgba(37, 71, 51, 0.2),
-    0 0 0 4px rgba(37, 71, 51, 0.1) !important;
+    0 14px 30px var(--app-shadow-colour, rgba(37, 71, 51, 0.2)),
+    0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.1)) !important;
 }
 
 .dealerValuationSurface [class*='pathChoiceCard'][class*='choiceCardActive'] :is(strong, [class*='choiceCardNote']) {
@@ -1888,12 +1888,12 @@
 
 .dealerValuationSurface [class*='inlineOptionButtonActive'],
 .dealerValuationSurface [class*='conditionChoiceButtonActive'] {
-  border-color: var(--dealer-green) !important;
+  border-color: var(--app-accent, var(--dealer-green)) !important;
   background: var(--dealer-green) !important;
   color: #ffffff !important;
   box-shadow:
-    0 12px 24px rgba(37, 71, 51, 0.18),
-    0 0 0 4px rgba(37, 71, 51, 0.08) !important;
+    0 12px 24px var(--app-shadow-colour, rgba(37, 71, 51, 0.18)),
+    0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.08)) !important;
 }
 
 .dealerValuationSurface [class*='inlineOptionButtonActive']::after,
@@ -1904,12 +1904,12 @@
 }
 
 .dealerValuationSurface [class*='choiceCard'][aria-pressed='true']:not([class*='pathChoiceCard']) {
-  border-color: var(--dealer-green) !important;
+  border-color: var(--app-accent, var(--dealer-green)) !important;
   background: var(--dealer-green) !important;
   color: #ffffff !important;
   box-shadow:
-    0 12px 26px rgba(37, 71, 51, 0.2),
-    0 0 0 4px rgba(37, 71, 51, 0.1) !important;
+    0 12px 26px var(--app-shadow-colour, rgba(37, 71, 51, 0.2)),
+    0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.1)) !important;
 }
 
 .dealerValuationSurface [class*='choiceCard'][aria-pressed='true']:not([class*='pathChoiceCard']) :is(strong, [class*='choiceCardNote']) {
@@ -1921,17 +1921,17 @@
 }
 
 .dealerValuationSurface [class*='specStepCardActive'] {
-  border-color: rgba(37, 71, 51, 0.34) !important;
-  background: #ffffff !important;
+  border-color: var(--app-accent, rgba(37, 71, 51, 0.34)) !important;
+  background: var(--app-surface, #ffffff) !important;
 }
 
 .dealerValuationSurface [class*='specStepCardComplete'] {
-  border-color: rgba(37, 71, 51, 0.3) !important;
-  background: linear-gradient(180deg, #f2f8f4 0%, #e7f1eb 100%) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.3)) !important;
+  background: linear-gradient(180deg, var(--app-surface-soft, #f2f8f4) 0%, var(--app-surface-soft, #e7f1eb) 100%) !important;
 }
 
 .dealerValuationSurface [class*='specStepCardComplete'] [class*='specStepAction'] {
-  border-color: rgba(37, 71, 51, 0.2) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.2)) !important;
   background: var(--dealer-green) !important;
   color: #ffffff !important;
 }
@@ -1947,15 +1947,15 @@
 
 .dealerValuationSurface [class*='primaryButton'],
 .dealerValuationSurface [class*='assetButton'] {
-  border: 1px solid var(--dealer-green) !important;
+  border: 1px solid var(--app-line, var(--dealer-green)) !important;
   background: var(--dealer-green) !important;
   color: #ffffff !important;
-  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18) !important;
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(37, 71, 51, 0.18)) !important;
 }
 
 .dealerValuationSurface [class*='primaryButton']:hover:not(:disabled),
 .dealerValuationSurface [class*='assetButton']:hover:not(:disabled) {
-  border-color: var(--dealer-green-dark) !important;
+  border-color: var(--app-line, var(--dealer-green-dark)) !important;
   background: var(--dealer-green-dark) !important;
 }
 
@@ -1984,7 +1984,7 @@
 
 .dealerValuationSurface :is(button, [role='button']):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.14), 0 10px 24px rgba(18, 53, 45, 0.1) !important;
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.14)), 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.1)) !important;
 }
 
 @media (max-width: 520px) {
@@ -2296,7 +2296,7 @@
 
 .toolSectionHeader h2 {
   margin: 0;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: 0.82rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -2304,7 +2304,7 @@
 }
 
 .toolSectionHeader span {
-  color: var(--dealer-muted);
+  color: var(--app-muted, var(--dealer-muted));
   font-size: 0.76rem;
   font-weight: 800;
 }
@@ -2323,7 +2323,7 @@
 }
 
 .cardCopy strong {
-  color: var(--dealer-green);
+  color: var(--app-text, var(--dealer-green));
   font-size: clamp(1.08rem, 5vw, 1.3rem);
   font-weight: 900;
   line-height: 1.08;
@@ -2331,7 +2331,7 @@
 }
 
 .cardCopy small {
-  color: var(--dealer-muted);
+  color: var(--app-muted, var(--dealer-muted));
   font-size: 0.78rem;
   font-weight: 680;
   line-height: 1.35;
@@ -2347,8 +2347,8 @@
   place-items: center;
   border-radius: 999px;
   padding: 0 8px;
-  background: #e7f6ee;
-  color: #0b6448;
+  background: var(--app-surface-soft, #e7f6ee);
+  color: var(--app-text, #0b6448);
   font-size: 0.76rem;
   font-weight: 900;
   transform: translateY(-50%);
@@ -2360,7 +2360,7 @@
 
 .secondaryLauncher .card {
   min-height: 72px;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f8fbf9) 100%);
 }
 
 @media (max-width: 390px) {
@@ -2455,19 +2455,19 @@
 }
 
 .navButton {
-  border: 1.5px solid #6fc596;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
-  color: #0a543d;
-  box-shadow: 0 10px 24px rgba(10, 84, 61, 0.1);
+  border: 1.5px solid var(--app-line, #6fc596);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%);
+  color: var(--app-text, #0a543d);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(10, 84, 61, 0.1));
 }
 
 .signOut {
   flex: 0 0 auto;
   margin-left: auto;
-  border: 1px solid rgba(198, 55, 55, 0.24);
-  background: linear-gradient(180deg, #fff8f8 0%, #fde8e8 100%);
-  color: #9b3030;
-  box-shadow: 0 12px 26px rgba(155, 48, 48, 0.1);
+  border: 1px solid var(--app-danger-line, rgba(198, 55, 55, 0.24));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fff8f8) 0%, var(--app-danger-soft, #fde8e8) 100%);
+  color: var(--app-danger, #9b3030);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(155, 48, 48, 0.1));
 }
 
 .homeButton {
@@ -2487,8 +2487,8 @@
     max(24px, env(safe-area-inset-bottom))
     max(12px, env(safe-area-inset-left));
   background:
-    radial-gradient(circle at 50% 5%, rgba(111, 197, 150, 0.16), transparent 34%),
-    linear-gradient(180deg, #f5faf7 0%, #ffffff 48%, #f4f9f6 100%);
+    radial-gradient(circle at 50% 5%, var(--app-surface-soft, rgba(111, 197, 150, 0.16)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #f5faf7) 0%, var(--app-surface, #ffffff) 48%, var(--app-surface, #f4f9f6) 100%);
 }
 
 .dealerLayout > .module {
@@ -2514,7 +2514,7 @@
 }
 
 .middlemanHomeIntro span {
-  color: #ad6d00;
+  color: var(--app-warning, #ad6d00);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.13em;
@@ -2523,7 +2523,7 @@
 
 .middlemanHomeIntro h1 {
   margin: 0;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: clamp(1.85rem, 8vw, 2.6rem);
   font-weight: 900;
   letter-spacing: -0.055em;
@@ -2533,7 +2533,7 @@
 .middlemanHomeIntro p {
   max-width: 34rem;
   margin: 0 auto;
-  color: #62766f;
+  color: var(--app-muted, #62766f);
   font-size: 0.94rem;
   line-height: 1.5;
 }
@@ -2557,12 +2557,12 @@
   align-items: center;
   gap: clamp(12px, 4vw, 20px);
   box-sizing: border-box;
-  border: 1px solid #d2e2da;
+  border: 1px solid var(--app-line, #d2e2da);
   border-radius: 16px;
-  background: #ffffff;
-  color: var(--dealer-ink);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, var(--dealer-ink));
   padding: 14px 20px;
-  box-shadow: 0 4px 14px rgba(18, 53, 45, 0.045);
+  box-shadow: 0 4px 14px var(--app-shadow-colour, rgba(18, 53, 45, 0.045));
   text-align: left;
   text-decoration: none;
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
@@ -2572,7 +2572,7 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  color: var(--dealer-ink);
+  color: var(--app-text, var(--dealer-ink));
   font-size: clamp(1rem, 4.4vw, 1.25rem);
   font-weight: 750;
   letter-spacing: -0.025em;
@@ -2585,7 +2585,7 @@
   width: 28px;
   height: 28px;
   flex: 0 0 28px;
-  color: #285443;
+  color: var(--app-text, #285443);
 }
 
 .homeLaunchEnd {
@@ -2599,12 +2599,12 @@
   width: 16px;
   height: 20px;
   flex: 0 0 16px;
-  color: #7c9e8b;
+  color: var(--app-muted, #7c9e8b);
 }
 
 .homeLaunchCard:hover {
-  border-color: #9cbeab;
-  box-shadow: 0 6px 18px rgba(18, 53, 45, 0.075);
+  border-color: var(--app-line, #9cbeab);
+  box-shadow: 0 6px 18px var(--app-shadow-colour, rgba(18, 53, 45, 0.075));
   transform: translateY(-1px);
 }
 
@@ -2613,7 +2613,7 @@
 }
 
 .homeLaunchCard:focus-visible {
-  outline: 3px solid #43836a;
+  outline: 3px solid var(--app-accent, #43836a);
   outline-offset: 3px;
 }
 
@@ -2623,10 +2623,10 @@
   display: grid;
   place-items: center;
   box-sizing: border-box;
-  border: 1px solid #efd2d2;
+  border: 1px solid var(--app-danger-line, #efd2d2);
   border-radius: 999px;
-  background: #fcecec;
-  color: #963838;
+  background: var(--app-danger-soft, #fcecec);
+  color: var(--app-danger, #963838);
   padding-inline: 7px;
   font-size: 0.66rem;
   font-weight: 800;
@@ -2706,7 +2706,7 @@
   min-height: calc(100dvh - 80px - env(safe-area-inset-top));
   box-sizing: border-box;
   overflow-x: hidden;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 8px 0 max(24px, env(safe-area-inset-bottom));
 }
 
@@ -2759,7 +2759,7 @@
 /* Keep the Dealer App workspace navigation visually continuous with the page surface. */
 .navLeadsSurface.navLeadsSurface {
   border-bottom-color: transparent;
-  background: rgba(246, 250, 247, 0.98);
+  background: var(--app-surface, rgba(246, 250, 247, 0.98));
   box-shadow: none;
   backdrop-filter: blur(16px) saturate(1.04);
 }
@@ -2799,7 +2799,7 @@
     display: grid !important;
     gap: 6px !important;
     padding: 12px !important;
-    box-shadow: 0 8px 20px rgba(18, 53, 45, 0.07) !important;
+    box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(18, 53, 45, 0.07)) !important;
   }
 
   .dealerValuationSurface [class*='mobileStepSummary'] {
@@ -2845,10 +2845,10 @@
     height: 34px !important;
     margin: 0 !important;
     padding: 0 !important;
-    border: 1px solid rgba(28, 75, 59, 0.04) !important;
+    border: 1px solid var(--app-line, rgba(28, 75, 59, 0.04)) !important;
     border-radius: 50% !important;
-    background: #e7eeea !important;
-    color: #718078 !important;
+    background: var(--app-surface-soft, #e7eeea) !important;
+    color: var(--app-muted, #718078) !important;
     font-size: 13px !important;
     line-height: 1 !important;
     text-align: center !important;
@@ -2858,7 +2858,7 @@
 
   .dealerValuationSurface [class*='stepperBulletActive'],
   .dealerValuationSurface [class*='stepperBulletComplete'] {
-    border-color: #1d5742 !important;
+    border-color: var(--app-accent, #1d5742) !important;
     background: #1d5742 !important;
     color: #ffffff !important;
   }
@@ -2885,9 +2885,9 @@
     display: grid !important;
     place-items: center !important;
     min-height: 112px !important;
-    border: 1px solid rgba(116, 185, 156, 0.5) !important;
+    border: 1px solid var(--app-line, rgba(116, 185, 156, 0.5)) !important;
     background: #1d5742 !important;
-    box-shadow: 0 10px 22px rgba(14, 55, 42, 0.14) !important;
+    box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(14, 55, 42, 0.14)) !important;
     transform: none !important;
   }
 
@@ -3025,21 +3025,21 @@
     gap: 9px !important;
     min-height: 59px !important;
     padding: 10px 12px !important;
-    border: 1px solid rgba(37, 71, 51, 0.17) !important;
+    border: 1px solid var(--app-line, rgba(37, 71, 51, 0.17)) !important;
     border-radius: 14px !important;
-    background: #ffffff !important;
-    color: #29473e !important;
+    background: var(--app-surface, #ffffff) !important;
+    color: var(--app-text, #29473e) !important;
     font-size: 0.9rem !important;
     line-height: 1.2 !important;
     text-align: left !important;
-    box-shadow: 0 5px 14px rgba(18, 53, 45, 0.035) !important;
+    box-shadow: 0 5px 14px var(--app-shadow-colour, rgba(18, 53, 45, 0.035)) !important;
   }
 
   .dealerValuationSurface [class*='conditionChoiceButtonActive'] {
-    border-color: #1d5742 !important;
+    border-color: var(--app-accent, #1d5742) !important;
     background: #1d5742 !important;
     color: #ffffff !important;
-    box-shadow: 0 10px 22px rgba(24, 75, 57, 0.18) !important;
+    box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(24, 75, 57, 0.18)) !important;
   }
 
   .dealerValuationSurface [class*='conditionChoiceIndicator'] {
@@ -3047,16 +3047,16 @@
     place-items: center !important;
     width: 22px !important;
     height: 22px !important;
-    border: 2px solid #b7c8c0 !important;
+    border: 2px solid var(--app-line, #b7c8c0) !important;
     border-radius: 50% !important;
-    color: #1d5742 !important;
+    color: var(--app-text, #1d5742) !important;
     font-size: 11px !important;
     line-height: 1 !important;
   }
 
   .dealerValuationSurface [class*='conditionChoiceButtonActive'] [class*='conditionChoiceIndicator'] {
-    border-color: #ffffff !important;
-    background: #ffffff !important;
+    border-color: var(--app-accent, #ffffff) !important;
+    background: var(--app-surface, #ffffff) !important;
   }
 
   .dealerValuationSurface [class*='conditionChoiceLabel'] {
@@ -3069,18 +3069,18 @@
     gap: 10px !important;
     margin-top: 2px !important;
     padding: 13px !important;
-    border: 1px solid rgba(29, 87, 66, 0.18) !important;
+    border: 1px solid var(--app-line, rgba(29, 87, 66, 0.18)) !important;
     border-radius: 15px !important;
-    background: #f0f7f3 !important;
+    background: var(--app-surface-soft, #f0f7f3) !important;
   }
 
   .dealerValuationSurface [class*='detailedAssessmentToggle'] {
     width: 100% !important;
     min-height: 48px !important;
-    border: 1px solid #1d5742 !important;
+    border: 1px solid var(--app-line, #1d5742) !important;
     border-radius: 12px !important;
-    background: #ffffff !important;
-    color: #174b39 !important;
+    background: var(--app-surface, #ffffff) !important;
+    color: var(--app-text, #174b39) !important;
   }
 
   .dealerValuationSurface [class*='detailedAssessmentPanel'] {
@@ -3093,7 +3093,7 @@
   .dealerValuationSurface [class*='detailedAssessmentHeader'] {
     gap: 4px !important;
     padding: 0 0 11px !important;
-    border-bottom: 1px solid rgba(37, 71, 51, 0.1) !important;
+    border-bottom: 1px solid var(--app-line, rgba(37, 71, 51, 0.1)) !important;
   }
 
   .dealerValuationSurface [class*='dealerAssessmentGroup'] {
@@ -3119,20 +3119,20 @@
   .dealerValuationSurface [class*='dealerAssessmentOption'] {
     min-height: 52px !important;
     padding: 10px 8px !important;
-    border: 1px solid rgba(37, 71, 51, 0.17) !important;
+    border: 1px solid var(--app-line, rgba(37, 71, 51, 0.17)) !important;
     border-radius: 12px !important;
-    background: #ffffff !important;
-    color: #37534b !important;
+    background: var(--app-surface, #ffffff) !important;
+    color: var(--app-text, #37534b) !important;
     font-size: 0.78rem !important;
     line-height: 1.25 !important;
     box-shadow: none !important;
   }
 
   .dealerValuationSurface [class*='dealerAssessmentOptionActive'] {
-    border-color: #1d5742 !important;
+    border-color: var(--app-accent, #1d5742) !important;
     background: #1d5742 !important;
     color: #ffffff !important;
-    box-shadow: 0 8px 18px rgba(24, 75, 57, 0.15) !important;
+    box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(24, 75, 57, 0.15)) !important;
   }
 
   .dealerValuationSurface [class*='detailedAssessmentSummary'] {
@@ -3186,7 +3186,7 @@
     top: -16px;
     z-index: 4;
     padding: 14px 0 8px !important;
-    background: rgba(255, 255, 255, 0.97) !important;
+    background: var(--app-surface, rgba(255, 255, 255, 0.97)) !important;
   }
 
   .dealerValuationSurface .dealerCompactModalHeader {
@@ -3215,8 +3215,8 @@
     gap: 10px !important;
     margin-top: 0 !important;
     padding: 12px 0 max(16px, env(safe-area-inset-bottom)) !important;
-    background: rgba(250, 252, 251, 0.98) !important;
-    box-shadow: 0 -8px 20px rgba(18, 53, 45, 0.07) !important;
+    background: var(--app-surface, rgba(250, 252, 251, 0.98)) !important;
+    box-shadow: 0 -8px 20px var(--app-shadow-colour, rgba(18, 53, 45, 0.07)) !important;
   }
 
   .dealerValuationSurface [class*='detailsModalActions'] > button {
@@ -3236,8 +3236,8 @@
     grid-template-columns: minmax(104px, 0.72fr) minmax(0, 1.28fr) !important;
     gap: 9px !important;
     padding: 12px 16px max(12px, env(safe-area-inset-bottom)) !important;
-    background: rgba(250, 252, 251, 0.97) !important;
-    box-shadow: 0 -10px 24px rgba(18, 53, 45, 0.08) !important;
+    background: var(--app-surface, rgba(250, 252, 251, 0.97)) !important;
+    box-shadow: 0 -10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.08)) !important;
     backdrop-filter: blur(12px);
   }
 
@@ -3307,10 +3307,10 @@
   min-height: 28px !important;
   max-width: 100% !important;
   padding: 6px 10px !important;
-  border: 1px solid #d7e7de !important;
+  border: 1px solid var(--app-line, #d7e7de) !important;
   border-radius: 8px !important;
-  background: #edf5f0 !important;
-  color: #285443 !important;
+  background: var(--app-surface-soft, #edf5f0) !important;
+  color: var(--app-text, #285443) !important;
   font-size: 0.75rem !important;
   line-height: 1.35 !important;
   letter-spacing: 0 !important;
@@ -3410,14 +3410,14 @@
 }
 
 .dealerValuationSurface :is(button, a, input, select, textarea):focus-visible {
-  outline: 3px solid #43836a !important;
+  outline: 3px solid var(--app-accent, #43836a) !important;
   outline-offset: 3px !important;
 }
 
 @media (max-width: 720px) {
   .dealerValuationSurface [class*='wizardCard'] {
     border-radius: 20px !important;
-    box-shadow: 0 12px 30px rgba(18, 53, 45, 0.07) !important;
+    box-shadow: 0 12px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.07)) !important;
   }
 
   .dealerValuationSurface [class*='wizardHeader'] [class*='stepperItem'] {
@@ -3587,7 +3587,7 @@
   line-height: 1.4 !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
-  color: #244c3e !important;
+  color: var(--app-text, #244c3e) !important;
 }
 
 .dealerValuationSurface [class*='equipmentPickerHead'] [class*='equipmentCountPill'] {
@@ -3600,7 +3600,7 @@
   line-height: 1.4 !important;
   letter-spacing: 0 !important;
   text-transform: none !important;
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
 }
 
 .dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownMenu'] {
@@ -3616,10 +3616,10 @@
   min-height: 52px !important;
   height: auto !important;
   padding: 12px 14px !important;
-  border: 1px solid #dce7e0 !important;
+  border: 1px solid var(--app-line, #dce7e0) !important;
   border-radius: 12px !important;
-  background: #ffffff !important;
-  color: #244c3e !important;
+  background: var(--app-surface, #ffffff) !important;
+  color: var(--app-text, #244c3e) !important;
   font-size: 1rem !important;
   font-weight: 700 !important;
   line-height: 1.45 !important;
@@ -3637,9 +3637,9 @@
 .dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOption']:hover,
 .dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOption']:focus-visible,
 .dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownOptionActive'] {
-  border-color: #43836a !important;
-  background: #edf6f0 !important;
-  color: #164d38 !important;
+  border-color: var(--app-accent, #43836a) !important;
+  background: var(--app-surface-soft, #edf6f0) !important;
+  color: var(--app-text, #164d38) !important;
 }
 
 /* Center specification tiers independently of the selection indicator. */
@@ -3720,7 +3720,7 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
 }
 
 .estimateNav .navButton:disabled {
@@ -3803,7 +3803,7 @@
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
-  color: #d4a62a !important;
+  color: var(--app-warning, #d4a62a) !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
 }
@@ -3811,5 +3811,5 @@
   display: block !important;
   width: 26px !important;
   height: 26px !important;
-  color: #d4a62a !important;
+  color: var(--app-warning, #d4a62a) !important;
 }

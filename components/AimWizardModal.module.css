@@ -21,10 +21,10 @@
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden;
-  border: 1px solid rgba(42, 93, 82, 0.18) !important;
+  border: 1px solid var(--app-line, rgba(42, 93, 82, 0.18)) !important;
   border-radius: 30px !important;
-  background: #ffffff !important;
-  box-shadow: 0 34px 90px rgba(7, 31, 38, 0.32) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 34px 90px var(--app-shadow-colour, rgba(7, 31, 38, 0.32)) !important;
 }
 
 .dialog.wideDialog {
@@ -48,8 +48,8 @@
   align-items: center !important;
   margin: 0 !important;
   padding: 28px 36px 24px !important;
-  border-bottom: 1px solid #d9e8e2 !important;
-  background: #ffffff !important;
+  border-bottom: 1px solid var(--app-line, #d9e8e2) !important;
+  background: var(--app-surface, #ffffff) !important;
 }
 
 .headerText {
@@ -59,7 +59,7 @@
 
 .dialog .header h2 {
   margin: 0;
-  color: #063f33;
+  color: var(--app-text, #063f33);
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: clamp(28px, calc(var(--website-design-vw, 1vw) * 4), 38px) !important;
@@ -72,7 +72,7 @@
 .dialog .header p {
   max-width: none;
   margin: 8px 0 0 !important;
-  color: #62758b;
+  color: var(--app-info, #62758b);
   font-size: 15px !important;
   font-weight: 700;
   line-height: 1.4 !important;
@@ -86,10 +86,10 @@
   flex: 0 0 54px;
   place-items: center;
   padding: 0 !important;
-  border: 1px solid #d5e3de !important;
+  border: 1px solid var(--app-line, #d5e3de) !important;
   border-radius: 999px !important;
-  color: #173f63 !important;
-  background: #f8fbfd !important;
+  color: var(--app-info, #173f63) !important;
+  background: var(--app-info-soft, #f8fbfd) !important;
   box-shadow: none !important;
   cursor: pointer;
   transition:
@@ -99,13 +99,13 @@
 }
 
 .dialog .closeButton:hover:not(:disabled) {
-  border-color: #a9c9bd !important;
-  background: #eef8f4 !important;
+  border-color: var(--app-line, #a9c9bd) !important;
+  background: var(--app-surface-soft, #eef8f4) !important;
   transform: translateY(-1px);
 }
 
 .dialog .closeButton:focus-visible {
-  outline: 3px solid rgba(22, 134, 96, 0.2);
+  outline: 3px solid var(--app-accent, rgba(22, 134, 96, 0.2));
   outline-offset: 3px;
 }
 
@@ -136,7 +136,7 @@
 .intro {
   max-width: none;
   margin: 0;
-  color: #526a63;
+  color: var(--app-muted, #526a63);
   font-size: 16px;
   font-weight: 600;
   line-height: 1.55;
@@ -165,7 +165,7 @@
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
-  color: #7a8b84 !important;
+  color: var(--app-muted, #7a8b84) !important;
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -182,7 +182,7 @@
   height: 2px;
   flex: 1 1 auto;
   margin: 0 18px;
-  background: #dce8e3;
+  background: var(--app-surface-soft, #dce8e3);
 }
 
 .progressItem > span {
@@ -193,10 +193,10 @@
   flex: 0 0 44px;
   display: grid;
   place-items: center;
-  border: 1px solid #c8dbd4 !important;
+  border: 1px solid var(--app-line, #c8dbd4) !important;
   border-radius: 999px;
-  color: #597068 !important;
-  background: #f7faf8 !important;
+  color: var(--app-muted, #597068) !important;
+  background: var(--app-surface, #f7faf8) !important;
   box-shadow: none !important;
   font-size: 14px !important;
   font-weight: 900;
@@ -209,7 +209,7 @@
   overflow: visible !important;
   padding-right: 12px;
   color: inherit;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   font-size: 14px !important;
   font-weight: 850;
   line-height: 1.25;
@@ -219,24 +219,24 @@
 
 .progressItemCurrent,
 .progressItemComplete {
-  color: #087553 !important;
+  color: var(--app-text, #087553) !important;
 }
 
 .progressItemCurrent > span {
-  border-color: #168660 !important;
+  border-color: var(--app-line, #168660) !important;
   color: #ffffff !important;
   background: #168660 !important;
-  box-shadow: 0 0 0 5px rgba(22, 134, 96, 0.11) !important;
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(22, 134, 96, 0.11)) !important;
 }
 
 .progressItemComplete > span {
-  border-color: #92cdb7 !important;
-  color: #087553 !important;
-  background: #e5f6ef !important;
+  border-color: var(--app-line, #92cdb7) !important;
+  color: var(--app-text, #087553) !important;
+  background: var(--app-surface-soft, #e5f6ef) !important;
 }
 
 .progressItemComplete:not(:last-child)::after {
-  background: #83c8ae;
+  background: var(--app-surface-soft, #83c8ae);
 }
 
 .dialog .panel {
@@ -246,18 +246,18 @@
   gap: 18px !important;
   margin: 24px 0 0;
   padding: 24px 26px !important;
-  border: 1px solid #d6e5df !important;
+  border: 1px solid var(--app-line, #d6e5df) !important;
   border-radius: 22px !important;
   background:
     radial-gradient(
       circle at 100% 0%,
-      rgba(32, 139, 100, 0.045),
+      var(--app-surface-soft, rgba(32, 139, 100, 0.045)),
       transparent 15rem
     ),
-    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%) !important;
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #fbfdfc) 100%) !important;
   box-shadow:
-    0 12px 28px rgba(12, 62, 47, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+    0 12px 28px var(--app-shadow-colour, rgba(12, 62, 47, 0.045)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95)) !important;
   animation: aimWizardStepIn 180ms ease both;
 }
 
@@ -289,11 +289,11 @@
   height: 46px;
   display: grid;
   place-items: center;
-  border: 1px solid #9fd1be;
+  border: 1px solid var(--app-line, #9fd1be);
   border-radius: 15px;
-  color: #087553;
-  background: linear-gradient(180deg, #eff9f5 0%, #e5f5ed 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  color: var(--app-text, #087553);
+  background: linear-gradient(180deg, var(--app-surface-soft, #eff9f5) 0%, var(--app-surface-soft, #e5f5ed) 100%);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
   font-size: 17px;
   font-weight: 900;
 }
@@ -301,7 +301,7 @@
 .panelHeading h3 {
   grid-column: 2;
   margin: 0;
-  color: #0b4437 !important;
+  color: var(--app-text, #0b4437) !important;
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 19px !important;
@@ -313,7 +313,7 @@
 .panelHeading p {
   grid-column: 2;
   margin: 0 !important;
-  color: #667b73 !important;
+  color: var(--app-muted, #667b73) !important;
   font-size: 13px !important;
   font-weight: 650;
   line-height: 1.45 !important;
@@ -330,8 +330,8 @@
   gap: 14px !important;
   margin: 0 !important;
   padding: 18px 36px max(24px, env(safe-area-inset-bottom)) !important;
-  border-top: 1px solid #d9e8e2 !important;
-  background: #fbfdfc !important;
+  border-top: 1px solid var(--app-line, #d9e8e2) !important;
+  background: var(--app-surface, #fbfdfc) !important;
 }
 
 .dialog .secondaryAction,
@@ -351,33 +351,33 @@
 }
 
 .dialog .secondaryAction {
-  border: 1px solid #cbdcd6 !important;
-  color: #18463a !important;
-  background: #ffffff !important;
+  border: 1px solid var(--app-line, #cbdcd6) !important;
+  color: var(--app-text, #18463a) !important;
+  background: var(--app-surface, #ffffff) !important;
   box-shadow: none !important;
 }
 
 .dialog .primaryAction {
   min-width: 142px;
-  border: 1px solid #087553 !important;
+  border: 1px solid var(--app-line, #087553) !important;
   color: #ffffff !important;
   background: #087553 !important;
-  box-shadow: 0 10px 24px rgba(8, 117, 83, 0.2) !important;
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(8, 117, 83, 0.2)) !important;
 }
 
 .dialog .secondaryAction:hover:not(:disabled) {
-  border-color: #9fc5b7 !important;
-  background: #f7fbf9 !important;
+  border-color: var(--app-line, #9fc5b7) !important;
+  background: var(--app-surface, #f7fbf9) !important;
 }
 
 .dialog .primaryAction:hover:not(:disabled) {
-  border-color: #066445 !important;
+  border-color: var(--app-line, #066445) !important;
   background: #066f4d !important;
 }
 
 .dialog .secondaryAction:focus-visible,
 .dialog .primaryAction:focus-visible {
-  outline: 3px solid rgba(22, 134, 96, 0.18);
+  outline: 3px solid var(--app-accent, rgba(22, 134, 96, 0.18));
   outline-offset: 3px;
 }
 

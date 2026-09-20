@@ -34,7 +34,7 @@
 
 .leadsTitleBlock h1 {
   margin: 0;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3.5), 2.55rem);
   line-height: 0.98;
   letter-spacing: -0.05em;
@@ -44,7 +44,7 @@
 .leadsTitleBlock p {
   margin: 0;
   max-width: 62rem;
-  color: #677586;
+  color: var(--app-muted, #677586);
   font-size: 1rem;
   line-height: 1.6;
   font-weight: 520;
@@ -86,10 +86,10 @@
 .leadThread {
   overflow: hidden;
   padding: 1rem;
-  border: 1px solid rgba(206, 218, 229, 0.98);
+  border: 1px solid var(--app-info-line, rgba(206, 218, 229, 0.98));
   border-radius: 1.65rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(249, 252, 253, 0.98) 100%);
-  box-shadow: 0 12px 24px rgba(20, 36, 33, 0.03);
+  background: linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.98)) 0%, var(--app-info-soft, rgba(249, 252, 253, 0.98)) 100%);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(20, 36, 33, 0.03));
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
@@ -98,16 +98,16 @@
 }
 
 .leadThread:hover {
-  border-color: rgba(184, 204, 217, 0.98);
-  box-shadow: 0 16px 30px rgba(16, 31, 28, 0.055);
+  border-color: var(--app-info-line, rgba(184, 204, 217, 0.98));
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(16, 31, 28, 0.055));
   transform: translateY(-1px);
 }
 
 .leadThreadOpen {
-  border-color: rgba(184, 204, 217, 0.98);
+  border-color: var(--app-info-line, rgba(184, 204, 217, 0.98));
   box-shadow:
-    0 20px 38px rgba(16, 31, 28, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 20px 38px var(--app-shadow-colour, rgba(16, 31, 28, 0.07)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .clientPanel {
@@ -131,7 +131,7 @@
 
 .clientKicker {
   display: block;
-  color: #68798a;
+  color: var(--app-muted, #68798a);
   font-size: 0.9rem;
   font-weight: 760;
   line-height: 1.3;
@@ -139,7 +139,7 @@
 
 .clientPanel h3 {
   margin: 0;
-  color: #0d3028;
+  color: var(--app-text, #0d3028);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem);
   font-weight: 760;
@@ -153,7 +153,7 @@
   align-items: center;
   gap: 0.32rem 0.62rem;
   margin: 0;
-  color: var(--lead-muted);
+  color: var(--app-muted, var(--lead-muted));
   font-size: 0.96rem;
   font-weight: 650;
   line-height: 1.45;
@@ -169,7 +169,7 @@
 .clientInlineMeta span:not(:last-child)::after {
   content: '•';
   margin-left: 0.62rem;
-  color: #a9b8c7;
+  color: var(--app-info, #a9b8c7);
   font-weight: 900;
 }
 
@@ -182,15 +182,15 @@
   gap: 0.42rem 0.7rem;
   min-height: 2.05rem;
   padding: 0 0.72rem;
-  border: 1px solid rgba(216, 226, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(216, 226, 236, 0.98));
   border-radius: 999px;
-  background: #f4f8fb;
-  color: #33495b;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  background: var(--app-info-soft, #f4f8fb);
+  color: var(--app-info, #33495b);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
 }
 
 .leadPreviewMeta span {
-  color: #263c49;
+  color: var(--app-info, #263c49);
   font-size: 0.9rem;
   font-weight: 850;
   line-height: 1.1;
@@ -198,7 +198,7 @@
 }
 
 .leadPreviewMeta strong {
-  color: var(--lead-ink);
+  color: var(--app-text, var(--lead-ink));
   font-size: 0.9rem;
   font-weight: 850;
   line-height: 1.1;
@@ -230,25 +230,25 @@
 }
 
 .openLeadButton {
-  color: var(--lead-mint-text) !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-mint-soft) 100%) !important;
-  border-color: var(--lead-mint-line) !important;
+  color: var(--app-text, var(--lead-mint-text)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, var(--lead-mint-soft)) 100%) !important;
+  border-color: var(--app-line, var(--lead-mint-line)) !important;
   box-shadow:
-    0 10px 22px rgba(10, 84, 61, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .closeLeadButton {
-  color: #11335a !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%) !important;
-  border-color: rgba(197, 214, 228, 0.98) !important;
-  box-shadow: 0 12px 24px rgba(20, 48, 70, 0.04) !important;
+  color: var(--app-info, #11335a) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f9fd) 100%) !important;
+  border-color: var(--app-info-line, rgba(197, 214, 228, 0.98)) !important;
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(20, 48, 70, 0.04)) !important;
 }
 
 .deleteLeadButton {
-  color: var(--lead-danger) !important;
-  background: var(--lead-danger-soft) !important;
-  border-color: var(--lead-danger-line) !important;
+  color: var(--app-danger, var(--lead-danger)) !important;
+  background: var(--app-danger-soft, var(--lead-danger-soft)) !important;
+  border-color: var(--app-danger-line, var(--lead-danger-line)) !important;
   box-shadow: none !important;
 }
 
@@ -259,21 +259,21 @@
 }
 
 .openLeadButton:hover {
-  color: #083f2f !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-mint-hover) 100%) !important;
-  border-color: var(--lead-mint-line-hover) !important;
+  color: var(--app-text, #083f2f) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, var(--lead-mint-hover)) 100%) !important;
+  border-color: var(--app-line, var(--lead-mint-line-hover)) !important;
   box-shadow:
-    0 14px 28px rgba(10, 84, 61, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 14px 28px var(--app-shadow-colour, rgba(10, 84, 61, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .deleteLeadButton:hover {
-  color: #842929 !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-hover) 100%) !important;
-  border-color: var(--lead-danger-line-hover) !important;
+  color: var(--app-danger, #842929) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-danger-hover)) 100%) !important;
+  border-color: var(--app-danger-line, var(--lead-danger-line-hover)) !important;
   box-shadow:
-    0 12px 24px rgba(142, 51, 51, 0.105),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 12px 24px var(--app-shadow-colour, rgba(142, 51, 51, 0.105)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .leadAssetCard {
@@ -289,8 +289,8 @@
 
 .fullRegisterLeadCard {
   background:
-    radial-gradient(circle at 0% 0%, rgba(23, 96, 72, 0.035), transparent 30%),
-    linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(23, 96, 72, 0.035)), transparent 30%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #fbfdfe) 100%);
 }
 
 .fullRegisterLeadBody.fullRegisterLeadBody {
@@ -303,12 +303,12 @@
 
 .fullRegisterPdfPanel {
   min-height: 15rem;
-  border: 1px solid rgba(208, 221, 232, 0.98);
+  border: 1px solid var(--app-info-line, rgba(208, 221, 232, 0.98));
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 50% 10%, rgba(23, 96, 72, 0.06), transparent 42%),
-    linear-gradient(180deg, #f9fcfd 0%, #eef5f7 100%);
-  color: var(--lead-ink);
+    radial-gradient(circle at 50% 10%, var(--app-surface-soft, rgba(23, 96, 72, 0.06)), transparent 42%),
+    linear-gradient(180deg, var(--app-info-soft, #f9fcfd) 0%, var(--app-info-soft, #eef5f7) 100%);
+  color: var(--app-text, var(--lead-ink));
   display: grid;
   align-content: center;
   justify-items: center;
@@ -317,8 +317,8 @@
   text-align: center;
   cursor: pointer;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.96),
-    0 16px 32px rgba(22, 48, 42, 0.045);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96)),
+    0 16px 32px var(--app-shadow-colour, rgba(22, 48, 42, 0.045));
   transition:
     transform 150ms ease,
     border-color 150ms ease,
@@ -328,25 +328,25 @@
 
 .fullRegisterPdfPanel:hover {
   transform: translateY(-1px);
-  border-color: rgba(23, 96, 72, 0.25);
+  border-color: var(--app-line, rgba(23, 96, 72, 0.25));
   background:
-    radial-gradient(circle at 50% 8%, rgba(23, 96, 72, 0.09), transparent 44%),
-    linear-gradient(180deg, #ffffff 0%, #edf7f2 100%);
+    radial-gradient(circle at 50% 8%, var(--app-surface-soft, rgba(23, 96, 72, 0.09)), transparent 44%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #edf7f2) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.98),
-    0 18px 34px rgba(22, 48, 42, 0.07);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)),
+    0 18px 34px var(--app-shadow-colour, rgba(22, 48, 42, 0.07));
 }
 
 .fullRegisterPdfIcon {
   width: 5rem;
   height: 5rem;
-  border: 1px solid rgba(205, 219, 230, 0.98);
+  border: 1px solid var(--app-info-line, rgba(205, 219, 230, 0.98));
   border-radius: 1.4rem;
-  background: #ffffff;
-  color: #0f3b2f;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #0f3b2f);
   display: grid;
   place-items: center;
-  box-shadow: 0 14px 26px rgba(15, 44, 38, 0.055);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(15, 44, 38, 0.055));
 }
 
 .fullRegisterPdfIcon svg {
@@ -356,7 +356,7 @@
 
 .fullRegisterPdfPanel strong {
   display: block;
-  color: var(--lead-ink);
+  color: var(--app-text, var(--lead-ink));
   font-size: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.35rem);
   font-weight: 850;
   line-height: 1.05;
@@ -367,7 +367,7 @@
   display: block;
   max-width: 18rem;
   margin-top: 0.35rem;
-  color: #677586;
+  color: var(--app-muted, #677586);
   font-size: 0.92rem;
   font-weight: 640;
   line-height: 1.45;
@@ -375,15 +375,15 @@
 
 .fullRegisterStatsPanel {
   min-width: 0;
-  border: 1px solid rgba(208, 221, 232, 0.98);
+  border: 1px solid var(--app-info-line, rgba(208, 221, 232, 0.98));
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 100% 0%, rgba(23, 96, 72, 0.045), transparent 35%),
-    linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+    radial-gradient(circle at 100% 0%, var(--app-surface-soft, rgba(23, 96, 72, 0.045)), transparent 35%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafc) 100%);
   padding: clamp(0.85rem, calc(var(--website-design-vw, 1vw) * 1.4), 1.05rem);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.98),
-    0 16px 32px rgba(22, 48, 42, 0.035);
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)),
+    0 16px 32px var(--app-shadow-colour, rgba(22, 48, 42, 0.035));
 }
 
 .fullRegisterStatsGrid {
@@ -401,15 +401,15 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.78rem 0.9rem;
-  border: 1px solid rgba(212, 224, 234, 0.96);
+  border: 1px solid var(--app-info-line, rgba(212, 224, 234, 0.96));
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.82);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, rgba(255, 255, 255, 0.82));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .fullRegisterStatRow span {
   min-width: 0;
-  color: #64748b;
+  color: var(--app-info, #64748b);
   font-size: 0.74rem;
   font-weight: 900;
   letter-spacing: 0.055em;
@@ -418,7 +418,7 @@
 }
 
 .fullRegisterStatRow strong {
-  color: var(--lead-ink);
+  color: var(--app-text, var(--lead-ink));
   font-size: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.35rem);
   font-weight: 900;
   line-height: 1;
@@ -438,15 +438,15 @@
 }
 
 .accountantDeleteAction {
-  color: var(--lead-danger) !important;
-  border-color: var(--lead-danger-line) !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-soft) 100%) !important;
+  color: var(--app-danger, var(--lead-danger)) !important;
+  border-color: var(--app-danger-line, var(--lead-danger-line)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-danger-soft)) 100%) !important;
 }
 
 .accountantDeleteAction:hover {
-  color: #842929 !important;
-  border-color: var(--lead-danger-line-hover) !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-hover) 100%) !important;
+  color: var(--app-danger, #842929) !important;
+  border-color: var(--app-danger-line, var(--lead-danger-line-hover)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-danger-hover)) 100%) !important;
 }
 
 .leadAssetBody.leadAssetBody {
@@ -476,8 +476,8 @@
   padding: 0 3rem 0 1rem;
   line-height: 1;
   font-weight: 760;
-  color: var(--lead-ink);
-  background-color: #ffffff;
+  color: var(--app-text, var(--lead-ink));
+  background-color: var(--app-surface, #ffffff);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%230d3028' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 1.05rem center;
@@ -538,7 +538,7 @@
   margin-top: 0.08rem;
   padding: 1.28rem 1.35rem !important;
   border-radius: 1.25rem !important;
-  background: linear-gradient(180deg, #ffffff 0%, #fff9f9 100%) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fff9f9) 100%) !important;
 }
 
 .leadDeleteSummary strong {
@@ -709,7 +709,7 @@
 }
 
 .licensingLeadThread .leadAssetName {
-  color: #244d40;
+  color: var(--app-text, #244d40);
   font-size: 0.93rem;
 }
 
@@ -726,10 +726,10 @@
   gap: 0.62rem;
   margin-top: 0.25rem;
   padding: 0.58rem 0.75rem 0.58rem 0.62rem;
-  border: 1px solid rgba(109, 40, 217, 0.17);
+  border: 1px solid var(--app-info-line, rgba(109, 40, 217, 0.17));
   border-radius: 0.9rem;
-  background: linear-gradient(135deg, #fbf9ff 0%, #f3edff 100%);
-  box-shadow: 0 8px 20px rgba(109, 40, 217, 0.06);
+  background: linear-gradient(135deg, var(--app-info-soft, #fbf9ff) 0%, var(--app-info-soft, #f3edff) 100%);
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(109, 40, 217, 0.06));
 }
 
 .licenceRenewalMetaIcon {
@@ -739,9 +739,9 @@
   width: 2rem;
   height: 2rem;
   border-radius: 0.68rem;
-  color: #6528bd;
-  background: #ffffff;
-  border: 1px solid rgba(109, 40, 217, 0.14);
+  color: var(--app-info, #6528bd);
+  background: var(--app-surface, #ffffff);
+  border: 1px solid var(--app-info-line, rgba(109, 40, 217, 0.14));
 }
 
 .licenceRenewalMetaCopy {
@@ -751,7 +751,7 @@
 }
 
 .licenceRenewalMetaCopy strong {
-  color: #532095;
+  color: var(--app-info, #532095);
   font-size: 0.82rem;
   font-weight: 850;
   line-height: 1.25;
@@ -759,7 +759,7 @@
 }
 
 .licenceRenewalMetaCopy small {
-  color: #6c5c7c;
+  color: var(--app-muted, #6c5c7c);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.3;
@@ -793,21 +793,21 @@
 }
 
 .licenceOutcomePending {
-  color: #7a4a0a;
-  border-color: rgba(211, 137, 31, 0.3);
-  background: #fff4df;
+  color: var(--app-warning, #7a4a0a);
+  border-color: var(--app-warning-line, rgba(211, 137, 31, 0.3));
+  background: var(--app-warning-soft, #fff4df);
 }
 
 .licenceOutcomeWon {
-  color: #176047;
-  border-color: rgba(43, 138, 99, 0.3);
-  background: #e9f7ef;
+  color: var(--app-text, #176047);
+  border-color: var(--app-line, rgba(43, 138, 99, 0.3));
+  background: var(--app-surface-soft, #e9f7ef);
 }
 
 .licenceOutcomeDenied {
-  color: #963737;
-  border-color: rgba(204, 58, 58, 0.25);
-  background: #fff0f0;
+  color: var(--app-danger, #963737);
+  border-color: var(--app-danger-line, rgba(204, 58, 58, 0.25));
+  background: var(--app-danger-soft, #fff0f0);
 }
 
 @media (max-width: 900px) {
@@ -849,12 +849,12 @@
   flex-direction: column !important;
   padding: 0 !important;
   overflow: hidden !important;
-  border: 1px solid rgba(198, 216, 226, 0.98) !important;
+  border: 1px solid var(--app-info-line, rgba(198, 216, 226, 0.98)) !important;
   border-radius: 1.55rem !important;
-  background: #ffffff !important;
+  background: var(--app-surface, #ffffff) !important;
   box-shadow:
-    0 34px 90px rgba(8, 27, 34, 0.26),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 34px 90px var(--app-shadow-colour, rgba(8, 27, 34, 0.26)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
   scrollbar-gutter: auto !important;
 }
 
@@ -868,10 +868,10 @@
   gap: 1rem !important;
   margin: 0 !important;
   padding: 1.35rem 5rem 1.2rem 1.5rem !important;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.94) !important;
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.94)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.075), transparent 44%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(25, 116, 84, 0.075)), transparent 44%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f8fbfa) 100%);
 }
 
 .leadModalTitleGroup {
@@ -882,7 +882,7 @@
 
 .leadModalTitleGroup h3 {
   margin: 0 !important;
-  color: #0d392e !important;
+  color: var(--app-text, #0d392e) !important;
   font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.15rem) !important;
   font-weight: 850 !important;
   line-height: 1.05 !important;
@@ -891,7 +891,7 @@
 
 .leadModalTitleGroup p {
   margin: 0.05rem 0 0 !important;
-  color: #607286 !important;
+  color: var(--app-info, #607286) !important;
   font-size: 0.93rem !important;
   font-weight: 650 !important;
   line-height: 1.4 !important;
@@ -909,7 +909,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .leadEmailRecipientCard.leadEmailRecipientCard {
@@ -919,11 +919,11 @@
   align-items: center;
   gap: 0.85rem;
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(198, 218, 230, 0.98);
+  border: 1px solid var(--app-info-line, rgba(198, 218, 230, 0.98));
   border-radius: 1rem;
   background:
-    radial-gradient(circle at 0 0, rgba(35, 102, 154, 0.07), transparent 45%),
-    linear-gradient(180deg, #ffffff 0%, #f6fafc 100%);
+    radial-gradient(circle at 0 0, var(--app-info-soft, rgba(35, 102, 154, 0.07)), transparent 45%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f6fafc) 100%);
 }
 
 .leadEmailRecipientCard > div {
@@ -938,11 +938,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(57, 112, 157, 0.18);
+  border: 1px solid var(--app-info-line, rgba(57, 112, 157, 0.18));
   border-radius: 0.8rem;
-  color: #285d86;
-  background: #ffffff;
-  box-shadow: 0 7px 16px rgba(30, 80, 120, 0.07);
+  color: var(--app-info, #285d86);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 7px 16px var(--app-shadow-colour, rgba(30, 80, 120, 0.07));
 }
 
 .leadEmailRecipientIcon svg {
@@ -952,7 +952,7 @@
 
 .leadEmailRecipientCard > div > span,
 .leadEmailField > span {
-  color: #647589 !important;
+  color: var(--app-info, #647589) !important;
   font-size: 0.72rem !important;
   font-weight: 900 !important;
   letter-spacing: 0.08em !important;
@@ -961,7 +961,7 @@
 }
 
 .leadEmailRecipientCard > div > strong {
-  color: #103b31;
+  color: var(--app-text, #103b31);
   font-size: 1rem;
   font-weight: 820;
   line-height: 1.3;
@@ -970,8 +970,8 @@
 
 .leadEmailField input,
 .leadEmailField textarea {
-  border-color: rgba(202, 218, 229, 0.98) !important;
-  background: #fbfdfe !important;
+  border-color: var(--app-info-line, rgba(202, 218, 229, 0.98)) !important;
+  background: var(--app-info-soft, #fbfdfe) !important;
 }
 
 .leadEmailField textarea {
@@ -986,8 +986,8 @@
   gap: 0.75rem !important;
   margin: 0 !important;
   padding: 1rem 1.5rem 1.2rem !important;
-  border-top: 1px solid rgba(211, 224, 234, 0.94) !important;
-  background: #fbfdfc !important;
+  border-top: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.94)) !important;
+  background: var(--app-surface, #fbfdfc) !important;
 }
 
 .leadEmailActions.leadEmailActions {
@@ -1017,22 +1017,22 @@
 .leadNoteBody.leadNoteBody {
   gap: 1.05rem;
   padding: 1.25rem 1.5rem !important;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .leadNoteBody .leadNoteAttachmentDropzone {
   min-height: 7.6rem;
-  border-color: rgba(37, 94, 74, 0.26) !important;
+  border-color: var(--app-line, rgba(37, 94, 74, 0.26)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.055), transparent 38%),
-    #f8fbf9 !important;
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(25, 116, 84, 0.055)), transparent 38%),
+    var(--app-surface, #f8fbf9) !important;
 }
 
 .leadNoteBody .leadNoteDeliveryHint {
   padding: 0.82rem 0.95rem;
-  border: 1px solid rgba(25, 116, 84, 0.13);
-  color: #315348;
-  background: #f1f7f3;
+  border: 1px solid var(--app-line, rgba(25, 116, 84, 0.13));
+  color: var(--app-text, #315348);
+  background: var(--app-surface-soft, #f1f7f3);
 }
 
 /* === My Leads photo viewers: authoritative modal sizing and image fit === */
@@ -1071,10 +1071,10 @@
   flex-direction: column;
   overflow: hidden;
   padding: 0;
-  border: 1px solid rgba(194, 211, 222, 0.98);
+  border: 1px solid var(--app-info-line, rgba(194, 211, 222, 0.98));
   border-radius: 1.25rem;
-  background: #ffffff;
-  box-shadow: 0 30px 80px rgba(5, 18, 24, 0.32);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 30px 80px var(--app-shadow-colour, rgba(5, 18, 24, 0.32));
 }
 
 .assetPhotoModal {
@@ -1093,9 +1093,9 @@
   align-items: center;
   gap: 1rem;
   padding: 0.85rem 0.9rem 0.8rem 1.05rem;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.94);
-  background: #ffffff;
-  box-shadow: inset 0 3px 0 var(--lead-photo-accent);
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.94));
+  background: var(--app-surface, #ffffff);
+  box-shadow: inset 0 3px 0 var(--app-shadow-colour, var(--lead-photo-accent));
 }
 
 .leadPhotoModalHeader > div {
@@ -1105,7 +1105,7 @@
 }
 
 .leadPhotoModalHeader strong {
-  color: #12382f;
+  color: var(--app-text, #12382f);
   font-size: 1.03rem;
   font-weight: 880;
   line-height: 1.2;
@@ -1113,7 +1113,7 @@
 }
 
 .leadPhotoModalHeader span {
-  color: #647589;
+  color: var(--app-info, #647589);
   font-size: 0.8rem;
   font-weight: 760;
   line-height: 1.25;
@@ -1126,9 +1126,9 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid rgba(196, 213, 225, 0.98);
-  background: rgba(255, 255, 255, 0.96);
-  color: #17362c;
+  border: 1px solid var(--app-info-line, rgba(196, 213, 225, 0.98));
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  color: var(--app-text, #17362c);
   cursor: pointer;
   transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
 }
@@ -1143,10 +1143,10 @@
 .leadPhotoModalCloseButton:focus-visible,
 .leadPhotoModalNavButton:hover,
 .leadPhotoModalNavButton:focus-visible {
-  border-color: var(--lead-photo-accent);
+  border-color: var(--app-info-line, var(--lead-photo-accent));
   outline: 0;
-  background: #f8fbfa;
-  box-shadow: 0 0 0 3px var(--lead-photo-accent-soft);
+  background: var(--app-surface, #f8fbfa);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, var(--lead-photo-accent-soft));
 }
 
 .leadPhotoModalBody {
@@ -1161,7 +1161,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.75rem 0.8rem 0.85rem;
-  background: #eef3f5;
+  background: var(--app-info-soft, #eef3f5);
   scrollbar-width: thin;
   scrollbar-color: rgba(25, 66, 55, 0.45) transparent;
 }
@@ -1177,7 +1177,7 @@
   place-items: center;
   overflow: hidden;
   padding: clamp(0.4rem, calc(var(--website-design-vw, 1vw) * 1), 0.7rem);
-  border: 1px solid rgba(29, 49, 58, 0.32);
+  border: 1px solid var(--app-info-line, rgba(29, 49, 58, 0.32));
   border-radius: 0.95rem;
   background:
     radial-gradient(circle at 50% 45%, rgba(59, 77, 85, 0.7), transparent 54%),
@@ -1185,7 +1185,7 @@
 }
 
 .sentPhotoModalFrame {
-  background: #f7fafb;
+  background: var(--app-info-soft, #f7fafb);
 }
 
 .leadPhotoModalFrame > img {
@@ -1206,7 +1206,7 @@
   height: 2.6rem;
   border-radius: 999px;
   transform: translateY(-50%);
-  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.14);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.14));
 }
 
 .leadPhotoModalNavButton:hover,
@@ -1242,20 +1242,20 @@
   padding: 0.14rem;
   border: 2px solid transparent;
   border-radius: 0.68rem;
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(12, 32, 40, 0.1);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 4px 12px var(--app-shadow-colour, rgba(12, 32, 40, 0.1));
   cursor: pointer;
 }
 
 .leadPhotoModalThumbButton:hover,
 .leadPhotoModalThumbButton:focus-visible {
-  border-color: var(--lead-photo-accent);
+  border-color: var(--app-info-line, var(--lead-photo-accent));
   outline: 0;
 }
 
 .leadPhotoModalThumbButtonActive {
-  border-color: var(--lead-photo-accent);
-  box-shadow: 0 0 0 3px var(--lead-photo-accent-soft);
+  border-color: var(--app-info-line, var(--lead-photo-accent));
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, var(--lead-photo-accent-soft));
 }
 
 .leadPhotoModalThumbButton img {
@@ -1370,15 +1370,15 @@
   align-items: center !important;
   margin: 0 0 clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.5), 1.3rem) !important;
   padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem) !important;
-  border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
+  border: 1.5px solid var(--app-info-line, rgba(193, 211, 218, 0.98)) !important;
   border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.7rem) !important;
   background:
-    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
+    radial-gradient(circle at 3% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.08)) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(248, 252, 253, 0.98)) 100%) !important;
   box-shadow:
-    0 18px 38px rgba(16, 36, 40, 0.06),
-    0 6px 16px rgba(16, 36, 40, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 18px 38px var(--app-shadow-colour, rgba(16, 36, 40, 0.06)),
+    0 6px 16px var(--app-shadow-colour, rgba(16, 36, 40, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadsPage:not(.dealerOwnerParity) .leadsHeroTitleBlock {
@@ -1394,7 +1394,7 @@
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
-  color: #073b30 !important;
+  color: var(--app-text, #073b30) !important;
   background: transparent !important;
   box-shadow: none !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
@@ -1415,11 +1415,11 @@
 .leadsPage:not(.dealerOwnerParity) .leadSummaryCard {
   min-height: clamp(8.35rem, calc(var(--website-design-vw, 1vw) * 9.2), 9.3rem) !important;
   padding: 1.15rem 1.3rem 1.15rem 1.55rem !important;
-  border-color: rgba(196, 215, 223, 0.98) !important;
+  border-color: var(--app-info-line, rgba(196, 215, 223, 0.98)) !important;
   border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.55rem) !important;
   box-shadow:
-    0 12px 26px rgba(16, 31, 28, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 12px 26px var(--app-shadow-colour, rgba(16, 31, 28, 0.045)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadsPage:not(.dealerOwnerParity) .leadSummaryCard > span {
@@ -1457,11 +1457,11 @@
 .leadsPage:not(.dealerOwnerParity) .leadThreadNew:not(.leadThreadOpen),
 .leadsPage:not(.dealerOwnerParity) .leadThreadDone {
   padding: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.25rem) !important;
-  border-color: rgba(198, 216, 223, 0.98) !important;
+  border-color: var(--app-info-line, rgba(198, 216, 223, 0.98)) !important;
   border-radius: 1.45rem !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(25, 116, 84, 0.035) 0%, rgba(25, 116, 84, 0) 34%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.99) 100%) !important;
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.035)) 0%, rgba(25, 116, 84, 0) 34%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(248, 252, 253, 0.99)) 100%) !important;
 }
 
 .leadsPage:not(.dealerOwnerParity) .clientPanelHeader {
@@ -1521,10 +1521,10 @@
   --owner-ink: #12352d;
   --owner-muted: #64746a;
   --owner-line: rgba(37, 71, 51, 0.15);
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   background:
-    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
-    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%) !important;
+    radial-gradient(circle at 50% 4%, var(--app-surface-soft, rgba(111, 197, 150, 0.13)), transparent 31rem),
+    linear-gradient(180deg, var(--app-surface, #f6faf7) 0%, var(--app-surface, #ffffff) 42%, var(--app-surface-soft, #f4f8f6) 100%) !important;
   font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -1544,10 +1544,10 @@
   min-height: 0 !important;
   margin: 0 0 1rem !important;
   padding: 1.15rem 1.25rem !important;
-  border: 1px solid var(--owner-line) !important;
+  border: 1px solid var(--app-line, var(--owner-line)) !important;
   border-radius: 22px !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08) !important;
+  background: var(--app-surface, rgba(255, 255, 255, 0.96)) !important;
+  box-shadow: 0 14px 32px var(--app-shadow-colour, rgba(18, 53, 45, 0.08)) !important;
 }
 
 .leadsHeroTitleBlock {
@@ -1556,7 +1556,7 @@
 }
 
 .leadsHeroEyebrow {
-  color: #2c6c55;
+  color: var(--app-text, #2c6c55);
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.13em;
@@ -1572,7 +1572,7 @@
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  color: var(--owner-ink) !important;
+  color: var(--app-text, var(--owner-ink)) !important;
   font-size: clamp(1.95rem, calc(var(--website-design-vw, 1vw) * 3.2), 2.65rem) !important;
   font-weight: 800 !important;
   line-height: 1.04 !important;
@@ -1583,7 +1583,7 @@
 .leadsHeroTitleBlock p {
   max-width: 46rem;
   margin: 0 !important;
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.94rem;
   font-weight: 650;
   line-height: 1.5;
@@ -1605,10 +1605,10 @@
   align-content: center;
   gap: 0.35rem 0.8rem;
   padding: 1rem 1.08rem 1rem 1.28rem;
-  border: 1px solid var(--owner-line);
+  border: 1px solid var(--app-line, var(--owner-line));
   border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.055);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.055));
 }
 
 .leadSummaryCard::before {
@@ -1616,11 +1616,11 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: #7f938a;
+  background: var(--app-surface-soft, #7f938a);
 }
 
 .leadSummaryCard > span {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.055em;
@@ -1631,7 +1631,7 @@
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: center;
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: clamp(1.9rem, calc(var(--website-design-vw, 1vw) * 3), 2.45rem);
   font-weight: 900;
   line-height: 1;
@@ -1639,18 +1639,18 @@
 }
 
 .leadSummaryCard > small {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.4;
 }
 
-.leadSummaryCardNew::before { background: #cf7b32; }
-.leadSummaryCardNew { background: linear-gradient(180deg, #fffdfa 0%, #fff7ef 100%); }
-.leadSummaryCardActive::before { background: #52718f; }
-.leadSummaryCardActive { background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%); }
+.leadSummaryCardNew::before { background: var(--app-danger-soft, #cf7b32); }
+.leadSummaryCardNew { background: linear-gradient(180deg, var(--app-warning-soft, #fffdfa) 0%, var(--app-warning-soft, #fff7ef) 100%); }
+.leadSummaryCardActive::before { background: var(--app-info-soft, #52718f); }
+.leadSummaryCardActive { background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f8fb) 100%); }
 .leadSummaryCardDone::before { background: #2b8a63; }
-.leadSummaryCardDone { background: linear-gradient(180deg, #ffffff 0%, #f1f8f4 100%); }
+.leadSummaryCardDone { background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f1f8f4) 100%); }
 
 .leadSearchToolbar {
   gap: 0.75rem !important;
@@ -1665,18 +1665,18 @@
 }
 
 .leadToolbarActions .leadFilterButton {
-  color: #0a543d !important;
-  border-color: #6fc596 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
-  box-shadow: 0 10px 24px rgba(10, 84, 61, 0.09) !important;
+  color: var(--app-text, #0a543d) !important;
+  border-color: var(--app-line, #6fc596) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%) !important;
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(10, 84, 61, 0.09)) !important;
 }
 
 .leadRefreshButton {
   min-width: 142px !important;
-  color: var(--owner-green) !important;
-  border-color: var(--owner-line) !important;
-  background: #ffffff !important;
-  box-shadow: 0 9px 22px rgba(18, 53, 45, 0.055) !important;
+  color: var(--app-text, var(--owner-green)) !important;
+  border-color: var(--app-line, var(--owner-line)) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 9px 22px var(--app-shadow-colour, rgba(18, 53, 45, 0.055)) !important;
 }
 
 .leadResultSummary {
@@ -1685,13 +1685,13 @@
   gap: 0.35rem;
   margin: 0 0 0.9rem;
   padding: 0 0.25rem;
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.8rem;
   font-weight: 650;
 }
 
 .leadResultSummary strong {
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: 0.92rem;
   font-weight: 800;
 }
@@ -1711,10 +1711,10 @@
   position: relative;
   overflow: hidden;
   padding: 1rem !important;
-  border: 1px solid var(--owner-line) !important;
+  border: 1px solid var(--app-line, var(--owner-line)) !important;
   border-radius: 20px !important;
-  background: #ffffff !important;
-  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.06) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.06)) !important;
 }
 
 .leadThread::before {
@@ -1722,10 +1722,10 @@
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: #82918a;
+  background: var(--app-surface-soft, #82918a);
 }
 
-.leadThreadNew:not(.leadThreadOpen)::before { background: #cf7b32; }
+.leadThreadNew:not(.leadThreadOpen)::before { background: var(--app-danger-soft, #cf7b32); }
 .leadThreadDone::before { background: #2b8a63; }
 .leadThreadOpen::before { background: var(--owner-green); }
 
@@ -1733,8 +1733,8 @@
 .leadThreadNew:not(.leadThreadOpen):hover,
 .leadThreadDone:hover {
   transform: translateY(-1px);
-  border-color: rgba(37, 71, 51, 0.25) !important;
-  box-shadow: 0 14px 30px rgba(18, 53, 45, 0.085) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.25)) !important;
+  box-shadow: 0 14px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.085)) !important;
 }
 
 .clientPanelHeader {
@@ -1750,7 +1750,7 @@
 .leadsPage .clientPanel h3,
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3,
 .leadsPage .leadThreadDone .clientPanel h3 {
-  color: var(--owner-ink) !important;
+  color: var(--app-text, var(--owner-ink)) !important;
   font-size: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.52rem) !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
@@ -1758,7 +1758,7 @@
 }
 
 .leadAssetName {
-  color: #315348;
+  color: var(--app-text, #315348);
   font-size: 0.9rem;
   font-weight: 800;
   line-height: 1.35;
@@ -1767,7 +1767,7 @@
 .clientKicker,
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientKicker,
 .leadsPage .leadThreadDone .clientKicker {
-  color: var(--owner-muted) !important;
+  color: var(--app-muted, var(--owner-muted)) !important;
   font-size: 0.78rem !important;
   font-weight: 650 !important;
 }
@@ -1786,9 +1786,9 @@
 .openLeadButton {
   min-width: 9.5rem !important;
   color: #ffffff !important;
-  border-color: var(--owner-green) !important;
+  border-color: var(--app-line, var(--owner-green)) !important;
   background: var(--owner-green) !important;
-  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18) !important;
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(37, 71, 51, 0.18)) !important;
 }
 
 .openLeadButton:hover {
@@ -1797,35 +1797,35 @@
 
 .markDoneLeadButton,
 .doneLeadPill {
-  color: #0a543d !important;
-  border-color: #6fc596 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
-  box-shadow: 0 9px 20px rgba(10, 84, 61, 0.08) !important;
+  color: var(--app-text, #0a543d) !important;
+  border-color: var(--app-line, #6fc596) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%) !important;
+  box-shadow: 0 9px 20px var(--app-shadow-colour, rgba(10, 84, 61, 0.08)) !important;
 }
 
 .deleteLeadButton {
-  color: #8c3131 !important;
-  border-color: rgba(150, 56, 56, 0.24) !important;
-  background: #fff7f7 !important;
+  color: var(--app-danger, #8c3131) !important;
+  border-color: var(--app-danger-line, rgba(150, 56, 56, 0.24)) !important;
+  background: var(--app-danger-soft, #fff7f7) !important;
   box-shadow: none !important;
 }
 
 .closeLeadButton {
-  color: var(--owner-green) !important;
-  border-color: var(--owner-line) !important;
-  background: #ffffff !important;
+  color: var(--app-text, var(--owner-green)) !important;
+  border-color: var(--app-line, var(--owner-line)) !important;
+  background: var(--app-surface, #ffffff) !important;
 }
 
 .leadAssetCard {
   margin-top: 0.85rem !important;
-  border: 1px solid rgba(37, 71, 51, 0.13) !important;
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13)) !important;
   border-radius: 18px !important;
-  background: #fbfdfb !important;
+  background: var(--app-surface, #fbfdfb) !important;
   box-shadow: none !important;
 }
 
 .leadAssetHeader {
-  border-bottom-color: rgba(37, 71, 51, 0.12) !important;
+  border-bottom-color: var(--app-line, rgba(37, 71, 51, 0.12)) !important;
 }
 
 .leadAssetHeader h2,
@@ -1842,10 +1842,10 @@
 .leadNoteModal {
   width: min(var(--website-dialog-reference-width, 100%), 56rem) !important;
   padding: 1.25rem !important;
-  border: 1px solid var(--owner-line) !important;
+  border: 1px solid var(--app-line, var(--owner-line)) !important;
   border-radius: 22px !important;
-  background: #ffffff !important;
-  box-shadow: 0 28px 80px rgba(18, 53, 45, 0.22) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 28px 80px var(--app-shadow-colour, rgba(18, 53, 45, 0.22)) !important;
 }
 
 .leadNoteAttachmentDropzone {
@@ -1855,9 +1855,9 @@
   gap: 0.2rem 0.8rem !important;
   min-height: 7rem;
   padding: 1rem !important;
-  border: 1px dashed rgba(37, 71, 51, 0.28) !important;
+  border: 1px dashed var(--app-line, rgba(37, 71, 51, 0.28)) !important;
   border-radius: 17px !important;
-  background: #f7faf8 !important;
+  background: var(--app-surface, #f7faf8) !important;
 }
 
 .leadNoteAttachmentIcon {
@@ -1866,9 +1866,9 @@
   height: 2.6rem;
   padding: 0.62rem;
   border-radius: 14px;
-  color: #244f76;
-  background: #eef6fc;
-  border: 1px solid rgba(29, 72, 111, 0.16);
+  color: var(--app-info, #244f76);
+  background: var(--app-info-soft, #eef6fc);
+  border: 1px solid var(--app-info-line, rgba(29, 72, 111, 0.16));
 }
 
 .leadNoteAttachmentEyebrow,
@@ -1878,19 +1878,19 @@
 }
 
 .leadNoteAttachmentEyebrow {
-  color: #315348 !important;
+  color: var(--app-text, #315348) !important;
   font-size: 0.72rem !important;
   font-weight: 800 !important;
 }
 
 .leadNoteAttachmentDropzone > strong {
-  color: var(--owner-ink);
+  color: var(--app-text, var(--owner-ink));
   font-size: 0.92rem;
   font-weight: 800;
 }
 
 .leadNoteAttachmentDropzone > small {
-  color: var(--owner-muted);
+  color: var(--app-muted, var(--owner-muted));
   font-size: 0.76rem;
   font-weight: 650;
 }
@@ -1898,10 +1898,10 @@
 .leadNoteDeliveryHint {
   margin: 0;
   padding: 0.75rem 0.85rem;
-  border: 1px solid rgba(37, 71, 51, 0.1);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.1));
   border-radius: 14px;
-  color: #315348;
-  background: #f2f6f3;
+  color: var(--app-text, #315348);
+  background: var(--app-surface-soft, #f2f6f3);
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1.45;
@@ -2036,12 +2036,12 @@
 
 .leadDeleteSummary {
   margin-top: 0 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%) !important;
-  border-color: rgba(207, 223, 236, 0.98) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfd) 100%) !important;
+  border-color: var(--app-info-line, rgba(207, 223, 236, 0.98)) !important;
 }
 
 .leadDeleteSummary span {
-  color: #68798b !important;
+  color: var(--app-muted, #68798b) !important;
 }
 
 .leadDeleteSummary strong {
@@ -2057,12 +2057,12 @@
 .leadDeleteConfirmButton,
 .leadDeleteConfirmButton:hover {
   min-width: 12.5rem !important;
-  color: #9a3030 !important;
-  background: linear-gradient(180deg, #fffafa 0%, #fff3f3 100%) !important;
-  border: 1px solid rgba(235, 203, 203, 0.98) !important;
+  color: var(--app-danger, #9a3030) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff3f3) 100%) !important;
+  border: 1px solid var(--app-danger-line, rgba(235, 203, 203, 0.98)) !important;
   box-shadow:
-    0 10px 22px rgba(130, 45, 45, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(130, 45, 45, 0.06)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96)) !important;
 }
 
 @media (max-width: 760px) {
@@ -2110,7 +2110,7 @@
 /* === Lead delete modal: keep description above divider === */
 .leadDeleteHeader {
   padding-bottom: 1.05rem !important;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98) !important;
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.98)) !important;
 }
 
 .leadDeleteHeader h3 {
@@ -2150,16 +2150,16 @@
   justify-content: flex-start !important;
   margin: 0 !important;
   padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem) !important;
-  border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
+  border: 1.5px solid var(--app-info-line, rgba(193, 211, 218, 0.98)) !important;
   border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.7rem) !important;
   background:
-    radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
+    radial-gradient(circle at 3% 0%, var(--app-surface-soft, rgba(25, 116, 84, 0.08)) 0%, rgba(25, 116, 84, 0) 38%),
+    linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(248, 252, 253, 0.98)) 100%) !important;
   box-shadow:
-    0 18px 38px rgba(16, 36, 40, 0.06),
-    0 6px 16px rgba(16, 36, 40, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
-  color: #073b30 !important;
+    0 18px 38px var(--app-shadow-colour, rgba(16, 36, 40, 0.06)),
+    0 6px 16px var(--app-shadow-colour, rgba(16, 36, 40, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
+  color: var(--app-text, #073b30) !important;
   text-shadow: none !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
   font-size: clamp(2.35rem, calc(var(--website-design-vw, 1vw) * 4.15), 3.55rem) !important;
@@ -2201,7 +2201,7 @@
 }
 
 .clientKicker {
-  color: #667789 !important;
+  color: var(--app-muted, #667789) !important;
   font-size: 0.88rem !important;
   font-weight: 800 !important;
   letter-spacing: -0.008em !important;
@@ -2234,63 +2234,63 @@
 
 /* === Leads inbox: unopened/read state, contact panel and action colours === */
 .leadThreadNew:not(.leadThreadOpen) {
-  border-color: rgba(124, 201, 157, 0.94) !important;
+  border-color: var(--app-line, rgba(124, 201, 157, 0.94)) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(70, 181, 120, 0.16) 0%, rgba(70, 181, 120, 0) 42%),
-    linear-gradient(180deg, #f3fff8 0%, #eaf9f1 100%) !important;
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(70, 181, 120, 0.16)) 0%, rgba(70, 181, 120, 0) 42%),
+    linear-gradient(180deg, var(--app-surface, #f3fff8) 0%, var(--app-surface-soft, #eaf9f1) 100%) !important;
   box-shadow:
-    0 16px 32px rgba(20, 97, 66, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 16px 32px var(--app-shadow-colour, rgba(20, 97, 66, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadThreadNew:not(.leadThreadOpen):hover {
-  border-color: rgba(83, 174, 122, 0.98) !important;
+  border-color: var(--app-line, rgba(83, 174, 122, 0.98)) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(70, 181, 120, 0.2) 0%, rgba(70, 181, 120, 0) 44%),
-    linear-gradient(180deg, #f7fffa 0%, #e4f6ed 100%) !important;
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(70, 181, 120, 0.2)) 0%, rgba(70, 181, 120, 0) 44%),
+    linear-gradient(180deg, var(--app-surface, #f7fffa) 0%, var(--app-surface-soft, #e4f6ed) 100%) !important;
   box-shadow:
-    0 18px 34px rgba(20, 97, 66, 0.095),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 18px 34px var(--app-shadow-colour, rgba(20, 97, 66, 0.095)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .leadThreadOpen {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(249, 252, 253, 0.99) 100%) !important;
+  background: linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.99)) 0%, var(--app-info-soft, rgba(249, 252, 253, 0.99)) 100%) !important;
 }
 
 .leadThreadNew:not(.leadThreadOpen) .clientKicker {
-  color: #367456 !important;
+  color: var(--app-accent, #367456) !important;
 }
 
 .leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
-  color: #063b30 !important;
+  color: var(--app-text, #063b30) !important;
 }
 
 .deleteLeadButton {
-  color: var(--lead-danger) !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-soft) 100%) !important;
-  border-color: var(--lead-danger-line) !important;
+  color: var(--app-danger, var(--lead-danger)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-danger-soft)) 100%) !important;
+  border-color: var(--app-danger-line, var(--lead-danger-line)) !important;
   box-shadow:
-    0 9px 20px rgba(142, 51, 51, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 9px 20px var(--app-shadow-colour, rgba(142, 51, 51, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .deleteLeadButton:hover {
-  color: #842929 !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-hover) 100%) !important;
-  border-color: var(--lead-danger-line-hover) !important;
+  color: var(--app-danger, #842929) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-danger-hover)) 100%) !important;
+  border-color: var(--app-danger-line, var(--lead-danger-line-hover)) !important;
   box-shadow:
-    0 12px 24px rgba(142, 51, 51, 0.105),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 12px 24px var(--app-shadow-colour, rgba(142, 51, 51, 0.105)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .leadDeleteConfirmButton,
 .leadDeleteConfirmButton:hover {
   color: #ffffff !important;
-  background: linear-gradient(180deg, #d85252 0%, #a83333 100%) !important;
-  border-color: rgba(152, 43, 43, 0.98) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #d85252) 0%, #a83333 100%) !important;
+  border-color: var(--app-danger-line, rgba(152, 43, 43, 0.98)) !important;
   box-shadow:
-    0 12px 24px rgba(145, 44, 44, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    0 12px 24px var(--app-shadow-colour, rgba(145, 44, 44, 0.18)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18)) !important;
 }
 
 .leadContactPanel {
@@ -2316,7 +2316,7 @@
   align-items: center;
   width: fit-content;
   max-width: 100%;
-  color: #273f4e;
+  color: var(--app-info, #273f4e);
   font-size: clamp(0.98rem, calc(var(--website-design-vw, 1vw) * 1.1), 1.06rem);
   font-weight: 760;
   line-height: 1.35;
@@ -2325,13 +2325,13 @@
 }
 
 .leadContactLine:hover {
-  color: #0f684f;
+  color: var(--app-text, #0f684f);
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }
 
 .leadContactEmpty {
-  color: #7a8794;
+  color: var(--app-muted, #7a8794);
   font-weight: 720;
 }
 
@@ -2356,32 +2356,32 @@
 }
 
 .leadAssetCard .leadManageButton {
-  color: #0a543d !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
-  border-color: #6fc596 !important;
+  color: var(--app-text, #0a543d) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%) !important;
+  border-color: var(--app-line, #6fc596) !important;
   box-shadow:
-    0 10px 22px rgba(15, 90, 67, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(15, 90, 67, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadAssetCard .leadManageButton:hover:not(:disabled) {
-  color: #0b4635 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%) !important;
-  border-color: #43ad73 !important;
+  color: var(--app-text, #0b4635) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #d9f1e5) 100%) !important;
+  border-color: var(--app-line, #43ad73) !important;
   box-shadow:
-    0 14px 28px rgba(15, 90, 67, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 14px 28px var(--app-shadow-colour, rgba(15, 90, 67, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .leadAssetCard .maintenanceReportButton {
   color: #ffffff !important;
-  border-color: #197d5c !important;
+  border-color: var(--app-line, #197d5c) !important;
   background: linear-gradient(180deg, #24906b 0%, #197d5c 100%) !important;
-  box-shadow: 0 10px 22px rgba(25, 125, 92, 0.16) !important;
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(25, 125, 92, 0.16)) !important;
 }
 
 .leadAssetCard .maintenanceReportButton:hover:not(:disabled) {
-  border-color: #126b4e !important;
+  border-color: var(--app-line, #126b4e) !important;
   background: linear-gradient(180deg, #208663 0%, #126b4e 100%) !important;
 }
 
@@ -2389,7 +2389,7 @@
 .leadsPage .clientPanel h3,
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
   margin: 0 !important;
-  color: #073b30 !important;
+  color: var(--app-text, #073b30) !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
   font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem) !important;
   font-weight: 760 !important;
@@ -2398,39 +2398,39 @@
 }
 
 .leadsPage .clientActionRow .deleteLeadButton {
-  color: var(--lead-danger) !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-soft) 100%) !important;
-  border-color: var(--lead-danger-line) !important;
+  color: var(--app-danger, var(--lead-danger)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-danger-soft)) 100%) !important;
+  border-color: var(--app-danger-line, var(--lead-danger-line)) !important;
   box-shadow:
-    0 10px 22px rgba(156, 52, 52, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(156, 52, 52, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadsPage .clientActionRow .deleteLeadButton:hover:not(:disabled) {
-  color: #842929 !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-danger-hover) 100%) !important;
-  border-color: var(--lead-danger-line-hover) !important;
+  color: var(--app-danger, #842929) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-danger-hover)) 100%) !important;
+  border-color: var(--app-danger-line, var(--lead-danger-line-hover)) !important;
   box-shadow:
-    0 13px 26px rgba(142, 51, 51, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 13px 26px var(--app-shadow-colour, rgba(142, 51, 51, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .leadsPage .clientActionRow .openLeadButton {
-  color: var(--lead-mint-text) !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-mint-soft) 100%) !important;
-  border-color: var(--lead-mint-line) !important;
+  color: var(--app-text, var(--lead-mint-text)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, var(--lead-mint-soft)) 100%) !important;
+  border-color: var(--app-line, var(--lead-mint-line)) !important;
   box-shadow:
-    0 10px 22px rgba(10, 84, 61, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadsPage .clientActionRow .openLeadButton:hover:not(:disabled) {
-  color: #083f2f !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-mint-hover) 100%) !important;
-  border-color: var(--lead-mint-line-hover) !important;
+  color: var(--app-text, #083f2f) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, var(--lead-mint-hover)) 100%) !important;
+  border-color: var(--app-line, var(--lead-mint-line-hover)) !important;
   box-shadow:
-    0 14px 28px rgba(10, 84, 61, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 14px 28px var(--app-shadow-colour, rgba(10, 84, 61, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 @media (max-width: 760px) {
@@ -2553,10 +2553,10 @@
   gap: 0.34rem;
   margin-top: 1rem;
   padding: 1.05rem 1.15rem;
-  border: 1.5px dashed rgba(23, 83, 70, 0.28);
+  border: 1.5px dashed var(--app-line, rgba(23, 83, 70, 0.28));
   border-radius: 1.18rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f6fbf9 100%);
-  color: #17362c;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f6fbf9) 100%);
+  color: var(--app-text, #17362c);
   cursor: pointer;
   transition:
     border-color 160ms ease,
@@ -2567,9 +2567,9 @@
 
 .leadNoteAttachmentDropzone:hover,
 .leadNoteAttachmentDropzoneDragging {
-  border-color: rgba(14, 113, 82, 0.58);
-  background: linear-gradient(180deg, #ffffff 0%, #eef9f4 100%);
-  box-shadow: 0 12px 28px rgba(14, 91, 67, 0.08);
+  border-color: var(--app-line, rgba(14, 113, 82, 0.58));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #eef9f4) 100%);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(14, 91, 67, 0.08));
   transform: translateY(-1px);
 }
 
@@ -2587,7 +2587,7 @@
 }
 
 .leadNoteAttachmentEyebrow {
-  color: #657587;
+  color: var(--app-muted, #657587);
   font-size: 0.78rem;
   font-weight: 850;
   letter-spacing: 0.085em;
@@ -2596,14 +2596,14 @@
 }
 
 .leadNoteAttachmentDropzone strong {
-  color: #103b31;
+  color: var(--app-text, #103b31);
   font-size: 1rem;
   font-weight: 820;
   line-height: 1.25;
 }
 
 .leadNoteAttachmentDropzone small {
-  color: #69798a;
+  color: var(--app-muted, #69798a);
   font-size: 0.9rem;
   font-weight: 650;
   line-height: 1.45;
@@ -2616,9 +2616,9 @@
   gap: 0.9rem;
   margin-top: 0.72rem;
   padding: 0.85rem 0.95rem;
-  border: 1px solid rgba(199, 216, 226, 0.98);
+  border: 1px solid var(--app-info-line, rgba(199, 216, 226, 0.98));
   border-radius: 1rem;
-  background: #f8fbfd;
+  background: var(--app-info-soft, #f8fbfd);
 }
 
 .leadNoteAttachmentPreview div {
@@ -2628,7 +2628,7 @@
 }
 
 .leadNoteAttachmentPreview strong {
-  color: #19362d;
+  color: var(--app-text, #19362d);
   font-size: 0.95rem;
   font-weight: 820;
   line-height: 1.25;
@@ -2636,7 +2636,7 @@
 }
 
 .leadNoteAttachmentPreview span {
-  color: #6c7b8a;
+  color: var(--app-muted, #6c7b8a);
   font-size: 0.84rem;
   font-weight: 700;
 }
@@ -2645,10 +2645,10 @@
   flex: 0 0 auto;
   min-height: 2.35rem;
   padding: 0 0.9rem;
-  border: 1px solid rgba(207, 221, 232, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 221, 232, 0.98));
   border-radius: 999px;
-  background: #ffffff;
-  color: #22384a;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #22384a);
   font: inherit;
   font-size: 0.88rem;
   font-weight: 780;
@@ -2656,8 +2656,8 @@
 }
 
 .leadNoteAttachmentPreview button:hover:not(:disabled) {
-  border-color: rgba(154, 177, 196, 0.98);
-  background: #f2f6f9;
+  border-color: var(--app-info-line, rgba(154, 177, 196, 0.98));
+  background: var(--app-info-soft, #f2f6f9);
 }
 
 @media (max-width: 620px) {
@@ -2689,11 +2689,11 @@
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0 1rem;
-  border: 1px solid rgba(207, 223, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 223, 236, 0.98));
   border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%);
-  color: var(--lead-ink);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #fbfdfe) 100%);
+  color: var(--app-text, var(--lead-ink));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   font: inherit;
   font-size: 1rem;
   font-weight: 760;
@@ -2709,11 +2709,11 @@
 
 .leadFilterSelectButton:hover,
 .leadFilterSelectButtonOpen {
-  border-color: rgba(128, 175, 158, 0.82);
-  background: linear-gradient(180deg, #ffffff 0%, #f6fbf9 100%);
+  border-color: var(--app-line, rgba(128, 175, 158, 0.82));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f6fbf9) 100%);
   box-shadow:
-    0 10px 22px rgba(15, 62, 48, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(15, 62, 48, 0.055)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .leadFilterSelectButton span {
@@ -2727,7 +2727,7 @@
   width: 1rem;
   height: 1rem;
   flex: 0 0 auto;
-  color: #0d3028;
+  color: var(--app-text, #0d3028);
   transition: transform 160ms ease;
 }
 
@@ -2744,12 +2744,12 @@
   max-height: min(18rem, calc(var(--website-design-vh, 1vh) * 42));
   overflow-y: auto;
   padding: 0.35rem;
-  border: 1px solid rgba(187, 211, 224, 0.98);
+  border: 1px solid var(--app-info-line, rgba(187, 211, 224, 0.98));
   border-radius: 1rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow:
-    0 18px 36px rgba(20, 36, 33, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 18px 36px var(--app-shadow-colour, rgba(20, 36, 33, 0.14)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .leadFilterSelectOption {
@@ -2761,7 +2761,7 @@
   border: 1px solid transparent;
   border-radius: 0.75rem;
   background: transparent;
-  color: #18382f;
+  color: var(--app-text, #18382f);
   font: inherit;
   font-size: 0.98rem;
   font-weight: 720;
@@ -2776,15 +2776,15 @@
 
 .leadFilterSelectOption:hover,
 .leadFilterSelectOption:focus-visible {
-  border-color: rgba(207, 223, 236, 0.9);
-  background: #f3f8fb;
+  border-color: var(--app-info-line, rgba(207, 223, 236, 0.9));
+  background: var(--app-info-soft, #f3f8fb);
   outline: none;
 }
 
 .leadFilterSelectOptionActive {
-  border-color: rgba(90, 188, 130, 0.45);
-  background: #eaf8f1;
-  color: #0d5a42;
+  border-color: var(--app-accent, rgba(90, 188, 130, 0.45));
+  background: var(--app-surface-soft, #eaf8f1);
+  color: var(--app-text, #0d5a42);
 }
 
 .leadPagination {
@@ -2795,21 +2795,21 @@
   flex-wrap: wrap;
   margin-top: 1rem;
   padding: 0.95rem 1rem;
-  border: 1px solid rgba(206, 218, 229, 0.98);
+  border: 1px solid var(--app-info-line, rgba(206, 218, 229, 0.98));
   border-radius: 1.25rem;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 253, 0.98) 100%);
-  box-shadow: 0 12px 24px rgba(20, 36, 33, 0.035);
+  background: linear-gradient(180deg, var(--app-surface, rgba(255, 255, 255, 0.98)) 0%, var(--app-info-soft, rgba(248, 251, 253, 0.98)) 100%);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(20, 36, 33, 0.035));
 }
 
 .leadPaginationSummary {
-  color: #607386;
+  color: var(--app-info, #607386);
   font-size: 0.92rem;
   font-weight: 700;
   line-height: 1.35;
 }
 
 .leadPaginationSummary strong {
-  color: var(--lead-ink);
+  color: var(--app-text, var(--lead-ink));
   font-weight: 900;
 }
 
@@ -2828,11 +2828,11 @@
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  border: 1px solid rgba(205, 219, 230, 0.98);
+  border: 1px solid var(--app-info-line, rgba(205, 219, 230, 0.98));
   border-radius: 0.92rem;
-  background: #ffffff;
-  color: #17362c;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #17362c);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   font: inherit;
   font-size: 0.9rem;
   font-weight: 780;
@@ -2858,8 +2858,8 @@
 .leadPaginationButton:hover:not(:disabled),
 .leadPaginationPageButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(140, 165, 181, 0.98);
-  background: #f6fafc;
+  border-color: var(--app-info-line, rgba(140, 165, 181, 0.98));
+  background: var(--app-info-soft, #f6fafc);
 }
 
 .leadPaginationButton:disabled,
@@ -2870,10 +2870,10 @@
 
 .leadPaginationPageButtonActive,
 .leadPaginationPageButtonActive:hover:not(:disabled) {
-  border-color: #176f52;
+  border-color: var(--app-accent, #176f52);
   background: #176f52;
   color: #ffffff;
-  box-shadow: 0 10px 20px rgba(18, 103, 76, 0.18);
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(18, 103, 76, 0.18));
   transform: none;
 }
 
@@ -2915,14 +2915,14 @@
   display: grid;
   gap: 0.28rem;
   padding: 0.86rem 0.98rem;
-  border: 1px solid rgba(207, 223, 236, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 223, 236, 0.98));
   border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfd) 100%);
 }
 
 .leadEmailRecipientCard span,
 .leadEmailField span {
-  color: #657587;
+  color: var(--app-muted, #657587);
   font-size: 0.78rem;
   font-weight: 850;
   letter-spacing: 0.085em;
@@ -2931,7 +2931,7 @@
 }
 
 .leadEmailRecipientCard strong {
-  color: #103b31;
+  color: var(--app-text, #103b31);
   font-size: 1rem;
   font-weight: 820;
   line-height: 1.28;
@@ -3004,21 +3004,21 @@
 .leadRefreshButton {
   min-width: 154px !important;
   justify-content: center !important;
-  color: var(--lead-copper-text) !important;
-  background: linear-gradient(180deg, #fffaf6 0%, var(--lead-copper-soft-bg) 100%) !important;
-  border-color: var(--lead-copper-soft-border) !important;
+  color: var(--app-danger, var(--lead-copper-text)) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffaf6) 0%, var(--app-danger-soft, var(--lead-copper-soft-bg)) 100%) !important;
+  border-color: var(--app-danger-line, var(--lead-copper-soft-border)) !important;
   box-shadow:
-    0 10px 22px rgba(180, 107, 43, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(180, 107, 43, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadRefreshButton:hover:not(:disabled) {
-  color: var(--lead-copper-text) !important;
-  background: linear-gradient(180deg, #ffffff 0%, var(--lead-copper-soft-bg-hover) 100%) !important;
-  border-color: var(--lead-copper-soft-border-hover) !important;
+  color: var(--app-danger, var(--lead-copper-text)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, var(--lead-copper-soft-bg-hover)) 100%) !important;
+  border-color: var(--app-danger-line, var(--lead-copper-soft-border-hover)) !important;
   box-shadow:
-    0 14px 28px rgba(180, 107, 43, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 14px 28px var(--app-shadow-colour, rgba(180, 107, 43, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
   transform: translateY(-1px);
 }
 
@@ -3035,53 +3035,53 @@
 }
 
 .leadThreadNew:not(.leadThreadOpen) {
-  border-color: var(--lead-new-red-line) !important;
+  border-color: var(--app-danger-line, var(--lead-new-red-line)) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.08) 0%, rgba(220, 38, 38, 0) 36%),
-    linear-gradient(180deg, #fff7f7 0%, var(--lead-new-red-bg) 100%) !important;
+    radial-gradient(circle at 0% 0%, var(--app-danger-soft, rgba(220, 38, 38, 0.08)) 0%, rgba(220, 38, 38, 0) 36%),
+    linear-gradient(180deg, var(--app-danger-soft, #fff7f7) 0%, var(--app-danger-soft, var(--lead-new-red-bg)) 100%) !important;
   box-shadow:
-    0 18px 42px rgba(166, 42, 42, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 18px 42px var(--app-shadow-colour, rgba(166, 42, 42, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadThreadNew:not(.leadThreadOpen):hover {
-  border-color: rgba(231, 91, 91, 0.98) !important;
+  border-color: var(--app-danger-line, rgba(231, 91, 91, 0.98)) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(220, 38, 38, 0.11) 0%, rgba(220, 38, 38, 0) 38%),
-    linear-gradient(180deg, #fffafa 0%, #ffeaea 100%) !important;
+    radial-gradient(circle at 0% 0%, var(--app-danger-soft, rgba(220, 38, 38, 0.11)) 0%, rgba(220, 38, 38, 0) 38%),
+    linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #ffeaea) 100%) !important;
   box-shadow:
-    0 22px 48px rgba(166, 42, 42, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 22px 48px var(--app-shadow-colour, rgba(166, 42, 42, 0.14)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientKicker,
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
-  color: var(--lead-new-red-text) !important;
+  color: var(--app-danger, var(--lead-new-red-text)) !important;
 }
 
 .leadThreadDone {
-  border-color: var(--lead-done-green-line) !important;
+  border-color: var(--app-line, var(--lead-done-green-line)) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(70, 181, 120, 0.14) 0%, rgba(70, 181, 120, 0) 42%),
-    linear-gradient(180deg, #f5fff9 0%, var(--lead-done-green-bg) 100%) !important;
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(70, 181, 120, 0.14)) 0%, rgba(70, 181, 120, 0) 42%),
+    linear-gradient(180deg, var(--app-surface, #f5fff9) 0%, var(--app-surface-soft, var(--lead-done-green-bg)) 100%) !important;
   box-shadow:
-    0 18px 38px rgba(20, 97, 66, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 18px 38px var(--app-shadow-colour, rgba(20, 97, 66, 0.09)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadThreadDone:hover {
-  border-color: rgba(83, 174, 122, 0.98) !important;
+  border-color: var(--app-line, rgba(83, 174, 122, 0.98)) !important;
   background:
-    radial-gradient(circle at 0% 0%, rgba(70, 181, 120, 0.18) 0%, rgba(70, 181, 120, 0) 44%),
-    linear-gradient(180deg, #f9fffb 0%, #e4f6ed 100%) !important;
+    radial-gradient(circle at 0% 0%, var(--app-surface-soft, rgba(70, 181, 120, 0.18)) 0%, rgba(70, 181, 120, 0) 44%),
+    linear-gradient(180deg, var(--app-surface, #f9fffb) 0%, var(--app-surface-soft, #e4f6ed) 100%) !important;
   box-shadow:
-    0 22px 46px rgba(20, 97, 66, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 22px 46px var(--app-shadow-colour, rgba(20, 97, 66, 0.12)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .leadsPage .leadThreadDone .clientKicker,
 .leadsPage .leadThreadDone .clientPanel h3 {
-  color: var(--lead-done-green-text) !important;
+  color: var(--app-text, var(--lead-done-green-text)) !important;
 }
 
 .markDoneLeadButton,
@@ -3095,21 +3095,21 @@
 }
 
 .markDoneLeadButton {
-  color: var(--lead-done-green-text) !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
-  border-color: #6fc596 !important;
+  color: var(--app-text, var(--lead-done-green-text)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%) !important;
+  border-color: var(--app-line, #6fc596) !important;
   box-shadow:
-    0 10px 22px rgba(15, 90, 67, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(15, 90, 67, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .markDoneLeadButton:hover:not(:disabled) {
-  color: #0b4635 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%) !important;
-  border-color: #43ad73 !important;
+  color: var(--app-text, #0b4635) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #d9f1e5) 100%) !important;
+  border-color: var(--app-line, #43ad73) !important;
   box-shadow:
-    0 14px 28px rgba(15, 90, 67, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 14px 28px var(--app-shadow-colour, rgba(15, 90, 67, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
   transform: translateY(-1px);
 }
 
@@ -3118,21 +3118,21 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border: 1px solid #6fc596 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
-  color: var(--lead-done-green-text) !important;
+  border: 1px solid var(--app-line, #6fc596) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%) !important;
+  color: var(--app-text, var(--lead-done-green-text)) !important;
   box-shadow:
-    0 10px 22px rgba(15, 90, 67, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 10px 22px var(--app-shadow-colour, rgba(15, 90, 67, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .doneLeadPill:hover:not(:disabled) {
-  color: #0b4635 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%) !important;
-  border-color: #43ad73 !important;
+  color: var(--app-text, #0b4635) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #d9f1e5) 100%) !important;
+  border-color: var(--app-line, #43ad73) !important;
   box-shadow:
-    0 14px 28px rgba(15, 90, 67, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 14px 28px var(--app-shadow-colour, rgba(15, 90, 67, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
   transform: translateY(-1px);
 }
 
@@ -3202,7 +3202,7 @@
   aspect-ratio: 4 / 3 !important;
   min-height: 0 !important;
   border-radius: 0.94rem !important;
-  background: linear-gradient(180deg, #eef3f6 0%, #dde7ee 100%) !important;
+  background: linear-gradient(180deg, var(--app-info-soft, #eef3f6) 0%, var(--app-info-soft, #dde7ee) 100%) !important;
 }
 
 .leadPreviewImage,
@@ -3264,10 +3264,10 @@
   appearance: none;
   font: inherit;
   line-height: 1;
-  border: 1px solid rgba(203, 216, 226, 0.98);
+  border: 1px solid var(--app-info-line, rgba(203, 216, 226, 0.98));
   border-radius: 0.88rem;
-  background: #f4f7fa;
-  box-shadow: 0 8px 18px rgba(23, 45, 75, 0.045);
+  background: var(--app-info-soft, #f4f7fa);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(23, 45, 75, 0.045));
   cursor: zoom-in;
 }
 
@@ -3296,7 +3296,7 @@
   justify-content: center;
   min-height: 1.35rem;
   padding: 0 0.45rem;
-  border: 1px solid rgba(255, 255, 255, 0.62);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.62));
   border-radius: 999px;
   background: rgba(15, 31, 42, 0.68);
   color: #ffffff;
@@ -3481,8 +3481,8 @@
 /* === Dealership workspace cascade lock (must remain last) === */
 .leadsPage {
   background:
-    radial-gradient(circle at 50% 4%, rgba(111, 197, 150, 0.13), transparent 31rem),
-    linear-gradient(180deg, #f6faf7 0%, #ffffff 42%, #f4f8f6 100%) !important;
+    radial-gradient(circle at 50% 4%, var(--app-surface-soft, rgba(111, 197, 150, 0.13)), transparent 31rem),
+    linear-gradient(180deg, var(--app-surface, #f6faf7) 0%, var(--app-surface, #ffffff) 42%, var(--app-surface-soft, #f4f8f6) 100%) !important;
 }
 
 .leadsPage .leadsRegisterPanel {
@@ -3496,10 +3496,10 @@
   min-height: 0 !important;
   margin: 0 0 1rem !important;
   padding: 1.15rem 1.25rem !important;
-  border: 1px solid rgba(37, 71, 51, 0.15) !important;
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.15)) !important;
   border-radius: 22px !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08) !important;
+  background: var(--app-surface, rgba(255, 255, 255, 0.96)) !important;
+  box-shadow: 0 14px 32px var(--app-shadow-colour, rgba(18, 53, 45, 0.08)) !important;
 }
 
 .leadsPage .leadsHeroTitleBlock {
@@ -3514,7 +3514,7 @@
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: clamp(1.95rem, calc(var(--website-design-vw, 1vw) * 3.2), 2.65rem) !important;
   font-weight: 800 !important;
   line-height: 1.04 !important;
@@ -3528,22 +3528,22 @@
   position: relative;
   overflow: hidden;
   padding: 1rem !important;
-  border: 1px solid rgba(37, 71, 51, 0.15) !important;
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.15)) !important;
   border-radius: 20px !important;
-  background: #ffffff !important;
-  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.06) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.06)) !important;
 }
 
 .leadsPage .leadThread:hover,
 .leadsPage .leadThreadNew:not(.leadThreadOpen):hover,
 .leadsPage .leadThreadDone:hover {
-  border-color: rgba(37, 71, 51, 0.25) !important;
-  background: #ffffff !important;
-  box-shadow: 0 14px 30px rgba(18, 53, 45, 0.085) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.25)) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 14px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.085)) !important;
 }
 
 .leadsPage .leadThreadNew:not(.leadThreadOpen)::before {
-  background: #cf7b32 !important;
+  background: var(--app-danger-soft, #cf7b32) !important;
 }
 
 .leadsPage .leadThreadDone::before {
@@ -3557,7 +3557,7 @@
 .leadsPage .clientPanel h3,
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3,
 .leadsPage .leadThreadDone .clientPanel h3 {
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.52rem) !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
@@ -3567,7 +3567,7 @@
 .leadsPage .clientKicker,
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientKicker,
 .leadsPage .leadThreadDone .clientKicker {
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: 0.78rem !important;
   font-weight: 650 !important;
 }
@@ -3575,44 +3575,44 @@
 .leadsPage .clientActionRow .openLeadButton {
   min-width: 9.5rem !important;
   color: #ffffff !important;
-  border-color: #254733 !important;
+  border-color: var(--app-line, #254733) !important;
   background: #254733 !important;
-  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18) !important;
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(37, 71, 51, 0.18)) !important;
 }
 
 .leadsPage .clientActionRow .openLeadButton:hover:not(:disabled) {
   color: #ffffff !important;
-  border-color: #1d3929 !important;
+  border-color: var(--app-line, #1d3929) !important;
   background: #1d3929 !important;
 }
 
 .leadsPage .clientActionRow .deleteLeadButton {
-  color: #8c3131 !important;
-  border-color: rgba(150, 56, 56, 0.24) !important;
-  background: #fff7f7 !important;
+  color: var(--app-danger, #8c3131) !important;
+  border-color: var(--app-danger-line, rgba(150, 56, 56, 0.24)) !important;
+  background: var(--app-danger-soft, #fff7f7) !important;
   box-shadow: none !important;
 }
 
 .leadsPage .clientActionRow .closeLeadButton,
 .leadsPage .clientActionRow .closeLeadButton:hover:not(:disabled) {
-  color: #254733 !important;
-  border-color: rgba(37, 71, 51, 0.22) !important;
-  background: #ffffff !important;
-  box-shadow: 0 10px 22px rgba(37, 71, 51, 0.06) !important;
+  color: var(--app-text, #254733) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.22)) !important;
+  background: var(--app-surface, #ffffff) !important;
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(37, 71, 51, 0.06)) !important;
 }
 
 .leadsPage .leadAssetCard {
-  border: 1px solid rgba(37, 71, 51, 0.13) !important;
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13)) !important;
   border-radius: 18px !important;
-  background: #fbfdfb !important;
+  background: var(--app-surface, #fbfdfb) !important;
   box-shadow: none !important;
 }
 
 .leadsPage .leadAssetCard .leadManageButton {
-  color: #0a543d !important;
-  border-color: #6fc596 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%) !important;
-  box-shadow: 0 10px 22px rgba(15, 90, 67, 0.085) !important;
+  color: var(--app-text, #0a543d) !important;
+  border-color: var(--app-line, #6fc596) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%) !important;
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(15, 90, 67, 0.085)) !important;
 }
 
 @media (max-width: 760px) {
@@ -3658,7 +3658,7 @@
 .leadReportModal::-webkit-scrollbar-track,
 .leadDeleteModal::-webkit-scrollbar-track,
 .leadNoteModal::-webkit-scrollbar-track {
-  background: #eef5f0;
+  background: var(--app-surface-soft, #eef5f0);
 }
 
 .leadFilterModal::-webkit-scrollbar-thumb,
@@ -3667,7 +3667,7 @@
 .leadReportModal::-webkit-scrollbar-thumb,
 .leadDeleteModal::-webkit-scrollbar-thumb,
 .leadNoteModal::-webkit-scrollbar-thumb {
-  border: 2px solid #eef5f0;
+  border: 2px solid var(--app-line, #eef5f0);
   border-radius: 999px;
   background: #2b8a63;
 }
@@ -3703,118 +3703,118 @@
   overflow: hidden !important;
   border-width: 1px !important;
   box-shadow:
-    0 14px 30px rgba(18, 53, 45, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+    0 14px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.78)) !important;
 }
 
 .leadsPage .leadSummaryRow > .leadOwnerSummaryCard.leadOwnerSummaryCardNew:first-child,
 .leadsPage .leadSummaryRow > .leadOwnerSummaryCard.leadOwnerSummaryCardNew:first-child:hover,
 .leadsPage .leadSummaryRow > .leadOwnerSummaryCard.leadOwnerSummaryCardNew:first-child:focus-within {
-  border-color: rgba(204, 58, 58, 0.24) !important;
-  background-color: #ffe7e7 !important;
+  border-color: var(--app-danger-line, rgba(204, 58, 58, 0.24)) !important;
+  background-color: var(--app-danger-soft, #ffe7e7) !important;
   background-image:
-    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.11), transparent 34%),
-    linear-gradient(180deg, #fff2f2 0%, #ffe7e7 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-danger-soft, rgba(204, 58, 58, 0.11)), transparent 34%),
+    linear-gradient(180deg, var(--app-danger-soft, #fff2f2) 0%, var(--app-danger-soft, #ffe7e7) 100%) !important;
   background-position: 0 0 !important;
   background-repeat: no-repeat !important;
   background-size: 100% 100% !important;
   box-shadow:
-    0 16px 36px rgba(157, 42, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+    0 16px 36px var(--app-shadow-colour, rgba(157, 42, 42, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.88)) !important;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
 
 .leadsPage .leadOwnerSummaryCardOpen {
-  border-color: var(--lead-state-open-line) !important;
+  border-color: var(--app-warning-line, var(--lead-state-open-line)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.17), transparent 43%),
-    linear-gradient(180deg, var(--lead-state-open-bg-top) 0%, var(--lead-state-open-bg-bottom) 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-warning-soft, rgba(230, 161, 55, 0.17)), transparent 43%),
+    linear-gradient(180deg, var(--app-warning-soft, var(--lead-state-open-bg-top)) 0%, var(--app-warning-soft, var(--lead-state-open-bg-bottom)) 100%) !important;
 }
 
 .leadsPage .leadOwnerSummaryCardDone {
-  border-color: var(--lead-state-done-line) !important;
+  border-color: var(--app-line, var(--lead-state-done-line)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.12), transparent 43%),
-    linear-gradient(180deg, var(--lead-state-done-bg-top) 0%, var(--lead-state-done-bg-bottom) 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(43, 138, 99, 0.12)), transparent 43%),
+    linear-gradient(180deg, var(--app-surface, var(--lead-state-done-bg-top)) 0%, var(--app-surface-soft, var(--lead-state-done-bg-bottom)) 100%) !important;
 }
 
 .leadsPage .leadOwnerSummaryCardNew .leadOwnerSummaryText {
-  color: var(--lead-state-new-ink) !important;
+  color: var(--app-text, var(--lead-state-new-ink)) !important;
 }
 
 .leadsPage .leadOwnerSummaryCardOpen .leadOwnerSummaryText {
-  color: var(--lead-state-open-ink) !important;
+  color: var(--app-warning, var(--lead-state-open-ink)) !important;
 }
 
 .leadsPage .leadOwnerSummaryCardDone .leadOwnerSummaryText {
-  color: var(--lead-state-done-ink) !important;
+  color: var(--app-text, var(--lead-state-done-ink)) !important;
 }
 
 .leadsPage .leadOwnerSummaryCardNew .leadOwnerSummaryFooter {
-  border-color: rgba(82, 97, 92, 0.18) !important;
+  border-color: var(--app-line, rgba(82, 97, 92, 0.18)) !important;
 }
 
 .leadsPage .leadOwnerSummaryCardNew .leadOwnerSummaryFooter .leadOwnerSummaryText {
-  color: #52615c !important;
+  color: var(--app-muted, #52615c) !important;
 }
 
 .leadsPage .leadOwnerSummaryCardOpen .leadOwnerSummaryFooter {
-  border-color: rgba(125, 75, 10, 0.2) !important;
+  border-color: var(--app-warning-line, rgba(125, 75, 10, 0.2)) !important;
 }
 
 .leadsPage .leadOwnerSummaryCardDone .leadOwnerSummaryFooter {
-  border-color: rgba(35, 99, 71, 0.2) !important;
+  border-color: var(--app-line, rgba(35, 99, 71, 0.2)) !important;
 }
 
 .leadsPage .leadThreadNew,
 .leadsPage .leadThreadNew.leadThreadOpen {
-  border-color: var(--lead-state-new-line) !important;
+  border-color: var(--app-danger-line, var(--lead-state-new-line)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(204, 58, 58, 0.075), transparent 32%),
-    linear-gradient(180deg, var(--lead-state-new-bg-top) 0%, var(--lead-state-new-bg-bottom) 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-danger-soft, rgba(204, 58, 58, 0.075)), transparent 32%),
+    linear-gradient(180deg, var(--app-danger-soft, var(--lead-state-new-bg-top)) 0%, var(--app-danger-soft, var(--lead-state-new-bg-bottom)) 100%) !important;
 }
 
 .leadsPage .leadThreadActive,
 .leadsPage .leadThreadActive.leadThreadOpen {
-  border-color: var(--lead-state-open-line) !important;
+  border-color: var(--app-warning-line, var(--lead-state-open-line)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(230, 161, 55, 0.1), transparent 34%),
-    linear-gradient(180deg, var(--lead-state-open-bg-top) 0%, var(--lead-state-open-bg-bottom) 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-warning-soft, rgba(230, 161, 55, 0.1)), transparent 34%),
+    linear-gradient(180deg, var(--app-warning-soft, var(--lead-state-open-bg-top)) 0%, var(--app-warning-soft, var(--lead-state-open-bg-bottom)) 100%) !important;
 }
 
 .leadsPage .leadThreadDone,
 .leadsPage .leadThreadDone.leadThreadOpen {
-  border-color: var(--lead-state-done-line) !important;
+  border-color: var(--app-line, var(--lead-state-done-line)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.085), transparent 34%),
-    linear-gradient(180deg, var(--lead-state-done-bg-top) 0%, var(--lead-state-done-bg-bottom) 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(43, 138, 99, 0.085)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, var(--lead-state-done-bg-top)) 0%, var(--app-surface-soft, var(--lead-state-done-bg-bottom)) 100%) !important;
 }
 
 .leadsPage .leadThreadNew:hover,
 .leadsPage .leadThreadNew.leadThreadOpen:hover {
-  border-color: rgba(204, 58, 58, 0.48) !important;
-  background: linear-gradient(180deg, #fffafa 0%, #ffe4e4 100%) !important;
+  border-color: var(--app-danger-line, rgba(204, 58, 58, 0.48)) !important;
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #ffe4e4) 100%) !important;
 }
 
 .leadsPage .leadThreadActive:hover,
 .leadsPage .leadThreadActive.leadThreadOpen:hover {
-  border-color: rgba(211, 137, 31, 0.56) !important;
-  background: linear-gradient(180deg, #fffdf8 0%, #ffe9c0 100%) !important;
+  border-color: var(--app-warning-line, rgba(211, 137, 31, 0.56)) !important;
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf8) 0%, var(--app-warning-soft, #ffe9c0) 100%) !important;
 }
 
 .leadsPage .leadThreadDone:hover,
 .leadsPage .leadThreadDone.leadThreadOpen:hover {
-  border-color: rgba(43, 138, 99, 0.48) !important;
-  background: linear-gradient(180deg, #f9fdfa 0%, #dff2e7 100%) !important;
+  border-color: var(--app-line, rgba(43, 138, 99, 0.48)) !important;
+  background: linear-gradient(180deg, var(--app-surface, #f9fdfa) 0%, var(--app-surface-soft, #dff2e7) 100%) !important;
 }
 
 .leadsPage .leadThreadNew::before {
-  background: #c93a3a !important;
+  background: var(--app-danger-soft, #c93a3a) !important;
 }
 
 .leadsPage .leadThreadActive::before {
-  background: #d28116 !important;
+  background: var(--app-warning-soft, #d28116) !important;
 }
 
 .leadsPage .leadThreadDone::before {
@@ -3830,15 +3830,15 @@
   align-items: center;
   margin: 0.58rem 0 0.42rem;
   padding: 0.72rem 0.88rem 0.72rem 0.72rem;
-  border: 1px solid rgba(55, 105, 151, 0.22);
+  border: 1px solid var(--app-info-line, rgba(55, 105, 151, 0.22));
   border-radius: 0.9rem;
   background:
-    radial-gradient(circle at 0 0, rgba(59, 111, 158, 0.09), transparent 42%),
-    rgba(255, 255, 255, 0.84);
-  color: #244f76;
+    radial-gradient(circle at 0 0, var(--app-info-soft, rgba(59, 111, 158, 0.09)), transparent 42%),
+    var(--app-surface, rgba(255, 255, 255, 0.84));
+  color: var(--app-info, #244f76);
   box-shadow:
-    0 8px 20px rgba(36, 79, 118, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 8px 20px var(--app-shadow-colour, rgba(36, 79, 118, 0.055)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9));
 }
 
 .trackingLeadPurposeIcon {
@@ -3847,11 +3847,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(59, 111, 158, 0.18);
+  border: 1px solid var(--app-info-line, rgba(59, 111, 158, 0.18));
   border-radius: 0.72rem;
-  background: #ffffff;
-  color: #3b6f9e;
-  box-shadow: 0 6px 14px rgba(36, 79, 118, 0.07);
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #3b6f9e);
+  box-shadow: 0 6px 14px var(--app-shadow-colour, rgba(36, 79, 118, 0.07));
 }
 
 .trackingLeadPurposeIconGraphic {
@@ -3866,14 +3866,14 @@
 }
 
 .trackingLeadPurposeCopy strong {
-  color: #173f61;
+  color: var(--app-info, #173f61);
   font-size: 0.88rem;
   font-weight: 850;
   line-height: 1.22;
 }
 
 .trackingLeadPurposeCopy small {
-  color: #536e84;
+  color: var(--app-info, #536e84);
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.38;
@@ -3918,7 +3918,7 @@
 }
 
 .leadPreviewOpenButton:focus-visible {
-  outline: 3px solid rgba(37, 138, 99, 0.45);
+  outline: 3px solid var(--app-accent, rgba(37, 138, 99, 0.45));
   outline-offset: -3px;
 }
 
@@ -3930,11 +3930,11 @@
   align-items: center;
   min-height: 2rem;
   padding: 0 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.58);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.58));
   border-radius: 0.65rem;
   background: rgba(18, 53, 45, 0.84);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(18, 53, 45, 0.2);
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(18, 53, 45, 0.2));
   font-size: 0.72rem;
   font-weight: 800;
   line-height: 1;
@@ -4042,13 +4042,13 @@
 .leadsPage .leadThreadTracking.leadThreadActive,
 .leadsPage .leadThreadTracking.leadThreadDone,
 .leadsPage .leadThreadTracking.leadThreadOpen {
-  border-color: var(--lead-state-done-line) !important;
+  border-color: var(--app-accent, var(--lead-state-done-line)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.11), transparent 36%),
-    linear-gradient(180deg, #f8fdf9 0%, #e5f5ec 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(43, 138, 99, 0.11)), transparent 36%),
+    linear-gradient(180deg, var(--app-surface, #f8fdf9) 0%, var(--app-surface-soft, #e5f5ec) 100%) !important;
   box-shadow:
-    0 14px 30px rgba(25, 107, 75, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+    0 14px 30px var(--app-shadow-colour, rgba(25, 107, 75, 0.085)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.9)) !important;
 }
 
 .leadsPage .leadThreadTracking:hover,
@@ -4056,13 +4056,13 @@
 .leadsPage .leadThreadTracking.leadThreadActive:hover,
 .leadsPage .leadThreadTracking.leadThreadDone:hover,
 .leadsPage .leadThreadTracking.leadThreadOpen:hover {
-  border-color: rgba(43, 138, 99, 0.5) !important;
+  border-color: var(--app-accent, rgba(43, 138, 99, 0.5)) !important;
   background:
-    radial-gradient(circle at 0 0, rgba(43, 138, 99, 0.14), transparent 38%),
-    linear-gradient(180deg, #fbfefc 0%, #dcf0e5 100%) !important;
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(43, 138, 99, 0.14)), transparent 38%),
+    linear-gradient(180deg, var(--app-surface, #fbfefc) 0%, var(--app-surface-soft, #dcf0e5) 100%) !important;
   box-shadow:
-    0 18px 36px rgba(25, 107, 75, 0.115),
-    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+    0 18px 36px var(--app-shadow-colour, rgba(25, 107, 75, 0.115)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.94)) !important;
 }
 
 .leadsPage .leadThreadTracking::before,
@@ -4115,33 +4115,33 @@
 
 .leadsPage .clientActionRow .trackingOpenButton {
   min-width: 9.5rem !important;
-  color: #254733 !important;
-  border-color: rgba(37, 71, 51, 0.22) !important;
-  background: #ffffff !important;
+  color: var(--app-text, #254733) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.22)) !important;
+  background: var(--app-surface, #ffffff) !important;
   box-shadow:
-    0 9px 20px rgba(37, 71, 51, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 9px 20px var(--app-shadow-colour, rgba(37, 71, 51, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadsPage .clientActionRow .trackingOpenButton:hover:not(:disabled) {
-  color: #1d3929 !important;
-  border-color: rgba(37, 71, 51, 0.38) !important;
-  background: #f8fbf9 !important;
+  color: var(--app-text, #1d3929) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.38)) !important;
+  background: var(--app-surface, #f8fbf9) !important;
   box-shadow:
-    0 12px 24px rgba(37, 71, 51, 0.105),
-    inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    0 12px 24px var(--app-shadow-colour, rgba(37, 71, 51, 0.105)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 1)) !important;
 }
 
 .leadsPage .trackingLeadActions .openLeadButton,
 .leadsPage .trackingLeadActions .openLeadButton:hover:not(:disabled) {
   color: #ffffff !important;
-  border-color: #254733 !important;
+  border-color: var(--app-line, #254733) !important;
   background: #254733 !important;
-  box-shadow: 0 12px 24px rgba(37, 71, 51, 0.18) !important;
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(37, 71, 51, 0.18)) !important;
 }
 
 .leadsPage .trackingLeadActions .openLeadButton:hover:not(:disabled) {
-  border-color: #1d3929 !important;
+  border-color: var(--app-line, #1d3929) !important;
   background: #1d3929 !important;
 }
 
@@ -4150,14 +4150,14 @@
   max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 4), 3rem)) !important;
   overflow: visible !important;
   padding: 0 !important;
-  border: 1px solid rgba(203, 218, 230, 0.98) !important;
+  border: 1px solid var(--app-info-line, rgba(203, 218, 230, 0.98)) !important;
   border-radius: 2rem !important;
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f9fcfd 100%) !important;
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.045)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f9fcfd) 100%) !important;
   box-shadow:
-    0 32px 82px rgba(8, 27, 34, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 32px 82px var(--app-shadow-colour, rgba(8, 27, 34, 0.25)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
   scrollbar-gutter: auto !important;
 }
@@ -4169,12 +4169,12 @@
 .leadFilterHeader {
   margin: 0 !important;
   padding: 1.55rem 5rem 1.35rem 1.7rem !important;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.94) !important;
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.94)) !important;
 }
 
 .leadFilterHeader h3 {
   margin: 0 !important;
-  color: #073b30 !important;
+  color: var(--app-text, #073b30) !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
   font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 2.8), 2.15rem) !important;
   font-weight: 800 !important;
@@ -4185,7 +4185,7 @@
 .leadFilterIntro {
   max-width: 42rem !important;
   margin: 0.48rem 0 0 !important;
-  color: #607286 !important;
+  color: var(--app-info, #607286) !important;
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif !important;
   font-size: 0.95rem !important;
   font-weight: 620 !important;
@@ -4199,7 +4199,7 @@
   gap: 1.2rem 1.25rem;
   margin: 0 !important;
   padding: 1.55rem 1.7rem 1.7rem;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--app-surface, rgba(255, 255, 255, 0.72));
 }
 
 .leadFilterModal .leadFilterField {
@@ -4212,7 +4212,7 @@
 }
 
 .leadFilterModal .leadFilterField > span {
-  color: #33424c;
+  color: var(--app-info, #33424c);
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.86rem;
   font-weight: 700;
@@ -4224,10 +4224,10 @@
 .leadFilterModal .leadFilterSelectButton {
   min-height: 3.45rem;
   padding: 0 1.05rem;
-  border: 1px solid #dbe4ee;
+  border: 1px solid var(--app-info-line, #dbe4ee);
   border-radius: 1rem;
-  background: #ffffff;
-  color: #1d2d36;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #1d2d36);
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.96rem;
   font-weight: 700;
@@ -4258,9 +4258,9 @@
   gap: 0.75rem !important;
   margin: 0 !important;
   padding: 1.1rem 1.7rem 1.4rem !important;
-  border-top: 1px solid rgba(211, 224, 234, 0.94) !important;
+  border-top: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.94)) !important;
   border-radius: 0 0 2rem 2rem;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
 }
 
 .leadFilterModal .leadFilterActions > button {
@@ -4381,17 +4381,17 @@
 
 .leadsPage .trackingLeadActions .trackingCloseButton,
 .leadsPage .trackingLeadActions .trackingCloseButton:hover:not(:disabled) {
-  color: #254733 !important;
-  border-color: rgba(37, 71, 51, 0.22) !important;
-  background: #ffffff !important;
+  color: var(--app-text, #254733) !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.22)) !important;
+  background: var(--app-surface, #ffffff) !important;
   box-shadow:
-    0 9px 20px rgba(37, 71, 51, 0.075),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+    0 9px 20px var(--app-shadow-colour, rgba(37, 71, 51, 0.075)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98)) !important;
 }
 
 .leadsPage .trackingLeadActions .trackingCloseButton:hover:not(:disabled) {
-  border-color: rgba(37, 71, 51, 0.38) !important;
-  background: #f8fbf9 !important;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.38)) !important;
+  background: var(--app-surface, #f8fbf9) !important;
 }
 
 .leadsPage .leadAssetHeaderActions > button,
@@ -4423,7 +4423,7 @@
   position: relative;
   display: block !important;
   padding: 1.5rem 5rem 1.25rem 1.5rem !important;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98) !important;
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.98)) !important;
 }
 
 .leadDeleteHeader h3 {
@@ -4447,9 +4447,9 @@
 .leadDeleteSummary.leadDeleteSummary {
   margin: 1.35rem 1.5rem 0 !important;
   padding: 1rem 1.1rem !important;
-  border-color: rgba(207, 220, 231, 0.98) !important;
+  border-color: var(--app-info-line, rgba(207, 220, 231, 0.98)) !important;
   border-radius: 1rem !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafc) 100%) !important;
 }
 
 .leadDeleteWarning {
@@ -4457,10 +4457,10 @@
   gap: 0.28rem;
   margin: 0.9rem 1.5rem 1.35rem;
   padding: 0.9rem 1rem;
-  border: 1px solid rgba(226, 177, 177, 0.82);
+  border: 1px solid var(--app-danger-line, rgba(226, 177, 177, 0.82));
   border-radius: 1rem;
-  color: #7d3434;
-  background: #fff7f7;
+  color: var(--app-danger, #7d3434);
+  background: var(--app-danger-soft, #fff7f7);
 }
 
 .leadDeleteWarning strong {
@@ -4469,7 +4469,7 @@
 }
 
 .leadDeleteWarning span {
-  color: #795656;
+  color: var(--app-danger, #795656);
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.45;
@@ -4482,8 +4482,8 @@
   gap: 0.75rem !important;
   margin: 0 !important;
   padding: 1rem 1.5rem 1.25rem !important;
-  border-top: 1px solid rgba(211, 224, 234, 0.94) !important;
-  background: #ffffff;
+  border-top: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.94)) !important;
+  background: var(--app-surface, #ffffff);
 }
 
 .leadDeleteActions > button {
@@ -4553,16 +4553,16 @@
 
 .leadSummaryFilterButton:hover,
 .leadSummaryFilterButton:focus-visible {
-  border-color: #79bc9c !important;
+  border-color: var(--app-accent, #79bc9c) !important;
   outline: 0;
   transform: translateY(-1px);
 }
 
 .leadSummaryFilterButtonActive {
-  border-color: #4ca77b !important;
+  border-color: var(--app-accent, #4ca77b) !important;
   box-shadow:
-    0 0 0 4px rgba(76, 167, 123, 0.12),
-    0 18px 34px rgba(16, 82, 59, 0.09) !important;
+    0 0 0 4px var(--app-shadow-colour, rgba(76, 167, 123, 0.12)),
+    0 18px 34px var(--app-shadow-colour, rgba(16, 82, 59, 0.09)) !important;
 }
 
 .leadThreadMuted {
@@ -4642,10 +4642,10 @@
   width: 100%;
   min-height: 3.45rem;
   box-sizing: border-box;
-  border: 1px solid #dbe4ee;
+  border: 1px solid var(--app-info-line, #dbe4ee);
   border-radius: 1rem;
-  background: #ffffff;
-  color: #1d2d36;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-info, #1d2d36);
   padding: 0 1rem;
   font: inherit;
   font-size: 1rem;
@@ -4654,8 +4654,8 @@
 }
 
 .leadFilterNativeSelect:focus-visible {
-  border-color: #4ca77b;
-  outline: 3px solid rgba(76, 167, 123, 0.16);
+  border-color: var(--app-accent, #4ca77b);
+  outline: 3px solid var(--app-accent, rgba(76, 167, 123, 0.16));
   outline-offset: 2px;
 }
 
@@ -4709,11 +4709,11 @@
 }
 
 .leadManageScrollBody::-webkit-scrollbar-track {
-  background: #eef5f0;
+  background: var(--app-surface-soft, #eef5f0);
 }
 
 .leadManageScrollBody::-webkit-scrollbar-thumb {
-  border: 2px solid #eef5f0;
+  border: 2px solid var(--app-line, #eef5f0);
   border-radius: 999px;
   background: #2b8a63;
 }
@@ -4884,11 +4884,11 @@
 }
 
 .dealerAppLeads .leadNoteBody::-webkit-scrollbar-track {
-  background: #eef5f0;
+  background: var(--app-surface-soft, #eef5f0);
 }
 
 .dealerAppLeads .leadNoteBody::-webkit-scrollbar-thumb {
-  border: 2px solid #eef5f0;
+  border: 2px solid var(--app-line, #eef5f0);
   border-radius: 999px;
   background: #2b8a63;
 }
@@ -5083,15 +5083,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  color: #123f35;
+  color: var(--app-text, #123f35);
 }
 
 .leadPhotoSectionHeading span {
   min-width: 2rem;
   padding: 0.18rem 0.55rem;
   border-radius: 999px;
-  background: #e7f5ef;
-  color: #167252;
+  background: var(--app-surface-soft, #e7f5ef);
+  color: var(--app-text, #167252);
   text-align: center;
   font-weight: 800;
 }
@@ -5115,9 +5115,9 @@
   aspect-ratio: 4 / 3;
   margin: 0;
   padding: 0;
-  border: 1px solid #cfe0d9;
+  border: 1px solid var(--app-line, #cfe0d9);
   border-radius: 1rem;
-  background: #f3f8f5;
+  background: var(--app-surface-soft, #f3f8f5);
   overflow: hidden;
 }
 
@@ -5140,10 +5140,10 @@
   align-content: center;
   gap: 0.45rem;
   padding: 1.5rem;
-  border: 2px dashed #91bea9;
+  border: 2px dashed var(--app-line, #91bea9);
   border-radius: 1.25rem;
-  background: #f4fbf7;
-  color: #214f43;
+  background: var(--app-surface, #f4fbf7);
+  color: var(--app-text, #214f43);
   text-align: center;
   cursor: pointer;
   transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
@@ -5151,8 +5151,8 @@
 
 .leadPhotoDropzone:hover,
 .leadPhotoDropzoneActive {
-  border-color: #16815c;
-  background: #e9f8f0;
+  border-color: var(--app-accent, #16815c);
+  background: var(--app-surface-soft, #e9f8f0);
   transform: translateY(-1px);
 }
 
@@ -5166,7 +5166,7 @@
 }
 
 .leadPhotoDropzone span {
-  color: #16815c;
+  color: var(--app-text, #16815c);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -5178,13 +5178,13 @@
 }
 
 .leadPhotoDropzone small {
-  color: #637a73;
+  color: var(--app-muted, #637a73);
 }
 
 .leadPhotoDropzoneIcon {
   width: 2rem;
   height: 2rem;
-  color: #16815c;
+  color: var(--app-text, #16815c);
 }
 
 .leadPendingPhoto > button {
@@ -5196,7 +5196,7 @@
   height: 2rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.75));
   border-radius: 999px;
   background: rgba(13, 55, 45, 0.9);
   color: #fff;
@@ -5223,7 +5223,7 @@
 .leadPhotoUploadActions {
   margin: 0;
   padding: 1rem 1.25rem;
-  border-top: 1px solid #d8e5df;
+  border-top: 1px solid var(--app-line, #d8e5df);
 }
 
 @media (max-width: 720px) {
@@ -5249,7 +5249,7 @@
   gap: 16px;
   margin-top: 22px;
   padding-top: 22px;
-  border-top: 1px solid #d9e6e2;
+  border-top: 1px solid var(--app-line, #d9e6e2);
 }
 
 .fullRegisterAssetsHeading {
@@ -5265,7 +5265,7 @@
 }
 
 .fullRegisterAssetsHeading span {
-  color: #2c806c;
+  color: var(--app-accent, #2c806c);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.09em;
@@ -5274,15 +5274,15 @@
 
 .fullRegisterAssetsHeading h4 {
   margin: 0;
-  color: #073f3b;
+  color: var(--app-text, #073f3b);
   font-size: 1.35rem;
 }
 
 .fullRegisterAssetsHeading > strong {
   padding: 7px 11px;
   border-radius: 999px;
-  background: #eaf7f2;
-  color: #0b6554;
+  background: var(--app-surface-soft, #eaf7f2);
+  color: var(--app-text, #0b6554);
   font-size: 0.78rem;
 }
 
@@ -5293,18 +5293,18 @@
 
 .fullRegisterAssetCard {
   overflow: hidden;
-  border: 1px solid #d2e2de;
+  border: 1px solid var(--app-line, #d2e2de);
   border-radius: 20px;
-  background: #ffffff;
-  box-shadow: 0 12px 28px rgba(10, 61, 55, 0.08);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(10, 61, 55, 0.08));
 }
 
 .fullRegisterAssetHeader {
   display: flex;
   gap: 20px;
   padding: 19px 21px;
-  border-bottom: 1px solid #deebe7;
-  background: linear-gradient(135deg, #f5fbf8, #ffffff);
+  border-bottom: 1px solid var(--app-line, #deebe7);
+  background: linear-gradient(135deg, var(--app-surface, #f5fbf8), var(--app-surface, #ffffff));
   justify-content: space-between;
   align-items: flex-start;
 }
@@ -5316,7 +5316,7 @@
 }
 
 .fullRegisterAssetHeader > div:first-child > span {
-  color: #347c6b;
+  color: var(--app-accent, #347c6b);
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -5325,13 +5325,13 @@
 
 .fullRegisterAssetHeader h4 {
   margin: 0;
-  color: #073f3b;
+  color: var(--app-text, #073f3b);
   font-size: 1.35rem;
   line-height: 1.2;
 }
 
 .fullRegisterAssetHeader small {
-  color: #657b77;
+  color: var(--app-muted, #657b77);
 }
 
 .fullRegisterAssetHeader em {
@@ -5340,8 +5340,8 @@
   margin-top: 4px;
   padding: 5px 9px;
   border-radius: 999px;
-  background: #e9f4ff;
-  color: #2d6281;
+  background: var(--app-info-soft, #e9f4ff);
+  color: var(--app-info, #2d6281);
   font-size: 0.7rem;
   font-style: normal;
   font-weight: 850;
@@ -5355,7 +5355,7 @@
 }
 
 .fullRegisterAssetHeader > div:last-child strong {
-  color: #073f3b;
+  color: var(--app-text, #073f3b);
   font-size: 1.3rem;
 }
 
@@ -5381,24 +5381,24 @@
   display: flex;
   gap: 8px;
   padding: 12px 14px;
-  border: 1px solid #dbe7e4;
+  border: 1px solid var(--app-line, #dbe7e4);
   border-radius: 12px;
-  background: #f8fbfa;
+  background: var(--app-surface, #f8fbfa);
   flex-wrap: wrap;
   align-items: center;
 }
 
 .fullRegisterAssetDocuments > strong {
   width: 100%;
-  color: #2d5651;
+  color: var(--app-text, #2d5651);
   font-size: 0.78rem;
 }
 
 .fullRegisterAssetDocuments a {
   padding: 6px 9px;
   border-radius: 8px;
-  background: #e8f4f0;
-  color: #0c6553;
+  background: var(--app-surface-soft, #e8f4f0);
+  color: var(--app-text, #0c6553);
   font-size: 0.75rem;
   font-weight: 800;
   text-decoration: none;
@@ -5406,16 +5406,16 @@
 
 .fullRegisterAssetsEmpty {
   padding: 25px;
-  border: 1px dashed #c0d7d1;
+  border: 1px dashed var(--app-line, #c0d7d1);
   border-radius: 15px;
-  background: #f8fbfa;
-  color: #3e615d;
+  background: var(--app-surface, #f8fbfa);
+  color: var(--app-text, #3e615d);
   text-align: center;
 }
 
 .fullRegisterAssetsEmpty p {
   margin: 7px 0 0;
-  color: #6a7d7a;
+  color: var(--app-muted, #6a7d7a);
 }
 
 @media (max-width: 900px) {
@@ -5447,14 +5447,14 @@
 .leadAssetIdentifier {
   display: inline-flex;
   align-items: center;
-  color: #526c64;
+  color: var(--app-muted, #526c64);
   font-size: 0.78rem;
   font-weight: 760;
 }
 
 .leadAssetIdentifier::before {
   margin-right: 0.7rem;
-  color: rgba(49, 83, 72, 0.52);
+  color: var(--app-muted, rgba(49, 83, 72, 0.52));
   content: '·';
 }
 
@@ -5641,12 +5641,12 @@
   line-height: 1.45;
 }
 .dealerAppLeads .expandedLeadFacts dt {
-  color: #60746c;
+  color: var(--app-muted, #60746c);
   font-weight: 600;
 }
 .dealerAppLeads .expandedLeadFacts dd {
   margin: 0;
-  color: #173f35;
+  color: var(--app-text, #173f35);
   font-weight: 750;
   overflow-wrap: anywhere;
 }
@@ -5712,7 +5712,7 @@
   max-width: 100%;
   box-sizing: border-box;
   container: dealer-lead / inline-size;
-  box-shadow: 0 10px 26px rgba(22, 52, 44, .055) !important;
+  box-shadow: 0 10px 26px var(--app-shadow-colour, rgba(22, 52, 44, .055)) !important;
 }
 .dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadHeader.expandedLeadHeader {
   display: grid !important;

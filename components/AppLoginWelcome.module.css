@@ -3,12 +3,12 @@
   display: grid;
   justify-items: center;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.13));
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
   padding: clamp(28px, 8vw, 42px) clamp(22px, 7vw, 34px);
   text-align: center;
-  box-shadow: 0 24px 58px rgba(18, 53, 45, 0.13);
+  box-shadow: 0 24px 58px var(--app-shadow-colour, rgba(18, 53, 45, 0.13));
   animation: welcomeEnter 280ms ease-out both;
 }
 
@@ -19,11 +19,11 @@
   place-items: center;
   overflow: hidden;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 26px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 12px;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.1);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.1));
 }
 
 .logoFrame img {
@@ -35,7 +35,7 @@
 
 .eyebrow {
   margin-top: 21px;
-  color: #277057;
+  color: var(--app-text, #277057);
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -44,7 +44,7 @@
 
 .card h1 {
   margin: 7px 0 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(2rem, 9vw, 2.65rem);
   font-weight: 900;
   letter-spacing: -0.05em;
@@ -54,7 +54,7 @@
 
 .card p {
   margin: 9px 0 0;
-  color: rgba(18, 53, 45, 0.66);
+  color: var(--app-muted, rgba(18, 53, 45, 0.66));
   font-size: 0.9rem;
   font-weight: 750;
   line-height: 1.4;
@@ -66,7 +66,7 @@
   overflow: hidden;
   margin-top: 28px;
   border-radius: 999px;
-  background: rgba(18, 53, 45, 0.09);
+  background: var(--app-surface-soft, rgba(18, 53, 45, 0.09));
 }
 
 .progress span {

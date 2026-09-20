@@ -3633,7 +3633,8 @@
 /* The timer shares the card's moving container so it follows every scene. */
 .featureCountdown {
   position: absolute;
-  z-index: 2;
+  /* Keep playback controls above the preview card (z-index: 3). */
+  z-index: 4;
   top: 0.55rem;
   left: 5rem;
   right: 3.25rem;

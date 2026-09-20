@@ -25,11 +25,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(203, 218, 230, 0.98);
+  border: 1px solid var(--app-info-line, rgba(203, 218, 230, 0.98));
   border-radius: 1.8rem;
-  color: #17362c;
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 26px 70px rgba(8, 27, 34, 0.22);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
+  box-shadow: 0 26px 70px var(--app-shadow-colour, rgba(8, 27, 34, 0.22));
   font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   outline: none;
 }
@@ -55,13 +55,13 @@
   gap: 1.15rem;
   margin: 0;
   padding: 1.35rem 1.5rem 1.1rem;
-  border-bottom: 1px solid #dbe7e1;
-  background: linear-gradient(135deg, rgba(238, 248, 243, 0.96), rgba(255, 255, 255, 0.98) 58%);
+  border-bottom: 1px solid var(--app-line, #dbe7e1);
+  background: linear-gradient(135deg, var(--app-surface-soft, rgba(238, 248, 243, 0.96)), var(--app-surface, rgba(255, 255, 255, 0.98)) 58%);
 }
 
 .header h2 {
   margin: 0;
-  color: #0f3329;
+  color: var(--app-text, #0f3329);
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.35), 1.98rem);
   font-weight: 760;
   line-height: 1.04;
@@ -71,7 +71,7 @@
 .header p {
   max-width: 48rem;
   margin: 0.28rem 0 0;
-  color: #617286;
+  color: var(--app-info, #617286);
   font-size: 1rem;
   font-weight: 620;
   line-height: 1.52;
@@ -83,20 +83,20 @@
   width: 3.08rem;
   min-width: 3.08rem;
   height: 3.08rem;
-  border: 1px solid rgba(210, 222, 237, 0.98);
+  border: 1px solid var(--app-info-line, rgba(210, 222, 237, 0.98));
   border-radius: 999px;
   padding: 0;
-  color: #1d3b62;
-  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
-  box-shadow: 0 10px 20px rgba(23, 45, 75, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  color: var(--app-info, #1d3b62);
+  background: linear-gradient(180deg, var(--app-info-soft, #f7fbff) 0%, var(--app-info-soft, #edf4fb) 100%);
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(23, 45, 75, 0.06)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   cursor: pointer;
   transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
 }
 
 .closeButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(175, 198, 222, 0.98);
-  background: linear-gradient(180deg, #fff 0%, #e6f0fa 100%);
+  border-color: var(--app-info-line, rgba(175, 198, 222, 0.98));
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-info-soft, #e6f0fa) 100%);
 }
 
 .closeButton svg {
@@ -121,7 +121,7 @@
 }
 
 .wizardBody {
-  background: #f9fbfc;
+  background: var(--app-info-soft, #f9fbfc);
 }
 
 .confirmContent {
@@ -133,8 +133,8 @@
 .confirmContent h2 {
   margin: 0;
   padding: 0 3.4rem 1.1rem 0;
-  border-bottom: 1px solid rgba(211, 224, 234, 0.98);
-  color: #0c382f;
+  border-bottom: 1px solid var(--app-info-line, rgba(211, 224, 234, 0.98));
+  color: var(--app-text, #0c382f);
   font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.25rem);
   font-weight: 760;
   line-height: 1.02;
@@ -144,14 +144,14 @@
 .confirmContent p {
   max-width: 100%;
   margin: 0;
-  color: #647382;
+  color: var(--app-muted, #647382);
   font-size: 1rem;
   font-weight: 560;
   line-height: 1.45;
 }
 
 .confirmContent p strong {
-  color: #0c382f;
+  color: var(--app-text, #0c382f);
   font-weight: 760;
 }
 
@@ -162,9 +162,9 @@
   width: 3rem;
   min-width: 3rem;
   height: 3rem;
-  border-color: rgba(207, 223, 236, 0.98);
-  color: #13395d;
-  background: #f7fbff;
+  border-color: var(--app-info-line, rgba(207, 223, 236, 0.98));
+  color: var(--app-info, #13395d);
+  background: var(--app-info-soft, #f7fbff);
 }
 
 .selectedAdvert {
@@ -173,13 +173,13 @@
   width: 100%;
   margin: 0;
   padding: 1.05rem 1.15rem;
-  border: 1px solid rgba(207, 220, 231, 0.98);
+  border: 1px solid var(--app-info-line, rgba(207, 220, 231, 0.98));
   border-radius: 1.2rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fbfd 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f8fbfd) 100%);
 }
 
 .selectedAdvert span {
-  color: #68798b;
+  color: var(--app-muted, #68798b);
   font-size: 0.78rem;
   font-weight: 820;
   letter-spacing: 0.06em;
@@ -188,7 +188,7 @@
 
 .selectedAdvert strong {
   overflow-wrap: anywhere;
-  color: #0c382f;
+  color: var(--app-text, #0c382f);
   font-size: 1.2rem;
   font-weight: 780;
   line-height: 1.1;
@@ -196,7 +196,7 @@
 
 .selectedAdvert small {
   overflow-wrap: anywhere;
-  color: #607084;
+  color: var(--app-info, #607084);
   font-size: 0.98rem;
   font-weight: 650;
   line-height: 1.35;
@@ -216,7 +216,7 @@
   display: grid;
   justify-items: center;
   gap: 0.3rem;
-  color: #81908b;
+  color: var(--app-muted, #81908b);
   text-align: center;
 }
 
@@ -228,7 +228,7 @@
   left: calc(-50% - 0.22rem);
   width: calc(100% + 0.44rem);
   height: 2px;
-  background: #dce6e1;
+  background: var(--app-surface-soft, #dce6e1);
 }
 
 .progress li:first-child::before {
@@ -242,10 +242,10 @@
   place-items: center;
   width: 1.65rem;
   height: 1.65rem;
-  border: 2px solid #d1ddd7;
+  border: 2px solid var(--app-line, #d1ddd7);
   border-radius: 999px;
-  color: #71827b;
-  background: #fff;
+  color: var(--app-muted, #71827b);
+  background: var(--app-surface, #fff);
   font-size: 0.7rem;
   font-weight: 900;
 }
@@ -258,19 +258,19 @@
 
 .progressCurrent,
 .progressComplete {
-  color: #176247 !important;
+  color: var(--app-text, #176247) !important;
 }
 
 .progressCurrent > span,
 .progressComplete > span {
-  border-color: #1d7657 !important;
+  border-color: var(--app-line, #1d7657) !important;
   color: #fff !important;
   background: #1d7657 !important;
 }
 
 .progressCurrent::before,
 .progressComplete::before {
-  background: #66a58d !important;
+  background: var(--app-surface-soft, #66a58d) !important;
 }
 
 .step {
@@ -286,7 +286,7 @@
 }
 
 .stepHeader strong {
-  color: #133c33;
+  color: var(--app-text, #133c33);
   font-size: 1.08rem;
   font-weight: 880;
   line-height: 1.25;
@@ -295,12 +295,12 @@
 
 .stepHeader strong:focus-visible {
   border-radius: 4px;
-  box-shadow: 0 0 0 4px rgba(37, 131, 97, 0.1);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 131, 97, 0.1));
 }
 
 .stepHeader small {
   max-width: 42rem;
-  color: #68798a;
+  color: var(--app-muted, #68798a);
   font-size: 0.8rem;
   font-weight: 640;
   line-height: 1.45;
@@ -317,12 +317,12 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  border: 1px solid #cddce7;
+  border: 1px solid var(--app-info-line, #cddce7);
   border-radius: 0.95rem;
   padding: 0.75rem 0.85rem;
-  color: #233846;
-  background: linear-gradient(180deg, #fff 0%, #f6f9fb 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: var(--app-info, #233846);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-info-soft, #f6f9fb) 100%);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
   cursor: pointer;
   text-align: left;
   transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
@@ -330,16 +330,16 @@
 
 .option:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: #9fbeb2;
+  border-color: var(--app-line, #9fbeb2);
 }
 
 .option > span {
   width: 1rem;
   height: 1rem;
   flex: 0 0 1rem;
-  border: 2px solid #b8cbd1;
+  border: 2px solid var(--app-info-line, #b8cbd1);
   border-radius: 999px;
-  background: #fff;
+  background: var(--app-surface, #fff);
 }
 
 .option strong {
@@ -349,14 +349,14 @@
 }
 
 .optionSelected {
-  border-color: rgba(18, 113, 82, 0.72);
-  color: #0f5e45;
-  background: linear-gradient(180deg, #f7fcf9 0%, #eaf7f0 100%);
-  box-shadow: 0 10px 22px rgba(18, 101, 74, 0.09), inset 0 1px 0 #fff;
+  border-color: var(--app-accent, rgba(18, 113, 82, 0.72));
+  color: var(--app-text, #0f5e45);
+  background: linear-gradient(180deg, var(--app-surface, #f7fcf9) 0%, var(--app-surface-soft, #eaf7f0) 100%);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(18, 101, 74, 0.09)), inset 0 1px 0 var(--app-shadow-colour, #fff);
 }
 
 .optionSelected > span {
-  border: 0.28rem solid #167455;
+  border: 0.28rem solid var(--app-accent, #167455);
 }
 
 .detailsGrid {
@@ -364,9 +364,9 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
   padding: 1rem;
-  border: 1px solid #cfe0df;
+  border: 1px solid var(--app-line, #cfe0df);
   border-radius: 1.15rem;
-  background: linear-gradient(135deg, #f8fcfb 0%, #fffaf2 100%);
+  background: linear-gradient(135deg, var(--app-surface, #f8fcfb) 0%, var(--app-warning-soft, #fffaf2) 100%);
 }
 
 .noteField {
@@ -382,7 +382,7 @@
 .textField > span {
   display: block;
   margin: 0 0 0.55rem;
-  color: #254d40;
+  color: var(--app-text, #254d40);
   font-size: 0.8rem;
   font-weight: 820;
   line-height: 1.35;
@@ -392,10 +392,10 @@
 .textField textarea {
   width: 100%;
   min-height: 3.35rem;
-  border: 1px solid #cddbd5;
+  border: 1px solid var(--app-line, #cddbd5);
   border-radius: 0.95rem;
-  color: #17362c;
-  background: #fff;
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, #fff);
   outline: 0;
 }
 
@@ -409,13 +409,13 @@
 
 .textField input:focus,
 .textField textarea:focus {
-  border-color: #4f8c76;
-  box-shadow: 0 0 0 3px rgba(22, 95, 73, 0.1);
+  border-color: var(--app-accent, #4f8c76);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22, 95, 73, 0.1));
 }
 
 .textField small {
   margin-top: 0.42rem;
-  color: #71827b;
+  color: var(--app-muted, #71827b);
   font-size: 0.7rem;
   line-height: 1.45;
 }
@@ -426,15 +426,15 @@
   align-items: center;
   min-height: 3.35rem;
   overflow: hidden;
-  border: 1px solid #cddbd5;
+  border: 1px solid var(--app-line, #cddbd5);
   border-radius: 0.95rem;
-  color: #36594d;
-  background: #fff;
+  color: var(--app-text, #36594d);
+  background: var(--app-surface, #fff);
 }
 
 .moneyField:focus-within {
-  border-color: #4f8c76;
-  box-shadow: 0 0 0 3px rgba(22, 95, 73, 0.1);
+  border-color: var(--app-accent, #4f8c76);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22, 95, 73, 0.1));
 }
 
 .moneyField > span {
@@ -459,9 +459,9 @@
   display: grid;
   gap: 0.75rem;
   padding: 0.95rem;
-  border: 1px solid #c1d7cd;
+  border: 1px solid var(--app-line, #c1d7cd);
   border-radius: 1rem;
-  background: linear-gradient(145deg, #f6fbf8 0%, #fff 74%);
+  background: linear-gradient(145deg, var(--app-surface, #f6fbf8) 0%, var(--app-surface, #fff) 74%);
 }
 
 .informationCard {
@@ -470,14 +470,14 @@
 }
 
 .informationCard strong {
-  color: #154b3b;
+  color: var(--app-text, #154b3b);
   font-size: 0.92rem;
   font-weight: 850;
 }
 
 .informationCard p {
   margin: 0;
-  color: #62766d;
+  color: var(--app-muted, #62766d);
   font-size: 0.78rem;
   font-weight: 640;
   line-height: 1.5;
@@ -492,20 +492,20 @@
 
 .helpButton {
   min-height: 3rem;
-  border: 1px solid #cfddd7;
+  border: 1px solid var(--app-line, #cfddd7);
   border-radius: 0.85rem;
-  color: #29453c;
-  background: #fff;
+  color: var(--app-text, #29453c);
+  background: var(--app-surface, #fff);
   cursor: pointer;
   font-size: 0.8rem;
   font-weight: 820;
 }
 
 .helpButtonSelected {
-  border-color: #258361;
-  color: #0f6147;
-  background: #eaf7f0;
-  box-shadow: 0 0 0 3px rgba(37, 131, 97, 0.08);
+  border-color: var(--app-accent, #258361);
+  color: var(--app-text, #0f6147);
+  background: var(--app-surface-soft, #eaf7f0);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(37, 131, 97, 0.08));
 }
 
 .summary {
@@ -520,13 +520,13 @@
   display: grid;
   gap: 0.22rem;
   padding: 0.72rem 0.78rem;
-  border: 1px solid #e0e7e3;
+  border: 1px solid var(--app-line, #e0e7e3);
   border-radius: 0.8rem;
-  background: #f8faf9;
+  background: var(--app-surface, #f8faf9);
 }
 
 .summary dt {
-  color: #7a8983;
+  color: var(--app-muted, #7a8983);
   font-size: 0.62rem;
   font-weight: 850;
   letter-spacing: 0.04em;
@@ -535,7 +535,7 @@
 
 .summary dd {
   margin: 0;
-  color: #193b31;
+  color: var(--app-text, #193b31);
   font-size: 0.78rem;
   font-weight: 790;
   overflow-wrap: anywhere;
@@ -543,11 +543,11 @@
 
 .error {
   margin: 0;
-  border: 1px solid #edcbc6;
+  border: 1px solid var(--app-danger-line, #edcbc6);
   border-radius: 10px;
   padding: 0.75rem 0.85rem;
-  color: #92372f;
-  background: #fff7f5;
+  color: var(--app-danger, #92372f);
+  background: var(--app-danger-soft, #fff7f5);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.45;
@@ -567,8 +567,8 @@
   bottom: -1.4rem;
   margin-top: 0.15rem;
   padding: 0.85rem 0 0;
-  border-top: 1px solid rgba(211, 224, 231, 0.84);
-  background: linear-gradient(180deg, rgba(249, 251, 252, 0), #f9fbfc 28%);
+  border-top: 1px solid var(--app-info-line, rgba(211, 224, 231, 0.84));
+  background: linear-gradient(180deg, rgba(249, 251, 252, 0), var(--app-info-soft, #f9fbfc) 28%);
 }
 
 .confirmActions {
@@ -594,29 +594,29 @@
 }
 
 .cancelButton {
-  border: 1px solid rgba(197, 214, 228, 0.98);
-  color: #11335a;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f9fd 100%);
+  border: 1px solid var(--app-info-line, rgba(197, 214, 228, 0.98));
+  color: var(--app-info, #11335a);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f5f9fd) 100%);
 }
 
 .primaryButton {
   min-width: 10.5rem;
-  border: 1px solid #124f3b;
+  border: 1px solid var(--app-line, #124f3b);
   color: #fff;
   background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
-  box-shadow: 0 10px 24px rgba(18, 79, 59, 0.18);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 79, 59, 0.18));
 }
 
 .removeButton {
-  border: 1px solid rgba(180, 35, 24, 0.78);
+  border: 1px solid var(--app-danger-line, rgba(180, 35, 24, 0.78));
   color: #fff;
-  background: linear-gradient(180deg, #dc3f3f 0%, #b42318 100%);
-  box-shadow: 0 14px 26px rgba(180, 35, 24, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, var(--app-danger-soft, #dc3f3f) 0%, #b42318 100%);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(180, 35, 24, 0.22)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.18));
 }
 
 .cancelButton:hover:not(:disabled) {
-  border-color: #aac2d6;
-  background: linear-gradient(180deg, #fff 0%, #edf5fb 100%);
+  border-color: var(--app-info-line, #aac2d6);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-info-soft, #edf5fb) 100%);
 }
 
 .primaryButton:hover:not(:disabled) {
@@ -624,8 +624,8 @@
 }
 
 .removeButton:hover:not(:disabled) {
-  background: linear-gradient(180deg, #e34f4f 0%, #a91f16 100%);
-  box-shadow: 0 18px 32px rgba(180, 35, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, var(--app-danger-soft, #e34f4f) 0%, #a91f16 100%);
+  box-shadow: 0 18px 32px var(--app-shadow-colour, rgba(180, 35, 24, 0.28)), inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.2));
 }
 
 .closeButton:focus-visible,
@@ -634,7 +634,7 @@
 .cancelButton:focus-visible,
 .primaryButton:focus-visible,
 .removeButton:focus-visible {
-  outline: 3px solid rgba(243, 182, 64, 0.58);
+  outline: 3px solid var(--app-warning-line, rgba(243, 182, 64, 0.58));
   outline-offset: 2px;
 }
 
@@ -767,10 +767,10 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
-  border: 1px solid rgba(18, 45, 37, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12));
   border-radius: 1.55rem;
-  background: linear-gradient(180deg, #fff, #f7faf8);
-  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface, #f7faf8));
+  box-shadow: 0 32px 90px var(--app-shadow-colour, rgba(7, 25, 20, 0.28)), 0 8px 24px var(--app-shadow-colour, rgba(7, 25, 20, 0.12));
 }
 .accountConfirmHeader {
   display: grid;
@@ -778,29 +778,29 @@
   align-items: start;
   gap: 1.25rem;
   padding-bottom: 1.15rem;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.1);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
 }
 .accountConfirmDialog .accountConfirmHeader h2 {
   margin: 0;
   padding: 0;
   border: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.08;
 }
 .accountConfirmDialog .confirmContent p,
-.accountConfirmDialog .selectedAdvert small { color: #64746a; font-size: 0.88rem; font-weight: 650; line-height: 1.5; }
+.accountConfirmDialog .selectedAdvert small { color: var(--app-muted, #64746a); font-size: 0.88rem; font-weight: 650; line-height: 1.5; }
 .accountConfirmDialog .selectedAdvert {
   padding: 0.9rem;
-  border-color: rgba(62, 110, 213, 0.12);
+  border-color: var(--app-info-line, rgba(62, 110, 213, 0.12));
   border-radius: 1rem;
-  background: linear-gradient(135deg, rgba(62, 110, 213, 0.075), rgba(31, 138, 102, 0.06));
+  background: linear-gradient(135deg, var(--app-info-soft, rgba(62, 110, 213, 0.075)), var(--app-surface-soft, rgba(31, 138, 102, 0.06)));
 }
-.accountConfirmDialog .selectedAdvert span { color: #405c50; font-size: 0.7rem; font-weight: 850; letter-spacing: 0.045em; }
-.accountConfirmDialog .selectedAdvert strong { color: #17362c; font-size: 0.95rem; font-weight: 800; line-height: 1.35; }
+.accountConfirmDialog .selectedAdvert span { color: var(--app-text, #405c50); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.045em; }
+.accountConfirmDialog .selectedAdvert strong { color: var(--app-text, #17362c); font-size: 0.95rem; font-weight: 800; line-height: 1.35; }
 .accountConfirmDialog .confirmActions { gap: 0.65rem; background: transparent; }
 .accountConfirmDialog .confirmActions > button { min-height: 3rem; min-width: 8.75rem; border-radius: 1rem; font-size: 0.95rem; font-weight: 700; }
-.accountConfirmDialog .cancelButton { color: #17362c; background: #f2f5f8; border-color: #d8e1ea; }
-.accountConfirmDialog .removeButton { background: linear-gradient(180deg, #c94d4d, #a93636); border-color: transparent; }
+.accountConfirmDialog .cancelButton { color: var(--app-text, #17362c); background: var(--app-info-soft, #f2f5f8); border-color: var(--app-info-line, #d8e1ea); }
+.accountConfirmDialog .removeButton { background: linear-gradient(180deg, var(--app-danger-soft, #c94d4d), #a93636); border-color: transparent; }
