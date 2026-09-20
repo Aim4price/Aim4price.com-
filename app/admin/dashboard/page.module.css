@@ -354,3 +354,6 @@
   }
 
 }
+
+.cardHeader h2 { white-space: normal; text-wrap: wrap; line-height: 1.35; }
+.values { margin-top: 0.8rem; }

@@ -1785,13 +1785,13 @@ export default function AdminClient({
                         }}
                       >
                         <strong className={styles.nameCell}>{user.name || user.email}</strong>
-                        {user.name && user.email ? <span>· {user.email}</span> : null}
+                        {user.name && user.email ? <span>{user.email}</span> : null}
                       </button>
                     </td>
                     <td>
                       <div className={styles.accountTypeCell}>
                         <strong>{formatAccountValue(user.accountType)}</strong>
-                        <span>· {formatAccountValue(user.accountSubtype)}</span>
+                        <span>{formatAccountValue(user.accountSubtype)}</span>
                       </div>
                     </td>
                     <td>

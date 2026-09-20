@@ -132,15 +132,15 @@ function readStorageLimitBytes(): number | null {
 function periodValues(counts: PeriodCounts): DashboardMetricValue[] {
   return [
     { label: 'Today', value: formatCount(counts.today) },
-    { label: 'Month', value: formatCount(counts.month) },
-    { label: 'Year', value: formatCount(counts.year) },
+    { label: 'This month', value: formatCount(counts.month) },
+    { label: 'This year', value: formatCount(counts.year) },
   ];
 }
 
 function monthYearValues(counts: MonthYearCounts): DashboardMetricValue[] {
   return [
-    { label: 'Month', value: formatCount(counts.month) },
-    { label: 'Year', value: formatCount(counts.year) },
+    { label: 'This month', value: formatCount(counts.month) },
+    { label: 'This year', value: formatCount(counts.year) },
   ];
 }
 
@@ -207,9 +207,9 @@ async function countUsageEvents(eventType: AdminUsageEventType): Promise<PeriodC
   const result = await getDb().query<PeriodCountRow>(
     `
       select
-        count(*) filter (where created_at >= date_trunc('day', now()))::bigint as today,
-        count(*) filter (where created_at >= date_trunc('month', now()))::bigint as month,
-        count(*) filter (where created_at >= date_trunc('year', now()))::bigint as year
+        count(*) filter (where created_at >= (date_trunc('day', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg'))::bigint as today,
+        count(*) filter (where created_at >= (date_trunc('month', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg'))::bigint as month,
+        count(*) filter (where created_at >= (date_trunc('year', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg'))::bigint as year
       from public.admin_usage_events
       where event_type = $1
     `,
@@ -227,11 +227,11 @@ async function countDistinctUsageUsers(eventType: AdminUsageEventType): Promise<
       select
         count(distinct user_id) filter (
           where user_id is not null
-            and created_at >= date_trunc('month', now())
+            and created_at >= (date_trunc('month', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg')
         )::bigint as month,
         count(distinct user_id) filter (
           where user_id is not null
-            and created_at >= date_trunc('year', now())
+            and created_at >= (date_trunc('year', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg')
         )::bigint as year
       from public.admin_usage_events
       where event_type = $1
@@ -255,9 +255,9 @@ async function countTableByCreatedAt(
   const whereSql = whereClause ? `where ${whereClause}` : '';
   const result = await getDb().query<PeriodCountRow>(`
     select
-      count(*) filter (where created_at >= date_trunc('day', now()))::bigint as today,
-      count(*) filter (where created_at >= date_trunc('month', now()))::bigint as month,
-      count(*) filter (where created_at >= date_trunc('year', now()))::bigint as year
+      count(*) filter (where created_at >= (date_trunc('day', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg'))::bigint as today,
+      count(*) filter (where created_at >= (date_trunc('month', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg'))::bigint as month,
+      count(*) filter (where created_at >= (date_trunc('year', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg'))::bigint as year
     from public.${tableName}
     ${whereSql}
   `);
@@ -311,8 +311,8 @@ async function countAccountsByType(accountType?: 'owner' | 'dealer' | 'finance' 
         where lower(trim(coalesce(u.email, ''))) <> $1
       )
       select
-        count(*) filter (where created_at >= date_trunc('month', now()))::bigint as month,
-        count(*) filter (where created_at >= date_trunc('year', now()))::bigint as year
+        count(*) filter (where created_at >= (date_trunc('month', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg'))::bigint as month,
+        count(*) filter (where created_at >= (date_trunc('year', now() at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg'))::bigint as year
       from account_rows
       where true
       ${typeFilter}

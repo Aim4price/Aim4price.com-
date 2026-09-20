@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isTrustedRequestOrigin } from "../../../../lib/trusted-request-origin";
 import { getAnyServerSession } from "../../../../lib/auth-session";
 import { isAim4priceAdminEmail } from "../../../../lib/account-constants";
 import {
@@ -29,7 +30,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   const user = await admin();
   if (!user) return json({ error: "Admin access required." }, 403);
-  if (request.headers.get("origin") !== new URL(request.url).origin)
+  if (!isTrustedRequestOrigin(request.headers.get("origin"), new URL(request.url).origin))
     return json({ error: "Invalid request origin." }, 403);
   try {
     if (Number(request.headers.get("content-length") || 0) > 2500000)

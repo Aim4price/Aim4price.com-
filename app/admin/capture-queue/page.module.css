@@ -1328,3 +1328,23 @@ fieldset.formGrid {
     grid-column: auto;
   }
 }
+
+/* Let filter controls reflow before their labels become clipped. */
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  align-items: end;
+  overflow: visible;
+  gap: 0.75rem;
+}
+.filters > label,
+.filters .searchField {
+  min-width: 0;
+}
+.filters .searchField {
+  grid-column: span 2;
+}
+@media (max-width: 600px) {
+  .filters { grid-template-columns: minmax(0, 1fr); }
+  .filters .searchField { grid-column: auto; }
+}

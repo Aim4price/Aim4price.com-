@@ -77,7 +77,10 @@ export async function DELETE(request: NextRequest) {
   if (!access.ok) return access.response;
 
   try {
-    const body = await request.json() as Record<string, unknown>;
+    const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ ok: false, error: "Invalid request body." }, { status: 400 });
+    }
     const accountUserId = value(body, 'accountUserId');
     const sourceAssetId = value(body, 'sourceAssetId') || null;
     const latestListingId = value(body, 'latestListingId');

@@ -2187,3 +2187,25 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Account identity and type each have a readable secondary line. */
+.rowAccountButton,
+.accountTypeCell {
+  display: grid;
+  gap: 0.3rem;
+}
+.nameCell,
+.rowAccountButton > span,
+.accountTypeCell strong,
+.accountTypeCell span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.userSummary .summaryStorage {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+.summaryStorage strong {
+  grid-column: 1;
+  grid-row: auto;
+}

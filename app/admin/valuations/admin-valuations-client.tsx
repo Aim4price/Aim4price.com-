@@ -277,6 +277,8 @@ export default function AdminValuationsClient({
       );
     } catch (loadError) {
       if (sequence !== requestSequenceRef.current) return;
+      setFilters(report.filters);
+      setSearchDraft(report.filters.search);
       setError(loadError instanceof Error ? loadError.message : 'Admin valuations could not be loaded.');
     } finally {
       if (sequence === requestSequenceRef.current) setLoading(false);
@@ -450,11 +452,11 @@ export default function AdminValuationsClient({
           <strong>{summary.savedValuations.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
-          <span>Accounts</span>
+          <span>Account records</span>
           <strong>{summary.knownAccountValuations.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
-          <span>Guests</span>
+          <span>Guest records</span>
           <strong>{summary.unknownAccountValuations.toLocaleString('en-ZA')}</strong>
         </article>
       </section>
@@ -611,7 +613,7 @@ export default function AdminValuationsClient({
                   </td>
                   <td>
                     <strong>{assetTitle(valuation)}</strong>
-                    <span>· {valuation.asset.sectorLabel}</span>
+                    <span>{valuation.asset.sectorLabel}</span>
                   </td>
                   <td className={styles.moneyCell}>{formatAdminValuationMoney(valuation.estimate.selectedValueExVat)}</td>
                   <td>{formatRange(valuation)}</td>

@@ -289,6 +289,7 @@ function formatDateTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Not available";
   return new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -418,6 +419,7 @@ function targetKey(input: {
 
 export default function CaptureQueueClient() {
   const [rows, setRows] = useState<CaptureRow[]>([]);
+  const [queueError, setQueueError] = useState("");
   const [counts, setCounts] = useState<QueueCounts>(EMPTY_COUNTS);
   const [statusFilter, setStatusFilter] = useState("open");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -546,6 +548,7 @@ export default function CaptureQueueClient() {
     draft.hourMeterReading,
     draft.odometerReading,
     draft.usageMetric,
+    draft.usageReading,
     draft.usageNotApplicable,
     isMatchConfirmed,
     isRequestEditable,
@@ -589,6 +592,7 @@ export default function CaptureQueueClient() {
   const loadQueue = useCallback(async () => {
     const generation = ++queueLoadGenerationRef.current;
     setIsLoading(true);
+    setQueueError("");
     try {
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.set("status", statusFilter);
@@ -611,6 +615,7 @@ export default function CaptureQueueClient() {
       );
     } catch (error) {
       if (generation !== queueLoadGenerationRef.current) return;
+      setQueueError(error instanceof Error ? error.message : "Failed to load capture requests.");
       setNotice({
         tone: "error",
         message: error instanceof Error ? error.message : "Failed to load capture requests.",
@@ -661,7 +666,10 @@ export default function CaptureQueueClient() {
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadQueue(), search.trim() ? 250 : 0);
-    return () => window.clearTimeout(timeout);
+    return () => {
+      window.clearTimeout(timeout);
+      queueLoadGenerationRef.current += 1;
+    };
   }, [loadQueue, search]);
 
   useEffect(() => {
@@ -1095,7 +1103,7 @@ export default function CaptureQueueClient() {
         </div>
 
         <div className={styles.queueTableWrap}>
-          {isLoading || rows.length || hasActiveFilters ? <table className={styles.queueTable}>
+          {queueError ? <div className={styles.emptyCell} role="alert"><p>{queueError}</p><button type="button" className={styles.clearButton} onClick={() => void loadQueue()}>Try again</button></div> : isLoading || rows.length || hasActiveFilters ? <table className={styles.queueTable}>
             <thead>
               <tr>
                 <th>Request</th>
@@ -1343,7 +1351,7 @@ export default function CaptureQueueClient() {
                     {usageUpdate.message}
                   </p>
                   <div className={styles.usageUpdateFooter}>
-                    <small>Usage only changes here.</small>
+                    <small>Completing the ledger record does not update usage. Only this button does.</small>
                     {usageUpdate.supported ? (
                       <button
                         type="button"

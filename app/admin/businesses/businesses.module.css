@@ -107,3 +107,13 @@
   font-size: 0.72rem;
   font-weight: 800;
 }
+
+.emptyState {
+  padding: 1.5rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 0.8rem;
+  background: #fff;
+  color: #52685e;
+}
+.emptyState p { margin: 0 0 0.75rem; }
+.emptyState p:last-child { margin-bottom: 0; }

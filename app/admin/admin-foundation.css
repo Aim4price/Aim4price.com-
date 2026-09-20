@@ -95,3 +95,26 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Data-heavy pages need readable content as well as compact controls. */
+.adminWorkspaceRoot {
+  background: #f5f8f6;
+}
+.adminWorkspaceRoot :where([class*="topBar"]) {
+  flex-wrap: wrap;
+  row-gap: 1rem;
+}
+.adminWorkspaceRoot :where([class*="titleBlock"] h1) {
+  font-size: clamp(1.8rem, 3vw, 2.8rem) !important;
+  line-height: 1.15 !important;
+}
+.adminWorkspaceRoot :where(td) {
+  font-variant-numeric: tabular-nums;
+}
+.adminWorkspaceRoot :where([class*="tableScroller"], [class*="tableWrap"], [class*="queueTableWrap"]) {
+  scrollbar-width: thin;
+  scrollbar-color: #9bbcaf #eff5f2;
+}
+.adminWorkspaceRoot :where(button:disabled) {
+  cursor: not-allowed;
+}

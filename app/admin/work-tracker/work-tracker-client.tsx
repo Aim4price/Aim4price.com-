@@ -113,6 +113,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   const [activeSession, setActiveSession] = useState<AdminWorkSessionView | null>(null);
   const [history, setHistory] = useState<AdminWorkHistory | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [savingSessionId, setSavingSessionId] = useState<string | null>(null);
@@ -131,6 +132,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   const loadTracker = useCallback(async () => {
     const generation = ++loadGenerationRef.current;
     setIsLoading(true);
+    setLoadError("");
     try {
       const params = new URLSearchParams({
         view: "history",
@@ -177,10 +179,8 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
       });
     } catch (error) {
       if (generation !== loadGenerationRef.current) return;
-      setNotice({
-        tone: "error",
-        message: error instanceof Error ? error.message : "Failed to load work history.",
-      });
+      setHistory(null);
+      setLoadError(error instanceof Error ? error.message : "Failed to load work history.");
     } finally {
       if (generation === loadGenerationRef.current) setIsLoading(false);
     }
@@ -599,7 +599,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
           <button type="button" className={styles.reportButton} onClick={openReport} disabled={!clientUserId || isLoading || savingSessionId !== null || deletingSessionId !== null || hasDirtyReportNotes}>
             Print report
           </button>
-          {hasDirtyReportNotes ? <small>Save notes first.</small> : null}
+          {!clientUserId ? <small>Choose an account to print its report.</small> : hasDirtyReportNotes ? <small>Save notes first.</small> : null}
         </div>
 
         <section className={styles.summaryGrid} aria-label="Work period summary">
@@ -613,7 +613,8 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
 
         <div className={styles.sessionList} aria-live="polite">
           {isLoading ? <p className={styles.emptyState}>Loading work sessions…</p> : null}
-          {!isLoading && !history?.sessions.length ? <p className={styles.emptyState}>No work recorded for this period.</p> : null}
+          {loadError ? <div className={styles.emptyState} role="alert"><p>{loadError}</p><button type="button" className={styles.reportButton} onClick={() => void loadTracker()}>Try again</button></div> : null}
+          {!isLoading && !loadError && !history?.sessions.length ? <p className={styles.emptyState}>No work recorded for this period.</p> : null}
           {!isLoading ? history?.sessions.map((session) => (
             <article key={session.id} className={`${styles.sessionCard} ${!session.includeInReport ? styles.sessionExcluded : ""}`} aria-busy={deletingSessionId === session.id}>
               <header className={styles.sessionHeader}>
