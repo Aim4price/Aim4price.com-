@@ -10,8 +10,8 @@
   margin-top: 1.1rem;
   padding: .95rem 1rem;
   border-radius: 1.2rem;
-  background: linear-gradient(180deg,#fff 0%,#f5f8fb 100%);
-  border: 1px solid rgba(217,227,235,.96);
+  background: linear-gradient(180deg,var(--app-surface, #fff) 0%,var(--app-info-soft, #f5f8fb) 100%);
+  border: 1px solid var(--app-info-line, rgba(217,227,235,.96));
 }
 
 .info {
@@ -23,7 +23,7 @@
 }
 
 .meta {
-  color: #677586;
+  color: var(--app-muted, #677586);
   font-size: .9rem;
   font-weight: 700;
 }
@@ -33,8 +33,8 @@
   align-items: center;
   gap: .55rem;
   padding-left: 1rem;
-  border-left: 1px solid #d8e1ea;
-  color: #677586;
+  border-left: 1px solid var(--app-info-line, #d8e1ea);
+  color: var(--app-muted, #677586);
   font-size: .85rem;
   font-weight: 800;
   white-space: nowrap;
@@ -55,23 +55,23 @@
   min-height: 3.1rem;
   padding: 0 1.08rem;
   border-radius: 1rem;
-  border: 1px solid #c5d5e2;
+  border: 1px solid var(--app-info-line, #c5d5e2);
   font: inherit;
   font-size: .96rem;
   font-weight: 830;
   letter-spacing: -.015em;
   cursor: pointer;
-  color: #1d3142;
-  background: linear-gradient(180deg,#fff 0%,#f8fbfd 100%);
-  box-shadow: 0 8px 18px rgba(31,51,71,.045),inset 0 1px 0 rgba(255,255,255,.98);
+  color: var(--app-info, #1d3142);
+  background: linear-gradient(180deg,var(--app-surface, #fff) 0%,var(--app-info-soft, #f8fbfd) 100%);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(31,51,71,.045)),inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.98));
   transition: transform 160ms ease,box-shadow 160ms ease,background 160ms ease;
 }
 
 .bar .button:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: #aebfd0;
-  background: linear-gradient(180deg,#fff 0%,#f5f9fb 100%);
-  box-shadow: 0 12px 24px rgba(31,51,71,.065),inset 0 1px 0 #fff;
+  border-color: var(--app-info-line, #aebfd0);
+  background: linear-gradient(180deg,var(--app-surface, #fff) 0%,var(--app-info-soft, #f5f9fb) 100%);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(31,51,71,.065)),inset 0 1px 0 var(--app-shadow-colour, #fff);
 }
 
 .bar .button:disabled {
@@ -80,22 +80,22 @@
 }
 
 .bar .button:focus-visible {
-  outline: 3px solid rgba(20,112,82,.35);
+  outline: 3px solid var(--app-accent, rgba(20,112,82,.35));
   outline-offset: 3px;
 }
 
 .bar .selectedSize, .bar .selectedSize:hover:not(:disabled) {
   color: #fff;
   background: linear-gradient(180deg,#197454 0%,#0f5840 100%);
-  border-color: #0f6248;
-  box-shadow: 0 14px 26px rgba(25,116,84,.2),inset 0 1px 0 rgba(255,255,255,.18);
+  border-color: var(--app-line, #0f6248);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(25,116,84,.2)),inset 0 1px 0 var(--app-shadow-colour, rgba(255,255,255,.18));
 }
 
 .bar .selectedPage, .bar .selectedPage:hover:not(:disabled) {
-  color: #0a543d;
-  background: radial-gradient(circle at top left,rgba(20,112,82,.085),transparent 42%),linear-gradient(180deg,#f7fffa 0%,#e4f7ec 100%);
-  border-color: #86d0a8;
-  box-shadow: 0 10px 22px rgba(20,112,82,.09),inset 0 1px 0 #fff;
+  color: var(--app-text, #0a543d);
+  background: radial-gradient(circle at top left,var(--app-surface-soft, rgba(20,112,82,.085)),transparent 42%),linear-gradient(180deg,var(--app-surface, #f7fffa) 0%,var(--app-surface-soft, #e4f7ec) 100%);
+  border-color: var(--app-line, #86d0a8);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(20,112,82,.09)),inset 0 1px 0 var(--app-shadow-colour, #fff);
 }
 
 .actions {
@@ -115,7 +115,7 @@
 .ellipsis {
   min-width: 2rem;
   text-align: center;
-  color: #677586;
+  color: var(--app-muted, #677586);
   font-weight: 800;
 }
 

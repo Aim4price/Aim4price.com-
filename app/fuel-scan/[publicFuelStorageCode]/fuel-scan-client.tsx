@@ -1099,7 +1099,7 @@ export default function FuelScanClient({
             className={styles.rangeInput}
             value={currentFuelPercent}
             style={{
-              background: `linear-gradient(90deg, #176b4f 0%, #176b4f ${currentFuelPercent}%, #dce8e4 ${currentFuelPercent}%, #dce8e4 100%)`,
+              background: `linear-gradient(90deg, #176b4f 0%, #176b4f ${currentFuelPercent}%, var(--app-line, #dce8e4) ${currentFuelPercent}%, var(--app-line, #dce8e4) 100%)`,
             }}
             onChange={(event) => onChange(fuelPercentText(event.target.value))}
           />

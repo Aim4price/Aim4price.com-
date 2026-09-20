@@ -153,7 +153,7 @@ $('unlock-form').onsubmit = event => { event.preventDefault(); void run(async ()
           if (worker.state === 'redundant') { clearTimeout(timeout); reject(Error('Offline setup failed. Please reconnect and retry.')); }
         });
       });
-      if (!await caches.match('/field-manager/offline.html', { cacheName: 'aim4price-field-offline-shell-v3' })) throw Error('Offline screens are not ready. Reconnect and try again.');
+      if (!await caches.match('/field-manager/offline.html', { cacheName: 'aim4price-field-offline-shell-v4' })) throw Error('Offline screens are not ready. Reconnect and try again.');
       vault = await createVault($('pin').value, snapshot);
       await navigator.storage?.persist?.().catch(() => false);
     }

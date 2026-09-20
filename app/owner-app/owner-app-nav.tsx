@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import FieldManagerSettings from '../field-manager/field-manager-settings';
+import AppSettings from '../../components/AppSettings';
 import { useState, type ReactNode } from 'react';
 import { clearCachedHeaderSession } from '../../lib/header-session-cache';
 import styles from './owner-app.module.css';
@@ -37,7 +37,7 @@ export default function OwnerAppNav({ showBack = true, backHref = '/owner-app', 
 
   return (
     <header className={`${styles.assetsHeader} ${headerLayoutClass} ${className}`} aria-label="Aim4price Owner account controls">
-      {!showBack ? <FieldManagerSettings appRoot="/owner-app" /> : null}
+      {!showBack ? <AppSettings offlineHref="/owner-app/offline.html" /> : null}
       {showBack ? (
         <>
           {backAction ? (

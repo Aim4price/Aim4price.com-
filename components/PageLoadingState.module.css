@@ -3,10 +3,10 @@
   display: grid;
   place-items: center;
   padding: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 5), 4rem) 1rem;
-  color: #153c31;
+  color: var(--app-text, #153c31);
   background:
-    radial-gradient(circle at 18% 10%, rgba(34, 151, 109, 0.09), transparent 24rem),
-    linear-gradient(180deg, #f8fbfa, #f0f5f6);
+    radial-gradient(circle at 18% 10%, var(--app-surface-soft, rgba(34, 151, 109, 0.09)), transparent 24rem),
+    linear-gradient(180deg, var(--app-surface, #f8fbfa), var(--app-info-soft, #f0f5f6));
 }
 
 .card {
@@ -16,19 +16,19 @@
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  border: 1px solid rgba(18, 62, 49, 0.09);
+  border: 1px solid var(--app-line, rgba(18, 62, 49, 0.09));
   border-radius: 1.35rem;
   padding: 1.4rem;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 20px 48px rgba(18, 55, 44, 0.09);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  box-shadow: 0 20px 48px var(--app-shadow-colour, rgba(18, 55, 44, 0.09));
 }
 
 .spinner {
   width: 2.3rem;
   height: 2.3rem;
   flex: 0 0 auto;
-  border: 0.24rem solid #dcece6;
-  border-top-color: #208463;
+  border: 0.24rem solid var(--app-line, #dcece6);
+  border-top-color: var(--app-line, #208463);
   border-radius: 999px;
   animation: spin 760ms linear infinite;
 }
@@ -45,7 +45,7 @@
 }
 
 .copy span {
-  color: #6d8079;
+  color: var(--app-muted, #6d8079);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1.45;

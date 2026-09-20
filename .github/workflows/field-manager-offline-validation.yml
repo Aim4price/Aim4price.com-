@@ -8,6 +8,8 @@ on:
       - 'app/middleman/**'
       - 'app/api/app-offline/**'
       - 'components/AppOfflineEntry.tsx'
+      - 'components/AppSettings*'
+      - 'public/app-theme.css'
       - 'database/migrations/109-app-offline-work.sql'
       - 'lib/app-offline*.ts'
       - 'lib/offline-mutation-queue.ts'

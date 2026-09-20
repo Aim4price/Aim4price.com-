@@ -38,7 +38,7 @@
 }
 
 .usageReading > span {
-  color: #2d3e4c;
+  color: var(--app-info, #2d3e4c);
   font-size: 0.84rem;
   font-weight: 820;
   line-height: 1.2;

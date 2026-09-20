@@ -6,7 +6,10 @@ import AppFooter from '../components/AppFooter';
 import AppPatternBackground from '../components/AppPatternBackground';
 import SiteWorkspaceZoom from '../components/SiteWorkspaceZoom';
 import { BACKGROUND_PREFERENCE_SCRIPT } from '../lib/background-preference';
+import { APP_THEME_SCRIPT } from '../lib/app-theme';
+import AppThemeSync from '../components/AppThemeSync';
 import './globals.css';
+import '../public/app-theme.css';
 import './asset-register-view-tuning.css';
 
 const brandTitle = 'Aim4price | Asset Intelligence, Management & Pricing';
@@ -54,6 +57,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: BACKGROUND_PREFERENCE_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: APP_THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: APP_REQUEST_CONTEXT_SCRIPT }} />
         <link
           rel="preload"
@@ -64,6 +68,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
+        <AppThemeSync />
         <div className="appRoot">
           <SiteWorkspaceZoom footer={<AppFooter />} operational={<AdminWorkTrackerBar />}>
             <AppPatternBackground>{children}</AppPatternBackground>

@@ -1,6 +1,6 @@
 import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile } from './helpers/light-theme-source.mjs';
 import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");

@@ -1,10 +1,10 @@
 .panel {
   margin: 0 0 18px;
   overflow: hidden;
-  border: 1px solid rgba(27, 105, 76, 0.2);
+  border: 1px solid var(--app-line, rgba(27, 105, 76, 0.2));
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(240, 250, 245, 0.98), rgba(255, 255, 255, 0.98));
-  box-shadow: 0 12px 32px rgba(20, 58, 44, 0.08);
+  background: linear-gradient(135deg, var(--app-surface-soft, rgba(240, 250, 245, 0.98)), var(--app-surface, rgba(255, 255, 255, 0.98)));
+  box-shadow: 0 12px 32px var(--app-shadow-colour, rgba(20, 58, 44, 0.08));
 }
 
 .header {
@@ -18,7 +18,7 @@
 .eyebrow {
   display: block;
   margin-bottom: 3px;
-  color: #2f795e;
+  color: var(--app-accent, #2f795e);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -27,7 +27,7 @@
 
 .header h2 {
   margin: 0;
-  color: #173f31;
+  color: var(--app-text, #173f31);
   font-size: 1.04rem;
   font-weight: 800;
 }
@@ -44,7 +44,7 @@
 }
 
 .list {
-  border-top: 1px solid rgba(27, 105, 76, 0.12);
+  border-top: 1px solid var(--app-line, rgba(27, 105, 76, 0.12));
 }
 
 .row {
@@ -53,7 +53,7 @@
   align-items: center;
   gap: 12px;
   padding: 13px 20px;
-  border-bottom: 1px solid rgba(27, 105, 76, 0.1);
+  border-bottom: 1px solid var(--app-line, rgba(27, 105, 76, 0.1));
 }
 
 .row:last-child {
@@ -66,8 +66,8 @@
   height: 36px;
   place-items: center;
   border-radius: 11px;
-  background: #dcefe6;
-  color: #1f684d;
+  background: var(--app-surface-soft, #dcefe6);
+  color: var(--app-text, #1f684d);
   font-size: 0.78rem;
   font-weight: 900;
 }
@@ -81,7 +81,7 @@
 
 .details strong {
   overflow: hidden;
-  color: #183f31;
+  color: var(--app-text, #183f31);
   font-size: 0.88rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -89,7 +89,7 @@
 
 .details span,
 .timing small {
-  color: #667d74;
+  color: var(--app-muted, #667d74);
   font-size: 0.72rem;
 }
 
@@ -100,19 +100,19 @@
 }
 
 .status {
-  color: #246b50;
+  color: var(--app-text, #246b50);
   font-size: 0.76rem;
   font-weight: 800;
 }
 
 .statusOverdue {
-  color: #a33f3f;
+  color: var(--app-danger, #a33f3f);
 }
 
 .reviewButton {
   min-height: 36px;
   padding: 0.55rem 0.9rem;
-  border: 1px solid #246b50;
+  border: 1px solid var(--app-line, #246b50);
   border-radius: 999px;
   background: #246b50;
   color: #fff;
@@ -133,10 +133,10 @@
 .retractButton {
   min-height: 36px;
   padding: 0.55rem 0.9rem;
-  border: 1px solid rgba(157, 55, 55, 0.55);
+  border: 1px solid var(--app-danger-line, rgba(157, 55, 55, 0.55));
   border-radius: 999px;
-  background: rgba(255, 251, 251, 0.96);
-  color: #963737;
+  background: var(--app-danger-soft, rgba(255, 251, 251, 0.96));
+  color: var(--app-danger, #963737);
   font: inherit;
   font-size: 0.76rem;
   font-weight: 850;
@@ -146,8 +146,8 @@
 
 .retractButton:hover {
   transform: translateY(-1px);
-  background: #fff2f2;
-  box-shadow: 0 7px 16px rgba(118, 33, 33, 0.13);
+  background: var(--app-danger-soft, #fff2f2);
+  box-shadow: 0 7px 16px var(--app-shadow-colour, rgba(118, 33, 33, 0.13));
 }
 
 .modalBackdrop {
@@ -165,16 +165,16 @@
 .modal {
   width: min(var(--website-dialog-reference-width, 100%), 500px);
   padding: 26px;
-  border: 1px solid rgba(27, 105, 76, 0.18);
+  border: 1px solid var(--app-line, rgba(27, 105, 76, 0.18));
   border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 28px 80px rgba(9, 35, 26, 0.28);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 28px 80px var(--app-shadow-colour, rgba(9, 35, 26, 0.28));
 }
 
 .modalEyebrow {
   display: block;
   margin-bottom: 7px;
-  color: #2f795e;
+  color: var(--app-accent, #2f795e);
   font-size: 0.69rem;
   font-weight: 850;
   letter-spacing: 0.08em;
@@ -183,13 +183,13 @@
 
 .modal h3 {
   margin: 0;
-  color: #173f31;
+  color: var(--app-text, #173f31);
   font-size: 1.28rem;
 }
 
 .modal > p {
   margin: 10px 0 0;
-  color: #5f746c;
+  color: var(--app-muted, #5f746c);
   font-size: 0.9rem;
   line-height: 1.55;
 }
@@ -200,18 +200,18 @@
   gap: 2px;
   margin-top: 18px;
   padding: 13px 15px;
-  border: 1px solid rgba(27, 105, 76, 0.15);
+  border: 1px solid var(--app-line, rgba(27, 105, 76, 0.15));
   border-radius: 14px;
-  background: #f3faf7;
+  background: var(--app-surface, #f3faf7);
 }
 
 .modalReference strong {
-  color: #173f31;
+  color: var(--app-text, #173f31);
   font-size: 0.88rem;
 }
 
 .modalReference span {
-  color: #667d74;
+  color: var(--app-muted, #667d74);
   font-size: 0.75rem;
 }
 
@@ -219,8 +219,8 @@
   margin-top: 14px;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #fff0f0;
-  color: #8d2f2f;
+  background: var(--app-danger-soft, #fff0f0);
+  color: var(--app-danger, #8d2f2f);
   font-size: 0.8rem;
   font-weight: 700;
 }
@@ -244,13 +244,13 @@
 }
 
 .keepButton {
-  border: 1px solid rgba(27, 105, 76, 0.28);
-  background: #fff;
-  color: #245c47;
+  border: 1px solid var(--app-line, rgba(27, 105, 76, 0.28));
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #245c47);
 }
 
 .confirmRetractButton {
-  border: 1px solid #993d3d;
+  border: 1px solid var(--app-danger-line, #993d3d);
   background: #993d3d;
   color: #fff;
 }
@@ -264,13 +264,13 @@
 .reviewButton:hover {
   transform: translateY(-1px);
   background: #185c43;
-  box-shadow: 0 7px 16px rgba(24, 92, 67, 0.18);
+  box-shadow: 0 7px 16px var(--app-shadow-colour, rgba(24, 92, 67, 0.18));
 }
 
 .empty {
   margin: 0;
   padding: 0 20px 18px;
-  color: #667d74;
+  color: var(--app-muted, #667d74);
   font-size: 0.84rem;
 }
 
@@ -315,5 +315,5 @@
 
 
 .replyField { display: grid; gap: 8px; font: inherit; }
-.replyField textarea { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid #c9ddd2; border-radius: 12px; font: inherit; resize: vertical; }
+.replyField textarea { box-sizing: border-box; width: 100%; padding: 12px; border: 1px solid var(--app-line, #c9ddd2); border-radius: 12px; font: inherit; resize: vertical; }
 .modal { box-sizing: border-box; max-height: calc(var(--website-visible-height, 100dvh) * 0.9); overflow-y: auto; }

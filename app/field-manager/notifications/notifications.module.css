@@ -1,7 +1,7 @@
 .page {
   min-height: 100dvh;
-  background: linear-gradient(180deg, #f8fcf9 0%, #f3f8f5 100%);
-  color: #14352c;
+  background: linear-gradient(180deg, var(--app-surface, #f8fcf9) 0%, var(--app-surface-soft, #f3f8f5) 100%);
+  color: var(--app-text, #14352c);
 }
 
 .shell {
@@ -34,10 +34,10 @@
 .clearButton,
 .modalActions button {
   min-height: 44px;
-  border: 1px solid rgba(191, 208, 199, 0.95);
+  border: 1px solid var(--app-line, rgba(191, 208, 199, 0.95));
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.96);
-  color: #173b31;
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  color: var(--app-text, #173b31);
   font: inherit;
   font-weight: 760;
   cursor: pointer;
@@ -52,9 +52,9 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 6px;
-  border: 1px solid rgba(207, 220, 213, 0.95);
+  border: 1px solid var(--app-line, rgba(207, 220, 213, 0.95));
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--app-surface, rgba(255, 255, 255, 0.78));
 }
 
 .tabs button {
@@ -62,7 +62,7 @@
   border: 0;
   border-radius: 13px;
   background: transparent;
-  color: #526b63;
+  color: var(--app-muted, #526b63);
   font: inherit;
   font-weight: 760;
   cursor: pointer;
@@ -73,17 +73,17 @@
 }
 
 .tabs .tabActive {
-  background: #e8f6ee;
-  color: #0e5c43;
-  box-shadow: inset 0 0 0 1px rgba(97, 181, 137, 0.35);
+  background: var(--app-surface-soft, #e8f6ee);
+  color: var(--app-text, #0e5c43);
+  box-shadow: inset 0 0 0 1px var(--app-shadow-colour, rgba(97, 181, 137, 0.35));
 }
 
 .clearAllButton {
   width: 100%;
   margin-top: 12px;
-  background: #edf8f2;
-  border-color: rgba(104, 184, 142, 0.45);
-  color: #0b6044;
+  background: var(--app-surface-soft, #edf8f2);
+  border-color: var(--app-line, rgba(104, 184, 142, 0.45));
+  color: var(--app-text, #0b6044);
 }
 
 .error,
@@ -95,15 +95,15 @@
 }
 
 .error {
-  border: 1px solid #efc5c5;
-  background: #fff3f3;
-  color: #8b3030;
+  border: 1px solid var(--app-danger-line, #efc5c5);
+  background: var(--app-danger-soft, #fff3f3);
+  color: var(--app-danger, #8b3030);
 }
 
 .empty {
-  border: 1px dashed rgba(191, 208, 199, 0.95);
-  background: rgba(255, 255, 255, 0.72);
-  color: #607169;
+  border: 1px dashed var(--app-line, rgba(191, 208, 199, 0.95));
+  background: var(--app-surface, rgba(255, 255, 255, 0.72));
+  color: var(--app-muted, #607169);
 }
 
 .list {
@@ -114,15 +114,15 @@
 
 .card {
   overflow: hidden;
-  border: 1px solid rgba(199, 215, 207, 0.96);
+  border: 1px solid var(--app-line, rgba(199, 215, 207, 0.96));
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 12px 30px rgba(21, 56, 46, 0.05);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  box-shadow: 0 12px 30px var(--app-shadow-colour, rgba(21, 56, 46, 0.05));
 }
 
 .cardActive {
-  border-color: rgba(99, 184, 142, 0.55);
-  background: linear-gradient(180deg, #ffffff 0%, #f0faf5 100%);
+  border-color: var(--app-accent, rgba(99, 184, 142, 0.55));
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f0faf5) 100%);
 }
 
 .cardHistory {
@@ -139,7 +139,7 @@
 .cardLink time {
   display: block;
   margin-bottom: 7px;
-  color: #74877f;
+  color: var(--app-muted, #74877f);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -152,7 +152,7 @@
 
 .cardLink p {
   margin: 8px 0 0;
-  color: #5a6c65;
+  color: var(--app-muted, #5a6c65);
   font-size: 0.93rem;
   line-height: 1.5;
 }
@@ -162,8 +162,8 @@
   margin-top: 11px;
   padding: 6px 9px;
   border-radius: 999px;
-  background: #fff3d8;
-  color: #75530b;
+  background: var(--app-warning-soft, #fff3d8);
+  color: var(--app-warning, #75530b);
   font-size: 0.74rem;
   font-weight: 850;
   text-transform: uppercase;
@@ -173,7 +173,7 @@
 .clearButton {
   width: calc(100% - 24px);
   margin: 0 12px 12px;
-  background: #fff;
+  background: var(--app-surface, #fff);
 }
 
 .modalOverlay {
@@ -199,8 +199,8 @@
   width: min(100%, 420px);
   padding: 22px;
   border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 24px 70px rgba(12, 35, 28, 0.24);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 24px 70px var(--app-shadow-colour, rgba(12, 35, 28, 0.24));
 }
 
 .modal h2 {
@@ -210,7 +210,7 @@
 
 .modal p {
   margin: 10px 0 0;
-  color: #5b6c65;
+  color: var(--app-muted, #5b6c65);
   line-height: 1.55;
 }
 
@@ -222,9 +222,9 @@
 }
 
 .modalActions .modalConfirm {
-  border-color: rgba(184, 133, 38, 0.45);
-  background: #fff2d5;
-  color: #684607;
+  border-color: var(--app-warning-line, rgba(184, 133, 38, 0.45));
+  background: var(--app-warning-soft, #fff2d5);
+  color: var(--app-warning, #684607);
 }
 
 @media (max-width: 390px) {

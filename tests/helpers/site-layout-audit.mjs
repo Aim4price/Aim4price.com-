@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
+import { readFile } from './light-theme-source.mjs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import FieldManagerSettings from '../field-manager/field-manager-settings';
+import AppSettings from '../../components/AppSettings';
 import NotificationSettingsModal from '../../components/NotificationSettingsModal';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import { usePathname } from 'next/navigation';
@@ -31,7 +31,7 @@ export default function DealerNav({
   const [isSigningOut, setIsSigningOut] = useState(false);
   const isLeadsPage = pathname.startsWith('/dealer/leads');
   const isMaintenancePage = pathname.startsWith('/dealer/maintenance');
-  const resolvedShowBack = showBack ?? pathname !== '/dealer';
+  const resolvedShowBack = showBack ?? pathname !== appRoot;
   const isMaintenanceDetail = pathname.startsWith('/dealer/maintenance/');
   const isInventoryDetail = pathname.startsWith('/dealer/inventory/');
   const resolvedBackHref = backHref === '/dealer' && isMaintenanceDetail
@@ -72,7 +72,7 @@ export default function DealerNav({
       className={`${styles.nav} ${navLayoutClass} ${workspaceSurfaceClass} ${onBack ? styles.estimateNav : ''}`}
       aria-label="Dealer App navigation"
     >
-      {!resolvedShowBack ? <FieldManagerSettings appRoot={appRoot} /> : null}
+      {pathname === appRoot ? <AppSettings offlineHref={`${appRoot}/offline.html`} /> : null}
       {resolvedShowBack ? (
         <>
           {onBack ? (

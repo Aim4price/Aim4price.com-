@@ -14,13 +14,13 @@
   min-height: 8rem !important;
   height: auto;
   padding: 1.5rem;
-  border: 1px solid #d2deed;
+  border: 1px solid var(--app-info-line, #d2deed);
   border-radius: 1.4rem;
-  background: linear-gradient(180deg, #fff, #f4f7fa);
-  color: #12352d;
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #f4f7fa));
+  color: var(--app-text, #12352d);
   text-align: left;
   white-space: normal;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, .055);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, .055));
   font-family: var(--font-heading, 'Montserrat'), sans-serif;
 }
 .grid.grid.grid.grid > button > svg {
@@ -28,7 +28,7 @@
   height: 1.5rem;
   flex: 0 0 1.5rem;
   margin: 0;
-  color: #1d3b62;
+  color: var(--app-info, #1d3b62);
 }
 .grid.grid.grid.grid .copy {
   display: grid;
@@ -36,34 +36,34 @@
   min-width: 0;
 }
 .grid.grid.grid.grid .copy > span {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.3;
 }
 .grid.grid.grid.grid .copy > small {
-  color: #64746a;
+  color: var(--app-muted, #64746a);
   font-size: .9rem;
   font-weight: 650;
   line-height: 1.45;
 }
 .grid.grid.grid.grid > .primary {
-  border-color: #b4dfcb;
-  background: radial-gradient(circle at top left, rgba(25, 116, 84, .08), transparent 50%), linear-gradient(180deg, #fff, #eef8f3);
+  border-color: var(--app-line, #b4dfcb);
+  background: radial-gradient(circle at top left, var(--app-surface-soft, rgba(25, 116, 84, .08)), transparent 50%), linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #eef8f3));
 }
-.grid.grid.grid.grid > .primary > svg { color: #175441; }
+.grid.grid.grid.grid > .primary > svg { color: var(--app-text, #175441); }
 .grid.grid.grid.grid > .danger {
-  border-color: #ffb3b6;
-  background: linear-gradient(180deg, #fff, #fff2f3);
+  border-color: var(--app-danger-line, #ffb3b6);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-danger-soft, #fff2f3));
 }
 .grid.grid.grid.grid > .danger > svg,
-.grid.grid.grid.grid > .danger .copy > span { color: #a92c32; }
+.grid.grid.grid.grid > .danger .copy > span { color: var(--app-danger, #a92c32); }
 .grid.grid.grid.grid > button:hover:not(:disabled) {
-  border-color: #8fb5a6;
-  box-shadow: 0 14px 30px rgba(18, 53, 45, .1);
+  border-color: var(--app-line, #8fb5a6);
+  box-shadow: 0 14px 30px var(--app-shadow-colour, rgba(18, 53, 45, .1));
 }
-.grid.grid.grid.grid > .danger:hover:not(:disabled) { border-color: #d8757b; }
-.grid.grid.grid.grid > button:focus-visible { outline: 3px solid #197454; outline-offset: 4px; }
+.grid.grid.grid.grid > .danger:hover:not(:disabled) { border-color: var(--app-danger-line, #d8757b); }
+.grid.grid.grid.grid > button:focus-visible { outline: 3px solid var(--app-accent, #197454); outline-offset: 4px; }
 .grid.grid.grid.grid > button:disabled { opacity: .55; cursor: not-allowed; }
 @media (max-width: 640px) {
   :global(html:not(:has([data-website-canvas]))) .grid.grid.grid.grid { grid-template-columns: minmax(0, 1fr); }

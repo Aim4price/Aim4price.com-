@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile } from './helpers/light-theme-source.mjs';
 import test from 'node:test';
 import ts from 'typescript';
 
@@ -616,7 +616,7 @@ test('private showroom advert manager matches the accessible Aim4price modal pat
   assert.match(modal, /aria-labelledby="showroom-listing-manager-title"/);
   assert.match(modal, /aria-describedby="showroom-listing-manager-description"/);
   assert.match(modal, /id="showroom-listing-manager-description"/);
-  assert.match(modal, /className=\{styles\.listingManagerClose\}/);
+  assert.match(modal, /className=\{`\$\{styles\.listingManagerClose\} \$\{dialogStyles\.close\}`\}/);
   assert.match(modal, /aria-label="Close advert manager"[\s\S]*?<svg/);
   assert.doesNotMatch(modal, /aria-label="Close advert manager"[^>]*>\s*×/);
   assert.match(modal, /ShowroomManageActionIcon name="edit"/);

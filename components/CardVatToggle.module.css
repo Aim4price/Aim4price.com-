@@ -15,7 +15,7 @@
   border: 0;
   border-radius: .35rem;
   background: transparent;
-  color: rgba(7, 59, 48, .78);
+  color: var(--app-text, rgba(7, 59, 48, .78));
   box-shadow: none;
   opacity: .9;
   cursor: pointer;
@@ -33,9 +33,9 @@
   letter-spacing: 0 !important;
   transform: translateY(-.03em);
 }
-.button:hover { color: #073b30; opacity: 1; transform: translate(.18rem, -50%); }
+.button:hover { color: var(--app-text, #073b30); opacity: 1; transform: translate(.18rem, -50%); }
 .button[aria-pressed=true]:hover { transform: translate(-.18rem, -50%); }
-.button:focus-visible { outline: 3px solid rgba(43,138,99,.35); outline-offset: 2px; }
+.button:focus-visible { outline: 3px solid var(--app-accent, rgba(43,138,99,.35)); outline-offset: 2px; }
 @media(max-width:760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .button {
     right: calc(-1 * var(--asset-card-vat-arrow-offset, 1rem) - 1.1rem);
@@ -62,7 +62,7 @@
   bottom: auto;
   left: auto;
   border-color: transparent;
-  border-left-color: rgba(4,55,44,.96);
+  border-left-color: var(--app-line, rgba(4,55,44,.96));
   transform: translate(-.25rem, -50%);
 }
 .button.button:hover::before,

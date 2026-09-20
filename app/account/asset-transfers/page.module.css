@@ -1,10 +1,10 @@
 .page {
   min-height: calc(var(--website-design-vh, 1vh) * 100);
-  color: #142f28;
+  color: var(--app-text, #142f28);
   background:
-    radial-gradient(circle at 8% 8%, rgba(31, 108, 83, 0.08), transparent 28rem),
-    radial-gradient(circle at 92% 18%, rgba(62, 110, 213, 0.09), transparent 30rem),
-    linear-gradient(180deg, #f7faf8 0%, #eef4f1 52%, #fbfcfb 100%);
+    radial-gradient(circle at 8% 8%, var(--app-surface-soft, rgba(31, 108, 83, 0.08)), transparent 28rem),
+    radial-gradient(circle at 92% 18%, var(--app-info-soft, rgba(62, 110, 213, 0.09)), transparent 30rem),
+    linear-gradient(180deg, var(--app-surface, #f7faf8) 0%, var(--app-surface-soft, #eef4f1) 52%, var(--app-surface, #fbfcfb) 100%);
 }
 
 .shell {
@@ -21,12 +21,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(18, 72, 54, 0.11);
+  border: 1px solid var(--app-line, rgba(18, 72, 54, 0.11));
   border-radius: 0.95rem;
-  color: #173f34;
-  background: rgba(255, 255, 255, 0.9);
+  color: var(--app-text, #173f34);
+  background: var(--app-surface, rgba(255, 255, 255, 0.9));
   padding: 0 1rem;
-  box-shadow: 0 10px 24px rgba(17, 58, 45, 0.055);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(17, 58, 45, 0.055));
   font-size: 0.88rem;
   font-weight: 850;
   text-decoration: none;
@@ -35,8 +35,8 @@
 
 .backButton:hover {
   transform: translateY(-1px);
-  border-color: rgba(31, 138, 102, 0.24);
-  box-shadow: 0 14px 28px rgba(17, 58, 45, 0.08);
+  border-color: var(--app-line, rgba(31, 138, 102, 0.24));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(17, 58, 45, 0.08));
 }
 
 .transferLauncher {
@@ -54,10 +54,10 @@
   align-items: center;
   gap: 0.95rem;
   padding: 1rem 1.05rem;
-  border: 1px solid rgba(36, 79, 125, 0.12);
+  border: 1px solid var(--app-info-line, rgba(36, 79, 125, 0.12));
   border-radius: 1.15rem;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(239, 246, 252, 0.92));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  background: linear-gradient(135deg, var(--app-surface, rgba(255, 255, 255, 0.9)), var(--app-info-soft, rgba(239, 246, 252, 0.92)));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .guideIcon {
@@ -65,11 +65,11 @@
   height: 3.3rem;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(54, 104, 194, 0.15);
+  border: 1px solid var(--app-info-line, rgba(54, 104, 194, 0.15));
   border-radius: 1rem;
-  color: #295b87;
-  background: #ffffff;
-  box-shadow: 0 10px 22px rgba(36, 79, 125, 0.08);
+  color: var(--app-info, #295b87);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(36, 79, 125, 0.08));
 }
 
 .guideIcon svg {
@@ -84,7 +84,7 @@
 }
 
 .transferGuide strong {
-  color: #173f34;
+  color: var(--app-text, #173f34);
   font-size: 0.94rem;
   font-weight: 900;
 }
@@ -92,7 +92,7 @@
 .transferGuide p {
   max-width: 76rem;
   margin: 0;
-  color: #62766e;
+  color: var(--app-muted, #62766e);
   font-size: 0.84rem;
   font-weight: 650;
   line-height: 1.5;
@@ -111,21 +111,21 @@
 
 
 .successNotice {
-  border: 1px solid #a8d9c1;
-  color: #176047;
-  background: #f0faf5;
+  border: 1px solid var(--app-line, #a8d9c1);
+  color: var(--app-text, #176047);
+  background: var(--app-surface-soft, #f0faf5);
 }
 
 .errorNotice {
-  border: 1px solid #e2b4b4;
-  color: #8a3f3f;
-  background: #fff4f4;
+  border: 1px solid var(--app-danger-line, #e2b4b4);
+  color: var(--app-danger, #8a3f3f);
+  background: var(--app-danger-soft, #fff4f4);
 }
 
 .outgoingHeading h3,
 .claimResult h3 {
   margin: 0;
-  color: #123b30;
+  color: var(--app-text, #123b30);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: 1.22rem;
   font-weight: 900;
@@ -136,7 +136,7 @@
 .outgoingHeading p,
 .claimResult p {
   margin: 0.28rem 0 0;
-  color: #667970;
+  color: var(--app-muted, #667970);
   font-size: 0.9rem;
   font-weight: 620;
   line-height: 1.48;
@@ -155,7 +155,7 @@
 }
 
 .claimForm label span {
-  color: #40564e;
+  color: var(--app-text, #40564e);
   font-size: 0.78rem;
   font-weight: 850;
 }
@@ -164,10 +164,10 @@
   width: 100%;
   min-height: 3.15rem;
   box-sizing: border-box;
-  border: 1px solid #d7e2dd;
+  border: 1px solid var(--app-line, #d7e2dd);
   border-radius: 0.85rem;
-  color: #17362c;
-  background: #fbfcfb;
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, #fbfcfb);
   padding: 0 0.85rem;
   font: inherit;
   font-size: 0.9rem;
@@ -176,8 +176,8 @@
 
 .claimForm input:focus {
   outline: none;
-  border-color: #2b8062;
-  box-shadow: 0 0 0 4px rgba(43, 128, 98, 0.1);
+  border-color: var(--app-accent, #2b8062);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(43, 128, 98, 0.1));
 }
 
 .registerPicker {
@@ -188,7 +188,7 @@
 }
 
 .registerPickerLabel {
-  color: #40564e;
+  color: var(--app-text, #40564e);
   font-size: 0.78rem;
   font-weight: 850;
 }
@@ -201,12 +201,12 @@
   align-items: center;
   gap: 0.78rem;
   box-sizing: border-box;
-  border: 1px solid #cfded7;
+  border: 1px solid var(--app-line, #cfded7);
   border-radius: 0.95rem;
-  color: #17362c;
-  background: linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%);
+  color: var(--app-text, #17362c);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f9fcfa) 100%);
   padding: 0.62rem 0.78rem;
-  box-shadow: 0 8px 20px rgba(18, 55, 43, 0.045), inset 0 1px 0 #ffffff;
+  box-shadow: 0 8px 20px var(--app-shadow-colour, rgba(18, 55, 43, 0.045)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -214,21 +214,21 @@
 }
 
 .registerPickerTrigger:hover:not(:disabled) {
-  border-color: #8fc6b2;
-  background: #ffffff;
-  box-shadow: 0 10px 24px rgba(18, 55, 43, 0.07), inset 0 1px 0 #ffffff;
+  border-color: var(--app-line, #8fc6b2);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 55, 43, 0.07)), inset 0 1px 0 var(--app-shadow-colour, #ffffff);
 }
 
 .registerPickerTrigger:focus-visible,
 .registerPickerTriggerOpen {
   outline: none;
-  border-color: #218260;
-  box-shadow: 0 0 0 4px rgba(33, 130, 96, 0.12), 0 10px 24px rgba(18, 55, 43, 0.07);
+  border-color: var(--app-accent, #218260);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(33, 130, 96, 0.12)), 0 10px 24px var(--app-shadow-colour, rgba(18, 55, 43, 0.07));
 }
 
 .registerPickerTrigger:disabled {
-  color: #71827c;
-  background: #f2f5f3;
+  color: var(--app-muted, #71827c);
+  background: var(--app-surface-soft, #f2f5f3);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -244,10 +244,10 @@
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  border: 1px solid #cde4d9;
+  border: 1px solid var(--app-line, #cde4d9);
   border-radius: 0.78rem;
-  color: #1e7658;
-  background: linear-gradient(180deg, #f2faf6 0%, #e9f6ef 100%);
+  color: var(--app-text, #1e7658);
+  background: linear-gradient(180deg, var(--app-surface-soft, #f2faf6) 0%, var(--app-surface-soft, #e9f6ef) 100%);
 }
 
 .registerPickerTriggerIcon svg,
@@ -265,7 +265,7 @@
 
 .registerPickerTriggerCopy strong,
 .registerPickerOptionCopy strong {
-  color: #153c30;
+  color: var(--app-text, #153c30);
   font-size: 0.91rem;
   font-weight: 900;
   line-height: 1.25;
@@ -274,7 +274,7 @@
 
 .registerPickerTriggerCopy small,
 .registerPickerOptionCopy small {
-  color: #657a71;
+  color: var(--app-muted, #657a71);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.35;
@@ -286,14 +286,14 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  color: #47665b;
-  background: #f0f6f3;
+  color: var(--app-accent, #47665b);
+  background: var(--app-surface-soft, #f0f6f3);
   transition: transform 150ms ease, color 150ms ease, background 150ms ease;
 }
 
 .registerPickerTriggerOpen .registerPickerChevron {
-  color: #176047;
-  background: #e6f4ed;
+  color: var(--app-text, #176047);
+  background: var(--app-surface-soft, #e6f4ed);
   transform: rotate(180deg);
 }
 
@@ -303,7 +303,7 @@
 }
 
 .registerPickerHelper {
-  color: #667970;
+  color: var(--app-muted, #667970);
   font-size: 0.75rem;
   font-weight: 650;
   line-height: 1.42;
@@ -313,12 +313,12 @@
   display: grid;
   gap: 0.42rem;
   box-sizing: border-box;
-  border: 1px solid #cbdcd4;
+  border: 1px solid var(--app-line, #cbdcd4);
   border-radius: 1rem;
-  color: #17362c;
-  background: rgba(255, 255, 255, 0.99);
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, rgba(255, 255, 255, 0.99));
   padding: 0.55rem;
-  box-shadow: 0 24px 60px rgba(14, 54, 41, 0.2), 0 4px 14px rgba(14, 54, 41, 0.09);
+  box-shadow: 0 24px 60px var(--app-shadow-colour, rgba(14, 54, 41, 0.2)), 0 4px 14px var(--app-shadow-colour, rgba(14, 54, 41, 0.09));
   font-family: var(--font-body, 'Inter'), sans-serif;
   overscroll-behavior: contain;
 }
@@ -332,17 +332,17 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.6rem;
-  border: 1px solid #cfded7;
+  border: 1px solid var(--app-line, #cfded7);
   border-radius: 0.8rem;
-  background: #f7fbf9;
+  background: var(--app-surface, #f7fbf9);
   padding: 0 0.72rem;
-  box-shadow: 0 4px 12px rgba(18, 55, 43, 0.045);
+  box-shadow: 0 4px 12px var(--app-shadow-colour, rgba(18, 55, 43, 0.045));
 }
 
 .registerPickerSearchRow:focus-within {
-  border-color: #218260;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(33, 130, 96, 0.11);
+  border-color: var(--app-accent, #218260);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(33, 130, 96, 0.11));
 }
 
 .registerPickerSearchRow > span {
@@ -350,7 +350,7 @@
   height: 1.25rem;
   display: grid;
   place-items: center;
-  color: #557168;
+  color: var(--app-muted, #557168);
 }
 
 .registerPickerSearchRow svg {
@@ -366,7 +366,7 @@
   appearance: none;
   border: 0;
   outline: 0;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   background: transparent;
   padding: 0;
   font: inherit;
@@ -375,7 +375,7 @@
 }
 
 .registerPickerSearchRow input::placeholder {
-  color: #83918c;
+  color: var(--app-muted, #83918c);
 }
 
 .registerPickerSearchRow input::-webkit-search-cancel-button {
@@ -400,13 +400,13 @@
 
 .registerPickerOptions::-webkit-scrollbar-track {
   border-radius: 999px;
-  background: #edf4f1;
+  background: var(--app-surface-soft, #edf4f1);
 }
 
 .registerPickerOptions::-webkit-scrollbar-thumb {
-  border: 2px solid #edf4f1;
+  border: 2px solid var(--app-line, #edf4f1);
   border-radius: 999px;
-  background: #79ae9a;
+  background: var(--app-surface-soft, #79ae9a);
 }
 
 .registerPickerOption {
@@ -419,8 +419,8 @@
   box-sizing: border-box;
   border: 1px solid transparent;
   border-radius: 0.88rem;
-  color: #17362c;
-  background: #ffffff;
+  color: var(--app-text, #17362c);
+  background: var(--app-surface, #ffffff);
   padding: 0.62rem 0.68rem;
   font: inherit;
   text-align: left;
@@ -430,18 +430,18 @@
 
 .registerPickerOption:hover,
 .registerPickerOptionActive {
-  border-color: #cae1d7;
-  background: #f5fbf8;
-  box-shadow: inset 3px 0 0 #5aab8b;
+  border-color: var(--app-accent, #cae1d7);
+  background: var(--app-surface, #f5fbf8);
+  box-shadow: inset 3px 0 0 var(--app-shadow-colour, #5aab8b);
 }
 
 .registerPickerOptionSelected {
-  border-color: #8bc8b1;
-  background: linear-gradient(135deg, #eff9f4 0%, #f9fcfa 100%);
+  border-color: var(--app-accent, #8bc8b1);
+  background: linear-gradient(135deg, var(--app-surface-soft, #eff9f4) 0%, var(--app-surface, #f9fcfa) 100%);
 }
 
 .registerPickerOptionSelected .registerPickerOptionIcon {
-  border-color: #9bd2bc;
+  border-color: var(--app-accent, #9bd2bc);
   color: #ffffff;
   background: #218260;
 }
@@ -449,8 +449,8 @@
 .registerPickerOptionCopy em {
   width: fit-content;
   border-radius: 999px;
-  color: #176047;
-  background: #e4f4ec;
+  color: var(--app-text, #176047);
+  background: var(--app-surface-soft, #e4f4ec);
   padding: 0.2rem 0.42rem;
   font-size: 0.64rem;
   font-style: normal;
@@ -470,7 +470,7 @@
 
 .registerPickerOptionSelected .registerPickerCheck {
   background: #218260;
-  box-shadow: 0 6px 12px rgba(33, 130, 96, 0.2);
+  box-shadow: 0 6px 12px var(--app-shadow-colour, rgba(33, 130, 96, 0.2));
 }
 
 .registerPickerCheck svg {
@@ -484,10 +484,10 @@
   place-content: center;
   justify-items: center;
   gap: 0.32rem;
-  border: 1px dashed #cbdcd4;
+  border: 1px dashed var(--app-line, #cbdcd4);
   border-radius: 0.88rem;
-  color: #6a7e75;
-  background: #f9fcfa;
+  color: var(--app-muted, #6a7e75);
+  background: var(--app-surface, #f9fcfa);
   padding: 1rem;
   text-align: center;
 }
@@ -499,8 +499,8 @@
   place-items: center;
   margin-bottom: 0.15rem;
   border-radius: 999px;
-  color: #568071;
-  background: #eaf4ef;
+  color: var(--app-accent, #568071);
+  background: var(--app-surface-soft, #eaf4ef);
 }
 
 .registerPickerNoResults svg {
@@ -509,7 +509,7 @@
 }
 
 .registerPickerNoResults strong {
-  color: #29473d;
+  color: var(--app-text, #29473d);
   font-size: 0.86rem;
   font-weight: 900;
 }
@@ -523,7 +523,7 @@
 .registerPickerNoResults button {
   margin-top: 0.28rem;
   border: 0;
-  color: #176047;
+  color: var(--app-text, #176047);
   background: transparent;
   padding: 0.25rem 0.4rem;
   font: inherit;
@@ -537,9 +537,9 @@
   position: sticky;
   bottom: 0;
   z-index: 2;
-  border-top: 1px solid #e3ece8;
-  color: #6d7f77;
-  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid var(--app-line, #e3ece8);
+  color: var(--app-muted, #6d7f77);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
   padding: 0.38rem 0.48rem 0.04rem;
   font-size: 0.68rem;
   font-weight: 750;
@@ -547,7 +547,7 @@
 }
 
 .claimForm label small {
-  color: #667970;
+  color: var(--app-muted, #667970);
   font-size: 0.75rem;
   font-weight: 650;
   line-height: 1.42;
@@ -559,10 +559,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  border: 1px solid #e2b4b4;
+  border: 1px solid var(--app-danger-line, #e2b4b4);
   border-radius: 0.85rem;
-  color: #8a3f3f;
-  background: #fff4f4;
+  color: var(--app-danger, #8a3f3f);
+  background: var(--app-danger-soft, #fff4f4);
   padding: 0.72rem 0.8rem;
   font-size: 0.78rem;
   font-weight: 750;
@@ -571,7 +571,7 @@
 .registerError button {
   flex: 0 0 auto;
   border: 0;
-  color: #7b3434;
+  color: var(--app-danger, #7b3434);
   background: transparent;
   padding: 0.25rem;
   font: inherit;
@@ -587,7 +587,7 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  border: 1px solid #236c52;
+  border: 1px solid var(--app-line, #236c52);
   border-radius: 0.85rem;
   padding: 0 1rem;
   font: inherit;
@@ -599,14 +599,14 @@
 }
 
 .secondaryButton {
-  color: #236c52;
-  background: #ffffff;
+  color: var(--app-text, #236c52);
+  background: var(--app-surface, #ffffff);
 }
 
 .archiveButton {
-  border-color: #d8b5b5;
-  color: #914f4f;
-  background: #fffafa;
+  border-color: var(--app-danger-line, #d8b5b5);
+  color: var(--app-danger, #914f4f);
+  background: var(--app-danger-soft, #fffafa);
 }
 
 .secondaryButton:disabled,
@@ -618,10 +618,10 @@
 .privacyNote {
   display: grid;
   gap: 0.25rem;
-  border: 1px solid rgba(54, 104, 194, 0.09);
+  border: 1px solid var(--app-info-line, rgba(54, 104, 194, 0.09));
   border-radius: 0.9rem;
-  color: #244f76;
-  background: #eef6fc;
+  color: var(--app-info, #244f76);
+  background: var(--app-info-soft, #eef6fc);
   padding: 0.9rem 0.95rem;
 }
 
@@ -643,9 +643,9 @@
   align-items: center;
   gap: 1rem;
   padding: 1.1rem;
-  border: 1px solid #cde4d8;
+  border: 1px solid var(--app-line, #cde4d8);
   border-radius: 1.15rem;
-  background: linear-gradient(180deg, #f7fcf9 0%, #eef8f3 100%);
+  background: linear-gradient(180deg, var(--app-surface, #f7fcf9) 0%, var(--app-surface-soft, #eef8f3) 100%);
   text-align: left;
 }
 
@@ -657,7 +657,7 @@
   border-radius: 999px;
   color: #ffffff;
   background: #1f8a66;
-  box-shadow: 0 12px 26px rgba(31, 138, 102, 0.2);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(31, 138, 102, 0.2));
   font-size: 1.7rem;
   font-weight: 900;
 }
@@ -672,7 +672,7 @@
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 0.9rem;
-  border-bottom: 1px solid rgba(18, 72, 54, 0.09);
+  border-bottom: 1px solid var(--app-line, rgba(18, 72, 54, 0.09));
 }
 
 .outgoingHeading > div {
@@ -681,10 +681,10 @@
 
 .outgoingHeading > span {
   flex: 0 0 auto;
-  border: 1px solid rgba(36, 79, 125, 0.11);
+  border: 1px solid var(--app-info-line, rgba(36, 79, 125, 0.11));
   border-radius: 999px;
-  color: #244f7d;
-  background: #eef5fb;
+  color: var(--app-info, #244f7d);
+  background: var(--app-info-soft, #eef5fb);
   padding: 0.5rem 0.75rem;
   font-size: 0.78rem;
   font-weight: 850;
@@ -698,11 +698,11 @@
 .transferCard {
   display: grid;
   gap: 0.82rem;
-  border: 1px solid #dfe8e3;
+  border: 1px solid var(--app-line, #dfe8e3);
   border-radius: 1.05rem;
-  background: #fbfcfb;
+  background: var(--app-surface, #fbfcfb);
   padding: 1rem;
-  box-shadow: 0 10px 24px rgba(18, 55, 43, 0.045);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 55, 43, 0.045));
 }
 
 .transferTitle {
@@ -719,13 +719,13 @@
 }
 
 .transferTitle strong {
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: 0.98rem;
   font-weight: 900;
 }
 
 .transferTitle span {
-  color: #687a73;
+  color: var(--app-muted, #687a73);
   font-size: 0.76rem;
   font-weight: 700;
   overflow-wrap: anywhere;
@@ -741,23 +741,23 @@
 }
 
 .status_pending {
-  color: #176047 !important;
-  background: #e7f6ee;
+  color: var(--app-text, #176047) !important;
+  background: var(--app-surface-soft, #e7f6ee);
 }
 
 .status_claimed {
-  color: #245e9a !important;
-  background: #eaf3fc;
+  color: var(--app-info, #245e9a) !important;
+  background: var(--app-info-soft, #eaf3fc);
 }
 
 .status_cancelled {
-  color: #6b7370 !important;
-  background: #ecefed;
+  color: var(--app-muted, #6b7370) !important;
+  background: var(--app-surface-soft, #ecefed);
 }
 
 .status_expired {
-  color: #8a571d !important;
-  background: #fff1dc;
+  color: var(--app-warning, #8a571d) !important;
+  background: var(--app-warning-soft, #fff1dc);
 }
 
 .transferCard dl {
@@ -768,8 +768,8 @@
 }
 
 .cancelPanel.cancelPanel {
-  border-color: #ead0d0 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #fffafa 100%) !important;
+  border-color: var(--app-danger-line, #ead0d0) !important;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-danger-soft, #fffafa) 100%) !important;
 }
 
 
@@ -786,32 +786,32 @@
   display: grid;
   gap: 0.2rem;
   border-radius: 0.78rem;
-  background: #f7eeee;
+  background: var(--app-danger-soft, #f7eeee);
   padding: 0.7rem 0.75rem;
 }
 
 .cancelDetails dt {
-  color: #8a6a6a;
+  color: var(--app-muted, #8a6a6a);
   font-size: 0.72rem;
   font-weight: 780;
 }
 
 .cancelDetails dd {
   margin: 0;
-  color: #684242;
+  color: var(--app-danger, #684242);
   font-size: 0.8rem;
   font-weight: 850;
   overflow-wrap: anywhere;
 }
 
 .footerDangerAction.footerDangerAction {
-  border-color: #914f4f !important;
+  border-color: var(--app-danger-line, #914f4f) !important;
   background: #914f4f !important;
-  box-shadow: 0 10px 24px rgba(145, 79, 79, 0.2) !important;
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(145, 79, 79, 0.2)) !important;
 }
 
 .footerDangerAction.footerDangerAction:hover:not(:disabled) {
-  border-color: #7d3f3f !important;
+  border-color: var(--app-danger-line, #7d3f3f) !important;
   background: #7d3f3f !important;
 }
 
@@ -824,20 +824,20 @@
   display: grid;
   gap: 0.2rem;
   border-radius: 0.78rem;
-  background: #f1f5f3;
+  background: var(--app-surface-soft, #f1f5f3);
   padding: 0.7rem 0.75rem;
   text-align: left;
 }
 
 .transferCard dt {
-  color: #77867f;
+  color: var(--app-muted, #77867f);
   font-size: 0.72rem;
   font-weight: 780;
 }
 
 .transferCard dd {
   margin: 0;
-  color: #2d473e;
+  color: var(--app-text, #2d473e);
   font-size: 0.8rem;
   font-weight: 850;
   overflow-wrap: anywhere;
@@ -860,10 +860,10 @@
   place-content: center;
   justify-items: center;
   gap: 0.35rem;
-  border: 1px dashed #cfdad5;
+  border: 1px dashed var(--app-line, #cfdad5);
   border-radius: 1rem;
-  color: #73827c;
-  background: #fafcfb;
+  color: var(--app-muted, #73827c);
+  background: var(--app-surface, #fafcfb);
   padding: 1.2rem;
   text-align: center;
   font-size: 0.86rem;
@@ -871,7 +871,7 @@
 }
 
 .emptyState strong {
-  color: #334c43;
+  color: var(--app-text, #334c43);
   font-size: 1rem;
   font-weight: 900;
 }
@@ -888,21 +888,21 @@
   display: grid;
   place-content: center;
   gap: 0.42rem;
-  border: 1px solid #dfe8e3;
+  border: 1px solid var(--app-line, #dfe8e3);
   border-radius: 1rem;
-  background: #f7faf8;
+  background: var(--app-surface, #f7faf8);
   padding: 1rem;
   text-align: center;
 }
 
 .receiptGrid span {
-  color: #77867f;
+  color: var(--app-muted, #77867f);
   font-size: 0.75rem;
   font-weight: 780;
 }
 
 .receiptGrid strong {
-  color: #176047;
+  color: var(--app-text, #176047);
   font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.25rem);
   font-weight: 900;
   letter-spacing: 0.035em;
@@ -994,22 +994,22 @@
   max-height: calc(var(--website-visible-height, 100dvh) - 3rem);
   min-height: 0;
   overflow: hidden;
-  border: 1px solid #dce4df;
+  border: 1px solid var(--app-line, #dce4df);
   border-radius: 1.5rem;
-  background: #fff;
-  box-shadow: 0 34px 90px rgba(7, 31, 38, .32);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 34px 90px var(--app-shadow-colour, rgba(7, 31, 38, .32));
 }
 .modalHeader {
   position: relative;
   flex: 0 0 auto;
   margin: 2rem 2rem 0;
   padding: 0 3.75rem 1.25rem 0;
-  border-bottom: 1px solid rgba(18, 45, 37, .1);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, .1));
 }
 .modalHeaderText { min-width: 0; }
 .modalHeader h2 {
   margin: 0;
-  color: #10392e;
+  color: var(--app-text, #10392e);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem);
   font-weight: 900;
@@ -1017,7 +1017,7 @@
   letter-spacing: -.035em;
   overflow-wrap: anywhere;
 }
-.modalHeader p { margin: .35rem 0 0; color: #63766f; font-size: .88rem; font-weight: 620; line-height: 1.5; }
+.modalHeader p { margin: .35rem 0 0; color: var(--app-muted, #63766f); font-size: .88rem; font-weight: 620; line-height: 1.5; }
 .modalCloseButton {
   appearance: none;
   position: absolute;
@@ -1029,17 +1029,17 @@
   min-width: 2.75rem;
   height: 2.75rem;
   padding: 0;
-  border: 1px solid rgba(37,71,51,.15);
+  border: 1px solid var(--app-line, rgba(37,71,51,.15));
   border-radius: .9rem;
-  color: #254733;
-  background: #f7faf8;
+  color: var(--app-text, #254733);
+  background: var(--app-surface, #f7faf8);
   font: inherit;
   font-size: 1.35rem;
   font-weight: 650;
   line-height: 1;
   cursor: pointer;
 }
-.modalCloseButton:hover:not(:disabled) { background: #eef5f0; border-color: rgba(37,71,51,.28); }
+.modalCloseButton:hover:not(:disabled) { background: var(--app-surface-soft, #eef5f0); border-color: var(--app-line, rgba(37,71,51,.28)); }
 .modalBody {
   min-height: 0;
   overflow-y: auto;
@@ -1052,8 +1052,8 @@
 }
 .modalPanel { display: grid; min-width: 0; gap: 1rem; }
 .modalPanelHeading { display: grid; min-width: 0; gap: .3rem; }
-.modalPanelHeading h3 { margin: 0; color: #17362c; font-size: 1rem; font-weight: 750; line-height: 1.3; letter-spacing: 0; overflow-wrap: anywhere; }
-.modalPanelHeading p { margin: 0; color: #63766f; font-size: .88rem; font-weight: 550; line-height: 1.5; }
+.modalPanelHeading h3 { margin: 0; color: var(--app-text, #17362c); font-size: 1rem; font-weight: 750; line-height: 1.3; letter-spacing: 0; overflow-wrap: anywhere; }
+.modalPanelHeading p { margin: 0; color: var(--app-muted, #63766f); font-size: .88rem; font-weight: 550; line-height: 1.5; }
 .modalFooter {
   flex: 0 0 auto;
   display: flex;
@@ -1062,8 +1062,8 @@
   justify-content: flex-end;
   gap: .65rem;
   padding: 1rem 2rem max(1.6rem, env(safe-area-inset-bottom));
-  border-top: 1px solid rgba(18,45,37,.11);
-  background: #fff;
+  border-top: 1px solid var(--app-line, rgba(18,45,37,.11));
+  background: var(--app-surface, #fff);
 }
 .modalPrimaryAction,
 .modalSecondaryAction {
@@ -1074,7 +1074,7 @@
   align-items: center;
   justify-content: center;
   padding: .7rem 1rem;
-  border: 1px solid #195440;
+  border: 1px solid var(--app-line, #195440);
   border-radius: 1rem;
   background: #195440;
   color: #fff;
@@ -1084,22 +1084,22 @@
   text-align: center;
   cursor: pointer;
 }
-.modalSecondaryAction { border-color: #d2dfea; background: #f2f5f8; color: #17362c; }
+.modalSecondaryAction { border-color: var(--app-info-line, #d2dfea); background: var(--app-info-soft, #f2f5f8); color: var(--app-text, #17362c); }
 .modalPrimaryAction:hover:not(:disabled) { background: #123f30; }
-.modalSecondaryAction:hover:not(:disabled) { background: #e8eef3; }
+.modalSecondaryAction:hover:not(:disabled) { background: var(--app-info-soft, #e8eef3); }
 .modalDialog button:focus-visible,
-.modalDialog a:focus-visible { outline: 3px solid rgba(43,138,99,.35); outline-offset: 3px; }
+.modalDialog a:focus-visible { outline: 3px solid var(--app-accent, rgba(43,138,99,.35)); outline-offset: 3px; }
 .modalPrimaryAction:disabled,
 .modalSecondaryAction:disabled,
 .modalCloseButton:disabled { opacity: .55; cursor: not-allowed; }
 .modalDialog .claimForm { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
 .modalDialog .claimForm label span,
 .modalDialog .registerPickerLabel { font-size: .9rem; font-weight: 700; }
-.modalDialog .claimForm input { border-radius: .9rem; background: #fff; font-weight: 600; }
-.modalDialog .transferCard { border-color: #d2dfea; border-radius: 1rem; background: #fff; box-shadow: none; }
-.modalDialog .secondaryButton { border-color: #d2dfea; border-radius: 1rem; background: #f2f5f8; color: #17362c; font-weight: 700; }
-.modalDialog .privacyNote { border-color: #d2dfea; background: #f7f9fb; color: #40564e; }
-.modalDialog .emptyState { min-height: 7rem; border: 1px solid #d2dfea; background: #fff; font-weight: 550; }
+.modalDialog .claimForm input { border-radius: .9rem; background: var(--app-surface, #fff); font-weight: 600; }
+.modalDialog .transferCard { border-color: var(--app-info-line, #d2dfea); border-radius: 1rem; background: var(--app-surface, #fff); box-shadow: none; }
+.modalDialog .secondaryButton { border-color: var(--app-info-line, #d2dfea); border-radius: 1rem; background: var(--app-info-soft, #f2f5f8); color: var(--app-text, #17362c); font-weight: 700; }
+.modalDialog .privacyNote { border-color: var(--app-info-line, #d2dfea); background: var(--app-info-soft, #f7f9fb); color: var(--app-text, #40564e); }
+.modalDialog .emptyState { min-height: 7rem; border: 1px solid var(--app-info-line, #d2dfea); background: var(--app-surface, #fff); font-weight: 550; }
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .modalOverlay { padding: .75rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .modalDialog { width: 100%; max-height: calc(100dvh - 1.5rem); }

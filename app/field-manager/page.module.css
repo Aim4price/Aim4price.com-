@@ -2,8 +2,8 @@
   --field-page-gutter: 24px;
   min-height: 100vh;
   min-height: 100dvh;
-  background: #ffffff;
-  color: #12352d;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #12352d);
   font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -28,7 +28,7 @@
   display: grid;
   justify-items: center;
   gap: 12px;
-  color: #12352d;
+  color: var(--app-text, #12352d);
 }
 
 .installLoadingCard strong {
@@ -39,8 +39,8 @@
 .loadingSpinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(37, 71, 51, 0.14);
-  border-top-color: #254733;
+  border: 3px solid var(--app-line, rgba(37, 71, 51, 0.14));
+  border-top-color: var(--app-line, #254733);
   border-radius: 999px;
   animation: fieldManagerSpin 750ms linear infinite;
 }
@@ -52,11 +52,11 @@
 .installCard {
   width: min(100%, 390px);
   box-sizing: border-box;
-  border: 1px solid rgba(37, 71, 51, 0.12);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.12));
   border-radius: 28px;
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--app-surface, rgba(255, 255, 255, 0.98));
   padding: clamp(26px, 7vw, 36px);
-  box-shadow: 0 24px 58px rgba(18, 53, 45, 0.12);
+  box-shadow: 0 24px 58px var(--app-shadow-colour, rgba(18, 53, 45, 0.12));
 }
 
 .installHeader {
@@ -89,7 +89,7 @@
 }
 
 .loginEyebrow {
-  color: #2c6c55;
+  color: var(--app-text, #2c6c55);
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.13em;
@@ -98,7 +98,7 @@
 
 .installCard h1 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.9rem, 8vw, 2.25rem);
   font-weight: 900;
   letter-spacing: -0.05em;
@@ -129,28 +129,28 @@
 }
 
 .installPrimary {
-  border: 1px solid #254733;
+  border: 1px solid var(--app-line, #254733);
   background: #254733;
   color: #ffffff;
-  box-shadow: 0 14px 26px rgba(37, 71, 51, 0.2);
+  box-shadow: 0 14px 26px var(--app-shadow-colour, rgba(37, 71, 51, 0.2));
 }
 
 .installPrimary:hover:not(:disabled) {
-  border-color: #1d3929;
+  border-color: var(--app-line, #1d3929);
   background: #1d3929;
-  box-shadow: 0 17px 30px rgba(29, 57, 41, 0.24);
+  box-shadow: 0 17px 30px var(--app-shadow-colour, rgba(29, 57, 41, 0.24));
   transform: translateY(-1px);
 }
 
 .installSecondary {
-  border: 1px solid rgba(37, 71, 51, 0.2);
-  background: #ffffff;
-  color: #254733;
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #254733);
 }
 
 .installSecondary:hover {
-  border-color: rgba(37, 71, 51, 0.38);
-  background: #eef5f0;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.38));
+  background: var(--app-surface-soft, #eef5f0);
   transform: translateY(-1px);
 }
 
@@ -171,16 +171,16 @@
   display: grid;
   gap: 11px;
   margin-top: 14px;
-  border: 1px solid rgba(37, 71, 51, 0.13);
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.13));
   border-radius: 16px;
-  background: #eef5f0;
+  background: var(--app-surface-soft, #eef5f0);
   padding: 13px;
   text-align: center;
 }
 
 .installInstructions p {
   margin: 0;
-  color: #254733;
+  color: var(--app-text, #254733);
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1.4;
@@ -188,15 +188,15 @@
 
 .installContinue {
   min-height: 46px;
-  border: 1px solid rgba(37, 71, 51, 0.2);
-  background: #ffffff;
-  color: #254733;
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.2));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #254733);
   font-size: 0.8rem;
 }
 
 .installContinue:hover {
-  border-color: rgba(37, 71, 51, 0.38);
-  background: #f9fcfa;
+  border-color: var(--app-line, rgba(37, 71, 51, 0.38));
+  background: var(--app-surface, #f9fcfa);
   transform: translateY(-1px);
 }
 
@@ -236,7 +236,7 @@
 .searchField span,
 .assetMetaGrid span,
 .homeActionCard span {
-  color: #236851;
+  color: var(--app-text, #236851);
   font-size: 0.72rem;
   font-weight: 950;
   letter-spacing: 0.12em;
@@ -249,7 +249,7 @@
 .homeCard h2,
 .homeActionCard strong {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   letter-spacing: -0.04em;
 }
 
@@ -260,9 +260,9 @@
 .homeActionCard,
 .mobileEmpty,
 .errorNotice {
-  border: 1px solid rgba(18, 53, 45, 0.12);
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 20px 48px rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
+  background: var(--app-surface, rgba(255, 255, 255, 0.95));
+  box-shadow: 0 20px 48px var(--app-shadow-colour, rgba(18, 53, 45, 0.1));
 }
 
 .loginCard {
@@ -279,8 +279,8 @@
 
 .homePage {
   background:
-    radial-gradient(circle at 50% 5%, rgba(111, 197, 150, 0.16), transparent 34%),
-    linear-gradient(180deg, #f5faf7 0%, #ffffff 48%, #f4f9f6 100%);
+    radial-gradient(circle at 50% 5%, var(--app-surface-soft, rgba(111, 197, 150, 0.16)), transparent 34%),
+    linear-gradient(180deg, var(--app-surface, #f5faf7) 0%, var(--app-surface, #ffffff) 48%, var(--app-surface, #f4f9f6) 100%);
 }
 
 .homeCard {
@@ -302,7 +302,7 @@
 
 .homeCard p {
   margin: 10px 0 0;
-  color: rgba(18, 53, 45, 0.66);
+  color: var(--app-muted, rgba(18, 53, 45, 0.66));
   font-weight: 760;
   line-height: 1.48;
 }
@@ -324,9 +324,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 17px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 15px 44px;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font: inherit;
   text-align: center;
   cursor: pointer;
@@ -346,7 +346,7 @@
 }
 
 .homeActionCard small {
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.94rem;
   font-weight: 780;
   line-height: 1.42;
@@ -370,14 +370,14 @@
   letter-spacing: 0 !important;
   line-height: 1;
   text-transform: none !important;
-  box-shadow: 0 8px 18px rgba(174, 35, 35, 0.22);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(174, 35, 35, 0.22));
 }
 
 .loginHeader {
   display: grid;
   justify-items: center;
   padding-bottom: 18px;
-  border-bottom: 1px solid rgba(18, 53, 45, 0.09);
+  border-bottom: 1px solid var(--app-line, rgba(18, 53, 45, 0.09));
   text-align: center;
 }
 
@@ -397,7 +397,7 @@
 .loginHeader .loginSubheading {
   max-width: 310px;
   margin: 8px 0 0;
-  color: rgba(18, 53, 45, 0.67);
+  color: var(--app-muted, rgba(18, 53, 45, 0.67));
   font-size: 0.88rem;
   font-weight: 720;
   line-height: 1.48;
@@ -418,7 +418,7 @@
 .mobileField span,
 .mobileField label,
 .searchField span {
-  color: rgba(18, 53, 45, 0.76);
+  color: var(--app-text, rgba(18, 53, 45, 0.76));
   font-size: 0.82rem;
   font-weight: 920;
   letter-spacing: 0;
@@ -429,10 +429,10 @@
 .searchField input {
   width: 100%;
   min-height: 58px;
-  border: 1px solid rgba(18, 53, 45, 0.16);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.16));
   border-radius: 18px;
-  background: #fbfdfb;
-  color: #12352d;
+  background: var(--app-surface, #fbfdfb);
+  color: var(--app-text, #12352d);
   font: inherit;
   font-size: 1rem;
   font-weight: 820;
@@ -450,8 +450,8 @@
 
 .mobileField input:focus,
 .searchField input:focus {
-  border-color: rgba(35, 104, 81, 0.6);
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.6));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.11));
 }
 
 .mobilePasswordInputWrap {
@@ -472,10 +472,10 @@
   min-width: 64px;
   min-height: 42px;
   transform: translateY(-50%);
-  border: 1px solid rgba(35, 104, 81, 0.14);
+  border: 1px solid var(--app-line, rgba(35, 104, 81, 0.14));
   border-radius: 14px;
-  background: rgba(35, 104, 81, 0.08);
-  color: #174637;
+  background: var(--app-surface-soft, rgba(35, 104, 81, 0.08));
+  color: var(--app-text, #174637);
   font: inherit;
   font-size: 0.84rem;
   font-weight: 920;
@@ -484,12 +484,12 @@
 }
 
 .mobilePasswordToggleButton:active {
-  background: rgba(35, 104, 81, 0.14);
+  background: var(--app-surface-soft, rgba(35, 104, 81, 0.14));
 }
 
 .mobilePasswordToggleButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.11));
 }
 
 .mobilePrimaryButton,
@@ -510,14 +510,14 @@
 
 .mobilePrimaryButton {
   width: 100%;
-  border: 1px solid #254733;
+  border: 1px solid var(--app-line, #254733);
   background: #254733;
   color: #fff;
-  box-shadow: 0 16px 30px rgba(37, 71, 51, 0.24);
+  box-shadow: 0 16px 30px var(--app-shadow-colour, rgba(37, 71, 51, 0.24));
 }
 
 .mobilePrimaryButton:hover:not(:disabled) {
-  border-color: #1d3929;
+  border-color: var(--app-line, #1d3929);
   background: #1d3929;
 }
 
@@ -526,27 +526,27 @@
   margin-left: auto;
   width: min(100%, 164px);
   min-height: 50px;
-  border: 1px solid rgba(198, 55, 55, 0.24);
+  border: 1px solid var(--app-danger-line, rgba(198, 55, 55, 0.24));
   border-radius: 14px;
-  background: linear-gradient(180deg, #fff8f8 0%, #fde8e8 100%);
-  color: #9b3030;
+  background: linear-gradient(180deg, var(--app-danger-soft, #fff8f8) 0%, var(--app-danger-soft, #fde8e8) 100%);
+  color: var(--app-danger, #9b3030);
   font-size: 0.9rem;
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
   word-break: keep-all;
-  box-shadow: 0 12px 26px rgba(155, 48, 48, 0.1);
+  box-shadow: 0 12px 26px var(--app-shadow-colour, rgba(155, 48, 48, 0.1));
 }
 
 .logoutButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(155, 48, 48, 0.1), 0 12px 26px rgba(155, 48, 48, 0.1);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(155, 48, 48, 0.1)), 0 12px 26px var(--app-shadow-colour, rgba(155, 48, 48, 0.1));
 }
 
 .mobilePrimaryButton:focus-visible,
 .homeActionCard:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12), 0 16px 30px rgba(35, 104, 81, 0.18);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.12)), 0 16px 30px var(--app-shadow-colour, rgba(35, 104, 81, 0.18));
 }
 
 .mobilePrimaryButton:active,
@@ -564,9 +564,9 @@
 
 .errorNotice {
   border-radius: 18px;
-  border-color: rgba(155, 44, 44, 0.16);
-  background: rgba(155, 44, 44, 0.09);
-  color: #8a2424;
+  border-color: var(--app-danger-line, rgba(155, 44, 44, 0.16));
+  background: var(--app-danger-soft, rgba(155, 44, 44, 0.09));
+  color: var(--app-danger, #8a2424);
   padding: 14px 15px;
   font-weight: 860;
   line-height: 1.42;
@@ -574,7 +574,7 @@
 
 .installNote {
   margin: 0;
-  color: rgba(18, 53, 45, 0.58);
+  color: var(--app-muted, rgba(18, 53, 45, 0.58));
   font-size: 0.9rem;
   font-weight: 740;
   text-align: center;
@@ -603,7 +603,7 @@
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
-  color: rgba(18, 53, 45, 0.66);
+  color: var(--app-muted, rgba(18, 53, 45, 0.66));
   font-size: clamp(0.98rem, 4.4vw, 1.2rem);
   font-weight: 880;
   line-height: 1.25;
@@ -616,7 +616,7 @@
   z-index: 2;
   border-radius: 22px;
   padding: 13px;
-  box-shadow: 0 14px 32px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 14px 32px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
   backdrop-filter: blur(12px);
 }
 
@@ -632,30 +632,30 @@
 .assetDirectorySection > .assetList { margin-top: 0; }
 .assetDirectoryHeading { display: grid; gap: 3px; padding: 2px 4px; }
 .assetDirectoryHeading > span {
-  color: #237052;
+  color: var(--app-text, #237052);
   font-size: 0.7rem;
   font-weight: 900;
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
-.assetDirectoryHeading > h1 { margin: 0; color: #12352d; font-size: 1.28rem; font-weight: 900; letter-spacing: -0.035em; }
+.assetDirectoryHeading > h1 { margin: 0; color: var(--app-text, #12352d); font-size: 1.28rem; font-weight: 900; letter-spacing: -0.035em; }
 .assetDirectoryNav {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   margin: 0 0 14px;
-  border: 1px solid rgba(18, 53, 45, 0.11);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.11));
   border-radius: 18px;
-  background: #f7fbf8;
+  background: var(--app-surface, #f7fbf8);
   padding: 10px;
 }
 .assetDirectoryNav button {
   min-height: 44px;
-  border: 1px solid rgba(18, 53, 45, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14));
   border-radius: 13px;
-  background: #fff;
-  color: #15533e;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #15533e);
   padding: 0 12px;
   font: inherit;
   font-size: 0.78rem;
@@ -663,8 +663,8 @@
   cursor: pointer;
 }
 .assetDirectoryNav div { min-width: 0; display: grid; gap: 2px; }
-.assetDirectoryNav span { color: rgba(18, 53, 45, 0.58); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
-.assetDirectoryNav strong { overflow-wrap: anywhere; color: #12352d; font-size: 0.94rem; }
+.assetDirectoryNav span { color: var(--app-muted, rgba(18, 53, 45, 0.58)); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
+.assetDirectoryNav strong { overflow-wrap: anywhere; color: var(--app-text, #12352d); font-size: 0.94rem; }
 
 .assetCard {
   display: grid;
@@ -672,13 +672,13 @@
   overflow: hidden;
   border-radius: 24px;
   padding: 18px 16px 16px;
-  box-shadow: 0 16px 36px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 16px 36px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .assetDirectoryUmbrellaCard {
   justify-items: center;
-  border-color: rgba(32, 143, 102, 0.27);
-  background: linear-gradient(145deg, #ffffff 0%, #f1faf6 100%);
+  border-color: var(--app-line, rgba(32, 143, 102, 0.27));
+  background: linear-gradient(145deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #f1faf6) 100%);
   text-align: center;
 }
 .assetDirectoryUmbrellaIcon {
@@ -686,16 +686,16 @@
   height: 48px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(31, 138, 102, 0.24);
+  border: 1px solid var(--app-line, rgba(31, 138, 102, 0.24));
   border-radius: 16px;
-  background: #e9f8f1;
-  color: #0c6a4c;
+  background: var(--app-surface-soft, #e9f8f1);
+  color: var(--app-text, #0c6a4c);
   font-size: 1.45rem;
   font-weight: 900;
 }
 .assetDirectoryCount {
   margin: -4px 0 0;
-  color: rgba(18, 53, 45, 0.62);
+  color: var(--app-muted, rgba(18, 53, 45, 0.62));
   font-size: 0.8rem;
   font-weight: 750;
   line-height: 1.4;
@@ -731,7 +731,7 @@
 .assetTopRow p {
   max-width: min(100%, 32ch);
   margin: 8px auto 0;
-  color: rgba(18, 53, 45, 0.65);
+  color: var(--app-muted, rgba(18, 53, 45, 0.65));
   font-weight: 760;
   line-height: 1.38;
   text-align: center;
@@ -751,9 +751,9 @@
   display: grid;
   align-content: center;
   justify-items: center;
-  border: 1px solid rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 18px;
-  background: #fbfdfb;
+  background: var(--app-surface, #fbfdfb);
   padding: 11px 10px;
   text-align: center;
 }
@@ -762,7 +762,7 @@
 .homeActionCard span {
   display: block;
   margin-bottom: 5px;
-  color: rgba(18, 53, 45, 0.52);
+  color: var(--app-muted, rgba(18, 53, 45, 0.52));
 }
 
 .assetMetaGrid span {
@@ -773,7 +773,7 @@
 
 .assetMetaGrid strong {
   display: block;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(0.94rem, 3.8vw, 1.08rem);
   font-weight: 800;
   line-height: 1.2;
@@ -782,9 +782,9 @@
 
 .assetOpenButton,
 .overviewOpenButton {
-  border: 1.5px solid #6fc596;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
-  color: #0a543d;
+  border: 1.5px solid var(--app-line, #6fc596);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%);
+  color: var(--app-text, #0a543d);
   font-weight: 800;
 }
 
@@ -793,20 +793,20 @@
   border-radius: 17px;
   font-size: 0.94rem;
   line-height: 1;
-  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.085);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.085));
 }
 
 .assetOpenButton:hover:not(:disabled),
 .overviewOpenButton:hover:not(:disabled) {
-  border-color: #43ad73;
-  background: linear-gradient(180deg, #ffffff 0%, #d9f1e5 100%);
+  border-color: var(--app-line, #43ad73);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #d9f1e5) 100%);
 }
 
 .mobileEmpty {
   margin: 14px 0 0;
   border-radius: 22px;
   padding: 18px;
-  color: rgba(18, 53, 45, 0.68);
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   font-weight: 820;
   line-height: 1.45;
 }
@@ -828,7 +828,7 @@
 .overviewRange button:focus-visible,
 .overviewError button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.12));
 }
 
 .overviewIntro {
@@ -837,7 +837,7 @@
 
 .overviewIntro > span {
   display: block;
-  color: #236851;
+  color: var(--app-text, #236851);
   font-size: 0.7rem;
   font-weight: 950;
   letter-spacing: 0.12em;
@@ -846,7 +846,7 @@
 
 .overviewIntro h1 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.9rem, 8vw, 2.45rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -855,7 +855,7 @@
 
 .overviewIntro p {
   margin: 8px 0 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.94rem;
   font-weight: 650;
   line-height: 1.4;
@@ -865,11 +865,11 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 5px;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--app-surface, rgba(255, 255, 255, 0.72));
   padding: 5px;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .overviewRange button {
@@ -877,7 +877,7 @@
   border: 0;
   border-radius: 14px;
   background: transparent;
-  color: rgba(18, 53, 45, 0.68);
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   padding: 0 10px;
   font: inherit;
   font-size: 0.9rem;
@@ -889,7 +889,7 @@
 .overviewRange .overviewRangeActive {
   background: #254733;
   color: #fff;
-  box-shadow: 0 8px 18px rgba(37, 71, 51, 0.2);
+  box-shadow: 0 8px 18px var(--app-shadow-colour, rgba(37, 71, 51, 0.2));
 }
 
 .overviewSearch {
@@ -899,18 +899,18 @@
   align-items: center;
   gap: 11px;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.14);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14));
   border-radius: 17px;
-  background: rgba(255, 255, 255, 0.96);
-  color: rgba(18, 53, 45, 0.56);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  color: var(--app-muted, rgba(18, 53, 45, 0.56));
   padding: 0 16px;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
 
 .overviewSearch:focus-within {
-  border-color: rgba(35, 104, 81, 0.42);
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1), 0 12px 28px rgba(18, 53, 45, 0.07);
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.42));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.1)), 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .overviewSearch svg {
@@ -927,7 +927,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   padding: 0;
   font: inherit;
   font-size: 0.9rem;
@@ -935,7 +935,7 @@
 }
 
 .overviewSearch input::placeholder {
-  color: rgba(18, 53, 45, 0.48);
+  color: var(--app-muted, rgba(18, 53, 45, 0.48));
   opacity: 1;
 }
 
@@ -954,10 +954,10 @@
 .overviewError button {
   flex: 0 0 auto;
   min-height: 40px;
-  border: 1px solid rgba(138, 36, 36, 0.2);
+  border: 1px solid var(--app-danger-line, rgba(138, 36, 36, 0.2));
   border-radius: 13px;
-  background: #fff;
-  color: #8a2424;
+  background: var(--app-surface, #fff);
+  color: var(--app-danger, #8a2424);
   padding: 0 12px;
   font: inherit;
   font-size: 0.82rem;
@@ -985,7 +985,7 @@
 
 .overviewSectionHeading h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.2rem, 5vw, 1.42rem);
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -997,10 +997,10 @@
   min-height: 29px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.84);
-  color: rgba(18, 53, 45, 0.68);
+  background: var(--app-surface, rgba(255, 255, 255, 0.84));
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   font-size: 0.78rem;
   font-weight: 800;
 }
@@ -1012,31 +1012,31 @@
 
 .overviewCard {
   min-width: 0;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
   padding: 16px;
-  box-shadow: 0 16px 38px rgba(18, 53, 45, 0.09);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(18, 53, 45, 0.09));
 }
 
 .overviewCard.overviewRecurringCard {
-  border-color: rgba(193, 123, 51, 0.46);
+  border-color: var(--app-warning-line, rgba(193, 123, 51, 0.46));
   background:
-    radial-gradient(circle at 0 0, rgba(230, 148, 61, 0.1), transparent 42%),
-    linear-gradient(180deg, #fffdf9 0%, #fff8ee 100%);
-  box-shadow: 0 16px 38px rgba(182, 111, 38, 0.13);
+    radial-gradient(circle at 0 0, var(--app-warning-soft, rgba(230, 148, 61, 0.1)), transparent 42%),
+    linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-warning-soft, #fff8ee) 100%);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(182, 111, 38, 0.13));
 }
 
 .overviewCard.overviewCardNeedsAttention {
-  border-color: rgba(162, 48, 48, 0.2);
-  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%);
-  box-shadow: 0 16px 38px rgba(162, 48, 48, 0.1);
+  border-color: var(--app-danger-line, rgba(162, 48, 48, 0.2));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fffafa) 0%, var(--app-danger-soft, #fff1f1) 100%);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(162, 48, 48, 0.1));
 }
 
 .overviewCard.overviewCardDueSoon {
-  border-color: rgba(161, 105, 16, 0.22);
-  background: linear-gradient(180deg, #fffdf8 0%, #fff6e5 100%);
-  box-shadow: 0 16px 38px rgba(161, 105, 16, 0.1);
+  border-color: var(--app-warning-line, rgba(161, 105, 16, 0.22));
+  background: linear-gradient(180deg, var(--app-warning-soft, #fffdf8) 0%, var(--app-warning-soft, #fff6e5) 100%);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(161, 105, 16, 0.1));
 }
 
 .overviewCardLabels {
@@ -1063,19 +1063,19 @@
 }
 
 .overviewType {
-  background: rgba(35, 104, 81, 0.09);
-  color: #1d5b46;
+  background: var(--app-surface-soft, rgba(35, 104, 81, 0.09));
+  color: var(--app-text, #1d5b46);
 }
 
 .overviewType.overviewRecurringType {
-  border: 1px solid rgba(193, 123, 51, 0.22);
-  background: #fff0dc;
-  color: #8b4f12;
+  border: 1px solid var(--app-warning-line, rgba(193, 123, 51, 0.22));
+  background: var(--app-warning-soft, #fff0dc);
+  color: var(--app-warning, #8b4f12);
 }
 
 .overviewRecurringNotice {
   margin: -2px 0 10px;
-  color: #9a5816;
+  color: var(--app-warning, #9a5816);
   font-size: 0.72rem;
   font-weight: 950;
   letter-spacing: 0.07em;
@@ -1091,26 +1091,26 @@
 }
 
 .overviewStatusUrgent {
-  border: 1px solid rgba(162, 48, 48, 0.16);
-  background: #fbeaea;
-  color: #992d2d;
+  border: 1px solid var(--app-danger-line, rgba(162, 48, 48, 0.16));
+  background: var(--app-danger-soft, #fbeaea);
+  color: var(--app-danger, #992d2d);
 }
 
 .overviewStatusUpcoming {
-  border: 1px solid rgba(161, 105, 16, 0.18);
-  background: #fff4d9;
-  color: #855708;
+  border: 1px solid var(--app-warning-line, rgba(161, 105, 16, 0.18));
+  background: var(--app-warning-soft, #fff4d9);
+  color: var(--app-warning, #855708);
 }
 
 .overviewStatusNeutral {
-  border: 1px solid rgba(35, 104, 81, 0.14);
-  background: #edf6f1;
-  color: #1c6048;
+  border: 1px solid var(--app-line, rgba(35, 104, 81, 0.14));
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #1c6048);
 }
 
 .overviewCard h3 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.16rem, 4.8vw, 1.38rem);
   font-weight: 800;
   letter-spacing: -0.025em;
@@ -1120,7 +1120,7 @@
 
 .overviewHeadline {
   margin: 8px 0 0;
-  color: #174637;
+  color: var(--app-text, #174637);
   font-size: 0.96rem;
   font-weight: 800;
   line-height: 1.36;
@@ -1129,7 +1129,7 @@
 
 .overviewDetail {
   margin: 7px 0 0;
-  color: rgba(18, 53, 45, 0.66);
+  color: var(--app-muted, rgba(18, 53, 45, 0.66));
   font-size: 0.88rem;
   font-weight: 720;
   line-height: 1.42;
@@ -1140,8 +1140,8 @@
   display: -webkit-box;
   margin: 12px 0 0;
   overflow: hidden;
-  border-left: 3px solid rgba(35, 104, 81, 0.22);
-  color: rgba(18, 53, 45, 0.72);
+  border-left: 3px solid var(--app-line, rgba(35, 104, 81, 0.22));
+  color: var(--app-muted, rgba(18, 53, 45, 0.72));
   padding: 1px 0 1px 10px;
   font-size: 0.88rem;
   font-weight: 740;
@@ -1156,7 +1156,7 @@
   margin-top: 15px;
   border-radius: 15px;
   font-size: 0.96rem;
-  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.1);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.1));
 }
 
 .overviewCardActions {
@@ -1172,23 +1172,23 @@
 
 .overviewClearButton {
   min-height: 50px;
-  border: 1px solid rgba(18, 53, 45, 0.16);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.16));
   border-radius: 15px;
-  background: #fff;
-  color: #174637;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #174637);
   padding: 0 14px;
   font: inherit;
   font-size: 0.9rem;
   font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
 }
 
 .overviewClearButton:focus-visible {
   outline: none;
-  border-color: rgba(35, 104, 81, 0.4);
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11);
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.4));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.11));
 }
 
 .overviewClearButton:active {
@@ -1221,13 +1221,13 @@
   max-height: calc(100vh - 32px);
   max-height: calc(100dvh - 32px);
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.13));
   border-radius: 26px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 26px 24px 24px;
   overflow-y: auto;
   text-align: center;
-  box-shadow: 0 26px 70px rgba(9, 31, 25, 0.25);
+  box-shadow: 0 26px 70px var(--app-shadow-colour, rgba(9, 31, 25, 0.25));
 }
 
 .overviewConfirmClose {
@@ -1238,11 +1238,11 @@
   width: 38px;
   height: 38px;
   place-items: center;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 999px;
-  background: rgba(247, 251, 249, 0.96);
+  background: var(--app-surface, rgba(247, 251, 249, 0.96));
   padding: 0;
-  color: #174637;
+  color: var(--app-text, #174637);
   cursor: pointer;
   transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
 }
@@ -1253,13 +1253,13 @@
 }
 
 .overviewConfirmClose:hover:not(:disabled) {
-  border-color: rgba(35, 104, 81, 0.26);
-  background: #eff7f3;
+  border-color: var(--app-line, rgba(35, 104, 81, 0.26));
+  background: var(--app-surface-soft, #eff7f3);
 }
 
 .overviewConfirmClose:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.14);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.14));
 }
 
 .overviewConfirmClose:active:not(:disabled) {
@@ -1274,7 +1274,7 @@
 .overviewConfirmEyebrow {
   display: block;
   margin-bottom: 6px;
-  color: #236851;
+  color: var(--app-text, #236851);
   font-size: 0.7rem;
   font-weight: 950;
   letter-spacing: 0.12em;
@@ -1283,7 +1283,7 @@
 
 .overviewConfirmCard h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.42rem, 6vw, 1.72rem);
   font-weight: 850;
   letter-spacing: -0.035em;
@@ -1293,23 +1293,23 @@
 .overviewConfirmCard p {
   max-width: 340px;
   margin: 10px auto 0;
-  color: rgba(18, 53, 45, 0.7);
+  color: var(--app-muted, rgba(18, 53, 45, 0.7));
   font-size: 0.92rem;
   font-weight: 650;
   line-height: 1.45;
 }
 
 .overviewConfirmCard p strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-weight: 850;
 }
 
 .overviewConfirmSharedNote {
-  border: 1px solid rgba(35, 104, 81, 0.14);
+  border: 1px solid var(--app-line, rgba(35, 104, 81, 0.14));
   border-radius: 14px;
-  background: #f2faf6;
+  background: var(--app-surface-soft, #f2faf6);
   padding: 10px 12px;
-  color: #236851 !important;
+  color: var(--app-text, #236851) !important;
   font-size: 0.82rem !important;
 }
 
@@ -1324,7 +1324,7 @@
 
 .overviewConfirmScope legend {
   margin-bottom: 8px;
-  color: rgba(18, 53, 45, 0.72);
+  color: var(--app-muted, rgba(18, 53, 45, 0.72));
   font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -1336,17 +1336,17 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 11px;
   align-items: start;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.13));
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 12px 13px;
   cursor: pointer;
 }
 
 .overviewConfirmScope label.overviewConfirmScopeSelected {
-  border-color: rgba(31, 139, 100, 0.48);
-  background: #eff9f4;
-  box-shadow: 0 0 0 3px rgba(31, 139, 100, 0.08);
+  border-color: var(--app-accent, rgba(31, 139, 100, 0.48));
+  background: var(--app-surface-soft, #eff9f4);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(31, 139, 100, 0.08));
 }
 
 .overviewConfirmScope input {
@@ -1362,13 +1362,13 @@
 }
 
 .overviewConfirmScope strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 0.86rem;
   font-weight: 850;
 }
 
 .overviewConfirmScope small {
-  color: rgba(18, 53, 45, 0.62);
+  color: var(--app-muted, rgba(18, 53, 45, 0.62));
   font-size: 0.74rem;
   font-weight: 650;
   line-height: 1.35;
@@ -1396,22 +1396,22 @@
 }
 
 .overviewConfirmCancel {
-  border: 1px solid rgba(18, 53, 45, 0.16);
-  background: #ffffff;
-  color: #174637;
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.16));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #174637);
 }
 
 .overviewConfirmButton {
-  border: 1px solid #ad3232;
-  background: linear-gradient(180deg, #c64242 0%, #aa3030 100%);
+  border: 1px solid var(--app-danger-line, #ad3232);
+  background: linear-gradient(180deg, var(--app-danger-soft, #c64242) 0%, #aa3030 100%);
   color: #ffffff;
-  box-shadow: 0 12px 24px rgba(170, 48, 48, 0.22);
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(170, 48, 48, 0.22));
 }
 
 .overviewConfirmCancel:focus-visible,
 .overviewConfirmButton:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.14);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.14));
 }
 
 .overviewConfirmCancel:active:not(:disabled),
@@ -1471,10 +1471,10 @@
 
 .overviewEmpty {
   margin: 0;
-  border: 1px dashed rgba(18, 53, 45, 0.15);
+  border: 1px dashed var(--app-line, rgba(18, 53, 45, 0.15));
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.58);
-  color: rgba(18, 53, 45, 0.62);
+  background: var(--app-surface, rgba(255, 255, 255, 0.58));
+  color: var(--app-muted, rgba(18, 53, 45, 0.62));
   padding: 16px;
   font-size: 0.88rem;
   font-weight: 780;
@@ -1483,8 +1483,8 @@
 
 .maintenancePage {
   background:
-    radial-gradient(circle at 50% 0%, rgba(111, 197, 150, 0.12), transparent 30%),
-    linear-gradient(180deg, #f7fbf8 0%, #ffffff 52%, #f4f9f6 100%);
+    radial-gradient(circle at 50% 0%, var(--app-surface-soft, rgba(111, 197, 150, 0.12)), transparent 30%),
+    linear-gradient(180deg, var(--app-surface, #f7fbf8) 0%, var(--app-surface, #ffffff) 52%, var(--app-surface, #f4f9f6) 100%);
 }
 
 .maintenanceShell {
@@ -1501,7 +1501,7 @@
 
 .maintenanceIntro > span,
 .maintenanceSuccess > span {
-  color: #236851;
+  color: var(--app-text, #236851);
   font-size: 0.7rem;
   font-weight: 950;
   letter-spacing: 0.12em;
@@ -1511,7 +1511,7 @@
 .maintenanceIntro h1,
 .maintenanceSuccess h1 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.9rem, 8vw, 2.45rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -1522,7 +1522,7 @@
 .maintenanceSuccess p,
 .maintenanceDescription {
   margin: 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.94rem;
   font-weight: 650;
   line-height: 1.48;
@@ -1530,11 +1530,11 @@
 
 .maintenanceCard,
 .maintenanceSuccess {
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
   padding: 17px;
-  box-shadow: 0 16px 38px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 16px 38px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .maintenanceCard {
@@ -1549,11 +1549,11 @@
 .maintenanceActiveCard {
   gap: 10px;
   margin-bottom: 16px;
-  border-color: rgba(35, 104, 81, 0.2);
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.2));
   background:
-    radial-gradient(circle at 100% 0%, rgba(111, 197, 150, 0.12), transparent 42%),
-    linear-gradient(180deg, #ffffff 0%, #f7fbf8 100%);
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+    radial-gradient(circle at 100% 0%, var(--app-surface-soft, rgba(111, 197, 150, 0.12)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #f7fbf8) 100%);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .maintenanceActiveCopy {
@@ -1563,7 +1563,7 @@
 
 .maintenanceActiveCopy > span,
 .maintenanceNextDue > span {
-  color: #236851;
+  color: var(--app-text, #236851);
   font-size: 0.66rem;
   font-weight: 950;
   letter-spacing: 0.09em;
@@ -1573,7 +1573,7 @@
 
 .maintenanceActiveCopy > p {
   margin: 0;
-  color: rgba(18, 53, 45, 0.68);
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   font-size: 0.88rem;
   font-weight: 690;
   line-height: 1.42;
@@ -1581,7 +1581,7 @@
 
 .maintenanceActiveTitle {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 1.04rem;
   font-weight: 850;
   line-height: 1.25;
@@ -1593,11 +1593,11 @@
   justify-content: space-between;
   gap: 12px;
   padding-top: 10px;
-  border-top: 1px solid rgba(18, 53, 45, 0.1);
+  border-top: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
 }
 
 .maintenanceNextDue > strong {
-  color: #15533e;
+  color: var(--app-text, #15533e);
   font-size: 0.9rem;
   font-weight: 850;
   line-height: 1.25;
@@ -1617,7 +1617,7 @@
 }
 
 .maintenanceField > span {
-  color: rgba(18, 53, 45, 0.72);
+  color: var(--app-muted, rgba(18, 53, 45, 0.72));
   font-size: 0.78rem;
   font-weight: 850;
   letter-spacing: 0.025em;
@@ -1628,10 +1628,10 @@
 .maintenanceField textarea {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.16);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.16));
   border-radius: 14px;
-  background: #fbfdfb;
-  color: #12352d;
+  background: var(--app-surface, #fbfdfb);
+  color: var(--app-text, #12352d);
   padding: 0 13px;
   font: inherit;
   font-size: 0.92rem;
@@ -1656,9 +1656,9 @@
 .maintenanceField input:focus,
 .maintenanceField select:focus,
 .maintenanceField textarea:focus {
-  border-color: rgba(37, 71, 51, 0.62);
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(37, 71, 51, 0.09);
+  border-color: var(--app-accent, rgba(37, 71, 51, 0.62));
+  background: var(--app-surface, #fff);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(37, 71, 51, 0.09));
 }
 
 .maintenanceFieldFull {
@@ -1670,9 +1670,9 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 10px;
-  border: 1px solid rgba(111, 197, 150, 0.42);
+  border: 1px solid var(--app-line, rgba(111, 197, 150, 0.42));
   border-radius: 15px;
-  background: #f1f9f4;
+  background: var(--app-surface-soft, #f1f9f4);
   padding: 13px;
   cursor: pointer;
 }
@@ -1690,13 +1690,13 @@
 }
 
 .maintenanceRecurringChoice strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 0.9rem;
   font-weight: 850;
 }
 
 .maintenanceRecurringChoice small {
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.4;
@@ -1709,10 +1709,10 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  border: 1.5px solid #6fc596;
+  border: 1.5px solid var(--app-line, #6fc596);
   border-radius: 15px;
-  background: linear-gradient(180deg, #ffffff 0%, #e6f8ef 100%);
-  color: #0a543d;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface-soft, #e6f8ef) 100%);
+  color: var(--app-text, #0a543d);
   padding: 0 16px;
   font: inherit;
   font-size: 0.94rem;
@@ -1720,7 +1720,7 @@
   text-align: center;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(10, 84, 61, 0.09);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(10, 84, 61, 0.09));
 }
 
 .maintenanceAddButton:disabled {
@@ -1748,10 +1748,10 @@
 }
 
 .maintenanceActionNotice {
-  border: 1px solid rgba(35, 104, 81, 0.22);
+  border: 1px solid var(--app-line, rgba(35, 104, 81, 0.22));
   border-radius: 14px;
-  background: #edf8f2;
-  color: #15533e;
+  background: var(--app-surface-soft, #edf8f2);
+  color: var(--app-text, #15533e);
   margin-bottom: 14px;
   padding: 12px 14px;
   font-size: 0.84rem;
@@ -1773,7 +1773,7 @@
 }
 
 .maintenanceScheduleHeading span {
-  color: #236851;
+  color: var(--app-text, #236851);
   font-size: 0.67rem;
   font-weight: 950;
   letter-spacing: 0.1em;
@@ -1782,7 +1782,7 @@
 
 .maintenanceScheduleHeading h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 1.22rem;
   letter-spacing: -0.025em;
 }
@@ -1793,8 +1793,8 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: #edf6f1;
-  color: #1c6048;
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #1c6048);
   font-size: 0.78rem;
 }
 
@@ -1806,32 +1806,32 @@
 .maintenanceScheduleCard {
   display: grid;
   gap: 9px;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.13));
   border-radius: 19px;
-  background: #fff;
+  background: var(--app-surface, #fff);
   padding: 15px;
-  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.07);
+  box-shadow: 0 12px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
   scroll-margin-block: 120px;
 }
 
 .maintenanceScheduleCardRecurring {
-  border-color: rgba(193, 123, 51, 0.5);
+  border-color: var(--app-warning-line, rgba(193, 123, 51, 0.5));
   background:
-    radial-gradient(circle at 0 0, rgba(230, 148, 61, 0.12), transparent 42%),
-    linear-gradient(180deg, #fffdf9 0%, #fff8ee 100%);
+    radial-gradient(circle at 0 0, var(--app-warning-soft, rgba(230, 148, 61, 0.12)), transparent 42%),
+    linear-gradient(180deg, var(--app-warning-soft, #fffdf9) 0%, var(--app-warning-soft, #fff8ee) 100%);
 }
 
 .maintenanceScheduleCardDone {
-  border-color: rgba(71, 139, 108, 0.38);
+  border-color: var(--app-line, rgba(71, 139, 108, 0.38));
   background:
-    radial-gradient(circle at 0 0, rgba(25, 116, 84, 0.09), transparent 42%),
-    linear-gradient(180deg, #f9fdfb 0%, #eff9f3 100%);
+    radial-gradient(circle at 0 0, var(--app-surface-soft, rgba(25, 116, 84, 0.09)), transparent 42%),
+    linear-gradient(180deg, var(--app-surface, #f9fdfb) 0%, var(--app-surface-soft, #eff9f3) 100%);
 }
 
 .maintenanceScheduleCardSelected {
-  outline: 4px solid rgba(230, 148, 61, 0.2);
-  border-color: #c17b33;
-  box-shadow: 0 18px 42px rgba(182, 111, 38, 0.18);
+  outline: 4px solid var(--app-warning-line, rgba(230, 148, 61, 0.2));
+  border-color: var(--app-warning-line, #c17b33);
+  box-shadow: 0 18px 42px var(--app-shadow-colour, rgba(182, 111, 38, 0.18));
 }
 
 .maintenanceScheduleLabels {
@@ -1854,19 +1854,19 @@
 }
 
 .maintenanceScheduleLabels span {
-  background: #edf6f1;
-  color: #1c6048;
+  background: var(--app-surface-soft, #edf6f1);
+  color: var(--app-text, #1c6048);
 }
 
 .maintenanceScheduleLabels span.maintenanceScheduleRecurringLabel {
-  border: 1px solid rgba(193, 123, 51, 0.25);
-  background: #fff0dc;
-  color: #8b4f12;
+  border: 1px solid var(--app-warning-line, rgba(193, 123, 51, 0.25));
+  background: var(--app-warning-soft, #fff0dc);
+  color: var(--app-warning, #8b4f12);
 }
 
 .maintenanceScheduleLabels strong {
-  background: rgba(18, 53, 45, 0.07);
-  color: rgba(18, 53, 45, 0.72);
+  background: var(--app-surface-soft, rgba(18, 53, 45, 0.07));
+  color: var(--app-muted, rgba(18, 53, 45, 0.72));
 }
 
 .maintenanceScheduleCard h3,
@@ -1876,19 +1876,19 @@
 }
 
 .maintenanceScheduleCard h3 {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 1.08rem;
   line-height: 1.2;
 }
 
 .maintenanceScheduleCard p {
-  color: #1c6048;
+  color: var(--app-text, #1c6048);
   font-size: 0.9rem;
   font-weight: 800;
 }
 
 .maintenanceScheduleCard small {
-  color: rgba(18, 53, 45, 0.63);
+  color: var(--app-muted, rgba(18, 53, 45, 0.63));
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.4;
@@ -1903,10 +1903,10 @@
 .maintenanceScheduleActions button {
   min-height: 43px;
   flex: 1 1 0;
-  border: 1px solid rgba(35, 104, 81, 0.24);
+  border: 1px solid var(--app-line, rgba(35, 104, 81, 0.24));
   border-radius: 12px;
-  background: #eef7f2;
-  color: #15533e;
+  background: var(--app-surface-soft, #eef7f2);
+  color: var(--app-text, #15533e);
   padding: 0 12px;
   font: inherit;
   font-size: 0.8rem;
@@ -1915,9 +1915,9 @@
 }
 
 .maintenanceScheduleActions button + button {
-  border-color: rgba(138, 36, 36, 0.16);
-  background: #fff5f3;
-  color: #8a2424;
+  border-color: var(--app-danger-line, rgba(138, 36, 36, 0.16));
+  background: var(--app-danger-soft, #fff5f3);
+  color: var(--app-danger, #8a2424);
 }
 
 .maintenanceScheduleActions button:disabled {
@@ -1991,7 +1991,7 @@
 
 /* Field Manager: shared Owner App visual and usability refinement. */
 .mobilePage:not(.homePage) {
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .assetsShell,
@@ -2006,9 +2006,9 @@
 .maintenanceCard,
 .maintenanceSuccess,
 .mobileEmpty {
-  border-color: rgba(18, 53, 45, 0.12);
-  background: #ffffff;
-  box-shadow: 0 12px 30px rgba(18, 53, 45, 0.07);
+  border-color: var(--app-line, rgba(18, 53, 45, 0.12));
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 12px 30px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .searchCard {
@@ -2156,7 +2156,7 @@
 
 .maintenanceRecurringChoice {
   border-radius: 15px;
-  background: #eef7f2;
+  background: var(--app-surface-soft, #eef7f2);
   padding: 13px;
 }
 
@@ -2432,10 +2432,10 @@
   align-items: center;
   gap: 13px;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 20px;
-  background: #ffffff;
-  color: #12352d;
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #12352d);
   padding: 14px 16px;
   text-decoration: none;
   box-shadow: var(--aim4price-card-shadow, 0 12px 30px rgba(13, 62, 49, 0.08));
@@ -2447,10 +2447,10 @@
   height: 42px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(35, 104, 81, 0.14);
+  border: 1px solid var(--app-line, rgba(35, 104, 81, 0.14));
   border-radius: 14px;
-  background: #eef8f3;
-  color: #236851;
+  background: var(--app-surface-soft, #eef8f3);
+  color: var(--app-text, #236851);
 }
 
 .fuelChoiceIcon svg {
@@ -2465,7 +2465,7 @@
 }
 
 .fuelChoiceCopy strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.08rem, 4.8vw, 1.24rem);
   font-weight: 850;
   letter-spacing: -0.025em;
@@ -2473,7 +2473,7 @@
 }
 
 .fuelChoiceArrow {
-  color: rgba(18, 53, 45, 0.36);
+  color: var(--app-muted, rgba(18, 53, 45, 0.36));
   font-size: 1.75rem;
   font-weight: 500;
   line-height: 1;
@@ -2486,8 +2486,8 @@
 
 .fuelChoiceCard:focus-visible {
   outline: none;
-  border-color: rgba(35, 104, 81, 0.4);
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.11), 0 16px 34px rgba(13, 62, 49, 0.12);
+  border-color: var(--app-accent, rgba(35, 104, 81, 0.4));
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.11)), 0 16px 34px var(--app-shadow-colour, rgba(13, 62, 49, 0.12));
 }
 
 .fuelFlowShell > section {
@@ -2512,7 +2512,7 @@
 
 /* Field Manager notification page refinement */
 .overviewPage {
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
 }
 
 .overviewPage .overviewShell {
@@ -2543,11 +2543,11 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.78);
+  background: var(--app-surface, rgba(255, 255, 255, 0.78));
   padding: 12px;
-  box-shadow: 0 14px 34px rgba(18, 53, 45, 0.07);
+  box-shadow: 0 14px 34px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .overviewPage .overviewSearch {
@@ -2558,7 +2558,7 @@
   gap: 11px;
   border-radius: 17px;
   padding-inline: 16px;
-  box-shadow: 0 12px 28px rgba(18, 53, 45, 0.07);
+  box-shadow: 0 12px 28px var(--app-shadow-colour, rgba(18, 53, 45, 0.07));
 }
 
 .overviewPage .overviewSearch input {
@@ -2581,8 +2581,8 @@
   place-items: center;
   border: 0;
   border-radius: 11px;
-  background: rgba(18, 53, 45, 0.08);
-  color: #12352d;
+  background: var(--app-surface-soft, rgba(18, 53, 45, 0.08));
+  color: var(--app-text, #12352d);
   padding: 0;
   font: inherit;
   font-size: 1.12rem;
@@ -2592,7 +2592,7 @@
 
 .overviewSearch button:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.12));
 }
 
 .overviewPage .overviewSections {
@@ -2649,10 +2649,10 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.13));
   border-radius: 17px;
-  background: rgba(255, 255, 255, 0.86);
-  color: rgba(18, 53, 45, 0.68);
+  background: var(--app-surface, rgba(255, 255, 255, 0.86));
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   padding: 10px 14px;
   font: inherit;
   font-weight: 900;
@@ -2666,19 +2666,19 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: rgba(18, 53, 45, 0.08);
+  background: var(--app-surface-soft, rgba(18, 53, 45, 0.08));
   font-size: 0.82rem;
 }
 
 .overviewTabs .overviewTabActive {
-  border-color: rgba(31, 143, 106, 0.58);
-  background: linear-gradient(135deg, rgba(229, 249, 239, 0.98), rgba(244, 252, 248, 0.98));
-  color: #0f654d;
-  box-shadow: 0 10px 24px rgba(18, 53, 45, 0.08);
+  border-color: var(--app-accent, rgba(31, 143, 106, 0.58));
+  background: linear-gradient(135deg, var(--app-surface-soft, rgba(229, 249, 239, 0.98)), var(--app-surface, rgba(244, 252, 248, 0.98)));
+  color: var(--app-text, #0f654d);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .overviewTabs .overviewTabActive strong {
-  background: rgba(31, 143, 106, 0.13);
+  background: var(--app-surface-soft, rgba(31, 143, 106, 0.13));
 }
 
 .overviewPage > .overviewShell > .overviewSection {
@@ -2713,16 +2713,16 @@
   display: grid;
   gap: 16px;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.13));
   border-radius: 24px;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   padding: 24px;
-  box-shadow: 0 28px 70px rgba(9, 31, 25, 0.28);
+  box-shadow: 0 28px 70px var(--app-shadow-colour, rgba(9, 31, 25, 0.28));
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .locationGateCardError {
-  border-color: rgba(197, 54, 54, 0.3);
+  border-color: var(--app-danger-line, rgba(197, 54, 54, 0.3));
 }
 
 .locationGateHeader {
@@ -2738,15 +2738,15 @@
   display: grid;
   place-items: center;
   border-radius: 17px;
-  background: linear-gradient(145deg, #e5f7ed, #f7fcf9);
-  color: #167455;
-  box-shadow: inset 0 0 0 1px rgba(22, 116, 85, 0.12);
+  background: linear-gradient(145deg, var(--app-surface-soft, #e5f7ed), var(--app-surface, #f7fcf9));
+  color: var(--app-text, #167455);
+  box-shadow: inset 0 0 0 1px var(--app-shadow-colour, rgba(22, 116, 85, 0.12));
 }
 
 .locationGateCardError .locationGateIcon {
-  background: linear-gradient(145deg, #fff0ef, #fff8f7);
-  color: #bd3030;
-  box-shadow: inset 0 0 0 1px rgba(189, 48, 48, 0.14);
+  background: linear-gradient(145deg, var(--app-danger-soft, #fff0ef), var(--app-danger-soft, #fff8f7));
+  color: var(--app-danger, #bd3030);
+  box-shadow: inset 0 0 0 1px var(--app-shadow-colour, rgba(189, 48, 48, 0.14));
 }
 
 .locationGateIcon svg {
@@ -2761,7 +2761,7 @@
 
 .locationGateCopy h2 {
   margin: 0;
-  color: #0e3f34;
+  color: var(--app-text, #0e3f34);
   font-size: clamp(1.45rem, 6.8vw, 1.8rem);
   font-weight: 900;
   line-height: 1.08;
@@ -2770,7 +2770,7 @@
 
 .locationGateAsset {
   margin: 0;
-  color: #154f40;
+  color: var(--app-text, #154f40);
   font-size: 1rem;
   font-weight: 850;
   line-height: 1.32;
@@ -2779,7 +2779,7 @@
 
 .locationGateDescription {
   margin: -4px 0 0;
-  color: rgba(18, 53, 45, 0.68);
+  color: var(--app-muted, rgba(18, 53, 45, 0.68));
   font-size: 0.88rem;
   font-weight: 650;
   line-height: 1.42;
@@ -2817,40 +2817,40 @@
 }
 
 .locationGateStatus strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: 0.9rem;
   line-height: 1.25;
 }
 
 .locationGateStatus p {
-  color: rgba(18, 53, 45, 0.72);
+  color: var(--app-muted, rgba(18, 53, 45, 0.72));
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.42;
 }
 
 .locationGateStatus small {
-  color: rgba(18, 53, 45, 0.62);
+  color: var(--app-muted, rgba(18, 53, 45, 0.62));
   font-size: 0.76rem;
   font-weight: 750;
 }
 
 .locationGateStatusChecking {
-  border-color: rgba(202, 135, 23, 0.26);
-  background: #fff8e8;
-  color: #d58a16;
+  border-color: var(--app-warning-line, rgba(202, 135, 23, 0.26));
+  background: var(--app-warning-soft, #fff8e8);
+  color: var(--app-warning, #d58a16);
 }
 
 .locationGateStatusReady {
-  border-color: rgba(31, 143, 106, 0.26);
-  background: #eaf8f1;
-  color: #1f8f6a;
+  border-color: var(--app-line, rgba(31, 143, 106, 0.26));
+  background: var(--app-surface-soft, #eaf8f1);
+  color: var(--app-accent, #1f8f6a);
 }
 
 .locationGateStatusError {
-  border-color: rgba(197, 54, 54, 0.26);
-  background: #fff0ef;
-  color: #c53636;
+  border-color: var(--app-danger-line, rgba(197, 54, 54, 0.26));
+  background: var(--app-danger-soft, #fff0ef);
+  color: var(--app-danger, #c53636);
 }
 
 .locationGateActions {
@@ -2872,36 +2872,36 @@
 }
 
 .locationGatePrimary {
-  border: 1px solid #b82e2e;
-  background: linear-gradient(135deg, #d44747, #b92c2c);
+  border: 1px solid var(--app-danger-line, #b82e2e);
+  background: linear-gradient(135deg, var(--app-danger-soft, #d44747), var(--app-danger-soft, #b92c2c));
   color: #ffffff;
-  box-shadow: 0 10px 22px rgba(185, 44, 44, 0.18);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(185, 44, 44, 0.18));
 }
 
 .locationGatePrimary:disabled {
-  border-color: rgba(18, 53, 45, 0.13);
-  background: #edf2ef;
-  color: rgba(18, 53, 45, 0.58);
+  border-color: var(--app-line, rgba(18, 53, 45, 0.13));
+  background: var(--app-surface-soft, #edf2ef);
+  color: var(--app-muted, rgba(18, 53, 45, 0.58));
   box-shadow: none;
   cursor: wait;
 }
 
 .locationGateStatusReady + .locationGateActions .locationGatePrimary {
-  border-color: #1b7659;
+  border-color: var(--app-line, #1b7659);
   background: linear-gradient(135deg, #22916e, #176c52);
   color: #ffffff;
 }
 
 .locationGateBack {
-  border: 1px solid rgba(18, 53, 45, 0.14);
-  background: #ffffff;
-  color: #173d34;
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14));
+  background: var(--app-surface, #ffffff);
+  color: var(--app-text, #173d34);
 }
 
 .locationGatePrimary:focus-visible,
 .locationGateBack:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(31, 143, 106, 0.18);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(31, 143, 106, 0.18));
 }
 
 @media (max-width: 390px) {

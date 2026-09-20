@@ -16,10 +16,10 @@
   width: min(1120px, var(--website-dialog-reference-width, 100%));
   max-height: min(880px, calc(calc(var(--website-visible-height, 100vh) * 1) - 48px));
   overflow: hidden;
-  border: 1px solid rgba(42, 93, 82, 0.18);
+  border: 1px solid var(--app-line, rgba(42, 93, 82, 0.18));
   border-radius: 30px;
-  background: #fff;
-  box-shadow: 0 34px 90px rgba(7, 31, 38, 0.32);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 34px 90px var(--app-shadow-colour, rgba(7, 31, 38, 0.32));
 }
 
 .dialog > form {
@@ -35,8 +35,8 @@
   gap: 18px;
   align-items: center;
   padding: 28px 36px 24px;
-  border-bottom: 1px solid #d9e8e2;
-  background: #fff;
+  border-bottom: 1px solid var(--app-line, #d9e8e2);
+  background: var(--app-surface, #fff);
 }
 
 .headerText {
@@ -60,7 +60,7 @@
 
 .header p {
   margin-top: 8px;
-  color: #62758b;
+  color: var(--app-info, #62758b);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.4;
@@ -68,7 +68,7 @@
 
 .header h2 {
   margin: 0;
-  color: #063f33;
+  color: var(--app-text, #063f33);
   font-size: clamp(28px, calc(var(--website-design-vw, 1vw) * 4), 38px);
   line-height: 1.04;
   letter-spacing: -0.035em;
@@ -81,10 +81,10 @@
   width: 54px;
   height: 54px;
   place-items: center;
-  border: 1px solid #d5e3de;
+  border: 1px solid var(--app-line, #d5e3de);
   border-radius: 999px;
-  background: #f8fbfd;
-  color: #173f63;
+  background: var(--app-info-soft, #f8fbfd);
+  color: var(--app-info, #173f63);
   cursor: pointer;
   transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
 }
@@ -95,8 +95,8 @@
 
 .closeButton:hover:not(:disabled),
 .backButton:hover:not(:disabled) {
-  border-color: #a9c9bd;
-  background: #eef8f4;
+  border-color: var(--app-line, #a9c9bd);
+  background: var(--app-surface-soft, #eef8f4);
   transform: translateY(-1px);
 }
 
@@ -119,7 +119,7 @@
 
 .intro {
   max-width: none;
-  color: #526a63;
+  color: var(--app-muted, #526a63);
   font-size: 16px;
   font-weight: 600;
   line-height: 1.55;
@@ -142,7 +142,7 @@
   flex: 1 1 0;
   align-items: center;
   gap: 11px;
-  color: #7a8b84;
+  color: var(--app-muted, #7a8b84);
 }
 
 .wizardProgressStep:last-child {
@@ -157,7 +157,7 @@
   height: 2px;
   flex: 1 1 auto;
   margin: 0 18px;
-  background: #dce8e3;
+  background: var(--app-surface-soft, #dce8e3);
 }
 
 .wizardProgressStep > span {
@@ -168,10 +168,10 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border: 1px solid #c8dbd4;
+  border: 1px solid var(--app-line, #c8dbd4);
   border-radius: 999px;
-  color: #597068;
-  background: #f7faf8;
+  color: var(--app-muted, #597068);
+  background: var(--app-surface, #f7faf8);
   font-size: 14px;
   font-weight: 900;
 }
@@ -181,7 +181,7 @@
   z-index: 1;
   padding-right: 12px;
   color: inherit;
-  background: #fff;
+  background: var(--app-surface, #fff);
   font-size: 14px;
   font-weight: 850;
   line-height: 1.25;
@@ -189,24 +189,24 @@
 
 .wizardProgressStepCurrent,
 .wizardProgressStepComplete {
-  color: #087553;
+  color: var(--app-text, #087553);
 }
 
 .wizardProgressStepCurrent > span {
-  border-color: #168660;
+  border-color: var(--app-line, #168660);
   color: #fff;
   background: #168660;
-  box-shadow: 0 0 0 5px rgba(22, 134, 96, 0.11);
+  box-shadow: 0 0 0 5px var(--app-shadow-colour, rgba(22, 134, 96, 0.11));
 }
 
 .wizardProgressStepComplete > span {
-  border-color: #92cdb7;
-  color: #087553;
-  background: #e5f6ef;
+  border-color: var(--app-line, #92cdb7);
+  color: var(--app-text, #087553);
+  background: var(--app-surface-soft, #e5f6ef);
 }
 
 .wizardProgressStepComplete:not(:last-child)::after {
-  background: #83c8ae;
+  background: var(--app-surface-soft, #83c8ae);
 }
 
 .wizardBody {
@@ -237,14 +237,14 @@
 .stepCard {
   min-width: 0;
   padding: 24px 26px;
-  border: 1px solid #d6e5df;
+  border: 1px solid var(--app-line, #d6e5df);
   border-radius: 22px;
   background:
-    radial-gradient(circle at 100% 0%, rgba(32, 139, 100, 0.045), transparent 15rem),
-    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+    radial-gradient(circle at 100% 0%, var(--app-surface-soft, rgba(32, 139, 100, 0.045)), transparent 15rem),
+    linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #fbfdfc) 100%);
   box-shadow:
-    0 12px 28px rgba(12, 62, 47, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 12px 28px var(--app-shadow-colour, rgba(12, 62, 47, 0.045)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.95));
 }
 
 .stepHeader {
@@ -260,11 +260,11 @@
   height: 46px;
   display: grid;
   place-items: center;
-  border: 1px solid #9fd1be;
+  border: 1px solid var(--app-line, #9fd1be);
   border-radius: 15px;
-  color: #087553;
-  background: linear-gradient(180deg, #eff9f5 0%, #e5f5ed 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  color: var(--app-text, #087553);
+  background: linear-gradient(180deg, var(--app-surface-soft, #eff9f5) 0%, var(--app-surface-soft, #e5f5ed) 100%);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
   font-size: 17px;
   font-weight: 900;
 }
@@ -276,7 +276,7 @@
 }
 
 .stepCopy strong {
-  color: #0b4437;
+  color: var(--app-text, #0b4437);
   font-size: 19px;
   font-weight: 900;
   line-height: 1.18;
@@ -284,7 +284,7 @@
 }
 
 .stepCopy small {
-  color: #667b73;
+  color: var(--app-muted, #667b73);
   font-size: 13px;
   font-weight: 650;
   line-height: 1.45;
@@ -297,8 +297,8 @@
   justify-content: center;
   padding: 0 13px;
   border-radius: 999px;
-  color: #08684a;
-  background: #e4f5ee;
+  color: var(--app-text, #08684a);
+  background: var(--app-surface-soft, #e4f5ee);
   font-size: 13px;
   font-weight: 900;
   white-space: nowrap;
@@ -316,7 +316,7 @@
 .manageHeader {
   margin-bottom: 20px !important;
   padding: 0 2px 18px !important;
-  border-bottom: 1px solid rgba(210, 225, 219, 0.94);
+  border-bottom: 1px solid var(--app-line, rgba(210, 225, 219, 0.94));
 }
 
 .manageHeader h3 {
@@ -341,7 +341,7 @@
 }
 
 .manageCloseButton:focus-visible {
-  outline: 3px solid rgba(22, 134, 96, 0.2);
+  outline: 3px solid var(--app-accent, rgba(22, 134, 96, 0.2));
   outline-offset: 3px;
 }
 
@@ -392,7 +392,7 @@
   flex: 0 0 46px;
   border: 1px solid transparent;
   border-radius: 15px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.82));
   font-style: normal;
 }
 
@@ -403,15 +403,15 @@
 }
 
 .manageMenuEditIcon {
-  color: #124635;
-  border-color: rgba(174, 216, 195, 0.9);
-  background: linear-gradient(180deg, #f2faf6 0%, #e2f2e9 100%);
+  color: var(--app-text, #124635);
+  border-color: var(--app-line, rgba(174, 216, 195, 0.9));
+  background: linear-gradient(180deg, var(--app-surface-soft, #f2faf6) 0%, var(--app-surface-soft, #e2f2e9) 100%);
 }
 
 .manageMenuReportIcon {
-  color: #1d4d78;
-  border-color: rgba(192, 215, 239, 0.95);
-  background: linear-gradient(180deg, #f5f9fe 0%, #e5f0fb 100%);
+  color: var(--app-info, #1d4d78);
+  border-color: var(--app-info-line, rgba(192, 215, 239, 0.95));
+  background: linear-gradient(180deg, var(--app-info-soft, #f5f9fe) 0%, var(--app-info-soft, #e5f0fb) 100%);
 }
 
 .manageMenuGrid .manageMenuDanger {
@@ -420,9 +420,9 @@
 }
 
 .manageMenuRemoveIcon {
-  color: #9b3030;
-  border-color: rgba(239, 195, 195, 0.95);
-  background: linear-gradient(180deg, #fff5f5 0%, #fde5e5 100%);
+  color: var(--app-danger, #9b3030);
+  border-color: var(--app-danger-line, rgba(239, 195, 195, 0.95));
+  background: linear-gradient(180deg, var(--app-danger-soft, #fff5f5) 0%, var(--app-danger-soft, #fde5e5) 100%);
 }
 
 .reportFilters {
@@ -431,9 +431,9 @@
   gap: 14px;
   margin-top: 24px;
   padding: 18px;
-  border: 1px solid #d7e5e0;
+  border: 1px solid var(--app-line, #d7e5e0);
   border-radius: 18px;
-  background: #f8fbfa;
+  background: var(--app-surface, #f8fbfa);
 }
 
 .reportFiltersMaintenance {
@@ -443,7 +443,7 @@
 .reportActions {
   margin-top: 1.75rem !important;
   padding-top: 1.35rem !important;
-  border-top: 1px solid rgba(211, 224, 232, 0.94) !important;
+  border-top: 1px solid var(--app-info-line, rgba(211, 224, 232, 0.94)) !important;
 }
 
 .reportFilters label {
@@ -452,7 +452,7 @@
 }
 
 .reportFilters label > span {
-  color: #23483e;
+  color: var(--app-text, #23483e);
   font-size: 13px;
   font-weight: 800;
 }
@@ -461,18 +461,18 @@
   min-width: 0;
   min-height: 48px;
   padding: 0 40px 0 14px;
-  border: 1px solid #bed5cd;
+  border: 1px solid var(--app-line, #bed5cd);
   border-radius: 14px;
-  background: #fff;
-  color: #073f33;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #073f33);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
 }
 
 .reportFilters select:focus {
-  border-color: #168660;
-  box-shadow: 0 0 0 3px rgba(22, 134, 96, 0.12);
+  border-color: var(--app-accent, #168660);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22, 134, 96, 0.12));
   outline: none;
 }
 
@@ -493,7 +493,7 @@
 
 .field > span,
 .valueModeFieldset legend {
-  color: #23483e;
+  color: var(--app-text, #23483e);
   font-size: 14px;
   font-weight: 800;
 }
@@ -502,10 +502,10 @@
 .searchField input,
 .memberControls select {
   min-height: 52px;
-  border: 1px solid #bed5cd;
+  border: 1px solid var(--app-line, #bed5cd);
   border-radius: 14px;
-  background: #fff;
-  color: #073f33;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #073f33);
   font: inherit;
   font-size: 15px;
   font-weight: 650;
@@ -520,8 +520,8 @@
 .field input:focus,
 .searchField input:focus,
 .memberControls select:focus {
-  border-color: #168660;
-  box-shadow: 0 0 0 3px rgba(22, 134, 96, 0.12);
+  border-color: var(--app-accent, #168660);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22, 134, 96, 0.12));
 }
 
 .valueModeFieldset {
@@ -537,19 +537,19 @@
   gap: 4px;
   margin-top: 18px;
   padding: 18px;
-  border: 1px solid #7ec5aa;
+  border: 1px solid var(--app-line, #7ec5aa);
   border-radius: 16px;
-  background: linear-gradient(135deg, #edf9f4, #f8fcfa);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  background: linear-gradient(135deg, var(--app-surface-soft, #edf9f4), var(--app-surface, #f8fcfa));
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.92));
 }
 
 .combinedModeNotice strong {
-  color: #0b4437;
+  color: var(--app-text, #0b4437);
   font-size: 16px;
 }
 
 .combinedModeNotice span {
-  color: #60766e;
+  color: var(--app-muted, #60766e);
   font-size: 13px;
   font-weight: 650;
   line-height: 1.45;
@@ -567,16 +567,16 @@
   align-items: center;
   min-height: 78px;
   padding: 17px 18px;
-  border: 1px solid #d6e4df;
+  border: 1px solid var(--app-accent, #d6e4df);
   border-radius: 16px;
-  background: #fff;
+  background: var(--app-surface, #fff);
   cursor: pointer;
 }
 
 .choiceActive {
-  border-color: #34a87e;
-  background: #f0faf6;
-  box-shadow: inset 0 0 0 1px rgba(52, 168, 126, 0.16);
+  border-color: var(--app-accent, #34a87e);
+  background: var(--app-surface-soft, #f0faf6);
+  box-shadow: inset 0 0 0 1px var(--app-shadow-colour, rgba(52, 168, 126, 0.16));
 }
 
 .choice input {
@@ -594,13 +594,13 @@
 
 .choice strong,
 .choiceActive strong {
-  color: #0b4437;
+  color: var(--app-text, #0b4437);
   font-size: 16px;
 }
 
 .choice small,
 .choiceActive small {
-  color: #647a73;
+  color: var(--app-muted, #647a73);
   font-size: 13px;
   font-weight: 600;
   line-height: 1.45;
@@ -623,13 +623,13 @@
 }
 
 .sectionHeading span {
-  color: #153f35;
+  color: var(--app-text, #153f35);
   font-size: 15px;
   font-weight: 800;
 }
 
 .sectionHeading small {
-  color: #6d807a;
+  color: var(--app-muted, #6d807a);
   font-size: 12px;
   font-weight: 600;
 }
@@ -638,8 +638,8 @@
   flex: 0 0 auto;
   padding: 6px 10px;
   border-radius: 999px;
-  background: #e4f5ee;
-  color: #08684a;
+  background: var(--app-surface-soft, #e4f5ee);
+  color: var(--app-text, #08684a);
   font-size: 12px;
 }
 
@@ -668,11 +668,11 @@
 .assetPickerToolbarButton {
   min-height: 52px;
   padding: 0 18px;
-  border: 1px solid #c6d9e5;
+  border: 1px solid var(--app-info-line, #c6d9e5);
   border-radius: 14px;
-  background: linear-gradient(180deg, #fff 0%, #f8fbfd 100%);
-  color: #173f55;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-info-soft, #f8fbfd) 100%);
+  color: var(--app-info, #173f55);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   font: inherit;
   font-size: 13px;
   font-weight: 850;
@@ -682,8 +682,8 @@
 
 .assetPickerToolbarButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: #8ebca9;
-  background: #f0f8f4;
+  border-color: var(--app-line, #8ebca9);
+  background: var(--app-surface-soft, #f0f8f4);
 }
 
 .assetPickerToolbarButton:disabled {
@@ -707,34 +707,34 @@
   min-height: 6.1rem;
   align-content: start;
   overflow: visible;
-  border: 1px solid #c7deed;
+  border: 1px solid var(--app-info-line, #c7deed);
   border-radius: 18px;
-  background: #fff;
+  background: var(--app-surface, #fff);
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .assetRow:hover,
 .assetRowSelected:hover {
   transform: translateY(-1px);
-  border-color: #a0c3b0;
-  background: linear-gradient(180deg, #fff 0%, #f7fbf9 100%);
+  border-color: var(--app-accent, #a0c3b0);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-surface, #f7fbf9) 100%);
   box-shadow:
-    0 14px 28px rgba(16, 31, 28, 0.055),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 14px 28px var(--app-shadow-colour, rgba(16, 31, 28, 0.055)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .assetRowSelected {
-  border-color: #62a683;
+  border-color: var(--app-accent, #62a683);
   background:
-    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 45%),
-    linear-gradient(180deg, #fff 0%, #f0faf5 100%);
+    radial-gradient(circle at top left, var(--app-surface-soft, rgba(22, 83, 64, 0.08)), transparent 45%),
+    linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-surface-soft, #f0faf5) 100%);
   box-shadow:
-    0 16px 32px rgba(22, 83, 64, 0.095),
-    inset 0 0 0 2px rgba(22, 83, 64, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 16px 32px var(--app-shadow-colour, rgba(22, 83, 64, 0.095)),
+    inset 0 0 0 2px var(--app-shadow-colour, rgba(22, 83, 64, 0.08)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .assetRowMain {
@@ -761,7 +761,7 @@
 }
 
 .assetCheckboxInput:focus-visible + .assetCheckbox {
-  outline: 3px solid rgba(22, 134, 96, 0.2);
+  outline: 3px solid var(--app-accent, rgba(22, 134, 96, 0.2));
   outline-offset: 3px;
 }
 
@@ -769,18 +769,18 @@
   position: relative;
   width: 36px;
   height: 36px;
-  border: 1.5px solid #b7cad8;
+  border: 1.5px solid var(--app-info-line, #b7cad8);
   border-radius: 12px;
-  background: linear-gradient(180deg, #fff 0%, #f4f8fb 100%);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-info-soft, #f4f8fb) 100%);
   box-shadow:
-    0 8px 16px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 8px 16px var(--app-shadow-colour, rgba(16, 31, 28, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .assetRowSelected .assetCheckbox {
-  border-color: rgba(18, 70, 53, 0.86);
+  border-color: var(--app-accent, rgba(18, 70, 53, 0.86));
   background: linear-gradient(180deg, #1d6048 0%, #124635 100%);
-  box-shadow: 0 10px 20px rgba(18, 70, 53, 0.18);
+  box-shadow: 0 10px 20px var(--app-shadow-colour, rgba(18, 70, 53, 0.18));
 }
 
 .assetRowSelected .assetCheckbox::after {
@@ -802,7 +802,7 @@
 }
 
 .assetCopy > strong {
-  color: #073b30;
+  color: var(--app-text, #073b30);
   font-size: 17px;
   font-weight: 900;
   line-height: 1.2;
@@ -811,7 +811,7 @@
 
 .assetDetailLine,
 .assetCopy > small {
-  color: #647587;
+  color: var(--app-muted, #647587);
   font-size: 13px;
   font-weight: 660;
   line-height: 1.35;
@@ -822,7 +822,7 @@
 }
 
 .assetMoveNotice {
-  color: #8a5f15 !important;
+  color: var(--app-warning, #8a5f15) !important;
 }
 
 .assetValue {
@@ -830,7 +830,7 @@
   min-width: 130px;
   justify-items: end;
   gap: 2px;
-  color: #10352b;
+  color: var(--app-text, #10352b);
   text-align: right;
   white-space: nowrap;
 }
@@ -842,7 +842,7 @@
 }
 
 .assetValue small {
-  color: #647587;
+  color: var(--app-muted, #647587);
   font-size: 12px;
   font-weight: 780;
 }
@@ -853,10 +853,10 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  border: 1px dashed #b4cad9;
+  border: 1px dashed var(--app-info-line, #b4cad9);
   border-radius: 18px;
-  background: linear-gradient(180deg, #fff 0%, #f8fbfc 100%);
-  color: #627589;
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-info-soft, #f8fbfc) 100%);
+  color: var(--app-info, #627589);
   font-size: 14px;
   font-weight: 760;
   text-align: center;
@@ -868,7 +868,7 @@
   gap: 10px;
   margin: 12px 0 0;
   padding: 12px 0 0 50px;
-  border-top: 1px solid #d8e7e1;
+  border-top: 1px solid var(--app-line, #d8e7e1);
 }
 
 .memberControls label,
@@ -879,7 +879,7 @@
 }
 
 .memberSelectLabel {
-  color: #667a73;
+  color: var(--app-muted, #667a73);
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -893,7 +893,7 @@
 
 .memberControls p {
   align-self: center;
-  color: #21634f;
+  color: var(--app-text, #21634f);
   font-size: 12px;
   font-weight: 800;
 }
@@ -906,11 +906,11 @@
   justify-content: space-between;
   gap: 12px;
   padding: 0 14px;
-  border: 1px solid #bed5cd;
+  border: 1px solid var(--app-line, #bed5cd);
   border-radius: 14px;
-  background: linear-gradient(180deg, #fff 0%, #f7fbf9 100%);
-  color: #073f33;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-surface, #f7fbf9) 100%);
+  color: var(--app-text, #073f33);
+  box-shadow: inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   font: inherit;
   font-size: 13px;
   font-weight: 800;
@@ -921,9 +921,9 @@
 
 .memberSelectButton:hover:not(:disabled),
 .memberSelectOpen .memberSelectButton {
-  border-color: #4da98a;
-  background: linear-gradient(180deg, #fff 0%, #edf8f3 100%);
-  box-shadow: 0 0 0 3px rgba(22, 134, 96, 0.1);
+  border-color: var(--app-line, #4da98a);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-surface-soft, #edf8f3) 100%);
+  box-shadow: 0 0 0 3px var(--app-shadow-colour, rgba(22, 134, 96, 0.1));
 }
 
 .memberSelectButton:disabled {
@@ -950,10 +950,10 @@
   max-height: 240px;
   overflow-y: auto;
   padding: 6px;
-  border: 1px solid #c7dbd4;
+  border: 1px solid var(--app-line, #c7dbd4);
   border-radius: 14px;
-  background: linear-gradient(180deg, #fff 0%, #f6faf8 100%);
-  box-shadow: 0 22px 48px rgba(7, 45, 37, 0.2);
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-surface, #f6faf8) 100%);
+  box-shadow: 0 22px 48px var(--app-shadow-colour, rgba(7, 45, 37, 0.2));
 }
 
 .memberSelectOption {
@@ -963,7 +963,7 @@
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: #153f35;
+  color: var(--app-text, #153f35);
   font: inherit;
   font-size: 13px;
   font-weight: 750;
@@ -973,30 +973,30 @@
 
 .memberSelectOption:hover,
 .memberSelectOption:focus-visible {
-  border-color: #b9ddcf;
+  border-color: var(--app-accent, #b9ddcf);
   outline: none;
-  background: #edf8f3;
+  background: var(--app-surface-soft, #edf8f3);
 }
 
 .memberSelectOptionActive {
-  border-color: #8ecbb4;
-  background: #e3f5ed;
-  color: #075d45;
+  border-color: var(--app-accent, #8ecbb4);
+  background: var(--app-surface-soft, #e3f5ed);
+  color: var(--app-text, #075d45);
   font-weight: 850;
 }
 
 .memberSelectOptionDanger {
   margin-top: 4px;
-  border-color: #edcbc6;
-  background: #fff7f5;
-  color: #963b34;
+  border-color: var(--app-danger-line, #edcbc6);
+  background: var(--app-danger-soft, #fff7f5);
+  color: var(--app-danger, #963b34);
 }
 
 .memberSelectOptionDanger:hover,
 .memberSelectOptionDanger:focus-visible {
-  border-color: #d99b92;
-  background: #ffefec;
-  color: #782922;
+  border-color: var(--app-danger-line, #d99b92);
+  background: var(--app-danger-soft, #ffefec);
+  color: var(--app-danger, #782922);
 }
 
 .summary {
@@ -1007,13 +1007,13 @@
   align-items: center;
   margin-top: 18px;
   padding: 15px 17px;
-  border: 1px solid #acd9c6;
+  border: 1px solid var(--app-line, #acd9c6);
   border-radius: 16px;
-  background: #edf9f4;
+  background: var(--app-surface-soft, #edf9f4);
 }
 
 .summary span {
-  color: #24564a;
+  color: var(--app-text, #24564a);
   font-size: 13px;
   font-weight: 800;
 }
@@ -1023,13 +1023,13 @@
   grid-row: span 2;
   align-self: center;
   justify-self: end;
-  color: #07533f;
+  color: var(--app-text, #07533f);
   font-size: 23px;
   white-space: nowrap;
 }
 
 .summary small {
-  color: #637970;
+  color: var(--app-muted, #637970);
   font-size: 12px;
   font-weight: 600;
 }
@@ -1056,21 +1056,21 @@
   align-items: center;
   min-height: 112px;
   padding: 20px 26px;
-  border: 1px solid #d5e1ea;
+  border: 1px solid var(--app-info-line, #d5e1ea);
   border-radius: 22px;
-  background: linear-gradient(180deg, #fff, #f8fbfd);
-  color: #123f35;
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-info-soft, #f8fbfd));
+  color: var(--app-text, #123f35);
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 10px 24px rgba(15, 56, 74, 0.045);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(15, 56, 74, 0.045));
   transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
 .menuAction:hover:not(:disabled),
 .reportMenuAction:hover:not(:disabled) {
-  border-color: #80bda7;
-  background: linear-gradient(180deg, #fff, #eff9f5);
-  box-shadow: 0 14px 30px rgba(8, 85, 62, 0.09);
+  border-color: var(--app-line, #80bda7);
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface-soft, #eff9f5));
+  box-shadow: 0 14px 30px var(--app-shadow-colour, rgba(8, 85, 62, 0.09));
   transform: translateY(-1px);
 }
 
@@ -1089,38 +1089,38 @@
 
 .menuAction strong,
 .reportMenuAction strong {
-  color: #123f35;
+  color: var(--app-text, #123f35);
   font-size: 17px;
   line-height: 1.2;
 }
 
 .menuAction small,
 .reportMenuAction small {
-  color: #62758b;
+  color: var(--app-info, #62758b);
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
 }
 
 .menuActionPrimary {
-  border-color: #adddc9;
-  background: linear-gradient(135deg, #edf9f4, #fbfefc);
+  border-color: var(--app-line, #adddc9);
+  background: linear-gradient(135deg, var(--app-surface-soft, #edf9f4), var(--app-surface, #fbfefc));
 }
 
 .menuActionDanger {
-  border-color: #ffb4ae;
-  background: linear-gradient(135deg, #fff7f6, #fffafa);
+  border-color: var(--app-danger-line, #ffb4ae);
+  background: linear-gradient(135deg, var(--app-danger-soft, #fff7f6), var(--app-danger-soft, #fffafa));
 }
 
 .menuActionDanger,
 .menuActionDanger strong {
-  color: #a62d28;
+  color: var(--app-danger, #a62d28);
 }
 
 .menuActionDanger:hover:not(:disabled) {
-  border-color: #ee8e87;
-  background: #fff2f1;
-  box-shadow: 0 14px 30px rgba(166, 45, 40, 0.08);
+  border-color: var(--app-danger-line, #ee8e87);
+  background: var(--app-danger-soft, #fff2f1);
+  box-shadow: 0 14px 30px var(--app-shadow-colour, rgba(166, 45, 40, 0.08));
 }
 
 .menuActionIcon {
@@ -1137,10 +1137,10 @@
   width: 56px;
   height: 48px;
   place-items: center;
-  border: 1px solid #91cbb5;
+  border: 1px solid var(--app-line, #91cbb5);
   border-radius: 14px;
-  background: #e5f6ef;
-  color: #08684a;
+  background: var(--app-surface-soft, #e5f6ef);
+  color: var(--app-text, #08684a);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -1149,10 +1149,10 @@
 .scopeNote {
   margin: 16px 0 0;
   padding: 13px 15px;
-  border: 1px solid #d8e5e0;
+  border: 1px solid var(--app-line, #d8e5e0);
   border-radius: 14px;
-  color: #60766e;
-  background: #f8fbfa;
+  color: var(--app-muted, #60766e);
+  background: var(--app-surface, #f8fbfa);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.45;
@@ -1164,15 +1164,15 @@
   gap: 18px;
   align-items: start;
   padding: 24px;
-  border: 1px solid #f2aaa4;
+  border: 1px solid var(--app-danger-line, #f2aaa4);
   border-radius: 22px;
-  background: linear-gradient(135deg, #fff5f4, #fffafa);
+  background: linear-gradient(135deg, var(--app-danger-soft, #fff5f4), var(--app-danger-soft, #fffafa));
 }
 
 .deleteNoticeIcon {
   width: 30px;
   height: 30px;
-  color: #ae302a;
+  color: var(--app-danger, #ae302a);
   stroke: currentColor;
   stroke-width: 1.8;
   stroke-linecap: round;
@@ -1180,13 +1180,13 @@
 }
 
 .deleteNotice strong {
-  color: #9e2b26;
+  color: var(--app-danger, #9e2b26);
   font-size: 17px;
 }
 
 .deleteNotice p {
   margin: 7px 0 0;
-  color: #6f5553;
+  color: var(--app-muted, #6f5553);
   font-size: 13px;
   font-weight: 650;
   line-height: 1.55;
@@ -1195,10 +1195,10 @@
 .error {
   margin: 15px 0 0;
   padding: 12px 14px;
-  border: 1px solid #f0b2ad;
+  border: 1px solid var(--app-danger-line, #f0b2ad);
   border-radius: 13px;
-  background: #fff3f2;
-  color: #a02720;
+  background: var(--app-danger-soft, #fff3f2);
+  color: var(--app-danger, #a02720);
   font-size: 13px;
   font-weight: 700;
 }
@@ -1210,8 +1210,8 @@
   justify-content: flex-end;
   gap: 14px;
   padding: 18px 36px max(24px, env(safe-area-inset-bottom));
-  border-top: 1px solid #d9e8e2;
-  background: #fbfdfc;
+  border-top: 1px solid var(--app-line, #d9e8e2);
+  background: var(--app-surface, #fbfdfc);
 }
 
 .wizardFooter {
@@ -1231,24 +1231,24 @@
 }
 
 .cancelButton {
-  border: 1px solid #cbdcd6;
-  background: #fff;
-  color: #18463a;
+  border: 1px solid var(--app-line, #cbdcd6);
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #18463a);
 }
 
 .saveButton {
   min-width: 142px;
-  border: 1px solid #087553;
+  border: 1px solid var(--app-line, #087553);
   background: #087553;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(8, 117, 83, 0.2);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(8, 117, 83, 0.2));
 }
 
 .deleteButton {
-  border: 1px solid #aa2f29;
-  background: #b9362f;
+  border: 1px solid var(--app-danger-line, #aa2f29);
+  background: var(--app-danger-soft, #b9362f);
   color: #fff;
-  box-shadow: 0 10px 24px rgba(169, 43, 36, 0.18);
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(169, 43, 36, 0.18));
 }
 
 .cancelButton:disabled,
@@ -1521,10 +1521,10 @@
   flex-direction: column !important;
   padding: 0 !important;
   overflow: hidden !important;
-  border: 1px solid rgba(18, 45, 37, 0.12) !important;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12)) !important;
   border-radius: 1.55rem !important;
-  background: linear-gradient(180deg, #fff, #f7faf8) !important;
-  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12) !important;
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface, #f7faf8)) !important;
+  box-shadow: 0 32px 90px var(--app-shadow-colour, rgba(7, 25, 20, 0.28)), 0 8px 24px var(--app-shadow-colour, rgba(7, 25, 20, 0.12)) !important;
 }
 .accountModal.accountEditorModal {
   width: min(var(--website-dialog-reference-width, 100%), 58rem) !important;
@@ -1536,13 +1536,13 @@
   gap: 1.25rem !important;
   margin: var(--umbrella-padding) var(--umbrella-padding) 0 !important;
   padding: 0 0 1.15rem !important;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.1) !important;
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.1)) !important;
   background: transparent !important;
 }
 .accountModal.accountModal > header h2,
 .accountModal.accountModal > header h3 {
   margin: 0 !important;
-  color: #12352d !important;
+  color: var(--app-text, #12352d) !important;
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
   font-weight: 800 !important;
   letter-spacing: -0.04em !important;
@@ -1551,7 +1551,7 @@
 }
 .accountModal.accountModal > header p {
   margin: 0.35rem 0 0 !important;
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: 0.88rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
@@ -1579,13 +1579,13 @@
 .accountModal .manageMenuGrid .manageMenuAction .menuOptionSubtitle,
 .accountModal .sectionHeading small,
 .accountModal .deleteNotice p {
-  color: #64746a !important;
+  color: var(--app-muted, #64746a) !important;
   font-size: 0.78rem !important;
   font-weight: 650 !important;
   line-height: 1.5 !important;
 }
 .accountModal .field > span {
-  color: #405950;
+  color: var(--app-text, #405950);
   font-size: 0.7rem;
   font-weight: 850;
   letter-spacing: 0.045em;
@@ -1593,7 +1593,7 @@
 }
 .accountModal .field input {
   min-height: 3.2rem;
-  border-color: #e5ebf1;
+  border-color: var(--app-info-line, #e5ebf1);
   border-radius: 0.92rem;
   font-weight: 400;
 }
@@ -1601,9 +1601,9 @@
 .accountModal .reportActions {
   gap: 0.65rem !important;
   padding: 1rem var(--umbrella-padding) 1.6rem !important;
-  border-top: 1px solid rgba(18, 45, 37, 0.11) !important;
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 -8px 20px rgba(18, 45, 37, 0.035);
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.11)) !important;
+  background: var(--app-surface, rgba(255, 255, 255, 0.97));
+  box-shadow: 0 -8px 20px var(--app-shadow-colour, rgba(18, 45, 37, 0.035));
 }
 .accountModal .reportActions {
   background: transparent;
@@ -1635,11 +1635,11 @@
 .accountModal.accountModal .assetCopy { grid-column:1 !important; gap:.25rem !important; }
 .accountModal.accountModal .assetCopy > strong { font-size:1rem !important; font-weight:800 !important; line-height:1.35 !important; }
 .accountModal.accountModal .assetCopy > small,
-.accountModal.accountModal .assetDetailLine { font-size:.88rem !important; line-height:1.5 !important; color:#64746a !important; overflow-wrap:anywhere; }
+.accountModal.accountModal .assetDetailLine { font-size:.88rem !important; line-height:1.5 !important; color:var(--app-muted, #64746a) !important; overflow-wrap:anywhere; }
 .accountModal.accountModal .assetValue { grid-column:2 !important; display:flex !important; align-items:center !important; gap:.6rem !important; }
 .accountModal.accountModal .assetValue > strong { font-size:.95rem !important; font-weight:800 !important; }
 .accountModal.accountModal .assetCheckbox { position:relative; width:1.6rem !important; height:1.6rem !important; border-radius:.45rem !important; flex-shrink:0; }
-.accountModal.accountModal .assetRowMain:focus-within { outline:3px solid #98cbb7; outline-offset:4px; border-radius:.4rem; }
+.accountModal.accountModal .assetRowMain:focus-within { outline:3px solid var(--app-accent, #98cbb7); outline-offset:4px; border-radius:.4rem; }
 
 /* Roomier umbrella Manage menu, using the existing two-column layout. */
 .accountModal.manageModal {

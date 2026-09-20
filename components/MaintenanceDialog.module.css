@@ -15,10 +15,10 @@
   min-height: 0;
   padding: 0 !important;
   overflow: hidden !important;
-  border: 1px solid rgba(18, 45, 37, 0.12) !important;
+  border: 1px solid var(--app-line, rgba(18, 45, 37, 0.12)) !important;
   border-radius: 1.55rem !important;
-  background: #fff !important;
-  box-shadow: 0 32px 90px rgba(7, 25, 20, 0.28), 0 8px 24px rgba(7, 25, 20, 0.12) !important;
+  background: var(--app-surface, #fff) !important;
+  box-shadow: 0 32px 90px var(--app-shadow-colour, rgba(7, 25, 20, 0.28)), 0 8px 24px var(--app-shadow-colour, rgba(7, 25, 20, 0.12)) !important;
 }
 
 .dialog.dialog > header {
@@ -29,14 +29,14 @@
   gap: 1rem;
   margin: 0 !important;
   padding: var(--maintenance-dialog-padding) !important;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.1);
-  background: #fff !important;
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.1));
+  background: var(--app-surface, #fff) !important;
 }
 
 .dialog.dialog > header > div { min-width: 0; }
 .dialog.dialog > header h2 {
   margin: 0;
-  color: #17362c;
+  color: var(--app-text, #17362c);
   font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem) !important;
   font-weight: 850;
   line-height: 1.08 !important;
@@ -46,7 +46,7 @@
 }
 .dialog.dialog > header p {
   margin: 0.4rem 0 0;
-  color: #607168;
+  color: var(--app-muted, #607168);
   font-size: 0.88rem !important;
   font-weight: 650;
   line-height: 1.5;
@@ -78,11 +78,11 @@
   scrollbar-width: auto;
   scrollbar-color: #608777 #edf3ef;
   overscroll-behavior: contain;
-  background: #fff;
+  background: var(--app-surface, #fff);
 }
 .body::-webkit-scrollbar { width: 12px; }
-.body::-webkit-scrollbar-track { background: #edf3ef; border-radius: 10px; }
-.body::-webkit-scrollbar-thumb { background: #608777; border: 3px solid #edf3ef; border-radius: 10px; }
+.body::-webkit-scrollbar-track { background: var(--app-surface-soft, #edf3ef); border-radius: 10px; }
+.body::-webkit-scrollbar-thumb { background: var(--app-surface-soft, #608777); border: 3px solid var(--app-line, #edf3ef); border-radius: 10px; }
 .body::-webkit-scrollbar-thumb:hover { background: #365f4d; }
 
 .dialog.dialog > footer {
@@ -94,9 +94,9 @@
   gap: 0.65rem;
   margin: 0 !important;
   padding: 1rem var(--maintenance-dialog-padding) 1.35rem !important;
-  border-top: 1px solid rgba(18, 45, 37, 0.11);
-  background: #fff !important;
-  box-shadow: 0 -12px 28px rgba(18, 45, 37, 0.045);
+  border-top: 1px solid var(--app-line, rgba(18, 45, 37, 0.11));
+  background: var(--app-surface, #fff) !important;
+  box-shadow: 0 -12px 28px var(--app-shadow-colour, rgba(18, 45, 37, 0.045));
 }
 .dialog.dialog > footer > button {
   flex: 0 1 auto;
@@ -117,23 +117,23 @@
 .dialog .body button small { font-size: 0.88rem; line-height: 1.5; }
 .dialog .body > div { min-width: 0; }
 .dialog.dialog > footer > button {
-  color: #173b62;
-  border: 1px solid rgba(62, 110, 213, 0.13);
-  background: rgba(62, 110, 213, 0.08);
+  color: var(--app-info, #173b62);
+  border: 1px solid var(--app-info-line, rgba(62, 110, 213, 0.13));
+  background: var(--app-info-soft, rgba(62, 110, 213, 0.08));
   box-shadow: none;
 }
 .dialog.dialog > footer > button[data-primary-action] {
   color: #fff;
   background: linear-gradient(180deg, #1a5a45 0%, #124233 100%);
-  border-color: rgba(18, 66, 51, 0.2);
-  box-shadow: 0 12px 24px rgba(18, 66, 51, 0.16);
+  border-color: var(--app-line, rgba(18, 66, 51, 0.2));
+  box-shadow: 0 12px 24px var(--app-shadow-colour, rgba(18, 66, 51, 0.16));
 }
 
 /* Compact download chooser, sized like the Fuel slips dialog. */
 .compactDownload.compactDownload {
   align-self: center;
   width: min(var(--website-dialog-reference-width, 100%), 46rem) !important;
-  background: linear-gradient(180deg, #fff, #f7faf8) !important;
+  background: linear-gradient(180deg, var(--app-surface, #fff), var(--app-surface, #f7faf8)) !important;
 }
 .compactDownload.compactDownload > header {
   margin: 0 var(--maintenance-dialog-padding) !important;
@@ -141,7 +141,7 @@
   background: transparent !important;
 }
 .compactDownload.compactDownload > header h2 { font-weight: 800; letter-spacing: -0.04em; }
-.compactDownload.compactDownload > header p { color: #64746a; }
+.compactDownload.compactDownload > header p { color: var(--app-muted, #64746a); }
 .compactDownload .body.body {
   flex: 0 1 auto;
   padding-top: 1.3rem !important;

@@ -5,16 +5,16 @@
   box-sizing: border-box;
   margin: 0 auto;
   padding: 4px 0 28px;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-family: 'Montserrat', var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .progressCard,
 .stepCard,
 .doneCard {
-  border: 1px solid rgba(18, 53, 45, 0.12);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 14px 34px rgba(18, 53, 45, 0.08);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
+  background: var(--app-surface, rgba(255, 255, 255, 0.96));
+  box-shadow: 0 14px 34px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 
 .progressCard {
@@ -28,7 +28,7 @@
 
 .progressCard div { min-width: 0; display: grid; gap: 2px; }
 .progressCard span {
-  color: rgba(18, 53, 45, 0.54);
+  color: var(--app-muted, rgba(18, 53, 45, 0.54));
   font-size: 0.68rem;
   font-weight: 850;
   letter-spacing: 0.09em;
@@ -41,13 +41,13 @@
   letter-spacing: -0.02em;
   line-height: 1.16;
 }
-.progressCard small { color: rgba(18, 53, 45, 0.61); font-size: 0.8rem; font-weight: 800; }
+.progressCard small { color: var(--app-muted, rgba(18, 53, 45, 0.61)); font-size: 0.8rem; font-weight: 800; }
 .progressCard i {
   grid-column: 1 / -1;
   height: 6px;
   overflow: hidden;
   border-radius: 999px;
-  background: #dfe9e4;
+  background: var(--app-surface-soft, #dfe9e4);
 }
 .progressCard b { display: block; height: 100%; border-radius: inherit; background: #2f9670; transition: width 0.2s ease; }
 
@@ -63,7 +63,7 @@
 .heading { display: grid; gap: 6px; }
 .heading > span,
 .field > span {
-  color: #276a52;
+  color: var(--app-text, #276a52);
   font-size: 0.7rem;
   font-weight: 850;
   letter-spacing: 0.08em;
@@ -72,7 +72,7 @@
 }
 .heading h1 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.8rem, 8vw, 2.25rem);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -81,7 +81,7 @@
 .heading p {
   min-height: 1.3em;
   margin: 0;
-  color: rgba(18, 53, 45, 0.64);
+  color: var(--app-muted, rgba(18, 53, 45, 0.64));
   font-size: 0.88rem;
   font-weight: 650;
   line-height: 1.45;
@@ -93,10 +93,10 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  border: 1px solid rgba(18, 53, 45, 0.16);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.16));
   border-radius: 16px;
-  background: #fbfdfb;
-  color: #12352d;
+  background: var(--app-surface, #fbfdfb);
+  color: var(--app-text, #12352d);
   padding: 0 15px;
   font-family: inherit;
   font-size: 0.96rem;
@@ -108,24 +108,24 @@
 .field textarea { min-height: 92px; padding-block: 13px; resize: vertical; }
 .searchField input:focus,
 .field input:focus,
-.field textarea:focus { border-color: rgba(35, 104, 81, 0.55); background: #fff; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1); }
+.field textarea:focus { border-color: var(--app-accent, rgba(35, 104, 81, 0.55)); background: var(--app-surface, #fff); box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.1)); }
 .searchField input::placeholder,
 .field input::placeholder,
-.field textarea::placeholder { color: rgba(18, 53, 45, 0.38); font-weight: 650; }
+.field textarea::placeholder { color: var(--app-muted, rgba(18, 53, 45, 0.38)); font-weight: 650; }
 
 .assetList { display: grid; gap: 12px; }
 .assetCard {
   display: grid;
   gap: 14px;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 24px;
-  background: #fff;
+  background: var(--app-surface, #fff);
   padding: 18px 16px 16px;
-  box-shadow: 0 16px 36px rgba(18, 53, 45, 0.08);
+  box-shadow: 0 16px 36px var(--app-shadow-colour, rgba(18, 53, 45, 0.08));
 }
 .assetCard h2 {
   margin: 0;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(1.18rem, 5.2vw, 1.5rem);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -140,22 +140,22 @@
   display: grid;
   align-content: center;
   justify-items: center;
-  border: 1px solid rgba(18, 53, 45, 0.1);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1));
   border-radius: 18px;
-  background: #fbfdfb;
+  background: var(--app-surface, #fbfdfb);
   padding: 11px 10px;
   text-align: center;
 }
 .assetMetaGrid span {
   margin-bottom: 5px;
-  color: rgba(18, 53, 45, 0.52);
+  color: var(--app-muted, rgba(18, 53, 45, 0.52));
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 .assetMetaGrid strong {
-  color: #12352d;
+  color: var(--app-text, #12352d);
   font-size: clamp(0.94rem, 3.8vw, 1.08rem);
   font-weight: 800;
   line-height: 1.2;
@@ -164,10 +164,10 @@
 .assetCard button {
   width: 100%;
   min-height: 54px;
-  border: 1px solid #65c28e;
+  border: 1px solid var(--app-line, #65c28e);
   border-radius: 14px;
-  background: linear-gradient(180deg, #fff 0%, #ecf9f2 100%);
-  color: #0f5a42;
+  background: linear-gradient(180deg, var(--app-surface, #fff) 0%, var(--app-surface-soft, #ecf9f2) 100%);
+  color: var(--app-text, #0f5a42);
   padding: 0 13px;
   font-family: inherit;
   font-size: 0.82rem;
@@ -182,9 +182,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 15px;
-  background: #fff;
+  background: var(--app-surface, #fff);
   padding: 0 14px;
   font-size: 0.85rem;
   font-weight: 750;
@@ -194,41 +194,41 @@
 .savedReading {
   display: grid;
   gap: 6px;
-  border: 1px solid rgba(35, 104, 81, 0.16);
+  border: 1px solid var(--app-line, rgba(35, 104, 81, 0.16));
   border-radius: 18px;
-  background: linear-gradient(145deg, #f6fbf8, #fff);
+  background: linear-gradient(145deg, var(--app-surface, #f6fbf8), var(--app-surface, #fff));
   padding: 14px 16px;
 }
-.savedReading span { color: rgba(18, 53, 45, 0.56); font-size: 0.68rem; font-weight: 850; letter-spacing: 0.07em; text-transform: uppercase; }
+.savedReading span { color: var(--app-muted, rgba(18, 53, 45, 0.56)); font-size: 0.68rem; font-weight: 850; letter-spacing: 0.07em; text-transform: uppercase; }
 .savedReading strong { font-size: 1.35rem; font-weight: 900; letter-spacing: -0.035em; }
 
 .fuelGauge {
   display: grid;
   justify-items: center;
   gap: 7px;
-  border: 1px solid rgba(35, 104, 81, 0.14);
+  border: 1px solid var(--app-line, rgba(35, 104, 81, 0.14));
   border-radius: 21px;
-  background: linear-gradient(145deg, #eff9f4, #fff 62%);
+  background: linear-gradient(145deg, var(--app-surface-soft, #eff9f4), var(--app-surface, #fff) 62%);
   padding: 20px;
 }
 .fuelGauge > strong { font-size: clamp(2.8rem, 15vw, 4rem); font-weight: 900; letter-spacing: -0.065em; line-height: 1; }
-.fuelGauge > span { color: rgba(18, 53, 45, 0.56); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.fuelGauge > span { color: var(--app-muted, rgba(18, 53, 45, 0.56)); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
 .fuelGauge input { width: 100%; height: 10px; margin-top: 14px; border-radius: 999px; appearance: none; }
-.fuelGauge input::-webkit-slider-thumb { width: 30px; height: 30px; border: 7px solid #236851; border-radius: 50%; background: #fff; appearance: none; box-shadow: 0 3px 10px rgba(18, 53, 45, 0.2); }
-.gaugeScale { width: 100%; display: flex; justify-content: space-between; color: rgba(18, 53, 45, 0.55); font-size: 0.68rem; font-weight: 850; text-transform: uppercase; }
+.fuelGauge input::-webkit-slider-thumb { width: 30px; height: 30px; border: 7px solid var(--app-line, #236851); border-radius: 50%; background: var(--app-surface, #fff); appearance: none; box-shadow: 0 3px 10px var(--app-shadow-colour, rgba(18, 53, 45, 0.2)); }
+.gaugeScale { width: 100%; display: flex; justify-content: space-between; color: var(--app-muted, rgba(18, 53, 45, 0.55)); font-size: 0.68rem; font-weight: 850; text-transform: uppercase; }
 .quickGrid { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
 .quickGrid button {
   min-height: 50px;
-  border: 1px solid rgba(18, 53, 45, 0.12);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12));
   border-radius: 14px;
-  background: #fff;
-  color: #12352d;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #12352d);
   font-family: inherit;
   font-size: 0.9rem;
   font-weight: 800;
   cursor: pointer;
 }
-.quickGrid .quickActive { border-color: #236851; background: #236851; color: #fff; }
+.quickGrid .quickActive { border-color: var(--app-accent, #236851); background: #236851; color: #fff; }
 
 .fuelTypeGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .fuelTypeGrid button {
@@ -237,16 +237,16 @@
   place-items: center;
   align-content: center;
   gap: 9px;
-  border: 1px solid rgba(18, 53, 45, 0.13);
+  border: 1px solid var(--app-line, rgba(18, 53, 45, 0.13));
   border-radius: 20px;
-  background: #fff;
-  color: #12352d;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #12352d);
   font-family: inherit;
   cursor: pointer;
 }
 .fuelTypeGrid span { font-size: 1.7rem; }
 .fuelTypeGrid strong { font-size: 1rem; font-weight: 850; }
-.fuelTypeGrid .fuelTypeActive { border-color: #236851; background: #eef8f3; box-shadow: inset 0 0 0 1px #236851, 0 12px 25px rgba(35, 104, 81, 0.1); }
+.fuelTypeGrid .fuelTypeActive { border-color: var(--app-accent, #236851); background: var(--app-surface-soft, #eef8f3); box-shadow: inset 0 0 0 1px var(--app-shadow-colour, #236851), 0 12px 25px var(--app-shadow-colour, rgba(35, 104, 81, 0.1)); }
 
 .receiptBlock { display: grid; gap: 13px; }
 .receiptButton {
@@ -255,23 +255,23 @@
   place-items: center;
   align-content: center;
   gap: 7px;
-  border: 1.5px dashed rgba(35, 104, 81, 0.38);
+  border: 1.5px dashed var(--app-line, rgba(35, 104, 81, 0.38));
   border-radius: 20px;
-  background: #f3faf6;
-  color: #174c3a;
+  background: var(--app-surface, #f3faf6);
+  color: var(--app-text, #174c3a);
   padding: 18px;
   text-align: center;
   cursor: pointer;
 }
 .receiptButton input { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; }
 .receiptButton strong { font-size: 0.96rem; font-weight: 850; }
-.receiptButton small { color: rgba(18, 53, 45, 0.52); font-size: 0.7rem; font-weight: 700; }
+.receiptButton small { color: var(--app-muted, rgba(18, 53, 45, 0.52)); font-size: 0.7rem; font-weight: 700; }
 .receiptIcon { font-size: 2rem; line-height: 1; }
-.receiptPreview { width: 100%; max-height: 260px; object-fit: contain; border: 1px solid rgba(18, 53, 45, 0.12); border-radius: 17px; background: #f5f7f6; }
-.fileName { margin: -4px 0 0; color: rgba(18, 53, 45, 0.58); font-size: 0.74rem; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
+.receiptPreview { width: 100%; max-height: 260px; object-fit: contain; border: 1px solid var(--app-line, rgba(18, 53, 45, 0.12)); border-radius: 17px; background: var(--app-surface-soft, #f5f7f6); }
+.fileName { margin: -4px 0 0; color: var(--app-muted, rgba(18, 53, 45, 0.58)); font-size: 0.74rem; font-weight: 700; text-align: center; overflow-wrap: anywhere; }
 .costSummary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.costSummary div { min-width: 0; display: grid; gap: 4px; border: 1px solid rgba(18, 53, 45, 0.1); border-radius: 14px; background: #fbfdfb; padding: 10px; }
-.costSummary span { color: rgba(18, 53, 45, 0.52); font-size: 0.62rem; font-weight: 850; letter-spacing: 0.06em; text-transform: uppercase; }
+.costSummary div { min-width: 0; display: grid; gap: 4px; border: 1px solid var(--app-line, rgba(18, 53, 45, 0.1)); border-radius: 14px; background: var(--app-surface, #fbfdfb); padding: 10px; }
+.costSummary span { color: var(--app-muted, rgba(18, 53, 45, 0.52)); font-size: 0.62rem; font-weight: 850; letter-spacing: 0.06em; text-transform: uppercase; }
 .costSummary strong { font-size: 0.73rem; font-weight: 800; line-height: 1.3; overflow-wrap: anywhere; }
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: auto; padding-top: 4px; }
@@ -294,23 +294,23 @@
   cursor: pointer;
 }
 .primaryButton,
-.doneCard button { border: 1px solid #254733; background: #254733; color: #fff; }
+.doneCard button { border: 1px solid var(--app-line, #254733); background: #254733; color: #fff; }
 .secondaryButton,
-.doneCard a { border: 1px solid rgba(18, 53, 45, 0.14); background: #fff; color: #12352d; }
+.doneCard a { border: 1px solid var(--app-line, rgba(18, 53, 45, 0.14)); background: var(--app-surface, #fff); color: var(--app-text, #12352d); }
 .primaryButton:disabled,
 .secondaryButton:disabled { cursor: wait; opacity: 0.6; }
 
 .errorNotice {
-  border: 1px solid rgba(201, 53, 53, 0.2);
+  border: 1px solid var(--app-danger-line, rgba(201, 53, 53, 0.2));
   border-radius: 14px;
-  background: #fff1f0;
-  color: #8f3030;
+  background: var(--app-danger-soft, #fff1f0);
+  color: var(--app-danger, #8f3030);
   padding: 11px 13px;
   font-size: 0.78rem;
   font-weight: 750;
   line-height: 1.4;
 }
-.empty { margin: 0; color: rgba(18, 53, 45, 0.58); font-size: 0.84rem; font-weight: 700; line-height: 1.5; text-align: center; padding: 22px 8px; }
+.empty { margin: 0; color: var(--app-muted, rgba(18, 53, 45, 0.58)); font-size: 0.84rem; font-weight: 700; line-height: 1.5; text-align: center; padding: 22px 8px; }
 
 .doneCard {
   width: min(calc(100% - 24px), 420px);
@@ -323,12 +323,12 @@
   margin: 8px auto 28px;
   border-radius: 24px;
   padding: 28px 20px;
-  color: #12352d;
+  color: var(--app-text, #12352d);
   text-align: center;
 }
-.doneCard > span { width: 62px; height: 62px; display: grid; place-items: center; border-radius: 50%; background: #e9f7ef; color: #24845e; font-size: 2rem; font-weight: 900; }
+.doneCard > span { width: 62px; height: 62px; display: grid; place-items: center; border-radius: 50%; background: var(--app-surface-soft, #e9f7ef); color: var(--app-accent, #24845e); font-size: 2rem; font-weight: 900; }
 .doneCard h1 { margin: 4px 0 0; font-size: 2rem; font-weight: 900; letter-spacing: -0.045em; }
-.doneCard p { margin: 0 0 4px; color: rgba(18, 53, 45, 0.64); font-size: 0.88rem; font-weight: 650; line-height: 1.5; }
+.doneCard p { margin: 0 0 4px; color: var(--app-muted, rgba(18, 53, 45, 0.64)); font-size: 0.88rem; font-weight: 650; line-height: 1.5; }
 .doneCard button,
 .doneCard a { width: 100%; }
 
@@ -341,7 +341,7 @@
 .primaryButton:focus-visible,
 .secondaryButton:focus-visible,
 .doneCard button:focus-visible,
-.doneCard a:focus-visible { outline: none; box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.12); }
+.doneCard a:focus-visible { outline: none; box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(35, 104, 81, 0.12)); }
 
 @media (max-width: 380px) {
   .stepCard { padding: 16px 14px; border-radius: 20px; }
@@ -354,10 +354,10 @@
   display: inline-flex;
   width: fit-content;
   padding: 0.34rem 0.62rem;
-  border: 1px solid #efc993;
+  border: 1px solid var(--app-warning-line, #efc993);
   border-radius: 999px;
-  color: #84400b;
-  background: #fff5df;
+  color: var(--app-danger, #84400b);
+  background: var(--app-warning-soft, #fff5df);
   font-size: 0.75rem;
   font-weight: 900;
   line-height: 1.15;

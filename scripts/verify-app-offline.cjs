@@ -35,7 +35,7 @@ async function main() {
         writes.set(app + ':' + item.payload.clientEventId,item);
         return res.end('{"ok":true,"asset":{"id":"asset"},"scheduledMaintenanceCompletion":{"completed":true}}');
       }
-      const allowed = url.pathname.startsWith('/app-offline/') || Object.values(roots).some(r => url.pathname === r+'/offline.html') || url.pathname.endsWith('-sw.js') || ['/app-push-worker.js','/field-manager/montserrat-latin.woff'].includes(url.pathname);
+      const allowed = url.pathname.startsWith('/app-offline/') || Object.values(roots).some(r => url.pathname === r+'/offline.html') || url.pathname.endsWith('-sw.js') || ['/app-theme.css','/app-push-worker.js','/field-manager/montserrat-latin.woff'].includes(url.pathname);
       if (!allowed) return req.socket.destroy();
       const file = path.join(root,'public',url.pathname);
       res.setHeader('Content-Type',url.pathname.endsWith('.html')?'text/html':url.pathname.endsWith('.css')?'text/css':url.pathname.endsWith('.woff')?'font/woff':'application/javascript');
@@ -54,7 +54,8 @@ async function main() {
       page.setDefaultTimeout(12000);
       const ready=()=>page.waitForFunction(()=>!document.querySelector('#sync').disabled);
       const set=async(values)=>page.evaluate(v=>{for(const [id,value] of Object.entries(v)) document.getElementById(id).value=value;},values);
-      await page.goto(origin+appRoot+'/offline.html');await page.type('#pin','12345678');await page.type('#confirm-pin','12345678');await page.click('#unlock-button');
+      await page.evaluateOnNewDocument(root => localStorage.setItem('aim4price-app-theme:' + root.slice(1), 'dark'), appRoot);
+      await page.goto(origin+appRoot+'/offline.html');assert.equal(await page.$eval('html', n => n.dataset.appTheme), 'dark');await page.type('#pin','12345678');await page.type('#confirm-pin','12345678');await page.click('#unlock-button');
       await page.waitForSelector('#workspace:not([hidden])');await ready();await page.setOfflineMode(true);
       if (['owner','field'].includes(app)) {
         await page.click('#open-fuel');
@@ -77,6 +78,8 @@ async function main() {
       }
       // A cold navigation returns the public shell and requires the PIN again.
       await page.goto(origin+appRoot+'/unavailable-offline');await page.waitForSelector('#pin');await page.type('#pin','12345678');await page.click('#unlock-button');await page.waitForSelector('#workspace:not([hidden])');await ready();
+      assert.equal(await page.$eval('html', n => n.dataset.appTheme), 'dark');
+      assert.equal(await page.$eval('#gate', n => getComputedStyle(n).backgroundColor), 'rgb(32, 56, 47)');
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
       await fs.mkdir(path.join(root,'.next/app-offline-validation'),{recursive:true});await page.screenshot({path:path.join(root,'.next/app-offline-validation',app+'.png'),fullPage:true});
       if(app==='owner') {

@@ -3,10 +3,10 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  border: 1px solid rgba(24, 77, 61, 0.13);
+  border: 1px solid var(--app-line, rgba(24, 77, 61, 0.13));
   border-radius: 16px;
-  background: #fff;
-  color: #173d31;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #173d31);
   padding: 14px;
   text-align: left;
   font: inherit;
@@ -35,7 +35,7 @@
 }
 
 .actionButtonBase small {
-  color: #687b75;
+  color: var(--app-muted, #687b75);
   font-size: 0.76rem;
   font-weight: 650;
   line-height: 1.35;
@@ -54,7 +54,7 @@
 }
 
 .actionButtonBase:focus-visible {
-  outline: 3px solid rgba(29, 59, 98, 0.16);
+  outline: 3px solid var(--app-info-line, rgba(29, 59, 98, 0.16));
   outline-offset: 3px;
 }
 
@@ -62,27 +62,27 @@
   width: 1.35rem;
   height: 1.35rem;
   flex: 0 0 auto;
-  color: #1d3b62;
+  color: var(--app-info, #1d3b62);
 }
 
 .pendingNotice {
   grid-column: 1 / -1;
   display: grid;
   gap: 4px;
-  border: 1px solid rgba(203, 132, 27, 0.24);
+  border: 1px solid var(--app-warning-line, rgba(203, 132, 27, 0.24));
   border-radius: 14px;
-  background: #fff8e8;
+  background: var(--app-warning-soft, #fff8e8);
   padding: 12px 14px;
 }
 
 .pendingNotice strong {
-  color: #80530d;
+  color: var(--app-warning, #80530d);
   font-size: 0.78rem;
   font-weight: 900;
 }
 
 .pendingNotice span {
-  color: #765f38;
+  color: var(--app-warning, #765f38);
   font-size: 0.74rem;
   font-weight: 650;
   line-height: 1.4;
@@ -106,14 +106,14 @@
   overflow: hidden;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.72));
   border-radius: 2rem;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
-  color: #17362d;
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-surface, #fbfdfc) 100%);
+  color: var(--app-text, #17362d);
   box-shadow:
-    0 34px 90px rgba(5, 24, 18, 0.3),
-    0 14px 36px rgba(18, 45, 37, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 34px 90px var(--app-shadow-colour, rgba(5, 24, 18, 0.3)),
+    0 14px 36px var(--app-shadow-colour, rgba(18, 45, 37, 0.1)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
   font-family: var(--font-montserrat), Montserrat, Arial, sans-serif;
 }
 
@@ -123,8 +123,8 @@
   justify-content: space-between;
   gap: 1.15rem;
   padding: 1.55rem 1.65rem 1.35rem;
-  border-bottom: 1px solid rgba(18, 45, 37, 0.09);
-  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid var(--app-line, rgba(18, 45, 37, 0.09));
+  background: var(--app-surface, rgba(255, 255, 255, 0.94));
 }
 
 .modalTitleGroup {
@@ -142,12 +142,12 @@
   align-items: center;
   justify-content: center;
   border-radius: 1rem;
-  color: #1d3b62;
-  background: linear-gradient(180deg, #ffffff 0%, #f1f6fb 100%);
-  border: 1px solid rgba(190, 205, 220, 0.94);
+  color: var(--app-info, #1d3b62);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f1f6fb) 100%);
+  border: 1px solid var(--app-info-line, rgba(190, 205, 220, 0.94));
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.05)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.98));
 }
 
 .modalTitleIcon {
@@ -162,7 +162,7 @@
 
 .modalKicker {
   display: block;
-  color: #2c795b;
+  color: var(--app-accent, #2c795b);
   font-size: 0.68rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -171,7 +171,7 @@
 
 .modalHeader h2 {
   margin: 0.35rem 0 0;
-  color: #10352b;
+  color: var(--app-text, #10352b);
   font-size: clamp(1.38rem, calc(var(--website-design-vw, 1vw) * 4), 1.85rem);
   font-weight: 900;
   line-height: 1.08;
@@ -180,7 +180,7 @@
 
 .modalHeader p {
   margin: 0.42rem 0 0;
-  color: #64748b;
+  color: var(--app-info, #64748b);
   font-size: 0.84rem;
   font-weight: 700;
   overflow-wrap: anywhere;
@@ -193,15 +193,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(62, 110, 213, 0.16);
+  border: 1px solid var(--app-info-line, rgba(62, 110, 213, 0.16));
   border-radius: 999px;
-  background: #f7fbff;
-  color: #17315c;
+  background: var(--app-info-soft, #f7fbff);
+  color: var(--app-info, #17315c);
   font: inherit;
   font-size: 1.45rem;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 10px 22px rgba(41, 72, 145, 0.08);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(41, 72, 145, 0.08));
   transition:
     transform 180ms ease,
     background 180ms ease,
@@ -211,15 +211,15 @@
 
 .closeButton:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: #ffffff;
-  border-color: rgba(23, 77, 62, 0.16);
-  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.1);
+  background: var(--app-surface, #ffffff);
+  border-color: var(--app-line, rgba(23, 77, 62, 0.16));
+  box-shadow: 0 14px 28px var(--app-shadow-colour, rgba(18, 45, 37, 0.1));
 }
 
 .closeButton:focus-visible,
 .cancelButton:focus-visible,
 .saveButton:focus-visible {
-  outline: 3px solid rgba(23, 77, 62, 0.16);
+  outline: 3px solid var(--app-accent, rgba(23, 77, 62, 0.16));
   outline-offset: 3px;
 }
 
@@ -235,18 +235,18 @@
 .explainer {
   display: grid;
   gap: 0.38rem;
-  border: 1px solid rgba(206, 218, 229, 0.94);
+  border: 1px solid var(--app-info-line, rgba(206, 218, 229, 0.94));
   border-radius: 1.05rem;
-  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+  background: linear-gradient(180deg, var(--app-surface, #ffffff) 0%, var(--app-info-soft, #f7fafc) 100%);
   padding: 0.95rem 1.05rem;
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .currentValue span,
 .field > span {
-  color: #61766f;
+  color: var(--app-muted, #61766f);
   font-size: 0.7rem;
   font-weight: 850;
   letter-spacing: 0.035em;
@@ -254,7 +254,7 @@
 }
 
 .currentValue strong {
-  color: #123b31;
+  color: var(--app-text, #123b31);
   font-size: 1.05rem;
   font-weight: 900;
   overflow-wrap: anywhere;
@@ -264,22 +264,22 @@
   display: grid;
   gap: 0.55rem;
   padding: 0.95rem 1rem 1rem;
-  border: 1px solid rgba(206, 218, 229, 0.94);
+  border: 1px solid var(--app-info-line, rgba(206, 218, 229, 0.94));
   border-radius: 1.05rem;
-  background: #ffffff;
+  background: var(--app-surface, #ffffff);
   box-shadow:
-    0 10px 22px rgba(16, 31, 28, 0.035),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+    0 10px 22px var(--app-shadow-colour, rgba(16, 31, 28, 0.035)),
+    inset 0 1px 0 var(--app-shadow-colour, rgba(255, 255, 255, 0.96));
 }
 
 .field input {
   width: 100%;
   min-height: 3.55rem;
   box-sizing: border-box;
-  border: 1px solid rgba(23, 54, 45, 0.18);
+  border: 1px solid var(--app-line, rgba(23, 54, 45, 0.18));
   border-radius: 1rem;
-  background: #fff;
-  color: #17362d;
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #17362d);
   padding: 0 1rem;
   font: inherit;
   font-size: 0.94rem;
@@ -288,24 +288,24 @@
 }
 
 .field input:focus {
-  border-color: #318765;
-  box-shadow: 0 0 0 4px rgba(49, 135, 101, 0.12);
+  border-color: var(--app-accent, #318765);
+  box-shadow: 0 0 0 4px var(--app-shadow-colour, rgba(49, 135, 101, 0.12));
 }
 
 .explainer {
-  border-color: rgba(49, 135, 101, 0.18);
-  background: linear-gradient(180deg, #f4fbf7 0%, #eef8f3 100%);
+  border-color: var(--app-line, rgba(49, 135, 101, 0.18));
+  background: linear-gradient(180deg, var(--app-surface, #f4fbf7) 0%, var(--app-surface-soft, #eef8f3) 100%);
 }
 
 .explainer strong {
-  color: #1e694d;
+  color: var(--app-text, #1e694d);
   font-size: 0.78rem;
   font-weight: 900;
 }
 
 .explainer p {
   margin: 0;
-  color: #526d63;
+  color: var(--app-muted, #526d63);
   font-size: 0.78rem;
   font-weight: 650;
   line-height: 1.48;
@@ -313,10 +313,10 @@
 
 .error {
   margin: 0;
-  border: 1px solid rgba(153, 45, 45, 0.2);
+  border: 1px solid var(--app-danger-line, rgba(153, 45, 45, 0.2));
   border-radius: 13px;
-  background: #fff2f2;
-  color: #912f2f;
+  background: var(--app-danger-soft, #fff2f2);
+  color: var(--app-danger, #912f2f);
   padding: 11px 13px;
   font-size: 0.78rem;
   font-weight: 750;
@@ -327,8 +327,8 @@
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   gap: 0.72rem;
   padding: 1rem 1.65rem 1.45rem;
-  border-top: 1px solid rgba(23, 54, 45, 0.1);
-  background: #fbfcfb;
+  border-top: 1px solid var(--app-line, rgba(23, 54, 45, 0.1));
+  background: var(--app-surface, #fbfcfb);
 }
 
 .cancelButton,
@@ -348,16 +348,16 @@
 }
 
 .cancelButton {
-  border: 1px solid rgba(23, 54, 45, 0.14);
-  background: #fff;
-  color: #49625a;
+  border: 1px solid var(--app-line, rgba(23, 54, 45, 0.14));
+  background: var(--app-surface, #fff);
+  color: var(--app-muted, #49625a);
 }
 
 .saveButton {
-  border: 1px solid #176f51;
+  border: 1px solid var(--app-line, #176f51);
   background: linear-gradient(180deg, #248864 0%, #176f51 100%);
   color: #fff;
-  box-shadow: 0 10px 22px rgba(23, 111, 81, 0.18);
+  box-shadow: 0 10px 22px var(--app-shadow-colour, rgba(23, 111, 81, 0.18));
 }
 
 .cancelButton:hover:not(:disabled),
