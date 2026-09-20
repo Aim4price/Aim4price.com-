@@ -6,7 +6,8 @@ import styles from "./page.module.css";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AdminCaptureQueuePage() {
+export default async function AdminCaptureQueuePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const params = await searchParams;
   await requireAdminPageAccess();
 
   return (
@@ -20,7 +21,7 @@ export default async function AdminCaptureQueuePage() {
           <AdminNavigation active="capture-queue" />
         </header>
 
-        <CaptureQueueClient />
+        <CaptureQueueClient key={`${params.status ?? "open"}:${params.owner ?? ""}`} initialStatus={typeof params.status === "string" ? params.status : "open"} initialOwnerId={typeof params.owner === "string" ? params.owner : ""} />
       </section>
     </main>
   );

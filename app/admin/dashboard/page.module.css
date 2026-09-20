@@ -357,3 +357,17 @@
 
 .cardHeader h2 { white-space: normal; text-wrap: wrap; line-height: 1.35; }
 .values { margin-top: 0.8rem; }
+
+.attentionHint { margin: 0 0 1rem; color: #52645d; font-size: .82rem; line-height: 1.6; }
+.attentionGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+.attentionCard { display: grid; gap: .6rem; padding: 1rem; border: 1px solid #dce6df; border-radius: .7rem; background: #fff; color: #173e30; text-decoration: none; }
+.attentionCard:hover, .attentionCard:focus-visible { border-color: #367e60; outline: 2px solid #a9cdb7; outline-offset: 2px; }
+.attentionCard > span:first-child { font-weight: 750; font-size: .9rem; }
+.attentionCard strong { font-size: 1.65rem; }
+.attentionCard small { color: #53675d; line-height: 1.5; }
+.attentionUrgent { border-color: #dab4aa; background: #fff8f5; }
+.attentionAction { font-size: .8rem; font-weight: 750; }
+@media (max-width: 1000px) { .attentionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.refreshButton { border: 1px solid #dce6df; border-radius: .4rem; background: #fff; color: #24583f; padding: .6rem .8rem; font: inherit; font-size: .8rem; cursor: pointer; }
+.refreshButton:disabled { opacity: .5; }

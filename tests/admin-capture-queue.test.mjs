@@ -59,7 +59,8 @@ test("all current admin navigation surfaces expose Capture Queue", () => {
 });
 
 test("queue prioritises deadline work and includes useful operational filters", () => {
-  assert.match(client, /sortOverdueFirst/);
+  assert.match(captureStore, /request\.due_at asc/);
+  assert.match(client, /data\.pagination/);
   assert.match(client, /Overdue/);
   assert.match(client, /Due in 24 hours/);
   assert.match(client, /Needs information/);

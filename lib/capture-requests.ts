@@ -223,6 +223,10 @@ export type CaptureRequestListFilters = {
   submittedByUserId?: string | null;
   assetId?: string | null;
   assignedAdminUserId?: string | null;
+  unassignedOnly?: boolean;
+  completedAfter?: Date | string | null;
+  completedBefore?: Date | string | null;
+  dueBeforeExclusive?: boolean;
   dueBefore?: Date | string | null;
   dueAfter?: Date | string | null;
   submittedAfter?: Date | string | null;
@@ -1245,10 +1249,15 @@ function buildCaptureListWhere(filters: CaptureRequestListFilters) {
   if (assetId) clauses.push(`request.asset_register_item_id = ${add(assetId)}::uuid`);
   const adminUserId = cleanText(filters.assignedAdminUserId, 200);
   if (adminUserId) clauses.push(`request.assigned_admin_user_id = ${add(adminUserId)}`);
+  if (filters.unassignedOnly) clauses.push('request.assigned_admin_user_id is null');
+  const completedAfter = normalizeFilterDate(filters.completedAfter, 'CAPTURE_FILTER_DATE_INVALID');
+  const completedBefore = normalizeFilterDate(filters.completedBefore, 'CAPTURE_FILTER_DATE_INVALID');
+  if (completedAfter) clauses.push(`request.completed_at >= ${add(completedAfter)}::timestamptz`);
+  if (completedBefore) clauses.push(`request.completed_at < ${add(completedBefore)}::timestamptz`);
   const dueBefore = normalizeFilterDate(filters.dueBefore, 'CAPTURE_FILTER_DATE_INVALID');
   const dueAfter = normalizeFilterDate(filters.dueAfter, 'CAPTURE_FILTER_DATE_INVALID');
   const submittedAfter = normalizeFilterDate(filters.submittedAfter, 'CAPTURE_FILTER_DATE_INVALID');
-  if (dueBefore) clauses.push(`request.due_at <= ${add(dueBefore)}::timestamptz`);
+  if (dueBefore) clauses.push(`request.due_at ${filters.dueBeforeExclusive ? '<' : '<='} ${add(dueBefore)}::timestamptz`);
   if (dueAfter) clauses.push(`request.due_at >= ${add(dueAfter)}::timestamptz`);
   if (submittedAfter) clauses.push(`request.submitted_at >= ${add(submittedAfter)}::timestamptz`);
   const search = cleanText(filters.search, 180);
@@ -1323,8 +1332,8 @@ export async function getCaptureQueueCounts(now: Date = new Date()): Promise<Cap
         count(*) filter (where status = 'awaiting_owner')::integer as awaiting_owner,
         count(*) filter (
           where status = 'completed'
-            and completed_at >= date_trunc('day', $1::timestamptz)
-            and completed_at < date_trunc('day', $1::timestamptz) + interval '1 day'
+            and completed_at >= (date_trunc('day', $1::timestamptz at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg')
+            and completed_at < (date_trunc('day', $1::timestamptz at time zone 'Africa/Johannesburg') at time zone 'Africa/Johannesburg') + interval '24 hours'
         )::integer as completed_today
       from public.document_capture_requests
     `,

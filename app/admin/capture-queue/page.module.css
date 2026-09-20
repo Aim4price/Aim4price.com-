@@ -1348,3 +1348,15 @@ fieldset.formGrid {
   .filters { grid-template-columns: minmax(0, 1fr); }
   .filters .searchField { grid-column: auto; }
 }
+
+.queueHint { margin: .2rem 1rem 1rem; color: #52645d; font-size: .78rem; line-height: 1.5; }
+.accountScope, .pagination { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: .85rem 1rem; background: #f1f6f2; border: 1px solid #dce6df; border-radius: .6rem; font-size: .85rem; }
+.accountScope { margin: .5rem 1rem; }
+.accountScope a, .workbenchLinks a { color: #24583f; text-underline-offset: 3px; }
+.accountScope button, .pagination button { padding: .6rem .85rem; border: 1px solid #bdcfc2; border-radius: .4rem; background: #fff; color: #244e39; font-weight: 750; cursor: pointer; }
+.pagination > div, .workbenchLinks { display: flex; gap: .6rem; }
+.pagination button:disabled { opacity: .45; cursor: not-allowed; }
+.workbenchLinks { margin-top: .6rem; font-size: .8rem; }
+.kpiGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.queueTable td > strong, .queueTable td > span { display: block; white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
+.queueTable td > span { margin-top: .2rem; }
