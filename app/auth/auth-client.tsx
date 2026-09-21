@@ -1,5 +1,6 @@
 "use client";
 
+import { money, type BillingPlan } from "../../lib/billing-shared";
 import DropdownOverlay from '../../components/DropdownOverlay';
 import Link from "next/link";
 import {
@@ -609,6 +610,15 @@ async function postAuth(path: string, body: Record<string, unknown>) {
 }
 
 export default function AuthClient() {
+  const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
+  const [billingPricingError, setBillingPricingError] = useState("");
+  const [billing, setBilling] = useState({name:"",email:"",address:"",accepted:false});
+  useEffect(() => {
+    let active=true;
+    fetch('/api/billing/plans', {cache:'no-store'}).then(async response=>{const data=await response.json();if(!response.ok)throw Error(data.error);if(active)setBillingPlans(data.plans);}).catch(()=>{if(active)setBillingPricingError('Signup pricing could not be loaded. Refresh before creating an account.');});
+    return()=>{active=false;};
+  }, []);
+
   const [mode, setMode] = useState<Mode>("signup");
   const [signupStep, setSignupStep] = useState<SignupStep>(1);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -733,6 +743,10 @@ export default function AuthClient() {
   };
 
   const validateSignupStep = (step: SignupStep) => {
+    if (step === 3 && (billingPricingError || (selectedBillingPlan && (!billing.accepted || !billing.address.trim())))) {
+      setNotice({tone:"error",title:"Invoice details required",text:billingPricingError || "Add your billing address and accept the signup invoice price."});
+      returnToSignupStep(3);return false;
+    }
     const name = signupForm.name.trim();
     const phone = signupForm.phone.trim();
     const email = signupForm.email.trim();
@@ -831,6 +845,9 @@ export default function AuthClient() {
     return true;
   };
 
+  const selectedBillingPlan = signupForm.accountType === "middleman" ? undefined : billingPlans.find(plan=>plan.accountType===signupForm.accountType);
+  useEffect(()=>{setBilling(current=>({...current,accepted:false}));},[selectedBillingPlan?.accountType,selectedBillingPlan?.version]);
+
   const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setNotice(null);
@@ -865,6 +882,11 @@ export default function AuthClient() {
         name,
         email,
         password: signupForm.password,
+        billingName: billing.name.trim() || name,
+        billingEmail: billing.email.trim() || email,
+        billingAddress: billing.address,
+        billingAccepted: billing.accepted,
+        billingPlanVersion: selectedBillingPlan?.version,
         phone,
         accountType: signupForm.accountType === "middleman" ? "dealer" : signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
@@ -885,6 +907,7 @@ export default function AuthClient() {
 
       const redirectUrl = extractRedirectUrl(payload);
 
+      setBilling({name:"",email:"",address:"",accepted:false});
       setSignupForm(initialSignupState);
       setSignupStep(1);
       setNotice({
@@ -1343,6 +1366,16 @@ export default function AuthClient() {
                           </div>
                         </div>
 
+                        {billingPricingError ? <p role="alert">{billingPricingError}</p> : null}
+                        {selectedBillingPlan ? <div className={styles.billingSignup}>
+                          <strong>Your signup invoice · {money(selectedBillingPlan.amountCents)}</strong>
+                          <p>{selectedBillingPlan.description} · {selectedBillingPlan.interval === 'once' ? 'One-time charge' : selectedBillingPlan.interval === 'monthly' ? 'Monthly' : 'Annual'} · No VAT applicable.</p>
+                          <p>Payment due {selectedBillingPlan.dueDays === 0 ? 'on issue' : `within ${selectedBillingPlan.dueDays} days`}. Your invoice will be available in your account and emailed after signup.</p>
+                          <label>Billing name<input value={billing.name} placeholder={signupForm.name || 'Name or business name'} onChange={e=>setBilling({...billing,name:e.target.value})}/></label>
+                          <label>Billing email<input type="email" value={billing.email} placeholder={signupForm.email || 'Uses your account email if left blank'} onChange={e=>setBilling({...billing,email:e.target.value})}/></label>
+                          <label>Billing address<textarea required value={billing.address} maxLength={600} onChange={e=>setBilling({...billing,address:e.target.value})}/></label>
+                          <label><input type="checkbox" checked={billing.accepted} onChange={e=>setBilling({...billing,accepted:e.target.checked})}/> I accept this charge and billing interval.</label>
+                        </div> : null}
                         <div className={styles.signupFieldGrid}>
                           <label className={`${styles.field} ${styles.signupFieldWide}`}>
                             <span className={styles.label}>Email address</span>

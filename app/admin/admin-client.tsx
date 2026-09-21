@@ -2197,6 +2197,7 @@ export default function AdminClient({
             </div>
 
             <nav className={styles.accountWorkspaceLinks} aria-label="Account workspaces">
+              <Link href={`/admin/billing?account=${encodeURIComponent(accountActionModal.userId)}`}>Billing & invoices</Link>
               <Link href={`/admin/capture-queue?owner=${encodeURIComponent(accountActionModal.userId)}`}>Capture requests</Link>
               <Link href={`/admin/work-tracker?account=${encodeURIComponent(accountActionModal.userId)}`}>Work history</Link>
               <Link href={`/admin/discovery?owner=${encodeURIComponent(accountActionModal.userId)}`}>Discovery assets</Link>

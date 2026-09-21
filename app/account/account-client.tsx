@@ -2258,6 +2258,7 @@ export default function AccountClient({
 
             <div className={styles.heroCopy}>
               <h1>{accountDisplayName}</h1>
+              <Link href="/billing" className={styles.quickActionButton}>Aim4price invoices</Link>
               <p>{profile?.email || "Loading email"}</p>
               <small>
                 {accountTypeLabel} account&nbsp; • &nbsp;{memberSinceLabel}

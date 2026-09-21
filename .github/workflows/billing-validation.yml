@@ -1,0 +1,41 @@
+name: Billing validation
+on:
+  pull_request:
+    paths:
+      - 'lib/billing*'
+      - 'app/**/billing/**'
+      - 'app/auth/**'
+      - 'app/api/auth/**'
+      - 'lib/auth.ts'
+      - 'lib/signup-workspace-context.ts'
+      - 'lib/report-theme.ts'
+      - 'lib/report-pdf.ts'
+      - 'tests/billing*'
+      - 'scripts/verify-billing-report.cjs'
+      - 'scripts/verify-admin-review.cjs'
+      - 'database/migrations/110-aim4price-billing.sql'
+      - '.github/workflows/billing-validation.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: node --test tests/billing*.test.mjs tests/signup-wizard-flow.test.mjs
+      - run: node scripts/verify-billing-report.cjs
+      - run: node scripts/verify-admin-review.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: billing-review-evidence
+          path: |
+            .next/billing-validation/
+            .next/admin-review-validation/

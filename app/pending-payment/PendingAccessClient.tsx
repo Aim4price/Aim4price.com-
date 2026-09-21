@@ -42,6 +42,7 @@ export default function PendingAccessClient({
                 <Link href="/" className={styles.secondaryButton}>
                   Back to home
                 </Link>
+                <Link href="/billing" className={styles.secondaryButton}>View invoices</Link>
                 <ContactSupportModal />
               </div>
             </div>

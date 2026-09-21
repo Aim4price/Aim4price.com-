@@ -1,3 +1,4 @@
+import { BillingError, validateSignupBilling } from "../../../../lib/billing";
 import { toNextJsHandler } from "better-auth/next-js";
 import { auth } from "../../../../lib/auth";
 import { withSignupWorkspaceInput } from "../../../../lib/signup-workspace-context";
@@ -17,7 +18,12 @@ export async function POST(request: Request): Promise<Response> {
 
   const signupInput = await request.clone().json().catch(() => null);
 
-  return withSignupWorkspaceInput(signupInput, () =>
-    authHandlers.POST(request),
-  );
+  try {
+    const billingSignup = await validateSignupBilling(signupInput ?? {});
+    return await withSignupWorkspaceInput({ ...signupInput, billingSignup }, () => authHandlers.POST(request));
+  } catch (error) {
+    if (error instanceof BillingError) return Response.json({ message: error.message }, { status: 400 });
+    console.error("Signup billing preparation failed", error);
+    return Response.json({ message: "Account setup could not finish. Please retry or contact Aim4price." }, { status: 503 });
+  }
 }
