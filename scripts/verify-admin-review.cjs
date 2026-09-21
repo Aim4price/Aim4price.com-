@@ -76,13 +76,14 @@ const evidence=path.join(root,'.next/admin-review-validation');
  try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   let failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
-  const queueRequests=[],workRequests=[],billingRequests=[];
+  const queueRequests=[],workRequests=[],billingRequests=[];let billingIssued=false,previewFailure=false;
   await page.setRequestInterception(true);
   page.on('request',request=>{
    const url=request.url(),respond=(body,status=200)=>request.respond({status,contentType:'application/json',body:JSON.stringify(body)});
+   if(url.includes('/api/billing/invoices/'))return previewFailure?respond({error:'Preview unavailable'},503):request.respond({contentType:'text/html',body:fs.existsSync(path.join(root,'.next/billing-validation/invoice.html'))?fs.readFileSync(path.join(root,'.next/billing-validation/invoice.html'),'utf8'):'<!doctype html><html><body><h1>Aim4price Invoice</h1><p>ABSA · No VAT applicable</p></body></html>'});
    if(url.includes('/api/admin/billing')) {
     if(request.method()==='POST'){billingRequests.push(JSON.parse(request.postData()));return respond({ok:true,id:'fixture'});}
-    return respond({invoices:[],total:0,plans:[],workspace:{customer:{name:user.name,email:user.email,address:'George'},nextBillingDate:null,interval:'once',amountCents:0,work:[{id:'work-one',started_at:now,duration_seconds:5400,note:'Capture work'}]}});
+    return respond({invoices:billingIssued?[{id:'invoice-test',number:'A4P-2026-000001',status:'issued',customer:{name:user.name,email:user.email},lines:[],dueDate:'2026-09-28',totalCents:30000,paidCents:0,version:2}]:[],total:billingIssued?1:0,plans:[],workspace:{customer:{name:user.name,email:user.email,address:'George'},nextBillingDate:null,interval:'once',amountCents:0,work:[{id:'work-one',started_at:now,duration_seconds:5400,note:'Capture work'}]}});
    }
    if(url.includes('/api/admin/business-network'))return failBusiness?respond({error:'Directory unavailable'},503):respond({businesses:[]});
    if(url.includes('/api/admin/maintenance-catalogue'))return respond({catalogue});
@@ -112,7 +113,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
    const ownShell=['accounts','businesses','dashboard','work-tracker','maintenance'].includes(section);
    const cssFile=section==='outcomes'||section==='asset-outcomes'?'sold-assets':section==='lifecycle'?'lifecycle-calculator':section;
-   const wrapper=ownShell?'child':`React.createElement("main",{className:styles.page},React.createElement("section",{className:styles.shell},React.createElement("header",{className:styles.topBar},React.createElement("div",{className:styles.titleBlock},React.createElement("h1",null,${JSON.stringify(titles[section])})),React.createElement(require("components/AdminNavigation").default,{active:${JSON.stringify(section)}})),child))`;
+   const wrapper=ownShell?'child':`React.createElement("main",{className:styles.page},React.createElement("section",{className:styles.shell},React.createElement("header",{className:${section==='billing'?'styles.header':'styles.topBar'}},React.createElement("div",{className:styles.titleBlock},React.createElement("h1",null,${JSON.stringify(titles[section])})),React.createElement(require("components/AdminNavigation").default,{active:${JSON.stringify(section)}})),child))`;
    await page.addScriptTag({content:runtime+`; (async()=>{const Component=require(${JSON.stringify(entries[section])}).default;const child=${section==='dashboard'?'await Component()':`React.createElement(Component,${JSON.stringify(props[section]||{})})`};const styles=${ownShell?'{}':`require("app/admin/${cssFile}/page.module.css")`};ReactDOM.createRoot(document.getElementById("app")).render(${wrapper});})().catch(error=>{window.renderError=error.message;});`});
    await page.waitForSelector('h1');
    await page.evaluate(()=>document.fonts.ready);
@@ -143,12 +144,44 @@ const evidence=path.join(root,'.next/admin-review-validation');
    assert.equal(await page.$eval('input[type="checkbox"]',e=>e.checked),true);
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'billing draft '+width);
    await page.screenshot({path:path.join(evidence,'billing-draft-'+width+'.png'),fullPage:true});
-   await page.$$eval('button',els=>els.find(e=>e.textContent==='Save draft').click());
+   await page.$$eval('button',els=>els.find(e=>e.textContent==='Save & preview').click());
    await page.waitForFunction(()=>document.body.textContent.includes('Draft saved.'));
    assert.equal(billingRequests.at(-1).hourlyRateCents,20000);
    assert.deepEqual(billingRequests.at(-1).workSessionIds,['work-one']);
+   await page.waitForSelector('dialog[open] iframe');
+   await page.waitForFunction(()=>[...document.querySelectorAll('dialog button')].some(b=>b.textContent==='Issue & email'&&!b.disabled));
+   assert.equal(await page.$('dialog a[download]'),null,'draft has no download');
+   if(width===1440){
+    page.once('dialog',dialog=>dialog.accept());
+    await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Issue & email').click());
+    await page.waitForSelector('dialog a[download]');
+    assert.equal(billingRequests.at(-1).action,'issue');
+    assert.equal(billingRequests.at(-1).version,1);
+   }
+   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
+
   }
-  console.log('PASS billing work selection, amount conversion and responsive draft composer');
+  console.log('PASS billing work selection, responsive composer and save-to-preview flow');
+  billingIssued=true;await open('billing');
+  await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));
+  assert.equal(await page.$('a[href*="format=pdf"]'),null,'no direct download before preview');
+  await page.click('[aria-label="Choose billing account"]');
+  await page.type('[aria-label="Search billing accounts"]','no such account');
+  await page.waitForFunction(()=>document.body.textContent.includes('No matching accounts.'));
+  await page.keyboard.press('Escape');
+  assert.equal(await page.$eval('[aria-label="Choose billing account"]',e=>e.getAttribute('aria-expanded')),'false');
+  previewFailure=true;
+  await (await page.evaluateHandle(()=>[...document.querySelectorAll('button')].find(e=>e.textContent==='View invoice'))).click();
+  await page.waitForSelector('dialog [role="alert"]');
+  assert.equal(await page.$('dialog a[download]'),null,'failed preview cannot download');
+  previewFailure=false;await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Try again').click());
+  await page.waitForSelector('dialog a[download]');
+  assert.equal(await page.$eval('dialog iframe',e=>e.getAttribute('sandbox')),'');
+  await page.screenshot({path:path.join(evidence,'billing-preview-1440.png'),fullPage:true});
+  await page.click('[aria-label="Close invoice preview"]');
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent),'View invoice');
+  billingIssued=false;
+  console.log('PASS account search, preview retry, sandbox, download gating and focus restoration');
   await open('accounts');
   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
   assert.equal(await page.$$eval('[aria-label="Admin navigation"] a',els=>els.length),13);

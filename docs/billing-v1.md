@@ -17,7 +17,8 @@ This follows the existing long-running Railway/Next.js instrumentation model. A 
 
 - Choose an account, create a draft, enter billing details and an explicit payment due date. Add manual lines or selected completed Work Tracker sessions at an agreed hourly rate.
 - Saving reserves selected work so it cannot appear on two invoices. Drafts can be edited or deleted. Changing a reserved work charge requires deleting and recreating the draft.
-- Preview, then **Issue & email**. This assigns a unique invoice number, freezes issuer/customer/charge details and the canonical HTML, and queues the PDF email in the same transaction. Repeating the issue request does not create another invoice/email.
+- **Save & preview** opens the saved draft in a focused preview dialog. Review it, then choose **Issue & email** inside that dialog. Issued invoices open through **View invoice** in both Admin and customer Billing; PDF download becomes available after the preview loads. Failed previews show a retry action.
+- Issuing an invoice assigns a unique invoice number, freezes issuer/customer/charge details and the canonical HTML, and queues the PDF email in the same transaction. Repeating the issue request does not create another invoice/email.
 - Record only verified receipts. Partial payments are supported. Repeating the same payment request is safe; amounts above the outstanding balance are rejected. Payment entries are audited and do not activate account access.
 - Unpaid issued invoices can be voided with a reason. Voiding retains history, releases work reservations and prevents queued sending. Already-sent messages cannot be withdrawn; contact the customer about the correction. Paid invoices cannot be voided. Payment reversal, credit notes and refunds are not implemented in v1.
 

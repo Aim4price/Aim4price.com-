@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'lib/billing*'
+      - 'components/InvoicePreview*'
       - 'app/**/billing/**'
       - 'app/auth/**'
       - 'app/api/auth/**'
