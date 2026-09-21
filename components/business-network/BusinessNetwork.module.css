@@ -299,3 +299,12 @@
 }
 
 .invitationOptions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; line-height: 1.6; }
+
+.directoryTools:has(.directoryDisclosure) { gap: 8px; padding: 0 0 14px; }
+.directoryDisclosure { border: 1px solid var(--app-line, #dce5e1); border-radius: 10px; background: var(--app-surface, #fff); }
+.directoryDisclosure summary { cursor: pointer; padding: 12px 14px; color: var(--app-text, #173f31); font-weight: 700; font-size: .78rem; }
+.directoryDisclosure summary:focus-visible { outline: 2px solid var(--app-accent, #21815b); outline-offset: 2px; border-radius: 8px; }
+.directoryDisclosure summary > span { float: right; color: var(--app-accent, #21815b); font-size: .7rem; }
+.directoryDisclosure > .filters, .directoryDisclosure > .directoryActions { margin: 0 14px 14px; }
+.directoryDisclosure .filterHeading > span { display: none; }
+.directoryDisclosure .directoryActions { padding-top: 0; border-top: 0; }

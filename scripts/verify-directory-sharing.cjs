@@ -23,6 +23,7 @@ async function check(browser, url) {
     const target=new URL(request.url());
     if(target.pathname.startsWith('/api/')) {
       requests.push(target.pathname);
+      if(target.pathname==='/api/partners' && target.searchParams.get('search')==='missing') return request.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true,partners:[]})});
       if(target.pathname==='/api/partners') return request.respond({status:200,contentType:'application/json',body:JSON.stringify({ok:true,partners:[{userId:'external:fixture',businessName:'Garden Route Repairs',displayName:'Garden Route Repairs',partnerType:'dealer',isExternalBusiness:true,email:'repairs@example.invalid',phone:'082 123 4567',latitude:-33.96,longitude:22.46,townCity:'George',province:'Western Cape',services:'Tractor repairs',description:'Local equipment workshop',logoUrl:'',extraPhotoUrls:[],websiteUrl:'',addressLine1:'Test Street',serviceRadiusKm:100}]})});
       if(target.pathname==='/api/asset-groups' && request.method()==='PATCH') {const data=JSON.parse(request.postData());groups=groups.map(g=>({...g,isFlagged:data.isFlagged}));}
       const body=target.pathname==='/api/me'?{ok:true,signedIn:true,user}:target.pathname==='/api/account-profile'?{ok:true,profile}:{ok:true,register:{id:'canvas-register',name:'Test farm'},items:assets,assets,groups,registers:[{id:'canvas-register',name:'Test farm'}],notifications:[],listings:[],storages:[],recentEvents:[],recentFuelSlips:[],requests:[],budgets:[],scanPin:{enabled:false,hasPin:false},enabled:false,hasPin:false};
@@ -33,8 +34,9 @@ async function check(browser, url) {
   const click = async text => {
     assert.ok(await page.evaluate(t => { const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === t && !b.disabled); if (!button) return false; button.click(); return true; }, text), `Missing button: ${text}`);
   };
-  for (const width of [1440, 430]) {
-    await page.setViewport({width,height:1100,deviceScaleFactor:1});
+  for (const width of [1440, 1920, 430]) {
+    const height = width === 430 ? 950 : 900;
+    await page.setViewport({width,height,deviceScaleFactor:1});
     await page.goto(url+'/directory-sharing-validation?page=register',{waitUntil:'networkidle2',timeout:120000});
     await page.waitForSelector('[aria-label="Share Asset umbrella"]');
     await page.click('[aria-label="Share Asset umbrella"]');
@@ -43,8 +45,25 @@ async function check(browser, url) {
     await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.querySelector('strong')?.textContent==='Dealer'));
     await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.querySelector('strong')?.textContent==='Dealer').click());
     await page.waitForSelector('#asset-quote-location-input');
+    const checkDialog = async () => {
+      const bounds = await page.$eval('[role="dialog"][aria-labelledby="asset-quote-title"]', el => {
+        const r = el.getBoundingClientRect(); const close = el.querySelector('[aria-label="Close"]') || el.querySelector('button[class*="modalCloseButton"]');
+        return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,radius:close ? parseFloat(getComputedStyle(close).borderRadius) : 100,width:close?.offsetWidth || 0};
+      });
+      assert.ok(bounds.left >= -1 && bounds.right <= width+1 && bounds.top >= -1 && bounds.bottom <= height+1, 'entire modal fits visible viewport');
+      if (bounds.width) assert.ok(bounds.radius < bounds.width / 3, 'close control is a rounded square');
+    };
+    await checkDialog();
+    await page.screenshot({path:path.join(output,`location-${width}.png`)});
     await page.$eval('#asset-quote-location-input',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'George');e.dispatchEvent(new Event('input',{bubbles:true}));});
     await click('Show businesses');
+    await page.waitForSelector('[aria-label="View Garden Route Repairs"]');
+    await checkDialog();
+    await page.type('[aria-label="Search business directory"]','missing');
+    await click('Search');
+    await page.waitForFunction(()=>document.body.textContent.includes('No businesses found'));
+    await page.screenshot({path:path.join(output,`directory-empty-${width}.png`)});
+    await click('Clear search & filters');
     await page.waitForSelector('[aria-label="View Garden Route Repairs"]');
     await page.click('[aria-label="View Garden Route Repairs"]');
     await page.waitForSelector('[aria-label="Selected business"]');
@@ -52,6 +71,10 @@ async function check(browser, url) {
     const geometry = await page.$eval('[aria-label="Selected business"]', e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right};});
     assert.ok(geometry.left >= -1 && geometry.right <= width+1, 'business profile fits the viewport');
     await page.screenshot({path:path.join(output,`directory-${width}.png`)});
+    await checkDialog();
+    await click('Expand map');
+    await checkDialog();
+    await click('Return to results');
     await click('Send message');
     await page.waitForFunction(()=>document.body.textContent.includes('To: Garden Route Repairs'));
     assert.ok(await page.evaluate(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='WhatsApp')&&[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Email')));
@@ -59,7 +82,7 @@ async function check(browser, url) {
     await page.screenshot({path:path.join(output,`directory-external-${width}.png`)});
   }
   assert.deepEqual(errors,[]);
-  console.log('PASS directory profile, external sharing handoff, viewport fit and no server delivery at 1440px and 430px');
+  console.log('PASS directory profile, external sharing handoff, viewport fit and no server delivery at 1440px, 1920px and 430px, including location, empty results, reset and map expansion');
   await page.close();
 }
 
