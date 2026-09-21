@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./AdminNavigation.module.css";
 
 export type AdminSection =
+  | "billing"
   | "accounts"
   | "businesses"
   | "maintenance-catalogue"
@@ -24,6 +25,7 @@ const ADMIN_LINKS: Array<{
   href: string;
   label: string;
 }> = [
+  { href: "/admin/billing", label: "Billing", key: "billing" },
   {
     href: "/admin",
     label: "Accounts",

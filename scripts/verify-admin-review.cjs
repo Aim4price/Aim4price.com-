@@ -40,7 +40,7 @@ function add(file){
  });
 }
 const entries={
- accounts:'app/admin/admin-client', businesses:'app/admin/businesses/businesses-client', dashboard:'app/admin/dashboard/page',
+ billing:'app/admin/billing/billing-client', accounts:'app/admin/admin-client', businesses:'app/admin/businesses/businesses-client', dashboard:'app/admin/dashboard/page',
  valuations:'app/admin/valuations/admin-valuations-client', marketplace:'app/admin/marketplace/admin-marketplace-client',
  'asset-map':'app/admin/asset-map/admin-asset-map-client', discovery:'app/admin/discovery/admin-discovery-client',
  outcomes:'app/admin/sold-assets/admin-marketplace-outcomes-client', 'asset-outcomes':'app/admin/sold-assets/sold-assets-client',
@@ -65,8 +65,8 @@ const market={assetKey:'asset:one',sourceAssetId:'one',latestListingId:'listing-
 const valuation={id:'estimate:1',sourceId:'1',recordType:'estimate',valuationMode:'generic',source:'basic',createdAtIso:now,account:{...asset.owner,known:true},asset:{sectorKey:'agricultural',sectorLabel:'Agriculture',familyKey:'small-field-tractor',familyLabel:'Small Field Tractor',brandName:'New Holland',modelName:'TT4.90',yearModel:2022,condition:'good',usageAmount:1250,usageUnit:'hours'},estimate:{selectedValueExVat:327133,lowValueExVat:300000,midValueExVat:327133,highValueExVat:350000,replacementPriceExVat:600000,confidenceLabel:''},input:{},output:{}};
 const valuations={generatedAtIso:now,valuations:[valuation],summary:{totalValuations:1,estimateEvents:1,savedValuations:0,knownAccountValuations:1,unknownAccountValuations:0,uniqueAccounts:1,valuedValuations:1},options:{sectors:options.sectors,years:[]},filters:{search:'',recordType:'all',valuationMode:'all',account:'all',sector:'',period:'all',sort:'latest',page:1,pageSize:50},pagination:{...pagination,totalItems:1}};
 const outcome={outcomeId:'outcome',listingId:'listing-one',sourceAssetId:'one',accountUserId:'owner',sellerLabel:user.name,sellerEmail:user.email,title:asset.title,sectorKey:'agricultural',sectorLabel:'Agriculture',reason:'created_by_mistake',outcomeNote:'',aim4priceHelped:false,finalSalePriceExVat:null,askingPriceExVat:327133,aim4priceValueExVat:327133,totalViewsAtClose:8,accountViewsAtClose:5,unknownViewsAtClose:3,uniqueViewersAtClose:3,sourceSurface:'marketplace',publishedAtIso:now,closedAtIso:now,actorType:'owner'};
-const titles={accounts:'Accounts',businesses:'Business Directory',dashboard:'Dashboard',valuations:'Valuations',marketplace:'Marketplace','asset-map':'Asset Map',discovery:'Discovery',outcomes:'Outcomes','asset-outcomes':'Asset register outcomes','work-tracker':'Work tracker','capture-queue':'Capture Queue',lifecycle:'Lifecycle Model',maintenance:'Maintenance checklists'};
-const props={accounts:{initialUsers:[user,{...user,userId:'two',name:'Example Dealer',accountType:'dealer',accountSubtype:'equipment_middleman',accountStatus:'pending_payment',accountStatusLabel:'Pending payment',email:'dealer@example.test'}]},marketplace:{report:{assets:[market,{...market,assetKey:'asset:two',title:'3 Ton Tip Trailer',hasRepeatInterest:false}],generatedAtIso:now}},discovery:{initialReport:discovery},'asset-map':{initialReport:discovery},valuations:{initialReport:valuations},outcomes:{report:{outcomes:[outcome]}},'asset-outcomes':{report:{outcomes:[]},allocationAccounts:[]},'work-tracker':{initialClients:[user]}};
+const titles={billing:'Billing',accounts:'Accounts',businesses:'Business Directory',dashboard:'Dashboard',valuations:'Valuations',marketplace:'Marketplace','asset-map':'Asset Map',discovery:'Discovery',outcomes:'Outcomes','asset-outcomes':'Asset register outcomes','work-tracker':'Work tracker','capture-queue':'Capture Queue',lifecycle:'Lifecycle Model',maintenance:'Maintenance checklists'};
+const props={billing:{clients:[user],initialAccount:'owner',initialWork:'work-one'},accounts:{initialUsers:[user,{...user,userId:'two',name:'Example Dealer',accountType:'dealer',accountSubtype:'equipment_middleman',accountStatus:'pending_payment',accountStatusLabel:'Pending payment',email:'dealer@example.test'}]},marketplace:{report:{assets:[market,{...market,assetKey:'asset:two',title:'3 Ton Tip Trailer',hasRepeatInterest:false}],generatedAtIso:now}},discovery:{initialReport:discovery},'asset-map':{initialReport:discovery},valuations:{initialReport:valuations},outcomes:{report:{outcomes:[outcome]}},'asset-outcomes':{report:{outcomes:[]},allocationAccounts:[]},'work-tracker':{initialClients:[user]}};
 const catalogue={version:1,profiles:[{key:'tractor',label:'Tractor checklist',items:[{id:'oil',label:'Engine oil',checkLabel:'Check oil',serviceLabel:'Change oil',description:'Check with engine stopped.'}]}],families:[{source:'basic',sector:'agricultural',familyKey:'small-field-tractor',label:'Small Field Tractor',profileKey:'tractor'}]};
 const capture={id:'request-one',publicReference:'INV-TEST',requestType:'invoice',submissionChannel:'owner_upload',status:'in_progress',senderDisplayName:'Example Sender',ownerDisplayName:user.name,assetDisplayName:asset.title,assetReference:'ABC123',fuelStorageDisplayName:'',assignedAdminDisplayName:'Admin',submittedAtIso:now,dueAtIso:'2026-09-22T10:00:00Z',updatedAtIso:now,version:1,fileCount:0,ownerUserId:'owner',assetId:'one',fuelStorageId:'',senderEmail:'sender@example.test',senderPhone:'',senderBusinessName:'',senderNote:'',adminNote:'',needsInformationReason:'',candidatePayload:{},capturedPayload:{usageMetric:'hours',usageReading:'1250'}};
 const evidence=path.join(root,'.next/admin-review-validation');
@@ -76,10 +76,14 @@ const evidence=path.join(root,'.next/admin-review-validation');
  try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   let failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
-  const queueRequests=[],workRequests=[];
+  const queueRequests=[],workRequests=[],billingRequests=[];
   await page.setRequestInterception(true);
   page.on('request',request=>{
    const url=request.url(),respond=(body,status=200)=>request.respond({status,contentType:'application/json',body:JSON.stringify(body)});
+   if(url.includes('/api/admin/billing')) {
+    if(request.method()==='POST'){billingRequests.push(JSON.parse(request.postData()));return respond({ok:true,id:'fixture'});}
+    return respond({invoices:[],total:0,plans:[],workspace:{customer:{name:user.name,email:user.email,address:'George'},nextBillingDate:null,interval:'once',amountCents:0,work:[{id:'work-one',started_at:now,duration_seconds:5400,note:'Capture work'}]}});
+   }
    if(url.includes('/api/admin/business-network'))return failBusiness?respond({error:'Directory unavailable'},503):respond({businesses:[]});
    if(url.includes('/api/admin/maintenance-catalogue'))return respond({catalogue});
    if(url.includes('/api/admin/capture-assistance'))return respond({rows:[],total:0,pending:0});
@@ -129,12 +133,28 @@ const evidence=path.join(root,'.next/admin-review-validation');
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,section+' '+width);
    await page.screenshot({path:path.join(evidence,section+'-'+width+'.png'),fullPage:true});
   }
+  for(const width of [390,1440]){
+   await open('billing',width);
+   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Create invoice'&&!b.disabled));
+   await page.$$eval('button',els=>els.find(e=>e.textContent==='Create invoice').click());
+   await page.waitForSelector('[aria-label="Create invoice"]');
+   const rate=await page.evaluateHandle(()=>[...document.querySelectorAll('label')].find(e=>e.textContent==='Agreed hourly rate (R)').querySelector('input'));
+   await rate.type('200');
+   assert.equal(await page.$eval('input[type="checkbox"]',e=>e.checked),true);
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'billing draft '+width);
+   await page.screenshot({path:path.join(evidence,'billing-draft-'+width+'.png'),fullPage:true});
+   await page.$$eval('button',els=>els.find(e=>e.textContent==='Save draft').click());
+   await page.waitForFunction(()=>document.body.textContent.includes('Draft saved.'));
+   assert.equal(billingRequests.at(-1).hourlyRateCents,20000);
+   assert.deepEqual(billingRequests.at(-1).workSessionIds,['work-one']);
+  }
+  console.log('PASS billing work selection, amount conversion and responsive draft composer');
   await open('accounts');
   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
-  assert.equal(await page.$$eval('[aria-label="Admin navigation"] a',els=>els.length),12);
+  assert.equal(await page.$$eval('[aria-label="Admin navigation"] a',els=>els.length),13);
   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-haspopup')),'dialog');
-  console.log('PASS 12-section navigation, Escape and focus restoration');
+  console.log('PASS 13-section navigation, Escape and focus restoration');
   await page.$$eval('[aria-label="Account summary"] button',els=>els.find(e=>e.textContent.includes('Pending')).click());
   await page.waitForFunction(()=>document.querySelectorAll('tbody tr').length===1);
   assert.ok(await page.$eval('tbody',e=>e.textContent.includes('Example Dealer')));

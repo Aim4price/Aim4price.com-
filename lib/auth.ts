@@ -1,3 +1,4 @@
+import { queueSignupInvoice, type SignupBilling } from "./billing";
 import { betterAuth } from "better-auth";
 import {
   buildAim4priceResetPasswordUrl,
@@ -154,6 +155,9 @@ export const auth = betterAuth({
               error,
             );
           }
+          const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;
+          if (billing) await queueSignupInvoice(user.id, billing);
+
         },
       },
     },

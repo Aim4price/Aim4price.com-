@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { openCanonicalReportUrl } from "../../../lib/report-open";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -622,6 +623,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
             placeholder="All accounts"
             emptyOption={ALL_ACCOUNTS_OPTION}
           />
+          <Link className={styles.reportButton} href={clientUserId ? `/admin/billing?account=${encodeURIComponent(clientUserId)}` : "/admin/billing"}>Billing & invoices</Link>
           <button type="button" className={styles.reportButton} onClick={openReport} disabled={!clientUserId || isLoading || savingSessionId !== null || deletingSessionId !== null || hasDirtyReportNotes}>
             Print report
           </button>
@@ -700,6 +702,7 @@ export default function WorkTrackerClient({ initialClients, initialAccountId = "
               </details>
 
               <div className={styles.sessionDanger}>
+                <Link className={styles.reportButton} href={`/admin/billing?account=${encodeURIComponent(session.clientUserId)}&work=${encodeURIComponent(session.id)}`}>Invoice this work</Link>
                 <button type="button" className={styles.deleteSessionButton} onClick={() => void deleteSession(session)} disabled={savingSessionId !== null || deletingSessionId !== null}>
                   {deletingSessionId === session.id ? "Deleting…" : "Delete entry"}
                 </button>

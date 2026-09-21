@@ -9,6 +9,7 @@ const SIGNUP_WORKSPACE_FIELDS = [
   "townCity",
   "partnerDirectoryEnabled",
   "phone",
+  "billingSignup",
 ] as const;
 
 export type SignupWorkspaceField = (typeof SIGNUP_WORKSPACE_FIELDS)[number];
