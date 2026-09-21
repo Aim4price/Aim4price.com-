@@ -13,7 +13,7 @@ test('Share Asset opens the inside or outside Aim4price choice before either flo
   assert.equal((client.match(/<AssetShareDestinationPicker/g) ?? []).length, 2);
   assert.equal((client.match(/<AssetExternalShare/g) ?? []).length, 2);
   assert.match(client, /onInside=\{\(\) => setAssetShareDestination\('inside'\)\}/);
-  assert.match(client, /onOutside=\{\(\) => setAssetShareDestination\('outside'\)\}/);
+  assert.match(client, /onOutside=\{\(\) => \{ setExternalBusinessRecipient\(null\); setDirectoryShareAssetIds\(null\); setAssetShareDestination\('outside'\); \}\}/);
   assert.match(component, /<strong>Inside Aim4price<\/strong>/);
   assert.match(component, /<strong>Outside Aim4price<\/strong>/);
 });

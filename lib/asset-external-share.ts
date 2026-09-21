@@ -91,10 +91,15 @@ export function buildExternalAssetShareCopy(
   };
 }
 
-export function buildWhatsAppShareUrl(copy: ExternalAssetShareCopy): string {
-  return `https://wa.me/?text=${encodeURIComponent(copy.body)}`;
+export function buildWhatsAppShareUrl(copy: ExternalAssetShareCopy, phone?: string): string {
+  let number = String(phone || '').replace(/[^0-9]/g, '');
+  if (/^0[0-9]{9}$/.test(number)) number = `27${number.slice(1)}`;
+  if (number.startsWith('00')) number = number.slice(2);
+  if (!/^[1-9][0-9]{7,14}$/.test(number)) number = '';
+  return `https://wa.me/${number}?text=${encodeURIComponent(copy.body)}`;
 }
 
-export function buildEmailShareUrl(copy: ExternalAssetShareCopy): string {
-  return `mailto:?subject=${encodeURIComponent(copy.subject)}&body=${encodeURIComponent(copy.body)}`;
+export function buildEmailShareUrl(copy: ExternalAssetShareCopy, email?: string): string {
+  const recipient = /^[^\s@<>;,]+@[^\s@<>;,]+\.[^\s@<>;,]+$/.test(email || '') ? email! : '';
+  return `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(copy.subject)}&body=${encodeURIComponent(copy.body)}`;
 }

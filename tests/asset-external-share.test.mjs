@@ -84,3 +84,13 @@ test('WhatsApp and email links carry the formatted message safely', () => {
   assert.match(decodeURIComponent(emailUrl), /2019 John Deere 6155M asset details/);
   assert.match(decodeURIComponent(emailUrl), /Serial number: 1L06155MHKH123456/);
 });
+
+
+test('business recipients prefill email and WhatsApp without changing the outside-share message', () => {
+  const copy = {subject:'Asset details',body:'Saved asset details'};
+  assert.equal(buildWhatsAppShareUrl(copy, '082 123 4567'), 'https://wa.me/27821234567?text=Saved%20asset%20details');
+  assert.equal(buildWhatsAppShareUrl(copy, '+27 82 123 4567'), buildWhatsAppShareUrl(copy, '082 123 4567'));
+  assert.equal(buildWhatsAppShareUrl(copy, 'invalid'), buildWhatsAppShareUrl(copy));
+  assert.equal(buildEmailShareUrl(copy, 'workshop@example.com'), 'mailto:workshop%40example.com?subject=Asset%20details&body=Saved%20asset%20details');
+  assert.equal(buildEmailShareUrl(copy, 'bad\r\nbcc:other@example.com'), buildEmailShareUrl(copy));
+});

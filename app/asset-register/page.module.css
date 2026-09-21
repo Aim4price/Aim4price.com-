@@ -41170,3 +41170,30 @@ button.documentOpenLink {
 .assetClassificationSummary > div + div { padding-left: 1.5rem; border-left: 1px solid var(--app-line, #d8e4de); }
 .assetClassificationSummary dt { color: var(--app-muted, #64746a); font-size: .72rem; font-weight: 700; line-height: 1.4; }
 .assetClassificationSummary dd { margin: 0; color: var(--app-text, #173d32); font-size: 1rem; font-weight: 750; line-height: 1.4; overflow-wrap: anywhere; }
+
+/* Directory: results, map and selected business stay visible together. */
+.optionsModal.assetQuoteModal.assetQuotePartnerPickerModal:not(.assetQuoteMapExpandedModal) .assetQuoteMapStage.businessDirectorySelected {
+  grid-template-columns: minmax(15rem, .85fr) minmax(20rem, 1.4fr) minmax(18rem, 1fr) !important;
+  align-items: stretch;
+}
+.businessDirectorySelected .assetQuoteMapShell { grid-column: auto !important; min-width:0; }
+.businessDirectoryLogo { width:48px; height:48px; object-fit:contain; border-radius:8px; background:var(--app-surface,#fff); }
+@media(max-width:1100px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal.assetQuoteModal.assetQuotePartnerPickerModal:not(.assetQuoteMapExpandedModal) .assetQuoteMapStage.businessDirectorySelected {
+    grid-template-columns: minmax(13rem,1fr) minmax(16rem,1.3fr) !important;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .businessDirectorySelected > aside:last-child { grid-column:1 / -1; max-height:none; }
+}
+@media(max-width:700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal.assetQuoteModal.assetQuotePartnerPickerModal:not(.assetQuoteMapExpandedModal) .assetQuoteMapStage.businessDirectorySelected { grid-template-columns:minmax(0,1fr) !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .businessDirectorySelected .assetQuoteMapShell { min-height:300px; }
+}
+
+.optionsModal.assetQuotePartnerPickerModal .assetQuoteSearchBar {
+  grid-template-columns: minmax(0, 1fr) auto auto !important;
+}
+.businessDirectoryBadge { display:inline-flex; width:fit-content; margin-top:6px; padding:4px 7px; border-radius:5px; background:var(--app-surface-soft,#eaf5ef); color:var(--app-text,#174b39); font-size:.65rem; font-weight:700; }
+@media(max-width:700px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal.assetQuotePartnerPickerModal .assetQuoteSearchBar { grid-template-columns:minmax(0,1fr) auto !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .assetQuoteSearchBar input { grid-column:1 / -1; }
+}

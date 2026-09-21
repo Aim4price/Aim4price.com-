@@ -99,7 +99,7 @@ test('seed and schema are idempotent, duplicate-safe and preserve admin visibili
   assert.match(network, /pg_advisory_xact_lock/);
 });
 
-test('directory keeps real partners first and loads managed listings by viewport or search', async () => {
+test('directory returns real accounts and accepted businesses without managed service areas', async () => {
   const [network, partnerAccess, route] = await Promise.all([
     read('lib/assistance-network.ts'),
     read('lib/partner-access.ts'),
@@ -112,7 +112,8 @@ test('directory keeps real partners first and loads managed listings by viewport
   assert.match(network, /filters\.push\('false'\)/);
   assert.match(partnerAccess, /activeDifference/);
   assert.match(partnerAccess, /distanceKm/);
-  assert.match(partnerAccess, /return \[\.\.\.genuinePartners, \.\.\.outsideBusinesses, \.\.\.assistancePartners\]/);
+  assert.match(partnerAccess, /return \[\.\.\.accounts, \.\.\.outsideBusinesses\]/);
+  assert.doesNotMatch(partnerAccess, /listAssistanceDirectoryEntries/);
   assert.match(route, /readBounds/);
   assert.match(route, /west, south, east, north/);
   assert.match(network, /row\.service_key === 'dealer' \? AIM4PRICE_DEALER_ASSISTANCE_PHONE/);
@@ -120,74 +121,17 @@ test('directory keeps real partners first and loads managed listings by viewport
   assert.match(network, /row\.service_key === 'dealer' \? AIM4PRICE_DEALER_ASSISTANCE_WEBSITE/);
 });
 
-test('desktop and mobile maps ask for an area, cluster markers and refresh on map movement', async () => {
-  const [client, css] = await Promise.all([
-    read('app/asset-register/asset-register-client.tsx'),
-    read('app/asset-register/page.module.css'),
-  ]);
-  assert.match(client, /leaflet\.markercluster@1\.5\.3/);
-  assert.match(client, /markerClusterGroup/);
-  assert.match(client, /chunkedLoading: true/);
-  assert.match(client, /removeOutsideVisibleBounds: true/);
-  assert.match(client, /\.on\('moveend', handleViewportChange\)/);
-  assert.match(client, /quoteViewportTimeoutRef/);
-  assert.match(client, /type QuoteDirectoryStage = 'location' \| 'map'/);
-  assert.match(client, /Where do you need help\?/);
-  assert.match(client, /resolveQuoteLocationMapTarget/);
-  assert.match(client, /QUOTE_LOCATION_SUGGESTIONS/);
-  assert.match(client, /Use current location/);
-  assert.match(client, /quoteInitialMapLocationRef/);
-  assert.match(client, /autoPan: false/);
-  assert.match(client, /isQuoteMapExpanded/);
-  assert.match(client, /Click the map to expand/);
-  assert.match(client, /Expand partner map/);
-  assert.match(client, /invalidateSize\(\{ animate: false, pan: false \}\)/);
-  assert.doesNotMatch(client, /focusQuotePartnerOnMap/);
-  assert.doesNotMatch(client, /const selectedMarker = selectedQuotePartnerIds/);
-  assert.match(client, /params\.set\('west'/);
-  assert.match(client, /Aim4price service area/);
-  assert.match(client, /service area, not a physical branch/i);
-  assert.match(client, /function isAim4priceAssistancePartner/);
-  assert.match(client, /return Boolean\(partner\.isAim4priceManaged\);/);
-  assert.match(client, /function openAim4priceAssistanceMessage/);
-  assert.doesNotMatch(client, /openDealerAssistanceMessage/);
-  assert.match(client, /const opensMessage = isAim4priceAssistancePartner\(partner\) && !isSelected;/);
-  assert.match(client, /data-quote-partner-action="\$\{opensMessage \? 'message' : 'toggle'\}"/);
-  assert.match(client, /Message Aim4price/);
-  assert.match(client, /setQuoteLeadStep\('message'\)/);
-  assert.match(client, /quotePartnerWebsiteDisplay/);
-  assert.match(client, /useCompactQuotePopup \? 280 : 380/);
-  const dealerContacts = client.slice(
-    client.indexOf('const dealerContacts'),
-    client.indexOf('const opensMessage'),
-  );
-  assert.match(dealerContacts, /\]\.filter\(Boolean\)\.join\(''\) : '';/);
-  const assistanceCardMarkup = client.slice(
-    client.indexOf('quotePartners.map((partner)'),
-    client.indexOf("selectedQuoteOption.emptyPartnerText"),
-  );
-  assert.match(assistanceCardMarkup, /!partner\.isAim4priceManaged/);
-  assert.match(assistanceCardMarkup, /isAim4priceAssistancePartner\(partner\)/);
-  assert.doesNotMatch(assistanceCardMarkup, /assetQuoteManagedCopy/);
-  assert.doesNotMatch(assistanceCardMarkup, /Service area only/);
-  assert.match(assistanceCardMarkup, /Message Aim4price/);
-  const assistanceCardCss = css.slice(css.indexOf('/* === Assistance cards: larger, calmer and action-led === */'));
-  assert.match(assistanceCardCss, /\.assetQuotePartnerPickerModal:not\(\.assetQuoteMapExpandedModal\) \.assetQuoteMapStage/);
-  assert.match(assistanceCardCss, /\.assetQuoteMapExpandedModal \.assetQuoteMapShell\s*\{[\s\S]*?grid-column: 1 \/ -1 !important;/);
-  assert.doesNotMatch(assistanceCardCss, /\.assetQuotePartnerPickerModal \.assetQuoteMapStage/);
-  assert.match(assistanceCardCss, /min-height: 9\.5rem !important;/);
-  assert.doesNotMatch(assistanceCardCss, /min-height: 12rem !important;/);
-  assert.match(css, /\.marker-cluster-small/);
-  assert.match(css, /@media \(max-width: 760px\)/);
-  assert.match(css, /assetQuoteMapEmptyOverlay/);
-  assert.match(css, /assetQuoteLocationPickerModal/);
-  assert.match(css, /assetQuoteChangeLocationButton/);
-  assert.match(css, /\.optionsModal\.assetQuoteModal\.assetQuoteLocationPickerModal/);
-  assert.match(css, /assetQuoteMapExpandButton/);
-  assert.match(css, /assetQuoteMapExpandedModal/);
-  assert.match(css, /assetQuotePartnerAction/);
-  assert.match(css, /assetQuoteSelectedCompanyHero/);
-  assert.match(css, /assetQuoteManagedKicker/);
+test('directory map opens a business profile with a message action and a single help entry', async () => {
+  const client = await read('app/asset-register/asset-register-client.tsx');
+  const card = await read('components/business-network/BusinessProfileCard.tsx');
+  assert.match(client, /<BusinessProfileCard/);
+  assert.match(client, /setDirectoryBusiness\(partner\)/);
+  assert.match(client, /Need help\?/);
+  assert.match(client, /Where are you looking\?/);
+  assert.match(client, /openDirectoryExternalShare/);
+  assert.match(card, /Send message/);
+  assert.match(card, /Aim4price account/);
+  assert.doesNotMatch(client, /function buildQuotePartnerPopupHtml/);
 });
 
 test('managed selection shares all selected assets with the master and records grouped context', async () => {

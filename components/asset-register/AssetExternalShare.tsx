@@ -196,11 +196,13 @@ export function AssetShareDestinationPicker({
 export default function AssetExternalShare({
   shareName,
   assets,
+  recipient,
   reportFiles = EMPTY_REPORT_FILES,
   onAddAim4priceReport,
   onRemoveAim4priceReport,
 }: {
   shareName: string;
+  recipient?: {name:string;email:string;phone:string};
   assets: ExternalAssetShareItem[];
   reportFiles?: ExternalShareFileSource[];
   onAddAim4priceReport: () => void;
@@ -249,8 +251,8 @@ export default function AssetExternalShare({
     }),
     [assets, reportFiles.length, selectedPhotoCount, shareName],
   );
-  const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy), [copy]);
-  const emailHref = useMemo(() => buildEmailShareUrl(copy), [copy]);
+  const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
+  const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
   const selectedAttachmentCount = selectedSources.length;
   const isPreparing = preparation.status === 'preparing';
   const isSending = sendingTarget !== null;
@@ -375,6 +377,7 @@ export default function AssetExternalShare({
 
   return (
     <section className={styles.externalPanel} aria-label="Share outside Aim4price">
+      {recipient ? <div className={styles.shareContext}><strong>To: {recipient.name}</strong><small>{recipient.email} {recipient.phone}</small></div> : null}
       <div className={styles.shareContext}>
         <strong>{assets.length === 1 ? assets[0]?.title : shareName}</strong>
         <small>{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</small>
@@ -435,7 +438,7 @@ export default function AssetExternalShare({
       <footer className={styles.sendFooter}>
         <div className={styles.sendLead}>
           <span>{selectedAttachmentCount
-            ? 'Choose an app in the share menu.'
+            ? recipient ? `Choose an app and select ${recipient.name} (${recipient.email || recipient.phone}) in the share menu.` : 'Choose an app in the share menu.'
             : 'Only selected attachments are shared.'}</span>
           {shareStatus ? <small role="status" aria-live="polite">{shareStatus}</small> : null}
         </div>

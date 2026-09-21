@@ -39,7 +39,7 @@ export default function BusinessShareHistory() {
           if (!open) void load();
         }}
       >
-        Shared email enquiries
+        Previous email enquiries
       </button>
       {open ? (
         <div className={styles.panel}>

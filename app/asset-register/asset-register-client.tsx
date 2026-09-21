@@ -22,6 +22,8 @@ import CardVatToggle from '../../components/CardVatToggle';
 import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
 
 import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
+import BusinessProfileCard from '../../components/business-network/BusinessProfileCard';
+import GoogleDirectoryMap, { googleDirectoryEnabled } from '../../components/business-network/GoogleDirectoryMap';
 import BusinessSharePreview from '../../components/business-network/BusinessSharePreview';
 import QrCodePreview from '../../components/QrCodePreview';
 import { resolveAssetUsage } from '../../lib/asset-usage';
@@ -258,6 +260,7 @@ type PartnerDirectoryEntry = {
   isExternalBusiness?: boolean;
   businessHeadings?: string[];
   googleMapsUrl?: string;
+  googlePlaceId?: string;
   userId: string;
   masterAccountUserId?: string;
   partnerType: PartnerType;
@@ -6585,51 +6588,6 @@ function escapeHtml(value: string): string {
 }
 
 
-function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, isSelected = false): string {
-  const name = escapeHtml(quotePartnerName(partner));
-  const location = escapeHtml(quotePartnerLocation(partner));
-  const radius = escapeHtml(quotePartnerRadiusDisplay(partner));
-  const brands = !partner.isAim4priceManaged && partner.brandFocus ? escapeHtml(partner.brandFocus) : '';
-  const services = escapeHtml(quotePartnerServicesDisplay(partner));
-  const isDealerAssistance = isDealerAssistancePartner(partner);
-  const websiteHref = normalizeWebsiteHref(partner.websiteUrl);
-  const emailHref = normalizeEmailHref(partner.email);
-  const phoneHref = normalizePhoneHref(partner.phone);
-  const details = [
-    `<div><span>Area</span><strong>${location}</strong></div>`,
-    services ? `<div><span>Support</span><strong>${services}</strong></div>` : '',
-    brands ? `<div><span>Brands</span><strong>${brands}</strong></div>` : '',
-    `<div><span>Coverage</span><strong>${radius}</strong></div>`,
-  ].filter(Boolean).join('');
-  const dealerContacts = isDealerAssistance ? [
-    websiteHref ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noreferrer"><span>Website</span><strong>${escapeHtml(quotePartnerWebsiteDisplay(partner))}</strong></a>` : '',
-    emailHref ? `<a href="${escapeHtml(emailHref)}"><span>Email</span><strong>${escapeHtml(partner.email)}</strong></a>` : '',
-    phoneHref ? `<a href="${escapeHtml(phoneHref)}"><span>Contact</span><strong>${escapeHtml(partner.phone)}</strong></a>` : '',
-  ].filter(Boolean).join('') : '';
-  const opensMessage = isAim4priceAssistancePartner(partner) && !isSelected;
-  const actionLabel = isSelected
-    ? 'Remove selection'
-    : opensMessage
-      ? 'Message Aim4price'
-      : partner.isAim4priceManaged
-        ? 'Select this service area'
-        : 'Select this business';
-
-  return `
-    <div class="assetQuotePopupCard assetQuotePopupCardSimple assetQuotePopupCard--${escapeHtml(partner.partnerType)}">
-      <div class="assetQuotePopupSimpleHeader">
-        ${partner.isAim4priceManaged ? '<span class="assetQuoteManagedKicker"><i></i>Aim4price service area</span>' : ''}
-        <strong>${name}</strong>
-      </div>
-      <div class="assetQuotePopupDetails assetQuotePopupSimpleDetails">${details}</div>
-      ${partner.googleMapsUrl ? `<a href="${escapeHtml(normalizeWebsiteHref(partner.googleMapsUrl))}" target="_blank" rel="noreferrer">View business on Google</a>` : ''}
-      ${dealerContacts ? `<div class="assetQuotePopupContacts">${dealerContacts}</div>` : ''}
-      ${partner.isAim4priceManaged ? '<p class="assetQuoteManagedNotice">This is a service area, not a physical branch. Aim4price will help locate a suitable provider.</p>' : ''}
-      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" data-quote-partner-action="${opensMessage ? 'message' : 'toggle'}" class="assetQuotePopupChooseButton">${actionLabel}</button>
-    </div>
-  `;
-}
-
 function extractApiError(payload: unknown, fallback: string): string {
   if (payload && typeof payload === 'object') {
     const record = payload as Record<string, unknown>;
@@ -6922,6 +6880,9 @@ export default function AssetRegisterClient({
   const summaryDialogRef = useRef<HTMLDivElement | null>(null);
   const summaryTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [isRegisterShareModalOpen, setIsRegisterShareModalOpen] = useState(false);
+  const [directoryBusiness, setDirectoryBusiness] = useState<PartnerDirectoryEntry | null>(null);
+  const [externalBusinessRecipient, setExternalBusinessRecipient] = useState<{name:string;email:string;phone:string} | null>(null);
+  const [directoryShareAssetIds, setDirectoryShareAssetIds] = useState<string[] | null>(null);
   const [assetShareDestination, setAssetShareDestination] = useState<AssetShareDestination>('choice');
   const [externalShareReportScope, setExternalShareReportScope] = useState<ExternalShareReportScope>(null);
   const [externalShareReportFiles, setExternalShareReportFiles] = useState<ExternalShareFileSource[]>([]);
@@ -7191,6 +7152,8 @@ export default function AssetRegisterClient({
   }
 
   function resetExternalShareDraft() {
+    setExternalBusinessRecipient(null);
+    setDirectoryShareAssetIds(null);
     setExternalShareReportScope(null);
     setExternalShareReportFiles([]);
     externalShareReportTriggerRef.current = null;
@@ -8055,8 +8018,8 @@ export default function AssetRegisterClient({
   const activeShareName = assetGroupShareTarget?.name || activeRegisterShareName;
   const isAssetGroupShare = Boolean(assetGroupShareTarget);
   const activeExternalShareAssets = useMemo(
-    () => activeShareAssets.map(buildExternalShareAsset),
-    [activeShareAssets],
+    () => activeShareAssets.filter(asset => !directoryShareAssetIds || directoryShareAssetIds.includes(asset.id)).map(buildExternalShareAsset),
+    [activeShareAssets, directoryShareAssetIds],
   );
   const quoteExternalShareAssets = useMemo(
     () => quoteAsset ? [buildExternalShareAsset(quoteAsset)] : [],
@@ -9189,12 +9152,11 @@ export default function AssetRegisterClient({
         }
 
         const bounds = L.latLngBounds([]);
-        const useCompactQuotePopup = !document.querySelector('[data-website-canvas]') && window.innerWidth <= 620;
 
         quotePartnersWithCoordinates.forEach((partner) => {
           const lat = Number(partner.latitude);
           const lng = Number(partner.longitude);
-          const isActive = selectedQuotePartnerIds.includes(partner.userId);
+          const isActive = directoryBusiness?.userId === partner.userId;
           const icon = L.divIcon({
             className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${partner.isAim4priceManaged ? ' assetQuoteMapMarker--managed' : ''}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
             html: '<span class="assetQuoteMapMarkerPin"></span>',
@@ -9203,12 +9165,7 @@ export default function AssetRegisterClient({
             popupAnchor: [0, -36],
           });
           const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
-          marker.bindPopup(buildQuotePartnerPopupHtml(partner, isActive), {
-            className: 'assetQuotePartnerPopup',
-            minWidth: useCompactQuotePopup ? 280 : 380,
-            maxWidth: useCompactQuotePopup ? 330 : 500,
-            autoPan: false,
-          });
+          marker.on('click', () => { setDirectoryBusiness(partner); setIsQuoteMapExpanded(false); });
           bounds.extend([lat, lng]);
         });
 
@@ -9228,34 +9185,7 @@ export default function AssetRegisterClient({
     return () => {
       cancelled = true;
     };
-  }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerIds]);
-
-  useEffect(() => {
-    if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map') return undefined;
-
-    const handleQuotePopupSelect = (event: MouseEvent) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-
-      const button = target.closest<HTMLButtonElement>('[data-quote-partner-id]');
-      if (!button) return;
-
-      const partnerId = button.getAttribute('data-quote-partner-id');
-      const partner = quotePartners.find((entry) => entry.userId === partnerId);
-      if (!partner) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      if (button.getAttribute('data-quote-partner-action') === 'message' && isAim4priceAssistancePartner(partner)) {
-        openAim4priceAssistanceMessage(partner);
-        return;
-      }
-      toggleQuotePartnerSelection(partner);
-    };
-
-    document.addEventListener('click', handleQuotePopupSelect, true);
-    return () => document.removeEventListener('click', handleQuotePopupSelect, true);
-  }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption, quotePartners]);
+  }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption, quotePartnersWithCoordinates, directoryBusiness]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || quoteDirectoryStage !== 'map' || !quoteLeafletMapRef.current) return undefined;
@@ -9268,7 +9198,7 @@ export default function AssetRegisterClient({
       window.clearTimeout(immediateResize);
       window.clearTimeout(settledResize);
     };
-  }, [isQuoteMapExpanded, isQuoteModalOpen, quoteDirectoryStage]);
+  }, [isQuoteMapExpanded, isQuoteModalOpen, quoteDirectoryStage, directoryBusiness]);
 
   useEffect(() => {
     if (isQuoteModalOpen && selectedQuoteOption && quoteDirectoryStage === 'map') {
@@ -11700,6 +11630,7 @@ export default function AssetRegisterClient({
   }
 
   function prepareQuoteLocationStep(asset: RegisterAsset | null) {
+    setDirectoryBusiness(null);
     quoteInitialMapLocationRef.current = null;
     quoteFitResultsRef.current = false;
     quotePartnerSearchRef.current = '';
@@ -11711,6 +11642,7 @@ export default function AssetRegisterClient({
   }
 
   function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
+    setDirectoryBusiness(null);
     quotePartnerRequestRef.current += 1;
     quoteFitResultsRef.current = false;
     quoteInitialMapLocationRef.current = null;
@@ -11844,7 +11776,16 @@ export default function AssetRegisterClient({
     setQuoteLocationInput(label);
     setQuoteLocationError('');
     setSelectedQuotePartnerIds([]);
-    if (!options.preservePartners) setQuotePartners([]);
+    setDirectoryBusiness(null);
+    if (!options.preservePartners) {
+      setQuotePartners([]);
+      // Keep the directory usable even if the map provider cannot load.
+      const span = Math.min(10, 360 / Math.pow(2, location.zoom - 1));
+      void loadQuotePartners(selectedQuoteLeadType, '', {
+        west: Math.max(-180, location.center[1] - span), east: Math.min(180, location.center[1] + span),
+        south: Math.max(-90, location.center[0] - span), north: Math.min(90, location.center[0] + span),
+      });
+    }
     setQuoteDirectoryStage('map');
   }
 
@@ -11927,6 +11868,7 @@ export default function AssetRegisterClient({
     quoteFitResultsRef.current = false;
     quotePartnerSearchRef.current = '';
     setIsQuoteMapExpanded(false);
+    setDirectoryBusiness(null);
     setQuoteDirectoryStage('location');
     setQuoteLocationError('');
     setQuotePartnerSearch('');
@@ -11996,6 +11938,39 @@ export default function AssetRegisterClient({
     removeQuoteMap();
   }
 
+  function openDirectoryExternalShare(recipient: {name:string;email:string;phone:string}) {
+    const registerScope = isFullRegisterQuoteLead;
+    const selectedIds = registerScope && (selectedQuoteOption?.leadType === 'replacement_quote' || selectedQuoteOption?.leadType === 'license_renewal')
+      ? selectedDealerShareAssetIds : null;
+    resetExternalShareDraft();
+    setExternalBusinessRecipient(recipient);
+    setDirectoryShareAssetIds(selectedIds);
+    setDirectoryBusiness(null);
+    setSelectedQuoteLeadType(null);
+    setSelectedQuotePartnerIds([]);
+    setQuoteLeadStep(null);
+    setQuoteTrackMaintenance(false);
+    setIsQuoteMapExpanded(false);
+    removeQuoteMap();
+    setAssetShareDestination('outside');
+    if (registerScope) {
+      setQuoteAsset(null);
+      setIsRegisterShareModalOpen(true);
+    }
+  }
+
+  function messageDirectoryBusiness(partner: PartnerDirectoryEntry) {
+    if (partner.isExternalBusiness) {
+      openDirectoryExternalShare({name: quotePartnerName(partner), email:partner.email, phone:partner.phone});
+      return;
+    }
+    setSelectedQuotePartnerIds([partner.userId]);
+    setQuoteTrackMaintenance(false);
+    setQuoteConsentAccepted(false);
+    setIsQuoteMapExpanded(false);
+    setQuoteLeadStep('message');
+  }
+
   function openAim4priceAssistanceMessage(partner: PartnerDirectoryEntry) {
     setSelectedQuotePartnerIds([partner.userId]);
     setQuoteConsentAccepted(false);
@@ -12004,6 +11979,7 @@ export default function AssetRegisterClient({
   }
 
   function toggleQuotePartnerSelection(partner: PartnerDirectoryEntry) {
+    if (partner.isExternalBusiness) { messageDirectoryBusiness(partner); return; }
     setQuoteTrackMaintenance(false);
     setSelectedQuotePartnerIds((current) => {
       if (!isAssetGroupShare) return current.includes(partner.userId) ? [] : [partner.userId];
@@ -12026,6 +12002,8 @@ export default function AssetRegisterClient({
   }
 
   function openQuoteLeadMessage() {
+    const external = selectedQuotePartners.find(partner => partner.isExternalBusiness);
+    if (external) { messageDirectoryBusiness(external); return; }
     if (!selectedQuotePartners.length) {
       setNotice({ tone: 'error', message: 'Select at least one company first.' });
       return;
@@ -18239,7 +18217,7 @@ export default function AssetRegisterClient({
           disabled={isExporting || isSendingQuoteLead}
           onClose={closeRegisterShareModal}
           onInside={() => setAssetShareDestination('inside')}
-          onOutside={() => setAssetShareDestination('outside')}
+          onOutside={() => { setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
         />
       ) : isRegisterShareModalOpen && assetShareDestination === 'inside' ? (
         <InsideShareDialog
@@ -18299,11 +18277,12 @@ export default function AssetRegisterClient({
               {assetShareDestination === 'choice' ? (
                 <AssetShareDestinationPicker
                   onInside={() => setAssetShareDestination('inside')}
-                  onOutside={() => setAssetShareDestination('outside')}
+                  onOutside={() => { setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
                   disabled={isExporting || isSendingQuoteLead}
                 />
               ) : assetShareDestination === 'outside' ? (
                 <AssetExternalShare
+                  recipient={externalBusinessRecipient ?? undefined}
                   shareName={activeShareName}
                   assets={activeExternalShareAssets}
                   reportFiles={externalShareReportFiles}
@@ -20526,7 +20505,7 @@ export default function AssetRegisterClient({
           disabled={isSendingQuoteLead}
           onClose={closeAssetQuoteModal}
           onInside={() => setAssetShareDestination('inside')}
-          onOutside={() => setAssetShareDestination('outside')}
+          onOutside={() => { setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
         />
       ) : isQuoteModalOpen && !selectedQuoteOption && assetShareDestination === 'inside' ? (
         <InsideShareDialog
@@ -20558,7 +20537,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${isExternalAssetShareView ? styles.registerShareModalHeader : ''}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-quote-title" tabIndex={-1}>{selectedQuoteOption
-                  ? quoteDirectoryStage === 'location' ? 'Where do you need help?' : selectedQuoteOption.mapTitle
+                  ? quoteDirectoryStage === 'location' ? 'Where are you looking?' : selectedQuoteOption.mapTitle
                   : assetShareDestination === 'inside'
                     ? 'Share inside Aim4price'
                     : assetShareDestination === 'outside'
@@ -20571,7 +20550,7 @@ export default function AssetRegisterClient({
                       ? 'Choose attachments, then share.'
                       : quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : quoteDirectoryStage === 'location' ? (
-                  <p>Choose an area first. We will open the map there and show nearby active partners before Aim4price assistance listings.</p>
+                  <p>Choose an area to see businesses near you.</p>
                 ) : isFullRegisterQuoteLead ? (
                   selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal' ? (
                     <p>{isAssetGroupShare
@@ -20599,11 +20578,12 @@ export default function AssetRegisterClient({
                 assetShareDestination === 'choice' ? (
                   <AssetShareDestinationPicker
                     onInside={() => setAssetShareDestination('inside')}
-                    onOutside={() => setAssetShareDestination('outside')}
+                    onOutside={() => { setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
                     disabled={isSendingQuoteLead}
                   />
                 ) : assetShareDestination === 'outside' ? (
                   <AssetExternalShare
+                    recipient={externalBusinessRecipient ?? undefined}
                     shareName={quoteAsset?.title || 'Aim4price asset'}
                     assets={quoteExternalShareAssets}
                     reportFiles={externalShareReportFiles}
@@ -20652,7 +20632,7 @@ export default function AssetRegisterClient({
 
                     <div className={styles.assetQuoteLocationCopy}>
                       <h4 id="asset-quote-location-heading">Start with your town or area</h4>
-                      <p>This keeps the map steady and loads only the partners and Aim4price service areas near you.</p>
+                      <p>Find businesses that serve your town or area.</p>
                     </div>
 
                     <form className={styles.assetQuoteLocationForm} onSubmit={submitQuoteLocation}>
@@ -20694,7 +20674,7 @@ export default function AssetRegisterClient({
                           Use current location
                         </button>
                         <button type="submit" className={styles.primaryButton} disabled={isResolvingQuoteLocation || !quoteLocationInput.trim()}>
-                          {isResolvingQuoteLocation ? 'Finding area...' : 'Show nearby help'}
+                          {isResolvingQuoteLocation ? 'Finding area...' : 'Show businesses'}
                         </button>
                       </div>
                     </form>
@@ -20721,9 +20701,10 @@ export default function AssetRegisterClient({
                       <SearchIcon className={styles.buttonIcon} />
                       <span>{isLoadingQuotePartners ? 'Searching...' : 'Search'}</span>
                     </button>
+                    <button type="button" className={styles.secondaryButton} onClick={() => openDirectoryExternalShare({name:'Aim4price',email:'aim4price@gmail.com',phone:'062 572 1650'})}>Need help?</button>
                   </form>
 
-                  <div className={styles.assetQuoteMapStage}>
+                  <div className={`${styles.assetQuoteMapStage} ${directoryBusiness ? styles.businessDirectorySelected : ''}`}>
                     <aside className={styles.assetQuoteMapSidebar} aria-label="Available companies">
                       <div className={styles.assetQuoteSidebarHeader}>
                         <button type="button" className={styles.assetQuoteBackButton} onClick={goBackToQuoteOptions} disabled={isSendingQuoteLead}>
@@ -20745,31 +20726,21 @@ export default function AssetRegisterClient({
                           <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
                         ) : quotePartners.length ? (
                           quotePartners.map((partner) => {
-                            const isSelected = selectedQuotePartnerIds.includes(partner.userId);
+                            const isSelected = directoryBusiness?.userId === partner.userId;
                             return (
                               <button
                                 key={partner.userId}
                                 type="button"
                                 className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${isSelected ? styles.assetQuotePartnerCardActive : ''}`}
-                                onClick={() => {
-                                  if (isAim4priceAssistancePartner(partner) && !isSelected) {
-                                    openAim4priceAssistanceMessage(partner);
-                                    return;
-                                  }
-                                  toggleQuotePartnerSelection(partner);
-                                }}
-                                aria-label={`${isSelected ? 'Remove' : isAim4priceAssistancePartner(partner) ? 'Message' : 'Select'} ${quotePartnerName(partner)}`}
+                                onClick={() => setDirectoryBusiness(partner)}
+                                aria-label={`View ${quotePartnerName(partner)}`}
                                 aria-pressed={isSelected}
                               >
                                 <span className={styles.assetQuotePartnerBody}>
+                                  {partner.logoUrl ? <img className={styles.businessDirectoryLogo} src={partner.logoUrl} alt="" /> : null}
                                   <span className={styles.assetQuotePartnerHeader}>
                                     <strong>{quotePartnerName(partner)}</strong>
-                                    {partner.isExternalBusiness ? <small>Email enquiries</small> : null}
-                                    {partner.isAim4priceManaged ? (
-                                      <span className={styles.assetQuoteManagedLabel}><i aria-hidden="true" />Aim4price service area</span>
-                                    ) : partner.isActivePartner ? (
-                                      <small className={styles.assetQuoteActivePartnerBadge}>Active partner</small>
-                                    ) : null}
+                                    <small className={styles.businessDirectoryBadge}>{partner.isExternalBusiness ? 'Directory listing' : 'Aim4price account'}</small>
                                   </span>
                                   <span className={styles.assetQuotePartnerMeta}>
                                     <span>{quotePartnerLocation(partner)}</span>
@@ -20782,7 +20753,7 @@ export default function AssetRegisterClient({
                                     <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>
                                   ) : null}
                                   <span className={styles.assetQuotePartnerAction}>
-                                    <span>{isSelected ? 'Selected' : isAim4priceAssistancePartner(partner) ? 'Message Aim4price' : 'Select company'}</span>
+                                    <span>{isSelected ? 'Viewing business' : 'View business'}</span>
                                     <ChevronRightIcon className={styles.buttonIcon} />
                                   </span>
                                 </span>
@@ -20794,7 +20765,7 @@ export default function AssetRegisterClient({
                         )}
                       </div>
 
-                      <div className={styles.assetQuoteSidebarFooter}>
+                      {isAssetGroupShare ? <div className={styles.assetQuoteSidebarFooter}>
                         <span>
                           {selectedQuotePartners.length
                             ? `${selectedQuotePartners.length} selected`
@@ -20808,16 +20779,26 @@ export default function AssetRegisterClient({
                         >
                           {selectedQuotePartners.length ? `Continue with ${selectedQuotePartners.length}` : 'Continue'}
                         </button>
-                      </div>
+                      </div> : null}
                     </aside>
 
                     <div
                       className={`${styles.assetQuoteMapShell} ${isQuoteMapExpanded ? styles.assetQuoteMapShellExpanded : ''}`}
-                      onClick={() => {
-                        if (!isQuoteMapExpanded) setIsQuoteMapExpanded(true);
-                      }}
+
                     >
-                      <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Business and Aim4price assistance map" />
+                      {googleDirectoryEnabled ? <GoogleDirectoryMap
+                        fitResults={!isLoadingQuotePartners && quoteFitResultsRef.current}
+                        onFitted={() => { quoteFitResultsRef.current = false; }}
+                        partners={quotePartnersWithCoordinates}
+                        selectedId={directoryBusiness?.userId}
+                        center={quoteInitialMapLocationRef.current?.center ?? DEFAULT_PARTNER_MAP_CENTER}
+                        zoom={quoteInitialMapLocationRef.current?.zoom ?? DEFAULT_PARTNER_MAP_ZOOM}
+                        onSelect={id => { setDirectoryBusiness(quotePartners.find(p => p.userId === id) ?? null); setIsQuoteMapExpanded(false); }}
+                        onBounds={bounds => {
+                          if (quoteViewportTimeoutRef.current !== null) window.clearTimeout(quoteViewportTimeoutRef.current);
+                          quoteViewportTimeoutRef.current = window.setTimeout(() => { void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch, bounds); }, 300);
+                        }}
+                      /> : <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Business locations map" />}
                       <div className={styles.assetQuoteMapControls} onClick={(event) => event.stopPropagation()}>
                         {isQuoteMapExpanded ? (
                           <span className={styles.assetQuoteExpandedMapArea}>
@@ -20836,16 +20817,22 @@ export default function AssetRegisterClient({
                           <span>{isQuoteMapExpanded ? 'Return to results' : 'Expand map'}</span>
                         </button>
                       </div>
-                      {!isQuoteMapExpanded ? (
-                        <span className={styles.assetQuoteMapExpandHint}>Click the map to expand</span>
-                      ) : null}
+
                       {!isLoadingQuotePartners && !quotePartnersWithCoordinates.length ? (
                         <div className={styles.assetQuoteMapEmptyOverlay}>
                           <OptionsIcon className={styles.buttonIcon} />
-                          <p>Move the map or search a town to load nearby partners and Aim4price service areas.</p>
+                          <p>Move the map or search for a business. Need help? Contact Aim4price above.</p>
                         </div>
                       ) : null}
                     </div>
+                    {directoryBusiness && !isQuoteMapExpanded ? <BusinessProfileCard
+                      key={directoryBusiness.userId}
+                      business={directoryBusiness}
+                      onClose={() => setDirectoryBusiness(null)}
+                      onMessage={() => messageDirectoryBusiness(directoryBusiness)}
+                      onAdd={isAssetGroupShare && !directoryBusiness.isExternalBusiness ? () => toggleQuotePartnerSelection(directoryBusiness) : undefined}
+                      selected={selectedQuotePartnerIds.includes(directoryBusiness.userId)}
+                    /> : null}
                   </div>
 
                   {quoteLeadStep && selectedQuoteOption && selectedQuotePartner ? (
