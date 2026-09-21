@@ -122,10 +122,10 @@ export async function inviteBusiness(
   await sendAim4priceEmail({
     to: email,
     subject: title,
-    text: `${business.name}, list your business for free and receive asset enquiries by email. No login required. Only after you accept will your business be visible to all Aim4price owners. Confirm your details: ${url}`,
+    text: `${business.name}, list your business for free and receive asset enquiries by email or WhatsApp. No login required. Only after you accept will your business be visible to all Aim4price owners. Confirm your details: ${url}`,
     html: businessEmailHtml(
       title,
-      `<p>${esc(business.name)}, receive asset enquiries directly by email. Joining is free and no login is needed.</p><p>Your listing becomes visible to all Aim4price owners only when you accept.</p><p><a href="${esc(url)}">${business.status === "invited" ? "Review invitation" : "Manage listing"}</a></p><p>If you are not interested, ignore this email. This link expires in 30 days.</p>`,
+      `<p>${esc(business.name)}, receive asset enquiries by email or WhatsApp. Joining is free and no login is needed.</p><p>Your listing becomes visible to all Aim4price owners only when you accept.</p><p><a href="${esc(url)}">${business.status === "invited" ? "Review invitation" : "Manage listing"}</a></p><p>If you are not interested, ignore this email. This link expires in 30 days.</p>`,
     ),
   });
 }
@@ -192,7 +192,7 @@ export async function listExternalBusinesses(input: {
     email: string;
     details: BusinessDetails;
   }>(
-    `select id,email,details from business_network where status='active' order by name limit 1000`,
+    `select id,email,details from business_network where status='active' and accepted_at is not null order by name limit 1000`,
   );
   const query = (input.search || "").toLowerCase();
   return result.rows
@@ -221,6 +221,7 @@ export async function listExternalBusinesses(input: {
     })
     .map(({ id, email, details: b }) => ({
       userId: `external:${id}`,
+      googlePlaceId: b.googlePlaceId,
       partnerType: (input.partnerType || businessPartnerTypes(b.headings)[0]) as PartnerDirectoryEntry["partnerType"],
       accountSubtype: "external-business",
       displayName: b.name,

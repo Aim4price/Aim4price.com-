@@ -368,7 +368,7 @@ test("invitation actions require an active owner or an admin and reject foreign 
   );
 });
 
-test("admin can publish, edit and hide businesses without fabricating acceptance or sending invitations", async () => {
+test("admin drafts require business acceptance before appearing in the directory", async () => {
   const db = new PGlite();
   const adapter = {
     query: async (sql, params) =>
@@ -403,7 +403,7 @@ test("admin can publish, edit and hide businesses without fabricating acceptance
     const row = (
       await db.query("select * from business_network where id=$1", [id])
     ).rows[0];
-    assert.equal(row.status, "active");
+    assert.equal(row.status, "invited");
     assert.equal(row.accepted_at, null);
     assert.equal(row.invited_by, "admin-one");
     assert.equal(
@@ -412,20 +412,17 @@ test("admin can publish, edit and hide businesses without fabricating acceptance
     );
     assert.equal(
       (await network.listExternalBusinesses({ partnerType: "dealer" })).length,
-      1,
+      0,
     );
     await assert.rejects(
       () => admin.saveAdminBusiness("admin-one", input),
       /already listed/,
     );
-    await assert.rejects(
-      () =>
-        admin.saveAdminBusiness("admin-one", {
-          ...input,
-          email: "another@example.com",
-        }),
-      /already listed/,
-    );
+    // Drafts may reference the same Google place; publication remains unique.
+    const duplicateDraft = await admin.saveAdminBusiness("admin-one", {...input, email: "another@example.com"});
+    assert.equal((await network.listExternalBusinesses({partnerType:"dealer"})).length, 0);
+    await db.query("delete from business_network_admin_actions where business_id=$1", [duplicateDraft]);
+    await db.query("delete from business_network where id=$1", [duplicateDraft]);
     await assert.rejects(
       () =>
         admin.saveAdminBusiness("admin-one", {
@@ -454,6 +451,9 @@ test("admin can publish, edit and hide businesses without fabricating acceptance
       (await admin.listAdminBusinesses())[0].name,
       "Updated Workshop",
     );
+    assert.equal((await admin.listAdminBusinesses())[0].status, "invited");
+    await db.query("update business_network set status='active',accepted_at=now() where id=$1", [id]);
+    assert.equal((await network.listExternalBusinesses({ partnerType: "dealer" })).length, 1);
     await db.query(
       `insert into business_network_requests(id,owner_id,business_id,request_key,token_hash,snapshot,status,expires_at) values($1,'owner',$2,'key','hash','{}','sent',now()+interval '1 day')`,
       ["33333333-3333-4333-8333-333333333333", id],
@@ -473,7 +473,7 @@ test("admin can publish, edit and hide businesses without fabricating acceptance
           "select action from business_network_admin_actions order by created_at",
         )
       ).rows.map((r) => r.action),
-      ["create", "publish", "pause"],
+      ["create", "update", "pause"],
     );
   } finally {
     await db.close();

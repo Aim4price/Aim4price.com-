@@ -27,7 +27,7 @@ export async function listAdminBusinesses() {
   await ensure();
   return (
     await getDb().query<AdminBusiness>(
-      "select id,name,email,status,details from business_network order by name,id",
+      "select id,name,email,case when status='active' and accepted_at is null then 'invited' else status end as status,details from business_network order by name,id",
     )
   ).rows;
 }
@@ -77,8 +77,8 @@ export async function saveAdminBusiness(
     if (existing) {
       await getDb().query(
         `with updated as (
-        update business_network set name=$2,details=$3,status='active',updated_at=now() where id=$1 returning id
-      ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $4,id,$5,'publish' from updated`,
+        update business_network set name=$2,details=$3,status=case when accepted_at is not null then 'active' else 'invited' end,updated_at=now() where id=$1 returning id
+      ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $4,id,$5,'update' from updated`,
         [
           businessId,
           details.name,
@@ -90,7 +90,7 @@ export async function saveAdminBusiness(
     } else {
       await getDb().query(
         `with added as (
-        insert into business_network(id,email,name,status,details,invited_by) values($1,$2,$3,'active',$4,$5) returning id
+        insert into business_network(id,email,name,status,details,invited_by) values($1,$2,$3,'invited',$4,$5) returning id
       ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $6,id,$5,'create' from added`,
         [
           businessId,

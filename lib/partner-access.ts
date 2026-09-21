@@ -18,7 +18,6 @@ import {
 } from './asset-document-permissions';
 import {
   isAssistanceMasterAccountUserId,
-  listAssistanceDirectoryEntries,
   type AssistanceMapBounds,
 } from './assistance-network';
 
@@ -31,6 +30,7 @@ export type PartnerDirectoryEntry = {
   isExternalBusiness?: boolean;
   businessHeadings?: string[];
   googleMapsUrl?: string;
+  googlePlaceId?: string;
   userId: string;
   masterAccountUserId?: string;
   partnerType: PartnerType;
@@ -1288,14 +1288,16 @@ export async function listPartnerDirectory(input: {
     return left.displayName.localeCompare(right.displayName);
   });
 
-  const assistancePartners = partnerType && !input.category && !input.service
-    ? await listAssistanceDirectoryEntries({ partnerType, search, bounds })
-    : [];
-
-  // Genuine registered partners remain first, with nearby active partners ranked
-  // highest. Aim4price service-area fallbacks follow them.
-  const outsideBusinesses = input.includeExternal === false ? [] : (await listExternalBusinesses(input)).filter(b => !genuinePartners.some(p => p.isActivePartner && p.email && p.email.toLowerCase() === b.email.toLowerCase()));
-  return [...genuinePartners, ...outsideBusinesses, ...assistancePartners];
+  // Only real businesses belong in the directory. Managed service-area records
+  // remain intact for historical leads but are never returned as listings.
+  const externalBusinesses = input.includeExternal === false ? [] : await listExternalBusinesses(input);
+  const accounts = genuinePartners.filter(p => !isAssistanceMasterAccountUserId(p.userId));
+  for (const account of accounts) {
+    const linked = externalBusinesses.find(b => account.email && b.email.toLowerCase() === account.email.toLowerCase());
+    if (linked) { account.googlePlaceId = linked.googlePlaceId; account.googleMapsUrl = linked.googleMapsUrl; }
+  }
+  const outsideBusinesses = externalBusinesses.filter(b => !accounts.some(p => p.email && p.email.toLowerCase() === b.email.toLowerCase()));
+  return [...accounts, ...outsideBusinesses];
 }
 
 async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerProfileRow | null> {

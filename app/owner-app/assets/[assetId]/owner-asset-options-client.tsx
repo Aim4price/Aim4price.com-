@@ -217,6 +217,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
   assetIsLicensed: boolean;
   licenceRenewalDate: string;
 }) {
+  const [externalRecipient, setExternalRecipient] = useState<{name:string;email:string;phone:string} | null>(null);
   const [stage, setStage] = useState<OptionsStage>('destination');
   const [selectedLeadType, setSelectedLeadType] = useState<AssetLeadType | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -335,7 +336,18 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
     if (selectedOption) void loadPartners(selectedOption, search);
   }
 
+  function shareWithExternalBusiness(recipient: {name:string;email:string;phone:string}) {
+    setExternalRecipient(recipient);
+    setReportFiles([]);
+    setNotice(null);
+    setStage('outside');
+  }
+
   function choosePartner(partner: Partner) {
+    if (partner.isExternalBusiness) {
+      shareWithExternalBusiness({name:partnerName(partner),email:partner.email,phone:partner.phone});
+      return;
+    }
     setSelectedPartnerId(partner.userId);
     setTrackMaintenance(false);
     setRequestKey(crypto.randomUUID());
@@ -437,7 +449,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
         <section className={`${styles.section} ${styles.ownerOptionsSection} ${styles.ownerShareDestinationSection}`}>
           <AssetShareDestinationPicker
             onInside={() => returnToStage('inside')}
-            onOutside={() => returnToStage('outside')}
+            onOutside={() => { setExternalRecipient(null); returnToStage('outside'); }}
           />
         </section>
       ) : null}
@@ -461,6 +473,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
       {stage === 'outside' ? (
         <section className={styles.ownerExternalShareSection} aria-hidden={reportPickerOpen || undefined}>
           <AssetExternalShare
+            recipient={externalRecipient ?? undefined}
             shareName={assetTitle}
             assets={[asset]}
             reportFiles={reportFiles}
@@ -481,6 +494,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
             <button type="submit" disabled={loadingPartners}>{loadingPartners ? 'Searching…' : 'Search'}</button>
           </form>
 
+          <button type="button" className={styles.secondaryButton} onClick={() => shareWithExternalBusiness({name:'Aim4price',email:'aim4price@gmail.com',phone:'062 572 1650'})}>Need help?</button>
           <BusinessInvite />
           <BusinessFilters heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadPartners(selectedOption, search, heading, service); }} />
           <div className={styles.ownerPartnerList}>
@@ -491,10 +505,9 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
                 </span>
                 <span className={styles.ownerPartnerCopy}>
                   <strong>{partnerName(partner)}</strong>
-                  {partner.isAim4priceManaged ? <em className={styles.ownerManagedBadge}>Aim4price managed</em> : null}
+                  <em className={styles.ownerManagedBadge}>{partner.isExternalBusiness ? 'Directory listing' : 'Aim4price account'}</em>
                   <small>{partnerLocation(partner)}</small>
                   <small>{partner.services || partnerTypeLabel(partner.partnerType)}</small>
-                  {partner.isAim4priceManaged ? <small className={styles.ownerManagedCopy}>Service area — not a physical branch.</small> : null}
                 </span>
                 <b aria-hidden="true">›</b>
               </button>

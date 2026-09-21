@@ -297,3 +297,5 @@
   background: var(--app-surface-soft, #edf5f0);
   color: var(--app-text, #215d43);
 }
+
+.invitationOptions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 16px; line-height: 1.6; }

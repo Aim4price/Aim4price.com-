@@ -87,6 +87,7 @@ export default function BusinessJoin({
     tokenRef.current = token;
     history.replaceState(null, "", window.location.pathname);
     setToken(token);
+    if (!token) { setNotice("Open your invitation link to accept a listing, or request a management link for an existing invitation."); return; }
     fetch("/api/business-network/profile", {
       headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
@@ -143,7 +144,7 @@ export default function BusinessJoin({
       setNotice(
         action === "pause"
           ? "Your listing is hidden and requests are stopped."
-          : "Your business is now listed. Requests will arrive by email.",
+          : "Your business is now listed. Owners can contact you by email or WhatsApp.",
       );
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Unable to save.");
@@ -166,14 +167,30 @@ export default function BusinessJoin({
       </Heading>
       <p>
         {adminMode
-          ? "Publish directly to the owner directory. No invitation is required."
-          : "No subscription or login needed."}
+          ? "Save business details, then send an invitation. The business appears after accepting."
+          : "Would you like your business to be part of the Aim4price directory?"}
       </p>
+      {!adminMode && status !== "active" && status !== "paused" ? (
+        <section className={styles.invitationOptions} aria-label="Ways to join Aim4price">
+          <div className={styles.card}>
+            <h2>Free directory listing</h2>
+            <p>Help asset owners find your business. Receive messages, asset photos and reports through email or WhatsApp.</p>
+            <p>No Aim4price account is required. Complete the details below to accept, and hide your listing whenever you need to.</p>
+          </div>
+          <div className={styles.card}>
+            <h2>With an Aim4price account</h2>
+            <p>Show an Aim4price account badge and receive leads inside Aim4price. Access shared asset information according to the owner’s permissions.</p>
+            <a className={styles.button} href="/auth">Explore an Aim4price account</a>
+            <p className={styles.muted}>Account registration and approval are separate from your free listing.</p>
+          </div>
+        </section>
+      ) : null}
       {notice ? (
         <p className={styles.notice} role="status">
           {notice}
         </p>
       ) : null}
+      {!adminMode && !status ? <a href="/business-network/manage">Request a management link</a> : null}
       {status ? (
         <>
           <section className={styles.card}>
@@ -234,7 +251,7 @@ export default function BusinessJoin({
                         set("googleMapsUrl", p.googleMapsUri || "");
                         setPlaces([]);
                         setNotice(
-                          "Google listing linked. Add your business details below.",
+                          "Google profile linked for your directory card. Confirm your contact and location details below.",
                         );
                       }}
                     >
@@ -451,16 +468,16 @@ export default function BusinessJoin({
                   onChange={(e) => setAccepted(e.target.checked)}
                 />
                 I represent this business and agree to show these details to all
-                Aim4price owners and receive their requests by email.
+                Aim4price owners and receive their requests by email or WhatsApp.
               </label>
             ) : null}
             <button className={styles.primary} disabled={busy} type="submit">
               {busy
                 ? "Saving…"
                 : adminMode
-                  ? "Publish business"
+                  ? "Save business"
                   : status === "invited"
-                    ? "Accept and join"
+                    ? "Accept free listing"
                     : "Save listing"}
             </button>
           </form>
