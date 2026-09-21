@@ -1,0 +1,22 @@
+.dialog { width:min(1120px,calc(100vw - 32px)); max-width:none; height:min(940px,calc(100dvh - 40px)); max-height:none; padding:0; border:1px solid #cfdfd7; border-radius:14px; background:#f5f8f6; color:#173c32; box-shadow:0 24px 90px #09271d40; }
+.dialog::backdrop { background:rgba(12,32,26,.56); backdrop-filter:blur(7px); }
+.layout { height:100%; display:flex; flex-direction:column; min-height:0; }
+.header,.footer { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:20px 24px; background:#fff; }
+.header { border-bottom:1px solid #dce7e1; }
+.header h2 { margin:0; font-size:22px; }
+.header p { margin:7px 0 0; color:#637a70; font-size:13px; line-height:1.5; }
+.dialog .close { flex-shrink:0; width:42px; height:42px; background:#fff; border:1px solid #cfdfd7; border-radius:6px; font-size:26px; cursor:pointer; color:#173c32; }
+.document { flex:1; min-height:0; overflow:auto; padding:18px; }
+.frame { width:100%; height:100%; min-height:280px; display:block; border:1px solid #d9e5de; background:#fff; }
+.message { padding:20px; text-align:center; color:#506d60; }
+.footer { border-top:1px solid #dce7e1; }
+.footer>span { font-size:12px; color:#637a70; }
+.footer>div { display:flex; gap:10px; }
+.primary,.secondary { min-height:42px; padding:11px 18px; border-radius:6px; font:inherit; font-size:13px; font-weight:650; text-decoration:none; cursor:pointer; border:1px solid #c8dbcf; }
+.primary { color:white; background:#18553f; border-color:#18553f; }
+.secondary { color:#173c32; background:#fff; }
+.dialog button:disabled { opacity:.5; cursor:not-allowed; }
+.dialog :is(button,a):focus-visible { outline:3px solid #6ea48e; outline-offset:3px; }
+@media(max-width:600px){.dialog{width:calc(100vw - 16px);height:calc(100dvh - 16px)}.header,.footer{padding:14px;gap:12px}.header h2{font-size:18px}.footer{align-items:stretch;flex-direction:column}.footer>div{justify-content:flex-end}.document{padding:6px}}
+
+.actionError { margin:0; padding:12px 24px; background:#fff1ec; color:#873e2d; border-top:1px solid #ebc9bd; font-size:13px; }
