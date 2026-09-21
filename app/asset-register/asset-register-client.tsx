@@ -20528,7 +20528,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetQuoteModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${isExternalAssetShareView ? `${styles.externalAssetShareModal} ${styles.modalCard} ${styles.assetEntryModal} ${styles.registerShareAccountModal} ${styles.registerShareModal} ${accountStyles.modalTheme}` : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption ? styles.businessDirectoryDialog : ''} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${isExternalAssetShareView ? `${styles.externalAssetShareModal} ${styles.modalCard} ${styles.assetEntryModal} ${styles.registerShareAccountModal} ${styles.registerShareModal} ${accountStyles.modalTheme}` : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-hidden={externalShareReportScope === 'asset' ? true : undefined}
@@ -20631,8 +20631,7 @@ export default function AssetRegisterClient({
                     </span>
 
                     <div className={styles.assetQuoteLocationCopy}>
-                      <h4 id="asset-quote-location-heading">Start with your town or area</h4>
-                      <p>Find businesses that serve your town or area.</p>
+                      <h4 id="asset-quote-location-heading">Choose your location</h4>
                     </div>
 
                     <form className={styles.assetQuoteLocationForm} onSubmit={submitQuoteLocation}>
@@ -20658,8 +20657,11 @@ export default function AssetRegisterClient({
                         ))}
                       </datalist>
 
+                      <button type="button" className={styles.directoryUseLocation} onClick={() => void useCurrentQuoteLocation()} disabled={isResolvingQuoteLocation}>
+                        Use current location
+                      </button>
                       <small id="asset-quote-location-hint" className={styles.assetQuoteLocationHint}>
-                        You can also use your current device location. We only use it to centre this search.
+                        Your location is only used to centre this search.
                       </small>
                       {quoteLocationError ? (
                         <p className={styles.assetQuoteLocationError} role="alert">{quoteLocationError}</p>
@@ -20670,9 +20672,7 @@ export default function AssetRegisterClient({
                           <ChevronLeftIcon className={styles.buttonIcon} />
                           <span>Back</span>
                         </button>
-                        <button type="button" className={styles.secondaryButton} onClick={() => void useCurrentQuoteLocation()} disabled={isResolvingQuoteLocation}>
-                          Use current location
-                        </button>
+
                         <button type="submit" className={styles.primaryButton} disabled={isResolvingQuoteLocation || !quoteLocationInput.trim()}>
                           {isResolvingQuoteLocation ? 'Finding area...' : 'Show businesses'}
                         </button>
@@ -20694,7 +20694,7 @@ export default function AssetRegisterClient({
                       className={styles.assetQuoteSearchInput}
                       value={quotePartnerSearch}
                       onChange={(event) => setQuotePartnerSearch(event.target.value)}
-                      placeholder="Search another area, company, service or brand"
+                      placeholder="Search business, service or brand"
                       aria-label="Search business directory"
                     />
                     <button type="submit" className={styles.secondaryButton} disabled={isLoadingQuotePartners}>
@@ -20761,7 +20761,17 @@ export default function AssetRegisterClient({
                             );
                           })
                         ) : (
-                          <p className={styles.assetQuoteEmptyState}>{selectedQuoteOption.emptyPartnerText}</p>
+                          <div className={styles.directoryEmptyState} role="status">
+                            <strong>No businesses found</strong>
+                            <p>Try another area or adjust your search and filters.</p>
+                            <div>
+                              <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={changeQuoteLocation}>Change area</button>
+                              {quotePartnerSearch || businessHeading || businessService ? <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={() => {
+                                setQuotePartnerSearch(''); setBusinessHeading(''); setBusinessService('');
+                                void loadQuotePartners(selectedQuoteOption.leadType, '', undefined, '', '');
+                              }}>Clear search &amp; filters</button> : null}
+                            </div>
+                          </div>
                         )}
                       </div>
 
@@ -20821,7 +20831,7 @@ export default function AssetRegisterClient({
                       {!isLoadingQuotePartners && !quotePartnersWithCoordinates.length ? (
                         <div className={styles.assetQuoteMapEmptyOverlay}>
                           <OptionsIcon className={styles.buttonIcon} />
-                          <p>Move the map or search for a business. Need help? Contact Aim4price above.</p>
+                          <p>Move the map to explore another area.</p>
                         </div>
                       ) : null}
                     </div>

@@ -13,10 +13,14 @@ export default function BusinessDirectoryTools(props: {
       className={styles.directoryTools}
       aria-label="Business filters and invitations"
     >
-      <BusinessFilters {...props} />
-      <div className={styles.directoryActions}>
-        <BusinessInvite />
-      </div>
+      <details className={styles.directoryDisclosure}>
+        <summary>Filter businesses{props.heading || props.service ? <span>Active</span> : null}</summary>
+        <BusinessFilters {...props} />
+      </details>
+      <details className={styles.directoryDisclosure}>
+        <summary>Invitations &amp; history</summary>
+        <div className={styles.directoryActions}><BusinessInvite /></div>
+      </details>
     </section>
   );
 }
