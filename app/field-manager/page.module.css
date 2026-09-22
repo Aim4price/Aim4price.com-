@@ -2920,3 +2920,10 @@
   border: 2px solid #d94b4b;
   box-shadow: 0 0 0 2px rgba(217, 75, 75, 0.16);
 }
+
+/* Keep chooser spacing consistent without stacking list and section gutters. */
+.assetsShell > .searchCard { margin-bottom: 14px; }
+.assetDirectory { gap: 24px; padding-bottom: 22px; }
+.assetDirectorySection > .assetList { padding-bottom: 0; }
+.assetCard.assetDirectoryUmbrellaCard { gap: 12px; padding: 16px; }
+.assetDirectoryUmbrellaCard > .assetDirectoryCount { margin: 0; }

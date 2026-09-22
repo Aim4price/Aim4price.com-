@@ -3528,3 +3528,11 @@
   border: 2px solid #d94b4b;
   box-shadow: 0 0 0 2px rgba(217, 75, 75, 0.16);
 }
+
+/* Keep chooser spacing consistent without stacking list and section gutters. */
+.assetDirectory { gap: 24px; padding-bottom: 22px; }
+.assetDirectorySection > .managerAssetList { padding-bottom: 0; }
+.managerAssetCard.assetDirectoryUmbrellaCard,
+.managerAssetCard.assetDirectoryAllCard { gap: 12px; padding: 16px; }
+.assetDirectoryUmbrellaCard > p,
+.assetDirectoryAllCard > p { margin: 0; }
