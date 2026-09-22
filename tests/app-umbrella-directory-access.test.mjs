@@ -47,7 +47,7 @@ test('Owner and Field Manager asset directories adapt only when umbrellas exist'
 
   for (const client of [ownerClient, fieldClient]) {
     assert.match(client, /const showDirectoryHome = groups\.length > 0/);
-    assert.match(client, /Open umbrella/);
+    assert.match(client, /Open/);
     assert.match(client, /View all assets/);
     assert.doesNotMatch(client, /Umbrella: \{assetGroup\.name\}/);
     assert.match(client, /styles\.assetDirectorySearchMatch/);
@@ -166,7 +166,7 @@ for (const role of ['owner', 'field']) {
     search('Massey');
     assert.deepEqual(cards().map((node) => node.key), ['farm', 'standalone']);
     assert.ok(cards().every((node) => node.props.className.includes('assetDirectorySearchMatch')));
-    click('Open umbrella');
+    click('Open');
     assert.deepEqual(cards().map((node) => node.key), ['tractor']);
     assert.match(cards()[0].props.className, /assetDirectorySearchMatch/);
     const nav = render().find((node) => node.props['aria-label'] === 'Asset directory navigation');

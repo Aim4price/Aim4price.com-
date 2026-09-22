@@ -332,7 +332,7 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
                       className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
                       onClick={() => setSelectedGroupId(group.id)}
                     >
-                      Open umbrella
+                      Open
                     </button>
                   </article>
                 ))}
