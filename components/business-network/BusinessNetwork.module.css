@@ -308,3 +308,8 @@
 .directoryDisclosure > .filters, .directoryDisclosure > .directoryActions { margin: 0 14px 14px; }
 .directoryDisclosure .filterHeading > span { display: none; }
 .directoryDisclosure .directoryActions { padding-top: 0; border-top: 0; }
+
+.entryActions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.entryActions > button { flex: 1 1 180px; }
+
+.panel .entryActions > button[aria-pressed="true"] { background: #286044; color: #fff; border-color: #286044; }

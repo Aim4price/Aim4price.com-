@@ -81,25 +81,31 @@ export async function saveAdminBusiness(
     throw new Error("This business email cannot be changed here.");
   const details = validateBusinessDetails(input, email);
   const businessId = id || randomUUID();
+  const publish = input.action === "save_publish";
   try {
     if (existing) {
       await getDb().query(
         `with updated as (
-        update business_network set name=$2,details=$3,status=status,updated_at=now() where id=$1 returning id
-      ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $4,id,$5,'update' from updated`,
+        update business_network set name=$2,details=$3,
+          status=case when $6 then 'active' else status end,
+          accepted_at=case when $6 then coalesce(accepted_at,now()) else accepted_at end,
+          updated_at=now() where id=$1 returning id
+      ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $4,id,$5,case when $6 then 'update_and_publish' else 'update' end from updated`,
         [
           businessId,
           details.name,
           JSON.stringify(details),
           randomUUID(),
           adminId,
+          publish,
         ],
       );
     } else {
       await getDb().query(
         `with added as (
-        insert into business_network(id,email,name,status,details,invited_by) values($1,$2,$3,'invited',$4,$5) returning id
-      ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $6,id,$5,'create' from added`,
+        insert into business_network(id,email,name,status,details,invited_by,accepted_at)
+        values($1,$2,$3,case when $7 then 'active' else 'invited' end,$4,$5,case when $7 then now() else null end) returning id
+      ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $6,id,$5,case when $7 then 'create_and_publish' else 'create' end from added`,
         [
           businessId,
           email,
@@ -107,6 +113,7 @@ export async function saveAdminBusiness(
           JSON.stringify(details),
           adminId,
           randomUUID(),
+          publish,
         ],
       );
     }

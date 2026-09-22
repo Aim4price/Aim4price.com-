@@ -66,9 +66,9 @@ export default function AdminBusinesses() {
               <BusinessJoin
                 adminMode
                 adminBusiness={editing}
-                onAdminSaved={() => {
+                onAdminSaved={(published) => {
                   setEditing(undefined);
-                  setNotice("Business saved.");
+                  setNotice(published ? "Business approved and published. No invitation was sent." : "Business saved.");
                   void load();
                 }}
               />

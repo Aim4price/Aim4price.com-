@@ -31,6 +31,8 @@ on:
       - 'database/migrations/102-business-network.sql'
       - 'tests/business-network.test.mjs'
       - 'scripts/verify-business-network.cjs'
+      - 'scripts/verify-business-admin-entry.cjs'
+      - 'lib/trusted-request-origin.ts'
       - 'package*.json'
       - '.github/workflows/business-network-validation.yml'
   workflow_dispatch:
@@ -54,3 +56,4 @@ jobs:
       - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/asset-share-links.test.cjs
       - run: node scripts/verify-business-network.cjs
       - run: node scripts/verify-guest-leads.cjs
+      - run: node scripts/verify-business-admin-entry.cjs

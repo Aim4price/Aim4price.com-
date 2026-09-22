@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isTrustedRequestOrigin } from "./trusted-request-origin";
 import { getServerSession } from "./auth-session";
 import { getAccountProfile } from "./account-profile";
 import { isAim4priceAdminEmail } from "./account-constants";
@@ -29,7 +30,7 @@ export function businessError(e: unknown) {
 }
 export function requireBusinessOrigin(request: NextRequest) {
   const origin = request.headers.get("origin");
-  if (!origin || origin !== new URL(request.url).origin)
+  if (!isTrustedRequestOrigin(origin, new URL(request.url).origin))
     throw new Error("This request must be sent from Aim4price.");
 }
 export async function businessBody(

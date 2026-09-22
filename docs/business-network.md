@@ -3,8 +3,8 @@
 ## Add a business yourself
 
 1. Open **Admin → Manage → Business Directory → Add business manually**.
-2. Enter the business name, email, contact information, headings/services and location. A Google Maps link or optional Google lookup can link its profile.
-3. Save the draft. Select **Approve and publish** when you want it in the directory. No invitation or account is required.
+2. Choose **Search Google** to look up a name and town, or **Enter manually** to skip Google completely. Enter the business email, contact information, headings/services and location.
+3. Select **Save and publish** on the form to approve it immediately. No invitation, business acceptance or account is required. Choose **Save draft** instead if you want to finish later; the list also retains **Approve and publish**.
 4. Use **Hide listing** to remove it. Editing a hidden listing does not publish it again.
 
 Publishing is an explicit admin decision, recorded in the admin audit table. A business cannot publish itself through an old management link.
@@ -87,3 +87,11 @@ Use one test asset and a mailbox you control:
 8. Reactivate, then disable the lead as owner: the card and reports must become unavailable.
 
 A live smoke test is still needed to verify deployment database permissions, outbound code delivery and the configured Google keys. Local fixtures do not prove those external services work.
+
+## Google search troubleshooting
+
+The lookup uses Google's Places Text Search endpoint and requires the server's `GOOGLE_PLACES_API_KEY` with Places API (New) enabled. The browser map key is separate. Missing configuration is now reported explicitly, with an **Open search in Google Maps** fallback; manual entry/publication remains available.
+
+Browser requests from both official Aim4price origins use the shared trusted-origin check, including behind Railway's internal proxy URL. Foreign, missing and malformed origins remain rejected; forwarded host headers cannot grant trust. Google lookup still requires an admin session or a valid business management token.
+
+`node scripts/verify-business-admin-entry.cjs` checks the actual form at desktop/mobile widths: Google result selection, keyboard search, failed lookup recovery, saving a draft and publishing without an invitation. These are mocked Google responses; a deployed-key check is still needed to confirm the site's Google configuration.

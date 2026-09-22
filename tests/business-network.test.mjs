@@ -334,6 +334,7 @@ test("invitation actions require an active owner or an admin and reject foreign 
   let user = null;
   let profile = { accountType: "owner", accountStatus: "active" };
   const api = load("lib/business-network-api.ts", {
+    "./trusted-request-origin": load("lib/trusted-request-origin.ts"),
     "./auth-session": {
       getServerSession: async (options) => {
         assert.equal(options.allowAdmin, true);
@@ -481,6 +482,17 @@ test("admin drafts require explicit publication before appearing in the director
       ).rows.map((r) => r.action),
       ["create", "update", "manually_approve_publish", "pause"],
     );
+    // Admin can publish in the same atomic save, with no Google profile or invite.
+    const direct = await admin.saveAdminBusiness('admin-one', {...input, email:'direct@example.com', googlePlaceId:'', googleMapsUrl:'', action:'save_publish'});
+    assert.equal((await db.query('select status from business_network where id=$1',[direct])).rows[0].status,'active');
+    assert.equal((await network.listExternalBusinesses({partnerType:'dealer'})).length,1);
+    assert.equal((await db.query('select count(*)::int as n from business_network_tokens')).rows[0].n,0);
+    await admin.saveAdminBusiness('admin-one', {...input,id,action:'save_publish',name:'Republished Workshop'});
+    assert.equal((await db.query('select name,status from business_network where id=$1',[id])).rows[0].name,'Republished Workshop');
+    assert.equal((await network.listExternalBusinesses({partnerType:'dealer'})).length,2);
+    await assert.rejects(admin.saveAdminBusiness('admin-one',{...input,email:'conflict@example.com',action:'save_publish'}),/already listed/);
+    assert.equal((await db.query("select count(*)::int as n from business_network where email='conflict@example.com'")).rows[0].n,0,'failed publish leaves no partial draft');
+    assert.deepEqual((await db.query("select action from business_network_admin_actions where action like '%and_publish' order by created_at")).rows.map(r=>r.action),['create_and_publish','update_and_publish']);
   } finally {
     await db.close();
   }
@@ -536,4 +548,41 @@ test("manual business API refuses non-admin callers and cross-origin writes", as
   assert.equal(writes, 0);
   assert.equal((await route.POST(request)).status, 200);
   assert.equal(writes, 1);
+});
+
+
+test('Google lookup accepts public origins through a proxy, searches real endpoint and rejects foreign origins', async () => {
+  const oldEnv = process.env.NODE_ENV, oldKey = process.env.GOOGLE_PLACES_API_KEY, originalFetch = globalThis.fetch;
+  process.env.NODE_ENV = 'production'; process.env.GOOGLE_PLACES_API_KEY = 'test-key';
+  let session = {user:{id:'admin',email:'admin@example.com'}}, calls = 0;
+  const api = load('lib/business-network-api.ts', {
+    './trusted-request-origin':load('lib/trusted-request-origin.ts'), './auth-session':{}, './account-profile':{}, './account-constants':{},
+  });
+  const route = load('app/api/business-network/google/route.ts', {
+    '../../../../lib/auth-session':{getAnyServerSession:async()=>session},
+    '../../../../lib/account-constants':{isAim4priceAdminEmail:e=>e==='admin@example.com'},
+    '../../../../lib/business-network':{limitBusinessAction:async()=>{},getBusinessByToken:async()=>{throw new Error('This token is invalid.')}},
+    '../../../../lib/business-network-api':api, '../../../../lib/business-network-shared':shared,
+  });
+  const {NextRequest}=require('next/server');
+  const request = origin => new NextRequest('http://internal.railway:3000/api/business-network/google',{method:'POST',headers:{...(origin?{origin}:{}),'content-type':'application/json','x-forwarded-host':'evil.test'},body:JSON.stringify({query:'S Haddad George'})});
+  globalThis.fetch=async(url,options)=>{
+    calls++;assert.equal(url,'https://places.googleapis.com/v1/places:searchText');
+    assert.equal(JSON.parse(options.body).textQuery,'S Haddad George');assert.equal(options.headers['X-Goog-Api-Key'],'test-key');
+    return Response.json({places:[{id:'place-1',displayName:{text:'S Haddad'},formattedAddress:'George'}]});
+  };
+  try {
+    for(const origin of ['https://aim4price.com','https://www.aim4price.com']) {
+      const response=await route.POST(request(origin)); assert.equal(response.status,200); assert.equal((await response.json()).places[0].id,'place-1');
+    }
+    for(const origin of ['https://evil.test','null',undefined,'https://aim4price.com.evil.test'])assert.notEqual((await route.POST(request(origin))).status,200);
+    assert.equal(calls,2,'untrusted origins never reach Google');
+    session=null; assert.equal((await route.POST(request('https://aim4price.com'))).status,403);assert.equal(calls,2);
+    session={user:{id:'admin',email:'admin@example.com'}};delete process.env.GOOGLE_PLACES_API_KEY;
+    const unavailable=await route.POST(request('https://aim4price.com'));assert.equal(unavailable.status,503);assert.match((await unavailable.json()).error,/not configured/);
+  } finally {
+    globalThis.fetch=originalFetch;
+    if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
+    if(oldKey===undefined)delete process.env.GOOGLE_PLACES_API_KEY;else process.env.GOOGLE_PLACES_API_KEY=oldKey;
+  }
 });
