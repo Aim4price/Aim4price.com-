@@ -49,7 +49,8 @@ test('Owner and Field Manager asset directories adapt only when umbrellas exist'
     assert.match(client, /const showDirectoryHome = groups\.length > 0/);
     assert.match(client, /Open umbrella/);
     assert.match(client, /View all assets/);
-    assert.match(client, /Umbrella: \{assetGroup\.name\}/);
+    assert.doesNotMatch(client, /Umbrella: \{assetGroup\.name\}/);
+    assert.match(client, /styles\.assetDirectorySearchMatch/);
     assert.match(client, /Back to umbrellas/);
     assert.doesNotMatch(client, /Organised assets/);
   }
@@ -102,3 +103,92 @@ test('whole-umbrella access is enforced for Owner App users and Field Managers',
   assert.match(accessUi, /Owner \/ Admin users always have access to every umbrella and asset/);
 });
 
+
+// Exercise the rendered chooser and its click/change handlers without API calls.
+async function renderDirectory(role, assets, groups) {
+  const path = role === 'owner'
+    ? 'app/owner-app/assets/owner-assets-client.tsx'
+    : 'app/field-manager/field-manager-assets-client.tsx';
+  const state = role === 'owner'
+    ? ['', assets, groups, null, false, false]
+    : [assets, groups, null, false, '', null, false];
+  let cursor = 0;
+  const react = {
+    useState(initial) {
+      const index = cursor++;
+      if (!(index in state)) state[index] = initial;
+      return [state[index], (value) => { state[index] = value; }];
+    },
+    useMemo: (compute) => compute(),
+    useEffect() {},
+  };
+  const jsx = (type, props, key) => ({ type, props: props || {}, key });
+  const styles = new Proxy({}, { get: (_, key) => String(key) });
+  const output = ts.transpileModule(await read(path), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
+  }).outputText;
+  const module = { exports: {} };
+  new Function('require', 'module', 'exports', output)((name) => {
+    if (name === 'react') return react;
+    if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
+    if (name.endsWith('.css')) return { __esModule: true, default: styles };
+    return { __esModule: true, default: name };
+  }, module, module.exports);
+  return () => {
+    cursor = 0;
+    const nodes = [];
+    function visit(node) {
+      if (Array.isArray(node)) return node.forEach(visit);
+      if (!node || typeof node !== 'object') return;
+      nodes.push(node);
+      visit(node.props.children);
+    }
+    visit(module.exports.default({}));
+    return nodes;
+  };
+}
+
+for (const role of ['owner', 'field']) {
+  test(`${role} search opens matching umbrellas before assets and preserves search on back`, async () => {
+    const assets = [
+      { id: 'tractor', title: 'Massey Ferguson 4708', serialNumber: 'MF123', usage: null, usageLabel: 'Not captured' },
+      { id: 'other', title: 'Trailer', usage: null, usageLabel: 'Not captured' },
+      { id: 'standalone', title: 'Massey pump', usage: null, usageLabel: 'Not captured' },
+    ];
+    const groups = [
+      { id: 'farm', name: 'Farm', memberAssetIds: ['tractor'], memberCount: 1 },
+      { id: 'yard', name: 'Yard', memberAssetIds: ['other'], memberCount: 1 },
+    ];
+    const render = await renderDirectory(role, assets, groups);
+    const search = (value) => render().find((node) => node.type === 'input').props.onChange({ target: { value } });
+    const cards = () => render().filter((node) => node.type === 'article');
+    const click = (label) => render().find((node) => node.type === 'button' && node.props.children === label).props.onClick();
+    search('Massey');
+    assert.deepEqual(cards().map((node) => node.key), ['farm', 'standalone']);
+    assert.ok(cards().every((node) => node.props.className.includes('assetDirectorySearchMatch')));
+    click('Open umbrella');
+    assert.deepEqual(cards().map((node) => node.key), ['tractor']);
+    assert.match(cards()[0].props.className, /assetDirectorySearchMatch/);
+    const nav = render().find((node) => node.props['aria-label'] === 'Asset directory navigation');
+    assert.equal(nav.props.children.type, 'button');
+    click('Back to umbrellas');
+    assert.deepEqual(cards().map((node) => node.key), ['farm', 'standalone']);
+    search('missing');
+    assert.equal(cards().length, 0);
+    assert.ok(render().some((node) => node.props.children === 'No assets match this search.'));
+    search('');
+    assert.ok(cards().every((node) => !node.props.className.includes('assetDirectorySearchMatch')));
+    click('View all assets');
+    assert.deepEqual(cards().map((node) => node.key), ['tractor', 'other', 'standalone']);
+    search('MF123');
+    assert.deepEqual(cards().map((node) => node.key), ['farm']);
+  });
+
+  test(`${role} search still supports accounts without umbrellas`, async () => {
+    const render = await renderDirectory(role, [{ id: 'tractor', title: 'Massey', usage: null }], []);
+    render().find((node) => node.type === 'input').props.onChange({ target: { value: 'Massey' } });
+    const cards = render().filter((node) => node.type === 'article');
+    assert.deepEqual(cards.map((node) => node.key), ['tractor']);
+    assert.match(cards[0].props.className, /assetDirectorySearchMatch/);
+  });
+}
