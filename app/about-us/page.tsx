@@ -27,30 +27,29 @@ export default async function AboutUsPage() {
             <div className={styles.heroCopy}>
               <p className={styles.pageLabel}>About Aim4price</p>
               <h1 id="about-title" className={styles.heroTitle}>
-                Why we started
+                Why we started{" "}
                 <span>Aim4price.</span>
               </h1>
               <div className={styles.storyText}>
                 <p>
-                  We started with a simple problem: machinery dealers struggled
-                  to determine trade-in values. Our first tool helped value
-                  second-hand tractors, bringing a clearer approach to pricing
-                  used equipment.
+                  Aim4price began by helping machinery dealers work out
+                  trade-in values. Our first tool made it easier to value
+                  second-hand tractors.
                 </p>
                 <p>
-                  We soon saw a bigger need. Owners needed to understand their
-                  assets, from what they owned and what it was worth to what it
-                  cost to keep running.
+                  We soon realised owners needed more than a value. They needed
+                  to know what they owned, what it was worth and what it cost
+                  to keep running.
                 </p>
                 <p>
-                  We also saw a gap between accounting records and everyday
-                  ownership. Invoices, budgets, running costs and maintenance
-                  needed to connect to each individual asset.
+                  That meant linking invoices, running costs, budgets and
+                  maintenance to each asset. With everything in one place,
+                  owners could see where their money was going and what
+                  needed attention.
                 </p>
                 <p className={styles.storyFocus}>
-                  That became our focus: bringing this information together so
-                  owners can make better decisions, plan ahead and look after
-                  what they have.
+                  That became our focus: helping owners make better decisions,
+                  plan ahead and look after what they have.
                 </p>
               </div>
             </div>
@@ -83,16 +82,17 @@ export default async function AboutUsPage() {
                 Where we’re heading
               </h2>
               <p>
-                We believe better asset information could help lenders assess
-                risk and give insurers a clearer basis for offering fairer
-                premiums. That is our longer-term ambition, built on reliable,
-                up-to-date records.
+                We want to help owners save on parts and reduce maintenance
+                costs. In time, we also believe accurate asset records could
+                help lenders understand risk and insurers offer fairer premiums.
+                These are our longer-term goals, built on keeping asset
+                information reliable and up to date.
               </p>
             </div>
             <div className={styles.directionClosing}>
               <p>
-                It starts with something practical: helping owners understand
-                and manage their assets better.
+                It starts with helping owners understand and manage
+                what they have.
               </p>
               <div className={styles.heroActions}>
                 <Link href="/auth#signup" className={styles.primaryAction}>
