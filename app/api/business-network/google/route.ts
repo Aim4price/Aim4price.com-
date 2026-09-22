@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         {
           ok: false,
           error:
-            "Google search is not available yet. You can add your Google Maps link and business details below.",
+            "Google search is not configured on this site. Enter the business manually or open Google Maps.",
         },
         503,
       );

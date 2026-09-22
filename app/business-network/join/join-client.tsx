@@ -52,7 +52,7 @@ export default function BusinessJoin({
 }: {
   adminMode?: boolean;
   adminBusiness?: AdminBusiness | null;
-  onAdminSaved?: () => void;
+  onAdminSaved?: (published: boolean) => void;
 }) {
   const tokenRef = useRef("");
   const [token, setToken] = useState(""),
@@ -65,7 +65,14 @@ export default function BusinessJoin({
     [service, setService] = useState(""),
     [heading, setHeading] = useState(""),
     [query, setQuery] = useState(""),
-    [places, setPlaces] = useState<Place[]>([]);
+    [places, setPlaces] = useState<Place[]>([]),
+    [entryMode, setEntryMode] = useState<'google' | 'manual'>('google'),
+    [searching, setSearching] = useState(false),
+    [searchNotice, setSearchNotice] = useState('');
+  const businessNameInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (entryMode === 'manual') businessNameInput.current?.focus();
+  }, [entryMode]);
   useEffect(() => {
     if (adminMode) {
       if (adminBusiness) {
@@ -116,6 +123,7 @@ export default function BusinessJoin({
     setFields((current) => ({ ...current, [key]: value }));
   async function save(action = "save") {
     setBusy(true);
+    setNotice("");
     try {
       const r = await fetch(
         adminMode
@@ -138,7 +146,7 @@ export default function BusinessJoin({
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
       if (adminMode) {
-        onAdminSaved?.();
+        onAdminSaved?.(action === "save_publish");
         return;
       }
       if (action === "pause") setStatus("paused");
@@ -155,6 +163,30 @@ export default function BusinessJoin({
       setBusy(false);
     }
   }
+  async function searchGoogle() {
+
+    setSearching(true);
+    setSearchNotice('');
+    setPlaces([]);
+    try {
+      const r = await fetch("/api/business-network/google", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(adminMode ? {} : { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify({ query }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setPlaces(d.places);
+      setSearchNotice(d.places.length ? '' : 'No matching businesses found. Try adding the town, or enter the business manually.');
+    } catch (e) {
+      setSearchNotice(e instanceof Error ? e.message : 'Search unavailable. You can enter the business manually.');
+    } finally {
+      setSearching(false);
+    }
+  }
   if (!adminMode && !token && notice.startsWith("Open your invitation")) return <BusinessAcceptanceForm/>;
   const Container = adminMode ? "section" : "main";
   const Heading = adminMode ? "h2" : "h1";
@@ -162,7 +194,7 @@ export default function BusinessJoin({
     <Container className={`${styles.panel} ${styles.page}`}>
       <Heading>
         {adminMode
-          ? adminBusiness
+          ? adminBusiness?.id
             ? "Edit business"
             : "Add business"
           : status === "invited"
@@ -171,7 +203,7 @@ export default function BusinessJoin({
       </Heading>
       <p>
         {adminMode
-          ? "Save the business, then approve and publish it from your directory list. No invitation is required."
+          ? "Search Google or enter the business yourself. As admin, you can save and publish immediately without an invitation or business acceptance."
           : "Would you like your business to be part of the Aim4price directory?"}
       </p>
       {!adminMode && status !== "active" && status !== "paused" ? (
@@ -197,47 +229,26 @@ export default function BusinessJoin({
       {!adminMode && !status ? <a href="/business-network/manage">Request a management link</a> : null}
       {status ? (
         <>
-          <section className={styles.card}>
-            <h2>Find your Google business</h2>
+          <div className={styles.entryActions} aria-label="Business entry method">
+            <button type="button" className={entryMode === 'google' ? styles.primary : styles.button} aria-pressed={entryMode === 'google'} onClick={() => setEntryMode('google')}>Search Google</button>
+            <button type="button" className={entryMode === 'manual' ? styles.primary : styles.button} aria-pressed={entryMode === 'manual'} onClick={() => setEntryMode('manual')}>Enter manually</button>
+          </div>
+          {entryMode === 'manual' && <p className={styles.notice}>Enter the business details below. Google is optional. {adminMode ? 'Use Save and publish to approve it yourself.' : 'Aim4price will review your listing.'}</p>}
+          {entryMode === 'google' && <form className={styles.card} aria-label="Google business search" onSubmit={event => { event.preventDefault(); if (!searching && query.trim().length >= 3) void searchGoogle(); }}>
+            <h2>Find a business on Google</h2>
             <label>
               Business name and town
-              <input value={query} onChange={(e) => setQuery(e.target.value)} />
+              <input value={query} placeholder="For example: S Haddad, George" onChange={(e) => setQuery(e.target.value)} />
             </label>
             <button
-              type="button"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  const r = await fetch("/api/business-network/google", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      ...(adminMode
-                        ? {}
-                        : { Authorization: `Bearer ${token}` }),
-                    },
-                    body: JSON.stringify({ query }),
-                  });
-                  const d = await r.json();
-                  if (!r.ok) throw new Error(d.error);
-                  setPlaces(d.places);
-                  setNotice(
-                    d.places.length
-                      ? ""
-                      : "No matches. Add your details below.",
-                  );
-                } catch (e) {
-                  setNotice(
-                    e instanceof Error ? e.message : "Search unavailable.",
-                  );
-                } finally {
-                  setBusy(false);
-                }
-              }}
+              type="submit"
+              disabled={searching || query.trim().length < 3}
+
             >
-              Find on Google
+              {searching ? 'Searching Google…' : 'Find on Google'}
             </button>
+            {searchNotice && <p role="status" className={styles.notice}>{searchNotice}</p>}
+            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query.trim() || 'businesses near me')}`} target="_blank" rel="noreferrer">Open search in Google Maps</a>
             {places.length ? (
               <div className={styles.card}>
                 <span style={{ fontSize: 14, fontWeight: 400 }} translate="no">
@@ -265,9 +276,7 @@ export default function BusinessJoin({
                 ))}
               </div>
             ) : null}
-            <p className={styles.muted}>
-              No Google listing? Fill in your details below.
-            </p>
+            <p className={styles.muted}>Google is optional. You can enter the business details manually.</p>
             <label>
               Google Maps link · optional
               <input
@@ -275,18 +284,20 @@ export default function BusinessJoin({
                 onChange={(e) => set("googleMapsUrl", e.target.value)}
               />
             </label>
-          </section>
+          </form>}
           <form
             className={styles.panel}
             onSubmit={(e) => {
               e.preventDefault();
-              void save();
+              const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+              void save(adminMode && submitter?.value === 'save_publish' ? 'save_publish' : 'save');
             }}
           >
             <label>
               Business name
               <input
                 required
+                ref={businessNameInput}
                 value={fields.name}
                 onChange={(e) => set("name", e.target.value)}
               />
@@ -297,13 +308,13 @@ export default function BusinessJoin({
                 type="email"
                 required
                 value={email}
-                readOnly={!adminMode || Boolean(adminBusiness)}
+                readOnly={!adminMode || Boolean(adminBusiness?.id)}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </label>
             <p className={styles.muted}>
               {adminMode
-                ? adminBusiness
+                ? adminBusiness?.id
                   ? "The delivery email stays fixed for this listing."
                   : "Owner enquiries will be sent to this address."
                 : "Contact Aim4price to change this verified email address."}
@@ -475,15 +486,16 @@ export default function BusinessJoin({
                 Aim4price owners and receive their requests by email or WhatsApp.
               </label>
             ) : null}
-            <button className={styles.primary} disabled={busy} type="submit">
-              {busy
-                ? "Saving…"
-                : adminMode
-                  ? "Save business"
-                  : status === "invited"
-                    ? "Accept free listing"
-                    : "Save listing"}
-            </button>
+            {adminMode ? <section className={styles.card} aria-label="Manual approval">
+              <h2>Publish this business</h2>
+              <p>You control approval. Save and publish adds this business to the directory immediately, without sending an invitation.</p>
+              <div className={styles.entryActions}>
+                <button className={styles.button} disabled={busy} type="submit" name="action" value="save">{status === 'active' ? 'Save changes' : 'Save draft'}</button>
+                <button className={styles.primary} disabled={busy} type="submit" name="action" value="save_publish">{busy ? 'Saving…' : 'Save and publish'}</button>
+              </div>
+            </section> : <button className={styles.primary} disabled={busy} type="submit">
+              {busy ? 'Saving…' : status === 'invited' ? 'Accept free listing' : 'Save listing'}
+            </button>}
           </form>
           {status === "active" ? (
             <button
