@@ -14,6 +14,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import DesktopNotificationSettings from "./notifications/notification-settings-client";
+import AccountInvoices from "./account-invoices";
 import AppHeader from "../../components/AppHeader";
 import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
@@ -26,6 +27,7 @@ type AccountNotice = {
 type BusinessDetailsStep = 1 | 2 | 3;
 type PartnerDirectoryStep = 1 | 2 | 3;
 type AccountActionModal =
+  | "invoices"
   | "notifications"
   | "business"
   | "scanPin"
@@ -179,6 +181,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 type QuickActionIconName =
+  | "invoices"
   | "notifications"
   | "business"
   | "registers"
@@ -284,6 +287,10 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           <path {...strokeProps} d="M12 10.1h.02" />
           <path {...strokeProps} d="M14.8 10.1h.02" />
         </svg>
+      ) : null}
+
+      {name === "invoices" ? (
+        <svg {...svgProps}><path {...strokeProps} d="M6 3h9l4 4v14H6V3Z M14 3v5h5 M9 12h7 M9 16h7" /></svg>
       ) : null}
 
       {name === "registers" ? (
@@ -1334,6 +1341,8 @@ export default function AccountClient({
     });
 
     const handleDialogKeyDown = (event: KeyboardEvent) => {
+      // The native invoice preview owns focus and Escape while it is open.
+      if (dialog?.querySelector("dialog[open]")) return;
       if (dialog) {
         keepFocusInsideAccountDialog(event, dialog);
       }
@@ -2258,7 +2267,6 @@ export default function AccountClient({
 
             <div className={styles.heroCopy}>
               <h1>{accountDisplayName}</h1>
-              <Link href="/billing" className={styles.quickActionButton}>Aim4price invoices</Link>
               <p>{profile?.email || "Loading email"}</p>
               <small>
                 {accountTypeLabel} account&nbsp; • &nbsp;{memberSinceLabel}
@@ -2361,6 +2369,10 @@ export default function AccountClient({
                 </div>
 
                 <div className={styles.quickActionList}>
+                  <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")}>
+                    <QuickActionIcon name="invoices" />
+                    <strong>Aim4price invoices</strong>
+                  </button>
                   {isOwnerAccount || isDealerAccount ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("notifications")}>
                     <QuickActionIcon name="notifications" />
                     <strong>Notifications</strong>
@@ -2564,6 +2576,32 @@ export default function AccountClient({
           </button>
         </section>
       </section>
+
+      {activeAccountModal === "invoices" ? (
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
+          <section ref={activeDialogRef}
+            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.passwordModalCard}`}
+            role="dialog" aria-modal="true" aria-labelledby="invoices-modal-title"
+            aria-describedby="invoices-modal-description" tabIndex={-1}
+            onClick={(event) => event.stopPropagation()}>
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="invoices-modal-title">Aim4price invoices</h2>
+                <p id="invoices-modal-description">View your invoices and recorded payments.</p>
+                <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close invoices">×</button>
+              </div>
+              <div className={styles.passwordModalIntro}>
+                <QuickActionIcon name="invoices" />
+                <div><strong>Your Aim4price billing</strong><p>Preview an invoice before downloading. No VAT applicable.</p></div>
+              </div>
+              <AccountInvoices />
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.ghostButton} onClick={closeActionModal}>Close</button>
+              </div>
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
 
       {activeAccountModal === "password" ? (
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
