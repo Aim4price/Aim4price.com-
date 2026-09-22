@@ -1,43 +1,89 @@
-# Business network
+# Business directory and guest leads
 
-Owners and admin can invite a business with its name and email from the share directory (or the admin page). For owner invitations, acceptance through the emailed, 30-day management link publishes the business for all owners. No account, password or subscription is created.
+## Add a business yourself
 
-Businesses confirm their contact details, headings, services and location. They can select several headings and services, add their own labels, set a service radius or nationwide coverage, and pause/reactivate their listing through an emailed management link. A paused listing disappears immediately and its old viewing links remain revoked if reactivated. Changing the verified delivery email currently requires Aim4price support.
+1. Open **Admin → Manage → Business Directory → Add business manually**.
+2. Enter the business name, email, contact information, headings/services and location. A Google Maps link or optional Google lookup can link its profile.
+3. Save the draft. Select **Approve and publish** when you want it in the directory. No invitation or account is required.
+4. Use **Hide listing** to remove it. Editing a hidden listing does not publish it again.
 
-The dealer directory combines existing subscribed dealers and accepted outside businesses. Existing dealer Leads and report permissions are retained. Matching subscriber email addresses suppress duplicate outside listings. QR dealer tracking retains its registered-dealer directory; outside businesses use the owner's email-share flow.
+Publishing is an explicit admin decision, recorded in the admin audit table. A business cannot publish itself through an old management link.
 
-## Sharing
+## Let a business accept first
 
-The existing owner share flow chooses one business at a time; umbrellas retain multiple-recipient selection and can include multiple member assets. External multi-asset requests validate the actual owner's umbrella membership on the server.
+Copy `/business-network/accept` from the Acceptance link panel. Send it yourself through your own email or WhatsApp.
 
-The owner sees the actual server-built read-only projection before sending. The email contains the message, asset identification and selected valuation summary, sender contact details and optional additional contact. A 30-day link opens the frozen asset/photo view. Resend's Reply-To is the owner's saved email, falling back to their account email. Replies are not ingested into Aim4price.
+The form asks for business name, contact name, email, optional phone and consent. It records the acceptance; it does not publish, charge, send an invitation or create a full account. Duplicate submissions cannot overwrite an earlier acceptance.
 
-The projection deliberately excludes reports, documents, raw specifications, ledgers, scan history, live records and update permissions. Subscription links do not confer asset access: the owner must still share any additional information. Enquiry history in the directory allows owners to revoke their viewing links; this cannot recall details already delivered in an email.
+In the admin directory, expand **Business acceptances**, choose **Prepare listing**, complete the listing, save and then **Approve and publish**. Refresh acceptances after someone submits. Submitted email addresses are not verified by this form: check their details before publication.
 
-Management and request links use different random tokens, stored only as SHA-256 hashes. The token is passed in the URL fragment, cleared from the address bar after opening, and sent to APIs in an Authorization header. The page does not persist it in browser storage. Reopen the original email link after refreshing the page. Requests/photos use private no-store responses. Photos are limited to snapshot entries, never arbitrary requested upload IDs.
+## Send an outside lead
 
-Invitation and request rate limits use shared database counters. A stable request key per preview and recipient prevents repeated clicks from sending duplicate emails. Failed sends remain marked failed; a fresh review creates a new request attempt. Nothing shows successful delivery when Resend is unconfigured or rejects the send. No real invitation emails are sent by automated tests.
+1. As an owner, select saved assets and share outside Aim4price or choose an external directory business.
+2. Select **Lead page · protected reports** (the default for an external business).
+3. Choose photos and use **Add report** to select the PDFs you want to share.
+4. Enter the recipient email, request and reply details. You can turn the reply buttons off.
+5. Choose **Create lead link**, preview it, then choose email or WhatsApp. Your own email/WhatsApp app opens; you send the message yourself.
 
-## Google connection
+The basic asset snapshot, included photos and request are visible to anyone with the link. **Manage · shared reports** lists only the PDFs you selected. PDF files stay on Aim4price; this mode does not attach them to email/WhatsApp.
 
-`GOOGLE_PLACES_API_KEY` enables server-side Google Places Text Search (New). Enable Places API (New) and billing in the Google Cloud project, restrict the key to that API, and store it only on the server. Lookup results have Google Maps attribution and are not persisted. Businesses link the selected Place ID / Maps link and independently provide their listing details. A manual Google Maps link works without an API key.
+Each request has its own recipient-specific link. Links do not expire automatically, but the owner can disable them under **Previously shared leads**. Deleting or transferring any included asset also makes the page unavailable. These are saved snapshots: create a new lead to share updated information. Previously downloaded copies cannot be recalled.
 
-The proposed permanent one-time Google Places data import is intentionally not implemented: Google's Places policies restrict storing business content and showing it on non-Google maps. The existing directory uses Leaflet/OpenStreetMap. A future owner-authorised Business Profile integration would need separate Google approval, OAuth and a policy review. Do not describe the current connection as Google account verification, a permanent import or automatic synchronisation.
+**Message & attachments** remains available for ordinary outside sharing. Internal Aim4price businesses keep their existing lead flow.
 
-## Setup and validation
+## What the recipient sees
 
-- Migration: `database/migrations/102-business-network.sql`. The idempotent runtime initializer follows the application's existing lazy-schema convention.
-- Email: existing `RESEND_API_KEY` and Aim4price sender settings. A missing key blocks sends in every environment.
-- Optional: `GOOGLE_PLACES_API_KEY` for lookup; manual joining remains functional without it.
-- `npm run test:business-network` executes PostgreSQL-backed tests using PGlite, without a production database.
-- `node scripts/verify-business-network.cjs` starts a temporary local Next server, mocks APIs, and checks mobile/desktop joining and read-only rendering. It also supports `BUSINESS_TEST_URL` for an already-running server.
-- `npm run typecheck` and existing assistance/umbrella regression tests cover integration.
+- Without signing in: asset card, request, included photos and owner-enabled reply options.
+- **Manage → Sign up / sign in with email**: limited guest registration using an emailed six-digit code. No full Aim4price workspace is created.
+- After verification: reports remain locked until guest access is active.
+- With matching verified email and active guest access: selected reports open. An eligible active full Aim4price account with that verified email also has access.
+- Wrong email, suspended/expired access, disabled link or removed ownership: report access is refused on the server, even if the download URL is known.
 
-Before production rollout, exercise one invitation and one asset email using an explicitly selected test business mailbox. This development run does not send real email or modify the production database.
+The receiving business pays. There is no automated checkout in this release.
 
+## Activate paid access manually
 
-## Direct Admin listings
+1. Have the business confirm its email on its lead page.
+2. Open the admin directory and refresh **Guest report access**.
+3. After receiving payment, choose the expiry date, enter a payment reference/note and select **Activate paid access**.
+4. Ask the business to select **Check access again** on its lead page.
+5. **Suspend access** blocks subsequent report downloads immediately. Access also ends at the selected expiry (end of that date in UTC).
 
-Admin → Manage → Business Directory → Add business manually creates an active listing immediately, without an invitation or business acceptance step. Admin can add a Google Maps link or use the optional Google lookup, and enter the business contact email, headings, services and location. Lookup stores only the Place ID and Maps link; it does not connect a Google login or synchronise profile content.
+Activation applies to reports shared with that business email; it does not open other recipients' leads. All changes are audited with the admin identity, expiry and note.
 
-Admin can edit, publish and hide existing listings. Existing delivery emails remain fixed. Hiding also revokes existing enquiry viewing links. Direct Admin actions are recorded in `business_network_admin_actions` (migration 103, also initialised at runtime); `accepted_at` is reserved for actual business acceptance. Creating a manual listing sends no email and creates no account or management token. The business can request its own management link through the existing email flow later.
+## Google profiles
+
+Existing profile enrichment and account badges are retained. `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` supports selected-profile details in the browser; `GOOGLE_PLACES_API_KEY` supports optional server lookup. Google-returned profile content and attribution remain transient; listing records retain the Place ID/Maps link and independently entered business details. This release does not add Google OAuth, permanent profile imports or Google-account verification.
+
+## Setup and verification
+
+- Migration `112-directory-guest-leads.sql` follows migrations 102/103/111. The server also applies the idempotent schema on first use.
+- Existing `RESEND_API_KEY` and sender configuration are required **only for guest sign-in codes** in this new flow. Lead messages and the acceptance link are sent manually. No actual emails are sent by these tests.
+- Reports: up to six PDFs per lead, 8 MB each, 30 MB total. Private PDF bytes are stored with the lead in PostgreSQL and served only after authorization. Photos reference existing saved media.
+- Guest sessions use a hashed random token in the database and a Secure/HttpOnly cookie in production, valid for 30 days. Codes expire after ten minutes, can be used once, and have per-email/IP rate limits. Every report request rechecks entitlement.
+- Legacy invitation/request endpoints remain for existing links and history; acceptance no longer auto-publishes a listing.
+
+Automated checks:
+
+```sh
+npm run typecheck
+node --test tests/guest-leads.test.cjs tests/business-network.test.mjs tests/asset-share-links.test.cjs
+node scripts/verify-guest-leads.cjs
+```
+
+Browser checks use local fixtures and intercepted APIs. They cover mobile/desktop acceptance, lead creation/revocation, draft preservation, guest sign-in states and admin activation. PostgreSQL-backed tests cover ownership, report isolation, code expiry/reuse, access suspension and admin authorization.
+
+## Simple deployment smoke test
+
+Use one test asset and a mailbox you control:
+
+1. Submit the acceptance form. Check it appears in admin but not the directory.
+2. Prepare/save/publish the business. Check it appears; hide it and confirm it disappears.
+3. Share the test asset with a PDF to that mailbox. Send the link using your own email.
+4. Open in a private browser. Confirm the card/request display and the report is locked.
+5. Request a real sign-in code, verify, and confirm the report is still locked.
+6. Activate access as admin, refresh the lead and open the PDF.
+7. Suspend access and try the same report URL again: it must refuse access.
+8. Reactivate, then disable the lead as owner: the card and reports must become unavailable.
+
+A live smoke test is still needed to verify deployment database permissions, outbound code delivery and the configured Google keys. Local fixtures do not prove those external services work.

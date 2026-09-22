@@ -4,7 +4,9 @@ The directory keeps accepted external listings distinct from Aim4price accounts.
 
 Google profile fields are fetched on selection using the configured `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and the listing's Google place ID. Maps JavaScript and Places access must be enabled for that key; restrict it to approved site origins. Photos, ratings, review counts and opening hours appear only when returned. These fields and their attributions stay in browser memory, rather than being copied into business records. Confirmed listing details remain the fallback. No Google key or billing settings are changed by this PR.
 
-## Asset page links
+For recipient-specific requests with protected reports and manual business onboarding, see [Business directory and guest leads](business-network.md). External directory businesses default to that lead mode. The simpler mode below remains available under **Message & attachments**.
+
+## Basic asset page links
 
 Create an asset link in the outside-share panel, then include it in the email/WhatsApp message or copy it. It opens `/asset-share/<random-token>` without signing in. Reopen outside sharing for the same selection and photo choice to find or disable that link.
 
@@ -13,7 +15,7 @@ Create an asset link in the outside-share panel, then include it in the email/Wh
 - The public page contains only cards, optional photos, snapshot date and valuation note. It omits application navigation and actions.
 - Only authenticated, active owner/dealer accounts with register access can create/manage links. Every selected asset must belong to the authenticated account. Delegated accountant access cannot publish another owner's assets.
 - Public reads require an unguessable 256-bit token, an active link and continued ownership of every included asset. Revocation, deletion or transfer makes the page unavailable.
-- Public fields are explicitly allowlisted. Private documents, notes, finance data, owner identifiers, QR codes and location history are excluded. Reports remain separate attachments.
+- Public fields are explicitly allowlisted. Private documents, notes, finance data, owner identifiers, QR codes and location history are excluded. In this basic mode, reports remain separate attachments. Lead mode instead stores selected PDFs privately and checks recipient access on every download.
 - Optional photos reference existing saved media; this is not an independent photo archive. Removing a saved file can remove that photo from an older snapshot.
 - Pages are dynamic, no-store, no-referrer and excluded from indexing. Anyone who receives/forwards the link can view it; previously downloaded content cannot be recalled.
 

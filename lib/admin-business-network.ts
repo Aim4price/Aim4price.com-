@@ -63,6 +63,14 @@ export async function saveAdminBusiness(
     );
     return id;
   }
+  if (input.action === "publish") {
+    if (!existing) throw new Error("Choose an existing business.");
+    validateBusinessDetails({ ...existing.details, name: existing.name }, existing.email);
+    await getDb().query(`with published as (
+      update business_network set status='active',accepted_at=coalesce(accepted_at,now()),updated_at=now() where id=$1 returning id
+    ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $2,id,$3,'manually_approve_publish' from published`, [id, randomUUID(), adminId]);
+    return id;
+  }
   // Existing delivery addresses stay fixed; editing a listing must not redirect its enquiries.
   const email = existing?.email || businessEmail(input.email);
   if (
@@ -77,7 +85,7 @@ export async function saveAdminBusiness(
     if (existing) {
       await getDb().query(
         `with updated as (
-        update business_network set name=$2,details=$3,status=case when accepted_at is not null then 'active' else 'invited' end,updated_at=now() where id=$1 returning id
+        update business_network set name=$2,details=$3,status=status,updated_at=now() where id=$1 returning id
       ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $4,id,$5,'update' from updated`,
         [
           businessId,

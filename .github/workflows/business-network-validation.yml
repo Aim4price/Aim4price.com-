@@ -3,6 +3,22 @@ on:
   pull_request:
     paths:
       - 'lib/business-network*'
+      - 'lib/admin-business-network.ts'
+      - 'lib/business-acceptances.ts'
+      - 'lib/guest-*.ts'
+      - 'lib/asset-share-links.ts'
+      - 'app/api/guest-access/**'
+      - 'app/api/admin/guest-businesses/**'
+      - 'app/api/asset-share-links/**'
+      - 'app/admin/businesses/**'
+      - 'app/asset-share/**'
+      - 'components/asset-register/GuestLead*'
+      - 'components/asset-register/AssetExternalShare.tsx'
+      - 'components/asset-register/SharedAssetCards.tsx'
+      - 'database/migrations/112-directory-guest-leads.sql'
+      - 'tests/guest-leads.test.cjs'
+      - 'tests/asset-share-links.test.cjs'
+      - 'scripts/verify-guest-leads.cjs'
       - 'lib/partner-access.ts'
       - 'lib/website-canvas.ts'
       - 'app/api/business-network/**'
@@ -35,5 +51,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs
+      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/asset-share-links.test.cjs
       - run: node scripts/verify-business-network.cjs
+      - run: node scripts/verify-guest-leads.cjs

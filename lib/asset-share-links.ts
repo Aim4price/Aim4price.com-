@@ -16,7 +16,7 @@ export const ASSET_SHARE_SCHEMA = `CREATE TABLE IF NOT EXISTS public.asset_share
 CREATE UNIQUE INDEX IF NOT EXISTS asset_share_links_active_selection
   ON public.asset_share_links (user_id, selection_key) WHERE revoked_at IS NULL;`;
 let schemaReady: Promise<void> | undefined;
-function ensureSchema() {
+export function ensureAssetShareSchema() {
   if (!schemaReady) schemaReady = getDb().query(ASSET_SHARE_SCHEMA).then(() => {}).catch(error => { schemaReady = undefined; throw error; });
   return schemaReady;
 }
@@ -25,7 +25,7 @@ function selectionKey(ids: string[], includePhotos: boolean) {
   return createHash('sha256').update(JSON.stringify([ids, includePhotos])).digest('hex');
 }
 export async function findAssetShareLink(userId: string, ids: string[], includePhotos: boolean) {
-  await ensureSchema();
+  await ensureAssetShareSchema();
   const result = await getDb().query('SELECT token, created_at FROM asset_share_links WHERE user_id = $1 AND selection_key = $2 AND revoked_at IS NULL', [userId, selectionKey(parseShareAssetIds(ids), includePhotos)]);
   return result.rows[0] ?? null;
 }
@@ -34,7 +34,7 @@ export async function createAssetShareLink(userId: string, assetIds: unknown, in
   // Ownership comes from the authenticated account, never from the request body.
   const assets = await getAssetRegisterItemsByRefs(ids.map(assetId => ({ userId, assetId })));
   if (assets.length !== ids.length) throw new Error('ASSET_SHARE_FORBIDDEN');
-  await ensureSchema();
+  await ensureAssetShareSchema();
   const snapshot = ids.map(id => assetShareSnapshot(assets.find(asset => asset.id === id)!, includePhotos));
   const result = await getDb().query(`INSERT INTO asset_share_links (token, user_id, selection_key, asset_ids, snapshot)
     VALUES ($1, $2, $3, $4::uuid[], $5::jsonb)
@@ -44,12 +44,12 @@ export async function createAssetShareLink(userId: string, assetIds: unknown, in
   return result.rows[0];
 }
 export async function revokeAssetShareLink(userId: string, token: string) {
-  await ensureSchema();
+  await ensureAssetShareSchema();
   await getDb().query('UPDATE asset_share_links SET revoked_at = now() WHERE user_id = $1 AND token = $2 AND revoked_at IS NULL', [userId, token]);
 }
 export async function readPublicAssetShare(token: string): Promise<PublicAssetShare | null> {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
-  await ensureSchema();
+  await ensureAssetShareSchema();
   // A transfer or deletion invalidates access even to the older snapshot.
   const result = await getDb().query(`SELECT snapshot, created_at FROM asset_share_links s
     WHERE token = $1 AND revoked_at IS NULL
