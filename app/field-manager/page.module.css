@@ -641,7 +641,7 @@
 .assetDirectoryHeading > h1 { margin: 0; color: var(--app-text, #12352d); font-size: 1.28rem; font-weight: 900; letter-spacing: -0.035em; }
 .assetDirectoryNav {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   margin: 0 0 14px;
@@ -2909,4 +2909,14 @@
     border-radius: 22px;
     padding: 20px;
   }
+}
+
+/* Compact directory cards keep the asset chooser easy to scan on phones. */
+.assetCard.assetDirectoryUmbrellaCard {
+  gap: 10px;
+  padding: 14px 12px;
+}
+.assetCard.assetDirectorySearchMatch {
+  border: 2px solid #d94b4b;
+  box-shadow: 0 0 0 2px rgba(217, 75, 75, 0.16);
 }

@@ -127,11 +127,16 @@ export default function OwnerAssetsClient({
   );
   const hasSearch = Boolean(query.trim());
   const directoryItems = useMemo(() => {
-    if (hasSearch || showAllAssets || !groups.length) return filteredItems;
+    if (showAllAssets || !groups.length) return filteredItems;
     if (selectedGroup) return filteredItems.filter((asset) => selectedGroupAssetIds.has(asset.id));
     return filteredItems.filter((asset) => !groupByAssetId.has(asset.id));
-  }, [filteredItems, groupByAssetId, groups.length, hasSearch, selectedGroup, selectedGroupAssetIds, showAllAssets]);
-  const showDirectoryHome = groups.length > 0 && !hasSearch && !selectedGroup && !showAllAssets;
+  }, [filteredItems, groupByAssetId, groups.length, selectedGroup, selectedGroupAssetIds, showAllAssets]);
+  const matchingAssetIds = useMemo(() => new Set(filteredItems.map((asset) => asset.id)), [filteredItems]);
+  const matchingGroups = useMemo(
+    () => hasSearch ? groups.filter((group) => group.memberAssetIds.some((id) => matchingAssetIds.has(id))) : groups,
+    [groups, hasSearch, matchingAssetIds],
+  );
+  const showDirectoryHome = groups.length > 0 && !selectedGroup && !showAllAssets;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -208,13 +213,9 @@ export default function OwnerAssetsClient({
   }
 
   function renderAssetCard(asset: Asset) {
-    const assetGroup = groupByAssetId.get(asset.id);
     return (
-      <article key={asset.id} className={styles.managerAssetCard}>
+      <article key={asset.id} className={`${styles.managerAssetCard} ${hasSearch && matchingAssetIds.has(asset.id) ? styles.assetDirectorySearchMatch : ''}`}>
         <h2><BalancedHeadingText text={asset.title} /></h2>
-        {hasSearch && assetGroup ? (
-          <p className={styles.assetDirectoryBreadcrumb}>Umbrella: {assetGroup.name}</p>
-        ) : null}
 
         <div className={`${styles.managerAssetMetaGrid} ${styles.ownerAssetMetaStack}`}>
           <div>
@@ -259,7 +260,10 @@ export default function OwnerAssetsClient({
         <div className={styles.assetSearchField}>
           <input
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              returnToDirectory();
+            }}
             placeholder="Search asset, model, reg or serial"
             aria-label="Search assets"
             autoComplete="off"
@@ -273,13 +277,9 @@ export default function OwnerAssetsClient({
         ) : null}
       </section>
 
-      {!loading && !error && groups.length > 0 && !hasSearch && (selectedGroup || showAllAssets) ? (
+      {!loading && !error && groups.length > 0 && (selectedGroup || showAllAssets) ? (
         <section className={styles.assetDirectoryNav} aria-label="Asset directory navigation">
           <button type="button" onClick={returnToDirectory}>Back to umbrellas</button>
-          <div>
-            <span>{selectedGroup ? 'Umbrella' : 'My Assets'}</span>
-            <strong>{selectedGroup?.name || 'All assets'}</strong>
-          </div>
         </section>
       ) : null}
 
@@ -287,19 +287,15 @@ export default function OwnerAssetsClient({
       {actionError ? <div className={styles.errorNotice}>{actionError}</div> : null}
       {loading ? <div className={styles.loading}>Loading your assets…</div> : null}
       {!loading && !error && !items.length ? <div className={styles.empty}>No assets have been added yet.</div> : null}
-      {!loading && !error && items.length > 0 && !filteredItems.length ? <div className={styles.empty}>No assets match this search.</div> : null}
+      {!loading && !error && items.length > 0 && !directoryItems.length && (!showDirectoryHome || !matchingGroups.length) ? <div className={styles.empty}>No assets match this search.</div> : null}
 
       {!loading && !error ? (
         <div className={styles.assetDirectory}>
           {showDirectoryHome ? (
-            <section className={styles.assetDirectorySection} aria-labelledby="owner-umbrella-heading">
-              <div className={styles.assetDirectoryHeading}>
-                <h2 id="owner-umbrella-heading">Umbrellas</h2>
-              </div>
+            <section className={styles.assetDirectorySection} aria-label="Umbrellas">
               <div className={styles.managerAssetList}>
-                {groups.map((group) => (
-                  <article key={group.id} className={`${styles.managerAssetCard} ${styles.assetDirectoryUmbrellaCard}`}>
-                    <div className={styles.assetDirectoryUmbrellaIcon} aria-hidden="true">☂</div>
+                {matchingGroups.map((group) => (
+                  <article key={group.id} className={`${styles.managerAssetCard} ${styles.assetDirectoryUmbrellaCard} ${hasSearch ? styles.assetDirectorySearchMatch : ''}`}>
                     <h2><BalancedHeadingText text={group.name} /></h2>
                     <p>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</p>
                     <button
@@ -311,18 +307,19 @@ export default function OwnerAssetsClient({
                     </button>
                   </article>
                 ))}
-                <article className={`${styles.managerAssetCard} ${styles.assetDirectoryAllCard}`}>
-                  <div className={styles.assetDirectoryUmbrellaIcon} aria-hidden="true">▦</div>
-                  <h2>All assets</h2>
-                  <p>View every physical asset in one list.</p>
-                  <button
-                    type="button"
-                    className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
-                    onClick={() => setShowAllAssets(true)}
-                  >
-                    View all assets
-                  </button>
-                </article>
+                {!hasSearch ? (
+                  <article className={`${styles.managerAssetCard} ${styles.assetDirectoryAllCard}`}>
+                    <h2>All assets</h2>
+                    <p>View every physical asset in one list.</p>
+                    <button
+                      type="button"
+                      className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
+                      onClick={() => setShowAllAssets(true)}
+                    >
+                      View all assets
+                    </button>
+                  </article>
+                ) : null}
               </div>
             </section>
           ) : null}

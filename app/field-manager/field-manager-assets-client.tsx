@@ -137,11 +137,16 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
   );
   const hasSearch = Boolean(search.trim());
   const directoryAssets = useMemo(() => {
-    if (hasSearch || showAllAssets || !groups.length) return filteredAssets;
+    if (showAllAssets || !groups.length) return filteredAssets;
     if (selectedGroup) return filteredAssets.filter((asset) => selectedGroupAssetIds.has(asset.id));
     return filteredAssets.filter((asset) => !groupByAssetId.has(asset.id));
-  }, [filteredAssets, groupByAssetId, groups.length, hasSearch, selectedGroup, selectedGroupAssetIds, showAllAssets]);
-  const showDirectoryHome = groups.length > 0 && !hasSearch && !selectedGroup && !showAllAssets;
+  }, [filteredAssets, groupByAssetId, groups.length, selectedGroup, selectedGroupAssetIds, showAllAssets]);
+  const matchingAssetIds = useMemo(() => new Set(filteredAssets.map((asset) => asset.id)), [filteredAssets]);
+  const matchingGroups = useMemo(
+    () => hasSearch ? groups.filter((group) => group.memberAssetIds.some((id) => matchingAssetIds.has(id))) : groups,
+    [groups, hasSearch, matchingAssetIds],
+  );
+  const showDirectoryHome = groups.length > 0 && !selectedGroup && !showAllAssets;
 
   useEffect(() => {
     void loadFieldManagerAssets();
@@ -237,14 +242,12 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
 
   function renderAssetCard(asset: FieldManagerAssetSummary) {
     const isOpening = openingAssetId === asset.id;
-    const assetGroup = groupByAssetId.get(asset.id);
 
     return (
-      <article key={asset.id} className={styles.assetCard}>
+      <article key={asset.id} className={`${styles.assetCard} ${hasSearch && matchingAssetIds.has(asset.id) ? styles.assetDirectorySearchMatch : ''}`}>
         <div className={styles.assetTopRow}>
           <div>
             <h2>{asset.title}</h2>
-            {hasSearch && assetGroup ? <p>Umbrella: {assetGroup.name}</p> : null}
           </div>
         </div>
 
@@ -289,7 +292,10 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
           <div className={styles.searchField}>
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                returnToDirectory();
+              }}
               placeholder="Search asset, model, reg, serial or notes"
               aria-label="Search assets"
               autoComplete="off"
@@ -297,13 +303,9 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
           </div>
         </section>
 
-        {!isLoading && groups.length > 0 && !hasSearch && (selectedGroup || showAllAssets) ? (
+        {!isLoading && groups.length > 0 && (selectedGroup || showAllAssets) ? (
           <section className={styles.assetDirectoryNav} aria-label="Asset directory navigation">
             <button type="button" onClick={returnToDirectory}>Back to umbrellas</button>
-            <div>
-              <span>{selectedGroup ? 'Umbrella' : 'Maintenance'}</span>
-              <strong>{selectedGroup?.name || 'All assets'}</strong>
-            </div>
           </section>
         ) : null}
 
@@ -313,20 +315,16 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
           <p className={styles.mobileEmpty}>No assets are available for this Field Manager login.</p>
         ) : null}
 
-        {!isLoading && assets.length > 0 && !filteredAssets.length ? (
+        {!isLoading && assets.length > 0 && !directoryAssets.length && (!showDirectoryHome || !matchingGroups.length) ? (
           <p className={styles.mobileEmpty}>No assets match this search.</p>
         ) : null}
 
         <div className={styles.assetDirectory}>
           {showDirectoryHome ? (
-            <section className={styles.assetDirectorySection} aria-labelledby="field-umbrella-heading">
-              <div className={styles.assetDirectoryHeading}>
-                <h1 id="field-umbrella-heading">Umbrellas</h1>
-              </div>
+            <section className={styles.assetDirectorySection} aria-label="Umbrellas">
               <div className={styles.assetList}>
-                {groups.map((group) => (
-                  <article key={group.id} className={`${styles.assetCard} ${styles.assetDirectoryUmbrellaCard}`}>
-                    <div className={styles.assetDirectoryUmbrellaIcon} aria-hidden="true">☂</div>
+                {matchingGroups.map((group) => (
+                  <article key={group.id} className={`${styles.assetCard} ${styles.assetDirectoryUmbrellaCard} ${hasSearch ? styles.assetDirectorySearchMatch : ''}`}>
                     <div className={styles.assetTopRow}><div><h2>{group.name}</h2></div></div>
                     <p className={styles.assetDirectoryCount}>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</p>
                     <button
@@ -338,18 +336,19 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
                     </button>
                   </article>
                 ))}
-                <article className={`${styles.assetCard} ${styles.assetDirectoryUmbrellaCard}`}>
-                  <div className={styles.assetDirectoryUmbrellaIcon} aria-hidden="true">▦</div>
-                  <div className={styles.assetTopRow}><div><h2>All assets</h2></div></div>
-                  <p className={styles.assetDirectoryCount}>View every available physical asset.</p>
-                  <button
-                    type="button"
-                    className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
-                    onClick={() => setShowAllAssets(true)}
-                  >
-                    View all assets
-                  </button>
-                </article>
+                {!hasSearch ? (
+                  <article className={`${styles.assetCard} ${styles.assetDirectoryUmbrellaCard}`}>
+                    <div className={styles.assetTopRow}><div><h2>All assets</h2></div></div>
+                    <p className={styles.assetDirectoryCount}>View every available physical asset.</p>
+                    <button
+                      type="button"
+                      className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
+                      onClick={() => setShowAllAssets(true)}
+                    >
+                      View all assets
+                    </button>
+                  </article>
+                ) : null}
               </div>
             </section>
           ) : null}
