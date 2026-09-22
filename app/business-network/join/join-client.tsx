@@ -141,11 +141,13 @@ export default function BusinessJoin({
         onAdminSaved?.();
         return;
       }
-      setStatus(action === "pause" ? "paused" : "active");
+      if (action === "pause") setStatus("paused");
       setNotice(
         action === "pause"
           ? "Your listing is hidden and requests are stopped."
-          : "Your business is now listed. Owners can contact you by email or WhatsApp.",
+          : status === "active"
+            ? "Your listing details have been updated."
+            : "Your details are saved. Aim4price will review and publish your listing.",
       );
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Unable to save.");

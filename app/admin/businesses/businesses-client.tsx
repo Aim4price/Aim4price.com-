@@ -121,7 +121,7 @@ export default function AdminBusinesses() {
                           ? "Published"
                           : b.status === "paused"
                             ? "Hidden"
-                            : "Awaiting acceptance"}
+                            : "Awaiting publication"}
                       </span>
                       <span>{b.details.town || "Location not added"}</span>
                       <span>{b.email}</span>
