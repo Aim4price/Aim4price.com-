@@ -303,7 +303,7 @@ export default function OwnerAssetsClient({
                       className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
                       onClick={() => setSelectedGroupId(group.id)}
                     >
-                      Open umbrella
+                      Open
                     </button>
                   </article>
                 ))}
