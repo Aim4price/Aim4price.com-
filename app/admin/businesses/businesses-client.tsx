@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import AdminNavigation from "../../../components/AdminNavigation";
+import DirectoryAdminAccess from "../../../components/business-network/DirectoryAdminAccess";
 import BusinessInvite from "../../../components/business-network/BusinessInvite";
 import adminStyles from "../page.module.css";
 import layout from "./businesses.module.css";
@@ -92,11 +93,12 @@ export default function AdminBusinesses() {
                 </button>
               </section>
               <details className={layout.invitationTools}>
-                <summary>Invitations and email enquiries</summary>
+                <summary>Acceptance link</summary>
                 <div className={layout.invitationBody}>
                   <BusinessInvite />
                 </div>
               </details>
+              <DirectoryAdminAccess onAdd={setEditing} />
               {notice ? (
                 <p role="status" className={styles.notice}>
                   {notice}
@@ -119,7 +121,7 @@ export default function AdminBusinesses() {
                           ? "Published"
                           : b.status === "paused"
                             ? "Hidden"
-                            : "Awaiting acceptance"}
+                            : "Awaiting publication"}
                       </span>
                       <span>{b.details.town || "Location not added"}</span>
                       <span>{b.email}</span>
@@ -130,16 +132,10 @@ export default function AdminBusinesses() {
                       >
                         Edit business
                       </button>
-                      {b.status === "invited" ? <button type="button" className={layout.secondary} disabled={Boolean(inviting)} onClick={async () => {
-                        setInviting(b.id);
-                        try {
-                          const response = await fetch("/api/business-network/invite", {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:b.name,email:b.email})});
-                          const result = await response.json();
-                          if (!response.ok) throw new Error(result.error || "Unable to send invitation.");
-                          setNotice(`Invitation sent to ${b.email}.`);
-                        } catch (error) {setNotice(error instanceof Error ? error.message : "Unable to send invitation.");}
-                        finally {setInviting("");}
-                      }}>{inviting === b.id ? "Sending…" : "Send invitation"}</button> : null}
+                      <button type="button" className={layout.secondary} disabled={Boolean(inviting)} onClick={async()=>{
+                        setInviting(b.id);setNotice('');
+                        try{const response=await fetch('/api/admin/business-network',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:b.id,action:b.status==='active'?'pause':'publish'})});const data=await response.json();if(!response.ok)throw new Error(data.error);setNotice(b.status==='active'?'Listing hidden.':'Business approved and published.');await load();}catch(error){setNotice(error instanceof Error?error.message:'Unable to update listing.');}finally{setInviting('');}
+                      }}>{b.status==='active'?'Hide listing':'Approve and publish'}</button>
                     </article>
                   ))}
                   {!visible.length ? (

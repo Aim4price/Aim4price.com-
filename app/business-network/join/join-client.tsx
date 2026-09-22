@@ -1,4 +1,5 @@
 "use client";
+import BusinessAcceptanceForm from "../../../components/business-network/BusinessAcceptanceForm";
 import { useEffect, useState, useRef } from "react";
 import BusinessLocation from "../../../components/business-network/BusinessLocation";
 import {
@@ -140,11 +141,13 @@ export default function BusinessJoin({
         onAdminSaved?.();
         return;
       }
-      setStatus(action === "pause" ? "paused" : "active");
+      if (action === "pause") setStatus("paused");
       setNotice(
         action === "pause"
           ? "Your listing is hidden and requests are stopped."
-          : "Your business is now listed. Owners can contact you by email or WhatsApp.",
+          : status === "active"
+            ? "Your listing details have been updated."
+            : "Your details are saved. Aim4price will review and publish your listing.",
       );
     } catch (e) {
       setNotice(e instanceof Error ? e.message : "Unable to save.");
@@ -152,6 +155,7 @@ export default function BusinessJoin({
       setBusy(false);
     }
   }
+  if (!adminMode && !token && notice.startsWith("Open your invitation")) return <BusinessAcceptanceForm/>;
   const Container = adminMode ? "section" : "main";
   const Heading = adminMode ? "h2" : "h1";
   return (
@@ -167,7 +171,7 @@ export default function BusinessJoin({
       </Heading>
       <p>
         {adminMode
-          ? "Save business details, then send an invitation. The business appears after accepting."
+          ? "Save the business, then approve and publish it from your directory list. No invitation is required."
           : "Would you like your business to be part of the Aim4price directory?"}
       </p>
       {!adminMode && status !== "active" && status !== "paused" ? (
@@ -175,7 +179,7 @@ export default function BusinessJoin({
           <div className={styles.card}>
             <h2>Free directory listing</h2>
             <p>Help asset owners find your business. Receive messages, asset photos and reports through email or WhatsApp.</p>
-            <p>No Aim4price account is required. Complete the details below to accept, and hide your listing whenever you need to.</p>
+            <p>No Aim4price account is required. Complete the details below to accept. Aim4price will review and publish your listing.</p>
           </div>
           <div className={styles.card}>
             <h2>With an Aim4price account</h2>

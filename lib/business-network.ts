@@ -165,7 +165,7 @@ export async function saveBusiness(
   const details = validateBusinessDetails(input, b.email);
   try {
     await getDb().query(
-      `update business_network set name=$2,details=$3,status='active',accepted_at=coalesce(accepted_at,now()),updated_at=now() where id=$1`,
+      `update business_network set name=$2,details=$3,accepted_at=coalesce(accepted_at,now()),updated_at=now() where id=$1`,
       [b.id, details.name, JSON.stringify(details)],
     );
   } catch (e) {

@@ -151,6 +151,9 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
       /Confirm/,
     );
     await network.saveBusiness(token, details);
+    assert.equal((await network.listExternalBusinesses({})).length, 0, 'acceptance alone must not publish');
+    const manualAdmin = load('lib/admin-business-network.ts', {'./db': {getDb: () => ({query: async (sql,params)=>params?db.query(sql,params):(await db.exec(sql)).at(-1)})}, './business-network': network, './business-network-shared': shared});
+    await manualAdmin.saveAdminBusiness('admin', {id:b.id,action:'publish'});
     const directory = await network.listExternalBusinesses({
       partnerType: "dealer",
       category: "Mechanic",
@@ -308,6 +311,8 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     );
     await assert.rejects(network.sendBusinessLead(owner, input), /no longer/);
     await network.saveBusiness(token, details);
+    assert.equal((await network.listExternalBusinesses({})).length,0,'editing a hidden listing does not republish it');
+    await manualAdmin.saveAdminBusiness('admin', {id:b.id,action:'publish'});
     await assert.rejects(
       network.getBusinessRequest(requestToken),
       /unavailable/,
@@ -368,7 +373,7 @@ test("invitation actions require an active owner or an admin and reject foreign 
   );
 });
 
-test("admin drafts require business acceptance before appearing in the directory", async () => {
+test("admin drafts require explicit publication before appearing in the directory", async () => {
   const db = new PGlite();
   const adapter = {
     query: async (sql, params) =>
@@ -452,7 +457,8 @@ test("admin drafts require business acceptance before appearing in the directory
       "Updated Workshop",
     );
     assert.equal((await admin.listAdminBusinesses())[0].status, "invited");
-    await db.query("update business_network set status='active',accepted_at=now() where id=$1", [id]);
+    await admin.saveAdminBusiness('admin-two',{id,action:'publish'});
+    assert.equal((await db.query("select count(*)::int as n from business_network_tokens")).rows[0].n,0,'manual publishing needs no invitation');
     assert.equal((await network.listExternalBusinesses({ partnerType: "dealer" })).length, 1);
     await db.query(
       `insert into business_network_requests(id,owner_id,business_id,request_key,token_hash,snapshot,status,expires_at) values($1,'owner',$2,'key','hash','{}','sent',now()+interval '1 day')`,
@@ -473,7 +479,7 @@ test("admin drafts require business acceptance before appearing in the directory
           "select action from business_network_admin_actions order by created_at",
         )
       ).rows.map((r) => r.action),
-      ["create", "update", "pause"],
+      ["create", "update", "manually_approve_publish", "pause"],
     );
   } finally {
     await db.close();
