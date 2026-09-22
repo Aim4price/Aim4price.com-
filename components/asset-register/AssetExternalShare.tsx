@@ -13,6 +13,7 @@ import {
   type ExternalShareFileSource,
 } from '../../lib/external-file-share';
 import styles from './AssetExternalShare.module.css';
+import AssetShareLinkControl from './AssetShareLinkControl';
 
 export type { ExternalShareFileSource } from '../../lib/external-file-share';
 
@@ -209,6 +210,11 @@ export default function AssetExternalShare({
   onRemoveAim4priceReport: (reportId: string) => void;
 }) {
   const [includePhotos, setIncludePhotos] = useState(false);
+  const assetIds = assets.map(asset => asset.assetId || '');
+  const linkSelection = JSON.stringify([assetIds, includePhotos]);
+  const [pageLink, setPageLink] = useState({ selection: '', url: '' });
+  const shareUrl = pageLink.selection === linkSelection ? pageLink.url : '';
+  const canCreateLink = assetIds.length > 0 && assetIds.length <= 100 && assetIds.every(Boolean);
   const [preparationAttempt, setPreparationAttempt] = useState(0);
   const [sendingTarget, setSendingTarget] = useState<ShareTarget | null>(null);
   const [shareStatus, setShareStatus] = useState('');
@@ -246,10 +252,11 @@ export default function AssetExternalShare({
     .join('|');
   const copy = useMemo(
     () => buildExternalAssetShareCopy(shareName, assets, {
+      shareUrl,
       attachedPhotoCount: selectedPhotoCount,
       attachedReportCount: reportFiles.length,
     }),
-    [assets, reportFiles.length, selectedPhotoCount, shareName],
+    [assets, reportFiles.length, selectedPhotoCount, shareName, shareUrl],
   );
   const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
   const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
@@ -434,6 +441,8 @@ export default function AssetExternalShare({
           </div>
         </aside>
       </div>
+
+      {canCreateLink && <AssetShareLinkControl key={linkSelection} assetIds={assetIds} includePhotos={includePhotos} onChange={url => setPageLink({ selection: linkSelection, url })} />}
 
       <footer className={styles.sendFooter}>
         <div className={styles.sendLead}>

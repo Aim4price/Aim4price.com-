@@ -195,6 +195,8 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     return () => { clearTimeout(timer); clearTimeout(hideTimer); };
   }, [native, pathname, controlHost, loaded]);
 
+  if (pathname === '/asset-share' || pathname.startsWith('/asset-share/')) return <>{children}</>;
+
   if (native) {
     // Preserve the original root structure and footer/tracker ordering for
     // operational and device-native routes. No website variables reach them.

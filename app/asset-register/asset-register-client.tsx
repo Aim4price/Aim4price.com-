@@ -5988,6 +5988,7 @@ function buildAssetScanUrl(asset: RegisterAsset): string | null {
 
 function buildExternalShareAsset(asset: RegisterAsset): ExternalAssetShareItem {
   return {
+    assetId: asset.id,
     title: asset.title,
     serialNumber: asset.serialNumber,
     yearModel: asset.yearModel,
@@ -20740,14 +20741,14 @@ export default function AssetRegisterClient({
                                   {partner.logoUrl ? <img className={styles.businessDirectoryLogo} src={partner.logoUrl} alt="" /> : null}
                                   <span className={styles.assetQuotePartnerHeader}>
                                     <strong>{quotePartnerName(partner)}</strong>
-                                    <small className={styles.businessDirectoryBadge}>{partner.isExternalBusiness ? 'Directory listing' : 'Aim4price account'}</small>
+                                    <small className={`${styles.businessDirectoryBadge} ${!partner.isExternalBusiness ? styles.businessAccountBadge : ''}`}>{partner.isExternalBusiness ? 'Directory listing' : 'Aim4price account'}</small>
                                   </span>
                                   <span className={styles.assetQuotePartnerMeta}>
                                     <span>{quotePartnerLocation(partner)}</span>
                                     {!partner.isAim4priceManaged ? (
                                       <span>{quotePartnerServicesDisplay(partner)}</span>
                                     ) : null}
-                                    <span>{quotePartnerRadiusDisplay(partner)}</span>
+                                    {partner.serviceRadiusKm != null ? <span>{quotePartnerRadiusDisplay(partner)}</span> : null}
                                   </span>
                                   {!partner.isAim4priceManaged && partner.brandFocus ? (
                                     <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>

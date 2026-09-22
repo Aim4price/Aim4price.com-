@@ -32,6 +32,11 @@ export function middleware(request: NextRequest) {
     requestHeaders.set('cookie', isolateAppCookies(cookie, null));
   }
   const response = NextResponse.next({ request: { headers: requestHeaders } });
+  if (request.nextUrl.pathname.startsWith('/asset-share/')) {
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    response.headers.set('Referrer-Policy', 'no-referrer');
+  }
   if (isAdminApi || realm || ambiguousApi) response.headers.set('Cache-Control', 'private, no-store, max-age=0');
   return response;
 }

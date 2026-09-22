@@ -1,4 +1,5 @@
 export type ExternalAssetShareItem = {
+  assetId?: string;
   title: string;
   serialNumber: string;
   yearModel: number | null;
@@ -16,6 +17,7 @@ export type ExternalAssetShareCopy = {
 };
 
 export type ExternalAssetShareCopyOptions = {
+  shareUrl?: string;
   attachedPhotoCount?: number;
   attachedReportCount?: number;
 };
@@ -27,7 +29,7 @@ function cleanText(value: unknown): string {
 function formatMoney(value: number | null | undefined): string {
   const amount = Number(value);
   return Number.isFinite(amount) && amount > 0
-    ? `R ${Math.round(amount).toLocaleString('en-ZA').replace(/\u00a0/g, ' ')}`
+    ? `R ${String(Math.round(amount)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`
     : 'Not saved';
 }
 
@@ -80,6 +82,7 @@ export function buildExternalAssetShareCopy(
       ...buildAssetBlock(asset, index, shareableAssets.length > 1),
       ...(index < shareableAssets.length - 1 ? ['', '------------------------------', ''] : []),
     ]),
+    ...(options.shareUrl ? ['', 'View asset details:', options.shareUrl] : []),
     ...(attachmentLine ? ['', attachmentLine] : []),
     '',
     'Shared from Aim4price. Values are saved estimates and remain subject to inspection.',
