@@ -1197,6 +1197,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       <OwnerAssetOptionsClient
         assetId={assetId}
         asset={{
+          assetId,
           title: draft.title,
           serialNumber: draft.serialNumber,
           yearModel: draft.yearModel,

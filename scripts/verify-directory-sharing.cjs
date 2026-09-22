@@ -65,6 +65,7 @@ async function check(browser, url) {
     await page.screenshot({path:path.join(output,`directory-empty-${width}.png`)});
     await click('Clear search & filters');
     await page.waitForSelector('[aria-label="View Garden Route Repairs"]');
+    assert.ok(await page.$eval('[aria-label="View Garden Route Repairs"] small', e=>getComputedStyle(e).display !== 'none'), 'directory badge stays visible');
     await page.click('[aria-label="View Garden Route Repairs"]');
     await page.waitForSelector('[aria-label="Selected business"]');
     assert.match(await page.$eval('[aria-label="Selected business"]',e=>e.textContent), /Directory listing/);

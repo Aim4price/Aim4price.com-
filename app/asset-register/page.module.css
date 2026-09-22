@@ -41256,3 +41256,12 @@ button.documentOpenLink {
 
 .businessDirectoryDialog .modalCloseButton { position: static !important; flex: 0 0 2.5rem !important; min-height: 2.5rem !important; max-height: 2.5rem !important; padding: 0 !important; display: grid !important; place-items: center !important; }
 .businessDirectoryDialog .businessDirectoryBadge { display: inline-flex !important; }
+
+.businessDirectoryDialog .businessDirectoryLogo { width: 3rem; height: 3rem; object-fit: contain; padding: .35rem; border-radius: .6rem; background: #fff; border: 1px solid #e1e9e4; }
+.businessDirectoryDialog .businessAccountBadge { color: #116347 !important; background: #e3f3e9 !important; }
+.businessDirectoryDialog .assetQuotePartnerCard:hover { border-color: #83af9d !important; background: var(--app-surface-soft, #f5faf7) !important; }
+.businessDirectoryDialog .assetQuotePartnerCardActive { border-color: #146b50 !important; background: var(--app-surface-soft, #eef7f2) !important; box-shadow: inset 3px 0 #146b50 !important; }
+
+.businessDirectoryDialog .assetQuotePartnerCard .assetQuotePartnerHeader small.businessDirectoryBadge { display: inline-flex !important; font-size: .65rem !important; padding: .3rem .45rem !important; border-radius: .35rem !important; }
+
+.businessDirectoryDialog .assetQuotePartnerCard .assetQuotePartnerHeader small.businessAccountBadge { color: #116347 !important; background: #e3f3e9 !important; border-color: #c5e3d3 !important; }
