@@ -64,3 +64,24 @@ test('Signup wizard permits early steps and requires invoice consent only at the
  billing.accepted=true;billing.address='George';assert.equal(validate(3),true);
  assert.equal(notices[0].title,'Invoice details required');
 });
+
+test('Account invoice list requires sign-in, excludes drafts and ignores caller-supplied account scope', async () => {
+ let session = null;
+ const calls = [];
+ const route = load('app/api/billing/invoices/route.ts', {
+  '../../../../lib/auth-session': { getAnyServerSession: async () => session },
+  '../../../../lib/billing': { listBillingInvoices: async (...args) => { calls.push(args); return { invoices: [], total: 0 }; } },
+  '../../../../lib/db': { getDb: () => ({ query: async (_sql, params) => { assert.deepEqual(params, ['owner']); return { rowCount: 1 }; } }) },
+ });
+ const request = query => new NextRequest(`https://aim4price.com/api/billing/invoices?${query}`);
+ assert.equal((await route.GET(request(''))).status, 401);
+ assert.equal(calls.length, 0);
+ session = { user: { id: 'owner' } };
+ for (const page of ['0', '-1', '1.5', 'NaN', '100001']) assert.equal((await route.GET(request(`page=${page}`))).status, 400);
+ assert.equal(calls.length, 0);
+ const response = await route.GET(request('page=2&userId=another&includeDrafts=true'));
+ assert.equal(response.status, 200);
+ assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
+ assert.deepEqual(calls, [['owner', false, 2]]);
+ assert.equal((await response.json()).preparing, true);
+});
