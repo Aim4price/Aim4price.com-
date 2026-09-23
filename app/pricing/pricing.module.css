@@ -109,3 +109,42 @@
 }
 
 :global(html[data-background='dark']) .billingRow .billingControl > span { color: #e0ebe4; }
+
+/* Keep the first view short; reveal prices and detail only on request. */
+.shell { max-width: 68rem; }
+.hero { padding: 2rem 0 1.5rem; }
+.hero h1 { font-size: clamp(1.9rem, 3.5vw, 2.8rem); letter-spacing: -.04em; }
+.intro { margin-top: .75rem; font-size: .9rem; line-height: 1.6; }
+.audienceButtons { margin-top: 1.25rem; max-width: 32rem; }
+.questions { display: grid; gap: .75rem; }
+.section { margin: 0; display: grid; gap: .75rem; }
+.question { border: 1px solid #d6e1d9; border-radius: 14px; background: #fcfdfc; }
+.question > summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem 1.25rem; cursor: pointer; list-style: none; border-radius: 14px; }
+.question > summary::-webkit-details-marker { display: none; }
+.question > summary:hover { background: #f0f6f1; }
+.question > summary strong { display: block; font-size: 1rem; font-weight: 650; line-height: 1.5; }
+.questionHint { display: block; margin-top: .2rem; color: #52665c; font-size: .8rem; line-height: 1.6; }
+.chevron { width: .6rem; height: .6rem; border-right: 2px solid #37775d; border-bottom: 2px solid #37775d; transform: rotate(45deg); flex-shrink: 0; margin: 0 .3rem .3rem; }
+.question[open] > summary .chevron { transform: rotate(225deg); margin-bottom: -.3rem; }
+.question[open] > summary { border-bottom: 1px solid #e3ebe5; border-radius: 14px 14px 0 0; }
+.answer { padding: 1.25rem; }
+.billingRow { justify-content: flex-start; margin-bottom: 1rem; }
+.billingControl { text-align: left; }
+.planCard { padding: 1.25rem; }
+.planCard h3 { font-size: 1.25rem; margin-bottom: .8rem; }
+.planDescription { min-height: 0; margin-bottom: 1rem; }
+.assetLimit { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
+.included, .adminPanel { margin: 0; padding: 0; border: 0; background: transparent; }
+.sharedNote { font-size: .82rem; color: #52665c; line-height: 1.7; margin: 1rem 0 0; }
+.adminPanel > .sharedNote { margin: 0 0 1rem; }
+.detailsList summary { padding: 1rem 1.25rem; font-size: .85rem; }
+.closing { margin-top: 1rem; padding: 1.1rem 1.25rem; }
+.closing h2 { font-size: 1rem; letter-spacing: 0; }
+:global(html[data-background='dark']) .billingRow .billingControl > span { color: #52665c; }
+@media (max-width: 640px) {
+  .hero { padding: 1.5rem 0 1rem; }
+  .question > summary { padding: 1rem; }
+  .question > summary strong { font-size: .93rem; }
+  .answer { padding: 1rem; }
+  .closing { flex-direction: row; flex-wrap: wrap; gap: .75rem; }
+}
