@@ -3,19 +3,12 @@
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import styles from './pricing.module.css';
+import OwnerJourney from './owner-journey';
 
 const ownerPlans = [
   { name: 'Essentials', assets: 25, monthly: 99, yearly: 999, fundedMonthly: 60, fundedYearly: 600 },
   { name: 'Growth', assets: 100, monthly: 199, yearly: 1999, fundedMonthly: 120, fundedYearly: 1200 },
   { name: 'Business', assets: 300, monthly: 399, yearly: 3999, fundedMonthly: 240, fundedYearly: 2400 },
-];
-const features = [
-  ['Know your assets', 'Asset registers, estimates, current and replacement values, photographs and documents.'],
-  ['Understand your costs', 'Cost and invoice records, fuel records, budgets and contributions.'],
-  ['Keep work on track', 'Maintenance schedules, reminders, fault reporting and notifications.'],
-  ['Keep the full history', 'Ownership, finance and insurance details, connected to each asset.'],
-  ['Take your records with you', 'PDF reports, Excel and CSV exports, and asset QR codes.'],
-  ['Prepare for the next step', 'Marketplace access and tools to prepare your assets for sale.'],
 ];
 const adminPlans = [{ hours: 2, price: 499 }, { hours: 5, price: 999 }, { hours: 10, price: 1799 }];
 const money = (amount: number) => `R${String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
@@ -50,8 +43,8 @@ export default function PricingContent() {
     <div className={styles.shell}>
       <header className={styles.hero}>
         <p className={styles.eyebrow}>Aim4price pricing</p>
-        <h1>Pricing made simple.</h1>
-        <p className={styles.intro}>Choose your account type. Open a question to see your options.</p>
+        <h1>A plan that fits your assets.</h1>
+        <p className={styles.intro}>Choose your account type. We’ll help you find the right fit.</p>
         <div className={styles.audienceButtons} role="group" aria-label="Choose your account type">
           {(['owner', 'dealer', 'middleman'] as const).map(type => (
             <button key={type} type="button" aria-pressed={audience === type} aria-controls="pricing-selection" onClick={() => setAudience(type)}>
@@ -61,26 +54,8 @@ export default function PricingContent() {
         </div>
       </header>
 
-      <div id="pricing-selection" key={audience} className={styles.questions}>
-      {audience === 'owner' && <section id="owners" className={styles.section} aria-label="Owner pricing">
-        <Question title="Which plan fits my assets?" hint="Owner plans from R99/month · choose by active assets">
-        {billingControl}
-        <div className={styles.planGrid}>
-          {ownerPlans.map(plan => <article key={plan.name} className={styles.planCard}>
-            <h3>{plan.name}</h3>
-            <p className={styles.price}><strong>{money(yearly ? plan.yearly : plan.monthly)}</strong><span>/{period}</span></p>
-            <p className={styles.billingNote}>{yearly ? 'Billed once per year' : `${money(plan.yearly)} when billed yearly`}</p>
-            <div className={styles.assetLimit}>Up to <strong>{plan.assets}</strong> active assets</div>
-          </article>)}
-        </div>
-        <div className={styles.enterprise}><div><h3>More than 300 active assets?</h3><p>Enterprise pricing tailored to your operation.</p></div><Link href="/contact-us" className={styles.button}>Discuss Enterprise <span aria-hidden="true">↗</span></Link></div>
-        <p className={styles.footnote}>Only active assets count. Sold and archived assets are excluded. All prices are in South African rand.</p>
-        <p className={styles.sharedNote}>Every plan includes the same core tools, unlimited manual uploads and the daily Capture allowance.</p>
-        </Question>
-        <Question title="What’s included in my plan?" hint="The same core tools in every Owner plan">
-        <div className={styles.included}><div className={styles.featureGrid}>{features.map(([title, description]) => <div key={title}><h4>{title}</h4><p>{description}</p></div>)}</div></div>
-        </Question>
-      </section>}
+      <div id="pricing-selection" className={styles.questions}>
+      <div hidden={audience !== 'owner'}><OwnerJourney /></div>
 
       {audience !== 'owner' && <section id="partners" className={styles.section} aria-label="Partner pricing">
         <Question title={audience === 'dealer' ? 'What does a Dealer plan cost?' : 'How much does Middleman access cost?'} hint={audience === 'dealer' ? 'R199/month or R1 999/year · launch pricing' : 'R0 while active · see requirements and paid options'}>
@@ -102,7 +77,7 @@ export default function PricingContent() {
         </Question>
       </section>}
 
-      {audience !== 'middleman' && <section id="assistance" className={styles.section} aria-label="Capture and assistance">
+      {audience === 'dealer' && <section id="assistance" className={styles.section} aria-label="Capture and assistance">
         <Question title="Can I upload records myself?" hint="Manual uploads are free · Capture includes 10 invoices + 10 fuel slips daily">
         <div className={styles.allowanceGrid}>
           <article><span className={styles.step}>01</span><h3>Manual entry &amp; uploads</h3><p className={styles.allowanceValue}>Included. No daily limit.</p><p>Enter your own records and upload supporting documents at no extra charge. This does not use your capture allowance.</p></article>
@@ -120,7 +95,7 @@ export default function PricingContent() {
         </Question>
       </section>}
 
-      <section className={styles.section} aria-label="More pricing questions">
+      <section hidden={audience === 'owner'} className={styles.section} aria-label="More pricing questions">
         <div className={styles.detailsList}>
           {audience === 'dealer' && <details><summary>Can a Dealer pay for an Owner account?</summary><div className={styles.detailBody}><p>A Dealer can fund an Owner subscription and manage the account with the Owner’s permission. The Owner keeps their own login, owns their information and can revoke Dealer access.</p>
             {billingControl}<div className={styles.fundedGrid}>{ownerPlans.map(plan => <div key={plan.name}><h4>{plan.name}</h4><strong>{money(yearly ? plan.fundedYearly : plan.fundedMonthly)} /{period}</strong><p>Up to {plan.assets} active assets</p></div>)}</div>
