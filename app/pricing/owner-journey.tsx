@@ -41,13 +41,12 @@ export default function OwnerJourney({ onTitleChange }: { onTitleChange?: (title
   const [assetBand, setAssetBand] = useState<number | null>(null);
   const [yearly, setYearly] = useState(false);
   const [setup, setSetup] = useState<Setup | null>(null);
-  const [wantsHelp, setWantsHelp] = useState(false);
   const [admin, setAdmin] = useState<Admin | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const plan = assetBand !== null ? plans[assetBand] : undefined;
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
   const ready = step === 0 ? assetBand !== null : step === 1 ? setup !== null : admin !== null;
-  const titles = ['How many assets?', 'How will you add your assets?', 'Who will manage your register?', 'Your package'];
+  const titles = ['How many assets?', 'How will you add your assets?', 'Who will manage your register?', 'Your package', 'How much admin help do you need?'];
   useEffect(() => { onTitleChange?.(titles[step]); }, [step, onTitleChange]);
   const move = (next: number) => {
     setCopyStatus('');
@@ -87,6 +86,7 @@ export default function OwnerJourney({ onTitleChange }: { onTitleChange?: (title
           'Do it yourself or get help with the initial setup.',
           'Choose self-service or monthly admin help.',
           'Review your subscription and optional services.',
+          'Choose your monthly admin package.',
         ][step]}</p>
       </div>
 
@@ -107,16 +107,16 @@ export default function OwnerJourney({ onTitleChange }: { onTitleChange?: (title
 
       {step === 2 && <>
         <div className={styles.choices} role="group" aria-label="Ongoing administration">
-          <Choice selected={admin === 'self'} onClick={() => { setWantsHelp(false); setAdmin('self'); }} title="I’ll manage it">No additional admin fee.</Choice>
-          <Choice selected={wantsHelp} onClick={() => { if (!wantsHelp) setAdmin(null); setWantsHelp(true); }} title="I’d like monthly help">Help capturing records and keeping my register organised.</Choice>
+          <Choice selected={admin === 'self'} onClick={() => { setAdmin('self'); }} title="I’ll manage it">No additional admin fee.</Choice>
+          <Choice selected={admin !== null && admin !== 'self'} onClick={() => { if (admin === 'self') setAdmin(null); move(4); }} title="I’d like monthly help">Help capturing records and keeping my register organised.</Choice>
         </div>
-        {wantsHelp && <div className={styles.tip}>
-          <p>Prepaid admin time, on top of your subscription.</p>
+      </>}
+
+      {step === 4 && <>
           <div className={styles.assetChoices} role="group" aria-label="Admin package">
             {adminPlans.map(item => <Choice key={item.hours} selected={admin === String(item.hours)} onClick={() => setAdmin(String(item.hours) as Admin)} title={`Up to ${item.hours} hours`}>{money(item.price)}/month</Choice>)}
             <Choice selected={admin === 'custom'} onClick={() => setAdmin('custom')} title="More than 10 hours">Custom quote</Choice>
           </div>
-        </div>}
       </>}
 
       {step === 3 && <div className={styles.layout}>
@@ -150,8 +150,8 @@ export default function OwnerJourney({ onTitleChange }: { onTitleChange?: (title
 
       </div>
       <div className={styles.navigation}>
-        {!editing && step > 0 ? <button type="button" className={styles.secondary} onClick={() => move(step - 1)}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
-        {step < 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { if (editing) { setEditing(false); move(3); } else move(step + 1); }}>{editing ? 'Update package' : step === 2 ? 'See my package' : 'Continue'} </button> : <button type="button" className={styles.secondary} onClick={() => { setEditing(false); setAssetBand(null); setSetup(null); setAdmin(null); setWantsHelp(false); setYearly(false); move(0); }}>Start again</button>}
+        {(step === 4 || (!editing && step > 0)) ? <button type="button" className={styles.secondary} onClick={() => move(step === 4 ? 2 : step === 3 && admin !== 'self' ? 4 : step - 1)}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
+        {step !== 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { if (editing) { setEditing(false); move(3); } else move(step === 4 ? 3 : step + 1); }}>{editing ? 'Update package' : step === 2 || step === 4 ? 'See my package' : 'Continue'} </button> : <button type="button" className={styles.secondary} onClick={() => { setEditing(false); setAssetBand(null); setSetup(null); setAdmin(null); setYearly(false); move(0); }}>Start again</button>}
       </div>
     </div>
   </section>;
