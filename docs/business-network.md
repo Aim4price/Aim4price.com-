@@ -95,3 +95,32 @@ The lookup uses Google's Places Text Search endpoint and requires the server's `
 Browser requests from both official Aim4price origins use the shared trusted-origin check, including behind Railway's internal proxy URL. Foreign, missing and malformed origins remain rejected; forwarded host headers cannot grant trust. Google lookup still requires an admin session or a valid business management token.
 
 `node scripts/verify-business-admin-entry.cjs` checks the actual form at desktop/mobile widths: Google result selection, keyboard search, failed lookup recovery, saving a draft and publishing without an invitation. These are mocked Google responses; a deployed-key check is still needed to confirm the site's Google configuration.
+
+
+### Selecting Google results
+
+Selecting **Link this business** now requests Place Details (New) for that result and
+fills available name, phone, website, address, town and coordinates. Blank fields
+remain editable; enquiry email, headings, services and service coverage remain
+business/admin supplied. Existing manually entered values are preserved. Selecting
+another result replaces unchanged suggestions from the previous result, including
+clearing unavailable suggestions so details from two businesses are not mixed.
+
+The details request uses the same private `GOOGLE_PLACES_API_KEY`. Search retains
+its existing Text Search Pro field mask; the selected-result request includes phone
+and website, which use the separate **Place Details Enterprise** SKU. It does not
+request photos, reviews or ratings. No key is sent to the browser.
+
+Google suggestions live in form memory and are not automatically saved. Before
+saving, the operator must independently check the listing information with the
+business or its own website and have permission to publish it. A checkbox is not
+permission from Google to copy its database: do not bulk import Google content or
+use confirmation as a substitute for independent verification. Raw Place responses
+and attributions are not stored. Both upstream fetches and API responses use
+no-store. Google's broader directory/display/storage terms still apply; this change
+does not assert that every directory use is permitted by Google.
+
+**Save draft** keeps new records unpublished; **Save and publish** publishes without
+sending an invitation. Existing admin **Hide listing** controls remain available,
+with republishing through **Approve and publish**. Hiding also revokes existing
+business-network request links; it is not permanent deletion.

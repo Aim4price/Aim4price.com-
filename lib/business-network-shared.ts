@@ -91,6 +91,8 @@ export function validateBusinessDetails(
   input: Record<string, unknown>,
   email: string,
 ): BusinessDetails {
+  if (input.googleDetailsUsed === true && input.detailsVerified !== true)
+    throw new Error("Confirm the listing details directly with the business or its own website before saving.");
   const list = (value: unknown) =>
     Array.isArray(value)
       ? [

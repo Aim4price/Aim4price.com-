@@ -565,7 +565,7 @@ test('Google lookup accepts public origins through a proxy, searches real endpoi
     '../../../../lib/business-network-api':api, '../../../../lib/business-network-shared':shared,
   });
   const {NextRequest}=require('next/server');
-  const request = origin => new NextRequest('http://internal.railway:3000/api/business-network/google',{method:'POST',headers:{...(origin?{origin}:{}),'content-type':'application/json','x-forwarded-host':'evil.test'},body:JSON.stringify({query:'S Haddad George'})});
+  const request = (origin, body={query:'S Haddad George'}) => new NextRequest('http://internal.railway:3000/api/business-network/google',{method:'POST',headers:{...(origin?{origin}:{}),'content-type':'application/json','x-forwarded-host':'evil.test'},body:JSON.stringify(body)});
   globalThis.fetch=async(url,options)=>{
     calls++;assert.equal(url,'https://places.googleapis.com/v1/places:searchText');
     assert.equal(JSON.parse(options.body).textQuery,'S Haddad George');assert.equal(options.headers['X-Goog-Api-Key'],'test-key');
@@ -577,7 +577,21 @@ test('Google lookup accepts public origins through a proxy, searches real endpoi
     }
     for(const origin of ['https://evil.test','null',undefined,'https://aim4price.com.evil.test'])assert.notEqual((await route.POST(request(origin))).status,200);
     assert.equal(calls,2,'untrusted origins never reach Google');
-    session=null; assert.equal((await route.POST(request('https://aim4price.com'))).status,403);assert.equal(calls,2);
+    globalThis.fetch=async(url,options)=>{
+      calls++;assert.equal(url,'https://places.googleapis.com/v1/places/place-1');
+      assert.equal(options.cache,'no-store');assert.match(options.headers['X-Goog-FieldMask'],/nationalPhoneNumber/);
+      assert.ok(!options.headers['X-Goog-FieldMask'].includes('photos'));
+      return Response.json({id:'place-1',displayName:{text:'Workshop'},location:{latitude:-33.9,longitude:22.4}});
+    };
+    const detail=await route.POST(request('https://aim4price.com',{placeId:'place-1'}));
+    assert.equal(detail.status,200);assert.match(detail.headers.get('cache-control'),/no-store/);
+    assert.equal((await detail.json()).place.displayName.text,'Workshop');
+    for(const placeId of ['../secrets','https://evil.test','', 'place-1?key=bad']) assert.equal((await route.POST(request('https://aim4price.com',{placeId}))).status,400);
+    assert.equal(calls,3);
+    globalThis.fetch=async()=>new Response('',{status:503});
+    const failed=await route.POST(request('https://aim4price.com',{placeId:'place-1'}));
+    assert.equal(failed.status,400);assert.match((await failed.json()).error,/manually/);
+    session=null; assert.equal((await route.POST(request('https://aim4price.com'))).status,403);assert.equal(calls,3);
     session={user:{id:'admin',email:'admin@example.com'}};delete process.env.GOOGLE_PLACES_API_KEY;
     const unavailable=await route.POST(request('https://aim4price.com'));assert.equal(unavailable.status,503);assert.match((await unavailable.json()).error,/not configured/);
   } finally {
@@ -585,4 +599,9 @@ test('Google lookup accepts public origins through a proxy, searches real endpoi
     if(oldEnv===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=oldEnv;
     if(oldKey===undefined)delete process.env.GOOGLE_PLACES_API_KEY;else process.env.GOOGLE_PLACES_API_KEY=oldKey;
   }
+});
+
+
+test('Google suggestions require independent confirmation before saving', () => {
+  assert.throws(() => shared.validateBusinessDetails({googleDetailsUsed:true,detailsVerified:false}, 'business@example.com'), /Confirm the listing details/);
 });
