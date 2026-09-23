@@ -12,7 +12,7 @@ const plans = [
 ];
 const adminPlans = [{ hours: 2, price: 499 }, { hours: 5, price: 999 }, { hours: 10, price: 1799 }];
 const money = (amount: number) => `R${String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
-type Setup = 'self' | 'visit' | 'inspection';
+type Setup = 'assisted' | 'self' | 'visit' | 'inspection';
 type Admin = 'self' | '2' | '5' | '10' | 'custom';
 
 function Choice({ selected, onClick, title, children }: { selected: boolean; onClick: () => void; title: string; children: ReactNode }) {
@@ -26,7 +26,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
   const dealer = audience === 'dealer';
   const firstStep = dealer ? 1 : 0;
   const [step, setStep] = useState(firstStep);
-  const [detail, setDetail] = useState<'tools' | 'funding' | 'commission' | 'setup' | 'admin' | null>(null);
+  const [detail, setDetail] = useState<'funding' | 'commission' | 'setup' | 'admin' | null>(null);
   const [editing, setEditing] = useState(false);
   const [assetBand, setAssetBand] = useState<number | null>(null);
   const [yearly, setYearly] = useState(false);
@@ -37,8 +37,8 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
   const plan = dealer ? { name: 'Dealer Partner', monthly: 199, yearly: 1999, limit: 0 } : assetBand !== null ? plans[assetBand] : undefined;
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
   const ready = step === 6 ? customers !== null : step === 0 ? assetBand !== null : step === 1 || step === 5 ? setup !== null : admin !== null;
-  const titles = ['How many assets?', dealer ? 'How will you add your stock?' : 'How will you add your assets?', dealer ? 'Who will manage your stock records?' : 'Who will manage your register?', dealer ? 'Your Dealer package' : 'Your Owner package', 'How much admin help do you need?', 'What help do you need?', 'Will you manage customer registers?'];
-  const detailTitles = { tools: 'Your Dealer tools', funding: 'Funding customer accounts', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help' };
+  const titles = ['How many assets?', dealer ? 'How will you add your stock?' : 'How will you add your assets?', dealer ? 'Who will manage the records?' : 'Who will manage your register?', dealer ? 'Your Dealer package' : 'Your Owner package', 'How much admin help do you need?', 'What help do you need?', 'Will you manage customer registers?'];
+  const detailTitles = { funding: 'Funding customer accounts', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help' };
   useEffect(() => { onTitleChange?.(detail ? detailTitles[detail] : titles[step]); }, [step, detail, onTitleChange, dealer]);
   const move = (next: number) => {
     setDetail(null);
@@ -48,11 +48,24 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
       heading.current?.closest('[data-pricing-content]')?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     });
   };
+  const nextStep = () => {
+    if (step === 1) return dealer ? 6 : 2;
+    if (step === 6 || step === 5) return 2;
+    if (step === 2 || step === 4) return 3;
+    return 1;
+  };
+  const previousStep = () => {
+    if (step === 6 || step === 5) return 1;
+    if (step === 4) return 2;
+    if (step === 2) return dealer ? 6 : setup === 'self' ? 1 : 5;
+    if (step === 3) return admin === 'self' ? 2 : 4;
+    return 0;
+  };
   const billing = <div className={styles.billing} role="group" aria-label={`${dealer ? 'Dealer' : 'Owner'} billing period`}>
     <button type="button" aria-pressed={!yearly} onClick={() => setYearly(false)}>Monthly</button>
     <button type="button" aria-pressed={yearly} onClick={() => setYearly(true)}>Yearly</button>
   </div>;
-  const setupLabel = setup === 'self' ? dealer ? 'Stock added by our team' : 'Upload my own assets' : setup === 'visit' ? 'Asset recording visit' : 'Formal inspection / valuation';
+  const setupLabel = setup === 'assisted' ? 'Aim4price helps add stock' : setup === 'self' ? dealer ? 'Stock added by our team' : 'Upload my own assets' : setup === 'visit' ? 'Asset recording visit' : 'Formal inspection / valuation';
   const adminLabel = admin === 'self' ? dealer ? 'Managed by our team' : 'Manage it myself' : admin === 'custom' ? 'Custom administration' : `Up to ${adminPlan?.hours} admin hours / month`;
 
   const openDetail = (next: NonNullable<typeof detail>) => {
@@ -87,7 +100,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
       {!detail && step === 1 && <>
         <div className={styles.choices} role="group" aria-label="Setup preference">
           <Choice selected={setup === 'self'} onClick={() => setSetup('self')} title={dealer ? 'Our team will add stock' : 'Upload myself'}>{dealer ? 'Add stock details, photos and documents. No setup fee.' : 'Add my details, photos and documents. No setup fee.'}</Choice>
-          <Choice selected={setup === 'visit' || setup === 'inspection'} onClick={() => { if (setup === 'self') setSetup(null); move(5); }} title="Arrange a visit">{dealer ? 'Help recording stock details, photos and documents.' : 'Help recording machinery and building my register.'}</Choice>
+          {dealer ? <Choice selected={setup === 'assisted'} onClick={() => setSetup('assisted')} title="Aim4price helps add stock">We add stock from your supplied details, photos and documents.</Choice> : <Choice selected={setup === 'visit' || setup === 'inspection'} onClick={() => { if (setup === 'self') setSetup(null); move(5); }} title="Arrange a visit">{dealer ? 'Help recording stock details, photos and documents.' : 'Help recording machinery and building my register.'}</Choice>}
 
         </div>
       </>}
@@ -130,23 +143,27 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         {setup !== 'self' && <p className={styles.serviceNote}>Setup is quoted separately, in addition to your subscription.</p>}
         <div className={styles.reviewRows}>
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Base plan</span><strong>{plan ? plan.name : 'Enterprise'}</strong></div><span>{plan ? `${money(yearly ? plan.yearly : plan.monthly)}/${yearly ? 'year' : 'month'}` : 'Custom quote'}</span>{!dealer && <button type="button" aria-label="Change assets" onClick={() => { setEditing(true); move(0); }}>Edit</button>}</div>
-          <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Initial setup</span><strong>{setupLabel}</strong></div><span>{setup === 'self' ? 'No setup fee' : setup === 'visit' ? 'Capture + travel, quoted separately' : 'Separate custom quote'}</span><button type="button" aria-label="Change setup" onClick={() => { setEditing(true); move(1); }}>Edit</button></div>
-          <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Admin help</span><strong>{adminLabel}</strong></div><span>{adminPlan ? `${money(adminPlan.price)}/month` : admin === 'self' ? 'No admin fee' : 'Custom quote'}</span><button type="button" aria-label="Change help" onClick={() => { setEditing(true); move(2); }}>Edit</button></div>
+          <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Initial setup</span><strong>{setupLabel}</strong></div><span>{setup === 'self' ? 'No setup fee' : setup === 'assisted' ? 'Stock capture, quoted separately' : setup === 'visit' ? 'Capture + travel, quoted separately' : 'Separate custom quote'}</span><button type="button" aria-label="Change setup" onClick={() => { setEditing(true); move(1); }}>Edit</button></div>
           {dealer && <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Customer registers</span><strong>{customers === 'customers' ? 'Manage with Owner permission' : 'Add customers later'}</strong></div><span>Owner subscriptions separate</span><button type="button" aria-label="Change customer registers" onClick={() => { setEditing(true); move(6); }}>Edit</button></div>}
+          <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Admin help</span><strong>{adminLabel}</strong></div><span>{adminPlan ? `${money(adminPlan.price)}/month` : admin === 'self' ? 'No admin fee' : 'Custom quote'}</span><button type="button" aria-label="Change help" onClick={() => { setEditing(true); move(2); }}>Edit</button></div>
         </div>
         <div className={styles.detailLinks}>
-          {dealer && <><button type="button" onClick={() => openDetail('tools')}>Dealer tools</button><button type="button" onClick={() => openDetail('funding')}>Customer funding</button><button type="button" onClick={() => openDetail('commission')}>Partner commission</button></>}
+          {dealer && <><button type="button" onClick={() => openDetail('funding')}>Customer funding</button><button type="button" onClick={() => openDetail('commission')}>Partner commission</button></>}
           {setup !== 'self' && <button type="button" onClick={() => openDetail('setup')}>View setup details</button>}
           {admin !== 'self' && <button type="button" onClick={() => openDetail('admin')}>View admin details</button>}
         </div>
-        {dealer && <p className={styles.reviewNote}>Your Dealer plan supports stock and customer management. Each Owner needs a separate subscription; you can optionally fund it. No customer subscriptions are added to this total.</p>}
+        {dealer && <p className={styles.reviewNote}>Owner subscriptions are separate. Fund customer accounts optionally; none are included in this total.</p>}
         <p className={styles.reviewNote}>Admin help is available anytime. Prices in rand. No payment or booking is made here.</p>
 
       </div>}
 
       {detail && <div className={styles.detailPage}>
-        {['tools', 'funding', 'commission'].includes(detail) && <DealerDetails topic={detail as 'tools' | 'funding' | 'commission'} />}
-        {detail === 'setup' && (setup === 'visit' ? <>
+        {['funding', 'commission'].includes(detail) && <DealerDetails topic={detail as 'funding' | 'commission'} />}
+        {detail === 'setup' && (setup === 'assisted' ? <>
+          <p>Send your stock details, photographs and documents. Aim4price helps capture and organise them in your stock register.</p>
+          <dl className={styles.dealerRates}><div><dt>Road-licensed stock</dt><dd>R100 per asset</dd></div><div><dt>Other stock</dt><dd>R50 per asset</dd></div></dl>
+          <p>We confirm the scope and cost before starting. This is initial stock capture, separate from monthly admin help. No site visit or formal inspection is included.</p>
+        </> : setup === 'visit' ? <>
           <p>We record details and photographs to help build an organised {dealer ? 'stock register' : 'asset register'}.</p>
           <dl className={styles.dealerRates}><div><dt>Road-licensed asset</dt><dd>R100 per asset</dd></div><div><dt>Other asset</dt><dd>R50 per asset</dd></div><div><dt>Return travel</dt><dd>R7.50/km</dd></div></dl>
           <p>Travel is charged once per visit. Your quote depends on the asset mix and distance.</p>
@@ -162,8 +179,8 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
       </div>
       <div className={styles.navigation}>
         {detail ? <button type="button" className={styles.secondary} onClick={() => move(3)}>Back to package</button> : <>
-        {(step === 6 || step === 5 || step === 4 || (!editing && step > firstStep)) ? <button type="button" className={styles.secondary} onClick={() => move(step === 6 ? admin === 'self' ? 2 : 4 : step === 3 && dealer ? 6 : step === 5 ? 1 : step === 4 ? 2 : step === 2 && setup !== 'self' ? 5 : step === 3 && admin !== 'self' ? 4 : step - 1)}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : dealer ? 'Dealer Partner · R199/month' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
-        {step !== 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { if (editing) { setEditing(false); move(3); } else move(step === 6 ? 3 : step === 2 || step === 4 ? dealer ? 6 : 3 : step === 5 ? 2 : step + 1); }}>{editing ? 'Update package' : step === 6 || (!dealer && (step === 2 || step === 4)) ? 'See my package' : 'Continue'} </button> : <div className={styles.finalActions}><button type="button" className={styles.restart} onClick={() => { setEditing(false); setAssetBand(null); setSetup(null); setAdmin(null); setCustomers(null); setYearly(false); move(firstStep); }}>Start again</button><Link href={`/auth?accountType=${audience}#signup`} className={styles.primary}>Sign up</Link></div>}
+        {(step === 6 || step === 5 || step === 4 || (!editing && step > firstStep)) ? <button type="button" className={styles.secondary} onClick={() => move(previousStep())}>Back</button> : <span className={styles.note}>{editing ? 'Adjust your choice, then update.' : dealer ? 'Dealer Partner · R199/month' : ready ? 'Your base plan is selected.' : 'Choose your asset range.'}</span>}
+        {step !== 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => { if (editing) { setEditing(false); move(3); } else move(nextStep()); }}>{editing ? 'Update package' : step === 2 || step === 4 ? 'See my package' : 'Continue'} </button> : <div className={styles.finalActions}><button type="button" className={styles.restart} onClick={() => { setEditing(false); setAssetBand(null); setSetup(null); setAdmin(null); setCustomers(null); setYearly(false); move(firstStep); }}>Start again</button><Link href={`/auth?accountType=${audience}#signup`} className={styles.primary}>Sign up</Link></div>}
         </>}
       </div>
     </div>
