@@ -44,6 +44,12 @@ type Place = {
   formattedAddress?: string;
   primaryTypeDisplayName?: { text: string };
   googleMapsUri?: string;
+  nationalPhoneNumber?: string;
+  websiteUri?: string;
+  addressComponents?: Array<{longText?: string; types?: string[]}>;
+  location?: {latitude: number; longitude: number};
+  businessStatus?: string;
+  attributions?: Array<{provider?: string; providerUri?: string}>;
 };
 export default function BusinessJoin({
   adminMode = false,
@@ -68,8 +74,14 @@ export default function BusinessJoin({
     [places, setPlaces] = useState<Place[]>([]),
     [entryMode, setEntryMode] = useState<'google' | 'manual'>('google'),
     [searching, setSearching] = useState(false),
-    [searchNotice, setSearchNotice] = useState('');
+    [searchNotice, setSearchNotice] = useState(''),
+    [linking, setLinking] = useState(''),
+    [linkedPlace, setLinkedPlace] = useState<Place | null>(null),
+    [detailsVerified, setDetailsVerified] = useState(false);
+  const detailsRequest = useRef(0);
+  const populated = useRef<Partial<Fields>>({});
   const businessNameInput = useRef<HTMLInputElement>(null);
+  useEffect(() => () => { detailsRequest.current++; }, []);
   useEffect(() => {
     if (entryMode === 'manual') businessNameInput.current?.focus();
   }, [entryMode]);
@@ -119,9 +131,16 @@ export default function BusinessJoin({
       })
       .catch((e) => setNotice(e.message));
   }, [adminMode, adminBusiness]);
-  const set = (key: keyof Fields, value: unknown) =>
+  const set = (key: keyof Fields, value: unknown) => {
+    setDetailsVerified(false);
     setFields((current) => ({ ...current, [key]: value }));
+  };
   async function save(action = "save") {
+    if (linking) return;
+    if (linkedPlace && action !== 'pause' && !detailsVerified) {
+      setNotice('Confirm the listing details directly with the business or its own website before saving.');
+      return;
+    }
     setBusy(true);
     setNotice("");
     try {
@@ -139,6 +158,7 @@ export default function BusinessJoin({
             ...fields,
             action,
             accepted,
+            ...(linkedPlace ? { googleDetailsUsed: true, detailsVerified } : {}),
             ...(adminMode ? { email, id: adminBusiness?.id } : {}),
           }),
         },
@@ -163,8 +183,51 @@ export default function BusinessJoin({
       setBusy(false);
     }
   }
+  async function linkBusiness(place: Place) {
+    const requestId = ++detailsRequest.current;
+    setLinking(place.id);
+    setSearchNotice('');
+    try {
+      const response = await fetch('/api/business-network/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(adminMode ? {} : { Authorization: `Bearer ${token}` }) },
+        body: JSON.stringify({ placeId: place.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
+      if (requestId !== detailsRequest.current) return;
+      const detail: Place = data.place;
+      if (!detail || detail.id !== place.id) throw new Error('This business could not be loaded. Try again.');
+      const town = ['locality', 'postal_town', 'administrative_area_level_3', 'administrative_area_level_2']
+        .map(type => detail.addressComponents?.find(component => component.types?.includes(type))?.longText).find(Boolean) || '';
+      const next: Partial<Fields> = {
+        name: detail.displayName?.text || '', phone: detail.nationalPhoneNumber || '',
+        website: detail.websiteUri || '', address: detail.formattedAddress || '', town,
+        latitude: Number.isFinite(detail.location?.latitude) ? String(detail.location!.latitude) : '',
+        longitude: Number.isFinite(detail.location?.longitude) ? String(detail.location!.longitude) : '',
+      };
+      const previous = populated.current;
+      setFields(current => {
+        const updated = {...current, googlePlaceId: detail.id, googleMapsUrl: detail.googleMapsUri || ''};
+        for (const key of ['name', 'phone', 'website', 'address', 'town', 'latitude', 'longitude'] as const) {
+          if (!current[key].trim() || current[key] === previous[key]) updated[key] = next[key] || '';
+        }
+        return updated;
+      });
+      populated.current = next;
+      setLinkedPlace(detail);
+      setDetailsVerified(false);
+      setPlaces([]);
+      setNotice('Google details loaded. Review the fields below, add the enquiry email and choose the services. Your own entries have been kept.');
+      businessNameInput.current?.scrollIntoView({behavior: 'smooth', block: 'center'});
+    } catch (error) {
+      if (requestId === detailsRequest.current) setSearchNotice(error instanceof Error ? error.message : 'Unable to load business details. Enter them manually.');
+    } finally {
+      if (requestId === detailsRequest.current) setLinking('');
+    }
+  }
   async function searchGoogle() {
-
+    if (linking || searching) return;
     setSearching(true);
     setSearchNotice('');
     setPlaces([]);
@@ -242,7 +305,7 @@ export default function BusinessJoin({
             </label>
             <button
               type="submit"
-              disabled={searching || query.trim().length < 3}
+              disabled={searching || Boolean(linking) || query.trim().length < 3}
 
             >
               {searching ? 'Searching Google…' : 'Find on Google'}
@@ -261,16 +324,10 @@ export default function BusinessJoin({
                     <p>{p.primaryTypeDisplayName?.text}</p>
                     <button
                       type="button"
-                      onClick={() => {
-                        set("googlePlaceId", p.id);
-                        set("googleMapsUrl", p.googleMapsUri || "");
-                        setPlaces([]);
-                        setNotice(
-                          "Google profile linked for your directory card. Confirm your contact and location details below.",
-                        );
-                      }}
+                      disabled={Boolean(linking) || busy}
+                      onClick={() => void linkBusiness(p)}
                     >
-                      Link this business
+                      {linking === p.id ? 'Loading business details…' : 'Link this business'}
                     </button>
                   </div>
                 ))}
@@ -285,6 +342,14 @@ export default function BusinessJoin({
               />
             </label>
           </form>}
+          {linkedPlace && <section className={styles.card} aria-label="Linked Google business">
+            <strong>{linkedPlace.displayName?.text || 'Linked business'}</strong>
+            <p>{linkedPlace.primaryTypeDisplayName?.text}</p>
+            <span translate="no">Google Maps</span>
+            {linkedPlace.attributions?.map((a, index) => <p key={index}>{a.providerUri && /^https?:\/\//i.test(a.providerUri) ? <a href={a.providerUri} target="_blank" rel="noreferrer">{a.provider}</a> : a.provider}</p>)}
+            {linkedPlace.businessStatus && linkedPlace.businessStatus !== 'OPERATIONAL' && <p role="alert">Google marks this business as {linkedPlace.businessStatus === 'CLOSED_PERMANENTLY' ? 'permanently closed' : 'temporarily closed'}. Check with the business before publishing.</p>}
+            <p>Google does not supply an enquiry email. Enter the address the business wants to receive requests at.</p>
+          </section>}
           <form
             className={styles.panel}
             onSubmit={(e) => {
@@ -338,7 +403,7 @@ export default function BusinessJoin({
             ))}
             <section className={styles.card}>
               <h2>Business location</h2>
-              <BusinessLocation
+              {!linkedPlace && <BusinessLocation
                 latitude={fields.latitude}
                 longitude={fields.longitude}
                 town={fields.town}
@@ -350,7 +415,7 @@ export default function BusinessJoin({
                     ...(town ? { town } : {}),
                   }))
                 }
-              />
+              />}
               <button
                 type="button"
                 onClick={() =>
@@ -474,6 +539,10 @@ export default function BusinessJoin({
                 </button>
               </section>
             ))}
+            {linkedPlace && <label className={styles.check}>
+              <input type="checkbox" required checked={detailsVerified} onChange={event => setDetailsVerified(event.target.checked)} />
+              I have independently checked these listing details with the business or its own website and have permission to publish them.
+            </label>}
             {!adminMode ? (
               <label className={styles.check}>
                 <input
@@ -490,17 +559,17 @@ export default function BusinessJoin({
               <h2>Publish this business</h2>
               <p>You control approval. Save and publish adds this business to the directory immediately, without sending an invitation.</p>
               <div className={styles.entryActions}>
-                <button className={styles.button} disabled={busy} type="submit" name="action" value="save">{status === 'active' ? 'Save changes' : 'Save draft'}</button>
-                <button className={styles.primary} disabled={busy} type="submit" name="action" value="save_publish">{busy ? 'Saving…' : 'Save and publish'}</button>
+                <button className={styles.button} disabled={busy || Boolean(linking)} type="submit" name="action" value="save">{status === 'active' ? 'Save changes' : 'Save draft'}</button>
+                <button className={styles.primary} disabled={busy || Boolean(linking)} type="submit" name="action" value="save_publish">{busy ? 'Saving…' : 'Save and publish'}</button>
               </div>
-            </section> : <button className={styles.primary} disabled={busy} type="submit">
+            </section> : <button className={styles.primary} disabled={busy || Boolean(linking)} type="submit">
               {busy ? 'Saving…' : status === 'invited' ? 'Accept free listing' : 'Save listing'}
             </button>}
           </form>
           {status === "active" ? (
             <button
               className={styles.danger}
-              disabled={busy}
+              disabled={busy || Boolean(linking)}
               onClick={() => void save("pause")}
             >
               Hide listing and stop requests
