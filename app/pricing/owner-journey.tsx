@@ -22,19 +22,6 @@ function Choice({ selected, onClick, title, children }: { selected: boolean; onC
   </button>;
 }
 
-function Included() {
-  return <div className={styles.benefits}>
-    <h3>Your tools, whether you do it yourself or get help</h3><p>Only active assets count towards your plan. Sold and archived assets are excluded.</p>
-    <ul>
-      <li><strong>Know what you own.</strong> Asset registers, photographs, documents and value estimates in one place.</li>
-      <li><strong>Understand running costs.</strong> Connect invoices, fuel records and budgets to your assets.</li>
-      <li><strong>Stay on top of maintenance.</strong> Schedules, reminders and problem reporting.</li>
-      <li><strong>Keep useful records.</strong> Ownership, finance and insurance details, PDF reports, Excel/CSV exports and asset QR codes.</li>
-    </ul>
-    <details><summary>See uploads, Capture and selling tools</summary><p>Manual entry and document uploads have no daily limit and no extra charge. Aim4price Capture includes 10 invoices + 10 fuel slips per Owner account, per day, shared across its users and contributors. The allowance resets at midnight South African time and covers invoices and fuel slips, not asset setup.</p><p>Marketplace access and tools to prepare your assets for sale are also included.</p></details>
-  </div>;
-}
-
 export default function PackageJourney({ onTitleChange, audience = 'owner' }: { onTitleChange?: (title: string) => void; audience?: 'owner' | 'dealer' }) {
   const dealer = audience === 'dealer';
   const firstStep = dealer ? 1 : 0;
@@ -124,11 +111,11 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Initial setup</span><strong>{setupLabel}</strong></div><span>{setup === 'self' ? 'No setup fee' : setup === 'visit' ? 'Capture + travel, quoted separately' : 'Separate custom quote'}</span><button type="button" aria-label="Change setup" onClick={() => { setEditing(true); move(1); }}>Change</button></div>
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Admin help</span><strong>{adminLabel}</strong></div><span>{adminPlan ? `${money(adminPlan.price)}/month` : admin === 'self' ? 'No admin fee' : 'Custom quote'}</span><button type="button" aria-label="Change help" onClick={() => { setEditing(true); move(2); }}>Change</button></div>
         </div>
-        <div className={styles.reviewDetails}>
-          <details><summary>Included features</summary>{dealer ? <DealerDetails /> : <Included />}</details>
+        {(dealer || setup !== 'self' || admin !== 'self') && <div className={styles.reviewDetails}>
+          {dealer && <details><summary>Included features</summary><DealerDetails /></details>}
           {setup !== 'self' && <details><summary>{setup === 'visit' ? 'Visit details & rates' : 'Inspection & valuation'}</summary>{setup === 'visit' ? <><p>We help build your records with asset details, photographs and ownership information, including serial/VIN, make, model, year and hours or mileage.</p><p>R100 per road-licensed asset · R50 per other asset · R7.50/km return travel. Travel is charged once per visit. Final cost depends on asset mix and distance.</p><p>Asset recording is not a formal inspection or certified valuation. Visit costs are additional to the subscription.</p></> : <p>Formal inspections and professional valuations require a separate quote. They are not included in asset capture or admin hours.</p>}</details>}
           {admin !== 'self' && <details><summary>Admin help & terms</summary><p>We capture additional or bulk records, organise supplied documents and keep asset information updated. You supply the records; we help maintain them.</p><p>Prepaid hours expire monthly with no rollover. Extra work: R250/hour. Travel, formal inspections and professional valuation research are excluded. Admin is billed monthly, even with a yearly base plan.</p></details>}
-        </div>
+        </div>}
         <p className={styles.reviewNote}>You can request admin help anytime. Prices in rand. This is a package preview; no subscription or visit is booked.</p>
 
       </div>}
