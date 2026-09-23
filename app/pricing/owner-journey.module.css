@@ -170,3 +170,41 @@
   .choiceCopy { font-size: .82rem; }
   .selection { top: 1.1rem; right: 1rem; }
 }
+/* A single total followed by a clear, editable cost breakdown. */
+.review { display: grid; gap: .85rem; }
+.reviewTotal { display: flex; justify-content: space-between; align-items: center; gap: 1.25rem; padding: 1.1rem 1.25rem; border: 1px solid #d3e3d9; border-radius: 1.1rem; background: #edf5ef; }
+.reviewTotal .label { margin: 0; font-size: .85rem; }
+.reviewTotal .price { margin: .45rem 0; font-size: 2.1rem; }
+.totalCaption, .reviewBilling p { margin: 0; color: #52645d; font-size: .8rem; line-height: 1.5; }
+.reviewBilling { flex-shrink: 0; text-align: center; }
+.reviewBilling p { margin-top: .4rem; font-size: .72rem; }
+.quoteTitle { font-size: 1.6rem; font-weight: 800; margin: .5rem 0; }
+.reviewRows { border: 1px solid #dce5df; border-radius: 1rem; padding: 0 1rem; }
+.reviewRow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .9fr) 4rem; gap: .8rem; align-items: center; padding: .75rem 0; }
+.reviewRow + .reviewRow { border-top: 1px solid #e1e9e4; }
+.reviewRow strong { display: block; font-size: .88rem; line-height: 1.4; }
+.rowLabel { display: block; color: #607168; font-size: .72rem; margin-bottom: .2rem; }
+.reviewRow > span { font-size: .8rem; text-align: right; line-height: 1.5; }
+.reviewRow button { font: inherit; font-size: .78rem; color: #24533e; border: 0; background: transparent; text-decoration: underline; text-underline-offset: .2rem; min-height: 2.75rem; cursor: pointer; }
+.reviewDetails details { margin: 0; padding: .65rem 0; }
+.reviewDetails p { font-size: .82rem; line-height: 1.65; color: #52645d; }
+.reviewNote { margin: 0; font-size: .75rem; line-height: 1.5; color: #607168; }
+.reviewActions { display: flex; justify-content: flex-end; gap: .75rem; }
+.fundedRates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; font-size: .8rem; }
+.fundedRates h4 { margin: 0 0 .5rem; }
+@media (max-width: 640px) {
+  .reviewTotal { flex-direction: column; align-items: stretch; gap: .85rem; padding: 1rem; }
+  .reviewBilling { text-align: left; }
+  .reviewRow { grid-template-columns: minmax(0, 1fr) auto; gap: .35rem .5rem; }
+  .reviewRow > span { text-align: left; grid-column: 1; }
+  .reviewRow button { grid-column: 2; grid-row: 1 / span 2; }
+  .reviewActions { flex-direction: column-reverse; }
+  .fundedRates { grid-template-columns: 1fr; }
+}
+.reviewRow { padding-block: .5rem; }
+.reviewDetails { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0 1rem; }
+.reviewDetails > details[open] { grid-column: 1 / -1; }
+@media (max-width: 640px) { .reviewDetails { grid-template-columns: 1fr; } }
+
+.dealerRates > div { display: flex; justify-content: space-between; gap: 1rem; padding-block: .5rem; font-size: .82rem; }
+.dealerRates dd { margin: 0; text-align: right; font-weight: 700; }
