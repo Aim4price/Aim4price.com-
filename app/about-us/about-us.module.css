@@ -227,6 +227,10 @@
   text-wrap: pretty;
 }
 
+.directionCopy > p + p {
+  margin-top: 1rem;
+}
+
 .directionClosing {
   padding-left: 3rem;
   border-left: 1px solid rgba(24, 77, 61, 0.18);
