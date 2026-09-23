@@ -9,10 +9,10 @@
 .body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1rem 1.75rem 0; }
 @media (max-width: 640px) { .dialog { width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); border-radius: 1.25rem; } .header { margin: 0 1rem; padding: 1rem 0 .75rem; } .body { padding: .75rem 1rem 0; } }
 
-/* Keep the Owner questions and actions in a stable, centred frame. */
-.owner { height: min(44rem, calc(100dvh - 2rem)); }
+/* Centre the Owner flow and let each question fit its content. */
+.owner { height: fit-content; }
 .owner .header { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; align-items: center; }
 .owner .header::before { content: ''; }
 .owner .header h2 { text-align: center; font-size: clamp(1.35rem, 2.1vw, 1.8rem); }
-.owner .body { display: flex; flex: 1; }
-@media (max-width: 640px) { .owner { height: calc(100dvh - 1rem); } .owner .header { gap: .5rem; } }
+.owner .body { display: flex; flex: 0 1 auto; }
+@media (max-width: 640px) { .owner .header { gap: .5rem; } }
