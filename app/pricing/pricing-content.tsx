@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import styles from './pricing.module.css';
 import OwnerJourney from './owner-journey';
+import PricingModal from './pricing-modal';
 
 const ownerPlans = [
   { name: 'Essentials', assets: 25, monthly: 99, yearly: 999, fundedMonthly: 60, fundedYearly: 600 },
@@ -25,7 +26,7 @@ function Question({ title, hint, children }: { title: string; hint: string; chil
 }
 
 export default function PricingContent() {
-  const [audience, setAudience] = useState<'owner' | 'dealer' | 'middleman'>('owner');
+  const [audience, setAudience] = useState<'owner' | 'dealer' | null>(null);
   const [yearly, setYearly] = useState(false);
   const period = yearly ? 'year' : 'month';
   const billingControl = (
@@ -43,36 +44,28 @@ export default function PricingContent() {
     <div className={styles.shell}>
       <header className={styles.hero}>
         <p className={styles.eyebrow}>Aim4price pricing</p>
-        <h1>A plan that fits your assets.</h1>
-        <p className={styles.intro}>Choose your account type. We’ll help you find the right fit.</p>
-        <div className={styles.audienceButtons} role="group" aria-label="Choose your account type">
-          {(['owner', 'dealer', 'middleman'] as const).map(type => (
-            <button key={type} type="button" aria-pressed={audience === type} aria-controls="pricing-selection" onClick={() => setAudience(type)}>
-              {type === 'owner' ? 'Owners' : type === 'dealer' ? 'Dealers' : 'Middlemen'}
-            </button>
-          ))}
+        <h1>Let’s find your package.</h1>
+        <p className={styles.intro}>Choose how you use Aim4price.</p>
+        <div className={styles.accountChoices}>
+          <button type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}><strong>Owner</strong><span>Manage my assets</span><span aria-hidden="true">→</span></button>
+          <button type="button" aria-haspopup="dialog" onClick={() => setAudience('dealer')}><strong>Dealer</strong><span>Manage customers &amp; stock</span><span aria-hidden="true">→</span></button>
         </div>
       </header>
+      <PricingModal open={audience === 'owner'} title="Owner pricing" onClose={() => setAudience(null)}><OwnerJourney /></PricingModal>
+      <PricingModal open={audience === 'dealer'} title="Dealer pricing" onClose={() => setAudience(null)}>
 
       <div id="pricing-selection" className={styles.questions}>
-      <div hidden={audience !== 'owner'}><OwnerJourney /></div>
 
-      {audience !== 'owner' && <section id="partners" className={styles.section} aria-label="Partner pricing">
-        <Question title={audience === 'dealer' ? 'What does a Dealer plan cost?' : 'How much does Middleman access cost?'} hint={audience === 'dealer' ? 'R199/month or R1 999/year · launch pricing' : 'R0 while active · see requirements and paid options'}>
+      {audience === 'dealer' && <section id="partners" className={styles.section} aria-label="Partner pricing">
+        <Question title="What does a Dealer plan cost?" hint="R199/month or R1 999/year · launch pricing">
         {audience === 'dealer' && billingControl}
         <div className={styles.partnerGrid}>
-          {audience === 'dealer' ? <article className={`${styles.planCard} ${styles.dealerCard}`}>
+          <article className={`${styles.planCard} ${styles.dealerCard}`}>
             <p className={styles.planCategory}>Dealer</p><h3>Dealer Partner</h3><p className={styles.planDescription}>Connect customer records, enquiries and your stock.</p>
             <p className={styles.price}><strong>{money(yearly ? 1999 : 199)}</strong><span>/{period}</span></p><p className={styles.billingNote}>{yearly ? 'Billed once per year · launch pricing' : 'R1 999 yearly · launch pricing'}</p>
             <CheckList items={['Customer asset access & history, with permission', 'Leads, Discovery & customer follow-ups', 'Maintenance, staff assignments & client costs', 'Estimates, Ad Studio & reusable branding', 'Public showroom & Marketplace listings', 'Dashboard, notifications & 40% commission opportunities']} />
             <p className={styles.footnote}>Launch pricing may be reviewed for new Dealers as Discovery and leads develop.</p>
-          </article> :
-          <article className={styles.planCard}>
-            <p className={styles.planCategory}>Middleman</p><h3>Active Partner</h3><p className={styles.planDescription}>Value, advertise and connect assets with buyers.</p>
-            <p className={styles.price}><strong>R0</strong><span>/month</span></p><p className={styles.billingNote}>While activity requirements are met</p>
-            <CheckList items={['Estimates, valuations & professional adverts', 'Ad Studio & reusable brand kits', 'Public showroom & Marketplace listings', 'WhatsApp & social media sharing', '40% commission opportunities']} />
-            <details className={styles.cardDetails}><summary>How active access works</summary><p>In every rolling 90 days, complete three genuine valuations, adverts or listings, plus one verified Aim4price marketing or referral activity.</p><p>If you fall short, you have 30 days to correct this. After that, choose R199 per month or read-only access at R0. Fake assets, duplicate adverts and self-referrals do not count.</p><p>Dealer Leads, Discovery, maintenance management, staff workflows and Client Costs are excluded.</p></details>
-          </article>}
+          </article>
         </div>
         </Question>
       </section>}
@@ -95,17 +88,18 @@ export default function PricingContent() {
         </Question>
       </section>}
 
-      <section hidden={audience === 'owner'} className={styles.section} aria-label="More pricing questions">
+      <section className={styles.section} aria-label="More pricing questions">
         <div className={styles.detailsList}>
           {audience === 'dealer' && <details><summary>Can a Dealer pay for an Owner account?</summary><div className={styles.detailBody}><p>A Dealer can fund an Owner subscription and manage the account with the Owner’s permission. The Owner keeps their own login, owns their information and can revoke Dealer access.</p>
             {billingControl}<div className={styles.fundedGrid}>{ownerPlans.map(plan => <div key={plan.name}><h4>{plan.name}</h4><strong>{money(yearly ? plan.fundedYearly : plan.fundedMonthly)} /{period}</strong><p>Up to {plan.assets} active assets</p></div>)}</div>
             <p><strong>R99 once-off activation.</strong> Includes account and initial register setup, Dealer linking, the Owner signup email and access checks.</p><p>The Dealer-funded rate already reflects the partner discount; no additional commission is paid. If the Dealer captures the assets, photographs and documents, no per-asset admin fee or Managed Admin Package is required.</p><p>When Dealer funding ends, the Owner is notified and has 30 days to subscribe. Access remains read-only and information is not deleted.</p></div></details>}
-          {audience !== 'middleman' && <details><summary>What does asset setup or a visit cost?</summary><div className={styles.detailBody}><dl className={styles.serviceList}><div><dt>Road-licensed asset capture</dt><dd>R100 per asset</dd></div><div><dt>Non-road-licensed asset capture</dt><dd>R50 per asset</dd></div><div><dt>Travel</dt><dd>R7.50 per kilometre</dd></div><div><dt>Formal inspection or professional valuation</dt><dd>Custom quote</dd></div></dl><p>Asset setup covers standard details, supplied photographs and documents, serial/VIN, make, model, year, hours or mileage, and basic ownership details. It is separate from the daily invoice and fuel-slip allowance.</p><p>Travel uses the return distance, with one travel charge per visit. Data capture is not a physical inspection or certified valuation.</p></div></details>}
-          {audience !== 'owner' && <details><summary>How does partner commission work?</summary><div className={styles.detailBody}><p>Eligible partners earn 40% on referred Owner and Dealer subscriptions and asset data capture. One Partner of Record is linked to each customer and must remain active and compliant.</p><p>Commission is based on qualifying money received, excluding VAT, discounts, refunds and chargebacks. It becomes available after 30 days, with monthly statements and a minimum EFT payout of R500. Smaller balances carry forward.</p><p>Commission credit can fund a Dealer subscription or Dealer-Managed Owner accounts. No commission applies to your own subscription, activation fees or Managed Administration. Dealer-funded subscriptions already include the discount. Travel payments go entirely to the person travelling.</p></div></details>}
-          {audience === 'owner' && <details><summary>What counts towards my Owner plan?</summary><div className={styles.detailBody}><p>Only active assets count towards the 25, 100 or 300 asset limit. Sold and archived assets do not count. All Owner plans include the same core features, with pricing based on asset quantity rather than storage. Owner accounts require a paid subscription.</p></div></details>}
+          {audience === 'dealer' && <details><summary>What does asset setup or a visit cost?</summary><div className={styles.detailBody}><dl className={styles.serviceList}><div><dt>Road-licensed asset capture</dt><dd>R100 per asset</dd></div><div><dt>Non-road-licensed asset capture</dt><dd>R50 per asset</dd></div><div><dt>Travel</dt><dd>R7.50 per kilometre</dd></div><div><dt>Formal inspection or professional valuation</dt><dd>Custom quote</dd></div></dl><p>Asset setup covers standard details, supplied photographs and documents, serial/VIN, make, model, year, hours or mileage, and basic ownership details. It is separate from the daily invoice and fuel-slip allowance.</p><p>Travel uses the return distance, with one travel charge per visit. Data capture is not a physical inspection or certified valuation.</p></div></details>}
+          {audience === 'dealer' && <details><summary>How does partner commission work?</summary><div className={styles.detailBody}><p>Eligible partners earn 40% on referred Owner and Dealer subscriptions and asset data capture. One Partner of Record is linked to each customer and must remain active and compliant.</p><p>Commission is based on qualifying money received, excluding VAT, discounts, refunds and chargebacks. It becomes available after 30 days, with monthly statements and a minimum EFT payout of R500. Smaller balances carry forward.</p><p>Commission credit can fund a Dealer subscription or Dealer-Managed Owner accounts. No commission applies to your own subscription, activation fees or Managed Administration. Dealer-funded subscriptions already include the discount. Travel payments go entirely to the person travelling.</p></div></details>}
+
         </div>
       </section>
       </div>
+      </PricingModal>
       <div className={styles.closing}><div><h2>Still have a question?</h2></div><Link className={styles.button} href="/contact-us">Talk to Aim4price <span aria-hidden="true">↗</span></Link></div>
     </div>
   );

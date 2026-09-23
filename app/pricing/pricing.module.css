@@ -150,3 +150,10 @@
 }
 .shell [hidden] { display: none !important; }
 .hero h1 { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-weight: 800; letter-spacing: -.045em; }
+.accountChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; max-width: 46rem; margin: 2rem auto; }
+.accountChoices button { min-height: 13rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem; padding: 2rem; border: 1px solid #cbdcd0; border-radius: 1.25rem; background: #fcfdfc; color: #183b30; font: inherit; cursor: pointer; box-shadow: 0 6px 18px #173e2e08; }
+.accountChoices button:hover { border-color: #37775d; background: #edf4ef; }
+.accountChoices strong { font-size: 1.8rem; font-weight: 800; letter-spacing: -.035em; }
+.accountChoices span { font-size: .9rem; color: #52665c; }
+.accountChoices span:last-child { font-size: 1.4rem; color: #24533e; }
+@media (max-width: 640px) { .accountChoices { gap: .75rem; } .accountChoices button { padding: 1rem .5rem; min-height: 10rem; } .accountChoices strong { font-size: 1.4rem; } }

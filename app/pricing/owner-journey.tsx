@@ -41,18 +41,19 @@ export default function OwnerJourney() {
   const [assetBand, setAssetBand] = useState<number | null>(null);
   const [yearly, setYearly] = useState(false);
   const [setup, setSetup] = useState<Setup | null>(null);
+  const [wantsHelp, setWantsHelp] = useState(false);
   const [admin, setAdmin] = useState<Admin | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const plan = assetBand !== null ? plans[assetBand] : undefined;
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
   const ready = step === 0 ? assetBand !== null : step === 1 ? setup !== null : admin !== null;
-  const titles = ['How many assets do you have?', 'How would you like to get set up?', 'Who will keep your register up to date?', 'Your Aim4price package'];
+  const titles = ['How many assets?', 'How would you like to set up?', 'Who will manage your register?', 'Your package'];
   const move = (next: number) => {
     setCopyStatus('');
     setStep(next);
     requestAnimationFrame(() => {
       heading.current?.focus({ preventScroll: true });
-      heading.current?.scrollIntoView({ block: 'center', behavior: 'auto' });
+      heading.current?.closest('[class*=body]')?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     });
   };
   const billing = <div className={styles.billing} role="group" aria-label="Owner billing period">
@@ -83,53 +84,49 @@ export default function OwnerJourney() {
         <p>{step < 3 ? `Step ${step + 1} of 3` : 'Built around your choices'}</p>
         <h2 ref={heading} tabIndex={-1}>{titles[step]}</h2>
         <p>{[
-          'Choose by active assets. Every Owner plan includes the same core tools.',
-          'Start on your own, or get help creating a complete asset register.',
-          'Use the tools yourself, or choose prepaid time for someone to help with the records.',
-          'Your subscription, setup and ongoing help — clearly separated.',
+          'Same tools. Choose your asset range.',
+          'Upload yourself or let us help.',
+          'Do it yourself or choose monthly help.',
+          'Your plan, setup and monthly help.',
         ][step]}</p>
       </div>
 
-      {step === 0 && <div className={styles.layout}>
-        <div>
-          <div className={styles.choices} role="group" aria-label="Number of active assets">
-            {plans.map((item, index) => <Choice key={item.name} selected={assetBand === index} onClick={() => setAssetBand(index)} title={item.range}>{item.name} · from {money(item.monthly)}/month</Choice>)}
-            <Choice selected={assetBand === 3} onClick={() => setAssetBand(3)} title="More than 300 assets">Enterprise · pricing tailored to your operation</Choice>
-          </div>
-          <p className={styles.note}>Sold and archived assets do not count towards your limit.</p>
-          {assetBand !== null && <div className={styles.preview} aria-live="polite">
-            <h3>{plan ? `${plan.name} fits your register` : 'Let’s plan for your operation'}</h3>
-            {plan ? <>{billing}<p className={styles.price}>{money(yearly ? plan.yearly : plan.monthly)}<span>/{yearly ? 'year' : 'month'}</span></p><p>{yearly ? `Save ${money(plan.monthly * 12 - plan.yearly)} compared with 12 monthly payments.` : `${money(plan.yearly)} if billed yearly.`} Up to {plan.limit} active assets.</p></> : <p>We’ll quote for your asset numbers. Continue to choose the setup and support you need.</p>}
-          </div>}
+      {step === 0 && <>
+        <div className={styles.assetChoices} role="group" aria-label="Number of active assets">
+          {plans.map((item, index) => <Choice key={item.name} selected={assetBand === index} onClick={() => setAssetBand(index)} title={item.range}>{money(item.monthly)}/month · {item.name}</Choice>)}
+          <Choice selected={assetBand === 3} onClick={() => setAssetBand(3)} title="More than 300">Enterprise · custom quote</Choice>
         </div>
-        <Included />
-      </div>}
+        {plan && <div className={styles.compactPrice}>{billing}<strong>{money(yearly ? plan.yearly : plan.monthly)}/{yearly ? 'year' : 'month'}</strong><span>{yearly ? 'Billed yearly' : `${money(plan.yearly)} billed yearly`}</span></div>}
+        <p className={styles.note}>Only active assets count. Sold and archived assets are excluded.</p>
+        <details><summary>What’s included?</summary><Included /></details>
+      </>}
 
-      {step === 1 && <div className={styles.layout}>
+      {step === 1 && <>
         <div className={styles.choices} role="group" aria-label="Setup preference">
-          <Choice selected={setup === 'self'} onClick={() => setSetup('self')} title="I’ll upload my own assets">Add details, photographs and documents at your own pace. No additional setup fee.</Choice>
-          <Choice selected={setup === 'visit'} onClick={() => setSetup('visit')} title="I’d like someone to visit">Help recording your machinery, taking photographs and organising your register.</Choice>
-          <Choice selected={setup === 'inspection'} onClick={() => setSetup('inspection')} title="I need an inspection or valuation">Discuss a formal machinery inspection or professional valuation. Quoted separately.</Choice>
+          <Choice selected={setup === 'self'} onClick={() => setSetup('self')} title="Upload myself">Add my details, photos and documents. No setup fee.</Choice>
+          <Choice selected={setup === 'visit'} onClick={() => setSetup('visit')} title="Arrange a visit">Help recording machinery and building my register.</Choice>
         </div>
-        <aside className={styles.benefits} aria-live="polite">
-          {!setup && <><h3>A good register starts with good information</h3><p>Accurate asset details and useful photographs make it easier to identify machinery, keep records together and prepare for the next step.</p><p>Choose how you’d like to start. You can decide on ongoing help separately.</p></>}
-          {setup === 'self' && <><h3>Everything you need to do it yourself</h3><ul><li>Add assets and keep their photos and documents together.</li><li>Record costs, fuel and maintenance as you go.</li><li>Upload invoices and fuel slips for Aim4price Capture instead of typing every record yourself.</li></ul><p><strong>Manual uploads: no daily limit.</strong> Capture includes 10 invoices + 10 fuel slips per Owner account daily, shared across users. Resets at midnight South African time.</p><p className={styles.note}>The Capture allowance is for invoices and fuel slips; it is separate from asset setup.</p></>}
-          {setup === 'visit' && <><h3>Get your register off to a stronger start</h3><p>A visit helps gather the details that are easy to miss: serial/VIN numbers, make, model, year, hours or mileage, photographs and basic ownership information.</p><dl className={styles.rates}><div><dt>Road-licensed asset capture</dt><dd>R100 / asset</dd></div><div><dt>Non-road-licensed asset capture</dt><dd>R50 / asset</dd></div><div><dt>Travel</dt><dd>R7.50 / km</dd></div></dl><p className={styles.note}>Travel is charged on the return distance, once per visit. The final amount depends on the asset mix and distance and is confirmed with you. Asset recording is not a formal inspection or certified valuation.</p></>}
-          {setup === 'inspection' && <><h3>Help for a specific inspection or valuation</h3><p>Tell us which machinery you need assessed and what the report is for. We’ll discuss the scope and provide a custom quote.</p><p><strong>Quoted separately.</strong> Standard asset capture fees and monthly admin hours do not include formal inspections or professional valuation research.</p></>}
-        </aside>
-      </div>}
+        {setup === 'self' && <div className={styles.tip}><strong>Your tools are included.</strong><p>Unlimited manual uploads. Capture: 10 invoices + 10 fuel slips per Owner account daily.</p><details><summary>Capture details</summary><p>Shared across users and contributors. Resets at midnight South African time. The allowance covers invoices and fuel slips, not asset setup.</p></details></div>}
+        {setup === 'visit' && <div className={styles.tip}><strong>A complete register, with less setup work.</strong><p>We help record asset details, photographs and ownership information.</p><dl className={styles.rates}><div><dt>Road-licensed assets</dt><dd>R100 each</dd></div><div><dt>Other assets</dt><dd>R50 each</dd></div><div><dt>Return travel</dt><dd>R7.50/km</dd></div></dl><details><summary>Visit details</summary><p>Includes standard asset details, serial/VIN, make, model, year, hours or mileage and basic ownership information. Travel is charged once per visit. Final cost depends on asset mix and distance. Asset recording is not a formal inspection or certified valuation.</p></details></div>}
+        <details><summary>Need a formal inspection or valuation?</summary><p className={styles.note}>Quoted separately. Not included in asset capture or admin hours.</p><Choice selected={setup === 'inspection'} onClick={() => setSetup('inspection')} title="Request an inspection quote">Discuss the machinery and report you need.</Choice></details>
+        {setup === 'inspection' && <p className={styles.note} role="status">Selected: formal inspection / valuation · custom quote.</p>}
+      </>}
 
-      {step === 2 && <div className={styles.layout}>
+      {step === 2 && <>
         <div className={styles.choices} role="group" aria-label="Ongoing administration">
-          <Choice selected={admin === 'self'} onClick={() => setAdmin('self')} title="I’ll manage it myself">No extra administration fee. Keep using all your plan’s tools and daily Capture allowance.</Choice>
-          {adminPlans.map(item => <Choice key={item.hours} selected={admin === String(item.hours)} onClick={() => setAdmin(String(item.hours) as Admin)} title={`Up to ${item.hours} hours per month`}>{money(item.price)}/month · Managed Administration</Choice>)}
-          <Choice selected={admin === 'custom'} onClick={() => setAdmin('custom')} title="I need more than 10 hours">Let’s discuss your workload and prepare a custom quote.</Choice>
+          <Choice selected={admin === 'self'} onClick={() => { setWantsHelp(false); setAdmin('self'); }} title="I’ll manage it">All my tools and daily Capture allowance. No admin fee.</Choice>
+          <Choice selected={wantsHelp} onClick={() => { if (!wantsHelp) setAdmin(null); setWantsHelp(true); }} title="I’d like monthly help">Help capturing records and keeping my register organised.</Choice>
         </div>
-        <aside className={styles.benefits} aria-live="polite">
-          <h3>{admin === 'self' ? 'You stay in control of your records' : 'Less time on records. More time on your operation.'}</h3>
-          {admin === 'self' ? <><p>Use costs, budgets, fuel records and maintenance reminders to keep your register useful as your machinery ages.</p><p>Manual entry and uploads have no daily limit. You still get 10 invoice + 10 fuel-slip captures per Owner account each day.</p><p>You can ask for extra help later if your workload grows.</p></> : <><p>The administration fee pays for time spent capturing, organising and maintaining your records. It is optional help on top of your software subscription.</p><ul><li>Help with additional capture and bulk records.</li><li>Organise supplied documents and asset information.</li><li>Keep your register current as new information comes in.</li></ul><p><strong>You provide the records; we help with the administration.</strong> Choose prepaid hours to match the help you need.</p><details><summary>How admin hours work</summary><p>Hours expire monthly and do not roll over. Additional work is R250 per hour. Travel, formal inspections and professional valuation research are excluded.</p></details></>}
-        </aside>
-      </div>}
+        {wantsHelp && <div className={styles.tip}>
+          <p>Prepaid admin time, on top of your subscription.</p>
+          <div className={styles.assetChoices} role="group" aria-label="Admin package">
+            {adminPlans.map(item => <Choice key={item.hours} selected={admin === String(item.hours)} onClick={() => setAdmin(String(item.hours) as Admin)} title={`Up to ${item.hours} hours`}>{money(item.price)}/month</Choice>)}
+            <Choice selected={admin === 'custom'} onClick={() => setAdmin('custom')} title="More than 10 hours">Custom quote</Choice>
+          </div>
+          <details><summary>What does admin cover?</summary><p>Additional capture, bulk records, organising supplied documents and updating asset information. You supply the records; we help maintain them.</p><p>Hours expire monthly with no rollover. Extra work: R250/hour. Travel, formal inspections and professional valuation research are excluded.</p></details>
+        </div>}
+        {admin === 'self' && <div className={styles.tip}><strong>Stay in control, at your own pace.</strong><p>Track costs, fuel, budgets and maintenance. Manual uploads have no daily limit.</p><details><summary>Your daily Capture allowance</summary><p>10 invoices + 10 fuel slips per Owner account, shared across users and contributors. Resets at midnight South African time.</p></details></div>}
+      </>}
 
       {step === 3 && <div className={styles.layout}>
         <div>
@@ -146,14 +143,14 @@ export default function OwnerJourney() {
           <div className={styles.summaryCard}>
             <div className={styles.summaryHead}><h3>Ongoing administration</h3><button type="button" onClick={() => move(2)}>Change help</button></div>
             <p>{adminLabel}</p><strong>{adminPlan ? `${money(adminPlan.price)}/month` : admin === 'self' ? 'No additional administration fee' : 'Custom quote'}</strong>
-            {adminPlan && <p className={styles.note}>Prepaid hours expire monthly. Extra work: R250/hour. Travel, formal inspections and professional valuation research are excluded.</p>}
+            {adminPlan && <details><summary>Admin terms</summary><p className={styles.note}>Prepaid hours expire monthly. Extra work: R250/hour. Travel, formal inspections and professional valuation research are excluded.</p></details>}
           </div>
         </div>
         <aside className={styles.total} aria-live="polite">
           <p className={styles.label}>Your ongoing cost</p>
           {plan && admin !== 'custom' ? yearly ? <><p className={styles.price}>{money(plan.yearly)}<span>/year</span></p><p>Base subscription, billed yearly.</p><p><strong>{adminPlan ? `${money(adminPlan.price)}/month for administration` : 'No monthly administration charge.'}</strong></p></> : <><p className={styles.price}>{money(plan.monthly + (adminPlan?.price ?? 0))}<span>/month</span></p><p>Includes your base subscription{adminPlan ? ' and chosen administration package' : ''}.</p></> : <><h3>Let’s confirm your package</h3><p>{plan ? `${money(yearly ? plan.yearly : plan.monthly)}/${yearly ? 'year' : 'month'} base subscription. Administration quoted separately.` : `Enterprise subscription quoted separately.${adminPlan ? ` Administration: ${money(adminPlan.price)}/month.` : admin === 'self' ? ' No administration fee.' : ' Administration also requires a quote.'}`}</p></>}
           {setup !== 'self' && <p className={styles.excluded}>Your {setup === 'visit' ? 'once-off visit' : 'inspection / valuation'} is additional and needs confirmation.</p>}
-          <p className={styles.note}>All prices are in South African rand. This is a package guide; choosing options does not create a subscription or book a visit.</p>
+          <p className={styles.note}>Prices in rand. No subscription or visit is booked here.</p>
           <Link href="/contact-us" className={styles.primary}>Discuss this package <span aria-hidden="true">↗</span></Link>
           <details><summary>Copy your choices for your enquiry</summary><textarea className={styles.copyText} aria-label="Your package summary" readOnly value={packageText} onFocus={event => event.currentTarget.select()} /><button type="button" className={styles.secondary} onClick={copyPackage}>Copy summary</button><p role="status" className={styles.note}>{copyStatus}</p></details>
           <details><summary>What your Owner plan includes</summary><Included /></details>
@@ -161,8 +158,8 @@ export default function OwnerJourney() {
       </div>}
 
       <div className={styles.navigation}>
-        {step > 0 ? <button type="button" className={styles.secondary} onClick={() => move(step - 1)}>Back</button> : <span className={styles.note}>Choose an asset range to continue.</span>}
-        {step < 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => move(step + 1)}>{step === 2 ? 'See my package' : 'Continue'} <span aria-hidden="true">→</span></button> : <button type="button" className={styles.secondary} onClick={() => { setAssetBand(null); setSetup(null); setAdmin(null); setYearly(false); move(0); }}>Start again</button>}
+        {step > 0 ? <button type="button" className={styles.secondary} onClick={() => move(step - 1)}>Back</button> : <span className={styles.note}>Select an option to continue.</span>}
+        {step < 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => move(step + 1)}>{step === 2 ? 'See my package' : 'Continue'} <span aria-hidden="true">→</span></button> : <button type="button" className={styles.secondary} onClick={() => { setAssetBand(null); setSetup(null); setAdmin(null); setWantsHelp(false); setYearly(false); move(0); }}>Start again</button>}
       </div>
     </div>
   </section>;
