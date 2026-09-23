@@ -27,6 +27,7 @@ function Question({ title, hint, children }: { title: string; hint: string; chil
 
 export default function PricingContent() {
   const [audience, setAudience] = useState<'owner' | 'dealer' | null>(null);
+  const [ownerTitle, setOwnerTitle] = useState('How many assets?');
   const [yearly, setYearly] = useState(false);
   const period = yearly ? 'year' : 'month';
   const billingControl = (
@@ -36,7 +37,7 @@ export default function PricingContent() {
           <button type="button" aria-pressed={!yearly} onClick={() => setYearly(false)}>Monthly</button>
           <button type="button" aria-pressed={yearly} onClick={() => setYearly(true)}>Yearly</button>
         </div>
-        <span>Lower total cost with yearly billing</span>
+        <span>Dealer Partner: save 16.3% with yearly billing</span>
       </div>
     </div>
   );
@@ -47,11 +48,11 @@ export default function PricingContent() {
         <h1>Let’s find your package.</h1>
         <p className={styles.intro}>Choose how you use Aim4price.</p>
         <div className={styles.accountChoices}>
-          <button type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}><strong>Owner</strong><span>Manage my assets</span><span aria-hidden="true">→</span></button>
-          <button type="button" aria-haspopup="dialog" onClick={() => setAudience('dealer')}><strong>Dealer</strong><span>Manage customers &amp; stock</span><span aria-hidden="true">→</span></button>
+          <button type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}><strong>Owner</strong><span>Manage my assets</span></button>
+          <button type="button" aria-haspopup="dialog" onClick={() => setAudience('dealer')}><strong>Dealer</strong><span>Manage customers &amp; stock</span></button>
         </div>
       </header>
-      <PricingModal open={audience === 'owner'} title="Owner pricing" onClose={() => setAudience(null)}><OwnerJourney /></PricingModal>
+      <PricingModal open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><OwnerJourney onTitleChange={setOwnerTitle} /></PricingModal>
       <PricingModal open={audience === 'dealer'} title="Dealer pricing" onClose={() => setAudience(null)}>
 
       <div id="pricing-selection" className={styles.questions}>
@@ -82,7 +83,7 @@ export default function PricingContent() {
         <div className={styles.adminPanel}>
           <p className={styles.sharedNote}>Prepaid time for capturing, organising and maintaining your records.</p>
           <div className={styles.adminGrid}>{adminPlans.map(plan => <article key={plan.hours}><h4>Up to {plan.hours} hours</h4><p className={styles.price}><strong>{money(plan.price)}</strong><span>/month</span></p></article>)}</div>
-          <div className={styles.adminExtra}><p><strong>More than 10 hours?</strong> Custom quote.<br />Additional work: <strong>R250 per hour.</strong></p><Link href="/contact-us" className={styles.button}>Discuss your needs <span aria-hidden="true">↗</span></Link></div>
+          <div className={styles.adminExtra}><p><strong>More than 10 hours?</strong> Custom quote.<br />Additional work: <strong>R250 per hour.</strong></p><Link href="/contact-us" className={styles.button}>Discuss your needs </Link></div>
           <p className={styles.footnote}>Hours expire monthly and do not roll over. Travel, formal inspections and professional valuation research are excluded.</p>
         </div>
         </Question>
@@ -100,7 +101,7 @@ export default function PricingContent() {
       </section>
       </div>
       </PricingModal>
-      <div className={styles.closing}><div><h2>Still have a question?</h2></div><Link className={styles.button} href="/contact-us">Talk to Aim4price <span aria-hidden="true">↗</span></Link></div>
+      <div className={styles.closing}><div><h2>Still have a question?</h2></div><Link className={styles.button} href="/contact-us">Talk to Aim4price </Link></div>
     </div>
   );
 }

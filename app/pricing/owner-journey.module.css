@@ -87,3 +87,40 @@
 .total { padding: 1.15rem; }
 @media (max-width: 640px) { .navigation { bottom: -1rem; } .progress li { font-size: .65rem; } .assetChoices { gap: .5rem; } .assetChoices .choice { padding: .8rem; } .choiceTitle { font-size: .95rem; } }
 .navigation > .primary { margin-left: auto; }
+/* Password-modal typography and compact question layout. */
+.heading { margin-bottom: .85rem; }
+.heading h2 { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.heading > p:last-child { margin: 0; font-size: .88rem; font-weight: 650; color: #607168; }
+.assetChoices .choice { min-height: 4.75rem; }
+.choice { padding: .8rem 1rem; border-color: #dce5ed; border-radius: 1rem; }
+.choiceTitle { font-size: .95rem; font-weight: 750; }
+.choiceCopy { margin-top: .25rem; font-size: .8rem; line-height: 1.45; }
+.journey details { margin-top: .65rem; padding-top: .65rem; }
+.journey summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: .75rem; font-size: .8rem; }
+.journey summary::-webkit-details-marker { display: none; }
+.journey summary::after { content: '+'; font-size: 1rem; font-weight: 500; }
+.journey details[open] > summary::after { content: '−'; }
+.tip { padding: .75rem 1rem; margin-top: .75rem; border: 1px solid rgba(62,110,213,.12); border-radius: 1rem; background: linear-gradient(135deg, rgba(62,110,213,.075), rgba(31,138,102,.06)); font-size: .82rem; }
+.tip p { margin: .3rem 0; }
+.rates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: .65rem 0; font-size: .8rem; }
+.rates > div { display: block; padding: 0; border: 0; }
+.rates dd { text-align: left; }
+.navigation { bottom: 0; padding: .85rem 0; margin-top: .85rem; background: #fff; }
+.primary, .secondary { min-height: 2.8rem; padding: .65rem 1.1rem; border-radius: 1rem; font-size: .88rem; }
+.secondary { background: #f2f6f9; border-color: #d5e0ed; }
+.saving { display: inline-block; margin-left: .45rem; font-size: .7rem; font-weight: 750; }
+.adminNote { margin: 0 0 .75rem; color: #52645d; font-size: .8rem; }
+.summaryCard { padding: .75rem 1rem; margin-bottom: .5rem; }
+.summaryHead h3 { font-size: .9rem; }
+.summaryHead button { min-height: 1.8rem; }
+.summaryCard p { margin: .4rem 0; }
+.journey .price { font-size: 1.8rem; margin: .65rem 0 .4rem; }
+.total { padding: 1rem; }
+.total > p { margin: .5rem 0; }
+.total .excluded { padding-block: .5rem; }
+@media (max-height: 760px) and (min-width: 761px) { .choice { padding: .65rem .85rem; } .assetChoices .choice { min-height: 4.1rem; } .tip { padding: .6rem .85rem; } .heading { margin-bottom: .6rem; } }
+@media (max-width: 640px) { .rates { grid-template-columns: 1fr; gap: .35rem; } .rates > div { display: flex; justify-content: space-between; } .billing button { padding: .5rem .7rem; } }
+
+.summaryCard p { line-height: 1.45; margin: .25rem 0; }
+.summaryCard .billing { margin-top: .35rem; }
+.summaryCard { padding: .65rem .85rem; }
