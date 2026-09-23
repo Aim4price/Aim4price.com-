@@ -5,8 +5,6 @@
 .hero h1 { margin: 0; font-size: clamp(2.8rem, 5vw, 4.6rem); line-height: 1.08; letter-spacing: -.055em; font-weight: 800; }
 .hero h1 span { color: #347959; }
 .intro { margin: 1.5rem auto 0; max-width: 43rem; line-height: 1.8; color: #52665c; }
-.sectionLinks { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem 1.5rem; margin-top: 2rem; }
-.sectionLinks a { color: #244f3e; font-size: .85rem; text-underline-offset: 5px; }
 .section { margin-bottom: 3.5rem; scroll-margin-top: 2rem; }
 .sectionHeading { display: flex; justify-content: space-between; align-items: flex-end; gap: 1.5rem; margin-bottom: 1.5rem; }
 .sectionHeading h2, .closing h2 { margin: 0; font-size: clamp(1.5rem, 2.4vw, 2rem); line-height: 1.25; letter-spacing: -.04em; }
@@ -39,7 +37,7 @@
 .featureGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.65rem 2rem; }
 .featureGrid h4 { margin: 0 0 .5rem; font-size: .85rem; }
 .featureGrid p { margin: 0; color: #52665c; font-size: .8rem; line-height: 1.8; }
-.partnerGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.partnerGrid { max-width: 48rem; margin-inline: auto; }
 .dealerCard { background: #edf4ee; }
 .cardDetails { border-top: 1px solid #d6e1d9; margin-top: 1.5rem; padding-top: 1rem; font-size: .8rem; }
 .cardDetails p { color: #52665c; line-height: 1.8; }
@@ -99,3 +97,15 @@
   .toggle { display: flex; }
   .toggle button { flex: 1; }
 }
+
+.audienceButtons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; max-width: 38rem; margin: 2rem auto 0; }
+.audienceButtons button { min-height: 50px; padding: .9rem 1rem; border: 1px solid #cbdcd0; border-radius: 9px; background: #fcfdfc; color: #24533e; font: inherit; font-size: .95rem; font-weight: 700; cursor: pointer; }
+.audienceButtons button:hover { background: #eaf1eb; }
+.audienceButtons button[aria-pressed='true'] { background: #24533e; border-color: #24533e; color: white; }
+.billingRow { display: flex; justify-content: flex-end; margin-bottom: 1.5rem; }
+@media (max-width: 640px) {
+  .audienceButtons { gap: .4rem; }
+  .audienceButtons button { padding: .8rem .4rem; font-size: .82rem; }
+}
+
+:global(html[data-background='dark']) .billingRow .billingControl > span { color: #e0ebe4; }
