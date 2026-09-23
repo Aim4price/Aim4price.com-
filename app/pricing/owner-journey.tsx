@@ -39,7 +39,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
   const ready = step === 7 ? help !== null : step === 8 ? setup !== null : step === 6 ? customers !== null : step === 0 ? assetBand !== null : step === 1 || step === 5 ? setup !== null : admin !== null;
   const titles = ['How many assets?', dealer ? 'How will you add your stock?' : 'How will you add your assets?', dealer ? 'Who will manage the records?' : 'Who will manage your register?', dealer ? 'Your Dealer package' : 'Your Owner package', 'How much admin help do you need?', 'What help do you need?', 'Will you manage customers’ asset registers?', 'Would you like help from Aim4price?', 'What would you like help setting up?'];
-  const detailTitles = { funding: 'Client account billing', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help' };
+  const detailTitles = { funding: 'Client register billing', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help' };
   useEffect(() => { onTitleChange?.(detail ? detailTitles[detail] : titles[step]); }, [step, detail, onTitleChange, dealer]);
   const move = (next: number) => {
     setDetail(null);
@@ -142,7 +142,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
 
       {!detail && dealer && step === 6 && <div className={styles.choices} role="group" aria-label="Customer registers">
         <Choice selected={customers === 'self'} onClick={() => setCustomers('self')} title="Not for now">You can add customer registers later.</Choice>
-        <Choice selected={customers === 'customers'} onClick={() => setCustomers('customers')} title="Yes, with their permission">Client accounts you create are billed to your dealership.</Choice>
+        <Choice selected={customers === 'customers'} onClick={() => setCustomers('customers')} title="Yes, managed by our dealership">Client registers stay in your Dealer account. Clients have no login or access.</Choice>
       </div>}
 
       {!detail && dealer && step === 7 && <div className={styles.assetChoices} role="group" aria-label="Aim4price assistance">
@@ -182,15 +182,15 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         <div className={styles.reviewRows}>
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Hosting subscription</span><strong>{plan ? plan.name : 'Enterprise'}</strong></div><span>{plan ? `${money(yearly ? plan.yearly : plan.monthly)}/${yearly ? 'year' : 'month'}` : 'Custom quote'}</span>{!dealer && <button type="button" aria-label="Change assets" onClick={() => { setEditing(true); move(0); }}>Edit</button>}</div>
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Initial setup</span><strong>{setupLabel}</strong></div><span>{setup === 'self' ? 'No setup fee' : setup === 'assisted' ? '+ Stock capture · separate quote' : setup === 'visit' ? '+ Capture & travel · separate quote' : '+ Separate custom quote'}</span><button type="button" aria-label="Change setup" onClick={() => { setEditing(true); move(dealer ? 7 : 1); }}>Edit</button></div>
-          {dealer && <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Customer registers</span><strong>{customers === 'customers' ? 'Manage with Owner permission' : 'Add customers later'}</strong></div><span>{customers === 'customers' ? '+ Client accounts · billed to you' : 'No customer subscriptions selected'}</span><button type="button" aria-label="Change customer registers" onClick={() => { setEditing(true); move(6); }}>Edit</button></div>}
+          {dealer && <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Customer registers</span><strong>{customers === 'customers' ? 'Controlled by our dealership' : 'Add customers later'}</strong></div><span>{customers === 'customers' ? '+ Client hosting · billed to you' : 'No client registers selected'}</span><button type="button" aria-label="Change customer registers" onClick={() => { setEditing(true); move(6); }}>Edit</button></div>}
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Admin help</span><strong>{adminLabel}</strong></div><span>{adminPlan ? `+ ${money(adminPlan.price)}/month` : admin === 'self' ? 'No admin fee' : '+ Custom quote'}</span><button type="button" aria-label="Change help" onClick={() => { setEditing(true); move(dealer ? 7 : 2); }}>Edit</button></div>
         </div>
         <div className={styles.detailLinks}>
-          {dealer && <><button type="button" onClick={() => openDetail('funding')}>Client account billing</button><button type="button" onClick={() => openDetail('commission')}>Partner commission</button></>}
+          {dealer && <><button type="button" onClick={() => openDetail('funding')}>Client register billing</button><button type="button" onClick={() => openDetail('commission')}>Partner commission</button></>}
           {setup !== 'self' && <button type="button" onClick={() => openDetail('setup')}>View setup details</button>}
           {admin !== 'self' && <button type="button" onClick={() => openDetail('admin')}>View admin details</button>}
         </div>
-        {dealer ? <p className={styles.reviewNote}>Client accounts you create are added to your Dealer invoice when activated. They are not included in this preview. You decide what to charge your clients.</p> : <p className={styles.reviewNote}>Unlimited asset registers. Your active-asset limit is shared across the whole account; sold and archived assets are excluded. No per-register fee. Invoices go to your Owner account’s billing email.</p>}
+        {dealer ? <p className={styles.reviewNote}>Client-register hosting is billed to your dealership and is not included in this preview. Admin confirms charges and the start date. Your clients have no login or access.</p> : <p className={styles.reviewNote}>Unlimited asset registers. Your active-asset limit is shared across the whole account; sold and archived assets are excluded. No per-register fee. Invoices go to your Owner account’s billing email.</p>}
         <p className={styles.reviewNote}>Admin help is available anytime. Prices in rand. No payment or booking is made here.</p>
 
       </div>}
@@ -210,7 +210,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         {detail === 'admin' && <>
           <p>We capture supplied records, organise documents and keep {dealer ? 'your agreed records' : 'your asset register'} up to date.</p>
           <dl className={styles.dealerRates}><div><dt>Your monthly help</dt><dd>{adminLabel}</dd></div><div><dt>Monthly fee</dt><dd>{adminPlan ? money(adminPlan.price) : 'Custom quote'}</dd></div><div><dt>Additional work</dt><dd>R250/hour</dd></div></dl>
-          {dealer && <p>We agree which records the work covers before starting. Customer-register work requires the Owner’s permission and an agreed scope; it is not unlimited assistance across accounts.</p>}
+          {dealer && <p>We agree which records the work covers before starting. Your dealership authorises work on its client registers. Admin help covers the agreed scope and hours.</p>}
           <p>Hours expire monthly and do not roll over. Admin is billed monthly, including when your base plan is yearly.</p><p>Travel, formal inspections and professional valuation research are excluded.</p>
         </>}
       </div>}
