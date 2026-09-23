@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import styles from './owner-journey.module.css';
 
 const plans = [
@@ -11,7 +11,6 @@ const plans = [
 ];
 const adminPlans = [{ hours: 2, price: 499 }, { hours: 5, price: 999 }, { hours: 10, price: 1799 }];
 const money = (amount: number) => `R${String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
-const steps = ['Your assets', 'Getting set up', 'Ongoing help', 'Your package'];
 type Setup = 'self' | 'visit' | 'inspection';
 type Admin = 'self' | '2' | '5' | '10' | 'custom';
 
@@ -35,7 +34,7 @@ function Included() {
   </div>;
 }
 
-export default function OwnerJourney() {
+export default function OwnerJourney({ onTitleChange }: { onTitleChange?: (title: string) => void }) {
   const [step, setStep] = useState(0);
   const [copyStatus, setCopyStatus] = useState('');
   const [assetBand, setAssetBand] = useState<number | null>(null);
@@ -48,6 +47,7 @@ export default function OwnerJourney() {
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
   const ready = step === 0 ? assetBand !== null : step === 1 ? setup !== null : admin !== null;
   const titles = ['How many assets?', 'How would you like to set up?', 'Who will manage your register?', 'Your package'];
+  useEffect(() => { onTitleChange?.(titles[step]); }, [step, onTitleChange]);
   const move = (next: number) => {
     setCopyStatus('');
     setStep(next);
@@ -58,7 +58,7 @@ export default function OwnerJourney() {
   };
   const billing = <div className={styles.billing} role="group" aria-label="Owner billing period">
     <button type="button" aria-pressed={!yearly} onClick={() => setYearly(false)}>Monthly</button>
-    <button type="button" aria-pressed={yearly} onClick={() => setYearly(true)}>Yearly</button>
+    <button type="button" aria-pressed={yearly} onClick={() => setYearly(true)}>Yearly{plan && <span className={styles.saving}>Save {((1 - plan.yearly / (plan.monthly * 12)) * 100).toFixed(1)}%</span>}</button>
   </div>;
   const setupLabel = setup === 'self' ? 'Upload my own assets' : setup === 'visit' ? 'Asset recording visit' : 'Formal inspection / valuation';
   const adminLabel = admin === 'self' ? 'Manage it myself' : admin === 'custom' ? 'Custom administration' : `Up to ${adminPlan?.hours} admin hours / month`;
@@ -76,9 +76,6 @@ export default function OwnerJourney() {
   };
 
   return <section className={styles.journey} aria-label="Build your Owner package">
-    <ol className={styles.progress} aria-label="Package steps">
-      {steps.map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined}><span>{index < step ? '✓' : index + 1}</span>{label}</li>)}
-    </ol>
     <div className={styles.panel}>
       <div className={styles.heading}>
         <p>{step < 3 ? `Step ${step + 1} of 3` : 'Built around your choices'}</p>
@@ -113,6 +110,7 @@ export default function OwnerJourney() {
       </>}
 
       {step === 2 && <>
+        <p className={styles.adminNote}>You can request admin help anytime.</p>
         <div className={styles.choices} role="group" aria-label="Ongoing administration">
           <Choice selected={admin === 'self'} onClick={() => { setWantsHelp(false); setAdmin('self'); }} title="I’ll manage it">All my tools and daily Capture allowance. No admin fee.</Choice>
           <Choice selected={wantsHelp} onClick={() => { if (!wantsHelp) setAdmin(null); setWantsHelp(true); }} title="I’d like monthly help">Help capturing records and keeping my register organised.</Choice>
@@ -133,12 +131,12 @@ export default function OwnerJourney() {
           <div className={styles.summaryCard}>
             <div className={styles.summaryHead}><h3>Base subscription</h3><button type="button" onClick={() => move(0)}>Change assets</button></div>
             <p>{plan ? `${plan.name} · up to ${plan.limit} active assets` : 'Enterprise · more than 300 assets'}</p>
-            {plan ? <>{billing}<p className={styles.price}>{money(yearly ? plan.yearly : plan.monthly)}<span>/{yearly ? 'year' : 'month'}</span></p></> : <p className={styles.price}>Custom quote</p>}
+            {plan ? <><p><strong>{money(yearly ? plan.yearly : plan.monthly)}/{yearly ? 'year' : 'month'}</strong></p>{billing}</> : <strong>Custom quote</strong>}
           </div>
           <div className={styles.summaryCard}>
             <div className={styles.summaryHead}><h3>Initial setup</h3><button type="button" onClick={() => move(1)}>Change setup</button></div>
             <p>{setupLabel}</p>
-            {setup === 'self' ? <strong>No additional setup fee</strong> : setup === 'visit' ? <><strong>Once-off capture + travel</strong><p>R100 per road-licensed asset · R50 per non-road-licensed asset · R7.50/km return travel.</p><p className={styles.note}>Final visit cost to be confirmed from asset mix and distance. Does not include a formal inspection.</p></> : <strong>Separate custom quote</strong>}
+            {setup === 'self' ? <strong>No additional setup fee</strong> : setup === 'visit' ? <><strong>Once-off capture + travel</strong><details><summary>Visit rates</summary><p>R100 per road-licensed asset · R50 per non-road-licensed asset · R7.50/km return travel. Final cost confirmed from asset mix and distance. Formal inspections excluded.</p></details></> : <strong>Separate custom quote</strong>}
           </div>
           <div className={styles.summaryCard}>
             <div className={styles.summaryHead}><h3>Ongoing administration</h3><button type="button" onClick={() => move(2)}>Change help</button></div>
@@ -150,8 +148,8 @@ export default function OwnerJourney() {
           <p className={styles.label}>Your ongoing cost</p>
           {plan && admin !== 'custom' ? yearly ? <><p className={styles.price}>{money(plan.yearly)}<span>/year</span></p><p>Base subscription, billed yearly.</p><p><strong>{adminPlan ? `${money(adminPlan.price)}/month for administration` : 'No monthly administration charge.'}</strong></p></> : <><p className={styles.price}>{money(plan.monthly + (adminPlan?.price ?? 0))}<span>/month</span></p><p>Includes your base subscription{adminPlan ? ' and chosen administration package' : ''}.</p></> : <><h3>Let’s confirm your package</h3><p>{plan ? `${money(yearly ? plan.yearly : plan.monthly)}/${yearly ? 'year' : 'month'} base subscription. Administration quoted separately.` : `Enterprise subscription quoted separately.${adminPlan ? ` Administration: ${money(adminPlan.price)}/month.` : admin === 'self' ? ' No administration fee.' : ' Administration also requires a quote.'}`}</p></>}
           {setup !== 'self' && <p className={styles.excluded}>Your {setup === 'visit' ? 'once-off visit' : 'inspection / valuation'} is additional and needs confirmation.</p>}
-          <p className={styles.note}>Prices in rand. No subscription or visit is booked here.</p>
-          <Link href="/contact-us" className={styles.primary}>Discuss this package <span aria-hidden="true">↗</span></Link>
+          <p className={styles.note}>Admin help is available anytime. Prices in rand. No booking is made here.</p>
+          <Link href="/contact-us" className={styles.primary}>Discuss this package </Link>
           <details><summary>Copy your choices for your enquiry</summary><textarea className={styles.copyText} aria-label="Your package summary" readOnly value={packageText} onFocus={event => event.currentTarget.select()} /><button type="button" className={styles.secondary} onClick={copyPackage}>Copy summary</button><p role="status" className={styles.note}>{copyStatus}</p></details>
           <details><summary>What your Owner plan includes</summary><Included /></details>
         </aside>
@@ -159,7 +157,7 @@ export default function OwnerJourney() {
 
       <div className={styles.navigation}>
         {step > 0 ? <button type="button" className={styles.secondary} onClick={() => move(step - 1)}>Back</button> : <span className={styles.note}>Select an option to continue.</span>}
-        {step < 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => move(step + 1)}>{step === 2 ? 'See my package' : 'Continue'} <span aria-hidden="true">→</span></button> : <button type="button" className={styles.secondary} onClick={() => { setAssetBand(null); setSetup(null); setAdmin(null); setWantsHelp(false); setYearly(false); move(0); }}>Start again</button>}
+        {step < 3 ? <button type="button" className={styles.primary} disabled={!ready} onClick={() => move(step + 1)}>{step === 2 ? 'See my package' : 'Continue'} </button> : <button type="button" className={styles.secondary} onClick={() => { setAssetBand(null); setSetup(null); setAdmin(null); setWantsHelp(false); setYearly(false); move(0); }}>Start again</button>}
       </div>
     </div>
   </section>;

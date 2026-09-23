@@ -1,10 +1,10 @@
-.dialog { width: min(56rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 1px solid #cbdcd0; border-radius: 1.5rem; color: #183b30; background: linear-gradient(180deg, #fff, #f7faf8); box-shadow: 0 30px 80px #07191455; font-family: var(--font-body, 'Montserrat'), sans-serif; overflow: hidden; }
+.dialog { width: min(54rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 1px solid rgba(18,45,37,.12); border-radius: 1.55rem; color: #17362c; background: #fff; box-shadow: 0 32px 90px rgba(7,25,20,.28), 0 8px 24px rgba(7,25,20,.12); font-family: var(--font-body, 'Montserrat'), sans-serif; overflow: hidden; }
 .dialog[open] { display: flex; flex-direction: column; }
-.dialog::backdrop { background: rgba(12, 24, 35, .65); backdrop-filter: var(--modal-backdrop-filter, blur(12px)); }
-.header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.1rem 1.5rem; border-bottom: 1px solid #d6e1d9; flex-shrink: 0; }
-.header h2 { margin: 0; font-size: 1rem; font-weight: 700; }
-.header button { width: 2.6rem; height: 2.6rem; display: grid; place-items: center; padding: 0; border: 1px solid #cbdcd0; border-radius: .5rem; background: #fff; color: #183b30; font-size: 1.6rem; cursor: pointer; }
+.dialog::backdrop { background: var(--modal-backdrop-color, rgba(12,24,35,.42)); backdrop-filter: var(--modal-backdrop-filter, blur(12px)); }
+.header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin: 0 1.75rem; padding: 1.4rem 0 1rem; border-bottom: 1px solid rgba(18,45,37,.1); flex-shrink: 0; }
+.header h2 { margin: 0; font-size: clamp(1.5rem, 2.3vw, 2rem); line-height: 1.15; font-weight: 850; letter-spacing: -.045em; }
+.header button { width: 2.75rem; height: 2.75rem; flex: 0 0 auto; display: grid; place-items: center; padding: 0; border: 1px solid #d3dfda; border-radius: .9rem; background: #f6faf8; color: #254d3c; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
 .header button:hover { background: #edf4ef; }
 .header button:focus-visible { outline: 3px solid #398d67; outline-offset: 3px; }
-.body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1.5rem; }
-@media (max-width: 640px) { .dialog { width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); border-radius: 1rem; } .header { padding: .8rem 1rem; } .body { padding: 1rem; } }
+.body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1rem 1.75rem 0; }
+@media (max-width: 640px) { .dialog { width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); border-radius: 1.25rem; } .header { margin: 0 1rem; padding: 1rem 0 .75rem; } .body { padding: .75rem 1rem 0; } }

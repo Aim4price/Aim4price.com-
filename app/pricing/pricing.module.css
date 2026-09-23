@@ -157,3 +157,9 @@
 .accountChoices span { font-size: .9rem; color: #52665c; }
 .accountChoices span:last-child { font-size: 1.4rem; color: #24533e; }
 @media (max-width: 640px) { .accountChoices { gap: .75rem; } .accountChoices button { padding: 1rem .5rem; min-height: 10rem; } .accountChoices strong { font-size: 1.4rem; } }
+.accountChoices span:last-child { font-size: .9rem; color: #52665c; }
+.accountChoices button { min-height: 11rem; }
+.detailsList summary { list-style: none; }
+.detailsList summary::-webkit-details-marker { display: none; }
+.detailsList summary::after { content: '+'; float: right; }
+.detailsList details[open] > summary::after { content: '−'; }
