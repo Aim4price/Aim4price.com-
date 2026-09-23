@@ -52,7 +52,7 @@ export default function PricingContent() {
           <button type="button" aria-haspopup="dialog" onClick={() => setAudience('dealer')}><strong>Dealer</strong><span>Manage customers &amp; stock</span></button>
         </div>
       </header>
-      <PricingModal open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><OwnerJourney onTitleChange={setOwnerTitle} /></PricingModal>
+      <PricingModal owner open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><OwnerJourney onTitleChange={setOwnerTitle} /></PricingModal>
       <PricingModal open={audience === 'dealer'} title="Dealer pricing" onClose={() => setAudience(null)}>
 
       <div id="pricing-selection" className={styles.questions}>

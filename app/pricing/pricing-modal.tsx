@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './pricing-modal.module.css';
 
-function ModalSurface({ open, title, onClose, children }: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
+function ModalSurface({ open, title, onClose, children, owner = false }: { open: boolean; owner?: boolean; title: string; onClose: () => void; children: ReactNode }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -15,7 +15,7 @@ function ModalSurface({ open, title, onClose, children }: { open: boolean; title
     if (dialog.current && !dialog.current.open) dialog.current.showModal();
     return () => { document.body.style.overflow = overflow; previous?.isConnected && previous.focus(); };
   }, [open]);
-  return <dialog ref={dialog} className={styles.dialog} aria-labelledby={titleId} onKeyDown={event => {
+  return <dialog ref={dialog} className={`${styles.dialog} ${owner ? styles.owner : ''}`} aria-labelledby={titleId} onKeyDown={event => {
     if (event.key !== 'Tab') return;
     const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], summary, textarea:not(:disabled), [tabindex="0"]')).filter(element => element.getClientRects().length > 0 && getComputedStyle(element).visibility !== 'hidden');
     const first = controls[0];
@@ -32,7 +32,7 @@ function ModalSurface({ open, title, onClose, children }: { open: boolean; title
   </dialog>;
 }
 
-export default function PricingModal(props: { open: boolean; title: string; onClose: () => void; children: ReactNode }) {
+export default function PricingModal(props: { open: boolean; owner?: boolean; title: string; onClose: () => void; children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
