@@ -16,3 +16,5 @@
 .owner .header h2 { text-align: center; font-size: clamp(1.35rem, 2.1vw, 1.8rem); }
 .owner .body { display: flex; flex: 0 1 auto; }
 @media (max-width: 640px) { .owner .header { gap: .5rem; } }
+/* Delegate scrolling to the active view, keeping the action bar visible. */
+.owner .body { overflow: hidden; padding: 0; }

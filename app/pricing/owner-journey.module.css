@@ -220,3 +220,39 @@
   .finalActions > a, .finalActions > button { flex: 1; min-width: 0; }
   .reviewBilling .yearlySaving { justify-content: flex-start; flex-wrap: wrap; }
 }
+
+/* The question scrolls independently; navigation stays within the dialog. */
+.journey { min-height: 0; width: 100%; }
+.panel { min-height: 0; }
+.content { overflow-y: auto; min-height: 0; overscroll-behavior: contain; padding: 1rem 1.75rem .5rem; scrollbar-gutter: stable; }
+.navigation { position: static; margin: 0 1.75rem; padding: .85rem 0; min-height: 4.5rem; }
+.heading:has(h2:last-child) { margin: 0; }
+.reviewTotal { padding: 1rem 1.15rem; }
+.reviewTotal .price { margin: .4rem 0; }
+.detailLinks { display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
+.detailLinks:empty { display: none; }
+.detailLinks button, .restart { border: 0; background: transparent; color: #24533e; font: inherit; font-size: .8rem; font-weight: 650; padding: .6rem .15rem; min-height: 2.75rem; cursor: pointer; text-decoration: underline; text-underline-offset: .2rem; }
+.finalActions .restart { min-width: auto; }
+.serviceNote { margin: 0; font-size: .78rem; line-height: 1.5; color: #607168; }
+.detailPage { max-width: 42rem; margin: 0 auto; padding: .25rem 0 1rem; font-size: .88rem; line-height: 1.7; color: #52645d; }
+.detailPage > p:first-child { margin-top: 0; }
+.detailPage .benefits { padding: 0; }
+.detailPage .benefits ul { list-style: none; padding: 0; gap: .7rem; }
+.detailPage .benefits li { border: 1px solid #dce5df; border-radius: .8rem; padding: .8rem 1rem; }
+.detailPage h3 { margin-top: 1.25rem; }
+.dealerRates { margin: 1rem 0; padding: .25rem 1rem; background: #edf5ef; border-radius: 1rem; }
+.dealerRates > div + div { border-top: 1px solid #d3e3d9; }
+.fundedRates > div { background: #edf5ef; border-radius: .8rem; padding: .8rem; }
+@media (max-width: 640px) {
+  .content { padding: .85rem 1rem .5rem; scrollbar-gutter: auto; }
+  .navigation { margin-inline: 1rem; }
+  .reviewTotal { padding: .85rem; }
+  .reviewTotal .price { font-size: 1.85rem; }
+  .navigation:has(.finalActions) { flex-wrap: nowrap; gap: .5rem; }
+  .finalActions { flex: 0 1 auto; }
+  .navigation button { min-width: auto; }
+  .finalActions .restart { font-size: .75rem; padding-inline: .25rem; }
+  .finalActions > a { min-width: 6rem; }
+}
+
+.finalActions .restart { white-space: nowrap; }
