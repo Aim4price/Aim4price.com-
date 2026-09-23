@@ -148,3 +148,5 @@
   .answer { padding: 1rem; }
   .closing { flex-direction: row; flex-wrap: wrap; gap: .75rem; }
 }
+.shell [hidden] { display: none !important; }
+.hero h1 { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-weight: 800; letter-spacing: -.045em; }
