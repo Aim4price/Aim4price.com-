@@ -124,3 +124,34 @@
 .summaryCard p { line-height: 1.45; margin: .25rem 0; }
 .summaryCard .billing { margin-top: .35rem; }
 .summaryCard { padding: .65rem .85rem; }
+
+/* Consistent alignment across questions and the review screen. */
+.journey { display: flex; flex: 1; min-width: 0; }
+.panel { display: flex; flex-direction: column; width: 100%; min-height: 100%; }
+.content { padding-bottom: 1rem; }
+.heading { text-align: center; margin-bottom: 1.25rem; }
+.heading > p:last-child { font-weight: 500; }
+.navigation { margin-top: auto; flex-shrink: 0; min-height: 4.5rem; flex-wrap: nowrap; }
+.navigation > .note { max-width: 50%; margin: 0; }
+.navigation button { min-width: 8rem; }
+.choice { position: relative; }
+.choiceTitle { padding-right: 1.8rem; min-height: 1.4em; }
+.selection { position: absolute; right: 1rem; top: 1rem; }
+.compactPrice { min-height: 4.5rem; margin-top: .75rem; justify-content: center; text-align: center; gap: .5rem 1rem; }
+.compactPrice > span { line-height: 1.5; }
+.layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.summaryHead { align-items: center; }
+.summaryHead h3 { margin: 0; }
+.summaryHead button { white-space: nowrap; }
+@media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .heading { margin-bottom: 1rem; }
+  .choiceTitle { font-size: .9rem; }
+  .selection { width: 1rem; height: 1rem; right: .65rem; top: .85rem; }
+  .assetChoices .choice { padding: .8rem .65rem; }
+  .navigation button { min-width: 6rem; padding-inline: .85rem; }
+  .navigation > .note { font-size: .72rem; }
+  .summaryHead { flex-wrap: nowrap; }
+}
+
+.choice { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
