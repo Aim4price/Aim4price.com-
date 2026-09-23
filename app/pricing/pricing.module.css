@@ -1,0 +1,101 @@
+.page { color: #183b30; }
+.shell { width: var(--shell-width); max-width: 100%; margin-inline: auto; padding-bottom: 3rem; }
+.hero { padding: 4rem 1rem 3.5rem; text-align: center; }
+.eyebrow { margin: 0 0 .75rem; color: #37775d; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.hero h1 { margin: 0; font-size: clamp(2.8rem, 5vw, 4.6rem); line-height: 1.08; letter-spacing: -.055em; font-weight: 800; }
+.hero h1 span { color: #347959; }
+.intro { margin: 1.5rem auto 0; max-width: 43rem; line-height: 1.8; color: #52665c; }
+.sectionLinks { display: flex; flex-wrap: wrap; justify-content: center; gap: .6rem 1.5rem; margin-top: 2rem; }
+.sectionLinks a { color: #244f3e; font-size: .85rem; text-underline-offset: 5px; }
+.section { margin-bottom: 3.5rem; scroll-margin-top: 2rem; }
+.sectionHeading { display: flex; justify-content: space-between; align-items: end; gap: 1.5rem; margin-bottom: 1.5rem; }
+.sectionHeading h2, .closing h2 { margin: 0; font-size: clamp(1.5rem, 2.4vw, 2rem); line-height: 1.25; letter-spacing: -.04em; }
+.sectionHeading p:not(.eyebrow), .enterprise p, .closing p { margin: .65rem 0 0; color: #52665c; line-height: 1.6; font-size: .9rem; }
+.billingControl { flex-shrink: 0; text-align: center; }
+.billingControl > span { display: block; margin-top: .6rem; font-size: .7rem; color: #52665c; }
+.toggle { display: inline-flex; background: #e7eee8; padding: 4px; border: 1px solid #d4e0d7; border-radius: 10px; }
+.toggle button { min-height: 40px; padding: .6rem 1.25rem; border: 0; border-radius: 7px; background: transparent; font: inherit; font-size: .85rem; font-weight: 650; color: #42624e; cursor: pointer; }
+.toggle button[aria-pressed='true'] { background: #194b37; color: white; box-shadow: 0 2px 5px #193d3014; }
+.planGrid, .allowanceGrid, .adminGrid, .fundedGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.planCard { padding: 1.65rem; border: 1px solid #d6e1d9; border-radius: 16px; background: #fcfdfc; box-shadow: 0 5px 18px #173e2e05; min-width: 0; }
+.planCategory { margin: 0 0 .55rem; color: #587363; font-size: .8rem; }
+.planCard h3 { font-size: 1.5rem; letter-spacing: -.04em; margin: 0; }
+.planDescription { font-size: .85rem; color: #52665c; line-height: 1.65; min-height: 2.8rem; margin: .7rem 0 1.6rem; }
+.price { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; margin: 0; }
+.price strong { font-size: clamp(2.1rem, 3vw, 2.7rem); letter-spacing: -.055em; font-weight: 750; line-height: 1.2; }
+.price > span { font-size: .8rem; color: #52665c; }
+.billingNote { margin: .55rem 0 1.4rem; color: #52665c; font-size: .76rem; line-height: 1.6; }
+.assetLimit { padding: .95rem 0; margin-bottom: 1rem; border-block: 1px solid #dce5de; font-size: .9rem; }
+.checkList { padding: 0; margin: 0; list-style: none; display: grid; gap: .8rem; }
+.checkList li { display: flex; gap: .6rem; align-items: baseline; font-size: .8rem; line-height: 1.65; }
+.checkList li > span { color: #347959; font-weight: 750; flex-shrink: 0; }
+.enterprise { display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: #eaf1eb; border: 1px solid #d6e1d9; border-radius: 12px; padding: 1.4rem 1.65rem; margin-top: 1rem; }
+.enterprise h3 { font-size: 1rem; margin: 0; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 1rem; min-height: 44px; padding: .8rem 1.1rem; border-radius: 8px; border: 1px solid #24533e; background: #24533e; color: white; text-decoration: none; font-size: .82rem; font-weight: 650; text-align: center; flex-shrink: 0; }
+.button:hover { background: #163d2b; }
+.footnote { color: #586c60; font-size: .75rem; line-height: 1.7; margin: 1rem 0 0; }
+.included { margin-top: 2rem; padding: 1.8rem; border: 1px solid #d6e1d9; border-radius: 16px; background: #fcfdfc; }
+.included h3 { margin: 0 0 1.5rem; font-size: 1.05rem; }
+.featureGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.65rem 2rem; }
+.featureGrid h4 { margin: 0 0 .5rem; font-size: .85rem; }
+.featureGrid p { margin: 0; color: #52665c; font-size: .8rem; line-height: 1.8; }
+.partnerGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.dealerCard { background: #edf4ee; }
+.cardDetails { border-top: 1px solid #d6e1d9; margin-top: 1.5rem; padding-top: 1rem; font-size: .8rem; }
+.cardDetails p { color: #52665c; line-height: 1.8; }
+.cardDetails summary, .detailsList summary { cursor: pointer; font-weight: 650; line-height: 1.6; }
+.allowanceGrid { gap: 0; border: 1px solid #d6e1d9; border-radius: 16px; overflow: hidden; background: #fcfdfc; }
+.allowanceGrid article { padding: 1.6rem; }
+.allowanceGrid article + article { border-left: 1px solid #d6e1d9; }
+.step { color: #64816f; font-size: .75rem; font-weight: 650; }
+.allowanceGrid h3 { margin: 1rem 0 .75rem; font-size: 1rem; letter-spacing: -.02em; }
+.allowanceGrid p { font-size: .8rem; line-height: 1.8; color: #52665c; margin: .7rem 0 0; }
+.allowanceGrid .allowanceValue { color: #24533e; font-weight: 700; }
+.adminPanel { margin-top: 1.5rem; padding: 1.8rem; background: #edf4ee; border: 1px solid #d6e1d9; border-radius: 16px; }
+.adminPanel h3 { margin: 0; font-size: 1.3rem; letter-spacing: -.03em; }
+.smallLabel { font-size: .75rem; color: #52665c; }
+.adminGrid article { background: #fcfdfc; padding: 1.3rem; border: 1px solid #d6e1d9; border-radius: 10px; }
+.adminGrid h4 { margin: 0 0 .9rem; font-size: .85rem; }
+.adminGrid .price strong { font-size: 2rem; }
+.adminExtra { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-top: 1rem; }
+.adminExtra p { line-height: 1.9; font-size: .85rem; }
+.detailsList { border: 1px solid #d6e1d9; border-radius: 16px; overflow: hidden; background: #fcfdfc; }
+.detailsList > details + details { border-top: 1px solid #d6e1d9; }
+.detailsList summary { padding: 1.3rem 1.5rem; font-size: .9rem; }
+.detailBody { padding: 0 1.5rem 1.3rem; color: #52665c; font-size: .82rem; line-height: 1.8; }
+.detailBody p { margin: 0 0 1rem; }
+.detailBody p:last-child { margin-bottom: 0; }
+.fundedGrid { margin: 1.3rem 0; }
+.fundedGrid > div { background: #edf4ee; padding: 1rem; border-radius: 8px; }
+.fundedGrid h4 { margin: 0 0 .5rem; color: #183b30; }
+.fundedGrid strong { color: #24533e; font-size: 1rem; }
+.fundedGrid p { margin: .5rem 0 0; font-size: .72rem; }
+.serviceList { margin: 0 0 1rem; }
+.serviceList div { display: flex; justify-content: space-between; gap: 1rem; padding: .7rem 0; border-bottom: 1px solid #e3ebe5; }
+.serviceList dd { margin: 0; text-align: right; color: #183b30; font-weight: 650; }
+.closing { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 2rem; border: 1px solid #d6e1d9; border-radius: 16px; background: #fcfdfc; }
+.shell :is(a, button, summary):focus-visible { outline: 3px solid #398d67; outline-offset: 4px; }
+:global(html[data-background='dark']) .hero, :global(html[data-background='dark']) .section > .sectionHeading { background: #fcfdfc; padding: 1.8rem; border-radius: 16px; }
+:global(html[data-background='dark']) .section > .footnote { color: #e0ebe4; }
+@media (max-width: 900px) {
+  .sectionHeading { align-items: start; flex-direction: column; }
+  .planCard { padding: 1.25rem; }
+  .featureGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .hero { padding: 2.5rem .5rem; }
+  .desktopBreak { display: none; }
+  .section { margin-bottom: 2.5rem; }
+  .planGrid, .partnerGrid, .allowanceGrid, .adminGrid, .fundedGrid { grid-template-columns: 1fr; }
+  .planCard { padding: 1.5rem; }
+  .planDescription { min-height: 0; }
+  .enterprise, .adminExtra, .closing { flex-direction: column; align-items: stretch; }
+  .featureGrid { grid-template-columns: 1fr; gap: 1.25rem; }
+  .included, .adminPanel, .closing { padding: 1.4rem; }
+  .allowanceGrid article + article { border-left: 0; border-top: 1px solid #d6e1d9; }
+  .serviceList div { flex-direction: column; gap: .2rem; }
+  .serviceList dd { text-align: left; }
+  .billingControl { width: 100%; }
+  .toggle { display: flex; }
+  .toggle button { flex: 1; }
+}

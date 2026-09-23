@@ -85,6 +85,7 @@ const insuranceWorkspace: FooterWorkspace = {
 };
 
 const companyLinks: FooterLink[] = [
+  { href: '/pricing', label: 'Pricing' },
   { href: '/about-us', label: 'About Aim4price' },
   { href: '/contact-us', label: 'Contact Us' },
 ];
@@ -252,4 +253,3 @@ export default function AppFooter() {
     </footer>
   );
 }
-
