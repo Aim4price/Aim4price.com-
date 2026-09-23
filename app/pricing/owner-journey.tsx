@@ -23,14 +23,14 @@ function Choice({ selected, onClick, title, children }: { selected: boolean; onC
 
 function Included() {
   return <div className={styles.benefits}>
-    <h3>Your tools, whether you do it yourself or get help</h3>
+    <h3>Your tools, whether you do it yourself or get help</h3><p>Only active assets count towards your plan. Sold and archived assets are excluded.</p>
     <ul>
       <li><strong>Know what you own.</strong> Asset registers, photographs, documents and value estimates in one place.</li>
       <li><strong>Understand running costs.</strong> Connect invoices, fuel records and budgets to your assets.</li>
       <li><strong>Stay on top of maintenance.</strong> Schedules, reminders and problem reporting.</li>
       <li><strong>Keep useful records.</strong> Ownership, finance and insurance details, PDF reports, Excel/CSV exports and asset QR codes.</li>
     </ul>
-    <details><summary>See uploads, Capture and selling tools</summary><p>Manual entry and document uploads have no daily limit and no extra charge. Aim4price Capture includes 10 invoices + 10 fuel slips per Owner account, per day, shared across its users and contributors. The allowance resets at midnight South African time.</p><p>Marketplace access and tools to prepare your assets for sale are also included.</p></details>
+    <details><summary>See uploads, Capture and selling tools</summary><p>Manual entry and document uploads have no daily limit and no extra charge. Aim4price Capture includes 10 invoices + 10 fuel slips per Owner account, per day, shared across its users and contributors. The allowance resets at midnight South African time and covers invoices and fuel slips, not asset setup.</p><p>Marketplace access and tools to prepare your assets for sale are also included.</p></details>
   </div>;
 }
 
@@ -83,38 +83,31 @@ export default function OwnerJourney({ onTitleChange }: { onTitleChange?: (title
         <p>{step < 3 ? `Step ${step + 1} of 3` : 'Built around your choices'}</p>
         <h2 ref={heading} tabIndex={-1}>{titles[step]}</h2>
         <p>{[
-          'Your base plan includes all Owner tools.',
+          'Choose how many active assets you have.',
           'Do it yourself or get help with the initial setup.',
-          'Monthly admin is optional and can be added anytime.',
+          'Choose self-service or monthly admin help.',
           'Review your subscription and optional services.',
         ][step]}</p>
       </div>
 
       {step === 0 && <>
         <div className={styles.assetChoices} role="group" aria-label="Number of active assets">
-          {plans.map((item, index) => <Choice key={item.name} selected={assetBand === index} onClick={() => setAssetBand(index)} title={item.range}>{money(yearly ? item.yearly : item.monthly)}/{yearly ? 'year' : 'month'} · {item.name}</Choice>)}
+          {plans.map((item, index) => <Choice key={item.name} selected={assetBand === index} onClick={() => setAssetBand(index)} title={item.range}>{money(item.monthly)}/month · {item.name}</Choice>)}
           <Choice selected={assetBand === 3} onClick={() => setAssetBand(3)} title="301+">Enterprise · custom quote</Choice>
         </div>
-        <div className={styles.compactPrice}>{plan ? <>{billing}<span><strong>{money(yearly ? plan.yearly : plan.monthly)}/{yearly ? 'year' : 'month'}</strong> · {yearly ? 'Billed once a year' : 'Billed monthly'}</span></> : <span>{assetBand === 3 ? 'We’ll quote a plan for your asset register.' : 'Choose an asset range to see monthly and yearly options.'}</span>}</div>
-        <p className={styles.note}>Only active assets count. Sold and archived assets are excluded.</p>
-        <details><summary>What’s included?</summary><Included /></details>
       </>}
 
       {step === 1 && <>
         <div className={styles.choices} role="group" aria-label="Setup preference">
           <Choice selected={setup === 'self'} onClick={() => setSetup('self')} title="Upload myself">Add my details, photos and documents. No setup fee.</Choice>
           <Choice selected={setup === 'visit'} onClick={() => setSetup('visit')} title="Arrange a visit">Help recording machinery and building my register.</Choice>
+          <Choice selected={setup === 'inspection'} onClick={() => setSetup('inspection')} title="Formal inspection or valuation">Separate custom quote.</Choice>
         </div>
-        {setup === 'self' && <div className={styles.tip}><strong>Capture helps with your paperwork.</strong><p>Manual uploads are free and unlimited. Aim4price Capture: 10 invoices + 10 fuel slips per Owner account daily.</p><details><summary>Capture details</summary><p>Shared across users and contributors. Resets at midnight South African time. The allowance covers invoices and fuel slips, not asset setup.</p></details></div>}
-        {setup === 'visit' && <div className={styles.tip}><strong>A complete register, with less setup work.</strong><p>We help record asset details, photographs and ownership information.</p><dl className={styles.rates}><div><dt>Road-licensed assets</dt><dd>R100 each</dd></div><div><dt>Other assets</dt><dd>R50 each</dd></div><div><dt>Return travel</dt><dd>R7.50/km</dd></div></dl><details><summary>Visit details</summary><p>Includes standard asset details, serial/VIN, make, model, year, hours or mileage and basic ownership information. Travel is charged once per visit. Final cost depends on asset mix and distance. Asset recording is not a formal inspection or certified valuation.</p></details></div>}
-        <details><summary>Need a formal inspection or valuation?</summary><p className={styles.note}>Quoted separately. Not included in asset capture or admin hours.</p><Choice selected={setup === 'inspection'} onClick={() => setSetup('inspection')} title="Request an inspection quote">Discuss the machinery and report you need.</Choice></details>
-        {setup === 'inspection' && <p className={styles.note} role="status">Selected: formal inspection / valuation · custom quote.</p>}
       </>}
 
       {step === 2 && <>
-
         <div className={styles.choices} role="group" aria-label="Ongoing administration">
-          <Choice selected={admin === 'self'} onClick={() => { setWantsHelp(false); setAdmin('self'); }} title="I’ll manage it">All my tools and daily Capture allowance. No admin fee.</Choice>
+          <Choice selected={admin === 'self'} onClick={() => { setWantsHelp(false); setAdmin('self'); }} title="I’ll manage it">No additional admin fee.</Choice>
           <Choice selected={wantsHelp} onClick={() => { if (!wantsHelp) setAdmin(null); setWantsHelp(true); }} title="I’d like monthly help">Help capturing records and keeping my register organised.</Choice>
         </div>
         {wantsHelp && <div className={styles.tip}>
@@ -123,9 +116,7 @@ export default function OwnerJourney({ onTitleChange }: { onTitleChange?: (title
             {adminPlans.map(item => <Choice key={item.hours} selected={admin === String(item.hours)} onClick={() => setAdmin(String(item.hours) as Admin)} title={`Up to ${item.hours} hours`}>{money(item.price)}/month</Choice>)}
             <Choice selected={admin === 'custom'} onClick={() => setAdmin('custom')} title="More than 10 hours">Custom quote</Choice>
           </div>
-          <details><summary>What does admin cover?</summary><p>Additional capture, bulk records, organising supplied documents and updating asset information. You supply the records; we help maintain them.</p><p>Hours expire monthly with no rollover. Extra work: R250/hour. Travel, formal inspections and professional valuation research are excluded.</p></details>
         </div>}
-        {admin === 'self' && <div className={styles.tip}><strong>Stay in control, at your own pace.</strong><p>Track costs, fuel, budgets and maintenance. Manual uploads have no daily limit.</p><details><summary>Your daily Capture allowance</summary><p>10 invoices + 10 fuel slips per Owner account, shared across users and contributors. Resets at midnight South African time.</p></details></div>}
       </>}
 
       {step === 3 && <div className={styles.layout}>
@@ -138,12 +129,12 @@ export default function OwnerJourney({ onTitleChange }: { onTitleChange?: (title
           <div className={styles.summaryCard}>
             <div className={styles.summaryHead}><h3>Initial setup</h3><button type="button" onClick={() => { setEditing(true); move(1); }}>Change setup</button></div>
             <p>{setupLabel}</p>
-            {setup === 'self' ? <strong>No additional setup fee</strong> : setup === 'visit' ? <><strong>Once-off capture + travel</strong><details><summary>Visit rates</summary><p>R100 per road-licensed asset · R50 per non-road-licensed asset · R7.50/km return travel. Final cost confirmed from asset mix and distance. Formal inspections excluded.</p></details></> : <strong>Separate custom quote</strong>}
+            {setup === 'self' ? <strong>No additional setup fee</strong> : setup === 'visit' ? <><strong>Once-off capture + travel</strong><details><summary>Visit details &amp; rates</summary><p>We help build your register by recording asset details, photographs and ownership information, saving you setup time. Includes serial/VIN, make, model, year and hours or mileage.</p><p>R100 per road-licensed asset · R50 per non-road-licensed asset · R7.50/km return travel. Final cost confirmed from asset mix and distance. Travel is charged once per visit. Asset recording is not a formal inspection or certified valuation.</p></details></> : <strong>Separate custom quote</strong>}
           </div>
           <div className={styles.summaryCard}>
             <div className={styles.summaryHead}><h3>Ongoing administration</h3><button type="button" onClick={() => { setEditing(true); move(2); }}>Change help</button></div>
             <p>{adminLabel}</p><strong>{adminPlan ? `${money(adminPlan.price)}/month` : admin === 'self' ? 'No additional administration fee' : 'Custom quote'}</strong>
-            {adminPlan && <details><summary>Admin terms</summary><p className={styles.note}>Prepaid hours expire monthly. Extra work: R250/hour. Travel, formal inspections and professional valuation research are excluded.</p></details>}
+            {admin !== 'self' && <details><summary>Admin help &amp; terms</summary><p>We help capture additional or bulk records, organise supplied documents and keep your register updated. You supply the records; we help maintain them.</p><p className={styles.note}>Prepaid hours expire monthly. Extra work: R250/hour. Travel, formal inspections and professional valuation research are excluded.</p></details>}
           </div>
         </div>
         <aside className={styles.total} aria-live="polite">
