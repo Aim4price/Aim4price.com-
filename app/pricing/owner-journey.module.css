@@ -37,7 +37,7 @@
 .rates { font-size: .85rem; line-height: 1.7; }
 .rates > div { display: flex; justify-content: space-between; gap: 1rem; padding: .65rem 0; border-bottom: 1px solid #ccded2; }
 .rates dd { margin: 0; font-weight: 700; text-align: right; }
-.navigation { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-top: 1.5rem; margin-top: 1.75rem; border-top: 1px solid #d6e1d9; }
+.navigation { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-top: 1.5rem; margin-top: 1.75rem; }
 .primary, .secondary { display: inline-flex; align-items: center; justify-content: center; gap: 1rem; min-height: 3rem; padding: .75rem 1.2rem; border: 1px solid #24533e; border-radius: .65rem; font: inherit; font-size: .9rem; font-weight: 750; text-decoration: none; cursor: pointer; }
 .primary { background: #24533e; color: #fff; }
 .primary:hover:not(:disabled) { background: #183b30; }
