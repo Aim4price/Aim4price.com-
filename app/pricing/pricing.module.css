@@ -1,5 +1,6 @@
 .page { color: #183b30; }
 .shell { width: var(--shell-width); max-width: 100%; margin-inline: auto; padding-bottom: 3rem; }
+:global(html[data-background='dark']) .shell { padding-top: 1rem; }
 .hero { padding: 4rem 1rem 3.5rem; text-align: center; }
 .eyebrow { margin: 0 0 .75rem; color: #37775d; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .hero h1 { margin: 0; font-size: clamp(2.8rem, 5vw, 4.6rem); line-height: 1.08; letter-spacing: -.055em; font-weight: 800; }
