@@ -9,7 +9,7 @@ import PricingModal from './pricing-modal';
 export default function PricingContent() {
   const [audience, setAudience] = useState<'owner' | 'dealer' | null>(null);
   const [ownerTitle, setOwnerTitle] = useState('How many assets?');
-  const [dealerTitle, setDealerTitle] = useState('How will you add your stock?');
+  const [dealerTitle, setDealerTitle] = useState('Will you manage customers’ asset registers?');
   return (
     <div className={styles.shell}>
       <header className={styles.hero}>
