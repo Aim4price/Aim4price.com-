@@ -59,3 +59,31 @@
 @media (max-width: 760px) { .layout { grid-template-columns: 1fr; gap: 1.25rem; } .panel { padding: 1.25rem; } .progress { gap: .4rem; } .progress li { flex-direction: column; text-align: center; font-size: .75rem; gap: .4rem; } .navigation { flex-wrap: wrap; } .benefits, .total { padding: 1.25rem; } .summaryHead { flex-wrap: wrap; gap: .25rem; } .rates > div { flex-wrap: wrap; gap: .25rem; } }
 .copyText { width: 100%; min-height: 12rem; resize: vertical; padding: .8rem; margin-block: 1rem; background: #fff; border: 1px solid #cbdcd0; border-radius: .65rem; color: #183b30; font: inherit; font-size: .8rem; line-height: 1.7; }
 .copyText:focus-visible { outline: 3px solid #398d67; outline-offset: 3px; }
+/* Compact questions inside the pricing dialog. */
+.panel { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.progress { gap: .5rem; margin-bottom: 1.5rem; }
+.progress li { font-size: .75rem; }
+.progress li > span { width: 1.65rem; height: 1.65rem; }
+.heading { margin-bottom: 1.25rem; }
+.heading h2 { font-size: clamp(1.5rem, 2.4vw, 2rem); }
+.heading > p:first-child { display: none; }
+.heading > p:last-child { margin-top: .5rem; font-size: .88rem; }
+.assetChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.assetChoices .choice { min-height: 6.5rem; }
+.choice { padding: 1rem 1.15rem; }
+.choiceTitle { font-size: 1.05rem; }
+.choiceCopy { font-size: .82rem; }
+.compactPrice { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-top: 1rem; font-size: .9rem; }
+.compactPrice > span { color: #52645d; font-size: .8rem; }
+.tip { background: #edf4ef; padding: 1rem 1.15rem; border-radius: .85rem; margin-top: 1rem; font-size: .88rem; line-height: 1.65; }
+.tip p { margin: .4rem 0 .75rem; }
+.tip .assetChoices { margin-top: .85rem; }
+.navigation { position: sticky; bottom: -1.5rem; background: #f8fbf9; padding: 1rem 0; margin-top: 1.25rem; z-index: 1; }
+.benefits { border: 0; padding: 1rem 0 0; background: transparent; }
+.layout { gap: 1rem; }
+.summaryCard { padding: 1rem; }
+.summaryCard p, .total p { font-size: .82rem; }
+.summaryHead h3 { font-size: 1rem; }
+.total { padding: 1.15rem; }
+@media (max-width: 640px) { .navigation { bottom: -1rem; } .progress li { font-size: .65rem; } .assetChoices { gap: .5rem; } .assetChoices .choice { padding: .8rem; } .choiceTitle { font-size: .95rem; } }
+.navigation > .primary { margin-left: auto; }
