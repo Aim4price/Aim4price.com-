@@ -256,3 +256,13 @@
 }
 
 .finalActions .restart { white-space: nowrap; }
+
+/* Keep package rows and service details on the same visual grid. */
+.detailPage { max-width: none; padding-top: 0; }
+.detailPage p:first-child { margin-top: 0; }
+.review { gap: .65rem; }
+.reviewRow { grid-template-columns: minmax(0, 1fr) minmax(0, .85fr) 3.25rem; }
+.reviewRow button { justify-self: end; padding-inline: .35rem; }
+@media (max-width: 640px) {
+  .reviewRow { grid-template-columns: minmax(0, 1fr) auto; }
+}
