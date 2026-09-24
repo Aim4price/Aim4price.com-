@@ -2017,7 +2017,7 @@
 }
 
 .roleTitle {
-  margin: 0 auto clamp(2.35rem, calc(var(--website-design-vw) * 3.5), 3.2rem);
+  margin: 0 auto clamp(1.75rem, calc(var(--website-design-vw) * 2.5), 2.3rem);
   color: #0b4a39;
   font-size: clamp(2.65rem, calc(var(--website-design-vw) * 4), 4.25rem);
   line-height: 1;
@@ -2035,7 +2035,7 @@
 .roleGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(1.1rem, calc(var(--website-design-vw) * 2), 1.7rem);
+  gap: clamp(1rem, calc(var(--website-design-vw) * 1.4), 1.2rem);
   max-width: 78rem;
   margin: 0 auto;
 }
@@ -2043,11 +2043,11 @@
 .roleCard {
   display: flex;
   min-width: 0;
-  min-height: 17rem;
+  min-height: 14.5rem;
   align-items: stretch;
   justify-content: space-between;
   gap: 1rem;
-  padding: 2.3rem 2.6rem;
+  padding: 1.8rem 2rem;
   border: 1px solid rgba(48, 137, 104, 0.18);
   border-radius: 1.55rem;
   color: #0c4637;
@@ -2077,7 +2077,7 @@
 .roleCard > span:first-child {
   display: grid;
   max-width: 30rem;
-  grid-template-rows: 4.9rem 1fr auto;
+  grid-template-rows: auto 1fr auto;
   gap: 0.8rem;
   flex: 1;
 }
@@ -2765,7 +2765,8 @@
 }
 
 .heroPromiseText {
-  max-width: 33.5rem;
+  width: min(36rem, calc(100% + 4rem));
+  max-width: 36rem;
   margin-top: 1.85rem;
   color: #52645d;
   font-size: clamp(1.2rem, calc(var(--website-design-vw) * 1.27), 1.34rem);
@@ -2926,7 +2927,7 @@
   text-wrap: pretty;
   font-size: 1.04rem;
   line-height: 1.58;
-  margin-top: 1.05rem;
+  margin-top: 0.85rem;
 }
 
 .featureNarrativeCount {
@@ -3066,7 +3067,7 @@
     margin-inline-start: var(--hero-working-inset);
     padding: clamp(1.5rem, calc(var(--website-design-vh) * 3.5), 3rem) 0;
     grid-template-columns: minmax(446.4px, 1fr) minmax(619.2px, 49.5rem);
-    gap: 64.8px;
+    gap: 40px;
     padding-block: 31.5px;
   }
 
@@ -3091,7 +3092,7 @@
 
 .featureNarrative {
   --feature-copy-inset: 7.75rem;
-  width: min(100%, 27rem);
+  width: min(100%, 29rem);
   display: grid;
   min-height: 23.5rem;
   }
@@ -3139,11 +3140,11 @@
 }
 
 .heroPromiseCopy .heroPromiseText {
-  margin-top: 1.5rem;
+  margin-top: 1.2rem;
 }
 
 .heroPromiseCopy .heroActions {
-  margin-top: 1.5rem;
+  margin-top: 1.2rem;
 }
 
 /* Keep both opening actions on one row within the canonical copy column. */
@@ -3553,7 +3554,7 @@
 }
 .heroStory .assetPreviewCard[data-active-question='attention'] { border-color: #dfb3ac; background: linear-gradient(145deg, #fff9f8, #fffdfc); }
 .featureNarrativeCopy p { margin: 0; }
-.featureNarrativeCopy p + p { margin-top: 0.8rem; }
+.featureNarrativeCopy p + p { margin-top: 0.65rem; }
 .featureNarrativeCopy p:last-child { color: #63766d; }
 @media (forced-colors: active) {
   .worthReportPaper, .miniFact, .reportFooter > span { border: 1px solid CanvasText; }
