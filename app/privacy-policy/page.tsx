@@ -74,12 +74,17 @@ export default async function PrivacyPolicyPage() {
       <section className={styles.articleShell}>
         <div className={styles.documentLayout}>
           <nav className={styles.contents} aria-label="Privacy Policy contents">
-            <h2>On this page</h2>
-            {contents.map(([id, label]) => (
-              <a key={id} href={`#${id}`}>
-                {label}
-              </a>
-            ))}
+            <div className={styles.contentsHeader}>
+              <h2>Quick access</h2>
+              <p>Jump to a section</p>
+            </div>
+            <div className={styles.contentsLinks} tabIndex={0} role="region" aria-label="Scroll through sections">
+              {contents.map(([id, label]) => (
+                <a key={id} href={`#${id}`}>
+                  {label}
+                </a>
+              ))}
+            </div>
           </nav>
 
           <article className={styles.article}>
