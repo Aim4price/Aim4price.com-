@@ -1875,6 +1875,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   // null means not initialized; an empty string is an intentional user edit.
   const [basicReplacementPrice, setBasicReplacementPrice] = useState<string | null>(null);
   const specificationDialogRef = useRef<HTMLDialogElement>(null);
+  const [specificationDraft, setSpecificationDraft] = useState<BasicSpecificationLevel>('standard');
   const [basicReplacementVatMode, setBasicReplacementVatMode] = useState<VatDisplayMode>('excl');
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
   const [yearModelUnknown, setYearModelUnknown] = useState(false);
@@ -6047,6 +6048,28 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     );
   }
 
+  function renderSpecificationChoices(selectedLevel: BasicSpecificationLevel | '', onSelect: (level: BasicSpecificationLevel) => void) {
+    return (
+        <div className={`${styles.choiceGrid} ${styles.basicLevelGrid}`}>
+          {BASIC_SPECIFICATION_LEVELS.map((option) => {
+            const selected = selectedLevel === option.key;
+            return (
+              <button
+                key={option.key}
+                type="button"
+                className={`${styles.choiceCard} ${styles.pathChoiceCard} ${styles.basicLevelCard} ${selected ? styles.choiceCardActive : ''}`}
+                aria-pressed={selected}
+                onClick={() => onSelect(option.key)}
+              >
+                <strong>{option.label}</strong>
+                <span className={styles.choiceCardNote}>{option.description}</span>
+              </button>
+            );
+          })}
+        </div>
+    );
+  }
+
   function renderBasicLevelStep() {
     return (
       <div className={`${styles.stepBlock} ${styles.basicFamilyContextStage}`}>
@@ -6058,28 +6081,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           {!compactAppMode ? <p className={styles.stepText}>Where does this asset roughly sit in the new-asset market?</p> : null}
         </div>
 
-        <div className={`${styles.choiceGrid} ${styles.basicLevelGrid}`}>
-          {BASIC_SPECIFICATION_LEVELS.map((option) => {
-            const selected = basicSpecLevel === option.key;
-            return (
-              <button
-                key={option.key}
-                type="button"
-                className={`${styles.choiceCard} ${styles.pathChoiceCard} ${styles.basicLevelCard} ${selected ? styles.choiceCardActive : ''}`}
-                aria-pressed={selected}
-                onClick={() => {
-                  setBasicSpecLevel(option.key);
-                  setBasicReplacementPrice(null);
-                  setMessage('');
-                  resetResult();
-                }}
-              >
-                <strong>{option.label}</strong>
-                <span className={styles.choiceCardNote}>{option.description}</span>
-              </button>
-            );
-          })}
-        </div>
+        {renderSpecificationChoices(basicSpecLevel, (level) => {
+          setBasicSpecLevel(level);
+          setBasicReplacementPrice(null);
+          setMessage('');
+          resetResult();
+        })}
       </div>
     );
   }
@@ -6136,10 +6143,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     return (
-      <div className={`${styles.stepBlock} ${styles.replacementStage} ${styles.basicFamilyContextStage}`}>
-        <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
-          {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
-        </div>
+      <div className={`${styles.stepBlock} ${styles.replacementStage}`}>
         <div className={styles.replacementHeading}>
           <div>
             <h2 className={styles.stepTitle}>Replacement price</h2>
@@ -6150,6 +6154,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             className={styles.changeSpecificationButton}
             aria-haspopup="dialog"
             onClick={() => {
+              setSpecificationDraft(basicSpecLevel || 'standard');
               const dialog = specificationDialogRef.current;
               dialog?.showModal();
               dialog?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
@@ -6176,20 +6181,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <h3 id="replacement-specification-title">Change specification</h3>
             <button type="button" className={styles.saveModalClose} onClick={() => specificationDialogRef.current?.close()} aria-label="Close specification options">×</button>
           </div>
-          <p className={styles.specificationModalHint}>Choose a level to update the price range and suggested price.</p>
-          <div className={styles.specificationOptions}>
-            {BASIC_SPECIFICATION_LEVELS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                className={styles.specificationOption}
-                aria-pressed={basicSpecLevel === option.key}
-                onClick={() => applyReplacementSpecification(option.key)}
-              >
-                <strong>{option.label}</strong>
-                <span>{option.description}</span>
-              </button>
-            ))}
+          <p className={styles.specificationModalHint}>Where does this asset roughly sit in the new-asset market?</p>
+          {renderSpecificationChoices(specificationDraft, setSpecificationDraft)}
+          <div className={styles.specificationModalFooter}>
+            <p>Applying a different level updates the price range and resets the replacement price to its suggested value.</p>
+            <div className={styles.specificationModalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={() => specificationDialogRef.current?.close()}>Cancel</button>
+              <button type="button" className={styles.primaryButton} onClick={() => applyReplacementSpecification(specificationDraft)}>Apply specification</button>
+            </div>
           </div>
         </dialog>
 
@@ -9308,12 +9307,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             onClick={(event) => event.stopPropagation()}
           >
             <div className={styles.replacementNoticeTitle}>
-              <span aria-hidden="true">!</span>
               <h2 id="replacement-notice-title">Ready for your estimate?</h2>
+              <button type="button" className={styles.saveModalClose} onClick={closeReplacementPriceNotice} aria-label="Close estimate confirmation">×</button>
             </div>
             <p id="replacement-notice-description" className={styles.replacementNoticeIntro}>
-              Review your estimate next. You can go back and change your details.
+              Your estimate uses the asset details and replacement price you supplied. Take a moment to confirm they are accurate.
             </p>
+            <ul className={styles.replacementNoticePoints}>
+              <li>The replacement price should reflect a comparable new asset, with the correct VAT basis.</li>
+              <li>Actual selling prices can vary with condition, demand, location and the information available. The asset has not been physically inspected.</li>
+              <li>For insurance, finance or a significant purchase, confirm the required valuation with the relevant professional.</li>
+            </ul>
+            <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
+              Indicative estimate only — not a certified valuation, inspection or guaranteed price.
+            </small>
             <div className={styles.replacementNoticeActions}>
               <button
                 ref={replacementNoticeGoBackRef}
@@ -9334,9 +9341,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 I understand, get estimate
               </button>
             </div>
-            <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
-              Indicative estimate only — not a certified valuation, inspection or guaranteed price.
-            </small>
           </section>
         </div>
       ) : null}

@@ -12364,7 +12364,7 @@
 
 .replacementNoticeModal .replacementNoticeIntro {
   margin-top: 0.8rem;
-  color: var(--app-danger, #613f3b);
+  color: var(--app-muted, #5a6962);
 }
 
 .replacementNoticeModal {
@@ -12372,9 +12372,9 @@
   max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem);
   padding: 1.75rem;
   overflow-y: auto;
-  border-color: var(--app-danger-line, #e4a39d);
-  background: var(--app-danger-soft, #fff4f2);
-  box-shadow: 0 24px 70px var(--app-shadow-colour, rgba(91, 25, 20, 0.28));
+  border-color: var(--app-line, #d5e4dc);
+  background: var(--app-surface, #ffffff);
+  box-shadow: 0 24px 70px var(--app-shadow-colour, rgba(12, 40, 29, 0.24));
   overscroll-behavior: contain;
 }
 
@@ -12384,22 +12384,9 @@
   gap: 0.75rem;
 }
 
-.replacementNoticeTitle > span {
-  display: inline-grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--app-danger-soft, #c6352e);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 900;
-}
-
 .replacementNoticeModal h2 {
   margin: 0;
-  color: var(--app-danger, #76251f);
+  color: var(--app-text, #173e33);
 }
 
 .replacementNoticeActions {
@@ -12407,21 +12394,21 @@
 }
 
 .replacementNoticeActions .secondaryButton {
-  border-color: var(--app-danger-line, #ddb2ae);
+  border-color: var(--app-line, #b9d1c4);
   background: var(--app-surface, rgba(255, 255, 255, 0.72));
-  color: var(--app-danger, #612e29);
+  color: var(--app-text, #173e33);
 }
 
 .replacementNoticeActions .primaryButton {
-  border-color: var(--app-danger-line, #b92f28);
-  background: var(--app-danger-soft, #b92f28);
+  border-color: var(--app-accent, #174f3e);
+  background: #174f3e;
   color: #fff;
-  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(151, 35, 29, 0.2));
+  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(17, 79, 62, 0.16));
 }
 
 .replacementNoticeActions .primaryButton:hover {
-  border-color: var(--app-danger-line, #9f251f);
-  background: #9f251f;
+  border-color: #103d30;
+  background: #103d30;
 }
 
 .replacementNoticeDisclaimer {
@@ -12429,7 +12416,7 @@
   margin-top: 1rem;
   padding-top: 0.75rem;
   border-top: 0;
-  color: var(--app-danger, #6d4b47);
+  color: var(--app-muted, #52665c);
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -14532,7 +14519,7 @@
 }
 
 .specificationModal {
-  width: min(680px, calc(100% - 32px));
+  width: min(1040px, calc(var(--website-design-width, 100%) - 32px));
   max-height: calc(var(--website-visible-height, 100dvh) - 32px);
   box-sizing: border-box;
   margin: auto;
@@ -14579,44 +14566,7 @@
   line-height: 1.5;
 }
 
-.specificationOptions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.specificationOption {
-  display: grid;
-  align-content: center;
-  gap: 8px;
-  min-height: 112px;
-  padding: 16px;
-  border: 1px solid var(--app-line, #cbded2);
-  border-radius: 14px;
-  background: var(--app-surface, #fff);
-  color: var(--app-text, #244c3e);
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-}
-
-.specificationOption strong {
-  font-size: 1rem;
-}
-
-.specificationOption span {
-  font-size: 0.8rem;
-  line-height: 1.45;
-}
-
-.specificationOption[aria-pressed='true'] {
-  background: #20543e;
-  border-color: var(--app-accent, #20543e);
-  color: #fff;
-}
-
-.changeSpecificationButton:focus-visible,
-.specificationOption:focus-visible {
+.changeSpecificationButton:focus-visible {
   outline: 3px solid var(--app-accent, #43836a);
   outline-offset: 3px;
 }
@@ -14624,14 +14574,6 @@
 @media (max-width: 640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .specificationModal {
     padding: 20px;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .specificationOptions {
-    grid-template-columns: 1fr;
-  }
-
-  :global(:where(html:not(:has([data-website-canvas])))) .specificationOption {
-    min-height: 80px;
   }
 }
 
@@ -14651,3 +14593,14 @@
 /* Private calculation appendix choice. */
 .breakdownPdfOption { display: flex; align-items: center; gap: 9px; font-size: 12px; color: #365b46; padding: 10px 0; }
 .breakdownPdfOption input { width: 17px; height: 17px; accent-color: #174c3c; }
+
+.specificationModalHeader, .specificationModal .basicLevelGrid { width: 100%; }
+.specificationModalHeader { text-align: left; }
+.specificationModalFooter { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--app-line, #d5e4dc); }
+.specificationModalFooter p { color: var(--app-muted, #64746a); font-size: 0.85rem; line-height: 1.5; margin: 0 0 16px; }
+.specificationModalActions { display: flex; justify-content: flex-end; gap: 12px; }
+.replacementNoticeTitle { justify-content: space-between; align-items: flex-start; }
+.replacementNoticeTitle .saveModalClose { flex-shrink: 0; }
+.replacementNoticePoints { margin: 20px 0; padding-left: 20px; color: var(--app-muted, #52665c); font-size: 0.9rem; line-height: 1.65; }
+.replacementNoticePoints li + li { margin-top: 10px; }
+.replacementNoticeDisclaimer { padding: 14px; border: 1px solid var(--app-line, #d5e4dc); border-radius: 10px; background: var(--app-surface-soft, #edf6f0); }
