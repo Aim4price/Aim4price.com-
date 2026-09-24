@@ -20,7 +20,7 @@
 .dialog {
   box-sizing: border-box;
   width: min(540px, calc(100% - 32px));
-  max-height: calc(100dvh - 32px);
+  max-height: calc(var(--website-visible-height, 100dvh) - 32px);
   margin: auto;
   padding: 28px;
   border: 1px solid var(--app-line, #dce5e1);
@@ -51,12 +51,12 @@
 .whatsapp:hover { filter: brightness(1.08); }
 .trigger:focus-visible, .dialog :focus-visible { outline: 3px solid #74ac92; outline-offset: 3px; }
 @media (max-width: 480px) {
-  .dialog { padding: 20px; border-radius: 18px; }
-  .header { gap: 10px; padding-bottom: 16px; }
-  .header h2 { font-size: 22px; }
-  .description { font-size: 14px; margin: 16px 0; }
-  .actions { gap: 8px; }
-  .actions a { padding: 10px; font-size: 14px; }
+  :global(body:not(:has([data-website-canvas]))) .dialog { padding: 20px; border-radius: 18px; }
+  :global(body:not(:has([data-website-canvas]))) .header { gap: 10px; padding-bottom: 16px; }
+  :global(body:not(:has([data-website-canvas]))) .header h2 { font-size: 22px; }
+  :global(body:not(:has([data-website-canvas]))) .description { font-size: 14px; margin: 16px 0; }
+  :global(body:not(:has([data-website-canvas]))) .actions { gap: 8px; }
+  :global(body:not(:has([data-website-canvas]))) .actions a { padding: 10px; font-size: 14px; }
 }
 
 .actions strong { font-size:1.1rem; line-height:1.35; font-weight:800; color:var(--app-text,#173f31); }
@@ -65,4 +65,4 @@
 .dialog .whatsappGlyph { fill:currentColor; stroke:none; }
 .actions a { transition:border-color .15s,box-shadow .15s; }
 .actions a:hover { border-color:currentColor; box-shadow:0 5px 18px rgb(19 53 45 / 8%); filter:none; }
-@media(max-width:480px) { .actions a { min-height:120px; } }
+@media(max-width:480px) { :global(body:not(:has([data-website-canvas]))) .actions a { min-height:120px; } }
