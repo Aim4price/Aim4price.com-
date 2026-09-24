@@ -8865,7 +8865,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <strong>{money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), vatDisplayMode))}</strong>
                 <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
               </div>
-              <button type="button" className={styles.resultAccordionAction}
+              <button type="button" className={modalStyles.adjustButton}
                 aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; setUserReplacementPrice(String(price)); setReplacementSliderMax(Math.max(10000, price * 2)); setReplacementPanelOpen(true); }}>
                 Check / adjust
               </button>
@@ -8885,43 +8885,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </div>
                 <div className={styles.resultAccordionBody}>
                   <p className={`${styles.resultAccordionCopy} ${modalStyles.description}`}>
-                    {tractorResult
-                      ? 'Check the asset and selected-extra replacement prices. Aim4price depreciates each one before recalculating.'
-                      : 'Check the replacement price and change it only when the saved figure is no longer accurate.'}
+                    Set the cost of a comparable new asset. Drag the slider or type an amount.
                   </p>
-
-                  {isGeneric && genericResult ? (
-                    <div className={styles.replacementOptionGrid}>
-                      <button
-                        type="button"
-                        className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'aim4price' ? styles.replacementOptionCardActive : ''}`}
-                        onClick={() => {
-                          setReplacementPriceBasis('aim4price');
-                          setSelectedMethod('aim4price');
-                        }}
-                      >
-                        <span>Saved price basis</span>
-                        <strong>{money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null, replacementModalVat))}</strong>
-                        <small>Estimate {getVatDisplayLabel(replacementModalVat).toLowerCase()}. New price used: {money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null, replacementModalVat))}</small>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={`${styles.replacementOptionCard} ${replacementPriceBasis === 'user' ? styles.replacementOptionCardActive : ''}`}
-                        onClick={() => {
-                          if (genericResult.userReplacementCalculation) {
-                            setReplacementPriceBasis('user');
-                            setSelectedMethod('aim4price');
-                          }
-                        }}
-                        disabled={!genericResult.userReplacementCalculation}
-                      >
-                        <span>Updated price basis</span>
-                        <strong>{money(getVatDisplayValue(genericResult.userReplacementCalculation?.valuationMidExVat ?? null, replacementModalVat))}</strong>
-                        <small>Estimate {getVatDisplayLabel(replacementModalVat).toLowerCase()}. New price used: {money(getVatDisplayValue(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null, replacementModalVat))}</small>
-                      </button>
-                    </div>
-                  ) : null}
 
                   <div className={styles.replacementInputPanel}>
                     <div className={styles.resultVatToggle} role="group" aria-label="Replacement input VAT basis">
@@ -8929,14 +8894,21 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         className={`${styles.resultVatToggleButton} ${replacementModalVat === mode ? styles.resultVatToggleButtonActive : ''}`}
                         aria-pressed={replacementModalVat === mode} onClick={() => setReplacementModalVat(mode)}>{mode === 'incl' ? 'VAT included' : 'VAT excluded'}</button>)}
                     </div>
-                    <p className={styles.replacementFieldHint}>Enter prices {replacementModalVat === 'incl' ? 'including' : 'excluding'} VAT. Changing the toggle converts the amounts.</p>
+
                     <div className={styles.replacementFieldsGrid}>
                       <label className={`${styles.field} ${styles.replacementField}`}>
-                        <span className={styles.fieldLabel}>Asset replacement price</span>
+                        <span className={styles.fieldLabel}>Replacement price ({replacementModalVat === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
                         <EstimatePriceInput value={userReplacementPrice} onChange={setUserReplacementPrice} vatMode={replacementModalVat}
                           label="Asset replacement price" sliderMax={replacementSliderMax} />
-                        <small className={styles.replacementFieldHint}>Current: {money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), replacementModalVat))} {getVatDisplayLabel(replacementModalVat)}</small>
+                        <small className={styles.replacementFieldHint}>Current price: {money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), replacementModalVat))} {getVatDisplayLabel(replacementModalVat)}</small>
                       </label>
+                      {isGeneric && genericResult?.aim4priceReplacementCalculation?.replacementPriceExVat ? <button
+                        type="button" className={styles.replacementSavedLink} disabled={replacementRecalculateLoading}
+                        onClick={() => setUserReplacementPrice(String(genericResult.aim4priceReplacementCalculation!.replacementPriceExVat))}>
+                        Use saved price: {money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation.replacementPriceExVat, replacementModalVat))}
+                      </button> : null}
+                      {tractorResult && (frontPto || frontLoader || gpsEnabled || otherExtraEnabled) ? <details className={styles.replacementExtrasDisclosure}>
+                        <summary>Adjust selected extras</summary><div className={styles.replacementFieldsGrid}>
                       {tractorResult && frontPto ? (
                         <label className={`${styles.field} ${styles.replacementField}`}>
                           <span className={styles.fieldLabel}>Front PTO replacement</span>
@@ -8973,6 +8945,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           </label>
                         </div>
                       ) : null}
+                        </div></details> : null}
                     </div>
                     {replacementModalError ? <p className={styles.resultActionError} role="alert">{replacementModalError}</p> : null}
                     <div className={`${styles.replacementInputActions} ${modalStyles.actions}`}>

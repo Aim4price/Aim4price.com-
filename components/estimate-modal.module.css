@@ -105,3 +105,25 @@
   -webkit-backdrop-filter: var(--modal-backdrop-filter, blur(8px));
   backdrop-filter: var(--modal-backdrop-filter, blur(8px));
 }
+
+.adjustButton.adjustButton {
+  font: inherit;
+  font-weight: 700;
+  color: var(--app-text, #174c3c);
+  border: 1px solid var(--app-line, #bacbc1);
+  border-radius: 12px;
+  padding: 12px 18px;
+  background: var(--app-surface, #fff);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.valueControl { display: grid; gap: 10px; width: 100%; min-width: 0; }
+.valueLabel { font-size: 14px; font-weight: 700; }
+.amountEntry { display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid #b8cabe; border-radius: 12px; background: var(--app-surface, #fff); }
+.amountEntry > span { font-size: 18px; font-weight: 700; color: var(--app-muted, #617483); }
+.surface.surface .amountEntry input { width: 100%; min-width: 0; min-height: 54px; padding: 8px 0; border: 0; background: transparent; box-shadow: none; border-radius: 0; font-size: 1.35rem; font-weight: 750; }
+.amountEntry:focus-within { outline: 2px solid #43836a; outline-offset: 2px; }
+.valueHint { color: var(--app-muted, #617483); font-size: 12px; line-height: 1.5; }
+.sliderControl { display: grid; gap: 8px; padding: 6px 0; }
+.sliderLabels { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--app-muted, #617483); }
+.adjustSlider.adjustSlider { box-sizing: border-box; width: 100%; height: 28px; min-height: 28px; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; accent-color: #175644; cursor: pointer; }

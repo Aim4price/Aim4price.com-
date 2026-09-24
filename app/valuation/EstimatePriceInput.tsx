@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import modal from '../../components/estimate-modal.module.css';
 
 /** The caller always receives an ex-VAT amount; the input preserves editable decimals. */
 export default function EstimatePriceInput({ value, onChange, vatMode, label, sliderMax }: {
@@ -12,11 +13,8 @@ export default function EstimatePriceInput({ value, onChange, vatMode, label, sl
     setDraft(amount > 0 ? String(Math.round(amount * multiplier * 100) / 100) : '');
   }, [amount, multiplier]);
   const display = draft.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  return <div style={{ display: 'grid', gap: 14, width: '100%' }}>
-    {sliderMax != null && <input aria-label={`${label} slider (${vatMode === 'incl' ? 'VAT included' : 'VAT excluded'})`}
-      type="range" min={0} max={Math.max(sliderMax, amount) * multiplier} step={100}
-      value={amount * multiplier} style={{ width: '100%', accentColor: '#175644' }}
-      onChange={event => { onChange(String(Number(event.target.value) / multiplier)); }} />}
+  return <div className={modal.valueControl}>
+    <div className={modal.amountEntry}><span aria-hidden="true">R</span>
     <input aria-label={`${label} (${vatMode === 'incl' ? 'VAT included' : 'VAT excluded'})`} type="text" inputMode="decimal"
       value={display} placeholder="Enter amount"
       onChange={event => {
@@ -25,5 +23,13 @@ export default function EstimatePriceInput({ value, onChange, vatMode, label, sl
         setDraft(raw);
         onChange(raw && Number(raw) > 0 ? String(Number(raw) / multiplier) : '');
       }} />
+    </div>
+    {sliderMax != null && <div className={modal.sliderControl}>
+      <div className={modal.sliderLabels}><span>Drag to adjust</span><span>Or type the exact amount above</span></div>
+      <input aria-label={`${label} slider (${vatMode === 'incl' ? 'VAT included' : 'VAT excluded'})`}
+      type="range" min={0} max={Math.max(sliderMax, amount) * multiplier} step={100}
+      value={amount * multiplier} className={modal.adjustSlider}
+      onChange={event => { onChange(String(Number(event.target.value) / multiplier)); }} />
+    </div>}
   </div>;
 }

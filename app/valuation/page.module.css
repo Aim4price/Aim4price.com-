@@ -14717,3 +14717,13 @@
   background: transparent;
   box-shadow: none;
 }
+
+/* Compact adjustment dialog: one price editor and a visible action row. */
+.replacementPriceDialog .resultAccordionBody { padding-top: 10px; gap: 14px; }
+.replacementPriceDialog .resultAccordionCopy { margin: 0; }
+.replacementPriceDialog .replacementInputPanel { padding: 16px; gap: 14px; margin: 0; }
+.replacementPriceDialog .replacementInputActions { margin-top: 0; padding-top: 14px; }
+.replacementPriceDialog .replacementSavedLink { justify-self: start; grid-column: 1 / -1; padding: 0; background: transparent; border: 0; color: var(--app-text, #175644); text-decoration: underline; text-underline-offset: 3px; font: inherit; font-size: 12px; cursor: pointer; }
+.replacementExtrasDisclosure { grid-column: 1 / -1; }
+.replacementExtrasDisclosure summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
+.replacementExtrasDisclosure > div { margin-top: 12px; }

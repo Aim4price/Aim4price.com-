@@ -56,4 +56,4 @@
 
 .usageSummary { padding: 20px 24px; border-top: 1px solid #d7e0da; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .usageSummary p { margin: 6px 0 0; }
-.usageSummary button { font: inherit; font-weight: 700; color: #174c3c; border: 1px solid #bacbc1; border-radius: 12px; padding: 12px 18px; background: #fff; cursor: pointer; }
+.usageSummary dialog button { font: inherit; font-weight: 700; color: #174c3c; border: 1px solid #bacbc1; border-radius: 12px; padding: 12px 18px; background: #fff; cursor: pointer; }
