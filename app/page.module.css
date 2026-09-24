@@ -822,8 +822,7 @@
 }
 
 .primaryCta:focus-visible,
-.secondaryCta:focus-visible,
-.roleCard:focus-visible {
+.secondaryCta:focus-visible {
   outline: 3px solid rgba(22, 147, 101, 0.28);
   outline-offset: 4px;
 }
@@ -2043,81 +2042,38 @@
 .roleCard {
   display: flex;
   min-width: 0;
-  min-height: 14.5rem;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 1rem;
+  min-height: 10.5rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.85rem;
   padding: 1.8rem 2rem;
-  border: 1px solid rgba(48, 137, 104, 0.18);
-  border-radius: 1.55rem;
+  border: 1px solid rgba(48, 137, 104, 0.16);
+  border-radius: 1.35rem;
   color: #0c4637;
   background: linear-gradient(145deg, #ffffff, #f5faf7);
   box-shadow:
-    0 3px 8px rgba(20, 64, 50, 0.05),
-    0 20px 44px -12px rgba(20, 64, 50, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  text-decoration: none;
-  transition:
-    transform 190ms ease,
-    border-color 190ms ease,
-    background 190ms ease,
-    box-shadow 190ms ease;
-}
-
-.roleCard:hover {
-  transform: translateY(-3px);
-  border-color: rgba(26, 142, 99, 0.28);
-  background: #ffffff;
-  box-shadow:
-    0 4px 10px rgba(20, 64, 50, 0.06),
-    0 26px 50px -12px rgba(20, 64, 50, 0.2),
+    0 3px 8px rgba(20, 64, 50, 0.03),
+    0 16px 32px -16px rgba(20, 64, 50, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
-.roleCard > span:first-child {
-  display: grid;
-  max-width: 30rem;
-  grid-template-rows: auto 1fr auto;
-  gap: 0.8rem;
-  flex: 1;
-}
-
-.roleCard strong,
-.roleCard small {
-  display: block;
-}
-
-.roleCard strong {
+.roleCard h3 {
+  margin: 0;
   color: #0a4536;
-  font-size: clamp(1.5rem, calc(var(--website-design-vw) * 2.15), 2.15rem);
-  line-height: 1.12;
-  letter-spacing: -0.04em;
-  font-weight: 850;
-  text-wrap: balance;
-}
-
-.roleCard small {
-  margin-top: 0;
-  color: #5d6c66;
-  font-size: clamp(0.95rem, calc(var(--website-design-vw) * 1.2), 1.12rem);
-  line-height: 1.58;
-  font-weight: 500;
+  font-size: 1.65rem;
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+  font-weight: 800;
   text-wrap: pretty;
 }
 
-.roleArrow {
-  flex: 0 0 auto;
-  align-self: flex-end;
-  margin-bottom: 0.1rem;
-  color: #0b533f;
-  font-size: 2.6rem;
-  line-height: 0.8;
-  font-weight: 300;
-  transition: transform 190ms ease;
-}
-
-.roleCard:hover .roleArrow {
-  transform: translateX(0.32rem);
+.roleCard p {
+  margin: 0;
+  color: #5d6c66;
+  font-size: 1rem;
+  line-height: 1.6;
+  font-weight: 500;
+  text-wrap: pretty;
 }
 
 .heroMedia,
@@ -2344,9 +2300,7 @@
   .assetCurrentValue,
   .assetPhotoPanel,
   .assetDetailRow,
-  .assetReplacementRow,
-  .roleCard,
-  .roleArrow {
+  .assetReplacementRow {
     transition: none;
   }
 
@@ -2356,9 +2310,7 @@
 
   .primaryCta:hover,
   .secondaryCta:hover,
-  .assetQuestion:hover,
-  .roleCard:hover,
-  .roleCard:hover .roleArrow {
+  .assetQuestion:hover {
     transform: none;
   }
 }
@@ -2378,8 +2330,7 @@
 
   .primaryCta:focus-visible,
   .secondaryCta:focus-visible,
-  .assetQuestion:focus-visible,
-  .roleCard:focus-visible {
+  .assetQuestion:focus-visible {
     outline-color: Highlight;
   }
 }
@@ -3530,7 +3481,6 @@
 
 /* Match the asset register Manage actions without changing other previews. */
 
-.roleCta { display: block; margin-top: 0.4rem; color: #126247; font-size: 0.85rem; font-weight: 750; }
 .scrollCueLabel { font-size: 0.7rem; font-weight: 650; white-space: nowrap; }
 .storyScrollCue svg { width: 1.35rem; height: 2.2rem; }
 

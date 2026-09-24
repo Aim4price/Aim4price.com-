@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import styles from './page.module.css';
 
@@ -48,35 +47,15 @@ export default function HomeRoleSelector() {
         </h2>
 
         <div className={styles.roleGrid}>
-          <Link
-            href="/auth?accountType=owner#signup"
-            className={styles.roleCard}
-            aria-label="Continue as someone who owns or manages assets"
-          >
-            <span>
-              <strong>I own or manage assets</strong>
-              <small>Farmers, contractors, fleet operators and business owners.</small>
-              <span className={styles.roleCta}>Get started as an owner</span>
-            </span>
-            <span className={styles.roleArrow} aria-hidden="true">
-              →
-            </span>
-          </Link>
+          <article className={styles.roleCard} aria-labelledby="role-owner-title">
+            <h3 id="role-owner-title">I own or manage assets</h3>
+            <p>Farmers, contractors, fleet operators and business owners.</p>
+          </article>
 
-          <Link
-            href="/auth?accountType=dealer#signup"
-            className={styles.roleCard}
-            aria-label="Continue as someone who sells, services or supports assets"
-          >
-            <span>
-              <strong>I sell, service or support assets</strong>
-              <small>Dealers, workshops and service providers.</small>
-              <span className={styles.roleCta}>Get started as a business</span>
-            </span>
-            <span className={styles.roleArrow} aria-hidden="true">
-              →
-            </span>
-          </Link>
+          <article className={styles.roleCard} aria-labelledby="role-business-title">
+            <h3 id="role-business-title">I sell, service or support assets</h3>
+            <p>Dealers, workshops and service providers.</p>
+          </article>
         </div>
       </div>
     </section>

@@ -190,8 +190,8 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(roleSelector, /id="choose-role-title"[\s\S]*?Which describes you best\?/);
   assert.match(roleSelector, /I own or manage assets/);
   assert.match(roleSelector, /I sell, service or support assets/);
-  assert.match(roleSelector, /href="\/auth\?accountType=owner#signup"/);
-  assert.match(roleSelector, /href="\/auth\?accountType=dealer#signup"/);
+  assert.equal((roleSelector.match(/<article\b/g) ?? []).length, 2);
+  assert.doesNotMatch(roleSelector, /<Link\b|<a\b|<button\b|href=|onClick=|roleArrow|roleCta/);
   assert.match(roleSelector, /focus\(\{ preventScroll: true \}\)/);
   assert.match(auth, /accountType === "owner" \|\| accountType === "dealer"/);
 
