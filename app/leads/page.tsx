@@ -1,3 +1,4 @@
+import SharedEnquiryInbox from "../../components/asset-register/SharedEnquiryInbox";
 import { redirect } from "next/navigation";
 import { getAccountProfile } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
@@ -31,14 +32,14 @@ export default async function LeadsPage() {
     : await listAssetLeadsForUser(session.user.id, { limit: INITIAL_LEAD_BATCH_SIZE + 1 });
 
   return (
-    <LeadsClient
+    <><SharedEnquiryInbox/><LeadsClient
       accountantWorkspaceMode={profile.accountType === "finance" && profile.accountSubtype === "accountant"}
       dealerWorkspaceMode={profile.accountType === "dealer"}
       licensingWorkspaceMode={profile.accountType === "licensing"}
       initialLeads={initialLeads.slice(0, INITIAL_LEAD_BATCH_SIZE)}
       initialLeadsHaveMore={initialLeads.length > INITIAL_LEAD_BATCH_SIZE}
       initialSessionUserId={session.user.id}
-    />
+    /></>
   );
 }
 

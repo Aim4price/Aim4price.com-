@@ -56,8 +56,6 @@ export async function saveAdminBusiness(
     await getDb().query(
       `with updated as (
       update business_network set status='paused',updated_at=now() where id=$1 returning id
-    ), revoked as (
-      update business_network_requests set revoked_at=now() where business_id in (select id from updated) and revoked_at is null
     ) insert into business_network_admin_actions(id,business_id,admin_id,action) select $2,id,$3,'pause' from updated`,
       [id, randomUUID(), adminId],
     );

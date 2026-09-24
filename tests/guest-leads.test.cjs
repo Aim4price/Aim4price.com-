@@ -75,3 +75,78 @@ test('guest activation API rejects non-admins and foreign origins',async()=>{
  const req=origin=>new NextRequest('https://aim4price.com/api/admin/guest-businesses',{method:'POST',headers:{origin,'Content-Type':'application/json'},body:'{}'});
  assert.equal((await route.POST(req('https://aim4price.com'))).status,403);user={id:'user',email:details.recipientEmail};assert.equal((await route.POST(req('https://aim4price.com'))).status,403);user={id:'admin',email:'admin@example.com'};assert.equal((await route.POST(req('https://evil.example'))).status,403);assert.equal(called,false);assert.equal((await route.POST(req('https://aim4price.com'))).status,200);assert.equal(called,true);
 });
+
+test('enquiries allow confirmed WhatsApp-only recipients but restrict reports to an email identity',async()=>{
+ const{pg,db,schema,base,assetDb}=await setup();
+ const mod=load('lib/guest-leads.ts',{'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':shared,'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async()=>null},'./asset-register-account-access':{getAssetRegisterAccountAccess:async()=>null}});
+ try{
+  assert.throws(()=>mod.validateLeadDetails({...details,recipientEmail:''}),/email or confirmed WhatsApp/);
+  assert.throws(()=>mod.validateLeadDetails({...details,recipientEmail:'',recipientWhatsApp:'0821234567'}),/country code/);
+  const whatsapp={...details,recipientEmail:'',recipientWhatsApp:'+27 82 123 4567',allowSubmissions:true};
+  const link=await mod.createGuestLead('owner',[A],true,whatsapp,[]);
+  assert.equal((await mod.readLeadPage(link.token)).details.recipientWhatsApp,'+27821234567');
+  await assert.rejects(mod.createGuestLead('owner',[A],true,whatsapp,[{label:'Report',fileName:'report.pdf',data:Buffer.from('%PDF-1.4')}]),/recipient email/);
+ }finally{await pg.close();}
+});
+
+test('incoming documents are opt-in, owner-private, review-only and respect link and asset lifecycle',async()=>{
+ const{pg,db,schema,base,assetDb}=await setup();let session=null;
+ const mocks={'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':shared,'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async()=>session},'./asset-register-account-access':{getAssetRegisterAccountAccess:async()=>({})}};
+ const lead=load('lib/guest-leads.ts',mocks),docs=load('lib/lead-submissions.ts',mocks);
+ const file={data:Buffer.from('%PDF-1.4\nquote'),fileName:'quote.pdf',contentType:'application/pdf',byteSize:14,sha256:'fixture',pageOrder:0},input={name:'Workshop',contact:'workshop@example.com',kind:'quote',note:'Please review'};
+ try{
+  const disabled=await lead.createGuestLead('owner',[A],false,details,[]);
+  await assert.rejects(docs.submitLeadDocument(disabled.token,input,file),/disabled/);
+  const one=await lead.createGuestLead('owner',[A],false,{...details,allowSubmissions:true},[]);
+  await docs.submitLeadDocument(one.token,input,file);
+  assert.deepEqual(await docs.listLeadSubmissions('other',one.token),[]);
+  const [submission]=await docs.listLeadSubmissions('owner',one.token);
+  assert.equal(submission.status,'pending');assert.ok(!('file_data' in submission));
+  assert.equal(await docs.downloadLeadSubmission('other',one.token,submission.id),null);
+  await assert.rejects(docs.reviewLeadSubmission('other',one.token,submission.id,'accepted'),/unavailable/);
+  await docs.reviewLeadSubmission('owner',one.token,submission.id,'accepted');
+  await assert.rejects(docs.reviewLeadSubmission('owner',one.token,submission.id,'rejected'),/already/);
+  assert.equal((await docs.listLeadSubmissions('owner',one.token))[0].status,'accepted');
+  assert.equal((await pg.query('SELECT user_id FROM asset_register_items WHERE id=$1',[A])).rows[0].user_id,'owner');
+  session={user:{id:'receiver',email:details.recipientEmail,emailVerified:true}};
+  assert.equal((await lead.listReceivedSharedEnquiries()).length,2);
+  session={user:{id:'receiver',email:details.recipientEmail,emailVerified:false}};assert.deepEqual(await lead.listReceivedSharedEnquiries(),[]);
+  await base.revokeAssetShareLink('owner',one.token);
+  await assert.rejects(docs.submitLeadDocument(one.token,input,file),/unavailable/);
+  assert.ok(await docs.downloadLeadSubmission('owner',one.token,submission.id),'owner retains received documents after revocation');
+  const two=await lead.createGuestLead('owner',[A],false,{...details,allowSubmissions:true},[]);
+  for(let i=0;i<10;i++)await docs.submitLeadDocument(two.token,input,file);
+  await assert.rejects(docs.submitLeadDocument(two.token,input,file),/document limit/);
+  await pg.query("UPDATE asset_register_items SET user_id='new-owner' WHERE id=$1",[A]);
+  await assert.rejects(docs.submitLeadDocument(two.token,input,file),/unavailable/);
+  session={user:{id:'receiver',email:details.recipientEmail,emailVerified:true}};assert.deepEqual(await lead.listReceivedSharedEnquiries(),[]);
+ }finally{await pg.close();}
+});
+
+test('document API rejects foreign writes, gates reviews by session, and validates uploaded bytes',async()=>{
+ const {NextRequest}=require('next/server');let session=null,enabled=true,submitted=0,reviewed=0;
+ const route=load('app/api/asset-share-links/[token]/submissions/route.ts',{
+  '../../../../../lib/auth-session':{getServerSession:async()=>session},
+  '../../../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>({})},
+  '../../../../../lib/business-network-api':{
+   businessHeaders:{'Cache-Control':'private, no-store'},businessJson:(d,s=200)=>Response.json(d,{status:s}),businessError:e=>Response.json({error:e.message},{status:400}),
+   requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.com')throw new Error('Invalid origin');},businessBody:r=>r.json(),
+  },
+  '../../../../../lib/business-network':{limitBusinessAction:async()=>{}},
+  '../../../../../lib/guest-leads':{readLeadPage:async()=>({details:{allowSubmissions:enabled}})},
+  '../../../../../lib/public-invoice-drop-security':load('lib/public-invoice-drop-security.ts'),
+  '../../../../../lib/lead-submissions':{submitLeadDocument:async()=>submitted++,listLeadSubmissions:async id=>{assert.equal(id,'owner');return[]},reviewLeadSubmission:async id=>{assert.equal(id,'owner');reviewed++},downloadLeadSubmission:async id=>{assert.equal(id,'owner');return{file_data:Buffer.from('%PDF-1.4'),file_name:'quote.pdf',content_type:'application/pdf'}}},
+ });
+ const ctx={params:{token:'g'.repeat(43)}},url='https://aim4price.com/api/asset-share-links/'+ctx.params.token+'/submissions';
+ const request=(data='%PDF-1.4\n%%EOF',origin='https://aim4price.com')=>{const form=new FormData();form.set('file',new Blob([data],{type:'application/pdf'}),'quote.pdf');form.set('kind','quote');return new NextRequest(url,{method:'POST',headers:{origin},body:form});};
+ assert.equal((await route.POST(request('%PDF-1.4','https://evil.test'),ctx)).status,400);assert.equal(submitted,0);
+ enabled=false;assert.equal((await route.POST(request(),ctx)).status,404);enabled=true;
+ assert.equal((await route.POST(request('<html>not a PDF</html>'),ctx)).status,400);assert.equal(submitted,0);
+ assert.equal((await route.POST(request(),ctx)).status,200);assert.equal(submitted,1);
+ assert.equal((await route.GET(new NextRequest(url),ctx)).status,401);
+ const patch=()=>new NextRequest(url,{method:'PATCH',headers:{origin:'https://aim4price.com','content-type':'application/json'},body:JSON.stringify({id:A,status:'accepted'})});
+ assert.equal((await route.PATCH(patch(),ctx)).status,401);assert.equal(reviewed,0);
+ session={user:{id:'owner'}};assert.equal((await route.GET(new NextRequest(url),ctx)).status,200);
+ assert.equal((await route.PATCH(patch(),ctx)).status,200);assert.equal(reviewed,1);
+ const download=await route.GET(new NextRequest(url+'?id='+A),ctx);assert.equal(download.status,200);assert.match(download.headers.get('content-disposition'),/attachment/);assert.equal(download.headers.get('x-content-type-options'),'nosniff');assert.match(download.headers.get('cache-control'),/no-store/);
+});

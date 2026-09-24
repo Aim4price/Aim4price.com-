@@ -20722,7 +20722,7 @@ export default function AssetRegisterClient({
                       </div>
 
                       <div className={styles.assetQuotePartnerList}>
-                        <BusinessDirectoryTools heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch, undefined, heading, service); }} />
+                        <BusinessDirectoryTools onShare={openDirectoryExternalShare} heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch, undefined, heading, service); }} />
                         {isLoadingQuotePartners ? (
                           <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
                         ) : quotePartners.length ? (
