@@ -5,7 +5,7 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('homepage plays one slower timed tour, returns to its brand frame, then follows scroll in both directions', async () => {
+test('homepage plays one slower timed tour, stays on its final feature, then follows scroll in both directions', async () => {
   const [page, hero, preview, roleSelector, styles, auth] = await Promise.all([
     read('app/page.tsx'),
     read('app/home-hero-experience.tsx'),
@@ -80,7 +80,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /if \(!supportsStory\) \{[\s\S]*?setIsAutoplaying\(false\)[\s\S]*?setIsManuallyControlled\(true\)[\s\S]*?updateStoryStep\(FEATURE_START_INDEX\)/);
   assert.match(hero, /const storyStep = HERO_STORY_STEPS\[storyStepIndex\]/);
   assert.match(hero, /window\.setTimeout\([\s\S]*?clockRef\.current\.remaining/);
-  assert.match(hero, /const finishAutoplay = useCallback\(\(\) => \{[\s\S]*?autoplayFinishedRef\.current = true;[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsAutoplaying\(false\);[\s\S]*?setIsPaused\(false\);[\s\S]*?updateStoryStep\(0\)/);
+  assert.match(hero, /const finishAutoplay = useCallback\(\(\) => \{[\s\S]*?autoplayFinishedRef\.current = true;[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsAutoplaying\(false\);[\s\S]*?setIsPaused\(false\);[\s\S]*?setIsTourFinished\(true\);[\s\S]*?setRemainingMs\(0\)/);
   assert.match(hero, /storyStepIndex >= HERO_STORY_STEPS\.length - 1[\s\S]*?finishAutoplay\(\)/);
   assert.match(hero, /const timer = window\.setTimeout\(\(\) => \{[\s\S]*?if \(autoplayFinishedRef\.current\) return/);
   const terminalAutoplay = hero.slice(
@@ -119,7 +119,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\),[\s\S]*?\)/);
   assert.match(hero, /if \(nextIndex !== storyStepRef\.current\) updateStoryStep\(nextIndex\)/);
   assert.match(hero, /if \(shouldClaimControl\) \{[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsManuallyControlled\(true\);[\s\S]*?setIsPaused\(false\);[\s\S]*?setIsAutoplaying\(false\)/);
-  assert.match(hero, /const handleScroll = \(\) => \{\s*scheduleStorySync\(true\)/);
+  assert.match(hero, /const handleScroll = \(\) => \{[\s\S]*?alignedScrollRef[\s\S]*?scheduleStorySync\(true\)/);
   assert.match(hero, /window\.addEventListener\('resize', handleResize\)/);
   assert.match(hero, /window\.addEventListener\('pageshow', handlePageShow\)/);
   assert.match(hero, /if \(window\.scrollY > 4\) scheduleStorySync\(true\)/);
@@ -379,16 +379,16 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
 
   assert.match(storyHeroStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
   assert.doesNotMatch(storyHeroStyles, /\.heroStory \.heroMedia \.shell \{[^}]*100rem/s);
-  assert.match(storyHeroStyles, /\.storyCopyLayer \{[\s\S]*?filter: blur\(14px\);[\s\S]*?opacity 820ms[\s\S]*?filter 820ms[\s\S]*?transform 820ms/);
+  assert.match(storyHeroStyles, /\.storyCopyLayer \{[\s\S]*?filter: blur\(2px\);[\s\S]*?opacity 820ms[\s\S]*?filter 820ms[\s\S]*?transform 820ms/);
   assert.match(storyHeroStyles, /\.heroBrandTitle > span,[\s\S]*?\.heroPromiseTitle span \{[\s\S]*?white-space: nowrap/);
   assert.match(storyHeroStyles, /\.heroBrandTitle \.openingProgress \{[\s\S]*?height: 2px[\s\S]*?linear-gradient\(90deg, #1ba677/);
-  assert.match(storyHeroStyles, /\.storyHeroLogo \{[\s\S]*?filter: blur\(14px\);[\s\S]*?opacity 850ms[\s\S]*?filter 850ms/);
+  assert.match(storyHeroStyles, /\.storyHeroLogo \{[\s\S]*?filter: blur\(2px\);[\s\S]*?opacity 850ms[\s\S]*?filter 850ms/);
   assert.match(storyHeroStyles, /\.storyHeroLogo::before \{[\s\S]*?border-radius: 50%/);
   assert.match(storyHeroStyles, /\.storyHeroLogo::before \{[\s\S]*?radial-gradient\([\s\S]*?rgba\(89, 195, 155, 0\.22\)/);
   assert.doesNotMatch(storyHeroStyles, /\.storyHeroLogo::after/);
   assert.match(storyHeroStyles, /\.storyHeroLogoImage \{[\s\S]*?drop-shadow\(0 1\.2rem 0\.8rem rgba\(12, 67, 49, 0\.16\)\)/);
-  assert.match(storyHeroStyles, /\.assetStageMotion \{[\s\S]*?filter: blur\(14px\);[\s\S]*?transform 940ms/);
-  assert.match(storyHeroStyles, /\.featureNarrativeLayer \{[\s\S]*?filter: blur\(12px\);[\s\S]*?opacity 700ms[\s\S]*?filter 700ms/);
+  assert.match(storyHeroStyles, /\.assetStageMotion \{[\s\S]*?filter: blur\(2px\);[\s\S]*?transform 760ms/);
+  assert.match(storyHeroStyles, /\.featureNarrativeLayer \{[\s\S]*?filter: blur\(0\);[\s\S]*?opacity 180ms[\s\S]*?filter 180ms/);
 
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.heroBrandCopy,[\s\S]*?\.heroSection\[data-story-step='preview'\] \.heroPromiseCopy \{[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.storyHeroLogo \{[\s\S]*?filter: blur\(0\)[\s\S]*?scale\(1\)/);

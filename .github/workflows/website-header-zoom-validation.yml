@@ -13,6 +13,7 @@ on:
       - 'app/home-hero-experience.tsx'
       - 'lib/home-story-swipe.ts'
       - 'tests/home-story-swipe.test.mjs'
+      - 'tests/home-story-playback.test.cjs'
       - 'tests/site-workspace-zoom.test.mjs'
       - 'scripts/verify-website-canvas.cjs'
       - 'scripts/verify-website-mobile-sizing.cjs'
@@ -39,8 +40,8 @@ jobs:
       - run: npm ci
       - name: Website layout regressions
         run: node --test tests/site-workspace-zoom.test.mjs tests/header-manage-layout.test.mjs tests/header-nav-drag.test.mjs
-      - name: Homepage swipe regressions
-        run: node --experimental-strip-types --test tests/home-story-swipe.test.mjs tests/homepage-asset-register-hero.test.mjs
+      - name: Homepage playback and swipe regressions
+        run: node --experimental-strip-types --test tests/home-story-playback.test.cjs tests/home-story-swipe.test.mjs tests/homepage-asset-register-hero.test.mjs
       - run: npm run typecheck
       - name: Production bundle validation
         shell: bash
