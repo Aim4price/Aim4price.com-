@@ -8,7 +8,7 @@
 .panel { padding: 2rem; background: linear-gradient(180deg, #fff, #f7faf8); border: 1px solid #d6e1d9; border-radius: 1.5rem; box-shadow: 0 8px 24px rgba(16,42,34,.04); }
 .heading { margin-bottom: 1.75rem; }
 .heading > p:first-child, .label { color: #37775d; font-size: .85rem; font-weight: 650; margin: 0 0 .65rem; }
-.heading h2 { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-size: clamp(1.65rem, 2.4vw, 2.35rem); font-weight: 800; line-height: 1.15; letter-spacing: -.045em; margin: 0; }
+.heading h2 { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.35rem); font-weight: 800; line-height: 1.15; letter-spacing: -.045em; margin: 0; }
 .heading > p:last-child { color: #52645d; line-height: 1.65; margin: .8rem 0 0; font-size: .95rem; }
 .layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 2rem; align-items: start; }
 .layout > * { min-width: 0; }
@@ -56,7 +56,7 @@
 :global(html[data-background='dark']) .progress li { color: #e0ebe4; }
 :global(html[data-background='dark']) .progress li > span { color: #183b30; }
 :global(html[data-background='dark']) .progress li[aria-current] > span { color: white; }
-@media (max-width: 760px) { .layout { grid-template-columns: 1fr; gap: 1.25rem; } .panel { padding: 1.25rem; } .progress { gap: .4rem; } .progress li { flex-direction: column; text-align: center; font-size: .75rem; gap: .4rem; } .navigation { flex-wrap: wrap; } .benefits, .total { padding: 1.25rem; } .summaryHead { flex-wrap: wrap; gap: .25rem; } .rates > div { flex-wrap: wrap; gap: .25rem; } }
+@media (max-width: 760px) { :global(html:not(:has([data-website-canvas]))) .layout { grid-template-columns: 1fr; gap: 1.25rem; } :global(html:not(:has([data-website-canvas]))) .panel { padding: 1.25rem; } :global(html:not(:has([data-website-canvas]))) .progress { gap: .4rem; } :global(html:not(:has([data-website-canvas]))) .progress li { flex-direction: column; text-align: center; font-size: .75rem; gap: .4rem; } :global(html:not(:has([data-website-canvas]))) .navigation { flex-wrap: wrap; } :global(html:not(:has([data-website-canvas]))) .benefits, :global(html:not(:has([data-website-canvas]))) .total { padding: 1.25rem; } :global(html:not(:has([data-website-canvas]))) .summaryHead { flex-wrap: wrap; gap: .25rem; } :global(html:not(:has([data-website-canvas]))) .rates > div { flex-wrap: wrap; gap: .25rem; } }
 .copyText { width: 100%; min-height: 12rem; resize: vertical; padding: .8rem; margin-block: 1rem; background: #fff; border: 1px solid #cbdcd0; border-radius: .65rem; color: #183b30; font: inherit; font-size: .8rem; line-height: 1.7; }
 .copyText:focus-visible { outline: 3px solid #398d67; outline-offset: 3px; }
 /* Compact questions inside the pricing dialog. */
@@ -65,7 +65,7 @@
 .progress li { font-size: .75rem; }
 .progress li > span { width: 1.65rem; height: 1.65rem; }
 .heading { margin-bottom: 1.25rem; }
-.heading h2 { font-size: clamp(1.5rem, 2.4vw, 2rem); }
+.heading h2 { font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem); }
 .heading > p:first-child { display: none; }
 .heading > p:last-child { margin-top: .5rem; font-size: .88rem; }
 .assetChoices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
@@ -85,7 +85,7 @@
 .summaryCard p, .total p { font-size: .82rem; }
 .summaryHead h3 { font-size: 1rem; }
 .total { padding: 1.15rem; }
-@media (max-width: 640px) { .navigation { bottom: -1rem; } .progress li { font-size: .65rem; } .assetChoices { gap: .5rem; } .assetChoices .choice { padding: .8rem; } .choiceTitle { font-size: .95rem; } }
+@media (max-width: 640px) { :global(html:not(:has([data-website-canvas]))) .navigation { bottom: -1rem; } :global(html:not(:has([data-website-canvas]))) .progress li { font-size: .65rem; } :global(html:not(:has([data-website-canvas]))) .assetChoices { gap: .5rem; } :global(html:not(:has([data-website-canvas]))) .assetChoices .choice { padding: .8rem; } :global(html:not(:has([data-website-canvas]))) .choiceTitle { font-size: .95rem; } }
 .navigation > .primary { margin-left: auto; }
 /* Password-modal typography and compact question layout. */
 .heading { margin-bottom: .85rem; }
@@ -118,8 +118,8 @@
 .total { padding: 1rem; }
 .total > p { margin: .5rem 0; }
 .total .excluded { padding-block: .5rem; }
-@media (max-height: 760px) and (min-width: 761px) { .choice { padding: .65rem .85rem; } .assetChoices .choice { min-height: 4.1rem; } .tip { padding: .6rem .85rem; } .heading { margin-bottom: .6rem; } }
-@media (max-width: 640px) { .rates { grid-template-columns: 1fr; gap: .35rem; } .rates > div { display: flex; justify-content: space-between; } .billing button { padding: .5rem .7rem; } }
+@media (max-height: 760px) and (min-width: 761px) { :global(html:not(:has([data-website-canvas]))) .choice { padding: .65rem .85rem; } :global(html:not(:has([data-website-canvas]))) .assetChoices .choice { min-height: 4.1rem; } :global(html:not(:has([data-website-canvas]))) .tip { padding: .6rem .85rem; } :global(html:not(:has([data-website-canvas]))) .heading { margin-bottom: .6rem; } }
+@media (max-width: 640px) { :global(html:not(:has([data-website-canvas]))) .rates { grid-template-columns: 1fr; gap: .35rem; } :global(html:not(:has([data-website-canvas]))) .rates > div { display: flex; justify-content: space-between; } :global(html:not(:has([data-website-canvas]))) .billing button { padding: .5rem .7rem; } }
 
 .summaryCard p { line-height: 1.45; margin: .25rem 0; }
 .summaryCard .billing { margin-top: .35rem; }
@@ -143,15 +143,15 @@
 .summaryHead { align-items: center; }
 .summaryHead h3 { margin: 0; }
 .summaryHead button { white-space: nowrap; }
-@media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { :global(html:not(:has([data-website-canvas]))) .layout { grid-template-columns: 1fr; } }
 @media (max-width: 640px) {
-  .heading { margin-bottom: 1rem; }
-  .choiceTitle { font-size: .9rem; }
-  .selection { width: 1rem; height: 1rem; right: .65rem; top: .85rem; }
-  .assetChoices .choice { padding: .8rem .65rem; }
-  .navigation button { min-width: 6rem; padding-inline: .85rem; }
-  .navigation > .note { font-size: .72rem; }
-  .summaryHead { flex-wrap: nowrap; }
+  :global(html:not(:has([data-website-canvas]))) .heading { margin-bottom: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .choiceTitle { font-size: .9rem; }
+  :global(html:not(:has([data-website-canvas]))) .selection { width: 1rem; height: 1rem; right: .65rem; top: .85rem; }
+  :global(html:not(:has([data-website-canvas]))) .assetChoices .choice { padding: .8rem .65rem; }
+  :global(html:not(:has([data-website-canvas]))) .navigation button { min-width: 6rem; padding-inline: .85rem; }
+  :global(html:not(:has([data-website-canvas]))) .navigation > .note { font-size: .72rem; }
+  :global(html:not(:has([data-website-canvas]))) .summaryHead { flex-wrap: nowrap; }
 }
 
 .choice { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
@@ -165,10 +165,10 @@
 .choiceCopy { font-size: .9rem; margin-top: .45rem; }
 .selection { top: 1.35rem; right: 1.35rem; }
 @media (max-width: 640px) {
-  .choice, .assetChoices .choice { min-height: 6.25rem; padding: 1rem; }
-  .choiceTitle { font-size: 1rem; }
-  .choiceCopy { font-size: .82rem; }
-  .selection { top: 1.1rem; right: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .choice, :global(html:not(:has([data-website-canvas]))) .assetChoices .choice { min-height: 6.25rem; padding: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .choiceTitle { font-size: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .choiceCopy { font-size: .82rem; }
+  :global(html:not(:has([data-website-canvas]))) .selection { top: 1.1rem; right: 1rem; }
 }
 /* A single total followed by a clear, editable cost breakdown. */
 .review { display: grid; gap: .85rem; }
@@ -193,18 +193,18 @@
 .fundedRates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; font-size: .8rem; }
 .fundedRates h4 { margin: 0 0 .5rem; }
 @media (max-width: 640px) {
-  .reviewTotal { flex-direction: column; align-items: stretch; gap: .85rem; padding: 1rem; }
-  .reviewBilling { text-align: left; }
-  .reviewRow { grid-template-columns: minmax(0, 1fr) auto; gap: .35rem .5rem; }
-  .reviewRow > span { text-align: left; grid-column: 1; }
-  .reviewRow button { grid-column: 2; grid-row: 1 / span 2; }
-  .reviewActions { flex-direction: column-reverse; }
-  .fundedRates { grid-template-columns: 1fr; }
+  :global(html:not(:has([data-website-canvas]))) .reviewTotal { flex-direction: column; align-items: stretch; gap: .85rem; padding: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .reviewBilling { text-align: left; }
+  :global(html:not(:has([data-website-canvas]))) .reviewRow { grid-template-columns: minmax(0, 1fr) auto; gap: .35rem .5rem; }
+  :global(html:not(:has([data-website-canvas]))) .reviewRow > span { text-align: left; grid-column: 1; }
+  :global(html:not(:has([data-website-canvas]))) .reviewRow button { grid-column: 2; grid-row: 1 / span 2; }
+  :global(html:not(:has([data-website-canvas]))) .reviewActions { flex-direction: column-reverse; }
+  :global(html:not(:has([data-website-canvas]))) .fundedRates { grid-template-columns: 1fr; }
 }
 .reviewRow { padding-block: .5rem; }
 .reviewDetails { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0 1rem; }
 .reviewDetails > details[open] { grid-column: 1 / -1; }
-@media (max-width: 640px) { .reviewDetails { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { :global(html:not(:has([data-website-canvas]))) .reviewDetails { grid-template-columns: 1fr; } }
 
 .dealerRates > div { display: flex; justify-content: space-between; gap: 1rem; padding-block: .5rem; font-size: .82rem; }
 .dealerRates dd { margin: 0; text-align: right; font-weight: 700; }
@@ -215,10 +215,10 @@
 .yearlySaving strong { padding: .25rem .55rem; border-radius: .5rem; background: #d6eadd; color: #174b35; font-size: .8rem; white-space: nowrap; }
 .yearlySaving span { color: #375a49; }
 @media (max-width: 640px) {
-  .navigation:has(.finalActions) { flex-wrap: wrap; }
-  .finalActions { flex: 1 1 100%; gap: .5rem; }
-  .finalActions > a, .finalActions > button { flex: 1; min-width: 0; }
-  .reviewBilling .yearlySaving { justify-content: flex-start; flex-wrap: wrap; }
+  :global(html:not(:has([data-website-canvas]))) .navigation:has(.finalActions) { flex-wrap: wrap; }
+  :global(html:not(:has([data-website-canvas]))) .finalActions { flex: 1 1 100%; gap: .5rem; }
+  :global(html:not(:has([data-website-canvas]))) .finalActions > a, :global(html:not(:has([data-website-canvas]))) .finalActions > button { flex: 1; min-width: 0; }
+  :global(html:not(:has([data-website-canvas]))) .reviewBilling .yearlySaving { justify-content: flex-start; flex-wrap: wrap; }
 }
 
 /* The question scrolls independently; navigation stays within the dialog. */
@@ -244,15 +244,15 @@
 .dealerRates > div + div { border-top: 1px solid #d3e3d9; }
 .fundedRates > div { background: #edf5ef; border-radius: .8rem; padding: .8rem; }
 @media (max-width: 640px) {
-  .content { padding: .85rem 1rem .5rem; scrollbar-gutter: auto; }
-  .navigation { margin-inline: 1rem; }
-  .reviewTotal { padding: .85rem; }
-  .reviewTotal .price { font-size: 1.85rem; }
-  .navigation:has(.finalActions) { flex-wrap: nowrap; gap: .5rem; }
-  .finalActions { flex: 0 1 auto; }
-  .navigation button { min-width: auto; }
-  .finalActions .restart { font-size: .75rem; padding-inline: .25rem; }
-  .finalActions > a { min-width: 6rem; }
+  :global(html:not(:has([data-website-canvas]))) .content { padding: .85rem 1rem .5rem; scrollbar-gutter: auto; }
+  :global(html:not(:has([data-website-canvas]))) .navigation { margin-inline: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .reviewTotal { padding: .85rem; }
+  :global(html:not(:has([data-website-canvas]))) .reviewTotal .price { font-size: 1.85rem; }
+  :global(html:not(:has([data-website-canvas]))) .navigation:has(.finalActions) { flex-wrap: nowrap; gap: .5rem; }
+  :global(html:not(:has([data-website-canvas]))) .finalActions { flex: 0 1 auto; }
+  :global(html:not(:has([data-website-canvas]))) .navigation button { min-width: auto; }
+  :global(html:not(:has([data-website-canvas]))) .finalActions .restart { font-size: .75rem; padding-inline: .25rem; }
+  :global(html:not(:has([data-website-canvas]))) .finalActions > a { min-width: 6rem; }
 }
 
 .finalActions .restart { white-space: nowrap; }
@@ -264,5 +264,5 @@
 .reviewRow { grid-template-columns: minmax(0, 1fr) minmax(0, .85fr) 3.25rem; }
 .reviewRow button { justify-self: end; padding-inline: .35rem; }
 @media (max-width: 640px) {
-  .reviewRow { grid-template-columns: minmax(0, 1fr) auto; }
+  :global(html:not(:has([data-website-canvas]))) .reviewRow { grid-template-columns: minmax(0, 1fr) auto; }
 }
