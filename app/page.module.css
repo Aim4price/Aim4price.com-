@@ -3656,3 +3656,33 @@
 button.storyHeroLogo { padding: 0; border: 0; background: transparent; cursor: pointer; }
 .heroSection[data-story-step='brand'] button.storyHeroLogo { pointer-events: auto; }
 button.storyHeroLogo:focus-visible, .featureCountdown button:focus-visible { outline: 3px solid #169a70; outline-offset: 5px; }
+
+/* Keep the navigation rail between the feature card and its explanation. */
+.heroStory .assetQuestionGroup {
+  left: var(--feature-rail-left, 0px);
+}
+.heroStory .assetPreviewCard,
+.featureCountdown {
+  left: var(--feature-card-left, 5rem);
+  right: var(--feature-card-right, 3.25rem);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .heroSection[data-story-mode='features'][data-card-side='left'] .assetStageMotion {
+    --feature-rail-left: calc(100% - 7.75rem);
+    --feature-card-left: 0rem;
+    --feature-card-right: 8.25rem;
+  }
+  .heroStory .assetQuestionGroup,
+  .heroStory .assetPreviewCard,
+  .featureCountdown {
+    transition: left 940ms cubic-bezier(0.76, 0, 0.24, 1), right 940ms cubic-bezier(0.76, 0, 0.24, 1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Reduced motion always places the card to the left of its explanation. */
+  .assetStageMotion {
+    --feature-rail-left: calc(100% - 7.75rem);
+    --feature-card-left: 0rem;
+    --feature-card-right: 8.25rem;
+  }
+}
