@@ -43,7 +43,8 @@ export default function Validation(){
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Startup timed out')),60000);server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));});
   browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await require('@sparticuz/chromium').executablePath(),args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true,pipe:true});
   const page=await browser.newPage(),errors=[],requests=[];
-  page.on('pageerror',e=>errors.push(e.message));
+  page.on('pageerror',e=>{errors.push(e.message);console.error(page.url(),e.message)});
+  page.on('console',msg=>{if(msg.type()==='error')console.error(page.url(),msg.text())});
   let history=[],activated=false,documents=[];
   await page.setRequestInterception(true);
   page.on('request',req=>{
@@ -77,7 +78,7 @@ export default function Validation(){
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await page.goto('http://127.0.0.1:3033/business-network/accept?from=X%20Farms',{waitUntil:'networkidle2'});
    assert.ok(await page.evaluate(()=>document.body.textContent.includes('X Farms wants to share assets with you more efficiently.')));
-   await page.waitForSelector('header');
+   await page.waitForSelector('[data-website-zoom-host=ready] [data-site-workspace-zoom-controls]');
    await page.screenshot({path:path.join(output,`listing-page-${width}.png`),fullPage:true});
    const writesBefore=requests.filter(r=>r.method==='POST').length;
    await Promise.all([page.waitForNavigation({waitUntil:'networkidle2'}),page.click('a[href^="/business-network/example"]')]);
@@ -181,26 +182,47 @@ export default function Validation(){
    await fill('[name=until]','2099-12-31');await page.type('[name=note]','Manual test payment');await click('Activate paid access');await page.waitForFunction(()=>document.body.textContent.includes('Guest access updated'));
    assert.ok(activated);await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Suspend access'&&!b.disabled));await click('Suspend access');await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Suspend access'&&!b.disabled));assert.equal(activated,false);
   }
-  await click('external');
-  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Create lead link'&&!b.disabled));
-  await labelInput('Your request','Please quote.');
-  await labelInput('Confirmed recipient WhatsApp · optional','+27820000000');
-  await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');
-  await page.evaluate(()=>{window.__opened=[];window.__nativeShares=0;window.open=url=>{window.__opened.push(url);return null};Object.defineProperty(navigator,'share',{configurable:true,value:()=>{window.__nativeShares++;return Promise.resolve()}});});
-  await click('WhatsApp');
-  let sent=await page.evaluate(()=>({opened:window.__opened,native:window.__nativeShares}));
-  assert.equal(sent.native,0,'Protected reports never go to the native attachment share sheet');
-  assert.match(decodeURIComponent(sent.opened[0]),new RegExp('/asset-share/'+token));
-  assert.match(sent.opened[0],/27820000000/);
-  await fill('input[type=email]','other@example.com');await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');await click('WhatsApp');
-  sent=await page.evaluate(()=>({opened:window.__opened,native:window.__nativeShares}));
-  assert.match(sent.opened.at(-1),/27820000000/,'Explicitly confirmed WhatsApp is retained; a directory phone is never assumed');
-  assert.equal(sent.native,0);
+  // Standard outside sharing must not create a snapshot or guest lead.
+  const linkRequestsBefore=requests.filter(r=>r.path.startsWith('/api/asset-share-links')).length;
+  for(const width of [1440,430]){
+   await page.setViewport({width,height:1000,deviceScaleFactor:1});
+   await click('external');
+   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='WhatsApp'&&!b.disabled));
+   const externalText=await page.$eval('[aria-label="Share outside Aim4price"]',e=>e.textContent);
+   assert.doesNotMatch(externalText,/Create lead link|Create asset link|Message & attachments|Lead page|View asset details:/);
+   await page.evaluate(()=>{
+    window.__opened=[];window.__nativeShares=[];
+    window.open=url=>{window.__opened.push(url);return null};
+    Object.defineProperty(navigator,'canShare',{configurable:true,value:data=>data.files?.length===1});
+    Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{
+     window.__nativeShares.push({text:data.text,title:data.title,files:await Promise.all(data.files.map(async file=>({name:file.name,type:file.type,body:await file.text()})))});
+    }});
+   });
+   for(const channel of ['WhatsApp','Email']){
+    await click(channel);
+    await page.waitForFunction(()=>document.body.textContent.includes('attachment was handed to your phone'));
+   }
+   const sent=await page.evaluate(()=>({opened:window.__opened,native:window.__nativeShares}));
+   assert.equal(sent.native.length,2,'Both actions hand the selected report to the native share menu');
+   assert.equal(sent.opened.length,0,'No message-only URL silently drops the selected report');
+   for(const payload of sent.native){
+    assert.match(payload.text,/Serial number: TEST-1/);
+    assert.match(payload.text,/Attachments: 1 Aim4price report/);
+    assert.doesNotMatch(payload.text,/asset-share|View asset details:/);
+    assert.deepEqual(payload.files,[{name:'valuation.pdf',type:'application/pdf',body:'%PDF-1.4 fixture'}]);
+   }
+   await page.evaluate(()=>Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false}));
+   await click('WhatsApp');
+   await page.waitForFunction(()=>document.body.textContent.includes('Nothing was sent.'));
+   assert.equal(await page.evaluate(()=>window.__nativeShares.length),2,'Unsupported payloads are not sent');
+   await page.screenshot({path:path.join(output,`standard-external-${width}.png`),fullPage:true});
+  }
+  assert.equal(requests.filter(r=>r.path.startsWith('/api/asset-share-links')).length,linkRequestsBefore,'Standard sharing never calls snapshot or lead APIs');
   assert.equal(requests.filter(r=>r.path==='/api/business-network/accept'&&r.method==='POST').length,2);
   assert.equal(requests.filter(r=>r.path==='/api/guest-access'&&r.method==='POST').length,0);
   assert.equal(requests.filter(r=>r.path.endsWith('/submissions')&&r.method==='POST').length,2);
   assert.deepEqual(errors,[]);
-  console.log('PASS simple directory invitation, acceptance, lead creation/revocation, private document submission/review, locked reports and confirmed WhatsApp delivery at desktop and mobile widths');
+  console.log('PASS simple directory invitation, acceptance, lead creation/revocation, private document submission/review, locked reports and standard external attachment delivery at desktop and mobile widths');
  }finally{
   if(browser)await browser.close();if(server)server.kill();
   await fs.rm(fixture,{recursive:true,force:true});

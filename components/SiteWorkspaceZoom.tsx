@@ -162,7 +162,9 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     };
     bindControls();
     const observer = new MutationObserver(bindControls);
-    observer.observe(canvas, { childList: true, subtree: true });
+    // A streamed header may still be hydrating when the canvas mounts.
+    // Wait for its host marker before inserting portal children into it.
+    observer.observe(canvas, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-website-zoom-host'] });
     return () => observer.disconnect();
   }, [native, pathname, syncOverlayWidths]);
 

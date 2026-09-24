@@ -39202,45 +39202,14 @@ button.documentOpenLink {
   scrollbar-gutter: auto !important;
 }
 
+/* Standard sharing fits naturally; overflow remains available for large registers. */
 .externalAssetShareModal .assetQuoteScrollBody,
 .externalAssetShareModal .registerShareModalBody {
-  flex: 1 1 auto !important;
+  flex: 0 1 auto !important;
   min-height: 0 !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable !important;
-  scrollbar-width: thin !important;
-  scrollbar-color: #568676 #e9f0f2 !important;
-}
-
-.externalAssetShareModal .assetQuoteScrollBody,
-.externalAssetShareModal .registerShareModalBody {
-  padding-right: clamp(0.65rem, calc(var(--website-design-vw, 1vw) * 1), 0.9rem) !important;
-}
-
-.externalAssetShareModal .assetQuoteScrollBody::-webkit-scrollbar,
-.externalAssetShareModal .registerShareModalBody::-webkit-scrollbar {
-  width: 0.82rem;
-}
-
-.externalAssetShareModal .assetQuoteScrollBody::-webkit-scrollbar-track,
-.externalAssetShareModal .registerShareModalBody::-webkit-scrollbar-track {
-  margin-block: 0.35rem;
-  border-radius: 999px;
-  background: var(--app-info-soft, #e9f0f2);
-}
-
-.externalAssetShareModal .assetQuoteScrollBody::-webkit-scrollbar-thumb,
-.externalAssetShareModal .registerShareModalBody::-webkit-scrollbar-thumb {
-  min-height: 3.25rem;
-  border: 3px solid var(--app-info-line, #e9f0f2);
-  border-radius: 999px;
-  background: linear-gradient(180deg, var(--app-surface-soft, #78a697) 0%, #3f7866 100%);
-}
-
-.externalAssetShareModal .assetQuoteScrollBody::-webkit-scrollbar-thumb:hover,
-.externalAssetShareModal .registerShareModalBody::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, var(--app-surface-soft, #5f9583) 0%, #2f6756 100%);
+  scrollbar-gutter: auto !important;
 }
 
 .assetShareInsideModal .assetShareInsideFlow {

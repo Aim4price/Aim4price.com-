@@ -742,6 +742,8 @@ export default function AppHeader({
   ctaHref,
   ctaLabel = 'Create Account',
 }: AppHeaderProps) {
+  const [headerHydrated, setHeaderHydrated] = useState(false);
+  useEffect(() => setHeaderHydrated(true), []);
   const primaryHref = ctaHref ?? signupHref;
   const pathname = usePathname();
   const brandAlignmentClass =
@@ -2518,7 +2520,7 @@ export default function AppHeader({
             />
           </Link>
 
-          <div className={styles.zoomHost} data-website-zoom-host />
+          <div className={styles.zoomHost} data-website-zoom-host={headerHydrated ? 'ready' : undefined} />
 
           <nav
             className={`${styles.nav} ${usesCompactHeader ? styles.navCompact : ''}`}

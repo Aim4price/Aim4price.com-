@@ -14,8 +14,6 @@ import {
   type ExternalShareFileSource,
 } from '../../lib/external-file-share';
 import styles from './AssetExternalShare.module.css';
-import AssetShareLinkControl from './AssetShareLinkControl';
-import GuestLeadComposer from './GuestLeadComposer';
 
 export type { ExternalShareFileSource } from '../../lib/external-file-share';
 
@@ -210,12 +208,6 @@ export default function AssetExternalShare({
   onRemoveAim4priceReport: (reportId: string) => void;
 }) {
   const [includePhotos, setIncludePhotos] = useState(false);
-  const [leadMode, setLeadMode] = useState(Boolean(recipient));
-  const assetIds = assets.map(asset => asset.assetId || '');
-  const linkSelection = JSON.stringify([assetIds, includePhotos, leadMode, recipient?.email, recipient?.name, reportFiles.map(report => report.id)]);
-  const [pageLink, setPageLink] = useState<{selection:string;url:string;email?:string;whatsapp?:string}>({ selection: '', url: '' });
-  const shareUrl = pageLink.selection === linkSelection ? pageLink.url : '';
-  const canCreateLink = assetIds.length > 0 && assetIds.length <= 100 && assetIds.every(Boolean);
   const [preparationAttempt, setPreparationAttempt] = useState(0);
   const [sendingTarget, setSendingTarget] = useState<ShareTarget | null>(null);
   const [shareStatus, setShareStatus] = useState('');
@@ -245,22 +237,21 @@ export default function AssetExternalShare({
   const savedPhotoCount = photoFiles.length;
   const selectedPhotoCount = includePhotos ? savedPhotoCount : 0;
   const selectedSources = useMemo(
-    () => [...(!leadMode && includePhotos ? photoFiles : []), ...reportFiles],
-    [includePhotos, photoFiles, reportFiles, leadMode],
+    () => [...(includePhotos ? photoFiles : []), ...reportFiles],
+    [includePhotos, photoFiles, reportFiles],
   );
   const selectedSourceSignature = selectedSources
     .map((source) => `${source.id}:${source.url}:${source.fileName}`)
     .join('|');
   const copy = useMemo(
     () => buildExternalAssetShareCopy(shareName, assets, {
-      shareUrl,
-      attachedPhotoCount: leadMode ? 0 : selectedPhotoCount,
-      attachedReportCount: leadMode ? 0 : reportFiles.length,
+      attachedPhotoCount: selectedPhotoCount,
+      attachedReportCount: reportFiles.length,
     }),
-    [assets, reportFiles.length, selectedPhotoCount, shareName, shareUrl, leadMode],
+    [assets, reportFiles.length, selectedPhotoCount, shareName],
   );
-  const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, leadMode ? pageLink.whatsapp : recipient?.phone), [copy, recipient?.phone, leadMode, pageLink.whatsapp]);
-  const emailHref = useMemo(() => buildEmailShareUrl(copy, leadMode ? pageLink.email || recipient?.email : recipient?.email), [copy, recipient?.email, leadMode, pageLink.email]);
+  const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
+  const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
   const selectedAttachmentCount = selectedSources.length;
   const isPreparing = preparation.status === 'preparing';
   const isSending = sendingTarget !== null;
@@ -319,9 +310,7 @@ export default function AssetExternalShare({
   async function sendShare(target: ShareTarget) {
     setShareStatus('');
 
-    if (leadMode && !shareUrl) { setShareStatus('Create your lead link before sending.'); return; }
-    if (leadMode && !(target === 'email' ? pageLink.email : pageLink.whatsapp)) { setShareStatus('Add and confirm this contact method in the lead form, then create a new link.'); return; }
-    if (leadMode || !selectedAttachmentCount) {
+    if (!selectedAttachmentCount) {
       if (target === 'email') {
         window.location.assign(emailHref);
       } else {
@@ -380,10 +369,10 @@ export default function AssetExternalShare({
   }
 
   const attachmentStatus = preparation.status === 'preparing'
-    ? (leadMode ? 'Preparing protected reports…' : 'Preparing attachments…')
+    ? 'Preparing attachments…'
     : preparation.status === 'error'
       ? preparation.error
-      : leadMode ? `${selectedPhotoCount} photos · ${reportFiles.length} protected reports on the lead page` : attachmentSummary(selectedPhotoCount, reportFiles.length);
+      : attachmentSummary(selectedPhotoCount, reportFiles.length);
 
   return (
     <section className={styles.externalPanel} aria-label="Share outside Aim4price">
@@ -393,10 +382,6 @@ export default function AssetExternalShare({
         <small>{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</small>
       </div>
 
-      {canCreateLink && <div className={styles.sendButtons} aria-label="Sharing format">
-        <button type="button" className={styles.addReportButton} aria-pressed={!leadMode} onClick={()=>{setLeadMode(false);setPageLink({selection:'',url:''});}}>Message & attachments</button>
-        <button type="button" className={styles.addReportButton} aria-pressed={leadMode} onClick={()=>{setLeadMode(true);setPageLink({selection:'',url:''});}}>Lead page · protected reports</button>
-      </div>}
       <div className={styles.shareLayout}>
         <article className={styles.messageCard}>
           <div className={styles.sectionHeader}>
@@ -408,9 +393,9 @@ export default function AssetExternalShare({
         <aside className={styles.attachmentsCard} aria-labelledby="optional-attachments-title">
           <div className={styles.attachmentsHeader}>
             <div>
-              <h4 id="optional-attachments-title">{leadMode ? 'On the lead page' : 'Attachments'}</h4>
+              <h4 id="optional-attachments-title">Attachments</h4>
             </div>
-            <span className={styles.attachmentCount}>{leadMode ? selectedPhotoCount + reportFiles.length : selectedAttachmentCount}</span>
+            <span className={styles.attachmentCount}>{selectedAttachmentCount}</span>
           </div>
 
           <label className={`${styles.photoToggle} ${includePhotos ? styles.photoToggleSelected : ''} ${!savedPhotoCount ? styles.photoToggleDisabled : ''}`}>
@@ -449,22 +434,19 @@ export default function AssetExternalShare({
         </aside>
       </div>
 
-      {canCreateLink && !leadMode && <AssetShareLinkControl key={linkSelection} assetIds={assetIds} includePhotos={includePhotos} onChange={url => setPageLink({ selection: linkSelection, url })} />}
-
-      {canCreateLink && leadMode && <GuestLeadComposer key={JSON.stringify([assetIds,recipient?.email,recipient?.name])} selectionKey={linkSelection} assetIds={assetIds} includePhotos={includePhotos} recipient={recipient} ready={!reportFiles.length || preparation.status==='ready'} reports={preparation.status==='ready'?reportFiles.map((report,index)=>({label:report.label,file:preparation.files[index]})).filter(report=>Boolean(report.file)):[]} onChange={(url,email,whatsapp)=>setPageLink({selection:linkSelection,url,email,whatsapp})}/>}
       <footer className={styles.sendFooter}>
         <div className={styles.sendLead}>
-          <span>{leadMode ? 'Your email or WhatsApp sends the link. Report files stay protected on the lead page.' : selectedAttachmentCount
+          <span>{selectedAttachmentCount
             ? recipient ? `Choose an app and select ${recipient.name} (${recipient.email || recipient.phone}) in the share menu.` : 'Choose an app in the share menu.'
             : 'Only selected attachments are shared.'}</span>
           {shareStatus ? <small role="status" aria-live="polite">{shareStatus}</small> : null}
         </div>
         <div className={styles.sendButtons}>
-          <button type="button" className={`${styles.sendButton} ${styles.emailButton}`} onClick={() => void sendShare('email')} disabled={isPreparing || isSending || (leadMode && (!shareUrl || !pageLink.email))}>
+          <button type="button" className={`${styles.sendButton} ${styles.emailButton}`} onClick={() => void sendShare('email')} disabled={isPreparing || isSending}>
             <span className={styles.sendIcon}><EmailIcon /></span>
             <span><strong>{sendingTarget === 'email' ? 'Opening…' : 'Email'}</strong></span>
           </button>
-          <button type="button" className={`${styles.sendButton} ${styles.whatsappButton}`} onClick={() => void sendShare('whatsapp')} disabled={isPreparing || isSending || (leadMode && (!shareUrl || !pageLink.whatsapp))}>
+          <button type="button" className={`${styles.sendButton} ${styles.whatsappButton}`} onClick={() => void sendShare('whatsapp')} disabled={isPreparing || isSending}>
             <span className={styles.sendIcon}><WhatsAppIcon /></span>
             <span><strong>{sendingTarget === 'whatsapp' ? 'Opening…' : 'WhatsApp'}</strong></span>
           </button>

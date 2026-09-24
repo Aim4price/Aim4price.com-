@@ -13,7 +13,7 @@ test('Share Asset opens the inside or outside Aim4price choice before either flo
   assert.equal((client.match(/<AssetShareDestinationPicker/g) ?? []).length, 2);
   assert.equal((client.match(/<AssetExternalShare/g) ?? []).length, 2);
   assert.match(client, /onInside=\{\(\) => setAssetShareDestination\('inside'\)\}/);
-  assert.match(client, /onOutside=\{\(\) => \{ setExternalBusinessRecipient\(null\); setDirectoryShareAssetIds\(null\); setAssetShareDestination\('outside'\); \}\}/);
+  assert.match(client, /onOutside=\{\(\) => \{ directoryShareReturnRef\.current = null; setExternalBusinessRecipient\(null\); setDirectoryShareAssetIds\(null\); setAssetShareDestination\('outside'\); \}\}/);
   assert.match(component, /<strong>Inside Aim4price<\/strong>/);
   assert.match(component, /<strong>Outside Aim4price<\/strong>/);
 });
@@ -35,11 +35,11 @@ test('outside sharing stays in one simple modal with optional photos, controlled
   assert.match(client, /toAbsoluteUrl\(photoUrl\)/);
 
   assert.match(component, /const \[includePhotos, setIncludePhotos\] = useState\(false\)/);
-  assert.match(component, /<strong>Include saved photos<\/strong>/);
+  assert.match(component, /<strong>Include photos<\/strong>/);
   assert.match(component, /type="checkbox" checked=\{includePhotos\}/);
   assert.match(component, /onAddAim4priceReport: \(\) => void/);
   assert.match(component, /onRemoveAim4priceReport: \(reportId: string\) => void/);
-  assert.match(component, /<strong>\{reportFiles\.length \? 'Add another Aim4price report' : 'Add Aim4price report'\}<\/strong>/);
+  assert.match(component, /<strong>\{reportFiles\.length \? 'Add another report' : 'Add report'\}<\/strong>/);
   assert.match(component, /reportFiles\.map\(\(report\) =>/);
   assert.match(component, /onRemoveAim4priceReport\(reportId\)/);
 
@@ -61,12 +61,13 @@ test('outside sharing stays in one simple modal with optional photos, controlled
   assert.ok(sendHandler, 'the component should expose one send handler');
   assert.doesNotMatch(sendHandler[1], /fetchExternalShareFile|prepareExternalShareFiles/, 'network preparation should finish before the user presses Send');
 
-  assert.match(component, /'Send by email'/);
-  assert.match(component, /'Send with WhatsApp'/);
+  assert.match(component, /'Email'/);
+  assert.match(component, /'WhatsApp'/);
   assert.equal((component.match(/className=\{`\$\{styles\.sendButton\}/g) ?? []).length, 2);
   assert.match(component, /window\.location\.assign\(emailHref\)/);
   assert.match(component, /window\.open\(whatsappHref/);
 
+  assert.doesNotMatch(component, /AssetShareLinkControl|GuestLeadComposer|leadMode|shareUrl|Sharing format/);
   assert.doesNotMatch(component, /Copy message/);
   assert.doesNotMatch(component, /Photos &amp; files/);
   assert.doesNotMatch(component, /Saved documents/);

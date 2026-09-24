@@ -206,7 +206,7 @@
   padding: 1.05rem 1.1rem;
   overflow: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   scrollbar-width: thin;
   scrollbar-color: #568676 #e9f0f2;
   color: var(--app-text, #243c35);
@@ -900,4 +900,16 @@
 }
 .accountShareTheme .destinationArrow {
   font-size: 1.75rem;
+}
+
+/* Keep the standard single-asset composer within the desktop dialog. */
+.accountShareTheme .externalPanel {
+  gap: 0.85rem;
+}
+
+.accountShareTheme .messagePreview {
+  min-height: 0;
+  padding: 0.8rem 1rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
