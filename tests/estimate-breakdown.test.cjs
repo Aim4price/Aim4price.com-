@@ -177,7 +177,7 @@ test('both valuation endpoints reject unauthorized settings before running calcu
     });
     for (const email of [null, 'someone@gmail.com', 'staff@aim4price.com']) {
       session = email ? { user: { id: 'other', email } } : null;
-      const body = { modelId: 'tractor', sectorKey: 'agricultural', familyKey: 'tractor', brandSlug: 'test', year: 2020, hours: 1000, condition: 'good', advancedAssumptions: { privateSettings: { ageDepreciationPercent: 0 } } };
+      const body = { modelId: 'tractor', sectorKey: 'agricultural', familyKey: 'tractor', brandSlug: 'test', year: 2020, hours: 1000, condition: 'good', advancedAssumptions: { privateSettings: { popularity_4: 125, mechanical_good: 95, lifetimeUsage: 20000 } } };
       const response = await route.POST(new NextRequest(`https://aim4price.test/api/${kind}-valuations`, { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }));
       assert.equal(response.status, 403);
     }
@@ -272,4 +272,32 @@ if (process.env.BREAKDOWN_HTML_SAMPLE) test('render full yearly settings sample'
   const report = genericEstimateBreakdown({ ...generic({ ageDepPct: 31, usageDepPct: 40, averageDepPct: 33, aim4priceValueExVat: 58960 }), advancedAssumptions: { privateSettings: settings } });
   const response = await reportRoute.POST(reportRequest({ selectedValueExVat: report.total, machineTitle: 'Sample tractor', recordRows: [{label: 'Year model', value: '2020'}, {label: 'Usage',value:'4000 hours'}, {label:'Condition',value:'Good'}, {label:'Replacement price',value:'R 100 000'}], estimateBreakdownToken: signEstimateBreakdown(report, 'allowed'), includeBreakdown: true }));
   writeFileSync('tmp/pdfs/combined-report.html', await response.text());
+});
+
+
+test('individual condition and popularity settings affect only the selected rating', () => {
+  const settings = normalizePrivateEstimateSettings({ basic_good: 80, basic_fair: 60, popularity_4: 110, popularity_1: 50 });
+  assert.ok(Math.abs(getValuationConditionFactorOverride('good', { privateSettings: settings, popularityStars: 4 }) - .88) < 1e-12);
+  assert.equal(getValuationConditionFactorOverride('fair', { privateSettings: settings, popularityStars: 3 }), .6);
+  assert.equal(getValuationConditionFactorOverride('excellent', { privateSettings: settings, popularityStars: 3 }), 1);
+  assert.throws(() => normalizePrivateEstimateSettings({ basic_good: 0 }));
+  assert.throws(() => normalizePrivateEstimateSettings({ popularity_4: 151 }));
+  assert.throws(() => normalizePrivateEstimateSettings({ work_major: NaN }));
+});
+
+test('each detailed answer contributes its configured factor and reconciles in the breakdown', () => {
+  const { normalizeAdvancedAssumptions } = require('../lib/valuation/shared.ts');
+  const answers = { mechanicalCondition: 'good', bodyCondition: 'average', tyreCondition: '50_75', serviceHistory: 'partial', requiredWork: 'moderate' };
+  const settings = { mechanical_good: 80, body_average: 60, tyre_50_75: 70, service_partial: 3, work_moderate: -5, popularity_4: 110 };
+  const advancedAssumptions = normalizeAdvancedAssumptions({ dealerAssessment: answers, popularityStars: 4, privateSettings: settings }, 'hours');
+  // 80% x 50% + 60% x 30% + 70% x 20% + 3pp - 5pp = 70%.
+  assert.equal(advancedAssumptions.dealerAssessment.conditionFactorPercent, 70);
+  assert.ok(Math.abs(getValuationConditionFactorOverride('excellent', advancedAssumptions) - .77) < 1e-12);
+  const report = genericEstimateBreakdown({ ...generic({ aim4priceValueExVat: 46200 }), advancedAssumptions });
+  assert.equal(report.total, 46200);
+  assert.ok(report.rows.every(row => Number.isFinite(row.value)));
+  assert.match(report.notes.join(' '), /mechanical 80% x 50%, body 60% x 30%, tyres \/ wear 70% x 20%/);
+  assert.match(report.notes.join(' '), /Service history: 3 percentage points; required work: -5/);
+  const changedUnused = normalizeAdvancedAssumptions({ dealerAssessment: answers, popularityStars: 4, privateSettings: { ...settings, mechanical_poor: 99 } }, 'hours');
+  assert.equal(getValuationConditionFactorOverride('excellent', changedUnused), getValuationConditionFactorOverride('excellent', advancedAssumptions));
 });

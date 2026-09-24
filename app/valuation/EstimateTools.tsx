@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { EstimateBreakdown } from '../../lib/estimate-breakdown';
-import { ANNUAL_DEPRECIATION_FIELDS, PRIVATE_ESTIMATE_FIELDS, type PrivateEstimateSettings } from '../../lib/private-estimate-settings';
+import { ANNUAL_DEPRECIATION_FIELDS, FACTOR_SETTING_GROUPS, PRIVATE_ESTIMATE_FIELDS, type PrivateEstimateSettings } from '../../lib/private-estimate-settings';
 import styles from './estimate-tools.module.css';
 import modalStyles from '../../components/estimate-modal.module.css';
 
@@ -28,7 +28,7 @@ export default function EstimateTools({ report, busy, error, onApply }: {
   }
 
   async function apply(reset = false) {
-    const settings = {} as PrivateEstimateSettings;
+    const settings = { ...report.settings } as PrivateEstimateSettings;
     for (const field of PRIVATE_ESTIMATE_FIELDS) {
       const raw = draft[field.key]?.trim();
       settings[field.key] = raw ? Number(raw) : null;
@@ -37,6 +37,8 @@ export default function EstimateTools({ report, busy, error, onApply }: {
         return;
       }
     }
+    settings.conditionPercent = null;
+    settings.popularityPercent = null;
     setLocalError('');
     if (await onApply(reset ? null : settings)) setOpen(false);
   }
@@ -93,15 +95,20 @@ export default function EstimateTools({ report, busy, error, onApply }: {
           </label>
           <p>Move right to give age more weight; left to give usage more weight. When only one is available, that measure determines depreciation.</p>
         </fieldset>
-        <div className={styles.fields}>
-          {PRIVATE_ESTIMATE_FIELDS.filter(field => field.key === 'conditionPercent' || field.key === 'popularityPercent').map(field => <label key={field.key}>
-            <span>{field.label}</span>
-            <input type="number" min={field.min} max={field.max} step={0.01} value={draft[field.key] ?? ''} disabled={busy}
-              placeholder={`Automatic${report.defaults?.[field.key] == null ? '' : ` (${Number(report.defaults[field.key]!.toFixed(2))}%)`}`}
-              onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} />
-            <small>{field.key === 'conditionPercent' ? 'Overrides the Basic condition or Advanced detailed assessment. Leave blank to use the assessment.' : '100% leaves the value unchanged; 115% adds 15%. Leave blank to use the popularity rating.'}</small>
-          </label>)}
-        </div>
+        {FACTOR_SETTING_GROUPS.map(group => <details className={styles.factorGroup} key={group.label}>
+          <summary>{group.label}</summary>
+          <p>{group.help}</p>
+          <div className={styles.yearFields}>
+            {group.fields.map(field => <label key={field.key}>
+              <span>{field.label}</span>
+              <input type="number" min={field.min} max={field.max} step={0.01} disabled={busy}
+                value={draft[field.key] ?? ''} placeholder={String(field.defaultValue)}
+                onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} />
+              <small>Default: {field.defaultValue}%</small>
+            </label>)}
+          </div>
+        </details>)}
+        <p className={styles.notice}>Blank fields use the displayed default. Only the selected rating or answer affects this asset. Detailed condition combines mechanical (50%), body (30%) and wear (20%), then service and work adjustments. Its total stays between 20% and 100%; condition with popularity stays between 10% and 100%.</p>
         <p className={styles.notice}>Custom estimates are labelled in the result and PDF. Salvage floors still apply. Platform defaults are never changed.</p>
         {(localError || error) && <p role="alert" className={styles.error}>{localError || error}</p>}
         <footer className={`${styles.actions} ${modalStyles.actions}`}>

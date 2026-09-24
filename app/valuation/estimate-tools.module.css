@@ -47,3 +47,13 @@
 .breakdown { border: 0; }
 .breakdown summary { box-sizing: border-box; padding: 24px; padding-right: 195px; min-height: 68px; background: transparent; font-size: 14px; }
 .customNote { margin: 0; padding: 0 24px 12px; font-size: 12px; color: #53675b; }
+
+.dialog.dialog { width: 860px; }
+.factorGroup { border: 1px solid #d7e0da; border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+.factorGroup summary { cursor: pointer; font-size: 16px; font-weight: 750; }
+.factorGroup p { font-size: 14px; line-height: 1.5; color: #53675b; }
+.factorGroup small { font-size: 12px; color: #53675b; }
+
+.usageSummary { padding: 20px 24px; border-top: 1px solid #d7e0da; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.usageSummary p { margin: 6px 0 0; }
+.usageSummary button { font: inherit; font-weight: 700; color: #174c3c; border: 1px solid #bacbc1; border-radius: 12px; padding: 12px 18px; background: #fff; cursor: pointer; }
