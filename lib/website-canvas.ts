@@ -13,6 +13,9 @@ export const WEBSITE_LANDSCAPE_BYPASS_KEY = 'aim4price.website-landscape-entry.v
 const NATIVE_ROUTE_PREFIXES = ['/owner-app', '/dealer', '/middleman', '/field-manager', '/admin', '/scan', '/fuel-scan', '/business-network', '/asset-share'];
 
 export function isNativeWorkspace(pathname: string): boolean {
+  // Public directory pages use the same header geometry and zoom as the website.
+  const route = pathname.replace(/\/+$/, '');
+  if (route === '/business-network/accept' || route === '/business-network/example') return false;
   return NATIVE_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
