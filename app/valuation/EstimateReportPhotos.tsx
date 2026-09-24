@@ -190,7 +190,7 @@ export default function EstimateReportPhotos() {
       <div className={styles.reportPhotoHeader}>
         <div>
           <strong>Report photos</strong>
-          <span>Optional · used in your PDF and Create Ad</span>
+          <span title="Photos are used in your PDF and Create Ad, and saved only when you publish.">Optional · Up to {MAX_ESTIMATE_REPORT_PHOTOS} photos</span>
         </div>
         <button
           type="button"
@@ -226,9 +226,7 @@ export default function EstimateReportPhotos() {
             <button type="button" onClick={clearPhotos} disabled={preparing}>Clear photos</button>
           </div>
         </>
-      ) : (
-        <p className={styles.emptyHint}>Add up to {MAX_ESTIMATE_REPORT_PHOTOS} photos. These are carried into Create Ad and saved only when you publish.</p>
-      )}
+      ) : null}
 
       {preparing ? <p className={styles.status}>Preparing report photos…</p> : null}
       {error ? <p className={styles.error} role="status">{error}</p> : null}

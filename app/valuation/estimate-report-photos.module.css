@@ -153,3 +153,10 @@
   color: #8a4a25;
   font-weight: 700;
 }
+
+/* Keep optional photos secondary to the save and report actions. */
+.reportPhotoCard { order: initial; box-sizing: border-box; padding: 18px 0 0; margin-top: 8px; border: 0; border-top: 1px solid rgba(18, 69, 53, 0.12); border-radius: 0; background: transparent; box-shadow: none; gap: 12px; }
+.reportPhotoHeader { gap: 12px; }
+.reportPhotoHeader strong { font-size: 0.88rem; }
+.reportPhotoHeader span { font-size: 0.75rem; }
+.photoPreview button { border-radius: 6px; }

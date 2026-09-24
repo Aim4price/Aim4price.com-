@@ -42,19 +42,18 @@ export default function EstimateTools({ report, busy, error, onApply }: {
 
   return <section className={styles.tools} aria-label="Estimate calculation tools">
     <div className={styles.heading}>
-      <div><strong>{report.settings ? 'Manually adjusted estimate' : 'Estimate calculation'}</strong>
-        <p>{report.settings ? 'Your settings apply to this estimate only.' : 'See how each adjustment changes the replacement price.'}</p></div>
       <button type="button" onClick={openSettings} disabled={busy}>Estimate settings</button>
     </div>
     <details className={styles.breakdown}>
-      <summary>Breakdown <span>Starting price to final estimate</span></summary>
+      <summary>Breakdown</summary>
+      {report.settings ? <p className={styles.customNote}>Manually adjusted estimate. Your settings apply to this estimate only.</p> : null}
       <div className={styles.tableScroll}>
         <table><caption>All amounts exclude VAT. Each percentage applies to the preceding balance.</caption>
           <thead><tr><th>Adjustment</th><th>% change</th><th>Rand change</th><th>Balance</th></tr></thead>
           <tbody>{report.rows.map((row, index) => <tr key={index}>
             <th scope="row">{row.label}</th>
-            <td>{row.percent === null ? '—' : `${row.percent > 0 ? '+' : ''}${Number(row.percent.toFixed(4))}%`}</td>
-            <td>{index === 0 ? '—' : `${row.change < 0 ? '−' : '+'}${money(Math.abs(row.change))}`}</td>
+            <td>{row.percent === null ? 'N/A' : `${row.percent > 0 ? '+' : ''}${Number(row.percent.toFixed(4))}%`}</td>
+            <td>{index === 0 ? 'N/A' : `${row.change < 0 ? '−' : '+'}${money(Math.abs(row.change))}`}</td>
             <td>{money(row.value)}</td>
           </tr>)}</tbody>
           <tfoot><tr><th colSpan={3}>Final estimate (excl. VAT)</th><td>{money(report.total)}</td></tr></tfoot>

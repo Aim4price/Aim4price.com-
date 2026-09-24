@@ -14612,3 +14612,57 @@
 .replacementNoticeTitle .saveModalClose { background: #fff8f7; border-color: #e3a49e; color: #7d251e; }
 .replacementNoticeActions { flex-wrap: wrap; }
 .replacementNoticeDisclaimer { padding: 0; border: 0; background: transparent; }
+
+/* Final estimate: value first, supporting details below, actions together. */
+.finalEstimateLayout { gap: 22px; }
+.finalEstimateLayout .resultsMain { gap: 16px; min-width: 0; }
+.finalEstimateLayout .resultHero { display: block; order: 0; padding: 24px; border-radius: 20px; }
+.finalEstimateLayout .resultMachineTitle { margin: 0 0 14px; font-size: 1rem; line-height: 1.5; overflow-wrap: anywhere; }
+.finalEstimateLayout .resultValueLine { gap: 18px; align-items: center; flex-wrap: wrap; }
+.finalEstimateLayout .resultValue { font-size: 3.6rem; line-height: 1.1; letter-spacing: -0.045em; }
+.finalEstimateLayout .resultValueLineCompact .resultValue { font-size: 3rem; }
+.finalEstimateLayout .resultValueLineTight .resultValue { font-size: 2.5rem; }
+.finalEstimateLayout .resultVatToggle { margin: 0; flex-shrink: 0; }
+.finalEstimateLayout .resultVatToggleButton { padding: 10px 12px; font-size: 0.78rem; }
+.finalEstimateLayout .resultConfidenceNote { margin: 12px 0 0; font-size: 0.85rem; line-height: 1.5; }
+.finalEstimateLayout .resultFactsGrid { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--app-line, #d5e4dc); gap: 0; }
+.finalEstimateLayout .resultFactCard { min-height: 0; align-content: start; gap: 8px; padding: 0 14px; border: 0; border-left: 1px solid var(--app-line, #d5e4dc); border-radius: 0; box-shadow: none; background: transparent; min-width: 0; }
+.finalEstimateLayout .resultFactCard:first-child { padding-left: 0; border-left: 0; }
+.finalEstimateLayout .resultFactCard span { text-transform: none; letter-spacing: 0; font-size: 0.8rem; }
+.finalEstimateLayout .resultFactCard strong { font-size: 0.95rem; overflow-wrap: anywhere; }
+.resultCalculationPanel { order: 1; min-width: 0; border: 1px solid var(--app-line, #d5e4dc); border-radius: 18px; background: var(--app-surface, #fff); }
+.resultReplacementSummary { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 24px; }
+.resultReplacementSummary > div { display: grid; gap: 5px; }
+.resultReplacementSummary > div > span { font-weight: 750; font-size: 0.85rem; }
+.resultReplacementSummary > div > strong { font-size: 1.15rem; }
+.resultReplacementSummary > div > small { color: var(--app-muted, #64746a); font-size: 0.75rem; }
+.resultReplacementSummary > button { cursor: pointer; font: inherit; font-size: 0.85rem; flex-shrink: 0; }
+.finalEstimateLayout .saleabilitySummary { order: 2; padding: 18px 24px; gap: 16px; border-radius: 18px; }
+.finalEstimateLayout .saleabilitySummary span { text-transform: none; letter-spacing: 0; font-size: 0.85rem; }
+.finalEstimateLayout .saleabilitySummary strong { font-size: 1.15rem; margin-top: 5px; }
+.finalEstimateLayout .saleabilitySummary p { font-size: 0.8rem; line-height: 1.5; }
+.finalEstimateLayout .saleabilitySummary small { display: block; margin-top: 9px; font-size: 0.72rem; color: var(--app-muted, #64746a); }
+.finalEstimateLayout .saleabilitySummary button { padding: 11px 18px; border-radius: 12px; background: var(--app-surface, #fff); color: var(--app-text, #174f3e); border: 1px solid var(--app-line, #b9d1c4); font-size: 0.82rem; box-shadow: none; }
+.finalEstimateLayout .advancedAccordion { order: 3; }
+.finalEstimateLayout .resultFinalActions { padding: 22px; border-radius: 20px; gap: 20px; }
+.finalEstimateLayout .resultFinalActionsCopy h3 { font-size: 1.2rem; letter-spacing: -0.02em; margin: 0; }
+.finalEstimateLayout .resultFinalActionsButtons { display: flex; flex-direction: column; gap: 12px; }
+.finalEstimateLayout .resultFinalActionsButtons > button { min-height: 52px; padding: 13px 16px; border-radius: 12px; font-size: 0.88rem; }
+.finalEstimateLayout .resultFinalActionsButtons > button::after { content: none; }
+.finalEstimateLayout .breakdownPdfOption { padding: 0 2px 8px; font-size: 0.78rem; line-height: 1.5; }
+.finalEstimateLayout .breakdownPdfOption input { flex-shrink: 0; }
+.resultDisclaimer { grid-column: 1 / -1; margin: 0; padding-top: 16px; border-top: 1px solid var(--app-line, #d5e4dc); color: var(--app-muted, #64746a); font-size: 0.75rem; line-height: 1.6; }
+.replacementPriceDialog { box-sizing: border-box; margin: auto; width: min(850px, calc(var(--website-design-width, 100%) - 32px)); max-height: calc(var(--website-visible-height, 100dvh) - 48px); padding: 26px; overflow: auto; border: 1px solid var(--app-line, #d5e4dc); border-radius: 20px; background: var(--app-surface, #fff); color: var(--app-text, #173e33); box-shadow: 0 24px 80px #001c2040; }
+.replacementPriceDialog::backdrop { background: var(--modal-backdrop-color, #061b16ad); backdrop-filter: var(--modal-backdrop-filter, blur(8px)); }
+.replacementPriceDialog .resultAccordionBody { width: 100%; padding: 16px 0 0; }
+.replacementPriceDialog .resultAccordionCopy { font-size: 0.85rem; line-height: 1.6; }
+.replacementPriceDialog .replacementInputActions { justify-content: flex-end; flex-wrap: wrap; gap: 12px; border-top: 1px solid var(--app-line, #d5e4dc); padding-top: 18px; }
+.replacementPriceDialog .replacementInputActions button { width: auto; min-height: 46px; font-size: 0.85rem; }
+.replacementPriceDialog .resultActionError { white-space: normal; }
+.replacementNoticeModal { padding: 28px; }
+.replacementNoticeModal .replacementNoticeTitle { gap: 24px; align-items: center; }
+.replacementNoticeModal .replacementNoticeTitle h2 { font-size: 1.65rem; line-height: 1.25; letter-spacing: -0.025em; }
+.replacementNoticeModal .replacementNoticeIntro { margin-top: 20px; font-size: 0.95rem; line-height: 1.65; }
+.replacementNoticeModal .replacementNoticeDisclaimer { margin-top: 16px; font-size: 0.8rem; line-height: 1.6; }
+.replacementNoticeModal .replacementNoticeActions { margin-top: 24px; padding-top: 20px; border-top: 1px solid #efcfca; gap: 12px; }
+.replacementNoticeModal .replacementNoticeActions button { min-height: 48px; padding: 12px 20px; border-radius: 12px; font-size: 0.9rem; }
