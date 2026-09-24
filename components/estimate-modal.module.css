@@ -1,0 +1,107 @@
+/* Shared Get Estimate modal styling. Individual dialogs retain their content widths. */
+.surface.surface {
+  box-sizing: border-box;
+  font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.55;
+  padding: 28px;
+  border: 1px solid var(--app-info-line, #cbdde5);
+  border-radius: 26px;
+  color: var(--app-text, #173e33);
+  background: var(--app-surface, #fff);
+  box-shadow: 0 30px 86px var(--app-shadow-colour, #081b3447);
+}
+.surface.surface [data-estimate-modal-title] {
+  margin: 0;
+  font: inherit;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+  text-transform: none;
+  color: var(--app-info, #18364b);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.surface.surface [data-estimate-modal-title] + p,
+.surface.surface .description {
+  margin: 12px 0 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--app-muted, #617483);
+  white-space: normal;
+}
+.surface.surface :is(input:not([type='range']):not([type='checkbox']):not([type='radio']), select, textarea) {
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.5;
+  min-height: 46px;
+  border-radius: 12px;
+}
+.surface.surface :is(label, legend) { font-size: 0.85rem; font-weight: 700; }
+.surface.surface .close {
+  box-sizing: border-box;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--app-info-line, #d2dfe4);
+  border-radius: 8px;
+  background: var(--app-surface-soft, #f5f9fa);
+  color: var(--app-text, #173e33);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow: none;
+}
+.surface.surface .actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--app-line, #d5e4dc);
+}
+.surface.surface .actions button {
+  width: auto;
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: -0.015em;
+  white-space: normal;
+}
+.surface.surface .primary {
+  border: 1px solid var(--app-line, #b9d1c4);
+  background: linear-gradient(180deg, var(--app-surface-soft, #edf7f2), var(--app-accent-soft, #d6ebe1));
+  color: var(--app-text, #173e33);
+}
+.surface.surface button:focus-visible { outline: 3px solid var(--app-accent, #43836a); outline-offset: 3px; }
+.surface.surface.danger { background: #fff4f2; border-color: #efb8b2; color: #7d251e; }
+.surface.surface.danger [data-estimate-modal-title] { color: #7d251e; }
+.surface.surface.danger .description { color: #79534e; }
+.surface.surface.danger .close { background: #fff8f7; border-color: #e3a49e; color: #7d251e; }
+.surface.surface.danger .actions { border-color: #efcfca; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .surface.surface { padding: 20px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .surface.surface [data-estimate-modal-title] { font-size: 1.7rem; }
+}
+.surface::backdrop {
+  background: var(--modal-backdrop-color, #061b16ad);
+  -webkit-backdrop-filter: var(--modal-backdrop-filter, blur(8px));
+  backdrop-filter: var(--modal-backdrop-filter, blur(8px));
+}

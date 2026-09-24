@@ -1,4 +1,5 @@
 'use client';
+import modalStyles from '../../components/estimate-modal.module.css';
 
 import { submitCanonicalReportForm } from '../../lib/report-open';
 
@@ -430,7 +431,7 @@ export default function ValuationFlowPolish() {
 
       <section
         ref={modalRef}
-        className={styles.familyModal}
+        className={`${styles.familyModal} ${modalStyles.surface}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby={FAMILY_MODAL_TITLE_ID}
@@ -438,12 +439,12 @@ export default function ValuationFlowPolish() {
       >
         <header className={styles.familyModalHeader}>
           <div className={styles.familyModalHeading}>
-            <h2 id={FAMILY_MODAL_TITLE_ID}>{modalTitle}</h2>
+            <h2 data-estimate-modal-title id={FAMILY_MODAL_TITLE_ID}>{modalTitle}</h2>
             <p id={FAMILY_MODAL_DESCRIPTION_ID}>Search or browse the available {itemLabel}.</p>
           </div>
           <button
             type="button"
-            className={styles.familyModalClose}
+            className={`${styles.familyModalClose} ${modalStyles.close}`}
             onClick={closeFamilyModal}
             aria-label="Close family selector"
           >
