@@ -18,7 +18,7 @@ import AssetExternalShare from '../../../components/asset-register/AssetExternal
 import GuestLeadComposer from '../../../components/asset-register/GuestLeadComposer';
 import GuestLeadActions from '../../../components/asset-register/GuestLeadActions';
 import BusinessAcceptanceForm from '../../../components/business-network/BusinessAcceptanceForm';
-import FindEnquiryBusiness from '../../../components/business-network/FindEnquiryBusiness';
+import BusinessDirectoryTools from '../../../components/business-network/BusinessDirectoryTools';
 import DirectoryAdminAccess from '../../../components/business-network/DirectoryAdminAccess';
 export default function Validation(){
  const [hydrated,setHydrated]=useState(false);useEffect(()=>setHydrated(true),[]);
@@ -29,7 +29,7 @@ export default function Validation(){
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
  {mode==='recipient'&&<><button onClick={()=>setAccess('payment-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><GuestLeadActions token={'g'.repeat(43)} details={details} reports={[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}]} access={access}/></>}
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
- {mode==='find'&&<><FindEnquiryBusiness onShare={r=>setLink(r.name)}/><output data-recipient>{link}</output></>}
+ {mode==='find'&&<BusinessDirectoryTools heading="" service="" onChange={()=>{}}/>}
  {mode==='admin'&&<DirectoryAdminAccess onAdd={b=>setLink(b.email)}/>}
  </main>;
 }
@@ -44,7 +44,6 @@ export default function Validation(){
   page.on('request',req=>{
    const p=new URL(req.url()).pathname;
    if(!p.startsWith('/api/'))return req.continue();
-   if(p==='/api/business-network/google')return req.respond({status:200,contentType:'application/json',body:JSON.stringify({places:[{id:'test-place',displayName:{text:'Test Workshop'},formattedAddress:'George',googleMapsUri:'https://maps.google.com'}]})});
    if(p==='/api/fixture-pdf')return req.respond({status:200,contentType:'application/pdf',body:'%PDF-1.4 fixture'});
    let body={ok:true};requests.push({path:p,method:req.method(),data:req.postData()});
    if(p==='/api/asset-share-links/leads'){
@@ -74,8 +73,32 @@ export default function Validation(){
    await page.waitForSelector('[data-hydrated=true]');
    await page.type('[name=businessName]','George Workshop');await page.type('[name=contactName]','Sam');await page.type('[name=email]','business@example.com');await page.click('[name=accepted]');await click('Accept free listing');
    await page.waitForFunction(()=>document.body.textContent.includes('your acceptance is recorded'));
-   await click('find');await page.click('details summary');await labelInput('Business name and town','Test Workshop George');await click('Search Google');await page.waitForFunction(()=>document.body.textContent.includes('Choose business'));await click('Choose business');await click('Prepare enquiry');await page.waitForFunction(()=>document.querySelector('[data-recipient]').textContent==='Test Workshop');
-   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Business finder fits viewport');
+   await click('find');
+   assert.ok(!(await page.evaluate(()=>document.body.textContent)).includes('Invitations & history'));
+   const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
+   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('dialog[open]');
+   const links=await page.$$eval('dialog a',nodes=>nodes.map(a=>a.href));
+   assert.equal(links.length,2);
+   for(const href of links){const target=new URL(href);const message=target.searchParams.get(target.protocol==='mailto:'?'body':'text');assert.ok(message.includes('/business-network/accept'));assert.ok(!message.includes('/asset-share/'));assert.ok(!message.includes('TEST-1'));}
+   assert.ok(links.some(href=>href.startsWith('mailto:?')),'Email lets the owner choose a recipient');
+   assert.ok(links.some(href=>href.startsWith('https://wa.me/?')),'WhatsApp lets the owner choose a recipient');
+   await page.evaluate(()=>{window.__invitationCopied='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__invitationCopied=text;}}});});
+   await click('Copy link');await page.waitForFunction(()=>document.body.textContent.includes('Invitation link copied.'));
+   assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept');
+   assert.ok(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth+1),'Invitation fits without horizontal scrolling');
+   await page.screenshot({path:path.join(output,`invitation-${width}.png`),fullPage:true});
+   await page.evaluate(()=>{window.__escapedToParent=false;document.addEventListener('keydown',event=>{if(event.key==='Escape')window.__escapedToParent=true;},{once:true});});
+   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+   assert.equal(await page.evaluate(()=>window.__escapedToParent),false,'Escape stays inside the invitation');
+   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
+   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('dialog[open]');
+   await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard unavailable')}}}));
+   await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');
+   assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept');
+   await page.click('button[aria-label="Close business invitation"]');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('dialog[open]');
+   await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+   assert.equal(requests.filter(r=>r.path.startsWith('/api/business-network/')).length,invitationRequests,'Inviting creates no database record and calls no invitation API');
    await click('compose');await page.waitForFunction(()=>document.querySelector('input[value="owner@example.com"]'));
    await labelInput('Your request','Please quote for servicing.');
    await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');
@@ -127,7 +150,7 @@ export default function Validation(){
   assert.equal(requests.filter(r=>r.path==='/api/guest-access'&&r.method==='POST').length,0);
   assert.equal(requests.filter(r=>r.path.endsWith('/submissions')&&r.method==='POST').length,2);
   assert.deepEqual(errors,[]);
-  console.log('PASS acceptance, lead creation/revocation, private document submission/review, locked reports and confirmed WhatsApp delivery at desktop and mobile widths');
+  console.log('PASS simple directory invitation, acceptance, lead creation/revocation, private document submission/review, locked reports and confirmed WhatsApp delivery at desktop and mobile widths');
  }finally{
   if(browser)await browser.close();if(server)server.kill();
   await fs.rm(fixture,{recursive:true,force:true});
