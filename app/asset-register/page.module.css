@@ -38015,7 +38015,8 @@ button.documentOpenLink {
 
 .assetQuotePartnerPickerModal .assetQuoteSidebarHeader {
   display: grid !important;
-  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  grid-template-columns: auto auto !important;
+  justify-content: space-between;
   align-items: center !important;
   gap: 0.65rem !important;
 }

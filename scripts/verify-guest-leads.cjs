@@ -20,6 +20,7 @@ import AssetExternalShare from '../../../components/asset-register/AssetExternal
 import GuestLeadComposer from '../../../components/asset-register/GuestLeadComposer';
 import GuestLeadActions from '../../../components/asset-register/GuestLeadActions';
 import BusinessAcceptanceForm from '../../../components/business-network/BusinessAcceptanceForm';
+import DirectoryHelp from '../../../components/business-network/DirectoryHelp';
 import BusinessDirectoryTools from '../../../components/business-network/BusinessDirectoryTools';
 import DirectoryAdminAccess from '../../../components/business-network/DirectoryAdminAccess';
 export default function Validation(){
@@ -33,7 +34,7 @@ export default function Validation(){
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
  {mode==='recipient'&&<><button onClick={()=>setAccess('payment-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><GuestLeadActions token={'g'.repeat(43)} details={details} reports={[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}]} access={access}/></>}
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
- {mode==='find'&&<BusinessDirectoryTools heading="" service="" onChange={()=>{}}/>}
+ {mode==='find'&&<><DirectoryHelp/><BusinessDirectoryTools heading="" service="" onChange={()=>{}}/></>}
  {mode==='admin'&&<DirectoryAdminAccess onAdd={b=>setLink(b.email)}/>}
  </main>;
 }
@@ -79,8 +80,20 @@ export default function Validation(){
    await page.waitForFunction(()=>document.body.textContent.includes('your acceptance is recorded'));
    await click('find');
    assert.ok(!(await page.evaluate(()=>document.body.textContent)).includes('Invitations & history'));
+   await click('Need help?');
+   await page.waitForSelector('dialog[open]');
+   const helpLinks=await page.$$eval('dialog[open] a',nodes=>nodes.map(n=>n.href));
+   assert(helpLinks.some(h=>h.startsWith('https://wa.me/27625721650')));
+   assert(helpLinks.some(h=>decodeURIComponent(h).startsWith('mailto:aim4price@gmail.com')));
+   assert(helpLinks.every(h=>!h.includes('asset-share')&&!h.includes('ASSET')));
+   await page.screenshot({path:path.join(output,`directory-help-${width}.png`),fullPage:true});
+   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
+   assert.equal(await page.evaluate(()=>document.activeElement?.textContent),'Need help?');
+   await click('Need help?');await page.waitForSelector('dialog[open]');
+   await page.click('[aria-label="Back to business directory"]');
+   await page.waitForFunction(()=>!document.querySelector('dialog'));
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
-   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('dialog[open]');
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    const links=await page.$$eval('dialog a',nodes=>nodes.map(a=>a.href));
    assert.equal(links.length,2);
    for(const href of links){const target=new URL(href);const message=target.searchParams.get(target.protocol==='mailto:'?'body':'text');assert.ok(message.includes('/business-network/accept'));assert.ok(!message.includes('/asset-share/'));assert.ok(!message.includes('TEST-1'));}
@@ -92,16 +105,16 @@ export default function Validation(){
    assert.ok(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth+1),'Invitation fits without horizontal scrolling');
    await page.screenshot({path:path.join(output,`invitation-${width}.png`),fullPage:true});
    await page.evaluate(()=>{window.__escapedToParent=false;document.addEventListener('keydown',event=>{if(event.key==='Escape')window.__escapedToParent=true;},{once:true});});
-   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
    assert.equal(await page.evaluate(()=>window.__escapedToParent),false,'Escape stays inside the invitation');
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
-   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('dialog[open]');
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard unavailable')}}}));
    await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');
    assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept');
-   await page.click('button[aria-label="Close business invitation"]');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
-   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('dialog[open]');
-   await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+   await page.click('button[aria-label="Close business invitation"]');await page.waitForFunction(()=>!document.querySelector('dialog'));
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
+   await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('dialog'));
    assert.equal(requests.filter(r=>r.path.startsWith('/api/business-network/')).length,invitationRequests,'Inviting creates no database record and calls no invitation API');
    for(const kind of ['asset','register','umbrella']){
     await click(kind);await page.waitForSelector('[role=dialog]');
@@ -111,7 +124,7 @@ export default function Validation(){
     await page.$eval('[role=dialog] button:has(strong)',button=>button.click());await page.waitForFunction(()=>document.body.textContent.includes('Choose who to share with.'));
     const after=await measure();assert.equal(before.title,after.title);assert.equal(before.description,after.description);assert.ok(after.gap<=6,'Title and description stay close');assert.ok(after.stacked&&after.centred);
     await page.screenshot({path:path.join(output,`share-inside-${width}.png`),fullPage:true});
-    await page.click('[aria-label="Close share options"]');
+    await page.click('[aria-label="Back to share options"]');
    }
    await click('compose');await page.waitForFunction(()=>document.querySelector('input[value="owner@example.com"]'));
    await labelInput('Your request','Please quote for servicing.');

@@ -21,6 +21,7 @@ import CardVatToggle from '../../components/CardVatToggle';
 
 import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
 
+import DirectoryHelp from '../../components/business-network/DirectoryHelp';
 import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
 import BusinessProfileCard from '../../components/business-network/BusinessProfileCard';
 import GoogleDirectoryMap, { googleDirectoryEnabled } from '../../components/business-network/GoogleDirectoryMap';
@@ -7152,7 +7153,10 @@ export default function AssetRegisterClient({
     }
   }
 
+  const directoryShareReturnRef = useRef<{ asset: RegisterAsset | null; leadType: AssetLeadType | null; register: boolean } | null>(null);
+
   function resetExternalShareDraft() {
+    directoryShareReturnRef.current = null;
     setExternalBusinessRecipient(null);
     setDirectoryShareAssetIds(null);
     setExternalShareReportScope(null);
@@ -9024,17 +9028,7 @@ export default function AssetRegisterClient({
       }
 
       if (isQuoteModalOpen) {
-        if (isQuoteMapExpanded) {
-          setIsQuoteMapExpanded(false);
-          return;
-        }
-
-        if (quoteLeadStep) {
-          closeQuoteLeadStep();
-          return;
-        }
-
-        closeAssetQuoteModal();
+        backFromShareModal();
         return;
       }
 
@@ -9074,7 +9068,7 @@ export default function AssetRegisterClient({
       }
 
       if (isRegisterShareModalOpen) {
-        closeRegisterShareModal();
+        backFromShareModal();
         return;
       }
 
@@ -9089,7 +9083,7 @@ export default function AssetRegisterClient({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map' || !quoteMapElementRef.current) {
@@ -11694,6 +11688,30 @@ export default function AssetRegisterClient({
     resetAssetQuoteState('asset');
   }
 
+  function backFromShareModal() {
+    if (isSendingQuoteLead || isExporting) return;
+    if (isQuoteMapExpanded) { setIsQuoteMapExpanded(false); return; }
+    if (quoteLeadStep === 'consent') { goBackToQuoteLeadMessage(); return; }
+    if (quoteLeadStep) { closeQuoteLeadStep(); return; }
+    if (selectedQuoteOption) { goBackToQuoteOptions(); return; }
+    const directoryReturn = directoryShareReturnRef.current;
+    if (assetShareDestination === 'outside' && directoryReturn) {
+      setQuoteAsset(directoryReturn.asset);
+      setSelectedQuoteLeadType(directoryReturn.leadType);
+      setQuoteScope(directoryReturn.register ? 'register' : 'asset');
+      setIsRegisterShareModalOpen(false);
+      setAssetShareDestination('inside');
+      setQuoteDirectoryStage('map');
+      return;
+    }
+    if (assetShareDestination !== 'choice') {
+      setAssetShareDestination('choice');
+      return;
+    }
+    if (isRegisterShareModalOpen) closeRegisterShareModal();
+    else closeAssetQuoteModal();
+  }
+
   async function loadQuotePartners(
     leadType: AssetLeadType | null = selectedQuoteLeadType,
     searchValue = quotePartnerSearch,
@@ -11944,6 +11962,7 @@ export default function AssetRegisterClient({
     const selectedIds = registerScope && (selectedQuoteOption?.leadType === 'replacement_quote' || selectedQuoteOption?.leadType === 'license_renewal')
       ? selectedDealerShareAssetIds : null;
     resetExternalShareDraft();
+    directoryShareReturnRef.current = { asset: quoteAsset, leadType: selectedQuoteLeadType, register: registerScope };
     setExternalBusinessRecipient(recipient);
     setDirectoryShareAssetIds(selectedIds);
     setDirectoryBusiness(null);
@@ -18216,16 +18235,16 @@ export default function AssetRegisterClient({
           titleId="asset-register-share-title"
           subject={activeShareName}
           disabled={isExporting || isSendingQuoteLead}
-          onClose={closeRegisterShareModal}
+          onClose={backFromShareModal}
           onInside={() => setAssetShareDestination('inside')}
-          onOutside={() => { setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
+          onOutside={() => { directoryShareReturnRef.current = null; setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
         />
       ) : isRegisterShareModalOpen && assetShareDestination === 'inside' ? (
         <InsideShareDialog
           titleId="asset-register-share-title"
           subject={activeShareName}
           disabled={isExporting || isSendingQuoteLead}
-          onClose={closeRegisterShareModal}
+          onClose={backFromShareModal}
           options={[
             { id: 'finance', title: 'Finance & accounting', description: 'Accountant, financier or bank' },
             { id: 'insurance', title: 'Insurance', description: 'Insurer or broker' },
@@ -18238,7 +18257,7 @@ export default function AssetRegisterClient({
         />
       ) : isRegisterShareModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={closeRegisterShareModal} />
+          <div className={styles.modalBackdrop} data-website-overlay onClick={backFromShareModal} />
 
           <div
             className={`${styles.optionsModal} ${styles.modalCard} ${styles.assetEntryModal} ${styles.registerShareAccountModal} ${accountStyles.modalTheme} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
@@ -18266,8 +18285,8 @@ export default function AssetRegisterClient({
               <button
                 type="button"
                 className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`}
-                onClick={closeRegisterShareModal}
-                aria-label="Close register share options"
+                onClick={backFromShareModal}
+                aria-label="Back to previous share step"
                 disabled={isExporting || isSendingQuoteLead}
               >
                 ×
@@ -18278,7 +18297,7 @@ export default function AssetRegisterClient({
               {assetShareDestination === 'choice' ? (
                 <AssetShareDestinationPicker
                   onInside={() => setAssetShareDestination('inside')}
-                  onOutside={() => { setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
+                  onOutside={() => { directoryShareReturnRef.current = null; setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
                   disabled={isExporting || isSendingQuoteLead}
                 />
               ) : assetShareDestination === 'outside' ? (
@@ -20504,16 +20523,16 @@ export default function AssetRegisterClient({
           titleId="asset-quote-title"
           subject={quoteAsset?.title || 'Asset'}
           disabled={isSendingQuoteLead}
-          onClose={closeAssetQuoteModal}
+          onClose={backFromShareModal}
           onInside={() => setAssetShareDestination('inside')}
-          onOutside={() => { setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
+          onOutside={() => { directoryShareReturnRef.current = null; setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
         />
       ) : isQuoteModalOpen && !selectedQuoteOption && assetShareDestination === 'inside' ? (
         <InsideShareDialog
           titleId="asset-quote-title"
           subject={quoteAsset?.title || 'Asset'}
           disabled={isSendingQuoteLead}
-          onClose={closeAssetQuoteModal}
+          onClose={backFromShareModal}
           options={availableAssetQuoteOptions.map(option => ({
             id: option.leadType,
             title: option.title,
@@ -20526,7 +20545,7 @@ export default function AssetRegisterClient({
         />
       ) : isQuoteModalOpen ? (
         <div className={`${styles.modalOverlay} ${isExternalAssetShareView ? styles.assetEntryOverlay : ''}`} data-website-overlay>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAssetQuoteModal} />
+          <div className={styles.modalBackdrop} data-website-overlay onClick={backFromShareModal} />
 
           <div
             className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption ? styles.businessDirectoryDialog : ''} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${isExternalAssetShareView ? `${styles.externalAssetShareModal} ${styles.modalCard} ${styles.assetEntryModal} ${styles.registerShareAccountModal} ${styles.registerShareModal} ${accountStyles.modalTheme}` : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
@@ -20566,8 +20585,8 @@ export default function AssetRegisterClient({
               <button
                 type="button"
                 className={isExternalAssetShareView ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : styles.modalCloseButton}
-                onClick={closeAssetQuoteModal}
-                aria-label="Close asset options"
+                onClick={backFromShareModal}
+                aria-label="Back to previous share step"
                 disabled={isSendingQuoteLead}
               >
                 <span aria-hidden="true">{isExternalAssetShareView ? '×' : <CloseIcon className={styles.buttonIcon} />}</span>
@@ -20579,7 +20598,7 @@ export default function AssetRegisterClient({
                 assetShareDestination === 'choice' ? (
                   <AssetShareDestinationPicker
                     onInside={() => setAssetShareDestination('inside')}
-                    onOutside={() => { setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
+                    onOutside={() => { directoryShareReturnRef.current = null; setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
                     disabled={isSendingQuoteLead}
                   />
                 ) : assetShareDestination === 'outside' ? (
@@ -20702,7 +20721,7 @@ export default function AssetRegisterClient({
                       <SearchIcon className={styles.buttonIcon} />
                       <span>{isLoadingQuotePartners ? 'Searching...' : 'Search'}</span>
                     </button>
-                    <button type="button" className={styles.secondaryButton} onClick={() => openDirectoryExternalShare({name:'Aim4price',email:'aim4price@gmail.com',phone:'062 572 1650'})}>Need help?</button>
+                    <DirectoryHelp className={styles.secondaryButton} />
                   </form>
 
                   <div className={`${styles.assetQuoteMapStage} ${directoryBusiness ? styles.businessDirectorySelected : ''}`}>
@@ -20712,10 +20731,6 @@ export default function AssetRegisterClient({
                           <ChevronLeftIcon className={styles.buttonIcon} />
                           <span>Back</span>
                         </button>
-                        <span className={styles.assetQuoteAreaSummary}>
-                          <small>Showing near</small>
-                          <strong>{quoteLocationInput}</strong>
-                        </span>
                         <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={changeQuoteLocation} disabled={isSendingQuoteLead}>
                           Change area
                         </button>
@@ -20811,12 +20826,6 @@ export default function AssetRegisterClient({
                         }}
                       /> : <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Business locations map" />}
                       <div className={styles.assetQuoteMapControls} onClick={(event) => event.stopPropagation()}>
-                        {isQuoteMapExpanded ? (
-                          <span className={styles.assetQuoteExpandedMapArea}>
-                            <small>Showing near</small>
-                            <strong>{quoteLocationInput}</strong>
-                          </span>
-                        ) : null}
                         <button
                           type="button"
                           className={styles.assetQuoteMapExpandButton}
@@ -20851,8 +20860,8 @@ export default function AssetRegisterClient({
                       <button
                         type="button"
                         className={styles.assetQuoteStepBackdrop}
-                        onClick={closeQuoteLeadStep}
-                        aria-label="Close request step"
+                        onClick={backFromShareModal}
+                        aria-label="Back to previous share step"
                         disabled={isSendingQuoteLead}
                       />
 
@@ -20866,8 +20875,8 @@ export default function AssetRegisterClient({
                           <button
                             type="button"
                             className={styles.assetQuoteStepCloseButton}
-                            onClick={closeQuoteLeadStep}
-                            aria-label="Close request step"
+                            onClick={backFromShareModal}
+                            aria-label="Back to previous share step"
                             disabled={isSendingQuoteLead}
                           >
                             <CloseIcon className={styles.buttonIcon} />
