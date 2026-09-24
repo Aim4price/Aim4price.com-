@@ -8719,10 +8719,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       <div className={styles.resultsLayout}>
         <div className={styles.resultsMain}>
           <section className={`${styles.resultHero} ${resultHeroTone}`}>
-            <div className={styles.resultHeroTopline}>
-              <span className={styles.resultKicker}>{isSalvageEstimate ? 'Indicative salvage estimate' : appliedDealerAssessment ? 'Detailed estimate' : 'Aim4price estimate'}</span>
+            {isSalvageEstimate || !basicEstimateActive ? <div className={styles.resultHeroTopline}>
+              {isSalvageEstimate ? <span className={styles.resultKicker}>Indicative salvage estimate</span> : null}
               {!basicEstimateActive ? <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span> : null}
-            </div>
+            </div> : null}
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
               <strong className={styles.resultValue}>{money(headlineDisplayValue)}</strong>
               {headlineValue !== null ? (
@@ -8788,9 +8788,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <button type="button" onClick={() => setSaleabilityOpen(true)}>Refine Saleability</button>
           </section>
 
-          {breakdownAccess && activeBreakdown ? <EstimateTools report={activeBreakdown.report}
-            busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
-            error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}
           {!breakdownAccess ? <section className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
             <button
               type="button"
@@ -9017,6 +9014,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               ) : null}
             </section>
           ) : null}
+          {breakdownAccess && activeBreakdown ? <EstimateTools report={activeBreakdown.report}
+            busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
+            error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}
         </div>
 
         <aside className={styles.resultsSide}>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { EstimateBreakdown } from '../../lib/estimate-breakdown';
-import { PRIVATE_ESTIMATE_FIELDS, type PrivateEstimateSettings } from '../../lib/private-estimate-settings';
+import { ANNUAL_DEPRECIATION_FIELDS, PRIVATE_ESTIMATE_FIELDS, type PrivateEstimateSettings } from '../../lib/private-estimate-settings';
 import styles from './estimate-tools.module.css';
 
 const money = (value: number) => `R ${value.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -21,7 +21,7 @@ export default function EstimateTools({ report, busy, error, onApply }: {
   }, [open]);
 
   function openSettings() {
-    setDraft(Object.fromEntries(PRIVATE_ESTIMATE_FIELDS.map(({ key }) => [key, report.settings?.[key]?.toString() ?? ''])));
+    setDraft(Object.fromEntries(PRIVATE_ESTIMATE_FIELDS.map(({ key }) => [key, String(report.settings?.[key] ?? (key === 'ageWeightPercent' ? 50 : ANNUAL_DEPRECIATION_FIELDS.find(field => field.key === key)?.defaultValue) ?? '')])));
     setLocalError('');
     setOpen(true);
   }
@@ -43,7 +43,7 @@ export default function EstimateTools({ report, busy, error, onApply }: {
   return <section className={styles.tools} aria-label="Estimate calculation tools">
     <div className={styles.heading}>
       <div><strong>{report.settings ? 'Manually adjusted estimate' : 'Estimate calculation'}</strong>
-        <p>{report.settings ? 'Your settings apply to this estimate only.' : 'See the calculation or try different assumptions.'}</p></div>
+        <p>{report.settings ? 'Your settings apply to this estimate only.' : 'See how each adjustment changes the replacement price.'}</p></div>
       <button type="button" onClick={openSettings} disabled={busy}>Estimate settings</button>
     </div>
     <details className={styles.breakdown}>
@@ -67,21 +67,39 @@ export default function EstimateTools({ report, busy, error, onApply }: {
       aria-labelledby="estimate-settings-title">
       <form onSubmit={(event) => { event.preventDefault(); void apply(); }}>
         <header className={styles.modalHeader}><div><h2 id="estimate-settings-title">Estimate settings</h2>
-          <p>Leave a field blank to use the standard calculation from your asset details.</p></div>
+          <p>Tweak this estimate, then apply your changes to recalculate.</p></div>
           <button type="button" className={styles.close} onClick={() => setOpen(false)} disabled={busy} aria-label="Close estimate settings">×</button>
         </header>
+        <fieldset className={styles.settingGroup} disabled={busy}>
+          <legend>Depreciation per year</legend>
+          <p>Each rate deducts a percentage of the starting replacement price. Rates add up, capped at 100%. Year 6 onward repeats each year.</p>
+          <div className={styles.yearFields}>
+            {ANNUAL_DEPRECIATION_FIELDS.map(field => <label key={field.key}>
+              <span>{field.label} (%)</span>
+              <input type="number" min={0} max={100} step={0.01} value={draft[field.key] ?? ''}
+                placeholder={String(field.defaultValue)}
+                onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} />
+            </label>)}
+          </div>
+          {report.defaults?.ageDepreciationPercent == null && <small>Age is unknown for this asset. Annual rates apply when a year model is supplied.</small>}
+        </fieldset>
+        <fieldset className={styles.settingGroup} disabled={busy || report.defaults?.ageDepreciationPercent == null || report.defaults?.usageDepreciationPercent == null}>
+          <legend>Age and usage weight</legend>
+          <label className={styles.weight}>
+            <span><strong>Age {draft.ageWeightPercent || 50}%</strong><strong>Usage {100 - Number(draft.ageWeightPercent || 50)}%</strong></span>
+            <input aria-label="Age weight" type="range" min={0} max={100} step={1} value={draft.ageWeightPercent || '50'}
+              aria-valuetext={`Age ${draft.ageWeightPercent || 50}%, usage ${100 - Number(draft.ageWeightPercent || 50)}%`}
+              onChange={event => setDraft({ ...draft, ageWeightPercent: event.target.value })} />
+          </label>
+          <p>Move right to give age more weight; left to give usage more weight. When only one is available, that measure determines depreciation.</p>
+        </fieldset>
         <div className={styles.fields}>
-          {PRIVATE_ESTIMATE_FIELDS.filter(({ key }) => {
-            if (key === 'lifetimeUsage') return report.defaults?.lifetimeUsage != null;
-            if (key === 'usageDepreciationPercent') return report.defaults?.usageDepreciationPercent != null;
-            return true;
-          }).map((field) => <label key={field.key}>
-            <span>{field.label}{field.key === 'lifetimeUsage' ? ` (${report.usageUnit ?? 'hours'})` : ''}</span>
-            <input type="number" min={field.min} max={field.max} step={field.key === 'lifetimeUsage' ? 1 : 0.01}
-              value={draft[field.key] ?? ''} disabled={busy}
-              placeholder={`Automatic${report.defaults?.[field.key] == null ? '' : ` (current: ${Number(report.defaults[field.key]!.toFixed(2))})`}`}
-              onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })} />
-            <small>{field.help}</small>
+          {PRIVATE_ESTIMATE_FIELDS.filter(field => field.key === 'conditionPercent' || field.key === 'popularityPercent').map(field => <label key={field.key}>
+            <span>{field.label}</span>
+            <input type="number" min={field.min} max={field.max} step={0.01} value={draft[field.key] ?? ''} disabled={busy}
+              placeholder={`Automatic${report.defaults?.[field.key] == null ? '' : ` (${Number(report.defaults[field.key]!.toFixed(2))}%)`}`}
+              onChange={event => setDraft({ ...draft, [field.key]: event.target.value })} />
+            <small>{field.key === 'conditionPercent' ? 'Overrides the Basic condition or Advanced detailed assessment. Leave blank to use the assessment.' : '100% leaves the value unchanged; 115% adds 15%. Leave blank to use the popularity rating.'}</small>
           </label>)}
         </div>
         <p className={styles.notice}>Custom estimates are labelled in the result and PDF. Salvage floors still apply. Platform defaults are never changed.</p>

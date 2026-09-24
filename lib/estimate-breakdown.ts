@@ -24,7 +24,7 @@ function calculationRows(start: number, age: number | null, usage: number | null
     value *= factor;
     rows.push({ label, percent: (factor - 1) * 100, change: value - before, value });
   };
-  apply(age !== null && usage !== null ? 'Age / usage depreciation (averaged)' : 'Depreciation', 1 - depreciation / 100);
+  apply(age !== null && usage !== null ? 'Age / usage depreciation (weighted)' : 'Depreciation', 1 - depreciation / 100);
   apply('Condition', condition);
   if (popularity !== 1) apply('Popularity (after limits)', popularity);
   if (marketability !== 1) apply('Older-car marketability', marketability);
@@ -48,7 +48,7 @@ export function genericEstimateBreakdown(result: GenericValuationResult): Estima
       ...privateEstimateSettingsNotes(result.advancedAssumptions?.privateSettings),
       `Age depreciation: ${c.ageDepPct == null ? 'not applied' : `${c.ageDepPct}%`}. Usage depreciation: ${c.usageDepPct == null ? 'not applied' : `${c.usageDepPct}%`}.`,
       c.ageDepPct != null && c.usageDepPct != null
-        ? `Applied depreciation: round((${c.ageDepPct}% + ${c.usageDepPct}%) / 2) = ${c.averageDepPct}%.`
+        ? `Applied depreciation: round(${c.ageDepPct}% × ${(result.advancedAssumptions?.privateSettings?.ageWeightPercent ?? 50)}% age weight + ${c.usageDepPct}% × ${100 - (result.advancedAssumptions?.privateSettings?.ageWeightPercent ?? 50)}% usage weight) = ${c.averageDepPct}%.`
         : `Applied depreciation: ${c.averageDepPct}%.`,
       ...(c.maxLifetimeHours ? [`Expected lifetime: ${c.maxLifetimeHours.toLocaleString('en-ZA')}; usage used: ${c.estimatedHours?.toLocaleString('en-ZA') ?? 'percentage basis'}.`] : []),
       ...(result.advancedAssumptions?.dealerAssessment && result.advancedAssumptions?.privateSettings?.conditionPercent == null ? dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment) : []),
@@ -74,7 +74,7 @@ export function tractorEstimateBreakdown(result: Result, input: RunValuationInpu
   const notes = [
     ...privateEstimateSettingsNotes(result.advancedAssumptions?.privateSettings),
     `Age depreciation: ${c.ageDepPct}%. Usage depreciation: ${c.usageDepPct}%.`,
-    `Applied depreciation: round((${c.ageDepPct}% + ${c.usageDepPct}%) / 2) = ${c.averageDepPct}%.`,
+    `Applied depreciation: round(${c.ageDepPct}% × ${(result.advancedAssumptions?.privateSettings?.ageWeightPercent ?? 50)}% age weight + ${c.usageDepPct}% × ${100 - (result.advancedAssumptions?.privateSettings?.ageWeightPercent ?? 50)}% usage weight) = ${c.averageDepPct}%.`,
     `Expected lifetime: ${result.maxLifetimeHours} hours; usage used: ${c.hoursUsed} hours.`,
   ];
   if (result.advancedAssumptions?.dealerAssessment && result.advancedAssumptions?.privateSettings?.conditionPercent == null) notes.push(...dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment));

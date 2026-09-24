@@ -207,7 +207,7 @@ test('Basic usage follows family valuationMode, including no-usage and percentag
 });
 
 test('year_condition remains inside the shared generic engine and does not fabricate usage', () => {
-  assert.match(genericValuation, /if \(input\.valuationMode === 'year_condition'\) \{[\s\S]*?const ageDepPct = input\.advancedAssumptions\?\.privateSettings\?\.ageDepreciationPercent \?\? \(input\.yearModelUnknown \? 0 : tractorAgeDepPct\(yearForDepreciation\)\);[\s\S]*?const ageAdjustedValue/);
+  assert.match(genericValuation, /if \(input\.valuationMode === 'year_condition'\) \{[\s\S]*?const ageDepPct = input\.advancedAssumptions\?\.privateSettings\?\.ageDepreciationPercent \?\? \(input\.yearModelUnknown \? 0 : tractorAgeDepPct\(yearForDepreciation, undefined, input\.advancedAssumptions\?\.privateSettings\)\);[\s\S]*?const ageAdjustedValue/);
   assert.match(genericValuation, /method: 'semi_depreciation',[\s\S]*?lifeWorkedPercent: null,[\s\S]*?lifeRemainingPercent: null,[\s\S]*?estimatedHours: null,[\s\S]*?maxLifetimeHours: null,[\s\S]*?usageDepPct: null/);
   assert.match(genericValuation, /family\.valuationMode === 'year_condition' \? 'none'/);
 });
