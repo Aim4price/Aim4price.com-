@@ -28,8 +28,7 @@ export default function InsideShareDialog({ titleId, subject, options, disabled 
           {options.map(option => (
             <button key={option.id} type="button" className={styles.card} data-tone={option.id} onClick={option.onSelect} disabled={disabled}>
               <span className={styles.icon} aria-hidden="true">{option.icon}</span>
-              <strong>{option.title}</strong>
-              <small>{option.description}</small>
+              <span className={styles.copy}><strong>{option.title}</strong><small>{option.description}</small></span>
             </button>
           ))}
         </div>

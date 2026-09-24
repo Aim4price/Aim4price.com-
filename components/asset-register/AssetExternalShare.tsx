@@ -1,4 +1,5 @@
 'use client';
+import choiceStyles from './InsideShareDialog.module.css';
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -173,23 +174,21 @@ export function AssetShareDestinationPicker({
   disabled?: boolean;
 }) {
   return (
-    <div className={styles.destinationGrid}>
-      <button type="button" className={`${styles.destinationCard} ${styles.destinationCardInside}`} onClick={onInside} disabled={disabled}>
-        <span className={styles.destinationIcon}><Aim4priceIcon /></span>
-        <span className={styles.destinationCopy}>
+    <div className={`${choiceStyles.grid} ${choiceStyles.pickerGrid}`}>
+      <button type="button" className={choiceStyles.card} onClick={onInside} disabled={disabled}>
+        <span className={choiceStyles.icon}><Aim4priceIcon /></span>
+        <span className={choiceStyles.copy}>
           <strong>Inside Aim4price</strong>
-          <small>Share with an Aim4price partner.</small>
+          <small>Share with a partner</small>
         </span>
-        <span className={styles.destinationArrow} aria-hidden="true">›</span>
       </button>
 
-      <button type="button" className={`${styles.destinationCard} ${styles.destinationCardOutside}`} onClick={onOutside} disabled={disabled}>
-        <span className={styles.destinationIcon}><OutsideIcon /></span>
-        <span className={styles.destinationCopy}>
+      <button type="button" className={choiceStyles.card} data-tone="outside" onClick={onOutside} disabled={disabled}>
+        <span className={choiceStyles.icon}><OutsideIcon /></span>
+        <span className={choiceStyles.copy}>
           <strong>Outside Aim4price</strong>
-          <small>Send by WhatsApp or email.</small>
+          <small>WhatsApp or email</small>
         </span>
-        <span className={styles.destinationArrow} aria-hidden="true">›</span>
       </button>
     </div>
   );
