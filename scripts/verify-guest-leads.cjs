@@ -34,7 +34,7 @@ export default function Validation(){
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
  {mode==='recipient'&&<><button onClick={()=>setAccess('payment-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><GuestLeadActions token={'g'.repeat(43)} details={details} reports={[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}]} access={access}/></>}
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
- {mode==='find'&&<><DirectoryHelp/><BusinessDirectoryTools heading="" service="" onChange={()=>{}}/></>}
+ {mode==='find'&&<><DirectoryHelp/><BusinessDirectoryTools senderName="X Farms" heading="" service="" onChange={()=>{}}/></>}
  {mode==='admin'&&<DirectoryAdminAccess onAdd={b=>setLink(b.email)}/>}
  </main>;
 }
@@ -75,6 +75,19 @@ export default function Validation(){
   for(const width of [1440,430]){
    history=[];
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
+   await page.goto('http://127.0.0.1:3033/business-network/accept?from=X%20Farms',{waitUntil:'networkidle2'});
+   assert.ok(await page.evaluate(()=>document.body.textContent.includes('X Farms wants to share assets with you more efficiently.')));
+   await page.waitForSelector('header');
+   await page.screenshot({path:path.join(output,`listing-page-${width}.png`),fullPage:true});
+   const writesBefore=requests.filter(r=>r.method==='POST').length;
+   await Promise.all([page.waitForNavigation({waitUntil:'networkidle2'}),page.click('a[href^="/business-network/example"]')]);
+   await page.waitForFunction(()=>document.body.textContent.includes('Example Toyota Hilux'));
+   await click('Reply by email');await page.waitForFunction(()=>document.body.textContent.includes('this opens your email app'));
+   await click('Reply on WhatsApp');await page.waitForFunction(()=>document.body.textContent.includes('this opens WhatsApp'));
+   await click('Send an invoice or quote');await page.waitForFunction(()=>document.body.textContent.includes('does not upload files'));
+   await page.screenshot({path:path.join(output,`enquiry-example-${width}.png`),fullPage:true});
+   assert.equal(requests.filter(r=>r.method==='POST').length,writesBefore,'Demo never sends or uploads anything');
+   assert.equal(await page.$eval('a[href^="/business-network/accept"]',a=>new URL(a.href).searchParams.get('from')),'X Farms');
    await page.goto('http://127.0.0.1:3033/asset-share/guest-validation',{waitUntil:'networkidle2'});
    await page.waitForSelector('[data-hydrated=true]');
    await page.screenshot({path:path.join(output,`acceptance-${width}.png`),fullPage:true});
@@ -111,7 +124,7 @@ export default function Validation(){
    assert.ok(links.some(href=>href.startsWith('https://wa.me/?')),'WhatsApp lets the owner choose a recipient');
    await page.evaluate(()=>{window.__invitationCopied='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__invitationCopied=text;}}});});
    await click('Copy link');await page.waitForFunction(()=>document.body.textContent.includes('Invitation link copied.'));
-   assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept');
+   assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept?from=X+Farms');
    assert.ok(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth+1),'Invitation fits without horizontal scrolling');
    await page.screenshot({path:path.join(output,`invitation-${width}.png`),fullPage:true});
    await page.evaluate(()=>{window.__escapedToParent=false;document.addEventListener('keydown',event=>{if(event.key==='Escape')window.__escapedToParent=true;},{once:true});});
@@ -121,7 +134,7 @@ export default function Validation(){
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard unavailable')}}}));
    await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');
-   assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept');
+   assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept?from=X+Farms');
    await page.click('button[aria-label="Close business invitation"]');await page.waitForFunction(()=>!document.querySelector('dialog'));
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('dialog'));
@@ -166,7 +179,7 @@ export default function Validation(){
    await click('admin');await page.waitForFunction(()=>document.body.textContent.includes('Business acceptances (1)'));
    await page.$$eval('details',els=>els.forEach(e=>e.open=true));await click('Prepare listing');
    await fill('[name=until]','2099-12-31');await page.type('[name=note]','Manual test payment');await click('Activate paid access');await page.waitForFunction(()=>document.body.textContent.includes('Guest access updated'));
-   assert.ok(activated);await click('Suspend access');await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Suspend access'&&!b.disabled));assert.equal(activated,false);
+   assert.ok(activated);await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Suspend access'&&!b.disabled));await click('Suspend access');await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Suspend access'&&!b.disabled));assert.equal(activated,false);
   }
   await click('external');
   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Create lead link'&&!b.disabled));

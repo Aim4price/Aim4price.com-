@@ -2,11 +2,11 @@ import type { ReactNode } from 'react';
 import type { PublicAssetShare } from '../../lib/asset-share-links';
 import styles from './SharedAssetCards.module.css';
 const money = (value: number | null) => value != null && Number.isFinite(value) && value > 0 ? `R ${String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}` : 'Not saved';
-export default function SharedAssetCards({ share, request, actions }: { share: PublicAssetShare | null; request?: ReactNode; actions?: ReactNode }) {
+export default function SharedAssetCards({ share, request, actions, example = false }: { example?: boolean; share: PublicAssetShare | null; request?: ReactNode; actions?: ReactNode }) {
   return <main className={styles.page}>
-    <header className={styles.header}><span className={styles.brand}>Aim4price<span>.</span></span><span>Shared asset details</span></header>
+    <header className={styles.header}><span className={styles.brand}>Aim4price<span>.</span></span><span>{example ? 'Example enquiry · fictional details' : 'Shared asset details'}</span></header>
     {!share ? <section className={styles.empty}><h1>This link is no longer available</h1><p>Ask the sender for a new asset link.</p></section> : <>
-      <div className={styles.intro}><p>READ-ONLY ASSET SNAPSHOT</p><h1>{share.assets.length === 1 ? 'Your shared asset' : `${share.assets.length} shared assets`}</h1><span>Shared {new Date(share.createdAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Johannesburg' })}. Details reflect the date shared.</span></div>
+      <div className={styles.intro}><p>{example ? 'DEMONSTRATION — NO REAL REQUEST' : 'READ-ONLY ASSET SNAPSHOT'}</p><h1>{example ? 'An example of what you receive' : share.assets.length === 1 ? 'Your shared asset' : `${share.assets.length} shared assets`}</h1><span>{example ? 'Sample values and illustration. Nothing is sent from this example.' : <>Shared {new Date(share.createdAt).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Johannesburg' })}. Details reflect the date shared.</>}</span></div>
       {request}
       <div className={styles.assets}>{share.assets.map((asset, index) => <article key={index} className={styles.card}>
         {asset.photoUrls.length ? <div className={styles.photos}>{asset.photoUrls.map((url, i) => <img key={url} src={url} alt={`${asset.title}, photo ${i + 1}`} loading="lazy" referrerPolicy="no-referrer" />)}</div> : null}
