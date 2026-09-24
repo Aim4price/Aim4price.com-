@@ -7608,7 +7608,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.conditionRouteCopy}>
                     <strong>Basic</strong>
                   </span>
-                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
                 </button>
 
                 <button type="button" className={styles.conditionRouteCard} aria-label="Use Advanced condition" onClick={() => chooseConditionRoute('advanced')}>
@@ -7616,7 +7615,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.conditionRouteCopy}>
                     <strong>Advanced</strong>
                   </span>
-                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
                 </button>
               </div>
 
@@ -7771,8 +7769,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div className={styles.conditionQuestionFlow}>
                   <div className={styles.conditionQuestionProgress}>
                     <div className={styles.conditionQuestionProgressTop}>
-                      <span>Question {advancedQuestionIndex + 1} of {advancedQuestionTotal}</span>
                       <strong>{advancedQuestion?.label}</strong>
+                      <span>Question {advancedQuestionIndex + 1} of {advancedQuestionTotal}</span>
                     </div>
                     <div className={styles.conditionQuestionProgressTrack} aria-hidden="true">
                       <span style={{ width: `${advancedQuestionProgress}%` }} />
@@ -7928,7 +7926,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.conditionRouteCopy}>
                     <strong>No extras</strong>
                   </span>
-                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
                 </button>
 
                 <button
@@ -7948,7 +7945,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.conditionRouteCopy}>
                     <strong>Extras</strong>
                   </span>
-                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
                 </button>
               </div>
 

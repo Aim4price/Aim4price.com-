@@ -3308,7 +3308,7 @@
   color: var(--app-text, #173e33);
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 1.35rem;
   line-height: 1;
 }
@@ -7696,7 +7696,7 @@
   width: 2.9rem;
   height: 2.9rem;
   border: 1px solid var(--app-info-line, rgba(205, 222, 234, 0.98));
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--app-info-soft, #f7fbff);
   color: var(--app-text, #143d34);
   font-size: 1.35rem;
@@ -9282,7 +9282,7 @@
   width: 2.9rem;
   height: 2.9rem;
   border: 1px solid var(--app-line, rgba(196, 216, 208, 0.95));
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--app-surface, rgba(255, 255, 255, 0.92));
   color: var(--app-text, #113b32);
   font: inherit;
@@ -9419,7 +9419,7 @@
   width: 3.05rem;
   height: 3.05rem;
   border: 1px solid var(--app-info-line, rgba(205, 222, 234, 0.98));
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--app-info-soft, #f7fbff);
   color: var(--app-text, #143d34);
   font-size: 1.4rem;
@@ -13813,7 +13813,7 @@
 
 .conditionRouteCard {
   display: grid;
-  grid-template-columns: 3.15rem minmax(0, 1fr) 2rem;
+  grid-template-columns: 3.15rem minmax(0, 1fr);
   align-items: center;
   gap: 0.9rem;
   min-height: 132px;
@@ -13868,17 +13868,6 @@
   color: var(--app-muted, #697b74);
   font-size: 0.86rem;
   line-height: 1.45;
-}
-
-.conditionRouteArrow {
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 999px;
-  color: var(--app-text, #0b7155);
-  font-size: 1.25rem;
-  font-weight: 800;
 }
 
 .conditionRouteNote {
@@ -14146,7 +14135,7 @@
   }
 
   :global(:where(html:not(:has([data-website-canvas])))) .conditionRouteCard {
-    grid-template-columns: 2.7rem minmax(0, 1fr) 1.7rem;
+    grid-template-columns: 2.7rem minmax(0, 1fr);
     padding: 0.9rem;
   }
 
@@ -14298,7 +14287,7 @@
 .conditionQuestionProgressTop strong {
   color: var(--app-text, #123f34);
   font-size: 1rem;
-  text-align: right;
+  text-align: left;
 }
 
 .conditionQuestionProgressTrack {
