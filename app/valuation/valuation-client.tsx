@@ -9321,7 +9321,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           >
             <div className={styles.replacementNoticeTitle}>
               <h2 data-estimate-modal-title id="replacement-notice-title">Ready for your estimate?</h2>
-              <button type="button" className={`${styles.saveModalClose} ${modalStyles.close}`} onClick={closeReplacementPriceNotice} aria-label="Close estimate confirmation">×</button>
             </div>
             <p id="replacement-notice-description" className={`${styles.replacementNoticeIntro} ${modalStyles.description}`}>
               Please check your asset details and replacement price. Your estimate uses this information, and actual selling prices may vary.
