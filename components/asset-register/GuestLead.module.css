@@ -2,6 +2,6 @@
 
 .form > button:first-of-type{background:var(--app-primary,#17654c);color:#fff;border-color:transparent}.panel p{margin:0}.panel details > p{margin:12px 0}
 
-.form select{font:inherit;padding:12px;border:1px solid var(--app-line,#c9ddd1);border-radius:8px;background:var(--app-surface,#fff);color:inherit;min-width:0;width:100%}.panel .panel{width:100%;box-sizing:border-box;margin:0}@media(max-width:600px){.panel{padding:16px}.actions>*{flex:1}.form input[type=file]{max-width:100%}}
+.form select{font:inherit;padding:12px;border:1px solid var(--app-line,#c9ddd1);border-radius:8px;background:var(--app-surface,#fff);color:inherit;min-width:0;width:100%}.panel .panel{width:100%;box-sizing:border-box;margin:0}@media(max-width:600px){:global(body:not(:has([data-website-canvas]))) .panel{padding:16px}:global(body:not(:has([data-website-canvas]))) .actions>*{flex:1}:global(body:not(:has([data-website-canvas]))) .form input[type=file]{max-width:100%}}
 
 .fields{display:grid;gap:12px;min-width:0;border:0;padding:0;margin:0}.fields>button:last-child{background:var(--app-primary,#17654c);color:white;border-color:transparent}
