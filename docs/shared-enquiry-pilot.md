@@ -3,7 +3,7 @@
 ## The flow
 
 1. In the asset register, select assets and open the business directory.
-2. Select a listed business, or expand **Business not listed?** to search Google or enter a name.
+2. Select a listed business. To invite an unlisted business, choose **Business not listed?**, then WhatsApp, Email or Copy link. The business confirms its own details on the free listing acceptance page; this does not share assets or publish a listing.
 3. Prepare the enquiry. Enter an email, a confirmed WhatsApp number with its country code, or both. Google does not supply enquiry emails, and ordinary telephone numbers are not assumed to support WhatsApp.
 4. Write the request, select photos/reports, and optionally enable invoice/quote submissions. Reports require the recipient's email so access can be matched to a verified account.
 5. Create and preview the link. Use Email or WhatsApp to send it from your own app. Creating a link does not send a message automatically.
