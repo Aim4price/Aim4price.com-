@@ -40,3 +40,10 @@
 .weight { display: grid; gap: 12px; margin: 8px 0 12px; }
 .weight span { display: flex; justify-content: space-between; font-size: 13px; }
 .weight input { width: 100%; margin: 0; accent-color: #174c3c; }
+
+/* Compact disclosure beneath the replacement price. */
+.tools { position: relative; order: initial; border: 0; border-top: 1px solid #d7e0da; border-radius: 0 0 18px 18px; background: transparent; }
+.heading { position: absolute; top: 12px; right: 24px; z-index: 1; padding: 0; }
+.breakdown { border: 0; }
+.breakdown summary { box-sizing: border-box; padding: 24px; padding-right: 195px; min-height: 68px; background: transparent; font-size: 14px; }
+.customNote { margin: 0; padding: 0 24px 12px; font-size: 12px; color: #53675b; }

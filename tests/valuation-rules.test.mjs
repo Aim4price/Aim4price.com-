@@ -372,7 +372,7 @@ test('path availability is checked with one model before the full list is reques
   assert.match(source, /Ready for your estimate\?/);
   assert.match(source, /I understand, get estimate/);
   const disclaimer = source.match(/<small id="replacement-notice-disclaimer"[^>]*>([\s\S]*?)<\/small>/)?.[1].trim();
-  assert.equal(disclaimer, 'Indicative estimate only — not a certified valuation, inspection or guaranteed price.');
+  assert.equal(disclaimer, 'Indicative estimate only. Not a certified valuation, inspection or guaranteed price.');
   assert.doesNotMatch(source, /Check the replacement price and usage/);
   assert.doesNotMatch(source, /Important: check both values/);
   assert.doesNotMatch(source, /replacementNoticePriceExVat|replacementNoticeUsage|Current usage/);

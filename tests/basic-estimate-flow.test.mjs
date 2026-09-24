@@ -270,7 +270,7 @@ test('Basic replacement slider keeps zero stable and preserves manual values abo
   const replacementBlock = client.slice(replacementStart, replacementStart + 18000);
   assert.match(replacementBlock, /parsedReplacementInput >= 0/);
   assert.match(replacementBlock, /const selectedReplacementPrice = hasReplacementSliderInput[\s\S]*?\? parsedReplacementInput[\s\S]*?: replacementSliderDefault/);
-  assert.match(replacementBlock, /<strong>\{basicReplacementPrice !== null && !hasReplacementSliderInput \? '—' : money\(selectedReplacementPrice\)\}<\/strong>/);
+  assert.match(replacementBlock, /<strong>\{basicReplacementPrice !== null && !hasReplacementSliderInput \? 'Not set' : money\(selectedReplacementPrice\)\}<\/strong>/);
   assert.match(replacementBlock, /value=\{sliderValue\}/);
 });
 
