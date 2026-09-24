@@ -15,9 +15,11 @@ import {
 import PricingVatToggle from './PricingVatToggle';
 import { pricingVatAmount } from '../lib/pricing-vat';
 import styles from './saleability-modal.module.css';
+import modalStyles from './estimate-modal.module.css';
 import accountStyles from '../app/account/page.module.css';
 
 type SaleabilityModalProps = {
+  estimateStyle?: boolean;
   open: boolean;
   onClose: () => void;
   assetTitle: string;
@@ -125,6 +127,7 @@ function ChoiceQuestion<T extends string>({
 }
 
 export default function SaleabilityModal({
+  estimateStyle = false,
   open,
   onClose,
   assetTitle,
@@ -230,14 +233,14 @@ export default function SaleabilityModal({
     <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
-      <section className={`${styles.modal} ${accountStyles.modalTheme}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
+      <section className={`${styles.modal} ${accountStyles.modalTheme} ${estimateStyle ? modalStyles.surface : ''}`} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
           <div>
-            <h2 id="saleability-title">{assetTitle}</h2>
+            <h2 data-estimate-modal-title={estimateStyle || undefined} id="saleability-title">{assetTitle}</h2>
             <p>Build your selling plan.</p>
             <PricingVatToggle included={vatIncluded} onChange={setVatIncluded} />
           </div>
-          <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
+          <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton} ${estimateStyle ? modalStyles.close : ''}`} onClick={onClose} aria-label="Close Saleability"><span aria-hidden="true">×</span></button>
         </header>
 
         <div className={styles.questionProgress} role="status" aria-live="polite">
@@ -357,7 +360,7 @@ export default function SaleabilityModal({
             </div>
           ) : null}
         </div>
-        <footer className={styles.actions}>
+        <footer className={`${styles.actions} ${estimateStyle ? modalStyles.actions : ''}`}>
           {step !== 'result' ? (
             <button type="button" className={styles.secondary} onClick={step === 1 ? onClose : () => setStep(step - 1)}>
               {step === 1 ? 'Cancel' : 'Back'}

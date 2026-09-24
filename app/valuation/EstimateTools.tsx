@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { EstimateBreakdown } from '../../lib/estimate-breakdown';
 import { ANNUAL_DEPRECIATION_FIELDS, PRIVATE_ESTIMATE_FIELDS, type PrivateEstimateSettings } from '../../lib/private-estimate-settings';
 import styles from './estimate-tools.module.css';
+import modalStyles from '../../components/estimate-modal.module.css';
 
 const money = (value: number) => `R ${value.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -61,13 +62,13 @@ export default function EstimateTools({ report, busy, error, onApply }: {
       </div>
       <ul className={styles.notes}>{report.notes.map((note, i) => <li key={i}>{note}</li>)}</ul>
     </details>
-    <dialog ref={dialog} className={styles.dialog} onCancel={(event) => { event.preventDefault(); if (!busy) setOpen(false); }}
+    <dialog ref={dialog} className={`${styles.dialog} ${modalStyles.surface}`} onCancel={(event) => { event.preventDefault(); if (!busy) setOpen(false); }}
       onClick={(event) => { const box = dialog.current?.getBoundingClientRect(); if (!busy && box && (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) setOpen(false); }}
       aria-labelledby="estimate-settings-title">
       <form onSubmit={(event) => { event.preventDefault(); void apply(); }}>
-        <header className={styles.modalHeader}><div><h2 id="estimate-settings-title">Estimate settings</h2>
+        <header className={styles.modalHeader}><div><h2 data-estimate-modal-title id="estimate-settings-title">Estimate settings</h2>
           <p>Tweak this estimate, then apply your changes to recalculate.</p></div>
-          <button type="button" className={styles.close} onClick={() => setOpen(false)} disabled={busy} aria-label="Close estimate settings">×</button>
+          <button type="button" className={`${styles.close} ${modalStyles.close}`} onClick={() => setOpen(false)} disabled={busy} aria-label="Close estimate settings">×</button>
         </header>
         <fieldset className={styles.settingGroup} disabled={busy}>
           <legend>Depreciation per year</legend>
@@ -103,9 +104,9 @@ export default function EstimateTools({ report, busy, error, onApply }: {
         </div>
         <p className={styles.notice}>Custom estimates are labelled in the result and PDF. Salvage floors still apply. Platform defaults are never changed.</p>
         {(localError || error) && <p role="alert" className={styles.error}>{localError || error}</p>}
-        <footer className={styles.actions}>
+        <footer className={`${styles.actions} ${modalStyles.actions}`}>
           <button type="button" disabled={busy} onClick={() => void apply(true)}>Reset to Aim4price defaults</button>
-          <button type="submit" disabled={busy}>{busy ? 'Recalculating...' : 'Apply and recalculate'}</button>
+          <button className={modalStyles.primary} type="submit" disabled={busy}>{busy ? 'Recalculating...' : 'Apply and recalculate'}</button>
         </footer>
       </form>
     </dialog>

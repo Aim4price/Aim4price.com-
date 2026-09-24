@@ -14666,3 +14666,6 @@
 .replacementNoticeModal .replacementNoticeDisclaimer { margin-top: 16px; font-size: 0.8rem; line-height: 1.6; }
 .replacementNoticeModal .replacementNoticeActions { margin-top: 24px; padding-top: 20px; border-top: 1px solid #efcfca; gap: 12px; }
 .replacementNoticeModal .replacementNoticeActions button { min-height: 48px; padding: 12px 20px; border-radius: 12px; font-size: 0.9rem; }
+
+/* Keep one footer divider after adopting the shared modal action row. */
+.specificationModal .specificationModalFooter { padding-top: 0; border-top: 0; }

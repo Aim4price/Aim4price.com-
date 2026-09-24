@@ -96,7 +96,7 @@ test('Saleability layouts preserve the estimate hierarchy and use the available 
   assert.match(modalStyles, /\.body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
   assert.match(modalStyles, /\.header p\s*\{[\s\S]*?white-space:\s*nowrap;/);
   assert.match(modalStyles, /@media \(max-width: 900px\)[\s\S]*?\.header p\s*\{\s*white-space:\s*normal;/);
-  assert.match(modal, /<h2 id="saleability-title">\{assetTitle\}<\/h2>/);
+  assert.match(modal, /<h2[^>]* id="saleability-title">\{assetTitle\}<\/h2>/);
   assert.doesNotMatch(modal, /<span>Saleability<\/span>/);
   assert.doesNotMatch(modal, /styles\.baselineStrip/);
   assert.match(modal, /styles\.settingsCard/);

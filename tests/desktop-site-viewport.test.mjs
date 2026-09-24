@@ -94,7 +94,7 @@ test('Get Estimate keeps the website viewport stable, uses R5k replacement slide
   assert.match(polishSource, /slider\.step = String\(BASIC_REPLACEMENT_SLIDER_STEP\)/);
   assert.match(polishSource, /data-basic-replacement-slider-step/);
   assert.match(polishSource, /createPortal\([\s\S]*?data-valuation-family-modal-root="true"/);
-  assert.match(polishSource, /className=\{styles\.familyModal\}[\s\S]*?role="dialog"[\s\S]*?aria-modal="true"/);
+  assert.match(polishSource, /className=\{`\$\{styles\.familyModal\} \$\{modalStyles\.surface\}`\}[\s\S]*?role="dialog"[\s\S]*?aria-modal="true"/);
   assert.match(polishSource, /event\.key === 'Escape'/);
   assert.match(polishSource, /modalSearchRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(polishStyles, /\.familyOverlay\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*2147482500;/);
