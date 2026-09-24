@@ -51,7 +51,7 @@ test("normal navigation stays private while all admin navigation links to the mo
   assert.doesNotMatch(header, /\/admin\/lifecycle-calculator/);
   assert.match(adminNavigation, /href: "\/admin\/lifecycle-calculator"/);
   assert.match(page, /<AdminNavigation active="lifecycle" \/>/);
-  assert.match(adminUsers, /<AdminNavigation active="accounts" \/>/);
+  assert.match(adminUsers, /<AdminNavigation active="accounts" canGetEstimate=\{canGetEstimate\} \/>/);
   assert.match(adminDashboard, /<AdminNavigation active="dashboard" \/>/);
 });
 

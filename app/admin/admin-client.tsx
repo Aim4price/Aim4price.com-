@@ -645,10 +645,12 @@ export default function AdminClient({
   initialUsers,
   initialStatus = "all",
   initialAccountId = "",
+  canGetEstimate = false,
 }: {
   initialUsers: AdminUserRow[];
   initialStatus?: string;
   initialAccountId?: string;
+  canGetEstimate?: boolean;
 }) {
   const [users, setUsers] = useState<AdminUserRow[]>(initialUsers);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1612,7 +1614,7 @@ export default function AdminClient({
         </div>
 
         <div className={styles.headerActions}>
-          <AdminNavigation active="accounts" />
+          <AdminNavigation active="accounts" canGetEstimate={canGetEstimate} />
           <button
             type="button"
             className={styles.groupNotificationButton}
