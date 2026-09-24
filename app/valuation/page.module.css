@@ -12364,7 +12364,7 @@
 
 .replacementNoticeModal .replacementNoticeIntro {
   margin-top: 0.8rem;
-  color: var(--app-muted, #5a6962);
+  color: #79534e;
 }
 
 .replacementNoticeModal {
@@ -12372,8 +12372,8 @@
   max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem);
   padding: 1.75rem;
   overflow-y: auto;
-  border-color: var(--app-line, #d5e4dc);
-  background: var(--app-surface, #ffffff);
+  border-color: #efb8b2;
+  background: #fff4f2;
   box-shadow: 0 24px 70px var(--app-shadow-colour, rgba(12, 40, 29, 0.24));
   overscroll-behavior: contain;
 }
@@ -12386,7 +12386,7 @@
 
 .replacementNoticeModal h2 {
   margin: 0;
-  color: var(--app-text, #173e33);
+  color: #7d251e;
 }
 
 .replacementNoticeActions {
@@ -12394,21 +12394,21 @@
 }
 
 .replacementNoticeActions .secondaryButton {
-  border-color: var(--app-line, #b9d1c4);
-  background: var(--app-surface, rgba(255, 255, 255, 0.72));
-  color: var(--app-text, #173e33);
+  border-color: #e3a49e;
+  background: rgba(255, 255, 255, 0.72);
+  color: #7d251e;
 }
 
 .replacementNoticeActions .primaryButton {
-  border-color: var(--app-accent, #174f3e);
-  background: #174f3e;
+  border-color: #b92f28;
+  background: #b92f28;
   color: #fff;
-  box-shadow: 0 10px 24px var(--app-shadow-colour, rgba(17, 79, 62, 0.16));
+  box-shadow: 0 10px 24px rgba(185, 47, 40, 0.16);
 }
 
 .replacementNoticeActions .primaryButton:hover {
-  border-color: #103d30;
-  background: #103d30;
+  border-color: #9e2721;
+  background: #9e2721;
 }
 
 .replacementNoticeDisclaimer {
@@ -12416,7 +12416,7 @@
   margin-top: 1rem;
   padding-top: 0.75rem;
   border-top: 0;
-  color: var(--app-muted, #52665c);
+  color: #79534e;
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -14463,16 +14463,20 @@
 }
 
 
-/* Keep the estimate confirmation copy on clean single lines on the website canvas. */
+/* Confirmation copy wraps within the canonical canvas dialog. */
 :global(html:has([data-website-canvas])) .replacementNoticeModal {
   width: min(820px, var(--website-dialog-reference-width, 100%));
 }
 
-:global(html:has([data-website-canvas])) .replacementNoticeModal h2,
-:global(html:has([data-website-canvas])) .replacementNoticeIntro,
-:global(html:has([data-website-canvas])) .replacementNoticeDisclaimer,
+.replacementNoticeModal h2,
+.replacementNoticeIntro,
+.replacementNoticeDisclaimer {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .replacementNoticeActions button {
-  white-space: nowrap;
+  white-space: normal;
 }
 
 
@@ -14596,11 +14600,15 @@
 
 .specificationModalHeader, .specificationModal .basicLevelGrid { width: 100%; }
 .specificationModalHeader { text-align: left; }
-.specificationModalFooter { margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--app-line, #d5e4dc); }
+.specificationModalFooter { width: 100%; box-sizing: border-box; text-align: left; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--app-line, #d5e4dc); }
 .specificationModalFooter p { color: var(--app-muted, #64746a); font-size: 0.85rem; line-height: 1.5; margin: 0 0 16px; }
-.specificationModalActions { display: flex; justify-content: flex-end; gap: 12px; }
+.specificationModalActions { display: flex; width: 100%; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+.specificationModalActions button { min-height: 48px; margin: 0; }
+.specificationModal .specificationModalHint { width: 100%; text-align: left; }
 .replacementNoticeTitle { justify-content: space-between; align-items: flex-start; }
 .replacementNoticeTitle .saveModalClose { flex-shrink: 0; }
-.replacementNoticePoints { margin: 20px 0; padding-left: 20px; color: var(--app-muted, #52665c); font-size: 0.9rem; line-height: 1.65; }
-.replacementNoticePoints li + li { margin-top: 10px; }
-.replacementNoticeDisclaimer { padding: 14px; border: 1px solid var(--app-line, #d5e4dc); border-radius: 10px; background: var(--app-surface-soft, #edf6f0); }
+.replacementNoticeModal { box-sizing: border-box; }
+.replacementNoticeTitle h2 { min-width: 0; }
+.replacementNoticeTitle .saveModalClose { background: #fff8f7; border-color: #e3a49e; color: #7d251e; }
+.replacementNoticeActions { flex-wrap: wrap; }
+.replacementNoticeDisclaimer { padding: 0; border: 0; background: transparent; }

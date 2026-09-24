@@ -6184,7 +6184,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <p className={styles.specificationModalHint}>Where does this asset roughly sit in the new-asset market?</p>
           {renderSpecificationChoices(specificationDraft, setSpecificationDraft)}
           <div className={styles.specificationModalFooter}>
-            <p>Applying a different level updates the price range and resets the replacement price to its suggested value.</p>
+            <p>Changing the level resets the replacement price to its suggested value.</p>
             <div className={styles.specificationModalActions}>
               <button type="button" className={styles.secondaryButton} onClick={() => specificationDialogRef.current?.close()}>Cancel</button>
               <button type="button" className={styles.primaryButton} onClick={() => applyReplacementSpecification(specificationDraft)}>Apply specification</button>
@@ -9311,13 +9311,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button type="button" className={styles.saveModalClose} onClick={closeReplacementPriceNotice} aria-label="Close estimate confirmation">×</button>
             </div>
             <p id="replacement-notice-description" className={styles.replacementNoticeIntro}>
-              Your estimate uses the asset details and replacement price you supplied. Take a moment to confirm they are accurate.
+              Based on the details and replacement price you supplied. Please check they are correct; actual selling prices may vary.
             </p>
-            <ul className={styles.replacementNoticePoints}>
-              <li>The replacement price should reflect a comparable new asset, with the correct VAT basis.</li>
-              <li>Actual selling prices can vary with condition, demand, location and the information available. The asset has not been physically inspected.</li>
-              <li>For insurance, finance or a significant purchase, confirm the required valuation with the relevant professional.</li>
-            </ul>
             <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
               Indicative estimate only — not a certified valuation, inspection or guaranteed price.
             </small>
