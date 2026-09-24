@@ -4,6 +4,12 @@ on:
   pull_request:
     paths:
       - 'lib/basic-*.ts'
+      - 'lib/estimate-breakdown*.ts'
+      - 'lib/valuation/dealer-assessment.ts'
+      - 'app/api/valuation/breakdown/route.ts'
+      - 'app/api/tractor-valuations/route.ts'
+      - 'app/api/generic-valuations/route.ts'
+      - 'tests/estimate-breakdown.test.cjs'
       - 'lib/generic-valuation.ts'
       - 'lib/equipment-catalog.ts'
       - 'lib/asset-register-db.ts'
@@ -33,6 +39,8 @@ jobs:
       - run: npm ci
       - name: Basic and shared valuation regressions
         run: node --experimental-strip-types --test tests/basic-catalogue.test.mjs tests/basic-estimate-flow.test.mjs tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs
+      - name: Private estimate breakdown regressions
+        run: node --test tests/estimate-breakdown.test.cjs
       - run: npm run typecheck
       - name: Production bundle validation
         shell: bash

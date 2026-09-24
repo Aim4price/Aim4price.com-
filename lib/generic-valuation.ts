@@ -147,6 +147,7 @@ export type GenericValuationInput = {
 };
 
 export type GenericValuationResult = {
+  breakdownToken?: string;
   catalogModeUsed: CatalogMode;
   sector: { id: number; key: SectorKey; label: string };
   family: {

@@ -1,3 +1,6 @@
+import { canUseEstimateBreakdown } from '../../../lib/estimate-breakdown-access';
+import { signEstimateBreakdown } from '../../../lib/estimate-breakdown-token';
+import { genericEstimateBreakdown } from '../../../lib/estimate-breakdown';
 import { NextRequest, NextResponse } from 'next/server';
 import { recordGenericValuationForAdminSafely } from '../../../lib/admin-valuation-events';
 import { getAccountProfile } from '../../../lib/account-profile';
@@ -73,6 +76,7 @@ async function getAdvancedAccessProfile() {
   const session = await getAnyServerSession();
   const user = session?.user;
   if (!user?.id) return null;
+  if (canUseEstimateBreakdown(user.email)) return { accountStatus: 'active' as const };
   return getAccountProfile({ id: user.id, name: user.name, email: user.email });
 }
 
@@ -153,6 +157,10 @@ export async function POST(request: NextRequest) {
       advancedAssumptions: body.advancedAssumptions ?? null,
     };
     const result = await runGenericValuation(valuationInput);
+    const breakdownSession = await getAnyServerSession();
+    if (breakdownSession?.user?.id && canUseEstimateBreakdown(breakdownSession.user.email)) {
+      result.breakdownToken = signEstimateBreakdown(genericEstimateBreakdown(result), breakdownSession.user.id);
+    }
 
     await recordGenericValuationForAdminSafely({
       userId: await getUsageUserId(),

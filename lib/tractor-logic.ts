@@ -29,6 +29,7 @@ export type RunValuationInput = {
 };
 
 export type Result = {
+  breakdownToken?: string;
   model: TractorCatalogRow;
   aim4priceValueExVat: number | null;
   marketLow: number | null;

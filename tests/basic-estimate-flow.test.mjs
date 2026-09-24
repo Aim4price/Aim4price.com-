@@ -102,7 +102,8 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   );
   assert.match(advancedCardChunk, /estimateModeCardLocked/);
   assert.match(advancedCardChunk, /\bdisabled\b/);
-  assert.match(advancedCardChunk, /aria-disabled="true"/);
+  assert.match(advancedCardChunk, /aria-disabled=\{!breakdownAccess\}/);
+  assert.match(advancedCardChunk, /disabled=\{!breakdownAccess\}/);
   assert.match(advancedCardChunk, /estimateModeAdvancedHint/);
   assert.match(advancedCardChunk, /aria-hidden="true"/);
   assert.match(advancedCardChunk, /Start estimate →/);
