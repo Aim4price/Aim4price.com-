@@ -5,7 +5,7 @@ import { createPortal } from '../WebsitePortal';
 import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import styles from './BusinessListingInvite.module.css';
 
-export default function BusinessListingInvite() {
+export default function BusinessListingInvite({ senderName = '' }: { senderName?: string }) {
   const titleId = useId();
   const descriptionId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -15,13 +15,15 @@ export default function BusinessListingInvite() {
   const [showCopyField, setShowCopyField] = useState(false);
   const copy = {
     subject: 'An invitation to the Aim4price business directory',
-    body: `Hi, I’d like to invite your business to the Aim4price directory. A basic listing is free and no Aim4price account is required.\n\nConfirm your business details and accept your listing here:\n${link}`,
+    body: `${senderName || 'We'} would like to share asset details and requests with you through Aim4price. See an example and add your free business listing.\n\nConfirm your business details and accept your listing here:\n${link}`,
   };
 
   function open() {
     setNotice('');
     setShowCopyField(false);
-    setLink(new URL('/business-network/accept', window.location.origin).href);
+    const url = new URL('/business-network/accept', window.location.origin);
+    if (senderName.trim()) url.searchParams.set('from', senderName.trim().slice(0, 120));
+    setLink(url.href);
   }
 
   async function copyLink() {
