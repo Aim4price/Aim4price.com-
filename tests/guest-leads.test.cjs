@@ -20,10 +20,12 @@ async function setup(){
 test('acceptances are durable, do not publish and cannot overwrite an earlier acceptance',async()=>{
  const ctx=await setup(),{pg,db,schema}=ctx;
  const mod=load('lib/business-acceptances.ts',{'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':shared});
- try{const input={email:'workshop@example.com',businessName:'Workshop',contactName:'Manager',phone:'0821234567',accepted:true};
+ try{const input={email:'workshop@example.com',businessName:'Workshop',contactName:'Manager',phone:'0821234567',accepted:true,googlePlaceId:'place-1',googleConfirmed:true,googleMapsUrl:'https://maps.google.com/?cid=123',town:'George',whatsappConfirmed:true};
  await assert.rejects(mod.recordBusinessAcceptance({...input,accepted:false}),/Confirm/);
+ await assert.rejects(mod.recordBusinessAcceptance({...input,googleConfirmed:false}),/Confirm/);
+ await assert.rejects(mod.recordBusinessAcceptance({...input,googleMapsUrl:'https://example.com'}));
  await mod.recordBusinessAcceptance(input);await mod.recordBusinessAcceptance({...input,businessName:'Overwritten'});
- const rows=await mod.listBusinessAcceptances();assert.equal(rows.length,1);assert.equal(rows[0].business_name,'Workshop');assert.equal(rows[0].business_id,null);assert.equal((await pg.query('SELECT * FROM business_network')).rows.length,0);
+ const rows=await mod.listBusinessAcceptances();assert.equal(rows.length,1);assert.equal(rows[0].business_name,'Workshop');assert.equal(rows[0].details.googlePlaceId,'place-1');assert.equal(rows[0].details.town,'George');assert.equal(rows[0].details.whatsappConfirmed,true);assert.equal(rows[0].business_id,null);assert.equal((await pg.query('SELECT * FROM business_network')).rows.length,0);
  }finally{await pg.close();}
 });
 test('guest email codes are one-use and expire; sessions and manual activation cannot grant themselves paid access',async()=>{

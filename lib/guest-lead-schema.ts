@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS business_acceptances (
  contact_name text NOT NULL, phone text NOT NULL DEFAULT '', accepted_at timestamptz NOT NULL DEFAULT now(),
  consent_version text NOT NULL DEFAULT 'directory-v1', handled_at timestamptz
 );
+ALTER TABLE business_acceptances ADD COLUMN IF NOT EXISTS details jsonb NOT NULL DEFAULT '{}'::jsonb;
 CREATE TABLE IF NOT EXISTS guest_businesses (
  email text PRIMARY KEY, business_name text NOT NULL, contact_name text NOT NULL,
  verified_at timestamptz NOT NULL DEFAULT now(), access_until timestamptz, suspended boolean NOT NULL DEFAULT false
