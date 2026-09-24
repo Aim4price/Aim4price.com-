@@ -1,3 +1,6 @@
+import { canUseEstimateBreakdown } from '../../../lib/estimate-breakdown-access';
+import { signEstimateBreakdown } from '../../../lib/estimate-breakdown-token';
+import { tractorEstimateBreakdown } from '../../../lib/estimate-breakdown';
 import { NextRequest, NextResponse } from 'next/server';
 import { recordTractorValuationForAdminSafely } from '../../../lib/admin-valuation-events';
 import { getAccountProfile } from '../../../lib/account-profile';
@@ -166,6 +169,7 @@ async function getAdvancedAccessProfile() {
   const session = await getAnyServerSession();
   const user = session?.user;
   if (!user?.id) return null;
+  if (canUseEstimateBreakdown(user.email)) return { accountStatus: 'active' as const };
   return getAccountProfile({ id: user.id, name: user.name, email: user.email });
 }
 
@@ -208,6 +212,10 @@ async function handleValuation(input: RunValuationInput | null) {
 
   try {
     const result = await runServerValuation(input);
+    const breakdownSession = await getAnyServerSession();
+    if (breakdownSession?.user?.id && canUseEstimateBreakdown(breakdownSession.user.email)) {
+      result.breakdownToken = signEstimateBreakdown(tractorEstimateBreakdown(result, input), breakdownSession.user.id);
+    }
 
     await recordTractorValuationForAdminSafely({
       userId: await getUsageUserId(),

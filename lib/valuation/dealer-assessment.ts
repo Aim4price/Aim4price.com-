@@ -75,6 +75,15 @@ const POPULARITY_FACTORS: Record<PopularityStars, number> = {
 
 const STANDARD_COMBINED_FACTOR_BOUNDS = { min: 0.1, max: 1 } as const;
 
+/** Explain the same factors used by calculateDealerConditionFactor. */
+export function dealerConditionBreakdownNotes(input: NormalizedDealerAssessment): string[] {
+  return [
+    `Condition weighting: mechanical ${MECHANICAL_FACTORS[input.mechanicalCondition] * 100}% x 50%, body ${BODY_FACTORS[input.bodyCondition] * 100}% x 30%, tyres / wear ${TYRE_FACTORS[input.tyreCondition] * 100}% x 20%.`,
+    `Service history: ${SERVICE_ADJUSTMENTS[input.serviceHistory] * 100} percentage points; required work: ${WORK_ADJUSTMENTS[input.requiredWork] * 100} percentage points.`,
+    `Condition retained: ${input.conditionFactorPercent}% after the 20%-100% limits, before popularity.`,
+  ];
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }

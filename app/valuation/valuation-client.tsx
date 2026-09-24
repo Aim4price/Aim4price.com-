@@ -226,6 +226,7 @@ type MarketMatch = {
 };
 
 type GenericValuationResult = {
+  breakdownToken?: string;
   catalogModeUsed: CatalogMode;
   sector: { id: number; key: SectorKey; label: string };
   family: {
@@ -1790,7 +1791,7 @@ function normalizeReportEmail(value: unknown): string {
   return cleaned && cleaned.includes('@') ? cleaned : '';
 }
 
-export default function ValuationClient({ dealerAppMode = false, ownerAppMode = false, ownerAppBackHref = '/owner-app' }: { dealerAppMode?: boolean; ownerAppMode?: boolean; ownerAppBackHref?: string } = {}) {
+export default function ValuationClient({ dealerAppMode = false, ownerAppMode = false, ownerAppBackHref = '/owner-app', breakdownAccess = false }: { breakdownAccess?: boolean; dealerAppMode?: boolean; ownerAppMode?: boolean; ownerAppBackHref?: string } = {}) {
   const dealerAppRoot = useDealerAppRoot();
   const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
 
@@ -2383,7 +2384,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const headlineDisplayValue = getVatDisplayValue(headlineValue, vatDisplayMode);
   const headlineVatLabel = getVatDisplayLabel(vatDisplayMode);
-  const canUseAdvancedAssumptions = isSignedIn && accountProfile?.accountStatus === 'active';
+  const canUseAdvancedAssumptions = breakdownAccess || (isSignedIn && accountProfile?.accountStatus === 'active');
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
   const dealerOwnedRegister = useMemo(
@@ -3951,7 +3952,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return;
     }
 
-    if (!isSignedIn && guestValuationCount >= 3) {
+    if (!isSignedIn && !breakdownAccess && guestValuationCount >= 3) {
       setMessage('You have used your 3 free estimates. Please create an account or log in to continue.');
       router.push('/auth#signup');
       return;
@@ -4022,7 +4023,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setReplacementPanelOpen(false);
       }
 
-      if (!isSignedIn) {
+      if (!isSignedIn && !breakdownAccess) {
         setGuestValuationCount(incrementGuestValuationCount());
       }
       setStep(6);
@@ -4402,6 +4403,35 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         { label: 'Confidence', value: generalSaleability.confidence },
       ]),
     };
+  }
+
+  const [breakdownLoading, setBreakdownLoading] = useState(false);
+
+  async function downloadBreakdown() {
+    const token = resultState?.result.breakdownToken;
+    if (!breakdownAccess || !token || breakdownLoading) return;
+    setBreakdownLoading(true);
+    setPdfError('');
+    try {
+      const response = await fetch('/api/valuation/breakdown', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Unable to download the breakdown.');
+      }
+      const url = URL.createObjectURL(await response.blob());
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Aim4price-estimate-breakdown.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : 'Unable to download the breakdown.');
+    } finally { setBreakdownLoading(false); }
   }
 
   async function downloadValuationPdf() {
@@ -5364,9 +5394,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function handleEstimateExperienceSelect(nextExperience: EstimateExperience) {
-    if (nextExperience !== 'basic') return;
+    if (nextExperience !== 'basic' && !(nextExperience === 'advanced' && breakdownAccess)) return;
 
-    setEstimateExperience('basic');
+    setEstimateExperience(nextExperience);
     setFlowMode('generic_specs');
     setEquipmentDropdownOpen(compactAppMode);
     setMessage('');
@@ -5851,9 +5881,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <button
               type="button"
-              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.estimateModeAdvancedCard} ${styles.estimateModeCardLocked}`}
-              disabled
-              aria-disabled="true"
+              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.estimateModeAdvancedCard} ${breakdownAccess ? styles.sectorBigCardLive : styles.estimateModeCardLocked}`}
+              onClick={() => handleEstimateExperienceSelect('advanced')}
+              disabled={!breakdownAccess}
+              aria-disabled={!breakdownAccess}
             >
               <span className={styles.sectorBigCardContent}>
                 <span className={styles.sectorCardTopRow}>
@@ -9054,7 +9085,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     </>
                   ) : (
                     <div className={styles.resultSignedOutNotice}>
-                      <p>Sign in to save this estimate or create a Marketplace advert.</p>
+                      <p>{breakdownAccess ? 'Download your estimate or its calculation breakdown.' : 'Sign in to save this estimate or create a Marketplace advert.'}</p>
                     </div>
                   )}
                   <button
@@ -9066,6 +9097,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   >
                     {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
                   </button>
+                  {breakdownAccess ? (
+                    <button type="button" className={styles.breakdownActionButton}
+                      data-result-action="breakdown" onClick={downloadBreakdown}
+                      disabled={breakdownLoading || valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading || !resultState?.result.breakdownToken}>
+                      {breakdownLoading ? 'Preparing breakdown...' : 'Breakdown'}
+                    </button>
+                  ) : null}
                 </>
               )}
             </div>

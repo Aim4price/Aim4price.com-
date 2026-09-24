@@ -1,3 +1,5 @@
+import { getAnyServerSession } from "../../lib/auth-session";
+import { canUseEstimateBreakdown } from "../../lib/estimate-breakdown-access";
 import { redirectAdminToAdmin } from "../../lib/account-access";
 import EstimateReportPhotos from "./EstimateReportPhotos";
 import ValuationClient from "./valuation-client";
@@ -8,13 +10,15 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function ValuationPage() {
-  await redirectAdminToAdmin();
+  const session = await getAnyServerSession();
+  const breakdownAccess = Boolean(session?.user?.id && canUseEstimateBreakdown(session.user.email));
+  if (!breakdownAccess) await redirectAdminToAdmin();
 
   return (
     <div className={badgeStyles.scope}>
       <ValuationFlowPolish />
       <EstimateReportPhotos />
-      <ValuationClient />
+      <ValuationClient breakdownAccess={breakdownAccess} />
     </div>
   );
 }

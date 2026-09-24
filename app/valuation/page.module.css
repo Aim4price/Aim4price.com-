@@ -14658,3 +14658,19 @@
 .appValuation:has(.appEstimateNav) .wizardCard {
   scroll-margin-top: calc(90px + env(safe-area-inset-top));
 }
+
+/* Private estimate diagnostic action. */
+.breakdownActionButton {
+  min-height: 46px;
+  padding: 12px 20px;
+  border: 1px solid #87682d;
+  border-radius: 12px;
+  background: #fff6e3;
+  color: #654a19;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.breakdownActionButton:hover:not(:disabled) { background: #f5e6c3; }
+.breakdownActionButton:focus-visible { outline: 3px solid #87682d; outline-offset: 3px; }
+.breakdownActionButton:disabled { opacity: .5; cursor: not-allowed; }
