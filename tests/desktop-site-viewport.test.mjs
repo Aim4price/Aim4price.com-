@@ -85,7 +85,7 @@ test('Get Estimate keeps the website viewport stable, uses R5k replacement slide
     readFile(valuationPolishStylesPath, 'utf8'),
   ]);
 
-  assert.match(pageSource, /<ValuationFlowPolish\s*\/>[\s\S]*?<ValuationClient\s*\/>/);
+  assert.match(pageSource, /<ValuationFlowPolish\s*\/>[\s\S]*?<ValuationClient\s+breakdownAccess=\{breakdownAccess\}\s*\/>/);
   assert.match(polishSource, /const WIZARD_CARD_ID = 'valuation-wizard-card'/);
   assert.match(polishSource, /originalScrollIntoView = wizard\.scrollIntoView;[\s\S]*?wizard\.scrollIntoView = \(\) => undefined/);
   assert.doesNotMatch(polishSource, /Element\.prototype\.scrollIntoView|HTMLElement\.prototype\.scrollIntoView/);

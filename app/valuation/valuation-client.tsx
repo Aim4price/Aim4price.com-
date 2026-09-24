@@ -1,4 +1,6 @@
 'use client';
+import EstimateTools from './EstimateTools';
+import type { PrivateEstimateSettings } from '../../lib/private-estimate-settings';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
 import DealerNav from '../dealer/dealer-nav';
 import OwnerAppNav from '../owner-app/owner-app-nav';
@@ -99,6 +101,7 @@ type ConditionModalView = 'choose' | 'basic' | 'advanced';
 type ExtrasModalView = 'choose' | 'options';
 
 type AdvancedAssumptionsRequest = {
+  privateSettings?: PrivateEstimateSettings | null;
   maxLifetimeUsage?: number | null;
   conditionFactorPercent?: number | null;
   dealerAssessment?: DealerAssessmentInput;
@@ -226,6 +229,8 @@ type MarketMatch = {
 };
 
 type GenericValuationResult = {
+  breakdowns?: import('../../lib/estimate-breakdown').EstimateBreakdownBundles;
+  estimateInput?: Record<string, unknown>;
   breakdownToken?: string;
   catalogModeUsed: CatalogMode;
   sector: { id: number; key: SectorKey; label: string };
@@ -1888,6 +1893,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [replacementRecalculateLoading, setReplacementRecalculateLoading] = useState(false);
   const [vatDisplayMode, setVatDisplayMode] = useState<VatDisplayMode>('excl');
   const [advancedPanelOpen, setAdvancedPanelOpen] = useState(false);
+  const [includeBreakdown, setIncludeBreakdown] = useState(false);
   const [advancedLifetimeUsage, setAdvancedLifetimeUsage] = useState('');
   const [advancedConditionFactorPercent, setAdvancedConditionFactorPercent] = useState('');
   const [advancedRecalculateLoading, setAdvancedRecalculateLoading] = useState(false);
@@ -2381,6 +2387,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     otherExtraName,
     basicUsageNotRequired,
   ]);
+  const activeBreakdown = breakdownAccess ? resultState?.result.breakdowns?.[replacementPriceBasis] : undefined;
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const headlineDisplayValue = getVatDisplayValue(headlineValue, vatDisplayMode);
   const headlineVatLabel = getVatDisplayLabel(vatDisplayMode);
@@ -3676,6 +3683,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const applied = getAppliedAdvancedAssumptionsFromState(resultState);
     const detailedAssessment = detailedAssessmentOpen ? buildDealerAssessmentRequest() : null;
     return {
+      privateSettings: applied?.privateSettings ?? null,
       maxLifetimeUsage: applied?.maxLifetimeUsage ?? null,
       conditionFactorPercent: detailedAssessment ? null : applied?.conditionFactorPercent ?? null,
       dealerAssessment: detailedAssessment,
@@ -4405,33 +4413,35 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     };
   }
 
-  const [breakdownLoading, setBreakdownLoading] = useState(false);
-
-  async function downloadBreakdown() {
-    const token = resultState?.result.breakdownToken;
-    if (!breakdownAccess || !token || breakdownLoading) return;
-    setBreakdownLoading(true);
-    setPdfError('');
+  async function applyPrivateEstimateSettings(privateSettings: PrivateEstimateSettings | null): Promise<boolean> {
+    if (!breakdownAccess || !resultState?.result.estimateInput) return false;
+    setAdvancedRecalculateLoading(true);
+    setAdvancedError('');
     try {
-      const response = await fetch('/api/valuation/breakdown', {
+      const input = resultState.result.estimateInput;
+      const advancedAssumptions = { ...getAppliedAdvancedAssumptionsFromState(resultState), privateSettings };
+      const response = await fetch(resultState.kind === 'tractor' ? '/api/tractor-valuations' : '/api/generic-valuations', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ ...input, saveModelCandidate: false,
+          userReplacementPriceExVat: replacementPriceBasis === 'user' ? input.userReplacementPriceExVat : null,
+          advancedAssumptions }),
       });
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Unable to download the breakdown.');
+      if (resultState.kind === 'tractor') {
+        const data = await response.json() as TractorValuationApiResponse;
+        if (!response.ok || !data.ok || !data.result) throw new Error(data.error || 'Unable to recalculate the estimate.');
+        setResultState({ kind: 'tractor', result: data.result });
+      } else {
+        const data = await response.json() as GenericValuationApiResponse;
+        if (!response.ok || !data.ok || !data.result) throw new Error(data.error || 'Unable to recalculate the estimate.');
+        setResultState({ kind: 'generic', result: data.result });
       }
-      const url = URL.createObjectURL(await response.blob());
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'Aim4price-estimate-breakdown.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      setSavedMarketplaceAssetId(null);
+      setSelectedMethod('aim4price');
+      return true;
     } catch (error) {
-      setPdfError(error instanceof Error ? error.message : 'Unable to download the breakdown.');
-    } finally { setBreakdownLoading(false); }
+      setAdvancedError(error instanceof Error ? error.message : 'Unable to recalculate the estimate.');
+      return false;
+    } finally { setAdvancedRecalculateLoading(false); }
   }
 
   async function downloadValuationPdf() {
@@ -4469,7 +4479,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       const payloadInput = document.createElement('input');
       payloadInput.type = 'hidden';
       payloadInput.name = 'payload';
-      payloadInput.value = JSON.stringify(payload);
+      payloadInput.value = JSON.stringify({ ...payload, estimateBreakdownToken: activeBreakdown?.token, includeBreakdown: Boolean(activeBreakdown && includeBreakdown) });
       form.appendChild(payloadInput);
 
       document.body.appendChild(form);
@@ -8778,7 +8788,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <button type="button" onClick={() => setSaleabilityOpen(true)}>Refine Saleability</button>
           </section>
 
-          <section className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
+          {breakdownAccess && activeBreakdown ? <EstimateTools report={activeBreakdown.report}
+            busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
+            error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}
+          {!breakdownAccess ? <section className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
             <button
               type="button"
               className={styles.resultAccordionToggle}
@@ -8854,7 +8867,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </div>
               </div>
             ) : null}
-          </section>
+          </section> : null}
 
 
           {(isGeneric && genericResult) || tractorResult ? (
@@ -9085,7 +9098,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     </>
                   ) : (
                     <div className={styles.resultSignedOutNotice}>
-                      <p>{breakdownAccess ? 'Download your estimate or its calculation breakdown.' : 'Sign in to save this estimate or create a Marketplace advert.'}</p>
+                      <p>{breakdownAccess ? 'Download your estimate, with an optional calculation breakdown.' : 'Sign in to save this estimate or create a Marketplace advert.'}</p>
                     </div>
                   )}
                   <button
@@ -9093,16 +9106,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     className={styles.resultPdfActionButton}
                     data-result-action="download-pdf"
                     onClick={downloadValuationPdf}
-                    disabled={pdfLoading || advancedRecalculateLoading || !resultState || headlineValue === null}
+                    disabled={pdfLoading || advancedRecalculateLoading || replacementRecalculateLoading || !resultState || headlineValue === null}
                   >
                     {pdfLoading ? 'Preparing PDF...' : 'Download PDF'}
                   </button>
-                  {breakdownAccess ? (
-                    <button type="button" className={styles.breakdownActionButton}
-                      data-result-action="breakdown" onClick={downloadBreakdown}
-                      disabled={breakdownLoading || valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading || !resultState?.result.breakdownToken}>
-                      {breakdownLoading ? 'Preparing breakdown...' : 'Breakdown'}
-                    </button>
+                  {breakdownAccess && activeBreakdown ? (
+                    <label className={styles.breakdownPdfOption}>
+                      <input type="checkbox" checked={includeBreakdown} disabled={pdfLoading || advancedRecalculateLoading}
+                        onChange={(event) => setIncludeBreakdown(event.target.checked)} />
+                      Include breakdown in PDF
+                    </label>
                   ) : null}
                 </>
               )}

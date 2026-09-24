@@ -3,12 +3,12 @@
 :global(html[data-background='dark']) .shell { padding-top: 1rem; }
 .hero { padding: 4rem 1rem 3.5rem; text-align: center; }
 .eyebrow { margin: 0 0 .75rem; color: #37775d; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-.hero h1 { margin: 0; font-size: clamp(2.8rem, 5vw, 4.6rem); line-height: 1.08; letter-spacing: -.055em; font-weight: 800; }
+.hero h1 { margin: 0; font-size: clamp(2.8rem, calc(var(--website-design-vw, 1vw) * 5), 4.6rem); line-height: 1.08; letter-spacing: -.055em; font-weight: 800; }
 .hero h1 span { color: #347959; }
 .intro { margin: 1.5rem auto 0; max-width: 43rem; line-height: 1.8; color: #52665c; }
 .section { margin-bottom: 3.5rem; scroll-margin-top: 2rem; }
 .sectionHeading { display: flex; justify-content: space-between; align-items: flex-end; gap: 1.5rem; margin-bottom: 1.5rem; }
-.sectionHeading h2, .closing h2 { margin: 0; font-size: clamp(1.5rem, 2.4vw, 2rem); line-height: 1.25; letter-spacing: -.04em; }
+.sectionHeading h2, .closing h2 { margin: 0; font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem); line-height: 1.25; letter-spacing: -.04em; }
 .sectionHeading p:not(.eyebrow), .enterprise p, .closing p { margin: .65rem 0 0; color: #52665c; line-height: 1.6; font-size: .9rem; }
 .billingControl { flex-shrink: 0; text-align: center; }
 .billingControl > span { display: block; margin-top: .6rem; font-size: .7rem; color: #52665c; }
@@ -21,7 +21,7 @@
 .planCard h3 { font-size: 1.5rem; letter-spacing: -.04em; margin: 0; }
 .planDescription { font-size: .85rem; color: #52665c; line-height: 1.65; min-height: 2.8rem; margin: .7rem 0 1.6rem; }
 .price { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem; margin: 0; }
-.price strong { font-size: clamp(2.1rem, 3vw, 2.7rem); letter-spacing: -.055em; font-weight: 750; line-height: 1.2; }
+.price strong { font-size: clamp(2.1rem, calc(var(--website-design-vw, 1vw) * 3), 2.7rem); letter-spacing: -.055em; font-weight: 750; line-height: 1.2; }
 .price > span { font-size: .8rem; color: #52665c; }
 .billingNote { margin: .55rem 0 1.4rem; color: #52665c; font-size: .76rem; line-height: 1.6; }
 .assetLimit { padding: .95rem 0; margin-bottom: 1rem; border-block: 1px solid #dce5de; font-size: .9rem; }
@@ -77,26 +77,26 @@
 :global(html[data-background='dark']) .hero, :global(html[data-background='dark']) .section > .sectionHeading { background: #fcfdfc; padding: 1.8rem; border-radius: 16px; }
 :global(html[data-background='dark']) .section > .footnote { color: #e0ebe4; }
 @media (max-width: 900px) {
-  .sectionHeading { align-items: flex-start; flex-direction: column; }
-  .planCard { padding: 1.25rem; }
-  .featureGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  :global(html:not(:has([data-website-canvas]))) .sectionHeading { align-items: flex-start; flex-direction: column; }
+  :global(html:not(:has([data-website-canvas]))) .planCard { padding: 1.25rem; }
+  :global(html:not(:has([data-website-canvas]))) .featureGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
-  .hero { padding: 2.5rem .5rem; }
-  .desktopBreak { display: none; }
-  .section { margin-bottom: 2.5rem; }
-  .planGrid, .partnerGrid, .allowanceGrid, .adminGrid, .fundedGrid { grid-template-columns: 1fr; }
-  .planCard { padding: 1.5rem; }
-  .planDescription { min-height: 0; }
-  .enterprise, .adminExtra, .closing { flex-direction: column; align-items: stretch; }
-  .featureGrid { grid-template-columns: 1fr; gap: 1.25rem; }
-  .included, .adminPanel, .closing { padding: 1.4rem; }
-  .allowanceGrid article + article { border-left: 0; border-top: 1px solid #d6e1d9; }
-  .serviceList div { flex-direction: column; gap: .2rem; }
-  .serviceList dd { text-align: left; }
-  .billingControl { width: 100%; }
-  .toggle { display: flex; }
-  .toggle button { flex: 1; }
+  :global(html:not(:has([data-website-canvas]))) .hero { padding: 2.5rem .5rem; }
+  :global(html:not(:has([data-website-canvas]))) .desktopBreak { display: none; }
+  :global(html:not(:has([data-website-canvas]))) .section { margin-bottom: 2.5rem; }
+  :global(html:not(:has([data-website-canvas]))) .planGrid, :global(html:not(:has([data-website-canvas]))) .partnerGrid, :global(html:not(:has([data-website-canvas]))) .allowanceGrid, :global(html:not(:has([data-website-canvas]))) .adminGrid, :global(html:not(:has([data-website-canvas]))) .fundedGrid { grid-template-columns: 1fr; }
+  :global(html:not(:has([data-website-canvas]))) .planCard { padding: 1.5rem; }
+  :global(html:not(:has([data-website-canvas]))) .planDescription { min-height: 0; }
+  :global(html:not(:has([data-website-canvas]))) .enterprise, :global(html:not(:has([data-website-canvas]))) .adminExtra, :global(html:not(:has([data-website-canvas]))) .closing { flex-direction: column; align-items: stretch; }
+  :global(html:not(:has([data-website-canvas]))) .featureGrid { grid-template-columns: 1fr; gap: 1.25rem; }
+  :global(html:not(:has([data-website-canvas]))) .included, :global(html:not(:has([data-website-canvas]))) .adminPanel, :global(html:not(:has([data-website-canvas]))) .closing { padding: 1.4rem; }
+  :global(html:not(:has([data-website-canvas]))) .allowanceGrid article + article { border-left: 0; border-top: 1px solid #d6e1d9; }
+  :global(html:not(:has([data-website-canvas]))) .serviceList div { flex-direction: column; gap: .2rem; }
+  :global(html:not(:has([data-website-canvas]))) .serviceList dd { text-align: left; }
+  :global(html:not(:has([data-website-canvas]))) .billingControl { width: 100%; }
+  :global(html:not(:has([data-website-canvas]))) .toggle { display: flex; }
+  :global(html:not(:has([data-website-canvas]))) .toggle button { flex: 1; }
 }
 
 .audienceButtons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; max-width: 38rem; margin: 2rem auto 0; }
@@ -105,8 +105,8 @@
 .audienceButtons button[aria-pressed='true'] { background: #24533e; border-color: #24533e; color: white; }
 .billingRow { display: flex; justify-content: flex-end; margin-bottom: 1.5rem; }
 @media (max-width: 640px) {
-  .audienceButtons { gap: .4rem; }
-  .audienceButtons button { padding: .8rem .4rem; font-size: .82rem; }
+  :global(html:not(:has([data-website-canvas]))) .audienceButtons { gap: .4rem; }
+  :global(html:not(:has([data-website-canvas]))) .audienceButtons button { padding: .8rem .4rem; font-size: .82rem; }
 }
 
 :global(html[data-background='dark']) .billingRow .billingControl > span { color: #e0ebe4; }
@@ -114,7 +114,7 @@
 /* Keep the first view short; reveal prices and detail only on request. */
 .shell { max-width: 68rem; }
 .hero { padding: 2rem 0 1.5rem; }
-.hero h1 { font-size: clamp(1.9rem, 3.5vw, 2.8rem); letter-spacing: -.04em; }
+.hero h1 { font-size: clamp(1.9rem, calc(var(--website-design-vw, 1vw) * 3.5), 2.8rem); letter-spacing: -.04em; }
 .intro { margin-top: .75rem; font-size: .9rem; line-height: 1.6; }
 .audienceButtons { margin-top: 1.25rem; max-width: 32rem; }
 .questions { display: grid; gap: .75rem; }
@@ -143,11 +143,11 @@
 .closing h2 { font-size: 1rem; letter-spacing: 0; }
 :global(html[data-background='dark']) .billingRow .billingControl > span { color: #52665c; }
 @media (max-width: 640px) {
-  .hero { padding: 1.5rem 0 1rem; }
-  .question > summary { padding: 1rem; }
-  .question > summary strong { font-size: .93rem; }
-  .answer { padding: 1rem; }
-  .closing { flex-direction: row; flex-wrap: wrap; gap: .75rem; }
+  :global(html:not(:has([data-website-canvas]))) .hero { padding: 1.5rem 0 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .question > summary { padding: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .question > summary strong { font-size: .93rem; }
+  :global(html:not(:has([data-website-canvas]))) .answer { padding: 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .closing { flex-direction: row; flex-wrap: wrap; gap: .75rem; }
 }
 .shell [hidden] { display: none !important; }
 .hero h1 { font-family: var(--font-heading, 'Montserrat'), sans-serif; font-weight: 800; letter-spacing: -.045em; }
@@ -157,7 +157,7 @@
 .accountChoices strong { font-size: 1.8rem; font-weight: 800; letter-spacing: -.035em; }
 .accountChoices span { font-size: .9rem; color: #52665c; }
 .accountChoices span:last-child { font-size: 1.4rem; color: #24533e; }
-@media (max-width: 640px) { .accountChoices { gap: .75rem; } .accountChoices button { padding: 1rem .5rem; min-height: 10rem; } .accountChoices strong { font-size: 1.4rem; } }
+@media (max-width: 640px) { :global(html:not(:has([data-website-canvas]))) .accountChoices { gap: .75rem; } :global(html:not(:has([data-website-canvas]))) .accountChoices button { padding: 1rem .5rem; min-height: 10rem; } :global(html:not(:has([data-website-canvas]))) .accountChoices strong { font-size: 1.4rem; } }
 .accountChoices span:last-child { font-size: .9rem; color: #52665c; }
 .accountChoices button { min-height: 11rem; }
 .detailsList summary { list-style: none; }

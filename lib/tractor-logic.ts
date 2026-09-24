@@ -29,6 +29,8 @@ export type RunValuationInput = {
 };
 
 export type Result = {
+  breakdowns?: import('./estimate-breakdown').EstimateBreakdownBundles;
+  estimateInput?: Record<string, unknown>;
   breakdownToken?: string;
   model: TractorCatalogRow;
   aim4priceValueExVat: number | null;
