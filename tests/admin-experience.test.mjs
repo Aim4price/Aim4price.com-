@@ -51,7 +51,7 @@ test("the users page separates navigation, account health and filtering", () => 
   assert.match(users, /<h1>Accounts<\/h1>/);
   assert.match(users, /aria-label="Account summary"/);
   assert.match(users, /accountSummary\.active/);
-  assert.match(users, /<AdminNavigation active="accounts" \/>/);
+  assert.match(users, /<AdminNavigation active="accounts" canGetEstimate=\{canGetEstimate\} \/>/);
   assert.match(users, /Clear filters/);
   assert.match(users, /setSignupDateFilter\("all"\)/);
   assert.match(userStyles, /\.userSummary/);

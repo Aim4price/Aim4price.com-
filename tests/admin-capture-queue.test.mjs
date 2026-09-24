@@ -52,7 +52,7 @@ test("all current admin navigation surfaces expose Capture Queue", () => {
   assert.match(adminNavigation, /href: "\/admin\/capture-queue"/);
   assert.match(adminNavigation, /label: "Capture Queue"/);
   assert.match(page, /<AdminNavigation active="capture-queue" \/>/);
-  assert.match(usersPage, /<AdminNavigation active="accounts" \/>/);
+  assert.match(usersPage, /<AdminNavigation active="accounts" canGetEstimate=\{canGetEstimate\} \/>/);
   assert.match(dashboardPage, /<AdminNavigation active="dashboard" \/>/);
   assert.match(lifecyclePage, /<AdminNavigation active="lifecycle" \/>/);
   assert.doesNotMatch(adminNavigation, /assistance-network/);

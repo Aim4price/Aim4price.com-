@@ -88,7 +88,7 @@ const ADMIN_LINKS: Array<{
   },
 ];
 
-export default function AdminNavigation({ active }: { active: AdminSection }) {
+export default function AdminNavigation({ active, canGetEstimate = false }: { active: AdminSection; canGetEstimate?: boolean }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const manageButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -196,6 +196,19 @@ export default function AdminNavigation({ active }: { active: AdminSection }) {
             </header>
 
             <div className={styles.optionGrid}>
+              {canGetEstimate ? (
+                <Link
+                  href="/valuation"
+                  prefetch={false}
+                  className={styles.link}
+                  onMouseEnter={() => router.prefetch("/valuation")}
+                  onFocus={() => router.prefetch("/valuation")}
+                  onClick={() => setIsOpen(false)}
+                >
+                  <strong>Get estimate</strong>
+                  <span aria-hidden="true">›</span>
+                </Link>
+              ) : null}
               {ADMIN_LINKS.map((item) => {
                 const isActive = item.key === active;
                 return (
