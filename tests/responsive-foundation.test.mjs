@@ -58,7 +58,7 @@ test('Home retains its eight-step scroll story at every width and respects reduc
   assert.match(hero, /getComputedStyle\(sticky\)\.top[\s\S]*?currentWebsiteScale\(\)/);
   assert.match(hero, /window\.addEventListener\('scroll', handleScroll, \{ passive: true \}\)/);
   assert.match(hero, /aim4price:canvas-geometry/);
-  assert.match(hero, /finishAutoplay[\s\S]*?updateStoryStep\(0\)/);
+  assert.match(hero, /finishAutoplay[\s\S]*?setIsTourFinished\(true\)/);
   assert.match(hero, /Math\.floor\(progress \* HERO_STORY_STEPS\.length\)/);
   assert.match(home, /grid-template-columns: minmax\(446\.4px, 1fr\) minmax\(619\.2px, 49\.5rem\)/);
   assert.match(home, /prefers-reduced-motion/);

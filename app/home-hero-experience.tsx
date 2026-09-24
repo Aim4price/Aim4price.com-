@@ -104,6 +104,7 @@ export default function HomeHeroExperience() {
   const [isDesktopStory, setIsDesktopStory] = useState(true);
   const [isManuallyControlled, setIsManuallyControlled] = useState(false);
   const [hasAutoplayFinished, setHasAutoplayFinished] = useState(false);
+  const [isTourFinished, setIsTourFinished] = useState(false);
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
@@ -114,11 +115,13 @@ export default function HomeHeroExperience() {
   const autoplayFinishedRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
   const scrollClaimRef = useRef(false);
+  const alignedScrollRef = useRef<number | null>(null);
 
   const updateStoryStep = useCallback((nextIndex: number) => {
     const safeIndex = clampStoryIndex(nextIndex);
     storyStepRef.current = safeIndex;
     setStoryStepIndex(safeIndex);
+    setIsTourFinished(false);
 
     if (safeIndex >= FEATURE_START_INDEX) {
       const questionIndex = safeIndex - FEATURE_START_INDEX;
@@ -133,14 +136,34 @@ export default function HomeHeroExperience() {
     setHasAutoplayFinished(true);
     setIsAutoplaying(false);
     setIsPaused(false);
-    updateStoryStep(0);
-  }, [updateStoryStep]);
+    setIsTourFinished(true);
+    setRemainingMs(0);
+  }, []);
 
   const claimManualControl = useCallback(() => {
     setIsManuallyControlled(true);
     setIsAutoplaying(false);
     setIsPaused(false);
   }, []);
+
+  const alignStoryScroll = useCallback((index: number) => {
+    // Discard an older scroll frame before resuming the selected card.
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
+    scrollClaimRef.current = false;
+    const section = sectionRef.current;
+    const sticky = stickyRef.current;
+    if (!isDesktopStory || !section || !sticky) return;
+    const sectionRect = section.getBoundingClientRect();
+    const stickyTop = (parseFloat(getComputedStyle(sticky).top) || 0) * currentWebsiteScale();
+    const trackStart = window.scrollY + sectionRect.top - stickyTop;
+    const travel = Math.max(1, sectionRect.height - sticky.getBoundingClientRect().height);
+    const top = Math.max(0, trackStart + travel * ((index + 0.5) / HERO_STORY_STEPS.length));
+    alignedScrollRef.current = top;
+    window.scrollTo({ top, behavior: 'instant' });
+  }, [isDesktopStory]);
 
   useEffect(() => {
     const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
@@ -293,6 +316,9 @@ export default function HomeHeroExperience() {
     };
 
     const handleScroll = () => {
+      const alignedTop = alignedScrollRef.current;
+      alignedScrollRef.current = null;
+      if (alignedTop !== null && Math.abs(window.scrollY - alignedTop) < 2) return;
       scheduleStorySync(true);
     };
     const handleResize = () => {
@@ -359,19 +385,9 @@ export default function HomeHeroExperience() {
       claimManualControl();
       updateStoryStep(nextIndex);
 
-      if (!isDesktopStory) return;
-      // Keep native vertical scrolling aligned with the selected card. Use the
-      // middle of its scroll interval to avoid rounding into a neighbouring step.
-      const sectionRect = section.getBoundingClientRect();
-      const stickyTop = (parseFloat(getComputedStyle(sticky).top) || 0) * currentWebsiteScale();
-      const trackStart = window.scrollY + sectionRect.top - stickyTop;
-      const travel = Math.max(1, sectionRect.height - sticky.getBoundingClientRect().height);
-      window.scrollTo({
-        top: Math.max(0, trackStart + travel * ((nextIndex + 0.5) / HERO_STORY_STEPS.length)),
-        behavior: 'instant',
-      });
+      alignStoryScroll(nextIndex);
     });
-  }, [claimManualControl, isDesktopStory, updateStoryStep]);
+  }, [alignStoryScroll, claimManualControl, isDesktopStory, updateStoryStep]);
 
   useEffect(() => {
     const length = OPENING_TAGLINE.join('').length;
@@ -381,6 +397,7 @@ export default function HomeHeroExperience() {
   }, [canAutoplay, storyStepIndex, isPaused, isPageVisible, isHeroVisible, typedCount]);
 
   const startStory = () => {
+    alignStoryScroll(canAutoplay ? 1 : FEATURE_START_INDEX);
     autoplayFinishedRef.current = false;
     setHasAutoplayFinished(false);
     setIsManuallyControlled(false);
@@ -394,6 +411,7 @@ export default function HomeHeroExperience() {
       setIsPaused(true);
       return;
     }
+    alignStoryScroll(storyStepRef.current);
     autoplayFinishedRef.current = false;
     setHasAutoplayFinished(false);
     setIsManuallyControlled(false);
@@ -402,8 +420,13 @@ export default function HomeHeroExperience() {
 
   const handleQuestionChange = (question: QuestionKey, index: number) => {
     claimManualControl();
+    if (isTourFinished) {
+      clockRef.current.remaining = HERO_FEATURE_DURATION_MS;
+      setRemainingMs(HERO_FEATURE_DURATION_MS);
+    }
     setActiveQuestion(question);
     updateStoryStep(FEATURE_START_INDEX + index);
+    alignStoryScroll(FEATURE_START_INDEX + index);
   };
 
   const handlePreviewInteraction = (source: 'pointer' | 'focus') => {
@@ -539,7 +562,7 @@ export default function HomeHeroExperience() {
               </button>
 
               <div ref={assetMotionRef} className={styles.assetStageMotion}>
-                {storyMode === 'features' && canAutoplay ? (
+                {storyMode === 'features' && canAutoplay && !isTourFinished ? (
                   <div className={styles.featureCountdown} data-feature-countdown>
                     <span>{Math.ceil(remainingMs / 1000)}s {isAutoplaying ? 'remaining' : 'paused'}</span>
                     <span className={styles.featureCountdownTrack} aria-hidden="true">
@@ -588,6 +611,18 @@ export default function HomeHeroExperience() {
                         <p>{feature.body}</p>
                         <p>{feature.detail}</p>
                       </div>
+                      {question === 'attention' && isActive && storyMode === 'features' ? (
+                        <div className={styles.featureEndActions}>
+                          <a href="#choose-role" className={styles.primaryCta} onClick={handleRoleSkip}>
+                            Get started
+                          </a>
+                          {canAutoplay ? (
+                            <button type="button" className={styles.secondaryCta} data-story-start onClick={startStory}>
+                              Replay tour
+                            </button>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
