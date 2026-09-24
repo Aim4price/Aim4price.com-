@@ -14,6 +14,8 @@ async function main() {
   await fs.mkdir(fixture,{recursive:true});
   await fs.writeFile(path.join(fixture,'page.tsx'), `'use client';
 import {useEffect,useState} from 'react';
+import ShareDestinationDialog from '../../../components/asset-register/ShareDestinationDialog';
+import InsideShareDialog from '../../../components/asset-register/InsideShareDialog';
 import AssetExternalShare from '../../../components/asset-register/AssetExternalShare';
 import GuestLeadComposer from '../../../components/asset-register/GuestLeadComposer';
 import GuestLeadActions from '../../../components/asset-register/GuestLeadActions';
@@ -24,7 +26,9 @@ export default function Validation(){
  const [hydrated,setHydrated]=useState(false);useEffect(()=>setHydrated(true),[]);
  const [mode,setMode]=useState('accept'),[access,setAccess]=useState<any>('sign-in'),[link,setLink]=useState(''),[selection,setSelection]=useState('one');
  const details={allowSubmissions:true,recipientName:'George Workshop',recipientEmail:'business@example.com',request:'Please quote for servicing.',replyName:'Asset Owner',replyEmail:'owner@example.com',replyPhone:'',allowReply:true};
- return <main data-hydrated={hydrated} style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external','find'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
+ return <main data-hydrated={hydrated} style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external','find','asset','register','umbrella'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
+ {['asset','register','umbrella'].includes(mode)&&<ShareDestinationDialog kind={mode as any} titleId="fixture-share" subject="Test asset" onClose={()=>setMode('find')} onInside={()=>setMode('inside')} onOutside={()=>setMode('external')}/>}
+ {mode==='inside'&&<InsideShareDialog titleId="fixture-inside" subject="Test asset" onClose={()=>setMode('find')} options={['finance','insurance','replacement_quote','license_renewal'].map((id,i)=>({id,title:['Finance & accounting','Insurance','Dealer','Licence renewal'][i],description:['Accountant, financier or bank','Insurer or broker','Share with a dealer','Renewal date required'][i],icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V8l8-5 8 5v12ZM9 20v-8h6v8"/></svg>,onSelect:()=>setMode('find')}))}/>}
  {mode==='accept'&&<BusinessAcceptanceForm/>}
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
  {mode==='recipient'&&<><button onClick={()=>setAccess('payment-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><GuestLeadActions token={'g'.repeat(43)} details={details} reports={[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}]} access={access}/></>}
@@ -99,6 +103,16 @@ export default function Validation(){
    await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('dialog[open]');
    await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
    assert.equal(requests.filter(r=>r.path.startsWith('/api/business-network/')).length,invitationRequests,'Inviting creates no database record and calls no invitation API');
+   for(const kind of ['asset','register','umbrella']){
+    await click(kind);await page.waitForSelector('[role=dialog]');
+    const measure=()=>page.$eval('[role=dialog] button:has(strong)',button=>{const title=button.querySelector('strong'),description=button.querySelector('small'),icon=button.querySelector('svg');const t=title.getBoundingClientRect(),d=description.getBoundingClientRect(),i=icon.getBoundingClientRect();return {title:getComputedStyle(title).fontSize,description:getComputedStyle(description).fontSize,gap:d.top-t.bottom,stacked:i.bottom<t.top,centred:Math.abs((i.left+i.right-t.left-t.right)/2)<3};});
+    const before=await measure();assert.ok(before.stacked&&before.centred,'Destination icon sits above its centred title');
+    await page.screenshot({path:path.join(output,`share-${kind}-${width}.png`),fullPage:true});
+    await page.$eval('[role=dialog] button:has(strong)',button=>button.click());await page.waitForFunction(()=>document.body.textContent.includes('Choose who to share with.'));
+    const after=await measure();assert.equal(before.title,after.title);assert.equal(before.description,after.description);assert.ok(after.gap<=6,'Title and description stay close');assert.ok(after.stacked&&after.centred);
+    await page.screenshot({path:path.join(output,`share-inside-${width}.png`),fullPage:true});
+    await page.click('[aria-label="Close share options"]');
+   }
    await click('compose');await page.waitForFunction(()=>document.querySelector('input[value="owner@example.com"]'));
    await labelInput('Your request','Please quote for servicing.');
    await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');
