@@ -1,3 +1,4 @@
+import type { PrivateEstimateSettings } from '../private-estimate-settings';
 import type { ConditionKey, TractorType } from '../tractor-data';
 import type { GpsType } from '../tractor-logic';
 import {
@@ -25,6 +26,7 @@ export type TractorValuationModel = {
 
 
 type TractorAssumptionOptions = {
+  privateSettings?: PrivateEstimateSettings | null;
   maxLifetimeHours?: number | null;
   conditionFactorOverride?: number | null;
 };
@@ -74,6 +76,7 @@ export function calculateTractorAim4priceDetails(
     maxLifetimeHours: options?.maxLifetimeHours ?? tractorLifetimeHours(model.tractorType, model.powerKw),
     floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
     conditionFactorOverride: options?.conditionFactorOverride,
+    privateSettings: options?.privateSettings,
   });
 }
 
@@ -98,6 +101,7 @@ export function calculateTractorFrontPtoValue(
     maxLifetimeHours: options?.maxLifetimeHours ?? tractorLifetimeHours(model.tractorType, model.powerKw),
     floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
     conditionFactorOverride: options?.conditionFactorOverride,
+    privateSettings: options?.privateSettings,
   }).finalValueExVat;
 }
 

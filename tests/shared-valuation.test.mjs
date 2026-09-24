@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import ts from 'typescript';
 
+import * as privateSettings from '../lib/private-estimate-settings.ts';
 import * as dealerAssessment from '../lib/valuation/dealer-assessment.ts';
 import * as valuationRules from '../lib/valuation/valuation-rules.ts';
 
@@ -18,6 +19,7 @@ const compiled = ts.transpileModule(source, {
 
 const moduleRecord = { exports: {} };
 const localRequire = (specifier) => {
+  if (specifier === '../private-estimate-settings') return privateSettings;
   if (specifier === './dealer-assessment') return dealerAssessment;
   if (specifier === './valuation-rules') return valuationRules;
   throw new Error(`Unexpected shared valuation import: ${specifier}`);

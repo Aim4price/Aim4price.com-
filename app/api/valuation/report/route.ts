@@ -1,3 +1,9 @@
+import { getAnyServerSession } from '../../../../lib/auth-session';
+import { canUseEstimateBreakdown } from '../../../../lib/estimate-breakdown-access';
+import { verifyEstimateBreakdown } from '../../../../lib/estimate-breakdown-token';
+import { appendEstimateBreakdownHtml } from '../../../../lib/estimate-breakdown-report';
+import { privateEstimateSettingsNotes } from '../../../../lib/private-estimate-settings';
+import type { EstimateBreakdown } from '../../../../lib/estimate-breakdown';
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
@@ -1034,9 +1040,29 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
 export async function POST(request: NextRequest) {
   try {
     const rawPayload = await readRequestPayload(request);
+    let breakdown: EstimateBreakdown | null = null;
+    if (isPlainRecord(rawPayload) && (rawPayload.estimateBreakdownToken || rawPayload.includeBreakdown === true)) {
+      const session = await getAnyServerSession();
+      if (!session?.user?.id || !canUseEstimateBreakdown(session.user.email)) {
+        return NextResponse.json({ error: 'Breakdown is not available for this account.' }, { status: 403 });
+      }
+      breakdown = verifyEstimateBreakdown(rawPayload.estimateBreakdownToken, session.user.id);
+      if (!breakdown) throw new Error('Run the estimate again to include its calculation details.');
+      if (readNumber(rawPayload.selectedValueExVat) !== breakdown.total) {
+        throw new Error('The breakdown does not match this estimate. Recalculate and try again.');
+      }
+    }
     const logoUrl = await getValuationReportLogoUrl(request);
     const payload = normalizePayload(rawPayload, logoUrl);
-    const html = renderValuationReportHtml(payload);
+    if (breakdown?.settings) {
+      payload.recordRows.push({ label: 'Estimate basis', value: 'Manually adjusted' });
+      for (const note of privateEstimateSettingsNotes(breakdown.settings)) {
+        const [label, value] = note.split(': ');
+        payload.recordRows.push({ label, value });
+      }
+    }
+    const baseHtml = renderValuationReportHtml(payload);
+    const html = breakdown ? appendEstimateBreakdownHtml(baseHtml, breakdown, isPlainRecord(rawPayload) && rawPayload.includeBreakdown === true) : baseHtml;
 
     return new NextResponse(html, {
       status: 200,

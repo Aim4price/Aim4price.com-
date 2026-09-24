@@ -1,3 +1,4 @@
+import type { PrivateEstimateSettings } from './private-estimate-settings';
 import { getBasicCatalogueFamily } from './basic-catalogue';
 import { resolveCatalogueGuide } from './basic-catalogue-guide';
 import { BASIC_USAGE_MODE_KEYS, resolveBasicUsage } from './basic-usage';
@@ -147,6 +148,8 @@ export type GenericValuationInput = {
 };
 
 export type GenericValuationResult = {
+  breakdowns?: import('./estimate-breakdown').EstimateBreakdownBundles;
+  estimateInput?: Record<string, unknown>;
   breakdownToken?: string;
   catalogModeUsed: CatalogMode;
   sector: { id: number; key: SectorKey; label: string };
@@ -466,7 +469,7 @@ function specsUseExplicitPercentageBasis(specs: Record<string, unknown>): boolea
 }
 
 function resolveMaxLifetimeHours(input: DepreciationInput): number {
-  const advancedLifetime = positiveUsageAmount(input.advancedAssumptions?.maxLifetimeUsage);
+  const advancedLifetime = positiveUsageAmount(input.advancedAssumptions?.privateSettings?.lifetimeUsage ?? input.advancedAssumptions?.maxLifetimeUsage);
   if (advancedLifetime !== null) return advancedLifetime;
   if (input.basicLifetime !== undefined) return input.basicLifetime;
 
@@ -561,6 +564,7 @@ function shouldBlendAgeIntoPercentageDepreciation(input: DepreciationInput): boo
 }
 
 function calculateAgeAwarePercentValue(input: {
+  privateSettings?: PrivateEstimateSettings | null;
   replacementPriceExVat: number;
   percentUsed: number;
   yearModel: number;
@@ -571,9 +575,9 @@ function calculateAgeAwarePercentValue(input: {
   marketabilityFactor?: number | null;
 }): AgeAwarePercentValueResult {
   const replacementPriceExVat = Math.max(0, Number(input.replacementPriceExVat) || 0);
-  const usageDepPct = clamp(Math.round(Number(input.percentUsed) || 0), 0, 100);
+  const usageDepPct = input.privateSettings?.usageDepreciationPercent ?? clamp(Math.round(Number(input.percentUsed) || 0), 0, 100);
   const remainingPercent = 100 - usageDepPct;
-  const ageDepPct = input.includeAgeDepreciation ? tractorAgeDepPct(input.yearModel) : null;
+  const ageDepPct = input.privateSettings?.ageDepreciationPercent ?? (input.includeAgeDepreciation ? tractorAgeDepPct(input.yearModel) : null);
   const averageDepPct = ageDepPct === null ? usageDepPct : Math.round((ageDepPct + usageDepPct) / 2);
   const baseValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(baseValueExVat, input.condition, input.conditionFactorOverride);
@@ -650,7 +654,7 @@ function resolveDepreciation(input: DepreciationInput): {
   // a meaningful measurement. Keep the shared age, condition, marketability and
   // salvage mathematics, but do not invent a percentage-worked fallback.
   if (input.valuationMode === 'year_condition') {
-    const ageDepPct = input.yearModelUnknown ? 0 : tractorAgeDepPct(yearForDepreciation);
+    const ageDepPct = input.advancedAssumptions?.privateSettings?.ageDepreciationPercent ?? (input.yearModelUnknown ? 0 : tractorAgeDepPct(yearForDepreciation));
     const ageAdjustedValue = input.replacementPrice * (1 - ageDepPct / 100);
     const conditionAdjustedValue = applyCondition(
       ageAdjustedValue,
@@ -693,6 +697,7 @@ function resolveDepreciation(input: DepreciationInput): {
       condition: input.condition,
       floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
       conditionFactorOverride: getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
+      privateSettings: input.advancedAssumptions?.privateSettings,
       marketabilityFactor: marketability.factor,
     });
 
@@ -703,7 +708,7 @@ function resolveDepreciation(input: DepreciationInput): {
       lifeRemainingPercent: calculated.remainingPercent,
       estimatedHours: null,
       maxLifetimeHours: null,
-      ageDepPct: calculated.ageDepPct,
+      ageDepPct: input.yearModelUnknown && input.advancedAssumptions?.privateSettings?.ageDepreciationPercent == null ? null : calculated.ageDepPct,
       usageDepPct: calculated.usageDepPct,
       averageDepPct: calculated.averageDepPct,
       marketabilityFactor: marketability.factor,
@@ -729,6 +734,7 @@ function resolveDepreciation(input: DepreciationInput): {
         maxLifetimeHours,
         floorPercent: resolveResidualFloorPercent(input, DEFAULT_ENGINE_FLOOR_PERCENT),
         conditionFactorOverride: getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
+        privateSettings: input.advancedAssumptions?.privateSettings,
         marketabilityFactor: marketability.factor,
       });
       const lifeWorkedPercent = clamp(Math.round((knownHours / maxLifetimeHours) * 100), 0, 100);
@@ -740,7 +746,7 @@ function resolveDepreciation(input: DepreciationInput): {
         lifeRemainingPercent: 100 - lifeWorkedPercent,
         estimatedHours: knownHours,
         maxLifetimeHours,
-        ageDepPct: calculated.ageDepPct,
+        ageDepPct: input.yearModelUnknown && input.advancedAssumptions?.privateSettings?.ageDepreciationPercent == null ? null : calculated.ageDepPct,
         usageDepPct: calculated.usageDepPct,
         averageDepPct: calculated.averageDepPct,
         marketabilityFactor: marketability.factor,
@@ -762,6 +768,7 @@ function resolveDepreciation(input: DepreciationInput): {
       maxLifetimeHours,
       floorPercent: resolveResidualFloorPercent(input, DEFAULT_ENGINE_FLOOR_PERCENT),
       conditionFactorOverride: getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
+      privateSettings: input.advancedAssumptions?.privateSettings,
       marketabilityFactor: marketability.factor,
     });
 
@@ -772,7 +779,7 @@ function resolveDepreciation(input: DepreciationInput): {
       lifeRemainingPercent: 100 - lifeWorkedPercent,
       estimatedHours,
       maxLifetimeHours,
-      ageDepPct: calculated.ageDepPct,
+      ageDepPct: input.yearModelUnknown && input.advancedAssumptions?.privateSettings?.ageDepreciationPercent == null ? null : calculated.ageDepPct,
       usageDepPct: calculated.usageDepPct,
       averageDepPct: calculated.averageDepPct,
       marketabilityFactor: marketability.factor,
@@ -792,6 +799,7 @@ function resolveDepreciation(input: DepreciationInput): {
     condition: input.condition,
     floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
     conditionFactorOverride: getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
+    privateSettings: input.advancedAssumptions?.privateSettings,
     marketabilityFactor: marketability.factor,
   });
 

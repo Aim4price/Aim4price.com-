@@ -1,3 +1,4 @@
+import { hasPrivateEstimateSettingsRequest } from '../../../lib/private-estimate-settings';
 import { canUseEstimateBreakdown } from '../../../lib/estimate-breakdown-access';
 import { signEstimateBreakdown } from '../../../lib/estimate-breakdown-token';
 import { genericEstimateBreakdown } from '../../../lib/estimate-breakdown';
@@ -89,7 +90,8 @@ function advancedAccessDenied() {
 
 function isAdvancedValidationError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
-  return error.message.startsWith('Expected lifetime')
+  return error.message.startsWith('Estimate settings')
+    || error.message.startsWith('Expected lifetime')
     || error.message.startsWith('Condition retained value')
     || error.message.includes('detailed asset assessment')
     || error.message.startsWith('Popularity must');
@@ -107,6 +109,13 @@ async function getUsageUserId(): Promise<string | null> {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as Body;
+    if (hasPrivateEstimateSettingsRequest(body.advancedAssumptions)) {
+      const session = await getAnyServerSession();
+      if (!session?.user?.id || !canUseEstimateBreakdown(session.user.email)) {
+        return NextResponse.json({ ok: false, error: 'Estimate settings are not available for this account.' }, { status: 403 });
+      }
+    }
+
     const sectorKey = String(body.sectorKey ?? '').trim();
     const familyKey = String(body.familyKey ?? '').trim();
     const brandSlug = String(body.brandSlug ?? '').trim();
@@ -159,7 +168,15 @@ export async function POST(request: NextRequest) {
     const result = await runGenericValuation(valuationInput);
     const breakdownSession = await getAnyServerSession();
     if (breakdownSession?.user?.id && canUseEstimateBreakdown(breakdownSession.user.email)) {
-      result.breakdownToken = signEstimateBreakdown(genericEstimateBreakdown(result), breakdownSession.user.id);
+      result.estimateInput = { ...valuationInput };
+      result.breakdowns = {};
+      for (const [basis, calculation] of [['aim4price', result.aim4priceReplacementCalculation], ['user', result.userReplacementCalculation]] as const) {
+        if (!calculation) continue;
+        const report = genericEstimateBreakdown({ ...result, selectedCalculation: calculation });
+        const token = signEstimateBreakdown(report, breakdownSession.user.id);
+        if (report && token) result.breakdowns[basis] = { report, token };
+      }
+      result.breakdownToken = result.breakdowns[result.replacementPriceBasis]?.token;
     }
 
     await recordGenericValuationForAdminSafely({

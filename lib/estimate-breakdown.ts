@@ -1,10 +1,19 @@
+import { privateEstimateSettingsNotes, type PrivateEstimateSettings } from './private-estimate-settings';
 import type { GenericValuationResult } from './generic-valuation';
 import type { Result, RunValuationInput } from './tractor-logic';
 import { dealerConditionBreakdownNotes } from './valuation/dealer-assessment';
 import { calculateEngineHoursValue, tractorLifetimeHours, getValuationConditionFactorOverride } from './valuation/shared';
 
 export type BreakdownRow = { label: string; percent: number | null; change: number; value: number };
-export type EstimateBreakdown = { title: string; notes: string[]; rows: BreakdownRow[]; total: number };
+export type EstimateBreakdown = {
+  title: string; notes: string[]; rows: BreakdownRow[]; total: number;
+  usageUnit?: string;
+  settings?: PrivateEstimateSettings | null;
+  defaults?: PrivateEstimateSettings;
+};
+export type EstimateBreakdownBundle = { report: EstimateBreakdown; token: string };
+export type EstimateBreakdownBundles = Partial<Record<'aim4price' | 'user', EstimateBreakdownBundle>>;
+
 
 function calculationRows(start: number, age: number | null, usage: number | null, depreciation: number,
   condition: number, popularity: number, marketability: number, final: number, salvage: boolean): BreakdownRow[] {
@@ -27,17 +36,22 @@ export function genericEstimateBreakdown(result: GenericValuationResult): Estima
   const c = result.selectedCalculation;
   if (!c || c.replacementPriceExVat == null || c.aim4priceValueExVat == null || c.averageDepPct == null) return null;
   const condition = getValuationConditionFactorOverride(result.condition, result.advancedAssumptions
-    ? { ...result.advancedAssumptions, popularityStars: null } : null);
+    ? { ...result.advancedAssumptions, popularityStars: null, privateSettings: result.advancedAssumptions.privateSettings ? { ...result.advancedAssumptions.privateSettings, popularityPercent: 100 } : null } : null);
   const combined = getValuationConditionFactorOverride(result.condition, result.advancedAssumptions);
   return {
     title: [result.brand.name, result.typedModelName || result.family.label].join(' '),
+    usageUnit: result.family.usageMetricType === 'km' ? 'kilometres' : 'hours',
+    settings: result.advancedAssumptions?.privateSettings ?? null,
+    defaults: { conditionPercent: condition * 100, popularityPercent: combined / condition * 100,
+      lifetimeUsage: c.maxLifetimeHours ?? null, ageDepreciationPercent: c.ageDepPct, usageDepreciationPercent: c.usageDepPct },
     notes: [
+      ...privateEstimateSettingsNotes(result.advancedAssumptions?.privateSettings),
       `Age depreciation: ${c.ageDepPct == null ? 'not applied' : `${c.ageDepPct}%`}. Usage depreciation: ${c.usageDepPct == null ? 'not applied' : `${c.usageDepPct}%`}.`,
       c.ageDepPct != null && c.usageDepPct != null
         ? `Applied depreciation: round((${c.ageDepPct}% + ${c.usageDepPct}%) / 2) = ${c.averageDepPct}%.`
         : `Applied depreciation: ${c.averageDepPct}%.`,
       ...(c.maxLifetimeHours ? [`Expected lifetime: ${c.maxLifetimeHours.toLocaleString('en-ZA')}; usage used: ${c.estimatedHours?.toLocaleString('en-ZA') ?? 'percentage basis'}.`] : []),
-      ...(result.advancedAssumptions?.dealerAssessment ? dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment) : []),
+      ...(result.advancedAssumptions?.dealerAssessment && result.advancedAssumptions?.privateSettings?.conditionPercent == null ? dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment) : []),
       ...(c.isSalvageEstimate ? [`Salvage floor: ${c.salvagePercent}% of the starting replacement price.`] : []),
     ],
     rows: calculationRows(c.replacementPriceExVat, c.ageDepPct, c.usageDepPct, c.averageDepPct,
@@ -48,21 +62,22 @@ export function genericEstimateBreakdown(result: GenericValuationResult): Estima
 
 export function tractorEstimateBreakdown(result: Result, input: RunValuationInput): EstimateBreakdown {
   const condition = getValuationConditionFactorOverride(input.condition, result.advancedAssumptions
-    ? { ...result.advancedAssumptions, popularityStars: null } : null);
+    ? { ...result.advancedAssumptions, popularityStars: null, privateSettings: result.advancedAssumptions.privateSettings ? { ...result.advancedAssumptions.privateSettings, popularityPercent: 100 } : null } : null);
   const combined = getValuationConditionFactorOverride(input.condition, result.advancedAssumptions);
   const start = (result.replacementPriceUsedExVat ?? 0) + (result.otherExtraReplacementPriceExVat ?? 0);
   const c = calculateEngineHoursValue({ replacementPriceExVat: start, yearModel: Math.round(input.year),
     hours: Math.max(0, Number(input.hours) || 0), condition: input.condition,
     maxLifetimeHours: result.maxLifetimeHours ?? tractorLifetimeHours(result.model.tractorType, result.model.powerKw),
-    conditionFactorOverride: combined });
+    conditionFactorOverride: combined, privateSettings: result.advancedAssumptions?.privateSettings });
   const rows = calculationRows(start, c.ageDepPct, c.usageDepPct, c.averageDepPct, condition, combined / condition, 1, c.finalValueExVat, c.isSalvageEstimate);
   let total = c.finalValueExVat;
   const notes = [
+    ...privateEstimateSettingsNotes(result.advancedAssumptions?.privateSettings),
     `Age depreciation: ${c.ageDepPct}%. Usage depreciation: ${c.usageDepPct}%.`,
     `Applied depreciation: round((${c.ageDepPct}% + ${c.usageDepPct}%) / 2) = ${c.averageDepPct}%.`,
     `Expected lifetime: ${result.maxLifetimeHours} hours; usage used: ${c.hoursUsed} hours.`,
   ];
-  if (result.advancedAssumptions?.dealerAssessment) notes.push(...dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment));
+  if (result.advancedAssumptions?.dealerAssessment && result.advancedAssumptions?.privateSettings?.conditionPercent == null) notes.push(...dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment));
   if (c.isSalvageEstimate) notes.push(`Salvage floor: ${c.salvagePercent}% of the starting replacement price.`);
   if (result.otherExtraReplacementPriceExVat) notes.push('Starting price includes the named other extra, depreciated with the asset.');
   for (const [label, replacement, current] of [
@@ -77,5 +92,10 @@ export function tractorEstimateBreakdown(result: Result, input: RunValuationInpu
   }
   if (result.frontPtoReplacementPriceExVat) notes.push('PTO uses the same age, usage and condition rules, with its own salvage floor.');
   if (result.frontLoaderReplacementPriceExVat || result.gpsReplacementPriceExVat) notes.push('Loader / GPS: 10% depreciation per year since installation, then the salvage floor.');
-  return { title: `${result.model.brandName} ${result.model.modelName}`, notes, rows, total: result.aim4priceValueExVat ?? total };
+  return { title: `${result.model.brandName} ${result.model.modelName}`, notes, rows,
+    usageUnit: 'hours',
+    settings: result.advancedAssumptions?.privateSettings ?? null,
+    defaults: { conditionPercent: condition * 100, popularityPercent: combined / condition * 100,
+      lifetimeUsage: result.maxLifetimeHours, ageDepreciationPercent: c.ageDepPct, usageDepreciationPercent: c.usageDepPct },
+    total: result.aim4priceValueExVat ?? total };
 }
