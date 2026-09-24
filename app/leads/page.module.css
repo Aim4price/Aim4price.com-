@@ -5761,6 +5761,19 @@
 .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody > * {
   min-width: 0;
 }
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody [class*='assetDetailsPanel'] {
+  align-content: center;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadPreviewWrap {
+  align-self: center;
+  justify-self: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadPreviewOpenLabel {
+  left: 0.7rem;
+  right: auto;
+}
 .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody [class*='assetDetailsGrid'] {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)) !important;
 }
@@ -5770,10 +5783,25 @@
   height: auto;
 }
 .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody [class*='assetDetailRow'] > :is(span, strong) {
+  display: flex;
+  align-items: center;
+  padding-block: 0.6rem;
   min-width: 0;
   white-space: normal;
   overflow-wrap: anywhere;
   line-height: 1.4;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody [class*='assetDetailRow'] > strong {
+  justify-content: center;
+  text-align: center;
+}
+.dealerDesktopLeads:not(.dealerAppLeads) .leadAssetBody [class*='assetRegistrationRow'] > strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 .dealerDesktopLeads:not(.dealerAppLeads) .leadAssetIdentifier {
   min-width: 0;
