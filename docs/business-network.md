@@ -17,19 +17,15 @@ The form asks for business name, contact name, email, optional phone and consent
 
 In the admin directory, expand **Business acceptances**, choose **Prepare listing**, complete the listing, save and then **Approve and publish**. Refresh acceptances after someone submits. Submitted email addresses are not verified by this form: check their details before publication.
 
-## Send an outside lead
+## Share outside Aim4price
 
-1. As an owner, select saved assets and share outside Aim4price or choose an external directory business.
-2. Select **Lead page · protected reports** (the default for an external business).
-3. Choose photos and use **Add report** to select the PDFs you want to share.
-4. Enter the recipient email, request and reply details. You can turn the reply buttons off.
-5. Choose **Create lead link**, preview it, then choose email or WhatsApp. Your own email/WhatsApp app opens; you send the message yourself.
+1. Select assets and choose **Outside Aim4price**, or choose an external directory business.
+2. Optionally enable **Include photos** and use **Add report** to select PDFs.
+3. Choose **Email** or **WhatsApp** and send the asset details using your own app.
 
-The basic asset snapshot, included photos and request are visible to anyone with the link. **Manage · shared reports** lists only the PDFs you selected. PDF files stay on Aim4price; this mode does not attach them to email/WhatsApp.
+This is the standard message-and-attachments flow. It does not create or include an asset-page or lead-page link. Selected files are handed to the device share menu where supported; unsupported browsers explain how to continue without silently dropping attachments. Internal Aim4price businesses retain their existing lead flow.
 
-Each request has its own recipient-specific link. Links do not expire automatically, but the owner can disable them under **Previously shared leads**. Deleting or transferring any included asset also makes the page unavailable. These are saved snapshots: create a new lead to share updated information. Previously downloaded copies cannot be recalled.
-
-**Message & attachments** remains available for ordinary outside sharing. Internal Aim4price businesses keep their existing lead flow.
+The guest-lead information below describes previously created links, which remain supported.
 
 ## What the recipient sees
 
