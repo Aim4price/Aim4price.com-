@@ -14669,3 +14669,33 @@
 
 /* Keep one footer divider after adopting the shared modal action row. */
 .specificationModal .specificationModalFooter { padding-top: 0; border-top: 0; }
+
+/* Roomier condition choices, matching the Basic / Advanced selection cards. */
+.conditionOptionsModal.conditionOptionsModal {
+  width: min(1120px, calc(var(--website-design-width, 100%) - 32px));
+}
+.conditionOptionsModal .conditionQuestionCard .dealerAssessmentOption {
+  min-height: 84px;
+  padding: 16px 12px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.conditionOptionsModal .conditionQuestionProgressTop strong {
+  font-size: 1.1rem;
+  line-height: 1.4;
+}
+/* Each extra card has enough space for its one-line description. */
+.specChoiceModal .basicExtrasGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.specChoiceModal .basicExtrasGrid .choiceCard:only-child { grid-column: 1 / -1; }
+.specChoiceModal .basicExtrasGrid .choiceCardNote { white-space: normal; text-wrap: pretty; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .specChoiceModal .basicExtrasGrid {
+    grid-template-columns: 1fr;
+  }
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionOptionsModal .conditionQuestionCard .dealerAssessmentOption {
+    white-space: normal;
+  }
+}
