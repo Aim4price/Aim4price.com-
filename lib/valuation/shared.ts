@@ -1,4 +1,4 @@
-import { normalizePrivateEstimateSettings, hasPrivateEstimateSettingsRequest, type PrivateEstimateSettings } from '../private-estimate-settings';
+import { annualDepreciationPercent, weightedDepreciationPercent, normalizePrivateEstimateSettings, hasPrivateEstimateSettingsRequest, type PrivateEstimateSettings } from '../private-estimate-settings';
 import type { ConditionKey, TractorType } from '../tractor-data';
 import {
   applyPopularityToConditionFactor,
@@ -306,17 +306,11 @@ export function fallbackEngineHours(
   return Math.round(maxLifetimeHours * clamp(fallbackLifetimeUsedPercent, 0, 1));
 }
 
-export function tractorAgeDepPct(yearModel: number, baseYear = currentBaseYear()): number {
+export function tractorAgeDepPct(yearModel: number, baseYear = currentBaseYear(), settings?: PrivateEstimateSettings | null): number {
   const safeYear = Number.isFinite(yearModel) ? Math.round(yearModel) : baseYear;
   const age = Math.max(0, baseYear - safeYear);
 
-  let depreciation = 0;
-  if (age >= 1) depreciation += 20;
-  if (age >= 2) depreciation += 15;
-  if (age >= 3) depreciation += 10;
-  if (age >= 4) depreciation += (age - 3) * 2.5;
-
-  return clamp(depreciation, 0, 100);
+  return annualDepreciationPercent(age, settings);
 }
 
 export function engineUsageDepPct(hours: number, maxLifetimeHours: number): number {
@@ -334,9 +328,9 @@ export function calculateEngineHoursValue(input: EngineHoursMethodInput): Engine
     ? Math.round(hoursProvided)
     : fallbackEngineHours(maxLifetimeHours, input.fallbackLifetimeUsedPercent);
 
-  const ageDepPct = input.privateSettings?.ageDepreciationPercent ?? (input.includeAgeDepreciation === false ? 0 : tractorAgeDepPct(input.yearModel, input.baseYear ?? currentBaseYear()));
+  const ageDepPct = input.privateSettings?.ageDepreciationPercent ?? (input.includeAgeDepreciation === false ? 0 : tractorAgeDepPct(input.yearModel, input.baseYear ?? currentBaseYear(), input.privateSettings));
   const usageDepPct = input.privateSettings?.usageDepreciationPercent ?? engineUsageDepPct(hoursUsed, maxLifetimeHours);
-  const averageDepPct = input.includeAgeDepreciation === false && input.privateSettings?.ageDepreciationPercent == null ? usageDepPct : Math.round((ageDepPct + usageDepPct) / 2);
+  const averageDepPct = input.includeAgeDepreciation === false && input.privateSettings?.ageDepreciationPercent == null ? usageDepPct : weightedDepreciationPercent(ageDepPct, usageDepPct, input.privateSettings);
   const depreciatedValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(depreciatedValueExVat, input.condition, input.conditionFactorOverride);
   const marketabilityFactor = clamp(Number(input.marketabilityFactor) || 1, 0, 1);

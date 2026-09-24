@@ -210,3 +210,66 @@ test('generic settings cover hours, kilometres, percentages, unknown ages and no
   assert.equal(unknown.ageDepPct, null);
   assert.equal(unknown.averageDepPct, 25);
 });
+
+test('annual schedule adds year 1–5 and repeats onward, with zero and caps', () => {
+  const { annualDepreciationPercent, weightedDepreciationPercent } = require('../lib/private-estimate-settings.ts');
+  const settings = normalizePrivateEstimateSettings({ year1Percent: 10, year2Percent: 8, year3Percent: 6, year4Percent: 4, year5Percent: 2, onwardPercent: 1 });
+  assert.deepEqual([0,1,2,3,4,5,6,10].map(age => annualDepreciationPercent(age, settings)), [0,10,18,24,28,30,31,35]);
+  assert.equal(annualDepreciationPercent(200, settings), 100);
+  assert.equal(annualDepreciationPercent(1, normalizePrivateEstimateSettings({ year1Percent: 0 })), 0);
+  for (const ageWeightPercent of [0,25,50,75,100]) {
+    const custom = normalizePrivateEstimateSettings({ ...settings, ageWeightPercent });
+    assert.equal(weightedDepreciationPercent(20, 60, custom), 60 - ageWeightPercent * .4);
+    assert.equal(weightedDepreciationPercent(null, 60, custom), 60);
+  }
+  for (const key of ['year1Percent','year2Percent','year3Percent','year4Percent','year5Percent','onwardPercent','ageWeightPercent']) {
+    for (const value of [-1,101,Infinity,'10']) assert.throws(() => normalizePrivateEstimateSettings({ [key]: value }));
+  }
+});
+
+test('yearly rates and age weighting reach basic and advanced valuation paths', () => {
+  const settings = normalizePrivateEstimateSettings({ year1Percent: 10, year2Percent: 8, year3Percent: 6, year4Percent: 4, year5Percent: 2, onwardPercent: 1, ageWeightPercent: 75, conditionPercent: 80, popularityPercent: 110 });
+  const baseYear = new Date().getFullYear();
+  const conditionFactorOverride = getValuationConditionFactorOverride('good', { privateSettings: settings });
+  const engine = calculateEngineHoursValue({ replacementPriceExVat: 100000, yearModel: baseYear - 6, hours: 4000, maxLifetimeHours: 10000, condition: 'good', conditionFactorOverride, privateSettings: settings });
+  assert.equal(engine.ageDepPct, 31);
+  assert.equal(engine.averageDepPct, 33);
+  assert.equal(engine.finalValueExVat, 58960);
+  const input = { sectorKey: 'agricultural', replacementPrice: 100000, year: baseYear - 6, yearModelUnknown: false,
+    usageAmount: 4000, lifeWorkedPercent: 40, usageMetricType: 'hours', valuationMode: 'engine_hours', condition: 'good', isPropelled: true,
+    familyKey: 'field-tractor', specsJson: {}, basicLifetime: 10000, advancedAssumptions: { privateSettings: settings }, replacementPriceBasis: 'user' };
+  for (const changes of [{}, { usageMetricType: 'km' }, { valuationMode: 'percent_used', isPropelled: false }]) {
+    const result = genericEngine.buildCalculation({ ...input, ...changes });
+    assert.equal(result.ageDepPct, 31);
+    assert.equal(result.averageDepPct, 33);
+    assert.equal(result.aim4priceValueExVat, 58960);
+  }
+  const ageOnly = genericEngine.buildCalculation({ ...input, valuationMode: 'year_condition' });
+  assert.equal(ageOnly.averageDepPct, 31);
+  const unknown = genericEngine.buildCalculation({ ...input, yearModelUnknown: true });
+  assert.equal(unknown.ageDepPct, null);
+  assert.equal(unknown.averageDepPct, 40);
+  const report = genericEstimateBreakdown({ ...generic(), advancedAssumptions: { privateSettings: settings }, selectedCalculation: { ...generic().selectedCalculation, ...engine, aim4priceValueExVat: engine.finalValueExVat, marketabilityFactor: 1 } });
+  assert.match(report.notes.join('\n'), /75% age weight.*25% usage weight/);
+  assert.equal(report.rows.at(-1).value, engine.finalValueExVat);
+});
+
+test('both approved accounts can download signed custom reports with form payloads', async () => {
+  for (const email of ['aim4price@gmail.com', 'kallageldenhuys@gmail.com']) {
+    session = { user: { id: email, email } };
+    const report = genericEstimateBreakdown(generic());
+    const form = new FormData();
+    form.set('payload', JSON.stringify({ selectedValueExVat: report.total, estimateBreakdownToken: signEstimateBreakdown(report, email), includeBreakdown: true }));
+    const response = await reportRoute.POST(new NextRequest('https://aim4price.test/api/valuation/report', { method: 'POST', body: form }));
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /estimateBreakdownPage/);
+  }
+});
+
+if (process.env.BREAKDOWN_HTML_SAMPLE) test('render full yearly settings sample', async () => {
+  session = { user: { id: 'allowed', email: 'aim4price@gmail.com' } };
+  const settings = normalizePrivateEstimateSettings({ year1Percent: 10, year2Percent: 8, year3Percent: 6, year4Percent: 4, year5Percent: 2, onwardPercent: 1, ageWeightPercent: 75, conditionPercent: 80, popularityPercent: 110 });
+  const report = genericEstimateBreakdown({ ...generic({ ageDepPct: 31, usageDepPct: 40, averageDepPct: 33, aim4priceValueExVat: 58960 }), advancedAssumptions: { privateSettings: settings } });
+  const response = await reportRoute.POST(reportRequest({ selectedValueExVat: report.total, machineTitle: 'Sample tractor', recordRows: [{label: 'Year model', value: '2020'}, {label: 'Usage',value:'4000 hours'}, {label:'Condition',value:'Good'}, {label:'Replacement price',value:'R 100 000'}], estimateBreakdownToken: signEstimateBreakdown(report, 'allowed'), includeBreakdown: true }));
+  writeFileSync('tmp/pdfs/combined-report.html', await response.text());
+});

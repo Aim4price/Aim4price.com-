@@ -1,5 +1,7 @@
 'use client';
 
+import { submitCanonicalReportForm } from '../../lib/report-open';
+
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { BASIC_REPLACEMENT_SLIDER_STEP } from '../../lib/basic-estimate';
@@ -165,8 +167,9 @@ export default function ValuationFlowPolish() {
   useLayoutEffect(() => {
     const originalSubmit = HTMLFormElement.prototype.submit;
     const submitWithSaleabilityPrice = function submitWithSaleabilityPrice(this: HTMLFormElement) {
+      if (new URL(this.action, window.location.href).pathname !== '/api/valuation/report') return originalSubmit.call(this);
       enrichEstimatePdfFormWithSaleabilityPrice(this);
-      return originalSubmit.call(this);
+      return submitCanonicalReportForm(this);
     };
 
     HTMLFormElement.prototype.submit = submitWithSaleabilityPrice;

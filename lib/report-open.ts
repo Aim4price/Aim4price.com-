@@ -8,11 +8,13 @@ function reportUrl(value: string): URL {
   return url;
 }
 
-async function fetchReport(url: URL): Promise<Response> {
+async function fetchReport(url: URL, body?: FormData): Promise<Response> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 90_000);
   try {
     const response = await fetch(url.href, {
+      method: body ? 'POST' : 'GET',
+      body,
       credentials: 'same-origin',
       cache: 'no-store',
       redirect: 'error',
@@ -68,7 +70,7 @@ function showReportStatus(reportWindow: Window, message: string, retry?: () => v
  * strip ambiguous cookies. Never change server authentication to work around it.
  * The boolean reports popup availability; loading failures stay in the tab.
  */
-export function openCanonicalReportUrl(url: string, preparedWindow?: Window): boolean {
+export function openCanonicalReportUrl(url: string, preparedWindow?: Window, body?: FormData): boolean {
   if (typeof window === 'undefined') return false;
   const target = reportUrl(url);
   const reportWindow = preparedWindow ?? window.open('', '_blank');
@@ -78,7 +80,7 @@ export function openCanonicalReportUrl(url: string, preparedWindow?: Window): bo
   const prepare = async () => {
     showReportStatus(reportWindow, 'This may take a moment.');
     try {
-      const response = await fetchReport(target);
+      const response = await fetchReport(target, body);
       if (!response.headers.get('content-type')?.includes('text/html')) {
         throw new Error('The report could not be prepared. Please try again.');
       }
@@ -121,4 +123,13 @@ export async function downloadCanonicalReportFile(url: string): Promise<void> {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+}
+
+/** Submit an already-enriched estimate form through the originating account. */
+export function submitCanonicalReportForm(form: HTMLFormElement): void {
+  const target = reportUrl(form.action);
+  if (target.pathname !== '/api/valuation/report') throw new Error('This estimate report is not available.');
+  const reportWindow = window.open('', form.target || '_blank');
+  if (!reportWindow) throw new Error('Allow pop-ups for Aim4price, then try again.');
+  openCanonicalReportUrl(target.href, reportWindow, new FormData(form));
 }

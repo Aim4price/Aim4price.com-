@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { openCanonicalReportUrl, downloadCanonicalReportFile } from '../lib/report-open.ts';
+import { openCanonicalReportUrl, downloadCanonicalReportFile, submitCanonicalReportForm } from '../lib/report-open.ts';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -201,4 +201,29 @@ test('Excel downloads preserve the original app session and validate the file be
     globalThis.window = previousWindow; globalThis.fetch = previousFetch; globalThis.document = previousDocument;
     URL.createObjectURL = previousCreate; URL.revokeObjectURL = previousRevoke;
   }
+});
+
+test('estimate POST keeps website identity and enriched payload when opening a report tab', async () => {
+  const previousWindow = globalThis.window, previousFetch = globalThis.fetch, PreviousFormData = globalThis.FormData;
+  try {
+    tab = reportTab();
+    globalThis.window = {
+      location: { href: 'https://www.aim4price.com/valuation', origin: 'https://www.aim4price.com', pathname: '/valuation' },
+      open: () => tab, setTimeout, clearTimeout,
+    };
+    const payload = { estimateBreakdownToken: 'signed-snapshot', includeBreakdown: true, reportPhotos: ['embedded-photo'], saleabilityRows: [{ label: 'Saleability price', value: 'R 100' }] };
+    const body = new FormData(); body.set('payload', JSON.stringify(payload));
+    globalThis.fetch = async (url, options) => {
+      assert.equal(options.method, 'POST');
+      assert.equal(options.credentials, 'same-origin');
+      assert.equal(options.headers['x-aim4price-client-realm'], 'website');
+      assert.deepEqual(JSON.parse(options.body.get('payload')), payload);
+      return new Response('<html>Private estimate report</html>', { headers: { 'content-type': 'text/html' } });
+    };
+    const form = { action: '/api/valuation/report', target: 'estimate-tab' };
+    globalThis.FormData = class { constructor(value) { assert.equal(value, form); return body; } };
+    submitCanonicalReportForm(form);
+    await settle();
+    assert.match(tab.written, /Private estimate report/);
+  } finally { globalThis.window = previousWindow; globalThis.fetch = previousFetch; globalThis.FormData = PreviousFormData; }
 });

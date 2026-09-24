@@ -1,4 +1,4 @@
-.tools { border: 1px solid #d7e0da; border-radius: 14px; background: #fff; color: #19352b; overflow: hidden; }
+.tools { order: 4; border: 1px solid #d7e0da; border-radius: 14px; background: #fff; color: #19352b; overflow: hidden; }
 .heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px; }
 .heading p { margin: 6px 0 0; font-size: 12px; color: #5b6d64; }
 .tools button { font: inherit; font-size: 13px; font-weight: 650; border: 1px solid #bacbc1; border-radius: 9px; padding: 10px 14px; background: #f6f8f6; color: #174c3c; cursor: pointer; }
@@ -17,7 +17,7 @@
 .notes { margin: 0; padding: 6px 32px 20px; font-size: 11px; color: #53675b; line-height: 1.7; }
 .dialog { box-sizing: border-box; width: 640px; max-width: calc(var(--website-design-width, 100%) - 32px); max-height: calc(var(--website-visible-height, 100dvh) - 48px); overflow: auto; padding: 24px; border: 1px solid #cedbd2; border-radius: 16px; color: #19352b; background: #fff; box-shadow: 0 24px 80px #001c2040; font: inherit; }
 .dialog::backdrop { background: #061b16ad; }
-.modalHeader { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 22px; }
+.modalHeader { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 22px; }
 .modalHeader h2 { margin: 0; font-size: 21px; }
 .modalHeader p { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: #5b6d64; }
 .tools .close { width: 36px; height: 36px; border-radius: 7px; padding: 0; font-size: 25px; flex-shrink: 0; }
@@ -29,3 +29,14 @@
 .error { color: #a12d2d; font-size: 13px; }
 .actions { display: flex; gap: 10px; justify-content: space-between; }
 .tools .actions button[type='submit'] { background: #174c3c; border-color: #174c3c; color: #fff; }
+
+.settingGroup { margin: 0 0 20px; padding: 16px; border: 1px solid #d7e0da; border-radius: 10px; }
+.settingGroup legend { padding: 0 6px; font-weight: 700; font-size: 14px; }
+.settingGroup p, .settingGroup small { font-size: 12px; line-height: 1.6; color: #53675b; margin: 0 0 12px; }
+.settingGroup:disabled { opacity: .6; }
+.yearFields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.yearFields label { display: grid; gap: 6px; font-size: 12px; font-weight: 650; }
+.yearFields input { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #b8cabe; border-radius: 8px; font: inherit; color: #19352b; background: #fff; }
+.weight { display: grid; gap: 12px; margin: 8px 0 12px; }
+.weight span { display: flex; justify-content: space-between; font-size: 13px; }
+.weight input { width: 100%; margin: 0; accent-color: #174c3c; }

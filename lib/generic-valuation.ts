@@ -1,4 +1,4 @@
-import type { PrivateEstimateSettings } from './private-estimate-settings';
+import { weightedDepreciationPercent, type PrivateEstimateSettings } from './private-estimate-settings';
 import { getBasicCatalogueFamily } from './basic-catalogue';
 import { resolveCatalogueGuide } from './basic-catalogue-guide';
 import { BASIC_USAGE_MODE_KEYS, resolveBasicUsage } from './basic-usage';
@@ -577,8 +577,8 @@ function calculateAgeAwarePercentValue(input: {
   const replacementPriceExVat = Math.max(0, Number(input.replacementPriceExVat) || 0);
   const usageDepPct = input.privateSettings?.usageDepreciationPercent ?? clamp(Math.round(Number(input.percentUsed) || 0), 0, 100);
   const remainingPercent = 100 - usageDepPct;
-  const ageDepPct = input.privateSettings?.ageDepreciationPercent ?? (input.includeAgeDepreciation ? tractorAgeDepPct(input.yearModel) : null);
-  const averageDepPct = ageDepPct === null ? usageDepPct : Math.round((ageDepPct + usageDepPct) / 2);
+  const ageDepPct = input.privateSettings?.ageDepreciationPercent ?? (input.includeAgeDepreciation ? tractorAgeDepPct(input.yearModel, undefined, input.privateSettings) : null);
+  const averageDepPct = ageDepPct === null ? usageDepPct : weightedDepreciationPercent(ageDepPct, usageDepPct, input.privateSettings);
   const baseValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(baseValueExVat, input.condition, input.conditionFactorOverride);
   const marketabilityFactor = clamp(Number(input.marketabilityFactor) || 1, 0, 1);
@@ -654,7 +654,7 @@ function resolveDepreciation(input: DepreciationInput): {
   // a meaningful measurement. Keep the shared age, condition, marketability and
   // salvage mathematics, but do not invent a percentage-worked fallback.
   if (input.valuationMode === 'year_condition') {
-    const ageDepPct = input.advancedAssumptions?.privateSettings?.ageDepreciationPercent ?? (input.yearModelUnknown ? 0 : tractorAgeDepPct(yearForDepreciation));
+    const ageDepPct = input.advancedAssumptions?.privateSettings?.ageDepreciationPercent ?? (input.yearModelUnknown ? 0 : tractorAgeDepPct(yearForDepreciation, undefined, input.advancedAssumptions?.privateSettings));
     const ageAdjustedValue = input.replacementPrice * (1 - ageDepPct / 100);
     const conditionAdjustedValue = applyCondition(
       ageAdjustedValue,
