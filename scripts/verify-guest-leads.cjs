@@ -43,7 +43,8 @@ export default function Validation(){
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Startup timed out')),60000);server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));});
   browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await require('@sparticuz/chromium').executablePath(),args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true,pipe:true});
   const page=await browser.newPage(),errors=[],requests=[];
-  page.on('pageerror',e=>errors.push(e.message));
+  page.on('pageerror',e=>{errors.push(e.message);console.error(page.url(),e.message)});
+  page.on('console',msg=>{if(msg.type()==='error')console.error(page.url(),msg.text())});
   let history=[],activated=false,documents=[];
   await page.setRequestInterception(true);
   page.on('request',req=>{
@@ -77,7 +78,7 @@ export default function Validation(){
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await page.goto('http://127.0.0.1:3033/business-network/accept?from=X%20Farms',{waitUntil:'networkidle2'});
    assert.ok(await page.evaluate(()=>document.body.textContent.includes('X Farms wants to share assets with you more efficiently.')));
-   await page.waitForSelector('header');
+   await page.waitForSelector('[data-website-zoom-host=ready] [data-site-workspace-zoom-controls]');
    await page.screenshot({path:path.join(output,`listing-page-${width}.png`),fullPage:true});
    const writesBefore=requests.filter(r=>r.method==='POST').length;
    await Promise.all([page.waitForNavigation({waitUntil:'networkidle2'}),page.click('a[href^="/business-network/example"]')]);
