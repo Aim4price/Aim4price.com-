@@ -438,7 +438,6 @@ export default function ValuationFlowPolish() {
       >
         <header className={styles.familyModalHeader}>
           <div className={styles.familyModalHeading}>
-            <span className={styles.familyModalKicker}>Aim4price catalogue</span>
             <h2 id={FAMILY_MODAL_TITLE_ID}>{modalTitle}</h2>
             <p id={FAMILY_MODAL_DESCRIPTION_ID}>Search or browse the available {itemLabel}.</p>
           </div>
@@ -490,7 +489,6 @@ export default function ValuationFlowPolish() {
                     <strong>{option.label}</strong>
                     {option.meta ? <small>{option.meta}</small> : null}
                   </span>
-                  <span className={styles.familyOptionArrow} aria-hidden="true">→</span>
                 </button>
               ))}
             </div>
