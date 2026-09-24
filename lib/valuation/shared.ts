@@ -1,3 +1,4 @@
+import { normalizePrivateEstimateSettings, hasPrivateEstimateSettingsRequest, type PrivateEstimateSettings } from '../private-estimate-settings';
 import type { ConditionKey, TractorType } from '../tractor-data';
 import {
   applyPopularityToConditionFactor,
@@ -31,6 +32,7 @@ export const ADVANCED_LIFETIME_KM_MIN = 50_000;
 export const ADVANCED_LIFETIME_KM_MAX = 2_000_000;
 
 export type AdvancedAssumptionsInput = {
+  privateSettings?: PrivateEstimateSettings | null;
   maxLifetimeUsage?: number | string | null;
   maxLifetimeHours?: number | string | null;
   conditionFactorPercent?: number | string | null;
@@ -39,6 +41,7 @@ export type AdvancedAssumptionsInput = {
 } | null | undefined;
 
 export type NormalizedAdvancedAssumptions = {
+  privateSettings?: PrivateEstimateSettings | null;
   maxLifetimeUsage: number | null;
   conditionFactorPercent: number | null;
   dealerAssessment: NormalizedDealerAssessment | null;
@@ -46,6 +49,7 @@ export type NormalizedAdvancedAssumptions = {
 };
 
 export type EngineHoursMethodInput = {
+  privateSettings?: PrivateEstimateSettings | null;
   includeAgeDepreciation?: boolean;
   replacementPriceExVat: number;
   yearModel: number;
@@ -168,7 +172,8 @@ export function advancedAssumptionsWereRequested(value: unknown): boolean {
   return hasAdvancedValue(pickAdvancedValue(source, ['maxLifetimeUsage', 'maxLifetimeHours']))
     || hasAdvancedValue(pickAdvancedValue(source, ['conditionFactorPercent']))
     || dealerAssessmentWasRequested(pickAdvancedValue(source, ['dealerAssessment']))
-    || hasAdvancedValue(pickAdvancedValue(source, ['popularityStars']));
+    || hasAdvancedValue(pickAdvancedValue(source, ['popularityStars']))
+    || hasPrivateEstimateSettingsRequest(source);
 }
 
 export function advancedAssumptionsRequireActiveAccess(value: unknown): boolean {
@@ -225,10 +230,14 @@ export function normalizeAdvancedAssumptions(
     normalized.conditionFactorPercent = Math.round(conditionPercent * 10) / 10;
   }
 
+  const privateSettings = normalizePrivateEstimateSettings(source.privateSettings);
+  if (privateSettings) normalized.privateSettings = privateSettings;
+
   normalized.dealerAssessment = normalizeDealerAssessment(dealerAssessmentRaw as DealerAssessmentInput);
   normalized.popularityStars = normalizePopularityStars(popularityRaw);
 
-  return normalized.maxLifetimeUsage !== null
+  return normalized.privateSettings != null
+      || normalized.maxLifetimeUsage !== null
       || normalized.conditionFactorPercent !== null
       || normalized.dealerAssessment !== null
       || normalized.popularityStars !== null
@@ -248,6 +257,14 @@ export function getValuationConditionFactorOverride(
   condition: ConditionKey,
   advancedAssumptions?: NormalizedAdvancedAssumptions | null,
 ): number {
+  const settings = advancedAssumptions?.privateSettings;
+  if (settings && (settings.conditionPercent !== null || settings.popularityPercent !== null)) {
+    const base = settings.conditionPercent !== null ? settings.conditionPercent / 100
+      : getDealerConditionFactor(advancedAssumptions?.dealerAssessment)
+        ?? (advancedAssumptions?.conditionFactorPercent != null ? advancedAssumptions.conditionFactorPercent / 100 : CONDITION_FACTORS[condition]);
+    return settings.popularityPercent !== null ? base * settings.popularityPercent / 100
+      : applyPopularityToConditionFactor(base, advancedAssumptions?.popularityStars, { min: 0.1, max: 1.1 });
+  }
   const detailedFactor = getDealerConditionFactor(advancedAssumptions?.dealerAssessment);
   if (detailedFactor !== null) {
     return applyPopularityToConditionFactor(detailedFactor, advancedAssumptions?.popularityStars);
@@ -317,9 +334,9 @@ export function calculateEngineHoursValue(input: EngineHoursMethodInput): Engine
     ? Math.round(hoursProvided)
     : fallbackEngineHours(maxLifetimeHours, input.fallbackLifetimeUsedPercent);
 
-  const ageDepPct = input.includeAgeDepreciation === false ? 0 : tractorAgeDepPct(input.yearModel, input.baseYear ?? currentBaseYear());
-  const usageDepPct = engineUsageDepPct(hoursUsed, maxLifetimeHours);
-  const averageDepPct = input.includeAgeDepreciation === false ? usageDepPct : Math.round((ageDepPct + usageDepPct) / 2);
+  const ageDepPct = input.privateSettings?.ageDepreciationPercent ?? (input.includeAgeDepreciation === false ? 0 : tractorAgeDepPct(input.yearModel, input.baseYear ?? currentBaseYear()));
+  const usageDepPct = input.privateSettings?.usageDepreciationPercent ?? engineUsageDepPct(hoursUsed, maxLifetimeHours);
+  const averageDepPct = input.includeAgeDepreciation === false && input.privateSettings?.ageDepreciationPercent == null ? usageDepPct : Math.round((ageDepPct + usageDepPct) / 2);
   const depreciatedValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(depreciatedValueExVat, input.condition, input.conditionFactorOverride);
   const marketabilityFactor = clamp(Number(input.marketabilityFactor) || 1, 0, 1);

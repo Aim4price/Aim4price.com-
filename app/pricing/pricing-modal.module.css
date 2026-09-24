@@ -1,20 +1,21 @@
 .overlay { position: fixed; inset: 0; z-index: 2147482500; display: flex; padding: 1rem; overflow: auto; }
-.dialog { position: relative; z-index: 1; flex-shrink: 0; width: min(64rem, calc(calc(var(--website-design-vw) * 100) - 2rem)); max-height: calc(calc(var(--website-design-vh) * 100) - 2rem); margin: auto; padding: 0; border: 1px solid rgba(18,45,37,.12); border-radius: 1.55rem; color: #17362c; background: #fff; box-shadow: 0 32px 90px rgba(7,25,20,.28), 0 8px 24px rgba(7,25,20,.12); font-family: var(--font-body, 'Montserrat'), sans-serif; overflow: hidden; }
+.dialog { position: relative; z-index: 1; flex-shrink: 0; width: min(64rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); max-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 2rem); margin: auto; padding: 0; border: 1px solid rgba(18,45,37,.12); border-radius: 1.55rem; color: #17362c; background: #fff; box-shadow: 0 32px 90px rgba(7,25,20,.28), 0 8px 24px rgba(7,25,20,.12); font-family: var(--font-body, 'Montserrat'), sans-serif; overflow: hidden; }
 .dialog { display: flex; flex-direction: column; }
 .backdrop { position: fixed; inset: 0; background: var(--modal-backdrop-color, rgba(12,24,35,.42)); backdrop-filter: var(--modal-backdrop-filter, blur(12px)); }
 .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin: 0 1.75rem; padding: 1.4rem 0 1rem; border-bottom: 1px solid rgba(18,45,37,.1); flex-shrink: 0; }
-.header h2 { margin: 0; font-size: clamp(1.5rem, calc(var(--website-design-vw) * 2.3), 2rem); line-height: 1.15; font-weight: 850; letter-spacing: -.045em; }
+.header h2 { margin: 0; font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.3), 2rem); line-height: 1.15; font-weight: 850; letter-spacing: -.045em; }
 .header button { width: 2.75rem; height: 2.75rem; flex: 0 0 auto; display: grid; place-items: center; padding: 0; border: 1px solid #d3dfda; border-radius: .9rem; background: #f6faf8; color: #254d3c; font-size: 1.4rem; font-weight: 800; cursor: pointer; }
 .header button:hover { background: #edf4ef; }
 .header button:focus-visible { outline: 3px solid #398d67; outline-offset: 3px; }
 .body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1rem 1.75rem 0; }
+@media (max-width: 640px) { :global(html:not(:has([data-website-canvas]))) .dialog { width: calc(calc(var(--website-design-vw, 1vw) * 100) - 1rem); max-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 1rem); border-radius: 1.25rem; } :global(html:not(:has([data-website-canvas]))) .header { margin: 0 1rem; padding: 1rem 0 .75rem; } :global(html:not(:has([data-website-canvas]))) .body { padding: .75rem 1rem 0; } }
 
 /* Centre the Owner flow and let each question fit its content. */
 .owner { height: fit-content; }
 .owner .header { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; align-items: center; }
 .owner .header::before { content: ''; }
-.owner .header h2 { text-align: center; font-size: clamp(1.35rem, calc(var(--website-design-vw) * 2.1), 1.8rem); }
+.owner .header h2 { text-align: center; font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.1), 1.8rem); }
 .owner .body { display: flex; flex: 0 1 auto; }
-
+@media (max-width: 640px) { :global(html:not(:has([data-website-canvas]))) .owner .header { gap: .5rem; } }
 /* Delegate scrolling to the active view, keeping the action bar visible. */
 .owner .body { overflow: hidden; padding: 0; }

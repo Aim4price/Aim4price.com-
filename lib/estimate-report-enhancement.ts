@@ -303,13 +303,14 @@ export function enhanceEstimateReportHtml(baseHtml: string, rawPayload: unknown)
 
   const payload = isRecord(rawPayload) ? rawPayload : {};
   const photos = normalizeEstimateReportPhotos(payload.reportPhotos);
-  const pageCount = photos.length ? 2 : 1;
+  const basePageCount = Number(baseHtml.match(/Page 1 of (\d+)/)?.[1] ?? 1);
+  const pageCount = basePageCount + (photos.length ? 1 : 0);
 
   let html = baseHtml.replace(/<\/head>/i, `${ESTIMATE_REPORT_ENHANCEMENT_STYLE}</head>`);
-  html = html.replace(/Page 1 of 1/g, `Page 1 of ${pageCount}`);
+  html = html.replace(/Page (\d+) of \d+/g, (_, page) => `Page ${page} of ${pageCount}`);
 
   if (photos.length) {
-    const photoPage = renderPhotoPage(baseHtml, payload, photos);
+    const photoPage = renderPhotoPage(baseHtml, payload, photos).replace(/Page 2 of 2/g, `Page ${pageCount} of ${pageCount}`);
     html = html.replace(/\n\s*<script>\s*\n\s*\(function \(\) \{/,
       `${photoPage}\n\n    <script>\n      (function () {`);
   }

@@ -231,9 +231,9 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   const replacementPriceUsedExVat = userReplacementPriceExVat ?? model.aim4priceReplacementExVat ?? null;
   const defaultMaxLifetimeHours = tractorLifetimeHours(model.tractorType, model.powerKw);
   const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, 'hours');
-  const maxLifetimeHours = advancedAssumptions?.maxLifetimeUsage ?? defaultMaxLifetimeHours;
+  const maxLifetimeHours = advancedAssumptions?.privateSettings?.lifetimeUsage ?? advancedAssumptions?.maxLifetimeUsage ?? defaultMaxLifetimeHours;
   const conditionFactorOverride = getValuationConditionFactorOverride(input.condition, advancedAssumptions);
-  const assumptionOptions = { maxLifetimeHours, conditionFactorOverride };
+  const assumptionOptions = { maxLifetimeHours, conditionFactorOverride, privateSettings: advancedAssumptions?.privateSettings };
 
   const baseCalculation = calculateTractorAim4priceDetails(
     model,

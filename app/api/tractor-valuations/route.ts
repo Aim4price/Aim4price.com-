@@ -1,3 +1,4 @@
+import { hasPrivateEstimateSettingsRequest } from '../../../lib/private-estimate-settings';
 import { canUseEstimateBreakdown } from '../../../lib/estimate-breakdown-access';
 import { signEstimateBreakdown } from '../../../lib/estimate-breakdown-token';
 import { tractorEstimateBreakdown } from '../../../lib/estimate-breakdown';
@@ -185,7 +186,8 @@ function advancedAccessDenied() {
 
 function isAdvancedValidationError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
-  return error.message.startsWith('Expected lifetime')
+  return error.message.startsWith('Estimate settings')
+    || error.message.startsWith('Expected lifetime')
     || error.message.startsWith('Condition retained value')
     || error.message.includes('detailed asset assessment')
     || error.message.startsWith('Popularity must');
@@ -205,6 +207,13 @@ async function handleValuation(input: RunValuationInput | null) {
     return badRequest('modelId, year, hours and condition are required.');
   }
 
+    if (hasPrivateEstimateSettingsRequest(input.advancedAssumptions)) {
+      const session = await getAnyServerSession();
+      if (!session?.user?.id || !canUseEstimateBreakdown(session.user.email)) {
+        return NextResponse.json({ ok: false, error: 'Estimate settings are not available for this account.' }, { status: 403 });
+      }
+    }
+
   if (advancedAssumptionsRequireActiveAccess(input.advancedAssumptions)) {
     const profile = await getAdvancedAccessProfile();
     if (profile?.accountStatus !== 'active') return advancedAccessDenied();
@@ -214,7 +223,11 @@ async function handleValuation(input: RunValuationInput | null) {
     const result = await runServerValuation(input);
     const breakdownSession = await getAnyServerSession();
     if (breakdownSession?.user?.id && canUseEstimateBreakdown(breakdownSession.user.email)) {
-      result.breakdownToken = signEstimateBreakdown(tractorEstimateBreakdown(result, input), breakdownSession.user.id);
+      result.estimateInput = { ...input };
+      const report = tractorEstimateBreakdown(result, input);
+      const token = signEstimateBreakdown(report, breakdownSession.user.id);
+      result.breakdownToken = token;
+      if (token) result.breakdowns = { [result.replacementPriceBasis]: { report, token } };
     }
 
     await recordTractorValuationForAdminSafely({
