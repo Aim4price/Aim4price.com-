@@ -51,7 +51,7 @@ export function genericEstimateBreakdown(result: GenericValuationResult): Estima
         ? `Applied depreciation: round(${c.ageDepPct}% × ${(result.advancedAssumptions?.privateSettings?.ageWeightPercent ?? 50)}% age weight + ${c.usageDepPct}% × ${100 - (result.advancedAssumptions?.privateSettings?.ageWeightPercent ?? 50)}% usage weight) = ${c.averageDepPct}%.`
         : `Applied depreciation: ${c.averageDepPct}%.`,
       ...(c.maxLifetimeHours ? [`Expected lifetime: ${c.maxLifetimeHours.toLocaleString('en-ZA')}; usage used: ${c.estimatedHours?.toLocaleString('en-ZA') ?? 'percentage basis'}.`] : []),
-      ...(result.advancedAssumptions?.dealerAssessment && result.advancedAssumptions?.privateSettings?.conditionPercent == null ? dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment) : []),
+      ...(result.advancedAssumptions?.dealerAssessment && result.advancedAssumptions?.privateSettings?.conditionPercent == null ? dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment, result.advancedAssumptions.privateSettings) : []),
       ...(c.isSalvageEstimate ? [`Salvage floor: ${c.salvagePercent}% of the starting replacement price.`] : []),
     ],
     rows: calculationRows(c.replacementPriceExVat, c.ageDepPct, c.usageDepPct, c.averageDepPct,
@@ -77,7 +77,7 @@ export function tractorEstimateBreakdown(result: Result, input: RunValuationInpu
     `Applied depreciation: round(${c.ageDepPct}% × ${(result.advancedAssumptions?.privateSettings?.ageWeightPercent ?? 50)}% age weight + ${c.usageDepPct}% × ${100 - (result.advancedAssumptions?.privateSettings?.ageWeightPercent ?? 50)}% usage weight) = ${c.averageDepPct}%.`,
     `Expected lifetime: ${result.maxLifetimeHours} hours; usage used: ${c.hoursUsed} hours.`,
   ];
-  if (result.advancedAssumptions?.dealerAssessment && result.advancedAssumptions?.privateSettings?.conditionPercent == null) notes.push(...dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment));
+  if (result.advancedAssumptions?.dealerAssessment && result.advancedAssumptions?.privateSettings?.conditionPercent == null) notes.push(...dealerConditionBreakdownNotes(result.advancedAssumptions.dealerAssessment, result.advancedAssumptions.privateSettings));
   if (c.isSalvageEstimate) notes.push(`Salvage floor: ${c.salvagePercent}% of the starting replacement price.`);
   if (result.otherExtraReplacementPriceExVat) notes.push('Starting price includes the named other extra, depreciated with the asset.');
   for (const [label, replacement, current] of [

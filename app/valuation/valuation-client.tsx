@@ -1,5 +1,7 @@
 'use client';
 import EstimateTools from './EstimateTools';
+import EstimatePriceInput from './EstimatePriceInput';
+import EstimateUsage from './EstimateUsage';
 import modalStyles from '../../components/estimate-modal.module.css';
 import type { PrivateEstimateSettings } from '../../lib/private-estimate-settings';
 import { useDealerAppRoot } from '../../lib/use-dealer-app-root';
@@ -1944,6 +1946,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [publishedAdvertDownload, setPublishedAdvertDownload] = useState<PublishedAdvertDownload | null>(null);
   const [isDownloadingPublishedAdvert, setIsDownloadingPublishedAdvert] = useState(false);
+  const [replacementModalVat, setReplacementModalVat] = useState<VatDisplayMode>('excl');
+  const [replacementSliderMax, setReplacementSliderMax] = useState(1000000);
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
   const replacementPriceDialogRef = useRef<HTMLDialogElement>(null);
   const [replacementModalError, setReplacementModalError] = useState('');
@@ -8862,7 +8866,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <small>{headlineVatLabel}{tractorExtrasReplacementPriceExVat > 0 ? ' · Asset price before extras' : ''}</small>
               </div>
               <button type="button" className={styles.resultAccordionAction}
-                aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementPanelOpen(true); }}>
+                aria-haspopup="dialog" onClick={() => { setReplacementModalError(''); setReplacementModalVat(vatDisplayMode); const price = getCurrentResultReplacementPriceExVat() ?? 0; setUserReplacementPrice(String(price)); setReplacementSliderMax(Math.max(10000, price * 2)); setReplacementPanelOpen(true); }}>
                 Check / adjust
               </button>
               <dialog ref={replacementPriceDialogRef} className={`${styles.replacementPriceDialog} ${modalStyles.surface}`}
@@ -8882,7 +8886,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div className={styles.resultAccordionBody}>
                   <p className={`${styles.resultAccordionCopy} ${modalStyles.description}`}>
                     {tractorResult
-                      ? 'Check the asset and selected-extra replacement prices. Aim4price depreciates each one before recalculating. All prices exclude VAT.'
+                      ? 'Check the asset and selected-extra replacement prices. Aim4price depreciates each one before recalculating.'
                       : 'Check the replacement price and change it only when the saved figure is no longer accurate.'}
                   </p>
 
@@ -8897,8 +8901,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         }}
                       >
                         <span>Saved price basis</span>
-                        <strong>{money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null, vatDisplayMode))}</strong>
-                        <small>Estimate {headlineVatLabel.toLowerCase()}. New price used: {moneyExVat(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null)}</small>
+                        <strong>{money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation?.valuationMidExVat ?? null, replacementModalVat))}</strong>
+                        <small>Estimate {getVatDisplayLabel(replacementModalVat).toLowerCase()}. New price used: {money(getVatDisplayValue(genericResult.aim4priceReplacementCalculation?.replacementPriceExVat ?? null, replacementModalVat))}</small>
                       </button>
 
                       <button
@@ -8913,36 +8917,37 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         disabled={!genericResult.userReplacementCalculation}
                       >
                         <span>Updated price basis</span>
-                        <strong>{money(getVatDisplayValue(genericResult.userReplacementCalculation?.valuationMidExVat ?? null, vatDisplayMode))}</strong>
-                        <small>Estimate {headlineVatLabel.toLowerCase()}. New price used: {moneyExVat(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null)}</small>
+                        <strong>{money(getVatDisplayValue(genericResult.userReplacementCalculation?.valuationMidExVat ?? null, replacementModalVat))}</strong>
+                        <small>Estimate {getVatDisplayLabel(replacementModalVat).toLowerCase()}. New price used: {money(getVatDisplayValue(genericResult.userReplacementCalculation?.replacementPriceExVat ?? null, replacementModalVat))}</small>
                       </button>
                     </div>
                   ) : null}
 
                   <div className={styles.replacementInputPanel}>
+                    <div className={styles.resultVatToggle} role="group" aria-label="Replacement input VAT basis">
+                      {(['excl', 'incl'] as const).map(mode => <button key={mode} type="button"
+                        className={`${styles.resultVatToggleButton} ${replacementModalVat === mode ? styles.resultVatToggleButtonActive : ''}`}
+                        aria-pressed={replacementModalVat === mode} onClick={() => setReplacementModalVat(mode)}>{mode === 'incl' ? 'VAT included' : 'VAT excluded'}</button>)}
+                    </div>
+                    <p className={styles.replacementFieldHint}>Enter prices {replacementModalVat === 'incl' ? 'including' : 'excluding'} VAT. Changing the toggle converts the amounts.</p>
                     <div className={styles.replacementFieldsGrid}>
                       <label className={`${styles.field} ${styles.replacementField}`}>
                         <span className={styles.fieldLabel}>Asset replacement price</span>
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          value={formatReplacementPriceInput(userReplacementPrice)}
-                          onChange={(event) => handleReplacementPriceInput(event, setUserReplacementPrice)}
-                          placeholder="e.g. 1 100 000"
-                        />
-                        <small className={styles.replacementFieldHint}>Current: {moneyExVat(getCurrentResultReplacementPriceExVat())}</small>
+                        <EstimatePriceInput value={userReplacementPrice} onChange={setUserReplacementPrice} vatMode={replacementModalVat}
+                          label="Asset replacement price" sliderMax={replacementSliderMax} />
+                        <small className={styles.replacementFieldHint}>Current: {money(getVatDisplayValue(getCurrentResultReplacementPriceExVat(), replacementModalVat))} {getVatDisplayLabel(replacementModalVat)}</small>
                       </label>
                       {tractorResult && frontPto ? (
                         <label className={`${styles.field} ${styles.replacementField}`}>
                           <span className={styles.fieldLabel}>Front PTO replacement</span>
-                          <input type="text" inputMode="decimal" value={frontPtoReplacementPrice} onChange={(event) => setFrontPtoReplacementPrice(event.target.value)} />
+                          <EstimatePriceInput value={frontPtoReplacementPrice} onChange={setFrontPtoReplacementPrice} vatMode={replacementModalVat} label="Front PTO replacement price" />
                           <small className={styles.replacementFieldHint}>Adds {moneyExVat(tractorResult.frontPtoValueExVat)} after depreciation</small>
                         </label>
                       ) : null}
                       {tractorResult && frontLoader ? (
                         <label className={`${styles.field} ${styles.replacementField}`}>
                           <span className={styles.fieldLabel}>Front Loader replacement</span>
-                          <input type="text" inputMode="decimal" value={frontLoaderReplacementPrice} onChange={(event) => setFrontLoaderReplacementPrice(event.target.value)} />
+                          <EstimatePriceInput value={frontLoaderReplacementPrice} onChange={setFrontLoaderReplacementPrice} vatMode={replacementModalVat} label="Front loader replacement price" />
                           <small className={styles.replacementFieldHint}>
                             Year added: {normalizeText(frontLoaderYear) || 'same as tractor'}. Adds {moneyExVat(tractorResult.frontLoaderValueExVat)} after depreciation.
                           </small>
@@ -8951,7 +8956,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       {tractorResult && gpsEnabled ? (
                         <label className={`${styles.field} ${styles.replacementField}`}>
                           <span className={styles.fieldLabel}>GPS replacement</span>
-                          <input type="text" inputMode="decimal" value={gpsReplacementPrice} onChange={(event) => setGpsReplacementPrice(event.target.value)} />
+                          <EstimatePriceInput value={gpsReplacementPrice} onChange={setGpsReplacementPrice} vatMode={replacementModalVat} label="GPS replacement price" />
                           <small className={styles.replacementFieldHint}>Adds {moneyExVat(tractorResult.gpsValueExVat)} after depreciation</small>
                         </label>
                       ) : null}
@@ -8963,12 +8968,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           </label>
                           <label className={`${styles.field} ${styles.replacementField}`}>
                             <span className={styles.fieldLabel}>Extra replacement price</span>
-                            <input
-                              type="text"
-                              inputMode="decimal"
-                              value={otherExtraReplacementPrice}
-                              onChange={(event) => setOtherExtraReplacementPrice(event.target.value)}
-                            />
+                            <EstimatePriceInput value={otherExtraReplacementPrice} onChange={setOtherExtraReplacementPrice} vatMode={replacementModalVat} label="Extra replacement price" />
                             <small className={styles.replacementFieldHint}>Adds {moneyExVat(tractorResult.otherExtraValueExVat)} after depreciation</small>
                           </label>
                         </div>
@@ -8998,6 +8998,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         className={styles.assetButton}
                         disabled={!replacementUpdateReady || replacementRecalculateLoading || advancedRecalculateLoading}
                         onClick={() => {
+                          setVatDisplayMode(replacementModalVat);
                           if (isGeneric) {
                             if (!userPriceInput) return;
                             setReplacementModalError('');
@@ -9017,6 +9018,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </dialog>
             </section>
           ) : null}
+          {breakdownAccess && activeBreakdown && (getResultUsageMetricType(resultState) === 'km' || getResultUsageMetricType(resultState) === 'hours') && getResultMaxLifetimeUsage(resultState) ?
+            <EstimateUsage unit={getResultUsageMetricType(resultState) === 'km' ? 'km' : 'hours'} lifetime={getResultMaxLifetimeUsage(resultState)!}
+              settings={activeBreakdown.report.settings ?? null} busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
+              error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}
           {breakdownAccess && activeBreakdown ? <EstimateTools report={activeBreakdown.report}
             busy={valuationLoading || replacementRecalculateLoading || advancedRecalculateLoading}
             error={advancedError} onApply={applyPrivateEstimateSettings} /> : null}

@@ -1,3 +1,4 @@
+import type { PrivateEstimateSettings } from '../private-estimate-settings';
 export type DealerMechanicalCondition = 'excellent' | 'good' | 'average' | 'below_average' | 'poor';
 export type DealerBodyCondition = 'excellent' | 'good' | 'average' | 'poor' | 'damaged';
 export type DealerTyreCondition = '75_100' | '50_75' | '25_50' | 'below_25' | 'replacement_required';
@@ -73,14 +74,21 @@ const POPULARITY_FACTORS: Record<PopularityStars, number> = {
   5: 1.15,
 };
 
+function estimateFactor(settings: PrivateEstimateSettings | null | undefined, key: keyof PrivateEstimateSettings): number {
+  const groups = { mechanical: MECHANICAL_FACTORS, body: BODY_FACTORS, tyre: TYRE_FACTORS, service: SERVICE_ADJUSTMENTS, work: WORK_ADJUSTMENTS };
+  const separator = key.indexOf('_');
+  const group = key.slice(0, separator) as keyof typeof groups;
+  return settings?.[key] != null ? settings[key]! / 100 : (groups[group] as Record<string, number>)[key.slice(separator + 1)];
+}
+
 const STANDARD_COMBINED_FACTOR_BOUNDS = { min: 0.1, max: 1 } as const;
 
 /** Explain the same factors used by calculateDealerConditionFactor. */
-export function dealerConditionBreakdownNotes(input: NormalizedDealerAssessment): string[] {
+export function dealerConditionBreakdownNotes(input: NormalizedDealerAssessment, settings?: PrivateEstimateSettings | null): string[] {
   return [
-    `Condition weighting: mechanical ${MECHANICAL_FACTORS[input.mechanicalCondition] * 100}% x 50%, body ${BODY_FACTORS[input.bodyCondition] * 100}% x 30%, tyres / wear ${TYRE_FACTORS[input.tyreCondition] * 100}% x 20%.`,
-    `Service history: ${SERVICE_ADJUSTMENTS[input.serviceHistory] * 100} percentage points; required work: ${WORK_ADJUSTMENTS[input.requiredWork] * 100} percentage points.`,
-    `Condition retained: ${input.conditionFactorPercent}% after the 20%-100% limits, before popularity.`,
+    `Condition weighting: mechanical ${estimateFactor(settings, `mechanical_${input.mechanicalCondition}`) * 100}% x 50%, body ${estimateFactor(settings, `body_${input.bodyCondition}`) * 100}% x 30%, tyres / wear ${estimateFactor(settings, `tyre_${input.tyreCondition}`) * 100}% x 20%.`,
+    `Service history: ${estimateFactor(settings, `service_${input.serviceHistory}`) * 100} percentage points; required work: ${estimateFactor(settings, `work_${input.requiredWork}`) * 100} percentage points.`,
+    `Condition retained: ${Math.round(calculateDealerConditionFactor(input, settings) * 1000) / 10}% after the 20%-100% limits, before popularity.`,
   ];
 }
 
@@ -97,14 +105,14 @@ export function dealerAssessmentWasRequested(value: unknown): boolean {
   return isRecord(value) && Object.keys(value).length > 0;
 }
 
-export function calculateDealerConditionFactor(input: Omit<NormalizedDealerAssessment, 'conditionFactorPercent'>): number {
+export function calculateDealerConditionFactor(input: Omit<NormalizedDealerAssessment, 'conditionFactorPercent'>, settings?: PrivateEstimateSettings | null): number {
   const componentFactor =
-    MECHANICAL_FACTORS[input.mechanicalCondition] * 0.5
-    + BODY_FACTORS[input.bodyCondition] * 0.3
-    + TYRE_FACTORS[input.tyreCondition] * 0.2;
+    estimateFactor(settings, `mechanical_${input.mechanicalCondition}`) * 0.5
+    + estimateFactor(settings, `body_${input.bodyCondition}`) * 0.3
+    + estimateFactor(settings, `tyre_${input.tyreCondition}`) * 0.2;
   const adjusted = componentFactor
-    + SERVICE_ADJUSTMENTS[input.serviceHistory]
-    + WORK_ADJUSTMENTS[input.requiredWork];
+    + estimateFactor(settings, `service_${input.serviceHistory}`)
+    + estimateFactor(settings, `work_${input.requiredWork}`);
 
   return Math.min(1, Math.max(0.2, adjusted));
 }

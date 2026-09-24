@@ -14699,3 +14699,21 @@
     white-space: normal;
   }
 }
+
+/* Replacement review has a slider and editable VAT-aware amounts. */
+.replacementPriceDialog .replacementField {
+  grid-template-rows: auto auto auto;
+  gap: 12px;
+}
+.replacementPriceDialog .replacementField:first-child {
+  grid-column: 1 / -1;
+}
+.replacementPriceDialog .replacementField input[type='range'] {
+  min-height: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}

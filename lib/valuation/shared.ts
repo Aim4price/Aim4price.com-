@@ -1,7 +1,8 @@
-import { annualDepreciationPercent, weightedDepreciationPercent, normalizePrivateEstimateSettings, hasPrivateEstimateSettingsRequest, type PrivateEstimateSettings } from '../private-estimate-settings';
+import { estimateFactor, annualDepreciationPercent, weightedDepreciationPercent, normalizePrivateEstimateSettings, hasPrivateEstimateSettingsRequest, type PrivateEstimateSettings } from '../private-estimate-settings';
 import type { ConditionKey, TractorType } from '../tractor-data';
 import {
   applyPopularityToConditionFactor,
+  calculateDealerConditionFactor,
   dealerAssessmentWasRequested,
   getDealerConditionFactor,
   normalizeDealerAssessment,
@@ -234,6 +235,9 @@ export function normalizeAdvancedAssumptions(
   if (privateSettings) normalized.privateSettings = privateSettings;
 
   normalized.dealerAssessment = normalizeDealerAssessment(dealerAssessmentRaw as DealerAssessmentInput);
+  if (normalized.dealerAssessment && privateSettings) {
+    normalized.dealerAssessment.conditionFactorPercent = Math.round(calculateDealerConditionFactor(normalized.dealerAssessment, privateSettings) * 1000) / 10;
+  }
   normalized.popularityStars = normalizePopularityStars(popularityRaw);
 
   return normalized.privateSettings != null
@@ -258,12 +262,18 @@ export function getValuationConditionFactorOverride(
   advancedAssumptions?: NormalizedAdvancedAssumptions | null,
 ): number {
   const settings = advancedAssumptions?.privateSettings;
-  if (settings && (settings.conditionPercent !== null || settings.popularityPercent !== null)) {
-    const base = settings.conditionPercent !== null ? settings.conditionPercent / 100
-      : getDealerConditionFactor(advancedAssumptions?.dealerAssessment)
-        ?? (advancedAssumptions?.conditionFactorPercent != null ? advancedAssumptions.conditionFactorPercent / 100 : CONDITION_FACTORS[condition]);
-    return settings.popularityPercent !== null ? base * settings.popularityPercent / 100
-      : applyPopularityToConditionFactor(base, advancedAssumptions?.popularityStars, { min: 0.1, max: 1.1 });
+  if (settings) {
+    const detailed = advancedAssumptions?.dealerAssessment;
+    const base = settings.conditionPercent != null ? settings.conditionPercent / 100
+      : detailed ? calculateDealerConditionFactor(detailed, settings)
+      : advancedAssumptions?.conditionFactorPercent != null ? advancedAssumptions.conditionFactorPercent / 100
+      : estimateFactor(settings, `basic_${condition}`);
+    const popularity = settings.popularityPercent != null ? settings.popularityPercent / 100
+      : estimateFactor(settings, `popularity_${advancedAssumptions?.popularityStars ?? 3}`);
+    // Explicit overall overrides preserve compatibility with saved custom estimates.
+    if (settings.popularityPercent != null) return base * popularity;
+    const max = settings.conditionPercent != null || advancedAssumptions?.conditionFactorPercent != null ? 1.1 : 1;
+    return clamp(base * popularity, 0.1, max);
   }
   const detailedFactor = getDealerConditionFactor(advancedAssumptions?.dealerAssessment);
   if (detailedFactor !== null) {
