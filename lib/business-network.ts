@@ -152,8 +152,7 @@ export async function saveBusiness(
   const b = await getBusinessByToken(token);
   if (input.action === "pause") {
     await getDb().query(
-      `with paused as (update business_network set status='paused',updated_at=now() where id=$1 returning id)
-       update business_network_requests set revoked_at=now() where business_id in (select id from paused) and revoked_at is null`,
+      `update business_network set status='paused',updated_at=now() where id=$1`,
       [b.id],
     );
     return;
@@ -416,7 +415,7 @@ export async function getBusinessRequest(
   await ensureBusinessNetwork();
   readBusinessToken(token);
   const result = await getDb().query<{ snapshot: BusinessLeadView }>(
-    `select r.snapshot from business_network_requests r join business_network b on b.id=r.business_id where r.token_hash=$1 and r.expires_at>now() and r.revoked_at is null and r.status='sent' and b.status='active'`,
+    `select r.snapshot from business_network_requests r join business_network b on b.id=r.business_id where r.token_hash=$1 and r.expires_at>now() and r.revoked_at is null and r.status='sent'`,
     [hashBusinessToken(token)],
   );
   if (!result.rows[0])

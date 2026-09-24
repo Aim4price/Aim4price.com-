@@ -13,20 +13,23 @@ async function main() {
  try {
   await fs.mkdir(fixture,{recursive:true});
   await fs.writeFile(path.join(fixture,'page.tsx'), `'use client';
-import {useState} from 'react';
+import {useEffect,useState} from 'react';
 import AssetExternalShare from '../../../components/asset-register/AssetExternalShare';
 import GuestLeadComposer from '../../../components/asset-register/GuestLeadComposer';
 import GuestLeadActions from '../../../components/asset-register/GuestLeadActions';
 import BusinessAcceptanceForm from '../../../components/business-network/BusinessAcceptanceForm';
+import FindEnquiryBusiness from '../../../components/business-network/FindEnquiryBusiness';
 import DirectoryAdminAccess from '../../../components/business-network/DirectoryAdminAccess';
 export default function Validation(){
+ const [hydrated,setHydrated]=useState(false);useEffect(()=>setHydrated(true),[]);
  const [mode,setMode]=useState('accept'),[access,setAccess]=useState<any>('sign-in'),[link,setLink]=useState(''),[selection,setSelection]=useState('one');
- const details={recipientName:'George Workshop',recipientEmail:'business@example.com',request:'Please quote for servicing.',replyName:'Asset Owner',replyEmail:'owner@example.com',replyPhone:'',allowReply:true};
- return <main style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
+ const details={allowSubmissions:true,recipientName:'George Workshop',recipientEmail:'business@example.com',request:'Please quote for servicing.',replyName:'Asset Owner',replyEmail:'owner@example.com',replyPhone:'',allowReply:true};
+ return <main data-hydrated={hydrated} style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external','find'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
  {mode==='accept'&&<BusinessAcceptanceForm/>}
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
- {mode==='recipient'&&<><button onClick={()=>setAccess('payment-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><GuestLeadActions token={'g'.repeat(43)} details={details} reports={[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}]} access={access}/></>}
+ {mode==='recipient'&&<><button onClick={()=>setAccess('payment-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><GuestLeadActions token={'g'.repeat(43)} details={details} reports={[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}]} access={access}/></>}
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
+ {mode==='find'&&<><FindEnquiryBusiness onShare={r=>setLink(r.name)}/><output data-recipient>{link}</output></>}
  {mode==='admin'&&<DirectoryAdminAccess onAdd={b=>setLink(b.email)}/>}
  </main>;
 }
@@ -36,11 +39,12 @@ export default function Validation(){
   browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await require('@sparticuz/chromium').executablePath(),args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true,pipe:true});
   const page=await browser.newPage(),errors=[],requests=[];
   page.on('pageerror',e=>errors.push(e.message));
-  let history=[],activated=false;
+  let history=[],activated=false,documents=[];
   await page.setRequestInterception(true);
   page.on('request',req=>{
    const p=new URL(req.url()).pathname;
    if(!p.startsWith('/api/'))return req.continue();
+   if(p==='/api/business-network/google')return req.respond({status:200,contentType:'application/json',body:JSON.stringify({places:[{id:'test-place',displayName:{text:'Test Workshop'},formattedAddress:'George',googleMapsUri:'https://maps.google.com'}]})});
    if(p==='/api/fixture-pdf')return req.respond({status:200,contentType:'application/pdf',body:'%PDF-1.4 fixture'});
    let body={ok:true};requests.push({path:p,method:req.method(),data:req.postData()});
    if(p==='/api/asset-share-links/leads'){
@@ -48,6 +52,11 @@ export default function Validation(){
     else body={leads:history,replyName:'Asset Owner',replyEmail:'owner@example.com'};
    }
    if(p==='/api/asset-share-links'&&req.method()==='DELETE')history=history.map(x=>({...x,revoked_at:'2026-09-22T00:00:00Z'}));
+   if(p.endsWith('/submissions')){
+    if(req.method()==='POST')documents=[{id:'10000000-0000-4000-8000-000000000003',kind:'quote',sender_name:'Sam',sender_contact:'sam@example.com',note:'Service quote',file_name:'quote.pdf',status:'pending',created_at:'2026-09-24T00:00:00Z'}];
+    if(req.method()==='PATCH')documents=documents.map(d=>({...d,status:JSON.parse(req.postData()).status}));
+    body={ok:true,submissions:documents};
+   }
    if(p==='/api/admin/guest-businesses'){
     if(req.method()==='POST')activated=JSON.parse(req.postData()).action==='activate';
     body={acceptances:[{id:'acceptance',business_name:'George Workshop',contact_name:'Sam',email:'business@example.com',accepted_at:'2026-09-22T00:00:00Z'}],guests:[{email:'business@example.com',business_name:'George Workshop',contact_name:'Sam',active:activated,suspended:false,access_until:null}]};
@@ -62,8 +71,11 @@ export default function Validation(){
    history=[];
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await page.goto('http://127.0.0.1:3033/asset-share/guest-validation',{waitUntil:'networkidle2'});
+   await page.waitForSelector('[data-hydrated=true]');
    await page.type('[name=businessName]','George Workshop');await page.type('[name=contactName]','Sam');await page.type('[name=email]','business@example.com');await page.click('[name=accepted]');await click('Accept free listing');
    await page.waitForFunction(()=>document.body.textContent.includes('your acceptance is recorded'));
+   await click('find');await page.click('details summary');await labelInput('Business name and town','Test Workshop George');await click('Search Google');await page.waitForFunction(()=>document.body.textContent.includes('Choose business'));await click('Choose business');await click('Prepare enquiry');await page.waitForFunction(()=>document.querySelector('[data-recipient]').textContent==='Test Workshop');
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Business finder fits viewport');
    await click('compose');await page.waitForFunction(()=>document.querySelector('input[value="owner@example.com"]'));
    await labelInput('Your request','Please quote for servicing.');
    await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');
@@ -75,15 +87,22 @@ export default function Validation(){
    await page.click('details summary');await click('Disable');await page.waitForFunction(()=>document.body.textContent.includes('Lead disabled'));
    await click('recipient');await page.click('details summary');
    assert.equal(await page.$$eval('a[href*="/reports/"]',els=>els.length),0,'Locked reports expose no download link');
-   await click('Sign up / sign in with email');await page.type('[name=contactName]','Sam');await click('Email me a sign-in code');await page.waitForSelector('[name=code]');await page.type('[name=code]','123456');await click('Confirm email');
-   await page.waitForFunction(()=>!document.querySelector('[name=code]'));
-   await click('Fixture verified');assert.equal(await page.$$eval('a[href*="/reports/"]',els=>els.length),0);
-   await page.waitForSelector('a[href^="mailto:aim4price"]');
+   assert.ok(await page.$('a[href^="/auth?returnTo="]'),'Account sign-in keeps the enquiry return path');
+   assert.equal(await page.$$eval('a[href^="mailto:aim4price"]',els=>els.length),0,'No paid guest upsell');
+   await page.type('[name=name]','Sam');await page.type('[name=contact]','sam@example.com');await page.type('[name=note]','Service quote');
+   const filePath=path.join(output,'quote.pdf');await fs.writeFile(filePath,'%PDF-1.4 fixture');
+   await (await page.$('input[type=file]')).uploadFile(filePath);await click('Send to owner');
+   await page.waitForFunction(()=>document.body.textContent.includes('Document sent to the owner'));
+   assert.equal(await page.$$eval('a[href*="submissions?id="]',els=>els.length),0,'Guest cannot see received documents');
    await page.screenshot({path:path.join(output,`locked-${width}.png`),fullPage:true});
    await click('Fixture activated');await page.waitForSelector('a[href*="/reports/"]');
    assert.ok(await page.$eval('a[href*="/reports/"]',e=>e.getAttribute('href').includes('g'.repeat(43))));
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Guest page fits viewport');
    await page.screenshot({path:path.join(output,`active-${width}.png`),fullPage:true});
+   await click('Fixture owner');await page.waitForSelector('a[href*="submissions?id="]');await click('Accept document');
+   await page.waitForFunction(()=>document.body.textContent.includes('Review saved. No asset details or costs were changed.'));
+   assert.equal(documents[0].status,'accepted');
+   await page.screenshot({path:path.join(output,`review-${width}.png`),fullPage:true});
    await click('admin');await page.waitForFunction(()=>document.body.textContent.includes('Business acceptances (1)'));
    await page.$$eval('details',els=>els.forEach(e=>e.open=true));await click('Prepare listing');
    await fill('[name=until]','2099-12-31');await page.type('[name=note]','Manual test payment');await click('Activate paid access');await page.waitForFunction(()=>document.body.textContent.includes('Guest access updated'));
@@ -92,6 +111,7 @@ export default function Validation(){
   await click('external');
   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Create lead link'&&!b.disabled));
   await labelInput('Your request','Please quote.');
+  await labelInput('Confirmed recipient WhatsApp · optional','+27820000000');
   await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');
   await page.evaluate(()=>{window.__opened=[];window.__nativeShares=0;window.open=url=>{window.__opened.push(url);return null};Object.defineProperty(navigator,'share',{configurable:true,value:()=>{window.__nativeShares++;return Promise.resolve()}});});
   await click('WhatsApp');
@@ -101,12 +121,13 @@ export default function Validation(){
   assert.match(sent.opened[0],/27820000000/);
   await fill('input[type=email]','other@example.com');await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');await click('WhatsApp');
   sent=await page.evaluate(()=>({opened:window.__opened,native:window.__nativeShares}));
-  assert.doesNotMatch(sent.opened.at(-1),/27820000000/,'Changing recipient must not keep the original WhatsApp target');
+  assert.match(sent.opened.at(-1),/27820000000/,'Explicitly confirmed WhatsApp is retained; a directory phone is never assumed');
   assert.equal(sent.native,0);
   assert.equal(requests.filter(r=>r.path==='/api/business-network/accept'&&r.method==='POST').length,2);
-  assert.equal(requests.filter(r=>r.path==='/api/guest-access'&&r.method==='POST').length,4);
+  assert.equal(requests.filter(r=>r.path==='/api/guest-access'&&r.method==='POST').length,0);
+  assert.equal(requests.filter(r=>r.path.endsWith('/submissions')&&r.method==='POST').length,2);
   assert.deepEqual(errors,[]);
-  console.log('PASS acceptance, lead creation/revocation, preserved drafts, verified/paid report states and manual admin activation at desktop and mobile widths');
+  console.log('PASS acceptance, lead creation/revocation, private document submission/review, locked reports and confirmed WhatsApp delivery at desktop and mobile widths');
  }finally{
   if(browser)await browser.close();if(server)server.kill();
   await fs.rm(fixture,{recursive:true,force:true});

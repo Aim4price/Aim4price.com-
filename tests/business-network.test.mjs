@@ -305,19 +305,12 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     failEmail = false;
     await network.saveBusiness(token, { action: "pause" });
     assert.equal((await network.listExternalBusinesses({})).length, 0);
-    await assert.rejects(
-      network.getBusinessRequest(requestToken),
-      /unavailable/,
-    );
+    assert.ok(await network.getBusinessRequest(requestToken), 'hiding a listing preserves existing enquiries');
     await assert.rejects(network.sendBusinessLead(owner, input), /no longer/);
     await network.saveBusiness(token, details);
     assert.equal((await network.listExternalBusinesses({})).length,0,'editing a hidden listing does not republish it');
     await manualAdmin.saveAdminBusiness('admin', {id:b.id,action:'publish'});
-    await assert.rejects(
-      network.getBusinessRequest(requestToken),
-      /unavailable/,
-      "reactivating does not revive revoked requests",
-    );
+    assert.ok(await network.getBusinessRequest(requestToken), 'directory visibility is separate from enquiry access');
     await network.limitBusinessAction("test-limit", 1);
     await assert.rejects(
       network.limitBusinessAction("test-limit", 1),
@@ -470,9 +463,9 @@ test("admin drafts require explicit publication before appearing in the director
       (await network.listExternalBusinesses({ partnerType: "dealer" })).length,
       0,
     );
-    assert.ok(
+    assert.equal(
       (await db.query("select revoked_at from business_network_requests"))
-        .rows[0].revoked_at,
+        .rows[0].revoked_at, null,
     );
     assert.deepEqual(
       (
@@ -556,7 +549,7 @@ test('Google lookup accepts public origins through a proxy, searches real endpoi
   process.env.NODE_ENV = 'production'; process.env.GOOGLE_PLACES_API_KEY = 'test-key';
   let session = {user:{id:'admin',email:'admin@example.com'}}, calls = 0;
   const api = load('lib/business-network-api.ts', {
-    './trusted-request-origin':load('lib/trusted-request-origin.ts'), './auth-session':{}, './account-profile':{}, './account-constants':{},
+    './trusted-request-origin':load('lib/trusted-request-origin.ts'), './auth-session':{getServerSession:async()=>session}, './account-profile':{getAccountProfile:async()=>({accountType:'owner',accountStatus:'active'})}, './account-constants':{isAim4priceAdminEmail:e=>e==='admin@example.com'},
   });
   const route = load('app/api/business-network/google/route.ts', {
     '../../../../lib/auth-session':{getAnyServerSession:async()=>session},
@@ -591,6 +584,9 @@ test('Google lookup accepts public origins through a proxy, searches real endpoi
     globalThis.fetch=async()=>new Response('',{status:503});
     const failed=await route.POST(request('https://aim4price.com',{placeId:'place-1'}));
     assert.equal(failed.status,400);assert.match((await failed.json()).error,/manually/);
+    session={user:{id:'owner',email:'owner@example.com'}};
+    globalThis.fetch=async()=>Response.json({places:[]});
+    assert.equal((await route.POST(request('https://aim4price.com'))).status,200,'active owners can search for a recipient');
     session=null; assert.equal((await route.POST(request('https://aim4price.com'))).status,403);assert.equal(calls,3);
     session={user:{id:'admin',email:'admin@example.com'}};delete process.env.GOOGLE_PLACES_API_KEY;
     const unavailable=await route.POST(request('https://aim4price.com'));assert.equal(unavailable.status,503);assert.match((await unavailable.json()).error,/not configured/);

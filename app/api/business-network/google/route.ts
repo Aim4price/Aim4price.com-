@@ -11,6 +11,7 @@ import {
   businessJson,
   requireBusinessOrigin,
   requestBusinessToken,
+  requireBusinessOwner,
 } from "../../../../lib/business-network-api";
 import { businessText } from "../../../../lib/business-network-shared";
 export const runtime = "nodejs";
@@ -23,12 +24,13 @@ export async function POST(request: NextRequest) {
       lookupId = (await getBusinessByToken(token)).id;
     } else {
       const session = await getAnyServerSession();
-      if (!session?.user?.id || !isAim4priceAdminEmail(session.user.email))
-        return businessJson(
-          { ok: false, error: "Admin access required." },
-          403,
-        );
-      lookupId = `admin:${session.user.id}`;
+      if (!session?.user?.id) return businessJson({ok:false,error:"Sign in to find a business."},403);
+      if (session?.user?.id && isAim4priceAdminEmail(session.user.email)) {
+        lookupId = `admin:${session.user.id}`;
+      } else {
+        const owner = await requireBusinessOwner();
+        lookupId = `owner:${owner.id}`;
+      }
     }
     await limitBusinessAction(`google:${lookupId}`, 20);
     const key = process.env.GOOGLE_PLACES_API_KEY;
