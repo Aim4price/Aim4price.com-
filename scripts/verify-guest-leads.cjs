@@ -49,6 +49,7 @@ export default function Validation(){
   page.on('request',req=>{
    const p=new URL(req.url()).pathname;
    if(!p.startsWith('/api/'))return req.continue();
+   if(p==='/api/business-network/accept/search')return req.respond({status:200,contentType:'application/json',body:JSON.stringify({places:[{id:'fixture-place',displayName:{text:'George Workshop'},formattedAddress:'George, Western Cape',googleMapsUri:'https://maps.google.com/?cid=123'}]})});
    if(p==='/api/fixture-pdf')return req.respond({status:200,contentType:'application/pdf',body:'%PDF-1.4 fixture'});
    let body={ok:true};requests.push({path:p,method:req.method(),data:req.postData()});
    if(p==='/api/asset-share-links/leads'){
@@ -76,8 +77,17 @@ export default function Validation(){
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await page.goto('http://127.0.0.1:3033/asset-share/guest-validation',{waitUntil:'networkidle2'});
    await page.waitForSelector('[data-hydrated=true]');
-   await page.type('[name=businessName]','George Workshop');await page.type('[name=contactName]','Sam');await page.type('[name=email]','business@example.com');await page.click('[name=accepted]');await click('Accept free listing');
+   await page.screenshot({path:path.join(output,`acceptance-${width}.png`),fullPage:true});
+   await page.type('input[placeholder="e.g. S Haddad, George"]','George Workshop');await click('Search Google');
+   await page.waitForSelector('[aria-label="Google search results"] button');
+   await page.click('[aria-label="Google search results"] button');await click('Yes, this is my business');
+   assert.equal(await page.$eval('[name=businessName]',el=>el.value),'George Workshop');
+   assert.equal(await page.$eval('[name=googleMapsUrl]',el=>el.value),'https://maps.google.com/?cid=123');
+   await page.type('[name=town]','George');await page.type('[name=contactName]','Sam');await page.type('[name=email]','business@example.com');await page.click('[name=accepted]');await click('Submit my free listing');
    await page.waitForFunction(()=>document.body.textContent.includes('your acceptance is recorded'));
+   const acceptance=requests.filter(r=>r.path==='/api/business-network/accept').at(-1);
+   assert.equal(JSON.parse(acceptance.data).googlePlaceId,'fixture-place');
+   assert.equal(JSON.parse(acceptance.data).googleConfirmed,true);
    await click('find');
    assert.ok(!(await page.evaluate(()=>document.body.textContent)).includes('Invitations & history'));
    await click('Need help?');
