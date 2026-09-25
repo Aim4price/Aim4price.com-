@@ -19,6 +19,7 @@ import {
 } from '../../components/WorkspacePrimitives';
 import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportKeyValue, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
+import accountStyles from '../account/page.module.css';
 import styles from './page.module.css';
 import native_dealerStyles from '../dealer/dealer.module.css';
 import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-corrections';
@@ -1772,6 +1773,7 @@ export default function LeadsClient({
 
   const useDealerWorkspaceStyles = licensingWorkspaceMode || accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
   const isDealerLeadsMode = Boolean(dealerAppMode || dealerWorkspaceMode);
+  const useOwnerManageLayout = Boolean(dealerWorkspaceMode && !dealerAppMode && !accountantWorkspaceMode && !licensingWorkspaceMode);
   const canAddDealerCosts = isDealerLeadsMode;
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
@@ -4092,24 +4094,24 @@ export default function LeadsClient({
       ) : null}
 
       {managedLead ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`} data-website-overlay>
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`}`} data-website-overlay data-account-asset-modal={useOwnerManageLayout ? true : undefined}>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setManagedLead(null)} />
 
-          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`}>
+          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${useOwnerManageLayout ? `${assetStyles.managementAccountModal} ${accountStyles.modalTheme}` : `${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
                 <p>{leadAssetMeta(managedLead)}</p>
               </div>
 
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={() => setManagedLead(null)} aria-label="Close lead management">
-                <CloseIcon className={assetStyles.buttonIcon} />
+              <button type="button" className={`${useOwnerManageLayout ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : `${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`}`} onClick={() => setManagedLead(null)} aria-label="Close lead management">
+                {useOwnerManageLayout ? <span aria-hidden="true">×</span> : <CloseIcon className={assetStyles.buttonIcon} />}
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}`}>
               <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${styles.manageOptionsGrid} ${isDealerLeadsMode ? dialogStyles.actions : ''}`}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${useOwnerManageLayout ? '' : `${styles.manageOptionsGrid} ${isDealerLeadsMode ? dialogStyles.actions : ''}`}`}>
                   {accountantWorkspaceMode ? (
                     <>
                       <button
