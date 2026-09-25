@@ -7817,15 +7817,12 @@ export default function AssetRegisterClient({
     const registersById = new Map<string, AssetRegisterSummary>();
 
     assetRegisters.forEach((register) => {
-      if (dealerRegisterMode === 'dealer' && !register.isPrimary) return;
-      if (dealerRegisterMode === 'client' && register.isPrimary) return;
+      if (dealerRegisterMode && register.id === COMBINED_REGISTER_ID) return;
       if (register.id) registersById.set(register.id, register);
     });
 
     const activeRegisterMatchesDealerMode =
-      !dealerRegisterMode
-      || (dealerRegisterMode === 'dealer' && Boolean(activeRegister?.isPrimary))
-      || (dealerRegisterMode === 'client' && !activeRegister?.isPrimary);
+      !dealerRegisterMode || activeRegister?.id !== COMBINED_REGISTER_ID;
 
     if (activeRegister?.id && activeRegisterMatchesDealerMode && !registersById.has(activeRegister.id)) {
       registersById.set(activeRegister.id, activeRegister);
@@ -7860,20 +7857,15 @@ export default function AssetRegisterClient({
       String(register.assetCount),
     ].some((value) => String(value ?? '').toLowerCase().includes(query)));
   }, [registerSwitcherOptions, registerSwitcherSearchTerm]);
-  const canOpenRegisterSwitcher = dealerRegisterMode === 'client'
+  const canOpenRegisterSwitcher = dealerRegisterMode || isAccountantWorkspace
     ? registerSwitcherOptions.length > 0
-    : isAccountantWorkspace
-      ? registerSwitcherOptions.length > 0
-      : registerSwitcherOptions.length > 1;
+    : registerSwitcherOptions.length > 1;
   const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
   const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
   const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
   const canManageAssetGroups =
-    !dealerRegisterMode
-    && (
-      canUseOwnerOnlyAssetActions
-      || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates))
-    );
+    canUseOwnerOnlyAssetActions
+    || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
   const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
   const registerUnnotedAlertCounts = useMemo(() => {
     const countsByRegisterId = new Map<string, number>();
@@ -8393,7 +8385,8 @@ export default function AssetRegisterClient({
     setChangingRegisterId(nextRegisterId);
 
     if (dealerRegisterMode) {
-      window.location.assign(`${dealerRegisterBaseHref}?dealerView=${dealerRegisterMode}&registerId=${encodeURIComponent(nextRegisterId)}`);
+      const nextDealerMode = nextRegisterId === dealerOwnedRegister?.id ? 'dealer' : 'client';
+      window.location.assign(`${dealerRegisterBaseHref}?dealerView=${nextDealerMode}&registerId=${encodeURIComponent(nextRegisterId)}`);
       return;
     }
 
@@ -16444,8 +16437,8 @@ export default function AssetRegisterClient({
               >
                 <div className={`${styles.modalHeader} ${styles.changeRegisterModalHeader}`}>
                   <div className={styles.modalHeaderText}>
-                    <h3 id="asset-register-change-title">{dealerRegisterMode === 'client' ? 'Change Client Asset Register' : 'Change Asset Register'}</h3>
-                    <p>{dealerRegisterMode === 'client' ? 'Choose another client register to open, or manage the available client registers.' : 'Choose a saved asset register to open, or manage your registers.'}</p>
+                    <h3 id="asset-register-change-title">Change Asset Register</h3>
+                    <p>{dealerRegisterMode ? 'Choose your dealership register or a client register.' : 'Choose a saved asset register to open, or manage your registers.'}</p>
                   </div>
 
                   <button
