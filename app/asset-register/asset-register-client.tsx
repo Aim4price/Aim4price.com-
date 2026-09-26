@@ -1,4 +1,6 @@
 'use client';
+import LicenceShareReview from '../../components/asset-register/LicenceShareReview';
+import { licenceShareMissingDetails } from '../../lib/licence-share-readiness';
 import ShareModalCloseButton from '../../components/asset-register/ShareModalCloseButton';
 import DateInput from '../../components/DateInput';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
@@ -6707,6 +6709,7 @@ export default function AssetRegisterClient({
   const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
   const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
+  const [licenceReviewAssetIds, setLicenceReviewAssetIds] = useState<string[] | null>(null);
   const [assetUpdateMenuEnabled, setAssetUpdateMenuEnabled] = useState(false);
   const [showAssetUpdateMenu, setShowAssetUpdateMenu] = useState(false);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
@@ -10180,6 +10183,7 @@ export default function AssetRegisterClient({
     setBulkFinanceAssetIds([]);
     resetEditor();
 
+    if (licenceReviewAssetIds) return true;
     if (!returnOrigin) return false;
 
     if (returnOrigin.origin === 'manage') {
@@ -10206,6 +10210,7 @@ export default function AssetRegisterClient({
 
   function navigateBackFromAssetForm() {
     if (assetAutosaveState === 'pending' || assetAutosaveState === 'saving') return;
+    if (licenceReviewAssetIds) { closeAssetModal(); return; }
     if (assetUpdateMenuEnabled && !showAssetUpdateMenu) {
       returnToAssetUpdateMenu();
       return;
@@ -11026,6 +11031,10 @@ export default function AssetRegisterClient({
     setExpandedAssetId(asset.id);
     if (section === 'license') {
       openUpdater(asset);
+      setShowAssetUpdateMenu(false);
+      setManualAssetStep(3);
+      setAssetStatusEditView('license');
+      setAssetStatusQuickOrigin('detail-card');
       return;
     }
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
@@ -11889,10 +11898,7 @@ export default function AssetRegisterClient({
     if (
       leadType === 'license_renewal'
       && quoteAsset
-      && (
-        readLicenseStatusChoice(quoteAsset) !== 'yes'
-        || !readSpecsText(quoteAsset, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date'])
-      )
+      && licenceShareMissingDetails(quoteAsset).length > 0
     ) {
       const asset = quoteAsset;
       setQuoteAsset(null);
@@ -15164,12 +15170,17 @@ export default function AssetRegisterClient({
     };
   }
 
-  function openFullRegisterQuotePartnerPicker(leadType: AssetLeadType) {
+  function openFullRegisterQuotePartnerPicker(leadType: AssetLeadType, licenceReviewed = false) {
     const shareAssets = isAssetGroupShare ? assetGroupShareAssets : assets;
+    if (leadType === 'license_renewal' && !licenceReviewed) {
+      setIsRegisterShareModalOpen(false);
+      setLicenceReviewAssetIds(shareAssets.map(asset => asset.id));
+      return;
+    }
+    if (leadType === 'license_renewal' && shareAssets.some(asset => assetKindSupportsLicensing(asset.kind) && licenceShareMissingDetails(asset).length)) return;
     const eligibleShareAssets = leadType === 'license_renewal'
       ? shareAssets.filter((asset) => (
-          readLicenseStatusChoice(asset) === 'yes' &&
-          Boolean(readSpecsText(asset, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date']))
+          assetKindSupportsLicensing(asset.kind) && licenceShareMissingDetails(asset).length === 0
         ))
       : shareAssets;
     const anchorAsset = eligibleShareAssets[0];
@@ -15192,6 +15203,7 @@ export default function AssetRegisterClient({
       return;
     }
 
+    setLicenceReviewAssetIds(null);
     setIsRegisterShareModalOpen(false);
     setAssetShareDestination('inside');
     resetAssetQuoteState('register');
@@ -18650,6 +18662,16 @@ export default function AssetRegisterClient({
         </div>
       ) : null}
 
+      {licenceReviewAssetIds && !isAssetModalOpen && <LicenceShareReview
+        assets={assets.filter(asset => licenceReviewAssetIds.includes(asset.id)).map(asset => ({
+          id: asset.id, title: asset.title, applicable: assetKindSupportsLicensing(asset.kind),
+          missing: licenceShareMissingDetails(asset), registration: asset.licenseRegistrationNumber || '',
+          renewal: readSpecsText(asset, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date']),
+        }))}
+        onEdit={id => { const asset = assets.find(asset => asset.id === id); if (asset) openQuickAssetStatusEditor(asset, 'license'); }}
+        onClose={() => { setLicenceReviewAssetIds(null); setIsRegisterShareModalOpen(true); }}
+        onContinue={() => openFullRegisterQuotePartnerPicker('license_renewal', true)}
+      />}
       {isAssetModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
