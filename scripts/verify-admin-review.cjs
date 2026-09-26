@@ -155,6 +155,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    if(width===1440){
     page.once('dialog',dialog=>dialog.accept());
     await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Issue & email').click());
+    await page.waitForFunction(()=>document.querySelector('dialog h2')?.textContent!=='Preview invoice draft');
     await page.waitForSelector('dialog a[download]');
     assert.equal(billingRequests.at(-1).action,'issue');
     assert.equal(billingRequests.at(-1).version,1);
@@ -165,6 +166,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
     await page.waitForFunction(()=>document.body.textContent.includes('Invoice issued. No email sent.'));
     assert.equal(billingRequests.at(-1).action,'issue');assert.equal(billingRequests.at(-1).sendEmail,false);
    }
+   await page.waitForFunction(()=>document.querySelector('dialog h2')?.textContent!=='Preview invoice draft'&&document.querySelector('dialog [aria-label="Close invoice preview"]')?.disabled===false);
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
   }
