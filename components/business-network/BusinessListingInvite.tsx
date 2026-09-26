@@ -1,4 +1,5 @@
 'use client';
+import ShareModalCloseButton from '../asset-register/ShareModalCloseButton';
 
 import { useId, useRef, useState } from 'react';
 import { createPortal } from '../WebsitePortal';
@@ -58,9 +59,7 @@ export default function BusinessListingInvite({ senderName = '' }: { senderName?
       >
         <header className={styles.header}>
           <h2 id={titleId}>Invite a business</h2>
-          <button type="button" className={styles.close} aria-label="Close business invitation" onClick={() => dialog.current?.close()}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-          </button>
+          <ShareModalCloseButton aria-label="Close business invitation" onClick={() => dialog.current?.close()} />
         </header>
         <p id={descriptionId} className={styles.description}>Send them a link to join the directory. They confirm their details, and Aim4price reviews the listing.</p>
         <div className={styles.actions}>
