@@ -5,7 +5,7 @@ const path = require('node:path');
 const {spawn} = require('node:child_process');
 const puppeteer = require('puppeteer-core');
 const root = path.resolve(__dirname, '..');
-const fixture = path.join(root, 'app/asset-share/guest-validation');
+const fixture = path.join(root, 'app/business-network/guest-validation');
 const output = path.join(root, '.next/guest-lead-validation');
 const token = 'g'.repeat(43);
 async function main() {
@@ -43,6 +43,7 @@ export default function Validation(){
   await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Startup timed out')),60000);server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));});
   browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await require('@sparticuz/chromium').executablePath(),args:['--no-sandbox','--disable-setuid-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true,pipe:true});
   const page=await browser.newPage(),errors=[],requests=[];
+  await page.evaluateOnNewDocument(()=>{localStorage.setItem('aim4price.website-canvas.v2',JSON.stringify({mode:'manual',scale:1.06}));});
   page.on('pageerror',e=>{errors.push(e.message);console.error(page.url(),e.message)});
   page.on('console',msg=>{if(msg.type()==='error')console.error(page.url(),msg.text())});
   let history=[],activated=false,documents=[];
@@ -84,6 +85,10 @@ export default function Validation(){
    const writesBefore=requests.filter(r=>r.method==='POST').length;
    assert.equal(await page.$('a[href^="/business-network/example"]'),null);
    assert.equal(await page.$('form'),null);
+   await page.goto('http://127.0.0.1:3033/asset-share/invalid',{waitUntil:'networkidle2'});
+   await page.waitForSelector('[data-website-canvas]');
+   await page.waitForSelector('[data-website-zoom-host=ready] [data-site-workspace-zoom-controls]');
+   assert.ok(await page.evaluate(()=>document.body.textContent.includes('This link is no longer available')));
    await page.goto('http://127.0.0.1:3033/business-network/example?from=X%20Farms',{waitUntil:'networkidle2'});
    await page.waitForFunction(()=>document.body.textContent.includes('Example Toyota Hilux'));
    const openCard='button[aria-label="Open Example Toyota Hilux"]';
@@ -102,6 +107,16 @@ export default function Validation(){
    assert.match(details,/Replacement Price/);
    assert.ok(await page.evaluate(id=>{const card=document.getElementById(id)?.closest('article');return card&&card.scrollWidth<=card.clientWidth+1;},panelId),'Expanded details fit the lead card in the website canvas');
    await page.screenshot({path:path.join(output,`enquiry-expanded-${width}.png`),fullPage:true});
+   const layout=await page.$eval(manageCard,button=>{
+    const card=button.closest('[class*="leadAssetCard"]');
+    const value=card.querySelector('[class*="leadValueBlock"]');
+    const shell=card.closest('[class*="shell"]');
+    const b=button.getBoundingClientRect(),v=value.getBoundingClientRect(),c=shell.getBoundingClientRect();
+    const canvas=document.querySelector('[data-website-canvas]').getBoundingClientRect();
+    return {rightGap:Math.abs(b.right-v.right),below:b.top>=v.bottom,leftGutter:c.left-canvas.left,rightGutter:canvas.right-c.right};
+   });
+   assert.ok(layout.rightGap<3&&layout.below,'Manage sits at the far right below the value');
+   assert.ok(layout.leftGutter>0&&Math.abs(layout.leftGutter-layout.rightGutter)<3,'Standard shell has equal side gutters');
    await page.click(manageCard);await page.waitForSelector('dialog[open]');
    await click('Reply by email');await page.waitForFunction(()=>document.body.textContent.includes('this opens your email app'));
    await click('Reply on WhatsApp');await page.waitForFunction(()=>document.body.textContent.includes('this opens WhatsApp'));
@@ -113,7 +128,7 @@ export default function Validation(){
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Manage Example Toyota Hilux','Closing Manage restores focus');
    await page.click(closeCard);await page.waitForSelector(openCard);
    assert.equal(await page.$(manageCard),null,'Closing the card hides its management controls');
-   await page.goto('http://127.0.0.1:3033/asset-share/guest-validation',{waitUntil:'networkidle2'});
+   await page.goto('http://127.0.0.1:3033/business-network/guest-validation',{waitUntil:'networkidle2'});
    await page.waitForSelector('[data-hydrated=true]');
    await page.screenshot({path:path.join(output,`acceptance-${width}.png`),fullPage:true});
    await page.type('input[placeholder="e.g. S Haddad, George"]','George Workshop');await click('Search Google');
@@ -259,7 +274,7 @@ export default function Validation(){
  }finally{
   if(browser)await browser.close();if(server)server.kill();
   await fs.rm(fixture,{recursive:true,force:true});
-  await fs.rm(path.join(root,'.next/types/app/asset-share/guest-validation'),{recursive:true,force:true});
+  await fs.rm(path.join(root,'.next/types/app/business-network/guest-validation'),{recursive:true,force:true});
  }
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

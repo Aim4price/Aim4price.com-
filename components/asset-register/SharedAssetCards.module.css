@@ -1,40 +1,20 @@
 /* Page framing only. All card, gallery and detail styling belongs to Leads. */
 .page {
-  min-height: 100dvh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #153c31;
-  padding: 32px 20px 48px;
   font-family: inherit;
 }
-.header,
 .intro,
 .assets.assets,
 .businessDetails,
 .note,
 .empty {
   width: 100%;
-  max-width: 1600px;
   margin-inline: auto;
   box-sizing: border-box;
 }
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  font-size: 13px;
-  color: #64786f;
-}
-.brand {
-  font-size: 25px;
-  letter-spacing: -1px;
-  font-weight: 800;
-  color: #123b30;
-}
-.brand span {
-  color: #299d72;
-}
 .intro {
-  margin-block: 44px 24px;
+  margin-block: 16px 24px;
 }
 .intro h1 {
   font-size: 30px;
@@ -69,7 +49,7 @@
 }
 .manageDialog {
   width: min(800px, calc(100% - 32px));
-  max-height: calc(100dvh - 32px);
+  max-height: calc(calc(var(--website-design-vh, 1vh) * 100) - 32px);
   margin: auto;
   padding: 0;
   overflow: auto;
@@ -86,19 +66,10 @@
   margin: 20px 0;
 }
 @media (max-width: 600px) {
-  .page {
-    padding: 20px 14px;
-  }
-  .header {
-    align-items: flex-start;
-  }
-  .header > span:last-child {
-    font-size: 11px;
-  }
-  .intro {
+  :global(:where(html:not(:has([data-website-canvas])))) .intro {
     margin-top: 32px;
   }
-  .intro h1 {
+  :global(:where(html:not(:has([data-website-canvas])))) .intro h1 {
     font-size: 25px;
   }
 }
