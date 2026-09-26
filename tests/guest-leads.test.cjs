@@ -10,7 +10,7 @@ const snapshot=load('lib/asset-share-snapshot.ts',{'./asset-usage':load('lib/ass
 const asset={id:A,userId:'owner',title:'Tractor',kind:'tractor',serialNumber:'1234',value:100000,photos:[],condition:'good',privateNote:'PRIVATE',documents:[{name:'PRIVATE'}]};
 const details={recipientName:'Workshop',recipientEmail:'workshop@example.com',request:'Please quote to repair this tractor.',replyName:'Owner',replyEmail:'owner@example.com',replyPhone:'0821234567',allowReply:true};
 async function setup(){
- const pg=new PGlite();await pg.exec('CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text NOT NULL)');await pg.query('INSERT INTO asset_register_items VALUES($1,$2),($3,$4)',[A,'owner',B,'other']);
+ const pg=new PGlite();await pg.exec('CREATE TABLE account_profiles(user_id text PRIMARY KEY,business_name text); CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text NOT NULL)');await pg.query('INSERT INTO asset_register_items VALUES($1,$2),($3,$4)',[A,'owner',B,'other']);
  const query=(sql,params)=>params?pg.query(sql,params):pg.exec(sql).then(rows=>rows.at(-1));const client={query,release(){}},db={query,connect:async()=>client};
  const assetDb={getAssetRegisterItemsByRefs:async refs=>{const rows=(await pg.query('SELECT * FROM asset_register_items')).rows;return rows.filter(row=>refs.some(ref=>ref.assetId===row.id&&ref.userId===row.user_id)).map(row=>({...asset,id:row.id,userId:row.user_id}));}};
  const base=load('lib/asset-share-links.ts',{'./db':{getDb:()=>db},'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot});
