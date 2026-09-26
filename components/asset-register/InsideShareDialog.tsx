@@ -1,4 +1,5 @@
 'use client';
+import ShareModalCloseButton from './ShareModalCloseButton';
 
 import type { ReactNode } from 'react';
 import base from './ShareDestinationDialog.module.css';
@@ -22,7 +23,7 @@ export default function InsideShareDialog({ titleId, subject, options, disabled 
             <h3 id={titleId} tabIndex={-1} title={subject}>Share inside Aim4price</h3>
             <p>Choose who to share with.</p>
           </div>
-          <button className={base.close} type="button" onClick={onClose} disabled={disabled} aria-label="Back to share options">×</button>
+          <ShareModalCloseButton onClick={onClose} disabled={disabled} aria-label="Back to share options" />
         </header>
         <div className={styles.grid}>
           {options.map(option => (
