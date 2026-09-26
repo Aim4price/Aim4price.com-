@@ -5,14 +5,14 @@ import ShareModalCloseButton from './ShareModalCloseButton';
 import styles from './ShareDisclosureDialog.module.css';
 
 /** One disclosure surface for invitations and direct external sharing. */
-export default function ShareDisclosureDialog({ title, titleId, descriptionId, closeLabel, onClose, children }: {
+export default function ShareDisclosureDialog({ title, titleId, descriptionId, closeLabel, onClose, children, className }: {
   title: string; titleId: string; descriptionId?: string; closeLabel: string;
-  onClose: () => void; children: ReactNode;
+  onClose: () => void; children: ReactNode; className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement | null>(null);
   return createPortal(<dialog
     ref={node => { dialog.current = node; if (node && !node.open) node.showModal(); }}
-    className={styles.dialog} aria-labelledby={titleId} aria-describedby={descriptionId}
+    className={[styles.dialog, className].filter(Boolean).join(' ')} aria-labelledby={titleId} aria-describedby={descriptionId}
     onKeyDown={event => event.stopPropagation()}
     onCancel={event => event.stopPropagation()}
     onClose={onClose}
