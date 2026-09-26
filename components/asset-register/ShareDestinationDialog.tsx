@@ -1,4 +1,5 @@
 'use client';
+import ShareModalCloseButton from './ShareModalCloseButton';
 
 import base from './ShareDestinationDialog.module.css';
 import styles from './InsideShareDialog.module.css';
@@ -24,7 +25,7 @@ export default function ShareDestinationDialog({ kind, titleId, subject, disable
             <h3 id={titleId} tabIndex={-1} title={subject}>Share {kind === 'register' ? 'asset register' : kind}</h3>
             <p>Choose how to share.</p>
           </div>
-          <button className={base.close} type="button" onClick={onClose} disabled={disabled} aria-label="Close share options">×</button>
+          <ShareModalCloseButton onClick={onClose} disabled={disabled} aria-label="Close share options" />
         </header>
         <div className={styles.grid}>
           <button className={styles.card} type="button" onClick={onInside} disabled={disabled}>
