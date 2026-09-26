@@ -66,7 +66,7 @@ const valuation={id:'estimate:1',sourceId:'1',recordType:'estimate',valuationMod
 const valuations={generatedAtIso:now,valuations:[valuation],summary:{totalValuations:1,estimateEvents:1,savedValuations:0,knownAccountValuations:1,unknownAccountValuations:0,uniqueAccounts:1,valuedValuations:1},options:{sectors:options.sectors,years:[]},filters:{search:'',recordType:'all',valuationMode:'all',account:'all',sector:'',period:'all',sort:'latest',page:1,pageSize:50},pagination:{...pagination,totalItems:1}};
 const outcome={outcomeId:'outcome',listingId:'listing-one',sourceAssetId:'one',accountUserId:'owner',sellerLabel:user.name,sellerEmail:user.email,title:asset.title,sectorKey:'agricultural',sectorLabel:'Agriculture',reason:'created_by_mistake',outcomeNote:'',aim4priceHelped:false,finalSalePriceExVat:null,askingPriceExVat:327133,aim4priceValueExVat:327133,totalViewsAtClose:8,accountViewsAtClose:5,unknownViewsAtClose:3,uniqueViewersAtClose:3,sourceSurface:'marketplace',publishedAtIso:now,closedAtIso:now,actorType:'owner'};
 const titles={billing:'Billing',accounts:'Accounts',businesses:'Business Directory',dashboard:'Dashboard',valuations:'Valuations',marketplace:'Marketplace','asset-map':'Asset Map',discovery:'Discovery',outcomes:'Outcomes','asset-outcomes':'Asset register outcomes','work-tracker':'Work tracker','capture-queue':'Capture Queue',lifecycle:'Lifecycle Model',maintenance:'Maintenance checklists'};
-const props={billing:{clients:[user],initialAccount:'owner',initialWork:'work-one'},accounts:{initialUsers:[user,{...user,userId:'two',name:'Example Dealer',accountType:'dealer',accountSubtype:'equipment_middleman',accountStatus:'pending_payment',accountStatusLabel:'Pending payment',email:'dealer@example.test'}]},marketplace:{report:{assets:[market,{...market,assetKey:'asset:two',title:'3 Ton Tip Trailer',hasRepeatInterest:false}],generatedAtIso:now}},discovery:{initialReport:discovery},'asset-map':{initialReport:discovery},valuations:{initialReport:valuations},outcomes:{report:{outcomes:[outcome]}},'asset-outcomes':{report:{outcomes:[]},allocationAccounts:[]},'work-tracker':{initialClients:[user]}};
+const props={billing:{clients:[user,{userId:'dealer-test',name:'Example Equipment Dealer',email:'dealer@example.test',accountType:'dealer'},{userId:'farm-test',name:'River Farm',email:'farm@example.test',accountType:'owner'}],initialAccount:'owner',initialWork:'work-one'},accounts:{initialUsers:[user,{...user,userId:'two',name:'Example Dealer',accountType:'dealer',accountSubtype:'equipment_middleman',accountStatus:'pending_payment',accountStatusLabel:'Pending payment',email:'dealer@example.test'}]},marketplace:{report:{assets:[market,{...market,assetKey:'asset:two',title:'3 Ton Tip Trailer',hasRepeatInterest:false}],generatedAtIso:now}},discovery:{initialReport:discovery},'asset-map':{initialReport:discovery},valuations:{initialReport:valuations},outcomes:{report:{outcomes:[outcome]}},'asset-outcomes':{report:{outcomes:[]},allocationAccounts:[]},'work-tracker':{initialClients:[user]}};
 const catalogue={version:1,profiles:[{key:'tractor',label:'Tractor checklist',items:[{id:'oil',label:'Engine oil',checkLabel:'Check oil',serviceLabel:'Change oil',description:'Check with engine stopped.'}]}],families:[{source:'basic',sector:'agricultural',familyKey:'small-field-tractor',label:'Small Field Tractor',profileKey:'tractor'}]};
 const capture={id:'request-one',publicReference:'INV-TEST',requestType:'invoice',submissionChannel:'owner_upload',status:'in_progress',senderDisplayName:'Example Sender',ownerDisplayName:user.name,assetDisplayName:asset.title,assetReference:'ABC123',fuelStorageDisplayName:'',assignedAdminDisplayName:'Admin',submittedAtIso:now,dueAtIso:'2026-09-22T10:00:00Z',updatedAtIso:now,version:1,fileCount:0,ownerUserId:'owner',assetId:'one',fuelStorageId:'',senderEmail:'sender@example.test',senderPhone:'',senderBusinessName:'',senderNote:'',adminNote:'',needsInformationReason:'',candidatePayload:{},capturedPayload:{usageMetric:'hours',usageReading:'1250'}};
 const evidence=path.join(root,'.next/admin-review-validation');
@@ -212,6 +212,31 @@ const evidence=path.join(root,'.next/admin-review-validation');
   assert.equal(await page.evaluate(()=>document.activeElement.textContent),'View invoice');
   billingIssued=false;
   console.log('PASS account search, preview retry, sandbox, download gating and focus restoration');
+  for(const width of [390,1440]){
+   await open('billing',width);
+   await page.click('[aria-label="Choose billing account"]');
+   await page.waitForSelector('[aria-label="Search billing accounts"]');
+   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Search billing accounts');
+   await page.evaluate(async()=>{window.scrollTo(0,0);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});
+   await page.screenshot({path:path.join(evidence,'billing-account-picker-'+width+'.png'),fullPage:true});
+   await page.type('[aria-label="Search billing accounts"]','dealer');
+   await page.keyboard.press('ArrowDown');
+   assert.equal(await page.evaluate(()=>document.activeElement.textContent.includes('All accounts')),true);
+   await page.keyboard.press('ArrowDown');
+   assert.equal(await page.evaluate(()=>document.activeElement.textContent.includes('Example Equipment Dealer')),true);
+   await page.keyboard.press('Enter');
+   await page.waitForFunction(()=>document.querySelector('[aria-label="Choose billing account"]').getAttribute('aria-expanded')==='false');
+   assert.match(await page.$eval('[aria-label="Choose billing account"]',e=>e.textContent),/Example Equipment Dealer/);
+   await page.click('[aria-label="Choose billing account"]');
+   await page.type('[aria-label="Search billing accounts"]','no such account');
+   await page.click('[aria-label="Clear account search"]');
+   assert.equal(await page.$eval('[aria-label="Search billing accounts"]',e=>e.value),'');
+   await page.keyboard.press('Escape');
+   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Choose billing account');
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'account picker width');
+  }
+  console.log('PASS billing account picker keyboard selection, clear search and responsive layout');
+
   await open('accounts');
   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
   assert.equal(await page.$$eval('[aria-label="Admin navigation"] a',els=>els.length),13);
