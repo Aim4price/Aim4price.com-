@@ -71,3 +71,41 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
   await mail.dispatchBillingMail();assert.equal(calls.length,4);assert.equal((await pg.query("select count(*)::int as n from aim4price_billing_mail where status='needs_review'")).rows[0].n,1);
  }finally{global.fetch=oldFetch;if(oldKey===undefined)delete process.env.RESEND_API_KEY;else process.env.RESEND_API_KEY=oldKey;await pg.close();}
 });
+
+test('recurring agreements are opt-in, audited, versioned and issue only once per scheduled period',async()=>{
+ const pg=new PGlite();
+ const query=async(sql,values)=>{if(sql===schema.BILLING_SCHEMA_SQL){await pg.exec(sql);return {rows:[],rowCount:0};}if(sql.includes('pg_advisory_xact_lock'))return {rows:[],rowCount:1};const r=await pg.query(sql,values);return {...r,rowCount:r.rows.length||r.affectedRows||0};};
+ const db={query,connect:async()=>({query,release(){}})};
+ const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
+ try {
+  await pg.exec('create table "user"(id text primary key,name text,email text); insert into "user" values(\'one\',\'Example\',\'one@example.test\');');
+  await billing.ensureBillingSchema();
+  const input={userId:'one',version:0,customer:{name:'Example',email:'one@example.test',address:'George'},lines:[{description:'Approved package',quantity:1,unitCents:25000}],interval:'monthly',nextInvoiceDate:'2090-01-31',dueDays:7,enabled:false};
+  await billing.saveBillingAgreement(input,'admin');
+  await billing.processRecurringInvoices('2090-01-31');
+  assert.equal((await billing.listBillingInvoices('one',true)).total,0);
+  await assert.rejects(billing.saveBillingAgreement({...input,version:1,enabled:true},'admin'),/agreed/);
+  await assert.rejects(billing.saveBillingAgreement({...input,version:0},'admin'),/changed/);
+  await billing.saveBillingAgreement({...input,version:1,enabled:true,approved:true},'admin');
+  await billing.processRecurringInvoices('2090-01-31');await billing.processRecurringInvoices('2090-01-31');
+  let a=await billing.getBillingAgreement('one');
+  assert.equal(a.nextInvoiceDate,'2090-02-28');
+  assert.equal((await billing.listBillingInvoices('one',false)).total,1);
+  assert.equal((await pg.query('select count(*)::int as n from aim4price_billing_mail')).rows[0].n,1);
+  await billing.processRecurringInvoices('2090-02-28');
+  a=await billing.getBillingAgreement('one');assert.equal(a.nextInvoiceDate,'2090-03-31');
+  await assert.rejects(billing.saveBillingAgreement({...input,version:a.version,nextInvoiceDate:'2090-02-28'},'admin'),/already been invoiced/);
+  await billing.pauseBillingAgreement({userId:'one',version:a.version,reason:'Customer requested a pause'},'admin');
+  await billing.processRecurringInvoices('2090-03-31');assert.equal((await billing.listBillingInvoices('one',false)).total,2);
+  a=await billing.getBillingAgreement('one');
+  await billing.saveBillingAgreement({...input,version:a.version,nextInvoiceDate:'2090-03-31',enabled:true,approved:true},'admin');
+  await billing.processRecurringInvoices('2090-05-01');
+  a=await billing.getBillingAgreement('one');assert.equal(a.enabled,false);assert.match(a.lastError,/Missed billing/);
+  assert.equal((await billing.listBillingInvoices('one',false)).total,2);
+  const events=await pg.query('select actor_id,action from aim4price_billing_agreement_events');
+  assert.ok(events.rows.some(e=>e.actor_id==='admin'&&e.action==='paused'));
+  assert.ok(events.rows.some(e=>e.action==='review_required'));
+  assert.equal(shared.nextAgreementDate('2025-02-28','annual','2024-02-29'),'2026-02-28');
+  assert.equal(shared.nextAgreementDate('2027-02-28','annual','2024-02-29'),'2028-02-29');
+ } finally {await pg.close();}
+});

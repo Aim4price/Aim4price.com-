@@ -162,6 +162,27 @@ const evidence=path.join(root,'.next/admin-review-validation');
 
   }
   console.log('PASS billing work selection, responsive composer and save-to-preview flow');
+  for(const width of [390,1440]){
+   await open('billing',width);
+   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Automatic billing')));
+   await page.$$eval('button',els=>els.find(e=>e.textContent.includes('Aim4price follows your schedule')).click());
+   await page.waitForSelector('[aria-label="Automatic billing settings"]');
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2),false,'automatic billing '+width);
+   assert.equal(await page.$$eval('button',els=>els.find(e=>e.textContent==='Save & enable automatic billing').disabled),true);
+   for(const [label,value] of [['Description','Monthly asset register'],['Unit price (R)','350']]){
+    const input=await page.evaluateHandle(label=>[...document.querySelectorAll('[aria-label="Automatic billing settings"] label')].find(e=>e.textContent===label).querySelector('input'),label);
+    await input.type(value);
+   }
+   await page.evaluate(async()=>{window.scrollTo(0,0);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});
+   await page.screenshot({path:path.join(evidence,'billing-automatic-'+width+'.png'),fullPage:true});
+   await page.$$eval('button',els=>els.find(e=>e.textContent==='Save with automation paused').click());
+   await page.waitForFunction(()=>document.body.textContent.includes('Billing settings saved.'));
+   assert.equal(billingRequests.at(-1).action,'save_agreement');
+   assert.equal(billingRequests.at(-1).enabled,false);
+   assert.equal(billingRequests.at(-1).lines[0].unitCents,35000);
+  }
+  console.log('PASS automatic billing setup, explicit approval and responsive layout');
+
   billingIssued=true;await open('billing');
   await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));
   assert.equal(await page.$('a[href*="format=pdf"]'),null,'no direct download before preview');

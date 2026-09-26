@@ -3,7 +3,7 @@ import type { PoolClient, QueryResultRow } from 'pg';
 import { getDb } from './db';
 import { ensureAdminWorkTrackerSchema } from './admin-work-tracker';
 import { BILLING_SCHEMA_SQL } from './billing-schema';
-import { BILLING_ISSUER, BILLING_ACCOUNT_TYPES, cleanCustomer, cleanLines, dateKey, validDate, nextBillingDate, type BillingInvoice, type BillingPlan, type BillingLine } from './billing-shared';
+import { BILLING_ISSUER, BILLING_ACCOUNT_TYPES, cleanCustomer, cleanLines, dateKey, validDate, nextBillingDate, type BillingInvoice, type BillingPlan, type BillingLine, nextAgreementDate } from './billing-shared';
 import { buildBillingInvoiceHtml } from './billing-report';
 
 export class BillingError extends Error {}
@@ -66,7 +66,7 @@ export async function getBillingWorkspace(userId: string) {
   const work=await getDb().query(`select s.id,s.started_at,s.duration_seconds,s.note from admin_work_sessions s
     where s.client_user_id=$1 and s.stopped_at is not null and not exists(select 1 from aim4price_billing_work w where w.work_session_id=s.id) order by s.started_at desc limit 200`,[userId]);
   const p=profile.rows[0];
-  return { customer:p.customer ?? {name:p.name,email:p.email,address:''}, nextBillingDate:p.next_billing_date, interval:p.interval ?? 'once', amountCents:Number(p.amount_cents ?? 0), work:work.rows };
+  return { agreement:await getBillingAgreement(userId), agreementHistory:(await getDb().query('select action,detail,created_at from aim4price_billing_agreement_events where user_id=$1 order by id desc limit 20',[userId])).rows, customer:p.customer ?? {name:p.name,email:p.email,address:''}, nextBillingDate:p.next_billing_date, interval:p.interval ?? 'once', amountCents:Number(p.amount_cents ?? 0), work:work.rows };
 }
 export async function createBillingDraft(input: Record<string, unknown>, actor: string): Promise<string> {
   let customer,lines,dueDate;
@@ -205,4 +205,76 @@ export async function billingPreparationStatus() {
   await ensureBillingSchema();
   const result=await getDb().query(`select count(*)::integer as pending, count(*) filter(where last_error is not null)::integer as failed from aim4price_billing_signup_jobs where processed_at is null`);
   return result.rows[0];
+}
+
+function agreementModel(row: QueryResultRow) {
+ const day = (value: string | Date) => typeof value === 'string' ? value.slice(0,10) : value.toISOString().slice(0,10);
+ return {customer:row.customer,lines:row.lines,interval:row.interval,anchorDate:day(row.anchor_date),nextInvoiceDate:day(row.next_invoice_date),dueDays:row.due_days,enabled:row.enabled,version:row.version,lastInvoiceDate:row.last_invoice_date?day(row.last_invoice_date):null,lastError:row.last_error};
+}
+export async function getBillingAgreement(userId: string) {
+ await ensureBillingSchema();
+ const result=await getDb().query('select * from aim4price_billing_agreements where user_id=$1',[userId]);
+ return result.rows[0]?agreementModel(result.rows[0]):null;
+}
+export async function saveBillingAgreement(input: Record<string,unknown>, actor: string) {
+ const userId=String(input.userId??'');
+ let customer,lines,next;
+ try {customer=cleanCustomer(input.customer);lines=cleanLines(input.lines);next=validDate(input.nextInvoiceDate);}catch(e){throw new BillingError((e as Error).message);}
+ const interval=String(input.interval),days=Number(input.dueDays);
+ if(!['monthly','annual'].includes(interval)||!Number.isInteger(days)||days<0||days>90||typeof input.enabled!=='boolean')throw new BillingError('Check the interval and payment terms.');
+ if(input.enabled&&input.approved!==true)throw new BillingError('Confirm the customer agreed to these recurring charges.');
+ if(next<dateKey())throw new BillingError('Choose today or a future invoice date. Past periods are invoiced manually.');
+ await transaction(async db=>{
+  await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-agreement:'+userId]);
+  if(!(await db.query('select id from "user" where id=$1',[userId])).rowCount)throw new BillingError('Account not found.');
+  const old=(await db.query('select * from aim4price_billing_agreements where user_id=$1 for update',[userId])).rows[0];
+  if(Number(input.version)!==(old?.version??0))throw new BillingError('Billing settings changed. Refresh before saving.');
+  const previous=old?agreementModel(old):null;
+  if(previous?.lastInvoiceDate&&next<=previous.lastInvoiceDate)throw new BillingError('This period has already been invoiced. Choose a later date.');
+  const anchor=previous&&next===previous.nextInvoiceDate&&interval===previous.interval?previous.anchorDate:next;
+  await db.query(`insert into aim4price_billing_agreements(user_id,customer,lines,interval,anchor_date,next_invoice_date,due_days,enabled)
+   values($1,$2,$3,$4,$5,$6,$7,$8) on conflict(user_id) do update set customer=$2,lines=$3,interval=$4,anchor_date=$5,next_invoice_date=$6,due_days=$7,enabled=$8,version=aim4price_billing_agreements.version+1,last_error=null,updated_at=now()`,[userId,JSON.stringify(customer),JSON.stringify(lines),interval,anchor,next,days,input.enabled]);
+  await db.query('insert into aim4price_billing_agreement_events(user_id,actor_id,action,detail) values($1,$2,$3,$4)',[userId,actor,input.enabled?'approved':'saved_paused',JSON.stringify({customer,lines,interval,nextInvoiceDate:next,dueDays:days,previous})]);
+ });
+}
+export async function pauseBillingAgreement(input: Record<string,unknown>, actor: string) {
+ const userId=String(input.userId??''),reason=String(input.reason??'').trim();
+ if(!reason||reason.length>500)throw new BillingError('Enter a pause reason (up to 500 characters).');
+ await transaction(async db=>{
+  const result=await db.query('update aim4price_billing_agreements set enabled=false,version=version+1,updated_at=now() where user_id=$1 and version=$2 returning user_id',[userId,Number(input.version)]);
+  if(!result.rowCount)throw new BillingError('Billing settings changed. Refresh before pausing.');
+  await db.query('insert into aim4price_billing_agreement_events(user_id,actor_id,action,detail) values($1,$2,$3,$4)',[userId,actor,'paused',JSON.stringify({reason})]);
+ });
+}
+export async function processRecurringInvoices(today=dateKey()) {
+ if(process.env.AIM4PRICE_RECURRING_BILLING_DISABLED==='1')return;
+ validDate(today);await ensureBillingSchema();
+ const due=await getDb().query('select user_id from aim4price_billing_agreements where enabled and next_invoice_date<=$1 order by next_invoice_date limit 50',[today]);
+ for(const item of due.rows){
+  try {await transaction(async db=>{
+   const row=(await db.query('select * from aim4price_billing_agreements where user_id=$1 and enabled and next_invoice_date<=$2 for update skip locked',[item.user_id,today])).rows[0];
+   if(!row)return;
+   const a=agreementModel(row),next=nextAgreementDate(a.nextInvoiceDate,a.interval,a.anchorDate);
+   // Never silently issue a batch of historic charges after downtime or a pause.
+   if(next<=today){
+    await db.query("update aim4price_billing_agreements set enabled=false,last_error='Missed billing periods. Review the next date before resuming.',version=version+1 where user_id=$1",[item.user_id]);
+    await db.query('insert into aim4price_billing_agreement_events(user_id,actor_id,action,detail) values($1,$2,$3,$4)',[item.user_id,'system','review_required',JSON.stringify({nextInvoiceDate:a.nextInvoiceDate})]);return;
+   }
+   const lines=cleanLines(a.lines),customer=cleanCustomer(a.customer),id=randomUUID(),key=`recurring:${item.user_id}:${a.nextInvoiceDate}`;
+   const dueDate=new Date(a.nextInvoiceDate+'T00:00:00Z');dueDate.setUTCDate(dueDate.getUTCDate()+a.dueDays);
+   const invoice=(await db.query(`insert into aim4price_billing_invoices(id,user_id,customer,issuer,lines,total_cents,due_date,generation_key,note)
+    values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(generation_key) do nothing returning *`,[id,item.user_id,JSON.stringify(customer),JSON.stringify(BILLING_ISSUER),JSON.stringify(lines),lines.reduce((sum,l)=>sum+l.totalCents,0),dueDate.toISOString().slice(0,10),key,`Recurring billing — ${a.nextInvoiceDate}`])).rows[0];
+   if(invoice)await issueLocked(db,invoice,'recurring');
+   await db.query('update aim4price_billing_agreements set next_invoice_date=$2,last_invoice_date=$3,last_error=null,version=version+1,updated_at=now() where user_id=$1',[item.user_id,next,a.nextInvoiceDate]);
+  });}catch{
+   await getDb().query("update aim4price_billing_agreements set last_error='Invoice preparation failed. Automatic retry pending.' where user_id=$1",[item.user_id]);
+  }
+ }
+}
+
+export async function listBillingAgreements() {
+ await ensureBillingSchema();
+ return (await getDb().query(`select a.user_id as "userId", a.customer->>'name' as name, a.enabled,
+  to_char(a.next_invoice_date,'YYYY-MM-DD') as "nextInvoiceDate", a.last_error as "lastError"
+  from aim4price_billing_agreements a order by (a.last_error is not null) desc,a.next_invoice_date,a.user_id limit 200`)).rows;
 }

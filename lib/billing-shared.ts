@@ -52,3 +52,17 @@ export function invoiceState(invoice: BillingInvoice): string {
   if (invoice.dueDate < dateKey()) return 'Overdue';
   return invoice.paidCents > 0 ? 'Part paid' : 'Outstanding';
 }
+
+export type BillingAgreement = {
+ customer: BillingCustomer; lines: BillingLine[]; interval: 'monthly' | 'annual';
+ anchorDate: string; nextInvoiceDate: string; dueDays: number; enabled: boolean;
+ version: number; lastInvoiceDate: string | null; lastError: string | null;
+};
+/** Retain the agreed day across February and leap years. */
+export function nextAgreementDate(current: string, interval: 'monthly' | 'annual', anchor: string): string {
+ const date = new Date(validDate(current) + 'T00:00:00Z');
+ const original = new Date(validDate(anchor) + 'T00:00:00Z');
+ const year = date.getUTCFullYear() + (interval === 'annual' ? 1 : 0);
+ const month = interval === 'annual' ? original.getUTCMonth() : date.getUTCMonth() + 1;
+ return new Date(Date.UTC(year, month, Math.min(original.getUTCDate(), new Date(Date.UTC(year, month + 1, 0)).getUTCDate()))).toISOString().slice(0,10);
+}

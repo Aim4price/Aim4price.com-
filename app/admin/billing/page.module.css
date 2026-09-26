@@ -68,3 +68,23 @@
 .pickerOptions strong,.pickerOptions small { display:block; overflow-wrap:anywhere; }
 .pickerOptions small { color:#60756d; margin-top:4px; font-size:12px; }
 @media(max-width:600px){.noteField{grid-column:auto}.sectionHeading{margin-bottom:14px}.total strong{font-size:21px}.picker{max-width:none;flex-basis:100%}.emptyState{padding:24px 14px}}
+
+.billingPaths { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin:20px 0; }
+.pathCard { display:flex; flex-direction:column; gap:10px; text-align:left; padding:24px; border:1px solid #d9e3de; border-radius:16px; background:#fff; color:#173c32; font:inherit; cursor:pointer; }
+.pathCard strong { font-size:23px; font-weight:700; }
+.pathCard > span:last-child { font-size:14px; line-height:1.6; color:#53675e; }
+.pathSelected { border:2px solid #28644d; padding:23px; background:#f0f7f3; box-shadow:0 5px 18px #173c320b; }
+.pathEyebrow { font-size:12px; font-weight:600; color:#527161; }
+.agreementSummary { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:22px; margin:24px 0; }
+.agreementSummary div { display:flex; flex-direction:column; gap:6px; overflow-wrap:anywhere; }
+.agreementSummary small { color:#617369; }
+.approval { display:flex; align-items:flex-start; gap:10px; margin:20px 0; line-height:1.6; }
+.approval input { margin-top:5px; }
+@media(max-width:600px) { .billingPaths,.agreementSummary { grid-template-columns:1fr; } .pathCard { padding:20px; } .pathSelected { padding:19px; } }
+
+.scheduleList { display:grid; gap:12px; margin-top:18px; }
+.scheduleList button { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; text-align:left; }
+
+.draftLabel { white-space:nowrap; flex-shrink:0; }
+.sectionHeading { flex-wrap:wrap; }
+.scheduleFields { margin-top:22px; }
