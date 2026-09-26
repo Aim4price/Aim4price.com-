@@ -64,7 +64,10 @@ test('dealer registers use meaningful titles without decorative pills or combine
   assert.doesNotMatch(registerClient, /`\$\{savedRegisterTitle\} Asset Register`/);
   assert.doesNotMatch(registerClient, /styles\.dealerRegisterContextPill/);
   assert.match(registerClient, /if \(dealerRegisterMode\) \{[\s\S]*?return null;/);
-  assert.match(registerClient, /const canManageAssetGroups =[\s\S]*?!dealerRegisterMode/);
+  const groupPermission = registerClient.match(/const canManageAssetGroups =([^;]+);/)?.[1] ?? '';
+  assert.match(groupPermission, /canUseOwnerOnlyAssetActions/);
+  assert.match(groupPermission, /accountantAccess\?\.allowDirectUpdates/);
+  assert.doesNotMatch(groupPermission, /dealerRegisterMode/);
   assert.match(registerClient, /\{canManageAssetGroups \? \([\s\S]*?<UmbrellaIcon/);
   assert.match(registerClient, /\{canShareActiveRegister && !dealerRegisterMode \? \(/);
   assert.doesNotMatch(registerClient, /disabled=\{!canManageAssetGroups \|\| isMovingAssetRegister\}/);
