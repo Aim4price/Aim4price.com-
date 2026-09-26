@@ -3,7 +3,7 @@
 ## Add a business yourself
 
 1. Open **Admin → Manage → Business Directory → Add business manually**.
-2. Choose **Search Google** to look up a name and town, or **Enter manually** to skip Google completely. Enter the business email, contact information, headings/services and location.
+2. Choose **Search Google** to look up a name and town, or **Enter manually** to skip Google completely. Enter the business email, contact information and location.
 3. Select **Save and publish** on the form to approve it immediately. No invitation, business acceptance or account is required. Choose **Save draft** instead if you want to finish later; the list also retains **Approve and publish**.
 4. Use **Hide listing** to remove it. Editing a hidden listing does not publish it again.
 
@@ -97,7 +97,7 @@ Browser requests from both official Aim4price origins use the shared trusted-ori
 
 Selecting **Link this business** now requests Place Details (New) for that result and
 fills available name, phone, website, address, town and coordinates. Blank fields
-remain editable; enquiry email, headings, services and service coverage remain
+remain editable; enquiry email and service coverage remain
 business/admin supplied. Existing manually entered values are preserved. Selecting
 another result replaces unchanged suggestions from the previous result, including
 clearing unavailable suggestions so details from two businesses are not mixed.
@@ -120,3 +120,7 @@ does not assert that every directory use is permitted by Google.
 sending an invitation. Existing admin **Hide listing** controls remain available,
 with republishing through **Approve and publish**. Hiding also revokes existing
 business-network request links; it is not permanent deletion.
+
+### Sharing directory
+
+The map is a recipient directory for businesses owners already work with. Users can look up a business by name or invite it to join. Business heading and service filters, and the corresponding Admin/profile controls, have been removed. Published external businesses can receive any sharing request without category tags; Aim4price account roles still control their existing access and workflow. Legacy tags remain stored for compatibility, but no longer control directory visibility or name lookup.

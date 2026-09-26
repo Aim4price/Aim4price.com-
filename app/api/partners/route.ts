@@ -43,8 +43,6 @@ export async function GET(request: NextRequest) {
       partnerType,
       search,
       bounds,
-      category: searchParams.get('category'),
-      service: searchParams.get('service'),
     });
 
     return NextResponse.json({ ok: true, partners });

@@ -25,7 +25,7 @@ function load(path, stubs = {}) {
   return module.exports;
 }
 const shared = load("lib/business-network-shared.ts");
-test("validates business details, multiple services, safe URLs and service coverage", () => {
+test("validates business details, legacy metadata, safe URLs and service coverage", () => {
   const b = shared.validateBusinessDetails(
     {
       name: "Workshop",
@@ -40,6 +40,9 @@ test("validates business details, multiple services, safe URLs and service cover
     },
     "service@example.com",
   );
+  const untagged = shared.validateBusinessDetails({ ...b, headings: undefined, services: undefined }, b.email);
+  assert.equal(untagged.headings.length, 0);
+  assert.equal(untagged.services.length, 0);
   assert.equal(b.headings.length, 2);
   assert.equal(b.services.length, 2);
   assert.equal(shared.businessCoversLocation(b, -33.95, 22.47), true);
@@ -156,21 +159,22 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     await manualAdmin.saveAdminBusiness('admin', {id:b.id,action:'publish'});
     const directory = await network.listExternalBusinesses({
       partnerType: "dealer",
-      category: "Mechanic",
-      service: "Brakes",
       latitude: -33.95,
       longitude: 22.47,
     });
     assert.equal(directory.length, 1);
     assert.equal(directory[0].isExternalBusiness, true);
+    assert.equal((await network.listExternalBusinesses({ search: 'Workshop' })).length, 1);
+    assert.equal((await network.listExternalBusinesses({ search: 'Brakes' })).length, 0, 'Lookup matches business names, not service tags');
+
     assert.equal(
       (
         await network.listExternalBusinesses({
-          partnerType: "dealer",
-          category: "Tyre services",
+          partnerType: "finance",
         })
       ).length,
-      0,
+      1,
+      'Legacy headings must not prevent sharing through another request type',
     );
     assert.equal(
       (
@@ -393,8 +397,6 @@ test("admin drafts require explicit publication before appearing in the director
       latitude: -33.96,
       longitude: 22.46,
       radiusKm: 100,
-      headings: ["Mechanic"],
-      services: ["Brakes"],
       googlePlaceId: "manual-place",
       googleMapsUrl: "https://www.google.com/maps?query_place_id=manual-place",
     };

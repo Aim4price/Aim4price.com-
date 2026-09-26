@@ -1,36 +1,3 @@
-export const BUSINESS_HEADINGS = [
-  "Tractor dealer",
-  "Vehicle dealer",
-  "Equipment dealer",
-  "Mechanic",
-  "Auto electrician",
-  "Parts supplier",
-  "Tyre services",
-  "Body repairer",
-  "Hydraulic services",
-  "Transport services",
-  "Insurance broker",
-  "Finance provider",
-  "Licence renewal services",
-];
-export const BUSINESS_SERVICES = [
-  "Air and cabin filter replacement",
-  "Vehicle engine diagnostic",
-  "Battery",
-  "Brakes",
-  "Electrical",
-  "Oil change",
-  "Steering and suspension repair",
-  "Body & Trim",
-  "Brake service & repair",
-  "Exhaust",
-  "Transmission",
-  "Hydraulic repairs",
-  "On-site repairs",
-  "Parts supply",
-  "Tyre replacement",
-  "Equipment sales",
-];
 export type BusinessDetails = {
   name: string;
   email: string;
@@ -42,6 +9,7 @@ export type BusinessDetails = {
   longitude: number;
   radiusKm: number;
   nationwide: boolean;
+  /** Legacy metadata; no longer required or used to filter recipients. */
   headings: string[];
   services: string[];
   googlePlaceId: string;
@@ -119,11 +87,9 @@ export function validateBusinessDetails(
   };
   if (
     details.name.length < 2 ||
-    !details.town ||
-    !details.headings.length ||
-    !details.services.length
+    !details.town
   )
-    throw new Error("Add your business name, town, headings and services.");
+    throw new Error("Add your business name and town.");
   if (
     !Number.isFinite(details.latitude) ||
     Math.abs(details.latitude) > 90 ||
@@ -164,14 +130,4 @@ export function businessCoversLocation(
     businessDistanceKm(b.latitude, b.longitude, latitude, longitude) <=
       b.radiusKm
   );
-}
-
-export function businessPartnerTypes(headings: string[]): Array<'dealer'|'finance'|'insurance'|'licensing'> {
-  return [...new Set(headings.map(heading => {
-    const label = heading.toLowerCase();
-    if (label.includes('insurance')) return 'insurance' as const;
-    if (label.includes('finance') || label.includes('accountant')) return 'finance' as const;
-    if (label.includes('licence') || label.includes('license')) return 'licensing' as const;
-    return 'dealer' as const;
-  }))];
 }

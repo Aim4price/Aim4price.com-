@@ -51,7 +51,7 @@ export default function Fixture(){const [saved,setSaved]=useState('');return <><
    await page.screenshot({path:path.join(output,`google-${width}.png`),fullPage:true});
    failSearch=true;await click('Find on Google');await page.waitForFunction(()=>document.body.textContent.includes('Google search is not configured'));
    await click('Enter manually');assert.equal(await page.$('[aria-label="Google business search"]'),null);
-   await fill('Business name','Manual Workshop');await fill('Request email','manual@example.com');await fill('Town / city','George');await fill('Latitude','-33.96');await fill('Longitude','22.46');await click('Mechanic');await click('Brakes');
+   await fill('Business name','Manual Workshop');await fill('Request email','manual@example.com');await fill('Town / city','George');await fill('Latitude','-33.96');await fill('Longitude','22.46');
    await click('Save draft');assert.equal(saves.length,width===1440?0:2,'Unverified Google suggestions cannot be saved');
    await page.evaluate(()=>[...document.querySelectorAll('label')].find(e=>e.textContent.includes('independently checked'))?.querySelector('input').click());
    await click('Save draft');await page.waitForFunction(()=>document.querySelector('[data-saved]').textContent==='Draft saved');assert.equal(saves.at(-1).action,'save');

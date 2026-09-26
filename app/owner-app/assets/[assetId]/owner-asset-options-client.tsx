@@ -1,7 +1,6 @@
 'use client';
 
 import BusinessInvite from '../../../../components/business-network/BusinessInvite';
-import BusinessFilters from '../../../../components/business-network/BusinessFilters';
 import BusinessSharePreview from '../../../../components/business-network/BusinessSharePreview';
 import Link from 'next/link';
 import { useMemo, useState, type FormEvent } from 'react';
@@ -227,8 +226,6 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
   const [additionalContact, setAdditionalContact] = useState('');
   const [businessPreviewReady, setBusinessPreviewReady] = useState(false);
   const [requestKey, setRequestKey] = useState('');
-  const [businessHeading, setBusinessHeading] = useState('');
-  const [businessService, setBusinessService] = useState('');
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [trackMaintenance, setTrackMaintenance] = useState(false);
   const [trackingPermissions, setTrackingPermissions] = useState<DealerMaintenancePermissions>(() => ({
@@ -280,13 +277,11 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
         ? () => returnToStage('message')
         : undefined;
 
-  async function loadPartners(option: QuoteOption, searchValue = '', heading = businessHeading, service = businessService) {
+  async function loadPartners(option: QuoteOption, searchValue = '') {
     setLoadingPartners(true);
     setNotice(null);
     try {
       const params = new URLSearchParams({ type: option.partnerType });
-      if (heading) params.set('category', heading);
-      if (service) params.set('service', service);
       if (searchValue.trim()) params.set('search', searchValue.trim());
       const response = await fetch(`/api/partners?${params.toString()}`, { credentials: 'include', cache: 'no-store' });
       const payload = await response.json().catch(() => null) as { ok?: boolean; partners?: Partner[]; error?: string } | null;
@@ -308,8 +303,6 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
       window.location.assign(`${assetHref}/manage/licence`);
       return;
     }
-    setBusinessHeading('');
-    setBusinessService('');
     setAdditionalContact('');
     setSelectedLeadType(option.leadType);
     setSelectedPartnerId('');
@@ -320,7 +313,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
     setTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
     setIsTrackingPermissionsOpen(false);
     setStage('partners');
-    await loadPartners(option, '', '', '');
+    await loadPartners(option, '');
   }
 
   function addReport(source: ExternalShareFileSource) {
@@ -490,13 +483,12 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
           </div>
 
           <form className={styles.ownerPartnerSearch} onSubmit={submitSearch}>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search business, town or province" aria-label="Search available companies" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a business by name" aria-label="Search available companies" />
             <button type="submit" disabled={loadingPartners}>{loadingPartners ? 'Searching…' : 'Search'}</button>
           </form>
 
           <button type="button" className={styles.secondaryButton} onClick={() => shareWithExternalBusiness({name:'Aim4price',email:'aim4price@gmail.com',phone:'062 572 1650'})}>Need help?</button>
           <BusinessInvite />
-          <BusinessFilters heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadPartners(selectedOption, search, heading, service); }} />
           <div className={styles.ownerPartnerList}>
             {loadingPartners ? <p className={styles.ownerOptionsEmpty}>Loading available companies…</p> : partners.length ? partners.map((partner) => (
               <button type="button" className={styles.ownerPartnerCard} key={partner.userId} onClick={() => choosePartner(partner)}>
