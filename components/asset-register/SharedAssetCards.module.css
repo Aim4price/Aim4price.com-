@@ -73,3 +73,6 @@
     font-size: 25px;
   }
 }
+.manageDialog { scrollbar-width:thin; scrollbar-color:var(--app-accent,#43836a) transparent; }
+.manageDialog::-webkit-scrollbar { width:6px; }
+.manageDialog::-webkit-scrollbar-thumb { border-radius:8px; background:var(--app-accent,#43836a); }

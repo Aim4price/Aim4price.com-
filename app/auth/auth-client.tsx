@@ -1,4 +1,5 @@
 "use client";
+import { sharedEnquiryReturnTo } from '../../lib/external-share-permissions';
 
 import { money, type BillingPlan } from "../../lib/billing-shared";
 import DropdownOverlay from '../../components/DropdownOverlay';
@@ -978,7 +979,7 @@ export default function AuthClient() {
         : authenticatedSession?.accountType === "licensing"
           ? getAbsoluteUrl("/")
           : getAbsoluteUrl("/leads");
-      const redirectUrl = authenticatedSession?.accountType === "business" ? getAbsoluteUrl("/business") :
+      const redirectUrl = authenticatedSession?.accountType === "business" ? getAbsoluteUrl(sharedEnquiryReturnTo(getSafeReturnTo()) || "/business") :
         !getSafeReturnTo() &&
         normalizeEmail(email) !== ADMIN_EMAIL &&
         (authenticatedSession?.accountType === "dealer" ||

@@ -14,9 +14,9 @@ export default function GuestLeadActions({token,details,reports,access}:{token:s
  {access==='owner'&&<p>You are previewing your own lead. The recipient needs verified, active access to open reports.</p>}
  {reports.map(report=><div key={report.id} className={styles.report}><strong>{report.label}</strong>{open?<a href={`/api/asset-share-links/${token}/reports/${report.id}`} target="_blank" rel="noreferrer">Open report</a>:<span>🔒 Account access required</span>}</div>)}
  {!reports.length&&<p>The owner has not shared any reports with this enquiry.</p>}
- {reports.length>0&&!open&&<><p>Sign in with the verified Aim4price account matching the email selected by the owner. Directory acceptance alone does not unlock reports.</p><div className={styles.actions}><a href={`/auth?returnTo=${encodeURIComponent(`/asset-share/${token}`)}`}>Sign in</a><a href={`/auth?returnTo=${encodeURIComponent(`/asset-share/${token}`)}`}>Create an account</a><button type="button" onClick={()=>router.refresh()}>Check access again</button></div></>}
+ {reports.length>0&&!open&&<><p>Sign in with the verified Aim4price account matching the email selected by the owner. Directory acceptance alone does not unlock reports.</p><div className={styles.actions}><a href={`/auth?returnTo=${encodeURIComponent(`/asset-share/${token}`)}`}>Sign in</a><a href={`/business/join?returnTo=${encodeURIComponent(`/asset-share/${token}`)}`}>Create free account</a><button type="button" onClick={()=>router.refresh()}>Check access again</button></div></>}
 
  </details>
- {(access==='owner'||details.allowSubmissions)&&<LeadDocuments token={token} owner={access==='owner'}/>}
+ {(access==='owner'||(open&&details.allowSubmissions))&&<LeadDocuments token={token} owner={access==='owner'}/>}
  </section>;
 }

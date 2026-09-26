@@ -47,6 +47,7 @@ test('public enquiry renders an expandable Leads card for every selected asset',
     '../leads/LeadAssetFacts':load('components/leads/LeadAssetFacts.tsx').default,
     '../leads/LeadManageButton':load('components/leads/LeadManageButton.tsx').default,
     '../LeadPhotoViewerModal':()=>null,
+    './ExternalLeadActions':()=>null,
     './ShareModalCloseButton':()=>null,
     '../business-network/BusinessAcceptanceForm':()=>React.createElement('div',null,'Business lookup'),
     '../WebsitePortal':{createPortal:()=>{throw new Error('No modal should be mounted before Manage is clicked');}},
@@ -76,6 +77,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
         '../asset-register/ShareDisclosureDialog':'dialog',
         '../asset-register/ShareModalCloseButton':()=>null,
         '../WebsitePortal':{createPortal:node=>node},
+        '../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
         '../../lib/asset-external-share':{buildEmailShareUrl:()=>'',buildWhatsAppShareUrl:()=>''},
       }).default;
       const render=(assetIds=ids)=>{cursor=0;view=Invite({senderName:'Farm',assetIds,includePhotos:false});};
@@ -83,18 +85,21 @@ test('invitation requires consent, freezes all selected assets and handles failu
       render();
       walk(view,node=>node.type==='button').props.onClick();render();
       assert.equal(sent,undefined,'Opening the invite does not publish asset data');
+      assert.ok(!button('Create invitation link'),'Permission selection comes first');
+      button('Share read-only').props.onClick();render();
       assert.equal(button('Create invitation link').props.disabled,true);
-      await button('Create invitation link').props.onClick();
+      await walk(view,node=>node.type==='form').props.onSubmit({preventDefault(){}});
       assert.equal(sent,undefined,'Handler also enforces consent');
       walk(view,node=>node.type===Disclaimer).props.onChange(true);
       render(['different-asset']);
-      await button('Create invitation link').props.onClick();
+      await walk(view,node=>node.type==='form').props.onSubmit({preventDefault(){}});
       await new Promise(resolve=>setImmediate(resolve));render();
       assert.deepEqual(sent,{assetIds:ids,includePhotos:false},'Original complete selection is preserved');
       if(failed){assert.ok(walk(view,node=>node.props?.role==='alert'));assert.ok(!button('Copy link'));}
       else assert.ok(button('Copy link'));
       walk(view,node=>node.type==='dialog').props.onClose();render();
       walk(view,node=>node.type==='button').props.onClick();render();
+      button('Share read-only').props.onClick();render();
       assert.equal(button('Create invitation link').props.disabled,true,'Reopening requires fresh consent');
     }
   }finally{Object.assign(global,previous);}

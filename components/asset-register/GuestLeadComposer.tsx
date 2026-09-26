@@ -20,10 +20,10 @@ export default function GuestLeadComposer({assetIds,includePhotos,recipient,repo
  }catch(e){setNotice(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}
  async function revoke(token:string){setBusy(true);try{const r=await fetch('/api/asset-share-links',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});if(!r.ok)throw new Error('Could not disable the lead.');if(url.endsWith(token)){setUrl('');onChange('');}await load();setNotice('Lead disabled, including its report access.');}catch(e){setNotice(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}
  return <section className={styles.panel} aria-label="Create a shared lead"><h2>Lead page</h2>
- <p>The basic card, photos you include and your request are visible to anyone with the link. Reports require an eligible verified Aim4price account matching the recipient email. Existing approved guest access is also honoured. Reports are kept on the lead page, not attached to your email.</p>
+ <p>The basic card, photos you include and your request are visible to anyone with the link. Reports require an eligible verified Aim4price account matching the recipient email. Reports are kept on the lead page, not attached to your email.</p>
  <form className={styles.form} onSubmit={create}><fieldset disabled={busy} className={styles.fields}>
  <label>Business name<input value={fields.recipientName} maxLength={200} onChange={e=>update('recipientName',e.target.value)}/></label>
- <label>Recipient email · required for reports<input type="email" value={fields.recipientEmail} required={reports.length>0} maxLength={254} onChange={e=>update('recipientEmail',e.target.value)}/></label>
+ <label>Recipient email · required for reports or contributions<input type="email" value={fields.recipientEmail} required={reports.length>0||fields.allowSubmissions} maxLength={254} onChange={e=>update('recipientEmail',e.target.value)}/></label>
  <label>Confirmed recipient WhatsApp · optional<input type="tel" value={fields.recipientWhatsApp} placeholder="+27821234567" maxLength={40} onChange={e=>update('recipientWhatsApp',e.target.value)}/></label>
  <p>Enter an email, a confirmed WhatsApp number, or both. A business phone number is not automatically a WhatsApp number.</p>
  <label>Your request<textarea value={fields.request} required maxLength={3000} placeholder="Please quote to insure this asset." onChange={e=>update('request',e.target.value)}/></label>
@@ -31,7 +31,7 @@ export default function GuestLeadComposer({assetIds,includePhotos,recipient,repo
  <label>Your reply email<input type="email" value={fields.replyEmail} required maxLength={254} onChange={e=>update('replyEmail',e.target.value)}/></label>
  <label>Your WhatsApp number · optional<input type="tel" value={fields.replyPhone} maxLength={40} onChange={e=>update('replyPhone',e.target.value)}/></label>
  <label><span><input style={{width:'auto'}} type="checkbox" checked={fields.allowReply} onChange={e=>update('allowReply',e.target.checked)}/> Show reply buttons and my contact details on the lead</span></label>
- <label><span><input style={{width:'auto'}} type="checkbox" checked={fields.allowSubmissions} onChange={e=>update('allowSubmissions',e.target.checked)}/> Allow anyone with this link to submit invoices or quotes for my review</span></label>
+ <label><span><input style={{width:'auto'}} type="checkbox" checked={fields.allowSubmissions} onChange={e=>update('allowSubmissions',e.target.checked)}/> Allow the verified recipient to submit invoices or quotes for my review</span></label>
  <p>{reports.length?`${reports.length} selected report(s) will be locked until the recipient has access.`:'No reports selected. Use Add report above to include reports.'} {includePhotos?'Saved asset photos are included.':'Photos are not included.'}</p>
  <ShareDisclaimer publicLink accepted={accepted} onChange={value=>setAcceptedKey(value?consentKey:'')} disabled={busy}/>
  <button disabled={busy||!ready||!accepted}>{busy?'Saving lead…':!ready?'Preparing reports…':'Create lead link'}</button>

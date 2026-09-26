@@ -5,19 +5,24 @@ import type { ValidatedPublicInvoiceFile } from './public-invoice-drop-security'
 
 export type LeadSubmission = { id:string; kind:string; sender_name:string; sender_contact:string; note:string; file_name:string; status:string; created_at:string };
 const validToken = (token:string) => /^[A-Za-z0-9_-]{43}$/.test(token);
-// The link is a bearer capability. Contact details are self-reported, not a verified business identity.
-export async function submitLeadDocument(token:string, input:Record<string,unknown>, file:ValidatedPublicInvoiceFile) {
+// All new submissions are attributed to the verified recipient, never form-supplied identity.
+export async function submitLeadDocument(token:string, input:Record<string,unknown>, file:ValidatedPublicInvoiceFile, actorId:string) {
  if(!validToken(token)) throw new Error('This enquiry is unavailable.');
- const name=String(input.name||'').trim(),contact=String(input.contact||'').trim(),note=String(input.note||'').trim();
+ const {requireExternalLeadAction}=await import('./external-lead-access');
+ const {user}=await requireExternalLeadAction(token,'documents');
+ if(!actorId||user.id!==actorId)throw new Error('Verified recipient access required.');
+ const {getAccountProfile}=await import('./account-profile');
+ const profile=await getAccountProfile(user);
+ const name=(profile.businessName||user.name||user.email).slice(0,150),contact=user.email,note=String(input.note||'').trim();
  if(!name||name.length>150||!contact||contact.length>254||note.length>2000||!['invoice','quote'].includes(String(input.kind))) throw new Error('Enter your name, contact details and document type.');
  await ensureGuestLeadSchema();const db=await getDb().connect();
  try {
   await db.query('BEGIN');
-  const lead=(await db.query(`SELECT user_id FROM asset_share_links s WHERE token=$1 AND revoked_at IS NULL AND lead_details->>'allowSubmissions'='true' AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) FOR UPDATE`,[token])).rows[0];
+  const lead=(await db.query(`SELECT user_id FROM asset_share_links s WHERE token=$1 AND revoked_at IS NULL AND lead_details->>'allowSubmissions'='true' AND lower(lead_details->>'recipientEmail')=$2 AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) FOR UPDATE`,[token,contact.toLowerCase()])).rows[0];
   if(!lead)throw new Error('This enquiry is unavailable or document submissions are disabled.');
   const count=(await db.query('SELECT count(*)::int AS count FROM asset_share_submissions WHERE token=$1',[token])).rows[0].count;
   if(count>=10)throw new Error('This enquiry has reached its document limit. Contact the owner.');
-  await db.query(`INSERT INTO asset_share_submissions(id,token,kind,sender_name,sender_contact,note,file_name,content_type,file_data) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,[randomUUID(),token,input.kind,name,contact,note,file.fileName,file.contentType,file.data]);
+  await db.query(`INSERT INTO asset_share_submissions(id,token,kind,sender_name,sender_contact,note,file_name,content_type,file_data,actor_user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,[randomUUID(),token,input.kind,name,contact,note,file.fileName,file.contentType,file.data,actorId]);
   await db.query('COMMIT');
  }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}
 }

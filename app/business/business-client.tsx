@@ -4,18 +4,19 @@ import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
 export function SignOut() { return <button className={styles.button} onClick={async () => { const r = await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok)
     location.assign('/auth#login'); }}>Sign out</button>; }
-export default function BusinessDetails({ businessName, phone, website, evidence, email, emailVerified }: {
+export default function BusinessDetails({ businessName, phone, website, evidence, email, emailVerified, returnTo }: {
     businessName: string;
     phone: string;
     website: string;
     evidence: string;
     email: string;
     emailVerified: boolean;
+    returnTo?: string|null;
 }) {
     const router = useRouter(), [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
     return <><p className={styles.muted}>Signed in as {email}. {emailVerified ? 'Email verified.' : 'Verify your email before Admin can approve your business.'}</p>
  {!emailVerified && <button className={styles.button} disabled={busy} onClick={async () => { setBusy(true); try {
-        const r = await fetch('/api/auth/send-verification-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, callbackURL: '/business' }) });
+        const r = await fetch('/api/auth/send-verification-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, callbackURL: returnTo||'/business' }) });
         if (!r.ok)
             throw Error();
         setNotice('Check your inbox for the verification link.');

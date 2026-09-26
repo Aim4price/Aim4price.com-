@@ -30,3 +30,7 @@
   :global(body:not(:has([data-website-canvas]))) .dialog {padding:20px;border-radius:18px}
   :global(body:not(:has([data-website-canvas]))) .header h2 {font-size:22px}
 }
+.dialog { scrollbar-width:thin; scrollbar-color:var(--app-accent,#43836a) transparent; }
+.dialog::-webkit-scrollbar { width:6px; }
+.dialog::-webkit-scrollbar-thumb { border-radius:8px; background:var(--app-accent,#43836a); }
+.dialog::-webkit-scrollbar-track { background:transparent; }
