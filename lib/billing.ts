@@ -27,7 +27,7 @@ async function transaction<T>(fn: (db: PoolClient) => Promise<T>): Promise<T> {
   catch(error) { await db.query('rollback'); throw error; } finally { db.release(); }
 }
 export function mapInvoice(row: QueryResultRow): BillingInvoice {
-  return { id:row.id, userId:row.user_id, number:row.number, status:row.status, customer:row.customer, lines:row.lines, totalCents:Number(row.total_cents), paidCents:Number(row.paid_cents), dueDate:typeof row.due_date === 'string' ? row.due_date.slice(0,10) : dateKey(row.due_date), issuedAt:row.issued_at?.toISOString?.() ?? row.issued_at, createdAt:row.created_at?.toISOString?.() ?? row.created_at, note:row.note, deliveryStatus:row.delivery_status ?? null, version:row.version, voidReason:row.void_reason };
+  return { id:row.id, userId:row.user_id, number:row.number, status:row.status, customer:row.customer, lines:row.lines, totalCents:Number(row.total_cents), paidCents:Number(row.paid_cents), dueDate:typeof row.due_date === 'string' ? row.due_date.slice(0,10) : dateKey(row.due_date), issuedAt:row.issued_at?.toISOString?.() ?? row.issued_at, createdAt:row.created_at?.toISOString?.() ?? row.created_at, note:row.note, deliveryStatus:row.delivery_status ?? null, version:row.version, voidReason:row.void_reason, contactPhone:row.contact_phone??undefined, contactEmail:row.contact_email??undefined };
 }
 async function event(db: PoolClient, id: string, actor: string, action: string, detail='') {
   await db.query('insert into aim4price_billing_events(invoice_id,actor_id,action,detail) values($1,$2,$3,$4)',[id,actor,action,detail]);
@@ -48,7 +48,7 @@ export async function listBillingInvoices(userId: string | null, includeDrafts: 
   if (!Number.isInteger(page)||page<1||page>100000) throw new BillingError('Invalid page.');
   const where="($1::text is null or user_id=$1) and ($2::boolean or status<>'draft')";
   const [rows,total]=await Promise.all([
-    getDb().query(`select i.id,i.user_id,i.number,i.status,i.customer,i.lines,i.total_cents,i.paid_cents,i.due_date,i.issued_at,i.created_at,i.note,i.version,i.void_reason, (select status from aim4price_billing_mail m where m.invoice_id=i.id order by created_at desc limit 1) as delivery_status from aim4price_billing_invoices i where ${where} order by created_at desc,id desc limit 50 offset $3`,[userId,includeDrafts,(page-1)*50]),
+    getDb().query(`select i.id,i.user_id,i.number,i.status,i.customer,i.lines,i.total_cents,i.paid_cents,i.due_date,i.issued_at,i.created_at,i.note,i.version,i.void_reason, (select ap.phone from account_profiles ap where ap.user_id=i.user_id) as contact_phone, (select u.email from "user" u where u.id=i.user_id) as contact_email, (select status from aim4price_billing_mail m where m.invoice_id=i.id order by created_at desc limit 1) as delivery_status from aim4price_billing_invoices i where ${where} order by created_at desc,id desc limit 50 offset $3`,[userId,includeDrafts,(page-1)*50]),
     getDb().query(`select count(*)::integer as total from aim4price_billing_invoices where ${where}`,[userId,includeDrafts]),
   ]);
   return { invoices:rows.rows.map(mapInvoice), total:total.rows[0].total, page };
