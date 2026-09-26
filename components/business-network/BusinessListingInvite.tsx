@@ -6,14 +6,14 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import styles from './BusinessListingInvite.module.css';
 
-export default function BusinessListingInvite({ assetIds, includePhotos = false }: { senderName?: string; assetIds: string[]; includePhotos?: boolean }) {
+export default function BusinessListingInvite({ assetIds, includePhotos = false, umbrellaId }: { senderName?: string; umbrellaId?: string; assetIds: string[]; includePhotos?: boolean }) {
   const titleId = useId();
   const descriptionId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const opening = useRef(false);
-  const [selection, setSelection] = useState<{assetIds: string[]; includePhotos: boolean} | null>(null);
+  const [selection, setSelection] = useState<{assetIds: string[]; includePhotos: boolean; umbrellaId?: string} | null>(null);
   const [accepted, setAccepted] = useState(false);
   const requestVersion = useRef(0);
   const [senderName, setSenderName] = useState('');
@@ -29,7 +29,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false 
 
   function open() {
     if (!assetIds.length) { setError('Select the assets you want to include in this enquiry.'); return; }
-    setSelection({assetIds: [...assetIds], includePhotos});
+    setSelection({assetIds: [...assetIds], includePhotos, ...(umbrellaId ? { umbrellaId } : {})});
     setAccepted(false); setLink(''); setError(''); setNotice(''); setShowCopyField(false);
   }
 

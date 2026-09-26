@@ -10,35 +10,32 @@ export const metadata = { title: 'Asset enquiry', robots: { index: false, follow
 export default async function Page({ searchParams }: { searchParams: { from?: string | string[]; share?: string | string[] } }) {
   const token = typeof searchParams.share === 'string' ? searchParams.share : '';
   const share = token ? await readPublicAssetShare(token) : null;
-  const senderName = share?.senderName || '';
-  const enquiryUrl = share ? `/asset-share/${encodeURIComponent(token)}` : '';
   return <><Suspense fallback={null}><AppHeader active="none"/></Suspense>
     <main className={styles.page}>
-      <header className={styles.hero}>
-        <span className={styles.eyebrow}>AIM4PRICE · ASSET ENQUIRY</span>
-        <h1>{share ? 'Asset details, shared with you.' : 'Receive asset enquiries.'}</h1>
-        <p>{share ? 'Review the shared assets and open the enquiry to see their details.' : 'Your next asset enquiry starts here.'}</p>
-      </header>
-      <section className={styles.card} aria-labelledby="enquiry-title">
-        {share ? <>
-          <div className={styles.sender}>
-            <span className={styles.icon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 21V5l8-3v19M12 8h8v13M2 21h20M7 7h2M7 11h2M7 15h2M15 12h2M15 16h2"/></svg></span>
-            <div><span className={styles.label}>SHARED BY</span><h2 id="enquiry-title">{senderName || 'An Aim4price business'}</h2><p>would like to share asset details with your business.</p></div>
-          </div>
-          <div className={styles.assets}>
-            <div className={styles.listHeading}><h3>Included in this enquiry</h3><span className={styles.count}>{share.assets.length} {share.assets.length === 1 ? 'asset' : 'assets'}</span></div>
-            <ul>{share.assets.map((asset, index) => <li key={index}>
+      <div className={styles.overlay} aria-hidden="true"/>
+      <div className={styles.layout}>
+        <section className={styles.copy}>
+          <h1><span>Asset details.</span><span>Shared with you.</span></h1>
+          {share ? <>
+            <p className={styles.sender}><strong>{share.senderName || 'An Aim4price business'}</strong> would like to share asset details with your business.</p>
+            <div className={styles.summary}>
               <span className={styles.assetIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9"/></svg></span>
-              <span className={styles.assetTitle}>{asset.title}</span>
-            </li>)}</ul>
-          </div>
-          <footer className={styles.footer}><p>View the assets and add your business details.</p><a className={styles.primary} href={enquiryUrl}>Open enquiry <span aria-hidden="true">→</span></a></footer>
-        </> : <div className={styles.empty}>
-          <h2 id="enquiry-title">{token ? 'This enquiry is no longer available' : 'Waiting for an invitation'}</h2>
-          <p>Ask the sender for a link with the assets they want to share with you.</p>
-        </div>}
-      </section>
-      <p className={styles.note}>Asset sharing through Aim4price</p>
+              <div><h2>{share.assets.length} {share.assets.length === 1 ? 'asset shared' : 'assets shared'}</h2>
+                {share.umbrellaName ? <p className={styles.umbrella}>{share.umbrellaName}</p> : <ul>{share.assets.map((asset, index) => <li key={index}>{asset.title}</li>)}</ul>}
+              </div>
+            </div>
+            <p className={styles.hint}>Open the enquiry to view the asset details.</p>
+          </> : <div className={styles.empty}>
+            <h2>{token ? 'This enquiry is no longer available' : 'Waiting for an invitation'}</h2>
+            <p>Ask the sender for a link with the assets they want to share with you.</p>
+          </div>}
+        </section>
+        {share && <a className={styles.action} href={`/asset-share/${encodeURIComponent(token)}`}>
+          <span className={styles.actionIcon} aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 9a2 2 0 0 1 2-2h7l3 3h10a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="m12 21 8-8m-7 0h7v7"/></svg></span>
+          <strong>Open enquiry</strong>
+          <span className={styles.actionHint}>{share.assets.length === 1 ? 'View the shared asset' : 'View the shared assets'}</span>
+        </a>}
+      </div>
     </main>
   </>;
 }

@@ -99,3 +99,16 @@ test('invitation requires consent, freezes all selected assets and handles failu
     }
   }finally{Object.assign(global,previous);}
 });
+
+ test('umbrella invitation shows its saved name and asset count without listing every member',async()=>{
+  const Page=load('app/business-network/accept/page.tsx',{
+    '../../../components/AppHeader':()=>null,
+    '../../../lib/asset-share-links':{readPublicAssetShare:async()=>({...share,umbrellaName:'Harvest fleet'})},
+  }).default;
+  const html=renderToStaticMarkup(await Page({searchParams:{share:token}}));
+  assert.match(html,/Harvest fleet/);
+  assert.match(html,/3 assets shared/);
+  assert.match(html,/Farm &amp; Co/);
+  assert.doesNotMatch(html,/Tractor|Trailer|Bakkie|→/);
+  assert.ok(html.includes(`/asset-share/${token}`));
+});

@@ -42,7 +42,11 @@ test('SQL persists and reuses snapshots, enforces owner scope, revocation and as
   });
   try {
     await assert.rejects(mod.createAssetShareLink('alice', [B], false), /FORBIDDEN/);
+    const grouped = await mod.createAssetShareLink('alice', [A], false, {id:'group-a',name:'Tractor fleet'});
+    assert.equal((await mod.readPublicAssetShare(grouped.token)).umbrellaName, 'Tractor fleet');
     const first = await mod.createAssetShareLink('alice', [A], false);
+    assert.notEqual(grouped.token, first.token);
+    assert.equal((await mod.readPublicAssetShare(first.token)).umbrellaName, '');
     assert.equal(first.sender_name, 'Alice Farming');
     assert.equal((await mod.readPublicAssetShare(first.token)).senderName, 'Alice Farming');
     await pg.query('UPDATE account_profiles SET business_name=$1 WHERE user_id=$2', ['Alice & Co', 'alice']);
@@ -75,6 +79,7 @@ test('API rejects missing sessions and bad origins and ignores client ownership'
   let accessed = false;
   const route = load('app/api/asset-share-links/route.ts', {
     'next/server': { NextRequest, NextResponse },
+    '../../../lib/asset-groups': { getAssetGroupById: async (user, id) => id === 'own-group' ? { id, name: 'Fleet', members: [{assetId:A}] } : null },
     '../../../lib/auth-session': { getServerSession: async () => signedIn ? { user: { id: 'alice' } } : null },
     '../../../lib/asset-register-account-access': { getAssetRegisterAccountAccess: async () => ({ accountType: 'owner' }) },
     '../../../lib/asset-share-snapshot': snapshot,
@@ -91,6 +96,9 @@ test('API rejects missing sessions and bad origins and ignores client ownership'
   assert.equal((await route.POST(req('POST', 'https://evil.example'))).status, 403);
   assert.equal(accessed, false);
   assert.equal((await route.POST(req('POST'))).status, 200);
+  assert.equal((await route.POST(req('POST', undefined, {assetIds:[A],umbrellaId:'foreign-group'}))).status,403);
+  assert.equal((await route.POST(req('POST', undefined, {assetIds:[B],umbrellaId:'own-group'}))).status,403);
+  assert.equal((await route.POST(req('POST', undefined, {assetIds:[A],umbrellaId:'own-group'}))).status,200);
   assert.equal((await route.POST(req('POST', undefined, { assetIds: [] }))).status, 400);
   assert.equal((await route.GET(req('GET'))).status, 200);
 });
