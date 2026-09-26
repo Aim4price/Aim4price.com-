@@ -1,4 +1,5 @@
 'use client';
+import ShareDisclaimer from './ShareDisclaimer';
 import choiceStyles from './InsideShareDialog.module.css';
 
 import { useEffect, useMemo, useState } from 'react';
@@ -253,6 +254,9 @@ export default function AssetExternalShare({
   const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
   const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
   const selectedAttachmentCount = selectedSources.length;
+  const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient]);
+  const [acceptedKey, setAcceptedKey] = useState('');
+  const accepted = acceptedKey === consentKey;
   const isPreparing = preparation.status === 'preparing';
   const isSending = sendingTarget !== null;
 
@@ -308,6 +312,7 @@ export default function AssetExternalShare({
   }
 
   async function sendShare(target: ShareTarget) {
+    if (!accepted) return;
     setShareStatus('');
 
     if (!selectedAttachmentCount) {
@@ -434,6 +439,7 @@ export default function AssetExternalShare({
         </aside>
       </div>
 
+      <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? consentKey : '')} disabled={isSending} />
       <footer className={styles.sendFooter}>
         <div className={styles.sendLead}>
           <span>{selectedAttachmentCount
@@ -442,11 +448,11 @@ export default function AssetExternalShare({
           {shareStatus ? <small role="status" aria-live="polite">{shareStatus}</small> : null}
         </div>
         <div className={styles.sendButtons}>
-          <button type="button" className={`${styles.sendButton} ${styles.emailButton}`} onClick={() => void sendShare('email')} disabled={isPreparing || isSending}>
+          <button type="button" className={`${styles.sendButton} ${styles.emailButton}`} onClick={() => void sendShare('email')} disabled={!accepted || isPreparing || isSending}>
             <span className={styles.sendIcon}><EmailIcon /></span>
             <span><strong>{sendingTarget === 'email' ? 'Opening…' : 'Email'}</strong></span>
           </button>
-          <button type="button" className={`${styles.sendButton} ${styles.whatsappButton}`} onClick={() => void sendShare('whatsapp')} disabled={isPreparing || isSending}>
+          <button type="button" className={`${styles.sendButton} ${styles.whatsappButton}`} onClick={() => void sendShare('whatsapp')} disabled={!accepted || isPreparing || isSending}>
             <span className={styles.sendIcon}><WhatsAppIcon /></span>
             <span><strong>{sendingTarget === 'whatsapp' ? 'Opening…' : 'WhatsApp'}</strong></span>
           </button>

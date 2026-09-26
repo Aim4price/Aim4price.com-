@@ -1,15 +1,19 @@
 'use client';
 import {useEffect,useState} from 'react';
+import ShareDisclaimer from './ShareDisclaimer';
 import LeadDocuments from './LeadDocuments';
 import styles from './GuestLead.module.css';
 export default function GuestLeadComposer({assetIds,includePhotos,recipient,reports,ready,onChange,selectionKey}:{selectionKey:string;assetIds:string[];includePhotos:boolean;recipient?:{name:string;email:string;phone:string};reports:{label:string;file:File}[];ready:boolean;onChange:(url:string,email?:string,whatsapp?:string)=>void}){
  const [fields,setFields]=useState({recipientName:recipient?.name||'',recipientEmail:recipient?.email||'',recipientWhatsApp:'',allowSubmissions:false,request:'',replyName:'',replyEmail:'',replyPhone:'',allowReply:true});
  const [history,setHistory]=useState<any[]>([]),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[url,setUrl]=useState(''),[reviewToken,setReviewToken]=useState('');
+ const consentKey=JSON.stringify([selectionKey,assetIds,includePhotos,fields]);
+ const [acceptedKey,setAcceptedKey]=useState('');
+ const accepted=acceptedKey===consentKey;
  useEffect(()=>{setUrl('');},[selectionKey]);
  async function load(signal?:AbortSignal){const params=new URLSearchParams();assetIds.forEach(id=>params.append('assetId',id));const r=await fetch(`/api/asset-share-links/leads?${params}`,{cache:'no-store',signal}),d=await r.json();if(!r.ok)throw new Error(d.error||'Could not load shared leads.');setHistory(d.leads||[]);setFields(f=>({...f,replyName:f.replyName||d.replyName||'',replyEmail:f.replyEmail||d.replyEmail||''}));}
  useEffect(()=>{const c=new AbortController();void load(c.signal).catch(e=>{if(!c.signal.aborted)setNotice(e.message);});return()=>c.abort();},[]); // The parent remounts on asset/recipient changes.
  function update(key:string,value:string|boolean){setFields(f=>({...f,[key]:value}));setUrl('');onChange('');}
- async function create(event:React.FormEvent){event.preventDefault();setBusy(true);setNotice('');try{
+ async function create(event:React.FormEvent){event.preventDefault();if(!accepted||!ready||busy)return;setBusy(true);setNotice('');try{
  const form=new FormData();form.set('assetIds',JSON.stringify(assetIds));form.set('includePhotos',String(includePhotos));form.set('details',JSON.stringify(fields));
  reports.forEach(report=>form.append('reports',report.file,`${report.label.replace(/\.pdf$/i,'').replace(/[^a-zA-Z0-9._ -]/g,'_').slice(0,180)}.pdf`));
  const r=await fetch('/api/asset-share-links/leads',{method:'POST',body:form}),d=await r.json();if(!r.ok)throw new Error(d.error||'Could not create the lead.');const next=`${window.location.origin}/asset-share/${d.share.token}`;setUrl(next);onChange(next,fields.recipientEmail,fields.recipientWhatsApp);setNotice('Lead link ready. Preview it, then send it from your email or WhatsApp.');await load();
@@ -29,7 +33,8 @@ export default function GuestLeadComposer({assetIds,includePhotos,recipient,repo
  <label><span><input style={{width:'auto'}} type="checkbox" checked={fields.allowReply} onChange={e=>update('allowReply',e.target.checked)}/> Show reply buttons and my contact details on the lead</span></label>
  <label><span><input style={{width:'auto'}} type="checkbox" checked={fields.allowSubmissions} onChange={e=>update('allowSubmissions',e.target.checked)}/> Allow anyone with this link to submit invoices or quotes for my review</span></label>
  <p>{reports.length?`${reports.length} selected report(s) will be locked until the recipient has access.`:'No reports selected. Use Add report above to include reports.'} {includePhotos?'Saved asset photos are included.':'Photos are not included.'}</p>
- <button disabled={busy||!ready}>{busy?'Saving lead…':!ready?'Preparing reports…':'Create lead link'}</button>
+ <ShareDisclaimer publicLink accepted={accepted} onChange={value=>setAcceptedKey(value?consentKey:'')} disabled={busy}/>
+ <button disabled={busy||!ready||!accepted}>{busy?'Saving lead…':!ready?'Preparing reports…':'Create lead link'}</button>
  </fieldset></form>
  {url&&<div className={styles.actions}><a href={url} target="_blank" rel="noreferrer">Preview recipient page</a><button type="button" onClick={async()=>{try{await navigator.clipboard.writeText(url);setNotice('Lead link copied.');}catch{setNotice(url);}}}>Copy lead link</button></div>}
  {notice&&<p role="status">{notice}</p>}

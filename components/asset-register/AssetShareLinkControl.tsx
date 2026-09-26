@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
+import ShareDisclaimer from './ShareDisclaimer';
 import styles from './AssetShareLinkControl.module.css';
 export default function AssetShareLinkControl({ assetIds, includePhotos, onChange }: {
   assetIds: string[]; includePhotos: boolean; onChange: (url: string) => void;
 }) {
+  const [accepted, setAccepted] = useState(false);
   const [token, setToken] = useState('');
   const [included, setIncluded] = useState(false);
   const [busy, setBusy] = useState(true);
@@ -24,6 +26,7 @@ export default function AssetShareLinkControl({ assetIds, includePhotos, onChang
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   async function create() {
+    if (!accepted || busy) return;
     setBusy(true); setStatus('');
     try {
       const response = await fetch('/api/asset-share-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assetIds, includePhotos }) });
@@ -35,6 +38,7 @@ export default function AssetShareLinkControl({ assetIds, includePhotos, onChang
     finally { setBusy(false); }
   }
   async function copyLink() {
+    if (!accepted) return;
     try {
       if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable');
       await navigator.clipboard.writeText(url);
@@ -52,12 +56,13 @@ export default function AssetShareLinkControl({ assetIds, includePhotos, onChang
   }
   return <section className={styles.panel} aria-label="Asset page link">
     <div><h4>Asset page link</h4><p>A simple, read-only snapshot. Anyone with the link can view it without signing in. No automatic expiry; you can disable it here.</p><p>{includePhotos ? 'Includes the selected asset photos.' : 'Asset details only. Turn on Include photos to add photos.'} Reports remain separate attachments.</p></div>
+    <ShareDisclaimer publicLink accepted={accepted} onChange={value => { setAccepted(value); if (!value) { setIncluded(false); onChange(''); } }} disabled={busy}/>
     {token ? <>
-      <label className={styles.toggle}><input type="checkbox" checked={included} disabled={busy} onChange={event => { setIncluded(event.target.checked); onChange(event.target.checked ? url : ''); }} />Include link in message</label>
+      <label className={styles.toggle}><input type="checkbox" checked={included} disabled={busy || !accepted} onChange={event => { setIncluded(event.target.checked); onChange(event.target.checked ? url : ''); }} />Include link in message</label>
       <small>Snapshot saved {new Date(createdAt).toLocaleDateString('en-ZA')}. Disable and create a new link to share updated details.</small>
-      <input className={styles.url} aria-label="Asset page URL" value={url} readOnly onFocus={event => event.target.select()} />
-      <div className={styles.actions}><a href={url} target="_blank" rel="noreferrer">Preview</a><button type="button" disabled={busy} onClick={() => void copyLink()}>Copy link</button><button type="button" disabled={busy} onClick={() => void revoke()}>Disable link</button></div>
-    </> : <button type="button" disabled={busy} onClick={() => void create()}>{busy ? 'Checking link…' : 'Create asset link'}</button>}
+      {accepted && <input className={styles.url} aria-label="Asset page URL" value={url} readOnly onFocus={event => event.target.select()} />}
+      <div className={styles.actions}><a href={url} target="_blank" rel="noreferrer">Preview</a><button type="button" disabled={busy || !accepted} onClick={() => void copyLink()}>Copy link</button><button type="button" disabled={busy} onClick={() => void revoke()}>Disable link</button></div>
+    </> : <button type="button" disabled={busy || !accepted} onClick={() => void create()}>{busy ? 'Checking link…' : 'Create asset link'}</button>}
     {status && <small role="status">{status}</small>}
   </section>;
 }

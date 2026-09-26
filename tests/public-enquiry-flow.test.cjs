@@ -49,27 +49,44 @@ test('public enquiry renders a Leads card and Manage control for every selected 
   assert.ok(html.includes('Add your business details'));
   assert.doesNotMatch(html,/[—–]/);
 });
-test('invitation creation sends the complete selected asset list and never falls back after failure',async()=>{
-  const previousWindow=global.window,previousFetch=global.fetch;
+
+test('invitation requires consent, freezes all selected assets and handles failures without an empty link',async()=>{
+  const previous={window:global.window,document:global.document,fetch:global.fetch};
   const ids=['10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003'];
+  const walk=(node,predicate)=>!node||typeof node!=='object'?null:predicate(node)?node:React.Children.toArray(node.props?.children).map(child=>walk(child,predicate)).find(Boolean);
   try{
-    global.window={location:{origin:'https://aim4price.test'}};
+    global.window={location:{origin:'https://aim4price.test'}};global.document={body:{}};
     for(const failed of [false,true]){
-      const changes=[];let sent;
-      global.fetch=async(url,options)=>{assert.equal(url,'/api/asset-share-links');sent=JSON.parse(options.body);return{ok:!failed,json:async()=>failed?{error:'Unable to share selected assets'}:{share:{token}}};};
+      let cursor=0,sent,view;
+      const slots=[];
+      const hook=initial=>{const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],value=>{slots[index]=value}];};
+      const Disclaimer=()=>null;
+      global.fetch=async(url,options)=>{sent=JSON.parse(options.body);return{ok:!failed,json:async()=>failed?{error:'Unable to share selected assets'}:{share:{token}}};};
       const Invite=load('components/business-network/BusinessListingInvite.tsx',{
-        react:{...React,useId:()=> 'test',useRef:value=>({current:value}),useState:value=>[value,next=>changes.push(next)]},
+        react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:value=>hook({current:value})[0],useState:hook},
+        '../asset-register/ShareDisclaimer':Disclaimer,
         '../asset-register/ShareModalCloseButton':()=>null,
-        '../WebsitePortal':{createPortal:()=>null},
+        '../WebsitePortal':{createPortal:node=>node},
         '../../lib/asset-external-share':{buildEmailShareUrl:()=>'',buildWhatsAppShareUrl:()=>''},
       }).default;
-      const view=Invite({senderName:'Farm',assetIds:ids,includePhotos:false});
-      view.props.children[0].props.onClick();
-      await new Promise(resolve=>setImmediate(resolve));
-      assert.deepEqual(sent,{assetIds:ids,includePhotos:false});
-      const urls=changes.filter(value=>typeof value==='string'&&value.startsWith('https://'));
-      if(failed){assert.equal(urls.length,0);assert.ok(changes.includes('Unable to share selected assets'));}
-      else{assert.equal(urls.length,1);assert.equal(new URL(urls[0]).searchParams.get('share'),token);}
+      const render=(assetIds=ids)=>{cursor=0;view=Invite({senderName:'Farm',assetIds,includePhotos:false});};
+      const button=text=>walk(view,node=>node.type==='button'&&React.Children.toArray(node.props.children).some(child=>typeof child==='string'&&child.trim()===text));
+      render();
+      walk(view,node=>node.type==='button').props.onClick();render();
+      assert.equal(sent,undefined,'Opening the invite does not publish asset data');
+      assert.equal(button('Create invitation link').props.disabled,true);
+      await button('Create invitation link').props.onClick();
+      assert.equal(sent,undefined,'Handler also enforces consent');
+      walk(view,node=>node.type===Disclaimer).props.onChange(true);
+      render(['different-asset']);
+      await button('Create invitation link').props.onClick();
+      await new Promise(resolve=>setImmediate(resolve));render();
+      assert.deepEqual(sent,{assetIds:ids,includePhotos:false},'Original complete selection is preserved');
+      if(failed){assert.ok(walk(view,node=>node.props?.role==='alert'));assert.ok(!button('Copy link'));}
+      else assert.ok(button('Copy link'));
+      walk(view,node=>node.type==='dialog').props.onClose();render();
+      walk(view,node=>node.type==='button').props.onClick();render();
+      assert.equal(button('Create invitation link').props.disabled,true,'Reopening requires fresh consent');
     }
-  }finally{global.window=previousWindow;global.fetch=previousFetch;}
+  }finally{Object.assign(global,previous);}
 });
