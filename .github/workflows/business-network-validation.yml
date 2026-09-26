@@ -7,6 +7,13 @@ on:
       - 'lib/business-acceptances.ts'
       - 'lib/guest-*.ts'
       - 'lib/asset-share-links.ts'
+      - 'lib/external-lead-access.ts'
+      - 'lib/external-share-permissions.ts'
+      - 'lib/lead-submissions.ts'
+      - 'lib/dealer-asset-corrections.ts'
+      - 'components/asset-register/ExternalLeadActions*'
+      - 'app/business/**'
+      - 'tests/external-share-permissions.test.cjs'
       - 'app/api/guest-access/**'
       - 'app/api/admin/guest-businesses/**'
       - 'app/api/asset-share-links/**'
@@ -57,7 +64,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs
+      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/business-accounts.test.cjs
       - run: node scripts/verify-business-network.cjs
       - run: node scripts/verify-guest-leads.cjs
       - run: node scripts/verify-business-admin-entry.cjs

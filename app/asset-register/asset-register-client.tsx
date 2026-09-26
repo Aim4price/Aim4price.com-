@@ -17487,7 +17487,7 @@ export default function AssetRegisterClient({
                                       : 'Replacement price saved — valuation pending'
                                     : dealerAssetCorrection.licenseRenewalDateChanged
                                       ? 'Licence renewal awaiting your approval'
-                                      : 'Dealer update awaiting your approval'}</strong>
+                                      : dealerAssetCorrection.sourceType === 'external' ? 'Business update awaiting your approval' : 'Dealer update awaiting your approval'}</strong>
                                   <p>{dealerCorrectionRevaluationAlert
                                     ? dealerAssetCorrection.revaluationStatus === 'failed'
                                       ? dealerAssetCorrection.revaluationFailureMessage || 'Aim4price could not recalculate this asset automatically.'
@@ -17497,7 +17497,7 @@ export default function AssetRegisterClient({
                                     ? 'The accepted replacement price remains saved regardless of the valuation result.'
                                     : dealerAssetCorrection.licenseRenewalDateChanged
                                       ? 'Review this date before the licence expert can submit another update.'
-                                      : 'Review this one change before the dealer can submit another update for this asset.'}</small>
+                                      : dealerAssetCorrection.sourceType === 'external' ? 'Review this change before the business can submit another update for this asset.' : 'Review this one change before the dealer can submit another update for this asset.'}</small>
                                 </div>
                               </div>
                               <div className={styles.dealerCorrectionActions}>

@@ -7,7 +7,7 @@ import { revalueAssetRegisterItem } from './asset-register-revaluation';
 import { isDatabaseSchemaReady } from './database-schema-readiness';
 import { getDb } from './db';
 
-export type DealerAssetCorrectionSource = 'lead' | 'maintenance';
+export type DealerAssetCorrectionSource = 'lead' | 'maintenance' | 'external';
 export type DealerAssetCorrectionField = 'serialNumber' | 'replacementPriceExVat' | 'licenseRenewalDate';
 export type DealerAssetCorrectionStatus = 'pending' | 'accepted' | 'rejected' | 'superseded';
 export type DealerAssetCorrectionRevaluationStatus = 'not_required' | 'pending' | 'succeeded' | 'failed';
@@ -166,7 +166,7 @@ function assetLicenseRenewalDate(asset: AssetRegisterItem): string {
 
 function normalizeSource(value: unknown): DealerAssetCorrectionSource | null {
   const source = asText(value).toLowerCase();
-  return source === 'lead' || source === 'maintenance' ? source : null;
+  return source === 'lead' || source === 'maintenance' || source === 'external' ? source : null;
 }
 
 function normalizeStatus(value: unknown): DealerAssetCorrectionStatus {
@@ -460,6 +460,14 @@ export async function ensureDealerAssetCorrectionTables(): Promise<void> {
   }
   await dealerAssetCorrectionTablesPromise;
 }
+let externalSourceReady: Promise<unknown> | undefined;
+async function ensureExternalCorrectionSource() {
+  if (!externalSourceReady) externalSourceReady = getDb().query(`
+    ALTER TABLE public.dealer_asset_correction_requests DROP CONSTRAINT IF EXISTS dealer_asset_correction_requests_source_type_check;
+    ALTER TABLE public.dealer_asset_correction_requests ADD CONSTRAINT dealer_asset_correction_requests_source_type_check CHECK (source_type IN ('lead','maintenance','external'));
+  `).catch(error => { externalSourceReady = undefined; throw error; });
+  await externalSourceReady;
+}
 
 async function resolveDealerAccess(input: {
   dealerUserId: string;
@@ -468,6 +476,11 @@ async function resolveDealerAccess(input: {
   field: DealerAssetCorrectionField;
 }): Promise<CorrectionAccessRow | null> {
   const db = getDb();
+
+  if (input.sourceType === 'external') {
+    const { resolveExternalCorrectionAccess } = await import('./external-lead-access');
+    return resolveExternalCorrectionAccess(input);
+  }
 
   if (input.sourceType === 'lead') {
     const result = await db.query<CorrectionAccessRow>(
@@ -512,6 +525,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
   value: unknown;
 }): Promise<DealerAssetCorrectionRequest> {
   await ensureDealerAssetCorrectionTables();
+  if (input.sourceType === 'external') await ensureExternalCorrectionSource();
   const sourceId = asText(input.sourceId);
   if (!sourceId) throw new Error('CORRECTION_SOURCE_REQUIRED');
 
@@ -557,7 +571,13 @@ export async function createOrUpdateDealerAssetCorrection(input: {
 
   try {
     await client.query('begin');
-    await client.query(
+    if (input.sourceType === 'external') {
+      const [token] = sourceId.split(':');
+      const permission = input.field === 'serialNumber' ? 'serialNumber' : 'replacementPrice';
+      const link = await client.query(`SELECT token FROM asset_share_links WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL AND asset_ids @> ARRAY[$3::uuid] AND lead_details->'permissions'->>$4='true' FOR SHARE`, [token, access.owner_user_id, asset.id, permission]);
+      if (!link.rows.length) throw new Error('CORRECTION_FORBIDDEN');
+    }
+    const lockedAsset = await client.query(
       `
         select id
         from public.asset_register_items
@@ -566,6 +586,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       `,
       [asset.id, access.owner_user_id],
     );
+    if (!lockedAsset.rows.length) throw new Error('ASSET_NOT_FOUND');
     const existingResult = await client.query<DealerAssetCorrectionRow>(
       `${correctionSelectSql(`
         where correction.owner_user_id = $1

@@ -5,11 +5,19 @@ import ShareDisclosureDialog from '../asset-register/ShareDisclosureDialog';
 import { useEffect, useId, useRef, useState } from 'react';
 import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import styles from './BusinessListingInvite.module.css';
+import { EXTERNAL_SHARE_OPTIONS, EMPTY_EXTERNAL_PERMISSIONS, type ExternalSharePermissions } from '../../lib/external-share-permissions';
 
 export default function BusinessListingInvite({ assetIds, includePhotos = false, umbrellaId }: { senderName?: string; umbrellaId?: string; assetIds: string[]; includePhotos?: boolean }) {
   const titleId = useId();
   const descriptionId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
+  const [step, setStep] = useState<'permissions'|'recipient'>('permissions');
+  const [permissions, setPermissions] = useState<ExternalSharePermissions>({...EMPTY_EXTERNAL_PERMISSIONS});
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipientName, setRecipientName] = useState('');
+  const [request, setRequest] = useState('');
+  const [reports, setReports] = useState<File[]>([]);
+  const protectedActions = Object.values(permissions).some(Boolean);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const opening = useRef(false);
@@ -21,6 +29,9 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
   const copyButton = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (link) copyButton.current?.focus(); }, [link]);
   const [notice, setNotice] = useState('');
+  const [history,setHistory]=useState<{token:string;recipient_name:string;recipient_email:string;revoked_at:string|null;pending_documents:number}[]>([]);
+  const historyKey=selection?.assetIds.join(',')||'';
+  useEffect(()=>{if(!historyKey)return;const controller=new AbortController();const params=new URLSearchParams();historyKey.split(',').forEach(id=>params.append('assetId',id));void fetch(`/api/asset-share-links/leads?${params}`,{signal:controller.signal,cache:'no-store'}).then(r=>r.json()).then(d=>{if(!controller.signal.aborted)setHistory(d.leads||[]);}).catch(()=>{});return()=>controller.abort();},[historyKey]);
   const [showCopyField, setShowCopyField] = useState(false);
   const copy = {
     subject: 'An invitation to the Aim4price business directory',
@@ -30,6 +41,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
   function open() {
     if (!assetIds.length) { setError('Select the assets you want to include in this enquiry.'); return; }
     setSelection({assetIds: [...assetIds], includePhotos, ...(umbrellaId ? { umbrellaId } : {})});
+    setHistory([]); setStep('permissions'); setPermissions({...EMPTY_EXTERNAL_PERMISSIONS}); setRecipientEmail(''); setRecipientName(''); setRequest(''); setReports([]);
     setAccepted(false); setLink(''); setError(''); setNotice(''); setShowCopyField(false);
   }
 
@@ -49,16 +61,23 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
     try {
       if (!selection.assetIds.length) throw new Error('Select the assets you want to include in this enquiry.');
       const url = new URL('/business-network/accept', window.location.origin);
-      if (selection.assetIds.length) {
-        const response = await fetch('/api/asset-share-links', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(selection),
-        });
-        const data = await response.json();
-        if (!response.ok || !data.share?.token) throw new Error(data.error || 'Unable to prepare the enquiry. Please try again.');
-        url.searchParams.set('share', data.share.token);
-        if (version === requestVersion.current) setSenderName(typeof data.share.sender_name === 'string' ? data.share.sender_name.trim().slice(0, 120) : '');
+      let response: Response;
+      if (recipientEmail.trim()) {
+        const form = new FormData();
+        form.set('assetIds', JSON.stringify(selection.assetIds));
+        form.set('includePhotos', String(selection.includePhotos));
+        if (selection.umbrellaId) form.set('umbrellaId', selection.umbrellaId);
+        form.set('details', JSON.stringify({ recipientName, recipientEmail, request: request.trim() || 'Please review the shared assets.', replyPhone: '', allowReply: false, permissions }));
+        if (permissions.reports) reports.forEach(file => form.append('reports', file));
+        response = await fetch('/api/asset-share-links/leads', { method: 'POST', body: form });
+      } else {
+        if (protectedActions) throw new Error('Enter the recipient email for the selected actions.');
+        response = await fetch('/api/asset-share-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(selection) });
       }
+      const data = await response.json();
+      if (!response.ok || !data.share?.token) throw new Error(data.error || 'Unable to prepare the enquiry. Please try again.');
+      url.searchParams.set('share', data.share.token);
+      if (version === requestVersion.current) setSenderName(typeof data.share.sender_name === 'string' ? data.share.sender_name.trim().slice(0, 120) : '');
       if (version === requestVersion.current) setLink(url.href);
     } catch (cause) {
       if (version === requestVersion.current) setError(cause instanceof Error ? cause.message : 'Unable to prepare the enquiry. Please try again.');
@@ -80,13 +99,29 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
       <span>{busy ? 'Preparing enquiry…' : 'Business not listed?'}</span><span aria-hidden="true">+</span>
     </button>
     {error && !selection && <p role="alert">{error}</p>}
-    {selection && <ShareDisclosureDialog title="Invite a business" titleId={titleId} descriptionId={descriptionId} closeLabel="Close business invitation" onClose={close}>
-        <p id={descriptionId} className={styles.description}>{`Invite a business to view ${selection.assetIds.length === 1 ? 'the selected asset' : `all ${selection.assetIds.length} selected assets`} and add their details to the enquiry.`}</p>
-        {!link && <>
-          <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink />
-          <p className={styles.hint}>{selection.includePhotos ? 'Saved asset photos are included.' : 'Photos are not included.'} Reports and private documents are not included in this invitation.</p>
-          <button type="button" className={styles.copy} disabled={!accepted || busy} onClick={() => void prepare()}>{busy ? 'Preparing enquiry…' : 'Create invitation link'}</button>
+    {selection && <ShareDisclosureDialog title={link ? "Invite a business" : step === 'permissions' ? "Choose what to share" : "Who are you sharing with?"} titleId={titleId} descriptionId={descriptionId} closeLabel="Close business invitation" onClose={close}>
+        <p id={descriptionId} className={styles.description}>{`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`}</p>
+        {!link && step === 'permissions' && <>
+          <p className={styles.hint}>Asset details are read-only. Enable the actions you want the recipient to use after verification.</p>
+          <div className={styles.permissions}>
+            <label className={styles.permission}><input type="checkbox" checked={selection.includePhotos} onChange={e => {setSelection({...selection, includePhotos:e.target.checked});setAccepted(false);}}/><span><strong>Asset photos</strong><small>Include saved photos in the link preview.</small></span></label>
+            {EXTERNAL_SHARE_OPTIONS.map(option => <label key={option.key} className={styles.permission}><input type="checkbox" checked={permissions[option.key]} onChange={e => {setPermissions(current=>({...current,[option.key]:e.target.checked}));setAccepted(false);}}/><span><strong>{option.label}</strong><small>{option.description}</small></span></label>)}
+          </div>
+          {history.length>0&&<details className={styles.history}><summary>Previous invitations ({history.length})</summary>{history.map(item=><div key={item.token}><span>{item.recipient_name||item.recipient_email}{item.revoked_at?' · Disabled':''}{item.pending_documents?` · ${item.pending_documents} document(s) to review`:''}</span>{!item.revoked_at&&<><a href={`/asset-share/${item.token}`} target="_blank" rel="noreferrer">Review enquiry</a><button type="button" className={styles.copy} disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const r=await fetch('/api/asset-share-links',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:item.token})});if(!r.ok)throw Error('Could not disable the invitation.');setHistory(current=>current.map(row=>row.token===item.token?{...row,revoked_at:new Date().toISOString()}:row));}catch(e){setError(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}}>Disable</button></>}</div>)}</details>}
+          <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setPermissions({...EMPTY_EXTERNAL_PERMISSIONS});setStep('recipient');}}>Share read-only</button><button type="button" className={styles.primary} onClick={()=>setStep('recipient')}>Continue</button></div>
         </>}
+        {!link && step === 'recipient' && <form className={styles.form} onSubmit={e=>{e.preventDefault();void prepare();}}>
+          <fieldset disabled={busy}>
+            <label>Business name · optional<input value={recipientName} maxLength={200} onChange={e=>{setRecipientName(e.target.value);setAccepted(false);}} autoComplete="organization"/></label>
+            <label>Recipient email{protectedActions ? '' : ' · optional'}<input value={recipientEmail} required={protectedActions} type="email" maxLength={254} autoComplete="email" onChange={e=>{setRecipientEmail(e.target.value);setAccepted(false);}}/></label>
+            <p className={styles.hint}>{protectedActions ? 'Only this email’s verified, approved account can use the selected actions. Enter it even when sending through WhatsApp.' : 'Add an email to place the enquiry in their Business workspace. Without an email, the link is read-only.'}</p>
+            {recipientEmail.trim() && <label>Your request · optional<textarea value={request} maxLength={3000} onChange={e=>{setRequest(e.target.value);setAccepted(false);}} placeholder="What would you like this business to help with?"/></label>}
+            {permissions.reports && <label>Selected reports · PDF<input type="file" accept="application/pdf,.pdf" multiple required onChange={e=>{const files=Array.from(e.target.files||[]);e.target.setCustomValidity(files.length>6||files.some(f=>f.size>8*1024*1024)||files.reduce((n,f)=>n+f.size,0)>30*1024*1024?'Choose up to 6 PDFs, each under 8 MB and 30 MB in total.':'');setReports(files);setAccepted(false);}}/><small>Attach the Aim4price reports you want to share. Up to six PDFs.</small>{reports.map((file,index)=><small key={index}>{file.name}</small>)}</label>}
+            <p className={styles.hint}>{protectedActions ? EXTERNAL_SHARE_OPTIONS.filter(option=>permissions[option.key]).map(option=>option.label).join(' · ') : 'Read-only asset details'}{selection.includePhotos ? ' · Photos included' : ''}</p>
+            <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink />
+            <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('permissions');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : 'Create invitation link'}</button></div>
+          </fieldset>
+        </form>}
         {error && <p role="alert">{error}</p>}
         {link && <>
         <div className={styles.actions}>
@@ -99,8 +134,9 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
             <strong>Email</strong>
           </a>
         </div>
-        <p className={styles.hint}>Choose the recipient in WhatsApp or your email app. A basic listing is free; no account is required.</p>
+        <p className={styles.hint}>Choose the recipient in WhatsApp or your email app. Viewing the link is free. Selected actions require the recipient’s verified account; a basic Business account needs no subscription.</p>
         <footer className={styles.footer}>
+          <a className={styles.copy} href={link} target="_blank" rel="noreferrer">Preview enquiry</a>
           <button ref={copyButton} type="button" className={styles.copy} onClick={() => void copyLink()}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></svg>
             Copy link

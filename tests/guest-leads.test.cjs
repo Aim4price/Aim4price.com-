@@ -3,7 +3,17 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const ts=require('typescript');
 const {PGlite}=require('@electric-sql/pglite');
-function load(file,mocks={}){const exports={};mocks={'./business-accounts':{canBusinessContribute:async()=>false},...mocks};const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;new Function('require','exports',code)(name=>name in mocks?mocks[name]:require(name),exports);return exports;}
+function load(file,mocks={}){
+ const exports={};
+ mocks={'./business-accounts':{canBusinessContribute:async()=>false},'./account-profile':{getAccountProfile:async()=>({accountType:'dealer',accountStatus:'active',businessName:'Workshop'})},...mocks};
+ const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+ new Function('require','exports',code)(name=>{
+  if(name in mocks)return mocks[name];
+  if(name==='./external-share-permissions')return load('lib/external-share-permissions.ts');
+  if(name==='./external-lead-access')return load('lib/external-lead-access.ts',{...mocks,'./guest-leads':mocks['./guest-leads']||exports});
+  return require(name);
+ },exports);return exports;
+}
 const A='10000000-0000-4000-8000-000000000001',B='10000000-0000-4000-8000-000000000002';
 const shared=load('lib/business-network-shared.ts');
 const snapshot=load('lib/asset-share-snapshot.ts',{'./asset-usage':load('lib/asset-usage.ts'),'./tractor-logic':{conditionLabel:key=>key}});
@@ -64,7 +74,7 @@ test('each lead and report is owner/recipient scoped; payment never bypasses own
  assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);
  guest={email:details.recipientEmail,active:false};assert.equal(await mod.resolveLeadAccess('owner',details.recipientEmail),'payment-required');assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);
  guest={email:'second@example.com',active:true};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);
- guest={email:details.recipientEmail,active:true};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);assert.equal((await mod.loadProtectedLeadReport(one.token,other.reports[0].id)).status,404);assert.equal((await mod.loadProtectedLeadReport(two.token,other.reports[0].id)).status,403);
+ guest={email:details.recipientEmail,active:true};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);session={user:{id:'recipient',email:details.recipientEmail,emailVerified:true}};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);assert.equal((await mod.loadProtectedLeadReport(one.token,other.reports[0].id)).status,404);assert.equal((await mod.loadProtectedLeadReport(two.token,other.reports[0].id)).status,403);
  guest=null;session={user:{id:'other',email:details.recipientEmail,emailVerified:false}};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);session.user.emailVerified=true;assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);
  session={user:{id:'owner'}};assert.equal(await mod.resolveLeadAccess('owner',details.recipientEmail),'owner');session=null;
  await base.revokeAssetShareLink('other',one.token);assert.ok(await mod.readLeadPage(one.token));await base.revokeAssetShareLink('owner',one.token);assert.equal(await mod.readLeadPage(one.token),null);assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,404);
@@ -84,7 +94,7 @@ test('enquiries allow confirmed WhatsApp-only recipients but restrict reports to
  try{
   assert.throws(()=>mod.validateLeadDetails({...details,recipientEmail:''}),/email or confirmed WhatsApp/);
   assert.throws(()=>mod.validateLeadDetails({...details,recipientEmail:'',recipientWhatsApp:'0821234567'}),/country code/);
-  const whatsapp={...details,recipientEmail:'',recipientWhatsApp:'+27 82 123 4567',allowSubmissions:true};
+  const whatsapp={...details,recipientEmail:'',recipientWhatsApp:'+27 82 123 4567',allowSubmissions:false};
   const link=await mod.createGuestLead('owner',[A],true,whatsapp,[]);
   assert.equal((await mod.readLeadPage(link.token)).details.recipientWhatsApp,'+27821234567');
   await assert.rejects(mod.createGuestLead('owner',[A],true,whatsapp,[{label:'Report',fileName:'report.pdf',data:Buffer.from('%PDF-1.4')}]),/recipient email/);
@@ -94,13 +104,15 @@ test('enquiries allow confirmed WhatsApp-only recipients but restrict reports to
 test('incoming documents are opt-in, owner-private, review-only and respect link and asset lifecycle',async()=>{
  const{pg,db,schema,base,assetDb}=await setup();let session=null;
  const mocks={'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':shared,'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async()=>session},'./asset-register-account-access':{getAssetRegisterAccountAccess:async()=>({})}};
- const lead=load('lib/guest-leads.ts',mocks),docs=load('lib/lead-submissions.ts',mocks);
+ const lead=load('lib/guest-leads.ts',mocks),docs=load('lib/lead-submissions.ts',{...mocks,'./guest-leads':lead});
  const file={data:Buffer.from('%PDF-1.4\nquote'),fileName:'quote.pdf',contentType:'application/pdf',byteSize:14,sha256:'fixture',pageOrder:0},input={name:'Workshop',contact:'workshop@example.com',kind:'quote',note:'Please review'};
  try{
   const disabled=await lead.createGuestLead('owner',[A],false,details,[]);
-  await assert.rejects(docs.submitLeadDocument(disabled.token,input,file),/disabled/);
+  await assert.rejects(docs.submitLeadDocument(disabled.token,input,file,'receiver'),/not shared/);
   const one=await lead.createGuestLead('owner',[A],false,{...details,allowSubmissions:true},[]);
-  await docs.submitLeadDocument(one.token,input,file);
+  await assert.rejects(docs.submitLeadDocument(one.token,input,file,'receiver'),/verified/);
+  session={user:{id:'receiver',name:'Workshop',email:details.recipientEmail,emailVerified:true}};
+  await docs.submitLeadDocument(one.token,input,file,'receiver');
   assert.deepEqual(await docs.listLeadSubmissions('other',one.token),[]);
   const [submission]=await docs.listLeadSubmissions('owner',one.token);
   assert.equal(submission.status,'pending');assert.ok(!('file_data' in submission));
@@ -114,13 +126,14 @@ test('incoming documents are opt-in, owner-private, review-only and respect link
   assert.equal((await lead.listReceivedSharedEnquiries()).length,2);
   session={user:{id:'receiver',email:details.recipientEmail,emailVerified:false}};assert.deepEqual(await lead.listReceivedSharedEnquiries(),[]);
   await base.revokeAssetShareLink('owner',one.token);
-  await assert.rejects(docs.submitLeadDocument(one.token,input,file),/unavailable/);
+  await assert.rejects(docs.submitLeadDocument(one.token,input,file,'receiver'),/no longer available/);
   assert.ok(await docs.downloadLeadSubmission('owner',one.token,submission.id),'owner retains received documents after revocation');
+  session={user:{id:'receiver',name:'Workshop',email:details.recipientEmail,emailVerified:true}};
   const two=await lead.createGuestLead('owner',[A],false,{...details,allowSubmissions:true},[]);
-  for(let i=0;i<10;i++)await docs.submitLeadDocument(two.token,input,file);
-  await assert.rejects(docs.submitLeadDocument(two.token,input,file),/document limit/);
+  for(let i=0;i<10;i++)await docs.submitLeadDocument(two.token,input,file,'receiver');
+  await assert.rejects(docs.submitLeadDocument(two.token,input,file,'receiver'),/document limit/);
   await pg.query("UPDATE asset_register_items SET user_id='new-owner' WHERE id=$1",[A]);
-  await assert.rejects(docs.submitLeadDocument(two.token,input,file),/unavailable/);
+  await assert.rejects(docs.submitLeadDocument(two.token,input,file,'receiver'),/no longer available/);
   session={user:{id:'receiver',email:details.recipientEmail,emailVerified:true}};assert.deepEqual(await lead.listReceivedSharedEnquiries(),[]);
  }finally{await pg.close();}
 });
@@ -135,14 +148,14 @@ test('document API rejects foreign writes, gates reviews by session, and validat
    requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.com')throw new Error('Invalid origin');},businessBody:r=>r.json(),
   },
   '../../../../../lib/business-network':{limitBusinessAction:async()=>{}},
-  '../../../../../lib/guest-leads':{readLeadPage:async()=>({details:{allowSubmissions:enabled}})},
+  '../../../../../lib/external-lead-access':{requireExternalLeadAction:async()=>{if(!enabled)throw Error('This action is disabled.');return{user:{id:'recipient'}};}},
   '../../../../../lib/public-invoice-drop-security':load('lib/public-invoice-drop-security.ts'),
   '../../../../../lib/lead-submissions':{submitLeadDocument:async()=>submitted++,listLeadSubmissions:async id=>{assert.equal(id,'owner');return[]},reviewLeadSubmission:async id=>{assert.equal(id,'owner');reviewed++},downloadLeadSubmission:async id=>{assert.equal(id,'owner');return{file_data:Buffer.from('%PDF-1.4'),file_name:'quote.pdf',content_type:'application/pdf'}}},
  });
  const ctx={params:{token:'g'.repeat(43)}},url='https://aim4price.com/api/asset-share-links/'+ctx.params.token+'/submissions';
  const request=(data='%PDF-1.4\n%%EOF',origin='https://aim4price.com')=>{const form=new FormData();form.set('file',new Blob([data],{type:'application/pdf'}),'quote.pdf');form.set('kind','quote');return new NextRequest(url,{method:'POST',headers:{origin},body:form});};
  assert.equal((await route.POST(request('%PDF-1.4','https://evil.test'),ctx)).status,400);assert.equal(submitted,0);
- enabled=false;assert.equal((await route.POST(request(),ctx)).status,404);enabled=true;
+ enabled=false;assert.equal((await route.POST(request(),ctx)).status,400);enabled=true;
  assert.equal((await route.POST(request('<html>not a PDF</html>'),ctx)).status,400);assert.equal(submitted,0);
  assert.equal((await route.POST(request(),ctx)).status,200);assert.equal(submitted,1);
  assert.equal((await route.GET(new NextRequest(url),ctx)).status,401);

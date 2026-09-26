@@ -1,6 +1,7 @@
 "use client";
 import { useId, useRef, useState, type ReactNode } from "react";
 import type { PublicAssetShare } from "../../lib/asset-share-links";
+import ExternalLeadActions, { type ExternalLeadActionData } from "./ExternalLeadActions";
 import ShareModalCloseButton from "./ShareModalCloseButton";
 import BusinessAcceptanceForm from "../business-network/BusinessAcceptanceForm";
 import { createPortal } from "../WebsitePortal";
@@ -24,6 +25,7 @@ export default function SharedAssetCards({
   share,
   request,
   actions,
+  enquiry,
   example = false,
   senderName = "",
   allowBusinessDetails = false,
@@ -32,6 +34,7 @@ export default function SharedAssetCards({
   share: PublicAssetShare | null;
   request?: ReactNode;
   actions?: ReactNode;
+  enquiry?: ExternalLeadActionData;
   senderName?: string;
   allowBusinessDetails?: boolean;
 }) {
@@ -313,7 +316,7 @@ export default function SharedAssetCards({
               />
             </header>
             <div className={dialogStyles.body}>
-              {actions ? (
+              {enquiry ? <ExternalLeadActions key={managed} {...enquiry} assetIndex={managed!} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
                   <p className={styles.note}>
                     These actions apply to the shared enquiry.

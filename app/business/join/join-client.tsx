@@ -1,13 +1,13 @@
 'use client';
 import { useState } from 'react';
 import styles from '../page.module.css';
-export default function JoinForm() {
+export default function JoinForm({returnTo}:{returnTo?:string|null}) {
     const [busy, setBusy] = useState(false), [error, setError] = useState('');
     return <form className={styles.form} onSubmit={async (e) => { e.preventDefault(); setBusy(true); setError(''); const f = new FormData(e.currentTarget); try {
-        const r = await fetch('/api/auth/sign-up/email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: f.get('name'), email: f.get('email'), password: f.get('password'), businessName: f.get('businessName'), phone: f.get('phone'), accountType: 'business', accountSubtype: 'contributor', acceptedTerms: f.get('terms') === 'on', callbackURL: '/business' }) }), d = await r.json();
+        const r = await fetch('/api/auth/sign-up/email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: f.get('name'), email: f.get('email'), password: f.get('password'), businessName: f.get('businessName'), phone: f.get('phone'), accountType: 'business', accountSubtype: 'contributor', acceptedTerms: f.get('terms') === 'on', callbackURL: returnTo||'/business' }) }), d = await r.json();
         if (!r.ok)
             throw Error(d.message || 'Unable to create your account.');
-        location.assign('/business');
+        location.assign(returnTo||'/business');
     }
     catch (e) {
         setError(e instanceof Error ? e.message : 'Unable to create your account.');

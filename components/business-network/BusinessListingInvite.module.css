@@ -44,3 +44,26 @@
 .actions a { transition:border-color .15s,box-shadow .15s; }
 .actions a:hover { border-color:currentColor; box-shadow:0 5px 18px rgb(19 53 45 / 8%); filter:none; }
 @media(max-width:480px) { :global(body:not(:has([data-website-canvas]))) .actions a { min-height:120px; } }
+.permissions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:20px 0; }
+.permission { display:flex; align-items:flex-start; gap:14px; padding:18px; border:1px solid var(--app-line,#dce5e1); border-radius:14px; cursor:pointer; background:var(--app-surface-soft,#f4f8f5); }
+.permission:has(input:checked) { border-color:var(--app-accent,#176b4d); }
+.permission input { width:20px; height:20px; flex-shrink:0; accent-color:var(--app-accent,#176b4d); }
+.permission strong { display:block; font-size:15px; line-height:1.4; }
+.permission small { display:block; font-size:13px; line-height:1.5; margin-top:6px; color:var(--app-muted,#657b72); }
+.primary { min-height:44px; margin-left:auto; padding:12px 22px; border:0; border-radius:10px; font:inherit; font-size:14px; font-weight:750; background:var(--app-accent,#176b4d); color:white; cursor:pointer; }
+.primary:disabled { opacity:.5; cursor:not-allowed; }
+.form fieldset { margin:0; padding:0; border:0; display:grid; gap:16px; min-width:0; }
+.form label { display:grid; gap:8px; font-size:14px; font-weight:650; }
+.form input,.form textarea { box-sizing:border-box; width:100%; padding:12px; border:1px solid var(--app-line,#c9ddd3); border-radius:10px; background:var(--app-surface,#fff); color:inherit; font:inherit; }
+.form input[type=checkbox] { width:auto; }
+.form small { font-size:12px; font-weight:400; overflow-wrap:anywhere; }
+.form .hint { margin:0; }
+.form textarea { min-height:78px; resize:vertical; }
+@media(max-width:560px) { :global(body:not(:has([data-website-canvas]))) .permissions { grid-template-columns:1fr; } }
+.history { margin-bottom:20px; font-size:13px; }
+.history summary { cursor:pointer; font-weight:700; padding:12px 0; }
+.history > div { display:flex; align-items:center; gap:12px; padding:12px 0; border-top:1px solid var(--app-line,#dce5e1); }
+.history span { flex:1; overflow-wrap:anywhere; }
+.history a { color:inherit; }
+
+.permission:first-child { grid-column:1 / -1; }
