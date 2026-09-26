@@ -8,7 +8,7 @@ const require=createRequire(import.meta.url);
 function load(file,deps={}){const code=ts.transpileModule(readFileSync(new URL('../'+file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;const module={exports:{}};Function('require','module','exports',code)(id=>id in deps?deps[id]:require(id),module,module.exports);return module.exports;}
 const shared=load('lib/billing-shared.ts'),constants=load('lib/account-constants.ts');
 const report=load('lib/billing-report.ts',{'./billing-shared':shared,'./report-theme':load('lib/report-theme.ts')});
-const template=load('lib/billing-email-template.ts',{'./billing-shared':shared,'./billing-report':report});
+const template=load('lib/billing-email-template.ts',{'./billing-shared':shared,'./billing-report':report,'./email-brand':load('lib/email-brand.ts')});
 test('invoice email includes clear payment details, escaped customer content and plain text',()=>{
  const result=template.buildBillingEmail({number:'A4P-2026-000001',customer:{name:'<img src=x onerror=alert(1)>',businessName:'Farm & Co',reference:'PO-7'},totalCents:39900,paidCents:10000,dueDate:'2026-09-27',issuer:shared.BILLING_ISSUER},'https://aim4price.test/billing');
  assert.match(result.html,/&lt;img/);assert.doesNotMatch(result.html,/<img src=x/);assert.match(result.html,/Farm &amp; Co/);
