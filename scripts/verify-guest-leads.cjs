@@ -34,7 +34,7 @@ export default function Validation(){
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
  {mode==='recipient'&&<><button onClick={()=>setAccess('payment-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><GuestLeadActions token={'g'.repeat(43)} details={details} reports={[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}]} access={access}/></>}
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
- {mode==='find'&&<><DirectoryHelp/><BusinessDirectoryTools senderName="X Farms" heading="" service="" onChange={()=>{}}/></>}
+ {mode==='find'&&<><DirectoryHelp/><BusinessDirectoryTools senderName="X Farms" assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={false}/></>}
  {mode==='admin'&&<DirectoryAdminAccess onAdd={b=>setLink(b.email)}/>}
  </main>;
 }
@@ -57,6 +57,7 @@ export default function Validation(){
     if(req.method()==='POST'){history=[{token,recipient_name:'George Workshop',recipient_email:'business@example.com',created_at:'2026-09-22T00:00:00Z'}];body={share:{token}};}
     else body={leads:history,replyName:'Asset Owner',replyEmail:'owner@example.com'};
    }
+   if(p==='/api/asset-share-links'&&req.method()==='POST')body={share:{token}};
    if(p==='/api/asset-share-links'&&req.method()==='DELETE')history=history.map(x=>({...x,revoked_at:'2026-09-22T00:00:00Z'}));
    if(p.endsWith('/submissions')){
     if(req.method()==='POST')documents=[{id:'10000000-0000-4000-8000-000000000003',kind:'quote',sender_name:'Sam',sender_contact:'sam@example.com',note:'Service quote',file_name:'quote.pdf',status:'pending',created_at:'2026-09-24T00:00:00Z'}];
@@ -77,12 +78,15 @@ export default function Validation(){
    history=[];
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await page.goto('http://127.0.0.1:3033/business-network/accept?from=X%20Farms',{waitUntil:'networkidle2'});
-   assert.ok(await page.evaluate(()=>document.body.textContent.includes('X Farms wants to share assets with you more efficiently.')));
+   assert.ok(await page.evaluate(()=>document.body.textContent.includes('X Farms wants to share asset details with you.')));
    await page.waitForSelector('[data-website-zoom-host=ready] [data-site-workspace-zoom-controls]');
    await page.screenshot({path:path.join(output,`listing-page-${width}.png`),fullPage:true});
    const writesBefore=requests.filter(r=>r.method==='POST').length;
-   await Promise.all([page.waitForNavigation({waitUntil:'networkidle2'}),page.click('a[href^="/business-network/example"]')]);
+   assert.equal(await page.$('a[href^="/business-network/example"]'),null);
+   assert.equal(await page.$('form'),null);
+   await page.goto('http://127.0.0.1:3033/business-network/example?from=X%20Farms',{waitUntil:'networkidle2'});
    await page.waitForFunction(()=>document.body.textContent.includes('Example Toyota Hilux'));
+   await click('Manage');await page.waitForSelector('dialog[open]');
    await click('Reply by email');await page.waitForFunction(()=>document.body.textContent.includes('this opens your email app'));
    await click('Reply on WhatsApp');await page.waitForFunction(()=>document.body.textContent.includes('this opens WhatsApp'));
    await click('Send an invoice or quote');await page.waitForFunction(()=>document.body.textContent.includes('does not upload files'));
@@ -125,7 +129,7 @@ export default function Validation(){
    assert.ok(links.some(href=>href.startsWith('https://wa.me/?')),'WhatsApp lets the owner choose a recipient');
    await page.evaluate(()=>{window.__invitationCopied='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__invitationCopied=text;}}});});
    await click('Copy link');await page.waitForFunction(()=>document.body.textContent.includes('Invitation link copied.'));
-   assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept?from=X+Farms');
+   assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept?from=X+Farms&share='+token);
    assert.ok(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth+1),'Invitation fits without horizontal scrolling');
    await page.screenshot({path:path.join(output,`invitation-${width}.png`),fullPage:true});
    await page.evaluate(()=>{window.__escapedToParent=false;document.addEventListener('keydown',event=>{if(event.key==='Escape')window.__escapedToParent=true;},{once:true});});
@@ -135,7 +139,7 @@ export default function Validation(){
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard unavailable')}}}));
    await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');
-   assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept?from=X+Farms');
+   assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept?from=X+Farms&share='+token);
    await page.click('button[aria-label="Close business invitation"]');await page.waitForFunction(()=>!document.querySelector('dialog'));
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('dialog'));

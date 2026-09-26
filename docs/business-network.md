@@ -124,3 +124,11 @@ business-network request links; it is not permanent deletion.
 ### Sharing directory
 
 The map is a recipient directory for businesses owners already work with. Users can look up a business by name or invite it to join. Business heading and service filters, and the corresponding Admin/profile controls, have been removed. Published external businesses can receive any sharing request without category tags; Aim4price account roles still control their existing access and workflow. Legacy tags remain stored for compatibility, but no longer control directory visibility or name lookup.
+
+### Public asset invitations
+
+Inviting a business from the sharing map creates an owner-checked snapshot link for all assets in the current sharing selection. The invitation URL carries the opaque share token to `/business-network/accept`; the landing page lists the actual assets and opens `/asset-share/[token]`. It no longer links to a fictional example or shows a Google lookup form on arrival. Missing or revoked links do not offer an enquiry.
+
+The opened enquiry reuses the Leads card styles and gives every asset a Manage button. Manage shows the saved asset details/photos and existing enquiry actions, with report access still checked server-side. Optional business lookup and directory acceptance appear only on the opened enquiry. Directory acceptance does not create an account. The existing account prompt remains at locked reports, retaining the return path; a new minimal signup flow is not part of this change.
+
+The existing share-link limit of 100 assets still applies. The invitation fails with an error if the selection cannot be shared; it never truncates a selection.

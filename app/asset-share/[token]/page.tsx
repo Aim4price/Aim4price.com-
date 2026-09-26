@@ -10,10 +10,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true },
   referrer: 'no-referrer',
 };
-export default async function AssetSharePage({ params }: { params: { token: string } }) {
+export default async function AssetSharePage({ params, searchParams }: { params: { token: string }; searchParams?: { from?: string | string[] } }) {
+  const senderName = typeof searchParams?.from === "string" ? searchParams.from.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 120) : "";
   const lead = await readLeadPage(params.token);
   if (!lead) return <SharedAssetCards share={null}/>;
   const {share,details,reports,ownerId}=lead;
   const access=details?await resolveLeadAccess(ownerId,details.recipientEmail):'sign-in';
-  return <SharedAssetCards share={share} request={details?<section className={styles.panel}><h2>Request from {details.replyName}</h2><p>{details.request}</p><small>For {details.recipientName||'the recipient business'}</small></section>:null} actions={details?<GuestLeadActions token={params.token} details={{...details,replyEmail:details.allowReply?details.replyEmail:'',replyPhone:details.allowReply?details.replyPhone:''}} reports={reports} access={access}/>:null}/>;
+  return <SharedAssetCards share={share} senderName={details?.replyName || senderName} allowBusinessDetails request={details?<section className={styles.panel}><h2>Request from {details.replyName}</h2><p>{details.request}</p><small>For {details.recipientName||'the recipient business'}</small></section>:null} actions={details?<GuestLeadActions token={params.token} details={{...details,replyEmail:details.allowReply?details.replyEmail:'',replyPhone:details.allowReply?details.replyPhone:''}} reports={reports} access={access}/>:null}/>;
 }
