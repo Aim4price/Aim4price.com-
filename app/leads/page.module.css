@@ -5826,3 +5826,8 @@
     display: none;
   }
 }
+
+/* A single Manage action occupies the same right-hand slot as two-action leads. */
+.dealerDesktopLeads:not(.dealerAppLeads) .expandedLeadAside .leadAssetHeaderActions > :only-child {
+  grid-column: 2;
+}

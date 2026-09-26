@@ -63,14 +63,7 @@ export default function SharedAssetCards({
     <main
       className={`${assetStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${leadStyles.dealerDesktopLeads} ${styles.page}`}
     >
-      <header className={styles.header}>
-        <span className={styles.brand}>
-          Aim4price<span>.</span>
-        </span>
-        <span>
-          {example ? "Example enquiry · fictional details" : "Asset enquiry"}
-        </span>
-      </header>
+      <section className={assetStyles.shell}>
       {!share ? (
         <section className={styles.empty}>
           <h1>This link is no longer available</h1>
@@ -271,6 +264,7 @@ export default function SharedAssetCards({
           </p>
         </>
       )}
+      </section>
       {viewedAsset && photoViewer && (
         <LeadPhotoViewerModal
           assetKey={`${panelPrefix}-${photoViewer.assetIndex}`}

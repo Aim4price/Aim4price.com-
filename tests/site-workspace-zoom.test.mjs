@@ -62,7 +62,7 @@ test('native product and operational routes are excluded with exact path boundar
     assert.equal(isNativeWorkspace(prefix), true);
     assert.equal(isNativeWorkspace(`${prefix}/nested/page`), true);
   }
-  for (const route of ['/', '/account', '/dealer-costs', '/asset-register', '/account/owner-app', '/scan-help', '/business-network/accept', '/business-network/example', '/business-network/accept/']) assert.equal(isNativeWorkspace(route), false);
+  for (const route of ['/', '/account', '/dealer-costs', '/asset-register', '/account/owner-app', '/scan-help', '/business-network/accept', '/business-network/example', '/business-network/accept/', '/asset-share', '/asset-share/example-token']) assert.equal(isNativeWorkspace(route), false);
 });
 test('portrait phone entry strongly recommends landscape without locking orientation', async () => {
   assert.equal(WEBSITE_PHONE_SHORT_SIDE_MAX, 560);
