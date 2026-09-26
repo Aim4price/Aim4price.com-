@@ -11,6 +11,7 @@ function load(path, stubs = {}) {
   const code = ts.transpileModule(source, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.ReactJSX,
       target: ts.ScriptTarget.ES2022,
     },
   }).outputText;
@@ -25,6 +26,31 @@ function load(path, stubs = {}) {
   return module.exports;
 }
 const shared = load("lib/business-network-shared.ts");
+test('licence sharing requires a licensed asset and a real calendar date', () => {
+  const { licenceShareMissingDetails: missing } = load('lib/licence-share-readiness.ts');
+  assert.equal(missing({}).length, 2);
+  assert.equal(missing({ isLicensed: true, specsJson: { licenseRenewalDate: '2026-02-30' } }).length, 1);
+  assert.equal(missing({ isLicensed: true, specsJson: { licenseRenewalDate: 'not a date' } }).length, 1);
+  assert.equal(missing({ isLicensed: true, specsJson: { licence_renewal_date: '2026-09-30' } }).length, 0);
+  assert.equal(missing({ isLicensed: true, specsJson: { licenseRenewalDate: '2024-02-29' } }).length, 0);
+});
+test('licence review blocks incomplete assets and clearly excludes non-licensable assets', () => {
+  const React = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const Review = load('components/asset-register/LicenceShareReview.tsx', {
+    './ShareDisclosureDialog': { default: ({ children }) => React.createElement('section', null, children) },
+    './ShareDisclosureDialog.module.css': { default: {} }, './LicenceShareReview.module.css': { default: {} },
+  }).default;
+  const ready = { id: 'one', title: 'Tractor', applicable: true, missing: [], registration: 'CAW 123', renewal: '2026-09-30' };
+  const absent = { ...ready, id: 'two', title: 'Trailer', missing: ['Licensed status', 'Valid renewal / expiry date'] };
+  const render = assets => renderToStaticMarkup(React.createElement(Review, { assets, onEdit() {}, onContinue() {}, onClose() {} }));
+  assert.match(render([ready, absent]), /Missing: Licensed status and Valid renewal/);
+  assert.match(render([ready, absent]), /disabled=""/);
+  assert.doesNotMatch(render([ready]), /disabled=""/);
+  assert.match(render([]), /disabled=""/);
+  assert.match(render([{ ...ready, applicable: false }]), /excluded from this request/);
+  assert.match(render([{ ...ready, applicable: false }]), /disabled=""/);
+});
 test("validates business details, legacy metadata, safe URLs and service coverage", () => {
   const b = shared.validateBusinessDetails(
     {
@@ -90,7 +116,9 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     specsJson: { secret: "hidden" },
     documents: [{ url: "private-report.pdf" }],
   };
+  let incompleteLicenceAssetId = null;
   const network = load("lib/business-network.ts", {
+    "./licence-share-readiness": load("lib/licence-share-readiness.ts"),
     "./business-network-shared": shared,
     "./db": {
       getDb: () => ({
@@ -116,7 +144,7 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     "./asset-register-db": {
       getAssetRegisterItemById: async (user, id) =>
         user === owner.id && [assetId, asset2].includes(id)
-          ? { ...asset, id }
+          ? { ...asset, id, ...(id === incompleteLicenceAssetId ? { specsJson: {} } : {}) }
           : null,
     },
     "./asset-groups": {
@@ -230,6 +258,20 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
       assetGroupId: "group-one",
     });
     assert.equal(umbrella.view.assets.length, 2);
+    const licenceRequest = { ...input, leadType: 'license_renewal', assetIds: [assetId, asset2], assetGroupId: 'group-one' };
+    const beforeRejectedShare = sent.length;
+    await assert.rejects(network.sendBusinessLead(owner, licenceRequest), /licensed.*valid renewal date/);
+    assert.equal(sent.length, beforeRejectedShare, 'Missing licence details must not send an external email');
+    asset.isLicensed = true;
+    asset.specsJson = { ...asset.specsJson, licenseRenewalDate: '2026-09-30' };
+    incompleteLicenceAssetId = asset2;
+    await assert.rejects(network.buildBusinessLeadView(owner, licenceRequest), /licensed.*valid renewal date/);
+    incompleteLicenceAssetId = null;
+    const completeLicenceView = await network.buildBusinessLeadView(owner, licenceRequest);
+    assert.equal(completeLicenceView.view.assets.length, 2);
+    for (const row of completeLicenceView.view.assets) assert.ok(row.details.some(([label, value]) => label === 'Renewal / expiry date' && value === '2026-09-30'));
+
+
     const emailCount = sent.length;
     await network.sendBusinessLead(owner, input);
     await network.sendBusinessLead(owner, input);
@@ -378,6 +420,7 @@ test("admin drafts require explicit publication before appearing in the director
       params ? db.query(sql, params) : (await db.exec(sql)).at(-1),
   };
   const network = load("lib/business-network.ts", {
+    "./licence-share-readiness": load("lib/licence-share-readiness.ts"),
     "./business-network-shared": shared,
     "./db": { getDb: () => adapter },
     "./email": {},
@@ -385,6 +428,7 @@ test("admin drafts require explicit publication before appearing in the director
     "./asset-register-db": {},
   });
   const admin = load("lib/admin-business-network.ts", {
+    "./licence-share-readiness": load("lib/licence-share-readiness.ts"),
     "./business-network-shared": shared,
     "./db": { getDb: () => adapter },
     "./business-network": network,

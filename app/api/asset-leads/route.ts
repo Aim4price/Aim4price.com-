@@ -1,3 +1,4 @@
+import { licenceShareMissingDetails } from '../../../lib/licence-share-readiness';
 import { sendBusinessLead } from '../../../lib/business-network';
 import { businessError, requireBusinessOrigin } from '../../../lib/business-network-api';
 import { NextRequest, NextResponse } from 'next/server';
@@ -85,14 +86,7 @@ function readDealerShareAssetIds(value: unknown): string[] | null {
 }
 
 function hasLicenceRenewalDate(asset: Awaited<ReturnType<typeof getAssetRegisterItemById>>): boolean {
-  if (!asset?.isLicensed) return false;
-  const specs = asset.specsJson ?? {};
-  return [
-    specs.licenseRenewalDate,
-    specs.license_renewal_date,
-    specs.licenceRenewalDate,
-    specs.licence_renewal_date,
-  ].some((value) => String(value ?? '').trim());
+  return Boolean(asset && licenceShareMissingDetails(asset).length === 0);
 }
 
 function isAssetGroupShareRequest(sections: Record<string, unknown> | null): boolean {

@@ -1,3 +1,4 @@
+import { licenceShareMissingDetails, licenceShareRenewalDate } from "./licence-share-readiness";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { getDb } from "./db";
 import { sendAim4priceEmail, getSiteOrigin } from "./email";
@@ -291,6 +292,9 @@ export async function buildBusinessLeadView(
     const a = await getAssetRegisterItemById(user.id, id);
     if (!a)
       throw new Error("An asset is unavailable or does not belong to you.");
+    if (input.leadType === 'license_renewal' && licenceShareMissingDetails(a).length) {
+      throw new Error('Every selected asset must be licensed and have a valid renewal date.');
+    }
     const values: Array<[string, unknown]> = [
       ["Brand", a.brandName],
       ["Model", a.modelName || a.typedModelName],
@@ -300,6 +304,9 @@ export async function buildBusinessLeadView(
       ["Serial number", a.serialNumber],
       ["Registration", a.licenseRegistrationNumber],
     ];
+    if (input.leadType === 'license_renewal') {
+      values.push(['Licence status', 'Licensed'], ['Renewal / expiry date', licenceShareRenewalDate(a)]);
+    }
     if (sections.valuationSummary === true)
       values.push([
         "Estimated value (excl. VAT)",

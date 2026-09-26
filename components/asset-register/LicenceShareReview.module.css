@@ -1,0 +1,5 @@
+.assets {display:grid;gap:12px;margin-top:20px}
+.asset {display:grid;gap:8px;padding:18px;border:1px solid var(--app-line,#dce5e1);border-radius:12px;background:var(--app-surface-soft,#f3f7f5)}
+.asset p {margin:0;font-size:14px;line-height:1.5}
+.asset small {color:var(--app-muted,#657b72);line-height:1.5}
+.asset button {justify-self:start;min-height:44px;margin-top:4px;padding:10px 16px;border:1px solid var(--app-line,#dce5e1);border-radius:10px;background:var(--app-surface,#fff);color:inherit;font:inherit;font-size:14px;font-weight:700;cursor:pointer}

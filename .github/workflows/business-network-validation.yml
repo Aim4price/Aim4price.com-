@@ -22,6 +22,8 @@ on:
       - 'tests/asset-share-links.test.cjs'
       - 'scripts/verify-guest-leads.cjs'
       - 'lib/partner-access.ts'
+      - 'lib/licence-share-readiness.ts'
+      - 'components/asset-register/LicenceShareReview*'
       - 'lib/website-canvas.ts'
       - 'app/api/business-network/**'
       - 'app/api/asset-leads/route.ts'

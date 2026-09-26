@@ -1,3 +1,4 @@
+import { licenceShareMissingDetails } from './licence-share-readiness';
 import { listExternalBusinesses } from './business-network';
 import { ensureAccountProfileColumns, getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
@@ -1543,13 +1544,7 @@ export async function createAssetLead(input: {
   }
 
   if (input.leadType === 'license_renewal') {
-    const renewalDate = readLeadSnapshotText(asset.specsJson, [
-      'licenseRenewalDate',
-      'license_renewal_date',
-      'licenceRenewalDate',
-      'licence_renewal_date',
-    ]);
-    if (!asset.isLicensed || !renewalDate) {
+    if (licenceShareMissingDetails(asset).length) {
       throw new Error('LICENSE_RENEWAL_DETAILS_REQUIRED');
     }
   }
