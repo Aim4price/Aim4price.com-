@@ -1,9 +1,8 @@
 'use client';
 import ShareDisclaimer from '../asset-register/ShareDisclaimer';
-import ShareModalCloseButton from '../asset-register/ShareModalCloseButton';
+import ShareDisclosureDialog from '../asset-register/ShareDisclosureDialog';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from '../WebsitePortal';
 import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import styles from './BusinessListingInvite.module.css';
 
@@ -11,7 +10,6 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
   const titleId = useId();
   const descriptionId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
-  const dialog = useRef<HTMLDialogElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const opening = useRef(false);
@@ -81,27 +79,8 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
       <span>{busy ? 'Preparing enquiry…' : 'Business not listed?'}</span><span aria-hidden="true">+</span>
     </button>
     {error && !selection && <p role="alert">{error}</p>}
-    {selection && createPortal(
-      <dialog
-        ref={node => { dialog.current = node; if (node && !node.open) node.showModal(); }}
-        className={styles.dialog}
-        aria-labelledby={titleId}
-        aria-describedby={descriptionId}
-        onKeyDown={event => event.stopPropagation()}
-        onCancel={event => event.stopPropagation()}
-        onClose={close}
-        onClick={event => {
-          event.stopPropagation();
-          if (event.target !== event.currentTarget) return;
-          const rect = event.currentTarget.getBoundingClientRect();
-          if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) dialog.current?.close();
-        }}
-      >
-        <header className={styles.header}>
-          <h2 id={titleId}>Invite a business</h2>
-          <ShareModalCloseButton aria-label="Close business invitation" onClick={() => dialog.current?.close()} />
-        </header>
-        <p id={descriptionId} className={styles.description}>{`Share an enquiry with all ${selection.assetIds.length} selected ${selection.assetIds.length === 1 ? 'asset' : 'assets'}. They can open the asset cards and add their business details afterwards.`}</p>
+    {selection && <ShareDisclosureDialog title="Invite a business" titleId={titleId} descriptionId={descriptionId} closeLabel="Close business invitation" onClose={close}>
+        <p id={descriptionId} className={styles.description}>{`Invite a business to view ${selection.assetIds.length === 1 ? 'the selected asset' : `all ${selection.assetIds.length} selected assets`}. They can add their business details after opening the enquiry.`}</p>
         {!link && <>
           <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink />
           <p className={styles.hint}>{selection.includePhotos ? 'Saved asset photos are included.' : 'Photos are not included.'} Reports and private documents are not included in this invitation.</p>
@@ -129,7 +108,6 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
         </footer>
         {showCopyField && <input className={styles.copyField} aria-label="Business invitation link" readOnly value={link} onFocus={event => event.currentTarget.select()}/>}
         </>}
-      </dialog>, document.body,
-    )}
+      </ShareDisclosureDialog>}
   </>;
 }

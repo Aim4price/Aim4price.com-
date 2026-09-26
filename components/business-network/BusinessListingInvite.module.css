@@ -17,30 +17,6 @@
   cursor: pointer;
 }
 .trigger > span:last-child { font-size: 20px; font-weight: 500; }
-.dialog {
-  box-sizing: border-box;
-  width: min(540px, calc(100% - 32px));
-  max-height: calc(var(--website-visible-height, 100dvh) - 32px);
-  margin: auto;
-  padding: 28px;
-  border: 1px solid var(--app-line, #dce5e1);
-  border-radius: 22px;
-  background: var(--app-surface, #fff);
-  color: var(--app-text, #173f31);
-  box-shadow: 0 24px 80px #102d2940;
-  font-family: inherit;
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-.dialog::backdrop {
-  /* Native top-layer backdrops must define their own tokens: they do not inherit them. */
-  background: var(--modal-backdrop-color, rgba(12, 24, 35, 0.42));
-  -webkit-backdrop-filter: var(--modal-backdrop-filter, blur(12px) saturate(0.9));
-  backdrop-filter: var(--modal-backdrop-filter, blur(12px) saturate(0.9));
-}
-.header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--app-line, #dce5e1); }
-.header h2 { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 800; letter-spacing: -.6px; }
-.close { display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; padding: 11px; border: 1px solid var(--app-line, #dce5e1); border-radius: 10px; background: var(--app-surface-soft, #f3f7f5); color: inherit; cursor: pointer; }
 .description { margin: 20px 0; font-size: 15px; line-height: 1.6; }
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .actions a { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; min-height: 130px; padding: 18px 16px; border: 1px solid var(--app-line, #c9ddd3); border-radius: 12px; font: inherit; font-size: 15px; font-weight: 750; text-decoration: none; }
@@ -51,14 +27,11 @@
 .copy { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 10px 12px; background: var(--app-surface-soft, #f3f7f5); color: inherit; border: 1px solid var(--app-line, #dce5e1); border-radius: 10px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .notice { margin: 0; font-size: 12px; line-height: 1.5; }
 .copyField { box-sizing: border-box; width: 100%; margin-top: 12px; padding: 12px; border: 1px solid var(--app-line, #c9ddd3); border-radius: 10px; font: inherit; font-size: 12px; color: inherit; background: var(--app-surface, #fff); }
-.dialog svg { display: block; flex-shrink: 0; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.trigger:hover, .close:hover, .email:hover, .copy:hover { background: var(--app-surface-soft, #edf5f0); }
+.actions svg, .copy svg { display: block; flex-shrink: 0; width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.trigger:hover, .email:hover, .copy:hover { background: var(--app-surface-soft, #edf5f0); }
 .whatsapp:hover { filter: brightness(1.08); }
-.trigger:focus-visible, .dialog :focus-visible { outline: 3px solid #74ac92; outline-offset: 3px; }
+.trigger:focus-visible, .actions :focus-visible, .copy:focus-visible { outline: 3px solid #74ac92; outline-offset: 3px; }
 @media (max-width: 480px) {
-  :global(body:not(:has([data-website-canvas]))) .dialog { padding: 20px; border-radius: 18px; }
-  :global(body:not(:has([data-website-canvas]))) .header { gap: 10px; padding-bottom: 16px; }
-  :global(body:not(:has([data-website-canvas]))) .header h2 { font-size: 22px; }
   :global(body:not(:has([data-website-canvas]))) .description { font-size: 14px; margin: 16px 0; }
   :global(body:not(:has([data-website-canvas]))) .actions { gap: 8px; }
   :global(body:not(:has([data-website-canvas]))) .actions a { padding: 10px; font-size: 14px; }
@@ -67,7 +40,7 @@
 .actions strong { font-size:1.1rem; line-height:1.35; font-weight:800; color:var(--app-text,#173f31); }
 .actionIcon { display:grid; place-items:center; width:50px; height:50px; border:1px solid var(--app-line,#d0e5da); border-radius:14px; background:var(--app-surface,#fff); box-shadow:0 5px 14px rgb(19 53 45 / 5%); }
 .actionIcon svg { width:28px; height:28px; }
-.dialog .whatsappGlyph { fill:currentColor; stroke:none; }
+.actions .whatsappGlyph { fill:currentColor; stroke:none; }
 .actions a { transition:border-color .15s,box-shadow .15s; }
 .actions a:hover { border-color:currentColor; box-shadow:0 5px 18px rgb(19 53 45 / 8%); filter:none; }
 @media(max-width:480px) { :global(body:not(:has([data-website-canvas]))) .actions a { min-height:120px; } }

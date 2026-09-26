@@ -14,6 +14,8 @@ on:
       - 'app/asset-share/**'
       - 'components/asset-register/GuestLead*'
       - 'components/asset-register/AssetExternalShare.tsx'
+      - 'components/asset-register/ShareDisclosure*'
+      - 'components/asset-register/ShareDisclaimer*'
       - 'components/asset-register/SharedAssetCards.tsx'
       - 'database/migrations/112-directory-guest-leads.sql'
       - 'tests/guest-leads.test.cjs'

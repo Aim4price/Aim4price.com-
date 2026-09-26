@@ -159,6 +159,8 @@ export default function Validation(){
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
+   if(width===1440) assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Invitation fits desktop without scrolling');
+   await page.screenshot({path:path.join(output,`invitation-disclosure-${width}.png`),fullPage:true});
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const links=await page.$$eval('dialog a',nodes=>nodes.map(a=>a.href));
    assert.equal(links.length,2);
@@ -232,9 +234,7 @@ export default function Validation(){
   for(const width of [1440,430]){
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await click('find');await click('external');
-   await page.waitForSelector('[data-share-consent]');
-   assert.equal(await page.$eval('[data-share-consent]',e=>e.checked),false);
-   await page.click('[data-share-consent]');
+   assert.equal(await page.$('[data-share-consent]'),null,'Disclosure is not inline in the attachment screen');
    await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='WhatsApp'&&!b.disabled));
    const externalText=await page.$eval('[aria-label="Share outside Aim4price"]',e=>e.textContent);
    assert.doesNotMatch(externalText,/Create lead link|Create asset link|Message & attachments|Lead page|View asset details:/);
@@ -247,7 +247,17 @@ export default function Validation(){
     }});
    });
    for(const channel of ['WhatsApp','Email']){
-    await click(channel);
+    await click(channel);await page.waitForSelector('dialog[open] [data-share-consent]');
+    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Every channel click needs acknowledgement');
+    assert.equal(await page.evaluate(()=>window.__nativeShares.length),channel==='WhatsApp'?0:1,'Opening disclosure never shares');
+    assert.equal(await page.$eval('dialog button:not([aria-label])',e=>e.disabled),true,'Continue is disabled until acknowledged');
+    await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});
+    await page.waitForFunction(channel=>document.activeElement?.textContent.trim()===channel,{},channel);
+    await click(channel);await page.waitForSelector('dialog[open] [data-share-consent]');
+    await page.click('dialog [data-share-consent]');
+    await page.screenshot({path:path.join(output,`external-disclosure-${channel}-${width}.png`),fullPage:true});
+    if(width===1440) assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Disclosure fits desktop without scrolling');
+    await click('Continue to '+channel);
     await page.waitForFunction(()=>document.body.textContent.includes('attachment was handed to your phone'));
    }
    const sent=await page.evaluate(()=>({opened:window.__opened,native:window.__nativeShares}));
@@ -260,7 +270,8 @@ export default function Validation(){
     assert.deepEqual(payload.files,[{name:'valuation.pdf',type:'application/pdf',body:'%PDF-1.4 fixture'}]);
    }
    await page.evaluate(()=>Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false}));
-   await click('WhatsApp');
+   await click('WhatsApp');await page.waitForSelector('dialog[open] [data-share-consent]');
+   await page.click('dialog [data-share-consent]');await click('Continue to WhatsApp');
    await page.waitForFunction(()=>document.body.textContent.includes('Nothing was sent.'));
    assert.equal(await page.evaluate(()=>window.__nativeShares.length),2,'Unsupported payloads are not sent');
    await page.screenshot({path:path.join(output,`standard-external-${width}.png`),fullPage:true});

@@ -1,8 +1,10 @@
 'use client';
 import ShareDisclaimer from './ShareDisclaimer';
+import ShareDisclosureDialog from './ShareDisclosureDialog';
+import disclosureStyles from './ShareDisclosureDialog.module.css';
 import choiceStyles from './InsideShareDialog.module.css';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
   buildEmailShareUrl,
   buildExternalAssetShareCopy,
@@ -256,6 +258,9 @@ export default function AssetExternalShare({
   const selectedAttachmentCount = selectedSources.length;
   const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient]);
   const [acceptedKey, setAcceptedKey] = useState('');
+  const [pendingShare, setPendingShare] = useState<{target: ShareTarget; key: string} | null>(null);
+  const disclosureId = useId();
+  const shareTrigger = useRef<HTMLButtonElement | null>(null);
   const accepted = acceptedKey === consentKey;
   const isPreparing = preparation.status === 'preparing';
   const isSending = sendingTarget !== null;
@@ -311,8 +316,22 @@ export default function AssetExternalShare({
     setShareStatus('');
   }
 
+  function openDisclosure(target: ShareTarget, trigger: HTMLButtonElement) {
+    shareTrigger.current = trigger;
+    setAcceptedKey('');
+    setPendingShare({target, key: consentKey});
+  }
+
+  function closeDisclosure() {
+    setPendingShare(null);
+    setAcceptedKey('');
+    shareTrigger.current?.focus();
+  }
+
   async function sendShare(target: ShareTarget) {
-    if (!accepted) return;
+    if (!accepted || !pendingShare || pendingShare.key !== consentKey || pendingShare.target !== target || isSending) return;
+    setPendingShare(null);
+    setAcceptedKey('');
     setShareStatus('');
 
     if (!selectedAttachmentCount) {
@@ -439,7 +458,6 @@ export default function AssetExternalShare({
         </aside>
       </div>
 
-      <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? consentKey : '')} disabled={isSending} />
       <footer className={styles.sendFooter}>
         <div className={styles.sendLead}>
           <span>{selectedAttachmentCount
@@ -448,16 +466,25 @@ export default function AssetExternalShare({
           {shareStatus ? <small role="status" aria-live="polite">{shareStatus}</small> : null}
         </div>
         <div className={styles.sendButtons}>
-          <button type="button" className={`${styles.sendButton} ${styles.emailButton}`} onClick={() => void sendShare('email')} disabled={!accepted || isPreparing || isSending}>
+          <button type="button" className={`${styles.sendButton} ${styles.emailButton}`} onClick={event => openDisclosure('email', event.currentTarget)} disabled={isPreparing || isSending}>
             <span className={styles.sendIcon}><EmailIcon /></span>
             <span><strong>{sendingTarget === 'email' ? 'Opening…' : 'Email'}</strong></span>
           </button>
-          <button type="button" className={`${styles.sendButton} ${styles.whatsappButton}`} onClick={() => void sendShare('whatsapp')} disabled={!accepted || isPreparing || isSending}>
+          <button type="button" className={`${styles.sendButton} ${styles.whatsappButton}`} onClick={event => openDisclosure('whatsapp', event.currentTarget)} disabled={isPreparing || isSending}>
             <span className={styles.sendIcon}><WhatsAppIcon /></span>
             <span><strong>{sendingTarget === 'whatsapp' ? 'Opening…' : 'WhatsApp'}</strong></span>
           </button>
         </div>
       </footer>
+      {pendingShare && <ShareDisclosureDialog title={`Share via ${pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}`} titleId={disclosureId} closeLabel="Close sharing disclosure" onClose={closeDisclosure}>
+        <p className={disclosureStyles.description}>Share {assets.length === 1 ? 'this asset' : `${assets.length} assets`} via {pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}.</p>
+        <p className={disclosureStyles.hint}>{attachmentSummary(selectedPhotoCount, reportFiles.length)}. {recipient ? `Recipient: ${recipient.name}.` : 'Choose the recipient in your sharing app.'}</p>
+        <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? pendingShare.key : '')} />
+        {pendingShare.key !== consentKey && <p role="alert">Your selection changed. Close this dialog and check the details before sharing.</p>}
+        <div className={disclosureStyles.actions}>
+          <button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>Continue to {pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>
+        </div>
+      </ShareDisclosureDialog>}
     </section>
   );
 }
