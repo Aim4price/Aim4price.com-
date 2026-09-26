@@ -409,3 +409,10 @@
   background: rgba(247, 250, 249, 0.86);
 }
 
+
+.reason { border-left:3px solid #b67448; padding:14px 18px; background:#fff7ed; border-radius:0 7px 7px 0; margin:10px 0; }
+.reason strong { font-size:13px; font-weight:650; color:#87512e; }
+.reason p { margin:9px 0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:14px; line-height:1.7; color:#634b3b; }
+.reason span { font-size:12px; line-height:1.6; color:#786859; }
+.invoiceSection { margin-top:24px; }
+@media(max-width:720px){.contentGrid{grid-template-columns:1fr}.summaryCard{max-width:none;justify-self:stretch}.title{font-size:30px}}

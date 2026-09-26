@@ -2,8 +2,7 @@ import { getDb } from './db';
 import { ensureBillingSchema, processSignupInvoices, processRecurringInvoices, mapInvoice } from './billing';
 import { renderReportHtmlToPdf } from './report-pdf';
 import { getSiteOrigin } from './email';
-import { billingEscape } from './billing-report';
-import { money } from './billing-shared';
+import { buildBillingEmail } from './billing-email-template';
 
 export async function billingPdf(id: string): Promise<Buffer> {
   await ensureBillingSchema();
@@ -39,7 +38,7 @@ export async function dispatchBillingMail(): Promise<void> {
       let payload=mail.payload;
       if(!payload){
         const pdf=await billingPdf(invoice.id),url=getSiteOrigin()+'/billing';
-        payload=JSON.stringify({from:process.env.AIM4PRICE_BILLING_EMAIL_FROM||process.env.AIM4PRICE_EMAIL_FROM||'Aim4price <billing@aim4price.com>',to:[invoice.customer.email],reply_to:invoice.issuer.email,subject:`Aim4price invoice ${invoice.number}`,text:`Hi ${invoice.customer.name},\n\nYour Aim4price invoice ${invoice.number} is attached.\nTotal: ${money(Number(invoice.total_cents))}\nDue: ${mapInvoice(invoice).dueDate}\nNo VAT applicable.\n\nBank: ${invoice.issuer.bank}\nAccount: ${invoice.issuer.accountNumber}\nReference: ${invoice.number}\n\nSign in to view your invoices: ${url}\n\n${invoice.issuer.email}`,html:`<div style="font-family:Arial,sans-serif;color:#173c32;max-width:600px;padding:24px;border:1px solid #d6e4dd"><h1>Aim4price Invoice</h1><p>Hi ${billingEscape(invoice.customer.name)},</p><p>Your invoice <strong>${billingEscape(invoice.number)}</strong> is attached.</p><p>Total: <strong>${billingEscape(money(Number(invoice.total_cents)))}</strong></p><p>No VAT applicable.</p><p>Please use your invoice number as the payment reference.</p><p><a href="${billingEscape(url)}">View invoices and payment status</a></p><p>${billingEscape(invoice.issuer.email)}</p></div>`,attachments:[{filename:`${invoice.number}.pdf`,content:pdf.toString('base64')}]});
+        payload=JSON.stringify({from:process.env.AIM4PRICE_BILLING_EMAIL_FROM||process.env.AIM4PRICE_EMAIL_FROM||'Aim4price <billing@aim4price.com>',to:[invoice.customer.email],reply_to:invoice.issuer.email,subject:`Aim4price invoice ${invoice.number}`,...buildBillingEmail({...mapInvoice(invoice),number:invoice.number,issuer:invoice.issuer},url),attachments:[{filename:`${invoice.number}.pdf`,content:pdf.toString('base64')}]});
         await getDb().query('update aim4price_billing_mail set payload=$2 where id=$1',[mail.id,payload]);
       }
       // Freeze the body before the first provider call. Retries reuse both bytes and key.

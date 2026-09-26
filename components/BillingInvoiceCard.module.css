@@ -1,0 +1,21 @@
+.card { border:1px solid #d8e4dd; border-radius:12px; background:#fff; color:#173c32; overflow:hidden; text-align:left; }
+.header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; padding:22px 24px; border-bottom:1px solid #e5ede7; }
+.eyebrow { font-size:11px; color:#6a8074; letter-spacing:.1em; text-transform:uppercase; }
+.header h3 { margin:6px 0 0; font-size:17px; font-weight:650; overflow-wrap:anywhere; }
+.header p { margin:6px 0 0; font-size:13px; color:#647b6f; }
+.status { padding:6px 10px; background:#edf3ef; border-radius:5px; font-size:11px; font-weight:650; white-space:nowrap; }
+.status[data-state=Outstanding],.status[data-state="Part paid"] { background:#fff2d9; color:#896020; }
+.status[data-state=Overdue] { background:#fcebe6; color:#963f30; }
+.status[data-state=Paid] { background:#e4f4e9; color:#276443; }
+.body { display:grid; grid-template-columns:1fr 1fr; gap:24px; padding:24px; }
+.balance { display:flex; flex-direction:column; gap:8px; }
+.balance span { font-size:12px; color:#647b6f; }
+.balance strong { font-size:28px; font-weight:650; letter-spacing:-.04em; }
+.details { margin:0; align-self:center; display:grid; gap:14px; }
+.details div { display:flex; justify-content:space-between; gap:18px; font-size:12px; }
+.details dt { color:#647b6f; }.details dd { margin:0; font-weight:600; overflow-wrap:anywhere; text-align:right; }
+.footer { padding:16px 24px; background:#f8fbf9; display:flex; align-items:center; justify-content:space-between; gap:16px; border-top:1px solid #e5ede7; }
+.footer>span { font-size:11px; color:#647b6f; line-height:1.6; }
+.button { display:inline-flex; align-items:center; justify-content:center; background:#1a654d; color:#fff; padding:12px 18px; border:1px solid #1a654d; border-radius:6px; font:inherit; font-weight:600; font-size:13px; cursor:pointer; text-decoration:none; white-space:nowrap; }
+.button:hover { background:#144e3c; }.button:focus-visible{outline:3px solid #88b7a1;outline-offset:3px}
+@media(max-width:560px){.header,.body,.footer{padding:18px}.body{grid-template-columns:1fr;gap:22px}.header{flex-wrap:wrap}.balance strong{font-size:26px}}

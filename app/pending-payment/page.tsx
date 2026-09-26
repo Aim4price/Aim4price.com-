@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAccountAccess } from "../../lib/account-access";
 import { getAnyServerSession } from "../../lib/auth-session";
+import { getBillingSuspension } from "../../lib/billing-suspension";
 import PendingAccessClient from "./PendingAccessClient";
 
 export const runtime = "nodejs";
@@ -21,6 +22,7 @@ export default async function PendingPaymentPage() {
 
   return (
     <PendingAccessClient
+      suspension={access.status === "suspended" ? await getBillingSuspension(session.user.id) : null}
       email={session.user.email ?? ""}
       statusLabel={access.statusLabel}
       isSuspended={access.status === "suspended"}

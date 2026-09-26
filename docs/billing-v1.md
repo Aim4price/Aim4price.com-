@@ -60,3 +60,16 @@ Reference: [Resend send-email API](https://resend.com/docs/api-reference/emails/
 `node --test tests/billing*.test.mjs` exercises the actual PostgreSQL schema and billing queries in PGlite, monetary/date validation, draft edits, work reservations, ownership, invoice/payment idempotency, signup quote validation, API authorization/origin checks, retry payload stability and expired retry review. PGlite stubs advisory locks; production concurrent-lock behavior still needs deployed PostgreSQL verification.
 
 `node scripts/verify-billing-report.cjs` renders synthetic one-page and three-page invoices. `node scripts/verify-admin-review.cjs` covers Admin rendering/navigation plus the billing draft composer at desktop and phone widths. Evidence is uploaded by the billing CI workflow. No production authentication, database or live Resend delivery is exercised by these fixtures.
+
+
+## Billing suspensions and customer presentation
+
+Admin Billing offers **Suspend account** on issued invoices with an outstanding balance. A customer-visible reason and explicit confirmation are required. Already suspended accounts offer **Update suspension** so an admin can link the correct invoice and replace the reason. The server checks the invoice version and current account status, rejects admin/self suspension, locks the invoice and account, and writes the access change and invoice audit event in one transaction.
+
+The suspended customer sees the reason, current invoice balance, original issued document and PDF download directly on `/pending-payment`. Invoice requests still require a session and invoice ownership. Voided linked invoices show their void status and a support prompt. Billing remains available while access is suspended. Existing access enforcement and background ingestion rules are unchanged. Recording a payment does not reactivate the account: restore access in Admin Accounts after review. Any status change there clears the billing suspension context so it cannot appear on a later unrelated suspension.
+
+Migration `116-billing-suspension.sql` adds the reason and linked invoice ID to `account_profiles`. The account profile schema initializer applies these idempotent additions too. Existing suspensions without a linked invoice retain their generic message until updated from Billing.
+
+The account invoice modal and Billing page share styled invoice cards. New email jobs use a table-based, inline-styled invoice email with a current balance, due date, bank details, payment reference and signed-in billing link. Already frozen mail payloads retain their original content for safe idempotent retries. The PDF attachment remains the immutable issued document.
+
+`node scripts/verify-billing-experience.cjs` checks the customer cards, directly displayed suspension invoice and email at phone and desktop widths. The suspension tests exercise atomic rollback, protected accounts, stale versions/status, audit history, ownership and clearing context on restoration. No live accounts are suspended and no test emails are sent by these fixtures.

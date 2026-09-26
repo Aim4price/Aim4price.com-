@@ -18,7 +18,7 @@ export default async function BusinessPage({searchParams}:{searchParams?:{return
         redirect('/account');
     const { profile, review } = account;
     if (profile.accountStatus === 'suspended')
-        return <main className={styles.page}><h1 className={styles.title}>Business account suspended</h1><p>Contact Aim4price to discuss restoring access.</p><a href="mailto:aim4price@gmail.com">Contact Aim4price</a><SignOut /></main>;
+        redirect('/pending-payment');
     const ready = await canBusinessContribute(s.user);
     const leads = ready ? await listBusinessEnquiries(s.user) : [];
     return <main className={styles.page}><nav className={styles.nav}><Link href="/">Aim4price</Link><a href="#leads">Leads</a><a href="#details">Business details</a><SignOut /></nav>

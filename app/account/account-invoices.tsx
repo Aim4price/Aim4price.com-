@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import InvoicePreviewButton from "../../components/InvoicePreview";
-import { invoiceState, money, type BillingInvoice } from "../../lib/billing-shared";
+import BillingInvoiceCard from "../../components/BillingInvoiceCard";
+import { type BillingInvoice } from "../../lib/billing-shared";
 import styles from "./page.module.css";
 
 type InvoicePage = { invoices: BillingInvoice[]; total: number; preparing: boolean };
@@ -34,16 +34,7 @@ export default function AccountInvoices() {
   return <div className={styles.invoiceList}>
     {data.preparing ? <div role="status"><p>Your signup invoice is being prepared. It will also be emailed to your billing address.</p><button className={styles.ghostButton} onClick={() => setAttempt(value => value + 1)}>Refresh invoices</button></div> : null}
     {!data.invoices.length && !data.preparing ? <p>No invoices have been issued to your account.</p> : null}
-    {data.invoices.map(invoice => <article key={invoice.id} className={styles.invoiceCard}>
-      <div className={styles.invoiceHeading}><strong>{invoice.number}</strong><span>{invoiceState(invoice)}</span></div>
-      <dl className={styles.invoiceDetails}>
-        <div><dt>Due date</dt><dd>{invoice.dueDate}</dd></div>
-        <div><dt>Total</dt><dd>{money(invoice.totalCents)}</dd></div>
-        <div><dt>Paid</dt><dd>{money(invoice.paidCents)}</dd></div>
-        <div><dt>Balance</dt><dd>{invoice.status === "void" ? "—" : money(invoice.totalCents - invoice.paidCents)}</dd></div>
-      </dl>
-      {invoice.status === "void" ? <p>{invoice.voidReason}</p> : <InvoicePreviewButton id={invoice.id} number={invoice.number} className={styles.ghostButton} />}
-    </article>)}
+    {data.invoices.map(invoice => <BillingInvoiceCard key={invoice.id} invoice={invoice} />)}
     {page > 1 || page * 50 < data.total ? <nav className={styles.invoicePagination} aria-label="Invoice pages">
       <button className={styles.ghostButton} disabled={page === 1} onClick={() => { setData(null); setPage(value => value - 1); }}>Previous</button>
       <span>Page {page}</span>
