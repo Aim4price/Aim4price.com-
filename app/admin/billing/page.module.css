@@ -88,3 +88,14 @@
 .draftLabel { white-space:nowrap; flex-shrink:0; }
 .sectionHeading { flex-wrap:wrap; }
 .scheduleFields { margin-top:22px; }
+
+/* Give customer details and invoice actions a consistent rhythm. */
+.detailHeading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin:24px 0 18px; padding-bottom:12px; border-bottom:1px solid #e2ebe5; }
+.detailHeading .sectionLabel { margin:0; padding:0; border:0; }
+.grid { row-gap:22px; }
+.line { margin:16px 0; gap:14px; }
+.actions { margin-top:18px; }
+.table .actions { margin-top:0; }
+.billingPaths { margin:4px 0; }
+.panel { padding:26px; }
+@media(max-width:600px){.panel{padding:18px}.detailHeading{align-items:flex-start}.grid{row-gap:18px}}

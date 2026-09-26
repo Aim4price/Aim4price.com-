@@ -11,9 +11,10 @@ type Props = {
   actionError?: string;
   onClose: () => void;
   onIssue?: () => void;
+  onIssueWithoutEmail?: () => void;
 };
 
-export function InvoicePreview({ id, number, draft = false, busy = false, actionError, onClose, onIssue }: Props) {
+export function InvoicePreview({ id, number, draft = false, busy = false, actionError, onClose, onIssue, onIssueWithoutEmail }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [html, setHtml] = useState('');
   const [ready, setReady] = useState(false);
@@ -46,7 +47,7 @@ export function InvoicePreview({ id, number, draft = false, busy = false, action
   return <dialog ref={dialog} className={styles.dialog} aria-label="Invoice preview" onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}>
     <div className={styles.layout}>
       <header className={styles.header}>
-        <div><h2>{draft ? 'Preview invoice draft' : number || 'Invoice preview'}</h2><p>{draft ? 'Check the details before issuing. This draft has not been emailed.' : 'Review your invoice, then download a copy.'}</p></div>
+        <div><h2>{draft ? 'Preview invoice draft' : number || 'Invoice preview'}</h2><p>{draft ? 'Download a draft, or issue a final invoice with or without emailing it.' : 'Review your invoice, then download a copy.'}</p></div>
         <button className={styles.close} aria-label="Close invoice preview" disabled={busy} onClick={onClose}>×</button>
       </header>
       <div className={styles.document}>
@@ -57,7 +58,9 @@ export function InvoicePreview({ id, number, draft = false, busy = false, action
       <footer className={styles.footer}>
         <span>{draft ? 'Draft · No payment due until issued' : 'No VAT applicable'}</span>
         <div><button className={styles.secondary} disabled={busy} onClick={onClose}>{draft ? 'Back to billing' : 'Close'}</button>
-          {draft ? onIssue ? <button className={styles.primary} disabled={!ready || Boolean(error) || busy} onClick={onIssue}>{busy ? 'Issuing…' : 'Issue & email'}</button> : null : ready && !error ? <a className={styles.primary} href={`/api/billing/invoices/${id}?format=pdf`} download>Download PDF</a> : <button className={styles.primary} disabled>Download PDF</button>}
+          {ready && !error ? <a className={styles.secondary} href={`/api/billing/invoices/${id}?format=pdf`} download>{draft?'Download draft PDF':'Download PDF'}</a> : <button className={styles.secondary} disabled>{draft?'Download draft PDF':'Download PDF'}</button>}
+          {draft && onIssueWithoutEmail ? <button className={styles.secondary} disabled={!ready || Boolean(error) || busy} onClick={onIssueWithoutEmail}>Issue & download PDF</button> : null}
+          {draft && onIssue ? <button className={styles.primary} disabled={!ready || Boolean(error) || busy} onClick={onIssue}>{busy?'Issuing…':'Issue & email'}</button> : null}
         </div>
       </footer>
     </div>
