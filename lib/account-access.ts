@@ -4,7 +4,7 @@ import {
   isAim4priceAdminEmail,
   type AccountStatus,
 } from "./account-constants";
-import { getAccountStatusForUser } from "./account-profile";
+import { getAccountProfile, getAccountStatusForUser } from "./account-profile";
 import {
   getAnyServerSession,
   getServerSession,
@@ -47,6 +47,8 @@ export async function requireActivePageAccess() {
   if (!realSession?.user?.id) {
     redirect("/auth#login");
   }
+
+  if ((await getAccountProfile(realSession.user)).accountType === "business") redirect("/business");
 
   const [effectiveSession, access] = await Promise.all([
     getServerSession({ requireActive: false, authSession: realSession }),

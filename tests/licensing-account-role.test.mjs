@@ -20,7 +20,7 @@ test('licensing signup remains a separate pending account role', async () => {
   assert.match(client, /accountType: signupForm\.accountType/);
   assert.doesNotMatch(client, /saveSignupProfileFallback|\/api\/account-profile\/complete-signup/);
   assert.match(authRoute, /pathname\.endsWith\("\/sign-up\/email"\)/);
-  assert.match(authRoute, /withSignupWorkspaceInput\(signupInput/);
+  assert.match(authRoute, /withSignupWorkspaceInput\(\{ \.\.\.signupInput, billingSignup \}/);
   assert.match(signupContext, /new AsyncLocalStorage<SignupWorkspaceInput>/);
   assert.match(signupContext, /"accountType"/);
   assert.match(signupContext, /signupWorkspaceStorage\.run/);

@@ -1,3 +1,4 @@
+import { canBusinessContribute } from './business-accounts';
 import { randomBytes,randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { ensureGuestLeadSchema } from './guest-lead-schema';
@@ -48,6 +49,8 @@ export async function resolveLeadAccess(ownerId:string,recipientEmail:string):Pr
  if(session?.user?.id===ownerId&&await getAssetRegisterAccountAccess(session))return 'owner';
  // Existing full accounts may use their own verified identity; guest accounts never become full accounts.
  if(session?.user?.emailVerified===true&&session.user.email.toLowerCase()===recipientEmail)return 'active';
+ const businessSession=await getServerSession({requireActive:false});
+ if(businessSession?.user?.email?.toLowerCase()===recipientEmail.toLowerCase()&&await canBusinessContribute(businessSession.user))return 'active';
  const guest=await getGuestViewer();
  if(!guest)return 'sign-in';if(guest.email!==recipientEmail)return 'wrong-recipient';return guest.active?'active':'payment-required';
 }

@@ -193,6 +193,7 @@ function normalizeProvince(value: unknown): string {
 }
 
 function normalizeAccountType(value: unknown): string {
+  if (asText(value).toLowerCase() === "business") return "business";
   const normalized = asText(value)
     .toLowerCase()
     .replace(/[\s_]+/g, "-");
@@ -247,6 +248,7 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
     .toLowerCase()
     .replace(/[\s_]+/g, "-");
   const allowedByType: Record<string, Set<string>> = {
+    business: new Set(["contributor"]),
     owner: new Set([
       "farmer",
       "contractor",
@@ -275,6 +277,7 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
     ]),
   };
   const defaults: Record<string, string> = {
+    business: "contributor",
     owner: "farmer",
     finance: "bank",
     insurance: "short-term-insurer",
@@ -472,6 +475,7 @@ async function ensureAccountRoleSchema(
           and conname = 'account_profiles_account_role_check'
           and pg_get_constraintdef(oid) ilike '%licensing%'
           and pg_get_constraintdef(oid) ilike '%licence-renewal-expert%'
+          and pg_get_constraintdef(oid) ilike '%contributor%'
       )
       and not exists (
         select 1
@@ -555,12 +559,14 @@ async function ensureAccountRoleSchema(
         when 'license-renewal-expert' then 'licensing'
         when 'licence-renewal-expert' then 'licensing'
         when 'licensing' then 'licensing'
+        when 'business' then 'business'
         when 'owner' then 'owner'
         else 'owner'
       end;
 
       update public.account_profiles
       set account_subtype = case account_type
+        when 'business' then 'contributor'
         when 'owner' then case
           when lower(regexp_replace(trim(coalesce(account_subtype, '')), '[ _]+', '-', 'g')) in
             ('farmer', 'contractor', 'construction-company', 'asset-owner')
@@ -603,7 +609,8 @@ async function ensureAccountRoleSchema(
       alter table public.account_profiles
         add constraint account_profiles_account_role_check
         check (
-          (account_type = 'owner' and account_subtype in
+          (account_type = 'business' and account_subtype = 'contributor')
+          or (account_type = 'owner' and account_subtype in
             ('farmer', 'contractor', 'construction-company', 'asset-owner'))
           or (account_type = 'finance' and account_subtype in
             ('bank', 'finance-house', 'accountant'))
@@ -953,6 +960,7 @@ export async function createInitialAccountProfile(
     townCity?: unknown;
     partnerDirectoryEnabled?: unknown;
     phone?: unknown;
+    businessName?: unknown;
   },
 ): Promise<void> {
   await ensureAccountProfileColumns();
@@ -966,7 +974,7 @@ export async function createInitialAccountProfile(
   );
   const initialAccountStatus = isAim4priceAdminEmail(user.email)
     ? "active"
-    : isMiddlemanAccountSubtype(initialAccountSubtype)
+    : (initialAccountType === "business" || isMiddlemanAccountSubtype(initialAccountSubtype))
       ? "active"
       : "pending_payment";
   const introducedByOption = normalizeIntroducedByOption(
@@ -980,6 +988,7 @@ export async function createInitialAccountProfile(
   const townCity = asText(input?.townCity);
   const initialPartnerDirectoryEnabled =
     initialAccountType !== "owner" &&
+    initialAccountType !== "business" &&
     !isMiddlemanAccountSubtype(initialAccountSubtype) &&
     (input?.partnerDirectoryEnabled === true ||
       String(input?.partnerDirectoryEnabled ?? "").trim().toLowerCase() === "true");
@@ -990,6 +999,7 @@ export async function createInitialAccountProfile(
       insert into account_profiles (
         user_id,
         display_name,
+        business_name,
         phone,
         account_type,
         account_subtype,
@@ -1002,7 +1012,7 @@ export async function createInitialAccountProfile(
         created_at,
         updated_at
       )
-      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now())
+      values ($1, $2, $13, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now())
       on conflict (user_id) do update set
         account_type = case
           when $12 then excluded.account_type
@@ -1035,6 +1045,7 @@ export async function createInitialAccountProfile(
       townCity || null,
       initialPartnerDirectoryEnabled,
       hasExplicitAccountType,
+      asText(input?.businessName).slice(0, 200) || null,
     ],
   );
 }
@@ -1329,7 +1340,12 @@ export async function isAccountActive(user: {
   id: string;
   email?: string | null;
 }): Promise<boolean> {
-  return (await getAccountStatusForUser(user)) === "active";
+  if (isAim4priceAdminEmail(user.email)) return true;
+  await ensureAccountProfileColumns();
+  const result = await getDb().query<{ account_type: string; account_status: string }>(
+    'SELECT account_type, account_status FROM account_profiles WHERE user_id = $1 LIMIT 1', [user.id],
+  );
+  return result.rows[0]?.account_type !== "business" && normalizeAccountStatus(result.rows[0]?.account_status) === "active";
 }
 
 export async function markAccountLastActive(user: {
