@@ -122,6 +122,9 @@ export default function Validation(){
    await page.waitForFunction(()=>!document.querySelector('dialog'));
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
+   assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
+   assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
+   await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const links=await page.$$eval('dialog a',nodes=>nodes.map(a=>a.href));
    assert.equal(links.length,2);
    for(const href of links){const target=new URL(href);const message=target.searchParams.get(target.protocol==='mailto:'?'body':'text');assert.ok(message.includes('/business-network/accept'));assert.ok(!message.includes('/asset-share/'));assert.ok(!message.includes('TEST-1'));}
@@ -137,6 +140,9 @@ export default function Validation(){
    assert.equal(await page.evaluate(()=>window.__escapedToParent),false,'Escape stays inside the invitation');
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
+   assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
+   assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
+   await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard unavailable')}}}));
    await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');
    assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept?from=X+Farms&share='+token);
@@ -156,11 +162,11 @@ export default function Validation(){
    }
    await click('compose');await page.waitForFunction(()=>document.querySelector('input[value="owner@example.com"]'));
    await labelInput('Your request','Please quote for servicing.');
-   await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');
+   await page.click('[data-share-consent]');await click('Create lead link');await page.waitForSelector('a[href$="'+token+'"]');
    assert.ok(await page.$eval('[data-link]',e=>e.textContent.endsWith('g'.repeat(43))));
    await click('Change report selection');assert.equal(await page.$eval('[data-link]',e=>e.textContent),'');
    assert.equal(await page.$eval('textarea',e=>e.value),'Please quote for servicing.','Report changes preserve request draft');
-   await click('Create lead link');await page.waitForFunction(()=>document.querySelector('[data-link]').textContent.length>0);
+   await page.click('[data-share-consent]');await click('Create lead link');await page.waitForFunction(()=>document.querySelector('[data-link]').textContent.length>0);
    await page.screenshot({path:path.join(output,`owner-${width}.png`),fullPage:true});
    await page.click('details summary');await click('Disable');await page.waitForFunction(()=>document.body.textContent.includes('Lead disabled'));
    await click('recipient');await page.click('details summary');
@@ -191,6 +197,9 @@ export default function Validation(){
   for(const width of [1440,430]){
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await click('external');
+   await page.waitForSelector('[data-share-consent]');
+   assert.equal(await page.$eval('[data-share-consent]',e=>e.checked),false);
+   await page.click('[data-share-consent]');
    await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='WhatsApp'&&!b.disabled));
    const externalText=await page.$eval('[aria-label="Share outside Aim4price"]',e=>e.textContent);
    assert.doesNotMatch(externalText,/Create lead link|Create asset link|Message & attachments|Lead page|View asset details:/);
