@@ -1,4 +1,5 @@
 'use client';
+import ShareModalCloseButton from '../asset-register/ShareModalCloseButton';
 import { useEffect, useState } from 'react';
 import { googleDirectoryEnabled, loadGoogleDirectory } from './GoogleDirectoryMap';
 import styles from './BusinessProfileCard.module.css';
@@ -55,7 +56,7 @@ export default function BusinessProfileCard({ business, onClose, onMessage, onAd
     const website = safeWebsite(google?.websiteURI || business.websiteUrl || '');
     const mapsUrl = safeWebsite(google?.googleMapsURI || business.googleMapsUrl || '');
     return <aside className={styles.card} aria-label="Selected business">
-    <div className={styles.heading}><span className={`${styles.badge} ${!business.isExternalBusiness ? styles.accountBadge : ''}`}>{business.isExternalBusiness ? 'Directory listing' : 'Aim4price account'}</span><button type="button" onClick={onClose} aria-label="Close business profile">×</button></div>
+    <div className={styles.heading}><span className={`${styles.badge} ${!business.isExternalBusiness ? styles.accountBadge : ''}`}>{business.isExternalBusiness ? 'Directory listing' : 'Aim4price account'}</span><ShareModalCloseButton onClick={onClose} aria-label="Close business profile" /></div>
     {photoUrl ? <img className={styles.photo} src={photoUrl} alt={name}/> : business.logoUrl ? <div className={styles.brand}><img className={styles.logo} src={business.logoUrl} alt={`${name} logo`}/></div> : <div className={styles.brand}><span className={styles.initial}>{name.slice(0, 1)}</span></div>}
     {photo?.authorAttributions?.map((a: any, i: number) => <a key={i} className={styles.attribution} href={safeWebsite(a.uri || '')} target="_blank" rel="noreferrer">{a.displayName}</a>)}
     <h4>{name}</h4><p>{google?.primaryTypeDisplayName || business.description || business.services}</p>
