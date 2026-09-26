@@ -13,6 +13,7 @@ const compile = file => ts.transpileModule(fs.readFileSync(path.join(root, file)
 }).outputText;
 const canvas = compile('lib/website-canvas.ts');
 const host = compile('components/SiteWorkspaceZoom.tsx');
+const phone = compile('lib/website-phone.ts');
 const output = path.join(root, '.next/mobile-sizing-validation');
 fs.mkdirSync(output, { recursive: true });
 (async () => {
@@ -22,7 +23,7 @@ fs.mkdirSync(output, { recursive: true });
     const cdp=await page.createCDPSession();
     const setViewport=async ({width,height,deviceScaleFactor=1,isMobile=false,hasTouch=false})=>{
       // Direct CDP updates do not reload and discard this isolated fixture.
-      await cdp.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor,mobile:isMobile,screenWidth:width,screenHeight:height});
+      await cdp.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor,mobile:isMobile,screenWidth:width,screenHeight:height,screenOrientation:{type:height>width?'portraitPrimary':'landscapePrimary',angle:height>width?0:90}});
       await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:hasTouch,maxTouchPoints:1});
     };
     const errors = [];
@@ -33,7 +34,7 @@ fs.mkdirSync(output, { recursive: true });
     await page.goto('https://canvas.test/');
     await page.addScriptTag({content:fs.readFileSync(path.join(path.dirname(require.resolve('react')),'umd/react.development.js'),'utf8')});
     await page.addScriptTag({content:fs.readFileSync(path.join(path.dirname(require.resolve('react-dom')),'umd/react-dom.development.js'),'utf8')});
-    await page.evaluate(({canvas,host}) => {
+    await page.evaluate(({canvas,host,phone}) => {
       Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>1440});
       localStorage.clear(); sessionStorage.clear();
       localStorage.setItem('aim4price.website-canvas.v2.intro','seen');
@@ -47,11 +48,13 @@ fs.mkdirSync(output, { recursive: true });
         if(name==='next/image')return {default:({priority,...props})=>React.createElement('img',props)};
         if(name==='./WebsitePortal')return {WebsiteCanvasContext:context};
         if(name.endsWith('.module.css'))return {default:new Proxy({},{get:(_,key)=>key})};
-        if(name==='../lib/website-canvas')return modules.canvas;
+        if(name==='../lib/website-canvas'||name==='./website-canvas')return modules.canvas;
+        if(name==='../lib/website-phone')return modules.phone;
         throw Error('Unexpected module '+name);
       }
       function evaluate(source) {const module={exports:{}};new Function('require','module','exports','React',source)(require,module,module.exports,React);return module.exports;}
       modules.canvas=evaluate(canvas);
+      modules.phone=evaluate(phone);
       const Host=evaluate(host).default;
       window.mount=()=> {
         window.fixtureRoot=ReactDOM.createRoot(document.getElementById('app'));
@@ -60,7 +63,7 @@ fs.mkdirSync(output, { recursive: true });
           React.createElement('main',null,React.createElement('h1',null,'Home'))));
       };
       window.mount();
-    },{canvas,host});
+    },{canvas,host,phone});
     const waitScale=async expected=>{try {await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)-value)<.001,{},expected);} catch(error) {console.error('Scale mismatch',expected,await page.evaluate(()=>({scale:document.querySelector('[data-website-canvas]')?.dataset.websiteScale,width:document.documentElement.clientWidth,coarse:matchMedia('(hover: none) and (pointer: coarse)').matches})),errors);throw error;}};
     await waitScale(1);
     await page.waitForSelector('[data-site-workspace-zoom-controls]');
