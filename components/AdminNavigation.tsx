@@ -161,9 +161,6 @@ export default function AdminNavigation({ active, canGetEstimate = false }: { ac
           <i />
         </span>
         <strong className={styles.manageCopy}>Manage</strong>
-        <span className={styles.manageChevron} aria-hidden="true">
-          ⌄
-        </span>
       </button>
 
       {isOpen ? (

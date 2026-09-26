@@ -25,16 +25,16 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
  const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  const oldFetch=global.fetch,oldKey=process.env.RESEND_API_KEY;
  try{
-  await pg.exec('create table "user"(id text primary key,name text,email text); create table account_profiles(user_id text primary key,business_name text,address_line_1 text,address_line_2 text,town_city text,province text); create table admin_work_sessions(id text primary key,client_user_id text,started_at timestamptz default now(),stopped_at timestamptz,duration_seconds integer,note text);');
+  await pg.exec('create table "user"(id text primary key,name text,email text); create table account_profiles(user_id text primary key,business_name text,address_line_1 text,address_line_2 text,town_city text,province text,phone text); create table admin_work_sessions(id text primary key,client_user_id text,started_at timestamptz default now(),stopped_at timestamptz,duration_seconds integer,note text);');
   await pg.exec("insert into \"user\" values('one','Customer One','one@example.test'),('two','Customer Two','two@example.test');insert into admin_work_sessions(id,client_user_id,stopped_at,duration_seconds,note) values('work-one','one',now(),5400,'Capture work'),('work-two','two',now(),3600,'Private work'),('running','one',null,3600,'Still running');");
   await billing.ensureBillingSchema();
-  await pg.exec("insert into account_profiles values('one','Farm Business','Road 10','Unit 2','George','Western Cape')");
+  await pg.exec("insert into account_profiles values('one','Farm Business','Road 10','Unit 2','George','Western Cape','0821234567')");
   const initialWorkspace=await billing.getBillingWorkspace('one');
   assert.equal(initialWorkspace.customer.businessName,'Farm Business');assert.equal(initialWorkspace.customer.address,'Road 10\nUnit 2\nGeorge\nWestern Cape');
   const customer={name:'Customer One',email:'one@example.test',address:'George'};
   const draft={id:randomUUID(),userId:'one',customer,lines:[{description:'Subscription',quantity:1,unitCents:10000}],dueDate:'2026-09-30',workSessionIds:['work-one'],hourlyRateCents:20000};
   await billing.createBillingDraft(draft,'admin');await billing.createBillingDraft(draft,'admin');
-  assert.equal((await billing.listBillingInvoices('one',true)).total,1);
+  const listed=await billing.listBillingInvoices('one',true);assert.equal(listed.total,1);assert.equal(listed.invoices[0].contactPhone,'0821234567');assert.equal(listed.invoices[0].contactEmail,'one@example.test');
   const savedWorkspace=await billing.getBillingWorkspace('one');assert.equal(savedWorkspace.customer.address,'George');assert.equal(savedWorkspace.accountCustomer.address,'Road 10\nUnit 2\nGeorge\nWestern Cape');
   let inv=await billing.getBillingInvoice(draft.id,null,true);assert.equal(Number(inv.total_cents),40000);
   await assert.rejects(billing.getBillingInvoice(draft.id,'one',false),/not found/);
@@ -90,6 +90,7 @@ test('recurring agreements are opt-in, audited, versioned and issue only once pe
  const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  try {
   await pg.exec('create table "user"(id text primary key,name text,email text); insert into "user" values(\'one\',\'Example\',\'one@example.test\');');
+  await pg.exec('create table account_profiles(user_id text primary key,phone text)');
   await billing.ensureBillingSchema();
   const input={userId:'one',version:0,customer:{name:'Example',email:'one@example.test',address:'George'},lines:[{description:'Approved package',quantity:1,unitCents:25000}],interval:'monthly',nextInvoiceDate:'2090-01-31',dueDays:7,enabled:false};
   await billing.saveBillingAgreement(input,'admin');
@@ -132,4 +133,16 @@ test('account defaults, business name and customer references survive validation
  assert.match(html,/Example Farming/);assert.match(html,/PO-123 &lt;test&gt;/);assert.match(html,/DRAFT - NOT ISSUED/);
  const issued=await report.buildBillingInvoiceHtml({...invoice,status:'issued',number:'A4P-TEST',issuedAt:'2026-09-27T00:00:00Z'});
  assert.doesNotMatch(issued,/DRAFT - NOT ISSUED|Draft for review|Draft only/);
+});
+
+test('share links normalize saved contacts and safely encode invoice messages',()=>{
+ const invoice={status:'issued',number:'A4P-2026-000001',customer:{name:'Name & Co'},contactPhone:'082 123 4567',contactEmail:'saved@example.test'};
+ const links=shared.billingContactLinks(invoice);
+ assert.equal(new URL(links.whatsapp).pathname,'/27821234567');
+ assert.match(new URL(links.whatsapp).searchParams.get('text'),/Name & Co/);
+ assert.match(links.email,/^mailto:saved%40example.test\?subject=/);
+ for(const phone of ['+27 (82) 123-4567','0027821234567'])assert.equal(new URL(shared.billingContactLinks({...invoice,contactPhone:phone}).whatsapp).pathname,'/27821234567');
+ for(const phone of ['', 'phone 0821234567','+27+821234567','123'])assert.equal(shared.billingContactLinks({...invoice,contactPhone:phone}).whatsapp,null);
+ for(const email of ['', 'a@example.test,b@example.test','a@example.test\r\nBcc: other@example.test'])assert.equal(shared.billingContactLinks({...invoice,contactEmail:email}).email,null);
+ const draft=shared.billingContactLinks({...invoice,status:'draft',number:null});assert.match(new URL(draft.whatsapp).searchParams.get('text'),/preparing/);assert.doesNotMatch(new URL(draft.whatsapp).searchParams.get('text'),/signing in/);
 });

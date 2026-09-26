@@ -6,7 +6,7 @@ export const BILLING_ACCOUNT_TYPES = ['owner', 'dealer', 'finance', 'insurance',
 export type BillingPlan = { accountType: string; description: string; amountCents: number; interval: 'once' | 'monthly' | 'annual'; dueDays: number; version: number; enabled: boolean };
 export type BillingLine = { description: string; quantity: number; unitCents: number; totalCents: number; workSessionId?: string };
 export type BillingCustomer = { name: string; email: string; address: string; businessName?: string; reference?: string };
-export type BillingInvoice = { id: string; userId: string; number: string | null; status: 'draft' | 'issued' | 'void'; customer: BillingCustomer; lines: BillingLine[]; totalCents: number; paidCents: number; dueDate: string; issuedAt: string | null; createdAt: string; note: string; deliveryStatus: string | null; version: number; voidReason?: string };
+export type BillingInvoice = { id: string; userId: string; number: string | null; status: 'draft' | 'issued' | 'void'; customer: BillingCustomer; lines: BillingLine[]; totalCents: number; paidCents: number; dueDate: string; issuedAt: string | null; createdAt: string; note: string; deliveryStatus: string | null; version: number; voidReason?: string; contactPhone?: string; contactEmail?: string };
 export function money(cents: number): string { return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(cents / 100); }
 export function moneyToCents(value: unknown): number {
   const text = String(value ?? '').trim().replace(/ /g, '');
@@ -72,4 +72,19 @@ export function nextAgreementDate(current: string, interval: 'monthly' | 'annual
 export function billingAccountCustomer(user: {name?:string;email?:string}, profile: Record<string,unknown> = {}): BillingCustomer {
  const text=(key:string)=>String(profile[key]??'').trim();
  return {name:text('display_name')||user.name||'',email:user.email||'',businessName:text('business_name'),address:['address_line_1','address_line_2','town_city','province'].map(text).filter(Boolean).join('\n'),reference:''};
+}
+
+/** Open the account's saved contact channel; no message is sent by Aim4price. */
+export function billingContactLinks(invoice: BillingInvoice) {
+ const raw=String(invoice.contactPhone??'').trim();
+ let phone=/^[+\d\s().-]+$/.test(raw)?raw.replace(/[^\d+]/g,''):'';
+ if(/^0[1-9]\d{8}$/.test(phone))phone='27'+phone.slice(1);
+ else if(phone.startsWith('00'))phone=phone.slice(2);
+ else if(phone.startsWith('+'))phone=phone.slice(1);
+ if(!/^[1-9]\d{7,14}$/.test(phone))phone='';
+ const email=String(invoice.contactEmail??'').trim();
+ const validEmail=/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email);
+ const subject=invoice.number?`Aim4price invoice ${invoice.number}`:'Aim4price invoice enquiry';
+ const body=invoice.status==='draft'?`Hi ${invoice.customer.name},\n\nI am preparing your Aim4price invoice and would like to confirm the details.`:`Hi ${invoice.customer.name},\n\nRegarding your Aim4price invoice ${invoice.number}. You can view your invoice by signing in at https://aim4price.com/billing.`;
+ return {whatsapp:phone?`https://wa.me/${phone}?text=${encodeURIComponent(body)}`:null,email:validEmail?`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`:null};
 }

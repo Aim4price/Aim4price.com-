@@ -5,17 +5,18 @@
 }
 
 .manageButton {
-  min-width: 9.5rem;
-  min-height: 3.25rem;
+  min-width: 8rem;
+  min-height: 2.9rem;
   box-sizing: border-box;
-  padding: 0.5rem 0.68rem;
+  padding: 0.65rem 1rem;
   border: 1px solid #145f47;
-  border-radius: 1rem;
+  border-radius: 0.6rem;
   color: #ffffff;
   background: #176c50;
-  box-shadow: 0 12px 28px rgba(23, 108, 80, 0.18);
+  box-shadow: 0 3px 10px rgba(23, 108, 80, 0.12);
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto auto;
+  justify-content: center;
   align-items: center;
   gap: 0.65rem;
   font: inherit;
@@ -26,7 +27,7 @@
 
 .manageButton:hover {
   background: #125f46;
-  box-shadow: 0 14px 32px rgba(23, 108, 80, 0.24);
+  box-shadow: 0 5px 14px rgba(23, 108, 80, 0.16);
   transform: translateY(-1px);
 }
 
@@ -57,16 +58,12 @@
 
 .manageCopy {
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 650;
   line-height: 1.1;
   white-space: nowrap;
 }
 
-.manageChevron {
-  font-size: 1rem;
-  line-height: 1;
-  transform: translateY(-0.12rem);
-}
+
 
 .modalLayer {
   position: fixed;
@@ -174,7 +171,7 @@
 .link strong {
   color: #173e32;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 650;
   white-space: nowrap;
 }
 
@@ -196,13 +193,8 @@
 }
 
 @media (max-width: 980px) {
-  .nav {
-    width: 100%;
-  }
-
-  .manageButton {
-    width: 100%;
-  }
+  .nav { margin-left:auto; }
+  .manageButton { width:auto; }
 }
 
 @media (max-width: 560px) {

@@ -138,3 +138,20 @@
 .invoiceStatus[data-state=Outstanding],.invoiceStatus[data-state="Part paid"] { background:#fff2d9; color:#87601c; }
 @media(max-width:600px){.picker{max-width:none;flex-basis:100%}.pickerTrigger{padding:11px;gap:10px}.pickerMenu{padding:9px}.accountAvatar{flex-basis:32px;width:32px;height:32px}.pickerSearch{padding:0 9px;gap:6px}.pickerSearch input{font-size:12px}}
 .picker .pickerSearch input:focus { outline:0; box-shadow:none; border:0; }
+
+.pickerTrigger { min-height:54px; }
+.shareDialog { width:min(520px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow:auto; padding:26px; border:1px solid #cfdfd5; border-radius:12px; background:#fff; color:#173c32; box-shadow:0 24px 70px #09271d35; }
+.shareDialog::backdrop { background:rgba(12,32,26,.58); backdrop-filter:blur(7px); }
+.shareHeader { display:flex; justify-content:space-between; align-items:flex-start; gap:20px; }
+.shareHeader h2 { font-size:22px; margin:0 0 8px; }
+.shareHeader p { margin:0; color:#647b6f; font-size:13px; line-height:1.6; overflow-wrap:anywhere; }
+.shareClose { flex:0 0 38px; width:38px; height:38px; border:1px solid #d2dfd7; border-radius:5px; color:#173c32; background:#fff; font-size:25px; cursor:pointer; }
+.shareChannels { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:24px 0 18px; }
+.shareChannel { display:flex; flex-direction:column; gap:8px; padding:20px 15px; border:1px solid #c5d9cd; border-radius:8px; background:#f4f9f6; color:#173c32; text-decoration:none; font:inherit; text-align:left; min-width:0; }
+.shareChannel strong { font-size:16px; font-weight:650; }
+.shareChannel span { font-size:12px; overflow-wrap:anywhere; color:#62796c; line-height:1.5; }
+.shareChannel:hover { background:#eaf4ee; border-color:#83ae97; }
+.shareChannel:disabled { background:#f5f6f5; opacity:.65; cursor:not-allowed; }
+.shareNote { font-size:12px; line-height:1.7; color:#647b6f; margin:0 0 15px; }
+.shareDialog :is(a,button):focus-visible { outline:2px solid #28644d; outline-offset:3px; }
+@media(max-width:480px){.shareDialog{padding:20px}.shareChannels{grid-template-columns:1fr}}

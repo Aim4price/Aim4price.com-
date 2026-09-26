@@ -30,7 +30,7 @@ export default function AccountPicker({clients,value,disabled,onChange}:{clients
   <span className={styles.pickerLabel}>Billing account</span>
   <button type="button" ref={trigger} className={styles.pickerTrigger} aria-label="Choose billing account" aria-expanded={open} aria-controls={open?id:undefined} disabled={disabled} onClick={()=>{if(open)close();else setOpen(true);}}>
    <span className={styles.accountAvatar} aria-hidden="true">{selected?initials(selected.name):'All'}</span>
-   <span className={styles.accountIdentity}><strong>{selected?.name||'All accounts'}</strong><small>{selected?.email||'View invoices across all accounts'}</small></span>
+   <span className={styles.accountIdentity}><strong>{selected?.name||'All accounts'}</strong></span>
    <span className={styles.pickerChevron} data-open={open}>{chevron}</span>
   </button>
   {open?<div id={id} className={styles.pickerMenu} role="region" aria-label="Billing accounts">
