@@ -1,17 +1,22 @@
 'use client';
 
+import InlineBillingInvoice from "../../components/InlineBillingInvoice";
+import BillingInvoiceCard from "../../components/BillingInvoiceCard";
+import type { BillingInvoice } from "../../lib/billing-shared";
 import Link from "next/link";
 import AppHeader from "../../components/AppHeader";
 import ContactSupportModal from "./contact-support-modal";
 import styles from "./page.module.css";
 
 type PendingAccessClientProps = {
+  suspension?: {reason:string;invoice:BillingInvoice}|null;
   email: string;
   statusLabel: string;
   isSuspended: boolean;
 };
 
 export default function PendingAccessClient({
+  suspension,
   email,
   statusLabel,
   isSuspended,
@@ -36,7 +41,8 @@ export default function PendingAccessClient({
               <h1 id="pending-access-heading" className={styles.title}>
                 {pageTitle}
               </h1>
-              <p className={styles.text}>{pageText}</p>
+              <p className={styles.text}>{suspension?'Account access is suspended. Please review the reason and invoice below.':pageText}</p>
+              {suspension?<div className={styles.reason}><strong>Why access is suspended</strong><p>{suspension.reason}</p><span>After payment is verified, Aim4price will review and restore access.</span></div>:null}
 
               <div className={styles.actions}>
                 <Link href="/" className={styles.secondaryButton}>
@@ -60,6 +66,7 @@ export default function PendingAccessClient({
             </aside>
           </div>
         </div>
+        {suspension?<div className={styles.invoiceSection}><BillingInvoiceCard invoice={suspension.invoice} showPreview={false}/>{suspension.invoice.status==='issued'?<InlineBillingInvoice id={suspension.invoice.id}/>:<p className={styles.text}>This invoice has been voided. Please contact Aim4price to review your access.</p>}</div>:null}
       </section>
     </main>
   );

@@ -83,7 +83,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
    if(url.includes('/api/billing/invoices/'))return previewFailure?respond({error:'Preview unavailable'},503):request.respond({contentType:'text/html',body:fs.existsSync(path.join(root,'.next/billing-validation/invoice.html'))?fs.readFileSync(path.join(root,'.next/billing-validation/invoice.html'),'utf8'):'<!doctype html><html><body><h1>Aim4price Invoice</h1><p>ABSA · No VAT applicable</p></body></html>'});
    if(url.includes('/api/admin/billing')) {
     if(request.method()==='POST'){billingRequests.push(JSON.parse(request.postData()));return respond({ok:true,id:'fixture'});}
-    return respond({invoices:billingIssued?[{id:'invoice-test',userId:'owner',contactPhone:'0821234567',contactEmail:user.email,number:'A4P-2026-000001',status:'issued',customer:{name:user.name,email:user.email},lines:[],dueDate:'2026-09-28',totalCents:30000,paidCents:0,version:2}]:[],total:billingIssued?1:0,plans:[],workspace:{customer:{name:user.name,email:user.email,address:'George'},nextBillingDate:null,interval:'once',amountCents:0,work:[{id:'work-one',started_at:now,duration_seconds:5400,note:'Capture work'}]}});
+    return respond({invoices:billingIssued?[{id:'invoice-test',userId:'owner',accountStatus:'active',contactPhone:'0821234567',contactEmail:user.email,number:'A4P-2026-000001',status:'issued',customer:{name:user.name,email:user.email},lines:[],dueDate:'2026-09-28',totalCents:30000,paidCents:0,version:2}]:[],total:billingIssued?1:0,plans:[],workspace:{customer:{name:user.name,email:user.email,address:'George'},nextBillingDate:null,interval:'once',amountCents:0,work:[{id:'work-one',started_at:now,duration_seconds:5400,note:'Capture work'}]}});
    }
    if(url.includes('/api/admin/business-network'))return failBusiness?respond({error:'Directory unavailable'},503):respond({businesses:[]});
    if(url.includes('/api/admin/maintenance-catalogue'))return respond({catalogue});
@@ -223,6 +223,26 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.keyboard.press('Escape');
    assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Share');
   }
+  for(const width of [390,1440]){
+   await open('billing',width);
+   await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(e=>e.textContent==='Suspend account'));
+   await page.$$eval('button',els=>{const button=els.find(e=>e.textContent==='Suspend account');button.focus();button.click();});
+   await page.waitForSelector('dialog[open]');
+   assert.equal(await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Confirm suspension').disabled),true);
+   await page.type('dialog textarea','Payment is outstanding. Please contact Aim4price to resolve this invoice.');
+   await page.click('dialog input[type="checkbox"]');
+   assert.equal(await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Confirm suspension').disabled),false);
+   assert.equal(await page.$eval('dialog',e=>e.getBoundingClientRect().right<=innerWidth),true);
+   await page.screenshot({path:path.join(evidence,`billing-suspension-${width}.png`),fullPage:true});
+   if(width===1440){
+    await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Confirm suspension').click());
+    await page.waitForFunction(()=>document.body.textContent.includes('Account suspended. The customer will see'));
+    const command=billingRequests.at(-1);assert.equal(command.action,'suspend_account');assert.equal(command.id,'invoice-test');assert.equal(command.version,2);assert.match(command.reason,/Payment is outstanding/);
+   }else{
+    await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Suspend account');
+   }
+  }
+  console.log('PASS suspension confirmation, reason, invoice scope and responsive layout');
   console.log('PASS responsive invoice sharing, saved contacts and focus restoration');
   billingIssued=false;
   console.log('PASS account search, preview retry, sandbox, download gating and focus restoration');

@@ -2580,19 +2580,15 @@ export default function AccountClient({
       {activeAccountModal === "invoices" ? (
         <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section ref={activeDialogRef}
-            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.passwordModalCard}`}
+            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.passwordModalCard} ${styles.billingModal}`}
             role="dialog" aria-modal="true" aria-labelledby="invoices-modal-title"
             aria-describedby="invoices-modal-description" tabIndex={-1}
             onClick={(event) => event.stopPropagation()}>
             <AccountModalScroller>
               <div className={styles.modalHeader}>
-                <h2 id="invoices-modal-title">Aim4price invoices</h2>
+                <h2 id="invoices-modal-title">Your invoices</h2>
                 <p id="invoices-modal-description">View your invoices and recorded payments.</p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close invoices">×</button>
-              </div>
-              <div className={styles.passwordModalIntro}>
-                <QuickActionIcon name="invoices" />
-                <div><strong>Your Aim4price billing</strong><p>Preview an invoice before downloading. No VAT applicable.</p></div>
               </div>
               <AccountInvoices />
               <div className={styles.modalActions}>

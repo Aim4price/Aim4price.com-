@@ -4,6 +4,12 @@ on:
     paths:
       - 'lib/billing*'
       - 'components/InvoicePreview*'
+      - 'components/BillingInvoiceCard*'
+      - 'components/InlineBillingInvoice*'
+      - 'app/pending-payment/**'
+      - 'app/account/account-invoices.tsx'
+      - 'lib/account-profile.ts'
+      - 'lib/admin-users.ts'
       - 'app/**/billing/**'
       - 'app/auth/**'
       - 'app/api/auth/**'
@@ -13,8 +19,10 @@ on:
       - 'lib/report-pdf.ts'
       - 'tests/billing*'
       - 'scripts/verify-billing-report.cjs'
+      - 'scripts/verify-billing-experience.cjs'
       - 'scripts/verify-admin-review.cjs'
       - 'database/migrations/110-aim4price-billing.sql'
+      - 'database/migrations/116-billing-suspension.sql'
       - '.github/workflows/billing-validation.yml'
 permissions:
   contents: read
@@ -33,10 +41,12 @@ jobs:
       - run: node --test tests/billing*.test.mjs tests/signup-wizard-flow.test.mjs
       - run: node scripts/verify-billing-report.cjs
       - run: node scripts/verify-admin-review.cjs
+      - run: node scripts/verify-billing-experience.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: billing-review-evidence
           path: |
             .next/billing-validation/
+            .next/billing-experience-validation/
             .next/admin-review-validation/

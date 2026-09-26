@@ -25,10 +25,10 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
  const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  const oldFetch=global.fetch,oldKey=process.env.RESEND_API_KEY;
  try{
-  await pg.exec('create table "user"(id text primary key,name text,email text); create table account_profiles(user_id text primary key,business_name text,address_line_1 text,address_line_2 text,town_city text,province text,phone text); create table admin_work_sessions(id text primary key,client_user_id text,started_at timestamptz default now(),stopped_at timestamptz,duration_seconds integer,note text);');
+  await pg.exec('create table "user"(id text primary key,name text,email text); create table account_profiles(user_id text primary key,business_name text,address_line_1 text,address_line_2 text,town_city text,province text,phone text,account_status text); create table admin_work_sessions(id text primary key,client_user_id text,started_at timestamptz default now(),stopped_at timestamptz,duration_seconds integer,note text);');
   await pg.exec("insert into \"user\" values('one','Customer One','one@example.test'),('two','Customer Two','two@example.test');insert into admin_work_sessions(id,client_user_id,stopped_at,duration_seconds,note) values('work-one','one',now(),5400,'Capture work'),('work-two','two',now(),3600,'Private work'),('running','one',null,3600,'Still running');");
   await billing.ensureBillingSchema();
-  await pg.exec("insert into account_profiles values('one','Farm Business','Road 10','Unit 2','George','Western Cape','0821234567')");
+  await pg.exec("insert into account_profiles values('one','Farm Business','Road 10','Unit 2','George','Western Cape','0821234567','active')");
   const initialWorkspace=await billing.getBillingWorkspace('one');
   assert.equal(initialWorkspace.customer.businessName,'Farm Business');assert.equal(initialWorkspace.customer.address,'Road 10\nUnit 2\nGeorge\nWestern Cape');
   const customer={name:'Customer One',email:'one@example.test',address:'George'};
@@ -66,7 +66,7 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
   await billing.queueSignupInvoice('two',quote);await billing.processSignupInvoices();await billing.processSignupInvoices();
   assert.equal((await billing.listBillingInvoices('two',false)).total,1);
   assert.equal((await pg.query("select count(*)::int as n from aim4price_billing_mail where invoice_id=$1",[draft.id])).rows[0].n,1);
-  const mail=load('lib/billing-mail.ts',{'./db':{getDb:()=>db},'./billing':billing,'./report-pdf':{renderReportHtmlToPdf:async()=>Buffer.from('%PDF-fixture')},'./email':{getSiteOrigin:()=> 'https://aim4price.test'},'./billing-report':report,'./billing-shared':shared});
+  const mail=load('lib/billing-mail.ts',{'./db':{getDb:()=>db},'./billing':billing,'./report-pdf':{renderReportHtmlToPdf:async()=>Buffer.from('%PDF-fixture')},'./email':{getSiteOrigin:()=> 'https://aim4price.test'},'./billing-report':report,'./billing-shared':shared,'./billing-email-template':load('lib/billing-email-template.ts',{'./billing-report':report,'./billing-shared':shared})});
   const calls=[];process.env.RESEND_API_KEY='fake-test-key';
   global.fetch=async(url,options)=>{calls.push({url,options});throw Error('Simulated network timeout');};
   await mail.dispatchBillingMail();
@@ -90,7 +90,7 @@ test('recurring agreements are opt-in, audited, versioned and issue only once pe
  const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  try {
   await pg.exec('create table "user"(id text primary key,name text,email text); insert into "user" values(\'one\',\'Example\',\'one@example.test\');');
-  await pg.exec('create table account_profiles(user_id text primary key,phone text)');
+  await pg.exec('create table account_profiles(user_id text primary key,phone text,account_status text)');
   await billing.ensureBillingSchema();
   const input={userId:'one',version:0,customer:{name:'Example',email:'one@example.test',address:'George'},lines:[{description:'Approved package',quantity:1,unitCents:25000}],interval:'monthly',nextInvoiceDate:'2090-01-31',dueDays:7,enabled:false};
   await billing.saveBillingAgreement(input,'admin');

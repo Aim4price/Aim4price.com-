@@ -241,6 +241,8 @@ export async function setAdminUserAccountStatus(
       on conflict (user_id)
       do update set
         account_status = excluded.account_status,
+        suspension_reason = null,
+        billing_suspension_invoice_id = null,
         updated_at = now()
     `,
     [user.id, asText(user.name) || null, normalizedStatus],

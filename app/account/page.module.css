@@ -4148,3 +4148,10 @@
 .invoiceDetails dd { margin: 0.25rem 0 0; font-weight: 750; overflow-wrap: anywhere; }
 .invoiceHelp { color: var(--app-muted, #607168); font-size: 0.8rem; line-height: 1.5; }
 .invoiceHelp a { color: inherit; overflow-wrap: anywhere; }
+
+.billingModal .modalHeader { padding-bottom:22px; margin-bottom:22px; }
+.billingModal .modalHeader h2 { font-size:26px; font-weight:650; letter-spacing:-.025em; }
+.billingModal .modalHeader p { font-size:13px; font-weight:400; margin-top:8px; }
+.billingModal .modalCloseButton { border-radius:5px; }
+.billingModal .invoiceList { gap:18px; }
+.billingModal .modalActions { margin-top:20px; padding-top:16px; }

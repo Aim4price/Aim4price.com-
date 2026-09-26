@@ -10,12 +10,13 @@ class BillingError extends Error {}
 test('Admin API rejects non-admin sessions, cross-origin writes and malformed requests before mutation',async()=>{
  let allowed=false,writes=0;
  const route=load('app/api/admin/billing/route.ts',{
+  '../../../../lib/billing-suspension':{suspendBillingAccount:async()=>{writes++;}},
   '../../../../lib/admin-api-access':{requireAdminApiAccess:async()=>allowed?{ok:true,actor:{userId:'admin'}}:{ok:false,response:Response.json({error:'Forbidden'},{status:403})}},
   '../../../../lib/trusted-request-origin':load('lib/trusted-request-origin.ts',{}),
   '../../../../lib/billing':{BillingError,createBillingDraft:async()=>{writes++;return 'draft';},saveBillingAgreement:async()=>{writes++;},pauseBillingAgreement:async()=>{writes++;}},
  });
  const request=(origin,body='{"action":"create_draft"}')=>new NextRequest('https://aim4price.com/api/admin/billing',{method:'POST',headers:{origin,'Content-Type':'application/json'},body});
- for(const action of ['create_draft','save_agreement','pause_agreement'])assert.equal((await route.POST(request('https://aim4price.com',JSON.stringify({action})))).status,403);
+ for(const action of ['create_draft','save_agreement','pause_agreement','suspend_account'])assert.equal((await route.POST(request('https://aim4price.com',JSON.stringify({action})))).status,403);
  assert.equal((await route.GET(new NextRequest('https://aim4price.com/api/admin/billing'))).status,403);
  allowed=true;
  assert.equal((await route.POST(request('https://untrusted.test'))).status,403);
@@ -23,8 +24,8 @@ test('Admin API rejects non-admin sessions, cross-origin writes and malformed re
  assert.equal((await route.POST(request('https://aim4price.com','{'))).status,400);
  assert.equal(writes,0);
  assert.equal((await route.POST(request('https://aim4price.com'))).status,200);assert.equal(writes,1);
- for(const action of ['save_agreement','pause_agreement']){assert.equal((await route.POST(request('https://untrusted.test',JSON.stringify({action})))).status,403);assert.equal((await route.POST(request('https://aim4price.com',JSON.stringify({action})))).status,200);}
- assert.equal(writes,3);
+ for(const action of ['save_agreement','pause_agreement','suspend_account']){assert.equal((await route.POST(request('https://untrusted.test',JSON.stringify({action})))).status,403);assert.equal((await route.POST(request('https://aim4price.com',JSON.stringify({action})))).status,200);}
+ assert.equal(writes,4);
 });
 test('Invoice downloads require a real session and enforce owner access before rendering',async()=>{
  let session=null,renders=0,lookup=0;
