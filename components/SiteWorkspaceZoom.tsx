@@ -8,9 +8,10 @@ import {
   WEBSITE_DESIGN_WIDTH, WEBSITE_DESIGN_HEIGHT, WEBSITE_MIN_MANUAL_SCALE,
   WEBSITE_MAX_MANUAL_SCALE, WEBSITE_SCALE_STEP, WEBSITE_PREFERENCE_KEY,
   WEBSITE_OVERLAY_ROOT_ID, WEBSITE_LANDSCAPE_BYPASS_KEY, calculateWebsiteScale,
-  stepWebsiteScale, isNativeWorkspace, parseWebsitePreference, shouldSuggestWebsiteLandscape,
+  stepWebsiteScale, isNativeWorkspace, parseWebsitePreference,
   type WebsitePreference,
 } from '../lib/website-canvas';
+import { listenToMediaQuery, observePhoneGeometry, phoneNeedsLandscape } from '../lib/website-phone';
 import styles from './SiteWorkspaceZoom.module.css';
 import { WebsiteCanvasContext } from './WebsitePortal';
 
@@ -60,11 +61,11 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     setLoaded(true);
     window.addEventListener('resize', syncAutomaticScale);
     window.addEventListener('orientationchange', syncAutomaticScale);
-    coarsePointer.addEventListener('change', syncAutomaticScale);
+    const stopMedia = listenToMediaQuery(coarsePointer, syncAutomaticScale);
     return () => {
       window.removeEventListener('resize', syncAutomaticScale);
       window.removeEventListener('orientationchange', syncAutomaticScale);
-      coarsePointer.removeEventListener('change', syncAutomaticScale);
+      stopMedia();
     };
   }, [native]);
 
@@ -75,28 +76,13 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     }
 
     try { landscapeBypassRef.current = sessionStorage.getItem(WEBSITE_LANDSCAPE_BYPASS_KEY) === 'portrait'; }
-    catch { landscapeBypassRef.current = false; }
+    catch { /* Preserve the in-memory choice when storage is blocked. */ }
 
-    const coarsePointer = window.matchMedia('(hover: none) and (pointer: coarse)');
-    const viewport = window.visualViewport;
+    const coarsePointer = window.matchMedia('(any-pointer: coarse)');
     const syncLandscapeEntry = () => {
-      const width = viewport?.width ?? window.innerWidth;
-      const height = viewport?.height ?? window.innerHeight;
-      setShowLandscapeEntry(!landscapeBypassRef.current && shouldSuggestWebsiteLandscape(width, height, coarsePointer.matches));
+      setShowLandscapeEntry(!landscapeBypassRef.current && phoneNeedsLandscape(coarsePointer));
     };
-
-    syncLandscapeEntry();
-    window.addEventListener('resize', syncLandscapeEntry);
-    window.addEventListener('orientationchange', syncLandscapeEntry);
-    viewport?.addEventListener('resize', syncLandscapeEntry);
-    coarsePointer.addEventListener('change', syncLandscapeEntry);
-
-    return () => {
-      window.removeEventListener('resize', syncLandscapeEntry);
-      window.removeEventListener('orientationchange', syncLandscapeEntry);
-      viewport?.removeEventListener('resize', syncLandscapeEntry);
-      coarsePointer.removeEventListener('change', syncLandscapeEntry);
-    };
+    return observePhoneGeometry(coarsePointer, syncLandscapeEntry);
   }, [native]);
 
   useEffect(() => {

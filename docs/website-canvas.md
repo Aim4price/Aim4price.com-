@@ -55,3 +55,13 @@ Review screenshots: [Home at 1440](website-canvas-evidence/home-1440.png), [Home
 Auto fits the same canonical composition to portrait or landscape; it does not load a different homepage. A saved manual percentage remains intentional until the percentage button restores Auto. Portrait phones show the sideways suggestion unless `Continue in portrait` was selected in the current tab session. Rotating dismisses that suggestion automatically; the website does not force device rotation. Test a fresh tab session when checking the initial prompt.
 
 Run `node scripts/verify-website-mobile-sizing.cjs` for isolated Chromium checks of the real canvas component, with a desktop outer window and touch viewport, rotation, saved manual sizing/Auto, pinch magnification, and desktop browser zoom.
+
+### Browser compatibility for the phone prompt
+
+The prompt uses touch capability (any coarse pointer, touch points, or legacy touch events) and the screen's CSS short side to identify phones, including browsers in desktop mode. Screen orientation is preferred, followed by the legacy phone angle and then the layout viewport. Visual viewport changes from keyboards or pinch zoom no longer determine orientation when a screen orientation API is available. Devices without either orientation API necessarily fall back to their layout viewport.
+
+Listeners support both modern `MediaQueryList` events and legacy `addListener`. Screen changes, legacy rotation, resize, restored pages and visibility changes refresh the prompt, with a deferred refresh for browsers that update geometry after the event. `Continue in portrait` stays usable with storage disabled; its choice then lasts only in memory. Native app route exclusions are unchanged.
+
+`node --test tests/website-phone.test.mjs tests/site-workspace-zoom.test.mjs` checks eligibility and listener fallbacks. `scripts/verify-phone-rotation.cjs` mounts the actual website shell and exercises seven feature profiles in Chromium, Firefox and WebKit: modern screen orientation, legacy events, layout-only fallback, desktop mode, blocked storage, desktop and tablet exclusions. It also verifies both rotations, unlocking the canvas, and the portrait bypass. CI installs Playwright 1.56.1 and its three engines independently of production dependencies.
+
+These engine/feature tests do not certify every branded browser, old browser version, physical phone, or embedded WebView. Real-device checks remain appropriate for Safari/iOS, Chrome/Android, Samsung Internet, Firefox, Edge, Opera, Brave and embedded browsers. A device with rotation locked can always use Continue in portrait. This change does not add support for obsolete browsers unsupported by the rest of the Next.js application.

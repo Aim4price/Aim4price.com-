@@ -84,11 +84,10 @@ test('portrait phone entry strongly recommends landscape without locking orienta
     read('components/SiteWorkspaceZoom.tsx'),
     read('components/SiteWorkspaceZoom.module.css'),
   ]);
-  assert.match(host, /matchMedia\('\(hover: none\) and \(pointer: coarse\)'\)/);
+  assert.match(host, /matchMedia\('\(any-pointer: coarse\)'\)/);
   assert.match(host, /sessionStorage\.getItem\(WEBSITE_LANDSCAPE_BYPASS_KEY\) === 'portrait'/);
   assert.match(host, /sessionStorage\.setItem\(WEBSITE_LANDSCAPE_BYPASS_KEY, 'portrait'\)/);
-  assert.match(host, /window\.addEventListener\('orientationchange', syncLandscapeEntry\)/);
-  assert.match(host, /viewport\?\.addEventListener\('resize', syncLandscapeEntry\)/);
+  assert.match(host, /observePhoneGeometry\(coarsePointer, syncLandscapeEntry\)/);
   assert.match(host, /canvas\?\.setAttribute\('inert', ''\)/);
   assert.match(host, /data-mobile-landscape-entry/);
   assert.match(host, /document\.body/);

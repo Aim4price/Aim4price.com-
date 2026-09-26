@@ -8,6 +8,9 @@ on:
       - 'components/AppPatternBackground*'
       - 'components/SiteWorkspaceZoom*'
       - 'lib/website-canvas.ts'
+      - 'lib/website-phone.ts'
+      - 'tests/website-phone.test.mjs'
+      - 'scripts/verify-phone-rotation.cjs'
       - 'lib/header-nav-drag.ts'
       - 'tests/header-nav-drag.test.mjs'
       - 'app/home-hero-experience.tsx'
@@ -39,7 +42,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Website layout regressions
-        run: node --test tests/site-workspace-zoom.test.mjs tests/header-manage-layout.test.mjs tests/header-nav-drag.test.mjs
+        run: node --test tests/website-phone.test.mjs tests/site-workspace-zoom.test.mjs tests/header-manage-layout.test.mjs tests/header-nav-drag.test.mjs
       - name: Homepage playback and swipe regressions
         run: node --experimental-strip-types --test tests/home-story-playback.test.cjs tests/home-story-swipe.test.mjs tests/homepage-asset-register-hero.test.mjs
       - run: npm run typecheck
@@ -80,3 +83,22 @@ jobs:
         with:
           name: mobile-sizing-validation
           path: .next/mobile-sizing-validation
+
+  phone-rotation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install browser test engines
+        run: |
+          npm install --prefix /tmp/phone-browser-tests --no-audit --no-fund playwright@1.56.1
+          /tmp/phone-browser-tests/node_modules/.bin/playwright install --with-deps chromium firefox webkit
+      - name: Phone rotation across browser engines
+        env:
+          PHONE_PLAYWRIGHT_PATH: /tmp/phone-browser-tests/node_modules/playwright
+        run: node scripts/verify-phone-rotation.cjs
