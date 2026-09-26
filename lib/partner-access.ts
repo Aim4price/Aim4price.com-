@@ -1193,8 +1193,6 @@ export async function listPartnerDirectory(input: {
   search?: string | null;
   bounds?: AssistanceMapBounds | null;
   includeExternal?: boolean;
-  category?: string | null;
-  service?: string | null;
 }): Promise<PartnerDirectoryEntry[]> {
   await ensurePartnerAccessTables();
   const db = getDb();
@@ -1219,10 +1217,6 @@ export async function listPartnerDirectory(input: {
     filters.push(`(
       lower(coalesce(business_name, '')) like $${params.length}
       or lower(coalesce(display_name, '')) like $${params.length}
-      or lower(coalesce(province, '')) like $${params.length}
-      or lower(coalesce(town_city, '')) like $${params.length}
-      or lower(coalesce(partner_brand_focus, '')) like $${params.length}
-      or lower(coalesce(partner_services, '')) like $${params.length}
     )`);
   } else if (input.bounds) {
     const { west, south, east, north } = input.bounds;
@@ -1271,7 +1265,7 @@ export async function listPartnerDirectory(input: {
     params,
   );
 
-  const genuinePartners = result.rows.map(mapPartnerRow).filter(p => (!input.category || [p.accountSubtype,p.description,p.services].join(' ').toLowerCase().includes(input.category.toLowerCase())) && (!input.service || p.services.toLowerCase().includes(input.service.toLowerCase())));
+  const genuinePartners = result.rows.map(mapPartnerRow);
   const bounds = input.bounds ?? null;
   const center = bounds ? {
     latitude: (bounds.south + bounds.north) / 2,

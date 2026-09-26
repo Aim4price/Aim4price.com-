@@ -6,7 +6,6 @@ import { getAssetRegisterItemById } from "./asset-register-db";
 import type { PartnerDirectoryEntry } from "./partner-access";
 import type { AssistanceMapBounds } from "./assistance-network";
 import {
-  businessPartnerTypes,
   businessText,
   businessEmail,
   businessCoversLocation,
@@ -179,8 +178,6 @@ export async function listExternalBusinesses(input: {
   partnerType?: string | null;
   search?: string | null;
   bounds?: AssistanceMapBounds | null;
-  category?: string | null;
-  service?: string | null;
   latitude?: number | null;
   longitude?: number | null;
 }): Promise<PartnerDirectoryEntry[]> {
@@ -193,20 +190,11 @@ export async function listExternalBusinesses(input: {
   }>(
     `select id,email,details from business_network where status='active' and accepted_at is not null order by name limit 1000`,
   );
-  const query = (input.search || "").toLowerCase();
+  const query = (input.search || "").trim().toLowerCase();
   return result.rows
     .filter(({ details: b }) => {
-      if (input.partnerType && !businessPartnerTypes(b.headings).some(type => type === input.partnerType)) return false;
-      if (
-        query &&
-        ![b.name, b.town, b.address, ...b.headings, ...b.services]
-          .join(" ")
-          .toLowerCase()
-          .includes(query)
-      )
-        return false;
-      if (input.category && !b.headings.includes(input.category)) return false;
-      if (input.service && !b.services.includes(input.service)) return false;
+      // Published businesses are recipients, not a category-based marketplace.
+      if (query && !b.name.toLowerCase().includes(query)) return false;
       const bounds = input.bounds;
       const latitude =
         input.latitude ?? (bounds ? (bounds.south + bounds.north) / 2 : null);
@@ -221,7 +209,7 @@ export async function listExternalBusinesses(input: {
     .map(({ id, email, details: b }) => ({
       userId: `external:${id}`,
       googlePlaceId: b.googlePlaceId,
-      partnerType: (input.partnerType || businessPartnerTypes(b.headings)[0]) as PartnerDirectoryEntry["partnerType"],
+      partnerType: (input.partnerType || "dealer") as PartnerDirectoryEntry["partnerType"],
       accountSubtype: "external-business",
       displayName: b.name,
       businessName: b.name,
@@ -233,14 +221,13 @@ export async function listExternalBusinesses(input: {
       logoUrl: "",
       websiteUrl: b.website,
       extraPhotoUrls: [],
-      description: b.headings.join(" · "),
+      description: "",
       latitude: b.latitude,
       longitude: b.longitude,
       serviceRadiusKm: b.nationwide ? null : b.radiusKm,
       brandFocus: "",
-      services: b.services.join(" · "),
+      services: "",
       isExternalBusiness: true,
-      businessHeadings: b.headings,
       googleMapsUrl:
         b.googleMapsUrl ||
         (b.googlePlaceId

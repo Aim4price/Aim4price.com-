@@ -6729,11 +6729,7 @@ export default function AssetRegisterClient({
   const [businessAdditionalContact, setBusinessAdditionalContact] = useState('');
   const [businessPreviewStates, setBusinessPreviewStates] = useState<Record<string, boolean>>({});
   const setBusinessPreviewReady = useCallback((ready: boolean, id?: string) => setBusinessPreviewStates(current => ({...current, [id || '']:ready})), []);
-  const [businessHeading, setBusinessHeading] = useState('');
-  const [businessService, setBusinessService] = useState('');
   const businessRequestKey = useRef('');
-  const businessFiltersRef = useRef({heading:'',service:''});
-  businessFiltersRef.current = {heading:businessHeading,service:businessService};
   const [quoteLeadStep, setQuoteLeadStep] = useState<QuoteLeadStep>(null);
   const [quoteConsentAccepted, setQuoteConsentAccepted] = useState(false);
   const [quoteTrackMaintenance, setQuoteTrackMaintenance] = useState(false);
@@ -11710,7 +11706,6 @@ export default function AssetRegisterClient({
     leadType: AssetLeadType | null = selectedQuoteLeadType,
     searchValue = quotePartnerSearch,
     bounds?: { west: number; south: number; east: number; north: number },
-    heading = businessFiltersRef.current.heading, service = businessFiltersRef.current.service,
   ): Promise<PartnerDirectoryEntry[]> {
     const option = quoteOptionForLeadType(leadType);
 
@@ -11726,8 +11721,6 @@ export default function AssetRegisterClient({
 
     try {
       const params = new URLSearchParams({ type: option.partnerType });
-      if (heading) params.set('category', heading);
-      if (service) params.set('service', service);
       if (searchValue.trim()) params.set('search', searchValue.trim());
       const currentMapBounds = !bounds && quoteLeafletMapRef.current
         ? quoteLeafletMapRef.current.getBounds()
@@ -11904,9 +11897,6 @@ export default function AssetRegisterClient({
       openQuickAssetStatusEditor(asset, 'license');
       return;
     }
-
-    setBusinessHeading('');
-    setBusinessService('');
     setBusinessAdditionalContact('');
     setSelectedQuoteLeadType(leadType);
     prepareQuoteLocationStep(quoteAsset);
@@ -15203,8 +15193,6 @@ export default function AssetRegisterClient({
     setAssetShareDestination('inside');
     resetAssetQuoteState('register');
     setQuoteAsset(anchorAsset);
-    setBusinessHeading('');
-    setBusinessService('');
     setBusinessAdditionalContact('');
     setSelectedQuoteLeadType(leadType);
     prepareQuoteLocationStep(anchorAsset);
@@ -20704,7 +20692,7 @@ export default function AssetRegisterClient({
                       className={styles.assetQuoteSearchInput}
                       value={quotePartnerSearch}
                       onChange={(event) => setQuotePartnerSearch(event.target.value)}
-                      placeholder="Search business, service or brand"
+                      placeholder="Find a business by name"
                       aria-label="Search business directory"
                     />
                     <button type="submit" className={styles.secondaryButton} disabled={isLoadingQuotePartners}>
@@ -20727,7 +20715,7 @@ export default function AssetRegisterClient({
                       </div>
 
                       <div className={styles.assetQuotePartnerList}>
-                        <BusinessDirectoryTools senderName={activeRegister?.businessName || accountProfile?.businessName || ''} heading={businessHeading} service={businessService} onChange={(heading, service) => { setBusinessHeading(heading); setBusinessService(service); void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch, undefined, heading, service); }} />
+                        <BusinessDirectoryTools senderName={activeRegister?.businessName || accountProfile?.businessName || ''} />
                         {isLoadingQuotePartners ? (
                           <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
                         ) : quotePartners.length ? (
@@ -20769,13 +20757,13 @@ export default function AssetRegisterClient({
                         ) : (
                           <div className={styles.directoryEmptyState} role="status">
                             <strong>No businesses found</strong>
-                            <p>Try another area or adjust your search and filters.</p>
+                            <p>Check the business name or invite the business to join.</p>
                             <div>
                               <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={changeQuoteLocation}>Change area</button>
-                              {quotePartnerSearch || businessHeading || businessService ? <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={() => {
-                                setQuotePartnerSearch(''); setBusinessHeading(''); setBusinessService('');
-                                void loadQuotePartners(selectedQuoteOption.leadType, '', undefined, '', '');
-                              }}>Clear search &amp; filters</button> : null}
+                              {quotePartnerSearch ? <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={() => {
+                                setQuotePartnerSearch('');
+                                void loadQuotePartners(selectedQuoteOption.leadType, '');
+                              }}>Clear search</button> : null}
                             </div>
                           </div>
                         )}

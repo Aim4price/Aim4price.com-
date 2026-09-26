@@ -2,10 +2,6 @@
 import BusinessAcceptanceForm from "../../../components/business-network/BusinessAcceptanceForm";
 import { useEffect, useState, useRef } from "react";
 import BusinessLocation from "../../../components/business-network/BusinessLocation";
-import {
-  BUSINESS_HEADINGS,
-  BUSINESS_SERVICES,
-} from "../../../lib/business-network-shared";
 import styles from "../../../components/business-network/BusinessNetwork.module.css";
 import type { AdminBusiness } from "../../../lib/admin-business-network";
 type Fields = {
@@ -68,8 +64,6 @@ export default function BusinessJoin({
     [notice, setNotice] = useState(adminMode ? "" : "Loading invitation…"),
     [busy, setBusy] = useState(false),
     [accepted, setAccepted] = useState(false),
-    [service, setService] = useState(""),
-    [heading, setHeading] = useState(""),
     [query, setQuery] = useState(""),
     [places, setPlaces] = useState<Place[]>([]),
     [entryMode, setEntryMode] = useState<'google' | 'manual'>('google'),
@@ -218,7 +212,7 @@ export default function BusinessJoin({
       setLinkedPlace(detail);
       setDetailsVerified(false);
       setPlaces([]);
-      setNotice('Google details loaded. Review the fields below, add the enquiry email and choose the services. Your own entries have been kept.');
+      setNotice('Google details loaded. Review the fields below and add the enquiry email. Your own entries have been kept.');
       businessNameInput.current?.scrollIntoView({behavior: 'smooth', block: 'center'});
     } catch (error) {
       if (requestId === detailsRequest.current) setSearchNotice(error instanceof Error ? error.message : 'Unable to load business details. Enter them manually.');
@@ -484,61 +478,6 @@ export default function BusinessJoin({
                 Nationwide
               </label>
             </section>
-            {(["headings", "services"] as const).map((key) => (
-              <section key={key} className={styles.card}>
-                <h2>{key === "headings" ? "Business headings" : "Services"}</h2>
-                <div className={styles.choices}>
-                  {[
-                    ...new Set([
-                      ...(key === "headings"
-                        ? BUSINESS_HEADINGS
-                        : BUSINESS_SERVICES),
-                      ...fields[key],
-                    ]),
-                  ].map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      aria-pressed={fields[key].includes(v)}
-                      onClick={() =>
-                        set(
-                          key,
-                          fields[key].includes(v)
-                            ? fields[key].filter((x) => x !== v)
-                            : [...fields[key], v],
-                        )
-                      }
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
-                <label>
-                  {key === "headings"
-                    ? "Add another heading"
-                    : "Add another service"}
-                  <input
-                    value={key === "headings" ? heading : service}
-                    onChange={(e) =>
-                      key === "headings"
-                        ? setHeading(e.target.value)
-                        : setService(e.target.value)
-                    }
-                    maxLength={100}
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const v = (key === "headings" ? heading : service).trim();
-                    if (v) set(key, [...new Set([...fields[key], v])]);
-                    key === "headings" ? setHeading("") : setService("");
-                  }}
-                >
-                  Add
-                </button>
-              </section>
-            ))}
             {linkedPlace && <label className={styles.check}>
               <input type="checkbox" required checked={detailsVerified} onChange={event => setDetailsVerified(event.target.checked)} />
               I have independently checked these listing details with the business or its own website and have permission to publish them.
