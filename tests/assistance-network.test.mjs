@@ -121,17 +121,11 @@ test('directory returns real accounts and accepted businesses without managed se
   assert.match(network, /row\.service_key === 'dealer' \? AIM4PRICE_DEALER_ASSISTANCE_WEBSITE/);
 });
 
-test('directory map opens a business profile with a message action and a single help entry', async () => {
+test('directory map opens a business profile with a message action', async () => {
   const client = await read('app/asset-register/asset-register-client.tsx');
   const card = await read('components/business-network/BusinessProfileCard.tsx');
   assert.match(client, /<BusinessProfileCard/);
   assert.match(client, /setDirectoryBusiness\(partner\)/);
-  const help = await read('components/business-network/DirectoryHelp.tsx');
-  assert.equal((client.match(/<DirectoryHelp\b/g) || []).length, 1);
-  assert.match(help, /Need help\?/);
-  assert.match(help, /buildWhatsAppShareUrl\(copy, '062 572 1650'\)/);
-  assert.match(help, /buildEmailShareUrl\(copy, 'aim4price@gmail.com'\)/);
-  assert.doesNotMatch(help, /openDirectoryExternalShare|GuestLeadComposer|AssetExternalShare/);
   assert.match(client, /Where are you looking\?/);
   assert.match(client, /openDirectoryExternalShare/);
   assert.match(card, /Send message/);

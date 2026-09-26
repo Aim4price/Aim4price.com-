@@ -41160,11 +41160,11 @@ button.documentOpenLink {
 }
 
 .optionsModal.assetQuotePartnerPickerModal .assetQuoteSearchBar {
-  grid-template-columns: minmax(0, 1fr) auto auto !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
 }
 .businessDirectoryBadge { display:inline-flex; width:fit-content; margin-top:6px; padding:4px 7px; border-radius:5px; background:var(--app-surface-soft,#eaf5ef); color:var(--app-text,#174b39); font-size:.65rem; font-weight:700; }
 @media(max-width:700px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal.assetQuotePartnerPickerModal .assetQuoteSearchBar { grid-template-columns:minmax(0,1fr) auto !important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .optionsModal.assetQuotePartnerPickerModal .assetQuoteSearchBar { grid-template-columns:minmax(0,1fr) !important; }
   :global(:where(html:not(:has([data-website-canvas])))) .assetQuoteSearchBar input { grid-column:1 / -1; }
 }
 
