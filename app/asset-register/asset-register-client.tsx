@@ -1,4 +1,5 @@
 'use client';
+import ShareModalCloseButton from '../../components/asset-register/ShareModalCloseButton';
 import DateInput from '../../components/DateInput';
 import { registerIdFromLocation, buildAssetRegisterApiUrl } from '../../lib/asset-register-location';
 import downloadStyles from "../../components/ReportDownload.module.css";
@@ -20575,15 +20576,11 @@ export default function AssetRegisterClient({
                 ) : null}
               </div>
 
-              <button
-                type="button"
-                className={isExternalAssetShareView ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : styles.modalCloseButton}
+              <ShareModalCloseButton
                 onClick={backFromShareModal}
                 aria-label="Back to previous share step"
                 disabled={isSendingQuoteLead}
-              >
-                <span aria-hidden="true">{isExternalAssetShareView ? '×' : <CloseIcon className={styles.buttonIcon} />}</span>
-              </button>
+              />
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${isExternalAssetShareView ? `${styles.registerShareModalBody} ${externalShareStyles.accountShareTheme}` : ''}`}>
@@ -20865,15 +20862,11 @@ export default function AssetRegisterClient({
                               ? `Message to selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}`
                               : 'Confirm and send request'}</h4>
                           </div>
-                          <button
-                            type="button"
-                            className={styles.assetQuoteStepCloseButton}
+                          <ShareModalCloseButton
                             onClick={backFromShareModal}
                             aria-label="Back to previous share step"
                             disabled={isSendingQuoteLead}
-                          >
-                            <CloseIcon className={styles.buttonIcon} />
-                          </button>
+                          />
                         </div>
 
                         {quoteLeadStep === 'message' ? (
@@ -21185,9 +21178,7 @@ export default function AssetRegisterClient({
                 <p>{quoteAsset.title}</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={cancelQuoteTrackingSettings} aria-label="Close dealer tracking settings">
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
+              <ShareModalCloseButton onClick={cancelQuoteTrackingSettings} aria-label="Close dealer tracking settings" />
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody}`}>
