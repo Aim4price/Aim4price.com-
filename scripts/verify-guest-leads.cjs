@@ -57,7 +57,7 @@ export default function Validation(){
     if(req.method()==='POST'){history=[{token,recipient_name:'George Workshop',recipient_email:'business@example.com',created_at:'2026-09-22T00:00:00Z'}];body={share:{token}};}
     else body={leads:history,replyName:'Asset Owner',replyEmail:'owner@example.com'};
    }
-   if(p==='/api/asset-share-links'&&req.method()==='POST')body={share:{token}};
+   if(p==='/api/asset-share-links'&&req.method()==='POST')body={share:{token,sender_name:'Saved Business Ltd'}};
    if(p==='/api/asset-share-links'&&req.method()==='DELETE')history=history.map(x=>({...x,revoked_at:'2026-09-22T00:00:00Z'}));
    if(p.endsWith('/submissions')){
     if(req.method()==='POST')documents=[{id:'10000000-0000-4000-8000-000000000003',kind:'quote',sender_name:'Sam',sender_contact:'sam@example.com',note:'Service quote',file_name:'quote.pdf',status:'pending',created_at:'2026-09-24T00:00:00Z'}];
@@ -78,7 +78,9 @@ export default function Validation(){
    history=[];
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await page.goto('http://127.0.0.1:3033/business-network/accept?from=X%20Farms',{waitUntil:'networkidle2'});
-   assert.ok(await page.evaluate(()=>document.body.textContent.includes('X Farms wants to share asset details with you.')));
+   assert.ok(await page.evaluate(()=>document.body.textContent.includes('Waiting for an invitation')));
+   assert.ok(await page.evaluate(()=>!document.querySelector('main').innerText.includes('X Farms')),'A URL parameter cannot supply the sender identity');
+   assert.equal(await page.$('a[href^="/asset-share/"]'),null,'A missing share token offers no enquiry');
    await page.waitForSelector('[data-website-zoom-host=ready] [data-site-workspace-zoom-controls]');
    await page.screenshot({path:path.join(output,`listing-page-${width}.png`),fullPage:true});
    const writesBefore=requests.filter(r=>r.method==='POST').length;
@@ -151,12 +153,12 @@ export default function Validation(){
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const links=await page.$$eval('dialog a',nodes=>nodes.map(a=>a.href));
    assert.equal(links.length,2);
-   for(const href of links){const target=new URL(href);const message=target.searchParams.get(target.protocol==='mailto:'?'body':'text');assert.ok(message.includes('/business-network/accept'));assert.ok(!message.includes('/asset-share/'));assert.ok(!message.includes('TEST-1'));}
+   for(const href of links){const target=new URL(href);const message=target.searchParams.get(target.protocol==='mailto:'?'body':'text');assert.ok(message.includes('/business-network/accept'));assert.ok(message.includes('Saved Business Ltd'));assert.ok(!message.includes('X Farms'));assert.ok(!message.includes('/asset-share/'));assert.ok(!message.includes('TEST-1'));}
    assert.ok(links.some(href=>href.startsWith('mailto:?')),'Email lets the owner choose a recipient');
    assert.ok(links.some(href=>href.startsWith('https://wa.me/?')),'WhatsApp lets the owner choose a recipient');
    await page.evaluate(()=>{window.__invitationCopied='';Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{window.__invitationCopied=text;}}});});
    await click('Copy link');await page.waitForFunction(()=>document.body.textContent.includes('Invitation link copied.'));
-   assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept?from=X+Farms&share='+token);
+   assert.equal(await page.evaluate(()=>window.__invitationCopied),'http://127.0.0.1:3033/business-network/accept?share='+token);
    assert.ok(await page.$eval('dialog',e=>e.scrollWidth<=e.clientWidth+1),'Invitation fits without horizontal scrolling');
    await page.screenshot({path:path.join(output,`invitation-${width}.png`),fullPage:true});
    await page.evaluate(()=>{window.__escapedToParent=false;document.addEventListener('keydown',event=>{if(event.key==='Escape')window.__escapedToParent=true;},{once:true});});
@@ -169,7 +171,7 @@ export default function Validation(){
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard unavailable')}}}));
    await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');
-   assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept?from=X+Farms&share='+token);
+   assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept?share='+token);
    await page.click('button[aria-label="Close business invitation"]');await page.waitForFunction(()=>!document.querySelector('dialog'));
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('dialog'));

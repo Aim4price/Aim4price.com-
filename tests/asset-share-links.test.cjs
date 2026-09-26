@@ -30,6 +30,7 @@ test('SQL persists and reuses snapshots, enforces owner scope, revocation and as
   const pg = new PGlite();
   await pg.exec('CREATE TABLE asset_register_items(id uuid PRIMARY KEY, user_id text NOT NULL)');
   await pg.query('INSERT INTO asset_register_items VALUES($1,$2),($3,$4)', [A, 'alice', B, 'bob']);
+  await pg.exec("CREATE TABLE account_profiles(user_id text PRIMARY KEY, business_name text); INSERT INTO account_profiles VALUES ('alice', 'Alice Farming'), ('bob', 'Bob Equipment')");
   let title = 'Original tractor';
   const db = { query: (sql, params) => params ? pg.query(sql, params) : pg.exec(sql) };
   const mod = load('lib/asset-share-links.ts', {
@@ -42,6 +43,12 @@ test('SQL persists and reuses snapshots, enforces owner scope, revocation and as
   try {
     await assert.rejects(mod.createAssetShareLink('alice', [B], false), /FORBIDDEN/);
     const first = await mod.createAssetShareLink('alice', [A], false);
+    assert.equal(first.sender_name, 'Alice Farming');
+    assert.equal((await mod.readPublicAssetShare(first.token)).senderName, 'Alice Farming');
+    await pg.query('UPDATE account_profiles SET business_name=$1 WHERE user_id=$2', ['Alice & Co', 'alice']);
+    assert.equal((await mod.readPublicAssetShare(first.token)).senderName, 'Alice & Co');
+    await pg.query('UPDATE account_profiles SET business_name=NULL WHERE user_id=$1', ['alice']);
+    assert.equal((await mod.readPublicAssetShare(first.token)).senderName, '');
     assert.match(first.token, /^[A-Za-z0-9_-]{43}$/);
     title = 'Changed tractor';
     assert.equal((await mod.createAssetShareLink('alice', [A], false)).token, first.token);

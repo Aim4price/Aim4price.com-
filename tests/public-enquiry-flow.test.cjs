@@ -11,15 +11,17 @@ function load(file, mocks = {}) {
   return exports;
 }
 const token = 'a'.repeat(43);
-const share = {createdAt:'2026-09-26T10:00:00Z',assets:['Tractor','Trailer','Bakkie'].map(title=>({title,serialNumber:title+'123',yearModel:2022,usage:'100 hours',condition:'Good',valueExVat:100000,replacementPriceExVat:200000,photoUrls:[],publicUrl:null}))};
+const share = {senderName:'Farm & Co',createdAt:'2026-09-26T10:00:00Z',assets:['Tractor','Trailer','Bakkie'].map(title=>({title,serialNumber:title+'123',yearModel:2022,usage:'100 hours',condition:'Good',valueExVat:100000,replacementPriceExVat:200000,photoUrls:[],publicUrl:null}))};
 test('invitation shows every selected asset, opens the real enquiry and has no signup or Google form',async()=>{
   const Page = load('app/business-network/accept/page.tsx',{
     '../../../components/AppHeader':()=>null,
     '../../../lib/asset-share-links':{readPublicAssetShare:async value=>{assert.equal(value,token);return share;}},
   }).default;
-  const html=renderToStaticMarkup(await Page({searchParams:{share:token,from:'Farm & Co'}}));
+  const html=renderToStaticMarkup(await Page({searchParams:{share:token,from:'Combined Asset Registers'}}));
   for(const asset of share.assets)assert.ok(html.includes(asset.title));
-  assert.ok(html.includes(`/asset-share/${token}?from=Farm%20%26%20Co`));
+  assert.ok(html.includes(`/asset-share/${token}`));
+  assert.ok(html.includes('Farm &amp; Co'));
+  assert.doesNotMatch(html, /Combined Asset Registers|\?from=/);
   assert.ok(html.includes('Open enquiry'));
   assert.doesNotMatch(html,/See an example|Search Google|Find your business on Google|<form|[—–]/);
 });

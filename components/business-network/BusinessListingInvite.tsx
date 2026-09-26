@@ -6,7 +6,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import styles from './BusinessListingInvite.module.css';
 
-export default function BusinessListingInvite({ senderName = '', assetIds, includePhotos = false }: { senderName?: string; assetIds: string[]; includePhotos?: boolean }) {
+export default function BusinessListingInvite({ assetIds, includePhotos = false }: { senderName?: string; assetIds: string[]; includePhotos?: boolean }) {
   const titleId = useId();
   const descriptionId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -16,6 +16,7 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
   const [selection, setSelection] = useState<{assetIds: string[]; includePhotos: boolean} | null>(null);
   const [accepted, setAccepted] = useState(false);
   const requestVersion = useRef(0);
+  const [senderName, setSenderName] = useState('');
   const [link, setLink] = useState('');
   const copyButton = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (link) copyButton.current?.focus(); }, [link]);
@@ -48,7 +49,6 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
     try {
       if (!selection.assetIds.length) throw new Error('Select the assets you want to include in this enquiry.');
       const url = new URL('/business-network/accept', window.location.origin);
-      if (senderName.trim()) url.searchParams.set('from', senderName.trim().slice(0, 120));
       if (selection.assetIds.length) {
         const response = await fetch('/api/asset-share-links', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -57,6 +57,7 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
         const data = await response.json();
         if (!response.ok || !data.share?.token) throw new Error(data.error || 'Unable to prepare the enquiry. Please try again.');
         url.searchParams.set('share', data.share.token);
+        if (version === requestVersion.current) setSenderName(typeof data.share.sender_name === 'string' ? data.share.sender_name.trim().slice(0, 120) : '');
       }
       if (version === requestVersion.current) setLink(url.href);
     } catch (cause) {

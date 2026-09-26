@@ -20,7 +20,7 @@ export function ensureAssetShareSchema() {
   if (!schemaReady) schemaReady = getDb().query(ASSET_SHARE_SCHEMA).then(() => {}).catch(error => { schemaReady = undefined; throw error; });
   return schemaReady;
 }
-export type PublicAssetShare = { assets: ExternalAssetShareItem[]; createdAt: string };
+export type PublicAssetShare = { assets: ExternalAssetShareItem[]; createdAt: string; senderName?: string };
 function selectionKey(ids: string[], includePhotos: boolean) {
   return createHash('sha256').update(JSON.stringify([ids, includePhotos])).digest('hex');
 }
@@ -40,7 +40,7 @@ export async function createAssetShareLink(userId: string, assetIds: unknown, in
     VALUES ($1, $2, $3, $4::uuid[], $5::jsonb)
     ON CONFLICT (user_id, selection_key) WHERE revoked_at IS NULL
     DO UPDATE SET selection_key = EXCLUDED.selection_key
-    RETURNING token, created_at`, [randomBytes(32).toString('base64url'), userId, selectionKey(ids, includePhotos), ids, JSON.stringify(snapshot)]);
+    RETURNING token, created_at, (SELECT business_name FROM account_profiles WHERE user_id = $2) AS sender_name`, [randomBytes(32).toString('base64url'), userId, selectionKey(ids, includePhotos), ids, JSON.stringify(snapshot)]);
   return result.rows[0];
 }
 export async function revokeAssetShareLink(userId: string, token: string) {
@@ -51,10 +51,11 @@ export async function readPublicAssetShare(token: string): Promise<PublicAssetSh
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return null;
   await ensureAssetShareSchema();
   // A transfer or deletion invalidates access even to the older snapshot.
-  const result = await getDb().query(`SELECT snapshot, created_at FROM asset_share_links s
+  const result = await getDb().query(`SELECT snapshot, s.created_at, p.business_name AS sender_name FROM asset_share_links s
+    LEFT JOIN account_profiles p ON p.user_id = s.user_id
     WHERE token = $1 AND revoked_at IS NULL
     AND NOT EXISTS (SELECT 1 FROM unnest(s.asset_ids) AS requested(id)
       WHERE NOT EXISTS (SELECT 1 FROM asset_register_items a WHERE a.id = requested.id AND a.user_id = s.user_id))`, [token]);
   const row = result.rows[0];
-  return row ? { assets: row.snapshot, createdAt: new Date(row.created_at).toISOString() } : null;
+  return row ? { assets: row.snapshot, senderName: (row.sender_name || '').trim().slice(0, 120), createdAt: new Date(row.created_at).toISOString() } : null;
 }
