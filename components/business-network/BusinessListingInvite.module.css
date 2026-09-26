@@ -32,7 +32,12 @@
   overflow: auto;
   overscroll-behavior: contain;
 }
-.dialog::backdrop { background: rgb(10 29 26 / 65%); }
+.dialog::backdrop {
+  /* Native top-layer backdrops must define their own tokens: they do not inherit them. */
+  background: var(--modal-backdrop-color, rgba(12, 24, 35, 0.42));
+  -webkit-backdrop-filter: var(--modal-backdrop-filter, blur(12px) saturate(0.9));
+  backdrop-filter: var(--modal-backdrop-filter, blur(12px) saturate(0.9));
+}
 .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid var(--app-line, #dce5e1); }
 .header h2 { margin: 0; font-size: 24px; line-height: 1.25; font-weight: 800; letter-spacing: -.6px; }
 .close { display: grid; place-items: center; flex: 0 0 42px; width: 42px; height: 42px; padding: 11px; border: 1px solid var(--app-line, #dce5e1); border-radius: 10px; background: var(--app-surface-soft, #f3f7f5); color: inherit; cursor: pointer; }
