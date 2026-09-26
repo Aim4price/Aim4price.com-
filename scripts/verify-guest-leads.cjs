@@ -102,7 +102,7 @@ export default function Validation(){
    assert.equal(await page.$eval('[name=businessName]',el=>el.value),'George Workshop');
    assert.equal(await page.$eval('[name=googleMapsUrl]',el=>el.value),'https://maps.google.com/?cid=123');
    await page.type('[name=town]','George');await page.type('[name=contactName]','Sam');await page.type('[name=email]','business@example.com');await page.click('[name=accepted]');await click('Submit my free listing');
-   await page.waitForFunction(()=>document.body.textContent.includes('your acceptance is recorded'));
+   await page.waitForFunction(()=>[...document.querySelectorAll('[role="status"] h2')].some(heading => /your acceptance is recorded/i.test(heading.textContent)));
    const acceptance=requests.filter(r=>r.path==='/api/business-network/accept').at(-1);
    assert.equal(JSON.parse(acceptance.data).googlePlaceId,'fixture-place');
    assert.equal(JSON.parse(acceptance.data).googleConfirmed,true);
