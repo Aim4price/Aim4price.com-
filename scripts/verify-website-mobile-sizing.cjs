@@ -106,8 +106,7 @@ fs.mkdirSync(output, { recursive: true });
     await waitScale(1);
     console.log('PASS desktop pointer change and browser magnification retain outer-window sizing');
     // Fresh phone entry with actual mobile viewport semantics and device-width metadata.
-    await cdp.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:3,mobile:true,screenWidth:390,screenHeight:844});
-    await cdp.send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
+    await setViewport({width:390,height:844,deviceScaleFactor:3,isMobile:true,hasTouch:true});
     await page.evaluate(()=>{sessionStorage.clear();localStorage.removeItem('aim4price.website-canvas.v2');window.fixtureRoot.unmount();window.mount()});
     await waitScale(390/1440);
     await page.waitForSelector('[data-mobile-landscape-entry]');
