@@ -63,7 +63,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       const Disclaimer=()=>null;
       global.fetch=async(url,options)=>{sent=JSON.parse(options.body);return{ok:!failed,json:async()=>failed?{error:'Unable to share selected assets'}:{share:{token}}};};
       const Invite=load('components/business-network/BusinessListingInvite.tsx',{
-        react:{...React,useId:()=> 'test',useRef:value=>hook({current:value})[0],useState:hook},
+        react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:value=>hook({current:value})[0],useState:hook},
         '../asset-register/ShareDisclaimer':Disclaimer,
         '../asset-register/ShareModalCloseButton':()=>null,
         '../WebsitePortal':{createPortal:node=>node},

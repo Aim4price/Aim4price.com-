@@ -2,7 +2,7 @@
 import ShareDisclaimer from '../asset-register/ShareDisclaimer';
 import ShareModalCloseButton from '../asset-register/ShareModalCloseButton';
 
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from '../WebsitePortal';
 import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import styles from './BusinessListingInvite.module.css';
@@ -19,6 +19,8 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
   const [accepted, setAccepted] = useState(false);
   const requestVersion = useRef(0);
   const [link, setLink] = useState('');
+  const copyButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => { if (link) copyButton.current?.focus(); }, [link]);
   const [notice, setNotice] = useState('');
   const [showCopyField, setShowCopyField] = useState(false);
   const copy = {
@@ -119,7 +121,7 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
         </div>
         <p className={styles.hint}>Choose the recipient in WhatsApp or your email app. A basic listing is free; no account is required.</p>
         <footer className={styles.footer}>
-          <button type="button" className={styles.copy} onClick={() => void copyLink()}>
+          <button ref={copyButton} type="button" className={styles.copy} onClick={() => void copyLink()}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M15 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/></svg>
             Copy link
           </button>
