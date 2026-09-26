@@ -22,7 +22,18 @@ This follows the existing long-running Railway/Next.js instrumentation model. A 
 - Record only verified receipts. Partial payments are supported. Repeating the same payment request is safe; amounts above the outstanding balance are rejected. Payment entries are audited and do not activate account access.
 - Unpaid issued invoices can be voided with a reason. Voiding retains history, releases work reservations and prevents queued sending. Already-sent messages cannot be withdrawn; contact the customer about the correction. Paid invoices cannot be voided. Payment reversal, credit notes and refunds are not implemented in v1.
 
-Monthly/annual plans store a next billing **review** date. There is no automatic renewal charge, pro-rata adjustment, automatic debit, payment gateway, reminder schedule or suspension rule in this version. Renewal invoices are prepared manually. Schedule changes for existing subscriptions need a later dedicated workflow.
+Signup plans still store a next billing **review** date and do not automatically enable recurring billing. Admin now has two explicit paths:
+
+- **Manual billing:** create, preview, issue/email and record payment for individual invoices. Manual charges are additional to an enabled recurring agreement; check for overlapping charges.
+- **Automatic billing:** choose an account and save customer details, recurring line items, monthly/yearly frequency, first/next invoice date and days to pay. Save paused while pricing is undecided. Enabling requires explicit confirmation of customer agreement and displays the amount, recipient and start date. Public plan changes do not change account agreements.
+
+Apply migration `114-billing-agreements.sql` to existing databases (runtime schema creation also includes these idempotent tables). Existing accounts are not enrolled. The existing production Node worker checks approved agreements every 30 seconds, issues each due invoice and queues its email in one transaction. Account/date generation keys and row locks prevent duplicate scheduled invoices. Dates use the agreed calendar day with month-end clamping, retaining January 31 and leap-day anchors. Work Tracker charges remain manual.
+
+Pause stops future generation, not already-issued invoices or queued mail. Pauses and agreement edits are audited with the actor and a snapshot. A stale editor must refresh after a worker run or another edit. Changes affect future invoices only. If an entire additional billing period has elapsed, the worker pauses the agreement for review instead of back-billing. Generation errors are visible on the agreement and automatic-billing account list; the worker retries. The list shows up to 200 agreements; any account remains selectable through the account picker.
+
+`AIM4PRICE_RECURRING_BILLING_DISABLED=1` pauses recurring generation only; manual email processing and signup processing continue. `AIM4PRICE_BILLING_DISABLED=1` pauses the entire worker. A continuously running production Node process is required. Email delivery still requires the sender/Resend setup above. Validate concurrent worker runs against deployed PostgreSQL before enabling customer agreements; local PGlite tests do not implement real row/advisory locks.
+
+Automatic billing means scheduled invoices, not automatic collection of funds. Payment recording and account access remain manual. Payment-provider integration, reminders, automatic suspension, pro-rata adjustments, refunds and credit notes are not part of this foundation. Existing signup settings remain separate under Advanced settings; avoid enabling a same-period recurring charge on top of a signup invoice.
 
 ## Invoice design and supplied details
 

@@ -1,5 +1,5 @@
 import { getDb } from './db';
-import { ensureBillingSchema, processSignupInvoices, mapInvoice } from './billing';
+import { ensureBillingSchema, processSignupInvoices, processRecurringInvoices, mapInvoice } from './billing';
 import { renderReportHtmlToPdf } from './report-pdf';
 import { getSiteOrigin } from './email';
 import { billingEscape } from './billing-report';
@@ -58,6 +58,6 @@ export async function startBillingSender() {
   if(process.env.NODE_ENV!=='production'||process.env.AIM4PRICE_BILLING_DISABLED==='1')return;
   const state=globalThis as typeof globalThis & {aim4priceBillingTimer?:ReturnType<typeof setInterval>};if(state.aim4priceBillingTimer)return;
   let running=false;
-  state.aim4priceBillingTimer=setInterval(async()=>{if(running)return;running=true;try{await processSignupInvoices();await dispatchBillingMail();}catch{console.warn('Billing sender unavailable; will retry.');}finally{running=false;}},30000);
+  state.aim4priceBillingTimer=setInterval(async()=>{if(running)return;running=true;try{await processSignupInvoices();await processRecurringInvoices();await dispatchBillingMail();}catch{console.warn('Billing sender unavailable; will retry.');}finally{running=false;}},30000);
   state.aim4priceBillingTimer.unref();
 }
