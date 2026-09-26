@@ -978,7 +978,7 @@ export default function AuthClient() {
         : authenticatedSession?.accountType === "licensing"
           ? getAbsoluteUrl("/")
           : getAbsoluteUrl("/leads");
-      const redirectUrl =
+      const redirectUrl = authenticatedSession?.accountType === "business" ? getAbsoluteUrl("/business") :
         !getSafeReturnTo() &&
         normalizeEmail(email) !== ADMIN_EMAIL &&
         (authenticatedSession?.accountType === "dealer" ||
@@ -1094,6 +1094,7 @@ export default function AuthClient() {
                 {copy.title}
               </h1>
               <p className={styles.authText}>{copy.text}</p>
+              <Link href="/business/join">Responding to an enquiry? Create a free Business account</Link>
             </div>
 
             {notice && mode !== "signup" ? (

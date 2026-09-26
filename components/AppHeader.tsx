@@ -297,6 +297,8 @@ function buildNavItems(
     return BASE_NAV_ITEMS;
   }
 
+  if (accountType === 'business') return [{ key: 'account', href: '/business', label: 'Business workspace' }];
+
   if (accountType === 'public') {
     return PUBLIC_NAV_ITEMS;
   }

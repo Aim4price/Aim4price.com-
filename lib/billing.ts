@@ -168,6 +168,7 @@ export async function billingHistory(id: string) {
 export type SignupBilling = { plan: BillingPlan; customer: ReturnType<typeof cleanCustomer> };
 export async function validateSignupBilling(input: Record<string,unknown>): Promise<SignupBilling | null> {
   const accountType=String(input.accountType??'owner');
+  if(accountType==='business') return null;
   if(!(BILLING_ACCOUNT_TYPES as readonly string[]).includes(accountType))throw new BillingError('Choose a valid account type.');
   if(accountType==='dealer'&&String(input.accountSubtype??'').replace(/_/g,'-')==='equipment-middleman')return null;
   const plan=(await listBillingPlans(true)).find(p=>p.accountType===String(input.accountType??'owner'));

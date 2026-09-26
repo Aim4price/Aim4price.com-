@@ -1,6 +1,7 @@
 import { queueSignupInvoice, type SignupBilling } from "./billing";
 import { betterAuth } from "better-auth";
 import {
+  sendAim4priceEmail,
   buildAim4priceResetPasswordUrl,
   sendAim4priceResetPasswordEmail,
 } from "./email";
@@ -121,6 +122,15 @@ export const auth = betterAuth({
       });
     },
   },
+  emailVerification: {
+    sendOnSignUp: false,
+    sendVerificationEmail: async ({ user, url }) => {
+      const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      await sendAim4priceEmail({ to: user.email, subject: 'Verify your Aim4price email',
+        text: `Verify your email to access enquiries addressed to you: ${url}`,
+        html: `<p>Verify your email to access enquiries addressed to you.</p><p><a href="${safeUrl}">Verify email</a></p>` });
+    },
+  },
   databaseHooks: {
     user: {
       create: {
@@ -134,6 +144,7 @@ export const auth = betterAuth({
               },
               {
                 accountType: readSignupField(context, "accountType"),
+                businessName: readSignupField(context, "businessName"),
                 accountSubtype: readSignupField(context, "accountSubtype"),
                 introducedByOption: readSignupField(
                   context,
@@ -150,6 +161,7 @@ export const auth = betterAuth({
               },
             );
           } catch (error) {
+            if (readSignupField(context, "accountType") === "business") throw error;
             console.error(
               "Failed to create initial Aim4price account profile",
               error,

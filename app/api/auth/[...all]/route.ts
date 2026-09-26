@@ -19,6 +19,9 @@ export async function POST(request: Request): Promise<Response> {
   const signupInput = await request.clone().json().catch(() => null);
 
   try {
+    if (signupInput?.accountType === 'business' && (typeof signupInput.businessName !== 'string' || !signupInput.businessName.trim() || signupInput.businessName.length > 200 || signupInput.acceptedTerms !== true)) {
+      return Response.json({ message: 'Enter your business name and accept the terms.' }, { status: 400 });
+    }
     const billingSignup = await validateSignupBilling(signupInput ?? {});
     return await withSignupWorkspaceInput({ ...signupInput, billingSignup }, () => authHandlers.POST(request));
   } catch (error) {
