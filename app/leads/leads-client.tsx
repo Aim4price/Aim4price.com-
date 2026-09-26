@@ -1,4 +1,9 @@
 'use client';
+import LeadCardSummary from '../../components/leads/LeadCardSummary';
+import LeadManageButton from '../../components/leads/LeadManageButton';
+import LeadAssetFacts from '../../components/leads/LeadAssetFacts';
+import LeadAssetCard from '../../components/leads/LeadAssetCard';
+import LeadAssetDetails from '../../components/leads/LeadAssetDetails';
 import dialogStyles from '../../components/AccountDialog.module.css';
 import downloadStyles from "../../components/ReportDownload.module.css";
 
@@ -2993,14 +2998,6 @@ export default function LeadsClient({
     return Math.min(Math.max(storedIndex, 0), photos.length - 1);
   }
 
-  function cycleLeadPhoto(lead: AssetLead, direction: -1 | 1) {
-    const photos = assetPhotos(lead);
-    if (photos.length <= 1) return;
-
-    const currentIndex = getLeadPhotoIndex(lead);
-    const nextIndex = (currentIndex + direction + photos.length) % photos.length;
-    setLeadPhotoIndex(lead.id, nextIndex);
-  }
 
   function openAssetPhotoModal(lead: AssetLead, urls: string[], index: number) {
     if (!urls.length) return;
@@ -3403,8 +3400,6 @@ export default function LeadsClient({
 
     const photos = assetPhotos(lead);
     const photoIndex = getLeadPhotoIndex(lead);
-    const photo = photos[photoIndex] ?? '';
-    const hasMultiplePhotos = photos.length > 1;
     const familyLabel = asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || 'Asset';
     const licenseStatus = readLeadLicenseStatusChoice(lead);
     const licenseRegistrationNumber = readLeadLicenseRegistrationNumber(lead);
@@ -3418,108 +3413,16 @@ export default function LeadsClient({
       : [];
 
     return (
-      <div className={`${assetStyles.assetBody} ${styles.leadAssetBody}`} id={`lead-panel-${lead.id}`}>
-        <div className={`${assetStyles.previewWrap} ${styles.leadPreviewWrap}`}>
-          <div className={`${assetStyles.previewStage} ${styles.leadPreviewStage}`}>
-            {photo ? (
-              <>
-                <button
-                  type="button"
-                  className={styles.leadPreviewOpenButton}
-                  onClick={() => openAssetPhotoModal(lead, photos, photoIndex)}
-                  aria-label={`Open ${assetTitle(lead)} photo ${photoIndex + 1}`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={photo} alt={`${assetTitle(lead)} photo ${photoIndex + 1}`} className={`${assetStyles.previewImage} ${styles.leadPreviewImage}`} />
-                  <span className={styles.leadPreviewOpenLabel}>Open photo</span>
-                </button>
-
-                {hasMultiplePhotos ? (
-                  <>
-                    <button
-                      type="button"
-                      className={`${assetStyles.previewNavButton} ${assetStyles.previewNavPrev}`}
-                      onClick={() => cycleLeadPhoto(lead, -1)}
-                      aria-label="Show previous photo"
-                    >
-                      <ChevronLeftIcon className={assetStyles.buttonIcon} />
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`${assetStyles.previewNavButton} ${assetStyles.previewNavNext}`}
-                      onClick={() => cycleLeadPhoto(lead, 1)}
-                      aria-label="Show next photo"
-                    >
-                      <ChevronRightIcon className={assetStyles.buttonIcon} />
-                    </button>
-
-                    <div className={assetStyles.previewCounter}>
-                      {photoIndex + 1} / {photos.length}
-                    </div>
-                  </>
-                ) : null}
-              </>
-            ) : (
-              <div className={`${assetStyles.previewPlaceholder} ${styles.leadPreviewPlaceholder}`}>
-                <div className={assetStyles.previewPlaceholderBadges}>
-                  <span className={`${assetStyles.badge} ${assetStyles.badgeNeutral} ${assetStyles.previewPlaceholderBadge}`}>
-                    {familyLabel}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {hasMultiplePhotos ? (
-            <div className={`${assetStyles.previewThumbRow} ${styles.leadPreviewThumbRow}`}>
-              {photos.map((thumbnail, index) => {
-                const isActivePhoto = index === photoIndex;
-
-                return (
-                  <button
-                    type="button"
-                    key={`${lead.id}-lead-photo-${index}`}
-                    className={`${assetStyles.previewThumbButton} ${styles.leadPreviewThumbButton} ${isActivePhoto ? assetStyles.previewThumbButtonActive : ''}`}
-                    onClick={() => {
-                      setLeadPhotoIndex(lead.id, index);
-                      openAssetPhotoModal(lead, photos, index);
-                    }}
-                    aria-label={`Open photo ${index + 1}`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={thumbnail} alt={`${assetTitle(lead)} thumbnail ${index + 1}`} className={`${assetStyles.previewThumbImage} ${styles.leadPreviewThumbImage}`} />
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
-
-        <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
-
-        <div className={assetStyles.assetDetailsPanel}>
-          <div className={assetStyles.assetDetailsGrid}>
-            <div className={assetStyles.assetPrimaryDetails}>
-              <div className={assetStyles.assetDetailRow}>
-                <span>{isLicenceRenewal ? 'Registration' : 'Serial'}</span>
-                <strong>{isLicenceRenewal ? licenseRegistrationNumber || '—' : asText(lead.assetSnapshot.serialNumber) || '—'}</strong>
-              </div>
-              <div className={assetStyles.assetDetailRow}>
-                <span>{isLicenceRenewal ? 'Renewal date' : asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year'}</span>
-                <strong>{isLicenceRenewal ? formatDate(licenceRenewalDate) : lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—'}</strong>
-              </div>
-              <div className={assetStyles.assetDetailRow}>
-                <span>{isLicenceRenewal ? 'Year' : 'Usage'}</span>
-                <strong>{isLicenceRenewal ? lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—' : assetUsageValue(lead)}</strong>
-              </div>
-              <div className={assetStyles.assetDetailRow}>
-                <span>{isLicenceRenewal ? 'Asset type' : 'Condition'}</span>
-                <strong>{isLicenceRenewal ? familyLabel : conditionLabel(lead.assetSnapshot.condition)}</strong>
-              </div>
-            </div>
-
-            <div className={assetStyles.assetStatusDetails}>
+      <LeadAssetDetails id={`lead-panel-${lead.id}`} title={assetTitle(lead)} photos={photos} photoIndex={photoIndex}
+        familyLabel={familyLabel} onPhotoIndexChange={index => setLeadPhotoIndex(lead.id, index)}
+        onOpenPhoto={index => openAssetPhotoModal(lead, photos, index)}
+        details={
+          <LeadAssetFacts rows={[
+            { label: isLicenceRenewal ? 'Registration' : 'Serial', value: isLicenceRenewal ? licenseRegistrationNumber || '—' : asText(lead.assetSnapshot.serialNumber) || '—' },
+            { label: isLicenceRenewal ? 'Renewal date' : asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year', value: isLicenceRenewal ? formatDate(licenceRenewalDate) : lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—' },
+            { label: isLicenceRenewal ? 'Year' : 'Usage', value: isLicenceRenewal ? lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—' : assetUsageValue(lead) },
+            { label: isLicenceRenewal ? 'Asset type' : 'Condition', value: isLicenceRenewal ? familyLabel : conditionLabel(lead.assetSnapshot.condition) },
+          ]} statuses={<>
               {!isLicenceRenewal ? (
                 <>
                   <div className={assetStyles.assetStatusRow}>
@@ -3541,10 +3444,10 @@ export default function LeadsClient({
                   <strong>{licenseRegistrationNumber}</strong>
                 </div>
               ) : null}
-            </div>
-          </div>
-
-          {isLicenceRenewal ? (
+          </>} />
+        }
+      >
+        {isLicenceRenewal ? (
             <div className={assetStyles.assetReplacementPriceBubble}>
               <span>Licence documents</span>
               <strong>{licenceDocuments.length}</strong>
@@ -3567,8 +3470,7 @@ export default function LeadsClient({
           )}
 
           {renderOwnerMessageBlock(lead)}
-        </div>
-      </div>
+      </LeadAssetDetails>
     );
   }
 
@@ -3741,9 +3643,7 @@ export default function LeadsClient({
 
                 return (
                   <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
-                    <div className={styles.clientPanel}>
-                      <div className={`${styles.clientPanelHeader} ${licensingWorkspaceMode ? styles.licensingLeadHeader : ''}`}>
-                        <div className={`${styles.clientIdentity} ${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
+                    <LeadCardSummary headerClassName={licensingWorkspaceMode ? styles.licensingLeadHeader : ''} identityClassName={`${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{assetTitle(lead)}</h3>
                           </div>
@@ -3784,9 +3684,7 @@ export default function LeadsClient({
                               </span>
                             </span>
                           ) : null}
-                        </div>
-
-                        <div className={styles.clientDecisionArea}>
+                    </>} actions={
                           <div
                             className={`${styles.clientActionRow} ${
                               isTrackingRequest
@@ -3911,14 +3809,11 @@ export default function LeadsClient({
                               </>
                             )}
                           </div>
-                        </div>
-                      </div>
-                    </div>
+                    } />
 
                     {isLeadOpen ? (
-                      <div className={`${assetStyles.assetCard} ${styles.leadAssetCard} ${isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''} ${assetStyles.assetCardExpanded}`}>
-                        <div className={`${assetStyles.assetHeader} ${styles.leadAssetHeader} ${styles.expandedLeadHeader}`}>
-                          <div className={`${assetStyles.assetTitleBlock} ${styles.expandedLeadIdentity}`}>
+                      <LeadAssetCard className={isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''}
+                        identity={<>
                             <h2>{assetTitle(lead)}</h2>
                             {dealerAppMode && !isFullRegisterLead(lead) ? (
                               <dl className={styles.expandedLeadFacts}>
@@ -3931,9 +3826,8 @@ export default function LeadsClient({
                               <span className={assetStyles.assetValueMethodLabel}>{licensingWorkspaceMode ? 'Licence renewal' : isFullRegisterLead(lead) ? 'Register' : `${methodLabel(lead.assetSnapshot.selectedMethod)} value`}</span>
                               <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
                             </div>
-                          </div>
-
-                          <div className={`${assetStyles.assetHeaderAside} ${styles.leadAssetHeaderAside} ${styles.expandedLeadAside}`}>
+                        </>}
+                        aside={<>
                             {!licensingWorkspaceMode ? (
                               <div className={`${assetStyles.valueBlock} ${styles.leadValueBlock}`}>
                                 <strong>{formatCurrency(assetValue(lead))}</strong>
@@ -3953,21 +3847,12 @@ export default function LeadsClient({
                                 <span>Send</span>
                               </button>
 
-                              <button
-                                type="button"
-                                className={`${assetStyles.optionsButton} ${styles.leadManageButton} ${styles.leadQuickActionButton}`}
-                                onClick={() => setManagedLead(lead)}
-                                aria-label="Manage lead"
-                              >
-                                <ManageIcon className={assetStyles.buttonIcon} />
-                                <span>Manage</span>
-                              </button>
+                              <LeadManageButton onClick={() => setManagedLead(lead)} />
                             </div>
-                          </div>
-                        </div>
-
+                        </>}
+                      >
                         {renderLeadDetails(lead)}
-                      </div>
+                      </LeadAssetCard>
                     ) : null}
                   </article>
                 );
