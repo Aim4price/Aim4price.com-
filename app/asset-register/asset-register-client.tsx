@@ -22,7 +22,6 @@ import CardVatToggle from '../../components/CardVatToggle';
 
 import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
 
-import DirectoryHelp from '../../components/business-network/DirectoryHelp';
 import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
 import BusinessProfileCard from '../../components/business-network/BusinessProfileCard';
 import GoogleDirectoryMap, { googleDirectoryEnabled } from '../../components/business-network/GoogleDirectoryMap';
@@ -20699,7 +20698,6 @@ export default function AssetRegisterClient({
                       <SearchIcon className={styles.buttonIcon} />
                       <span>{isLoadingQuotePartners ? 'Searching...' : 'Search'}</span>
                     </button>
-                    <DirectoryHelp className={styles.secondaryButton} />
                   </form>
 
                   <div className={`${styles.assetQuoteMapStage} ${directoryBusiness ? styles.businessDirectorySelected : ''}`}>
@@ -20708,9 +20706,6 @@ export default function AssetRegisterClient({
                         <button type="button" className={styles.assetQuoteBackButton} onClick={goBackToQuoteOptions} disabled={isSendingQuoteLead}>
                           <ChevronLeftIcon className={styles.buttonIcon} />
                           <span>Back</span>
-                        </button>
-                        <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={changeQuoteLocation} disabled={isSendingQuoteLead}>
-                          Change area
                         </button>
                       </div>
 

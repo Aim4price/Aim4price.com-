@@ -20,7 +20,6 @@ import AssetExternalShare from '../../../components/asset-register/AssetExternal
 import GuestLeadComposer from '../../../components/asset-register/GuestLeadComposer';
 import GuestLeadActions from '../../../components/asset-register/GuestLeadActions';
 import BusinessAcceptanceForm from '../../../components/business-network/BusinessAcceptanceForm';
-import DirectoryHelp from '../../../components/business-network/DirectoryHelp';
 import BusinessDirectoryTools from '../../../components/business-network/BusinessDirectoryTools';
 import DirectoryAdminAccess from '../../../components/business-network/DirectoryAdminAccess';
 export default function Validation(){
@@ -34,7 +33,7 @@ export default function Validation(){
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
  {mode==='recipient'&&<><button onClick={()=>setAccess('payment-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><GuestLeadActions token={'g'.repeat(43)} details={details} reports={[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}]} access={access}/></>}
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
- {mode==='find'&&<><DirectoryHelp/><BusinessDirectoryTools senderName="X Farms" assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={false}/></>}
+ {mode==='find'&&<><BusinessDirectoryTools senderName="X Farms" assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={false}/></>}
  {mode==='admin'&&<DirectoryAdminAccess onAdd={b=>setLink(b.email)}/>}
  </main>;
 }
@@ -143,18 +142,6 @@ export default function Validation(){
    assert.equal(JSON.parse(acceptance.data).googleConfirmed,true);
    await click('find');
    assert.ok(!(await page.evaluate(()=>document.body.textContent)).includes('Invitations & history'));
-   await click('Need help?');
-   await page.waitForSelector('dialog[open]');
-   const helpLinks=await page.$$eval('dialog[open] a',nodes=>nodes.map(n=>n.href));
-   assert(helpLinks.some(h=>h.startsWith('https://wa.me/27625721650')));
-   assert(helpLinks.some(h=>decodeURIComponent(h).startsWith('mailto:aim4price@gmail.com')));
-   assert(helpLinks.every(h=>!h.includes('asset-share')&&!h.includes('ASSET')));
-   await page.screenshot({path:path.join(output,`directory-help-${width}.png`),fullPage:true});
-   await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
-   assert.equal(await page.evaluate(()=>document.activeElement?.textContent),'Need help?');
-   await click('Need help?');await page.waitForSelector('dialog[open]');
-   await page.click('[aria-label="Back to business directory"]');
-   await page.waitForFunction(()=>!document.querySelector('dialog'));
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
