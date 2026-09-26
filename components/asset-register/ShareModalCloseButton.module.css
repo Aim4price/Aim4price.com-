@@ -1,0 +1,37 @@
+.close.close {
+  appearance: none;
+  position: static;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  align-self: start;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid var(--app-line, rgba(37, 71, 51, 0.15));
+  border-radius: 0.9rem;
+  color: var(--app-text, #254733);
+  background: var(--app-surface, #f7faf8);
+  font: inherit;
+  font-size: 1.35rem;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close.close:hover:not(:disabled) {
+  border-color: var(--app-line, rgba(37, 71, 51, 0.28));
+  background: var(--app-surface-soft, #eef5f0);
+}
+
+.close.close:focus-visible {
+  outline: 3px solid var(--app-accent, rgba(43, 138, 99, 0.2));
+  outline-offset: 3px;
+}
+
+.close.close:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

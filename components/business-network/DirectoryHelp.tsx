@@ -1,4 +1,5 @@
 'use client';
+import ShareModalCloseButton from '../asset-register/ShareModalCloseButton';
 
 import { useId, useRef, useState } from 'react';
 import { createPortal } from '../WebsitePortal';
@@ -38,9 +39,7 @@ export default function DirectoryHelp({ className }: { className?: string }) {
       >
         <header className={styles.header}>
           <h2 id={titleId}>Contact Aim4price</h2>
-          <button type="button" className={styles.close} aria-label="Back to business directory" onClick={() => dialog.current?.close()}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
-          </button>
+          <ShareModalCloseButton aria-label="Back to business directory" onClick={() => dialog.current?.close()} />
         </header>
         <p id={descriptionId} className={styles.description}>Need help finding the right business? Contact our team below.</p>
         <div className={styles.actions}>
