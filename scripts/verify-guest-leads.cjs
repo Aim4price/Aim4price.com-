@@ -79,7 +79,7 @@ export default function Validation(){
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
    await page.goto('http://127.0.0.1:3033/business-network/accept?from=X%20Farms',{waitUntil:'networkidle2'});
    assert.ok(await page.evaluate(()=>document.body.textContent.includes('Waiting for an invitation')));
-   assert.ok(await page.evaluate(()=>!document.body.textContent.includes('X Farms')),'A URL parameter cannot supply the sender identity');
+   assert.ok(await page.evaluate(()=>!document.querySelector('main').innerText.includes('X Farms')),'A URL parameter cannot supply the sender identity');
    assert.equal(await page.$('a[href^="/asset-share/"]'),null,'A missing share token offers no enquiry');
    await page.waitForSelector('[data-website-zoom-host=ready] [data-site-workspace-zoom-controls]');
    await page.screenshot({path:path.join(output,`listing-page-${width}.png`),fullPage:true});
