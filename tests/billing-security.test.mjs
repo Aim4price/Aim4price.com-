@@ -33,6 +33,7 @@ test('Invoice downloads require a real session and enforce owner access before r
   '../../../../../lib/account-constants':{isAim4priceAdminEmail:email=>email==='admin@example.test'},
   '../../../../../lib/billing':{BillingError,mapInvoice:x=>x,getBillingInvoice:async(id,userId,admin)=>{lookup++;if(!admin&&userId!=='owner')throw new BillingError();return {id,number:'A4P-test',status:'issued'};}},
   '../../../../../lib/billing-report':{buildBillingInvoiceHtml:async()=>'<html></html>'},
+  '../../../../../lib/report-pdf':{renderReportHtmlToPdf:async()=>Buffer.from('%PDF-draft')},
   '../../../../../lib/billing-mail':{billingPdf:async()=>{renders++;return Buffer.from('%PDF-fixture');}},
  });
  const request=new NextRequest('https://aim4price.com/api/billing/invoices/test?format=pdf'),params={params:{id:'test'}};
@@ -86,4 +87,20 @@ test('Account invoice list requires sign-in, excludes drafts and ignores caller-
  assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
  assert.deepEqual(calls, [['owner', false, 2]]);
  assert.equal((await response.json()).preparing, true);
+});
+
+test('draft PDF is admin-only, rendered fresh and never uses the issued PDF cache',async()=>{
+ let session={user:{id:'admin',email:'admin@example.test'}},fresh=0,cached=0;
+ const route=load('app/api/billing/invoices/[id]/route.ts',{
+  '../../../../../lib/auth-session':{getAnyServerSession:async()=>session},
+  '../../../../../lib/account-constants':{isAim4priceAdminEmail:email=>email==='admin@example.test'},
+  '../../../../../lib/billing':{BillingError,mapInvoice:x=>x,getBillingInvoice:async(id,userId,admin)=>{if(!admin)throw new BillingError();return {id,status:'draft',issuer:{},number:null};}},
+  '../../../../../lib/billing-report':{buildBillingInvoiceHtml:async()=>'<html>DRAFT</html>'},
+  '../../../../../lib/report-pdf':{renderReportHtmlToPdf:async html=>{assert.match(html,/DRAFT/);fresh++;return Buffer.from('%PDF-draft');}},
+  '../../../../../lib/billing-mail':{billingPdf:async()=>{cached++;return Buffer.from('%PDF-cached');}},
+ });
+ const request=new NextRequest('https://aim4price.com/api/billing/invoices/test?format=pdf'),params={params:{id:'test'}};
+ for(let i=0;i<2;i++){const response=await route.GET(request,params);assert.equal(response.headers.get('Content-Type'),'application/pdf');assert.match(response.headers.get('Content-Disposition'),/Draft-test.pdf/);assert.equal(await response.text(),'%PDF-draft');}
+ assert.equal(fresh,2);assert.equal(cached,0);
+ session={user:{id:'owner',email:'owner@example.test'}};assert.equal((await route.GET(request,params)).status,404);assert.equal(fresh,2);
 });

@@ -3,7 +3,7 @@ import type { PoolClient, QueryResultRow } from 'pg';
 import { getDb } from './db';
 import { ensureAdminWorkTrackerSchema } from './admin-work-tracker';
 import { BILLING_SCHEMA_SQL } from './billing-schema';
-import { BILLING_ISSUER, BILLING_ACCOUNT_TYPES, cleanCustomer, cleanLines, dateKey, validDate, nextBillingDate, type BillingInvoice, type BillingPlan, type BillingLine, nextAgreementDate } from './billing-shared';
+import { BILLING_ISSUER, BILLING_ACCOUNT_TYPES, cleanCustomer, cleanLines, dateKey, validDate, nextBillingDate, type BillingInvoice, type BillingPlan, type BillingLine, nextAgreementDate, billingAccountCustomer } from './billing-shared';
 import { buildBillingInvoiceHtml } from './billing-report';
 
 export class BillingError extends Error {}
@@ -61,12 +61,13 @@ export async function getBillingInvoice(id: string, userId: string | null, admin
 }
 export async function getBillingWorkspace(userId: string) {
   await Promise.all([ensureBillingSchema(), ensureAdminWorkTrackerSchema()]);
-  const profile=await getDb().query(`select u.id,u.name,u.email,p.customer,p.next_billing_date,p.interval,p.amount_cents from "user" u left join aim4price_billing_profiles p on p.user_id=u.id where u.id=$1`,[userId]);
+  const profile=await getDb().query(`select u.id,u.name,u.email,p.customer,p.next_billing_date,p.interval,p.amount_cents,to_jsonb(ap) as account_profile from "user" u left join aim4price_billing_profiles p on p.user_id=u.id left join account_profiles ap on ap.user_id=u.id where u.id=$1`,[userId]);
   if (!profile.rows[0]) throw new BillingError('Account not found.');
   const work=await getDb().query(`select s.id,s.started_at,s.duration_seconds,s.note from admin_work_sessions s
     where s.client_user_id=$1 and s.stopped_at is not null and not exists(select 1 from aim4price_billing_work w where w.work_session_id=s.id) order by s.started_at desc limit 200`,[userId]);
   const p=profile.rows[0];
-  return { agreement:await getBillingAgreement(userId), agreementHistory:(await getDb().query('select action,detail,created_at from aim4price_billing_agreement_events where user_id=$1 order by id desc limit 20',[userId])).rows, customer:p.customer ?? {name:p.name,email:p.email,address:''}, nextBillingDate:p.next_billing_date, interval:p.interval ?? 'once', amountCents:Number(p.amount_cents ?? 0), work:work.rows };
+  const accountCustomer=billingAccountCustomer(p,p.account_profile??{});
+  return { agreement:await getBillingAgreement(userId), agreementHistory:(await getDb().query('select action,detail,created_at from aim4price_billing_agreement_events where user_id=$1 order by id desc limit 20',[userId])).rows, accountCustomer, customer:{...accountCustomer,...p.customer,businessName:p.customer?.businessName||accountCustomer.businessName,address:p.customer?.address||accountCustomer.address,reference:''}, nextBillingDate:p.next_billing_date, interval:p.interval ?? 'once', amountCents:Number(p.amount_cents ?? 0), work:work.rows };
 }
 export async function createBillingDraft(input: Record<string, unknown>, actor: string): Promise<string> {
   let customer,lines,dueDate;
@@ -97,11 +98,11 @@ export async function createBillingDraft(input: Record<string, unknown>, actor: 
     const total=finalLines.reduce((sum,line)=>sum+line.totalCents,0);
     await db.query(`insert into aim4price_billing_invoices(id,user_id,customer,issuer,lines,total_cents,due_date,note) values($1,$2,$3,$4,$5,$6,$7,$8)`,[id,userId,JSON.stringify(customer),JSON.stringify(BILLING_ISSUER),JSON.stringify(finalLines),total,dueDate,note]);
     for(const workId of workIds)await db.query('insert into aim4price_billing_work(work_session_id,invoice_id) values($1,$2)',[workId,id]);
-    await db.query('insert into aim4price_billing_profiles(user_id,customer) values($1,$2) on conflict(user_id) do update set customer=$2,updated_at=now()',[userId,JSON.stringify(customer)]);
+    await db.query('insert into aim4price_billing_profiles(user_id,customer) values($1,$2) on conflict(user_id) do update set customer=$2,updated_at=now()',[userId,JSON.stringify({...customer,reference:''})]);
     await event(db,id,actor,'draft_created');return id;
   });
 }
-async function issueLocked(db: PoolClient, row: QueryResultRow, actor: string) {
+async function issueLocked(db: PoolClient, row: QueryResultRow, actor: string, sendEmail=true) {
   if(row.status!=='draft')return;
   if(!row.user_id)throw new BillingError('Cannot issue an invoice for a deleted account.');
   const seq=await db.query("select nextval('aim4price_invoice_number_seq')::text as number");
@@ -109,7 +110,7 @@ async function issueLocked(db: PoolClient, row: QueryResultRow, actor: string) {
   const invoice=mapInvoice({...row,status:'issued',number,issued_at:issuedAt});
   const html=await buildBillingInvoiceHtml(invoice,row.issuer);
   await db.query("update aim4price_billing_invoices set status='issued',number=$2,issued_at=$3,report_html=$4,version=version+1 where id=$1",[row.id,number,issuedAt,html]);
-  await db.query('insert into aim4price_billing_mail(id,invoice_id) values($1,$2)',[randomUUID(),row.id]);
+  if(sendEmail)await db.query('insert into aim4price_billing_mail(id,invoice_id) values($1,$2)',[randomUUID(),row.id]);
   await event(db,row.id,actor,'issued',number);
 }
 export async function actOnBillingInvoice(id: string, input: Record<string,unknown>, actor: string) {
@@ -129,7 +130,8 @@ export async function actOnBillingInvoice(id: string, input: Record<string,unkno
     } else if(action==='issue') {
       if(row.status!=='draft')return;
       if(input.version!==row.version)throw new BillingError('This draft changed. Refresh before issuing.');
-      await issueLocked(db,row,actor);
+      if(input.sendEmail!==undefined&&typeof input.sendEmail!=='boolean')throw new BillingError('Choose whether to email the invoice.');
+      await issueLocked(db,row,actor,input.sendEmail!==false);
     } else if(action==='delete_draft') {
       if(row.status!=='draft')throw new BillingError('Issued invoices cannot be deleted.');
       await db.query('delete from aim4price_billing_events where invoice_id=$1',[id]);

@@ -5,7 +5,7 @@ export const BILLING_ISSUER = {
 export const BILLING_ACCOUNT_TYPES = ['owner', 'dealer', 'finance', 'insurance', 'licensing'] as const;
 export type BillingPlan = { accountType: string; description: string; amountCents: number; interval: 'once' | 'monthly' | 'annual'; dueDays: number; version: number; enabled: boolean };
 export type BillingLine = { description: string; quantity: number; unitCents: number; totalCents: number; workSessionId?: string };
-export type BillingCustomer = { name: string; email: string; address: string };
+export type BillingCustomer = { name: string; email: string; address: string; businessName?: string; reference?: string };
 export type BillingInvoice = { id: string; userId: string; number: string | null; status: 'draft' | 'issued' | 'void'; customer: BillingCustomer; lines: BillingLine[]; totalCents: number; paidCents: number; dueDate: string; issuedAt: string | null; createdAt: string; note: string; deliveryStatus: string | null; version: number; voidReason?: string };
 export function money(cents: number): string { return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(cents / 100); }
 export function moneyToCents(value: unknown): number {
@@ -31,7 +31,9 @@ export function cleanCustomer(value: unknown): BillingCustomer {
   const c = value as Partial<BillingCustomer> | null;
   const name = String(c?.name ?? '').trim(), email = String(c?.email ?? '').trim(), address = String(c?.address ?? '').trim();
   if (!name || name.length > 180 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254 || !address || address.length > 600) throw new Error('Provide a billing name, valid email and address.');
-  return { name, email, address };
+  const businessName=String(c?.businessName??'').trim(),reference=String(c?.reference??'').trim();
+  if(businessName.length>180||reference.length>120)throw new Error('Keep business names below 180 characters and references below 120 characters.');
+  return { name, email, address, businessName, reference };
 }
 export function cleanLines(value: unknown): BillingLine[] {
   if (!Array.isArray(value) || !value.length || value.length > 40) throw new Error('Add between 1 and 40 invoice lines.');
@@ -65,4 +67,9 @@ export function nextAgreementDate(current: string, interval: 'monthly' | 'annual
  const year = date.getUTCFullYear() + (interval === 'annual' ? 1 : 0);
  const month = interval === 'annual' ? original.getUTCMonth() : date.getUTCMonth() + 1;
  return new Date(Date.UTC(year, month, Math.min(original.getUTCDate(), new Date(Date.UTC(year, month + 1, 0)).getUTCDate()))).toISOString().slice(0,10);
+}
+
+export function billingAccountCustomer(user: {name?:string;email?:string}, profile: Record<string,unknown> = {}): BillingCustomer {
+ const text=(key:string)=>String(profile[key]??'').trim();
+ return {name:text('display_name')||user.name||'',email:user.email||'',businessName:text('business_name'),address:['address_line_1','address_line_2','town_city','province'].map(text).filter(Boolean).join('\n'),reference:''};
 }

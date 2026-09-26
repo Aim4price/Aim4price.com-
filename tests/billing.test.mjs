@@ -25,13 +25,17 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
  const billing=load('lib/billing.ts',{'./db':{getDb:()=>db},'./billing-schema':schema,'./billing-shared':shared,'./billing-report':report,'./admin-work-tracker':{ensureAdminWorkTrackerSchema:async()=>{}}});
  const oldFetch=global.fetch,oldKey=process.env.RESEND_API_KEY;
  try{
-  await pg.exec('create table "user"(id text primary key,name text,email text); create table admin_work_sessions(id text primary key,client_user_id text,started_at timestamptz default now(),stopped_at timestamptz,duration_seconds integer,note text);');
+  await pg.exec('create table "user"(id text primary key,name text,email text); create table account_profiles(user_id text primary key,business_name text,address_line_1 text,address_line_2 text,town_city text,province text); create table admin_work_sessions(id text primary key,client_user_id text,started_at timestamptz default now(),stopped_at timestamptz,duration_seconds integer,note text);');
   await pg.exec("insert into \"user\" values('one','Customer One','one@example.test'),('two','Customer Two','two@example.test');insert into admin_work_sessions(id,client_user_id,stopped_at,duration_seconds,note) values('work-one','one',now(),5400,'Capture work'),('work-two','two',now(),3600,'Private work'),('running','one',null,3600,'Still running');");
   await billing.ensureBillingSchema();
+  await pg.exec("insert into account_profiles values('one','Farm Business','Road 10','Unit 2','George','Western Cape')");
+  const initialWorkspace=await billing.getBillingWorkspace('one');
+  assert.equal(initialWorkspace.customer.businessName,'Farm Business');assert.equal(initialWorkspace.customer.address,'Road 10\nUnit 2\nGeorge\nWestern Cape');
   const customer={name:'Customer One',email:'one@example.test',address:'George'};
   const draft={id:randomUUID(),userId:'one',customer,lines:[{description:'Subscription',quantity:1,unitCents:10000}],dueDate:'2026-09-30',workSessionIds:['work-one'],hourlyRateCents:20000};
   await billing.createBillingDraft(draft,'admin');await billing.createBillingDraft(draft,'admin');
   assert.equal((await billing.listBillingInvoices('one',true)).total,1);
+  const savedWorkspace=await billing.getBillingWorkspace('one');assert.equal(savedWorkspace.customer.address,'George');assert.equal(savedWorkspace.accountCustomer.address,'Road 10\nUnit 2\nGeorge\nWestern Cape');
   let inv=await billing.getBillingInvoice(draft.id,null,true);assert.equal(Number(inv.total_cents),40000);
   await assert.rejects(billing.getBillingInvoice(draft.id,'one',false),/not found/);
   for(const work of ['work-one','work-two','running'])await assert.rejects(billing.createBillingDraft({...draft,id:randomUUID(),workSessionIds:[work]},'admin'));
@@ -47,6 +51,13 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
   assert.equal(Number((await billing.getBillingInvoice(draft.id,'one',false)).paid_cents),10000);
   await assert.rejects(billing.actOnBillingInvoice(draft.id,{...pay,paymentId:randomUUID(),amountCents:50000},'admin'),/remaining balance/);
   await assert.rejects(billing.actOnBillingInvoice(draft.id,{action:'void',reason:'Correction'},'admin'),/unpaid/);
+  const localDraft={...draft,id:randomUUID(),workSessionIds:[],customer:{...customer,businessName:'Example Business',reference:'PO-99'}};
+  await billing.createBillingDraft(localDraft,'admin');
+  await billing.actOnBillingInvoice(localDraft.id,{action:'issue',version:1,sendEmail:false},'admin');
+  await billing.actOnBillingInvoice(localDraft.id,{action:'issue',version:1,sendEmail:false},'admin');
+  const localInvoice=await billing.getBillingInvoice(localDraft.id,'one',false);
+  assert.ok(localInvoice.number);assert.match(localInvoice.report_html,/Example Business/);assert.match(localInvoice.report_html,/PO-99/);
+  assert.equal((await pg.query('select count(*)::int as n from aim4price_billing_mail where invoice_id=$1',[localDraft.id])).rows[0].n,0);
   await billing.saveBillingPlan({accountType:'owner',description:'Monthly subscription',amountCents:50000,interval:'monthly',dueDays:7,enabled:true});
   await assert.rejects(billing.validateSignupBilling({accountType:'owner',accountSubtype:'equipment-middleman'}),/accept/);
   assert.equal(await billing.validateSignupBilling({accountType:'dealer',accountSubtype:'equipment-middleman'}),null);
@@ -108,4 +119,17 @@ test('recurring agreements are opt-in, audited, versioned and issue only once pe
   assert.equal(shared.nextAgreementDate('2025-02-28','annual','2024-02-29'),'2026-02-28');
   assert.equal(shared.nextAgreementDate('2027-02-28','annual','2024-02-29'),'2028-02-29');
  } finally {await pg.close();}
+});
+
+test('account defaults, business name and customer references survive validation and PDF HTML',async()=>{
+ const defaults=shared.billingAccountCustomer({name:'Contact',email:'contact@example.test'},{business_name:'Example Farming',address_line_1:'Farm Road 10',address_line_2:'Unit 2',town_city:'George',province:'Western Cape'});
+ assert.equal(defaults.businessName,'Example Farming');assert.equal(defaults.address,'Farm Road 10\nUnit 2\nGeorge\nWestern Cape');
+ const customer=shared.cleanCustomer({...defaults,reference:'PO-123 <test>'});
+ assert.equal(customer.reference,'PO-123 <test>');
+ assert.throws(()=>shared.cleanCustomer({...defaults,reference:'x'.repeat(121)}));
+ const invoice={id:'test',number:null,status:'draft',customer,lines:[{description:'Service',quantity:1,unitCents:10000,totalCents:10000}],totalCents:10000,dueDate:'2090-01-01',note:''};
+ const html=await report.buildBillingInvoiceHtml(invoice);
+ assert.match(html,/Example Farming/);assert.match(html,/PO-123 &lt;test&gt;/);assert.match(html,/DRAFT - NOT ISSUED/);
+ const issued=await report.buildBillingInvoiceHtml({...invoice,status:'issued',number:'A4P-TEST',issuedAt:'2026-09-27T00:00:00Z'});
+ assert.doesNotMatch(issued,/DRAFT - NOT ISSUED|Draft for review|Draft only/);
 });

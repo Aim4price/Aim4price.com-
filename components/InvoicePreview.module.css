@@ -20,3 +20,7 @@
 @media(max-width:600px){:global(:where(html:not(:has([data-website-canvas])))) .dialog{width:calc(100vw - 16px);height:calc(100dvh - 16px)}:global(:where(html:not(:has([data-website-canvas])))) .header,:global(:where(html:not(:has([data-website-canvas])))) .footer{padding:14px;gap:12px}:global(:where(html:not(:has([data-website-canvas])))) .header h2{font-size:18px}:global(:where(html:not(:has([data-website-canvas])))) .footer{align-items:stretch;flex-direction:column}:global(:where(html:not(:has([data-website-canvas])))) .footer>div{justify-content:flex-end}:global(:where(html:not(:has([data-website-canvas])))) .document{padding:6px}}
 
 .actionError { margin:0; padding:12px 24px; background:#fff1ec; color:#873e2d; border-top:1px solid #ebc9bd; font-size:13px; }
+
+.footer { flex-wrap:wrap; gap:14px; }
+.footer>div { flex-wrap:wrap; justify-content:flex-end; }
+.footer a { display:inline-flex; align-items:center; justify-content:center; }

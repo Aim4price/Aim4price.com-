@@ -150,14 +150,23 @@ const evidence=path.join(root,'.next/admin-review-validation');
    assert.deepEqual(billingRequests.at(-1).workSessionIds,['work-one']);
    await page.waitForSelector('dialog[open] iframe');
    await page.waitForFunction(()=>[...document.querySelectorAll('dialog button')].some(b=>b.textContent==='Issue & email'&&!b.disabled));
-   assert.equal(await page.$('dialog a[download]'),null,'draft has no download');
+   assert.equal(await page.$eval('dialog a[download]',e=>e.textContent),'Download draft PDF');
+   await page.screenshot({path:path.join(evidence,'billing-draft-preview-'+width+'.png'),fullPage:true});
    if(width===1440){
     page.once('dialog',dialog=>dialog.accept());
     await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Issue & email').click());
+    await page.waitForFunction(()=>document.querySelector('dialog h2')?.textContent!=='Preview invoice draft');
     await page.waitForSelector('dialog a[download]');
     assert.equal(billingRequests.at(-1).action,'issue');
     assert.equal(billingRequests.at(-1).version,1);
    }
+   if(width===390){
+    page.once('dialog',dialog=>dialog.accept());
+    await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Issue & download PDF').click());
+    await page.waitForFunction(()=>document.body.textContent.includes('Invoice issued. No email sent.'));
+    assert.equal(billingRequests.at(-1).action,'issue');assert.equal(billingRequests.at(-1).sendEmail,false);
+   }
+   await page.waitForFunction(()=>document.querySelector('dialog h2')?.textContent!=='Preview invoice draft'&&document.querySelector('dialog [aria-label="Close invoice preview"]')?.disabled===false);
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
   }
