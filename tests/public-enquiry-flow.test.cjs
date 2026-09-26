@@ -37,15 +37,21 @@ test('revoked and missing invitations do not offer a fabricated enquiry',async()
   assert.match(empty,/Ask the sender/);
   assert.doesNotMatch(empty,/Open enquiry|Example Toyota/);
 });
-test('public enquiry renders a Leads card and Manage control for every selected asset',()=>{
+test('public enquiry renders an expandable Leads card for every selected asset',()=>{
   const Cards=load('components/asset-register/SharedAssetCards.tsx',{
+    '../leads/LeadCardSummary':load('components/leads/LeadCardSummary.tsx').default,
+    '../leads/LeadAssetCard':load('components/leads/LeadAssetCard.tsx').default,
+    '../leads/LeadAssetDetails':load('components/leads/LeadAssetDetails.tsx').default,
+    '../leads/LeadAssetFacts':load('components/leads/LeadAssetFacts.tsx').default,
+    '../leads/LeadManageButton':load('components/leads/LeadManageButton.tsx').default,
+    '../LeadPhotoViewerModal':()=>null,
     './ShareModalCloseButton':()=>null,
     '../business-network/BusinessAcceptanceForm':()=>React.createElement('div',null,'Business lookup'),
     '../WebsitePortal':{createPortal:()=>{throw new Error('No modal should be mounted before Manage is clicked');}},
   }).default;
   const html=renderToStaticMarkup(React.createElement(Cards,{share,senderName:'Farm',allowBusinessDetails:true}));
   assert.equal((html.match(/<article/g)||[]).length,3);
-  for(const asset of share.assets)assert.ok(html.includes(`aria-label="Manage ${asset.title}"`));
+  for(const asset of share.assets)assert.ok(html.includes(`aria-label="Open ${asset.title}"`));
   assert.ok(html.includes('Add your business details'));
   assert.doesNotMatch(html,/[—–]/);
 });
