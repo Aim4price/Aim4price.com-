@@ -3,24 +3,24 @@
 .overlay { position:absolute; z-index:-1; inset:0; pointer-events:none; background:linear-gradient(90deg,rgba(250,251,249,.98) 0%,rgba(250,251,249,.94) 42%,rgba(250,251,249,.66) 68%,rgba(250,251,249,.35) 100%); }
 .layout { width:var(--shell-width,calc(100% - 64px)); margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) minmax(16rem,19rem); align-items:stretch; gap:clamp(2.25rem,calc(var(--website-design-vw,1vw)*3),3.5rem); padding:3rem 0; }
 .copy { min-width:0; min-height:18rem; display:flex; flex-direction:column; justify-content:center; }
-.copy h1 { margin:0; font-size:clamp(3rem,calc(var(--website-design-vw,1vw)*4),3.6rem); line-height:1.02; letter-spacing:-.055em; font-weight:800; }
+.copy h1 { margin:0; font-size:clamp(2.75rem,calc(var(--website-design-vw,1vw)*3.75),3.35rem); line-height:1.04; letter-spacing:-.045em; font-weight:800; }
 .copy h1 span { display:block; }
 .copy h1 span+span { margin-top:.08em; }
-.sender { max-width:50rem; margin:.875rem 0 0; font-size:1rem; line-height:1.5; color:#3f564e; overflow-wrap:anywhere; }
+.sender { max-width:38rem; text-wrap:pretty; margin:.875rem 0 0; font-size:1rem; line-height:1.5; color:#3f564e; overflow-wrap:anywhere; }
 .sender strong { color:#123b2e; font-weight:750; }
-.summary { display:flex; align-items:flex-start; gap:14px; margin-top:1rem; }
+.summary { display:flex; align-items:center; gap:14px; margin-top:1rem; }
 .summary>div { min-width:0; }
 .assetIcon { flex:none; display:grid; place-items:center; width:52px; height:52px; border:1px solid #dbe7df; border-radius:16px; background:#f3f8f5; color:#26765a; }
-.assetIcon svg { width:30px; height:30px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-.summary h2 { margin:3px 0 6px; font-size:15px; line-height:1.4; color:#23664c; font-weight:750; }
+.assetIcon svg { width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.summary h2 { margin:0 0 4px; font-size:15px; line-height:1.4; color:#23664c; font-weight:750; }
 .summary ul { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
 .summary li,.umbrella { margin:0; font-size:16px; line-height:1.45; overflow-wrap:anywhere; }
 .hint { margin:.875rem 0 0; font-size:15px; line-height:1.5; color:#4d665b; }
 .action { justify-self:end; width:100%; min-height:18rem; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; border:1px solid #ffffffbd; border-radius:1.65rem; background:rgba(255,255,255,.92); box-shadow:0 26px 54px #18372c29; backdrop-filter:blur(16px); color:#123b2e; text-align:center; text-decoration:none; transition:transform .18s,box-shadow .18s; }
-.actionIcon { width:92px; height:92px; margin-bottom:20px; display:grid; place-items:center; border-radius:50%; background:linear-gradient(145deg,#2a9c78,#17674d); box-shadow:0 14px 24px #22664c24; color:#fff; }
-.actionIcon svg { width:40px; height:40px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-.action strong { font-size:25px; font-weight:800; line-height:1.3; letter-spacing:-.7px; }
-.actionHint { margin-top:9px; color:#6b8177; font-size:14px; line-height:1.5; font-weight:600; }
+.actionIcon { width:80px; height:80px; margin-bottom:24px; display:grid; place-items:center; border-radius:50%; background:linear-gradient(145deg,#2a9c78,#17674d); box-shadow:0 14px 24px #22664c24; color:#fff; }
+.actionIcon svg { width:36px; height:36px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.action strong { font-size:24px; font-weight:800; line-height:1.3; letter-spacing:-.5px; }
+.actionHint { margin-top:8px; color:#566f63; font-size:14px; line-height:1.5; font-weight:600; }
 .action:hover { transform:translateY(-3px); box-shadow:0 30px 60px #18372c33; }
 .action:focus-visible { outline:3px solid #2b8f6a; outline-offset:5px; }
 .empty { margin-top:2rem; }
@@ -33,7 +33,8 @@
 :global(html[data-background='dark']) .summary h2 { color:#a5dfbd; }
 @media(max-width:760px) {
  :global(body:not(:has([data-website-canvas]))) .layout { width:calc(100% - 40px); grid-template-columns:1fr; gap:28px; padding:40px 0; }
- :global(body:not(:has([data-website-canvas]))) .copy h1 { font-size:clamp(2.5rem,8vw,3.8rem); }
+ :global(body:not(:has([data-website-canvas]))) .copy { min-height:0; }
+ :global(body:not(:has([data-website-canvas]))) .copy h1 { font-size:clamp(2rem,8vw,3.35rem); }
  :global(body:not(:has([data-website-canvas]))) .action { justify-self:start; max-width:24rem; min-height:15rem; }
 }
 @media(prefers-reduced-motion:reduce) { .action { transition:none; } }
