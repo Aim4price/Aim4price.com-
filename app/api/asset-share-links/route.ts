@@ -1,3 +1,4 @@
+import { getAssetGroupById } from '../../../lib/asset-groups';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
 import { getAssetRegisterAccountAccess } from '../../../lib/asset-register-account-access';
@@ -28,7 +29,17 @@ export async function POST(request: NextRequest) {
   try { body = await request.json(); parseShareAssetIds(body?.assetIds); }
   catch { return respond({ error: 'Select between 1 and 100 saved assets.' }, 400); }
   try {
-    const share = await createAssetShareLink(userId, body.assetIds, body.includePhotos === true);
+    let umbrella: { id: string; name: string } | undefined;
+    if (body.umbrellaId) {
+      if (typeof body.umbrellaId !== 'string') return respond({ error: 'Invalid umbrella.' }, 400);
+      const group = await getAssetGroupById(userId, body.umbrellaId);
+      const ids = parseShareAssetIds(body.assetIds);
+      if (!group || ids.some(id => !group.members.some(member => member.assetId === id))) {
+        return respond({ error: 'The selected assets do not belong to this umbrella.' }, 403);
+      }
+      umbrella = { id: group.id, name: group.name };
+    }
+    const share = await createAssetShareLink(userId, body.assetIds, body.includePhotos === true, umbrella);
     return respond({ share });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_SHARE_FORBIDDEN') return respond({ error: 'Only assets owned by your account can be shared by link.' }, 403);

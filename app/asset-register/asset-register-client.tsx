@@ -20737,6 +20737,7 @@ export default function AssetRegisterClient({
 
                       <div className={styles.assetQuotePartnerList}>
                         <BusinessDirectoryTools
+                          umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
                           senderName={activeRegister?.businessName || accountProfile?.businessName || ''}
                           assetIds={isFullRegisterQuoteLead
                             ? selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal'

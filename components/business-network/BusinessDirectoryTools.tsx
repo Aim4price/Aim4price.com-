@@ -4,6 +4,7 @@ import styles from "./BusinessNetwork.module.css";
 
 export default function BusinessDirectoryTools(props: {
   senderName?: string;
+  umbrellaId?: string;
   assetIds: string[];
   includePhotos: boolean;
 }) {
