@@ -80,7 +80,7 @@ export default function BusinessListingInvite({ senderName = '', assetIds, inclu
     </button>
     {error && !selection && <p role="alert">{error}</p>}
     {selection && <ShareDisclosureDialog title="Invite a business" titleId={titleId} descriptionId={descriptionId} closeLabel="Close business invitation" onClose={close}>
-        <p id={descriptionId} className={styles.description}>{`Invite a business to view ${selection.assetIds.length === 1 ? 'the selected asset' : `all ${selection.assetIds.length} selected assets`}. They can add their business details after opening the enquiry.`}</p>
+        <p id={descriptionId} className={styles.description}>{`Invite a business to view ${selection.assetIds.length === 1 ? 'the selected asset' : `all ${selection.assetIds.length} selected assets`} and add their details to the enquiry.`}</p>
         {!link && <>
           <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink />
           <p className={styles.hint}>{selection.includePhotos ? 'Saved asset photos are included.' : 'Photos are not included.'} Reports and private documents are not included in this invitation.</p>

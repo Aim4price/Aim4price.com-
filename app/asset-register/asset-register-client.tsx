@@ -11024,6 +11024,10 @@ export default function AssetRegisterClient({
 
     rememberAssetModalReturn(asset, 'card', `status-${section}`, trigger);
     setExpandedAssetId(asset.id);
+    if (section === 'license') {
+      openUpdater(asset);
+      return;
+    }
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
 
@@ -18700,7 +18704,7 @@ export default function AssetRegisterClient({
                       data-asset-update-section={section.step} onClick={() => openAssetFormSection(section.step)}
                       autoFocus={section.step === 2}>
                       {section.step === 2 ? <UpdateAssetIcon className={styles.buttonIcon} /> : section.step === 3 ? <ShieldIcon className={styles.buttonIcon} /> : <DocumentIcon className={styles.buttonIcon} />}
-                      <span><strong>{section.label}</strong><small>{section.step === 2 ? 'Edit asset details and usage.' : section.step === 3 ? 'Ownership, finance and insurance.' : 'Manage documents and photos.'}</small></span>
+                      <span><strong>{section.label}</strong><small>{section.step === 2 ? 'Edit asset details and usage.' : section.step === 3 ? 'Manage asset paperwork.' : 'Manage documents and photos.'}</small></span>
                     </button>
                   ))}
                 </div>
