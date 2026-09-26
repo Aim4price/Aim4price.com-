@@ -10,6 +10,7 @@ const output = path.join(root, '.next/guest-lead-validation');
 const token = 'g'.repeat(43);
 async function main() {
  let server, browser;
+ const pdf=await require('pdf-lib').PDFDocument.create();pdf.addPage();const reportPdf=Buffer.from(await pdf.save());
  try {
   await fs.mkdir(fixture,{recursive:true});
   await fs.writeFile(path.join(fixture,'page.tsx'), `'use client';
@@ -31,7 +32,7 @@ export default function Validation(){
  {mode==='inside'&&<InsideShareDialog titleId="fixture-inside" subject="Test asset" onClose={()=>setMode('find')} options={['finance','insurance','replacement_quote','license_renewal'].map((id,i)=>({id,title:['Finance & accounting','Insurance','Dealer','Licence renewal'][i],description:['Accountant, financier or bank','Insurer or broker','Share with a dealer','Renewal date required'][i],icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V8l8-5 8 5v12ZM9 20v-8h6v8"/></svg>,onSelect:()=>setMode('find')}))}/>}
  {mode==='accept'&&<BusinessAcceptanceForm/>}
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
- {mode==='recipient'&&<><button onClick={()=>setAccess('approval-required')}>Fixture verified</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><SharedAssetCards share={{createdAt:'2026-09-26',assets:[{title:'Test bakkie',serialNumber:'TEST-1',yearModel:2022,usage:'100 km',condition:'Good',valueExVat:200000,replacementPriceExVat:300000,photoUrls:[],publicUrl:null}]}} enquiry={{token:'g'.repeat(43),permissions:{reports:true,serialNumber:true,replacementPrice:true,documents:true},reports:[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}],access}}/></>}
+ {mode==='recipient'&&<><button onClick={()=>setAccess('approval-required')}>Fixture verified</button><button onClick={()=>setAccess('request-access')}>Fixture request access</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><SharedAssetCards share={{createdAt:'2026-09-26',assets:[{title:'Test bakkie',serialNumber:'TEST-1',yearModel:2022,usage:'100 km',condition:'Good',valueExVat:200000,replacementPriceExVat:300000,photoUrls:[],publicUrl:null}]}} enquiry={{token:'g'.repeat(43),permissions:{reports:true,serialNumber:true,replacementPrice:true,documents:true},reports:[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}],access}}/></>}
 
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
  {mode==='find'&&<><BusinessDirectoryTools senderName="X Farms" assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={false}/></>}
@@ -53,6 +54,8 @@ export default function Validation(){
    const p=new URL(req.url()).pathname;
    if(!p.startsWith('/api/'))return req.continue();
    if(p==='/api/business-network/accept/search')return req.respond({status:200,contentType:'application/json',body:JSON.stringify({places:[{id:'fixture-place',displayName:{text:'George Workshop'},formattedAddress:'George, Western Cape',googleMapsUri:'https://maps.google.com/?cid=123'}]})});
+   if(p==='/api/asset-register/scan-report'||p==='/api/my-invoices/report'){requests.push({path:p,url:req.url(),method:req.method()});return req.respond({status:200,contentType:'application/pdf',body:reportPdf});}
+   if(p.endsWith('/access')){requests.push({path:p,method:req.method(),data:req.postData()});return req.respond({status:200,contentType:'application/json',body:JSON.stringify({requests:[{user_id:'recipient',email:'business@example.com',business_name:'Verified Workshop',status:'pending'}],ok:true})});}
    if(p==='/api/fixture-pdf')return req.respond({status:200,contentType:'application/pdf',body:'%PDF-1.4 fixture'});
    let body={ok:true};requests.push({path:p,method:req.method(),data:req.postData()});
    if(p==='/api/asset-share-links/leads'){
@@ -171,13 +174,33 @@ export default function Validation(){
    assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Choose what to share')));
    await page.$$eval('dialog label input[type=checkbox]',inputs=>inputs.forEach(input=>{if(!input.checked)input.click();}));
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
+   await click('Reports');
+   await page.waitForSelector('input[aria-label="Share Maintenance"]');
+   await page.click('input[aria-label="Share Maintenance"]');
+   await page.select('fieldset select', '2025');
+   await page.$$eval('fieldset select',nodes=>{nodes[1].value='3';nodes[1].dispatchEvent(new Event('change',{bubbles:true}));});
+   await page.click('input[aria-label="Share Fuel ledger"]');
+   assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Report picker fits without scrolling');
+   await page.screenshot({path:path.join(output,`report-picker-${width}.png`),fullPage:true});
+   await page.evaluate(()=>document.documentElement.setAttribute('data-background','dark'));
+   await page.screenshot({path:path.join(output,`report-picker-dark-${width}.png`),fullPage:true});
+   await page.evaluate(()=>document.documentElement.setAttribute('data-background','default'));
+   await click('Use 2 reports');
+   await click('Reports');
+   assert.equal(await page.$eval('input[aria-label="Share Maintenance"]',e=>e.checked),true);
+   await click('Maintenance');
+   assert.equal(await page.$eval('fieldset select',e=>e.value),'2025','Each report keeps its own timeline');
+   await click('Cancel');
    await click('Continue');
-   await page.type('dialog input[type=email]','business@example.com');
-   const selectedPdf=path.join(output,'selected-report.pdf');await fs.writeFile(selectedPdf,'%PDF-1.4 fixture');
-   await (await page.$('dialog input[type=file]')).uploadFile(selectedPdf);
+   assert.equal(await page.$('dialog input[type=email]'),null);
+   assert.equal(await page.$('dialog input[type=file]'),null);
+   assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Disclaimer fits without scrolling');
+   await page.screenshot({path:path.join(output,`selected-disclosure-${width}.png`),fullPage:true});
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
-   assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:true});assert.equal(selectedDetails.recipientEmail,'business@example.com');
+   assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'owner-approval');
+   const reportRequest=requests.find(r=>r.url?.includes('report=maintenance'));
+   assert.equal(new URL(reportRequest.url).searchParams.get('year'),'2025');assert.equal(new URL(reportRequest.url).searchParams.get('month'),'3');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
@@ -220,6 +243,11 @@ export default function Validation(){
    await click('Back to Manage');await click('Reports');
    assert.equal(await page.$$eval('a[href*="/reports/"]',els=>els.length),0,'Locked reports expose no download link');
    assert.ok(await page.$('a[href^="/auth?returnTo="]'),'Sign-in keeps the enquiry return path');
+   await page.click('[aria-label="Close enquiry management"]');await click('Fixture request access');await page.click('button[aria-label="Manage Test bakkie"]');
+   await click('Reports');await click('Request access');
+   await page.waitForFunction(()=>document.body.textContent.includes('Access requested.'));
+   assert.equal(await page.$$eval('a[href*="/reports/"]',els=>els.length),0,'Requesting access does not unlock reports');
+   assert.ok(requests.some(r=>r.path.endsWith('/access')&&r.method==='POST'));
    await page.click('[aria-label="Close enquiry management"]');await click('Fixture activated');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await page.waitForSelector('a[href*="/reports/"]');
    await click('Back to Manage');await click('Update replacement price');
@@ -234,7 +262,11 @@ export default function Validation(){
    await page.waitForFunction(()=>document.body.textContent.includes('Document sent to the owner'));
    assert.equal(await page.$$eval('a[href*="submissions?id="]',els=>els.length),0,'Recipient cannot see received documents');
    await page.screenshot({path:path.join(output,`active-${width}.png`),fullPage:true});
-   await page.click('[aria-label="Close enquiry management"]');await click('Fixture owner');await page.click('button[aria-label="Manage Test bakkie"]');await click('Invoices & quotes');
+   await page.click('[aria-label="Close enquiry management"]');await click('Fixture owner');await page.click('button[aria-label="Manage Test bakkie"]');
+   await page.waitForFunction(()=>document.body.textContent.includes('Verified Workshop'));await click('Approve access');
+   await page.waitForFunction(()=>document.body.textContent.includes('Recipient approved.'));
+   assert.equal(JSON.parse(requests.filter(r=>r.path.endsWith('/access')&&r.method==='PATCH').at(-1).data).userId,'recipient');
+   await click('Invoices & quotes');
    await page.waitForSelector('a[href*="submissions?id="]');await click('Accept document');
    await page.waitForFunction(()=>document.body.textContent.includes('Review saved. No asset details or costs were changed.'));
    assert.equal(documents[0].status,'accepted');

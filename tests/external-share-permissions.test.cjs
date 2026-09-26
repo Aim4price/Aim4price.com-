@@ -107,3 +107,66 @@ test('correction endpoint rejects foreign requests and forged access, then attri
   const response=await route.POST(request({dealerUserId:'spoofed',ownerUserId:'other',assetId:B}),ctx);assert.equal(response.status,200);const result=await response.json();assert.equal(result.correction.dealerUserId,'recipient');assert.equal(result.correction.ownerUserId,'owner');assert.equal(result.correction.assetId,A);
  }finally{await x.pg.close();}
 });
+
+test('untargeted links require verification and explicit owner approval; forwarded and revoked links stay locked',async()=>{
+ const x=await setup();try{
+  const created=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'owner-approval',recipientName:'',recipientEmail:''},[x.report]);
+  const token=created.token;
+  x.signIn({emailVerified:false});x.state.approved=true;
+  await assert.rejects(x.access.requestExternalLeadAccess(token),e=>e.status===403);
+  x.signIn();x.state.approved=false;
+  await assert.rejects(x.access.requestExternalLeadAccess(token),e=>e.status===403);
+  x.state.approved=true;
+  assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(token))).access,'request-access');
+  await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===403);
+  await x.access.requestExternalLeadAccess(token);await x.access.requestExternalLeadAccess(token);
+  await assert.rejects(x.access.listExternalAccessRequests(token),e=>e.status===403);
+  await assert.rejects(x.access.reviewExternalAccessRequest(token,'recipient','approved'),e=>e.status===403);
+  x.signIn({id:'forwarded',email:'forwarded@example.com'});await x.access.requestExternalLeadAccess(token);
+  x.signIn({id:'owner',email:'owner@example.com'});
+  const rows=await x.access.listExternalAccessRequests(token);assert.equal(rows.length,2);
+  await x.access.reviewExternalAccessRequest(token,'recipient','approved');
+  await assert.rejects(x.access.reviewExternalAccessRequest(token,'forwarded','approved'),e=>e.status===409);
+  x.signIn();assert.equal((await x.access.requireExternalLeadAction(token,'reports')).user.id,'recipient');
+  const lead=await x.leads.readLeadPage(token);assert.equal(lead.details.recipientUserId,'recipient');
+  const pdf={fileName:'quote.pdf',contentType:'application/pdf',data:Buffer.from('%PDF-1.4 fixture')};
+  await x.docs.submitLeadDocument(token,{kind:'quote'},pdf,'recipient');
+  x.signIn({id:'different-account'});await assert.rejects(x.access.requireExternalLeadAction(token,'documents'),e=>e.status===403);
+  x.signIn({id:'forwarded',email:'forwarded@example.com'});await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===403);
+  x.signIn();x.state.approved=false;await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===403);
+  x.state.approved=true;await x.base.revokeAssetShareLink('owner',token);await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===404);
+ }finally{await x.pg.close();}
+});
+test('declined access cannot be reclaimed and transferred assets cannot be approved',async()=>{
+ const x=await setup();try{
+  const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'owner-approval',recipientEmail:''},[x.report]);
+  x.signIn();x.state.approved=true;await x.access.requestExternalLeadAccess(token);
+  x.signIn({id:'owner',email:'owner@example.com'});await x.access.reviewExternalAccessRequest(token,'recipient','rejected');
+  x.signIn();await assert.rejects(x.access.requestExternalLeadAccess(token),e=>e.status===403);
+  x.signIn({id:'other',email:'other@example.com'});await x.access.requestExternalLeadAccess(token);
+  await x.pg.query('UPDATE asset_register_items SET user_id=$1 WHERE id=$2',['new-owner',A]);
+  x.signIn({id:'owner',email:'owner@example.com'});await assert.rejects(x.access.reviewExternalAccessRequest(token,'other','approved'),e=>e.status===403);
+ }finally{await x.pg.close();}
+});
+test('access API ignores supplied identity and rejects foreign writes and non-owner approvals',async()=>{
+ const x=await setup();try{
+  const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'owner-approval',recipientEmail:''},[x.report]);
+  const {NextRequest}=require('next/server');
+  const route=load('app/api/asset-share-links/[token]/access/route.ts',{
+   '../../../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.test')throw Error('Foreign origin');},businessBody:r=>r.json(),businessJson:(data,status=200)=>Response.json(data,{status}),businessError:e=>Response.json({error:e.message},{status:400})},
+   '../../../../../lib/external-lead-access':x.access,'../../../../../lib/business-network':{limitBusinessAction:async()=>{}},'../../../../../lib/auth-session':x.mocks['./auth-session'],
+  });
+  const ctx={params:{token}},url='https://aim4price.test/api/asset-share-links/'+token+'/access';
+  const request=(method,body={},origin='https://aim4price.test')=>new NextRequest(url,{method,headers:{origin,'Content-Type':'application/json'},...(method==='GET'?{}:{body:JSON.stringify(body)})});
+  assert.equal((await route.POST(request('POST'),ctx)).status,401);
+  x.signIn();x.state.approved=true;
+  assert.equal((await route.POST(request('POST',{},'https://foreign.test'),ctx)).status,400);
+  assert.equal((await route.POST(request('POST',{userId:'owner',email:'spoofed@example.com'}),ctx)).status,200);
+  const saved=(await x.pg.query('SELECT * FROM asset_share_access_requests WHERE token=$1',[token])).rows[0];assert.equal(saved.user_id,'recipient');assert.equal(saved.email,'workshop@example.com');
+  assert.equal((await route.GET(request('GET'),ctx)).status,403);
+  assert.equal((await route.PATCH(request('PATCH',{userId:'recipient',decision:'approved'}),ctx)).status,403);
+  x.signIn({id:'owner',email:'owner@example.com'});
+  assert.equal((await route.PATCH(request('PATCH',{userId:'recipient',decision:'approved'},'https://foreign.test'),ctx)).status,400);
+  assert.equal((await route.PATCH(request('PATCH',{userId:'recipient',decision:'approved'}),ctx)).status,200);
+ }finally{await x.pg.close();}
+});

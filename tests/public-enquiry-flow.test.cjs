@@ -74,6 +74,8 @@ test('invitation requires consent, freezes all selected assets and handles failu
       const Invite=load('components/business-network/BusinessListingInvite.tsx',{
         react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:value=>hook({current:value})[0],useState:hook},
         '../asset-register/ShareDisclaimer':Disclaimer,
+        './ShareReportPicker':()=>null,
+        '../../lib/external-share-reports':{},
         '../asset-register/ShareDisclosureDialog':'dialog',
         '../asset-register/ShareModalCloseButton':()=>null,
         '../WebsitePortal':{createPortal:node=>node},

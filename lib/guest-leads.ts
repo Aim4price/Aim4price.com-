@@ -10,18 +10,19 @@ import { readPublicAssetShare } from './asset-share-links';
 import { getGuestViewer } from './guest-business-access';
 import { getServerSession } from './auth-session';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
-export type LeadDetails={permissions?:ExternalSharePermissions;recipientName:string;recipientEmail:string;recipientWhatsApp?:string;allowSubmissions?:boolean;request:string;replyName:string;replyEmail:string;replyPhone:string;allowReply:boolean};
+export type LeadDetails={accessMode?:'owner-approval';recipientUserId?:string;permissions?:ExternalSharePermissions;recipientName:string;recipientEmail:string;recipientWhatsApp?:string;allowSubmissions?:boolean;request:string;replyName:string;replyEmail:string;replyPhone:string;allowReply:boolean};
 export type LeadReport={id:string;label:string};
 export type LeadAccess='owner'|'active'|'sign-in'|'wrong-recipient'|'payment-required';
 export function validateLeadDetails(input:Record<string,unknown>):LeadDetails{
- const details={recipientName:businessText(input.recipientName),recipientEmail:businessText(input.recipientEmail)?businessEmail(input.recipientEmail):'',recipientWhatsApp:businessText(input.recipientWhatsApp).replace(/[\s()-]/g,''),allowSubmissions:input.allowSubmissions===true,request:String(input.request||'').trim(),replyName:businessText(input.replyName),replyEmail:businessEmail(input.replyEmail),replyPhone:businessText(input.replyPhone),allowReply:input.allowReply===true};
+ const ownerApproval=input.accessMode==='owner-approval';
+ const details={...(ownerApproval?{accessMode:'owner-approval' as const}:{}),recipientName:businessText(input.recipientName),recipientEmail:businessText(input.recipientEmail)?businessEmail(input.recipientEmail):'',recipientWhatsApp:businessText(input.recipientWhatsApp).replace(/[\s()-]/g,''),allowSubmissions:input.allowSubmissions===true,request:String(input.request||'').trim(),replyName:businessText(input.replyName),replyEmail:businessEmail(input.replyEmail),replyPhone:businessText(input.replyPhone),allowReply:input.allowReply===true};
  if(!details.request||details.request.length>3000||!details.replyName||details.replyName.length>150||details.recipientName.length>200||details.replyPhone.length>40)throw new Error('Enter your request, name and valid contact details.');
- if(!details.recipientEmail&&!details.recipientWhatsApp)throw new Error('Enter a recipient email or confirmed WhatsApp number.');
+ if(!ownerApproval&&!details.recipientEmail&&!details.recipientWhatsApp)throw new Error('Enter a recipient email or confirmed WhatsApp number.');
  if(details.recipientWhatsApp&&!/^\+[1-9]\d{7,14}$/.test(details.recipientWhatsApp))throw new Error('Enter the confirmed WhatsApp number with country code, for example +27821234567.');
- if(details.allowSubmissions&&!details.recipientEmail)throw new Error('Enter the recipient email to protect document submissions.');
+ if(!ownerApproval&&details.allowSubmissions&&!details.recipientEmail)throw new Error('Enter the recipient email to protect document submissions.');
  if(input.permissions !== undefined) {
   const permissions=normalizeExternalPermissions(input.permissions);
-  if(Object.values(permissions).some(Boolean)&&!details.recipientEmail)throw new Error('Enter the recipient email to protect the selected actions.');
+  if(!ownerApproval&&Object.values(permissions).some(Boolean)&&!details.recipientEmail)throw new Error('Enter the recipient email to protect the selected actions.');
   return {...details,permissions,allowSubmissions:permissions.documents};
  }
  return details;
@@ -31,7 +32,7 @@ export async function createGuestLead(ownerId:string,idsInput:unknown,includePho
  const ids=parseShareAssetIds(idsInput),safe=validateLeadDetails(details);
  if(safe.permissions && reports.length && !safe.permissions.reports)throw new Error('Enable Reports before attaching PDFs.');
  if(safe.permissions?.reports && !reports.length)throw new Error('Choose at least one PDF report or switch Reports off.');
- if(reports.length&&!safe.recipientEmail)throw new Error('Enter the recipient email to restrict report access to their verified account.');
+ if(reports.length&&!safe.recipientEmail&&safe.accessMode!=='owner-approval')throw new Error('Enter the recipient email to restrict report access to their verified account.');
  if(reports.length>6||reports.reduce((n,r)=>n+r.data.length,0)>30*1024*1024||reports.some(r=>r.data.length>8*1024*1024||r.data.length<5||r.data.subarray(0,5).toString()!=='%PDF-'||!r.label||r.label.length>200||r.fileName.length>200))throw new Error('Choose up to six PDF reports, each under 8 MB and 30 MB in total.');
  const assets=await getAssetRegisterItemsByRefs(ids.map(assetId=>({userId:ownerId,assetId})));
  if(assets.length!==ids.length)throw new Error('This account does not own all the selected assets.');
@@ -44,7 +45,7 @@ export async function createGuestLead(ownerId:string,idsInput:unknown,includePho
 }
 export async function listOwnerGuestLeads(ownerId:string,idsInput:unknown){
  const ids=parseShareAssetIds(idsInput);await ensureGuestLeadSchema();
- return(await getDb().query(`SELECT token,created_at,revoked_at,lead_details->>'recipientName' as recipient_name,lead_details->>'recipientEmail' as recipient_email ,(SELECT count(*)::int FROM asset_share_submissions d WHERE d.token=asset_share_links.token AND d.status='pending') AS pending_documents FROM asset_share_links WHERE user_id=$1 AND asset_ids=$2::uuid[] AND lead_details IS NOT NULL ORDER BY created_at DESC LIMIT 50`,[ownerId,ids])).rows;
+ return(await getDb().query(`SELECT token,created_at,revoked_at,lead_details->>'recipientName' as recipient_name,lead_details->>'recipientEmail' as recipient_email ,(SELECT count(*)::int FROM asset_share_submissions d WHERE d.token=asset_share_links.token AND d.status='pending') AS pending_documents,(SELECT count(*)::int FROM asset_share_access_requests r WHERE r.token=asset_share_links.token AND r.status='pending') AS pending_access FROM asset_share_links WHERE user_id=$1 AND asset_ids=$2::uuid[] AND lead_details IS NOT NULL ORDER BY created_at DESC LIMIT 50`,[ownerId,ids])).rows;
 }
 export async function readLeadPage(token:string){
  const share=await readPublicAssetShare(token);if(!share)return null;

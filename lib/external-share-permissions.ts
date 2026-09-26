@@ -1,8 +1,8 @@
 export const EXTERNAL_SHARE_OPTIONS = [
-    { key: 'reports', label: 'Reports', description: 'Share only the PDF reports you choose.' },
+    { key: 'reports', label: 'Reports', description: 'Choose reports & timelines' },
     { key: 'replacementPrice', label: 'Update replacement price', description: 'Send a proposed price for your approval.' },
     { key: 'serialNumber', label: 'Update serial number', description: 'Send a corrected serial for your approval.' },
-    { key: 'documents', label: 'Invoices & quotes', description: 'Attach documents for your review.' },
+    { key: 'documents', label: 'Invoices & quotes', description: 'For review' },
 ] as const;
 export type ExternalSharePermission = typeof EXTERNAL_SHARE_OPTIONS[number]['key'];
 export type ExternalSharePermissions = Record<ExternalSharePermission, boolean>;

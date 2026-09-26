@@ -9,6 +9,10 @@ on:
       - 'lib/asset-share-links.ts'
       - 'lib/external-lead-access.ts'
       - 'lib/external-share-permissions.ts'
+      - 'lib/external-share-reports.ts'
+      - 'components/asset-register/ExternalAccessRequests.tsx'
+      - 'database/migrations/116-external-share-access-requests.sql'
+      - 'tests/external-share-reports.test.cjs'
       - 'lib/lead-submissions.ts'
       - 'lib/dealer-asset-corrections.ts'
       - 'components/asset-register/ExternalLeadActions*'
@@ -64,7 +68,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/business-accounts.test.cjs
+      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/external-share-reports.test.cjs tests/business-accounts.test.cjs
       - run: node scripts/verify-business-network.cjs
       - run: node scripts/verify-guest-leads.cjs
       - run: node scripts/verify-business-admin-entry.cjs

@@ -40,6 +40,13 @@ CREATE TABLE IF NOT EXISTS asset_share_submissions (
 ALTER TABLE asset_share_submissions ADD COLUMN IF NOT EXISTS actor_user_id text;
 CREATE INDEX IF NOT EXISTS asset_share_submissions_token ON asset_share_submissions(token);
 CREATE INDEX IF NOT EXISTS asset_share_recipient_email ON asset_share_links (lower(lead_details->>'recipientEmail')) WHERE revoked_at IS NULL;
+CREATE TABLE IF NOT EXISTS asset_share_access_requests (
+ token text NOT NULL REFERENCES asset_share_links(token) ON DELETE CASCADE,
+ user_id text NOT NULL, email text NOT NULL, business_name text NOT NULL,
+ status text NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected')),
+ created_at timestamptz NOT NULL DEFAULT now(), reviewed_at timestamptz,
+ PRIMARY KEY(token,user_id)
+);
 CREATE INDEX IF NOT EXISTS asset_share_reports_token ON asset_share_reports(token);
 `;
 let ready: Promise<void> | undefined;
