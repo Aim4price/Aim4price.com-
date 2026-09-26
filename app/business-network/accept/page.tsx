@@ -24,7 +24,6 @@ export default async function Page({ searchParams }: { searchParams: { from?: st
                 {share.umbrellaName ? <p className={styles.umbrella}>{share.umbrellaName}</p> : <ul>{share.assets.map((asset, index) => <li key={index}>{asset.title}</li>)}</ul>}
               </div>
             </div>
-            <p className={styles.hint}>Open the enquiry to view the asset details.</p>
           </> : <div className={styles.empty}>
             <h2>{token ? 'This enquiry is no longer available' : 'Waiting for an invitation'}</h2>
             <p>Ask the sender for a link with the assets they want to share with you.</p>
