@@ -1252,3 +1252,16 @@
 .modalBody::-webkit-scrollbar-track { background: #edf3ef; }
 .modalBody::-webkit-scrollbar-thumb { background: #568572; border: 3px solid #edf3ef; border-radius: 8px; }
 .modalCloseButton:disabled, .backButton:disabled { opacity: .5; cursor: not-allowed; }
+
+/* The hero owns this page's height; the canonical background must not add a second minimum. */
+:global([data-app-pattern]):has(.page),
+:global([data-app-pattern]):has(.page) > :last-child {
+  min-height: 0;
+}
+:global([data-app-pattern]):has(.page) {
+  flex: 0 0 auto;
+}
+:global([data-website-canvas]):has(.page) > :global(footer),
+:global(.appRoot):has(.page) > :global(footer) {
+  margin-top: 0;
+}
