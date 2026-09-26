@@ -5,6 +5,7 @@ import type { ExternalLeadAccess } from '../../lib/external-lead-access';
 import { EXTERNAL_SHARE_OPTIONS, type ExternalSharePermission, type ExternalSharePermissions } from '../../lib/external-share-permissions';
 import { buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import type { LeadReport } from '../../lib/guest-leads';
+import ExternalAccessRequests from './ExternalAccessRequests';
 import LeadDocuments from './LeadDocuments';
 import assetStyles from '../../app/asset-register/page.module.css';
 import dialogStyles from '../AccountDialog.module.css';
@@ -37,21 +38,21 @@ export default function ExternalLeadActions({ token, permissions, reports, acces
     <div className={`${assetStyles.optionsGrid} ${assetStyles.ownerCommandGrid} ${dialogStyles.actions} ${styles.grid}`}>
       {EXTERNAL_SHARE_OPTIONS.filter(option => permissions[option.key]).map(option => <button key={option.key} type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => choose(option.key)}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d={option.key === 'replacementPrice' ? 'M12 7v10m3-8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9' : option.key === 'serialNumber' ? 'M7 9h10M7 13h7M7 17h5' : option.key === 'documents' ? 'M12 7v10M8 13l4 4 4-4' : 'M8 8h8M8 12h8M8 16h5'}/></svg>
-        <span><strong>{option.label}</strong><small>{option.key === 'reports' ? 'View selected reports.' : option.key === 'documents' ? 'Send for owner review.' : 'Send for owner approval.'}</small></span>
+        <span><strong>{option.label}</strong><small>{option.key === 'reports' ? 'View selected reports.' : option.key === 'documents' ? 'For review' : 'Send for owner approval.'}</small></span>
       </button>)}
     </div>
     {reply && <div className={styles.actions}>{reply.email && <a className={styles.secondary} href={`mailto:${encodeURIComponent(reply.email)}?subject=${encodeURIComponent('Re: Aim4price asset enquiry')}`}>Email owner</a>}{reply.phone && <a className={styles.secondary} href={buildWhatsAppShareUrl({ subject: 'Asset enquiry', body: `Hello ${reply.name}, regarding your Aim4price asset enquiry.` }, reply.phone)} target="_blank" rel="noreferrer">WhatsApp owner</a>}</div>}
     {!Object.values(permissions).some(Boolean) && <p className={styles.hint}>The sender shared read-only asset details. No additional actions are enabled.</p>}
-    {access === 'owner' && <p className={styles.hint}>Owner preview. Recipients can only use the actions you selected.</p>}
+    {access === 'owner' && <><p className={styles.hint}>Owner preview. Recipients can only use the actions you selected.</p><ExternalAccessRequests token={token}/></>}
   </>;
     return <section className={styles.panel}>
     <button type="button" className={styles.back} onClick={() => { setAction(null); setNotice(''); }}>Back to Manage</button>
     <h3>{selected?.label}</h3>
     {!open ? <div className={styles.gate}>
-      <h4>{access === 'sign-in' ? 'Create your free Business account' : access === 'wrong-recipient' ? 'Use the invited account' : access === 'verify-email' ? 'Verify your email' : access === 'suspended' ? 'Account access is paused' : 'Business verification required'}</h4>
-      <p>{access === 'sign-in' ? 'Create an account or sign in using the email the sender invited. Aim4price must approve your business before you can contribute. No subscription is required for a basic Business account.' : access === 'wrong-recipient' ? 'This link was shared with a different email. Switch to the invited account, or ask the sender for a new invitation.' : access === 'verify-email' ? 'Verify your email from your Business workspace, then return to this enquiry.' : access === 'suspended' ? 'Contact Aim4price to review your account status.' : 'Aim4price needs to verify your business. Add your business details and supporting information in your workspace.'}</p>
+      <h4>{access === 'request-access' ? 'Request access from the sender' : access === 'sign-in' ? 'Create your free Business account' : access === 'wrong-recipient' ? 'Use the invited account' : access === 'verify-email' ? 'Verify your email' : access === 'suspended' ? 'Account access is paused' : 'Business verification required'}</h4>
+      <p>{access === 'request-access' ? 'Your business is verified. Ask the sender to approve your account for this enquiry. A forwarded link does not grant access to reports or updates.' : access === 'sign-in' ? 'Create an account or sign in. Aim4price must verify your business, and the sender must approve access to this enquiry. No subscription is required for a basic Business account.' : access === 'wrong-recipient' ? 'This link was shared with a different email. Switch to the invited account, or ask the sender for a new invitation.' : access === 'verify-email' ? 'Verify your email from your Business workspace, then return to this enquiry.' : access === 'suspended' ? 'Contact Aim4price to review your account status.' : 'Aim4price needs to verify your business. Add your business details and supporting information in your workspace.'}</p>
       <div className={styles.actions}>
-        {access === 'sign-in' ? <><a className={styles.primary} href={`/business/join?returnTo=${encodeURIComponent(returnTo)}`}>Create free account</a><a className={styles.secondary} href={`/auth?returnTo=${encodeURIComponent(returnTo)}#login`}>Sign in</a></> : access === 'wrong-recipient' ? <button type="button" className={styles.primary} disabled={busy} onClick={async () => { setBusy(true); try {
+        {access === 'request-access' ? <button type="button" className={styles.primary} disabled={busy} onClick={async()=>{setBusy(true);setNotice('');try{const r=await fetch(`/api/asset-share-links/${token}/access`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const data=await r.json();if(!r.ok)throw Error(data.error||'Unable to request access.');setNotice('Access requested. The sender can approve you from Manage on this enquiry.');}catch(e){setNotice(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}}>Request access</button> : access === 'sign-in' ? <><a className={styles.primary} href={`/business/join?returnTo=${encodeURIComponent(returnTo)}`}>Create free account</a><a className={styles.secondary} href={`/auth?returnTo=${encodeURIComponent(returnTo)}#login`}>Sign in</a></> : access === 'wrong-recipient' ? <button type="button" className={styles.primary} disabled={busy} onClick={async () => { setBusy(true); try {
             const r = await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
             if (!r.ok)
                 throw Error('Unable to sign out.');

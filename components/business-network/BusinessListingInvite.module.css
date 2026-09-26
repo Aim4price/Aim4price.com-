@@ -53,12 +53,6 @@
 .primary { min-height:44px; margin-left:auto; padding:12px 22px; border:0; border-radius:10px; font:inherit; font-size:14px; font-weight:750; background:var(--app-accent,#176b4d); color:white; cursor:pointer; }
 .primary:disabled { opacity:.5; cursor:not-allowed; }
 .form fieldset { margin:0; padding:0; border:0; display:grid; gap:16px; min-width:0; }
-.form label { display:grid; gap:8px; font-size:14px; font-weight:650; }
-.form input,.form textarea { box-sizing:border-box; width:100%; padding:12px; border:1px solid var(--app-line,#c9ddd3); border-radius:10px; background:var(--app-surface,#fff); color:inherit; font:inherit; }
-.form input[type=checkbox] { width:auto; }
-.form small { font-size:12px; font-weight:400; overflow-wrap:anywhere; }
-.form .hint { margin:0; }
-.form textarea { min-height:78px; resize:vertical; }
 @media(max-width:560px) { :global(body:not(:has([data-website-canvas]))) .permissions { grid-template-columns:1fr; } }
 .history { margin-bottom:20px; font-size:13px; }
 .history summary { cursor:pointer; font-weight:700; padding:12px 0; }
@@ -67,3 +61,27 @@
 .history a { color:inherit; }
 
 .permission:first-child { grid-column:1 / -1; }
+
+.inviteDialog { scrollbar-width:none; }
+.inviteDialog::-webkit-scrollbar { display:none; }
+.form { margin-top:22px; }
+.form fieldset > div:first-child { margin:0 0 6px; padding:22px; }
+.form fieldset > div:first-child p:first-child { margin-top:0; }
+.form fieldset > div:first-child label { margin-top:20px; padding-top:18px; border-top:1px solid var(--app-line,#dce5e1); }
+.reportButton { text-align:left; font:inherit; color:inherit; width:100%; }
+.reportIndicator { width:20px; flex-shrink:0; font-size:20px; color:var(--app-accent,#176b4d); }
+.reportSummary { font-size:12px; color:var(--app-muted,#657b72); line-height:1.6; }
+.reportLayout { display:grid; grid-template-columns:1.1fr 1fr; gap:22px; margin-bottom:24px; }
+.reportChoices { display:grid; gap:10px; }
+.reportChoice { display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--app-line,#dce5e1); border-radius:12px; background:var(--app-surface-soft,#f3f7f5); }
+.activeReport { border-color:var(--app-accent,#176b4d); }
+.reportChoice input { width:18px; height:18px; accent-color:var(--app-accent,#176b4d); }
+.reportChoice button { flex:1; padding:0; background:none; border:0; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+.reportChoice strong { display:block; font-size:14px; }
+.reportChoice small { display:block; margin-top:5px; font-size:12px; color:var(--app-muted,#657b72); }
+.timeline { min-width:0; margin:0; padding:18px; border:1px solid var(--app-line,#dce5e1); border-radius:12px; display:grid; align-content:start; gap:14px; }
+.timeline legend { font-size:14px; font-weight:750; padding:0 6px; }
+.timeline label { display:grid; gap:7px; font-size:13px; font-weight:650; }
+.timeline select { width:100%; min-height:42px; padding:10px; font:inherit; color:inherit; background:var(--app-surface,#fff); border:1px solid var(--app-line,#dce5e1); border-radius:8px; }
+.timeline .hint { margin:0; }
+@media(max-width:560px) { :global(body:not(:has([data-website-canvas]))) .reportLayout { grid-template-columns:1fr; } }
