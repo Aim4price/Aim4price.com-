@@ -196,7 +196,7 @@ export default function Validation(){
   const linkRequestsBefore=requests.filter(r=>r.path.startsWith('/api/asset-share-links')).length;
   for(const width of [1440,430]){
    await page.setViewport({width,height:1000,deviceScaleFactor:1});
-   await click('external');
+   await click('recipient');await click('external');
    await page.waitForSelector('[data-share-consent]');
    assert.equal(await page.$eval('[data-share-consent]',e=>e.checked),false);
    await page.click('[data-share-consent]');
