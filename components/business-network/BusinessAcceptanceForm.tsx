@@ -32,15 +32,15 @@ export default function BusinessAcceptanceForm({ businessName = '', embedded = f
   }
 
   return <section className={`${styles.page} ${embedded ? styles.embedded : ''}`}>
-    <header className={styles.hero}>
+    {!embedded && <header className={styles.hero}>
       <h1>{senderName ? `${senderName} wants to share assets with you more efficiently.` : 'An easier way to receive asset enquiries.'}</h1>
-      <p>Asset details, photos and requests—together in one link.</p>
-      <a className={styles.exampleButton} href={`/business-network/example${senderName ? `?from=${encodeURIComponent(senderName)}` : ''}`}>See an example enquiry →</a>
+      <p>Asset details, photos and requests together in one link.</p>
+
       <span className={styles.reassurance}>Free basic listing · No account required</span>
-    </header>
+    </header>}
     {done ? <section className={styles.card} role="status" tabIndex={-1} ref={node => node?.focus()}>
       <span className={styles.icon} aria-hidden="true">✓</span>
-      <h2>Thank you—your acceptance is recorded.</h2>
+      <h2>Thank you. Your acceptance is recorded.</h2>
       <p>Aim4price will review your details before adding your business to the directory. Your listing is not public yet.</p>
       <p>Submitting this form does not create an account or activate paid access.</p>
     </section> : <>

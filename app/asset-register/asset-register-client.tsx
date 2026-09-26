@@ -20715,7 +20715,15 @@ export default function AssetRegisterClient({
                       </div>
 
                       <div className={styles.assetQuotePartnerList}>
-                        <BusinessDirectoryTools senderName={activeRegister?.businessName || accountProfile?.businessName || ''} />
+                        <BusinessDirectoryTools
+                          senderName={activeRegister?.businessName || accountProfile?.businessName || ''}
+                          assetIds={isFullRegisterQuoteLead
+                            ? selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal'
+                              ? selectedDealerShareAssetIds
+                              : activeShareAssets.map(asset => asset.id)
+                            : quoteAsset ? [quoteAsset.id] : []}
+                          includePhotos={isFullRegisterQuoteLead || quoteIncludePhotos}
+                        />
                         {isLoadingQuotePartners ? (
                           <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
                         ) : quotePartners.length ? (
