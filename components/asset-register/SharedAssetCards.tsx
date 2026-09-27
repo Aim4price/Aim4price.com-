@@ -287,7 +287,7 @@ export default function SharedAssetCards({
               dialog.current = node;
               if (node && !node.open) node.showModal();
             }}
-            className={`${dialogStyles.surface} ${styles.manageDialog}`}
+            className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${leadStyles.leadManageModal} ${dialogStyles.surface} ${dialogStyles.flush} ${styles.manageDialog}`}
             aria-labelledby={titleId}
             onClose={() => {
               setManaged(null);
@@ -305,9 +305,9 @@ export default function SharedAssetCards({
                 dialog.current?.close();
             }}
           >
-            <header className={dialogStyles.header}>
-              <div>
-                <h2 id={titleId}>{asset.title}</h2>
+            <header className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dialogStyles.header}`}>
+              <div className={assetStyles.modalHeaderText}>
+                <h3 id={titleId}>{asset.title}</h3>
                 <p>Manage enquiry</p>
               </div>
               <ShareModalCloseButton
@@ -315,7 +315,7 @@ export default function SharedAssetCards({
                 onClick={() => dialog.current?.close()}
               />
             </header>
-            <div className={dialogStyles.body}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${leadStyles.leadManageScrollBody} ${dialogStyles.body}`}>
               {enquiry ? <ExternalLeadActions key={managed} {...enquiry} assetIndex={managed!} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
                   <p className={styles.note}>

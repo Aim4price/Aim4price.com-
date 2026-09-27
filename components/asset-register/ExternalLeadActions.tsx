@@ -7,6 +7,7 @@ import { buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import type { LeadReport } from '../../lib/guest-leads';
 import ExternalAccessRequests from './ExternalAccessRequests';
 import LeadDocuments from './LeadDocuments';
+import leadStyles from '../../app/leads/page.module.css';
 import assetStyles from '../../app/asset-register/page.module.css';
 import dialogStyles from '../AccountDialog.module.css';
 import styles from './ExternalLeadActions.module.css';
@@ -27,7 +28,7 @@ export default function ExternalLeadActions({ token, permissions, reports, acces
     replacementPrice: number | null;
 }) {
     const router = useRouter();
-    const [action, setAction] = useState<ExternalSharePermission | null>(null);
+    const [action, setAction] = useState<ExternalSharePermission | 'access' | null>(null);
     const [draft, setDraft] = useState(''), [vat, setVat] = useState(false), [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
     const open = access === 'active' || access === 'owner';
     const returnTo = `/asset-share/${token}`;
@@ -35,20 +36,21 @@ export default function ExternalLeadActions({ token, permissions, reports, acces
     const selected = EXTERNAL_SHARE_OPTIONS.find(option => option.key === action);
     if (!action)
         return <>
-    <div className={`${assetStyles.optionsGrid} ${assetStyles.ownerCommandGrid} ${dialogStyles.actions} ${styles.grid}`}>
+    <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid} ${dialogStyles.actions} ${styles.grid}`}>
       {EXTERNAL_SHARE_OPTIONS.filter(option => permissions[option.key]).map(option => <button key={option.key} type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => choose(option.key)}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d={option.key === 'replacementPrice' ? 'M12 7v10m3-8h-4a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4H9' : option.key === 'serialNumber' ? 'M7 9h10M7 13h7M7 17h5' : option.key === 'documents' ? 'M12 7v10M8 13l4 4 4-4' : 'M8 8h8M8 12h8M8 16h5'}/></svg>
         <span><strong>{option.label}</strong><small>{option.key === 'reports' ? 'View selected reports.' : option.key === 'documents' ? 'For review' : 'Send for owner approval.'}</small></span>
       </button>)}
+      {access === 'owner' && <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setAction('access')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6Z M8 12l3 3 5-6"/></svg><span><strong>Recipient access</strong><small>Review access requests.</small></span></button>}
     </div>
     {reply && <div className={styles.actions}>{reply.email && <a className={styles.secondary} href={`mailto:${encodeURIComponent(reply.email)}?subject=${encodeURIComponent('Re: Aim4price asset enquiry')}`}>Email owner</a>}{reply.phone && <a className={styles.secondary} href={buildWhatsAppShareUrl({ subject: 'Asset enquiry', body: `Hello ${reply.name}, regarding your Aim4price asset enquiry.` }, reply.phone)} target="_blank" rel="noreferrer">WhatsApp owner</a>}</div>}
     {!Object.values(permissions).some(Boolean) && <p className={styles.hint}>The sender shared read-only asset details. No additional actions are enabled.</p>}
-    {access === 'owner' && <><p className={styles.hint}>Owner preview. Recipients can only use the actions you selected.</p><ExternalAccessRequests token={token}/></>}
+
   </>;
     return <section className={styles.panel}>
     <button type="button" className={styles.back} onClick={() => { setAction(null); setNotice(''); }}>Back to Manage</button>
-    <h3>{selected?.label}</h3>
-    {!open ? <div className={styles.gate}>
+    <h3>{action === 'access' ? 'Recipient access' : selected?.label}</h3>
+    {action === 'access' && access === 'owner' ? <ExternalAccessRequests token={token}/> : !open ? <div className={styles.gate}>
       <h4>{access === 'request-access' ? 'Request access from the sender' : access === 'sign-in' ? 'Create your free Business account' : access === 'wrong-recipient' ? 'Use the invited account' : access === 'verify-email' ? 'Verify your email' : access === 'suspended' ? 'Account access is paused' : 'Business verification required'}</h4>
       <p>{access === 'request-access' ? 'Your business is verified. Ask the sender to approve your account for this enquiry. A forwarded link does not grant access to reports or updates.' : access === 'sign-in' ? 'Create an account or sign in. Aim4price must verify your business, and the sender must approve access to this enquiry. No subscription is required for a basic Business account.' : access === 'wrong-recipient' ? 'This link was shared with a different email. Switch to the invited account, or ask the sender for a new invitation.' : access === 'verify-email' ? 'Verify your email from your Business workspace, then return to this enquiry.' : access === 'suspended' ? 'Contact Aim4price to review your account status.' : 'Aim4price needs to verify your business. Add your business details and supporting information in your workspace.'}</p>
       <div className={styles.actions}>

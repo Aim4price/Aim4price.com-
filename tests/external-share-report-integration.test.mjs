@@ -66,7 +66,8 @@ test('report pickers retain normal download wording and never mix in document-va
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(client, /isAttachingExternalReport \? 'Add asset valuation' : 'Open asset valuation'/);
+  assert.match(client, /<strong>Asset valuation<\/strong>/);
+  assert.match(client, /isAttachingExternalReport \? 'Asset valuation PDF\.' : 'Values, notes and documents\.'/);
   const individualReportModal = client.match(/\{reportAsset && isAssetReportModalOpen \? \(([\s\S]*?)\n      \) : null\}/);
   const registerReportModal = client.match(/\{isExportModalOpen \? \(([\s\S]*?)\n      \) : null\}/);
   assert.ok(individualReportModal, 'individual report modal should exist');

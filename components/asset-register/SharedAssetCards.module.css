@@ -73,6 +73,9 @@
     font-size: 25px;
   }
 }
-.manageDialog { scrollbar-width:thin; scrollbar-color:var(--app-accent,#43836a) transparent; }
-.manageDialog::-webkit-scrollbar { width:6px; }
-.manageDialog::-webkit-scrollbar-thumb { border-radius:8px; background:var(--app-accent,#43836a); }
+.manageDialog { scrollbar-width:none; }
+.manageDialog::-webkit-scrollbar { display:none; }
+.manageDialog > div { scrollbar-width:none; }
+.manageDialog > div::-webkit-scrollbar { display:none; }
+/* Native dialogs need intrinsic height; the Leads surface normally sits in a flex overlay. */
+.manageDialog.manageDialog.manageDialog { position:fixed; inset:0; height:fit-content !important; min-height:0 !important; }

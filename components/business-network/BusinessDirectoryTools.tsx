@@ -1,13 +1,8 @@
 "use client";
-import BusinessListingInvite from "./BusinessListingInvite";
+import BusinessListingInvite, { type BusinessListingInviteProps } from "./BusinessListingInvite";
 import styles from "./BusinessNetwork.module.css";
 
-export default function BusinessDirectoryTools(props: {
-  senderName?: string;
-  umbrellaId?: string;
-  assetIds: string[];
-  includePhotos: boolean;
-}) {
+export default function BusinessDirectoryTools(props: BusinessListingInviteProps) {
   return (
     <section
       className={styles.directoryTools}

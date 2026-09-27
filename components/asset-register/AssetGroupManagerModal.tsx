@@ -910,7 +910,7 @@ export default function AssetGroupManagerModal({
                   <AssetReportTypeIcon kind="ownership" className={registerStyles.buttonIcon} />
                   <span><strong>Cost of ownership</strong><small>Ownership costs and budgets.</small></span>
                 </button>
-                {!isAttachingReport && onDownloadMap ? (
+                {onDownloadMap ? (
                   <button type="button" className={registerStyles.assetReportOptionButton} disabled={mapBusy || reportBusy || !canDownloadMap} onClick={() => void onDownloadMap(group)} data-download-option="true">
                     <AssetReportTypeIcon kind="map" className={registerStyles.buttonIcon} />
                     <span><strong>{mapBusy ? 'Preparing map…' : 'Asset map'}</strong><small>{canDownloadMap ? 'Saved asset locations.' : 'Add an asset location first.'}</small></span>

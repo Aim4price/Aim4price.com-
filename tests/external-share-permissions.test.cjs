@@ -170,3 +170,21 @@ test('access API ignores supplied identity and rejects foreign writes and non-ow
   assert.equal((await route.PATCH(request('PATCH',{userId:'recipient',decision:'approved'}),ctx)).status,200);
  }finally{await x.pg.close();}
 });
+
+test('shared Excel reports retain their format and remain gated like PDFs',async()=>{
+ const x=await setup();try{
+  const workbook=load('lib/simple-xlsx.ts').createXlsxWorkbook([{name:'Asset report',rows:[['Asset','Value'],['Bakkie',100000]]}]);
+  const report={label:'Asset valuation · Excel',fileName:'valuation.xlsx',data:workbook};
+  assert.equal(x.leads.sharedReportContentType(report),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  await assert.rejects(x.leads.createGuestLead('owner',[A],false,x.details,[{...report,data:Buffer.from('not a workbook')}]),/valid PDF or Excel/);
+  const {token}=await x.leads.createGuestLead('owner',[A],false,x.details,[report]);
+  const lead=await x.leads.readLeadPage(token),id=lead.reports[0].id;
+  assert.equal((await x.leads.loadProtectedLeadReport(token,id)).status,403);
+  x.signIn();x.state.approved=true;
+  const downloaded=await x.leads.loadProtectedLeadReport(token,id);assert.equal(downloaded.status,200);assert.equal(downloaded.report.content_type,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  const route=load('app/api/asset-share-links/[token]/reports/[reportId]/route.ts',{'../../../../../../lib/guest-leads':x.leads});
+  const response=await route.GET(new Request('https://local.test'),{params:{token,reportId:id}});
+  assert.equal(response.headers.get('content-type'),downloaded.report.content_type);assert.match(response.headers.get('content-disposition'),/^attachment/);
+  await x.base.revokeAssetShareLink('owner',token);assert.equal((await x.leads.loadProtectedLeadReport(token,id)).status,404);
+ }finally{await x.pg.close();}
+});
