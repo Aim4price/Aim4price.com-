@@ -144,6 +144,49 @@
   gap: 0.75rem;
 }
 
+.verificationModal {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.verificationModal .modalHeader {
+  flex: 0 0 auto;
+}
+
+.verificationModal .modalHeader h2 {
+  white-space: normal;
+}
+
+.verificationBody {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  padding: 1rem 0.2rem 0.2rem;
+}
+
+.verificationBody::-webkit-scrollbar {
+  display: none;
+}
+
+.backButton {
+  padding: 0.5rem 0;
+  border: 0;
+  background: transparent;
+  color: #176c50;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.verificationBody :is(button, input, textarea, summary):focus-visible {
+  outline: 2px solid #25845e;
+  outline-offset: 2px;
+}
+
 .link {
   min-height: 4rem;
   box-sizing: border-box;
@@ -220,4 +263,3 @@
     display: none !important;
   }
 }
-

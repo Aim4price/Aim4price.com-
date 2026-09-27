@@ -75,6 +75,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"],headless:true,pipe:true,ignoreDefaultArgs:["--hide-scrollbars"]});
  try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+  let verificationAccounts=[],verificationFailure=false; const verificationWrites=[];
   let failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
   const queueRequests=[],workRequests=[],billingRequests=[];let billingIssued=false,previewFailure=false;
   await page.setRequestInterception(true);
@@ -84,6 +85,14 @@ const evidence=path.join(root,'.next/admin-review-validation');
    if(url.includes('/api/admin/billing')) {
     if(request.method()==='POST'){billingRequests.push(JSON.parse(request.postData()));return respond({ok:true,id:'fixture'});}
     return respond({invoices:billingIssued?[{id:'invoice-test',userId:'owner',accountStatus:'active',contactPhone:'0821234567',contactEmail:user.email,number:'A4P-2026-000001',status:'issued',customer:{name:user.name,email:user.email},lines:[],dueDate:'2026-09-28',totalCents:30000,paidCents:0,version:2}]:[],total:billingIssued?1:0,plans:[],workspace:{customer:{name:user.name,email:user.email,address:'George'},nextBillingDate:null,interval:'once',amountCents:0,work:[{id:'work-one',started_at:now,duration_seconds:5400,note:'Capture work'}]}});
+   }
+   if(url.includes('/api/admin/business-accounts')) {
+    if(request.method()==='PATCH'){
+     const body=JSON.parse(request.postData());verificationWrites.push(body);
+     verificationAccounts=verificationAccounts.map(a=>a.user_id===body.userId?{...a,verified_at:body.verified?now:null,review_note:body.note}:a);
+     return respond({ok:true});
+    }
+    return verificationFailure?respond({error:'Unable to load business accounts.'},503):respond({accounts:verificationAccounts});
    }
    if(url.includes('/api/admin/business-network'))return failBusiness?respond({error:'Directory unavailable'},503):respond({businesses:[]});
    if(url.includes('/api/admin/maintenance-catalogue'))return respond({catalogue});
@@ -119,6 +128,45 @@ const evidence=path.join(root,'.next/admin-review-validation');
    await page.evaluate(()=>document.fonts.ready);
    assert.deepEqual(errors,[],section+' runtime');
   }
+  for(const width of [390,1440]){
+   verificationAccounts=[];
+   await open('businesses',width);
+   await page.click('button[aria-haspopup="dialog"]');
+   await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent.includes('Business verification')).click());
+   await page.waitForFunction(()=>document.body.textContent.includes('No Business accounts awaiting review.'));
+   assert.equal(await page.$eval('[role="dialog"] h2',e=>e.textContent),'Business verification');
+   await page.screenshot({path:path.join(evidence,'business-verification-empty-'+width+'.png'),fullPage:true});
+   await page.keyboard.press('Escape');
+   assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Manage');
+   verificationAccounts=[{user_id:'business',business_name:'Example Oil and Filter Company',email:'workshop@example.test',email_verified:true,account_status:'active',phone:'0821234567',website:'https://example.test',evidence:'Confirmed premises and contact details.',verified_at:null,review_note:''}];
+   await page.click('button[aria-haspopup="dialog"]');
+   await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent.includes('Business verification')).click());
+   await page.waitForSelector('[role="dialog"] details');
+   await page.click('[role="dialog"] summary');
+   await page.click('[role="dialog"] input[type="checkbox"]');
+   await page.type('[role="dialog"] textarea','Confirmed business and contact by phone.');
+   await page.screenshot({path:path.join(evidence,'business-verification-review-'+width+'.png'),fullPage:true});
+   assert.equal(await page.$eval('[role="dialog"]',e=>[e,...e.querySelectorAll('div,details,section,form')].every(n=>n.scrollWidth<=n.clientWidth+2)),true,'verification modal and form fit without horizontal clipping');
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2),true,'verification page fits');
+   await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent==='Save verification').click());
+   await page.waitForFunction(()=>document.body.textContent.includes('Verification decision saved.')&&document.querySelector('[role="dialog"] summary').textContent.includes('Verified'));
+   assert.deepEqual(verificationWrites.at(-1),{userId:'business',verified:true,note:'Confirmed business and contact by phone.'});
+   await page.focus('[role="dialog"] textarea');await page.keyboard.press('Tab');await page.keyboard.press('Tab');
+   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')),'Close Admin menu','focus remains inside review form');
+   await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent==='Back to Manage').click());
+   assert.equal(await page.$eval('[role="dialog"] h2',e=>e.textContent),'Manage');
+   await page.keyboard.press('Escape');
+   verificationFailure=true;props.businesses={initialVerificationOpen:true};
+   await open('businesses',width);
+   await page.waitForSelector('[role="dialog"] [role="alert"]');
+   verificationFailure=false;
+   await page.$$eval('[role="dialog"] button',els=>els.find(b=>b.textContent==='Try again').click());
+   await page.waitForSelector('[role="dialog"] summary');
+   await page.keyboard.press('Escape');delete props.businesses;
+   assert.deepEqual(errors,[]);
+  }
+  console.log('PASS directory verification: empty state, manual approval, status refresh, keyboard focus, error retry and legacy entry at 390/1440');
+  if(process.env.ADMIN_VERIFY_ONLY==='1')return;
   for(const section of Object.keys(entries)){
    await open(section);
    if(section==='maintenance')await page.waitForFunction(()=>document.body.textContent.includes('Small Field Tractor'));

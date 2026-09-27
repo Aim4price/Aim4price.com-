@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import styles from "./AdminNavigation.module.css";
 
 export type AdminSection =
@@ -88,11 +88,25 @@ const ADMIN_LINKS: Array<{
   },
 ];
 
-export default function AdminNavigation({ active, canGetEstimate = false }: { active: AdminSection; canGetEstimate?: boolean }) {
+export default function AdminNavigation({ active, canGetEstimate = false, businessVerification, initialVerificationOpen = false }: {
+  active: AdminSection;
+  canGetEstimate?: boolean;
+  businessVerification?: ReactNode;
+  initialVerificationOpen?: boolean;
+}) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  const hasVerification = active === "businesses" && Boolean(businessVerification);
+  const [isOpen, setIsOpen] = useState(initialVerificationOpen && hasVerification);
+  const [showVerification, setShowVerification] = useState(initialVerificationOpen && hasVerification);
   const manageButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
+  function closeManage() {
+    setIsOpen(false);
+    setShowVerification(false);
+  }
+  useEffect(() => {
+    if (isOpen) modalRef.current?.querySelector<HTMLElement>("button")?.focus();
+  }, [showVerification, isOpen]);
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") return;
 
@@ -107,7 +121,7 @@ export default function AdminNavigation({ active, canGetEstimate = false }: { ac
     function keepFocusInsideManageModal(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        setIsOpen(false);
+        closeManage();
         return;
       }
 
@@ -115,9 +129,9 @@ export default function AdminNavigation({ active, canGetEstimate = false }: { ac
 
       const focusable = Array.from(
         modal.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
         ),
-      );
+      ).filter((element) => element.getClientRects().length > 0);
       if (!focusable.length) {
         event.preventDefault();
         modal.focus();
@@ -170,29 +184,40 @@ export default function AdminNavigation({ active, canGetEstimate = false }: { ac
             className={styles.backdrop}
             tabIndex={-1}
             aria-label="Close Admin menu"
-            onClick={() => setIsOpen(false)}
+            onClick={closeManage}
           />
           <section
             ref={modalRef}
-            className={styles.modal}
+            className={`${styles.modal} ${showVerification ? styles.verificationModal : ""}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-manage-modal-title"
             tabIndex={-1}
           >
             <header className={styles.modalHeader}>
-              <h2 id="admin-manage-modal-title">Manage</h2>
+              <h2 id="admin-manage-modal-title">{showVerification ? "Business verification" : "Manage"}</h2>
               <button
                 type="button"
                 className={styles.closeButton}
                 aria-label="Close Admin menu"
-                onClick={() => setIsOpen(false)}
+                onClick={closeManage}
               >
                 <span aria-hidden="true">×</span>
               </button>
             </header>
 
-            <div className={styles.optionGrid}>
+            {showVerification && hasVerification ? (
+              <div className={styles.verificationBody}>
+                <button type="button" className={styles.backButton} onClick={() => setShowVerification(false)}>Back to Manage</button>
+                {businessVerification}
+              </div>
+            ) : <div className={styles.optionGrid}>
+              {hasVerification ? (
+                <button type="button" className={styles.link} onClick={() => setShowVerification(true)}>
+                  <strong>Business verification</strong>
+                  <span aria-hidden="true">›</span>
+                </button>
+              ) : null}
               {canGetEstimate ? (
                 <Link
                   href="/valuation"
@@ -224,7 +249,7 @@ export default function AdminNavigation({ active, canGetEstimate = false }: { ac
                   </Link>
                 );
               })}
-            </div>
+            </div>}
           </section>
         </div>
       ) : null}

@@ -158,7 +158,7 @@ test("Admin navigation uses one-line labels and an accessible destination modal"
   assert.match(adminNavigation, /aria-labelledby="admin-manage-modal-title"/);
   assert.match(adminNavigation, /keepFocusInsideManageModal/);
   assert.match(adminNavigation, /manageButtonRef\.current\?\.focus\(\)/);
-  assert.match(adminNavigation, /id="admin-manage-modal-title">Manage/);
+  assert.match(adminNavigation, /id="admin-manage-modal-title">\{showVerification \? "Business verification" : "Manage"\}/);
   assert.match(adminNavigation, /label: "Asset Map"/);
   assert.match(adminNavigation, /label: "Discovery"/);
   assert.match(adminNavigation, /label: "Outcomes"/);
