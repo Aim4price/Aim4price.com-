@@ -4149,20 +4149,32 @@
 .invoiceHelp { color: var(--app-muted, #607168); font-size: 0.8rem; line-height: 1.5; }
 .invoiceHelp a { color: inherit; overflow-wrap: anywhere; }
 
-.billingModal .modalHeader { padding-bottom:22px; margin-bottom:22px; }
-.billingModal .modalHeader h2 { font-size:26px; font-weight:650; letter-spacing:-.025em; }
-.billingModal .modalHeader p { font-size:13px; font-weight:400; margin-top:8px; }
-.billingModal .modalCloseButton { border-radius:5px; }
-.billingModal .invoiceList { gap:18px; }
-.billingModal .modalActions { margin-top:20px; padding-top:16px; }
+.billingModal .invoiceList { gap:1rem; }
 
 .billingModal .accountModalScrollRail { background:#edf4ef; }
 .billingModal .accountModalScrollThumb { background:#669581; }
-.invoiceListToolbar { display:flex; justify-content:space-between; align-items:center; gap:15px; font-size:12px; color:#647b6f; }
-.invoiceListToolbar button { font:inherit; color:#1a654d; background:#f1f7f3; border:1px solid #cbded2; border-radius:6px; padding:9px 12px; cursor:pointer; }
-.invoiceFold { border:1px solid #d8e4dd; border-radius:10px; overflow:hidden; background:white; }
+.invoiceListToolbar {
+  display:flex; justify-content:space-between; align-items:center; gap:1rem;
+  padding:.85rem 1rem; border:1px solid var(--app-info-line, rgba(62,110,213,.12));
+  border-radius:1rem; color:var(--app-muted, #607168); font-size:.85rem; font-weight:650;
+  background:linear-gradient(135deg,var(--app-info-soft,rgba(62,110,213,.075)),var(--app-surface-soft,rgba(31,138,102,.06)));
+}
+.invoiceListToolbar button {
+  display:inline-flex; align-items:center; justify-content:center; gap:.55rem;
+  min-height:2.6rem; padding:.6rem .95rem; border:1px solid var(--app-line,#cbded2);
+  border-radius:.75rem; font:inherit; font-weight:750; line-height:1.2; white-space:nowrap;
+  color:var(--app-text,#173c32); background:var(--app-surface,#fff);
+  box-shadow:0 2px 5px rgba(18,45,37,.04); cursor:pointer;
+  transition:background 160ms ease,border-color 160ms ease,box-shadow 160ms ease;
+}
+.invoiceListToolbar button:hover {
+  background:var(--app-surface-soft,#f3f8f5); border-color:#8db5a3; box-shadow:0 3px 8px rgba(18,45,37,.08);
+}
+.invoiceListToolbar button svg { width:1rem; height:1rem; flex:none; color:var(--app-accent,#267152); }
+.invoiceFold { border:1px solid #d8e4dd; border-radius:1rem; overflow:hidden; background:white; }
 .invoiceFoldToggle { display:flex; align-items:center; gap:16px; width:100%; padding:18px; border:0; background:white; color:#173c32; font:inherit; text-align:left; cursor:pointer; }
 .invoiceFoldToggle>span:first-child { flex:1; }.invoiceFoldToggle strong { font-size:14px; font-weight:650; overflow-wrap:anywhere; }.invoiceFoldToggle small { display:block; font-size:11px; color:#647b6f; margin-top:7px; }
-.invoiceFoldAmount { text-align:right; }.invoiceFoldChevron { font-size:22px; color:#46765f; flex:0 0 20px; text-align:center; }
+.invoiceFoldAmount { text-align:right; }.invoiceFoldChevron { display:grid; place-items:center; width:2rem; height:2rem; color:#46765f; flex:0 0 2rem; border:1px solid #d8e4dd; border-radius:.65rem; background:#f5faf7; }
+.invoiceFoldChevron svg { width:1rem; height:1rem; }
 .invoiceFoldToggle:hover { background:#f5faf7; }.invoiceFoldToggle:focus-visible,.invoiceListToolbar button:focus-visible { outline:2px solid #267152; outline-offset:-3px; }
 .invoiceFoldBody { border-top:1px solid #e0e9e3; }
