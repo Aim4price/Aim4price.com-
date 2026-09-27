@@ -4166,4 +4166,3 @@
 .invoiceFoldAmount { text-align:right; }.invoiceFoldChevron { font-size:22px; color:#46765f; flex:0 0 20px; text-align:center; }
 .invoiceFoldToggle:hover { background:#f5faf7; }.invoiceFoldToggle:focus-visible,.invoiceListToolbar button:focus-visible { outline:2px solid #267152; outline-offset:-3px; }
 .invoiceFoldBody { border-top:1px solid #e0e9e3; }
-@media(max-width:560px){.invoiceFoldToggle{padding:15px;gap:10px}}
