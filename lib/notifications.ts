@@ -1,3 +1,4 @@
+import { listBillingNotifications } from './billing-notifications';
 import { getDb } from './db';
 import { ensureFuelLedgerTables, listFuelLedger, type FuelLedgerEvent } from './fuel-ledger';
 import {
@@ -30,6 +31,7 @@ import { listCurrentCostBudgetAlertEvents } from './cost-budgets';
 import { listMarketplaceSourcingRequestNotifications } from './marketplace-sourcing-requests';
 
 export type HeaderNotificationCategory =
+  | 'billing'
   | 'admin_message'
   | 'partner_note'
   | 'lead'
@@ -955,6 +957,7 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
           : Promise.resolve([]),
       ]);
 
+  notificationGroups.push(await listBillingNotifications(input.userId));
   return notificationGroups
     .flat()
     .sort(

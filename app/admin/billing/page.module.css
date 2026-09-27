@@ -167,3 +167,5 @@
 .suspendedLink { color:#934431; font-size:12px; }
 
 .check { display:flex; align-items:flex-start; gap:10px; font-size:13px; line-height:1.6; }.check input { margin-top:4px; accent-color:#1a654d; }
+
+.shareHeader>div { min-width:0; }.shareHeader h2 { overflow-wrap:anywhere; }

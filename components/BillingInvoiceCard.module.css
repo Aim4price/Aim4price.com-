@@ -19,3 +19,5 @@
 .button { display:inline-flex; align-items:center; justify-content:center; background:#1a654d; color:#fff; padding:12px 18px; border:1px solid #1a654d; border-radius:6px; font:inherit; font-weight:600; font-size:13px; cursor:pointer; text-decoration:none; white-space:nowrap; }
 .button:hover { background:#144e3c; }.button:focus-visible{outline:3px solid #88b7a1;outline-offset:3px}
 @media(max-width:560px){.header,.body,.footer{padding:18px}.body{grid-template-columns:1fr;gap:22px}.header{flex-wrap:wrap}.balance strong{font-size:26px}}
+
+.embedded { border:0; border-radius:0; }

@@ -322,6 +322,7 @@ export async function listNotificationInbox(
       from public.user_notifications
       where user_id = $1
         and ($3::boolean or category <> 'cost_budget')
+        and (category <> 'billing' or exists (select 1 from aim4price_billing_invoices i where ('billing-invoice:' || i.id::text)=event_key and i.status='issued'))
       order by
         case when action_required and resolved_at is null then 0 else 1 end,
         case when payload->>'priority' = 'true' then 0 else 1 end,

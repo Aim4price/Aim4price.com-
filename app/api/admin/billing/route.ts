@@ -1,3 +1,4 @@
+import { hardDeleteBillingInvoice } from '../../../../lib/billing-delete';
 import { suspendBillingAccount } from '../../../../lib/billing-suspension';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiAccess } from '../../../../lib/admin-api-access';
@@ -20,7 +21,8 @@ export async function POST(request:NextRequest){
  if(!isTrustedRequestOrigin(request.headers.get('origin'),request.nextUrl.origin))return json({error:'Invalid request origin.'},403);
  try {
   const input=await request.json().catch(()=>{throw new BillingError('Invalid JSON request.');});if(!input||typeof input!=='object'||Array.isArray(input))throw new BillingError('Invalid request.');
-  if(input.action==='suspend_account')await suspendBillingAccount(input,access.actor.userId);
+  if(input.action==='hard_delete')await hardDeleteBillingInvoice(input,access.actor.userId);
+  else if(input.action==='suspend_account')await suspendBillingAccount(input,access.actor.userId);
   else if(input.action==='save_agreement')await saveBillingAgreement(input,access.actor.userId);
   else if(input.action==='pause_agreement')await pauseBillingAgreement(input,access.actor.userId);
   else if(input.action==='save_plan')await saveBillingPlan(input);
