@@ -254,3 +254,13 @@
   :global(html[data-app-theme='dark'][data-app-theme]) .dotGrid { fill: #9dcdb7; opacity: .16; }
   :global(html[data-app-theme='dark'][data-app-theme]) .mintCircle { background: #619a80; opacity: .06; }
 }
+
+
+/* Suspension is a compact action page; do not reserve a full design-canvas height. */
+.background:has([data-suspension-page]),
+.content:has([data-suspension-page]) {
+  min-height: 0;
+}
+.background:has([data-suspension-page]) {
+  flex: 0 0 auto;
+}
