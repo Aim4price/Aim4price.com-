@@ -54,7 +54,7 @@ function ChatIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-export default function ContactSupportModal() {
+export default function ContactSupportModal({ className }: { className?: string } = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const titleId = useId();
   const descriptionId = useId();
@@ -81,7 +81,7 @@ export default function ContactSupportModal() {
   return (
     <>
       <button
-        className={styles.primaryButton}
+        className={className || styles.primaryButton}
         type="button"
         onClick={() => setIsOpen(true)}
       >
