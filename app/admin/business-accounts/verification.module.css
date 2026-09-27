@@ -1,0 +1,34 @@
+.review {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: 1rem;
+  color: #18372e;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.intro { margin: 0.5rem 0 0; color: #52685e; }
+.search { display: grid; gap: 0.4rem; font-weight: 650; }
+.search input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #cdded4;
+  border-radius: 0.6rem;
+  background: #fff;
+  color: #18372e;
+  font: inherit;
+}
+.account { min-width: 0; border: 1px solid #dce6e0; border-radius: 0.8rem; overflow-wrap: anywhere; }
+.account summary { display: flex; align-items: center; gap: 0.8rem; padding: 1rem; cursor: pointer; list-style: none; }
+.account summary::-webkit-details-marker { display: none; }
+.account summary::after { content: "+"; font-size: 1.3rem; color: #176c50; }
+.account[open] summary::after { content: "−"; }
+.account[open] summary { border-bottom: 1px solid #dce6e0; }
+.identity { display: grid; gap: 0.2rem; min-width: 0; flex: 1; }
+.identity > span { color: #52685e; font-size: 0.8rem; }
+.status { font-size: 0.75rem; font-weight: 700; color: #32674f; }
+.account > section { border: 0; box-shadow: none; border-radius: 0 0 0.8rem 0.8rem; padding: 1rem; }
+.account form { grid-template-columns: minmax(0, 1fr); }
+.account :is(input, textarea) { min-width: 0; }
+.empty { margin: 0; padding: 1.25rem; border: 1px solid #dce6e0; border-radius: 0.8rem; background: #f5f9f7; }
+.retry { padding: 0.6rem 1rem; border: 1px solid #cdded4; border-radius: 0.6rem; background: #fff; color: #176c50; font: inherit; cursor: pointer; }

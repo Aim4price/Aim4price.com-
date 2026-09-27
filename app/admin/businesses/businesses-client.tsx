@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import AdminNavigation from "../../../components/AdminNavigation";
 import DirectoryAdminAccess from "../../../components/business-network/DirectoryAdminAccess";
 import BusinessInvite from "../../../components/business-network/BusinessInvite";
+import BusinessVerification from "../business-accounts/verification-client";
 import adminStyles from "../page.module.css";
 import layout from "./businesses.module.css";
 import BusinessJoin from "../../business-network/join/join-client";
 import type { AdminBusiness } from "../../../lib/admin-business-network";
 import styles from "../../../components/business-network/BusinessNetwork.module.css";
-export default function AdminBusinesses() {
+export default function AdminBusinesses({ initialVerificationOpen = false }: { initialVerificationOpen?: boolean }) {
   const [rows, setRows] = useState<AdminBusiness[]>([]),
     [editing, setEditing] = useState<AdminBusiness | null | undefined>(
       undefined,
@@ -50,7 +51,7 @@ export default function AdminBusinesses() {
             <h1>Business Directory</h1>
           </div>
           <div className={adminStyles.headerActions}>
-            <AdminNavigation active="businesses" />
+            <AdminNavigation active="businesses" businessVerification={<BusinessVerification />} initialVerificationOpen={initialVerificationOpen} />
           </div>
         </header>
         <div className={layout.workspace}>

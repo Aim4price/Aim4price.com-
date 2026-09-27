@@ -14,7 +14,6 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
   return (
     <main className={styles.page}>
-      <a href="/admin/business-accounts">Business verification</a>
       <AdminClient key={`${params.status ?? "all"}:${params.account ?? ""}`} canGetEstimate={canUseEstimateBreakdown(session.user.email)} initialUsers={users} initialStatus={typeof params.status === "string" ? params.status : "all"} initialAccountId={typeof params.account === "string" ? params.account : ""} />
     </main>
   );

@@ -17,7 +17,7 @@ A Business account remains free. There is no subscription check for the approved
 2. Enable reports, serial, replacement price and invoices. Continue, enter a separate test recipient email, attach a PDF, accept the disclaimer and create the link.
 3. Open the link in a private browser. Open an asset, then Manage. Selected buttons should appear; clicking one should offer free signup/sign-in without allowing a write.
 4. Create the recipient's free Business account. Verify its email and complete its business details. Before Admin approval, protected actions must remain locked.
-5. In Admin → Business verification, tick **Business verified**, add the review note and save. Return to the enquiry and check access again.
+5. In Admin → Business Directory → Manage → Business verification, tick **Business verified**, add the review note and save. Return to the enquiry and check access again.
 6. Open the PDF, submit a document and propose a serial or replacement-price update. Review the proposal on the owner's Asset Register. Verify the asset is unchanged before acceptance. One update per asset can await approval at a time.
 7. Reopen **Business not listed? → Previous invitations → Review enquiry** to review received documents. Test Disable, a different recipient account, and an unselected permission; none should grant access.
 

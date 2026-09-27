@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from '../../business/page.module.css';
-type Account = {
+export type BusinessVerificationAccount = {
     user_id: string;
     business_name: string;
     phone: string;
@@ -14,13 +14,15 @@ type Account = {
     verified_at: string | null;
     review_note: string | null;
 };
-export default function ReviewCard({ account: a }: {
-    account: Account;
-}) { const router = useRouter(), [verified, setVerified] = useState(!!a.verified_at), [note, setNote] = useState(a.review_note || ''), [busy, setBusy] = useState(false), [message, setMessage] = useState(''); return <section className={styles.panel}><h2>{a.business_name || a.email}</h2><p>{a.email} · {a.email_verified ? 'Email verified' : 'Email unverified'} · {a.account_status}</p><p>{a.phone}</p>{a.website && <p>Website/listing: {a.website}</p>}<p>{a.evidence || 'No supporting information supplied.'}</p><form className={styles.form} onSubmit={async (e) => { e.preventDefault(); setBusy(true); try {
+export default function ReviewCard({ account: a, onSaved }: {
+    account: BusinessVerificationAccount;
+    onSaved?: () => void;
+}) { const router = useRouter(), [verified, setVerified] = useState(!!a.verified_at), [note, setNote] = useState(a.review_note || ''), [busy, setBusy] = useState(false), [message, setMessage] = useState(''); return <section className={styles.panel}><p>{a.email} · {a.email_verified ? 'Email verified' : 'Email unverified'} · {a.account_status}</p><p>{a.phone}</p>{a.website && <p>Website/listing: {a.website}</p>}<p>{a.evidence || 'No supporting information supplied.'}</p><form className={styles.form} onSubmit={async (e) => { e.preventDefault(); setBusy(true); try {
     const r = await fetch('/api/admin/business-accounts', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: a.user_id, verified, note }) }), d = await r.json();
     if (!r.ok)
         throw Error(d.error);
     setMessage('Verification decision saved.');
+    onSaved?.();
     router.refresh();
 }
 catch (e) {
