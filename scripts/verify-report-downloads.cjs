@@ -174,6 +174,9 @@ function verifyDetails(actual, reference, name) {
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(window, 'outerWidth', { get: () => innerWidth });
       localStorage.setItem('aim4price.website-canvas.v2.intro', 'seen');
+      // Hold desktop zoom constant; phone checks retain the native auto-fit boundary.
+      if(innerWidth>900)localStorage.setItem('aim4price.website-canvas.v2', JSON.stringify({mode:'manual',scale:1}));
+      else localStorage.removeItem('aim4price.website-canvas.v2');
     });
     const failures = [];
     for (const width of (process.env.REPORT_WIDTHS || '1440,430').split(',').map(Number)) {

@@ -17,3 +17,6 @@
 .form .check { display:flex; align-items:center; }
 .check input { width:20px; height:20px; accent-color:var(--app-accent,#176b4d); }
 .panel :focus-visible { outline:3px solid #74ac92; outline-offset:3px; }
+
+.grid > button > span { display:grid; gap:6px; text-align:left; min-width:0; }
+.grid > button strong,.grid > button small { display:block; }

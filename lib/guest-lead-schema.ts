@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS asset_share_reports (
  id uuid PRIMARY KEY, token text NOT NULL REFERENCES asset_share_links(token) ON DELETE CASCADE,
  label text NOT NULL, file_name text NOT NULL, pdf bytea NOT NULL
 );
+ALTER TABLE asset_share_reports ADD COLUMN IF NOT EXISTS content_type text NOT NULL DEFAULT 'application/pdf';
 CREATE TABLE IF NOT EXISTS asset_share_submissions (
  id uuid PRIMARY KEY, token text NOT NULL REFERENCES asset_share_links(token) ON DELETE CASCADE,
  kind text NOT NULL CHECK(kind IN ('invoice','quote')), sender_name text NOT NULL,

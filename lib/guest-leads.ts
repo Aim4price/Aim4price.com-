@@ -28,18 +28,25 @@ export function validateLeadDetails(input:Record<string,unknown>):LeadDetails{
  return details;
 }
 export type LeadPdf={label:string;fileName:string;data:Buffer};
+export function sharedReportContentType(report:LeadPdf) {
+ const pdf=report.data.subarray(0,5).toString()==='%PDF-' && /\.pdf$/i.test(report.fileName);
+ const xlsx=/\.xlsx$/i.test(report.fileName) && report.data.subarray(0,4).equals(Buffer.from([0x50,0x4b,0x03,0x04])) && report.data.includes(Buffer.from('[Content_Types].xml')) && report.data.includes(Buffer.from('xl/workbook.xml'));
+ if(!pdf&&!xlsx)throw new Error('Choose valid PDF or Excel reports.');
+ return pdf?'application/pdf':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+}
 export async function createGuestLead(ownerId:string,idsInput:unknown,includePhotos:boolean,details:LeadDetails,reports:LeadPdf[],umbrella?:{id:string;name:string}){
  const ids=parseShareAssetIds(idsInput),safe=validateLeadDetails(details);
- if(safe.permissions && reports.length && !safe.permissions.reports)throw new Error('Enable Reports before attaching PDFs.');
- if(safe.permissions?.reports && !reports.length)throw new Error('Choose at least one PDF report or switch Reports off.');
+ if(safe.permissions && reports.length && !safe.permissions.reports)throw new Error('Enable Reports before attaching reports.');
+ if(safe.permissions?.reports && !reports.length)throw new Error('Choose at least one report or switch Reports off.');
  if(reports.length&&!safe.recipientEmail&&safe.accessMode!=='owner-approval')throw new Error('Enter the recipient email to restrict report access to their verified account.');
- if(reports.length>6||reports.reduce((n,r)=>n+r.data.length,0)>30*1024*1024||reports.some(r=>r.data.length>8*1024*1024||r.data.length<5||r.data.subarray(0,5).toString()!=='%PDF-'||!r.label||r.label.length>200||r.fileName.length>200))throw new Error('Choose up to six PDF reports, each under 8 MB and 30 MB in total.');
+ if(reports.length>6||reports.reduce((n,r)=>n+r.data.length,0)>30*1024*1024||reports.some(r=>r.data.length>8*1024*1024||r.data.length<5||!r.label||r.label.length>200||r.fileName.length>200))throw new Error('Choose up to six PDF or Excel reports, each under 8 MB and 30 MB in total.');
+ reports.forEach(sharedReportContentType);
  const assets=await getAssetRegisterItemsByRefs(ids.map(assetId=>({userId:ownerId,assetId})));
  if(assets.length!==ids.length)throw new Error('This account does not own all the selected assets.');
  await ensureGuestLeadSchema();const db=await getDb().connect(),token=randomBytes(32).toString('base64url');
  try{await db.query('BEGIN');
  await db.query(`INSERT INTO asset_share_links(token,user_id,selection_key,asset_ids,snapshot,lead_details,umbrella_name) VALUES($1,$2,$3,$4::uuid[],$5::jsonb,$6::jsonb,$7)`,[token,ownerId,`lead:${randomUUID()}`,ids,JSON.stringify(ids.map(id=>assetShareSnapshot(assets.find(a=>a.id===id)!,includePhotos))),JSON.stringify(safe),umbrella?.name||null]);
- for(const report of reports)await db.query('INSERT INTO asset_share_reports(id,token,label,file_name,pdf) VALUES($1,$2,$3,$4,$5)',[randomUUID(),token,report.label,report.fileName,report.data]);
+ for(const report of reports)await db.query('INSERT INTO asset_share_reports(id,token,label,file_name,pdf,content_type) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),token,report.label,report.fileName,report.data,sharedReportContentType(report)]);
  await db.query('COMMIT');return{token,created_at:new Date().toISOString()};
  }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}
 }
@@ -71,7 +78,7 @@ export async function loadProtectedLeadReport(token:string,reportId:string){
  if(!leadAllows(lead,'reports'))return{status:403 as const};
  const { access }=await externalLeadAccess(lead);
  if(access!=='active'&&access!=='owner')return{status:403 as const};
- const report=(await getDb().query(`SELECT r.pdf,r.file_name FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.id=$1 AND r.token=$2 AND s.revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id))`,[reportId,token])).rows[0];
+ const report=(await getDb().query(`SELECT r.pdf,r.file_name,r.content_type FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.id=$1 AND r.token=$2 AND s.revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id))`,[reportId,token])).rows[0];
  return report?{status:200 as const,report}:{status:404 as const};
 }
 

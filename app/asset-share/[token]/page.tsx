@@ -3,7 +3,7 @@ import AppHeader from '../../../components/AppHeader';
 import type { Metadata } from 'next';
 import { readLeadPage } from '../../../lib/guest-leads';
 import { externalLeadAccess, leadAllows } from '../../../lib/external-lead-access';
-import styles from '../../../components/asset-register/GuestLead.module.css';
+import SharedEnquiryRequest from '../../../components/asset-register/SharedEnquiryRequest';
 import SharedAssetCards from '../../../components/asset-register/SharedAssetCards';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,5 +18,5 @@ export default async function AssetSharePage({ params, searchParams }: { params:
   if (!lead) return <>{header}<SharedAssetCards share={null}/></>;
   const {share,details,reports}=lead;
   const {access}=await externalLeadAccess(lead);
-  return <>{header}<SharedAssetCards share={share} senderName={share.senderName || details?.replyName || ''} request={details?<section className={styles.panel}><h2>Request from {share.senderName || details.replyName}</h2><p>{details.request}</p><small>For {details.recipientName||'the recipient business'}</small></section>:null} enquiry={details?{token:params.token,access,reports,reply:details.allowReply?{email:details.replyEmail,phone:details.replyPhone,name:details.replyName}:undefined,permissions:{reports:leadAllows(lead,'reports'),documents:leadAllows(lead,'documents'),serialNumber:leadAllows(lead,'serialNumber'),replacementPrice:leadAllows(lead,'replacementPrice')}}:undefined}/></>;
+  return <>{header}<SharedAssetCards share={share} senderName={share.senderName || details?.replyName || ''} request={details?<SharedEnquiryRequest sender={share.senderName || details.replyName} request={details.request} recipient={details.recipientName}/>:null} enquiry={details?{token:params.token,access,reports,reply:details.allowReply?{email:details.replyEmail,phone:details.replyPhone,name:details.replyName}:undefined,permissions:{reports:leadAllows(lead,'reports'),documents:leadAllows(lead,'documents'),serialNumber:leadAllows(lead,'serialNumber'),replacementPrice:leadAllows(lead,'replacementPrice')}}:undefined}/></>;
 }

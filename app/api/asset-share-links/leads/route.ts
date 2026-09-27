@@ -23,7 +23,7 @@ export async function POST(request:NextRequest){
  const form=await new Response(Buffer.concat(chunks),{headers:{'Content-Type':request.headers.get('content-type')||''}}).formData();
  const details=validateLeadDetails({...JSON.parse(String(form.get('details')||'{}')),replyName:user.name||'Asset owner',replyEmail:user.email}),ids=JSON.parse(String(form.get('assetIds')||'[]'));
  const reports:LeadPdf[]=[];
- for(const entry of form.getAll('reports')){if(typeof entry==='string')throw new Error('Choose PDF reports.');reports.push({label:entry.name.replace(/\.pdf$/i,'').slice(0,200),fileName:entry.name.replace(/[^a-zA-Z0-9._ -]/g,'_').slice(0,200),data:Buffer.from(await entry.arrayBuffer())});}
+ for(const entry of form.getAll('reports')){if(typeof entry==='string')throw new Error('Choose PDF or Excel reports.');reports.push({label:entry.name.replace(/\.(pdf|xlsx)$/i,'').slice(0,200),fileName:entry.name.replace(/[^a-zA-Z0-9._ -]/g,'_').slice(0,200),data:Buffer.from(await entry.arrayBuffer())});}
  const umbrellaId=String(form.get('umbrellaId')||'');
  const umbrella=umbrellaId?await getAssetGroupById(user.id,umbrellaId):undefined;
  if(umbrellaId&&(!umbrella||parseShareAssetIds(ids).some(id=>!umbrella.members.some(m=>m.assetId===id))))return businessJson({error:'The selected assets do not belong to this umbrella.'},403);

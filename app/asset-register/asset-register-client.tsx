@@ -6887,6 +6887,7 @@ export default function AssetRegisterClient({
   const [assetShareDestination, setAssetShareDestination] = useState<AssetShareDestination>('choice');
   const [externalShareReportScope, setExternalShareReportScope] = useState<ExternalShareReportScope>(null);
   const [externalShareReportFiles, setExternalShareReportFiles] = useState<ExternalShareFileSource[]>([]);
+  const directoryReportCompletion = useRef<((source: ExternalShareFileSource | null) => void) | null>(null);
   const [isAccountantReportsOpen, setIsAccountantReportsOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
@@ -7164,6 +7165,9 @@ export default function AssetRegisterClient({
   }
 
   function returnToExternalShareDraft() {
+    const complete = directoryReportCompletion.current;
+    directoryReportCompletion.current = null;
+    complete?.(null);
     if (!externalShareReportScope) return;
 
     const trigger = externalShareReportTriggerRef.current;
@@ -7176,6 +7180,12 @@ export default function AssetRegisterClient({
   }
 
   function addExternalShareReport(source: ExternalShareFileSource) {
+    if (directoryReportCompletion.current) {
+      const complete = directoryReportCompletion.current;
+      directoryReportCompletion.current = null;
+      complete(source);
+      return;
+    }
     setExternalShareReportFiles((current) => (
       current.some((file) => file.id === source.id)
         ? current
@@ -8022,6 +8032,32 @@ export default function AssetRegisterClient({
     [quoteAsset],
   );
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
+  const directoryInvitationAssetIds = isFullRegisterQuoteLead
+    ? selectedQuoteOption?.leadType === 'replacement_quote' || selectedQuoteOption?.leadType === 'license_renewal'
+      ? selectedDealerShareAssetIds : activeShareAssets.map(asset => asset.id)
+    : quoteAsset ? [quoteAsset.id] : [];
+  const directoryReportGroup = assetGroupShareTarget
+    && assetGroupShareTarget.members.length === directoryInvitationAssetIds.length
+    && assetGroupShareTarget.members.every(member => directoryInvitationAssetIds.includes(member.assetId))
+      ? assetGroupShareTarget : null;
+
+  function openDirectoryReport(assetId: string | null, complete: (source: ExternalShareFileSource | null) => void) {
+    if (assetId === null && directoryReportGroup) {
+      directoryReportCompletion.current = complete;
+      setExternalShareReportScope('group');
+      openAssetGroupReports(directoryReportGroup);
+      return;
+    }
+    const asset = assets.find(item => item.id === assetId && directoryInvitationAssetIds.includes(item.id));
+    if (!asset) {
+      complete(null);
+      return;
+    }
+    directoryReportCompletion.current = complete;
+    setExternalShareReportScope('asset');
+    openSharedAssetReportDialog(asset);
+  }
+
   const availableAssetQuoteOptions = useMemo(
     () => (
       quoteAsset?.kind === 'property'
@@ -14751,6 +14787,11 @@ export default function AssetRegisterClient({
     setIsDownloadingIndividualAssetMap(true);
     try {
       const params = new URLSearchParams({ format: 'pdf', assetId: asset.id });
+      if (externalShareReportScope === 'asset') {
+        addExternalShareReport(buildExternalReportSource({label:`${asset.title} · Asset map · PDF`,description:'Saved asset location',fileName:`${shareFileSlug(asset.title)}-map.pdf`,url:`/api/asset-map/report?${params}`,format:'pdf'}));
+        closeAssetReportDialog();
+        return;
+      }
       await downloadAssetMapReport(`/api/asset-map/report?${params.toString()}`, 'pdf');
       closeAssetReportDialog();
     } catch (error) {
@@ -15807,6 +15848,11 @@ export default function AssetRegisterClient({
     setAssetGroupError('');
     try {
       const params = new URLSearchParams({ format: 'pdf', ids: mappedMembers.map((asset) => asset.id).join(',') });
+      if (externalShareReportScope === 'group') {
+        addExternalShareReport(buildExternalReportSource({label:`${group.name} · Asset map · PDF`,description:'Saved umbrella asset locations',fileName:`${shareFileSlug(group.name)}-map.pdf`,url:`/api/asset-map/report?${params}`,format:'pdf'}));
+        closeAssetGroupManager();
+        return;
+      }
       await downloadAssetMapReport(`/api/asset-map/report?${params.toString()}`, 'pdf');
       closeAssetGroupManager();
     } catch (error) {
@@ -20739,11 +20785,10 @@ export default function AssetRegisterClient({
                         <BusinessDirectoryTools
                           umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
                           senderName={activeRegister?.businessName || accountProfile?.businessName || ''}
-                          assetIds={isFullRegisterQuoteLead
-                            ? selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal'
-                              ? selectedDealerShareAssetIds
-                              : activeShareAssets.map(asset => asset.id)
-                            : quoteAsset ? [quoteAsset.id] : []}
+                          assetIds={directoryInvitationAssetIds}
+                          reportAssets={assets.filter(asset=>directoryInvitationAssetIds.includes(asset.id)).map(asset=>({id:asset.id,title:asset.title}))}
+                          reportUmbrellaName={directoryReportGroup?.name}
+                          onChooseReport={openDirectoryReport}
                           includePhotos={isFullRegisterQuoteLead || quoteIncludePhotos}
                         />
                         {isLoadingQuotePartners ? (
@@ -22201,7 +22246,6 @@ export default function AssetRegisterClient({
                         </span>
                       </button>
 
-                      {!isAttachingExternalReport ? (
                         <button
                           type="button"
                           className={styles.assetReportOptionButton}
@@ -22214,7 +22258,6 @@ export default function AssetRegisterClient({
                             <small>{hasAssetGpsCoordinates(reportAsset) ? 'Saved asset location.' : 'Add a map location first.'}</small>
                           </span>
                         </button>
-                      ) : null}
                     </>
                   ) : null}
                 </div>

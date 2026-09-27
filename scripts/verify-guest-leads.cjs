@@ -14,7 +14,9 @@ async function main() {
  try {
   await fs.mkdir(fixture,{recursive:true});
   await fs.writeFile(path.join(fixture,'page.tsx'), `'use client';
-import {useEffect,useState} from 'react';
+import {useEffect,useState,useRef} from 'react';
+import GroupReports from '../../../components/asset-register/AssetGroupManagerModal';
+import SharedEnquiryRequest from '../../../components/asset-register/SharedEnquiryRequest';
 import ShareDestinationDialog from '../../../components/asset-register/ShareDestinationDialog';
 import InsideShareDialog from '../../../components/asset-register/InsideShareDialog';
 import AssetExternalShare from '../../../components/asset-register/AssetExternalShare';
@@ -26,16 +28,20 @@ import DirectoryAdminAccess from '../../../components/business-network/Directory
 export default function Validation(){
  const [hydrated,setHydrated]=useState(false);useEffect(()=>setHydrated(true),[]);
  const [mode,setMode]=useState('accept'),[access,setAccess]=useState<any>('sign-in'),[link,setLink]=useState(''),[selection,setSelection]=useState('one');
+ const [reportOpen,setReportOpen]=useState(false);const reportDone=useRef<any>(null);
+ const reportAsset={id:'10000000-0000-4000-8000-000000000001',registerId:null,title:'Test bakkie',kind:'vehicle',value:1000,createdAtIso:'2025-09-01',updatedAtIso:'2026-09-01',lastScannedAtIso:null};
+ const finishReport=(kind:string,format='pdf',filters:any={})=>{const params=new URLSearchParams({assetId:reportAsset.id,report:kind,format,year:filters.year||'all',month:filters.month||'all'});reportDone.current?.({id:params.toString(),kind:'report',label:kind+' · '+format,fileName:kind+'.'+format,url:'/api/asset-register/scan-report?'+params,contentType:'application/pdf'});setReportOpen(false);};
  const details={allowSubmissions:true,recipientName:'George Workshop',recipientEmail:'business@example.com',request:'Please quote for servicing.',replyName:'Asset Owner',replyEmail:'owner@example.com',replyPhone:'',allowReply:true};
  return <main data-hydrated={hydrated} style={{maxWidth:900,margin:'auto',padding:16}}><nav>{['accept','compose','recipient','admin','external','find','asset','register','umbrella'].map(x=><button key={x} onClick={()=>setMode(x)}>{x}</button>)}</nav>
  {['asset','register','umbrella'].includes(mode)&&<ShareDestinationDialog kind={mode as any} titleId="fixture-share" subject="Test asset" onClose={()=>setMode('find')} onInside={()=>setMode('inside')} onOutside={()=>setMode('external')}/>}
  {mode==='inside'&&<InsideShareDialog titleId="fixture-inside" subject="Test asset" onClose={()=>setMode('find')} options={['finance','insurance','replacement_quote','license_renewal'].map((id,i)=>({id,title:['Finance & accounting','Insurance','Dealer','Licence renewal'][i],description:['Accountant, financier or bank','Insurer or broker','Share with a dealer','Renewal date required'][i],icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V8l8-5 8 5v12ZM9 20v-8h6v8"/></svg>,onSelect:()=>setMode('find')}))}/>}
  {mode==='accept'&&<BusinessAcceptanceForm/>}
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
- {mode==='recipient'&&<><button onClick={()=>setAccess('approval-required')}>Fixture verified</button><button onClick={()=>setAccess('request-access')}>Fixture request access</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><SharedAssetCards share={{createdAt:'2026-09-26',assets:[{title:'Test bakkie',serialNumber:'TEST-1',yearModel:2022,usage:'100 km',condition:'Good',valueExVat:200000,replacementPriceExVat:300000,photoUrls:[],publicUrl:null}]}} enquiry={{token:'g'.repeat(43),permissions:{reports:true,serialNumber:true,replacementPrice:true,documents:true},reports:[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}],access}}/></>}
+ {mode==='recipient'&&<><button onClick={()=>setAccess('approval-required')}>Fixture verified</button><button onClick={()=>setAccess('request-access')}>Fixture request access</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><SharedAssetCards request={<SharedEnquiryRequest sender="Aim4price.com" request="Please review the shared assets."/>} share={{createdAt:'2026-09-26',assets:[{title:'Test bakkie',serialNumber:'TEST-1',yearModel:2022,usage:'100 km',condition:'Good',valueExVat:200000,replacementPriceExVat:300000,photoUrls:[],publicUrl:null}]}} enquiry={{token:'g'.repeat(43),permissions:{reports:true,serialNumber:true,replacementPrice:true,documents:true},reports:[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}],access}}/></>}
 
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
- {mode==='find'&&<><BusinessDirectoryTools senderName="X Farms" assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={false}/></>}
+ {mode==='find'&&<><BusinessDirectoryTools senderName="X Farms" assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={false} reportAssets={[reportAsset]} onChooseReport={(_id,done)=>{reportDone.current=done;setReportOpen(true);}}/>
+ {reportOpen&&<GroupReports open initialView="reports" reportDeliveryMode="attach" anchorAsset={reportAsset} group={{id:'fixture',userId:'test',registerId:null,name:'Test umbrella',valueMode:'separate',members:[{assetId:reportAsset.id,role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0}],createdAtIso:'2025-09-01',updatedAtIso:'2026-09-01'}} assets={[reportAsset]} groups={[]} onClose={()=>{reportDone.current?.(null);setReportOpen(false);}} onSave={()=>{}} onDelete={()=>{}} onDownloadReport={(_group,kind,format,filters)=>finishReport(kind,format,filters)} onDownloadMap={()=>finishReport('map')} canDownloadMap/>}</>}
  {mode==='admin'&&<DirectoryAdminAccess onAdd={b=>setLink(b.email)}/>}
  </main>;
 }
@@ -175,22 +181,18 @@ export default function Validation(){
    await page.$$eval('dialog label input[type=checkbox]',inputs=>inputs.forEach(input=>{if(!input.checked)input.click();}));
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Reports');
-   await page.waitForSelector('input[aria-label="Share Maintenance"]');
-   await page.click('input[aria-label="Share Maintenance"]');
-   await page.select('fieldset select', '2025');
-   await page.$$eval('fieldset select',nodes=>{nodes[1].value='3';nodes[1].dispatchEvent(new Event('change',{bubbles:true}));});
-   await page.click('input[aria-label="Share Fuel ledger"]');
-   assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Report picker fits without scrolling');
+   await page.waitForSelector('[data-download-dialog]');
+   for(const title of ['Umbrella valuation','Maintenance report','Fuel report','Depreciation log','Cost of ownership','Asset map'])assert.ok(await page.evaluate(t=>document.querySelector('[data-download-dialog]').textContent.includes(t),title));
+   assert.equal(await page.$('dialog[open]'),null,'Invitation yields to the existing report modal');
    await page.screenshot({path:path.join(output,`report-picker-${width}.png`),fullPage:true});
-   await page.evaluate(()=>document.documentElement.setAttribute('data-background','dark'));
-   await page.screenshot({path:path.join(output,`report-picker-dark-${width}.png`),fullPage:true});
-   await page.evaluate(()=>document.documentElement.setAttribute('data-background','default'));
-   await click('Use 2 reports');
-   await click('Reports');
-   assert.equal(await page.$eval('input[aria-label="Share Maintenance"]',e=>e.checked),true);
-   await click('Maintenance');
-   assert.equal(await page.$eval('fieldset select',e=>e.value),'2025','Each report keeps its own timeline');
-   await click('Cancel');
+   await click('Maintenance report');await click('Next');
+   await page.screenshot({path:path.join(output,`report-timeline-${width}.png`),fullPage:true});
+   await click('Add PDF report');await page.waitForSelector('dialog[open]');
+   await click('Reports');await page.waitForSelector('[data-download-dialog]');await click('Asset map');await page.waitForSelector('dialog[open]');
+   assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('2 selected')));
+   await click('Reports');await page.waitForSelector('[data-download-dialog]');
+   await page.click('[data-download-header] button');await page.waitForSelector('dialog[open]');
+   assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('2 selected')),'Cancelling preserves selected reports');
    await click('Continue');
    assert.equal(await page.$('dialog input[type=email]'),null);
    assert.equal(await page.$('dialog input[type=file]'),null);
@@ -200,7 +202,7 @@ export default function Validation(){
    const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
    assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'owner-approval');
    const reportRequest=requests.find(r=>r.url?.includes('report=maintenance'));
-   assert.equal(new URL(reportRequest.url).searchParams.get('year'),'2025');assert.equal(new URL(reportRequest.url).searchParams.get('month'),'3');
+   assert.equal(new URL(reportRequest.url).searchParams.get('assetId'),'10000000-0000-4000-8000-000000000001');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
@@ -235,7 +237,13 @@ export default function Validation(){
    await page.click('[data-share-consent]');await click('Create lead link');await page.waitForFunction(()=>document.querySelector('[data-link]').textContent.length>0);
    await page.screenshot({path:path.join(output,`owner-${width}.png`),fullPage:true});
    await page.click('details summary');await click('Disable');await page.waitForFunction(()=>document.body.textContent.includes('Lead disabled'));
-   await click('recipient');await page.click('button[aria-label="Open Test bakkie"]');await page.click('button[aria-label="Manage Test bakkie"]');
+   await click('recipient');
+   await page.screenshot({path:path.join(output,`request-bar-${width}.png`),fullPage:true});
+   await page.click('button[aria-label="Open Test bakkie"]');await page.click('button[aria-label="Manage Test bakkie"]');
+   const manageLayout=await page.$eval('dialog',dialog=>{const button=dialog.querySelector('button:has(strong)'),title=button.querySelector('strong').getBoundingClientRect(),copy=button.querySelector('small').getBoundingClientRect();return{height:dialog.getBoundingClientRect().height,stacked:copy.top>=title.bottom-1,overflow:dialog.scrollWidth>dialog.clientWidth+1};});
+   assert.ok(manageLayout.stacked,'Manage action description sits below its title');assert.equal(manageLayout.overflow,false);
+   if(width===1440)assert.ok(manageLayout.height<650,'Manage fits its actions without an empty full-height panel');
+   await page.screenshot({path:path.join(output,`manage-actions-${width}.png`),fullPage:true});
    await click('Update replacement price');
    await page.waitForSelector('a[href^="/business/join?returnTo="]');
    assert.equal(await page.$('dialog form'),null,'Visitors cannot submit updates');
@@ -262,11 +270,11 @@ export default function Validation(){
    await page.waitForFunction(()=>document.body.textContent.includes('Document sent to the owner'));
    assert.equal(await page.$$eval('a[href*="submissions?id="]',els=>els.length),0,'Recipient cannot see received documents');
    await page.screenshot({path:path.join(output,`active-${width}.png`),fullPage:true});
-   await page.click('[aria-label="Close enquiry management"]');await click('Fixture owner');await page.click('button[aria-label="Manage Test bakkie"]');
+   await page.click('[aria-label="Close enquiry management"]');await click('Fixture owner');await page.click('button[aria-label="Manage Test bakkie"]');await click('Recipient access');
    await page.waitForFunction(()=>document.body.textContent.includes('Verified Workshop'));await click('Approve access');
    await page.waitForFunction(()=>document.body.textContent.includes('Recipient approved.'));
    assert.equal(JSON.parse(requests.filter(r=>r.path.endsWith('/access')&&r.method==='PATCH').at(-1).data).userId,'recipient');
-   await click('Invoices & quotes');
+   await click('Back to Manage');await click('Invoices & quotes');
    await page.waitForSelector('a[href*="submissions?id="]');await click('Accept document');
    await page.waitForFunction(()=>document.body.textContent.includes('Review saved. No asset details or costs were changed.'));
    assert.equal(documents[0].status,'accepted');
