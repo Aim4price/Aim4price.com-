@@ -16,13 +16,13 @@ export default function SuspendedAccess({ suspension }: {
   const available = invoice?.status === 'issued';
   const balance = invoice ? Math.max(0, invoice.totalCents - invoice.paidCents) : 0;
 
-  return <main className={styles.page}>
+  return <main className={styles.page} data-suspension-page>
     <AppHeader active="none" />
     <section className={styles.hero} aria-labelledby="pending-access-heading">
       <div className={styles.overlay} />
       <div className={styles.grid}>
         <div className={styles.copy}>
-          <span className={styles.status}><span aria-hidden="true">Ⅱ</span>Access paused</span>
+          <span className={styles.status}><span aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M5 4v8M11 4v8"/></svg></span>Access paused</span>
           <h1 id="pending-access-heading">Your account is<br />temporarily paused.</h1>
           <p className={styles.intro}>{available
             ? 'Please review your invoice so we can help restore access.'
