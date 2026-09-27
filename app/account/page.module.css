@@ -4155,3 +4155,14 @@
 .billingModal .modalCloseButton { border-radius:5px; }
 .billingModal .invoiceList { gap:18px; }
 .billingModal .modalActions { margin-top:20px; padding-top:16px; }
+
+.billingModal .accountModalScrollRail { background:#edf4ef; }
+.billingModal .accountModalScrollThumb { background:#669581; }
+.invoiceListToolbar { display:flex; justify-content:space-between; align-items:center; gap:15px; font-size:12px; color:#647b6f; }
+.invoiceListToolbar button { font:inherit; color:#1a654d; background:#f1f7f3; border:1px solid #cbded2; border-radius:6px; padding:9px 12px; cursor:pointer; }
+.invoiceFold { border:1px solid #d8e4dd; border-radius:10px; overflow:hidden; background:white; }
+.invoiceFoldToggle { display:flex; align-items:center; gap:16px; width:100%; padding:18px; border:0; background:white; color:#173c32; font:inherit; text-align:left; cursor:pointer; }
+.invoiceFoldToggle>span:first-child { flex:1; }.invoiceFoldToggle strong { font-size:14px; font-weight:650; overflow-wrap:anywhere; }.invoiceFoldToggle small { display:block; font-size:11px; color:#647b6f; margin-top:7px; }
+.invoiceFoldAmount { text-align:right; }.invoiceFoldChevron { font-size:22px; color:#46765f; flex:0 0 20px; text-align:center; }
+.invoiceFoldToggle:hover { background:#f5faf7; }.invoiceFoldToggle:focus-visible,.invoiceListToolbar button:focus-visible { outline:2px solid #267152; outline-offset:-3px; }
+.invoiceFoldBody { border-top:1px solid #e0e9e3; }

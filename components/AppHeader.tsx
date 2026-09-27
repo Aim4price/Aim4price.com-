@@ -110,7 +110,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'admin_message' | 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'cost_budget' | 'capture' | 'dealer_correction' | 'asset_discovery' | 'marketplace_sourcing';
+type HeaderNotificationCategory = 'admin_message' | 'billing' | 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'cost_budget' | 'capture' | 'dealer_correction' | 'asset_discovery' | 'marketplace_sourcing';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 

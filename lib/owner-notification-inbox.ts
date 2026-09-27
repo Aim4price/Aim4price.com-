@@ -5,6 +5,7 @@ import { currentPushIdentity, resolvePushAccess } from './push-access';
 import { listPushEvents } from './push-events';
 import { markAppNotificationKeys } from './app-notification-state';
 function visibleToOwner(access:OwnerAppAccess,item:NotificationInboxItem) {
+  if(item.category==='billing')return access.sessionKind==='account';
   if(access.assetScope==='selected' && (!item.assetId || !access.accessibleAssetIds.includes(item.assetId)))return false;
   if(['dealer_cost','capture','cost_budget'].includes(item.category))return ownerAppCan(access,'manage_finance');
   if(['lead','asset_discovery','marketplace_sourcing'].includes(item.category))return ownerAppCan(access,'manage_marketplace');

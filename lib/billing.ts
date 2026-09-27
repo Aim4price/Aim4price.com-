@@ -78,6 +78,7 @@ export async function createBillingDraft(input: Record<string, unknown>, actor: 
   if(workIds.length>40)throw new BillingError('Select at most 40 work sessions.');
   return transaction(async db=>{
     await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-draft:'+id]);
+    if((await db.query('select 1 from aim4price_billing_deletions where invoice_id=$1',[id])).rowCount)throw new BillingError('This invoice was permanently deleted. Start a new draft.');
     const existing=await db.query('select id,user_id from aim4price_billing_invoices where id=$1',[id]);
     if(existing.rows[0]) { if(existing.rows[0].user_id!==userId)throw new BillingError('This request reference is already used.'); return id; }
     if(!(await db.query('select id from "user" where id=$1',[userId])).rows[0])throw new BillingError('Account not found.');
@@ -183,7 +184,8 @@ export async function createSignupInvoice(userId: string, signup: SignupBilling)
   await transaction(async db=>{
     await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-signup:'+userId]);
     const key='signup:'+userId;
-    if((await db.query('select id from aim4price_billing_invoices where generation_key=$1',[key])).rowCount)return;
+    await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-generation:'+key]);
+    if((await db.query('select id from aim4price_billing_invoices where generation_key=$1',[key])).rowCount || (await db.query('select 1 from aim4price_billing_deletions where generation_key=$1',[key])).rowCount)return;
     const id=randomUUID(),lines=[{description:plan.description,quantity:1,unitCents:plan.amountCents,totalCents:plan.amountCents}];
     const row=(await db.query(`insert into aim4price_billing_invoices(id,user_id,customer,issuer,lines,total_cents,due_date,generation_key,note) values($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,[id,userId,JSON.stringify(customer),JSON.stringify(BILLING_ISSUER),JSON.stringify(lines),plan.amountCents,due.toISOString().slice(0,10),key,`Signup subscription - ${plan.interval === 'once'?'one-time':plan.interval}. No VAT applicable.`])).rows[0];
     await db.query(`insert into aim4price_billing_profiles(user_id,customer,next_billing_date,interval,amount_cents) values($1,$2,$3,$4,$5) on conflict(user_id) do nothing`,[userId,JSON.stringify(customer),nextBillingDate(start,plan.interval),plan.interval,plan.amountCents]);
@@ -265,7 +267,9 @@ export async function processRecurringInvoices(today=dateKey()) {
    }
    const lines=cleanLines(a.lines),customer=cleanCustomer(a.customer),id=randomUUID(),key=`recurring:${item.user_id}:${a.nextInvoiceDate}`;
    const dueDate=new Date(a.nextInvoiceDate+'T00:00:00Z');dueDate.setUTCDate(dueDate.getUTCDate()+a.dueDays);
-   const invoice=(await db.query(`insert into aim4price_billing_invoices(id,user_id,customer,issuer,lines,total_cents,due_date,generation_key,note)
+   await db.query('select pg_advisory_xact_lock(hashtext($1))',['billing-generation:'+key]);
+   const deleted=(await db.query('select 1 from aim4price_billing_deletions where generation_key=$1',[key])).rowCount;
+   const invoice=deleted?null:(await db.query(`insert into aim4price_billing_invoices(id,user_id,customer,issuer,lines,total_cents,due_date,generation_key,note)
     values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(generation_key) do nothing returning *`,[id,item.user_id,JSON.stringify(customer),JSON.stringify(BILLING_ISSUER),JSON.stringify(lines),lines.reduce((sum,l)=>sum+l.totalCents,0),dueDate.toISOString().slice(0,10),key,`Recurring billing — ${a.nextInvoiceDate}`])).rows[0];
    if(invoice)await issueLocked(db,invoice,'recurring');
    await db.query('update aim4price_billing_agreements set next_invoice_date=$2,last_invoice_date=$3,last_error=null,version=version+1,updated_at=now() where user_id=$1',[item.user_id,next,a.nextInvoiceDate]);

@@ -37,6 +37,7 @@ function add(file){
 }
 
 add('app/account/account-invoices');
+add('app/account/account-modal-scroller');
 add('app/pending-payment/PendingAccessClient');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
@@ -52,10 +53,10 @@ const invoice={id:'10000000-0000-4000-8000-000000000001',userId:'owner',number:'
 const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSync(evidence,{recursive:true});
 (async()=>{
  const html=await report.buildBillingInvoiceHtml(invoice);
- const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),headless:true,pipe:true,args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"]});
+ const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),headless:true,pipe:true,ignoreDefaultArgs:["--hide-scrollbars"],args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"]});
  try{
   const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setRequestInterception(true);
-  page.on('request',request=>{const url=request.url();if(url.includes('/brand/aim4price-mark-black.png'))return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});if(url.includes('/api/billing/invoices/'))return request.respond({contentType:'text/html',body:html});if(url.includes('/api/billing/invoices?'))return request.respond({contentType:'application/json',body:JSON.stringify({invoices:[invoice],total:1,preparing:false})});if(url.startsWith('data:'))return request.continue();if(url==='https://billing.test/')return request.respond({contentType:'text/html',body:'<html></html>'});return request.abort();});
+  page.on('request',request=>{const url=request.url();if(url.includes('/brand/aim4price-mark-black.png'))return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});if(url.includes('/api/billing/invoices/'))return request.respond({contentType:'text/html',body:html});if(url.includes('/api/billing/invoices?'))return request.respond({contentType:'application/json',body:JSON.stringify({invoices:Array.from({length:8},(_,i)=>({...invoice,id:invoice.id.slice(0,-1)+i,number:'A4P-2026-00000'+(i+1)})),total:8,preparing:false})});if(url.startsWith('data:'))return request.continue();if(url==='https://billing.test/')return request.respond({contentType:'text/html',body:'<html></html>'});return request.abort();});
   const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
@@ -63,10 +64,20 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     await page.goto('https://billing.test/');
     await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:1vh;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32;--modal-backdrop-color:rgba(12,32,26,.58);--modal-backdrop-filter:blur(7px)}button,input,textarea{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
     await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
-    const account='const styles=require("app/account/page.module.css");const child=React.createElement(require("app/account/account-invoices").default);ReactDOM.createRoot(document.getElementById("app")).render(React.createElement("section",{className:styles.billingModal,style:{width:"min(760px,calc(100% - 32px))",margin:"32px auto",padding:"24px",background:"white",borderRadius:"12px"}},React.createElement("div",{className:styles.modalHeader},React.createElement("h2",null,"Your invoices"),React.createElement("p",null,"View your invoices and recorded payments.")),child));';
+    const account='const styles=require("app/account/page.module.css");const child=React.createElement(require("app/account/account-invoices").default);ReactDOM.createRoot(document.getElementById("app")).render(React.createElement("section",{className:styles.billingModal,style:{width:"min(760px,calc(100% - 32px))",margin:"32px auto",maxHeight:"850px",background:"white",borderRadius:"12px",overflow:"hidden"}},React.createElement(require("app/account/account-modal-scroller").default,{label:"Invoice list"},React.createElement("div",{className:styles.modalHeader},React.createElement("h2",null,"Your invoices"),React.createElement("p",null,"View your invoices and recorded payments.")),child)));';
     const suspended='ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/pending-payment/PendingAccessClient").default,'+JSON.stringify({email:'customer@example.test',statusLabel:'Suspended',isSuspended:true,suspension:{reason:'Payment remains outstanding. Please settle the linked invoice and contact Aim4price so we can review your access.',invoice}})+'));';
     await page.addScriptTag({content:runtime+(mode==='account'?account:suspended)});
     await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));
+    if(mode==='account'){
+     assert.equal(await page.$$eval('button[aria-expanded]',els=>els.length),8);
+     assert.equal(await page.$$eval('button[aria-expanded]',els=>els.every(e=>e.getAttribute('aria-expanded')==='true')),true);
+     await page.click('button[aria-expanded]');assert.equal(await page.$eval('button[aria-expanded]',e=>e.getAttribute('aria-expanded')),'false');
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Expand all').click());assert.equal(await page.$$eval('button[aria-expanded]',els=>els.every(e=>e.getAttribute('aria-expanded')==='true')),true);
+     const scroll=await page.$eval('[aria-label="Invoice list"]',e=>({overflow:getComputedStyle(e).overflowY,scrollable:e.scrollHeight>e.clientHeight}));assert.equal(scroll.overflow,'auto');assert.equal(scroll.scrollable,true);
+     await page.waitForFunction(()=>{const rail=document.querySelector('[class*="accountModalScrollRailVisible"]');return rail && getComputedStyle(rail).opacity==='1'});
+     await page.screenshot({path:path.join(evidence,'account-expanded-'+width+'.png'),fullPage:true});
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Collapse all').click());
+    }
     if(mode==='suspended'){await page.waitForSelector('a[download]');assert.equal(await page.$eval('iframe',e=>e.getAttribute('sandbox')),'');assert.match(await page.$eval('a[download]',e=>e.href),/10000000-0000-4000-8000-000000000001/);await page.$eval('iframe',e=>e.scrollIntoView());const frame=await (await page.$('iframe')).contentFrame();await frame.waitForSelector('.assetReportPage');await frame.evaluate(()=>document.fonts.ready);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));}
     await page.evaluate(()=>document.fonts.ready);
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,mode+' fits '+width);

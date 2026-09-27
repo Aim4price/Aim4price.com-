@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'lib/billing*'
+      - 'lib/notifications.ts'
+      - 'lib/notification-inbox.ts'
+      - 'lib/owner-notification-inbox.ts'
       - 'lib/email.ts'
       - 'lib/email-brand.ts'
       - 'components/InvoicePreview*'
@@ -10,6 +13,7 @@ on:
       - 'components/InlineBillingInvoice*'
       - 'app/pending-payment/**'
       - 'app/account/account-invoices.tsx'
+      - 'app/account/account-modal-scroller.tsx'
       - 'lib/account-profile.ts'
       - 'lib/admin-users.ts'
       - 'app/**/billing/**'
@@ -25,6 +29,7 @@ on:
       - 'scripts/verify-admin-review.cjs'
       - 'database/migrations/110-aim4price-billing.sql'
       - 'database/migrations/116-billing-suspension.sql'
+      - 'database/migrations/117-billing-hard-delete.sql'
       - '.github/workflows/billing-validation.yml'
 permissions:
   contents: read

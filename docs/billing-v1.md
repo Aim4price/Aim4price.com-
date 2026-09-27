@@ -73,3 +73,14 @@ Migration `116-billing-suspension.sql` adds the reason and linked invoice ID to 
 The account invoice modal and Billing page share styled invoice cards. New email jobs use a table-based, inline-styled invoice email with a current balance, due date, bank details, payment reference and signed-in billing link. Already frozen mail payloads retain their original content for safe idempotent retries. The PDF attachment remains the immutable issued document.
 
 `node scripts/verify-billing-experience.cjs` checks the customer cards, directly displayed suspension invoice and email at phone and desktop widths. The suspension tests exercise atomic rollback, protected accounts, stale versions/status, audit history, ownership and clearing context on restoration. No live accounts are suspended and no test emails are sent by these fixtures.
+
+
+## Invoice list, notifications and permanent deletion
+
+The account invoice modal opens every invoice expanded, with individual toggles, Expand all / Collapse all, and a styled scrollbar on the right. Pages remain limited to 50 invoices; pagination reaches older invoices.
+
+Issued invoices now feed the existing account notification bell with a stable invoice event ID and a link to Billing. This covers manual, signup and recurring invoices, including previously issued invoices. Drafts and voids do not create current invoice alerts. Read/archive state follows the existing inbox rules. Billing alerts are private to the account holder, not delegated Owner App users. This change adds inbox notifications; it does not add a new phone push category.
+
+**Hard delete** is available in Admin invoice actions for draft, issued, paid and void invoices. Admin must provide a reason, type the exact invoice number (or DELETE for a draft), and tick an irreversible-deletion confirmation. Server checks reject stale invoice versions and invoices with an email currently sending. One transaction deletes the invoice/PDF, payment records, work reservations, email queue/payloads and invoice history; linked suspension context and notification snapshots are removed too. Account access remains unchanged. Deletion does not refund payments or recall delivered emails.
+
+A minimal deletion receipt retains only the invoice ID/number, generation key, actor, reason and timestamp. Numbers are not reused. Signup and recurring generation respect these receipts so a deleted period does not regenerate. Migration 117 creates the receipt table; the billing schema initializer also applies it. Synthetic tests verify rollback, paid-invoice deletion, stale versions, sending-mail protection, invoice ownership in notifications, and signup/recurring replay prevention.

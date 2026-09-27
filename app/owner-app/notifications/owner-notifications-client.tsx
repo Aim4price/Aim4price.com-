@@ -58,6 +58,7 @@ const CATEGORY_FILTERS: Array<{ value: NotificationCategoryFilter; label: string
 ];
 
 function destination(item: Notification): string {
+  if (item.category === 'billing') return '/billing';
   if (item.category === 'admin_message') return '/owner-app/notifications';
   if (item.href.startsWith('/owner-app/')) return item.href;
   if ((item.category === 'capture' || item.category === 'cost_budget') && item.href) return item.href;

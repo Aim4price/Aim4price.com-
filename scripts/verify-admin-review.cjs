@@ -72,7 +72,7 @@ const capture={id:'request-one',publicReference:'INV-TEST',requestType:'invoice'
 const evidence=path.join(root,'.next/admin-review-validation');
 (async()=>{
  fs.mkdirSync(evidence,{recursive:true});
- const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"],headless:true,pipe:true});
+ const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"],headless:true,pipe:true,ignoreDefaultArgs:["--hide-scrollbars"]});
  try{
   const page=await browser.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   let failBusiness=false,failReport=false,captureMode=false,queuePaging=false,workMode=false;
@@ -242,6 +242,16 @@ const evidence=path.join(root,'.next/admin-review-validation');
     await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Suspend account');
    }
   }
+  for(const width of [390,1440]){
+   await open('billing',width);await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(e=>e.textContent==='Hard delete'));
+   await page.$$eval('button',els=>{const button=els.find(e=>e.textContent==='Hard delete');button.focus();button.click();});await page.waitForSelector('dialog[open]');
+   assert.equal(await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Permanently delete').disabled),true);
+   await page.type('dialog textarea','Mistaken test invoice');await page.type('dialog input:not([type="checkbox"])','A4P-2026-000001');await page.click('dialog input[type="checkbox"]');
+   assert.equal(await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Permanently delete').disabled),false);
+   await page.screenshot({path:path.join(evidence,`billing-delete-${width}.png`),fullPage:true});
+   if(width===1440){await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Permanently delete').click());await page.waitForFunction(()=>document.body.textContent.includes('Invoice permanently deleted.'));assert.equal(billingRequests.at(-1).action,'hard_delete');assert.equal(billingRequests.at(-1).confirmation,'A4P-2026-000001');}else{await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'Hard delete');}
+  }
+  console.log('PASS hard delete requires a reason, exact number and explicit confirmation');
   console.log('PASS suspension confirmation, reason, invoice scope and responsive layout');
   console.log('PASS responsive invoice sharing, saved contacts and focus restoration');
   billingIssued=false;
