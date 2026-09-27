@@ -66,7 +66,7 @@ test('invoice lifecycle, signup, ownership, work reservations, payment idempoten
   await billing.queueSignupInvoice('two',quote);await billing.processSignupInvoices();await billing.processSignupInvoices();
   assert.equal((await billing.listBillingInvoices('two',false)).total,1);
   assert.equal((await pg.query("select count(*)::int as n from aim4price_billing_mail where invoice_id=$1",[draft.id])).rows[0].n,1);
-  const mail=load('lib/billing-mail.ts',{'./db':{getDb:()=>db},'./billing':billing,'./report-pdf':{renderReportHtmlToPdf:async()=>Buffer.from('%PDF-fixture')},'./email':{getSiteOrigin:()=> 'https://aim4price.test'},'./billing-report':report,'./billing-shared':shared,'./billing-email-template':load('lib/billing-email-template.ts',{'./billing-report':report,'./billing-shared':shared})});
+  const mail=load('lib/billing-mail.ts',{'./db':{getDb:()=>db},'./billing':billing,'./report-pdf':{renderReportHtmlToPdf:async()=>Buffer.from('%PDF-fixture')},'./email':{getSiteOrigin:()=> 'https://aim4price.test'},'./billing-report':report,'./billing-shared':shared,'./billing-email-template':load('lib/billing-email-template.ts',{'./billing-report':report,'./billing-shared':shared,'./email-brand':load('lib/email-brand.ts')})});
   const calls=[];process.env.RESEND_API_KEY='fake-test-key';
   global.fetch=async(url,options)=>{calls.push({url,options});throw Error('Simulated network timeout');};
   await mail.dispatchBillingMail();

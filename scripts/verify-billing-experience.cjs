@@ -46,7 +46,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 function loadNode(file,deps={}){const code=ts.transpileModule(fs.readFileSync(path.join(root,file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,esModuleInterop:true}}).outputText;const module={exports:{}};Function('require','module','exports',code)(id=>id in deps?deps[id]:require(id),module,module.exports);return module.exports;}
 const shared=loadNode('lib/billing-shared.ts');
 const report=loadNode('lib/billing-report.ts',{'./billing-shared':shared,'./report-theme':loadNode('lib/report-theme.ts')});
-const template=loadNode('lib/billing-email-template.ts',{'./billing-shared':shared,'./billing-report':report});
+const template=loadNode('lib/billing-email-template.ts',{'./billing-shared':shared,'./billing-report':report,'./email-brand':loadNode('lib/email-brand.ts')});
+const resetEmail=loadNode('lib/email.ts',{'./email-brand':loadNode('lib/email-brand.ts')});
 const invoice={id:'10000000-0000-4000-8000-000000000001',userId:'owner',number:'A4P-2026-000001',status:'issued',customer:{name:'Example Customer',businessName:'Example Farming',email:'customer@example.test',address:'George'},lines:[{description:'Monthly account subscription',quantity:1,unitCents:39900,totalCents:39900}],totalCents:39900,paidCents:0,dueDate:'2026-09-27',issuedAt:'2026-09-26T10:00:00Z',note:'',version:2};
 const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSync(evidence,{recursive:true});
 (async()=>{
@@ -54,7 +55,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),headless:true,pipe:true,args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"]});
  try{
   const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setRequestInterception(true);
-  page.on('request',request=>{const url=request.url();if(url.includes('/api/billing/invoices/'))return request.respond({contentType:'text/html',body:html});if(url.includes('/api/billing/invoices?'))return request.respond({contentType:'application/json',body:JSON.stringify({invoices:[invoice],total:1,preparing:false})});if(url.startsWith('data:'))return request.continue();if(url==='https://billing.test/')return request.respond({contentType:'text/html',body:'<html></html>'});return request.abort();});
+  page.on('request',request=>{const url=request.url();if(url.includes('/brand/aim4price-mark-black.png'))return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});if(url.includes('/api/billing/invoices/'))return request.respond({contentType:'text/html',body:html});if(url.includes('/api/billing/invoices?'))return request.respond({contentType:'application/json',body:JSON.stringify({invoices:[invoice],total:1,preparing:false})});if(url.startsWith('data:'))return request.continue();if(url==='https://billing.test/')return request.respond({contentType:'text/html',body:'<html></html>'});return request.abort();});
   const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
@@ -74,8 +75,17 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
    }
    const email=template.buildBillingEmail({...invoice,issuer:shared.BILLING_ISSUER},'https://aim4price.test/billing');
    await page.goto('https://billing.test/');await page.setContent(email.html);
+   await page.waitForFunction(()=>[...document.images].every(img=>img.complete&&img.naturalWidth>0));
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'email fits '+width);
    await page.screenshot({path:path.join(evidence,'email-'+width+'.png'),fullPage:true});
+   const brandHeader=await page.$eval('.email-brand',e=>e.textContent.trim().replace(/\s+/g,' '));
+   const reset=resetEmail.buildAim4priceResetPasswordEmail({to:'customer@example.test',name:'Example Customer',resetUrl:'https://billing.test/reset-password?token=synthetic-test-token-only'});
+   await page.goto('https://billing.test/');await page.setContent(reset.html);
+   await page.waitForFunction(()=>[...document.images].every(img=>img.complete&&img.naturalWidth>0));
+   assert.equal(await page.$eval('.email-brand',e=>e.textContent.trim().replace(/\s+/g,' ')),brandHeader);
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'reset email fits '+width);
+   assert.equal(await page.$eval('.email-button a',e=>e.href),'https://billing.test/reset-password?token=synthetic-test-token-only');
+   await page.screenshot({path:path.join(evidence,'reset-email-'+width+'.png'),fullPage:true});
   }
   console.log('PASS customer invoice cards, suspension reason and inline invoice, and responsive email design');
  }finally{await browser.close();}
