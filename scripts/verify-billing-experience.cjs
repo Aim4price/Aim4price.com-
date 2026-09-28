@@ -134,6 +134,12 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
       await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
      }
     }
+    if(['guest','business-join','business-register'].includes(mode)){
+     assert.equal(await page.$$eval('main',els=>els.length),1,'Onboarding has one page landmark');
+     assert.ok(await page.$('nav[aria-label="Authentication mode"]'),'Every onboarding screen shares the signup navigation');
+     const frame=await page.$eval('h1',e=>e.closest('section').getBoundingClientRect().width);
+     assert.ok(width===390?frame<=390:frame>=800,'Onboarding retains the original signup width');
+    }
     if(mode==='business-join')assert.ok(await page.$('a[href="/business/guest"]'));
     if(mode==='business-register'){
      assert.match(await page.$eval('form',e=>e.textContent),/R199\/month/);
@@ -145,6 +151,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$('form'),null,'A failed verification email must not ask the user to register again');
      await page.$$eval('button',els=>els.find(e=>e.textContent==='Resend verification email').click());
      await page.waitForFunction(()=>document.body.textContent.includes('We sent a verification link'));
+     await page.screenshot({path:path.join(evidence,'business-email-sent-'+width+'.png'),fullPage:true});
     }
     if(mode==='guest'){
      await page.type('input[type="email"]','guest@example.test');await page.click('form button');
