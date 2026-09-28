@@ -60,11 +60,6 @@
     "name": "Dealer cost of ownership"
   },
   {
-    "file": "components/AccountantRegisterReportsModal.tsx",
-    "condition": "true",
-    "name": "Accountant register reports"
-  },
-  {
     "file": "components/asset-register/AssetGroupManagerModal.tsx",
     "condition": "view === 'reports'",
     "name": "Umbrella reports"

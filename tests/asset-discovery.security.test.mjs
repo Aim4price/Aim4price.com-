@@ -112,7 +112,7 @@ test("public Discovery opens with a dedicated contact-free projection", () => {
 
   assert.match(discoveryPage, /getServerSession/);
   assert.doesNotMatch(discoveryPage, /requireActivePageAccess|redirect\(/);
-  assert.match(discoveryPage, /allowRecentAdverts=\{activeAccountType !== 'licensing'\}/);
+  assert.match(discoveryPage, /allowRecentAdverts/);
   assert.match(discoveryRoute, /getPublicAssetDiscoveryBrowseAccess\(\)/);
   assert.match(discoveryRoute, /listPublicAssetDiscoveryAssets\(commonFilters\)/);
   assert.match(
@@ -335,17 +335,6 @@ test("dealer Discovery Open actions use the visible Overview treatment", () => {
   assert.match(dealerCss, /color: #0a543d !important/);
 });
 
-test("desktop navigation exposes Discovery directly only to licensing accounts", () => {
-  const navigationConfig = header.slice(
-    header.indexOf("const BASE_NAV_ITEMS"),
-    header.indexOf("function isAccountMenuItemVisible"),
-  );
-
-  assert.match(navigationConfig, /href:\s*['"]\/asset-discovery['"], label: ['"]Discovery['"], accountTypes: \[['"]licensing['"]\]/);
-  assert.match(marketplaceEntry, /href="\/asset-discovery"/);
-  assert.match(marketplaceEntry, /href="\/marketplace\/browse"/);
-});
-
 test("Discovery and Marketplace pages do not render the old switch", () => {
   assert.doesNotMatch(client, /DiscoveryMarketplaceSwitch/);
   assert.doesNotMatch(marketplaceClient, /DiscoveryMarketplaceSwitch/);
@@ -367,20 +356,6 @@ test("approved notification opens the matching Discovery card", () => {
 test("Owner App keeps direct separate Discovery and Marketplace buttons", () => {
   assert.match(ownerAppHome, /href:\s*['"]\/owner-app\/discovery['"]/);
   assert.match(ownerAppHome, /href:\s*['"]\/owner-app\/marketplace['"]/);
-});
-
-test("licensing Discovery includes every valid renewal date and keeps the pipeline visible", () => {
-  const licensingEligibility = discovery.slice(
-    discovery.indexOf("const LICENSING_DISCOVERY_ASSET_SQL"),
-    discovery.indexOf("const PROVINCE_ABBREVIATION_SQL"),
-  );
-  assert.match(licensingEligibility, /SAFE_LICENSE_RENEWAL_DATE_SQL} is not null/);
-  assert.doesNotMatch(licensingEligibility, /120 days|30 days/);
-  assert.match(discovery, /renewalTiming === 'later'/);
-  assert.match(discovery, /requestedStatus === 'available'/);
-  assert.match(discovery, /requester_account_type = 'licensing' and e\.status in \('approved', 'temporarily_denied'\) then true/);
-  assert.match(client, /statusPillLabel\(asset, true\)/);
-  assert.match(css, /\.discoveryFutureCard/);
 });
 
 test("desktop Discovery no longer exposes renewal filter controls", () => {

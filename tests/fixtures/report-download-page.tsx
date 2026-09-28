@@ -9,7 +9,6 @@ import Map from '../../app/asset-map/asset-map-client';
 import Fuel from '../../app/fuel/fuel-client';
 import DealerCosts from '../../components/DealerCostOfOwnershipReportModal';
 import DealerMaintenance from '../../components/DealerMaintenanceReportModal';
-import Accountant from '../../components/AccountantRegisterReportsModal';
 import Group from '../../components/asset-register/AssetGroupManagerModal';
 import OwnerReports from '../../app/owner-app/assets/[assetId]/owner-asset-report-picker';
 import mapStyles from '../../app/asset-map/page.module.css';
@@ -26,7 +25,6 @@ export default function ReportDownloadPage() {
  if (mode==='leads') return <Leads initialSessionUserId="test" initialLeads={[{id:'lead',ownerUserId:'owner',partnerUserId:'test',assetRegisterItemId:'1',leadType:'finance' as const,status:'viewed' as const,assetSnapshot:{title:'Test tractor',kind:'tractor',specsJson:{},value:1000},includedSections:{},ownerMessage:'',ownerContactName:'Test owner',ownerContactPhone:'',ownerContactEmail:'',ownerName:'Test owner',ownerBusinessName:'',ownerEmail:'',ownerPhone:'',ownerProvince:'',ownerTownCity:'',partnerName:'Test dealer',partnerBusinessName:'',partnerPhone:'',partnerProvince:'',partnerTownCity:'',createdAtIso:'2026-09-01',updatedAtIso:'2026-09-01',viewedAtIso:'2026-09-01',acceptedAtIso:null,quotedAtIso:null,declinedAtIso:null,closedAtIso:null}]} />;
  if (mode==='dealer-costs') return <DealerCosts accessId="test" assetTitle="Test tractor" assetMeta="2023" onClose={noop} />;
  if (mode==='dealer-maintenance') return <DealerMaintenance accessId="test" onClose={noop} />;
- if (mode==='accountant') return <Accountant shareId="test" registerName="Test register" includeCostLedger includeFuelLedger onClose={noop} />;
  if (mode==='group') return <Group open initialView="reports" anchorAsset={asset} group={{id:'test',userId:'test',registerId:null,name:'Test umbrella',valueMode:'separate',members:[{assetId:'1',role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0}],createdAtIso:'2026-09-01',updatedAtIso:'2026-09-01'}} assets={[asset]} groups={[]} onClose={noop} onSave={noop} onDelete={noop} onDownloadReport={noop} onDownloadMap={noop} canDownloadMap={false} />;
  if (mode==='owner-open') return <OwnerReports asset={asset} />;
  if (mode==='owner') return <OwnerReports asset={asset} mode="attach" onDismiss={noop} onAttach={noop} />;

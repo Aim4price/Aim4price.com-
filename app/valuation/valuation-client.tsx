@@ -326,7 +326,6 @@ type EquipmentModelsApiResponse = {
   error?: string;
 };
 
-
 type MotorTypeOption = {
   value: string;
   label: string;
@@ -537,7 +536,6 @@ const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 5, label: 'Replacement' },
   { step: 6, label: 'Value' },
 ];
-
 
 function getWizardStepLabel(step: Step, _sectorKey: SectorKey | null): string {
   return WIZARD_STEPS.find((item) => item.step === step)?.label ?? String(step);
@@ -1404,7 +1402,6 @@ function getConfidenceLabel(state: ValuationResultState | null, context: Confide
     return `Confidence: ${state.result.confidenceLabel}`;
   }
 
-
   const hasReplacementPrice = Number.isFinite(state.result.model.aim4priceReplacementExVat) && state.result.model.aim4priceReplacementExVat > 0;
 
   if (hasReplacementPrice && context.yearKnown && context.hoursKnown) {
@@ -1437,7 +1434,6 @@ function getConfidenceNote(state: ValuationResultState | null, context: Confiden
     return 'Aim4price confidence uses the replacement-price band, captured specs, age, usage and condition.';
   }
 
-
   if (context.hoursKnown) {
     return `Exact model, manufacturing year, ${context.usageSentenceLabel} and condition were captured.`;
   }
@@ -1448,7 +1444,6 @@ function getConfidenceNote(state: ValuationResultState | null, context: Confiden
 
   return `Exact model was captured, but confidence improves when real ${context.usageSentenceLabel} are supplied.`;
 }
-
 
 function buildSyntheticSpecOption(
   specQuestionId: number,
@@ -1926,8 +1921,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [conversionSourceAsset, setConversionSourceAsset] = useState<ConversionSourceAsset | null>(null);
   const [conversionPrefillLoaded, setConversionPrefillLoaded] = useState(false);
   const [accountType, setAccountType] = useState('public');
-  const [accountantShareId, setAccountantShareId] = useState('');
-  const [accountantRegisterId, setAccountantRegisterId] = useState('');
+  const [requestedRegisterId, setRequestedRegisterId] = useState('');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [dealerAssetRegisters, setDealerAssetRegisters] = useState<DealerAssetRegisterSummary[]>([]);
   const [dealerSaveTargetRegisterId, setDealerSaveTargetRegisterId] = useState('');
@@ -2428,11 +2422,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   );
   const popularityStepComplete = popularityStars >= 1 && popularityStars <= 5;
   const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
-  const isAccountantClientWorkspace = normalizedSignedInAccountType === 'finance' && Boolean(accountantShareId);
   const canSaveToAssetRegister = isSignedIn && (
     normalizedSignedInAccountType === 'owner'
     || normalizedSignedInAccountType === 'dealer'
-    || isAccountantClientWorkspace
   );
   const requiredSpecQuestionsCompleted = Boolean(
     conditionStepComplete &&
@@ -2642,10 +2634,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (typeof window === 'undefined') return undefined;
 
     const searchParams = new URLSearchParams(window.location.search);
-    setAccountantShareId(normalizeText(searchParams.get('accountantShareId')));
     const requestedRegisterId = normalizeText(searchParams.get('registerId'));
     const requestedDealerMode = normalizeText(searchParams.get('dealerRegisterMode'));
-    setAccountantRegisterId(requestedRegisterId);
+    setRequestedRegisterId(requestedRegisterId);
     setDealerSaveTargetRegisterId(requestedRegisterId);
     setDealerSaveTargetMode(requestedDealerMode === 'dealer' || requestedDealerMode === 'client' ? requestedDealerMode : null);
     const nextConversionAssetId = normalizeText(searchParams.get('convertAssetId') ?? searchParams.get('conversionAssetId'));
@@ -2837,7 +2828,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       mounted = false;
     };
   }, []);
-
 
   useEffect(() => {
     if (!isMotorSector(selectedSector)) return;
@@ -3692,7 +3682,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     return null;
   }
-
 
   function getCurrentAdvancedAssumptionsForRequest(): AdvancedAssumptionsRequest {
     const applied = getAppliedAdvancedAssumptionsFromState(resultState);
@@ -4751,14 +4740,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       const resolvedTargetRegisterId = isDealerAccount
         ? options.saveForMarketplace
           ? dealerOwnedRegister?.id || ''
-          : dealerSaveTargetRegisterId || accountantRegisterId
-        : accountantRegisterId;
+          : dealerSaveTargetRegisterId || requestedRegisterId
+        : requestedRegisterId;
       if (resolvedTargetRegisterId) {
         savePayload.registerId = resolvedTargetRegisterId;
       }
-      if (isAccountantClientWorkspace) {
-        savePayload.accountantShareId = accountantShareId;
-      }
+
       const response = await fetch('/api/valuation-runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4773,13 +4760,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
       if (options.redirectToAssetRegister) {
         const focusAssetId = data.assetId ?? conversionAssetId;
-        if (isAccountantClientWorkspace) {
-          const workspaceQuery = new URLSearchParams();
-          if (resolvedTargetRegisterId) workspaceQuery.set('registerId', resolvedTargetRegisterId);
-          if (focusAssetId) workspaceQuery.set('convertedAssetId', focusAssetId);
-          const query = workspaceQuery.toString();
-          router.push(`/accountant/registers/${encodeURIComponent(accountantShareId)}${query ? `?${query}` : ''}`);
-        } else {
+        {
           if (ownerAppMode) {
             router.push(focusAssetId ? `/owner-app/assets/${encodeURIComponent(focusAssetId)}` : '/owner-app/assets');
           } else if (isDealerAccount && resolvedTargetRegisterId) {
@@ -5022,9 +5003,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       jpegPhotos.push(prepared);
     }
 
-    const uploadUrl = isAccountantClientWorkspace
-      ? `/api/asset-register/uploads?accountantShareId=${encodeURIComponent(accountantShareId)}`
-      : '/api/asset-register/uploads';
+    const uploadUrl = '/api/asset-register/uploads';
     const response = await fetch(uploadUrl, {
       method: 'POST',
       body: formData,
@@ -5428,7 +5407,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     resetResult();
     scrollWizardToStart();
   }
-
 
   function buildGenericModelFromMotorResult(result: MotorCanonicalModelResult): GenericCatalogModel {
     return {
@@ -6358,7 +6336,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       </div>
     );
   }
-
 
   function renderMotorSearchStep() {
     const selectedLabel = selectedMotorCanonicalModel?.displayLabel ?? 'Choose vehicle model';
@@ -8776,8 +8753,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
           </section>
 
-
-
           {!breakdownAccess ? <section className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
             <button
               type="button"
@@ -8855,7 +8830,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
             ) : null}
           </section> : null}
-
 
           <div className={styles.resultCalculationPanel}>
           {(isGeneric && genericResult) || tractorResult ? (
@@ -9892,5 +9866,3 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
-
-

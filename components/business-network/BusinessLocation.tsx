@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import towns from "../../database/seeds/aim4price-assistance-locations.json";
+import towns from "../../database/seeds/south-africa-service-locations.json";
 import styles from "./BusinessNetwork.module.css";
 let loader: Promise<any> | undefined;
 function leaflet() {

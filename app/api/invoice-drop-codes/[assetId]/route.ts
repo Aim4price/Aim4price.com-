@@ -67,7 +67,7 @@ async function requireOwnerAccess(
   if (!resolved.ok) return resolved;
 
   const { context } = resolved;
-  if (context.accountantAccess || context.ownerUserId !== context.actorUserId) {
+  if (context.ownerUserId !== context.actorUserId) {
     return { ok: false, response: forbidden() };
   }
 

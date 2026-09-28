@@ -56,34 +56,6 @@ const dealerWorkspace: FooterWorkspace = {
   ],
 };
 
-const financeWorkspace: FooterWorkspace = {
-  label: 'Finance tools',
-  links: [
-    { href: '/leads', label: 'My Leads' },
-    { href: '/valuation', label: 'Get Estimate' },
-    { href: '/account', label: 'Account' },
-  ],
-};
-
-const accountantWorkspace: FooterWorkspace = {
-  label: 'Accountant tools',
-  links: [
-    { href: '/leads', label: 'My Clients' },
-    { href: '/valuation', label: 'Get Estimate' },
-    { href: '/account', label: 'Account' },
-  ],
-};
-
-const insuranceWorkspace: FooterWorkspace = {
-  label: 'Insurance tools',
-  links: [
-    { href: '/leads', label: 'My Leads' },
-    { href: '/shared-registers', label: 'Shared Registers' },
-    { href: '/valuation', label: 'Get Estimate' },
-    { href: '/account', label: 'Account' },
-  ],
-};
-
 const companyLinks: FooterLink[] = [
   { href: '/pricing', label: 'Pricing' },
   { href: '/about-us', label: 'About Aim4price' },
@@ -98,11 +70,6 @@ const legalLinks: FooterLink[] = [
 function getWorkspace(session: HeaderSessionUser | null | undefined): FooterWorkspace {
   if (session?.accountType === 'owner') return ownerWorkspace;
   if (session?.accountType === 'dealer') return dealerWorkspace;
-  if (session?.accountType === 'insurance') return insuranceWorkspace;
-
-  if (session?.accountType === 'finance') {
-    return session.accountSubtype === 'accountant' ? accountantWorkspace : financeWorkspace;
-  }
 
   return publicWorkspace;
 }

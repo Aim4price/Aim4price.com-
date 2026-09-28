@@ -178,10 +178,6 @@ type InvoicesResponse = {
   error?: string;
 };
 
-type AccountantInvoicesResponse = InvoicesResponse & {
-  cost?: InvoicesResponse;
-};
-
 type DealerDefaults = {
   supplierName: string;
   vatNumber: string;
@@ -190,8 +186,7 @@ type DealerDefaults = {
 
 type MyInvoicesClientProps = {
   budgetsPage?: boolean;
-  accountantShareId?: string;
-  accountantRegisterId?: string;
+
   dealerMode?: boolean;
   showAppHeader?: boolean;
   initialAssetId?: string;
@@ -954,33 +949,19 @@ function buildReportUrl(
   filters: InvoiceFilterState,
   format: ReportRouteFormat,
   includeFuelSlipCosts: boolean,
-  accountantShareId?: string,
-  accountantRegisterId?: string,
+
 ): string {
   const params = new URLSearchParams({ format, includeFuelSlipCosts: includeFuelSlipCosts ? 'true' : 'false' });
 
   if (filters.assetId !== 'all') params.set('assetId', filters.assetId);
   if (filters.year !== 'all') params.set('year', filters.year);
   if (filters.month !== 'all') params.set('month', filters.month);
-  if (accountantShareId) params.set('accountantShareId', accountantShareId);
-  if (accountantRegisterId) params.set('accountantRegisterId', accountantRegisterId);
 
   return `/api/my-invoices/report?${params.toString()}`;
 }
 
-function withAccountantShare(url: string, accountantShareId?: string, accountantRegisterId?: string): string {
-  if (!accountantShareId) return url;
-
-  const scopedUrl = new URL(url, window.location.origin);
-  scopedUrl.searchParams.set('accountantShareId', accountantShareId);
-  if (accountantRegisterId) scopedUrl.searchParams.set('accountantRegisterId', accountantRegisterId);
-  return `${scopedUrl.pathname}${scopedUrl.search}`;
-}
-
 export default function MyInvoicesClient({
   budgetsPage = false,
-  accountantShareId,
-  accountantRegisterId,
   dealerMode = false,
   showAppHeader,
   initialAssetId = '',
@@ -994,11 +975,11 @@ export default function MyInvoicesClient({
       ? '/api/dealer/cost'
       : '/api/my-invoices';
   const captureApiRoot = dealerMode ? '/api/dealer/capture-requests' : '/api/capture-requests';
-  const accountScopedUrl = (url: string) => withAccountantShare(url, accountantShareId, accountantRegisterId);
+  const accountScopedUrl = (url: string) => url;
   const shouldShowAppHeader = showAppHeader ?? !dealerMode;
-  const canManageInvoiceDropCodes = !dealerMode && !accountantShareId && !accountantRegisterId;
-  const canRetractCaptureRequests = !dealerMode && !accountantShareId && !accountantRegisterId;
-  const canManageBudgets = !dealerMode && !accountantShareId && !accountantRegisterId;
+  const canManageInvoiceDropCodes = !dealerMode;
+  const canRetractCaptureRequests = !dealerMode;
+  const canManageBudgets = !dealerMode;
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -1256,7 +1237,7 @@ export default function MyInvoicesClient({
 
     void loadCaptureRequests();
     return () => { cancelled = true; };
-  }, [budgetsPage, accountantRegisterId, accountantShareId, captureApiRoot]);
+  }, [budgetsPage, captureApiRoot]);
 
   useEffect(() => {
     if (!canManageInvoiceDropCodes) return;
@@ -2022,8 +2003,8 @@ export default function MyInvoicesClient({
 
   async function fetchInvoiceData(filters: InvoiceFilterState): Promise<InvoicesResponse> {
     const response = await fetch(accountScopedUrl(buildInvoiceListUrl(filters, apiRoot)), { cache: 'no-store' });
-    const payload = (await response.json()) as AccountantInvoicesResponse;
-    const data = payload.cost ?? payload;
+    const payload = (await response.json()) as InvoicesResponse;
+    const data = payload;
 
     if (!response.ok || !payload.ok) {
       throw new Error(payload.error || 'My Cost Ledger could not be loaded.');
@@ -2081,7 +2062,7 @@ export default function MyInvoicesClient({
   }
 
   function openBudgetManager() {
-    if (!dealerMode && !accountantShareId && !accountantRegisterId) { router.push('/budgets'); return; }
+    if (!dealerMode) { router.push('/budgets'); return; }
     setBudgetManagerView('choice');
     budgetManagerReturnFocusRef.current = '';
     setBudgetManagerNotice(null);
@@ -4894,7 +4875,7 @@ export default function MyInvoicesClient({
       {!dealerMode && downloadOpen ? <ReportDownloadFlow title="Cost reports" allLabel="All costs" assets={assets}
         fields={[{key:'fuel',label:'External fuel costs',initial:'true',options:[{value:'true',label:'Include fuel costs'},{value:'false',label:'Exclude fuel costs'}]}]}
         onClose={closeDownloadModal} onDownload={async selection => {
-          const url = buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', selection.fields.fuel === 'true', accountantShareId, accountantRegisterId);
+          const url = buildReportUrl({...DEFAULT_FILTERS,assetId:selection.assetId,year:selection.year,month:selection.month}, selection.format === 'pdf' ? 'html' : 'xlsx', selection.fields.fuel === 'true', );
           if(selection.format === 'xlsx') await downloadCanonicalReportFile(url);
           else if(!openCanonicalReportUrl(url)) throw new Error('Allow pop-ups to open your report.');
         }} /> : null}

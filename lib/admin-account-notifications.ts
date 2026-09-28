@@ -9,9 +9,7 @@ export const ADMIN_NOTIFICATION_AUDIENCES = [
   "all",
   "owner",
   "dealer",
-  "insurance",
-  "finance",
-  "licensing",
+  "business",
 ] as const;
 
 export type AdminNotificationAudience =

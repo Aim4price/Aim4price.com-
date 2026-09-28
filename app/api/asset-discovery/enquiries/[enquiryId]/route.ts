@@ -77,13 +77,13 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
   try {
     const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
-    if (!['owner', 'dealer', 'licensing'].includes(profile.accountType)) {
+    if (!['owner', 'dealer'].includes(profile.accountType)) {
       return NextResponse.json({ ok: false, error: 'Only the requester can retract this enquiry.' }, { status: 403 });
     }
     await retractAssetDiscoveryEnquiry({
       enquiryId: context.params.enquiryId,
       requesterUserId: session.user.id,
-      requesterAccountType: profile.accountType as 'owner' | 'dealer' | 'licensing',
+      requesterAccountType: profile.accountType as 'owner' | 'dealer',
     });
     return NextResponse.json({ ok: true });
   } catch (error) {

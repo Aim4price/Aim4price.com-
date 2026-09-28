@@ -23,7 +23,7 @@ const [
 test('sharing an umbrella sends every member asset for all supported partner types', () => {
   assert.match(shareClient, /assetIds: isAssetGroupShare[\s\S]*?\? managedAssetIds/);
   assert.match(leadRoute, /function isAssetGroupShareRequest/);
-  assert.match(leadRoute, /\|\| assetGroupShare[\s\S]*?\|\| leadType === 'license_renewal'/);
+  assert.match(leadRoute, /assetGroupShare[\s\S]*?\|\| leadType === 'license_renewal'/);
   assert.match(leadRoute, /for \(const \[selectedAssetIndex, selectedAssetId\] of leadAssetIds\.entries\(\)\)/);
 });
 

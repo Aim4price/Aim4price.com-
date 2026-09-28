@@ -29,10 +29,6 @@ import styles from './page.module.css';
 import native_dealerStyles from '../dealer/dealer.module.css';
 import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-corrections';
 
-const AccountantRegisterReportsModal = dynamic(
-  () => import('../../components/AccountantRegisterReportsModal'),
-  { ssr: false },
-);
 const DealerAssetCorrectionEditor = dynamic(
   () => import('../../components/DealerAssetCorrectionEditor'),
   { ssr: false },
@@ -334,7 +330,6 @@ function DownloadIcon({ className }: IconProps) {
     </svg>
   );
 }
-
 
 function QrCodeIcon({ className }: IconProps) {
   return (
@@ -694,7 +689,6 @@ function leadDateParts(lead: AssetLead): { month: string; year: string } | null 
     year: String(parsed.getFullYear()),
   };
 }
-
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -1756,31 +1750,27 @@ function leadMatchesSearch(lead: AssetLead, search: string): boolean {
 }
 
 type LeadsClientProps = {
-  accountantWorkspaceMode?: boolean;
   dealerAppMode?: boolean;
   dealerWorkspaceMode?: boolean;
   allowDealerCosts?: boolean;
-  licensingWorkspaceMode?: boolean;
   initialLeads?: AssetLead[];
   initialLeadsHaveMore?: boolean;
   initialSessionUserId?: string;
 };
 
 export default function LeadsClient({
-  accountantWorkspaceMode = false,
   dealerAppMode = false,
   dealerWorkspaceMode,
   allowDealerCosts = true,
-  licensingWorkspaceMode = false,
   initialLeads = [],
   initialLeadsHaveMore = false,
   initialSessionUserId = '',
 }: LeadsClientProps = {}) {
   const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
 
-  const useDealerWorkspaceStyles = licensingWorkspaceMode || accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
+  const useDealerWorkspaceStyles = (dealerWorkspaceMode ?? dealerAppMode);
   const isDealerLeadsMode = Boolean(dealerAppMode || dealerWorkspaceMode);
-  const useOwnerManageLayout = Boolean(dealerWorkspaceMode && !dealerAppMode && !accountantWorkspaceMode && !licensingWorkspaceMode);
+  const useOwnerManageLayout = Boolean(dealerWorkspaceMode && !dealerAppMode);
   const canAddDealerCosts = isDealerLeadsMode && allowDealerCosts;
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
@@ -1805,7 +1795,6 @@ export default function LeadsClient({
   const [pendingLeadPhotos, setPendingLeadPhotos] = useState<PendingLeadPhoto[]>([]);
   const [isLeadPhotoDragging, setIsLeadPhotoDragging] = useState(false);
   const [isUploadingLeadPhotos, setIsUploadingLeadPhotos] = useState(false);
-  const [accountantReportLead, setAccountantReportLead] = useState<AssetLead | null>(null);
   const [emailLead, setEmailLead] = useState<AssetLead | null>(null);
   const [emailSubjectDraft, setEmailSubjectDraft] = useState('');
   const [emailBodyDraft, setEmailBodyDraft] = useState('');
@@ -1997,7 +1986,6 @@ export default function LeadsClient({
   const hasOpenLeadModal = Boolean(
     isFilterModalOpen
     || managedLead
-    || accountantReportLead
     || emailLead
     || reportLead
     || maintenanceReportAccessId
@@ -2058,7 +2046,6 @@ export default function LeadsClient({
       else if (costReportLead) setCostReportLead(null);
       else if (maintenanceReportAccessId) setMaintenanceReportAccessId(null);
       else if (reportLead) closeLeadReportModal();
-      else if (accountantReportLead) setAccountantReportLead(null);
       else if (emailLead) closeEmailModal();
       else if (managedLead) setManagedLead(null);
       else setIsFilterModalOpen(false);
@@ -2072,7 +2059,6 @@ export default function LeadsClient({
     };
   }, [
     assetPhotoModal,
-    accountantReportLead,
     deleteLeadTarget,
     emailLead,
     hasOpenLeadModal,
@@ -2095,20 +2081,6 @@ export default function LeadsClient({
 
   async function deleteLead(leadToDelete: AssetLead): Promise<boolean> {
     try {
-      if (accountantWorkspaceMode && isFullRegisterLead(leadToDelete)) {
-        const response = await fetch(`/api/accountant/registers/${encodeURIComponent(leadToDelete.id)}`, {
-          method: 'DELETE',
-          credentials: 'include',
-        });
-        const data = (await response.json()) as { ok: boolean; error?: string };
-        if (!response.ok || !data.ok) throw new Error(data.error ?? 'Failed to remove Asset Register access.');
-
-        setLeads((current) => current.filter((lead) => lead.id !== leadToDelete.id));
-        setManagedLead((current) => (current?.id === leadToDelete.id ? null : current));
-        setOpenLeadId((current) => (current === leadToDelete.id ? null : current));
-        setNotice({ tone: 'success', message: 'Asset Register access removed from My Clients. The owner’s register was not deleted.' });
-        return true;
-      }
 
       if (leadToDelete.status !== 'declined') {
         const declineResponse = await fetch(`/api/asset-leads/${encodeURIComponent(leadToDelete.id)}`, {
@@ -2211,11 +2183,6 @@ export default function LeadsClient({
   async function openLead(leadToOpen: AssetLead) {
     setNotice(null);
     await markLeadViewed(leadToOpen);
-
-    if (accountantWorkspaceMode && isFullRegisterLead(leadToOpen)) {
-      window.location.assign(`/accountant/registers/${encodeURIComponent(leadToOpen.id)}`);
-      return;
-    }
 
     setOpenLeadId(leadToOpen.id);
   }
@@ -2328,7 +2295,6 @@ export default function LeadsClient({
     setOpenFilterDropdown(null);
     setIsFilterModalOpen(false);
   }
-
 
   function mergeLeadAssetMedia(lead: AssetLead, asset: LeadAssetMedia): AssetLead {
     const updatedLead = {
@@ -2588,12 +2554,6 @@ export default function LeadsClient({
     setNotice(null);
     setManagedLead(null);
     setReportLead(lead);
-  }
-
-  function openAccountantReportModal(lead: AssetLead) {
-    setNotice(null);
-    setManagedLead(null);
-    setAccountantReportLead(lead);
   }
 
   function openMaintenanceReport(lead: AssetLead) {
@@ -3000,7 +2960,6 @@ export default function LeadsClient({
     return Math.min(Math.max(storedIndex, 0), photos.length - 1);
   }
 
-
   function openAssetPhotoModal(lead: AssetLead, urls: string[], index: number) {
     if (!urls.length) return;
 
@@ -3406,7 +3365,7 @@ export default function LeadsClient({
     const licenseStatus = readLeadLicenseStatusChoice(lead);
     const licenseRegistrationNumber = readLeadLicenseRegistrationNumber(lead);
     const replacementPrice = snapshotReplacementPrice(lead.assetSnapshot);
-    const isLicenceRenewal = licensingWorkspaceMode || lead.leadType === 'license_renewal';
+    const isLicenceRenewal = lead.leadType === 'license_renewal';
     const licenceRenewalDate = leadLicenceRenewalDate(lead);
     const licenceDocuments = Array.isArray(lead.assetSnapshot.documents)
       ? lead.assetSnapshot.documents
@@ -3488,7 +3447,7 @@ export default function LeadsClient({
   const hasMultipleSentPhotos = Boolean(sentPhotoModal && sentPhotoModal.urls.length > 1);
 
   return (
-    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${licensingWorkspaceMode ? styles.licensingLeadsPage : ''} ${dealerAppMode ? `${styles.dealerAppLeads} ${dealerStyles.dealerLeadsSurface}` : ''} ${dealerWorkspaceMode && !accountantWorkspaceMode ? styles.dealerDesktopLeads : ''}`}>
+    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${''} ${dealerAppMode ? `${styles.dealerAppLeads} ${dealerStyles.dealerLeadsSurface}` : ''} ${dealerWorkspaceMode ? styles.dealerDesktopLeads : ''}`}>
       {!dealerAppMode ? <AppHeader active="leads" /> : null}
 
       <section className={`${assetStyles.shell} ${useDealerWorkspaceStyles ? workspaceStyles.shell : ''}`}>
@@ -3501,13 +3460,13 @@ export default function LeadsClient({
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
             <WorkspaceTitlePanel
-              title={licensingWorkspaceMode ? 'LICENCE RENEWAL LEADS' : accountantWorkspaceMode ? 'CLIENT MANAGEMENT SYSTEM' : dealerAppMode ? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'}
+              title={dealerAppMode ? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'}
               className={dealerAppMode ? styles.leadsTitlePanel : undefined}
             />
           ) : (
             <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
               <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-                <h1>{licensingWorkspaceMode ? 'LICENCE RENEWAL LEADS' : 'LEAD MANAGEMENT SYSTEM'}</h1>
+                <h1>{'LEAD MANAGEMENT SYSTEM'}</h1>
               </div>
             </div>
           )}
@@ -3627,7 +3586,6 @@ export default function LeadsClient({
             </div>
           ) : null}
 
-
           {!isLoading && !filteredLeads.length ? (
             <div className={`${assetStyles.emptyState} ${useDealerWorkspaceStyles ? workspaceStyles.emptyState : ''}`}>No leads match this search or filter.</div>
           ) : null}
@@ -3644,8 +3602,8 @@ export default function LeadsClient({
                 const assetIdentifier = leadAssetIdentifier(lead);
 
                 return (
-                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
-                    <LeadCardSummary headerClassName={licensingWorkspaceMode ? styles.licensingLeadHeader : ''} identityClassName={`${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
+                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+                    <LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{assetTitle(lead)}</h3>
                           </div>
@@ -3654,17 +3612,7 @@ export default function LeadsClient({
                             {assetIdentifier ? <span className={styles.leadAssetIdentifier}>{assetIdentifier}</span> : null}
                           </div>
                           <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
-                          {licensingWorkspaceMode ? (
-                            <span className={styles.licenceRenewalMeta}>
-                              <span className={styles.licenceRenewalMetaIcon} aria-hidden="true">
-                                <DocumentIcon className={assetStyles.buttonIcon} />
-                              </span>
-                              <span className={styles.licenceRenewalMetaCopy}>
-                                <strong>Renewal due {leadLicenceRenewalDisplay(lead)}</strong>
-                                <small>{readLeadLicenseRegistrationNumber(lead) || 'Registration not supplied'}</small>
-                              </span>
-                            </span>
-                          ) : null}
+                          {null}
                           {lead.ownerMessage ? (
                             <span className={`${styles.trackingLeadPurpose} ${styles.leadOwnerMessagePreview}`}>
                               <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
@@ -3696,45 +3644,7 @@ export default function LeadsClient({
                                 : ''
                             }`}
                           >
-                            {licensingWorkspaceMode ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className={`${isLeadOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${workspaceStyles.actionButton} ${isLeadOpen ? workspaceStyles.actionNeutral : workspaceStyles.actionGreen} ${styles.openLeadButton}`}
-                                  onClick={() => {
-                                    if (isLeadOpen) setOpenLeadId(null);
-                                    else void openLead(lead);
-                                  }}
-                                >
-                                  {isLeadOpen ? 'Close' : 'Open'}
-                                </button>
-                              </>
-                            ) : accountantWorkspaceMode ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${isLeadDone ? styles.doneLeadPill : styles.markDoneLeadButton}`}
-                                  onClick={() => void toggleLeadDone(lead)}
-                                  disabled={Boolean(markingLeadDoneId)}
-                                  aria-pressed={isLeadDone}
-                                  title={isLeadDone ? 'Return this client to Open' : 'Mark this client as handled'}
-                                >
-                                  <CheckIcon className={assetStyles.buttonIcon} />
-                                  <span>{isMarkingThisLeadDone ? 'Updating...' : isLeadDone ? 'Handled' : 'Mark handled'}</span>
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className={`${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.openLeadButton}`}
-                                  onClick={() => {
-                                    setManagedLead(lead);
-                                    void markLeadViewed(lead);
-                                  }}
-                                >
-                                  Manage
-                                </button>
-                              </>
-                            ) : isTrackingRequest ? (
+                            {isTrackingRequest ? (
                               <>
                                 {isLeadOpen ? (
                                   <button
@@ -3825,17 +3735,17 @@ export default function LeadsClient({
                               </dl>
                             ) : <p>{leadAssetMeta(lead)}</p>}
                             <div className={assetStyles.assetMetaRow}>
-                              <span className={assetStyles.assetValueMethodLabel}>{licensingWorkspaceMode ? 'Licence renewal' : isFullRegisterLead(lead) ? 'Register' : `${methodLabel(lead.assetSnapshot.selectedMethod)} value`}</span>
+                              <span className={assetStyles.assetValueMethodLabel}>{isFullRegisterLead(lead) ? 'Register' : `${methodLabel(lead.assetSnapshot.selectedMethod)} value`}</span>
                               <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
                             </div>
                         </>}
                         aside={<>
-                            {!licensingWorkspaceMode ? (
+                            {(
                               <div className={`${assetStyles.valueBlock} ${styles.leadValueBlock}`}>
                                 <strong>{formatCurrency(assetValue(lead))}</strong>
                                 <span>Excl. VAT</span>
                               </div>
-                            ) : null}
+                            )}
 
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>
                               <button
@@ -3956,7 +3866,7 @@ export default function LeadsClient({
       ) : null}
 
       {isFilterModalOpen ? (
-        <FilterFlow title={accountantWorkspaceMode ? 'Filter clients' : licensingWorkspaceMode ? 'Filter renewals' : 'Filter leads'} onClose={closeLeadFilterModal} onClear={resetLeadFilters} onApply={() => { setMonthFilter(draftLeadFilters.month); setYearFilter(draftLeadFilters.year); setStatusFilter(draftLeadFilters.status); closeLeadFilterModal(); }}>
+        <FilterFlow title={'Filter leads'} onClose={closeLeadFilterModal} onClear={resetLeadFilters} onApply={() => { setMonthFilter(draftLeadFilters.month); setYearFilter(draftLeadFilters.year); setStatusFilter(draftLeadFilters.status); closeLeadFilterModal(); }}>
           <FilterQuestion
             label="Which year?"
             value={draftLeadFilters.year}
@@ -3972,9 +3882,7 @@ export default function LeadsClient({
           <FilterQuestion
             label="Which status?"
             value={draftLeadFilters.status}
-            options={accountantWorkspaceMode
-              ? ACCOUNTANT_STATUS_FILTER_OPTIONS
-              : STATUS_FILTER_OPTIONS}
+            options={STATUS_FILTER_OPTIONS}
             onChange={(value) => setDraftLeadFilters((current) => ({ ...current, status: value as LeadStatusFilter }))}
           />
         </FilterFlow>
@@ -3984,7 +3892,7 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`}`} data-website-overlay data-account-asset-modal={useOwnerManageLayout ? true : undefined}>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setManagedLead(null)} />
 
-          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${useOwnerManageLayout ? `${assetStyles.managementAccountModal} ${accountStyles.modalTheme}` : `${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${useOwnerManageLayout ? `${assetStyles.managementAccountModal} ${accountStyles.modalTheme}` : `${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''} ${''}`}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
@@ -3999,60 +3907,7 @@ export default function LeadsClient({
             <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}`}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${useOwnerManageLayout ? '' : `${styles.manageOptionsGrid} ${isDealerLeadsMode ? dialogStyles.actions : ''}`}`}>
-                  {accountantWorkspaceMode ? (
-                    <>
-                      <button
-                        type="button"
-                        className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton}`}
-                        onClick={() => void openLead(managedLead)}
-                      >
-                        <DocumentIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>Open asset register</strong>
-                          <small className={styles.accountantManageDescription}>Open the shared register.</small>
-                        </span>
-                      </button>
-
-                      <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => openAccountantReportModal(managedLead)}>
-                        <DownloadIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>Download reports</strong>
-                          <small className={styles.accountantManageDescription}>Choose a report.</small>
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
-                        onClick={() => openEmail(managedLead)}
-                        disabled={!leadEmailRecipient(managedLead)}
-                        title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this client.' : undefined}
-                      >
-                        <EmailIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>Email client</strong>
-                          <small className={styles.accountantManageDescription}>
-                            {leadEmailRecipient(managedLead) ? 'Email the client.' : 'No email saved.'}
-                          </small>
-                        </span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className={`${assetStyles.optionActionButton} ${assetStyles.optionDangerButton} ${assetStyles.ownerCommandAction} ${assetStyles.ownerCommandDangerAction} ${styles.accountantDeleteAction}`}
-                        onClick={() => {
-                          setManagedLead(null);
-                          setDeleteLeadTarget(managedLead);
-                        }}
-                      >
-                        <DeleteIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>Delete client</strong>
-                          <small className={styles.accountantManageDescription}>Remove this register.</small>
-                        </span>
-                      </button>
-                    </>
-                  ) : (
+                  {(
                     <>
                       <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
                         <WhatsAppIcon className={`${assetStyles.buttonIcon} ${styles.whatsAppIcon}`} />
@@ -4076,7 +3931,7 @@ export default function LeadsClient({
                         </span>
                       </button>
 
-                      {!licensingWorkspaceMode ? (
+                      {(
                         <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => openLeadReportModal(managedLead)}>
                           <DownloadIcon className={assetStyles.buttonIcon} />
                           <span>
@@ -4084,8 +3939,7 @@ export default function LeadsClient({
                             <small>Choose a report.</small>
                           </span>
                         </button>
-                      ) : null}
-
+                      )}
 
                       {isDealerLeadsMode ? (
                         <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => void openLeadQrModal(managedLead)}>
@@ -4143,23 +3997,7 @@ export default function LeadsClient({
                         />
                       ) : null}
 
-                      {licensingWorkspaceMode && managedLead.leadType === 'license_renewal' && !isFullRegisterLead(managedLead) ? (
-                        <DealerAssetCorrectionEditor
-                          assetTitle={assetTitle(managedLead)}
-                          sourceType="lead"
-                          sourceId={managedLead.id}
-                          serialNumber={asText(managedLead.assetSnapshot.serialNumber)}
-                          replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
-                          licenseRenewalDate={leadLicenceRenewalDate(managedLead)}
-                          correction={managedLead.dealerCorrection}
-                          canUpdateSerial={false}
-                          canUpdateReplacementPrice={false}
-                          canUpdateLicenseRenewalDate
-                          actionClassName={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
-                          iconClassName={assetStyles.buttonIcon}
-                          onSaved={handleDealerCorrectionSaved}
-                        />
-                      ) : null}
+                      {null}
 
                       {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
                         <button
@@ -4182,7 +4020,6 @@ export default function LeadsClient({
           </div>
         </div>
       ) : null}
-
 
       {qrLeadAsset ? (
         <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>
@@ -4322,16 +4159,7 @@ export default function LeadsClient({
         </div>
       ) : null}
 
-      {accountantReportLead ? (
-        <AccountantRegisterReportsModal
-          shareId={accountantReportLead.id}
-          registerName={accountantReportLead.ownerBusinessName || ownerDisplayName(accountantReportLead)}
-          includeFuelLedger={asBoolean(accountantReportLead.includedSections.includeFuelLedger)}
-          includeCostLedger={asBoolean(accountantReportLead.includedSections.includeCostLedger)}
-          workspaceMode
-          onClose={() => setAccountantReportLead(null)}
-        />
-      ) : null}
+      {null}
 
       {emailLead ? (
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`} data-website-overlay>
@@ -4498,8 +4326,8 @@ export default function LeadsClient({
             <div className={`${assetStyles.deleteConfirmContent} ${styles.leadDeleteContent}`}>
               <div className={`${assetStyles.deleteConfirmHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''} ${styles.leadDeleteHeader} ${isDealerLeadsMode ? dialogStyles.inset : ''}`}>
                 <div>
-                  <h3 id="delete-lead-confirm-title">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'Remove Asset Register?' : 'Delete lead?'}</h3>
-                  <p id="delete-lead-confirm-copy">{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'This removes your access and the client from My Clients. It does not delete the owner’s Asset Register.' : 'This permanently removes the lead from your My Leads inbox.'}</p>
+                  <h3 id="delete-lead-confirm-title">{'Delete lead?'}</h3>
+                  <p id="delete-lead-confirm-copy">{'This permanently removes the lead from your My Leads inbox.'}</p>
                 </div>
 
                 <button
@@ -4520,11 +4348,9 @@ export default function LeadsClient({
               </div>
 
               <div className={styles.leadDeleteWarning}>
-                <strong>{accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget) ? 'Only accountant access is removed.' : isTrackingLead(deleteLeadTarget) ? 'Maintenance tracking will remain active.' : 'This action cannot be undone.'}</strong>
+                <strong>{isTrackingLead(deleteLeadTarget) ? 'Maintenance tracking will remain active.' : 'This action cannot be undone.'}</strong>
                 <span>
-                  {accountantWorkspaceMode && isFullRegisterLead(deleteLeadTarget)
-                    ? 'The owner can share the register with your accountant account again later.'
-                    : isTrackingLead(deleteLeadTarget)
+                  {isTrackingLead(deleteLeadTarget)
                     ? 'Delete the asset separately from Tracking if you also want to stop maintenance tracking access.'
                     : 'The owner will need to send a new lead if you need this information again.'}
                 </span>
@@ -4541,7 +4367,7 @@ export default function LeadsClient({
                   onClick={() => void confirmDeleteLead()}
                   disabled={isDeletingLead}
                 >
-                  <span>{isDeletingLead ? 'Deleting...' : accountantWorkspaceMode ? 'Delete client' : 'Delete lead'}</span>
+                  <span>{isDeletingLead ? 'Deleting...' : 'Delete lead'}</span>
                 </button>
               </div>
             </div>

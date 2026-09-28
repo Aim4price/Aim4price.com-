@@ -8,9 +8,7 @@ import {
   saveAssetGroup,
   setAssetGroupFlag,
 } from '../../../lib/asset-groups';
-import { listAssetRegisterItems } from '../../../lib/asset-register-db';
 import {
-  projectAssetGroupsToAssets,
   type AssetGroup,
   type AssetGroupRelationship,
   type AssetGroupValueMode,
@@ -36,16 +34,6 @@ function isCombinedGroupRequest(request: NextRequest, bodyScope?: unknown): bool
 async function requireGroupWriteAccess(
   context: OwnerWorkspaceContext,
 ): Promise<NextResponse | null> {
-  if (context.accountantAccess) {
-    if (!context.accountantAccess.allowDirectUpdates) {
-      return NextResponse.json(
-        { ok: false, error: 'This shared Asset Register is read-only.' },
-        { status: 403 },
-      );
-    }
-
-    return null;
-  }
 
   const profile = await getAccountProfile({
     id: context.ownerUserId,
@@ -66,17 +54,12 @@ async function requireGroupWriteAccess(
 async function resolveRegisterId(
   request: NextRequest,
   ownerUserId: string,
-  accountantRegisterId: string,
   bodyRegisterId?: unknown,
 ): Promise<string> {
   const requested = cleanText(bodyRegisterId)
-    || cleanText(request.nextUrl.searchParams.get('registerId'))
-    || cleanText(accountantRegisterId);
+    || cleanText(request.nextUrl.searchParams.get('registerId'));
 
   if (!requested) throw new Error('ASSET_GROUP_REGISTER_REQUIRED');
-  if (accountantRegisterId && requested !== accountantRegisterId) {
-    throw new Error('ASSET_GROUP_REGISTER_FORBIDDEN');
-  }
 
   const register = await getAssetRegisterForUser(ownerUserId, requested);
   if (!register) throw new Error('ASSET_GROUP_REGISTER_NOT_FOUND');
@@ -89,10 +72,8 @@ async function listWorkspaceGroups(
 ): Promise<AssetGroup[]> {
   const groups = await listAssetGroups(context.ownerUserId, registerId);
 
-  if (!context.accountantAccess || !registerId) return groups;
+  return groups;
 
-  const items = await listAssetRegisterItems(context.ownerUserId, registerId);
-  return projectAssetGroupsToAssets(groups, items);
 }
 
 function errorResponse(error: unknown): NextResponse {
@@ -132,15 +113,12 @@ export async function GET(request: NextRequest) {
 
   try {
     const combined = isCombinedGroupRequest(request);
-    if (combined && resolved.context.accountantAccess) {
-      throw new Error('ASSET_GROUP_REGISTER_FORBIDDEN');
-    }
+
     const registerId = combined
       ? ''
       : await resolveRegisterId(
           request,
           resolved.context.ownerUserId,
-          resolved.context.accountantRegisterId,
         );
     const groups = await listWorkspaceGroups(resolved.context, registerId);
     return NextResponse.json({ ok: true, groups });
@@ -169,15 +147,12 @@ async function save(request: NextRequest) {
       scope?: unknown;
     };
     const combined = isCombinedGroupRequest(request, body.scope);
-    if (combined && resolved.context.accountantAccess) {
-      throw new Error('ASSET_GROUP_REGISTER_FORBIDDEN');
-    }
+
     const registerId = combined
       ? null
       : await resolveRegisterId(
           request,
           resolved.context.ownerUserId,
-          resolved.context.accountantRegisterId,
           body.registerId,
         );
     const relationships = body.relationships && typeof body.relationships === 'object' && !Array.isArray(body.relationships)
@@ -233,15 +208,12 @@ export async function PATCH(request: NextRequest) {
       scope?: unknown;
     };
     const combined = isCombinedGroupRequest(request, body.scope);
-    if (combined && resolved.context.accountantAccess) {
-      throw new Error('ASSET_GROUP_REGISTER_FORBIDDEN');
-    }
+
     const registerId = combined
       ? null
       : await resolveRegisterId(
           request,
           resolved.context.ownerUserId,
-          resolved.context.accountantRegisterId,
           body.registerId,
         );
     if (Object.prototype.hasOwnProperty.call(body, 'isFlagged')) {
@@ -286,9 +258,6 @@ export async function DELETE(request: NextRequest) {
     const groupList = await listAssetGroups(resolved.context.ownerUserId);
     const group = groupList.find((entry) => entry.id === groupId);
     if (!group) throw new Error('ASSET_GROUP_NOT_FOUND');
-    if (resolved.context.accountantRegisterId && group.registerId !== resolved.context.accountantRegisterId) {
-      throw new Error('ASSET_GROUP_REGISTER_FORBIDDEN');
-    }
 
     await deleteAssetGroup(resolved.context.ownerUserId, groupId);
     const groups = await listWorkspaceGroups(resolved.context, group.registerId);

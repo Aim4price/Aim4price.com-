@@ -69,8 +69,6 @@ function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): 
   return session.user.id;
 }
 
-
-
 async function requireAssetRegisterAccount(session: Awaited<ReturnType<typeof getServerSession>>) {
   const access = await getAssetRegisterAccountAccess(session);
 
@@ -120,7 +118,6 @@ function normalizeHours(value: unknown): number | null {
 
   return Math.round(numeric);
 }
-
 
 function normalizeReplacementPrice(value: unknown): number | null {
   if (value === null || typeof value === 'undefined') {
@@ -430,7 +427,6 @@ function normalizePhotos(value: unknown): string[] {
     .slice(0, MAX_ASSET_REGISTER_PHOTOS);
 }
 
-
 function normalizeDocuments(value: unknown): AssetRegisterDocument[] {
   if (!Array.isArray(value)) {
     return [];
@@ -622,7 +618,6 @@ async function readAssetRegister(request: NextRequest, userId: string) {
   });
 }
 
-
 export async function POST(request: NextRequest) {
   const session = await getServerSession({ allowDealerApp: true });
 
@@ -632,7 +627,7 @@ export async function POST(request: NextRequest) {
 
   const workspace = await resolveOwnerWorkspaceContext(request);
   if (!workspace.ok) return workspace.response;
-  if (!workspace.context.accountantAccess) {
+  {
     const ownerError = await requireAssetRegisterAccount(session);
     if (ownerError) return ownerError;
   }
@@ -894,7 +889,6 @@ export async function PUT(request: NextRequest) {
       });
     }
 
-
     return NextResponse.json({ ok: true, item: itemWithAlertStatus ?? item });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
@@ -920,7 +914,6 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-
 
 export async function PATCH(request: NextRequest) {
   const session = await getServerSession({ allowDealerApp: true });

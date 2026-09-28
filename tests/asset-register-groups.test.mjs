@@ -536,7 +536,7 @@ test('the Switch flow can move an asset into an available umbrella', async () =>
   assert.match(client, /type AssetMoveDestination = 'register' \| 'umbrella'/);
   assert.match(client, /label="Target umbrella"/);
   assert.match(client, /Move to Umbrella/);
-  assert.match(client, /buildAssetGroupsApiUrl\(accountantShareId, undefined, combinedScope\)/);
+  assert.match(client, /buildAssetGroupsApiUrl\(undefined, combinedScope\)/);
   assert.match(client, /targetGroupId: targetGroup\.id/);
   assert.match(client, /group\.registerId === null \|\| !group\.members\.some/);
   assert.match(client, /remainingMembers\.map/);
@@ -735,12 +735,11 @@ test('asset disposal uses a valid withdrawn marketplace state and reuses the umb
 });
 
 test('combined Asset Register groups are account-wide, preserve member counting, and project in every output', async () => {
-  const [route, client, persistence, exportRoute, accountantWorkspace] = await Promise.all([
+  const [route, client, persistence, exportRoute] = await Promise.all([
     readFile(new URL('../app/api/asset-groups/route.ts', import.meta.url), 'utf8'),
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../lib/asset-groups.ts', import.meta.url), 'utf8'),
     readFile(new URL('../app/api/asset-register/export/route.ts', import.meta.url), 'utf8'),
-    readFile(new URL('../lib/accountant-workspace.ts', import.meta.url), 'utf8'),
   ]);
 
   assert.match(route, /isCombinedGroupRequest/);
@@ -752,9 +751,8 @@ test('combined Asset Register groups are account-wide, preserve member counting,
   assert.match(client, /window\.location\.assign\('\/asset-register'\)/);
   assert.match(client, /reportAssetGroups = projectAssetGroupsToAssets\(assetGroups, reportAssets\)/);
   assert.match(exportRoute, /combinedGroups = scope === 'combined'/);
-  assert.match(accountantWorkspace, /projectAssetGroupsToAssets/);
-});
 
+});
 
 test('umbrella and Maintenance page exports preserve completed maintenance history', async () => {
   const [route, report, maintenance, scanHistory, maintenanceClient, modal] = await Promise.all([
@@ -860,4 +858,3 @@ test('maintenance PDF and Excel builders accept PostgreSQL Date timestamps', asy
   assert.match(html, /30 Jul 2026/);
   assert.equal(workbook[0].rows.at(-1)[0].value, '2013 Landini 5-100H');
 });
-

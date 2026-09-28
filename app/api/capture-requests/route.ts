@@ -33,9 +33,9 @@ export async function GET(request: NextRequest) {
         : undefined,
   });
   if (!resolved.ok) return resolved.response;
-  const ownerAppAccess = resolved.context.accountantAccess ? null : await getOwnerAppAccess();
-  if (!resolved.context.accountantAccess && !ownerAppAccess) {
-    return NextResponse.json({ ok: false, error: 'Owner or shared accountant access is required.' }, { status: 403 });
+  const ownerAppAccess = await getOwnerAppAccess();
+  if (!ownerAppAccess) {
+    return NextResponse.json({ ok: false, error: 'Owner access is required.' }, { status: 403 });
   }
 
   try {
@@ -49,12 +49,7 @@ export async function GET(request: NextRequest) {
       getWorkspaceAssetIds(resolved.context),
     ]);
     const visibleRequests = requests.filter((capture) => {
-      if (resolved.context.accountantAccess) {
-        const ledgerShared = capture.requestType === 'invoice'
-          ? resolved.context.accountantAccess.includeCostLedger
-          : resolved.context.accountantAccess.includeFuelLedger;
-        if (!ledgerShared) return false;
-      }
+
       if (allowedAssetIds && capture.assetId && !allowedAssetIds.has(capture.assetId)) return false;
       if (ownerAppAccess?.sessionKind === 'owner-app-user' && ownerAppAccess.assetScope === 'selected') {
         return Boolean(capture.assetId && ownerAppCanAccessAsset(ownerAppAccess, capture.assetId));
@@ -80,4 +75,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Capture status is temporarily unavailable.' }, { status: 500 });
   }
 }
-

@@ -12,8 +12,8 @@ on:
       - 'components/*ReportModal.tsx'
       - 'components/ReportDownloadFlow.*'
       - 'lib/*report*.ts'
-      - 'lib/accountant-workspace.ts'
-      - 'tests/accountant*.test.mjs'
+      - 'lib/retired-workspaces.ts'
+      - 'tests/workspace-retirement.test.mjs'
       - 'lib/simple-xlsx.ts'
       - 'lib/fuel-slip-export.ts'
       - 'app/api/fuel/slips/export/**'
@@ -38,8 +38,8 @@ on:
       - 'components/*ReportModal.tsx'
       - 'components/ReportDownloadFlow.*'
       - 'lib/*report*.ts'
-      - 'lib/accountant-workspace.ts'
-      - 'tests/accountant*.test.mjs'
+      - 'lib/retired-workspaces.ts'
+      - 'tests/workspace-retirement.test.mjs'
       - 'lib/simple-xlsx.ts'
       - 'lib/fuel-slip-export.ts'
       - 'app/api/fuel/slips/export/**'
@@ -79,8 +79,8 @@ jobs:
       - name: Verify report access and opening regressions
         run: node --experimental-strip-types --test tests/app-account-isolation.test.mjs tests/asset-register-summary-export.test.mjs tests/rich-report-template-parity.test.mjs tests/asset-map-report.test.mjs tests/report-branding.test.mjs
 
-      - name: Verify accountant permissions
-        run: npm run test:accountant-workspace
+      - name: Verify workspace retirement boundaries
+        run: npm run test:workspace-retirement
 
       - name: Install PDF inspection tools
         run: sudo apt-get update && sudo apt-get install -y poppler-utils

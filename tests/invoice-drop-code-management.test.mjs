@@ -25,7 +25,7 @@ const invoiceDropWizard = ledger.slice(
 
 test('Invoice Drop code API is owner-only and supports owner-wide or one-asset targets', () => {
   assert.match(api, /resolveOwnerWorkspaceContext\(request, \{ ledger: 'cost' \}\)/);
-  assert.match(api, /context\.accountantAccess \|\| context\.ownerUserId !== context\.actorUserId/);
+  assert.match(api, /context\.ownerUserId !== context\.actorUserId/);
   assert.match(api, /profile\.accountType !== 'owner'/);
   assert.match(api, /isOwnerAppSession\(session\)/);
   assert.match(api, /if \(assetId === 'all'\)/);
@@ -56,7 +56,7 @@ test('code lifecycle uses the capture domain and full-code viewing is an explici
 });
 
 test('Cost Ledger exposes a gated three-step code wizard only in the direct owner workspace', () => {
-  assert.match(ledger, /const canManageInvoiceDropCodes = !dealerMode && !accountantShareId && !accountantRegisterId/);
+  assert.match(ledger, /const canManageInvoiceDropCodes = !dealerMode/);
   assert.match(ledger, /\{canManageInvoiceDropCodes \? \(/);
   assert.match(ledger, /<span>Invoice Drop<\/span>/);
   assert.match(ledger, /type InvoiceDropWizardStep = 1 \| 2 \| 3/);
@@ -142,5 +142,3 @@ test('Invoice Drop wizard avoids repeated headings and helper copy', () => {
   assert.doesNotMatch(invoiceDropWizard, /Create and share the code/);
   assert.doesNotMatch(invoiceDropWizard, /<span>Contribution code<\/span>/);
 });
-
-

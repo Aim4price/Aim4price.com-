@@ -42,7 +42,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     await assertWorkspaceAssetAccess(workspace, body.assetId);
     const result = await updateMyInvoice(workspace.ownerUserId, context.params.invoiceId, body, {
-      displayName: workspace.accountantAccess ? workspace.actorName : null,
+      displayName: null,
     });
     return NextResponse.json({ ok: true, invoice: result.invoice, duplicateWarnings: result.duplicateWarnings });
   } catch (error) {

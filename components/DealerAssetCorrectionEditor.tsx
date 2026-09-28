@@ -28,7 +28,6 @@ type DealerAssetCorrectionEditorProps = {
   correction?: DealerAssetCorrectionRequest | null;
   canUpdateSerial?: boolean;
   canUpdateReplacementPrice?: boolean;
-  canUpdateLicenseRenewalDate?: boolean;
   actionClassName?: string;
   iconClassName?: string;
   onSaved?: (correction: DealerAssetCorrectionRequest) => void;
@@ -88,7 +87,6 @@ export default function DealerAssetCorrectionEditor({
   correction,
   canUpdateSerial = true,
   canUpdateReplacementPrice = true,
-  canUpdateLicenseRenewalDate = false,
   actionClassName = '',
   iconClassName = '',
   onSaved,
@@ -166,7 +164,7 @@ export default function DealerAssetCorrectionEditor({
 
     try {
       const response = await fetch(
-        activeField === 'licenseRenewalDate' ? '/api/licensing/renewal-updates' : '/api/dealer/asset-corrections',
+        '/api/dealer/asset-corrections',
         {
         method: 'POST',
         credentials: 'include',
@@ -232,22 +230,6 @@ export default function DealerAssetCorrectionEditor({
           <span>
             <strong>Update replacement price</strong>
             <small>{formatCurrency(effectiveReplacementPrice)} excl. VAT.</small>
-          </span>
-        </button>
-      ) : null}
-
-      {canUpdateLicenseRenewalDate ? (
-        <button
-          type="button"
-          className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
-          onClick={() => openEditor('licenseRenewalDate')}
-          disabled={Boolean(effectiveCorrection)}
-          title={effectiveCorrection ? 'The owner must decide the pending update first.' : undefined}
-        >
-          <LicenseIcon className={iconClassName} />
-          <span>
-            <strong>Update renewal date</strong>
-            <small>{formatDate(effectiveLicenseRenewalDate)}.</small>
           </span>
         </button>
       ) : null}
@@ -318,4 +300,3 @@ export default function DealerAssetCorrectionEditor({
     </>
   );
 }
-

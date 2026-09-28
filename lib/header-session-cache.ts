@@ -31,9 +31,9 @@ type HeaderSessionCacheEntry = {
   user: HeaderSessionUser | null;
 };
 
-const HEADER_SESSION_CACHE_KEY = 'aim4price-header-session-v2';
+const HEADER_SESSION_CACHE_KEY = 'aim4price-header-session-v3';
 const HEADER_SESSION_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
-const ACCOUNT_TYPES = new Set<HeaderAccountType>(['owner', 'dealer', 'finance', 'insurance', 'licensing', 'business']);
+const ACCOUNT_TYPES = new Set<HeaderAccountType>(['owner', 'dealer', 'business']);
 
 function normalizeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';

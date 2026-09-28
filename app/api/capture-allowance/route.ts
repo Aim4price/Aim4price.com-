@@ -24,7 +24,7 @@ async function resolve(request: Request) {
   const resolved = await resolveOwnerWorkspaceContext(request, { ledger: type === 'invoice' ? 'cost' : 'fuel', requireWrite: true });
   if (!resolved.ok) return { response: resolved.response };
   const { context } = resolved;
-  if (!context.accountantAccess) {
+  {
     const access = await getOwnerAppAccess();
     if (!access || !ownerAppCan(access, 'manage_finance')) return { response: NextResponse.json({ error: 'Capture access required.' }, { status: 403 }) };
   }

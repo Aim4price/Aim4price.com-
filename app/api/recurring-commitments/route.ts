@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     await saveRecurringCommitment({
       ownerUserId: resolved.context.ownerUserId,
       actorUserId: resolved.context.actorUserId,
-      registerId: resolved.context.accountantAccess ? resolved.context.accountantRegisterId : null,
+      registerId: null,
       body,
     });
     const assetIds = await getWorkspaceAssetIds(resolved.context);

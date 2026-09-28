@@ -11,8 +11,6 @@ const [
   ownerClient,
   desktopRoute,
   desktopClient,
-  accountantRoute,
-  accountantClient,
   accountClient,
   transferPage,
   adminSales,
@@ -30,8 +28,6 @@ const [
   read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx'),
   read('app/api/asset-register/route.ts'),
   read('app/asset-register/asset-register-client.tsx'),
-  read('app/api/accountant/registers/[shareId]/assets/[assetId]/lifecycle/route.ts'),
-  read('components/AccountantAssetManageModal.tsx'),
   read('app/account/account-client.tsx'),
   read('app/account/asset-transfers/asset-transfers-client.tsx'),
   read('lib/admin-asset-sales.ts'),
@@ -68,13 +64,6 @@ test('desktop Asset Register collects outcome, details, impact and information i
   assert.match(desktopRoute, /aim4priceOutcomeInfluence/);
   assert.match(desktopRoute, /transferRequested/);
   assert.match(desktopRoute, /transfer: outcome\.transfer/);
-});
-
-test('accountant disposal requires outcome impact for sold, traded and scrapped assets', () => {
-  assert.match(accountantClient, /Did Aim4price help with this outcome in any way\?/);
-  assert.match(accountantClient, /aim4priceOutcomeInfluence: impactQuestionRequired/);
-  assert.match(accountantRoute, /Tell us whether Aim4price helped with this outcome/);
-  assert.match(accountantRoute, /'sold', 'traded_in', 'scrapped'/);
 });
 
 test('transfer codes are one-time credentials and are never stored as plaintext', () => {

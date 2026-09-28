@@ -17,10 +17,7 @@ import { getDb } from './db';
 import {
   filterAssetDocumentsForRole,
 } from './asset-document-permissions';
-import {
-  isAssistanceMasterAccountUserId,
-  type AssistanceMapBounds,
-} from './assistance-network';
+export type PartnerMapBounds = { west: number; south: number; east: number; north: number };
 
 export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance' | 'licensing';
 export type PartnerType = Exclude<AccountRole, 'owner'>;
@@ -28,12 +25,12 @@ export type LeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_
 export type AssetLeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 
 export type PartnerDirectoryEntry = {
+  serviceAreaNotice?: string;
   isExternalBusiness?: boolean;
   businessHeadings?: string[];
   googleMapsUrl?: string;
   googlePlaceId?: string;
   userId: string;
-  masterAccountUserId?: string;
   partnerType: PartnerType;
   accountSubtype: string;
   displayName: string;
@@ -52,11 +49,7 @@ export type PartnerDirectoryEntry = {
   serviceRadiusKm: number | null;
   brandFocus: string;
   services: string;
-  isAim4priceManaged?: boolean;
   isActivePartner?: boolean;
-  assistanceLocationId?: string;
-  assistanceServiceKey?: string;
-  serviceAreaNotice?: string;
 };
 
 export type AssetLead = {
@@ -881,7 +874,6 @@ function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
     serviceRadiusKm: asInteger(row.partner_service_radius_km),
     brandFocus: asText(row.partner_brand_focus),
     services: asText(row.partner_services),
-    isAim4priceManaged: false,
     isActivePartner: asText(row.account_status).toLowerCase() === 'active',
   };
 }
@@ -1193,7 +1185,7 @@ export async function listPartnerDirectory(input: {
   currentUserId: string;
   partnerType?: PartnerType | null;
   search?: string | null;
-  bounds?: AssistanceMapBounds | null;
+  bounds?: PartnerMapBounds | null;
   includeExternal?: boolean;
 }): Promise<PartnerDirectoryEntry[]> {
   await ensurePartnerAccessTables();
@@ -1204,7 +1196,7 @@ export async function listPartnerDirectory(input: {
   const params: unknown[] = [input.currentUserId];
   const filters = [
     `user_id <> $1`,
-    `account_type in ('dealer', 'finance', 'insurance', 'licensing')`,
+    `account_type = 'dealer'`,
     `partner_directory_enabled = true`,
     `partner_directory_status = 'approved'`,
   ];
@@ -1287,7 +1279,7 @@ export async function listPartnerDirectory(input: {
   // Only real businesses belong in the directory. Managed service-area records
   // remain intact for historical leads but are never returned as listings.
   const externalBusinesses = input.includeExternal === false ? [] : await listExternalBusinesses(input);
-  const accounts = genuinePartners.filter(p => !isAssistanceMasterAccountUserId(p.userId));
+  const accounts = genuinePartners.filter(p => !p.userId.startsWith('aim4price-assistance-'));
   for (const account of accounts) {
     const linked = externalBusinesses.find(b => account.email && b.email.toLowerCase() === account.email.toLowerCase());
     if (linked) { account.googlePlaceId = linked.googlePlaceId; account.googleMapsUrl = linked.googleMapsUrl; }
@@ -1323,6 +1315,9 @@ async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerP
         partner_services
       from account_profiles
       where user_id = $1
+        and account_type = 'dealer'
+        and account_status = 'active'
+        and not exists (select 1 from "user" u where u.id = user_id and lower(u.email) in ('insurance@aim4price.com','finance@aim4price.com','licensing@aim4price.com','accounting@aim4price.com','dealers@aim4price.com'))
       limit 1
     `,
     [partnerUserId],
@@ -1524,10 +1519,9 @@ export async function createAssetLead(input: {
   leadType: LeadType;
   ownerMessage?: string | null;
   includedSections?: Record<string, unknown> | null;
-  allowAim4priceAssistance?: boolean;
 }): Promise<AssetLead> {
   await ensurePartnerAccessTables();
-  if (isAssistanceMasterAccountUserId(input.partnerUserId) && input.allowAim4priceAssistance !== true) {
+  if (input.partnerUserId.startsWith('aim4price-assistance-')) {
     throw new Error('PARTNER_NOT_FOUND');
   }
   const allowedPartnerTypes = partnerTypesForLeadType(input.leadType);

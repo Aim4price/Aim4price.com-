@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       contentType: upload.contentType,
       byteSize: upload.byteSize,
       source: normalizeSource(formData.get('source')),
-      actor: { displayName: context.accountantAccess ? context.actorName : null },
+      actor: { displayName: null },
     });
 
     return NextResponse.json({ ok: true, document });

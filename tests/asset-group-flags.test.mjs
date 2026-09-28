@@ -81,14 +81,3 @@ test('flag API requires a boolean and uses the authenticated owner', async () =>
   assert.equal((await api.PATCH(request({ groupId, registerId, isFlagged:true, userId:'someone-else' }))).status, 200);
   assert.deepEqual(api.calls, [['owner', groupId, true, registerId]]);
 });
-test('read-only and cross-register accountant flag requests cannot mutate umbrellas', async () => {
-  for (const [allowDirectUpdates, body, scope] of [
-    [false, { groupId, registerId, isFlagged:true }, ''],
-    [true, { groupId, registerId:otherRegisterId, isFlagged:true }, ''],
-    [true, { groupId, isFlagged:true }, '?scope=combined'],
-  ]) {
-    const api = route({ ...ownerContext, accountantRegisterId:registerId, accountantAccess:{ allowDirectUpdates } });
-    assert.equal((await api.PATCH(request(body, scope))).status, 403);
-    assert.equal(api.calls.length, 0);
-  }
-});

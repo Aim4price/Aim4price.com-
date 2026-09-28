@@ -21,10 +21,6 @@ export default async function AssetRegisterPage({
     email: session.user.email,
   });
 
-  if (profile.accountType === "finance" && profile.accountSubtype === "accountant") {
-    redirect("/accountant/registers");
-  }
-
   if (profile.accountType !== "owner" && profile.accountType !== "dealer") {
     redirect("/leads");
   }

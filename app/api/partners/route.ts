@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../lib/auth-session';
 import { listPartnerDirectory, normalizePartnerType } from '../../../lib/partner-access';
-import type { AssistanceMapBounds } from '../../../lib/assistance-network';
+import type { PartnerMapBounds } from '../../../lib/partner-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-function readBounds(searchParams: URLSearchParams): AssistanceMapBounds | null {
+function readBounds(searchParams: URLSearchParams): PartnerMapBounds | null {
   const rawValues = ['west', 'south', 'east', 'north'].map((key) => searchParams.get(key));
   if (rawValues.some((value) => value === null || value.trim() === '')) return null;
   const values = rawValues.map((value) => Number(value));

@@ -202,10 +202,6 @@ type FuelLedgerAuditEvent = {
   createdAtIso: string;
 };
 
-type AccountantFuelLedgerResponse = FuelLedgerResponse & {
-  fuel?: FuelLedgerResponse;
-};
-
 type StorageDraft = {
   name: string;
   fuelType: string;
@@ -1475,11 +1471,9 @@ function getYearOptions(entries: Array<{ createdAtIso?: string; documentDate?: s
   return Array.from(years).sort((a, b) => Number(b) - Number(a));
 }
 
-function buildReportUrl(sourceId: string, year: string, month: string, format: ReportFormat = 'pdf', accountantShareId?: string, accountantRegisterId?: string): string {
+function buildReportUrl(sourceId: string, year: string, month: string, format: ReportFormat = 'pdf', ): string {
   const url = new URL('/api/fuel/report', window.location.origin);
   url.searchParams.set('format', format);
-  if (accountantShareId) url.searchParams.set('accountantShareId', accountantShareId);
-  if (accountantRegisterId) url.searchParams.set('accountantRegisterId', accountantRegisterId);
 
   if (sourceId === REPORT_SOURCE_ALL_STORAGE_UNITS) {
     url.searchParams.set('includeFuelSlips', 'false');
@@ -1496,15 +1490,6 @@ function buildReportUrl(sourceId: string, year: string, month: string, format: R
   }
 
   return url.toString();
-}
-
-function withAccountantShare(url: string, accountantShareId?: string, accountantRegisterId?: string): string {
-  if (!accountantShareId) return url;
-
-  const scopedUrl = new URL(url, window.location.origin);
-  scopedUrl.searchParams.set('accountantShareId', accountantShareId);
-  if (accountantRegisterId) scopedUrl.searchParams.set('accountantRegisterId', accountantRegisterId);
-  return `${scopedUrl.pathname}${scopedUrl.search}`;
 }
 
 function toAbsoluteUrl(value?: string | null): string | null {
@@ -1539,8 +1524,8 @@ function buildFuelScanUrl(storage: FuelLedgerStorage): string | null {
   return toAbsoluteUrl(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`);
 }
 
-function buildFuelQrPrintUrl(storage: FuelLedgerStorage, accountantShareId?: string, accountantRegisterId?: string): string {
-  return withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`, accountantShareId, accountantRegisterId);
+function buildFuelQrPrintUrl(storage: FuelLedgerStorage, ): string {
+  return `/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`;
 }
 
 function parseDownloadFileName(response: Response, fallback: string): string {
@@ -1564,15 +1549,12 @@ function downloadBlob(blob: Blob, fileName: string) {
 
 export default function FuelClient({
   addedByLabel,
-  accountantShareId,
-  accountantRegisterId,
   initialAssetId = '',
   initialOpenAdd = false,
   initialReturnTo = '',
 }: {
   addedByLabel: string;
-  accountantShareId?: string;
-  accountantRegisterId?: string;
+
   initialAssetId?: string;
   initialOpenAdd?: boolean;
   initialReturnTo?: string;
@@ -1590,8 +1572,7 @@ export default function FuelClient({
     window.scrollTo({ top: 0 });
   }
 
-  const isAccountantReadOnly = false;
-  const scopedApiUrl = (url: string) => withAccountantShare(url, accountantShareId, accountantRegisterId);
+  const scopedApiUrl = (url: string) => url;
   const [storages, setStorages] = useState<FuelLedgerStorage[]>([]);
   const [recentEvents, setRecentEvents] = useState<FuelLedgerEvent[]>([]);
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
@@ -1869,12 +1850,10 @@ export default function FuelClient({
     }
 
     try {
-      const ledgerUrl = accountantShareId
-        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/ledger?kind=fuel${accountantRegisterId ? `&registerId=${encodeURIComponent(accountantRegisterId)}` : ''}`
-        : '/api/fuel';
+      const ledgerUrl = '/api/fuel';
       const response = await fetch(ledgerUrl, { credentials: 'include', cache: 'no-store' });
-      const payload = (await response.json()) as AccountantFuelLedgerResponse;
-      const data = payload.fuel ?? payload;
+      const payload = (await response.json()) as FuelLedgerResponse;
+      const data = payload;
 
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || 'Failed to load Fuel Ledger.');
@@ -1929,7 +1908,7 @@ export default function FuelClient({
   useEffect(() => {
     void loadLedger();
     void loadCaptureRequests();
-  }, [accountantRegisterId, accountantShareId]);
+  }, []);
 
   useEffect(() => {
     if (!initialOpenAdd || initialQuickLaunchHandledRef.current || isLoading || !hasLoadedLedger) return;
@@ -2196,10 +2175,6 @@ export default function FuelClient({
   }
 
   function openFuelSlipMenu() {
-    if (isAccountantReadOnly) {
-      openFuelSlipManager();
-      return;
-    }
 
     resetFuelSlipValidationState();
     setFuelSlipFlow(null);
@@ -2946,7 +2921,7 @@ export default function FuelClient({
   }
 
   function handlePrintFuelQrLabel(storage: FuelLedgerStorage) {
-    const opened = window.open(buildFuelQrPrintUrl(storage, accountantShareId, accountantRegisterId), '_blank', 'noopener,noreferrer');
+    const opened = window.open(buildFuelQrPrintUrl(storage, ), '_blank', 'noopener,noreferrer');
 
     if (!opened) {
       setNotice({ tone: 'error', message: 'Unable to open the fuel QR print page. Please allow pop-ups and try again.' });
@@ -3386,12 +3361,12 @@ export default function FuelClient({
                     <div className={styles.fuelSlipManagerEmptyState}>
                       <strong>No fuel slips yet</strong>
                       <span>Add the first slip to start building a searchable fuel history.</span>
-                      {!isAccountantReadOnly ? (
+                      {(
                         <button type="button" className={styles.primaryButton} onClick={() => openFuelSlipModal(true)}>
                           <PlusIcon className={styles.buttonIcon} />
                           <span>Add fuel slip</span>
                         </button>
-                      ) : null}
+                      )}
                     </div>
                   ) : null}
 
@@ -3436,7 +3411,7 @@ export default function FuelClient({
                             <p className={styles.slipLedgerFuel}>{slip.fuelType || 'Fuel not recorded'} · {formatLitres(slip.litres)}{slip.pricePerLitre !== null ? ` · ${formatCurrency(slip.pricePerLitre)}/L` : ''}</p>
                             <div className={styles.slipLedgerPills}>
                               <span className={styles.slipLedgerAsset}><AssetPillIcon /><span>{fuelSlipTargetLabel(slip)}</span></span>
-                          {needsReview && !isAccountantReadOnly ? (
+                          {needsReview ? (
                             <button
                               type="button"
                               className={`${styles.fuelSlipManagerStatusBadge} ${styles.fuelSlipManagerStatusReview} ${styles.fuelSlipManagerStatusAction}`}
@@ -3456,7 +3431,7 @@ export default function FuelClient({
                             <div className={styles.slipLedgerAmount}><strong>{formatCurrency(slip.totalAmount)}</strong><span>Total amount</span></div>
                             <div className={styles.slipLedgerActions}>
                               {slip.documentFileUrl ? (
-                                <DocumentFileLink className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={withAccountantShare(slip.documentFileUrl, accountantShareId, accountantRegisterId)} fuelDocument fuelSource={slip.documentFileUrl} target="_blank" rel="noreferrer">
+                                <DocumentFileLink className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} fuelDocument fuelSource={slip.documentFileUrl} target="_blank" rel="noreferrer">
                                   <OpenFileIcon className={styles.buttonIcon} />
                                   <span>Open file</span>
                                 </DocumentFileLink>
@@ -3537,7 +3512,7 @@ export default function FuelClient({
 
               <div className={styles.topActions}>
                 <div className={styles.topActionButtons}>
-                  {!isAccountantReadOnly ? (
+                  {(
                     <button
                       type="button"
                       className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topAddButton}`}
@@ -3546,7 +3521,7 @@ export default function FuelClient({
                       <PlusIcon className={styles.buttonIcon} />
                       <span>{isSlipsPage ? 'Add Fuel Slip' : 'Add Storage Tank'}</span>
                     </button>
-                  ) : null}
+                  )}
                   <button
                     type="button"
                     className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topExclusionsButton}`}
@@ -3599,20 +3574,20 @@ export default function FuelClient({
             <CaptureRequestStatusList
               requests={captureRequests}
               title="Fuel slips being captured"
-              onRetract={!accountantShareId && !accountantRegisterId ? retractCaptureRequest : undefined}
+              onRetract={retractCaptureRequest}
             />
 
             {isSlipsPage ? <section className={styles.fuelSlipTrackingPage} aria-label="Fuel slip tracking">{fuelSlipResults}</section> : (<>
             {!isLoading && !storages.length ? (
               <div className={styles.emptyState}>
                 <strong>No fuel storage yet.</strong>
-                <span>{isAccountantReadOnly ? 'No fuel storage or fuel records have been shared for this register.' : 'Add your first tank, bowser or storage unit.'}</span>
-                {!isAccountantReadOnly ? (
+                <span>{'Add your first tank, bowser or storage unit.'}</span>
+                {(
                   <button type="button" className={styles.primaryButton} onClick={openCreateStorage}>
                     <PlusIcon className={styles.buttonIcon} />
                     <span>Add Storage Tank</span>
                   </button>
-                ) : null}
+                )}
               </div>
             ) : null}
 
@@ -3658,7 +3633,7 @@ export default function FuelClient({
                       </div>
                     </div>
 
-                    {!isAccountantReadOnly ? <div className={styles.storageHeaderAside}>
+                    {<div className={styles.storageHeaderAside}>
                       <div className={styles.unitActions}>
                         <button type="button" className={styles.unitButton} onClick={() => openManageStorageChoice(storage)} disabled={isSaving}>
                           <GearIcon className={styles.buttonIcon} />
@@ -3682,8 +3657,7 @@ export default function FuelClient({
                           <span>Archive Unit</span>
                         </button>
                       </div>
-                    </div> : null}
-
+                    </div>}
 
                     {hasStorageWarning ? (
                       <div className={styles.storageWarningList}>
@@ -3702,11 +3676,11 @@ export default function FuelClient({
                               <strong>Balance needs checking</strong>
                               <span>{storage.balanceCheckReason || 'Measure the tank physically and reconcile the recorded current litres.'}</span>
                             </div>
-                            {!isAccountantReadOnly ? (
+                            {(
                               <button type="button" className={styles.reconcileBalanceButton} onClick={() => openReconcileBalance(storage)} disabled={isSaving}>
                                 Reconcile Balance
                               </button>
-                            ) : null}
+                            )}
                           </div>
                         ) : null}
 
@@ -3716,11 +3690,11 @@ export default function FuelClient({
                               <strong>Dipstick note</strong>
                               <span>{dipstickNoteText}</span>
                             </div>
-                            {!isAccountantReadOnly ? (
+                            {(
                               <button type="button" className={styles.clearDipstickButton} onClick={() => handleClearDipstickNote(storage)} disabled={isSaving}>
                                 Clear note
                               </button>
-                            ) : null}
+                            )}
                           </div>
                         ) : null}
                       </div>
@@ -3743,12 +3717,12 @@ export default function FuelClient({
         </section>
 
         <nav className={styles.mobileQuickActions} aria-label="Fuel quick actions">
-          {!isAccountantReadOnly ? (
+          {(
             <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? () => openFuelSlipModal(true) : openCreateStorage}>
               <PlusIcon className={styles.buttonIcon} />
               <span>Add</span>
             </button>
-          ) : null}
+          )}
           <button type="button" className={styles.mobileQuickButton} onClick={switchFuelView}>
             {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}
             <span>{isSlipsPage ? 'Storage' : 'Slips'}</span>
@@ -3778,8 +3752,7 @@ export default function FuelClient({
           storage={selectedStorage}
           assets={includedFuelAssets}
           addedByLabel={addedByLabel}
-          accountantShareId={accountantShareId}
-          accountantRegisterId={accountantRegisterId}
+
           onClose={closeModal}
           onLedgerUpdated={applyLedgerData}
           onReconcile={() => openReconcileBalance(selectedStorage)}
@@ -3789,8 +3762,7 @@ export default function FuelClient({
       {modalMode === 'reconcile-balance' && selectedStorage ? (
         <ReconcileFuelBalanceModal
           storage={selectedStorage}
-          accountantShareId={accountantShareId}
-          accountantRegisterId={accountantRegisterId}
+
           onClose={closeModal}
           onLedgerUpdated={(data: MissingFuelLedgerPayload) => {
             applyLedgerData(data);
@@ -4043,12 +4015,12 @@ export default function FuelClient({
                 </label>
 
                 <div className={styles.fuelSlipManagerToolbarButtons}>
-                  {!isAccountantReadOnly ? (
+                  {(
                     <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerAddButton}`} onClick={() => openFuelSlipModal(true)}>
                       <PlusIcon className={styles.buttonIcon} />
                       <span>Add fuel slip</span>
                     </button>
-                  ) : null}
+                  )}
                   <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerFilterButton}`} onClick={openFuelSlipManagerFilterPanel}>
                     <FilterIcon className={styles.buttonIcon} />
                     <span>Filter</span>
@@ -4080,8 +4052,8 @@ export default function FuelClient({
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setManagedFuelSlip(null)} aria-label="Close manage fuel slip"><CloseIcon /></button>
             </div>
             <div className={`${styles.slipManageOptions} ${manageStyles.grid}`}>
-              {!isAccountantReadOnly ? <button type="button" className={manageStyles.primary} onClick={() => { const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipReview(slip); }}><EditIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>{fuelSlipNeedsReview(managedFuelSlip) ? 'Review / complete' : 'Edit'}</span><small>Check and update slip details.</small></span></button> : null}
-              {!isAccountantReadOnly ? <button type="button" className={manageStyles.danger} onClick={() => { const trigger = fuelSlipManagerChildTriggerRef.current; const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipDeleteConfirm(slip); fuelSlipManagerChildTriggerRef.current = trigger; }}><TrashIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>Void</span><small>Void this fuel slip.</small></span></button> : null}
+              {<button type="button" className={manageStyles.primary} onClick={() => { const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipReview(slip); }}><EditIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>{fuelSlipNeedsReview(managedFuelSlip) ? 'Review / complete' : 'Edit'}</span><small>Check and update slip details.</small></span></button>}
+              {<button type="button" className={manageStyles.danger} onClick={() => { const trigger = fuelSlipManagerChildTriggerRef.current; const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipDeleteConfirm(slip); fuelSlipManagerChildTriggerRef.current = trigger; }}><TrashIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>Void</span><small>Void this fuel slip.</small></span></button>}
             </div>
           </section>
         </div>
@@ -4429,7 +4401,7 @@ export default function FuelClient({
                 {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
 
                 {fuelSlipFormPage === 'details' && fuelSlipDraft.documentFileUrl ? (
-                  <DocumentFileLink className={styles.fileLink} href={withAccountantShare(fuelSlipDraft.documentFileUrl, accountantShareId, accountantRegisterId)} fuelDocument={Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached fuel slip/photo: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink>
+                  <DocumentFileLink className={styles.fileLink} href={fuelSlipDraft.documentFileUrl} fuelDocument={Boolean(fuelSlipDraft.id)} fuelSource={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached fuel slip/photo: {fuelSlipDraft.originalFilename || 'Uploaded file'}</DocumentFileLink>
                 ) : null}
 
                 {fuelSlipFormPage === 'details' && fuelSlipDraft.rawExtractedText ? (
@@ -4595,7 +4567,7 @@ export default function FuelClient({
       {modalMode === 'report' ? <ReportDownloadFlow title="Fuel reports" allLabel="All fuel records" assets={reportAssets} years={yearOptions}
         fields={[{key:'source',label:'Fuel source',initial:REPORT_SOURCE_ALL_WITH_SLIPS,options:reportStorageOptions}]}
         onClose={closeModal} onDownload={async selection => {
-          const url = new URL(buildReportUrl(selection.fields.source,selection.year,selection.month,selection.format,accountantShareId,accountantRegisterId),window.location.origin);
+          const url = new URL(buildReportUrl(selection.fields.source,selection.year,selection.month,selection.format,),window.location.origin);
           if(selection.assetId !== 'all') url.searchParams.set('assetId',selection.assetId);
           if(selection.format === 'xlsx') await downloadCanonicalReportFile(url.toString());
           else if(!openCanonicalReportUrl(url.toString())) throw new Error('Allow pop-ups to open your report.');
@@ -4645,4 +4617,3 @@ export default function FuelClient({
     </>
   );
 }
-

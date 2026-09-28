@@ -3,7 +3,7 @@ import { ensureAccountProfileColumns } from "./account-profile";
 import { resolveAssetRegisterUploadBytes } from "./asset-register-uploads";
 import { ensureDealerMaintenanceTrackerTables } from "./dealer-maintenance-tracker";
 import { getDb } from "./db";
-import { createAssetLead, ensurePartnerAccessTables } from "./partner-access";
+import { ensurePartnerAccessTables } from "./partner-access";
 
 export type AssetDiscoveryEnquiryStatus =
   | "pending"
@@ -353,10 +353,6 @@ const SAFE_LICENSE_RENEWAL_DATE_SQL = `(case
     then (${LICENSE_RENEWAL_DATE_SQL})::date
   else null
 end)`;
-const LICENSING_DISCOVERY_ASSET_SQL = `
-  coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active' and
-  ${SAFE_LICENSE_RENEWAL_DATE_SQL} is not null
-`;
 const PROVINCE_ABBREVIATION_SQL = `case lower(nullif(trim(owner.province), ''))
   when 'western cape' then 'WC'
   when 'gauteng' then 'GP'
@@ -1094,14 +1090,11 @@ export async function getAssetDiscoveryBrowseAccess(input: {
 }): Promise<AssetDiscoveryBrowseAccess> {
   await ensureAssetDiscoveryTables();
   const requestedType = asText(input.accountType).toLowerCase();
-  const accountType = requestedType === "owner"
-    ? "owner"
-    : requestedType === "licensing"
-      ? "licensing"
-      : "dealer";
+  if (!["owner", "dealer"].includes(requestedType)) throw new Error("Discovery is available to owners and dealers.");
+  const accountType = requestedType === "owner" ? "owner" : "dealer";
   const db = getDb();
 
-  if (accountType === "dealer" || accountType === "licensing") {
+  if (accountType === "dealer") {
     const dealer = await db.query<{ allowed: boolean }>(
       `
         select (
@@ -1116,7 +1109,7 @@ export async function getAssetDiscoveryBrowseAccess(input: {
     );
 
     if (!dealer.rows[0]?.allowed) {
-      throw new Error("Asset Discovery is available to active owners, dealers and licence renewal experts.");
+      throw new Error("Asset Discovery is available to active owners and dealers.");
     }
 
     return {
@@ -1260,7 +1253,7 @@ function baseAssetWhere(input: {
   renewalTiming?: string;
   enquiryStatus?: string;
 }) {
-  const licensingViewer = asText(input.viewerAccountType).toLowerCase() === 'licensing';
+
   const params: unknown[] = [input.viewerUserId];
   const where = [
     "owner.account_type = 'owner'",
@@ -1268,11 +1261,11 @@ function baseAssetWhere(input: {
     "owner.discovery_participation_enabled = true",
     "coalesce(to_jsonb(asset)->>'lifecycle_state', 'active') = 'active'",
     "asset.user_id <> $1",
-    `(${licensingViewer ? LICENSING_DISCOVERY_ASSET_SQL : DISCOVERY_ELIGIBLE_ASSET_SQL})`,
+    `(${DISCOVERY_ELIGIBLE_ASSET_SQL})`,
     `(${BASIC_ASSET_TYPE_SQL} is not null or ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}')`,
     `(${BASIC_ASSET_TYPE_SQL} is not null or coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}')`,
   ];
-  if (!licensingViewer) {
+  {
     where.push(`(
       not exists (
         select 1
@@ -1290,39 +1283,6 @@ function baseAssetWhere(input: {
           and viewer_denial.request_again_at > now()
       )
     )`);
-  }
-  if (licensingViewer) {
-    const renewalTiming = asText(input.renewalTiming).toLowerCase();
-    if (renewalTiming === 'overdue') {
-      where.push(`${SAFE_LICENSE_RENEWAL_DATE_SQL} < current_date`);
-    } else if (renewalTiming === 'next_30_days') {
-      where.push(`${SAFE_LICENSE_RENEWAL_DATE_SQL} between current_date and current_date + interval '30 days'`);
-    } else if (renewalTiming === 'next_6_months') {
-      where.push(`${SAFE_LICENSE_RENEWAL_DATE_SQL} between current_date and current_date + interval '6 months'`);
-    } else if (renewalTiming === 'later') {
-      where.push(`${SAFE_LICENSE_RENEWAL_DATE_SQL} > current_date + interval '6 months'`);
-    }
-
-    const requestedStatus = asText(input.enquiryStatus).toLowerCase();
-    const savedStatus = requestedStatus === 'won'
-      ? 'approved'
-      : requestedStatus === 'denied'
-        ? 'temporarily_denied'
-        : requestedStatus;
-    const latestStatusSql = `(select latest_enquiry.status
-      from public.asset_discovery_enquiries latest_enquiry
-      where latest_enquiry.asset_register_item_id = asset.id
-        and latest_enquiry.requester_user_id = $1
-        and latest_enquiry.requester_account_type = 'licensing'
-        and latest_enquiry.status in ('pending', 'approved', 'temporarily_denied')
-      order by latest_enquiry.created_at desc
-      limit 1)`;
-    if (requestedStatus === 'available') {
-      where.push(`${latestStatusSql} is null`);
-    } else if (['pending', 'approved', 'temporarily_denied'].includes(savedStatus)) {
-      params.push(savedStatus);
-      where.push(`${latestStatusSql} = $${params.length}`);
-    }
   }
 
   const search = asText(input.search);
@@ -1507,7 +1467,7 @@ export async function listAssetDiscoveryAssets(input: {
   const offset = (page - 1) * pageSize;
 
   const listParams = [...params];
-  const licensingViewer = asText(input.viewerAccountType).toLowerCase() === 'licensing';
+
   const focusAssetId = asText(input.focusAssetId);
   let focusOrderSql = "";
   if (focusAssetId) {
@@ -1576,7 +1536,7 @@ export async function listAssetDiscoveryAssets(input: {
         else 3
       end,
       case when enquiry.is_active then enquiry.created_at end desc nulls last,
-      ${licensingViewer ? `${SAFE_LICENSE_RENEWAL_DATE_SQL} asc nulls last,` : ''}
+      ${''}
       asset.updated_at desc nulls last,
       asset.created_at desc nulls last,
       asset.id desc
@@ -1808,24 +1768,11 @@ async function findSafeAssetForEnquiry(
         and owner.account_type = 'owner'
         and owner.account_status = 'active'
         and owner.discovery_participation_enabled = true
-        and (
-          ($3 = 'licensing' and (${LICENSING_DISCOVERY_ASSET_SQL}))
-          or ($3 <> 'licensing' and (${DISCOVERY_ELIGIBLE_ASSET_SQL}))
-        )
-        and (
-          $3 <> 'licensing'
-          or not exists (
-            select 1
-            from public.asset_discovery_enquiries permanent_licensing_denial
-            where permanent_licensing_denial.asset_register_item_id = asset.id
-              and permanent_licensing_denial.requester_user_id = $2
-              and permanent_licensing_denial.requester_account_type = 'licensing'
-              and permanent_licensing_denial.status = 'temporarily_denied'
-          )
-        )
+        and (${DISCOVERY_ELIGIBLE_ASSET_SQL})
+        and $3 in ('owner', 'dealer')
         and (${BASIC_ASSET_TYPE_SQL} is not null or ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
         and (${BASIC_ASSET_TYPE_SQL} is not null or coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
-        and ($3 = 'licensing' or not exists (
+        and (not exists (
           select 1
           from public.asset_discovery_enquiries blocked_enquiry
           where blocked_enquiry.asset_register_item_id = asset.id
@@ -1893,13 +1840,6 @@ export async function createAssetDiscoveryEnquiry(input: {
 
   if (
     current?.status === "temporarily_denied" &&
-    input.requesterAccountType === "licensing"
-  ) {
-    throw new Error("The owner declined renewal help for this asset. You cannot offer again.");
-  }
-
-  if (
-    current?.status === "temporarily_denied" &&
     current.request_again_at &&
     Date.parse(current.request_again_at) > Date.now()
   ) {
@@ -1941,17 +1881,7 @@ export async function createAssetDiscoveryEnquiry(input: {
           and blocked_enquiry.status = 'temporarily_denied'
           and blocked_enquiry.request_again_at > now()
       )
-        and (
-          $4 <> 'licensing'
-          or not exists (
-            select 1
-            from public.asset_discovery_enquiries permanent_licensing_denial
-            where permanent_licensing_denial.asset_register_item_id = $1::uuid
-              and permanent_licensing_denial.requester_user_id = $3
-              and permanent_licensing_denial.requester_account_type = 'licensing'
-              and permanent_licensing_denial.status = 'temporarily_denied'
-          )
-        )
+        and $4 in ('owner', 'dealer')
       returning id::text
     `,
     [
@@ -2052,7 +1982,7 @@ async function loadDiscoveryDetailRow(
       where asset.id = $1::uuid
         and owner.account_type = 'owner'
         and owner.account_status = 'active'
-        and ((${DISCOVERY_ELIGIBLE_ASSET_SQL}) or (${LICENSING_DISCOVERY_ASSET_SQL}))
+        and (${DISCOVERY_ELIGIBLE_ASSET_SQL})
         and (${BASIC_ASSET_TYPE_SQL} is not null or ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
         and (${BASIC_ASSET_TYPE_SQL} is not null or coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}')
       limit 1
@@ -2436,8 +2366,7 @@ export async function getAssetDiscoveryEnquiryForUser(input: {
   const accountType = asText(input.accountType).toLowerCase();
   if (
     accountType !== "owner" &&
-    accountType !== "dealer" &&
-    accountType !== "licensing"
+    accountType !== "dealer"
   ) {
     throw new Error("Discovery enquiry not found.");
   }
@@ -2566,10 +2495,6 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
                     and requester.account_type = 'dealer'
                   )
                   or (
-                    candidate.requester_account_type = 'licensing'
-                    and requester.account_type = 'licensing'
-                  )
-                  or (
                     candidate.requester_account_type = 'owner'
                     and requester.account_type = 'owner'
                     and requester.discovery_participation_enabled = true
@@ -2582,22 +2507,10 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
           set
             status = 'temporarily_denied',
             denied_at = now(),
-            request_again_at = case
-              when target.requester_account_type = 'licensing' then null
-              else now() + interval '90 days'
-            end,
+            request_again_at = now() + interval '90 days',
             updated_at = now()
           from target
-          where (
-              (
-                target.requester_account_type = 'licensing'
-                and enquiry.id = target.id
-              )
-              or (
-                target.requester_account_type <> 'licensing'
-                and enquiry.asset_register_item_id = target.asset_register_item_id
-              )
-            )
+          where enquiry.asset_register_item_id = target.asset_register_item_id
             and enquiry.owner_user_id = $2
             and enquiry.status = 'pending'
           returning enquiry.id
@@ -2635,10 +2548,6 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
                   and requester.account_type = 'dealer'
                 )
                 or (
-                  candidate.requester_account_type = 'licensing'
-                  and requester.account_type = 'licensing'
-                )
-                or (
                   candidate.requester_account_type = 'owner'
                   and requester.account_type = 'owner'
                   and requester.discovery_participation_enabled = true
@@ -2652,60 +2561,6 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
 
   if (!result.rows[0]?.id)
     throw new Error("Discovery enquiry not found or already decided.");
-
-  if (nextStatus === "approved") {
-    const approved = await db.query<{
-      asset_register_item_id: string;
-      requester_user_id: string;
-      requester_account_type: string;
-      requester_message: string | null;
-    }>(
-      `
-        select
-          asset_register_item_id::text,
-          requester_user_id,
-          requester_account_type,
-          requester_message
-        from public.asset_discovery_enquiries
-        where id = $1::uuid
-        limit 1
-      `,
-      [result.rows[0].id],
-    );
-    const approvedEnquiry = approved.rows[0];
-
-    if (approvedEnquiry?.requester_account_type === "licensing") {
-      try {
-        await createAssetLead({
-          ownerUserId: input.ownerUserId,
-          assetId: approvedEnquiry.asset_register_item_id,
-          partnerUserId: approvedEnquiry.requester_user_id,
-          leadType: "license_renewal",
-          ownerMessage: approvedEnquiry.requester_message,
-          includedSections: {
-            assetDetails: true,
-            mainPhoto: true,
-            photos: true,
-            documents: true,
-            source: "asset_discovery",
-          },
-        });
-      } catch (error) {
-        await db.query(
-          `
-            update public.asset_discovery_enquiries
-            set status = 'pending',
-                approved_at = null,
-                updated_at = now()
-            where id = $1::uuid
-              and status = 'approved'
-          `,
-          [result.rows[0].id],
-        );
-        throw error;
-      }
-    }
-  }
 
   return getAssetDiscoveryEnquiryForUser({
     enquiryId: result.rows[0].id,
@@ -2730,10 +2585,6 @@ export async function listPendingAssetDiscoveryEnquiriesForOwner(
            (
              enquiry.requester_account_type = 'dealer'
              and requester.account_type = 'dealer'
-           )
-           or (
-             enquiry.requester_account_type = 'licensing'
-             and requester.account_type = 'licensing'
            )
            or (
              enquiry.requester_account_type = 'owner'
@@ -2768,10 +2619,6 @@ export async function listRecentAssetDiscoveryEnquiriesForRequester(
             and requester.account_type = 'dealer'
           )
           or (
-            enquiry.requester_account_type = 'licensing'
-            and requester.account_type = 'licensing'
-          )
-          or (
             enquiry.requester_account_type = 'owner'
             and requester.account_type = 'owner'
             and requester.discovery_participation_enabled = true
@@ -2791,28 +2638,6 @@ export async function listRecentAssetDiscoveryEnquiriesForRequester(
   return result.rows.map(mapNotification);
 }
 
-export async function listLicensingAssetDiscoveryLeadOpportunities(
-  requesterUserId: string,
-): Promise<AssetDiscoveryNotification[]> {
-  await ensureAssetDiscoveryTables();
-  const result = await getDb().query<EnquiryRow>(
-    enquirySelectSql(`
-      where enquiry.requester_user_id = $1
-        and enquiry.requester_account_type = 'licensing'
-        and enquiry.status in ('pending', 'temporarily_denied')
-        and owner.account_status = 'active'
-        and requester.account_status = 'active'
-        and requester.account_type = 'licensing'
-      order by enquiry.updated_at desc
-      limit 100
-    `),
-    [requesterUserId],
-  );
-
-  return result.rows.map(mapNotification);
-}
-
 /** @deprecated Use listRecentAssetDiscoveryEnquiriesForRequester. */
 export const listRecentAssetDiscoveryEnquiriesForDealer =
   listRecentAssetDiscoveryEnquiriesForRequester;
-

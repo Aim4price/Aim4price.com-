@@ -156,9 +156,7 @@ type NotificationAudience =
   | "all"
   | "owner"
   | "dealer"
-  | "insurance"
-  | "finance"
-  | "licensing";
+  | "business";
 
 type NotificationComposerState = {
   userId: string;
@@ -205,9 +203,7 @@ const NOTIFICATION_AUDIENCE_OPTIONS: Array<{
   { value: "all", label: "All accounts" },
   { value: "owner", label: "Owners" },
   { value: "dealer", label: "Dealers" },
-  { value: "insurance", label: "Insurance" },
-  { value: "finance", label: "Finance & accounting" },
-  { value: "licensing", label: "Licensing" },
+  { value: "business", label: "Businesses" },
 ];
 
 function normalizeNotificationAudience(
@@ -216,9 +212,7 @@ function normalizeNotificationAudience(
   const normalized = value.trim().toLowerCase();
   if (
     normalized === "dealer" ||
-    normalized === "insurance" ||
-    normalized === "finance" ||
-    normalized === "licensing"
+    normalized === "business"
   ) {
     return normalized;
   }
@@ -863,9 +857,7 @@ export default function AdminClient({
       all: 0,
       owner: 0,
       dealer: 0,
-      insurance: 0,
-      finance: 0,
-      licensing: 0,
+      business: 0,
     };
 
     for (const user of users) {

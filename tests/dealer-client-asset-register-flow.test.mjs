@@ -75,7 +75,7 @@ test('manual add chooses its destination without switching the current register'
 });
 
 test('dealer estimates use one owner-style register action and route through a destination chooser', () => {
-  assert.match(valuationClient, /normalizedSignedInAccountType === 'dealer'[\s\S]*isAccountantClientWorkspace/);
+  assert.match(valuationClient, /normalizedSignedInAccountType === 'owner'[\s\S]*normalizedSignedInAccountType === 'dealer'/);
   assert.match(valuationClient, /onClick=\{openDealerRegisterDestination\}[\s\S]*Save to Asset Register/);
   assert.match(valuationClient, /Where should this asset be saved\?/);
   assert.match(valuationClient, /onClick=\{saveToDealerAssetRegister\}[\s\S]*Dealer Asset Register/);
@@ -109,7 +109,7 @@ test('dealer estimates use one owner-style register action and route through a d
   assert.match(valuationStyles, /\.finalSaveDestination/);
   assert.doesNotMatch(valuationStyles, /resultClientRegisterActionButton|data-result-action='(?:dealer-register|client-register)'|\.finalSaveHeader span \{/);
   assert.match(valuationClient, /savePayload\.registerId = resolvedTargetRegisterId/);
-  assert.match(valuationRoute, /accountType === 'owner' \|\| accountType === 'dealer' \|\| Boolean\(accountantAccess\)/);
+  assert.match(valuationRoute, /accountType === 'owner' \|\| accountType === 'dealer'/);
 });
 
 test('shared umbrella assets appear as ordinary independent leads', () => {

@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
         name: session.user.name,
         email: session.user.email,
       });
-      const permittedAccount = ["dealer", "owner", "licensing"].includes(
+      const permittedAccount = ["dealer", "owner"].includes(
         profile.accountType,
       );
 
@@ -154,13 +154,13 @@ export async function POST(request: NextRequest) {
       email: session.user.email,
     });
 
-    if (!["dealer", "owner", "licensing"].includes(profile.accountType)) {
+    if (!["dealer", "owner"].includes(profile.accountType)) {
       return forbidden();
     }
 
     const enquiry = await createAssetDiscoveryEnquiry({
       requesterUserId: session.user.id,
-      requesterAccountType: profile.accountType as "owner" | "dealer" | "licensing",
+      requesterAccountType: profile.accountType as "owner" | "dealer",
       assetId: asText(body.assetId),
       message: asText(body.message),
     });

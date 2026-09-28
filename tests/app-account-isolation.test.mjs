@@ -8,6 +8,7 @@ import ts from 'typescript';
 const require = createRequire(import.meta.url);
 const read = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
 async function load(path, deps = {}) {
+  if (path === 'lib/auth-session.ts') deps = { './retired-workspaces': await load('lib/retired-workspaces.ts'), ...deps };
   if (path !== 'lib/app-session-policy.ts') deps = { './app-session-policy': await load('lib/app-session-policy.ts'), ...deps };
   const output = ts.transpileModule(await read(path), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const module = { exports: {} };

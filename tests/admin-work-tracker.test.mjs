@@ -64,7 +64,7 @@ test("friendly page mapping removes query strings and dynamic record details", (
     label: "Other account page",
     isAdminArea: false,
   });
-  assert.equal(resolveAdminWorkPage("/accountant/client-123").label, "Accountant Workspace");
+  assert.equal(resolveAdminWorkPage("/accountant/client-123").label, "Other account page");
   assert.equal(resolveAdminWorkPage("/valuations/run-123").label, "Get Estimate");
   assert.equal(resolveAdminWorkPage("/fuel-scan/private-code").label, "Fuel Ledger");
   assert.equal(resolveAdminWorkPage("/scan/private-code").label, "Asset Scan");

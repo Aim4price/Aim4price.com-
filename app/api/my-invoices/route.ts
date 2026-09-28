@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
   try {
     await assertWorkspaceAssetAccess(context, body.assetId);
     const result = await createMyInvoice(context.ownerUserId, body, {
-      displayName: context.accountantAccess ? context.actorName : null,
+      displayName: null,
     });
     const data = await filterCostLedgerForWorkspace(
       context,

@@ -103,7 +103,7 @@ test('threshold alerts are stable, revision-aware and permission scoped', () => 
 });
 
 test('Cost Ledger exposes total-spend controls only to the direct owner experience', () => {
-  assert.match(costClient, /const canManageBudgets = !dealerMode && !accountantShareId && !accountantRegisterId/);
+  assert.match(costClient, /const canManageBudgets = !dealerMode/);
   assert.match(costClient, /Spending budgets/);
   assert.match(costClient, /Budget amount/);
   assert.match(costClient, /Count fuel slip costs/);
@@ -305,5 +305,3 @@ test('warning-level budget cards and notifications use the red priority treatmen
   assert.match(budgetNotificationBuilder, /tone: 'warning'/);
   assert.match(budgetNotificationBuilder, /priority: true/);
 });
-
-

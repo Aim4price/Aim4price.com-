@@ -5,7 +5,7 @@ import { sendAim4priceEmail, getSiteOrigin } from "./email";
 import { getAccountProfile } from "./account-profile";
 import { getAssetRegisterItemById } from "./asset-register-db";
 import type { PartnerDirectoryEntry } from "./partner-access";
-import type { AssistanceMapBounds } from "./assistance-network";
+import type { PartnerMapBounds } from "./partner-access";
 import {
   businessText,
   businessEmail,
@@ -178,7 +178,7 @@ export async function saveBusiness(
 export async function listExternalBusinesses(input: {
   partnerType?: string | null;
   search?: string | null;
-  bounds?: AssistanceMapBounds | null;
+  bounds?: PartnerMapBounds | null;
   latitude?: number | null;
   longitude?: number | null;
 }): Promise<PartnerDirectoryEntry[]> {

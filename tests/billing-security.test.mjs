@@ -48,6 +48,7 @@ test('Invoice downloads require a real session and enforce owner access before r
 test('Signup uses the server quote and rejects a changed price before creating the account',async()=>{
  let calls=0,context;const trustedQuote={plan:{amountCents:50000}};
  const route=load('app/api/auth/[...all]/route.ts',{
+  '../../../../lib/retired-workspaces':load('lib/retired-workspaces.ts',{}),
   '../../../../lib/billing':{BillingError,validateSignupBilling:async input=>{if(!input.billingAccepted)throw new BillingError('Accept current price');return trustedQuote;}},
   'better-auth/next-js':{toNextJsHandler:()=>({GET:()=>{},POST:async()=>{calls++;return Response.json({ok:true});}})},
   '../../../../lib/auth':{auth:{}},

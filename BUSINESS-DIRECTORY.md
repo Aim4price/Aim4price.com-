@@ -19,6 +19,6 @@ No database migration is required. Existing request history and invitation deliv
 
 ## Verification
 
-Run `npm run typecheck`, `npm run test:business-network`, `npm run test:assistance-network`, and `node --experimental-strip-types --test tests/asset-external-share.test.mjs tests/external-file-share.test.mjs`.
+Run `npm run typecheck`, `npm run test:business-network`, `npm run test:workspace-retirement`, and `node --experimental-strip-types --test tests/asset-external-share.test.mjs tests/external-file-share.test.mjs`.
 
 `node scripts/verify-directory-sharing.cjs` uses local account/business fixtures and browser interception, with no real messages. It checks the directory/profile and outside-share handoff at desktop and phone widths. Live Google credentials, real device share targets and attachment delivery require deployment/device verification.

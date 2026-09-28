@@ -26,7 +26,6 @@ import { runGenericValuation, type GenericCondition, type GenericSelectedMethod 
 import {
   advancedAssumptionsRequireActiveAccess,
 } from '../../../lib/valuation/shared';
-import { getAccountantRegisterAccess } from '../../../lib/accountant-workspace';
 import { getAssetRegisterForUser } from '../../../lib/asset-registers';
 
 export const runtime = 'nodejs';
@@ -450,21 +449,16 @@ export async function POST(request: NextRequest) {
     }
 
     const accountType = String(profile.accountType ?? '').trim().toLowerCase();
-    const accountantAccess = accountantShareId
-      ? await getAccountantRegisterAccess({ accountantUserId: session.user.id, shareId: accountantShareId })
-      : null;
-    const effectiveOwnerUserId = accountantAccess?.ownerUserId ?? session.user.id;
-    const targetRegisterId = requestedRegisterId || accountantAccess?.registerId || '';
+    if (accountantShareId) return NextResponse.json({ ok: false, error: 'Specialist workspaces have been retired.' }, { status: 410 });
+    const effectiveOwnerUserId = session.user.id;
+    const targetRegisterId = requestedRegisterId;
     const targetRegister = targetRegisterId
       ? await getAssetRegisterForUser(effectiveOwnerUserId, targetRegisterId)
       : null;
     if (targetRegisterId && !targetRegister) {
       return NextResponse.json<SaveValuationRunApiResponse>({ ok: false, error: 'Asset register not found.' }, { status: 404 });
     }
-    if (accountantAccess && (saveForMarketplace || requestedConversionAssetId)) {
-      return NextResponse.json<SaveValuationRunApiResponse>({ ok: false, error: 'Client workspace estimates can only be saved as new client assets.' }, { status: 400 });
-    }
-    const canSaveAssetRegister = accountType === 'owner' || accountType === 'dealer' || Boolean(accountantAccess);
+    const canSaveAssetRegister = accountType === 'owner' || accountType === 'dealer';
     const canSaveMarketplaceAsset = !requestedConversionAssetId && saveForMarketplace && (accountType === 'owner' || accountType === 'dealer');
 
     if (!canSaveAssetRegister && !canSaveMarketplaceAsset) {

@@ -14,6 +14,7 @@ test('Business sessions require explicit endpoint opt-in and current verificatio
   const user = {id:'business-1',email:'business@example.test',emailVerified:true};
   const session = {user};
   const mod = load('lib/auth-session.ts', {
+    './retired-workspaces': load('lib/retired-workspaces.ts', {}),
     './app-realm-server':{currentAppRealm:async()=>realm},
     'next/headers':{cookies:async()=>({get:()=>undefined}),headers:async()=>new Headers()},
     './account-constants':{isAim4priceAdminEmail:()=>false},
@@ -31,6 +32,11 @@ test('Business sessions require explicit endpoint opt-in and current verificatio
   assert.equal(await mod.getServerSession({allowBusiness:true}),null,'Website permission cannot bypass an app realm');
   realm=null; activeFullAccount=true;
   assert.equal(await mod.getServerSession(),session,'Existing full accounts remain supported');
+  user.email = 'Accounting@aim4price.com';
+  assert.equal(await mod.getAnyServerSession(), null);
+  assert.equal(await mod.getServerSession({ requireActive:false, allowBusiness:true, authSession:session }), null);
+  user.email = 'normal@example.com'; user.id = 'aim4price-assistance-finance';
+  assert.equal(await mod.getAnyServerSession(), null);
 });
 test('Business page access preserves approval, suspension and full-account boundaries',async()=>{
   let status='active',verified=true;

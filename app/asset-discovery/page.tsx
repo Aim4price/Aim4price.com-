@@ -54,7 +54,7 @@ export default async function AssetDiscoveryPage({
             ? 'recently-advertised'
             : 'discovery'
         }
-        allowRecentAdverts={activeAccountType !== 'licensing'}
+        allowRecentAdverts
       />
     </main>
   );
