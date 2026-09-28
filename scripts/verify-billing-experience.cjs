@@ -85,7 +85,15 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='suspended'){assert.equal(await page.$('iframe'),null);await page.click('button[aria-label="Open invoice"]');await page.waitForSelector('dialog[open] a[download]');assert.equal(await page.$eval('iframe',e=>e.getAttribute('sandbox')),'');assert.match(await page.$eval('a[download]',e=>e.href),/10000000-0000-4000-8000-000000000001/);await page.$eval('iframe',e=>e.scrollIntoView());const frame=await (await page.$('iframe')).contentFrame();await frame.waitForSelector('.assetReportPage');await frame.evaluate(()=>document.fonts.ready);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));}
     if(mode==='suspended'){await page.screenshot({path:path.join(evidence,'suspension-preview-'+width+'.png'),fullPage:true});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')),'Open invoice');}
     await page.evaluate(()=>document.fonts.ready);
-    if(mode.startsWith('suspended'))assert.equal(await page.$eval('footer',e=>getComputedStyle(e).display),'none');
+    if(mode.startsWith('suspended')){
+     const layout=await page.evaluate(()=>{const footer=document.querySelector('footer');const hero=document.querySelector('[data-suspension-page] > section');return {display:getComputedStyle(footer).display,footerTop:footer.getBoundingClientRect().top+scrollY,heroBottom:hero.getBoundingClientRect().bottom+scrollY,height:innerHeight};});
+     assert.notEqual(layout.display,'none');
+     assert.ok(Math.abs(layout.footerTop-layout.heroBottom)<1,'Footer must meet the hero without a gap');
+     assert.ok(layout.footerTop>=layout.height-1,'Footer must sit below the initial viewport');
+     await page.$eval('footer',e=>e.scrollIntoView());
+     assert.ok(await page.$eval('footer',e=>e.getBoundingClientRect().top<innerHeight),'Footer remains reachable by scrolling');
+     await page.evaluate(()=>scrollTo(0,0));
+    }
     if(mode==='pending')assert.notEqual(await page.$eval('footer',e=>getComputedStyle(e).display),'none');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,mode+' fits '+width);
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
