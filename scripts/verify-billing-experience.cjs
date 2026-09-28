@@ -152,15 +152,27 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      if(mode.startsWith('signup-')){
       await page.waitForFunction(type=>document.querySelector('input[name="accountType"]')?.value===type,{},mode.slice(7));
       if(mode==='signup-dealer'){
-       const notice=await page.$eval('[aria-label="Client register disclaimer"]',e=>e.textContent);
+       const trigger='button[aria-haspopup="dialog"]';
+       assert.equal(await page.$('[role="dialog"]'),null);
+       assert.doesNotMatch(await page.$eval('form',e=>e.textContent),/Clients have no login or access/);
+       await page.click(trigger);
+       await page.waitForSelector('[role="dialog"]');
+       const notice=await page.$eval('[role="dialog"]',e=>e.textContent);
        assert.match(notice,/Aim4price Manage Client Registers/);
        assert.match(notice,/Clients have no login or access/);
        assert.match(notice,/billed separately.*R199\/month/);
+       await page.screenshot({path:path.join(evidence,'dealer-register-popup-'+width+'.png'),fullPage:true});
+       await page.keyboard.press('Escape');
+       await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
+       assert.equal(await page.$eval(trigger,e=>document.activeElement===e),true);
+       await page.click(trigger);
+       await page.click('button[aria-label="Close client register information"]');
+       await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
        await select('What would you like to use Aim4price for?','Owner');
-       assert.equal(await page.$('[aria-label="Client register disclaimer"]'),null);
+       assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
        await select('What would you like to use Aim4price for?','Dealer');
-       assert.ok(await page.$('[aria-label="Client register disclaimer"]'));
-      }else assert.equal(await page.$('[aria-label="Client register disclaimer"]'),null);
+       assert.ok(await page.$('button[aria-haspopup="dialog"]'));
+      }else assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
      }
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
@@ -176,7 +188,17 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$eval('input[name="accountSubtype"]',e=>e.value),width===390?'insurance-services':'finance-services');
      await clickText('Next');await page.waitForSelector('input[name="businessName"]');await settledStep('signup-step-details');
      await typeField('name','Test Recipient');await typeField('businessName','Test Business');await typeField('phone','0821234567');
-     await select('Who introduced you to Aim4price?','No one / direct signup');await select('Province','Western Cape');await typeField('townCity','George');
+     await select('Who introduced you to Aim4price?','No one / direct signup');await page.click('button[aria-label^="Province"]');
+     await page.waitForSelector('[role="option"]');
+     await page.evaluate(()=>{
+      const option=[...document.querySelectorAll('[role="option"]')].find(e=>e.textContent.trim().startsWith('Western Cape'));
+      if(!option)throw Error('Western Cape option missing');
+      option.click();
+      document.querySelector('input[name="townCity"]').focus();
+     });
+     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+     assert.equal(await page.$eval('input[name="townCity"]',e=>document.activeElement===e),true,'Closing Province must not steal focus from Town / City');
+     await typeField('townCity','George');
      await clickText('Next');await page.waitForFunction(()=>!!document.querySelector('input[name="email"]')||!!document.querySelector('[role="alert"]'));assert.equal(await page.$eval('body',e=>e.querySelector('[role="alert"]')?.textContent||''),'');await page.waitForSelector('input[name="email"]');await settledStep('signup-step-account');
      assert.doesNotMatch(await page.$eval('form',e=>e.textContent),/Business pricing:|Creating an account does not take a payment/);
      await typeField('email','guest@example.test');await typeField('password','Synthetic-password-only-123');await typeField('confirmPassword','Synthetic-password-only-123');await page.click('input[type="checkbox"]');

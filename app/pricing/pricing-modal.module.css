@@ -19,3 +19,7 @@
 @media (max-width: 640px) { :global(html:not(:has([data-website-canvas]))) .owner .header { gap: .5rem; } }
 /* Delegate scrolling to the active view, keeping the action bar visible. */
 .owner .body { overflow: hidden; padding: 0; }
+
+.compact { width: min(38rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); }
+.compact .header { align-items: center; }
+.compact .header h2 { font-size: 1.4rem; }

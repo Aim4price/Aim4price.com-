@@ -15,6 +15,7 @@ import {
 import { refreshCachedHeaderSession } from "../../lib/header-session-cache";
 import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
+import PricingModal from "../pricing/pricing-modal";
 
 import { BUSINESS_SERVICE_OPTIONS, isBusinessService, type BusinessService } from "../../lib/business-service-options";
 
@@ -231,7 +232,7 @@ function CustomSelect<T extends string>({
     setIsOpen(false);
 
     if (restoreButtonFocus) {
-      window.requestAnimationFrame(() => buttonRef.current?.focus());
+      buttonRef.current?.focus({ preventScroll: true });
     }
   };
 
@@ -632,6 +633,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
 
   const [mode, setMode] = useState<Mode>("signup");
   const [signupStep, setSignupStep] = useState<SignupStep>(1);
+  const [showDealerRegisterInfo, setShowDealerRegisterInfo] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] =
@@ -1193,10 +1195,16 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                         </div>
 
                         {signupForm.accountType === "dealer" ? (
-                          <aside className={`${styles.notice} ${styles.noticeSuccess} ${styles.dealerRegisterNotice}`} aria-label="Client register disclaimer">
-                            <strong className={styles.noticeTitle}>Aim4price Manage Client Registers</strong>
-                            <span className={styles.noticeText}>Client registers are controlled by your dealership. Clients have no login or access. Client-register hosting is billed separately from your R199/month Dealer subscription, to your dealership. Aim4price confirms any additional charges and the billing start date before activation.</span>
-                          </aside>
+                          <>
+                            <button type="button" className={styles.dealerRegisterInfo} aria-haspopup="dialog" onClick={() => setShowDealerRegisterInfo(true)}>Client register information</button>
+                            <PricingModal compact open={showDealerRegisterInfo} title="Aim4price Manage Client Registers" closeLabel="Close client register information" onClose={() => setShowDealerRegisterInfo(false)}>
+                              <div className={styles.dealerRegisterDetails}>
+                                <p>Client registers are controlled by your dealership. Clients have no login or access.</p>
+                                <p>Client-register hosting is billed separately from your R199/month Dealer subscription, to your dealership.</p>
+                                <p>Aim4price confirms any additional charges and the billing start date before activation.</p>
+                              </div>
+                            </PricingModal>
+                          </>
                         ) : null}
 
                         <div className={styles.signupFieldGrid}>

@@ -881,6 +881,21 @@
 .sharedEntry a { padding:.75rem 1rem; border:1px solid #cadfd2; border-radius:.7rem; background:#fff; color:#24543e; text-decoration:none; font-size:.85rem; font-weight:700; }
 .sharedEntry a:focus-visible { outline:3px solid #168a65; outline-offset:3px; }
 
-.dealerRegisterNotice {
-  margin-bottom: 1.25rem;
+.dealerRegisterInfo {
+  justify-self: start;
+  margin: 0 0 1rem;
+  padding: .35rem 0;
+  border: 0;
+  background: transparent;
+  color: #20543e;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
+.dealerRegisterInfo:focus-visible { outline: 3px solid #168660; outline-offset: 4px; }
+.dealerRegisterDetails { padding-bottom: 1.5rem; color: #52665c; line-height: 1.65; text-align: center; }
+.dealerRegisterDetails p { margin: 0 0 1rem; }
+.dealerRegisterDetails p:last-child { margin-bottom: 0; }
