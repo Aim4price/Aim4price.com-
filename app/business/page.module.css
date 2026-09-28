@@ -10,7 +10,7 @@
 .panel p { line-height:1.55; }
 .form { display:grid; gap:18px; }
 .form label { display:grid; gap:8px; font-size:14px; font-weight:650; }
-.form input:not([type=checkbox]),.form textarea { width:100%; box-sizing:border-box; border:1px solid #75998c66; border-radius:10px; padding:12px; background:var(--surface,#fff); color:inherit; font:inherit; }
+.form input:not([type=checkbox]),.form textarea,.form select { width:100%; box-sizing:border-box; border:1px solid #75998c66; border-radius:10px; padding:12px; background:var(--surface,#fff); color:inherit; font:inherit; }
 .form textarea { min-height:100px; resize:vertical; }
 .button { display:inline-flex; align-items:center; justify-content:center; padding:12px 18px; border:0; border-radius:11px; background:#19664d; color:white; font:inherit; font-weight:700; cursor:pointer; text-decoration:none; }
 .button:disabled { opacity:.6; cursor:wait; }
@@ -29,7 +29,7 @@
 }
 :global(html[data-background='dark']) .panel { background:#17342a; color:#edf7f0; }
 :global(html[data-background='dark']) .intro,:global(html[data-background='dark']) .muted { color:#c3d6cc; }
-:global(html[data-background='dark']) .form input,:global(html[data-background='dark']) .form textarea { background:#10271f; color:#edf7f0; }
+:global(html[data-background='dark']) .form input,:global(html[data-background='dark']) .form textarea,:global(html[data-background='dark']) .form select { background:#10271f; color:#edf7f0; }
 
 .guestTitle { margin:0 0 1rem; color:#173c32; font-size:2rem; line-height:1.2; letter-spacing:-.04em; }
 .guestActions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:1rem; }
