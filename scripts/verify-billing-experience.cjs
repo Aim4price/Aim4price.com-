@@ -83,6 +83,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     const suspended='const footerStyles=require("components/AppFooter.module.css");ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(React.Fragment,null,React.createElement(require("components/AppPatternBackground").default,null,React.createElement(require("app/pending-payment/PendingAccessClient").default,'+JSON.stringify({email:'customer@example.test',statusLabel:mode==='pending'?'Pending approval':'Suspended',isSuspended:mode!=='pending',suspension:mode==='suspended-unlinked'||mode==='pending'?null:{reason:'Payment remains outstanding. Please settle the linked invoice and contact Aim4price so we can review your access.',invoice:mode==='suspended-void'?{...invoice,status:'void'}:invoice}})+')),React.createElement("footer",{className:footerStyles.footer},React.createElement("div",{className:footerStyles.footerDock},"Footer"))));';
     const billing='ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/billing/billing-overview").default,'+JSON.stringify({invoices:[invoice,{...invoice,id:invoice.id.slice(0,-1)+'2',number:'A4P-2026-000002',paidCents:39900}],total:2,page:1,preparing:false})+'));';
     const switchPage='require("app/auth/page").default({}).then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));';
+    if(mode.startsWith('signup-'))await page.evaluate(type=>history.replaceState(null,'','/auth?accountType='+type+'#signup'),mode.slice(7));
     await page.addScriptTag({content:runtime+(mode==='pricing'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/pricing/pricing-content").default));':mode==='business-join'||mode==='business-register'?'require("app/business/join/page").default('+JSON.stringify({searchParams:{mode:mode==='business-register'?'account':undefined,businessType:width===390?'insurance-services':undefined}})+').then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));':mode.startsWith('signup-')?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/auth/auth-client").default));':mode==='guest'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("components/GuestEnquiryAccess").default,{returnTo:"/asset-share/'+ 't'*43 +'"}));':mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
     if(mode==='account'||mode==='suspended')await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));else await page.waitForSelector('h1');
     if(mode==='suspended-unlinked'||mode==='suspended-void'){assert.equal(await page.$('button[aria-label="Open invoice"]'),null);assert.equal(await page.$('iframe'),null);assert.match(await page.$eval('h1',e=>e.textContent),/temporarily paused/);}
@@ -125,13 +126,16 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='pricing'){
      assert.equal(await page.$eval('a[href="/business/join"]',e=>e.textContent.includes('R199')),true);
      assert.match(await page.$eval('a[href="/business/join"]',e=>e.textContent),/after x credits/);
-     for(const label of ['Owner','Dealer']){
-      await page.$$eval('button[aria-haspopup="dialog"]',(els,label)=>els.find(e=>e.textContent.startsWith(label)).click(),label);
-      await page.waitForSelector('[role="dialog"]');
-      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),label==='Owner'?/How many assets/:/Will you manage/);
-      await page.keyboard.press('Escape');
-      await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
-     }
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
+     await page.waitForSelector('[role="dialog"]');
+     assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
+     await page.keyboard.press('Escape');
+     await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
+     const dealerLink='a[href="/auth?accountType=dealer#signup"]';
+     assert.match(await page.$eval(dealerLink,e=>e.textContent),/R199.*month.*Create Dealer account/);
+     assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.some(e=>e.textContent.startsWith('Dealer'))),false);
+     await page.click(dealerLink);
+     await page.waitForFunction(()=>location.pathname==='/auth'&&location.search==='?accountType=dealer'&&location.hash==='#signup');
     }
     if(['guest','business-join','business-register'].includes(mode)){
      assert.equal(await page.$$eval('main',els=>els.length),1,'Onboarding has one page landmark');
@@ -145,7 +149,19 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      const select=async(label,text)=>{const selector='button[aria-label^="'+label+'"]';await page.click(selector);await page.waitForSelector('[role="option"]');assert.ok(await page.evaluate(t=>{const e=[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.trim().startsWith(t));e?.click();return !!e;},text));await page.waitForFunction(selector=>{const button=document.querySelector(selector);return button?.getAttribute('aria-expanded')==='false'&&document.activeElement===button;},{},selector);};
      const settledStep=async id=>page.waitForFunction(id=>document.activeElement===document.querySelector('[aria-labelledby="'+id+'"]'),{},id);
      const typeField=async(name,value)=>{const selector='input[name="'+name+'"]';await page.type(selector,value);assert.equal(await page.$eval(selector,e=>e.value),value,'Signup field '+name+' receives every character');};
-     if(mode.startsWith('signup-'))await select('What would you like to use Aim4price for?',mode==='signup-owner'?'Owner':'Dealer');
+     if(mode.startsWith('signup-')){
+      await page.waitForFunction(type=>document.querySelector('input[name="accountType"]')?.value===type,{},mode.slice(7));
+      if(mode==='signup-dealer'){
+       const notice=await page.$eval('[aria-label="Client register disclaimer"]',e=>e.textContent);
+       assert.match(notice,/Aim4price Manage Client Registers/);
+       assert.match(notice,/Clients have no login or access/);
+       assert.match(notice,/billed separately.*R199\/month/);
+       await select('What would you like to use Aim4price for?','Owner');
+       assert.equal(await page.$('[aria-label="Client register disclaimer"]'),null);
+       await select('What would you like to use Aim4price for?','Dealer');
+       assert.ok(await page.$('[aria-label="Client register disclaimer"]'));
+      }else assert.equal(await page.$('[aria-label="Client register disclaimer"]'),null);
+     }
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
      if(mode==='business-register'){assert.ok(options.some(t=>t.includes('Insurance')));assert.ok(options.some(t=>t.includes('Finance')));}
