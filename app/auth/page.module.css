@@ -883,8 +883,8 @@
 
 .dealerRegisterInfo {
   justify-self: start;
-  margin: .8rem 0 0 3.7rem;
-  padding: .4rem 0;
+  margin: 0;
+  padding: .45rem .25rem;
   border: 0;
   background: transparent;
   color: #20543e;
@@ -901,3 +901,9 @@
 .dealerRegisterInfo:hover { color: #087553; }
 .dealerRegisterDetails { display: grid; gap: 1.1rem; max-width: 36rem; margin-inline: auto; color: #52665c; font-size: .95rem; line-height: 1.75; text-align: center; }
 .dealerRegisterDetails p { margin: 0; }
+
+.dealerRegisterInfoRow { grid-column: 1 / -1; display: flex; justify-content: center; padding: .15rem 0 .25rem; }
+.dealerRegisterDetails { gap: 1.15rem; max-width: 38rem; line-height: 1.65; }
+.dealerRegisterPrice { display: grid; gap: .65rem; padding: 1.15rem 1.4rem; border: 1px solid #d5e7dd; border-radius: 1rem; background: #f0f7f3; }
+.dealerRegisterPrice strong { color: #164d38; font-size: 1.05rem; line-height: 1.4; }
+.dealerRegisterNote { font-size: .82rem; color: #64776e; }

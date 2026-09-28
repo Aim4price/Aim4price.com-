@@ -31,3 +31,14 @@
   :global(html:not(:has([data-website-canvas]))) .compact .header h2 { font-size: 1.2rem; }
   :global(html:not(:has([data-website-canvas]))) .compact .body { padding: 1.15rem 1.25rem 1.4rem; }
 }
+
+.compact { width: min(46rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); }
+.compact .header { position: relative; display: block; padding: 1.55rem 3.5rem 1.35rem; }
+.compact .header::before { content: none; }
+.compact .header h2 { margin: 0; width: 100%; }
+.compact .header button { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+.compact .body { padding: 1.4rem 2rem 1.6rem; }
+@media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .compact .header { padding: 1.15rem 3rem; }
+  :global(html:not(:has([data-website-canvas]))) .compact .body { padding: 1rem 1.15rem 1.25rem; }
+}
