@@ -2045,13 +2045,14 @@
   min-width: 0;
   min-height: 10.5rem;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.85rem;
   padding: 1.8rem 2rem;
   border: 1px solid rgba(48, 137, 104, 0.16);
   border-radius: 1.35rem;
   color: #0c4637;
-  background: linear-gradient(145deg, #ffffff, #f5faf7);
+  background: #f8fcfa;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   box-shadow:
     0 3px 8px rgba(20, 64, 50, 0.03),
     0 16px 32px -16px rgba(20, 64, 50, 0.18),
@@ -2069,12 +2070,64 @@
 }
 
 .roleCard p {
+  flex: 1;
   margin: 0;
   color: #5d6c66;
   font-size: 1rem;
   line-height: 1.6;
   font-weight: 500;
   text-wrap: pretty;
+}
+
+.roleCard:hover,
+.roleCard:focus-within {
+  background-color: #eaf4ee;
+  border-color: #82b59f;
+  box-shadow: 0 8px 24px rgba(20, 64, 50, 0.1);
+}
+
+.rolePricing {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding-top: 1.25rem;
+  margin-top: .5rem;
+  border-top: 1px solid #dce8e0;
+  color: #486658;
+  font-size: .85rem;
+  line-height: 1.65;
+  text-decoration: underline;
+  text-decoration-color: #aac6b6;
+  text-underline-offset: .25em;
+}
+
+.rolePricing:hover { color: #0c4637; text-decoration-color: currentColor; }
+.rolePricing:focus-visible { outline: 3px solid #168a65; outline-offset: 4px; border-radius: 4px; }
+
+.roleAction {
+  display: block;
+  width: 100%;
+  padding: .85rem .6rem;
+  margin-top: .35rem;
+  border: 1px solid #d0e2d7;
+  border-radius: .75rem;
+  background: #eaf3ed;
+  color: #20543e;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  opacity: 1;
+  cursor: default;
+  transition: background-color 160ms ease;
+}
+
+.roleCard:hover .roleAction,
+.roleCard:focus-within .roleAction { background: #dfeee5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .roleCard, .roleAction { transition: none; }
 }
 
 .heroMedia,

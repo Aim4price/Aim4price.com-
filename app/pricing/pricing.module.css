@@ -169,14 +169,14 @@
 .hero { padding:3.5rem 0 2.5rem; }
 .hero h1 { font-size:clamp(2.4rem,calc(var(--website-design-vw,1vw)*4),3.6rem); }
 .pricingChoices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(1rem,calc(var(--website-design-vw,1vw)*1.4),1.2rem); }
-.accountCard { display:flex; flex-direction:column; align-items:stretch; min-width:0; gap:.85rem; padding:1.8rem 2rem; border:1px solid rgba(48,137,104,.16); border-radius:1.35rem; color:#0c4637; background:linear-gradient(145deg,#fff,#f5faf7); box-shadow:0 3px 8px rgba(20,64,50,.03),0 16px 32px -16px rgba(20,64,50,.18),inset 0 1px 0 rgba(255,255,255,.96); font:inherit; text-align:left; text-decoration:none; cursor:pointer; transition:border-color 160ms ease,box-shadow 160ms ease; }
-.accountCard:hover { border-color:#82b59f; box-shadow:0 8px 24px rgba(20,64,50,.1); }
+.accountCard { display:flex; flex-direction:column; align-items:stretch; min-width:0; gap:.85rem; padding:1.8rem 2rem; border:1px solid rgba(48,137,104,.16); border-radius:1.35rem; color:#0c4637; background:#f8fcfa; box-shadow:0 3px 8px rgba(20,64,50,.03),0 16px 32px -16px rgba(20,64,50,.18),inset 0 1px 0 rgba(255,255,255,.96); font:inherit; text-align:left; text-decoration:none; cursor:pointer; transition:background-color 160ms ease,border-color 160ms ease,box-shadow 160ms ease; }
+.accountCard:hover, .accountCard:focus-visible { background-color:#eaf4ee; border-color:#82b59f; box-shadow:0 8px 24px rgba(20,64,50,.1); }
 .accountTitle { margin:0; color:#0a4536; font-size:1.65rem; line-height:1.25; letter-spacing:-.035em; font-weight:800; }
 .accountDescription { margin:0; color:#5d6c66; font-size:1rem; line-height:1.6; font-weight:500; flex:1; }
 .cardPrice { display:block; padding-top:1.25rem; margin-top:.5rem; border-top:1px solid #dce8e0; font-size:.85rem; line-height:1.65; color:#486658; }
 .cardPrice strong { font-size:1.25rem; color:#0c4637; font-weight:800; }
 .cardAction { display:block; padding:.85rem .6rem; margin-top:.35rem; border:1px solid #d0e2d7; border-radius:.75rem; background:#eaf3ed; color:#20543e; text-align:center; font-size:.85rem; font-weight:700; line-height:1.5; }
-.accountCard:hover .cardAction { background:#dfeee5; }
+.accountCard:hover .cardAction, .accountCard:focus-visible .cardAction { background:#dfeee5; }
 .creditNote { text-align:center; color:#61756a; font-size:.76rem; margin:1.25rem 0 0; line-height:1.6; }
 .signIn { text-align:center; font-size:.85rem; color:#61756a; margin:1.4rem 0 2rem; line-height:1.6; }
 .signIn a { color:#24533e; font-weight:700; text-underline-offset:3px; }
@@ -204,3 +204,7 @@
     url('/brand/invoice-drop-hero.webp') center 57% / cover no-repeat;
 }
 .photoSurface .creditNote, .photoSurface .signIn { color: #38584a; }
+
+@media (prefers-reduced-motion: reduce) {
+  .accountCard { transition: none; }
+}

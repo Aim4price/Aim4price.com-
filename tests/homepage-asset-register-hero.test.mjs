@@ -188,13 +188,11 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(roleSelector, /removeEventListener\('hashchange', focusHeadingWhenTargeted\)/);
   assert.doesNotMatch(roleSelector, /useState|return null|scrollIntoView/);
   assert.match(roleSelector, /id="choose-role-title"[\s\S]*?Which describes you best\?/);
-  const accountChoices = [...roleSelector.matchAll(/<Link href="([^"]+)" className=\{styles\.roleCard\}>\s*<h3>([^<]+)<\/h3>/g)]
-    .map(([, href, label]) => ({ href, label }));
-  assert.deepEqual(accountChoices, [
-    { href: '/auth?accountType=owner#signup', label: 'Owner' },
-    { href: '/auth?accountType=dealer#signup', label: 'Dealer' },
-    { href: '/business/join', label: 'Business' },
-  ]);
+  const accountChoices = [...roleSelector.matchAll(/<article className=\{styles\.roleCard\}>\s*<h3>([^<]+)<\/h3>/g)]
+    .map(([, label]) => label);
+  assert.deepEqual(accountChoices, ['Owner', 'Dealer', 'Business']);
+  assert.equal((roleSelector.match(/href="\/pricing"/g) ?? []).length, 3);
+  assert.equal((roleSelector.match(/<button type="button" className=\{styles\.roleAction\} disabled>See more<\/button>/g) ?? []).length, 3);
   assert.equal((roleSelector.match(/<Link\b/g) ?? []).length, 3);
   assert.match(roleSelector, /focus\(\{ preventScroll: true \}\)/);
   assert.match(auth, /accountType === "owner" \|\| accountType === "dealer"/);
