@@ -13,7 +13,6 @@ export default function PricingContent() {
   return (
     <div className={styles.shell}>
       <header className={styles.hero}>
-        <p className={styles.eyebrow}>Aim4price pricing</p>
         <h1>Let’s find your package.</h1>
         <p className={styles.intro}>Choose how you use Aim4price.</p>
       </header>
