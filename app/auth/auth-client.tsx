@@ -232,7 +232,7 @@ function CustomSelect<T extends string>({
     setIsOpen(false);
 
     if (restoreButtonFocus) {
-      window.requestAnimationFrame(() => buttonRef.current?.focus());
+      buttonRef.current?.focus({ preventScroll: true });
     }
   };
 

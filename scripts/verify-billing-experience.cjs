@@ -188,7 +188,17 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$eval('input[name="accountSubtype"]',e=>e.value),width===390?'insurance-services':'finance-services');
      await clickText('Next');await page.waitForSelector('input[name="businessName"]');await settledStep('signup-step-details');
      await typeField('name','Test Recipient');await typeField('businessName','Test Business');await typeField('phone','0821234567');
-     await select('Who introduced you to Aim4price?','No one / direct signup');await select('Province','Western Cape');await typeField('townCity','George');
+     await select('Who introduced you to Aim4price?','No one / direct signup');await page.click('button[aria-label^="Province"]');
+     await page.waitForSelector('[role="option"]');
+     await page.evaluate(()=>{
+      const option=[...document.querySelectorAll('[role="option"]')].find(e=>e.textContent.trim().startsWith('Western Cape'));
+      if(!option)throw Error('Western Cape option missing');
+      option.click();
+      document.querySelector('input[name="townCity"]').focus();
+     });
+     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+     assert.equal(await page.$eval('input[name="townCity"]',e=>document.activeElement===e),true,'Closing Province must not steal focus from Town / City');
+     await typeField('townCity','George');
      await clickText('Next');await page.waitForFunction(()=>!!document.querySelector('input[name="email"]')||!!document.querySelector('[role="alert"]'));assert.equal(await page.$eval('body',e=>e.querySelector('[role="alert"]')?.textContent||''),'');await page.waitForSelector('input[name="email"]');await settledStep('signup-step-account');
      assert.doesNotMatch(await page.$eval('form',e=>e.textContent),/Business pricing:|Creating an account does not take a payment/);
      await typeField('email','guest@example.test');await typeField('password','Synthetic-password-only-123');await typeField('confirmPassword','Synthetic-password-only-123');await page.click('input[type="checkbox"]');
