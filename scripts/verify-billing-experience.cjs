@@ -152,15 +152,27 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      if(mode.startsWith('signup-')){
       await page.waitForFunction(type=>document.querySelector('input[name="accountType"]')?.value===type,{},mode.slice(7));
       if(mode==='signup-dealer'){
-       const notice=await page.$eval('[aria-label="Client register disclaimer"]',e=>e.textContent);
+       const trigger='button[aria-haspopup="dialog"]';
+       assert.equal(await page.$('[role="dialog"]'),null);
+       assert.doesNotMatch(await page.$eval('form',e=>e.textContent),/Clients have no login or access/);
+       await page.click(trigger);
+       await page.waitForSelector('[role="dialog"]');
+       const notice=await page.$eval('[role="dialog"]',e=>e.textContent);
        assert.match(notice,/Aim4price Manage Client Registers/);
        assert.match(notice,/Clients have no login or access/);
        assert.match(notice,/billed separately.*R199\/month/);
+       await page.screenshot({path:path.join(evidence,'dealer-register-popup-'+width+'.png'),fullPage:true});
+       await page.keyboard.press('Escape');
+       await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
+       assert.equal(await page.$eval(trigger,e=>document.activeElement===e),true);
+       await page.click(trigger);
+       await page.click('button[aria-label="Close client register information"]');
+       await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
        await select('What would you like to use Aim4price for?','Owner');
-       assert.equal(await page.$('[aria-label="Client register disclaimer"]'),null);
+       assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
        await select('What would you like to use Aim4price for?','Dealer');
-       assert.ok(await page.$('[aria-label="Client register disclaimer"]'));
-      }else assert.equal(await page.$('[aria-label="Client register disclaimer"]'),null);
+       assert.ok(await page.$('button[aria-haspopup="dialog"]'));
+      }else assert.equal(await page.$('button[aria-haspopup="dialog"]'),null);
      }
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
