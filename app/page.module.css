@@ -2033,13 +2033,14 @@
 
 .roleGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(1rem, calc(var(--website-design-vw) * 1.4), 1.2rem);
   max-width: 78rem;
   margin: 0 auto;
 }
 
 .roleCard {
+  text-decoration: none;
   display: flex;
   min-width: 0;
   min-height: 10.5rem;
@@ -3636,3 +3637,5 @@ button.storyHeroLogo:focus-visible, .featureCountdown button:focus-visible { out
   font-weight: 700;
   cursor: pointer;
 }
+
+.roleCard:focus-visible { outline: 3px solid #168a65; outline-offset: 4px; }

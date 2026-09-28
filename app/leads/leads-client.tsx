@@ -1759,6 +1759,7 @@ type LeadsClientProps = {
   accountantWorkspaceMode?: boolean;
   dealerAppMode?: boolean;
   dealerWorkspaceMode?: boolean;
+  allowDealerCosts?: boolean;
   licensingWorkspaceMode?: boolean;
   initialLeads?: AssetLead[];
   initialLeadsHaveMore?: boolean;
@@ -1769,6 +1770,7 @@ export default function LeadsClient({
   accountantWorkspaceMode = false,
   dealerAppMode = false,
   dealerWorkspaceMode,
+  allowDealerCosts = true,
   licensingWorkspaceMode = false,
   initialLeads = [],
   initialLeadsHaveMore = false,
@@ -1779,7 +1781,7 @@ export default function LeadsClient({
   const useDealerWorkspaceStyles = licensingWorkspaceMode || accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
   const isDealerLeadsMode = Boolean(dealerAppMode || dealerWorkspaceMode);
   const useOwnerManageLayout = Boolean(dealerWorkspaceMode && !dealerAppMode && !accountantWorkspaceMode && !licensingWorkspaceMode);
-  const canAddDealerCosts = isDealerLeadsMode;
+  const canAddDealerCosts = isDealerLeadsMode && allowDealerCosts;
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
   const [sessionUserId, setSessionUserId] = useState(initialSessionUserId);

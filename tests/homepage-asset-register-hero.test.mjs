@@ -188,10 +188,14 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(roleSelector, /removeEventListener\('hashchange', focusHeadingWhenTargeted\)/);
   assert.doesNotMatch(roleSelector, /useState|return null|scrollIntoView/);
   assert.match(roleSelector, /id="choose-role-title"[\s\S]*?Which describes you best\?/);
-  assert.match(roleSelector, /I own or manage assets/);
-  assert.match(roleSelector, /I sell, service or support assets/);
-  assert.equal((roleSelector.match(/<article\b/g) ?? []).length, 2);
-  assert.doesNotMatch(roleSelector, /<Link\b|<a\b|<button\b|href=|onClick=|roleArrow|roleCta/);
+  const accountChoices = [...roleSelector.matchAll(/<Link href="([^"]+)" className=\{styles\.roleCard\}>\s*<h3>([^<]+)<\/h3>/g)]
+    .map(([, href, label]) => ({ href, label }));
+  assert.deepEqual(accountChoices, [
+    { href: '/auth?accountType=owner#signup', label: 'Owner' },
+    { href: '/auth?accountType=dealer#signup', label: 'Dealer' },
+    { href: '/business/join', label: 'Business' },
+  ]);
+  assert.equal((roleSelector.match(/<Link\b/g) ?? []).length, 3);
   assert.match(roleSelector, /focus\(\{ preventScroll: true \}\)/);
   assert.match(auth, /accountType === "owner" \|\| accountType === "dealer"/);
 

@@ -18,8 +18,9 @@ import styles from "./page.module.css";
 
 type Mode = "signup" | "login" | "forgot";
 type SignupStep = 1 | 2 | 3;
-type SignupAccountType = "owner" | "middleman" | "dealer" | "finance" | "insurance" | "licensing";
+type SignupAccountType = "business" | "owner" | "middleman" | "dealer" | "finance" | "insurance" | "licensing";
 type SignupAccountSubtype =
+  | "contributor"
   | "farmer"
   | "contractor"
   | "construction-company"
@@ -124,18 +125,16 @@ const POST_LOGIN_REDIRECT = "/asset-register";
 const ADMIN_EMAIL = "aim4price@gmail.com";
 
 const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
-  { value: "owner", label: "Asset owner" },
-  { value: "middleman", label: "Middleman" },
-  { value: "dealer", label: "Dealer / auctioneer" },
-  { value: "finance", label: "Finance & accounting" },
-  { value: "insurance", label: "Insurance provider" },
-  { value: "licensing", label: "Licence renewal expert" },
+  { value: "owner", label: "Owner" },
+  { value: "dealer", label: "Dealer" },
+  { value: "business", label: "Business" },
 ];
 
 const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
   SignupAccountType,
   Array<SelectOption<SignupAccountSubtype>>
 > = {
+  business: [{ value: "contributor", label: "Business" }],
   owner: [
     { value: "farmer", label: "Farmer / farm owner" },
     { value: "contractor", label: "Contractor / operator" },
@@ -1095,7 +1094,7 @@ export default function AuthClient() {
                 {copy.title}
               </h1>
               <p className={styles.authText}>{copy.text}</p>
-              <Link href="/business/join">Responding to an enquiry? Create a free Business account</Link>
+              <Link href="/business/join">Finance, insurance, licensing or other services? Create a Business account</Link>
             </div>
 
             {notice && mode !== "signup" ? (
@@ -1169,6 +1168,7 @@ export default function AuthClient() {
                               value={signupForm.accountType}
                               options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
                               onChange={(accountType) => {
+                                if (accountType === "business") { window.location.assign("/business/join"); return; }
                                 setSignupForm((current) => ({
                                   ...current,
                                   accountType,

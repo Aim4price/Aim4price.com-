@@ -21,6 +21,7 @@ const unauthorized = () =>
 
 export async function GET() {
   const session = await getServerSession({
+    allowBusiness: true,
     allowDealerApp: true,
     allowOwnerApp: true,
   });

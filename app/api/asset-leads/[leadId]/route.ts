@@ -20,7 +20,7 @@ function unauthorized() {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowBusiness: true, allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -63,7 +63,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowBusiness: true, allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

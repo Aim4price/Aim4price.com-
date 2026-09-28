@@ -19,6 +19,6 @@ export default function JoinForm({returnTo}:{returnTo?:string|null}) {
  <label>Contact number<input name="phone" type="tel" maxLength={40} autoComplete="tel"/></label>
  <label>Password<input name="password" required type="password" minLength={8} maxLength={128} autoComplete="new-password"/></label>
  <label className={styles.check}><input name="terms" type="checkbox" required/><span>I accept the <a href="/terms-of-service" target="_blank" rel="noreferrer">terms</a> and <a href="/privacy-policy" target="_blank" rel="noreferrer">privacy policy</a>.</span></label>
- <button disabled={busy} className={styles.button}>{busy ? 'Creating account…' : 'Create free account'}</button>{error && <p role="alert">{error}</p>}
- <p className={styles.muted}>No card or subscription required. Asset management and dealer tools are separate paid services.</p></form>;
+ <button disabled={busy} className={styles.button}>{busy ? 'Creating account…' : 'Create Business account'}</button>{error && <p role="alert">{error}</p>}
+ <p className={styles.muted}>For finance, insurance, licensing and other asset services.</p></form>;
 }
