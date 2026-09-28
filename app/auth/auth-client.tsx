@@ -1094,7 +1094,6 @@ export default function AuthClient() {
                 {copy.title}
               </h1>
               <p className={styles.authText}>{copy.text}</p>
-              <Link href="/business/join">Finance, insurance, licensing or other services? Create a Business account</Link>
             </div>
 
             {notice && mode !== "signup" ? (
