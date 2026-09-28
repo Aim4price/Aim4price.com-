@@ -186,3 +186,22 @@
  :global(html:not(:has([data-website-canvas]))) .accountCard { padding:1.6rem; }
  :global(html:not(:has([data-website-canvas]))) .hero { padding:2.5rem 0 2rem; }
 }
+
+/* The Invoice Drop photograph gives Pricing the same soft asset backdrop. */
+.photoSurface {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(var(--website-visible-height, 100dvh) - 5.75rem);
+  background: #eef3ef;
+}
+.photoSurface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(249, 252, 249, .92), rgba(243, 248, 244, .7) 55%, rgba(239, 246, 241, .9)),
+    url('/brand/invoice-drop-hero.webp') center 57% / cover no-repeat;
+}
+.photoSurface .creditNote, .photoSurface .signIn { color: #38584a; }

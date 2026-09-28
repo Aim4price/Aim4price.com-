@@ -11,6 +11,7 @@ export default function PricingContent() {
   const [ownerTitle, setOwnerTitle] = useState('How many assets?');
   const [dealerTitle, setDealerTitle] = useState('Will you manage customers’ asset registers?');
   return (
+    <div className={styles.photoSurface}>
     <div className={styles.shell}>
       <header className={styles.hero}>
         <h1>Let’s find your package.</h1>
@@ -41,6 +42,7 @@ export default function PricingContent() {
       <PricingModal owner open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney onTitleChange={setOwnerTitle} /></PricingModal>
       <PricingModal owner open={audience === 'dealer'} title={dealerTitle} onClose={() => setAudience(null)}><PackageJourney audience="dealer" onTitleChange={setDealerTitle} /></PricingModal>
       <div className={styles.closing}><div><h2>Still have a question?</h2></div><Link className={styles.button} href="/contact-us">Talk to Aim4price </Link></div>
+    </div>
     </div>
   );
 }
