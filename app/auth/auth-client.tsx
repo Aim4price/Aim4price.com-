@@ -106,6 +106,7 @@ type SignupFormState = {
   townCity: string;
   directoryParticipation: boolean;
   name: string;
+  businessName: string;
   phone: string;
   email: string;
   password: string;
@@ -437,6 +438,7 @@ const initialSignupState: SignupFormState = {
   townCity: "",
   directoryParticipation: false,
   name: "",
+  businessName: "",
   phone: "",
   email: "",
   password: "",
@@ -612,7 +614,13 @@ async function postAuth(path: string, body: Record<string, unknown>) {
   return payload;
 }
 
-export default function AuthClient() {
+export default function AuthClient({businessSignup=false,initialBusinessType,initialEmail,returnTo}:{businessSignup?:boolean;initialBusinessType?:string;initialEmail?:string;returnTo?:string|null} = {}) {
+  const [createdBusinessEmail,setCreatedBusinessEmail]=useState('');
+  const [verificationSent,setVerificationSent]=useState(false);
+  async function sendBusinessVerification(email:string){
+    await postAuth('/send-verification-email',{email,callbackURL:sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/business'});
+    setVerificationSent(true);
+  }
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
   const [billingPricingError, setBillingPricingError] = useState("");
   const [billing, setBilling] = useState({name:"",email:"",address:"",accepted:false});
@@ -627,7 +635,7 @@ export default function AuthClient() {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] =
-    useState<SignupFormState>(initialSignupState);
+    useState<SignupFormState>(()=>businessSignup?{...initialSignupState,accountType:'business',accountSubtype:isBusinessService(initialBusinessType)?initialBusinessType:BUSINESS_SERVICE_OPTIONS[0].value,email:initialEmail||'',directoryParticipation:true}:initialSignupState);
   const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginState);
   const [forgotForm, setForgotForm] =
     useState<ForgotFormState>(initialForgotState);
@@ -746,7 +754,7 @@ export default function AuthClient() {
   };
 
   const validateSignupStep = (step: SignupStep) => {
-    if (step === 3 && (billingPricingError || (selectedBillingPlan && (!billing.accepted || !billing.address.trim())))) {
+    if (step === 3 && signupForm.accountType !== "business" && (billingPricingError || (selectedBillingPlan && (!billing.accepted || !billing.address.trim())))) {
       setNotice({tone:"error",title:"Invoice details required",text:billingPricingError || "Add your billing address and accept the signup invoice price."});
       returnToSignupStep(3);return false;
     }
@@ -761,6 +769,9 @@ export default function AuthClient() {
     }
 
     if (step === 2) {
+      if(signupForm.accountType==='business'&&!signupForm.businessName.trim()){
+        setNotice({tone:'error',title:'Business name required',text:'Enter your business name before continuing.'});return false;
+      }
       if (!name || !phone) {
         setNotice({
           tone: "error",
@@ -848,20 +859,12 @@ export default function AuthClient() {
     return true;
   };
 
-  const selectedBillingPlan = signupForm.accountType === "middleman" ? undefined : billingPlans.find(plan=>plan.accountType===signupForm.accountType);
+  const selectedBillingPlan = (signupForm.accountType === "middleman" || signupForm.accountType === "business") ? undefined : billingPlans.find(plan=>plan.accountType===signupForm.accountType);
   useEffect(()=>{setBilling(current=>({...current,accepted:false}));},[selectedBillingPlan?.accountType,selectedBillingPlan?.version]);
 
   const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setNotice(null);
-
-    if (signupForm.accountType === "business") {
-      const params = new URLSearchParams({mode: "account", businessType: signupForm.accountSubtype});
-      const returnTo = sharedEnquiryReturnTo(getSafeReturnTo());
-      if (returnTo) params.set("returnTo", returnTo);
-      window.location.assign(`/business/join?${params}`);
-      return;
-    }
 
     if (signupStep < 3) {
       if (validateSignupStep(signupStep)) {
@@ -899,6 +902,8 @@ export default function AuthClient() {
         billingAccepted: billing.accepted,
         billingPlanVersion: selectedBillingPlan?.version,
         phone,
+        businessName: signupForm.businessName.trim(),
+        acceptedTerms: signupForm.acceptTerms,
         accountType: signupForm.accountType === "middleman" ? "dealer" : signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
         province,
@@ -915,6 +920,14 @@ export default function AuthClient() {
           signupForm.accountType === "middleman" ? "/my-showroom" : undefined,
         ),
       });
+
+      if(signupForm.accountType==='business'){
+        setCreatedBusinessEmail(email);
+        try{await sendBusinessVerification(email);}catch{
+          setNotice({tone:'error',title:'Verification email not sent',text:'Your account was created. Please resend the verification email below.'});
+        }
+        return;
+      }
 
       const redirectUrl = extractRedirectUrl(payload);
 
@@ -1124,7 +1137,17 @@ export default function AuthClient() {
               </div>
             ) : null}
 
-            {mode === "signup" ? (
+            {mode === "signup" && createdBusinessEmail ? (
+              <section className={styles.signupStepCard} aria-live="polite">
+                <h2>Check your email</h2>
+                <p className={styles.authText}>{verificationSent?'We sent a verification link to':'Your account is registered with'} {createdBusinessEmail}. Verify your email to continue.</p>
+                {notice&&<p role="alert">{notice.text}</p>}
+                <div className={styles.signupFooter}>
+                  <button type="button" className={styles.secondaryButton} disabled={isSubmitting} onClick={async()=>{setIsSubmitting(true);setNotice(null);try{await sendBusinessVerification(createdBusinessEmail);}catch{setNotice({tone:'error',title:'Unable to send email',text:'Please try resending the verification email.'});}finally{setIsSubmitting(false);}}}>{isSubmitting?'Sending…':'Resend verification email'}</button>
+                  <a className={`${styles.primaryButton} ${styles.signupPrimaryButton}`} href={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/business'}>Continue</a>
+                </div>
+              </section>
+            ) : mode === "signup" ? (
               <form
                 className={`${styles.form} ${styles.signupForm}`}
                 onSubmit={handleSignupSubmit}
@@ -1197,12 +1220,11 @@ export default function AuthClient() {
                               name="accountSubtype"
                               ariaLabel="Which best describes your work?"
                               value={signupForm.accountSubtype}
-                              options={signupForm.accountType === "business" ? SIGNUP_ACCOUNT_SUBTYPE_OPTIONS.business : [...SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType], ...BUSINESS_SERVICE_OPTIONS]}
+                              options={SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]}
                               onChange={(nextAccountSubtype) =>
                                 setSignupForm((current) => ({
                                   ...current,
                                   accountSubtype: nextAccountSubtype,
-                                  ...(isBusinessService(nextAccountSubtype) ? { accountType: "business" as const, directoryParticipation: true } : {}),
                                 }))
                               }
                             />
@@ -1244,6 +1266,7 @@ export default function AuthClient() {
                         </div>
 
                         <div className={styles.signupFieldGrid}>
+                          {signupForm.accountType==='business'&&<label className={`${styles.field} ${styles.signupFieldWide}`}><span className={styles.label}>Business name</span><input name="businessName" autoComplete="organization" maxLength={200} className={styles.input} value={signupForm.businessName} onChange={e=>setSignupForm(current=>({...current,businessName:e.target.value}))}/></label>}
                           <label className={styles.field}>
                             <span className={styles.label}>Full name</span>
                             <input
@@ -1378,7 +1401,8 @@ export default function AuthClient() {
                           </div>
                         </div>
 
-                        {billingPricingError ? <p role="alert">{billingPricingError}</p> : null}
+                        {billingPricingError && signupForm.accountType!=="business" ? <p role="alert">{billingPricingError}</p> : null}
+                        {signupForm.accountType==='business'&&<p className={styles.authText}>Business pricing: R199/month. Creating an account does not take a payment.</p>}
                         {selectedBillingPlan ? <div className={styles.billingSignup}>
                           <strong>Your signup invoice · {money(selectedBillingPlan.amountCents)}</strong>
                           <p>{selectedBillingPlan.description} · {selectedBillingPlan.interval === 'once' ? 'One-time charge' : selectedBillingPlan.interval === 'monthly' ? 'Monthly' : 'Annual'} · No VAT applicable.</p>
