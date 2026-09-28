@@ -2,21 +2,23 @@ import { guestCreditLimit } from '../../../lib/guest-enquiry-credits';
 import { sharedEnquiryReturnTo } from '../../../lib/external-share-permissions';
 import { getGuestViewer } from '../../../lib/guest-business-access';
 import GuestEnquiryAccess from '../../../components/GuestEnquiryAccess';
-import AppHeader from '../../../components/AppHeader';
+import SignupFlow from '../../../components/SignupFlow';
 import Link from 'next/link';
 import JoinForm from './join-client';
-import styles from '../page.module.css';
+import styles from '../../../components/SignupFlow.module.css';
 export const metadata = { title: 'Business account | Aim4price' };
 export const dynamic = 'force-dynamic';
 export default async function JoinPage({searchParams}:{searchParams?:{returnTo?:string;mode?:string;businessType?:string}}) {
  const returnTo=sharedEnquiryReturnTo(searchParams?.returnTo);
- if(returnTo&&searchParams?.mode!=='account')return <><AppHeader active="none"/><main className={styles.page}><GuestEnquiryAccess limit={guestCreditLimit()} returnTo={returnTo}/></main></>;
+ if(returnTo&&searchParams?.mode!=='account')return <GuestEnquiryAccess limit={guestCreditLimit()} returnTo={returnTo}/>;
  const account=searchParams?.mode==='account';
  const guest=account?await getGuestViewer():null;
- return <><AppHeader active="none"/><main className={styles.page}>
- {account?<section className={`${styles.panel} ${styles.join}`}><h1 className={styles.guestTitle}>Create your Business account</h1><p className={styles.intro}>Keep your enquiries together. Get estimates, receive leads and browse the marketplace.</p><JoinForm returnTo={returnTo} email={guest?.email} businessType={searchParams?.businessType}/></section>:<section className={`${styles.panel} ${styles.join}`}><h1 className={styles.guestTitle}>How would you like to start?</h1><div className={styles.form}>
- <Link className={styles.entryCard} href="/business/guest"><strong>Open shared enquiries</strong><span>Free guest access using your email. View and reply, with {guestCreditLimit() ?? 'x'} credits available.</span><small>No personal inbox, saved history or backup service.</small></Link>
- <Link className={styles.entryCard} href="/business/join?mode=account"><strong>Create Business account</strong><span>Keep your enquiries together and access the Basic Business tools.</span></Link>
- </div><div className={styles.guestActions}><Link className={styles.button} href="/auth#login">Already registered? Log in</Link></div></section>}
- </main></>;
+ return <SignupFlow title={account?'Create your Business account':'How would you like to start?'} description={account?'Your business details, one simple account.':'Open an invitation or create your Business workspace.'} returnTo={returnTo}>
+ {account?<JoinForm returnTo={returnTo} email={guest?.email} businessType={searchParams?.businessType}/>:<>
+ <div className={styles.choices}>
+ <Link className={styles.entryCard} href="/business/guest"><span className={styles.badge}>Free guest access</span><strong>Open shared enquiries</strong><span>View shared information and reply using your email. {guestCreditLimit() ?? 'x'} credits available.</span><small>No personal inbox, saved history or backup.</small><span className={styles.choiceAction}>Continue with email</span></Link>
+ <Link className={styles.entryCard} href="/business/join?mode=account"><span className={styles.badge}>Basic Business account</span><strong>Create your account</strong><span>Home, Get Estimate, Leads and Marketplace in one workspace.</span><small>For insurance, finance, licensing and other services.</small><span className={styles.choiceAction}>Set up your business</span></Link>
+ </div><div className={styles.footer}><p className={styles.muted}>Already have an account?</p><Link className={styles.secondaryButton} href="/auth#login">Log in</Link></div>
+ </>}
+ </SignupFlow>;
 }
