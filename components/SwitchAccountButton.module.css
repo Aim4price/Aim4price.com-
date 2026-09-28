@@ -4,3 +4,6 @@
 .button:focus-visible { outline: 3px solid #168a65; outline-offset: 3px; }
 .button:disabled { opacity: .65; cursor: wait; }
 .error { color: #963d43; font-size: .85rem; line-height: 1.5; margin: .65rem 0 0; }
+
+.primary { width:100%; min-height:3.25rem; padding:1rem 1.25rem; background:#19664d; border-color:#19664d; color:#fff; box-shadow:0 6px 16px rgba(25,102,77,.12); }
+.primary:hover { background:#144f3c; border-color:#144f3c; }

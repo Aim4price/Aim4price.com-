@@ -21,13 +21,15 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
     });
 
     if (!access.isActive || searchParams?.switchAccount === '1') {
-      return <main className={styles.page}>
+      return <main className={`${styles.page} ${styles.switchPage}`}>
         <AppHeader active="none" />
-        <section className={styles.shell}>
-          <div className={styles.authCard}>
-            <h1 className={styles.authTitle}>Sign in to another account</h1>
-            <p className={styles.authText}>You are signed in as {session.user.email}. Sign out to continue with another account.</p>
-            <SwitchAccountButton />
+        <section className={styles.switchShell} aria-labelledby="switch-account-heading">
+          <div className={styles.switchCard}>
+            <span className={styles.switchIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20v-2a7 7 0 0 1 14 0v2"/></svg></span>
+            <h1 id="switch-account-heading" className={styles.switchTitle}>Switch account</h1>
+            <p className={styles.switchText}>Sign out to continue with another account.</p>
+            <div className={styles.switchIdentity}><span>Currently signed in</span><strong>{session.user.email}</strong></div>
+            <SwitchAccountButton primary />
           </div>
         </section>
       </main>;

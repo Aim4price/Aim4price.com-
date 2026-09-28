@@ -3,7 +3,14 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('puppeteer-core'),chromium=require('@sparticuz/chromium');
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
-const stubs={'components/AppHeader':'module.exports=()=>null;'};
+const stubs={
+ 'components/AppHeader':'module.exports=()=>null;',
+ 'app/auth/auth-client':'module.exports=()=>null;',
+ 'lib/account-access':'exports.getAccountAccess=async()=>({isActive:false,isAdmin:false});',
+ 'lib/account-profile':'exports.getAccountProfile=async()=>({accountType:"owner"});',
+ 'lib/auth-session':'exports.getAnyServerSession=async()=>({user:{id:"test",email:"customer@example.test"}});',
+ 'lib/middleman-account':'exports.isMiddlemanAccountSubtype=()=>false;'
+};
 function cssModule(file){
  const prefix='c'+cssIndex+++'_',map={},sheet=postcss.parse(fs.readFileSync(path.join(root,file),'utf8'));
  sheet.walkRules(rule=>{
@@ -36,6 +43,7 @@ function add(file){
  });
 }
 
+add('app/auth/page');
 add('app/account/account-invoices');
 add('app/billing/billing-overview');
 add('app/account/account-modal-scroller');
@@ -63,14 +71,15 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
   const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
-   for(const mode of ['account','billing','suspended','suspended-unlinked','suspended-void','pending']){
+   for(const mode of ['switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
     await page.goto('https://billing.test/');
     await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:12px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32;--modal-backdrop-color:rgba(12,32,26,.58);--modal-backdrop-filter:blur(7px)}button,input,textarea{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
     await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
     const account='const styles=require("app/account/page.module.css");const child=React.createElement(require("app/account/account-invoices").default);ReactDOM.createRoot(document.getElementById("app")).render(React.createElement("section",{className:[styles.modalCard,styles.accountActionModalCardNarrow,styles.accountScrollableModalCard,styles.passwordModalCard,styles.billingModal].join(" "),style:{width:"min(760px,calc(100% - 32px))",margin:"32px auto",maxHeight:"850px",background:"white",borderRadius:"12px",overflow:"hidden"}},React.createElement(require("app/account/account-modal-scroller").default,{label:"Invoice list"},React.createElement("div",{className:styles.modalHeader},React.createElement("h2",null,"Your invoices"),React.createElement("p",null,"View your invoices and recorded payments.")),child)));';
     const suspended='const footerStyles=require("components/AppFooter.module.css");ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(React.Fragment,null,React.createElement(require("components/AppPatternBackground").default,null,React.createElement(require("app/pending-payment/PendingAccessClient").default,'+JSON.stringify({email:'customer@example.test',statusLabel:mode==='pending'?'Pending approval':'Suspended',isSuspended:mode!=='pending',suspension:mode==='suspended-unlinked'||mode==='pending'?null:{reason:'Payment remains outstanding. Please settle the linked invoice and contact Aim4price so we can review your access.',invoice:mode==='suspended-void'?{...invoice,status:'void'}:invoice}})+')),React.createElement("footer",{className:footerStyles.footer},React.createElement("div",{className:footerStyles.footerDock},"Footer"))));';
     const billing='ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/billing/billing-overview").default,'+JSON.stringify({invoices:[invoice,{...invoice,id:invoice.id.slice(0,-1)+'2',number:'A4P-2026-000002',paidCents:39900}],total:2,page:1,preparing:false})+'));';
-    await page.addScriptTag({content:runtime+(mode==='account'?account:mode==='billing'?billing:suspended)});
+    const switchPage='require("app/auth/page").default({}).then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));';
+    await page.addScriptTag({content:runtime+(mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
     if(mode==='account'||mode==='suspended')await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));else await page.waitForSelector('h1');
     if(mode==='suspended-unlinked'||mode==='suspended-void'){assert.equal(await page.$('button[aria-label="Open invoice"]'),null);assert.equal(await page.$('iframe'),null);assert.match(await page.$eval('h1',e=>e.textContent),/temporarily paused/);}
     if(mode==='pending'){
@@ -109,6 +118,12 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='pending')assert.notEqual(await page.$eval('footer',e=>getComputedStyle(e).display),'none');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,mode+' fits '+width);
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
+    if(mode==='switch'){
+     assert.equal(await page.$eval('h1',e=>e.textContent),'Switch account');
+     assert.equal(await page.$eval('button',e=>e.textContent),'Sign out and continue');
+     await page.click('button');
+     await page.waitForFunction(()=>location.pathname==='/auth'&&location.hash==='#login');
+    }
     if(mode==='pending'||mode.startsWith('suspended')){
      assert.equal(await page.$$eval('button',els=>els.some(e=>e.textContent==='Sign in to another account')),false,'Account switching stays in the header/login flow');
     }
