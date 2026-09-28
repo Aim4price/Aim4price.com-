@@ -1,7 +1,7 @@
 .page {
   min-height: var(--website-visible-height, 100dvh);
   color: var(--text-strong);
-  background: #eef1ef;
+  background: transparent;
 }
 
 .shell {
@@ -15,35 +15,17 @@
   display: grid;
   align-items: center;
   overflow: hidden;
-  background: #e8ece9;
+  background: transparent;
   isolation: isolate;
 }
 
-.heroSection::before {
-  position: absolute;
-  z-index: 0;
-  inset: -1rem;
-  content: '';
-  background-image: url('/brand/invoice-drop-hero.webp');
-  background-position: center 57%;
-  background-size: cover;
-  filter: saturate(0.66) contrast(0.92) brightness(1.04);
-}
-
+/* Let the shared green arc background remain visible, as on Pricing. */
 .heroOverlay {
   position: absolute;
   z-index: 1;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(
-      90deg,
-      rgba(250, 251, 249, 0.98) 0%,
-      rgba(250, 251, 249, 0.96) 43%,
-      rgba(250, 251, 249, 0.73) 67%,
-      rgba(250, 251, 249, 0.42) 100%
-    ),
-    linear-gradient(180deg, rgba(250, 251, 249, 0.08) 0%, rgba(234, 239, 236, 0.42) 100%);
+  background: radial-gradient(ellipse at 80% 50%, rgba(157, 210, 184, 0.16), transparent 58%);
 }
 
 .heroGrid {
@@ -107,7 +89,7 @@
   border: 1px solid rgba(17, 70, 53, 0.17);
   border-radius: 1.65rem;
   color: #123b2e;
-  background: rgba(255, 255, 255, 0.88);
+  background: #ffffff;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.94),
     0 26px 54px rgba(24, 55, 44, 0.16);
