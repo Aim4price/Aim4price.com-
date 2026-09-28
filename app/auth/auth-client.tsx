@@ -1194,18 +1194,6 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           </div>
                         </div>
 
-                        {signupForm.accountType === "dealer" ? (
-                          <>
-                            <button type="button" className={styles.dealerRegisterInfo} aria-haspopup="dialog" onClick={() => setShowDealerRegisterInfo(true)}>Client register information</button>
-                            <PricingModal compact open={showDealerRegisterInfo} title="Aim4price Manage Client Registers" closeLabel="Close client register information" onClose={() => setShowDealerRegisterInfo(false)}>
-                              <div className={styles.dealerRegisterDetails}>
-                                <p>Client registers are controlled by your dealership. Clients have no login or access.</p>
-                                <p>Client-register hosting is billed separately from your R199/month Dealer subscription, to your dealership.</p>
-                                <p>Aim4price confirms any additional charges and the billing start date before activation.</p>
-                              </div>
-                            </PricingModal>
-                          </>
-                        ) : null}
 
                         <div className={styles.signupFieldGrid}>
                           <div className={styles.field}>
@@ -1244,6 +1232,23 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                               }
                             />
                           </div>
+
+                        {signupForm.accountType === "dealer" ? (
+                          <div className={styles.dealerRegisterInfoRow}>
+                            <button type="button" className={styles.dealerRegisterInfo} aria-haspopup="dialog" onClick={() => setShowDealerRegisterInfo(true)}>Client register information</button>
+                            <PricingModal compact open={showDealerRegisterInfo} title="Manage client asset registers" closeLabel="Close client register information" onClose={() => setShowDealerRegisterInfo(false)}>
+                              <div className={styles.dealerRegisterDetails}>
+                                <p>As a Dealer, you can create and manage asset registers for your clients directly inside your Aim4price account.</p>
+                                <div className={styles.dealerRegisterPrice}>
+                                  <strong>50% of the standard Owner plan price</strong>
+                                  <p>Client-register hosting is based on the number of assets and the corresponding Owner plan. It is billed separately from your R199/month Dealer subscription.</p>
+                                </div>
+                                <p>Your dealership controls these registers and receives the invoices. Clients have no login or access.</p>
+                                <p className={styles.dealerRegisterNote}>Aim4price confirms the applicable asset band, charges and billing start date before activation.</p>
+                              </div>
+                            </PricingModal>
+                          </div>
+                        ) : null}
 
                           {signupForm.accountType !== "owner" && signupForm.accountType !== "middleman" ? (
                             <label className={`${styles.checkboxRow} ${styles.signupFieldWide} ${styles.directoryChoice}`}>

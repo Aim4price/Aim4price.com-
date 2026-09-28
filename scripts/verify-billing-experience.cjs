@@ -158,7 +158,9 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
        await page.click(trigger);
        await page.waitForSelector('[role="dialog"]');
        const notice=await page.$eval('[role="dialog"]',e=>e.textContent);
-       assert.match(notice,/Aim4price Manage Client Registers/);
+       assert.match(notice,/Manage client asset registers/);
+       assert.match(notice,/50% of the standard Owner plan price/);
+       assert.match(notice,/number of assets and the corresponding Owner plan/);
        assert.match(notice,/Clients have no login or access/);
        assert.match(notice,/billed separately.*R199\/month/);
        await page.screenshot({path:path.join(evidence,'dealer-register-popup-'+width+'.png'),fullPage:true});
