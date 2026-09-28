@@ -19,7 +19,7 @@ export default function PricingContent() {
         <button className={styles.accountCard} type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}>
           <strong className={styles.accountTitle}>Owner</strong>
           <span className={styles.accountDescription}>Manage your assets, costs and maintenance.</span>
-          <span className={styles.cardPrice}>Your assets. Your package.</span>
+          <span className={styles.cardPrice}>From <strong>R99</strong> / month</span>
           <span className={styles.cardAction}>Explore Owner pricing</span>
         </button>
         <Link href="/auth?accountType=dealer#signup" className={styles.accountCard}>

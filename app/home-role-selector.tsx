@@ -48,21 +48,26 @@ export default function HomeRoleSelector() {
         </h2>
 
         <div className={styles.roleGrid}>
-          <Link href="/auth?accountType=owner#signup" className={styles.roleCard}>
+          <article className={styles.roleCard}>
             <h3>Owner</h3>
             <p>Manage your assets, costs and maintenance.</p>
-          </Link>
-          <Link href="/auth?accountType=dealer#signup" className={styles.roleCard}>
+            <Link href="/pricing" className={styles.rolePricing} aria-label="See Owner pricing">See pricing</Link>
+            <button type="button" className={styles.roleAction} disabled>See more</button>
+          </article>
+          <article className={styles.roleCard}>
             <h3>Dealer</h3>
-            <p>Manage dealership stock and client registers.</p>
-          </Link>
-          <Link href="/business/join" className={styles.roleCard}>
+            <p>Manage dealership stock and client registers, get estimates, receive leads and browse the marketplace.</p>
+            <Link href="/pricing" className={styles.rolePricing} aria-label="See Dealer pricing">See pricing</Link>
+            <button type="button" className={styles.roleAction} disabled>See more</button>
+          </article>
+          <article className={styles.roleCard}>
             <h3>Business</h3>
             <p>Get estimates, receive leads and browse the marketplace.</p>
-          </Link>
+            <Link href="/pricing" className={styles.rolePricing} aria-label="See Business pricing">See pricing</Link>
+            <button type="button" className={styles.roleAction} disabled>See more</button>
+          </article>
         </div>
       </div>
     </section>
   );
 }
-
