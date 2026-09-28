@@ -46,6 +46,11 @@ test('role migration preserves existing roles and the new business role on repea
     await pg.exec(sql);
     await pg.exec(sql);
     assert.deepEqual((await pg.query('SELECT account_type FROM account_profiles ORDER BY account_type')).rows.map(r => r.account_type), ['business', 'dealer', 'licensing', 'owner']);
+    for(const subtype of ['finance-services','insurance-services','licensing-services','accounting-services','maintenance-services'])await pg.query('INSERT INTO account_profiles VALUES($1,$2)',['business',subtype]);
+    const before=(await pg.query('SELECT * FROM account_profiles ORDER BY account_type,account_subtype')).rows;
+    await pg.exec(fs.readFileSync('database/migrations/119-business-account-services.sql','utf8'));
+    await pg.exec(sql);
+    assert.deepEqual((await pg.query('SELECT * FROM account_profiles ORDER BY account_type,account_subtype')).rows,before,'Service types survive migration and repeated schema setup');
     await assert.rejects(pg.exec("INSERT INTO account_profiles VALUES('business','farmer')"));
 }
 finally {
