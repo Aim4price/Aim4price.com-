@@ -20,6 +20,14 @@
 /* Delegate scrolling to the active view, keeping the action bar visible. */
 .owner .body { overflow: hidden; padding: 0; }
 
-.compact { width: min(38rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); }
-.compact .header { align-items: center; }
-.compact .header h2 { font-size: 1.4rem; }
+.compact { width: min(44rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)); }
+.compact .header { display: grid; grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; align-items: center; gap: .75rem; margin-inline: 1.75rem; padding: 1.5rem 0 1.25rem; }
+.compact .header::before { content: ''; }
+.compact .header h2 { font-size: 1.4rem; line-height: 1.35; text-align: center; text-wrap: balance; }
+.compact .body { padding: 1.4rem 2rem 1.8rem; }
+@media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .compact { width: calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem); }
+  :global(html:not(:has([data-website-canvas]))) .compact .header { margin-inline: 1rem; gap: .5rem; padding: 1.15rem 0 1rem; }
+  :global(html:not(:has([data-website-canvas]))) .compact .header h2 { font-size: 1.2rem; }
+  :global(html:not(:has([data-website-canvas]))) .compact .body { padding: 1.15rem 1.25rem 1.4rem; }
+}
