@@ -74,7 +74,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='account'||mode==='suspended')await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));else await page.waitForSelector('h1');
     if(mode==='suspended-unlinked'||mode==='suspended-void'){assert.equal(await page.$('button[aria-label="Open invoice"]'),null);assert.equal(await page.$('iframe'),null);assert.match(await page.$eval('h1',e=>e.textContent),/temporarily paused/);}
     if(mode==='pending'){
-     assert.equal(await page.$eval('h1',e=>e.textContent),'Account pending approval');
+     assert.equal(await page.$eval('h1',e=>e.textContent),'Pending approval');
      assert.equal(await page.$eval('a[href="/billing"]',e=>e.textContent.includes('View invoices')),true);
      assert.doesNotMatch(await page.$eval('main',e=>e.textContent),/Back to home|Contact Aim4price/);
     }
@@ -110,11 +110,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,mode+' fits '+width);
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
     if(mode==='pending'||mode.startsWith('suspended')){
-     const button=await page.evaluateHandle(()=>[...document.querySelectorAll('button')].find(e=>e.textContent==='Sign in to another account'));
-     assert.ok(button.asElement(),'Blocked accounts can switch accounts');
-     await button.asElement().click();
-     await page.waitForFunction(()=>location.pathname==='/auth'&&location.hash==='#login');
-     await button.dispose();
+     assert.equal(await page.$$eval('button',els=>els.some(e=>e.textContent==='Sign in to another account')),false,'Account switching stays in the header/login flow');
     }
     assert.deepEqual(errors,[]);
    }
