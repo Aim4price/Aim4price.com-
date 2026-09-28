@@ -55,7 +55,7 @@ async function resolveDealerLeadAsset(
   leadId: string,
 ): Promise<DealerLeadAssetContext | null> {
   const profile = await getAccountProfile({ id: dealerUserId });
-  if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
+  if (!['dealer', 'business'].includes(profile.accountType) || profile.accountStatus !== 'active') return null;
 
   const lead = await getAssetLeadForPartner({ dealerUserId, leadId });
   if (!lead) return null;
@@ -67,7 +67,7 @@ async function resolveDealerLeadAsset(
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowBusiness: true, allowDealerApp: true });
   if (!session?.user?.id) return unauthorized();
 
   try {
@@ -87,7 +87,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowBusiness: true, allowDealerApp: true });
   if (!session?.user?.id) return unauthorized();
 
   try {

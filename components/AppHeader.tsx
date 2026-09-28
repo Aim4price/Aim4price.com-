@@ -297,7 +297,12 @@ function buildNavItems(
     return BASE_NAV_ITEMS;
   }
 
-  if (accountType === 'business') return [{ key: 'account', href: '/business', label: 'Business workspace' }];
+  if (accountType === 'business') return [
+    { key: 'home', href: '/', label: 'Home' },
+    { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
+    { key: 'leads', href: '/leads', label: 'Leads' },
+    { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+  ];
 
   if (accountType === 'public') {
     return PUBLIC_NAV_ITEMS;
@@ -384,7 +389,7 @@ function buildMobileNavItems(
 ): NavItem[] {
   const items = buildNavItems(accountType, accountSubtype, accountantWorkspaceShareId, accountantWorkspaceRegisterId);
 
-  if (accountType === 'licensing') {
+  if (accountType === 'licensing' || accountType === 'business') {
     return items;
   }
 

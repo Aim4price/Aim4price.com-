@@ -688,20 +688,21 @@ async function ensurePartnerAccessTablesOnce(): Promise<void> {
       when 'insurance' then 'insurance'
       when 'finance' then 'finance'
       when 'dealer' then 'dealer'
+      when 'business' then 'business'
       when 'licensing' then 'licensing'
       when 'licence-renewal-expert' then 'licensing'
       when 'license-renewal-expert' then 'licensing'
       else 'owner'
     end
     where account_type is null
-       or lower(trim(account_type)) not in ('owner', 'dealer', 'finance', 'insurance', 'licensing')
+       or lower(trim(account_type)) not in ('owner', 'dealer', 'finance', 'insurance', 'licensing', 'business')
        or lower(trim(account_type)) in ('bank', 'broker', 'insurer')
   `);
 
   await db.query(`
     update account_profiles
     set account_type = 'insurance', account_subtype = 'short-term-insurer'
-    where lower(trim(coalesce(account_subtype, ''))) in ('insurer', 'short-term-insurer', 'insurance-broker', 'broker')
+    where account_type <> 'business' and lower(trim(coalesce(account_subtype, ''))) in ('insurer', 'short-term-insurer', 'insurance-broker', 'broker')
   `);
 
   await db.query(`
@@ -1856,7 +1857,7 @@ export async function createAssetLeadNote(input: {
   }
 
   const profile = await getAccountProfile({ id: input.currentUserId });
-  if (!normalizePartnerType(profile.accountType)) {
+  if (profile.accountType !== 'business' && !normalizePartnerType(profile.accountType)) {
     throw new Error('PARTNER_NOTE_FORBIDDEN');
   }
 

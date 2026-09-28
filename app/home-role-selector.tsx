@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import styles from './page.module.css';
 
@@ -47,15 +48,18 @@ export default function HomeRoleSelector() {
         </h2>
 
         <div className={styles.roleGrid}>
-          <article className={styles.roleCard} aria-labelledby="role-owner-title">
-            <h3 id="role-owner-title">I own or manage assets</h3>
-            <p>Farmers, contractors, fleet operators and business owners.</p>
-          </article>
-
-          <article className={styles.roleCard} aria-labelledby="role-business-title">
-            <h3 id="role-business-title">I sell, service or support assets</h3>
-            <p>Dealers, workshops and service providers.</p>
-          </article>
+          <Link href="/auth?accountType=owner#signup" className={styles.roleCard}>
+            <h3>Owner</h3>
+            <p>Manage your assets, costs and maintenance.</p>
+          </Link>
+          <Link href="/auth?accountType=dealer#signup" className={styles.roleCard}>
+            <h3>Dealer</h3>
+            <p>Manage dealership stock and client registers.</p>
+          </Link>
+          <Link href="/business/join" className={styles.roleCard}>
+            <h3>Business</h3>
+            <p>Get estimates, receive leads and browse the marketplace.</p>
+          </Link>
         </div>
       </div>
     </section>

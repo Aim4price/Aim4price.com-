@@ -97,7 +97,7 @@ async function readCreateLeadNoteRequest(request: NextRequest): Promise<{ noteTe
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({ allowDealerApp: true });
+  const session = await getServerSession({ allowBusiness: true, allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

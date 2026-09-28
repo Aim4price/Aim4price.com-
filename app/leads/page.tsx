@@ -9,11 +9,11 @@ import LeadsClient from "./leads-client";
 
 export const runtime = "nodejs";
 
-const PARTNER_ACCOUNT_TYPES = new Set(["dealer", "finance", "insurance", "licensing"]);
+const PARTNER_ACCOUNT_TYPES = new Set(["dealer", "finance", "insurance", "licensing", "business"]);
 const INITIAL_LEAD_BATCH_SIZE = 10;
 
 export default async function LeadsPage() {
-  const { session } = await requireActivePageAccess();
+  const { session } = await requireActivePageAccess({ allowBusiness: true });
 
   const profile = await getAccountProfile({
     id: session.user.id,
@@ -34,7 +34,8 @@ export default async function LeadsPage() {
   return (
     <><SharedEnquiryInbox/><LeadsClient
       accountantWorkspaceMode={profile.accountType === "finance" && profile.accountSubtype === "accountant"}
-      dealerWorkspaceMode={profile.accountType === "dealer"}
+      dealerWorkspaceMode={profile.accountType === "dealer" || profile.accountType === "business"}
+      allowDealerCosts={profile.accountType !== "business"}
       licensingWorkspaceMode={profile.accountType === "licensing"}
       initialLeads={initialLeads.slice(0, INITIAL_LEAD_BATCH_SIZE)}
       initialLeadsHaveMore={initialLeads.length > INITIAL_LEAD_BATCH_SIZE}

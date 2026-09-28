@@ -15,7 +15,7 @@ function unauthorized() {
 }
 
 async function notificationViewer() {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowBusiness: true });
   if (!session?.user?.id) return null;
 
   const profile = await getAccountProfile({

@@ -140,7 +140,7 @@ function buildAssetGroupChildSections(input: {
 }
 
 export async function GET() {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({ allowBusiness: true, allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();

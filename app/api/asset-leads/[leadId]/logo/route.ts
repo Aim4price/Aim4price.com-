@@ -12,7 +12,7 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { leadId: string } },
 ) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  const session = await getServerSession({ allowBusiness: true, allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return new NextResponse(null, { status: 401 });

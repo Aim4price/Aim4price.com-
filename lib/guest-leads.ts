@@ -84,7 +84,7 @@ export async function loadProtectedLeadReport(token:string,reportId:string){
 
 // The shared page and this inbox reference the same enquiry, not a copied lead.
 export async function listReceivedSharedEnquiries(){
- const session=await getServerSession({requireActive:true,allowDealerApp:true});
+ const session=await getServerSession({requireActive:true,allowBusiness:true,allowDealerApp:true});
  if(!session?.user?.emailVerified||!session.user.email)return[];
  await ensureGuestLeadSchema();
  return (await getDb().query<{token:string;request:string;sender:string;created_at:string}>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE lower(lead_details->>'recipientEmail')=$1 AND revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) ORDER BY created_at DESC LIMIT 50`,[session.user.email.toLowerCase()])).rows;

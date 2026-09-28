@@ -41,14 +41,20 @@ export async function redirectAdminToAdmin(): Promise<void> {
   }
 }
 
-export async function requireActivePageAccess() {
+export async function requireActivePageAccess(options: { allowBusiness?: boolean } = {}) {
   const realSession = await getAnyServerSession();
 
   if (!realSession?.user?.id) {
     redirect("/auth#login");
   }
 
-  if ((await getAccountProfile(realSession.user)).accountType === "business") redirect("/business");
+  if ((await getAccountProfile(realSession.user)).accountType === "business") {
+    const access = await getAccountAccess(realSession.user);
+    if (!access.isActive) redirect("/pending-payment");
+    const { canBusinessContribute } = await import("./business-accounts");
+    if (!options.allowBusiness || !(await canBusinessContribute(realSession.user))) redirect("/business");
+    return { session: realSession, access };
+  }
 
   const [effectiveSession, access] = await Promise.all([
     getServerSession({ requireActive: false, authSession: realSession }),

@@ -49,6 +49,8 @@ type EffectiveServerSession = NonNullServerSession | AdminSupportSession | Deale
 type SessionOptions = {
   requireActive?: boolean;
   allowAdmin?: boolean;
+  /** Opt in only for the basic Business workspace; full account APIs stay restricted. */
+  allowBusiness?: boolean;
   allowDealerApp?: boolean;
   allowOwnerApp?: boolean;
   authSession?: ServerSession;
@@ -311,7 +313,9 @@ export async function getServerSession(
   });
 
   if (!isActive) {
-    return null;
+    if (!options.allowBusiness) return null;
+    const { canBusinessContribute } = await import("./business-accounts");
+    if (!(await canBusinessContribute(session.user))) return null;
   }
 
   await markRealUserActivity(session);
