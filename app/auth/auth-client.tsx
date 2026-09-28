@@ -1192,6 +1192,13 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           </div>
                         </div>
 
+                        {signupForm.accountType === "dealer" ? (
+                          <aside className={`${styles.notice} ${styles.noticeSuccess} ${styles.dealerRegisterNotice}`} aria-label="Client register disclaimer">
+                            <strong className={styles.noticeTitle}>Aim4price Manage Client Registers</strong>
+                            <span className={styles.noticeText}>Client registers are controlled by your dealership. Clients have no login or access. Client-register hosting is billed separately from your R199/month Dealer subscription, to your dealership. Aim4price confirms any additional charges and the billing start date before activation.</span>
+                          </aside>
+                        ) : null}
+
                         <div className={styles.signupFieldGrid}>
                           <div className={styles.field}>
                             <span className={styles.label}>What would you like to use Aim4price for?</span>
