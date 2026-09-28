@@ -1,5 +1,7 @@
 'use client';
 
+import SwitchAccountButton from '../../components/SwitchAccountButton';
+
 import SuspendedAccess from "./suspended-access";
 import type { BillingInvoice } from "../../lib/billing-shared";
 import Link from "next/link";
@@ -47,6 +49,7 @@ export default function PendingAccessClient({
                 <Link href="/billing" className={styles.secondaryButton}>View invoices</Link>
                 <ContactSupportModal />
               </div>
+              <SwitchAccountButton />
             </div>
 
             <aside className={styles.summaryCard} aria-label="Account summary">

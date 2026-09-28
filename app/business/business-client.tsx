@@ -1,9 +1,9 @@
 'use client';
+import SwitchAccountButton from '../../components/SwitchAccountButton';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from './page.module.css';
-export function SignOut() { return <button className={styles.button} onClick={async () => { const r = await fetch('/api/auth/sign-out', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }); if (r.ok)
-    location.assign('/auth#login'); }}>Sign out</button>; }
+export function SignOut() { return <SwitchAccountButton />; }
 export default function BusinessDetails({ businessName, phone, website, evidence, email, emailVerified, returnTo }: {
     businessName: string;
     phone: string;

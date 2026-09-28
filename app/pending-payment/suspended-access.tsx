@@ -1,5 +1,7 @@
 'use client';
 
+import SwitchAccountButton from '../../components/SwitchAccountButton';
+
 import { useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { InvoicePreview } from '../../components/InvoicePreview';
@@ -33,7 +35,7 @@ export default function SuspendedAccess({ suspension }: {
               : invoice ? 'This invoice is no longer payable. Contact Aim4price to review your access.'
               : 'Our team will explain the next steps to restore access.'}</span>
           </div>
-
+          <SwitchAccountButton />
         </div>
         {available && invoice ? <button type="button" className={styles.invoiceCard} onClick={() => setPreviewOpen(true)} aria-label="Open invoice" aria-haspopup="dialog">
           <span className={styles.documentIcon}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span>

@@ -1,0 +1,6 @@
+.action { margin-top: 1.25rem; }
+.button { padding: .8rem 1.1rem; border: 1px solid #c7d9d0; border-radius: .75rem; background: #fff; color: #194e3d; font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; }
+.button:hover { background: #edf5f0; border-color: #81a894; }
+.button:focus-visible { outline: 3px solid #168a65; outline-offset: 3px; }
+.button:disabled { opacity: .65; cursor: wait; }
+.error { color: #963d43; font-size: .85rem; line-height: 1.5; margin: .65rem 0 0; }
