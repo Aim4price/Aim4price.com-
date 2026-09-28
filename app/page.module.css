@@ -3639,6 +3639,3 @@ button.storyHeroLogo:focus-visible, .featureCountdown button:focus-visible { out
 }
 
 .roleCard:focus-visible { outline: 3px solid #168a65; outline-offset: 4px; }
-@media (max-width: 760px) {
-  :global(html:not(:has([data-website-canvas]))) .roleGrid { grid-template-columns: 1fr; }
-}
