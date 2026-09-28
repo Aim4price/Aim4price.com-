@@ -160,7 +160,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.type('input[name="name"]','Test Recipient');await page.type('input[name="businessName"]','Test Business');await page.type('input[name="phone"]','0821234567');
      await select('Who introduced you to Aim4price?','No one / direct signup');await select('Province','Western Cape');await page.$eval('input[name="townCity"]',e=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'George');e.dispatchEvent(new Event('input',{bubbles:true}));});
      await clickText('Next');await page.waitForFunction(()=>!!document.querySelector('input[name="email"]')||!!document.querySelector('[role="alert"]'));assert.equal(await page.$eval('body',e=>e.querySelector('[role="alert"]')?.textContent||''),'');await page.waitForSelector('input[name="email"]');
-     assert.match(await page.$eval('form',e=>e.textContent),/R199\/month/);
+     assert.doesNotMatch(await page.$eval('form',e=>e.textContent),/Business pricing:|Creating an account does not take a payment/);
      await page.type('input[name="email"]','guest@example.test');await page.type('input[name="password"]','Synthetic-password-only-123');await page.type('input[name="confirmPassword"]','Synthetic-password-only-123');await page.click('input[type="checkbox"]');
      await page.screenshot({path:path.join(evidence,'business-step3-'+width+'.png'),fullPage:true});
      await clickText('Create account');

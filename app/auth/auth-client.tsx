@@ -1402,7 +1402,6 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                         </div>
 
                         {billingPricingError && signupForm.accountType!=="business" ? <p role="alert">{billingPricingError}</p> : null}
-                        {signupForm.accountType==='business'&&<p className={styles.authText}>Business pricing: R199/month. Creating an account does not take a payment.</p>}
                         {selectedBillingPlan ? <div className={styles.billingSignup}>
                           <strong>Your signup invoice · {money(selectedBillingPlan.amountCents)}</strong>
                           <p>{selectedBillingPlan.description} · {selectedBillingPlan.interval === 'once' ? 'One-time charge' : selectedBillingPlan.interval === 'monthly' ? 'Monthly' : 'Annual'} · No VAT applicable.</p>
