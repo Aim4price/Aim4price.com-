@@ -43,6 +43,8 @@ function add(file){
  });
 }
 
+add('app/pricing/pricing-content');
+add('app/business/join/page');
 add('app/auth/page');
 add('app/account/account-invoices');
 add('app/billing/billing-overview');
@@ -71,7 +73,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
   const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
-   for(const mode of ['switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
+   for(const mode of ['pricing','business-join','switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
     await page.goto('https://billing.test/');
     await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:12px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32;--modal-backdrop-color:rgba(12,32,26,.58);--modal-backdrop-filter:blur(7px)}button,input,textarea{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
     await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
@@ -79,7 +81,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     const suspended='const footerStyles=require("components/AppFooter.module.css");ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(React.Fragment,null,React.createElement(require("components/AppPatternBackground").default,null,React.createElement(require("app/pending-payment/PendingAccessClient").default,'+JSON.stringify({email:'customer@example.test',statusLabel:mode==='pending'?'Pending approval':'Suspended',isSuspended:mode!=='pending',suspension:mode==='suspended-unlinked'||mode==='pending'?null:{reason:'Payment remains outstanding. Please settle the linked invoice and contact Aim4price so we can review your access.',invoice:mode==='suspended-void'?{...invoice,status:'void'}:invoice}})+')),React.createElement("footer",{className:footerStyles.footer},React.createElement("div",{className:footerStyles.footerDock},"Footer"))));';
     const billing='ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/billing/billing-overview").default,'+JSON.stringify({invoices:[invoice,{...invoice,id:invoice.id.slice(0,-1)+'2',number:'A4P-2026-000002',paidCents:39900}],total:2,page:1,preparing:false})+'));';
     const switchPage='require("app/auth/page").default({}).then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));';
-    await page.addScriptTag({content:runtime+(mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
+    await page.addScriptTag({content:runtime+(mode==='pricing'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/pricing/pricing-content").default));':mode==='business-join'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/business/join/page").default,{}));':mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
     if(mode==='account'||mode==='suspended')await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));else await page.waitForSelector('h1');
     if(mode==='suspended-unlinked'||mode==='suspended-void'){assert.equal(await page.$('button[aria-label="Open invoice"]'),null);assert.equal(await page.$('iframe'),null);assert.match(await page.$eval('h1',e=>e.textContent),/temporarily paused/);}
     if(mode==='pending'){
@@ -118,6 +120,18 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='pending')assert.notEqual(await page.$eval('footer',e=>getComputedStyle(e).display),'none');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,mode+' fits '+width);
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
+    if(mode==='pricing'){
+     assert.equal(await page.$eval('a[href="/business/join"]',e=>e.textContent.includes('R199')),true);
+     assert.match(await page.$eval('a[href="/business/join"]',e=>e.textContent),/after x credits/);
+     for(const label of ['Owner','Dealer']){
+      await page.$$eval('button[aria-haspopup="dialog"]',(els,label)=>els.find(e=>e.textContent.startsWith(label)).click(),label);
+      await page.waitForSelector('[role="dialog"]');
+      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),label==='Owner'?/How many assets/:/Will you manage/);
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
+     }
+    }
+    if(mode==='business-join')assert.match(await page.$eval('form',e=>e.textContent),/R199\/month after x credits/);
     if(mode==='switch'){
      assert.equal(await page.$eval('h1',e=>e.textContent),'Switch account');
      assert.equal(await page.$eval('button',e=>e.textContent),'Sign out and continue');
