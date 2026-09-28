@@ -1094,7 +1094,6 @@ export default function AuthClient() {
                 {copy.title}
               </h1>
               <p className={styles.authText}>{copy.text}</p>
-              <Link href="/business/join">Finance, insurance, licensing or other services? Create a Business account</Link>
             </div>
 
             {notice && mode !== "signup" ? (
@@ -1637,6 +1636,11 @@ export default function AuthClient() {
                 </button>
               </form>
             ) : null}
+
+            {mode === "login" && <aside className={styles.sharedEntry}>
+              <div><strong>Received a shared enquiry?</strong><span>Open it for free using your email.</span></div>
+              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/guest?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/guest'}>Guest access</Link>
+            </aside>}
 
             <p className={styles.footerText}>
               {copy.footer}{" "}

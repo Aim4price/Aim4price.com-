@@ -8,13 +8,16 @@ test('switching verifies the real session before clearing cache and navigating',
  try{
   let clear=0,redirects=[],calls=[];
   global.window={location:{replace:url=>redirects.push(url)}};
-  const {switchWebsiteAccount}=load('lib/switch-website-account.ts',{'./header-session-cache':{clearCachedHeaderSession:()=>clear++}});
+  const {switchWebsiteAccount}=load('lib/switch-website-account.ts',{'./external-share-permissions':load('lib/external-share-permissions.ts',{}),'./header-session-cache':{clearCachedHeaderSession:()=>clear++}});
   global.fetch=async(url,options)=>{calls.push({url,options});return Response.json(null)};
   await switchWebsiteAccount();
   assert.deepEqual(calls.map(c=>c.url),['/api/auth/sign-out','/api/auth/get-session']);
   assert.equal(calls[0].options.method,'POST');
   assert.ok(calls.every(c=>c.options.credentials==='include'&&c.options.cache==='no-store'));
   assert.equal(clear,1);assert.deepEqual(redirects,['/auth#login']);
+  const enquiry='/asset-share/'+'t'.repeat(43);
+  await switchWebsiteAccount(enquiry);assert.equal(redirects.at(-1),'/auth?returnTo='+encodeURIComponent(enquiry)+'#login');
+  await switchWebsiteAccount('https://untrusted.test');assert.equal(redirects.at(-1),'/auth#login');
   for(const failure of ['signout','verification','still-signed-in','invalid-json']){
    clear=0;redirects=[];
    global.fetch=async url=>{
@@ -32,7 +35,7 @@ test('blocked login visits render a switch action instead of redirecting back to
  let status='suspended',signedIn=true,accountType='owner';
  const Switch=()=>null;
  const {default:Page}=load('app/auth/page.tsx',{
-  '../../components/AppHeader':()=>null,'../../components/SwitchAccountButton':Switch,'./page.module.css':{},
+  '../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),'../../components/AppHeader':()=>null,'../../components/SwitchAccountButton':Switch,'./page.module.css':{},
   'next/navigation':{redirect:path=>{throw Error('redirect:'+path)}},
   '../../lib/account-access':{getAccountAccess:async()=>({isActive:status==='active',isAdmin:false})},
   '../../lib/account-profile':{getAccountProfile:async()=>({accountType})},
@@ -41,7 +44,7 @@ test('blocked login visits render a switch action instead of redirecting back to
  });
  const hasSwitch=node=>!!node&&(node.type===Switch||[node.props?.children].flat().some(hasSwitch));
  for(status of ['suspended','pending_payment'])assert.ok(hasSwitch(await Page({})));
- status='active';await assert.rejects(Page({}),/redirect:\/asset-register/);
+ status='active';await assert.rejects(Page({searchParams:{returnTo:'/asset-share/'+'t'.repeat(43)}}),/redirect:\/asset-share\//);await assert.rejects(Page({}),/redirect:\/asset-register/);
  assert.ok(hasSwitch(await Page({searchParams:{switchAccount:'1'}})));
  accountType='business';await assert.rejects(Page({}),/redirect:\/business/);
  signedIn=false;assert.ok(!hasSwitch(await Page({})));

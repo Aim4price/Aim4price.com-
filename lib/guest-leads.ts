@@ -57,9 +57,9 @@ export async function listOwnerGuestLeads(ownerId:string,idsInput:unknown){
 export async function readLeadPage(token:string){
  const share=await readPublicAssetShare(token);if(!share)return null;
  await ensureGuestLeadSchema();const row=(await getDb().query('SELECT user_id,lead_details FROM asset_share_links WHERE token=$1 AND revoked_at IS NULL',[token])).rows[0];
- if(!row?.lead_details)return{share,details:null,reports:[] as LeadReport[],ownerId:row?.user_id||''};
+ if(!row?.lead_details)return{token,share,details:null,reports:[] as LeadReport[],ownerId:row?.user_id||''};
  const reports=(await getDb().query<LeadReport>('SELECT id,label FROM asset_share_reports WHERE token=$1 ORDER BY label,id',[token])).rows;
- return{share,details:row.lead_details as LeadDetails,reports,ownerId:row.user_id as string};
+ return{token,share,details:row.lead_details as LeadDetails,reports,ownerId:row.user_id as string};
 }
 export async function resolveLeadAccess(ownerId:string,recipientEmail:string):Promise<LeadAccess>{
  const session=await getServerSession({requireActive:true,allowOwnerApp:true,allowDealerApp:true});
@@ -77,7 +77,7 @@ export async function loadProtectedLeadReport(token:string,reportId:string){
  const { externalLeadAccess, leadAllows } = await import('./external-lead-access');
  if(!leadAllows(lead,'reports'))return{status:403 as const};
  const { access }=await externalLeadAccess(lead);
- if(access!=='active'&&access!=='owner')return{status:403 as const};
+ if(access!=='active'&&access!=='owner'&&access!=='guest')return{status:403 as const};
  const report=(await getDb().query(`SELECT r.pdf,r.file_name,r.content_type FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.id=$1 AND r.token=$2 AND s.revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id))`,[reportId,token])).rows[0];
  return report?{status:200 as const,report}:{status:404 as const};
 }

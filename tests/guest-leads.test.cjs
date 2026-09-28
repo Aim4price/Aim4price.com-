@@ -9,6 +9,8 @@ function load(file,mocks={}){
  const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
  new Function('require','exports',code)(name=>{
   if(name in mocks)return mocks[name];
+  if(name==='./access-email')return load('lib/access-email.ts',{'./email-brand':load('lib/email-brand.ts')});
+  if(name==='./guest-enquiry-credits')return {guestEnquiryAccess:async()=>({access:'sign-in'})};
   if(name==='./external-share-permissions')return load('lib/external-share-permissions.ts');
   if(name==='./external-lead-access')return load('lib/external-lead-access.ts',{...mocks,'./guest-leads':mocks['./guest-leads']||exports});
   return require(name);
@@ -41,9 +43,9 @@ test('acceptances are durable, do not publish and cannot overwrite an earlier ac
 test('guest email codes are one-use and expire; sessions and manual activation cannot grant themselves paid access',async()=>{
  const{pg,db,schema}=await setup();let cookie='',sent=[];const limits=[];
  const oldKey=process.env.RESEND_API_KEY;process.env.RESEND_API_KEY='local-test';
- const mod=load('lib/guest-business-access.ts',{'next/headers':{cookies:()=>({get:()=>({value:cookie})})},'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':shared,'./business-network':{limitBusinessAction:async(key,limit)=>limits.push([key,limit])},'./email':{sendAim4priceEmail:async message=>sent.push(message)}});
+ const mod=load('lib/guest-business-access.ts',{'next/headers':{cookies:()=>({get:()=>({value:cookie})})},'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':shared,'./business-network':{limitBusinessAction:async(key,limit)=>limits.push([key,limit])},'./email':{getSiteOrigin:()=> 'https://aim4price.test',sendAim4priceEmail:async message=>sent.push(message)}});
  try{
- await mod.startGuestLogin({email:details.recipientEmail,businessName:'Workshop',contactName:'Manager'},'ip');
+ await mod.startGuestLogin({email:details.recipientEmail},'ip');
  const code=sent[0].text.match(/\b\d{6}\b/)[0];
  await assert.rejects(mod.verifyGuestLogin(details.recipientEmail,'000000','ip'),/invalid/);
  cookie=await mod.verifyGuestLogin(details.recipientEmail,code,'ip');

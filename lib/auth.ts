@@ -1,3 +1,5 @@
+import { getSiteOrigin } from './email';
+import { buildAccessEmail } from './access-email';
 import { queueSignupInvoice, type SignupBilling } from "./billing";
 import { betterAuth } from "better-auth";
 import {
@@ -125,10 +127,7 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: false,
     sendVerificationEmail: async ({ user, url }) => {
-      const safeUrl = url.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-      await sendAim4priceEmail({ to: user.email, subject: 'Verify your Aim4price email',
-        text: `Verify your email to access enquiries addressed to you: ${url}`,
-        html: `<p>Verify your email to access enquiries addressed to you.</p><p><a href="${safeUrl}">Verify email</a></p>` });
+      await sendAim4priceEmail({to:user.email,...buildAccessEmail({url,origin:getSiteOrigin()})});
     },
   },
   databaseHooks: {
