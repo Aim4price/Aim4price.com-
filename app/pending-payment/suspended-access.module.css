@@ -1,5 +1,5 @@
-.page { min-height:0; color:#12382d; background:#eef1ef; }
-.hero { position:relative; isolation:isolate; display:grid; align-items:center; min-height:0; overflow:hidden; }
+.page { display:flex; flex-direction:column; min-height:var(--website-visible-height,100dvh); color:#12382d; background:#eef1ef; }
+.hero { flex:1 0 auto; position:relative; isolation:isolate; display:grid; align-items:center; min-height:0; overflow:hidden; }
 .hero::before { content:''; position:absolute; z-index:-2; inset:-1rem; background:url('/brand/invoice-drop-hero.webp') center 57% / cover; filter:blur(3px) saturate(.6) contrast(.92) brightness(1.04); }
 .overlay { position:absolute; z-index:-1; inset:0; background:linear-gradient(90deg,rgba(250,251,249,.98) 0%,rgba(250,251,249,.94) 45%,rgba(250,251,249,.65) 72%,rgba(250,251,249,.4) 100%); }
 .grid { width:var(--shell-width,min(90%,88rem)); margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) minmax(19rem,23rem); gap:clamp(3rem,calc(var(--website-design-vw,1vw)*5),6rem); align-items:center; padding:clamp(2.25rem,calc(var(--website-design-vw,1vw)*3),3.25rem) 0; }

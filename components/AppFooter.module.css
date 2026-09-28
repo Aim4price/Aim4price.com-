@@ -389,7 +389,7 @@
 }
 
 
-/* Suspension focuses on the invoice; hide the footer and its toggle entirely. */
+/* Keep the suspension footer in normal scroll flow, flush with the hero. */
 :global(body:has([data-suspension-page])) .footer {
-  display: none;
+  margin-top: 0;
 }
