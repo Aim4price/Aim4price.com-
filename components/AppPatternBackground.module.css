@@ -257,10 +257,10 @@
 
 
 /* Suspension is a compact action page; do not reserve a full design-canvas height. */
-.background:has([data-suspension-page]),
-.content:has([data-suspension-page]) {
+.background:has([data-account-access-page]),
+.content:has([data-account-access-page]) {
   min-height: 0;
 }
-.background:has([data-suspension-page]) {
+.background:has([data-account-access-page]) {
   flex: 0 0 auto;
 }

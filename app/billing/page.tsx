@@ -1,11 +1,8 @@
-import Link from 'next/link';
-import BillingInvoiceCard from '../../components/BillingInvoiceCard';
+import BillingOverview from './billing-overview';
 import { redirect } from 'next/navigation';
-import AppHeader from '../../components/AppHeader';
 import { getAnyServerSession } from '../../lib/auth-session';
 import { listBillingInvoices, ensureBillingSchema } from '../../lib/billing';
 import { getDb } from '../../lib/db';
-import styles from '../admin/billing/page.module.css';
 export const runtime='nodejs';export const dynamic='force-dynamic';
 export default async function BillingPage({searchParams={}}:{searchParams?:Record<string,string|string[]|undefined>}){
  const session=await getAnyServerSession();if(!session?.user?.id)redirect('/auth#login');
@@ -13,5 +10,5 @@ export default async function BillingPage({searchParams={}}:{searchParams?:Recor
  const {invoices,total}=await listBillingInvoices(session.user.id,false,Math.trunc(page));
  await ensureBillingSchema();
  const preparing=(await getDb().query('select 1 from aim4price_billing_signup_jobs where user_id=$1 and processed_at is null',[session.user.id])).rowCount;
- return <><AppHeader active="none"/><main className={styles.page}><div className={`${styles.shell} ${styles.customerShell}`}><header className={styles.header}><h1>Aim4price Billing</h1><Link className={styles.button} href="/account">My account</Link></header><section className={styles.panel}><p>Your invoices and recorded payments.</p>{preparing?<p role="status">Your signup invoice is being prepared. Refresh this page shortly. It will also be emailed to your billing address.</p>:null}<div className={styles.customerInvoices}>{invoices.map(inv=><BillingInvoiceCard key={inv.id} invoice={inv}/>)}</div>{!invoices.length&&!preparing?<p>No invoices have been issued to your account.</p>:null}<div className={styles.actions}>{page>1?<Link className={styles.button} href={'/billing?page='+(page-1)}>Previous</Link>:null}{page*50<total?<Link className={styles.button} href={'/billing?page='+(page+1)}>Next</Link>:null}</div><p className={styles.muted}>Payments appear after Aim4price verifies receipt. For invoice queries, email <a href="mailto:Aim4price@gmail.com">Aim4price@gmail.com</a>.</p></section></div></main></>;
+ return <BillingOverview invoices={invoices} total={total} page={page} preparing={Boolean(preparing)}/>;
 }

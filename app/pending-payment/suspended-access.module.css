@@ -2,18 +2,18 @@
 .hero { flex:1 0 auto; position:relative; isolation:isolate; display:grid; align-items:center; min-height:0; overflow:hidden; }
 .hero::before { content:''; position:absolute; z-index:-2; inset:-1rem; background:url('/brand/invoice-drop-hero.webp') center 57% / cover; filter:blur(3px) saturate(.6) contrast(.92) brightness(1.04); }
 .overlay { position:absolute; z-index:-1; inset:0; background:linear-gradient(90deg,rgba(250,251,249,.98) 0%,rgba(250,251,249,.94) 45%,rgba(250,251,249,.65) 72%,rgba(250,251,249,.4) 100%); }
-.grid { width:var(--shell-width,min(90%,88rem)); margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) minmax(19rem,23rem); gap:clamp(3rem,calc(var(--website-design-vw,1vw)*5),6rem); align-items:center; padding:clamp(2.25rem,calc(var(--website-design-vw,1vw)*3),3.25rem) 0; }
-.copy { min-width:0; }
+.grid { width:var(--shell-width,min(90%,88rem)); margin:0 auto; display:grid; grid-template-columns:minmax(0,1fr) minmax(22rem,27rem); gap:clamp(3rem,calc(var(--website-design-vw,1vw)*5),5rem); align-items:center; padding:clamp(2.25rem,calc(var(--website-design-vw,1vw)*3),3.25rem) 0; }
+.copy { min-width:0; padding:1rem 0; }
 .status { display:inline-flex; align-items:center; gap:.65rem; padding:.55rem 1rem; border-radius:2rem; background:#fceeed; color:#963d43; border:1px solid #edcccc; font-size:.85rem; font-weight:700; }
 .status>span { display:grid; place-items:center; width:1.6rem; height:1.6rem; border-radius:50%; color:#fff; background:#ad4c53; font-size:.9rem; }
 .copy h1 { margin:1.25rem 0 1rem; font-size:clamp(2.8rem,calc(var(--website-design-vw,1vw)*3.9),4.25rem); line-height:1.07; letter-spacing:-.05em; font-weight:800; }
 .intro { margin:0; max-width:44rem; font-size:1.12rem; line-height:1.65; color:#52655c; }
-.reason { margin-top:1.6rem; padding:1.15rem 1.4rem; background:linear-gradient(135deg,#fff5f4,#fceeed); border:1px solid #edcccc; border-left:3px solid #ad4c53; border-radius:.75rem; }
+.reason { margin-top:2rem; padding:1.35rem 1.5rem; background:linear-gradient(135deg,#fff5f4,#fceeed); border:1px solid #edcccc; border-left:3px solid #ad4c53; border-radius:.75rem; }
 .reason strong { font-size:.9rem; color:#963d43; font-weight:700; }
 .reason p { margin:.65rem 0; white-space:pre-wrap; overflow-wrap:anywhere; font-size:.96rem; line-height:1.6; color:#633f43; }
 .reason>span { font-size:.85rem; line-height:1.6; color:#795b5f; }
-.invoiceCard,.unavailable { display:flex; flex-direction:column; align-items:center; width:100%; padding:2.15rem 1.9rem 1.8rem; border:1px solid rgba(17,70,53,.12); border-radius:1.65rem; background:rgba(255,255,255,.94); box-shadow:0 24px 54px rgba(24,55,44,.16); color:#12382d; text-align:center; }
-.invoiceCard { font:inherit; cursor:pointer; transition:box-shadow 180ms ease,border-color 180ms ease; }
+.invoiceCard,.unavailable { display:flex; flex-direction:column; align-items:center; width:100%; min-height:23rem; justify-content:center; padding:2.75rem 2.25rem; border:1px solid rgba(17,70,53,.12); border-radius:1.65rem; background:rgba(255,255,255,.94); box-shadow:0 24px 54px rgba(24,55,44,.16); color:#12382d; text-align:center; }
+.invoiceCard { text-decoration:none; font:inherit; cursor:pointer; transition:box-shadow 180ms ease,border-color 180ms ease; }
 .invoiceCard:hover { border-color:#8db5a3; box-shadow:0 28px 60px rgba(24,55,44,.22); }
 .documentIcon { width:5.5rem; height:5.5rem; display:grid; place-items:center; border-radius:50%; background:linear-gradient(160deg,#279770,#17694e); color:#fff; box-shadow:0 15px 30px rgba(18,96,68,.14); }
 .documentIcon svg { width:2.6rem; height:2.6rem; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
@@ -31,3 +31,12 @@
 }
 
 .status svg { width:.85rem; height:.85rem; fill:none; stroke:currentColor; stroke-width:2.5; stroke-linecap:round; }
+
+.pendingStatus { background:#edf4ef; border-color:#cddfd3; color:#28644e; }
+.pendingStatus>span { background:#33785a; }
+.pendingReason { background:linear-gradient(135deg,#f7fbf8,#edf4ef); border-color:#cddfd3; border-left-color:#33785a; }
+.pendingReason strong { color:#28644e; }
+.pendingReason p { color:#36594a; }
+.pendingReason>span { color:#61756a; }
+.cardAction { display:block; width:100%; margin-top:2rem; padding:1rem; border-radius:.8rem; background:#1a654d; color:#fff; font-size:.9rem; font-weight:700; }
+.invoiceCard:hover .cardAction { background:#144e3c; }

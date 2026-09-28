@@ -6,8 +6,7 @@ import SuspendedAccess from "./suspended-access";
 import type { BillingInvoice } from "../../lib/billing-shared";
 import Link from "next/link";
 import AppHeader from "../../components/AppHeader";
-import ContactSupportModal from "./contact-support-modal";
-import styles from "./page.module.css";
+import styles from "./suspended-access.module.css";
 
 type PendingAccessClientProps = {
   suspension?: {reason:string;invoice:BillingInvoice}|null;
@@ -24,48 +23,30 @@ export default function PendingAccessClient({
 }: PendingAccessClientProps) {
   if (isSuspended) return <SuspendedAccess suspension={suspension} />;
 
-  const pageTitle = "Account pending approval";
-  const pageText = "Your Aim4price account has been created. Access will unlock once payment and admin approval are complete.";
-  const stateLabel = "Admin approval";
-
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-account-access-page>
       <AppHeader active="none" />
-
-      <section className={styles.shell} aria-labelledby="pending-access-heading">
-        <div className={styles.panel}>
-          <div className={styles.contentGrid}>
-            <div className={styles.copyBlock}>
-              <span className={styles.stateLabel}>{stateLabel}</span>
-              <h1 id="pending-access-heading" className={styles.title}>
-                {pageTitle}
-              </h1>
-              <p className={styles.text}>{pageText}</p>
-
-              <div className={styles.actions}>
-                <Link href="/" className={styles.secondaryButton}>
-                  Back to home
-                </Link>
-                <Link href="/billing" className={styles.secondaryButton}>View invoices</Link>
-                <ContactSupportModal />
-              </div>
-              <SwitchAccountButton />
+      <section className={styles.hero} aria-labelledby="pending-access-heading">
+        <div className={styles.overlay} />
+        <div className={styles.grid}>
+          <div className={styles.copy}>
+            <span className={`${styles.status} ${styles.pendingStatus}`}><span aria-hidden="true"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5"/><path d="M8 5v3l2 1"/></svg></span>Awaiting approval</span>
+            <h1 id="pending-access-heading">Account pending approval</h1>
+            <p className={styles.intro}>Your Aim4price account is ready for review. Access will unlock once payment and admin approval are complete.</p>
+            <div className={`${styles.reason} ${styles.pendingReason}`}>
+              <strong>{statusLabel}</strong>
+              <p>{email || 'Your account is awaiting approval.'}</p>
+              <span>You can view your invoices while we review your account.</span>
             </div>
-
-            <aside className={styles.summaryCard} aria-label="Account summary">
-              <div className={styles.summaryRow}>
-                <span>Signed in as</span>
-                <strong>{email || "Unknown email"}</strong>
-              </div>
-              <div className={styles.summaryRule} aria-hidden="true" />
-              <div className={styles.summaryRow}>
-                <span>Current status</span>
-                <strong>{statusLabel}</strong>
-              </div>
-            </aside>
+            <SwitchAccountButton />
           </div>
+          <Link href="/billing" className={styles.invoiceCard}>
+            <span className={styles.documentIcon}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></span>
+            <strong className={styles.cardTitle}>Your invoices</strong>
+            <span className={styles.cardHint}>Invoices and payment details, in one place.</span>
+            <span className={styles.cardAction}>View invoices</span>
+          </Link>
         </div>
-
       </section>
     </main>
   );
