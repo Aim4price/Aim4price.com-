@@ -16,7 +16,7 @@ export default function SuspendedAccess({ suspension }: {
   const available = invoice?.status === 'issued';
   const balance = invoice ? Math.max(0, invoice.totalCents - invoice.paidCents) : 0;
 
-  return <main className={styles.page} data-suspension-page>
+  return <main className={styles.page} data-suspension-page data-account-access-page>
     <AppHeader active="none" />
     <section className={styles.hero} aria-labelledby="pending-access-heading">
       <div className={styles.overlay} />

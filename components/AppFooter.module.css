@@ -390,6 +390,6 @@
 
 
 /* Keep the suspension footer in normal scroll flow, flush with the hero. */
-:global(body:has([data-suspension-page])) .footer {
+:global(body:has([data-account-access-page])) .footer {
   margin-top: 0;
 }

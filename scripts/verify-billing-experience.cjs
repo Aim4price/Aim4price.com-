@@ -37,6 +37,7 @@ function add(file){
 }
 
 add('app/account/account-invoices');
+add('app/billing/billing-overview');
 add('app/account/account-modal-scroller');
 add('app/pending-payment/PendingAccessClient');
 add('components/AppPatternBackground');
@@ -62,16 +63,27 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
   const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
-   for(const mode of ['account','suspended','suspended-unlinked','suspended-void','pending']){
+   for(const mode of ['account','billing','suspended','suspended-unlinked','suspended-void','pending']){
     await page.goto('https://billing.test/');
     await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:12px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32;--modal-backdrop-color:rgba(12,32,26,.58);--modal-backdrop-filter:blur(7px)}button,input,textarea{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
     await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
     const account='const styles=require("app/account/page.module.css");const child=React.createElement(require("app/account/account-invoices").default);ReactDOM.createRoot(document.getElementById("app")).render(React.createElement("section",{className:[styles.modalCard,styles.accountActionModalCardNarrow,styles.accountScrollableModalCard,styles.passwordModalCard,styles.billingModal].join(" "),style:{width:"min(760px,calc(100% - 32px))",margin:"32px auto",maxHeight:"850px",background:"white",borderRadius:"12px",overflow:"hidden"}},React.createElement(require("app/account/account-modal-scroller").default,{label:"Invoice list"},React.createElement("div",{className:styles.modalHeader},React.createElement("h2",null,"Your invoices"),React.createElement("p",null,"View your invoices and recorded payments.")),child)));';
-    const suspended='const footerStyles=require("components/AppFooter.module.css");ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(React.Fragment,null,React.createElement(require("components/AppPatternBackground").default,null,React.createElement(require("app/pending-payment/PendingAccessClient").default,'+JSON.stringify({email:'customer@example.test',statusLabel:'Suspended',isSuspended:mode!=='pending',suspension:mode==='suspended-unlinked'||mode==='pending'?null:{reason:'Payment remains outstanding. Please settle the linked invoice and contact Aim4price so we can review your access.',invoice:mode==='suspended-void'?{...invoice,status:'void'}:invoice}})+')),React.createElement("footer",{className:footerStyles.footer},React.createElement("div",{className:footerStyles.footerDock},"Footer"))));';
-    await page.addScriptTag({content:runtime+(mode==='account'?account:suspended)});
+    const suspended='const footerStyles=require("components/AppFooter.module.css");ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(React.Fragment,null,React.createElement(require("components/AppPatternBackground").default,null,React.createElement(require("app/pending-payment/PendingAccessClient").default,'+JSON.stringify({email:'customer@example.test',statusLabel:mode==='pending'?'Pending approval':'Suspended',isSuspended:mode!=='pending',suspension:mode==='suspended-unlinked'||mode==='pending'?null:{reason:'Payment remains outstanding. Please settle the linked invoice and contact Aim4price so we can review your access.',invoice:mode==='suspended-void'?{...invoice,status:'void'}:invoice}})+')),React.createElement("footer",{className:footerStyles.footer},React.createElement("div",{className:footerStyles.footerDock},"Footer"))));';
+    const billing='ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/billing/billing-overview").default,'+JSON.stringify({invoices:[invoice,{...invoice,id:invoice.id.slice(0,-1)+'2',number:'A4P-2026-000002',paidCents:39900}],total:2,page:1,preparing:false})+'));';
+    await page.addScriptTag({content:runtime+(mode==='account'?account:mode==='billing'?billing:suspended)});
     if(mode==='account'||mode==='suspended')await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));else await page.waitForSelector('h1');
     if(mode==='suspended-unlinked'||mode==='suspended-void'){assert.equal(await page.$('button[aria-label="Open invoice"]'),null);assert.equal(await page.$('iframe'),null);assert.match(await page.$eval('h1',e=>e.textContent),/temporarily paused/);}
-    if(mode==='pending')assert.equal(await page.$eval('h1',e=>e.textContent),'Account pending approval');
+    if(mode==='pending'){
+     assert.equal(await page.$eval('h1',e=>e.textContent),'Account pending approval');
+     assert.equal(await page.$eval('a[href="/billing"]',e=>e.textContent.includes('View invoices')),true);
+     assert.doesNotMatch(await page.$eval('main',e=>e.textContent),/Back to home|Contact Aim4price/);
+    }
+    if(mode==='billing'){
+     assert.equal(await page.$$eval('article',els=>els.length),2);
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='View invoice').click());
+     await page.waitForSelector('dialog[open] a[download]');
+     await page.keyboard.press('Escape');
+    }
     if(mode==='account'){
      assert.equal(await page.$$eval('button[aria-expanded]',els=>els.length),8);
      assert.equal(await page.$$eval('button[aria-expanded]',els=>els.every(e=>e.getAttribute('aria-expanded')==='true')),true);
@@ -85,8 +97,8 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='suspended'){assert.equal(await page.$('iframe'),null);await page.click('button[aria-label="Open invoice"]');await page.waitForSelector('dialog[open] a[download]');assert.equal(await page.$eval('iframe',e=>e.getAttribute('sandbox')),'');assert.match(await page.$eval('a[download]',e=>e.href),/10000000-0000-4000-8000-000000000001/);await page.$eval('iframe',e=>e.scrollIntoView());const frame=await (await page.$('iframe')).contentFrame();await frame.waitForSelector('.assetReportPage');await frame.evaluate(()=>document.fonts.ready);await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));}
     if(mode==='suspended'){await page.screenshot({path:path.join(evidence,'suspension-preview-'+width+'.png'),fullPage:true});await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog[open]'));assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-label')),'Open invoice');}
     await page.evaluate(()=>document.fonts.ready);
-    if(mode.startsWith('suspended')){
-     const layout=await page.evaluate(()=>{const footer=document.querySelector('footer');const hero=document.querySelector('[data-suspension-page] > section');return {display:getComputedStyle(footer).display,footerTop:footer.getBoundingClientRect().top+scrollY,heroBottom:hero.getBoundingClientRect().bottom+scrollY,height:innerHeight};});
+    if(mode.startsWith('suspended')||mode==='pending'){
+     const layout=await page.evaluate(()=>{const footer=document.querySelector('footer');const hero=document.querySelector('[data-account-access-page] > section');return {display:getComputedStyle(footer).display,footerTop:footer.getBoundingClientRect().top+scrollY,heroBottom:hero.getBoundingClientRect().bottom+scrollY,height:innerHeight};});
      assert.notEqual(layout.display,'none');
      assert.ok(Math.abs(layout.footerTop-layout.heroBottom)<1,'Footer must meet the hero without a gap');
      assert.ok(layout.footerTop>=layout.height-1,'Footer must sit below the initial viewport');
