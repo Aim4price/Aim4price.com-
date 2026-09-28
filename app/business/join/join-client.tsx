@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
+import { BUSINESS_SERVICE_OPTIONS, isBusinessService } from '../../../lib/business-service-options';
 import styles from '../page.module.css';
-export default function JoinForm({returnTo,email}:{returnTo?:string|null;email?:string}) {
+export default function JoinForm({returnTo,email,businessType}:{returnTo?:string|null;email?:string;businessType?:string}) {
     const [busy, setBusy] = useState(false), [error, setError] = useState('');
     const [createdEmail,setCreatedEmail]=useState(''),[sent,setSent]=useState(false);
     async function sendVerification(address:string){
@@ -24,14 +25,9 @@ export default function JoinForm({returnTo,email}:{returnTo?:string|null;email?:
     } }}>
  <label>Your name<input name="name" required maxLength={150} autoComplete="name"/></label>
  <label>Business name<input name="businessName" required maxLength={200} autoComplete="organization"/></label>
- <label>Business type<select name="accountSubtype" required defaultValue="">
+ <label>Business type<select name="accountSubtype" required defaultValue={isBusinessService(businessType)?businessType:""}>
   <option value="" disabled>Select your business type</option>
-  <option value="insurance-services">Insurance</option>
-  <option value="finance-services">Finance</option>
-  <option value="licensing-services">Licensing</option>
-  <option value="accounting-services">Accounting / asset advice</option>
-  <option value="maintenance-services">Repairs / maintenance</option>
-  <option value="contributor">Other business</option>
+  {BUSINESS_SERVICE_OPTIONS.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}
  </select></label>
  <p className={styles.muted}>All business types use the same Basic account: Home, Get Estimate, Leads and Marketplace.</p>
  <label>Email<input name="email" defaultValue={email} required type="email" autoComplete="email"/></label>

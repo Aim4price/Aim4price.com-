@@ -16,10 +16,13 @@ import { refreshCachedHeaderSession } from "../../lib/header-session-cache";
 import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
 
+import { BUSINESS_SERVICE_OPTIONS, isBusinessService, type BusinessService } from "../../lib/business-service-options";
+
 type Mode = "signup" | "login" | "forgot";
 type SignupStep = 1 | 2 | 3;
 type SignupAccountType = "business" | "owner" | "middleman" | "dealer" | "finance" | "insurance" | "licensing";
 type SignupAccountSubtype =
+  | BusinessService
   | "contributor"
   | "farmer"
   | "contractor"
@@ -134,7 +137,7 @@ const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
   SignupAccountType,
   Array<SelectOption<SignupAccountSubtype>>
 > = {
-  business: [{ value: "contributor", label: "Business" }],
+  business: [...BUSINESS_SERVICE_OPTIONS],
   owner: [
     { value: "farmer", label: "Farmer / farm owner" },
     { value: "contractor", label: "Contractor / operator" },
@@ -852,6 +855,14 @@ export default function AuthClient() {
     event.preventDefault();
     setNotice(null);
 
+    if (signupForm.accountType === "business") {
+      const params = new URLSearchParams({mode: "account", businessType: signupForm.accountSubtype});
+      const returnTo = sharedEnquiryReturnTo(getSafeReturnTo());
+      if (returnTo) params.set("returnTo", returnTo);
+      window.location.assign(`/business/join?${params}`);
+      return;
+    }
+
     if (signupStep < 3) {
       if (validateSignupStep(signupStep)) {
         moveToSignupStep((signupStep + 1) as SignupStep);
@@ -1167,7 +1178,6 @@ export default function AuthClient() {
                               value={signupForm.accountType}
                               options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
                               onChange={(accountType) => {
-                                if (accountType === "business") { window.location.assign("/business/join"); return; }
                                 setSignupForm((current) => ({
                                   ...current,
                                   accountType,
@@ -1187,11 +1197,12 @@ export default function AuthClient() {
                               name="accountSubtype"
                               ariaLabel="Which best describes your work?"
                               value={signupForm.accountSubtype}
-                              options={SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]}
+                              options={signupForm.accountType === "business" ? SIGNUP_ACCOUNT_SUBTYPE_OPTIONS.business : [...SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType], ...BUSINESS_SERVICE_OPTIONS]}
                               onChange={(nextAccountSubtype) =>
                                 setSignupForm((current) => ({
                                   ...current,
                                   accountSubtype: nextAccountSubtype,
+                                  ...(isBusinessService(nextAccountSubtype) ? { accountType: "business" as const, directoryParticipation: true } : {}),
                                 }))
                               }
                             />
