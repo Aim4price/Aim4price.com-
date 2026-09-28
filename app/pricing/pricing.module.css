@@ -1,6 +1,5 @@
 .page { color: #183b30; }
 .shell { width: var(--shell-width); max-width: 100%; margin-inline: auto; padding-bottom: 3rem; }
-:global(html[data-background='dark']) .shell { padding-top: 1rem; }
 .hero { padding: 4rem 1rem 3.5rem; text-align: center; }
 .eyebrow { margin: 0 0 .75rem; color: #37775d; font-size: .82rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .hero h1 { margin: 0; font-size: clamp(2.8rem, calc(var(--website-design-vw, 1vw) * 5), 4.6rem); line-height: 1.08; letter-spacing: -.055em; font-weight: 800; }
@@ -74,7 +73,7 @@
 .serviceList dd { margin: 0; text-align: right; color: #183b30; font-weight: 650; }
 .closing { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 2rem; border: 1px solid #d6e1d9; border-radius: 16px; background: #fcfdfc; }
 .shell :is(a, button, summary):focus-visible { outline: 3px solid #398d67; outline-offset: 4px; }
-:global(html[data-background='dark']) .hero, :global(html[data-background='dark']) .section > .sectionHeading { background: #fcfdfc; padding: 1.8rem; border-radius: 16px; }
+:global(html[data-background='dark']) .section > .sectionHeading { background: #fcfdfc; padding: 1.8rem; border-radius: 16px; }
 :global(html[data-background='dark']) .section > .footnote { color: #e0ebe4; }
 @media (max-width: 900px) {
   :global(html:not(:has([data-website-canvas]))) .sectionHeading { align-items: flex-start; flex-direction: column; }

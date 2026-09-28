@@ -15,7 +15,6 @@ export default function PricingContent() {
     <div className={styles.shell}>
       <header className={styles.hero}>
         <h1>Let’s find your package.</h1>
-        <p className={styles.intro}>Choose how you use Aim4price.</p>
       </header>
       <section className={styles.pricingChoices} aria-label="Choose your account">
         <button className={styles.accountCard} type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}>
