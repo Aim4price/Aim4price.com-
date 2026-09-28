@@ -142,7 +142,9 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='business-join')assert.ok(await page.$('a[href="/business/guest"]'));
     if(mode==='business-register'||mode.startsWith('signup-')){
      const clickText=async text=>{assert.ok(await page.evaluate(t=>{const e=[...document.querySelectorAll('button')].find(e=>e.textContent.trim()===t);e?.click();return !!e;},text),text);};
-     const select=async(label,text)=>{await page.click('button[aria-label^="'+label+'"]');await page.waitForSelector('[role="option"]');assert.ok(await page.evaluate(t=>{const e=[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.trim().startsWith(t));e?.click();return !!e;},text));};
+     const select=async(label,text)=>{const selector='button[aria-label^="'+label+'"]';await page.click(selector);await page.waitForSelector('[role="option"]');assert.ok(await page.evaluate(t=>{const e=[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.trim().startsWith(t));e?.click();return !!e;},text));await page.waitForFunction(selector=>{const button=document.querySelector(selector);return button?.getAttribute('aria-expanded')==='false'&&document.activeElement===button;},{},selector);};
+     const settledStep=async id=>page.waitForFunction(id=>document.activeElement===document.querySelector('[aria-labelledby="'+id+'"]'),{},id);
+     const typeField=async(name,value)=>{const selector='input[name="'+name+'"]';await page.type(selector,value);assert.equal(await page.$eval(selector,e=>e.value),value,'Signup field '+name+' receives every character');};
      if(mode.startsWith('signup-'))await select('What would you like to use Aim4price for?',mode==='signup-owner'?'Owner':'Dealer');
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
@@ -150,18 +152,18 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      else{assert.ok(options.every(t=>!/(Insurance|Finance|Licensing|Other business)/.test(t)),mode+' excludes business services');}
      await page.keyboard.press('Escape');
      if(mode==='business-register')await select('Which best describes your work?',width===390?'Insurance':'Finance');
-     await clickText('Next');await page.waitForSelector('input[name="name"]');
+     await clickText('Next');await page.waitForSelector('input[name="name"]');await settledStep('signup-step-details');
      assert.ok(await page.$('#signup-step-details'),'Every account uses the same second step');
      await page.screenshot({path:path.join(evidence,mode+'-step2-'+width+'.png'),fullPage:true});
      if(mode.startsWith('signup-'))continue;
      await clickText('Back');await page.waitForSelector('input[name="accountSubtype"]');
      assert.equal(await page.$eval('input[name="accountSubtype"]',e=>e.value),width===390?'insurance-services':'finance-services');
-     await clickText('Next');await page.waitForSelector('input[name="businessName"]');
-     await page.type('input[name="name"]','Test Recipient');await page.type('input[name="businessName"]','Test Business');await page.type('input[name="phone"]','0821234567');
-     await select('Who introduced you to Aim4price?','No one / direct signup');await select('Province','Western Cape');await page.$eval('input[name="townCity"]',e=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'George');e.dispatchEvent(new Event('input',{bubbles:true}));});
-     await clickText('Next');await page.waitForFunction(()=>!!document.querySelector('input[name="email"]')||!!document.querySelector('[role="alert"]'));assert.equal(await page.$eval('body',e=>e.querySelector('[role="alert"]')?.textContent||''),'');await page.waitForSelector('input[name="email"]');
-     assert.match(await page.$eval('form',e=>e.textContent),/R199\/month/);
-     await page.type('input[name="email"]','guest@example.test');await page.type('input[name="password"]','Synthetic-password-only-123');await page.type('input[name="confirmPassword"]','Synthetic-password-only-123');await page.click('input[type="checkbox"]');
+     await clickText('Next');await page.waitForSelector('input[name="businessName"]');await settledStep('signup-step-details');
+     await typeField('name','Test Recipient');await typeField('businessName','Test Business');await typeField('phone','0821234567');
+     await select('Who introduced you to Aim4price?','No one / direct signup');await select('Province','Western Cape');await typeField('townCity','George');
+     await clickText('Next');await page.waitForFunction(()=>!!document.querySelector('input[name="email"]')||!!document.querySelector('[role="alert"]'));assert.equal(await page.$eval('body',e=>e.querySelector('[role="alert"]')?.textContent||''),'');await page.waitForSelector('input[name="email"]');await settledStep('signup-step-account');
+     assert.doesNotMatch(await page.$eval('form',e=>e.textContent),/Business pricing:|Creating an account does not take a payment/);
+     await typeField('email','guest@example.test');await typeField('password','Synthetic-password-only-123');await typeField('confirmPassword','Synthetic-password-only-123');await page.click('input[type="checkbox"]');
      await page.screenshot({path:path.join(evidence,'business-step3-'+width+'.png'),fullPage:true});
      await clickText('Create account');
      await page.waitForSelector('[role="alert"]');assert.match(await page.$eval('[role="alert"]',e=>e.textContent),/account was created/i);
