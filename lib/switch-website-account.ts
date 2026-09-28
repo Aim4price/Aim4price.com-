@@ -1,7 +1,8 @@
+import { sharedEnquiryReturnTo } from './external-share-permissions';
 import { clearCachedHeaderSession } from './header-session-cache';
 
 /** Close only the website session before displaying another account's login form. */
-export async function switchWebsiteAccount(): Promise<void> {
+export async function switchWebsiteAccount(returnTo?: string | null): Promise<void> {
   const response = await fetch('/api/auth/sign-out', {
     method: 'POST', credentials: 'include', cache: 'no-store',
     headers: { 'Content-Type': 'application/json' }, body: '{}',
@@ -14,5 +15,6 @@ export async function switchWebsiteAccount(): Promise<void> {
   const session: unknown = await check.json();
   if (session !== null) throw new Error('Your session is still open. Please try again.');
   clearCachedHeaderSession();
-  window.location.replace('/auth#login');
+  const enquiry = sharedEnquiryReturnTo(returnTo);
+  window.location.replace(enquiry ? `/auth?returnTo=${encodeURIComponent(enquiry)}#login` : '/auth#login');
 }

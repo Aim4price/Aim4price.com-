@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const ts=require('typescript');
 const {PGlite}=require('@electric-sql/pglite');
-function load(file,mocks={}){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(n=>n in mocks?mocks[n]:require(n),exports);return exports;}
+function load(file,mocks={}){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(n=>n in mocks?mocks[n]:n==='./guest-enquiry-credits'?{guestEnquiryAccess:async()=>({access:'sign-in'})}:require(n),exports);return exports;}
 const permissions=load('lib/external-share-permissions.ts');
 const A='10000000-0000-4000-8000-000000000001',B='10000000-0000-4000-8000-000000000002';
 async function setup(){
@@ -16,8 +16,8 @@ async function setup(){
  const snapshot=load('lib/asset-share-snapshot.ts',{'./asset-usage':load('lib/asset-usage.ts'),'./tractor-logic':{conditionLabel:k=>k}});
  const base=load('lib/asset-share-links.ts',{'./db':{getDb:()=>db},'./asset-share-snapshot':snapshot,'./asset-register-db':assetDb});
  const schema=load('lib/guest-lead-schema.ts',{'./db':{getDb:()=>db},'./asset-share-links':base,'./business-network':{ensureBusinessNetwork:async()=>{}}});
- const state={user:null,approved:false,type:'business',status:'active'};
- const mocks={'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':load('lib/business-network-shared.ts'),'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async options=>state.user&&(!options?.requireActive||state.type!=='business')?{user:state.user}:null},'./asset-register-account-access':{getAssetRegisterAccountAccess:async s=>s.user.id==='owner'?{}:null},'./business-accounts':{canBusinessContribute:async()=>state.approved},'./account-profile':{getAccountProfile:async()=>({accountType:state.type,accountStatus:state.status,businessName:'Verified Workshop'})},'./external-share-permissions':permissions};
+ const state={guestAccess:'sign-in',user:null,approved:false,type:'business',status:'active'};
+ const mocks={'./guest-enquiry-credits':{guestEnquiryAccess:async()=>({access:state.guestAccess})},'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':load('lib/business-network-shared.ts'),'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async options=>state.user&&(!options?.requireActive||state.type!=='business')?{user:state.user}:null},'./asset-register-account-access':{getAssetRegisterAccountAccess:async s=>s.user.id==='owner'?{}:null},'./business-accounts':{canBusinessContribute:async()=>state.approved},'./account-profile':{getAccountProfile:async()=>({accountType:state.type,accountStatus:state.status,businessName:'Verified Workshop'})},'./external-share-permissions':permissions};
  const leads=load('lib/guest-leads.ts',mocks);mocks['./guest-leads']=leads;
  const access=load('lib/external-lead-access.ts',mocks);mocks['./external-lead-access']=access;
  // Guest leads resolves the same access module lazily through this proxy.
@@ -186,5 +186,20 @@ test('shared Excel reports retain their format and remain gated like PDFs',async
   const response=await route.GET(new Request('https://local.test'),{params:{token,reportId:id}});
   assert.equal(response.headers.get('content-type'),downloaded.report.content_type);assert.match(response.headers.get('content-disposition'),/^attachment/);
   await x.base.revokeAssetShareLink('owner',token);assert.equal((await x.leads.loadProtectedLeadReport(token,id)).status,404);
+ }finally{await x.pg.close();}
+});
+
+test('verified guest report downloads honour the credit decision without granting account actions',async()=>{
+ const x=await setup();
+ try{
+  const lead=await x.leads.readLeadPage(x.link.token),id=lead.reports[0].id;
+  x.state.guestAccess='guest';
+  assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,id)).status,200);
+  await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===401);
+  for(const access of ['signup-required','wrong-recipient','suspended','sign-in']){
+   x.state.guestAccess=access;assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,id)).status,403);
+  }
+  x.state.guestAccess='guest';await x.base.revokeAssetShareLink('owner',x.link.token);
+  assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,id)).status,404);
  }finally{await x.pg.close();}
 });

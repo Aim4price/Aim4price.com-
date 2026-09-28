@@ -30,3 +30,15 @@
 :global(html[data-background='dark']) .panel { background:#17342a; color:#edf7f0; }
 :global(html[data-background='dark']) .intro,:global(html[data-background='dark']) .muted { color:#c3d6cc; }
 :global(html[data-background='dark']) .form input,:global(html[data-background='dark']) .form textarea { background:#10271f; color:#edf7f0; }
+
+.guestTitle { margin:0 0 1rem; color:#173c32; font-size:2rem; line-height:1.2; letter-spacing:-.04em; }
+.guestActions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:1rem; }
+.guestBanner { display:flex; flex-wrap:wrap; align-items:center; gap:1rem; width:var(--shell-width,min(calc(100% - 40px),78rem)); margin:1.5rem auto 0; padding:1.1rem 1.4rem; border:1px solid #cddfd3; border-radius:1rem; background:#edf5ef; color:#24533e; font-size:.85rem; line-height:1.6; }
+.guestBanner span { flex:1; }.guestBanner a { color:inherit; font-weight:700; text-underline-offset:3px; }
+
+.entryCard { display:grid; gap:.7rem; padding:1.4rem; border:1px solid #d5e5db; border-radius:1rem; background:linear-gradient(145deg,#fff,#f1f7f3); text-decoration:none; color:#174d38; }
+.entryCard strong { font-size:1.2rem; }.entryCard span,.entryCard small { color:#61756a; line-height:1.6; }
+.entryCard:hover { border-color:#73a58b; }.entryCard:focus-visible { outline:3px solid #168a65; outline-offset:4px; }
+
+.secondaryButton { display:inline-flex; justify-content:center; align-items:center; padding:.7rem .9rem; border:1px solid #cddfd3; border-radius:.7rem; background:#f5f9f6; color:#24533e; font:inherit; font-size:.85rem; font-weight:650; cursor:pointer; text-decoration:none; }
+.secondaryButton:hover { background:#eaf3ed; }.secondaryButton:disabled { opacity:.6; cursor:wait; }.secondaryButton:focus-visible { outline:3px solid #168a65; outline-offset:3px; }

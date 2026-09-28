@@ -12,6 +12,12 @@ CREATE TABLE IF NOT EXISTS guest_businesses (
  email text PRIMARY KEY, business_name text NOT NULL, contact_name text NOT NULL,
  verified_at timestamptz NOT NULL DEFAULT now(), access_until timestamptz, suspended boolean NOT NULL DEFAULT false
 );
+CREATE TABLE IF NOT EXISTS guest_enquiry_usage (
+ email text NOT NULL REFERENCES guest_businesses(email) ON DELETE CASCADE,
+ token text NOT NULL,
+ opened_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(email,token)
+);
 CREATE TABLE IF NOT EXISTS guest_login_codes (
  email text PRIMARY KEY, code_hash text NOT NULL, profile jsonb NOT NULL,
  expires_at timestamptz NOT NULL

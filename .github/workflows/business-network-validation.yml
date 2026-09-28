@@ -30,6 +30,10 @@ on:
       - 'components/asset-register/SharedAssetCards.tsx'
       - 'database/migrations/112-directory-guest-leads.sql'
       - 'tests/guest-leads.test.cjs'
+      - 'tests/guest-enquiry-credits.test.cjs'
+      - 'components/GuestEnquiryAccess.tsx'
+      - 'lib/access-email.ts'
+      - 'database/migrations/118-guest-enquiry-credits.sql'
       - 'tests/asset-share-links.test.cjs'
       - 'scripts/verify-guest-leads.cjs'
       - 'lib/partner-access.ts'
@@ -68,7 +72,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/invitation-report-handoff.test.cjs tests/business-accounts.test.cjs
+      - run: node --test tests/business-network.test.mjs tests/assistance-network.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/guest-enquiry-credits.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/invitation-report-handoff.test.cjs tests/business-accounts.test.cjs
       - run: node scripts/verify-business-network.cjs
       - run: node scripts/verify-guest-leads.cjs
       - run: node scripts/verify-business-admin-entry.cjs

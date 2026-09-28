@@ -5,7 +5,7 @@ import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 import { readLeadPage } from './guest-leads';
 import { getDb } from './db';
 import { normalizeExternalPermissions, type ExternalSharePermission } from './external-share-permissions';
-export type ExternalLeadAccess = 'request-access' | 'sign-in' | 'verify-email' | 'approval-required' | 'wrong-recipient' | 'suspended' | 'owner' | 'active';
+export type ExternalLeadAccess = 'guest' | 'signup-required' | 'request-access' | 'sign-in' | 'verify-email' | 'approval-required' | 'wrong-recipient' | 'suspended' | 'owner' | 'active';
 export class ExternalLeadAccessError extends Error {
     constructor(message: string, readonly status: number) { super(message); }
 }
@@ -14,8 +14,10 @@ export async function externalLeadAccess(lead: Lead) {
     const session = await getServerSession({ requireActive: false, allowDealerApp: true, allowOwnerApp: true });
     const user = session?.user;
     const result = (access: ExternalLeadAccess) => ({ access, user: user || null });
-    if (!user)
-        return result('sign-in');
+    if (!user) {
+        const { guestEnquiryAccess } = await import('./guest-enquiry-credits');
+        return result((await guestEnquiryAccess(lead.token,lead.details?.recipientEmail || '',lead.details?.recipientUserId)).access);
+    }
     if (user.id === lead.ownerId && await getAssetRegisterAccountAccess(session!))
         return result('owner');
     const unbound = lead.details?.accessMode === 'owner-approval' && !lead.details.recipientEmail;

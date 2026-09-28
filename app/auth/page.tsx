@@ -1,3 +1,4 @@
+import { sharedEnquiryReturnTo } from '../../lib/external-share-permissions';
 import AppHeader from '../../components/AppHeader';
 import SwitchAccountButton from '../../components/SwitchAccountButton';
 import styles from './page.module.css';
@@ -11,7 +12,7 @@ import AuthClient from "./auth-client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AuthPage({ searchParams }: { searchParams?: { switchAccount?: string } }) {
+export default async function AuthPage({ searchParams }: { searchParams?: { switchAccount?: string; returnTo?: string } }) {
   const session = await getAnyServerSession();
 
   if (session?.user?.id) {
@@ -29,7 +30,7 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
             <h1 id="switch-account-heading" className={styles.switchTitle}>Switch account</h1>
             <p className={styles.switchText}>Sign out to continue with another account.</p>
             <div className={styles.switchIdentity}><span>Currently signed in</span><strong>{session.user.email}</strong></div>
-            <SwitchAccountButton primary />
+            <SwitchAccountButton primary returnTo={sharedEnquiryReturnTo(searchParams?.returnTo)} />
           </div>
         </section>
       </main>;
@@ -40,6 +41,8 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
     }
 
     if (access.isActive) {
+      const returnTo = sharedEnquiryReturnTo(searchParams?.returnTo);
+      if (returnTo) redirect(returnTo);
       const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
       redirect(
         profile.accountType === "business" ? "/business" : profile.accountType === "dealer"

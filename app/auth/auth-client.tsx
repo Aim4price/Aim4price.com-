@@ -1637,6 +1637,11 @@ export default function AuthClient() {
               </form>
             ) : null}
 
+            {mode === "login" && <aside className={styles.sharedEntry}>
+              <div><strong>Received a shared enquiry?</strong><span>Open it for free using your email.</span></div>
+              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/guest?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/guest'}>Guest access</Link>
+            </aside>}
+
             <p className={styles.footerText}>
               {copy.footer}{" "}
               <button
