@@ -177,7 +177,6 @@
 .cardPrice strong { font-size:1.25rem; color:#0c4637; font-weight:800; }
 .cardAction { display:block; padding:.85rem .6rem; margin-top:.35rem; border:1px solid #d0e2d7; border-radius:.75rem; background:#eaf3ed; color:#20543e; text-align:center; font-size:.85rem; font-weight:700; line-height:1.5; }
 .accountCard:hover .cardAction, .accountCard:focus-visible .cardAction { background:#dfeee5; }
-.creditNote { text-align:center; color:#61756a; font-size:.76rem; margin:1.25rem 0 0; line-height:1.6; }
 .signIn { text-align:center; font-size:.85rem; color:#61756a; margin:1.4rem 0 2rem; line-height:1.6; }
 .signIn a { color:#24533e; font-weight:700; text-underline-offset:3px; }
 @media(max-width:760px){
@@ -203,7 +202,13 @@
     linear-gradient(180deg, rgba(249, 252, 249, .92), rgba(243, 248, 244, .7) 55%, rgba(239, 246, 241, .9)),
     url('/brand/invoice-drop-hero.webp') center 57% / cover no-repeat;
 }
-.photoSurface .creditNote, .photoSurface .signIn { color: #38584a; }
+.photoSurface .signIn { color: #38584a; }
+
+/* Match Invoice Drop: the photo fills the viewport while the content stays canonical. */
+:global(:where([data-website-canvas])) .photoSurface {
+  width: max(var(--website-design-width), var(--website-visible-width, var(--website-design-width)));
+  margin-inline: min(0px, calc((var(--website-design-width) - var(--website-visible-width, var(--website-design-width))) / 2));
+}
 
 @media (prefers-reduced-motion: reduce) {
   .accountCard { transition: none; }

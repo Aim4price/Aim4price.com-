@@ -35,7 +35,6 @@ export default function PricingContent() {
           <span className={styles.cardAction}>Create Business account</span>
         </Link>
       </section>
-      <p className={styles.creditNote}>Business credit allowance is being finalised. x is a placeholder.</p>
       <p className={styles.signIn}>Already have an account? <Link href="/auth#login">Log in</Link></p>
       <PricingModal owner open={audience === 'owner'} title={ownerTitle} onClose={() => setAudience(null)}><PackageJourney onTitleChange={setOwnerTitle} /></PricingModal>
       <div className={styles.closing}><div><h2>Still have a question?</h2></div><Link className={styles.button} href="/contact-us">Talk to Aim4price </Link></div>
