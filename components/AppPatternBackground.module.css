@@ -265,42 +265,38 @@
   flex: 0 0 auto;
 }
 
-/* Public entry pages share Pricing's faded asset photography. The existing
+/* All pages share the faded asset photography. The existing
    decoration layer follows the visible viewport, including canvas zoom. */
-.background:has([data-public-photo]) {
+.background {
   --public-photo: url('/brand/asset-enquiry-hero.webp');
   --public-photo-position: center 55%;
 }
-.background:has([data-public-photo='estimate']) {
-  --public-photo: url('/brand/asset-enquiry-bakkie.webp');
-  --public-photo-position: center 60%;
-}
-.background:has([data-public-photo]) .decoration > * { display: none; }
-.background:has([data-public-photo]) .decoration::before,
-.background:has([data-public-photo]) .decoration::after {
+.background .decoration > * { display: none; }
+.background .decoration::before,
+.background .decoration::after {
   content: '';
   position: absolute;
   pointer-events: none;
 }
-.background:has([data-public-photo]) .decoration::before {
+.background .decoration::before {
   inset: -12px;
   background: var(--public-photo) var(--public-photo-position) / cover no-repeat;
   filter: blur(5px);
 }
-.background:has([data-public-photo]) .decoration::after {
+.background .decoration::after {
   inset: 0;
   background: linear-gradient(180deg, rgba(249,252,249,.94), rgba(243,248,244,.79) 52%, rgba(239,246,241,.92));
 }
-:global(html[data-background='dark']:not(:has([data-home-page]))) .background:has([data-public-photo]) .decoration::after {
+:global(html[data-background='dark']:not(:has([data-home-page]))) .background .decoration::after {
   background: linear-gradient(180deg, rgba(24,44,36,.94), rgba(24,44,36,.82) 52%, rgba(19,37,30,.94));
 }
 @media print {
-  .background:has([data-public-photo]) .decoration { display: none; }
+  .background .decoration { display: none; }
 }
 
-/* Keep the tractor underneath three gently crossfading Home-only layers. */
+/* Keep the tractor underneath three gently crossfading site-wide layers. */
 .homePhoto { display: none; }
-.background:has([data-public-photo='home']) .homePhoto {
+.background .homePhoto {
   display: block;
   position: absolute;
   inset: -12px;
@@ -313,21 +309,21 @@
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
-.background:has([data-public-photo='home']) .homeBakkie {
+.background .homeBakkie {
   background-image: url('/brand/asset-enquiry-bakkie.webp');
   animation-name: homeBakkieFade;
 }
-.background:has([data-public-photo='home']) .homeTruck {
+.background .homeTruck {
   background-image: url('/brand/home-background-truck.jpg');
   animation-name: homeTruckFade;
 }
-.background:has([data-public-photo='home']) .homeExcavator {
+.background .homeExcavator {
   background-image: url('/brand/home-background-excavator.jpg');
   animation-name: homeExcavatorFade;
 }
 /* Base photo, rotating photos, then the shared fade overlay. */
-.background:has([data-public-photo='home']) .decoration::before { z-index: -1; }
-.background:has([data-public-photo='home']) .decoration::after { z-index: 1; }
+.background .decoration::before { z-index: -1; }
+.background .decoration::after { z-index: 1; }
 .background:has([data-motion-paused='true']) .homePhoto { animation-play-state: paused; }
 @keyframes homeBakkieFade {
   0%, 20.833%, 54.167%, 100% { opacity: 0; }
@@ -342,5 +338,13 @@
   75%, 95.833% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .background:has([data-public-photo='home']) .homePhoto { display: none; animation: none; }
+  .background .homePhoto { display: none; animation: none; }
+}
+
+/* Installed apps follow their own theme rather than the website preference. */
+:global(html[data-app-theme='light'][data-app-theme]) .background .decoration::after {
+  background: linear-gradient(180deg, rgba(249,252,249,.94), rgba(243,248,244,.79) 52%, rgba(239,246,241,.92));
+}
+:global(html[data-app-theme='dark'][data-app-theme]) .background .decoration::after {
+  background: linear-gradient(180deg, rgba(24,44,36,.94), rgba(24,44,36,.82) 52%, rgba(19,37,30,.94));
 }

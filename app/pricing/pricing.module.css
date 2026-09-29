@@ -185,22 +185,12 @@
  :global(html:not(:has([data-website-canvas]))) .hero { padding:2.5rem 0 2rem; }
 }
 
-/* The Invoice Drop photograph gives Pricing the same soft asset backdrop. */
+/* The shared layout supplies the rotating asset backdrop. */
 .photoSurface {
   position: relative;
   isolation: isolate;
   min-height: calc(var(--website-visible-height, 100dvh) - 5.75rem);
-  background: #eef3ef;
-}
-.photoSurface::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(249, 252, 249, .92), rgba(243, 248, 244, .7) 55%, rgba(239, 246, 241, .9)),
-    url('/brand/invoice-drop-hero.webp') center 57% / cover no-repeat;
+  background: transparent;
 }
 .photoSurface .signIn { color: #38584a; }
 
@@ -213,3 +203,7 @@
 @media (prefers-reduced-motion: reduce) {
   .accountCard { transition: none; }
 }
+
+:global(html[data-background='dark']) .hero h1,
+:global(html[data-background='dark']) .photoSurface .signIn,
+:global(html[data-background='dark']) .photoSurface .signIn a { color: #e3eee7; }

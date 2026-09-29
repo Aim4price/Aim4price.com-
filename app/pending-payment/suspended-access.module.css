@@ -1,6 +1,5 @@
 .page { display:flex; flex-direction:column; min-height:var(--website-visible-height,100dvh); color:#12382d; background:#eef1ef; }
 .hero { flex:1 0 auto; position:relative; isolation:isolate; display:grid; align-items:center; min-height:0; overflow:hidden; }
-.hero::before { content:''; position:absolute; z-index:-2; inset:-1rem; background:url('/brand/invoice-drop-hero.webp') center 57% / cover; filter:blur(3px) saturate(.6) contrast(.92) brightness(1.04); }
 /* Keep the photo edge-to-edge when the website content is zoomed out. */
 :global(:where([data-website-canvas])) .hero {
   width: max(var(--website-design-width), var(--website-visible-width, var(--website-design-width)));
