@@ -15,7 +15,7 @@ export default async function ValuationPage() {
   if (!breakdownAccess) await redirectAdminToAdmin();
 
   return (
-    <div className={badgeStyles.scope}>
+    <div className={badgeStyles.scope} data-public-photo="estimate">
       <ValuationFlowPolish />
       <EstimateReportPhotos />
       <ValuationClient breakdownAccess={breakdownAccess} />

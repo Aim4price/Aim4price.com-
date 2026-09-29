@@ -11,7 +11,7 @@ export default async function HomePage() {
   await redirectAdminToAdmin();
 
   return (
-    <main className={styles.page} data-home-page>
+    <main className={styles.page} data-home-page data-public-photo="home">
       <AppHeader active="home" brandAlignment="working-column" />
 
       <HomeHeroExperience />
