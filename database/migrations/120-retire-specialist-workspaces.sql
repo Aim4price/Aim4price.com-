@@ -8,8 +8,6 @@ INSERT INTO retired_specialist_accounts(user_id, previous_account_type, previous
 SELECT user_id, account_type, account_subtype FROM account_profiles
 WHERE account_type IN ('insurance','finance','licensing','accounting','accountant')
    OR user_id LIKE 'aim4price-assistance-%'
-   OR user_id IN (SELECT id FROM "user" WHERE lower(email) IN
-     ('insurance@aim4price.com','finance@aim4price.com','licensing@aim4price.com','accounting@aim4price.com','dealers@aim4price.com'))
 ON CONFLICT (user_id) DO NOTHING;
 UPDATE account_profiles SET
  account_subtype = CASE
@@ -22,13 +20,9 @@ UPDATE account_profiles SET
 WHERE account_type IN ('insurance','finance','licensing','accounting','accountant');
 UPDATE account_profiles SET account_status='suspended', partner_directory_enabled=false,
  discovery_participation_enabled=false, updated_at=now()
-WHERE user_id LIKE 'aim4price-assistance-%'
-   OR user_id IN (SELECT id FROM "user" WHERE lower(email) IN
-     ('insurance@aim4price.com','finance@aim4price.com','licensing@aim4price.com','accounting@aim4price.com','dealers@aim4price.com'));
+WHERE user_id LIKE 'aim4price-assistance-%';
 DELETE FROM "session" WHERE "userId" IN (
  SELECT user_id FROM account_profiles WHERE user_id LIKE 'aim4price-assistance-%'
- UNION SELECT id FROM "user" WHERE lower(email) IN
- ('insurance@aim4price.com','finance@aim4price.com','licensing@aim4price.com','accounting@aim4price.com','dealers@aim4price.com')
 );
 DO $$ BEGIN
  IF to_regclass('public.aim4price_assistance_accounts') IS NOT NULL THEN

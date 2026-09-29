@@ -1317,7 +1317,6 @@ async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerP
       where user_id = $1
         and account_type = 'dealer'
         and account_status = 'active'
-        and not exists (select 1 from "user" u where u.id = user_id and lower(u.email) in ('insurance@aim4price.com','finance@aim4price.com','licensing@aim4price.com','accounting@aim4price.com','dealers@aim4price.com'))
       limit 1
     `,
     [partnerUserId],
