@@ -145,17 +145,13 @@ export async function GET(request: NextRequest) {
     }
 
     let reportOwnerUserId = workspace.ownerUserId;
-    let ownerFallbackUser: { name?: unknown; email?: unknown } = workspace.accountantAccess
-      ? { name: workspace.accountantAccess.ownerName, email: '' }
-      : { name: workspace.actorName, email: workspace.actorEmail };
+    let ownerFallbackUser: { name?: unknown; email?: unknown } = { name: workspace.actorName, email: workspace.actorEmail };
 
     if (dealerAccessId) {
       if (groupId) {
         return NextResponse.json({ ok: false, error: 'Dealer report access supports one asset at a time.' }, { status: 400 });
       }
-      if (workspace.accountantAccess) {
-        return NextResponse.json({ ok: false, error: 'Dealer report access cannot be combined with an accountant workspace.' }, { status: 400 });
-      }
+
       if (!UUID_PATTERN.test(dealerAccessId)) {
         return NextResponse.json({ ok: false, error: 'Cost of Ownership access is invalid.' }, { status: 400 });
       }
@@ -194,7 +190,7 @@ export async function GET(request: NextRequest) {
         name: String(ownerFallbackUser.name ?? ''),
         email: String(ownerFallbackUser.email ?? ''),
       }),
-      getAssetRegisterReportLogoUrl(reportOwnerUserId, group?.registerId || workspace.accountantRegisterId, filters.assetId),
+      getAssetRegisterReportLogoUrl(reportOwnerUserId, group?.registerId || '', filters.assetId),
       listCostBudgetHistory(reportOwnerUserId),
       listMyInvoicesData(reportOwnerUserId, { assetId: filters.assetId, includeFuelSlipCosts: true }),
     ]);

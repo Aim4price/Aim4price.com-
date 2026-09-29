@@ -1307,7 +1307,6 @@ function buildWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfile
   ];
 }
 
-
 const PDF_PAGE_WIDTH = 595.28;
 const PDF_PAGE_HEIGHT = 841.89;
 const PDF_MARGIN = 42;
@@ -1760,7 +1759,6 @@ function buildRegisterSummaryPdfSections(summary: RegisterBasicExportSummary): R
     },
   ];
 }
-
 
 function renderRegisterSummaryReportSection(section: RegisterSummaryPdfSection): string {
   const hasValueColumn = section.hasValueColumn !== false;
@@ -2475,8 +2473,6 @@ async function renderRegisterSummaryReportHtml(
 </html>`;
 }
 
-
-
 /** Full exports use the same canonical HTML as the summary, not a second PDF design. */
 async function renderFullRegisterReportHtml(
   bundles: RegisterExportBundle[],
@@ -3161,11 +3157,11 @@ export async function GET(request: NextRequest) {
 
     const profile = await getAccountProfile({
       id: ownerUserId,
-      name: workspace.accountantAccess?.ownerName || workspace.actorName,
-      email: workspace.accountantAccess ? '' : workspace.actorEmail,
+      name: workspace.actorName,
+      email: workspace.actorEmail,
     });
 
-    if (!workspace.accountantAccess && !isAssetRegisterAccountType(profile.accountType)) {
+    if (!isAssetRegisterAccountType(profile.accountType)) {
       return NextResponse.json({ ok: false, error: 'Asset Register export is only available to Owner and Dealer inventory accounts.' }, { status: 403 });
     }
 
@@ -3350,9 +3346,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const requestedRegisterId = workspace.accountantAccess
-      ? workspace.accountantRegisterId
-      : String(params.get('registerId') ?? '').trim();
+    const requestedRegisterId = String(params.get('registerId') ?? '').trim();
     const register = requestedRegisterId
       ? await getAssetRegisterForUser(ownerUserId, requestedRegisterId)
       : await getSelectedAssetRegister(ownerUserId);

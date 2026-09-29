@@ -1600,12 +1600,12 @@ export async function GET(request: NextRequest) {
       .reduce((sum, event) => sum + event.litres, 0);
     const ownerProfile = await getAccountProfile({
       id: workspace.ownerUserId,
-      name: workspace.accountantAccess?.ownerName || workspace.actorName,
-      email: workspace.accountantAccess ? '' : workspace.actorEmail,
+      name: workspace.actorName,
+      email: workspace.actorEmail,
     });
     const ownerDetails = buildOwnerReportDetails(ownerProfile, {
-      name: workspace.accountantAccess?.ownerName || workspace.actorName,
-      email: workspace.accountantAccess ? '' : workspace.actorEmail,
+      name: workspace.actorName,
+      email: workspace.actorEmail,
     });
     const ownerEmail = ownerDetails.businessEmail;
     const generatedAt = new Intl.DateTimeFormat('en-ZA', {
@@ -1624,7 +1624,7 @@ export async function GET(request: NextRequest) {
       : includeFuelSlips
         ? `All fuel storage and fuel slip transactions for ${dateRange.label}.`
         : `All fuel storage transactions for ${dateRange.label}.`;
-    const rawLogoUrl = await getAssetRegisterReportLogoUrl(workspace.ownerUserId, workspace.accountantRegisterId, assetId).catch(() => '');
+    const rawLogoUrl = await getAssetRegisterReportLogoUrl(workspace.ownerUserId, '', assetId).catch(() => '');
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const reportOptions: FuelReportOptions = {
       assetTitle: selectedAsset?.title,

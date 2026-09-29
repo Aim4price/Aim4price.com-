@@ -240,22 +240,8 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
   { href: '/ad-studio', label: 'Ad Studio', accountTypes: ['dealer'] },
   { href: '/my-showroom', label: 'My Showroom', accountTypes: ['dealer'] },
-  { href: '/leads', label: 'Leads', accountTypes: ['dealer', 'finance', 'insurance', 'licensing'] },
-  { href: '/asset-discovery', label: 'Discovery', accountTypes: ['licensing'] },
+  { href: '/leads', label: 'Leads', accountTypes: ['dealer', 'business'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
-  { href: '/shared-registers', label: 'Shared Registers', accountTypes: ['insurance'] },
-];
-
-const ACCOUNTANT_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/account', label: 'Account' },
-  { href: '/valuation', label: 'Get Estimate' },
-  { href: '/leads', label: 'My Clients' },
-];
-
-const LICENSING_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/leads', label: 'My Leads' },
-  { href: '/asset-discovery', label: 'Discovery' },
-  { href: '/account', label: 'Account' },
 ];
 
 const MIDDLEMAN_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
@@ -290,8 +276,7 @@ function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountTyp
 function buildNavItems(
   accountType: AccountType | 'public' | null,
   accountSubtype?: string | null,
-  accountantWorkspaceShareId?: string | null,
-  accountantWorkspaceRegisterId?: string | null,
+
 ): NavItem[] {
   if (accountType === null) {
     return BASE_NAV_ITEMS;
@@ -306,43 +291,6 @@ function buildNavItems(
 
   if (accountType === 'public') {
     return PUBLIC_NAV_ITEMS;
-  }
-
-  if (accountType === 'finance' && accountSubtype === 'accountant' && accountantWorkspaceShareId) {
-    const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantWorkspaceShareId)}`;
-    const registerQuery = accountantWorkspaceRegisterId
-      ? `?registerId=${encodeURIComponent(accountantWorkspaceRegisterId)}`
-      : '';
-    const valuationQuery = new URLSearchParams({ accountantShareId: accountantWorkspaceShareId });
-    if (accountantWorkspaceRegisterId) valuationQuery.set('registerId', accountantWorkspaceRegisterId);
-    return [
-      { key: 'valuation', href: `/valuation?${valuationQuery.toString()}`, label: 'Get Estimate' },
-      { key: 'asset-register', href: `${workspaceRoot}${registerQuery}`, label: 'Asset Register' },
-      { key: 'fuel', href: `${workspaceRoot}/fuel${registerQuery}`, label: 'Fuel Ledger' },
-      { key: 'cost', href: `${workspaceRoot}/costs${registerQuery}`, label: 'Cost Ledger' },
-    ];
-  }
-
-  if (accountType === 'finance' || accountType === 'insurance') {
-    const isAccountant = accountType === 'finance' && accountSubtype === 'accountant';
-    const partnerItems: NavItem[] = [
-      ...BASE_NAV_ITEMS,
-      {
-        key: 'leads',
-        href: '/leads',
-        label: isAccountant ? 'My Clients' : 'My Leads',
-      },
-    ];
-
-    if (isAccountant) {
-      partnerItems.push({ key: 'account', href: '/account', label: 'Account' });
-    }
-
-    if (accountType === 'insurance') {
-      partnerItems.push({ key: 'shared-registers', href: '/shared-registers', label: 'Shared Registers' });
-    }
-
-    return partnerItems;
   }
 
   if (accountType === 'dealer') {
@@ -366,14 +314,6 @@ function buildNavItems(
     ];
   }
 
-  if (accountType === 'licensing') {
-    return [
-      { key: 'home', href: '/', label: 'Home' },
-      { key: 'leads', href: '/leads', label: 'My Leads' },
-      { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
-    ];
-  }
-
   if (accountType === 'owner') {
     return OWNER_NAV_ITEMS;
   }
@@ -384,16 +324,11 @@ function buildNavItems(
 function buildMobileNavItems(
   accountType: AccountType,
   accountSubtype?: string | null,
-  accountantWorkspaceShareId?: string | null,
-  accountantWorkspaceRegisterId?: string | null,
+
 ): NavItem[] {
-  const items = buildNavItems(accountType, accountSubtype, accountantWorkspaceShareId, accountantWorkspaceRegisterId);
+  const items = buildNavItems(accountType, accountSubtype, );
 
-  if (accountType === 'licensing' || accountType === 'business') {
-    return items;
-  }
-
-  if (accountType === 'finance' && accountSubtype === 'accountant' && accountantWorkspaceShareId) {
+  if (accountType === 'business') {
     return items;
   }
 
@@ -756,21 +691,8 @@ export default function AppHeader({
   const brandAlignmentClass =
     brandAlignment === 'working-column' ? styles.brandWorkingColumn : '';
   const searchParams = useSearchParams();
-  const accountantWorkspaceShareId = useMemo(() => {
-    const match = /^\/accountant\/registers\/([^/]+)(?:\/|$)/.exec(pathname || '');
-    const encodedShareId = match?.[1] || (pathname === '/valuation' ? searchParams.get('accountantShareId') : '');
-    if (!encodedShareId) return null;
-    try {
-      return decodeURIComponent(encodedShareId);
-    } catch {
-      return encodedShareId;
-    }
-  }, [pathname, searchParams]);
-  const accountantWorkspaceRegisterId = accountantWorkspaceShareId
-    ? String(searchParams.get('registerId') ?? '').trim() || null
-    : null;
-  const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
+  const accountMenuRef = useRef<HTMLDivElement | null>(null);
 
   const notificationMenuRef = useRef<HTMLDivElement | null>(null);
   const notificationDialogRef = useRef<HTMLElement | null>(null);
@@ -986,13 +908,8 @@ export default function AppHeader({
     let mounted = true;
 
     async function loadNotifications() {
-      const isSharedAccountantWorkspace = Boolean(
-        accountantWorkspaceShareId
-        && session?.accountType === 'finance'
-        && session.accountSubtype === 'accountant',
-      );
 
-      if (!session?.id || isSharedAccountantWorkspace) {
+      if (!session?.id) {
         setNotifications([]);
         setNotificationOpen(false);
         return;
@@ -1024,16 +941,11 @@ export default function AppHeader({
     return () => {
       mounted = false;
     };
-  }, [accountantWorkspaceShareId, session?.id, session?.accountType, session?.accountSubtype, pathname]);
+  }, [session?.id, session?.accountType, session?.accountSubtype, pathname]);
 
   useEffect(() => {
     function refreshCostLedgerNotifications() {
-      const isSharedAccountantWorkspace = Boolean(
-        accountantWorkspaceShareId
-        && session?.accountType === 'finance'
-        && session.accountSubtype === 'accountant',
-      );
-      if (!session?.id || isSharedAccountantWorkspace) return;
+      if (!session?.id) return;
 
       void fetch('/api/notifications', {
         credentials: 'include',
@@ -1052,7 +964,7 @@ export default function AppHeader({
     return () => {
       window.removeEventListener('aim4price:cost-ledger-updated', refreshCostLedgerNotifications);
     };
-  }, [accountantWorkspaceShareId, session?.id, session?.accountType, session?.accountSubtype]);
+  }, [session?.id, session?.accountType, session?.accountSubtype]);
 
   useEffect(() => {
     function handleDealerCorrectionResolved(event: Event) {
@@ -1088,18 +1000,17 @@ export default function AppHeader({
   const isOwnerAccount = session?.accountType === 'owner';
   const isDealerAccount = session?.accountType === 'dealer';
   const isMiddlemanAccount = isDealerAccount && isMiddlemanAccountSubtype(session?.accountSubtype);
-  const isAccountantAccount = session?.accountType === 'finance' && session.accountSubtype === 'accountant';
-  const isAccountantWorkspace = isAccountantAccount && Boolean(accountantWorkspaceShareId);
+
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
   const navItems = useMemo(
-    () => buildNavItems(navAccountType, session?.accountSubtype, accountantWorkspaceShareId, accountantWorkspaceRegisterId),
-    [accountantWorkspaceRegisterId, accountantWorkspaceShareId, navAccountType, session?.accountSubtype],
+    () => buildNavItems(navAccountType, session?.accountSubtype, ),
+    [navAccountType, session?.accountSubtype],
   );
   const mobileNavItems = useMemo(
     () => (session?.accountType
-      ? buildMobileNavItems(session.accountType, session.accountSubtype, accountantWorkspaceShareId, accountantWorkspaceRegisterId)
+      ? buildMobileNavItems(session.accountType, session.accountSubtype, )
       : navItems),
-    [accountantWorkspaceRegisterId, accountantWorkspaceShareId, navItems, session?.accountType, session?.accountSubtype],
+    [navItems, session?.accountType, session?.accountSubtype],
   );
   const activeNavKey = useMemo(
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
@@ -1109,9 +1020,7 @@ export default function AppHeader({
   const [usesCompactHeader, setUsesCompactHeader] = useState(false);
   const navWindowSize = usesCompactHeader
     ? navItems.length
-    : isAccountantWorkspace
-      ? navItems.length
-      : NAV_WINDOW_SIZE;
+    : NAV_WINDOW_SIZE;
   const navViewportRef = useRef<HTMLDivElement>(null);
   const [navEdges, setNavEdges] = useState({ previous: false, next: false });
   const showNavWindowControls = navItems.length > navWindowSize;
@@ -1429,24 +1338,6 @@ export default function AppHeader({
     setMobileMenuOpen(false);
     setMenuOpen(false);
     setLeaveAccountOpen(true);
-  }
-
-  function handleChangeAccountantRegister() {
-    setMobileMenuOpen(false);
-    setMenuOpen(false);
-    if (!accountantWorkspaceShareId) return;
-
-    const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantWorkspaceShareId)}`;
-    const registerQuery = accountantWorkspaceRegisterId
-      ? `registerId=${encodeURIComponent(accountantWorkspaceRegisterId)}&`
-      : '';
-
-    if (pathname === workspaceRoot) {
-      window.dispatchEvent(new CustomEvent('aim4price:open-register-change'));
-      return;
-    }
-
-    window.location.assign(`${workspaceRoot}?${registerQuery}changeRegister=1`);
   }
 
   async function handleOpenAssetDiscoveryNotification(enquiryId: string, notificationId: string) {
@@ -1963,7 +1854,6 @@ export default function AppHeader({
     const isPending = enquiry.status === 'pending';
     const isApproved = enquiry.status === 'approved';
     const isDenied = !isPending && !isApproved;
-    const isLicensingExpert = session?.accountType === 'licensing';
     const retryDate = formatDateTime(enquiry.requestAgainAtIso);
     const contact = enquiry.requesterContact || enquiry.ownerContact || enquiry.dealerContact;
     const requesterLabel = enquiry.requesterAccountType === 'owner'
@@ -1971,37 +1861,24 @@ export default function AppHeader({
       : enquiry.requesterAccountType === 'licensing'
         ? 'licence renewal expert'
         : 'dealer';
-    const isLicensingEnquiry = enquiry.requesterAccountType === 'licensing';
-    const detailTitle = isLicensingEnquiry
-      ? isPending
-        ? 'Renewal help offer'
-        : isApproved
-          ? 'Renewal help accepted'
-          : 'Renewal help declined'
-      : 'Discovery enquiry';
+    const detailTitle = 'Discovery enquiry';
 
     return (
       <section
-        className={`${styles.notificationDetailModal} ${styles.notificationDiscoveryDetailModal} ${isLicensingEnquiry ? styles.notificationRenewalDetailModal : ''}`}
+        className={`${styles.notificationDetailModal} ${styles.notificationDiscoveryDetailModal} ${''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="notification-asset-discovery-title"
       >
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
-            {isLicensingEnquiry ? <span className={styles.notificationRenewalEyebrow}>Licence renewal</span> : null}
+            {null}
             <h2 id="notification-asset-discovery-title">{detailTitle}</h2>
             <p>{isPending
-              ? isLicensingEnquiry
-                ? 'An expert offered to manage this renewal. Review the asset, then accept or decline.'
-                : `${requesterLabel === 'owner' ? 'An' : 'A'} ${requesterLabel} is looking for a machine like this. Interested in making contact?`
-              : isLicensingEnquiry
-                ? isApproved
-                  ? 'The owner accepted this renewal request.'
-                  : 'The owner declined this renewal request.'
-                : 'Asset-specific enquiry status.'}</p>
+              ? `${requesterLabel === 'owner' ? 'An' : 'A'} ${requesterLabel} is looking for a machine like this. Interested in making contact?`
+              : 'Asset-specific enquiry status.'}</p>
           </div>
-          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label={`Close ${isLicensingEnquiry ? 'renewal help offer' : 'Discovery enquiry'}`}>
+          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label={`Close ${'Discovery enquiry'}`}>
             ×
           </button>
         </div>
@@ -2009,16 +1886,16 @@ export default function AppHeader({
         <div className={styles.notificationDetailBody}>
           <div className={styles.notificationDetailMetaGrid}>
             <div className={styles.notificationDetailMetaCard}>
-              <span>{isLicensingEnquiry ? 'Asset' : 'Type'}</span>
-              <strong>{isLicensingEnquiry ? [enquiry.asset.brand, enquiry.asset.model].filter(Boolean).join(' ') : enquiry.asset.type}</strong>
+              <span>{'Type'}</span>
+              <strong>{enquiry.asset.type}</strong>
             </div>
-            <div className={`${styles.notificationDetailMetaCard} ${isLicensingEnquiry ? styles.notificationRenewalDateCard : ''}`}>
-              <span>{isLicensingEnquiry ? 'Renewal due' : 'Brand / model'}</span>
-              <strong>{isLicensingEnquiry ? enquiry.asset.renewalWindow || 'Not saved' : [enquiry.asset.brand, enquiry.asset.model].filter(Boolean).join(' ')}</strong>
+            <div className={`${styles.notificationDetailMetaCard} ${''}`}>
+              <span>{'Brand / model'}</span>
+              <strong>{[enquiry.asset.brand, enquiry.asset.model].filter(Boolean).join(' ')}</strong>
             </div>
             <div className={styles.notificationDetailMetaCard}>
-              <span>{isLicensingEnquiry ? 'Year' : 'Year / usage'}</span>
-              <strong>{isLicensingEnquiry ? enquiry.asset.year : `${enquiry.asset.year} · ${enquiry.asset.usage}`}</strong>
+              <span>{'Year / usage'}</span>
+              <strong>{`${enquiry.asset.year} · ${enquiry.asset.usage}`}</strong>
             </div>
             <div className={styles.notificationDetailMetaCard}>
               <span>Province</span>
@@ -2026,25 +1903,14 @@ export default function AppHeader({
             </div>
           </div>
 
-          {isPending && isLicensingEnquiry ? (
-            <div className={styles.notificationRenewalShareNote}>
-              <strong>What approval shares</strong>
-              <p>Basic asset details, renewal date, photos and licence documents. Accepted offers are marked Won in the expert&apos;s Discovery.</p>
-            </div>
-          ) : null}
+          {null}
 
           {!isPending ? (
             <div className={`${styles.notificationDetailStatusBox} ${isDenied ? styles.notificationDetailStatusBoxDenied : ''}`}>
               <strong>{isApproved ? 'Access approved' : 'Request declined'}</strong>
               <p>{isApproved
-                ? isLicensingEnquiry
-                  ? 'Accepted. This offer is now marked Won in the licence expert’s Discovery.'
-                  : 'Approved. Your contact details are now visible to the interested user for three months.'
-                : isLicensingEnquiry
-                  ? isLicensingExpert
-                    ? 'Not accepted. You cannot offer renewal help for this asset again.'
-                    : 'Declined. This expert cannot offer renewal help for this asset again.'
-                  : retryDate
+                ? 'Approved. Your contact details are now visible to the interested user for three months.'
+                : retryDate
                     ? `Not interested right now. This asset is hidden from Discovery until ${retryDate}.`
                     : 'Not interested right now. This asset is hidden from Discovery for 90 days.'}</p>
             </div>
@@ -2087,7 +1953,7 @@ export default function AppHeader({
               onClick={() => handleAssetDiscoveryDecision(enquiry.id, 'denied')}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Saving...' : isLicensingEnquiry ? 'Decline' : 'No'}
+              {isProcessing ? 'Saving...' : 'No'}
             </button>
             <button
               type="button"
@@ -2095,7 +1961,7 @@ export default function AppHeader({
               onClick={() => handleAssetDiscoveryDecision(enquiry.id, 'approved')}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Saving...' : isLicensingEnquiry ? 'Accept help' : 'Yes'}
+              {isProcessing ? 'Saving...' : 'Yes'}
             </button>
           </div>
         ) : (
@@ -2103,15 +1969,7 @@ export default function AppHeader({
             <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
               Close
             </button>
-            {isApproved && isLicensingEnquiry && isLicensingExpert ? (
-              <a
-                className={styles.notificationPrimaryButton}
-                href="/leads"
-                onClick={markNotificationsSeen}
-              >
-                Open lead
-              </a>
-            ) : isApproved && Boolean(enquiry.ownerContact) ? (
+            {isApproved && Boolean(enquiry.ownerContact) ? (
               <a
                 className={styles.notificationPrimaryButton}
                 href={`/asset-discovery?openAsset=${encodeURIComponent(enquiry.assetId)}`}
@@ -2180,18 +2038,14 @@ export default function AppHeader({
 
         {session ? (
           <div className={styles.mobileMenuAccountActions}>
-            {isAccountantWorkspace ? (
-              <button type="button" className={styles.mobileMenuActionButton} onClick={handleChangeAccountantRegister}>
-                Change
-              </button>
-            ) : null}
+            {null}
             <button
               type="button"
               className={styles.mobileMenuDangerButton}
-              onClick={isAccountantWorkspace ? requestLeaveAccount : handleSignOut}
+              onClick={handleSignOut}
               disabled={isSigningOut}
             >
-              {isSigningOut ? 'Signing out...' : isAccountantWorkspace ? 'Leave account' : 'Sign out'}
+              {isSigningOut ? 'Signing out...' : 'Sign out'}
             </button>
           </div>
         ) : (
@@ -2488,9 +2342,7 @@ export default function AppHeader({
               <div className={`${styles.notificationDetailHeader} ${styles.leaveAccountHeader}`}>
                 <div className={`${styles.notificationDetailHeaderText} ${styles.leaveAccountHeaderText}`}>
                   <h2 id="leave-account-title">Leave this account?</h2>
-                  <p>{isAccountantWorkspace
-                    ? 'Are you sure you want to leave this account? You will return to My Clients.'
-                    : 'Are you sure you want to leave this account? You will return to My Leads.'}</p>
+                  <p>{'Are you sure you want to leave this account? You will return to My Leads.'}</p>
                 </div>
                 <button type="button" className={styles.notificationDetailCloseButton} onClick={() => setLeaveAccountOpen(false)} aria-label="Cancel leaving account">
                   ×
@@ -2592,7 +2444,7 @@ export default function AppHeader({
               {pathname !== '/' && <BackgroundToggle className={styles.notificationButton} iconClassName={styles.notificationIcon} />}
               {isLoadingSession ? null : session ? (
                 <>
-                  {!isAccountantWorkspace ? <div className={styles.notificationMenu} ref={notificationMenuRef}>
+                  {<div className={styles.notificationMenu} ref={notificationMenuRef}>
                     <button
                       type="button"
                       className={`${styles.notificationButton} ${activeNotificationCount ? styles.notificationButtonActive : ''}`}
@@ -2612,7 +2464,7 @@ export default function AppHeader({
                         <span className={styles.notificationBadge}>{notificationBadgeText}</span>
                       ) : null}
                     </button>
-                  </div> : null}
+                  </div>}
 
                   <div className={styles.accountMenu} ref={accountMenuRef}>
                     <button
@@ -2642,39 +2494,9 @@ export default function AppHeader({
 
                     {menuOpen ? (
                       <div id="header-account-menu" className={styles.accountPopover} role="menu">
-                        {isAccountantWorkspace ? (
+                        {(
                           <>
-                            {usesCompactHeader
-                              ? sortAccountMenuItems(navItems.filter((item) => item.href !== '/')).map((item) => {
-                                  const isActive = activeNavKey === item.key;
-                                  return (
-                                    <Link
-                                      key={`compact-accountant-${item.key}-${item.href}`}
-                                      href={item.href}
-                                      role="menuitem"
-                                      aria-current={isActive ? 'page' : undefined}
-                                      className={`${styles.menuLink} ${isActive ? styles.menuLinkActive : ''}`}
-                                      onClick={closeAccountMenu}
-                                    >
-                                      <span>{item.label}</span>
-                                    </Link>
-                                  );
-                                })
-                              : null}
-                            <button type="button" role="menuitem" className={styles.menuLink} onClick={handleChangeAccountantRegister}>
-                              <span>Change</span>
-                            </button>
-                            <button type="button" role="menuitem" className={styles.menuDangerButton} onClick={requestLeaveAccount}>
-                              Leave account
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {sortAccountMenuItems(session?.accountType === 'licensing'
-                              ? LICENSING_ACCOUNT_MENU_ITEMS
-                              : isAccountantAccount
-                                ? ACCOUNTANT_ACCOUNT_MENU_ITEMS
-                                : isMiddlemanAccount
+                            {sortAccountMenuItems(isMiddlemanAccount
                                   ? MIDDLEMAN_ACCOUNT_MENU_ITEMS
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {

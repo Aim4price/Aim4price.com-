@@ -243,7 +243,6 @@ test('owner Manage keeps disposal and mapping inside the gated command grid with
   assert.match(ownerManage, /ownerCommandGrid[\s\S]*?Marketplace[\s\S]*?ownerCommandDangerAction[\s\S]*?Dispose or remove asset/);
   assert.doesNotMatch(ownerManage, /ownerCommandDangerZone/);
   assert.doesNotMatch(ownerManage, /Dealer tracking settings|Remove from marketplace/);
-  assert.match(client, /<AccountantAssetManageModal/);
 });
 
 test('Manage uses concise update copy and a dedicated recalculate icon', () => {
@@ -450,8 +449,6 @@ test('successful asset reports close only the report child and preserve Manage',
   assert.equal(ownershipHandler.match(/closeAssetReportDialog\(\)/g)?.length, 3);
   assert.doesNotMatch(ownershipHandler, /closeActionDialog\(\)/);
 });
-
-
 
 test('outside interactions dismiss asset details before their umbrella', () => {
   const source = ts.createSourceFile('register.tsx', client, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

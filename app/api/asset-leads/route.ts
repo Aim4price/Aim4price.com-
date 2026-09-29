@@ -11,15 +11,7 @@ import {
   type DealerMaintenancePermissions,
 } from '../../../lib/dealer-maintenance-tracker';
 import { createAssetLead, listAssetLeadsForUser, normalizeLeadType } from '../../../lib/partner-access';
-import { syncAccountantShareSettingsFromLead } from '../../../lib/accountant-workspace';
-import { listLicensingWorkspaceLeads } from '../../../lib/licensing-workspace-leads';
 import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
-import {
-  AIM4PRICE_PROVIDER_APPROVAL_NOTICE,
-  createAssistanceRequest,
-  isAssistanceMasterAccountUserId,
-  resolveAssistanceSelection,
-} from '../../../lib/assistance-network';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,7 +27,6 @@ type CreateAssetLeadBody = {
   trackMaintenance?: unknown;
   trackingPermissions?: unknown;
   assetIds?: unknown;
-  assistanceLocationId?: unknown;
   assetGroupId?: unknown;
   assetGroupName?: unknown;
 };
@@ -151,9 +142,7 @@ export async function GET() {
     if (isMiddlemanAccountSubtype(profile.accountSubtype)) {
       return NextResponse.json({ ok: false, error: 'Leads are available to paid dealer accounts.' }, { status: 403 });
     }
-    const leads = profile.accountType === 'licensing'
-      ? await listLicensingWorkspaceLeads(session.user.id)
-      : await listAssetLeadsForUser(session.user.id);
+    const leads = await listAssetLeadsForUser(session.user.id);
     return NextResponse.json({ ok: true, leads });
   } catch (error) {
     console.error('asset leads GET failed', error);
@@ -189,13 +178,9 @@ export async function POST(request: NextRequest) {
   const trackMaintenance = body.trackMaintenance === true;
   const trackingPermissions = readTrackingPermissions(body.trackingPermissions);
   const dealerShareAssetIds = readDealerShareAssetIds(body.assetIds);
-  const assistanceLocationId = String(body.assistanceLocationId ?? '').trim();
 
   if (!assetId || !partnerUserId || !leadType) {
     return NextResponse.json({ ok: false, error: 'Choose a valid asset, partner and lead type.' }, { status: 400 });
-  }
-  if (isAssistanceMasterAccountUserId(partnerUserId) && !assistanceLocationId) {
-    return NextResponse.json({ ok: false, error: 'Choose an Aim4price assistance service area.' }, { status: 400 });
   }
   if (trackMaintenance && body.trackingPermissions && !trackingPermissions) {
     return NextResponse.json({ ok: false, error: 'Choose valid dealer tracking permissions.' }, { status: 400 });
@@ -219,18 +204,10 @@ export async function POST(request: NextRequest) {
       try { await sendBusinessLead(session.user, body as Record<string, unknown>); } catch (error) { return businessError(error); }
       return NextResponse.json({ok:true,confirmation:'Email sent. The business can reply directly to you.'});
     }
-    const assistanceSelection = assistanceLocationId
-      ? await resolveAssistanceSelection({
-          assistanceLocationId,
-          masterAccountUserId: partnerUserId,
-          leadType,
-        })
-      : null;
-    const effectivePartnerUserId = assistanceSelection?.masterAccountUserId ?? partnerUserId;
+    const effectivePartnerUserId = partnerUserId;
 
     if (
       dealerShareAssetIds.length
-      && !assistanceSelection
       && !assetGroupShare
       && leadType !== 'replacement_quote'
       && leadType !== 'license_renewal'
@@ -239,8 +216,7 @@ export async function POST(request: NextRequest) {
     }
 
     const leadAssetIds = dealerShareAssetIds.length && (
-      assistanceSelection
-      || assetGroupShare
+      assetGroupShare
       || leadType === 'license_renewal'
     )
       ? dealerShareAssetIds
@@ -317,17 +293,9 @@ export async function POST(request: NextRequest) {
         leadType,
         ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
         includedSections: leadSections,
-        allowAim4priceAssistance: Boolean(assistanceSelection),
       }));
     }
     const lead = leads[0];
-
-    if (leadType === 'finance') {
-      await Promise.all(leads.map((savedLead) => syncAccountantShareSettingsFromLead(
-        savedLead.id,
-        savedLead.includedSections,
-      )));
-    }
 
     const trackingAssetIds = dealerShareAssetIds.length ? dealerShareAssetIds : [assetId];
     const trackingAccesses: Array<{ id: string }> = [];
@@ -349,21 +317,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const assistanceRequest = assistanceSelection
-      ? await createAssistanceRequest({
-          selection: assistanceSelection,
-          ownerUserId: session.user.id,
-          ownerName: session.user.name,
-          ownerEmail: session.user.email,
-          selectedAssetIds: dealerShareAssetIds.length ? dealerShareAssetIds : [assetId],
-          assetLeadIds: leads.map((savedLead) => savedLead.id),
-          assetGroupId: typeof body.assetGroupId === 'string' ? body.assetGroupId : null,
-          assetGroupName: typeof body.assetGroupName === 'string' ? body.assetGroupName : null,
-          includedSections: savedSections,
-          ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
-        })
-      : null;
-
     return NextResponse.json({
       ok: true,
       lead,
@@ -371,8 +324,6 @@ export async function POST(request: NextRequest) {
       trackingAccess: trackingAccesses[0] ?? null,
       trackingAccesses,
       sharedAssetCount: dealerShareAssetIds.length || 1,
-      assistanceRequest,
-      confirmation: assistanceRequest ? AIM4PRICE_PROVIDER_APPROVAL_NOTICE : null,
     });
   } catch (error) {
     if (error instanceof Error && error.message === 'ASSET_NOT_FOUND') {
@@ -388,14 +339,6 @@ export async function POST(request: NextRequest) {
         ok: false,
         error: 'Every selected asset must be licensed and have a renewal date.',
       }, { status: 400 });
-    }
-
-    if (error instanceof Error && error.message === 'ASSISTANCE_LOCATION_NOT_FOUND') {
-      return NextResponse.json({ ok: false, error: 'Selected Aim4price assistance area is unavailable.' }, { status: 404 });
-    }
-
-    if (error instanceof Error && error.message === 'ASSISTANCE_NOTIFICATION_FAILED') {
-      return NextResponse.json({ ok: false, error: 'The assets were saved, but Aim4price could not be notified. Please try again or contact Aim4price.' }, { status: 502 });
     }
 
     console.error('asset leads POST failed', error);

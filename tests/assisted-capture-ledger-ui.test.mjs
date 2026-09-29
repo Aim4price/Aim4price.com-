@@ -95,8 +95,8 @@ test('owners can retract unfinished assisted captures from both ledgers with a c
     assert.match(handler, /current\.filter\(\(request\) => request\.id !== requestId\)/);
     assert.match(client, /onRetract=/);
   }
-  assert.match(costClient, /canRetractCaptureRequests = !dealerMode && !accountantShareId && !accountantRegisterId/);
-  assert.match(fuelClient, /onRetract=\{!accountantShareId && !accountantRegisterId/);
+  assert.match(costClient, /canRetractCaptureRequests = !dealerMode/);
+  assert.match(fuelClient, /onRetract=\{retractCaptureRequest\}/);
   assert.match(ownerRetractionRoute, /status: 'cancelled'/);
 });
 

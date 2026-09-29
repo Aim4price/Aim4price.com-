@@ -30,11 +30,6 @@ export default function DocumentFileLink({ href = '', children, fuelDocument = f
         original.searchParams.delete('accountantRegisterId');
         url.searchParams.set('source', fuelSource || (href.startsWith('/') ? original.pathname + original.search + original.hash : original.toString()));
       }
-      const current = new URL(window.location.href);
-      for (const key of ['accountantShareId', 'accountantRegisterId']) {
-        const value = source.searchParams.get(key) || current.searchParams.get(key);
-        if (value) url.searchParams.set(key, value);
-      }
       const response = await fetch(url, { credentials: 'include', cache: 'no-store',
         headers: { 'x-aim4price-client-realm': appRealmForPath(window.location.pathname) || 'website' } });
       if (!response.ok) throw new Error(response.status === 401

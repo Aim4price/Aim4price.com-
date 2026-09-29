@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const rawLogoUrl = profile
       ? profile.logoUrl || await getAssetRegisterReportLogoUrl(
         workspace.ownerUserId,
-        workspace.accountantRegisterId,
+        '',
         filters?.assetId === 'all' ? null : filters?.assetId,
       )
       : '';

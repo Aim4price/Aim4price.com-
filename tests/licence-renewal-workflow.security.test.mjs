@@ -17,30 +17,16 @@ const signup = read('app/auth/auth-client.tsx');
 const assetRegisterRoute = read('app/api/asset-register/route.ts');
 const ownerAssetActionsRoute = read('app/api/owner-app/assets/[assetId]/actions/route.ts');
 const ownerAssetRoute = read('app/api/owner-app/assets/[assetId]/route.ts');
-const accountantWorkspace = read('lib/accountant-workspace.ts');
+
 const ownerAssetOptions = read('app/owner-app/assets/[assetId]/owner-asset-options-client.tsx');
 const ownerAssetDetail = read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx');
 const ownerStyles = read('app/owner-app/owner-app.module.css');
 const assetLeadsRoute = read('app/api/asset-leads/route.ts');
 const correctionLibrary = read('lib/dealer-asset-corrections.ts');
 const correctionEditor = read('components/DealerAssetCorrectionEditor.tsx');
-const licensingRenewalRoute = read('app/api/licensing/renewal-updates/route.ts');
+
 const correctionMigration = read('database/migrations/70-license-renewal-corrections.sql');
 const notifications = read('lib/notifications.ts');
-const licensingWorkspaceLeads = read('lib/licensing-workspace-leads.ts');
-
-test('licence renewal experts have a dedicated account and focused workspace', () => {
-  assert.match(signup, /value: "licensing"/);
-  assert.match(header, /accountType === 'licensing'/);
-  assert.match(header, /label: 'Home'/);
-  assert.match(header, /label: 'Leads'/);
-  assert.match(header, /label: 'Discovery'/);
-  const licensingNav = header.slice(
-    header.indexOf("if (accountType === 'licensing')"),
-    header.indexOf("if (accountType === 'owner')"),
-  );
-  assert.doesNotMatch(licensingNav, /Get Estimate|Marketplace|Maintenance/);
-});
 
 test('the owner share modal includes licence renewals and selected eligible assets', () => {
   assert.match(registerClient, /<strong>Licence renewal<\/strong>/);
@@ -115,97 +101,12 @@ test('licence renewal sharing is date-gated in the API, desktop and Owner App', 
   assert.match(ownerAssetOptions, /Add a renewal date before sharing/);
 });
 
-test('licence experts propose renewal dates for owner approval', () => {
-  assert.match(licensingRenewalRoute, /profile\.accountType !== 'licensing'/);
-  assert.match(licensingRenewalRoute, /field: 'licenseRenewalDate'/);
-  assert.match(correctionLibrary, /licenseRenewalDateChanged/);
-  assert.match(correctionLibrary, /proposedLicenseRenewalDate/);
-  assert.match(correctionLibrary, /applyAcceptedCorrectionToAsset/);
-  assert.match(correctionLibrary, /licence_renewal_date: current\.proposedLicenseRenewalDate/);
-  assert.match(correctionEditor, /Update renewal date/);
-  assert.match(leadsClient, /canUpdateLicenseRenewalDate/);
-  assert.match(ownerAssetDetail, /Licence renewal awaiting approval/);
-  assert.match(ownerAssetDetail, /decideRenewalUpdate\('accept'\)/);
-  assert.match(notifications, /Licence expert updated renewal date/);
-  assert.match(notifications, /licence renewal date from/);
-  assert.match(correctionMigration, /license_renewal_date_changed/);
-});
-
 test('every document constructor supplies category and document type metadata', () => {
   for (const source of [assetRegisterRoute, ownerAssetActionsRoute, ownerAssetRoute]) {
     assert.match(source, /category: normalizeAssetDocumentCategory/);
     assert.match(source, /documentType: normalizeAssetDocumentType/);
   }
-  assert.match(accountantWorkspace, /category: documentType\.category/);
-  assert.match(accountantWorkspace, /documentType: documentType\.value/);
-});
 
-test('licensing Discovery exposes only a coarse renewal window before approval', () => {
-  assert.match(discovery, /LICENSING_DISCOVERY_ASSET_SQL/);
-  assert.match(discovery, /month: 'long', year: 'numeric'/);
-  assert.match(discoveryClient, /Offer renewal help/);
-  assert.match(discoveryClient, /styles\.discoveryRenewalAction/);
-  assert.match(discoveryClient, /Exact details remain private until the owner approves/);
-  assert.match(discoveryClient, /\["Renewal", details\.asset\.renewalWindow\]/);
-  const listSql = discovery.slice(
-    discovery.indexOf('const listSql = `'),
-    discovery.indexOf('const assetRows =', discovery.indexOf('const listSql = `')),
-  );
-  const projection = listSql.slice(0, listSql.indexOf('from public.asset_register_items'));
-  assert.doesNotMatch(projection, /licenseRegistrationNumber|serialNumber|documents|phone|email/i);
-});
-
-test('an approved Discovery offer creates a renewal lead with photos and licence documents', () => {
-  assert.match(discovery, /leadType: "license_renewal"/);
-  assert.match(discovery, /source: "asset_discovery"/);
-  assert.match(discovery, /documents: true/);
-  assert.match(leadsClient, /LICENCE RENEWAL LEADS/);
-  assert.match(leadsClient, /Renewal due/);
-  assert.doesNotMatch(leadsClient, /const licenceLeadPhoto/);
-  assert.doesNotMatch(leadsClient, /className=\{styles\.licenceLeadThumbnail\}/);
-  assert.match(leadsClient, /licenceRenewalMeta/);
-  assert.match(leadsStyles, /Licence renewal lead cards/);
-  assert.doesNotMatch(leadsClient, /licenceOutcomeWon/);
-  assert.match(notifications, /Licence renewal help offered/);
-  assert.match(notifications, /marked Won in Discovery/);
-  assert.match(header, /Renewal help offer/);
-  assert.match(header, /Accept help/);
-  assert.match(header, /marked Won in the expert&apos;s Discovery/);
-  assert.match(headerStyles, /notificationRenewalDetailModal/);
-  assert.match(headerStyles, /notificationRenewalDateCard/);
-});
-
-test('licensing My Leads contains direct work while Discovery owns opportunity outcomes', () => {
-  assert.match(licensingWorkspaceLeads, /lead\.leadType === 'license_renewal'/);
-  assert.match(licensingWorkspaceLeads, /!== 'asset_discovery'/);
-  assert.doesNotMatch(licensingWorkspaceLeads, /renewalOutcome|opportunityOnly/);
-  assert.doesNotMatch(leadsClient, /LICENSING_STATUS_FILTER_OPTIONS|renewalLeadOutcome/);
-  assert.match(leadsClient, /STATUS_FILTER_OPTIONS/);
-  assert.match(discoveryClient, /label: "Pending"/);
-  assert.match(discoveryClient, /label: "Won"/);
-  assert.match(discoveryClient, /label: "Denied"/);
-  assert.match(discoveryClient, /renderDiscoveryOutcome/);
-});
-
-test('licensing Manage removes reports and uses dedicated spacing', () => {
-  assert.match(leadsClient, /!licensingWorkspaceMode \? \([\s\S]*?<strong>Reports<\/strong>/);
-  assert.match(leadsClient, /styles\.licensingManageModal/);
-  assert.match(leadsStyles, /\.licensingManageModal\.licensingManageModal/);
-  assert.match(leadsStyles, /width: min\(54rem/);
-  assert.match(leadsStyles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-});
-
-test('a declined renewal offer is final for that licence expert', () => {
-  assert.match(discovery, /permanent_licensing_denial/);
-  assert.match(discovery, /requester_user_id = \$1[\s\S]*?requester_account_type = 'licensing'[\s\S]*?status = 'temporarily_denied'/);
-  assert.match(discovery, /You cannot offer again/);
-  assert.match(discovery, /when target\.requester_account_type = 'licensing' then null/);
-  assert.match(header, /Renewal help declined/);
-  assert.match(header, /cannot offer renewal help for this asset again/);
-  assert.match(headerStyles, /notificationDetailStatusBoxDenied/);
-  assert.match(notifications, /Renewal help declined/);
-  assert.match(notifications, /You cannot offer again for this asset/);
-  assert.match(notifications, /accountType === 'dealer' \|\| accountType === 'licensing'/);
 });
 
 test('renewal lead snapshots do not carry valuation or unrelated private specs', () => {

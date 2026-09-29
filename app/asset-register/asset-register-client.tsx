@@ -51,8 +51,6 @@ import AssetExternalShare, {
   AssetShareDestinationPicker,
   type ExternalShareFileSource,
 } from '../../components/asset-register/AssetExternalShare';
-import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
-import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import AssetDocumentUploadModal, {
   type UploadedVaultDocument,
 } from '../../components/documents/AssetDocumentUploadModal';
@@ -124,7 +122,7 @@ import {
 } from '../../lib/asset-document-permissions';
 import { isViewportScrollbarInteraction } from '../../lib/viewport-scrollbar';
 import type { GeneralSaleabilityInput } from '../../lib/saleability';
-import assistanceServiceLocations from '../../database/seeds/aim4price-assistance-locations.json';
+import serviceLocations from '../../database/seeds/south-africa-service-locations.json';
 
 type NoticeTone = 'success' | 'warning' | 'error';
 type PartnerType = 'dealer' | 'finance' | 'insurance' | 'licensing';
@@ -260,12 +258,12 @@ function disposalAmountLabel(reason: DisposalDraft['reason']): string {
 }
 
 type PartnerDirectoryEntry = {
+  serviceAreaNotice?: string;
   isExternalBusiness?: boolean;
   businessHeadings?: string[];
   googleMapsUrl?: string;
   googlePlaceId?: string;
   userId: string;
-  masterAccountUserId?: string;
   partnerType: PartnerType;
   accountSubtype: string;
   displayName: string;
@@ -284,11 +282,7 @@ type PartnerDirectoryEntry = {
   serviceRadiusKm: number | null;
   brandFocus: string;
   services: string;
-  isAim4priceManaged?: boolean;
   isActivePartner?: boolean;
-  assistanceLocationId?: string;
-  assistanceServiceKey?: string;
-  serviceAreaNotice?: string;
 };
 
 type PartnerDirectoryApiResponse = {
@@ -301,12 +295,6 @@ type AssetLeadApiResponse = {
   ok: boolean;
   lead?: unknown;
   confirmation?: string | null;
-  error?: string;
-};
-
-type AccountantNoteApiResponse = {
-  ok: boolean;
-  note?: OpenPartnerNote;
   error?: string;
 };
 
@@ -870,7 +858,7 @@ type AssetRegisterApiResponse = {
   };
   item?: RegisterAsset;
   note?: OpenPartnerNote;
-  access?: AccountantRegisterAccess;
+
   error?: string;
 };
 
@@ -890,26 +878,6 @@ type AssetRegisterDisplayRow =
       memberIndex: number;
       memberCount: number;
     };
-
-type AccountantRegisterAccess = {
-  shareId: string;
-  ownerName: string;
-  ownerBusinessName: string;
-  registerId: string;
-  registerName: string;
-  assetCount: number;
-  totalValue: number;
-  lastUpdatedIso: string;
-  allowDirectUpdates: boolean;
-  includeFuelLedger: boolean;
-  includeCostLedger: boolean;
-};
-
-type AccountantRegistersApiResponse = {
-  ok: boolean;
-  registers?: AccountantRegisterAccess[];
-  error?: string;
-};
 
 type UploadedAssetFile = {
   uploadId: string;
@@ -1201,7 +1169,6 @@ type ProjectionFormState = {
   extraHours: string;
   targetLifeWorkedPercent: string;
 };
-
 
 type IconProps = {
   className?: string;
@@ -1583,8 +1550,8 @@ const ASSET_SETTINGS_SA_PROVINCE_MAP_LOCATIONS: AssetSettingsMapLookupLocation[]
 ];
 
 const QUOTE_LOCATION_SUGGESTIONS = Array.from(new Set([
-  ...assistanceServiceLocations.map((location) => `${location.town}, ${location.province}`),
-  ...assistanceServiceLocations.map((location) => location.province),
+  ...serviceLocations.map((location) => `${location.town}, ${location.province}`),
+  ...serviceLocations.map((location) => location.province),
 ]));
 
 function normalizeAssetSettingsMapLookupText(value: unknown): string {
@@ -1649,7 +1616,7 @@ function resolveQuoteLocationMapTarget(value: string): AssetSettingsApproximateM
   }
 
   const paddedLookupText = ` ${lookupText} `;
-  const seededLocation = assistanceServiceLocations.find((location) => (
+  const seededLocation = serviceLocations.find((location) => (
     paddedLookupText.includes(` ${normalizeAssetSettingsMapLookupText(location.town)} `)
   ));
 
@@ -1727,7 +1694,7 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     description: 'Share with an accountant, financier or bank.',
     mapTitle: 'Choose an accountant, financier or bank.',
     sendLabel: 'Send finance request',
-    emptyPartnerText: 'No listed accountants, financiers or banks found yet. Finance accounts must enable their directory listing under Account details.',
+    emptyPartnerText: 'No listed accountants, financiers or banks found yet. Businesses can list their services in the Business Network.',
   },
   {
     leadType: 'insurance',
@@ -1804,7 +1771,6 @@ const QUOTE_TONE_STYLES: Record<PartnerType, QuoteToneStyle> = {
     shadow: 'rgba(124, 58, 237, 0.28)',
   },
 };
-
 
 const initialAssetDraft: AssetDraft = {
   kind: 'equipment',
@@ -2177,7 +2143,6 @@ function ShareIcon({ className }: IconProps) {
   );
 }
 
-
 function CopyIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -2226,8 +2191,6 @@ function PdfIcon({ className }: IconProps) {
     </svg>
   );
 }
-
-
 
 function DocumentIcon({ className }: IconProps) {
   return (
@@ -4073,7 +4036,6 @@ function buildDraftPhotoItems(
   }));
 }
 
-
 function normalizeDocuments(value: unknown): AssetDocument[] {
   const rawItems = Array.isArray(value) ? value : [];
   const seen = new Set<string>();
@@ -5124,7 +5086,6 @@ function assetFamilyLabel(asset: RegisterAsset): string {
   return 'Other';
 }
 
-
 function cleanReportText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
@@ -6007,7 +5968,6 @@ function buildExternalShareAsset(asset: RegisterAsset): ExternalAssetShareItem {
   };
 }
 
-
 function buildAssetPdfReportUrl(
   asset: RegisterAsset,
   reportKind: AssetPdfReportKind,
@@ -6215,9 +6175,9 @@ function readRegisterIdFromLocation(): string {
   return typeof window === 'undefined' ? '' : registerIdFromLocation(window.location);
 }
 
-function buildAssetGroupsApiUrl(accountantShareId?: string, groupId?: string, combined = false): string {
+function buildAssetGroupsApiUrl(groupId?: string, combined = false): string {
   const params = new URLSearchParams();
-  if (accountantShareId) params.set('accountantShareId', accountantShareId);
+
   if (groupId) params.set('groupId', groupId);
   if (combined) params.set('scope', 'combined');
   const query = params.toString();
@@ -6227,7 +6187,6 @@ function buildAssetGroupsApiUrl(accountantShareId?: string, groupId?: string, co
 function buildAssetRegisterExportUrl(
   registerId?: string | null,
   entityName = '',
-  accountantShareId?: string,
   availableRegisterIds: string[] = [],
   groupId = '',
   format: ExportFormat = 'xlsx',
@@ -6249,7 +6208,6 @@ function buildAssetRegisterExportUrl(
     if (cleanedEntityName) params.set('entityName', cleanedEntityName);
   }
 
-  if (accountantShareId) params.set('accountantShareId', accountantShareId);
   if (groupId.trim()) params.set('groupId', groupId.trim());
   const cleanedAssetIds = Array.from(new Set(assetIds.map((id) => id.trim()).filter(Boolean)));
   if (cleanedAssetIds.length) params.set('assetIds', cleanedAssetIds.join(','));
@@ -6261,7 +6219,6 @@ function buildAssetRegisterSummaryExportUrl(
   registerId: string | null | undefined,
   format: ExportFormat | 'html',
   availableRegisterIds: string[] = [],
-  accountantShareId?: string,
 ): string {
   const params = new URLSearchParams({
     format,
@@ -6276,13 +6233,6 @@ function buildAssetRegisterSummaryExportUrl(
     params.set('entityName', 'Combined Asset Registers');
   } else if (cleanedRegisterId) {
     params.set('registerId', cleanedRegisterId);
-  }
-
-  if (accountantShareId) {
-    params.set('accountantShareId', accountantShareId);
-    if (cleanedRegisterId && cleanedRegisterId !== COMBINED_REGISTER_ID) {
-      params.set('accountantRegisterId', cleanedRegisterId);
-    }
   }
 
   return `/api/asset-register/export?${params.toString()}`;
@@ -6304,7 +6254,6 @@ function mergeProfileWithRegister(profile: AccountProfile | null, register: Asse
     addressLine2: '',
   };
 }
-
 
 function getRegisterReportLogoUrl(register: AssetRegisterSummary | null): string {
   return toAbsoluteUrl(selectReportLogoUrl('', register)) ?? '';
@@ -6545,7 +6494,7 @@ function normalizeEmailHref(value: string): string {
 }
 
 function quotePartnerAddress(partner: PartnerDirectoryEntry): string {
-  if (partner.isAim4priceManaged) return 'Service area — not a physical branch';
+
   return [partner.addressLine1, partner.townCity, partner.province].filter(Boolean).join(', ') || 'Address not saved';
 }
 
@@ -6559,16 +6508,8 @@ function quotePartnerRadiusDisplay(partner: PartnerDirectoryEntry): string {
   return partner.partnerType === 'licensing' ? 'Available for renewal requests' : 'Service area not saved';
 }
 
-function isDealerAssistancePartner(partner: PartnerDirectoryEntry): boolean {
-  return Boolean(partner.isAim4priceManaged && partner.partnerType === 'dealer');
-}
-
-function isAim4priceAssistancePartner(partner: PartnerDirectoryEntry): boolean {
-  return Boolean(partner.isAim4priceManaged);
-}
-
 function quotePartnerWebsiteDisplay(partner: PartnerDirectoryEntry): string {
-  return isDealerAssistancePartner(partner) ? 'www.aim4price.com' : formatWebsiteDisplay(partner.websiteUrl);
+  return formatWebsiteDisplay(partner.websiteUrl);
 }
 
 function hasQuotePartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
@@ -6590,7 +6531,6 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
-
 
 function extractApiError(payload: unknown, fallback: string): string {
   if (payload && typeof payload === 'object') {
@@ -6619,19 +6559,18 @@ function renderManualAssetTypeIcon(assetKind: AssetKind, className?: string) {
 }
 
 export default function AssetRegisterClient({
-  accountantShareId,
   showAppHeader = true,
   registerManagementHref = '/asset-registers',
   dealerRegisterMode,
   dealerRegisterBaseHref = '/asset-register',
 }: {
-  accountantShareId?: string;
+
   showAppHeader?: boolean;
   registerManagementHref?: string;
   dealerRegisterMode?: 'dealer' | 'client';
   dealerRegisterBaseHref?: string;
 } = {}) {
-  const isAccountantWorkspace = Boolean(accountantShareId);
+
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [costBudgetStatusByAssetId, setCostBudgetStatusByAssetId] = useState<Record<string, AssetCostBudgetStatus>>({});
   const [budgetAssetIds, setBudgetAssetIds] = useState<Set<string>>(new Set());
@@ -6647,7 +6586,7 @@ export default function AssetRegisterClient({
   const [isSavingAssetGroup, setIsSavingAssetGroup] = useState(false);
   const [draggingAssetId, setDraggingAssetId] = useState<string | null>(null);
   const [assetGroupDropTargetId, setAssetGroupDropTargetId] = useState<string | null>(null);
-  const [accountantAccess, setAccountantAccess] = useState<AccountantRegisterAccess | null>(null);
+
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
   const [activeRegister, setActiveRegister] = useState<AssetRegisterSummary | null>(null);
@@ -6666,9 +6605,7 @@ export default function AssetRegisterClient({
   const [assetRegisterMoveError, setAssetRegisterMoveError] = useState('');
   const [isMovingAssetRegister, setIsMovingAssetRegister] = useState(false);
   const assetRegisterMoveGroupsRequestRef = useRef(0);
-  const [accountantNoteAsset, setAccountantNoteAsset] = useState<RegisterAsset | null>(null);
-  const [accountantNoteDraft, setAccountantNoteDraft] = useState('');
-  const [isSavingAccountantNote, setIsSavingAccountantNote] = useState(false);
+
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [assetStatusDraft, setAssetStatusDraft] = useState<AssetStatusDraft>(initialAssetStatusDraft);
   const [assetDetailFocusTarget, setAssetDetailFocusTarget] = useState<AssetDetailEditTarget | null>(null);
@@ -6888,7 +6825,7 @@ export default function AssetRegisterClient({
   const [externalShareReportScope, setExternalShareReportScope] = useState<ExternalShareReportScope>(null);
   const [externalShareReportFiles, setExternalShareReportFiles] = useState<ExternalShareFileSource[]>([]);
   const directoryReportCompletion = useRef<((source: ExternalShareFileSource | null) => void) | null>(null);
-  const [isAccountantReportsOpen, setIsAccountantReportsOpen] = useState(false);
+
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
   const [exportEntityName, setExportEntityName] = useState('');
@@ -6938,10 +6875,6 @@ export default function AssetRegisterClient({
   }, []);
 
   useEffect(() => {
-    if (isAccountantWorkspace) {
-      setCostBudgetStatusByAssetId({});
-      return undefined;
-    }
 
     let cancelled = false;
 
@@ -6982,7 +6915,7 @@ export default function AssetRegisterClient({
       window.removeEventListener('aim4price:cost-ledger-updated', handleCostLedgerUpdated);
       window.removeEventListener('focus', handleCostLedgerUpdated);
     };
-  }, [isAccountantWorkspace]);
+  }, []);
 
   useEffect(() => {
     function handleRegisterSummaryViewportChange() {
@@ -7325,7 +7258,7 @@ export default function AssetRegisterClient({
         registerId: combinedScope ? null : input.registerId,
         scope: combinedScope ? 'combined' : 'register',
       };
-      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, undefined, combinedScope), {
+      const response = await fetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
         method: input.groupId ? 'PUT' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -7430,7 +7363,7 @@ export default function AssetRegisterClient({
 
     try {
       const combinedScope = isCombinedRegisterView || targetGroup.registerId === null;
-      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, undefined, combinedScope), {
+      const response = await fetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -7479,7 +7412,6 @@ export default function AssetRegisterClient({
 
     try {
       const response = await fetch(buildAssetGroupsApiUrl(
-        accountantShareId,
         group.id,
         isCombinedRegisterView || group.registerId === null,
       ), {
@@ -7515,7 +7447,7 @@ export default function AssetRegisterClient({
     setBusyFlagGroupId(group.id);
     setNotice(null);
     try {
-      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, undefined, group.registerId === null), {
+      const response = await fetch(buildAssetGroupsApiUrl(undefined, group.registerId === null), {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -7575,9 +7507,7 @@ export default function AssetRegisterClient({
     }
 
     try {
-      const response = await fetch(accountantShareId
-        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(asset.id)}/flag`
-        : '/api/asset-register', {
+      const response = await fetch('/api/asset-register', {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -7615,64 +7545,6 @@ export default function AssetRegisterClient({
       });
     } finally {
       setBusyFlagAssetId(null);
-    }
-  }
-
-  function openAccountantNoteModal(asset: RegisterAsset): void {
-    setNotice(null);
-    setAccountantNoteAsset(asset);
-    setAccountantNoteDraft('');
-  }
-
-  function closeAccountantNoteModal(): void {
-    if (isSavingAccountantNote) return;
-    setAccountantNoteAsset(null);
-    setAccountantNoteDraft('');
-  }
-
-  async function submitAccountantNote(): Promise<void> {
-    if (!accountantShareId || !accountantNoteAsset || isSavingAccountantNote) return;
-
-    const noteText = accountantNoteDraft.trim();
-    if (!noteText) {
-      setNotice({ tone: 'error', message: 'Write a note before saving.' });
-      return;
-    }
-
-    setNotice(null);
-    setIsSavingAccountantNote(true);
-
-    try {
-      const response = await fetch(
-        `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(accountantNoteAsset.id)}/notes`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ note: noteText }),
-        },
-      );
-      const data = (await response.json()) as AccountantNoteApiResponse;
-
-      if (!response.ok || !data.ok || !data.note) {
-        throw new Error(data.error ?? 'Failed to save note.');
-      }
-
-      const savedNote = data.note;
-      setAssets((currentAssets) => currentAssets.map((asset) => {
-        if (asset.id !== accountantNoteAsset.id) return asset;
-        const existingNotes = Array.isArray(asset.partnerNotes)
-          ? asset.partnerNotes.filter((note) => note.id !== savedNote.id)
-          : [];
-        return { ...asset, openPartnerNote: savedNote, partnerNotes: [savedNote, ...existingNotes] };
-      }));
-      setAccountantNoteAsset(null);
-      setAccountantNoteDraft('');
-      setNotice({ tone: 'success', message: `Note saved on ${accountantNoteAsset.title}.` });
-    } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save note.' });
-    } finally {
-      setIsSavingAccountantNote(false);
     }
   }
 
@@ -7866,15 +7738,15 @@ export default function AssetRegisterClient({
       String(register.assetCount),
     ].some((value) => String(value ?? '').toLowerCase().includes(query)));
   }, [registerSwitcherOptions, registerSwitcherSearchTerm]);
-  const canOpenRegisterSwitcher = dealerRegisterMode || isAccountantWorkspace
+  const canOpenRegisterSwitcher = dealerRegisterMode
     ? registerSwitcherOptions.length > 0
     : registerSwitcherOptions.length > 1;
   const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
-  const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
-  const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
+  const canUseOwnerOnlyAssetActions = true;
+  const canManageRegisterStructure = canUseOwnerOnlyAssetActions;
   const canManageAssetGroups =
     canUseOwnerOnlyAssetActions
-    || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
+    ;
   const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
   const registerUnnotedAlertCounts = useMemo(() => {
     const countsByRegisterId = new Map<string, number>();
@@ -7923,10 +7795,9 @@ export default function AssetRegisterClient({
     return assetRegisterMoveGroups
       .filter((group) => (
         !group.members.some((member) => member.assetId === assetId)
-        && (!isAccountantWorkspace || group.registerId === assetRegisterMoveSourceId)
       ))
       .sort((left, right) => left.name.localeCompare(right.name, 'en-ZA'));
-  }, [assetRegisterMoveAsset?.id, assetRegisterMoveGroups, assetRegisterMoveSourceId, isAccountantWorkspace]);
+  }, [assetRegisterMoveAsset?.id, assetRegisterMoveGroups, assetRegisterMoveSourceId]);
   const assetRegisterMoveGroupOptions = useMemo<Array<ModalSelectOption<string>>>(
     () => assetRegisterMoveGroupTargets.map((group) => {
       const registerName = group.registerId
@@ -7946,22 +7817,21 @@ export default function AssetRegisterClient({
     }),
     [assetRegisterMoveGroupTargets, assetRegisterMoveSourceId, assetRegisters],
   );
-  const canUseAccountantDocumentActions = isAccountantWorkspace && Boolean(accountantAccess?.allowDirectUpdates);
+
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
   const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions
-    || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
+    ;
   const addAssetRegisterOptions = useMemo<Array<ModalSelectOption<string>>>(
     () => (activeRegister && !assetRegisters.some((register) => register.id === activeRegister.id)
       ? [...assetRegisters, activeRegister]
       : assetRegisters)
-      .filter((register) => register.id && register.id !== COMBINED_REGISTER_ID
-        && (!isAccountantWorkspace || register.id === (activeRegister?.id || activeRegisterId)))
+      .filter((register) => register.id && register.id !== COMBINED_REGISTER_ID)
       .map((register) => ({
         value: register.id,
         label: register.businessName || 'Asset Register',
         description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'} · ${money(Number(register.totalValue) || 0)} current value`,
       })),
-    [assetRegisters, isAccountantWorkspace, activeRegister, activeRegisterId],
+    [assetRegisters, activeRegister, activeRegisterId],
   );
   const dealerOwnedRegister = useMemo(
     () => assetRegisters.find((register) => register.isPrimary) ?? assetRegisters[0] ?? null,
@@ -7976,16 +7846,16 @@ export default function AssetRegisterClient({
       : dealerRegisterMode === 'dealer'
         ? 'Dealer Asset Register'
         : 'Asset Register');
-  const canUseMarketplaceActions = !isAccountantWorkspace;
+  const canUseMarketplaceActions = true;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
   const addAssetValuationHref = (() => {
     const params = new URLSearchParams();
-    if (isAccountantWorkspace && accountantShareId) params.set('accountantShareId', accountantShareId);
+
     const targetRegisterId = String(
       addAssetTargetRegisterId
       || (!isCombinedRegisterView ? activeRegister?.id || activeRegisterId : '')
-      || (isAccountantWorkspace ? accountantAccess?.registerId : '')
+      || ('')
       || '',
     ).trim();
     if (targetRegisterId && targetRegisterId !== COMBINED_REGISTER_ID) {
@@ -8071,7 +7941,6 @@ export default function AssetRegisterClient({
     return quotePartners.filter((partner) => selectedIds.has(partner.userId));
   }, [quotePartners, selectedQuotePartnerIds]);
   const selectedQuotePartner = selectedQuotePartners[0] ?? null;
-  const hasManagedAssistanceSelection = selectedQuotePartners.some((partner) => partner.isAim4priceManaged);
   const selectedQuotePartnerWebsiteHref = selectedQuotePartner ? normalizeWebsiteHref(selectedQuotePartner.websiteUrl) : '';
   const selectedQuotePartnerEmailHref = selectedQuotePartner ? normalizeEmailHref(selectedQuotePartner.email) : '';
   const selectedQuotePartnerPhoneHref = selectedQuotePartner ? normalizePhoneHref(selectedQuotePartner.phone) : '';
@@ -8186,7 +8055,7 @@ export default function AssetRegisterClient({
 
     // Keep old bookmarks working without reloading the register or losing deep links.
     const url = new URL(window.location.href);
-    if (!dealerRegisterMode && !isAccountantWorkspace && url.pathname === '/asset-register'
+    if (!dealerRegisterMode && url.pathname === '/asset-register'
       && url.searchParams.get('scope')?.trim().toLowerCase() === 'combined') {
       url.searchParams.delete('scope');
       url.searchParams.delete('registerId');
@@ -8220,16 +8089,9 @@ export default function AssetRegisterClient({
       try {
         const requestedRegisterId = readRegisterIdFromLocation();
         setActiveRegisterId(requestedRegisterId);
-        if (!isAccountantWorkspace) void loadAccountProfile();
+        void loadAccountProfile();
 
-        const accountantRegisterQuery = requestedRegisterId === COMBINED_REGISTER_ID
-          ? '?scope=combined'
-          : requestedRegisterId
-            ? `?registerId=${encodeURIComponent(requestedRegisterId)}`
-            : '';
-        const registerUrl = accountantShareId
-          ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}${accountantRegisterQuery}`
-          : buildAssetRegisterApiUrl(requestedRegisterId);
+        const registerUrl = buildAssetRegisterApiUrl(requestedRegisterId);
         const assetsResponse = await fetch(registerUrl, {
           cache: 'no-store',
           credentials: 'include',
@@ -8256,7 +8118,6 @@ export default function AssetRegisterClient({
           setAccountProfile(assetsData.profile);
         }
 
-        setAccountantAccess(assetsData.access ?? null);
         if (assetsData.register) {
           setActiveRegister(assetsData.register);
           setActiveRegisterId(assetsData.register.id);
@@ -8290,25 +8151,11 @@ export default function AssetRegisterClient({
       registerRequestVersion.current++;
       window.removeEventListener('aim4price:asset-register-updated', loadAssetRegister);
     };
-  }, [accountantShareId, isAccountantWorkspace]);
+  }, []);
 
   useEffect(() => {
-    if (!isAccountantWorkspace || isLoading || !registerSwitcherOptions.length) return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('changeRegister') !== '1') return;
+    return;
 
-    setRegisterSwitcherSearchTerm('');
-    setIsChangeRegisterModalOpen(true);
-    params.delete('changeRegister');
-    const query = params.toString();
-    window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
-  }, [isAccountantWorkspace, isLoading, registerSwitcherOptions.length]);
-
-  useEffect(() => {
-    if (!isAccountantWorkspace) return;
-    const openRegisterChange = () => openChangeRegisterModal();
-    window.addEventListener('aim4price:open-register-change', openRegisterChange);
-    return () => window.removeEventListener('aim4price:open-register-change', openRegisterChange);
   });
 
   useEffect(() => {
@@ -8326,14 +8173,8 @@ export default function AssetRegisterClient({
 
     try {
       const requestedRegisterId = readRegisterIdFromLocation() || activeRegister?.id || activeRegisterId;
-      const accountantRegisterQuery = requestedRegisterId === COMBINED_REGISTER_ID
-        ? '?scope=combined'
-        : requestedRegisterId
-          ? `?registerId=${encodeURIComponent(requestedRegisterId)}`
-          : '';
-      const registerUrl = accountantShareId
-        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}${accountantRegisterQuery}`
-        : buildAssetRegisterApiUrl(requestedRegisterId);
+
+      const registerUrl = buildAssetRegisterApiUrl(requestedRegisterId);
       const assetsResponse = await fetch(registerUrl, {
         cache: 'no-store',
         credentials: 'include',
@@ -8358,8 +8199,6 @@ export default function AssetRegisterClient({
       if (assetsData.profile) {
         setAccountProfile(assetsData.profile);
       }
-
-      setAccountantAccess(assetsData.access ?? null);
 
       if (assetsData.register) {
         setActiveRegister(assetsData.register);
@@ -8391,9 +8230,7 @@ export default function AssetRegisterClient({
 
   function openChangeRegisterModal() {
     if (!canOpenRegisterSwitcher) {
-      window.location.href = isAccountantWorkspace && accountantShareId
-        ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
-        : registerManagementHref;
+      window.location.href = registerManagementHref;
       return;
     }
 
@@ -8425,13 +8262,6 @@ export default function AssetRegisterClient({
       return;
     }
 
-    if (isAccountantWorkspace) {
-      const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantShareId ?? '')}`;
-      window.location.assign(nextRegisterId === COMBINED_REGISTER_ID
-        ? `${workspaceRoot}?scope=combined`
-        : `${workspaceRoot}?registerId=${encodeURIComponent(nextRegisterId)}`);
-      return;
-    }
     setNotice(null);
 
     if (nextRegisterId === COMBINED_REGISTER_ID) {
@@ -8473,16 +8303,11 @@ export default function AssetRegisterClient({
       return;
     }
 
-    if (isAccountantWorkspace) {
-      setAssetRegisterMoveGroups(assetGroups);
-      return;
-    }
-
     setIsLoadingAssetRegisterMoveGroups(true);
     setAssetRegisterMoveGroupLoadError('');
 
     try {
-      const response = await fetch(buildAssetGroupsApiUrl(undefined, undefined, true), {
+      const response = await fetch(buildAssetGroupsApiUrl(undefined, true), {
         credentials: 'include',
       });
       const payload = await response.json() as AssetGroupApiResponse;
@@ -8562,11 +8387,6 @@ export default function AssetRegisterClient({
         || targetGroup.registerId === null
         || targetGroup.registerId !== assetRegisterMoveSourceId;
 
-      if (isAccountantWorkspace && combinedScope) {
-        setAssetRegisterMoveError('This umbrella is not available in the current Asset Register.');
-        return;
-      }
-
       const sourceGroup = allAssetGroupMemberships.get(assetRegisterMoveAsset.id)?.group ?? null;
       const movedAssetTitle = assetRegisterMoveAsset.title;
 
@@ -8574,7 +8394,7 @@ export default function AssetRegisterClient({
       setAssetRegisterMoveError('');
 
       try {
-        const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, undefined, combinedScope), {
+        const response = await fetch(buildAssetGroupsApiUrl(undefined, combinedScope), {
           method: 'PATCH',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -8624,9 +8444,7 @@ export default function AssetRegisterClient({
     setAssetRegisterMoveError('');
 
     try {
-      const moveUrl = isAccountantWorkspace && accountantShareId
-        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/owner-registers/move-assets`
-        : '/api/asset-registers/move-assets';
+      const moveUrl = '/api/asset-registers/move-assets';
       const response = await fetch(moveUrl, {
         method: 'PUT',
         credentials: 'include',
@@ -8811,13 +8629,12 @@ export default function AssetRegisterClient({
     isAssetFilterOpen ||
     isChangeRegisterModalOpen ||
     Boolean(assetRegisterMoveAsset) ||
-    Boolean(accountantNoteAsset) ||
+
     isPricingModalOpen ||
     Boolean(saleabilityAsset) ||
     Boolean(pricingPreview) ||
     isQrModalOpen ||
     isSummaryModalOpen ||
-    isAccountantReportsOpen ||
     isRegisterShareModalOpen ||
     isExportModalOpen ||
     Boolean(projectionAsset) ||
@@ -8990,11 +8807,6 @@ export default function AssetRegisterClient({
         return;
       }
 
-      if (accountantNoteAsset) {
-        closeAccountantNoteModal();
-        return;
-      }
-
       if (deleteCandidateAsset) {
         closeDeleteConfirmDialog();
         return;
@@ -9085,11 +8897,6 @@ export default function AssetRegisterClient({
         return;
       }
 
-      if (isAccountantReportsOpen) {
-        setIsAccountantReportsOpen(false);
-        return;
-      }
-
       if (isExportModalOpen) {
         closeExportModal();
         return;
@@ -9111,7 +8918,7 @@ export default function AssetRegisterClient({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map' || !quoteMapElementRef.current) {
@@ -9181,7 +8988,7 @@ export default function AssetRegisterClient({
           const lng = Number(partner.longitude);
           const isActive = directoryBusiness?.userId === partner.userId;
           const icon = L.divIcon({
-            className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${partner.isAim4priceManaged ? ' assetQuoteMapMarker--managed' : ''}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
+            className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${''}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
             html: '<span class="assetQuoteMapMarkerPin"></span>',
             iconSize: [38, 44],
             iconAnchor: [19, 40],
@@ -9947,7 +9754,6 @@ export default function AssetRegisterClient({
     ? assetGroupMemberships.get(expandedAssetId)?.group.id ?? null
     : null;
 
-
   useEffect(() => {
     if ((!focusedAssetGroupId && !expandedAssetId) || anyModalOpen || documentUploadAsset || draggingAssetId) return undefined;
 
@@ -9991,13 +9797,13 @@ export default function AssetRegisterClient({
 
   useEffect(() => {
     if (!expandedAssetId) return;
-    if (isAccountantWorkspace && !accountantAccess) return;
+
     if (vaultDocumentsLoadingByAssetId[expandedAssetId]) return;
     if (vaultDocumentsErrorByAssetId[expandedAssetId]) return;
     if (Object.prototype.hasOwnProperty.call(vaultDocumentsByAssetId, expandedAssetId)) return;
 
     void loadVaultDocuments(expandedAssetId);
-  }, [accountantAccess, expandedAssetId, isAccountantWorkspace, vaultDocumentsByAssetId, vaultDocumentsErrorByAssetId, vaultDocumentsLoadingByAssetId]);
+  }, [expandedAssetId, vaultDocumentsByAssetId, vaultDocumentsErrorByAssetId, vaultDocumentsLoadingByAssetId]);
 
   useEffect(() => {
     if (assetFocusActionHandledRef.current || typeof window === 'undefined' || !assets.length) return;
@@ -11849,7 +11655,7 @@ export default function AssetRegisterClient({
 
     const locationValue = quoteLocationInput.replace(/\s+/g, ' ').trim();
     if (locationValue.length < 2) {
-      setQuoteLocationError('Enter a town, city or province to show nearby assistance.');
+      setQuoteLocationError('Enter a town, city or province to show nearby businesses.');
       return;
     }
 
@@ -12020,13 +11826,6 @@ export default function AssetRegisterClient({
     setQuoteLeadStep('message');
   }
 
-  function openAim4priceAssistanceMessage(partner: PartnerDirectoryEntry) {
-    setSelectedQuotePartnerIds([partner.userId]);
-    setQuoteConsentAccepted(false);
-    setIsQuoteMapExpanded(false);
-    setQuoteLeadStep('message');
-  }
-
   function toggleQuotePartnerSelection(partner: PartnerDirectoryEntry) {
     if (partner.isExternalBusiness) { messageDirectoryBusiness(partner); return; }
     setQuoteTrackMaintenance(false);
@@ -12035,17 +11834,7 @@ export default function AssetRegisterClient({
       if (current.includes(partner.userId)) {
         return current.filter((partnerId) => partnerId !== partner.userId);
       }
-      if (!partner.isAim4priceManaged) return [...current, partner.userId];
-
-      // Every managed town points at a master assistance account. Keep only one
-      // service area per master so a single request cannot be routed twice.
-      const matchingMasterId = partner.masterAccountUserId;
-      const withoutDuplicateMaster = current.filter((partnerId) => {
-        const selectedPartner = quotePartners.find((entry) => entry.userId === partnerId);
-        return !selectedPartner?.isAim4priceManaged
-          || selectedPartner.masterAccountUserId !== matchingMasterId;
-      });
-      return [...withoutDuplicateMaster, partner.userId];
+      return [...current, partner.userId];
     });
     setQuoteConsentAccepted(false);
   }
@@ -12194,7 +11983,7 @@ export default function AssetRegisterClient({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(partner.isExternalBusiness ? buildBusinessSharePayload(partner) : {
             assetId: leadAssetId,
-            partnerUserId: partner.masterAccountUserId || partner.userId,
+            partnerUserId: partner.userId,
             leadType: selectedQuoteOption.leadType,
             ownerMessage: quoteOwnerMessage,
             additionalContact: businessAdditionalContact,
@@ -12206,10 +11995,7 @@ export default function AssetRegisterClient({
               : undefined,
             assetIds: isAssetGroupShare
               ? managedAssetIds
-              : partner.isAim4priceManaged
-                ? managedAssetIds.length > 1 ? managedAssetIds : undefined
-                : isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
-            assistanceLocationId: partner.assistanceLocationId,
+              : isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
             assetGroupId: assetGroupShareTarget?.id,
             assetGroupName: assetGroupShareTarget?.name,
           }),
@@ -12241,9 +12027,7 @@ export default function AssetRegisterClient({
 
       setNotice({
         tone: 'success',
-        message: hasManagedAssistanceSelection
-          ? `Request sent to Aim4price. Aim4price will help locate a suitable provider for the selected service area. Your assets will not be shared with an external provider without your further approval.`
-          : isSelectedRegisterAssetShare
+        message: isSelectedRegisterAssetShare
           ? `${activeShareName} shared with ${selectedPartners.length === 1 ? quotePartnerName(selectedPartners[0]) : `${selectedPartners.length} selected companies`} · ${selectedDealerShareAssetIds.length} ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'}.`
           : isFullRegisterQuoteLead
           ? `${activeShareName} ${fullRegisterQuoteLabel} sent to ${selectedPartners.length === 1 ? quotePartnerName(selectedPartners[0]) : `${selectedPartners.length} selected companies`}.`
@@ -12515,7 +12299,6 @@ export default function AssetRegisterClient({
     setMainPhotoSelection((current) => (current?.source === 'pending' && current.id === photoId ? null : current));
   }
 
-
   function handleDocumentFilesSelected(
     event: ChangeEvent<HTMLInputElement>,
     category: AssetDocumentCategory = 'other',
@@ -12565,9 +12348,7 @@ export default function AssetRegisterClient({
       formData.append('files', file);
     });
 
-    const uploadUrl = isAccountantWorkspace && accountantShareId
-      ? `/api/asset-register/uploads?accountantShareId=${encodeURIComponent(accountantShareId)}`
-      : '/api/asset-register/uploads';
+    const uploadUrl = '/api/asset-register/uploads';
     const response = await fetch(uploadUrl, {
       method: 'POST',
       credentials: 'include',
@@ -12713,17 +12494,11 @@ export default function AssetRegisterClient({
   }
 
   function assetVaultDocumentsUrl(assetId: string): string {
-    if (accountantShareId) {
-      return `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(assetId)}/documents`;
-    }
 
     return `/api/documents?assetId=${encodeURIComponent(assetId)}`;
   }
 
   function assetVaultDocumentDownloadUrl(assetId: string, documentId: string): string {
-    if (accountantShareId) {
-      return `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(assetId)}/documents/${encodeURIComponent(documentId)}/download`;
-    }
 
     return `/api/documents/${encodeURIComponent(documentId)}/download`;
   }
@@ -12756,10 +12531,6 @@ export default function AssetRegisterClient({
   }
 
   function openAssetDocumentUpload(asset: RegisterAsset) {
-    if (isAccountantWorkspace && !canUseAccountantDocumentActions) {
-      setNotice({ tone: 'error', message: 'The owner has not enabled Allow direct updates for this register.' });
-      return;
-    }
 
     documentUploadReturnAssetIdRef.current = asset.id;
     setExpandedAssetId(asset.id);
@@ -13161,9 +12932,7 @@ export default function AssetRegisterClient({
       let savedAssetForEditor: RegisterAsset | null = null;
 
       if (editingAssetId !== null) {
-        const manualAssetUrl = isAccountantWorkspace && accountantShareId
-          ? `/api/asset-register?accountantShareId=${encodeURIComponent(accountantShareId)}`
-          : '/api/asset-register';
+        const manualAssetUrl = '/api/asset-register';
         const response = await fetch(manualAssetUrl, {
           method: 'PUT',
           credentials: 'include',
@@ -13206,9 +12975,7 @@ export default function AssetRegisterClient({
           });
         }
       } else {
-        const manualAssetUrl = isAccountantWorkspace && accountantShareId
-          ? `/api/asset-register?accountantShareId=${encodeURIComponent(accountantShareId)}`
-          : '/api/asset-register';
+        const manualAssetUrl = '/api/asset-register';
         const response = await fetch(manualAssetUrl, {
           method: 'POST',
           credentials: 'include',
@@ -15177,10 +14944,10 @@ export default function AssetRegisterClient({
       pdfReport: true,
       registerId: activeRegister?.id || activeRegisterId || null,
       groupId: assetGroupShareTarget?.id ?? null,
-      liveAccess: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartners.length === 1 && selectedQuotePartner?.accountSubtype === 'accountant',
-      allowDirectUpdates: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartners.length === 1 && selectedQuotePartner?.accountSubtype === 'accountant' && quoteAllowDirectUpdates,
-      includeFuelLedger: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartners.length === 1 && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeFuelLedger,
-      includeCostLedger: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartners.length === 1 && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeCostLedger,
+      liveAccess: false,
+      allowDirectUpdates: false,
+      includeFuelLedger: false,
+      includeCostLedger: false,
       registerSnapshot: {
         snapshotType: isAssetGroupShare ? 'asset_group' : 'full_asset_register',
         groupId: assetGroupShareTarget?.id ?? null,
@@ -15351,7 +15118,6 @@ export default function AssetRegisterClient({
         activeRegister?.id || activeRegisterId,
         'html',
         assetRegisters.map((register) => register.id),
-        accountantShareId,
       );
       const didOpen = openCanonicalReportUrl(url);
 
@@ -15689,7 +15455,6 @@ export default function AssetRegisterClient({
     const reportUrl = buildAssetRegisterExportUrl(
       activeRegister?.id || activeRegisterId,
       options.entityName ?? exportEntityName,
-      accountantShareId,
       assetRegisters.map((register) => register.id),
       options.groupId,
     );
@@ -15790,7 +15555,6 @@ export default function AssetRegisterClient({
     const reportUrl = buildAssetRegisterExportUrl(
       activeRegister?.id || activeRegisterId,
       group.name,
-      accountantShareId,
       assetRegisters.map((register) => register.id),
       group.id,
       'xlsx',
@@ -16516,9 +16280,7 @@ export default function AssetRegisterClient({
                   </label>
 
                   <Link
-                    href={isAccountantWorkspace && accountantShareId
-                      ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
-                      : registerManagementHref}
+                    href={registerManagementHref}
                     className={`${accountStyles.ghostButton} ${styles.changeRegisterManageButton}`}
                     onClick={closeChangeRegisterModal}
                   >
@@ -16702,9 +16464,7 @@ export default function AssetRegisterClient({
                             <div className={styles.assetRegisterMoveNoTarget}>
                               <p>Create another Asset Register before moving this asset.</p>
                               <Link
-                                href={isAccountantWorkspace && accountantShareId
-                                  ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
-                                  : registerManagementHref}
+                                href={registerManagementHref}
                                 className={`${styles.primaryButton} ${styles.assetRegisterMoveCreateButton}`}
                                 onClick={closeAssetRegisterMoveManager}
                               >
@@ -17124,7 +16884,7 @@ export default function AssetRegisterClient({
                             {isAssetGroupDropTarget ? (
                               <span className={styles.assetGroupDropPrompt} role="status">Drop asset here</span>
                             ) : null}
-                            {groupAnchorAsset && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
+                            {groupAnchorAsset && (canUseOwnerOnlyAssetActions) ? (
                               <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${group.name}`}>
                                 <button
                                   type="button"
@@ -17362,7 +17122,7 @@ export default function AssetRegisterClient({
                           className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${costBudgetStatus ? styles.assetCardBudgetWarning : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
                           data-cost-budget-status={costBudgetStatus || undefined}
                         >
-                        {(canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
+                        {(canUseOwnerOnlyAssetActions) ? (
                           <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${asset.title}`}>
                             <button
                               type="button"
@@ -17461,7 +17221,7 @@ export default function AssetRegisterClient({
                               </div>
                             </div>
 
-                            <div className={`${styles.assetHeaderActions} ${isAccountantWorkspace ? styles.assetHeaderActionsAccountant : ''}`}>
+                            <div className={`${styles.assetHeaderActions} ${''}`}>
                               {estimateNeedsUpdate && canUseOwnerOnlyAssetActions ? (
                                 <button
                                   type="button"
@@ -17485,17 +17245,7 @@ export default function AssetRegisterClient({
                                 </button>
                               ) : null}
 
-                              {isAccountantWorkspace ? (
-                                <button
-                                  type="button"
-                                  className={`${styles.optionsButton} ${styles.cardOptionsButton} ${styles.cardAccountantNoteButton}`}
-                                  onClick={() => openAccountantNoteModal(asset)}
-                                  aria-label={`Leave a note on ${asset.title}`}
-                                >
-                                  <NoteIcon className={styles.buttonIcon} />
-                                  <span>Note</span>
-                                </button>
-                              ) : null}
+                              {null}
 
                               <button
                                 type="button"
@@ -17912,7 +17662,7 @@ export default function AssetRegisterClient({
 
                                   <div className={styles.assetDocumentsPanel}>
                                     <div className={styles.assetDocumentsCardShell}>
-                                      {canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? (
+                                      {canUseOwnerOnlyAssetActions ? (
                                         <button
                                           type="button"
                                           className={`${styles.previewUploadPill} ${styles.assetDocumentsUploadPill}`}
@@ -19880,7 +19630,6 @@ export default function AssetRegisterClient({
                       </div>
                     ) : null}
 
-
                     {pendingDocumentFiles.length ? (
                       <div className={styles.documentDraftList}>
                         {pendingDocumentFiles.map((file, index) => (
@@ -20813,12 +20562,12 @@ export default function AssetRegisterClient({
                                   </span>
                                   <span className={styles.assetQuotePartnerMeta}>
                                     <span>{quotePartnerLocation(partner)}</span>
-                                    {!partner.isAim4priceManaged ? (
+                                    {(
                                       <span>{quotePartnerServicesDisplay(partner)}</span>
-                                    ) : null}
+                                    )}
                                     {partner.serviceRadiusKm != null ? <span>{quotePartnerRadiusDisplay(partner)}</span> : null}
                                   </span>
-                                  {!partner.isAim4priceManaged && partner.brandFocus ? (
+                                  {partner.brandFocus ? (
                                     <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>
                                   ) : null}
                                   <span className={styles.assetQuotePartnerAction}>
@@ -20946,19 +20695,13 @@ export default function AssetRegisterClient({
                                     )}
                                   </span>
                                   <div className={styles.assetQuoteSelectedCompanyTitle}>
-                                    {selectedQuotePartner.isAim4priceManaged ? (
-                                      <span className={styles.assetQuoteManagedLabel}><i aria-hidden="true" />Aim4price service area</span>
-                                    ) : null}
+                                    {null}
                                     <strong>{quotePartnerName(selectedQuotePartner)}</strong>
                                     <span>{quotePartnerLocation(selectedQuotePartner)}</span>
                                   </div>
                                 </div>
 
-                                {selectedQuotePartner.isAim4priceManaged ? (
-                                  <p className={styles.assetQuoteManagedSelectedNotice}>
-                                    Aim4price will find a suitable provider for this area. Nothing is shared with an external provider without your approval.
-                                  </p>
-                                ) : null}
+                                {null}
 
                                 <div className={styles.assetQuoteSelectedContactList}>
                                   {selectedQuotePartner.googleMapsUrl ? <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartner.googleMapsUrl} target="_blank" rel="noreferrer">View business on Google</a> : null}
@@ -21033,33 +20776,13 @@ export default function AssetRegisterClient({
                                 {isFullRegisterQuoteLead
                                   ? isAssetGroupShare
                                     ? `This sends one organised snapshot containing only ${activeShareName} and its grouped assets.`
-                                    : selectedQuotePartners.length === 1 && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
-                                    ? 'This grants the selected accountant live access to the latest authorised information in this Asset Register.'
                                     : selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal'
                                       ? `Choose the assets ${selectedQuotePartners.length === 1 ? 'this company' : 'these companies'} can work with.`
                                       : 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
                                   : 'This sends one asset only. It does not share the full register.'}
                               </p>
 
-                              {isFullRegisterQuoteLead && !isAssetGroupShare && selectedQuotePartners.length === 1 && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' ? (
-                                <div className={styles.assetLifecycleFields}>
-                                  <button type="button" className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`} onClick={() => setQuoteAllowDirectUpdates((current) => !current)} aria-pressed={quoteAllowDirectUpdates}>
-                                    <span className={`${styles.assetQuoteTrackingCheckbox} ${quoteAllowDirectUpdates ? styles.assetQuoteTrackingCheckboxActive : ''}`} aria-hidden="true">{quoteAllowDirectUpdates ? '✓' : ''}</span>
-                                    <span className={styles.assetQuoteTrackingCopy}>
-                                      <strong>Allow direct updates</strong>
-                                      <small>Permit immediate accountant finance changes, document uploads and accounting carrying-value references. Every change is audited.</small>
-                                    </span>
-                                  </button>
-                                  <button type="button" className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`} onClick={() => setQuoteIncludeFuelLedger((current) => !current)} aria-pressed={quoteIncludeFuelLedger}>
-                                    <span className={`${styles.assetQuoteTrackingCheckbox} ${quoteIncludeFuelLedger ? styles.assetQuoteTrackingCheckboxActive : ''}`} aria-hidden="true">{quoteIncludeFuelLedger ? '✓' : ''}</span>
-                                    <span className={styles.assetQuoteTrackingCopy}><strong>Share Fuel Ledger reports</strong><small>Read-only access to authorised fuel records and downloads.</small></span>
-                                  </button>
-                                  <button type="button" className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`} onClick={() => setQuoteIncludeCostLedger((current) => !current)} aria-pressed={quoteIncludeCostLedger}>
-                                    <span className={`${styles.assetQuoteTrackingCheckbox} ${quoteIncludeCostLedger ? styles.assetQuoteTrackingCheckboxActive : ''}`} aria-hidden="true">{quoteIncludeCostLedger ? '✓' : ''}</span>
-                                    <span className={styles.assetQuoteTrackingCopy}><strong>Share Cost Ledger reports</strong><small>Read-only access to authorised cost records and downloads.</small></span>
-                                  </button>
-                                </div>
-                              ) : null}
+                              {null}
 
                               {isFullRegisterQuoteLead && (selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal') ? (
                                 isAssetGroupShare ? (
@@ -21144,13 +20867,9 @@ export default function AssetRegisterClient({
                             <div className={styles.assetQuotePopiaBox}>
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
-                                {hasManagedAssistanceSelection
-                                  ? `By sending this request, you allow Aim4price to share the selected asset information and your saved business contact details with the relevant Aim4price master assistance account. Aim4price will help locate a suitable provider and will not share your assets with an external provider without your further approval.`
-                                  : isFullRegisterQuoteLead
+                                {isFullRegisterQuoteLead
                                   ? isAssetGroupShare
                                     ? `By sending this request, you allow Aim4price to share ${activeShareName}, its grouped asset information and your saved business contact details with the selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}.`
-                                    : selectedQuotePartners.length === 1 && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
-                                    ? `By sending this request, you allow Aim4price to share live Asset Register information and your saved business contact details with the chosen accountant.${quoteAllowDirectUpdates ? ' You also allow the accountant to save the selected direct updates, with audit history.' : ' The workspace will remain read-only.'}`
                                     : selectedQuoteOption.leadType === 'replacement_quote'
                                       ? `By continuing, you allow Aim4price to share the selected assets and your saved business contact details with the selected ${selectedQuotePartners.length === 1 ? 'dealer' : 'dealers'}. Ongoing access uses the permissions shown and can be revoked.`
                                       : `By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your saved business contact details with the selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}.`
@@ -21158,9 +20877,7 @@ export default function AssetRegisterClient({
                                 {' '}This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
                               <p>
-                                {hasManagedAssistanceSelection
-                                  ? 'You confirm that you may share the selected asset information and understand that the chosen town represents a service area, not a physical Aim4price branch.'
-                                  : isFullRegisterQuoteLead
+                                {isFullRegisterQuoteLead
                                   ? isAssetGroupShare
                                     ? `You confirm that you may share every grouped asset in this umbrella and understand that the selected ${selectedQuotePartners.length === 1 ? 'company may' : 'companies may'} contact you outside Aim4price.`
                                     : selectedQuoteOption.leadType === 'replacement_quote'
@@ -21324,77 +21041,9 @@ export default function AssetRegisterClient({
         </div>
       ) : null}
 
-      {accountantNoteAsset && isAccountantWorkspace ? (
-        <div className={styles.modalOverlay} data-website-overlay>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={closeAccountantNoteModal} />
+      {null}
 
-          <div
-            className={`${styles.modalCard} ${styles.sharedNoteModal} ${styles.accountantNoteModal}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="accountant-note-title"
-          >
-            <div className={styles.modalHeader}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="accountant-note-title">Leave a note</h3>
-                <p>{accountantNoteAsset.title} · {accountantAccess?.ownerBusinessName || 'Asset owner'}</p>
-              </div>
-
-              <button
-                type="button"
-                className={styles.modalCloseButton}
-                onClick={closeAccountantNoteModal}
-                aria-label="Close note modal"
-                disabled={isSavingAccountantNote}
-              >
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
-            </div>
-
-            <div className={styles.accountantNoteBody}>
-              <label className={`${styles.field} ${styles.sharedNoteField}`}>
-                <span>Note to asset owner</span>
-                <textarea
-                  className={styles.sharedNoteTextarea}
-                  value={accountantNoteDraft}
-                  onChange={(event) => setAccountantNoteDraft(event.target.value)}
-                  placeholder="Write your note here."
-                  disabled={isSavingAccountantNote}
-                  autoFocus
-                />
-              </label>
-              <p className={styles.accountantNoteHint}>This note will appear on the owner&apos;s Asset Register.</p>
-            </div>
-
-            <div className={`${styles.formActions} ${styles.sharedNoteActions} ${styles.accountantNoteActions}`}>
-              <button type="button" className={styles.secondaryButton} onClick={closeAccountantNoteModal} disabled={isSavingAccountantNote}>
-                Cancel
-              </button>
-              <button type="button" className={styles.primaryButton} onClick={() => void submitAccountantNote()} disabled={isSavingAccountantNote || !accountantNoteDraft.trim()}>
-                {isSavingAccountantNote ? 'Saving...' : 'Save note'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {activeAsset && isAccountantWorkspace ? (
-        accountantShareId && accountantAccess ? (
-          <AccountantAssetManageModal
-            shareId={accountantShareId}
-            asset={activeAsset}
-            assets={assets}
-            allowDirectUpdates={accountantAccess.allowDirectUpdates}
-            includeFuelLedger={accountantAccess.includeFuelLedger}
-            includeCostLedger={accountantAccess.includeCostLedger}
-            onClose={closeActionDialog}
-            onChanged={(message) => {
-              setNotice({ tone: 'success', message });
-              window.dispatchEvent(new Event('aim4price:asset-register-updated'));
-            }}
-          />
-        ) : null
-      ) : activeAsset ? (
+      {activeAsset ? (
         <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionDialog} />
 
@@ -21455,7 +21104,7 @@ export default function AssetRegisterClient({
                     </span>
                   </Link>
 
-                  {accountProfile?.accountType === 'owner' && !isAccountantWorkspace ? (
+                  {accountProfile?.accountType === 'owner' ? (
                     <button
                       type="button"
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
@@ -23246,7 +22895,7 @@ export default function AssetRegisterClient({
           accountDesign
           assetId={documentUploadAsset.id}
           assetTitle={documentUploadAsset.title}
-          uploadEndpoint={accountantShareId ? assetVaultDocumentsUrl(documentUploadAsset.id) : '/api/documents'}
+          uploadEndpoint={'/api/documents'}
           onClose={() => closeAssetDocumentUpload(documentUploadAsset.id)}
           onUploaded={(documents, outcome) => handleVaultDocumentsUploaded(documentUploadAsset, documents, outcome)}
         />
@@ -23275,15 +22924,7 @@ export default function AssetRegisterClient({
         canDownloadMap={Boolean(assetGroupModalGroup && assetsForGroup(assetGroupModalGroup).some(hasAssetGpsCoordinates))}
       />
 
-      {isAccountantReportsOpen && accountantShareId && accountantAccess ? (
-        <AccountantRegisterReportsModal
-          shareId={accountantShareId}
-          registerName={activeRegister?.businessName || accountantAccess.ownerBusinessName || 'Asset Register'}
-          includeFuelLedger={accountantAccess.includeFuelLedger}
-          includeCostLedger={accountantAccess.includeCostLedger}
-          onClose={() => setIsAccountantReportsOpen(false)}
-        />
-      ) : null}
+      {null}
     </main>
   );
 }

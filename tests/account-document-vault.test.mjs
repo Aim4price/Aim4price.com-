@@ -225,7 +225,6 @@ test('Documents follows Cost Ledger in owner navigation and remains in the owner
   assert.match(ownerNavigation, /href: '\/my-invoices', label: 'Cost Ledger' \},\s*\{ key: 'documents', href: '\/documents', label: 'Documents' \}/);
   assert.doesNotMatch(accountMenus, /href: '\/', label: 'Home'/);
   assert.doesNotMatch(footer, /href: '\/documents', label: 'Documents'/);
-  assert.match(header, /navItems\.filter\(\(item\) => item\.href !== '\/'\)/);
 });
 
 test('the account dropdown scrolls when its actions exceed the viewport', () => {
@@ -383,4 +382,3 @@ test('upload document notes stay contained inside the details panel', () => {
   assert.match(styles, /\.uploadWizardFields \.formGrid\s*\{[^}]*min-height:\s*0;[^}]*margin:\s*0/);
   assert.match(styles, /\.uploadWizardFields \.notesField textarea\s*\{[^}]*box-sizing:\s*border-box;[^}]*display:\s*block;[^}]*min-height:\s*6\.5rem/);
 });
-

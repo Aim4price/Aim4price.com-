@@ -21,7 +21,7 @@ import { BUSINESS_SERVICE_OPTIONS, isBusinessService, type BusinessService } fro
 
 type Mode = "signup" | "login" | "forgot";
 type SignupStep = 1 | 2 | 3;
-type SignupAccountType = "business" | "owner" | "middleman" | "dealer" | "finance" | "insurance" | "licensing";
+type SignupAccountType = "business" | "owner" | "middleman" | "dealer";
 type SignupAccountSubtype =
   | BusinessService
   | "contributor"
@@ -146,14 +146,6 @@ const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
     { value: "construction-company", label: "Construction company" },
     { value: "asset-owner", label: "Private / fleet asset owner" },
   ],
-  finance: [
-    { value: "bank", label: "Bank / finance institution" },
-    { value: "finance-house", label: "Equipment finance house" },
-    { value: "accountant", label: "Accountant / asset adviser" },
-  ],
-  insurance: [
-    { value: "short-term-insurer", label: "Short-term insurance provider" },
-  ],
   middleman: [
     { value: "equipment-middleman", label: "Equipment middleman" },
   ],
@@ -161,10 +153,6 @@ const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
     { value: "machinery-dealer", label: "Machinery dealer" },
     { value: "motor-dealer", label: "Motor dealer" },
     { value: "auctioneer", label: "Auctioneer / broker" },
-  ],
-  licensing: [
-    { value: "licence-renewal-expert", label: "Licence renewal expert" },
-    { value: "fleet-licensing-service", label: "Fleet licensing service" },
   ],
 };
 
@@ -422,7 +410,6 @@ function CustomSelect<T extends string>({
     </div>
   );
 }
-
 
 function getDefaultSubtype(
   accountType: SignupAccountType,
@@ -1193,7 +1180,6 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                             <small>Choose what fits. Paid workspaces require activation after signup.</small>
                           </div>
                         </div>
-
 
                         <div className={styles.signupFieldGrid}>
                           <div className={styles.field}>

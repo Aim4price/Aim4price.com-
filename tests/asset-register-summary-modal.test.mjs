@@ -97,10 +97,7 @@ test('register summary opens the canonical browser PDF flow', () => {
   assert.match(summaryExportBuilder, /reportKind: 'summary'/);
   assert.match(summaryExportBuilder, /params\.set\('scope', registerIds\.length >= 2 \? 'combined' : 'all'\)/);
   assert.match(summaryExportBuilder, /params\.set\('registerId', cleanedRegisterId\)/);
-  assert.match(summaryExportBuilder, /params\.set\('accountantShareId', accountantShareId\)/);
-  assert.match(summaryExportBuilder, /params\.set\('accountantRegisterId', cleanedRegisterId\)/);
   assert.match(summaryHandlers, /buildAssetRegisterSummaryExportUrl\(/);
-  assert.match(summaryHandlers, /activeRegister\?\.id \|\| activeRegisterId,[\s\S]*?'html',[\s\S]*?accountantShareId/);
   assert.match(summaryHandlers, /const didOpen = openCanonicalReportUrl\(url\);/);
   assert.doesNotMatch(summaryHandlers, /window\.open\(url/);
   assert.match(summaryHandlers, /The register summary PDF window was blocked\./);

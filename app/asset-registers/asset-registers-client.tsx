@@ -31,7 +31,6 @@ type QrLabelLayout = "full-labels-10-per-page" | "small-qr-25mm";
 
 const COMBINED_REGISTER_ID = "__combined_asset_registers__";
 
-
 type AssetRegisterSummary = {
   id: string;
   userId: string;
@@ -289,16 +288,12 @@ function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function buildOpenHref(registerId: string, accountantShareId?: string, registerBaseHref = '/asset-register'): string {
-  return accountantShareId
-    ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?registerId=${encodeURIComponent(registerId)}`
-    : `${registerBaseHref}?registerId=${encodeURIComponent(registerId)}`;
+function buildOpenHref(registerId: string, registerBaseHref = '/asset-register'): string {
+  return `${registerBaseHref}?registerId=${encodeURIComponent(registerId)}`;
 }
 
-function buildCombinedOpenHref(accountantShareId?: string, registerBaseHref = '/asset-register'): string {
-  return accountantShareId
-    ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?scope=combined`
-    : registerBaseHref === '/asset-register' ? registerBaseHref : `${registerBaseHref}?scope=combined`;
+function buildCombinedOpenHref(registerBaseHref = '/asset-register'): string {
+  return registerBaseHref === '/asset-register' ? registerBaseHref : `${registerBaseHref}?scope=combined`;
 }
 
 function normalizeLogoUrls(value: unknown): string[] {
@@ -529,7 +524,6 @@ function buildExportUrl(
   scope: ExportScope,
   selectedRegisterIds: string[],
   entityName: string,
-  accountantShareId?: string,
 ): string {
   const params = new URLSearchParams({
     format,
@@ -540,7 +534,6 @@ function buildExportUrl(
   if (scope !== "all") {
     params.set("registerIds", selectedRegisterIds.join(","));
   }
-  if (accountantShareId) params.set("accountantShareId", accountantShareId);
 
   return `/api/asset-register/export?${params.toString()}`;
 }
@@ -549,7 +542,6 @@ function buildScopedSummaryUrl(
   scope: ExportScope,
   selectedRegisterIds: string[],
   entityName: string,
-  accountantShareId?: string,
 ): string {
   const params = new URLSearchParams({
     format: "html",
@@ -565,7 +557,6 @@ function buildScopedSummaryUrl(
   if (scope !== "all") {
     params.set("registerIds", selectedRegisterIds.join(","));
   }
-  if (accountantShareId) params.set("accountantShareId", accountantShareId);
 
   return `/api/asset-register/export?${params.toString()}`;
 }
@@ -1315,23 +1306,18 @@ function RegisterTargetDropdown({
 }
 
 export default function AssetRegistersClient({
-  accountantShareId,
   showAppHeader = true,
   registerBaseHref = '/asset-register',
   showCombinedRegister = true,
 }: {
-  accountantShareId?: string;
+
   showAppHeader?: boolean;
   registerBaseHref?: string;
   showCombinedRegister?: boolean;
 } = {}) {
   const router = useRouter();
-  const registersApiUrl = accountantShareId
-    ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/owner-registers`
-    : "/api/asset-registers";
-  const registerItemsApiUrl = (registerId: string) => accountantShareId
-    ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}?registerId=${encodeURIComponent(registerId)}`
-    : `/api/asset-register?registerId=${encodeURIComponent(registerId)}`;
+  const registersApiUrl = "/api/asset-registers";
+  const registerItemsApiUrl = (registerId: string) => `/api/asset-register?registerId=${encodeURIComponent(registerId)}`;
   const [registers, setRegisters] = useState<AssetRegisterSummary[]>([]);
   const [createDraft, setCreateDraft] =
     useState<RegisterDraft>(emptyRegisterDraft);
@@ -1737,7 +1723,7 @@ export default function AssetRegistersClient({
   }
 
   function openCombinedRegister() {
-    router.push(buildCombinedOpenHref(accountantShareId, registerBaseHref));
+    router.push(buildCombinedOpenHref(registerBaseHref));
   }
 
   function closeManagePanel() {
@@ -1773,7 +1759,7 @@ export default function AssetRegistersClient({
 
   function openRegister(register: AssetRegisterSummary) {
     if (register.isSelected) {
-      router.push(buildOpenHref(register.id, accountantShareId, registerBaseHref));
+      router.push(buildOpenHref(register.id, registerBaseHref));
       return;
     }
 
@@ -1862,7 +1848,7 @@ export default function AssetRegistersClient({
 
     const selectedIds = scope === "all" ? [] : targetRegisters.map((register) => register.id);
     const entityName = buildDefaultEntityName(scope, targetRegisters);
-    const url = buildScopedSummaryUrl(scope, selectedIds, entityName, accountantShareId);
+    const url = buildScopedSummaryUrl(scope, selectedIds, entityName);
 
     setIsExporting(true);
 
@@ -2128,7 +2114,7 @@ export default function AssetRegistersClient({
           message: isSummaryFlow ? "Asset register summary PDF opened." : "Asset registers PDF opened.",
         });
       } else {
-        const response = await fetch(buildExportUrl(resolvedExportFormat, exportScope, selectedIds, entityName, accountantShareId), {
+        const response = await fetch(buildExportUrl(resolvedExportFormat, exportScope, selectedIds, entityName), {
           cache: "no-store",
           credentials: "include",
         });
@@ -2307,9 +2293,7 @@ export default function AssetRegistersClient({
     formData.append("registerId", registerId);
     files.forEach((file) => formData.append("files", file));
 
-    const uploadUrl = accountantShareId
-      ? `/api/asset-register/uploads?accountantShareId=${encodeURIComponent(accountantShareId)}`
-      : "/api/asset-register/uploads";
+    const uploadUrl = "/api/asset-register/uploads";
     const response = await fetch(uploadUrl, {
       method: "POST",
       credentials: "include",
@@ -2476,7 +2460,7 @@ export default function AssetRegistersClient({
       });
 
       if (openAfterSelect) {
-        router.push(buildOpenHref(data.register.id, accountantShareId, registerBaseHref));
+        router.push(buildOpenHref(data.register.id, registerBaseHref));
       }
     } catch (error) {
       setNotice({
@@ -2558,9 +2542,7 @@ export default function AssetRegistersClient({
     const targetRegister = managedMoveTargets.find((target) => target.id === targetRegisterId);
 
     try {
-      const moveApiUrl = accountantShareId
-        ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/owner-registers/move-assets`
-        : "/api/asset-registers/move-assets";
+      const moveApiUrl = "/api/asset-registers/move-assets";
       const response = await fetch(moveApiUrl, {
         method: "PUT",
         credentials: "include",
@@ -3346,7 +3328,7 @@ export default function AssetRegistersClient({
 
             <div className={styles.manageModalScrollArea}>
               <div className={styles.manageActionPanel}>
-                <div className={`${styles.manageActionGrid} ${isManagingCombined ? styles.manageActionGridCombined : ""} ${accountantShareId && !isManagingCombined ? styles.manageActionGridAccountant : ""}`}>
+                <div className={`${styles.manageActionGrid} ${isManagingCombined ? styles.manageActionGridCombined : ""} ${""}`}>
                   {!isManagingCombined ? (
                     <button
                       type="button"
@@ -3383,7 +3365,7 @@ export default function AssetRegistersClient({
                     <span>Download</span>
                   </button>
 
-                  {!accountantShareId ? <button
+                  {<button
                     type="button"
                     className={`${styles.manageActionButton} ${styles.manageQrAction}`}
                     onClick={() => void openQrModal()}
@@ -3391,7 +3373,7 @@ export default function AssetRegistersClient({
                   >
                     <QrCodeIcon className={styles.manageActionIcon} />
                     <span>QR Codes</span>
-                  </button> : null}
+                  </button>}
                 </div>
 
                 <label className={`${styles.searchWrap} ${styles.manageAssetSearchWrap}`}>
@@ -3960,4 +3942,3 @@ export default function AssetRegistersClient({
     </>
   );
 }
-

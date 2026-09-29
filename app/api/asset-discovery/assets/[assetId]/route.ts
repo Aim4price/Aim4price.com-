@@ -15,13 +15,13 @@ export async function GET(_request: Request, context: RouteContext) {
   }
   try {
     const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
-    if (!["owner", "dealer", "licensing"].includes(profile.accountType)) {
+    if (!["owner", "dealer"].includes(profile.accountType)) {
       return NextResponse.json({ ok: false, error: "Asset details are not available." }, { status: 403 });
     }
     const details = await getAssetDiscoveryAssetDetails({
       assetId: context.params.assetId,
       viewerUserId: session.user.id,
-      viewerAccountType: profile.accountType as "owner" | "dealer" | "licensing",
+      viewerAccountType: profile.accountType as "owner" | "dealer",
     });
     return NextResponse.json({ ok: true, details }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {

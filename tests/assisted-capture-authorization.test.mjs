@@ -4,23 +4,6 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('accountant capture writes require direct-update permission and listings honor each shared ledger', async () => {
-  const [workspace, statusRoute, invoiceRoute, fuelRoute] = await Promise.all([
-    read('lib/owner-workspace-access.ts'),
-    read('app/api/capture-requests/route.ts'),
-    read('app/api/capture-requests/invoice/route.ts'),
-    read('app/api/capture-requests/fuel-slip/route.ts'),
-  ]);
-
-  assert.match(workspace, /requireWrite\?: boolean/);
-  assert.match(workspace, /requireWrite: options\.requireWrite/);
-  assert.match(invoiceRoute, /ledger: 'cost', requireWrite: true/);
-  assert.match(fuelRoute, /ledger: 'fuel', requireWrite: true/);
-  assert.match(statusRoute, /requestedType === 'invoice'[\s\S]*?'cost'[\s\S]*?requestedType === 'fuel_slip'[\s\S]*?'fuel'/);
-  assert.match(statusRoute, /accountantAccess\.includeCostLedger/);
-  assert.match(statusRoute, /accountantAccess\.includeFuelLedger/);
-});
-
 test('capture intake rejects non-owner direct accounts and gates owner-app mutations and assets', async () => {
   const [invoiceRoute, fuelRoute] = await Promise.all([
     read('app/api/capture-requests/invoice/route.ts'),
@@ -28,7 +11,7 @@ test('capture intake rejects non-owner direct accounts and gates owner-app mutat
   ]);
 
   for (const route of [invoiceRoute, fuelRoute]) {
-    assert.match(route, /!context\.accountantAccess && !ownerAppAccess/);
+    assert.match(route, /!ownerAppAccess/);
     assert.match(route, /ownerAppAccess\?\.sessionKind === 'owner-app-user'/);
     assert.match(route, /ownerAppCan\(ownerAppAccess, 'manage_finance'\)/);
     assert.match(route, /ownerAppCanAccessAsset\(ownerAppAccess,/);
@@ -43,7 +26,7 @@ test('owner-app capture status, review detail, decisions and files stay inside a
     read('app/api/capture-requests/[requestId]/files/[fileId]/route.ts'),
   ]);
 
-  assert.match(statusRoute, /!resolved\.context\.accountantAccess && !ownerAppAccess/);
+  assert.match(statusRoute, /!ownerAppAccess/);
   assert.match(statusRoute, /ownerAppAccess\?\.sessionKind === 'owner-app-user' && ownerAppAccess\.assetScope === 'selected'/);
   assert.match(statusRoute, /capture\.assetId && ownerAppCanAccessAsset\(ownerAppAccess, capture\.assetId\)/);
   assert.match(decisionRoute, /ownerAppCanReachCapture/);
@@ -118,4 +101,3 @@ test('failed authenticated intake removes unlinked uploads in both database and 
   assert.match(uploads, /queue_deleted_bucket_upload_trigger/);
   assert.match(uploads, /capture_file\.promoted_upload_id = upload\.id::text/);
 });
-

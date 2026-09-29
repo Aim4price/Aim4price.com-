@@ -2,7 +2,7 @@ export const BILLING_ISSUER = {
   name: 'Aim4price', address: '14 Saffraan Ave, Denneoord, George, 6529',
   email: 'Aim4price@gmail.com', bank: 'ABSA', accountNumber: '4113 0591 64', vat: 'No VAT applicable',
 } as const;
-export const BILLING_ACCOUNT_TYPES = ['owner', 'dealer', 'finance', 'insurance', 'licensing'] as const;
+export const BILLING_ACCOUNT_TYPES = ['owner', 'dealer'] as const;
 export type BillingPlan = { accountType: string; description: string; amountCents: number; interval: 'once' | 'monthly' | 'annual'; dueDays: number; version: number; enabled: boolean };
 export type BillingLine = { description: string; quantity: number; unitCents: number; totalCents: number; workSessionId?: string };
 export type BillingCustomer = { name: string; email: string; address: string; businessName?: string; reference?: string };

@@ -1,3 +1,4 @@
+import { retiredBusinessSubtype, isRetiredAssistanceAccount } from "./retired-workspaces";
 import { getDb } from "./db";
 import {
   accountStatusLabel,
@@ -311,6 +312,7 @@ function resolveAccountType(
   accountType: unknown,
   accountSubtype: unknown,
 ): string {
+  if (retiredBusinessSubtype(accountType, accountSubtype)) return "business";
   const normalizedType = normalizeAccountType(accountType);
   const normalizedSubtype = asText(accountSubtype)
     .toLowerCase()
@@ -895,7 +897,7 @@ function mapAccountProfileRow(
     businessName: asText(row?.business_name),
     phone: asText(row?.phone),
     accountType,
-    accountSubtype: normalizeAccountSubtype(accountType, row?.account_subtype),
+    accountSubtype: retiredBusinessSubtype(row?.account_type, row?.account_subtype) ?? normalizeAccountSubtype(accountType, row?.account_subtype),
     accountStatus,
     accountStatusLabel: accountStatusLabel(accountStatus),
     introducedByOption,
@@ -975,9 +977,9 @@ export async function createInitialAccountProfile(
   await ensureAccountProfileColumns();
 
   const db = getDb();
-  const initialAccountType = normalizeAccountType(input?.accountType);
+  const initialAccountType = retiredBusinessSubtype(input?.accountType, input?.accountSubtype) ? "business" : normalizeAccountType(input?.accountType);
   const hasExplicitAccountType = Boolean(asText(input?.accountType));
-  const initialAccountSubtype = normalizeAccountSubtype(
+  const initialAccountSubtype = retiredBusinessSubtype(input?.accountType, input?.accountSubtype) ?? normalizeAccountSubtype(
     initialAccountType,
     input?.accountSubtype,
   );
@@ -1139,7 +1141,10 @@ export async function upsertAccountProfile(
         existingAccount.account_subtype,
       )
     : resolveAccountType(input.accountType, input.accountSubtype);
-  const normalizedAccountSubtype = normalizeAccountSubtype(
+  const normalizedAccountSubtype = retiredBusinessSubtype(
+    existingAccount?.account_type ?? input.accountType,
+    existingAccount?.account_subtype ?? input.accountSubtype,
+  ) ?? normalizeAccountSubtype(
     normalizedAccountType,
     asText(existingAccount?.account_subtype) || input.accountSubtype,
   );
@@ -1354,7 +1359,7 @@ export async function isAccountActive(user: {
   const result = await getDb().query<{ account_type: string; account_status: string }>(
     'SELECT account_type, account_status FROM account_profiles WHERE user_id = $1 LIMIT 1', [user.id],
   );
-  return result.rows[0]?.account_type !== "business" && normalizeAccountStatus(result.rows[0]?.account_status) === "active";
+  return !isRetiredAssistanceAccount(user) && ["owner", "dealer"].includes(result.rows[0]?.account_type) && normalizeAccountStatus(result.rows[0]?.account_status) === "active";
 }
 
 export async function markAccountLastActive(user: {

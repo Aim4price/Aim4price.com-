@@ -747,7 +747,6 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
     const enquiries = await listPendingAssetDiscoveryEnquiriesForOwner(userId);
 
     return enquiries.map((enquiry) => {
-      const licensingOffer = enquiry.requesterAccountType === 'licensing';
       const assetName = `${enquiry.asset.brand} ${enquiry.asset.model}`.trim();
 
       return {
@@ -755,10 +754,8 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
         actionRequired: true,
         category: 'asset_discovery',
         tone: 'warning',
-        title: licensingOffer ? 'Licence renewal help offered' : '#1 priority · Discovery enquiry',
-        body: licensingOffer
-          ? `A licence renewal expert offered to help with your ${assetName}${enquiry.asset.renewalWindow ? `, due ${enquiry.asset.renewalWindow}` : ''}.`
-          : `Another user is looking for a machine like your ${assetName}. Interested in selling it?`,
+        title: '#1 priority · Discovery enquiry',
+        body: `Another user is looking for a machine like your ${assetName}. Interested in selling it?`,
         href: '',
         createdAtIso: isoFallback(enquiry.createdAtIso || enquiry.updatedAtIso),
         assetId: enquiry.assetId,
@@ -778,7 +775,6 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
 
     return enquiries.map((enquiry) => {
       const approved = enquiry.status === 'approved';
-      const licensingOffer = enquiry.requesterAccountType === 'licensing';
       const assetName = `${enquiry.asset.brand} ${enquiry.asset.model}`.trim();
       const retryDate = enquiry.status === 'temporarily_denied'
         && enquiry.requestAgainAtIso
@@ -790,14 +786,8 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
         actionRequired: false,
         category: 'asset_discovery',
         tone: approved ? 'success' : 'warning',
-        title: licensingOffer
-          ? approved ? 'Renewal help approved' : 'Renewal help declined'
-          : approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
-        body: licensingOffer
-          ? approved
-            ? `The owner approved renewal help for ${assetName}. It is marked Won in Discovery.`
-            : `The owner declined renewal help for ${assetName}. You cannot offer again for this asset.`
-          : approved
+        title: approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
+        body: approved
             ? `Your enquiry for ${assetName} was approved.`
             : `The owner is not interested in selling ${assetName} right now.${retryDate ? ` You can enquire again after ${retryDate}.` : ''}`,
         href: '',
@@ -898,7 +888,6 @@ async function listQrScanNotifications(userId: string): Promise<HeaderNotificati
   }
 }
 
-
 async function listFuelNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
     const ledger = await listFuelLedger(userId);
@@ -949,7 +938,7 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
       ])
     : await Promise.all([
         listPartnerLeadNotifications(input.userId),
-        accountType === 'dealer' || accountType === 'licensing'
+        accountType === 'dealer'
           ? listRequesterAssetDiscoveryNotifications(input.userId)
           : Promise.resolve([]),
         accountType === 'dealer'
@@ -967,4 +956,3 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
     )
     .slice(0, MAX_COMPUTED_NOTIFICATIONS);
 }
-

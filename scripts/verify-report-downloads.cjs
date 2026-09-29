@@ -38,7 +38,7 @@ const scenarios = [
  ['fuel','fuel',['Download']], ['slips','fuel&view=slips',['Download']],
  ['asset-reports','register',['@asset-manage','Reports']], ['leads','leads',['Open','@asset-manage','Reports']],
  ['dealer-costs','dealer-costs',[]], ['dealer-maintenance','dealer-maintenance',[]],
- ['accountant','accountant',[]], ['group','group',[]], ['owner','owner',[]],
+ ['group','group',[]], ['owner','owner',[]],
  ['register-options','register',['Download','PDF report','Next']],
  ['registers-format','registers',['Download','All asset registers']],
  ['cost-timeline','costs',['Download','PDF','Next']],

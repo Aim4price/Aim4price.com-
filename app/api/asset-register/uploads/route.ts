@@ -11,7 +11,6 @@ import {
   isAllowedAssetRegisterDocument,
 } from '../../../../lib/asset-register-uploads';
 import { getAssetRegisterForUser, updateAssetRegisterLogo } from '../../../../lib/asset-registers';
-import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,10 +52,10 @@ export async function POST(request: NextRequest) {
 
   if (!session?.user?.id) return unauthorized();
 
-  const hasAccountantShare = Boolean(request.nextUrl.searchParams.get('accountantShareId')?.trim());
-  const workspace = hasAccountantShare ? await resolveOwnerWorkspaceContext(request) : null;
-  if (workspace && !workspace.ok) return workspace.response;
-  const ownerUserId = workspace?.ok ? workspace.context.ownerUserId : session.user.id;
+  if (request.nextUrl.searchParams.has('accountantShareId') || request.nextUrl.searchParams.has('accountantRegisterId')) {
+    return NextResponse.json({ ok: false, error: 'Specialist workspaces have been retired.' }, { status: 410 });
+  }
+  const ownerUserId = session.user.id;
 
   try {
     const formData = await request.formData();

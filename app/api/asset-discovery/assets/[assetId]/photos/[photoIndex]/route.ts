@@ -23,14 +23,14 @@ export async function GET(_request: Request, context: RouteContext) {
       name: session.user.name,
       email: session.user.email,
     });
-    if (!["owner", "dealer", "licensing"].includes(profile.accountType)) {
+    if (!["owner", "dealer"].includes(profile.accountType)) {
       return new NextResponse("Not found", { status: 404 });
     }
     const photo = await getAssetDiscoveryPhoto({
       assetId: context.params.assetId,
       photoIndex,
       viewerUserId: session.user.id,
-      viewerAccountType: profile.accountType as "owner" | "dealer" | "licensing",
+      viewerAccountType: profile.accountType as "owner" | "dealer",
     });
     return new NextResponse(photo.data, {
       status: 200,

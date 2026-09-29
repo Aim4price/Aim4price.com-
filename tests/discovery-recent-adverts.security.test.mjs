@@ -248,7 +248,7 @@ test("Discovery preserves existing results and adds a separate recent-adverts vi
   assert.match(discoveryClient, /url\.searchParams\.set\("view", "recently-advertised"\)/);
   assert.match(discoveryClient, /activeDiscoveryView !== "discovery"/);
   assert.match(discoveryPage, /searchParams\?\.view/);
-  assert.match(discoveryPage, /activeAccountType !== 'licensing'/);
+  assert.match(discoveryPage, /allowRecentAdverts/);
   assert.doesNotMatch(discoveryClient, /DiscoveryMarketplaceSwitch/);
 });
 

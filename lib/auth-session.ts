@@ -1,3 +1,4 @@
+import { isRetiredAssistanceAccount } from "./retired-workspaces";
 import { currentAppRealm } from './app-realm-server';
 import { cookies, headers } from "next/headers";
 import { isAim4priceAdminEmail } from "./account-constants";
@@ -80,9 +81,8 @@ function toDate(value: string | Date | null | undefined, fallback: Date): Date {
 }
 
 async function readAuthSession(): Promise<ServerSession> {
-  return auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await auth.api.getSession({ headers: await headers() });
+  return session?.user && isRetiredAssistanceAccount(session.user) ? null : session;
 }
 
 async function readAuthUser(userId: string): Promise<AuthUserRow | null> {
@@ -157,7 +157,6 @@ async function applyAdminSupportSession(
     },
   } as AdminSupportSession;
 }
-
 
 export function isDealerAppSession(
   session: EffectiveServerSession,
@@ -288,11 +287,14 @@ export async function getServerSession(
   }
   const session = options.authSession ?? await readAuthSession();
 
+  if (session?.user && isRetiredAssistanceAccount(session.user)) return null;
   if (!session?.user?.id) {
     return session;
   }
 
   const effectiveSession = await applyAdminSupportSession(session);
+
+  if (effectiveSession?.user && isRetiredAssistanceAccount(effectiveSession.user)) return null;
 
   if (isAdminSupportSession(effectiveSession)) {
     return effectiveSession;
@@ -321,4 +323,3 @@ export async function getServerSession(
   await markRealUserActivity(session);
   return session;
 }
-

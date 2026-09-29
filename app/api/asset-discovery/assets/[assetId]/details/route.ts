@@ -26,14 +26,14 @@ export async function GET(_request: Request, context: RouteContext) {
       name: session.user.name,
       email: session.user.email,
     });
-    if (!["owner", "dealer", "licensing"].includes(profile.accountType)) {
+    if (!["owner", "dealer"].includes(profile.accountType)) {
       return NextResponse.json({ ok: false, error: "Asset details are not available." }, { status: 403 });
     }
 
     const details = await getAssetDiscoveryAssetDetails({
       assetId: context.params.assetId,
       viewerUserId: session.user.id,
-      viewerAccountType: profile.accountType as "owner" | "dealer" | "licensing",
+      viewerAccountType: profile.accountType as "owner" | "dealer",
     });
 
     // Count only successful protected opens. Admin/support and owner self-views

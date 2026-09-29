@@ -6,7 +6,6 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 const migration = read('database/migrations/78-insurance-share-deletion-cascade.sql');
 const accountDeletion = read('lib/account-deletion.ts');
-const insuranceWorkspaces = read('lib/insurance-workspaces.ts');
 
 test('insurance snapshot revisions cascade when their source share is deleted', () => {
   assert.match(
@@ -24,19 +23,6 @@ test('admin account deletion clears insurance dependants before asset leads', ()
   const workspaceDelete = accountDeletion.indexOf('delete from insurance_workspaces');
   const leadDelete = accountDeletion.indexOf('delete from asset_leads where owner_user_id');
 
-  assert.ok(revisionDelete >= 0);
-  assert.ok(workspaceDelete > revisionDelete);
-  assert.ok(leadDelete > workspaceDelete);
-});
-
-test('single insurance-share deletion is safe before and after the migration is applied', () => {
-  const functionStart = insuranceWorkspaces.indexOf('export async function deleteInsuranceShare');
-  const deletionFlow = insuranceWorkspaces.slice(functionStart);
-  const revisionDelete = deletionFlow.indexOf('delete from insurance_snapshot_revisions');
-  const workspaceDelete = deletionFlow.indexOf('delete from insurance_workspaces');
-  const leadDelete = deletionFlow.indexOf('delete from asset_leads');
-
-  assert.ok(functionStart >= 0);
   assert.ok(revisionDelete >= 0);
   assert.ok(workspaceDelete > revisionDelete);
   assert.ok(leadDelete > workspaceDelete);

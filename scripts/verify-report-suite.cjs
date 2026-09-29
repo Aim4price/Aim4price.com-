@@ -17,7 +17,7 @@ const pure = new Set([
   'report-theme', 'maintenance-report-style', 'report-print', 'simple-xlsx', 'usage-readings',
   'asset-groups-shared', 'admin-work-tracker-shared', 'report-chronology',
   'asset-depreciation-timeline', 'depreciation-umbrella-summary',
-  'insurance-cover-catalogue', 'ownership-budget-tracker',
+  'ownership-budget-tracker',
 ]);
 const cache = new Map();
 function load(file, extra = []) {
@@ -207,17 +207,6 @@ async function fixtures() {
   const admin = load('lib/admin-work-tracker-report.ts');
   reports.retainer = admin.buildAdminWorkReportHtml({ client: { name: 'Demonstration Farm', accountType: 'owner' },
     generatedAt: date, history: { period: 'month', startIso: '2026-09-01T00:00:00Z', endIso: '2026-10-01T00:00:00Z', sessions: [] } }).replace('/brand/aim4price-mark-black.png', logo);
-  const insurance = load('lib/insurance-report.ts');
-  const workspace = {
-    clientName: 'Demonstration Farm', segments: ['commercial'], industryProfiles: ['agriculture'],
-    snapshotRevisions: [], snapshotReference: 'DEMO-1', assetCount: 0, totalReplacementValue: 0,
-    overview: { currentCoverCounts: { confirmed_included: 0, confirmed_excluded: 0, unknown: 0, not_recorded: 0, covered_elsewhere: 0, not_applicable: 0 } },
-    policies: [], informationRequests: [], assessments: [], riskObjects: [], evidence: [], assets: [],
-    locations: [], exposures: [], parties: [], notes: [], latestSnapshotDiffs: [],
-  };
-  for (const type of ['summary','detailed']) reports['insurance-'+type] = insurance.buildInsuranceReportHtml({
-    workspace, broker: { displayName: 'Demo Broker', businessName: 'Demo Broker', logoUrl: logo }, type, reference: 'DEMO', generatedAtIso: date.toISOString(),
-  });
   const fuelSlips = load('lib/fuel-slip-export.ts');
   const slipRecords = Array.from({ length: 35 }, (_, i) => ({
     documentDate: '2026-09-14', supplierName: 'Demonstration Supplier', targetType: 'asset',

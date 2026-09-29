@@ -36,9 +36,9 @@ export async function POST(request: Request) {
   const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost', requireWrite: true });
   if (!resolved.ok) return resolved.response;
   const { context } = resolved;
-  const ownerAppAccess = context.accountantAccess ? null : await getOwnerAppAccess();
-  if (!context.accountantAccess && !ownerAppAccess) {
-    return NextResponse.json({ ok: false, error: 'Owner or shared accountant access is required.' }, { status: 403 });
+  const ownerAppAccess = await getOwnerAppAccess();
+  if (!ownerAppAccess) {
+    return NextResponse.json({ ok: false, error: 'Owner access is required.' }, { status: 403 });
   }
   if (ownerAppAccess?.sessionKind === 'owner-app-user' && !ownerAppCan(ownerAppAccess, 'manage_finance')) {
     return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can send invoices for capture.' }, { status: 403 });
@@ -78,17 +78,17 @@ export async function POST(request: Request) {
     });
     unlinkedUploadUrl = upload.url;
     const actor: CaptureEventActor = await getCaptureAdminActor() ?? {
-      actorType: context.accountantAccess ? 'accountant' : 'owner',
+      actorType: 'owner',
       userId: context.actorUserId,
-      displayName: context.actorName || (context.accountantAccess ? 'Accountant' : 'Asset owner'),
+      displayName: context.actorName || ('Asset owner'),
     };
     const capture = await createCaptureRequest({
       requestType: 'invoice',
-      submissionChannel: context.accountantAccess ? 'accountant_upload' : 'owner_upload',
+      submissionChannel: 'owner_upload',
       ownerUserId: context.ownerUserId,
       assetId,
       sender: {
-        type: context.accountantAccess ? 'accountant' : 'owner',
+        type: 'owner',
         name: context.actorName,
         email: context.actorEmail,
       },
@@ -138,4 +138,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: safeMessage }, { status: 400 });
   }
 }
-

@@ -6,7 +6,7 @@ const leadClient = readFileSync(new URL('../app/leads/leads-client.tsx', import.
 const leadStyles = readFileSync(new URL('../app/leads/page.module.css', import.meta.url), 'utf8');
 const trackerClient = readFileSync(new URL('../components/DealerMaintenanceTrackerClient.tsx', import.meta.url), 'utf8');
 const trackerStyles = readFileSync(new URL('../components/DealerMaintenanceTrackerClient.module.css', import.meta.url), 'utf8');
-const accountantModal = readFileSync(new URL('../components/AccountantAssetManageModal.tsx', import.meta.url), 'utf8');
+
 const ownerStyles = readFileSync(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8');
 
 const leadManage = leadClient.slice(
@@ -17,11 +17,6 @@ const leadManage = leadClient.slice(
 const trackerManage = trackerClient.slice(
   trackerClient.indexOf('{managedAsset ? ('),
   trackerClient.indexOf('{filterOpen ? (', trackerClient.indexOf('{managedAsset ? (')),
-);
-
-const accountantMenu = accountantModal.slice(
-  accountantModal.indexOf("{view === 'menu' ? ("),
-  accountantModal.indexOf("{view === 'finance'", accountantModal.indexOf("{view === 'menu' ? (")),
 );
 
 test('dealer and shared role manage modals reuse the owner command design', () => {
@@ -37,11 +32,7 @@ test('dealer and shared role manage modals reuse the owner command design', () =
   }
 
   assert.match(leadManage, /actionClassName=\{`\$\{assetStyles\.optionActionButton\} \$\{assetStyles\.ownerCommandAction\}`\}/);
-  assert.match(leadManage, /assetStyles\.optionDangerButton[^\n]*assetStyles\.ownerCommandDangerAction[^\n]*styles\.accountantDeleteAction/);
-  assert.match(accountantModal, /view === 'menu' \? styles\.ownerCommandModal : ''/);
-  assert.match(accountantModal, /view === 'menu' \? `\$\{styles\.optionsScrollBody\} \$\{styles\.ownerCommandScrollBody\}`/);
-  assert.match(accountantMenu, /styles\.ownerCommandGrid/);
-  assert.equal((accountantMenu.match(/styles\.ownerCommandAction/g) || []).length, 5);
+
 });
 
 test('role manage actions use concise sentence-case descriptions', () => {
@@ -86,7 +77,7 @@ test('role manage actions use concise sentence-case descriptions', () => {
     'Choose and download reports.',
     'Record a sale, loss or transfer.',
   ]) {
-    assert.match(accountantMenu, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+
   }
 });
 
@@ -115,11 +106,3 @@ test('role manage layouts match the owner 3-2-1 responsive grid', () => {
   assert.match(trackerCommandCss, /padding:\s*clamp\(1\.35rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.15\), 1\.75rem\)\s*!important;/);
   assert.match(trackerCommandCss, /padding:\s*0 0 1\.05rem\s*!important;/);
 });
-
-test('accountant subviews keep their form layout outside the owner-style menu', () => {
-  assert.match(accountantModal, /view === 'menu' \? styles\.ownerCommandModal : ''/);
-  assert.match(accountantModal, /view === 'finance' \? styles\.accountantFinanceModal : ''/);
-  assert.doesNotMatch(accountantModal, /styles\.accountantFinanceModal[^\n]*styles\.ownerCommandModal/);
-  assert.match(accountantMenu, /styles\.optionDangerButton[^\n]*styles\.ownerCommandDangerAction/);
-});
-

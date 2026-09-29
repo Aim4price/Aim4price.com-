@@ -257,14 +257,6 @@ function parseNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function withAccountantShare(url: string, accountantShareId?: string, accountantRegisterId?: string): string {
-  if (!accountantShareId) return url;
-  const scopedUrl = new URL(url, window.location.origin);
-  scopedUrl.searchParams.set('accountantShareId', accountantShareId);
-  if (accountantRegisterId) scopedUrl.searchParams.set('accountantRegisterId', accountantRegisterId);
-  return `${scopedUrl.pathname}${scopedUrl.search}`;
-}
-
 export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMissingEntry }: {
   storage: MissingFuelStorage;
   onClose: () => void;
@@ -303,12 +295,11 @@ export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMis
   );
 }
 
-export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountantShareId, accountantRegisterId, onClose, onLedgerUpdated, onReconcile }: {
+export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, onLedgerUpdated, onReconcile }: {
   storage: MissingFuelStorage;
   assets: MissingFuelAsset[];
   addedByLabel: string;
-  accountantShareId?: string;
-  accountantRegisterId?: string;
+
   onClose: () => void;
   onLedgerUpdated: (payload: MissingFuelLedgerPayload) => void;
   onReconcile: () => void;
@@ -476,7 +467,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
         tankBalanceTreatment: treatment,
         idempotencyKey,
       };
-      const response = await fetch(withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/missing-entry`, accountantShareId, accountantRegisterId), {
+      const response = await fetch(`/api/fuel/storage/${encodeURIComponent(storage.id)}/missing-entry`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const data = await response.json() as MissingFuelLedgerPayload;
@@ -640,10 +631,9 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
   );
 }
 
-export function ReconcileFuelBalanceModal({ storage, accountantShareId, accountantRegisterId, onClose, onLedgerUpdated }: {
+export function ReconcileFuelBalanceModal({ storage, onClose, onLedgerUpdated }: {
   storage: MissingFuelStorage;
-  accountantShareId?: string;
-  accountantRegisterId?: string;
+
   onClose: () => void;
   onLedgerUpdated: (payload: MissingFuelLedgerPayload) => void;
 }) {
@@ -666,7 +656,7 @@ export function ReconcileFuelBalanceModal({ storage, accountantShareId, accounta
     if (!draft.measurementTime) { setError('Enter the physical measurement time.'); return; }
     setIsSaving(true); setError('');
     try {
-      const response = await fetch(withAccountantShare(`/api/fuel/storage/${encodeURIComponent(storage.id)}/reconcile`, accountantShareId, accountantRegisterId), {
+      const response = await fetch(`/api/fuel/storage/${encodeURIComponent(storage.id)}/reconcile`, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentLitres, measurementDate: draft.measurementDate, measurementTime: draft.measurementTime, note: draft.note, idempotencyKey }),
       });
@@ -698,4 +688,3 @@ export function ReconcileFuelBalanceModal({ storage, accountantShareId, accounta
     </div>
   );
 }
-

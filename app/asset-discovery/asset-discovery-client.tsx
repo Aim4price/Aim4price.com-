@@ -471,26 +471,26 @@ function temporaryDenialExpired(asset: AssetDiscoveryAsset): boolean {
   return Number.isFinite(retryTime) && retryTime <= Date.now();
 }
 
-function statusPillLabel(asset: AssetDiscoveryAsset, licensing = false): string {
-  if (asset.enquiryStatus === "approved") return licensing ? "Won" : "Contact open";
-  if (asset.enquiryStatus === "pending") return licensing ? "Pending" : "Enquiry pending";
+function statusPillLabel(asset: AssetDiscoveryAsset): string {
+  if (asset.enquiryStatus === "approved") return "Contact open";
+  if (asset.enquiryStatus === "pending") return "Enquiry pending";
   if (
     asset.enquiryStatus === "temporarily_denied" &&
     !temporaryDenialExpired(asset)
   )
-    return licensing ? "Denied" : "Temporarily denied";
+    return "Temporarily denied";
   return "";
 }
 
-function statusDescription(asset: AssetDiscoveryAsset, licensing = false): string {
-  if (asset.enquiryStatus === "approved") return licensing ? "Renewal work accepted by the owner." : "Approved by owner.";
+function statusDescription(asset: AssetDiscoveryAsset): string {
+  if (asset.enquiryStatus === "approved") return "Approved by owner.";
   if (asset.enquiryStatus === "pending") return "Waiting for owner approval.";
   if (
     asset.enquiryStatus === "temporarily_denied" &&
     !temporaryDenialExpired(asset)
   ) {
     const retryDate = formatDate(asset.requestAgainAtIso);
-    if (licensing && !retryDate) return "Denied by the owner. You cannot offer again for this asset.";
+
     return retryDate
       ? `Temporarily denied. Available again after ${retryDate}.`
       : "Temporarily denied.";
@@ -630,15 +630,15 @@ export default function AssetDiscoveryClient({
   const [activeEnquiry, setActiveEnquiry] =
     useState<DiscoveryEnquiryDetail | null>(null);
   const [loadingEnquiryId, setLoadingEnquiryId] = useState<string | null>(null);
-  const licensingDiscovery = access?.accountType === "licensing";
+
   const privateDiscoveryAccess =
     access?.accountType !== "public" && Boolean(access?.canContact);
 
   useEffect(() => {
-    if ((!allowRecentAdverts || licensingDiscovery) && activeDiscoveryView !== "discovery") {
+    if ((!allowRecentAdverts) && activeDiscoveryView !== "discovery") {
       setActiveDiscoveryView("discovery");
     }
-  }, [activeDiscoveryView, allowRecentAdverts, licensingDiscovery]);
+  }, [activeDiscoveryView, allowRecentAdverts]);
 
   useEffect(() => {
     if (
@@ -1168,9 +1168,7 @@ export default function AssetDiscoveryClient({
         },
         body: JSON.stringify({
           assetId: asset.id,
-          message: licensingDiscovery
-            ? "I can help renew this asset's licence."
-            : "",
+          message: "",
         }),
       });
       const data = (await response.json()) as EnquiryResponse;
@@ -1199,9 +1197,7 @@ export default function AssetDiscoveryClient({
       setNotice({
         tone: "success",
         message:
-          licensingDiscovery
-            ? "Renewal offer sent. The owner can approve access when they are ready."
-            : "Access request sent. The owner will be asked if they are interested in selling.",
+          "Access request sent. The owner will be asked if they are interested in selling.",
       });
     } catch (submitError) {
       setNotice({
@@ -1320,7 +1316,7 @@ export default function AssetDiscoveryClient({
   }
 
   function renderEnquiryControl(asset: AssetDiscoveryAsset) {
-    const pillLabel = statusPillLabel(asset, licensingDiscovery);
+    const pillLabel = statusPillLabel(asset);
     const isProcessing = processingAssetIds.has(asset.id);
 
     if (access?.accountType === "public") {
@@ -1344,7 +1340,7 @@ export default function AssetDiscoveryClient({
           className={
             compactAppMode
               ? `${styles.primaryButton} ${styles.enquireButton}`
-              : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction} ${licensingDiscovery ? styles.discoveryRenewalAction : ""}`
+              : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction} ${""}`
           }
           onClick={() => void openApprovedContact(asset)}
           disabled={loadingEnquiryId === asset.enquiryId}
@@ -1381,7 +1377,7 @@ export default function AssetDiscoveryClient({
               ? statusClassName(asset)
               : `${workspaceStyles.actionButton} ${styles.discoveryStatusAction} ${styles.discoveryDeniedAction}`
           }
-          title={statusDescription(asset, licensingDiscovery)}
+          title={statusDescription(asset)}
         >
           {pillLabel}
         </span>
@@ -1394,30 +1390,21 @@ export default function AssetDiscoveryClient({
         className={
           compactAppMode
             ? `${styles.primaryButton} ${styles.enquireButton}`
-            : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction} ${licensingDiscovery ? styles.discoveryRenewalAction : ""}`
+            : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction} ${""}`
         }
         onClick={() => handleEnquire(asset)}
         disabled={isProcessing}
       >
         {isProcessing
           ? "Sending..."
-          : licensingDiscovery
-            ? "Offer renewal help"
-            : "Request access"}
+          : "Request access"}
       </button>
     );
   }
 
   function renderDiscoveryOutcome(asset: AssetDiscoveryAsset) {
-    if (!licensingDiscovery) return null;
-    const label = statusPillLabel(asset, true);
-    if (!label) return null;
+    return null;
 
-    return (
-      <span className={`${statusClassName(asset)} ${styles.discoveryPipelineStatus}`} title={statusDescription(asset, true)}>
-        {label}
-      </span>
-    );
   }
 
   function renderOpenControl(asset: AssetDiscoveryAsset) {
@@ -1527,7 +1514,7 @@ export default function AssetDiscoveryClient({
           <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
             <div className={assetStyles.assetTitleBlock}>
               <h2>{dealerAssetDisplayName(asset)}</h2>
-              <p>{licensingDiscovery ? licenceRenewalAssetMeta(asset) : dealerAssetMeta(asset)}</p>
+              <p>{dealerAssetMeta(asset)}</p>
               <div className={assetStyles.assetMetaRow}>
                 <span className={assetStyles.assetValueMethodLabel}>
                   {cleanText(asset.type) || "Asset"}
@@ -1672,9 +1659,7 @@ export default function AssetDiscoveryClient({
                     ["Usage", details.asset.usage],
                     ["Condition", details.asset.condition],
                     ["Province", details.asset.province],
-                    ...(licensingDiscovery
-                      ? [["Renewal", details.asset.renewalWindow]]
-                      : []),
+                    ...([]),
                     [
                       "Enquiry",
                       statusPillLabel(asset) || "Contact not requested",
@@ -1696,9 +1681,7 @@ export default function AssetDiscoveryClient({
                     ? "Photos open through an existing direct share."
                     : details.accessSource === "approved_enquiry"
                       ? "Owner-approved Discovery access."
-                      : licensingDiscovery
-                        ? "Offer renewal help. Exact details remain private until the owner approves."
-                        : "Request access to ask whether the owner is interested in selling."}
+                      : "Request access to ask whether the owner is interested in selling."}
                 </strong>
                 <span>
                   {access?.accountType === "public"
@@ -1921,7 +1904,7 @@ export default function AssetDiscoveryClient({
   }
 
   function renderDiscoveryViewSwitch() {
-    if (!allowRecentAdverts || licensingDiscovery) return null;
+    if (!allowRecentAdverts) return null;
 
     return (
       <section className={styles.discoveryViewSwitch} aria-label="Choose a Discovery view">
@@ -2106,16 +2089,14 @@ export default function AssetDiscoveryClient({
     <section className={`${workspaceStyles.shell} ${styles.shell} ${compactAppMode ? `${dealerStyles.dealerDiscoverySurface} ${styles.compactAppSurface}` : ""}`}>
       {compactAppMode ? (
         <div className={`${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}`}>
-          <h1>{licensingDiscovery ? "Renewal Discovery" : "Discovery"}</h1>
+          <h1>{"Discovery"}</h1>
           <p>
-            {licensingDiscovery
-              ? "Find upcoming licence renewals and offer owners help."
-              : "Browse available machinery and request access from owners."}
+            {"Browse available machinery and request access from owners."}
           </p>
         </div>
       ) : (
         <WorkspaceTitlePanel
-          title={licensingDiscovery ? "Renewal Discovery" : "Discover Assets"}
+          title={"Discover Assets"}
         />
       )}
 
@@ -2135,7 +2116,7 @@ export default function AssetDiscoveryClient({
             >
               <div className={assetStyles.heroSummaryHead}>
                 <span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>
-                  {licensingDiscovery ? "Upcoming renewals" : "Available assets"}
+                  {"Available assets"}
                 </span>
               </div>
               <div className={assetStyles.heroSummaryValueRow}>
@@ -2155,19 +2136,17 @@ export default function AssetDiscoveryClient({
             >
               <div className={assetStyles.heroSummaryHead}>
                 <span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>
-                  {licensingDiscovery ? "Due within 30 days" : "Asset types"}
+                  {"Asset types"}
                 </span>
               </div>
               <div className={assetStyles.heroSummaryValueRow}>
                 <strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>
-                  {licensingDiscovery ? summary.dueSoonCount : summary.typeCount}
+                  {summary.typeCount}
                 </strong>
               </div>
               <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}>
                 <small className={leadStyles.leadOwnerSummaryText}>
-                  {licensingDiscovery
-                    ? "Renewals approaching in the next 30 days."
-                    : "Asset families represented in these results."}
+                  {"Asset families represented in these results."}
                 </small>
               </div>
             </article>
@@ -2177,19 +2156,17 @@ export default function AssetDiscoveryClient({
             >
               <div className={assetStyles.heroSummaryHead}>
                 <span className={`${assetStyles.heroSummaryTitle} ${leadStyles.leadOwnerSummaryText}`}>
-                  {licensingDiscovery ? "Overdue" : "Provinces"}
+                  {"Provinces"}
                 </span>
               </div>
               <div className={assetStyles.heroSummaryValueRow}>
                 <strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>
-                  {licensingDiscovery ? summary.overdueCount : summary.provinceCount}
+                  {summary.provinceCount}
                 </strong>
               </div>
               <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}>
                 <small className={leadStyles.leadOwnerSummaryText}>
-                  {licensingDiscovery
-                    ? "Renewal dates that have already passed."
-                    : "Saved owner provinces represented."}
+                  {"Saved owner provinces represented."}
                 </small>
               </div>
             </article>
@@ -2313,8 +2290,8 @@ export default function AssetDiscoveryClient({
           <div
             className={`${mobileStyles.overviewSectionHeading} ${styles.discoverySectionHeading}`}
           >
-            <h2>{licensingDiscovery ? "Upcoming renewals" : "Available assets"}</h2>
-            <span aria-label={`${pagination.totalItems} ${licensingDiscovery ? "renewals" : "available assets"}`}>
+            <h2>{"Available assets"}</h2>
+            <span aria-label={`${pagination.totalItems} ${"available assets"}`}>
               {pagination.totalItems}
             </span>
           </div>
@@ -2322,7 +2299,7 @@ export default function AssetDiscoveryClient({
           <div className={leadStyles.leadResultSummary}>
             <span>Showing</span>
             <strong>{pagination.totalItems}</strong>
-            <span>{licensingDiscovery ? "renewals" : "assets"} for the current search and filters</span>
+            <span>{"assets"} for the current search and filters</span>
           </div>
         )
       ) : null}
@@ -2345,7 +2322,7 @@ export default function AssetDiscoveryClient({
               <article
                 key={asset.id}
                 data-discovery-card
-                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)} ${licensingDiscovery && asset.renewalTiming === "later" ? styles.discoveryFutureCard : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""}`}
+                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)} ${""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={`${styles.assetIdentity} ${expandedAssetId === asset.id ? styles.discoverySummaryBlur : ""}`}>
@@ -2359,7 +2336,7 @@ export default function AssetDiscoveryClient({
                     </div>
                     <h2>{dealerAssetDisplayName(asset)}</h2>
                     <p className={styles.dealerAssetMeta}>
-                      {(licensingDiscovery ? licenceRenewalAssetMeta(asset) : dealerAssetMeta(asset)).split(" • ").map((detail, index) => <span key={index}>{detail}</span>)}
+                      {(dealerAssetMeta(asset)).split(" • ").map((detail, index) => <span key={index}>{detail}</span>)}
                     </p>
                   </div>
 
@@ -2374,7 +2351,7 @@ export default function AssetDiscoveryClient({
               <article
                 key={asset.id}
                 data-discovery-card
-                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${licensingDiscovery && asset.renewalTiming === "later" ? styles.discoveryFutureCard : ""} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""} ${
+                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${""} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""} ${
                   asset.enquiryStatus === "temporarily_denied" &&
                   !temporaryDenialExpired(asset)
                     ? styles.discoveryAssetCardDenied
@@ -2386,14 +2363,12 @@ export default function AssetDiscoveryClient({
                     <div className={`${leadStyles.clientIdentity} ${expandedAssetId === asset.id ? styles.discoverySummaryBlur : ""}`}>
                       <h3>{dealerAssetDisplayName(asset)}</h3>
                       <strong className={leadStyles.leadAssetName}>
-                        {licensingDiscovery ? licenceRenewalAssetMeta(asset) : dealerAssetMeta(asset)}
+                        {dealerAssetMeta(asset)}
                       </strong>
                       <span className={leadStyles.clientKicker}>
                         {[cleanText(asset.type) || "Asset", cleanText(asset.province) || "Location not saved"].join(" · ")}
                       </span>
-                      {licensingDiscovery && asset.renewalTiming === "later" ? (
-                        <span className={styles.discoveryFutureNote}>More than 6 months away</span>
-                      ) : null}
+                      {null}
                     </div>
 
                     <div className={leadStyles.clientDecisionArea}>
@@ -2410,7 +2385,7 @@ export default function AssetDiscoveryClient({
           })
         ) : !error ? (
           <div className={`${workspaceStyles.emptyState} ${styles.emptyState}`}>
-            No {licensingDiscovery ? "renewals" : "assets"} match this search or filter.
+            No {"assets"} match this search or filter.
           </div>
         ) : null}
       </section>
