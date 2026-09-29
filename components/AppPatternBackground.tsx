@@ -44,6 +44,9 @@ export default function AppPatternBackground({ children, className }: AppPattern
   return (
     <div className={rootClassName} data-app-pattern="minimal-arc">
       <div className={styles.decoration} aria-hidden="true">
+        <span className={`${styles.homePhoto} ${styles.homeBakkie}`} />
+        <span className={`${styles.homePhoto} ${styles.homeTruck}`} />
+        <span className={`${styles.homePhoto} ${styles.homeExcavator}`} />
         <CornerArcs className={`${styles.arcs} ${styles.arcsTopLeft}`} origin="start" />
         <CornerArcs className={`${styles.arcs} ${styles.arcsBottomRight}`} origin="end" />
         <DotGrid className={`${styles.dotGrid} ${styles.dotGridTopRight}`} />

@@ -297,3 +297,50 @@
 @media print {
   .background:has([data-public-photo]) .decoration { display: none; }
 }
+
+/* Keep the tractor underneath three gently crossfading Home-only layers. */
+.homePhoto { display: none; }
+.background:has([data-public-photo='home']) .homePhoto {
+  display: block;
+  position: absolute;
+  inset: -12px;
+  background-position: center 55%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: blur(5px);
+  opacity: 0;
+  animation-duration: 48s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+.background:has([data-public-photo='home']) .homeBakkie {
+  background-image: url('/brand/asset-enquiry-bakkie.webp');
+  animation-name: homeBakkieFade;
+}
+.background:has([data-public-photo='home']) .homeTruck {
+  background-image: url('/brand/home-background-truck.jpg');
+  animation-name: homeTruckFade;
+}
+.background:has([data-public-photo='home']) .homeExcavator {
+  background-image: url('/brand/home-background-excavator.jpg');
+  animation-name: homeExcavatorFade;
+}
+/* Base photo, rotating photos, then the shared fade overlay. */
+.background:has([data-public-photo='home']) .decoration::before { z-index: -1; }
+.background:has([data-public-photo='home']) .decoration::after { z-index: 1; }
+.background:has([data-motion-paused='true']) .homePhoto { animation-play-state: paused; }
+@keyframes homeBakkieFade {
+  0%, 20.833%, 54.167%, 100% { opacity: 0; }
+  25%, 50% { opacity: 1; }
+}
+@keyframes homeTruckFade {
+  0%, 45.833%, 79.167%, 100% { opacity: 0; }
+  50%, 75% { opacity: 1; }
+}
+@keyframes homeExcavatorFade {
+  0%, 70.833%, 100% { opacity: 0; }
+  75%, 95.833% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .background:has([data-public-photo='home']) .homePhoto { display: none; animation: none; }
+}
