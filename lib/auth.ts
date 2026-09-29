@@ -2,6 +2,8 @@ import { getSiteOrigin } from './email';
 import { buildAccessEmail } from './access-email';
 import { queueSignupInvoice, type SignupBilling } from "./billing";
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
+import { isAim4priceAdminEmail } from "./account-constants";
 import {
   sendAim4priceEmail,
   buildAim4priceResetPasswordUrl,
@@ -98,6 +100,12 @@ function readTrustedOrigins(authBaseUrl: string): string[] {
   );
 }
 
+function assertAuthUserCanBeDeleted(user: { email?: string | null }): void {
+  if (isAim4priceAdminEmail(user.email)) {
+    throw new APIError("FORBIDDEN", { message: "The Aim4price admin account cannot be deleted." });
+  }
+}
+
 const authBaseUrl = readAuthBaseUrl();
 
 export const auth = betterAuth({
@@ -132,6 +140,11 @@ export const auth = betterAuth({
   },
   databaseHooks: {
     user: {
+      delete: {
+        before: async (user) => {
+          assertAuthUserCanBeDeleted(user);
+        },
+      },
       create: {
         after: async (user, context) => {
           try {
@@ -177,6 +190,7 @@ export const auth = betterAuth({
     deleteUser: {
       enabled: true,
       beforeDelete: async (user) => {
+        assertAuthUserCanBeDeleted(user);
         await deleteUserWorkspaceData(user.id);
       },
     },

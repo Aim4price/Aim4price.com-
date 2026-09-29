@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { isAim4priceAdminEmail } from "../../lib/account-constants";
 import { adminAccountStatusFilter, type AdminAccountStatusFilter } from "../../lib/admin-operations-shared";
 import AdminNavigation from "../../components/AdminNavigation";
 import { clearCachedHeaderSession } from "../../lib/header-session-cache";
@@ -921,7 +922,7 @@ export default function AdminClient({
         .length
     : 0;
   const selectedAccountIsProtected =
-    accountActionModal?.email.trim().toLowerCase() === "aim4price@gmail.com";
+    isAim4priceAdminEmail(accountActionModal?.email);
 
   async function handleSignOut() {
     try {
@@ -952,6 +953,7 @@ export default function AdminClient({
 
   async function runAction(user: AdminUserRow, action: AdminAction) {
     if (action === "delete_user") {
+      if (isAim4priceAdminEmail(user.email)) return;
       const confirmation =
         typeof window !== "undefined"
           ? window.prompt(
@@ -2458,19 +2460,23 @@ export default function AdminClient({
               </form>
             ) : null}
 
-            <div className={styles.accountActionDanger}>
-              <strong>Delete account</strong>
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.deleteButton}`}
-                onClick={() => runAction(accountActionModal, "delete_user")}
-                disabled={busyUserAction !== null || selectedAccountIsProtected}
-              >
-                {busyUserAction === `${accountActionModal.userId}:delete_user`
-                  ? getBusyText("delete_user")
-                  : "Delete account"}
-              </button>
-            </div>
+            {selectedAccountIsProtected ? (
+              <p role="note">Protected administrator account — this account cannot be deleted.</p>
+            ) : (
+              <div className={styles.accountActionDanger}>
+                <strong>Delete account</strong>
+                <button
+                  type="button"
+                  className={`${styles.accountActionButton} ${styles.deleteButton}`}
+                  onClick={() => runAction(accountActionModal, "delete_user")}
+                  disabled={busyUserAction !== null || selectedAccountIsProtected}
+                >
+                  {busyUserAction === `${accountActionModal.userId}:delete_user`
+                    ? getBusyText("delete_user")
+                    : "Delete account"}
+                </button>
+              </div>
+            )}
           </section>
         </div>
       ) : null}

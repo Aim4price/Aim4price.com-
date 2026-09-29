@@ -844,7 +844,7 @@
 }
 
 .accountActionModal {
-  width: min(100%, 62rem);
+  width: min(100%, 78rem);
   max-height: min(92vh, 56rem);
   grid-template-rows: auto;
   overflow-y: auto;
