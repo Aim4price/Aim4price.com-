@@ -1247,3 +1247,13 @@
 :global(.appRoot):has(.page) > :global(footer) {
   margin-top: 0;
 }
+
+/* The background preference darkens the page, while the upload card and
+   wizard retain their light surfaces and original text colours. */
+:global(html[data-background='dark']) .heroCopy { color: #f1f8f4; }
+:global(html[data-background='dark']) .heroText,
+:global(html[data-background='dark']) .heroTrust { color: #d7e6de; }
+:global(html[data-background='dark']) .heroTrust strong { color: #f1f8f4; }
+:global(html[data-background='dark']) .heroUploadAction:focus-visible {
+  outline-color: #a5dec4;
+}

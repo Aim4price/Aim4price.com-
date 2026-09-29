@@ -13,7 +13,7 @@ test('public Invoice Drop is discoverable in the signed-out header without a dup
     read('components/AppHeader.tsx'),
   ]);
 
-  assert.match(header, /const PUBLIC_NAV_ITEMS:[\s\S]*?key: 'invoices', href: '\/drop-invoice', label: 'Invoices'/);
+  assert.match(header, /const PUBLIC_NAV_ITEMS:[\s\S]*?key: 'invoices', href: '\/drop-invoice', label: 'Drop invoice'/);
   assert.match(header, /accountType === 'public'[\s\S]*?return PUBLIC_NAV_ITEMS/);
   assert.match(header, /const DEFAULT_NAV_ITEMS:[\s\S]*?key: 'asset-register', href: '\/asset-register', label: 'Asset Register'/);
   assert.doesNotMatch(home, /Have an invoice for an Aim4price asset\?|invoiceDropSection|InvoiceDropIcon/);
@@ -67,7 +67,8 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(client, /Your submission reference/);
   assert.match(client, /Create a free dealer profile/);
   assert.match(client, /name="website"[\s\S]*?tabIndex=\{-1\}/);
-  assert.match(styles, /background-image: url\('\/brand\/invoice-drop-hero\.webp'\)/);
+  assert.match(styles, /\.heroSection\s*\{[^}]*background: transparent/);
+  assert.match(await read('components/AppPatternBackground.module.css'), /animation-name: homeTruckFade/);
   assert.doesNotMatch(styles, /\.heroEyebrow|\.heroPrimaryButton|\.modalEyebrow/);
   assert.match(styles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(16rem, 19rem\)/);
   assert.match(styles, /\.heroTitle \{[\s\S]*?max-width: 56rem;[\s\S]*?font-size: clamp\(3\.8rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 4\.9\), 5\.25rem\);[\s\S]*?line-height: 0\.96;[\s\S]*?letter-spacing: -0\.055em;[\s\S]*?font-weight: 800;/);
