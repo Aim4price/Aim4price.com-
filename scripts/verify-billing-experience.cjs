@@ -129,6 +129,38 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
+     const choose = async selector => { await page.$eval(selector, e => e.click()); };
+     await choose('[aria-label="Number of active assets"] button');
+     await choose('[data-pricing-content] + div button:last-child');
+     await choose('[aria-label="Setup preference"] button');
+     await choose('[data-pricing-content] + div button:last-child');
+     await choose('[aria-label="Ongoing administration"] button');
+     await choose('[data-pricing-content] + div button:last-child');
+     await page.waitForFunction(()=>document.querySelector('[role="dialog"] h2')?.textContent==='Your Owner package');
+     for (const height of [600, 450]) {
+      await page.setViewport({width,height});
+      const bounds = await page.$eval('[role="dialog"]', e => {
+       const rect=e.getBoundingClientRect(), content=e.querySelector('[data-pricing-content]');
+       const signup=e.querySelector('a[href*="#signup"]').getBoundingClientRect();
+       return {left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,signupBottom:signup.bottom,overflow:content.scrollHeight>content.clientHeight,track:content.offsetWidth-content.clientWidth};
+      });
+      assert.ok(bounds.top>=0 && bounds.bottom<=height && bounds.left>=0 && bounds.right<=width, 'Pricing dialog fits the visible screen');
+      assert.ok(bounds.signupBottom<=height, 'Sign up stays visible');
+      assert.ok(bounds.overflow && bounds.track>=12, 'Package has a visible internal scrollbar');
+      const content=await page.$('[data-pricing-content]');
+      await content.hover();
+      await page.mouse.wheel({deltaY:1000});
+      await page.waitForFunction(()=>document.querySelector('[data-pricing-content]').scrollTop>0);
+      await content.focus();
+      await page.keyboard.down('Control');
+      await page.keyboard.press('Home');
+      await page.keyboard.press('End');
+      await page.keyboard.up('Control');
+      await page.waitForFunction(()=>{const e=document.querySelector('[data-pricing-content]');return e.scrollTop+e.clientHeight>=e.scrollHeight-2;});
+      await page.screenshot({path:path.join(evidence,`owner-scroll-${width}-${height}.png`)});
+     }
+     await page.setViewport({width,height:1000});
+
      await page.keyboard.press('Escape');
      await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
      const dealerLink='a[href="/auth?accountType=dealer#signup"]';

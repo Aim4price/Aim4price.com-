@@ -224,7 +224,7 @@
 /* The question scrolls independently; navigation stays within the dialog. */
 .journey { min-height: 0; width: 100%; }
 .panel { min-height: 0; }
-.content { overflow-y: auto; min-height: 0; overscroll-behavior: contain; padding: 1rem 1.75rem .5rem; scrollbar-gutter: stable; }
+.content { overflow-y: scroll; min-height: 0; overscroll-behavior: contain; padding: 1rem 1.75rem .5rem; scrollbar-gutter: stable; }
 .navigation { position: static; margin: 0 1.75rem; padding: .85rem 0; min-height: 4.5rem; }
 .heading:has(h2:last-child) { margin: 0; }
 .reviewTotal { padding: 1rem 1.15rem; }
@@ -244,7 +244,7 @@
 .dealerRates > div + div { border-top: 1px solid #d3e3d9; }
 .fundedRates > div { background: #edf5ef; border-radius: .8rem; padding: .8rem; }
 @media (max-width: 640px) {
-  :global(html:not(:has([data-website-canvas]))) .content { padding: .85rem 1rem .5rem; scrollbar-gutter: auto; }
+  :global(html:not(:has([data-website-canvas]))) .content { padding: .85rem 1rem .5rem; scrollbar-gutter: stable; }
   :global(html:not(:has([data-website-canvas]))) .navigation { margin-inline: 1rem; }
   :global(html:not(:has([data-website-canvas]))) .reviewTotal { padding: .85rem; }
   :global(html:not(:has([data-website-canvas]))) .reviewTotal .price { font-size: 1.85rem; }
@@ -266,3 +266,11 @@
 @media (max-width: 640px) {
   :global(html:not(:has([data-website-canvas]))) .reviewRow { grid-template-columns: minmax(0, 1fr) auto; }
 }
+
+/* Keep a visible, draggable track within the constrained modal body. */
+.content { scrollbar-width: auto; scrollbar-color: #648674 #edf4ef; }
+.content::-webkit-scrollbar { width: 14px; }
+.content::-webkit-scrollbar-track { background: #edf4ef; border-radius: 8px; }
+.content::-webkit-scrollbar-thumb { background: #648674; border: 3px solid #edf4ef; border-radius: 8px; min-height: 40px; }
+.content::-webkit-scrollbar-thumb:hover { background: #24533e; }
+.content:focus-visible { outline: 2px solid #398d67; outline-offset: -2px; }
