@@ -3692,3 +3692,18 @@ button.storyHeroLogo:focus-visible, .featureCountdown button:focus-visible { out
 }
 
 .roleCard:focus-visible { outline: 3px solid #168a65; outline-offset: 4px; }
+
+/* Light wording only on the dark photo surface; demo and account cards stay light. */
+:global(html[data-background='dark']) .heroBrandTitle,
+:global(html[data-background='dark']) .heroPromiseTitle,
+:global(html[data-background='dark']) .featureNarrativeLayer h2,
+:global(html[data-background='dark']) .roleTitle { color: #f1f8f4; }
+:global(html[data-background='dark']) .heroPromiseText,
+:global(html[data-background='dark']) .featureNarrativeCopy,
+:global(html[data-background='dark']) .featureNarrativeCopy p:last-child,
+:global(html[data-background='dark']) .featureNarrativeCount,
+:global(html[data-background='dark']) .storyScrollCue,
+:global(html[data-background='dark']) .featureCountdown > span { color: #d7e6de; }
+:global(html[data-background='dark']) .featureNarrativeCount strong { color: #98dec0; }
+:global(html[data-background='dark']) .storyHeroLogoImage { filter: brightness(0) invert(1); }
+:global(html[data-background='dark']) .storyScrollCue:focus-visible { outline-color: #98dec0; }
