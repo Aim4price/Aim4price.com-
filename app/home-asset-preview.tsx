@@ -4,6 +4,9 @@ import Image from 'next/image';
 import AssetReportTypeIcon from '../components/asset-register/AssetReportTypeIcon';
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import styles from './page.module.css';
+import { createPortal } from '../components/WebsitePortal';
+import modalStyles from './home-preview-modal.module.css';
+import { currentWebsiteScale } from '../lib/website-canvas';
 
 export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 
@@ -102,6 +105,7 @@ export default function HomeAssetPreview({
   onInteraction,
 }: HomeAssetPreviewProps) {
   const [feedback, setFeedback] = useState('');
+  const [expandedPreview, setExpandedPreview] = useState<PreviewKey | null>(null);
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const selectQuestion = (index: number, moveFocus = false) => {
@@ -182,17 +186,30 @@ export default function HomeAssetPreview({
         role={showRegister ? 'region' : 'tabpanel'}
         aria-label={showRegister ? 'Asset Register preview' : undefined}
         aria-labelledby={showRegister ? undefined : `home-asset-question-${QUESTIONS[activeIndex]?.key ?? 'have'}`}
-        tabIndex={0}
         className={styles.assetPreviewCard}
         data-active-question={activeQuestion}
         onPointerEnter={() => onInteraction?.('pointer')}
         onFocusCapture={() => onInteraction?.('focus')}
       >
+        <button
+          type="button"
+          className={modalStyles.expand}
+          aria-label={`Enlarge ${showRegister ? 'asset register' : QUESTIONS[activeIndex]?.label ?? 'asset'} preview`}
+          aria-haspopup="dialog"
+          onClick={() => {
+            onInteraction?.('focus');
+            setExpandedPreview(showRegister ? 'register' : activeQuestion);
+          }}
+        ><span>⤢ View larger</span></button>
         <div key={activeQuestion} className={styles.assetPreviewState}>
           <PreviewContent activeQuestion={showRegister ? 'register' : activeQuestion} />
         </div>
       </article>
 
+      {expandedPreview && createPortal(
+        <ExpandedPreview preview={expandedPreview} onClose={() => setExpandedPreview(null)} />,
+        document.body,
+      )}
       <span
         className={styles.assetQuestionFeedback}
         role="status"
@@ -202,6 +219,51 @@ export default function HomeAssetPreview({
         {feedback}
       </span>
     </div>
+  );
+}
+
+function ExpandedPreview({ preview, onClose }: { preview: PreviewKey; onClose: () => void }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    returnFocusRef.current ??= document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    // A reading view must not shrink with the homepage's fit-to-screen canvas.
+    const syncReadingScale = () => { dialog.style.zoom = String(1 / currentWebsiteScale()); };
+    syncReadingScale();
+    window.addEventListener('aim4price:canvas-geometry', syncReadingScale);
+    dialog.showModal();
+    return () => {
+      window.removeEventListener('aim4price:canvas-geometry', syncReadingScale);
+      document.body.style.overflow = previousOverflow;
+      queueMicrotask(() => returnFocusRef.current?.focus({ preventScroll: true }));
+    };
+  }, []);
+  const title = preview === 'register' ? 'Asset register' : QUESTIONS.find(({ key }) => key === preview)?.label;
+  return (
+    <dialog ref={dialogRef} className={modalStyles.dialog} aria-labelledby="home-preview-title"
+      onCancel={onClose} onClose={onClose}
+      onFocus={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (event.target === event.currentTarget) {
+          const bounds = event.currentTarget.getBoundingClientRect();
+          if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+        }
+      }}>
+      <header className={modalStyles.header}>
+        <div><h2 id="home-preview-title">{title}</h2><p>Aim4price demo preview</p></div>
+        <button type="button" onClick={onClose} aria-label="Close enlarged preview">Close ×</button>
+      </header>
+      <div className={modalStyles.scroll} tabIndex={0} aria-label="Enlarged demo card — scroll to explore">
+        <div className={modalStyles.card} data-preview={preview}>
+          <div className={modalStyles.canvas}><PreviewContent activeQuestion={preview} /></div>
+        </div>
+      </div>
+    </dialog>
   );
 }
 
