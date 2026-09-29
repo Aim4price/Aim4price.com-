@@ -10,8 +10,8 @@ export function retiredBusinessSubtype(accountType: unknown, accountSubtype: unk
   return null;
 }
 export function isRetiredAssistanceAccount(user: { id?: unknown; email?: unknown }): boolean {
-  return String(user.id ?? '').startsWith('aim4price-assistance-')
-    || ['insurance@aim4price.com', 'finance@aim4price.com', 'licensing@aim4price.com', 'accounting@aim4price.com', 'dealers@aim4price.com'].includes(String(user.email ?? '').trim().toLowerCase());
+  // Retire the legacy workspace identity, never reserve its email address.
+  return String(user.id ?? '').startsWith('aim4price-assistance-');
 }
 export function isSupportedSignupAccountType(value: unknown): boolean {
   return ['owner', 'dealer', 'business', 'middleman'].includes(String(value ?? 'owner').trim().toLowerCase());

@@ -16,7 +16,7 @@ const retirement = load('lib/retired-workspaces.ts');
 test('signup supports the four core account choices and excludes assistance identities', () => {
   for (const type of ['owner', 'dealer', 'business', 'middleman']) assert.equal(retirement.isSupportedSignupAccountType(type), true);
   for (const type of ['insurance', 'finance', 'accounting', 'accountant', 'licensing', 'broker']) assert.equal(retirement.isSupportedSignupAccountType(type), false);
-  for (const email of ['insurance', 'finance', 'Accounting', 'licensing', 'dealers']) assert.equal(retirement.isRetiredAssistanceAccount({ email: email + '@aim4price.com' }), true);
+  for (const email of ['insurance', 'finance', 'Accounting', 'licensing', 'dealers']) assert.equal(retirement.isRetiredAssistanceAccount({ email: email + '@aim4price.com' }), false);
   assert.equal(retirement.isRetiredAssistanceAccount({ id: 'aim4price-assistance-insurance' }), true);
   assert.equal(retirement.isRetiredAssistanceAccount({ id: 'real-business', email: 'insurance@example.com' }), false);
 });
@@ -69,20 +69,28 @@ test('migration is repeatable, preserves records and disables only retired billi
     const profiles = Object.fromEntries((await pg.query('SELECT * FROM account_profiles')).rows.map(r=>[r.user_id,r]));
     for (const [id,role,subtype] of records.slice(0,4)) { assert.equal(profiles[id].account_type,role); assert.equal(profiles[id].account_subtype,subtype); assert.equal(profiles[id].account_status,'active'); }
     for (const [id,expected] of [['insurer','insurance-services'],['bank','finance-services'],['accountant','accounting-services'],['licenser','licensing-services']]) { assert.equal(profiles[id].account_type,'business'); assert.equal(profiles[id].account_subtype,expected); assert.equal(profiles[id].account_status,'active'); }
-    for (const id of ['aim4price-assistance-insurance','email-only-internal']) { assert.equal(profiles[id].account_status,'suspended'); assert.equal(profiles[id].partner_directory_enabled,false); assert.equal(profiles[id].discovery_participation_enabled,false); assert.equal((await pg.query('SELECT * FROM "session" WHERE "userId"=$1',[id])).rows.length,0); }
-    assert.equal((await pg.query('SELECT * FROM "session"')).rows.length,8);
+    for (const id of ['aim4price-assistance-insurance']) { assert.equal(profiles[id].account_status,'suspended'); assert.equal(profiles[id].partner_directory_enabled,false); assert.equal(profiles[id].discovery_participation_enabled,false); assert.equal((await pg.query('SELECT * FROM "session" WHERE "userId"=$1',[id])).rows.length,0); }
+    assert.equal((await pg.query('SELECT * FROM "session"')).rows.length,9);
+    assert.equal(profiles['email-only-internal'].account_status,'active');
     const agreements = Object.fromEntries((await pg.query('SELECT * FROM aim4price_billing_agreements')).rows.map(r=>[r.user_id,r]));
     for (const [id] of records.slice(0,4)) assert.equal(agreements[id].enabled,true);
-    for (const [id] of records.slice(4)) { assert.equal(agreements[id].enabled,false); assert.equal(agreements[id].version,2); }
+    for (const [id] of records.slice(4,-1)) { assert.equal(agreements[id].enabled,false); assert.equal(agreements[id].version,2); }
+    assert.equal(agreements['email-only-internal'].enabled,true);
+    await pg.exec("INSERT INTO retired_specialist_accounts(user_id,previous_account_type) VALUES ('email-only-internal','dealer')");
+    await pg.exec(read('database/migrations/121-release-retired-email-addresses.sql'));
+    await pg.exec(read('database/migrations/121-release-retired-email-addresses.sql'));
+    assert.equal((await pg.query("SELECT * FROM retired_specialist_accounts WHERE user_id='email-only-internal'")).rows.length,0);
+    assert.equal((await pg.query('SELECT * FROM retired_specialist_accounts')).rows.length,5);
+
     assert.deepEqual((await pg.query('SELECT * FROM retained_history')).rows,before);
-    assert.equal((await pg.query('SELECT * FROM retired_specialist_accounts')).rows.length,6);
+    assert.equal((await pg.query('SELECT * FROM retired_specialist_accounts')).rows.length,5);
     assert.equal((await pg.query('SELECT * FROM aim4price_assistance_accounts WHERE enabled')).rows.length,0);
     assert.equal((await pg.query('SELECT * FROM aim4price_assistance_locations WHERE enabled')).rows.length,0);
     assert.deepEqual((await pg.query('SELECT account_type FROM aim4price_billing_plans WHERE enabled ORDER BY account_type')).rows.map(r=>r.account_type),['dealer','owner']);
   } finally { await pg.close(); }
 });
 
-test('retired signup and internal sign-in are rejected before auth or billing can write', async () => {
+test('retired roles are rejected but former assistance emails can sign in and register core accounts', async () => {
   let authCalls = 0, billingCalls = 0;
   const route = load('app/api/auth/[...all]/route.ts', {
     '../../../../lib/retired-workspaces': retirement,
@@ -96,5 +104,12 @@ test('retired signup and internal sign-in are rejected before auth or billing ca
     assert.equal(res.status,400);
   }
   const res = await route.POST(new Request('https://example.com/api/auth/sign-in/email', {method:'POST',body:JSON.stringify({email:'Accounting@aim4price.com'})}));
-  assert.equal(res.status,403); assert.equal(authCalls,0); assert.equal(billingCalls,0);
+  assert.equal(res.status,200); assert.equal(authCalls,1); assert.equal(billingCalls,0);
+  for (const email of ['insurance', 'finance', 'Accounting', 'licensing', 'dealers']) {
+    for (const accountType of ['owner', 'dealer', 'business', 'middleman']) {
+      const response = await route.POST(new Request('https://example.com/api/auth/sign-up/email', {method:'POST',body:JSON.stringify({email:email+'@aim4price.com',accountType,businessName:'Example',acceptedTerms:true})}));
+      assert.equal(response.status,200, `${email}: ${accountType}`);
+    }
+  }
+  assert.equal(authCalls,21); assert.equal(billingCalls,20);
 });
