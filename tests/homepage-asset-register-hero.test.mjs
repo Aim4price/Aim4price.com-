@@ -220,7 +220,9 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(preview, /tabIndex=\{isActive \? 0 : -1\}/);
   assert.match(preview, /role=\{showRegister \? 'region' : 'tabpanel'\}/);
   assert.match(hero, /showRegister=\{storyStepIndex < FEATURE_START_INDEX\}/);
-  assert.doesNotMatch(preview, /ExpandedPreview|openedQuestion|openPreview|aria-haspopup="dialog"|Click to open/);
+  assert.match(preview, /aria-haspopup="dialog"/);
+  assert.match(preview, /dialog\.showModal\(\)/);
+  assert.match(preview, /<PreviewContent activeQuestion=\{preview\}/);
   assert.match(preview, /case 'register':[\s\S]*?<RegisterPreview \/>/);
   assert.match(preview, /DEMO BUSINESS PTY LTD/);
   assert.doesNotMatch(preview, /visibility: 'hidden'/);
