@@ -89,7 +89,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
 
   return <section className={styles.journey} aria-label={`Build your ${dealer ? 'Dealer' : 'Owner'} package`}>
     <div className={styles.panel}>
-      <div className={styles.content} data-pricing-content key={detail ?? step}>
+      <div className={styles.content} data-pricing-content tabIndex={0} role="region" aria-label="Package options and details" key={detail ?? step}>
       <div className={styles.heading}>
         <p>{step < 3 ? `Step ${step + 1} of 3` : 'Built around your choices'}</p>
         <h2 ref={heading} tabIndex={-1}>{detail ? detailTitles[detail] : titles[step]}</h2>
