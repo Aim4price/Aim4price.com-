@@ -300,7 +300,7 @@ export async function deleteAdminManagedUser(userId: string): Promise<void> {
   const user = await getAdminUserIdentity(userId);
 
   if (isAim4priceAdminEmail(user.email)) {
-    throw new Error("The Aim4price admin account cannot be deleted from this page.");
+    throw new Error("The Aim4price admin account cannot be deleted.");
   }
 
   await deleteUserWorkspaceData(user.id);

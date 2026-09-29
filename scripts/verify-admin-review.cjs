@@ -348,6 +348,26 @@ const evidence=path.join(root,'.next/admin-review-validation');
   assert.ok(await page.$('a[href="/admin/work-tracker?account=owner"]'));
   assert.ok(await page.$('a[href="/admin/discovery?owner=owner"]'));delete props.accounts.initialAccountId;
   console.log('PASS account status filters, deep links and account workspaces');
+  props.accounts.initialAccountId='owner';
+  for (const width of [390,1440,1920]) {
+   await open('accounts',width);
+   await page.waitForSelector('[aria-labelledby="admin-account-action-modal-title"]');
+   const box=await page.$eval('[aria-labelledby="admin-account-action-modal-title"]',el=>{const r=el.getBoundingClientRect();return {width:r.width,left:r.left,right:r.right};});
+   assert.ok(box.left>=0 && box.right<=width+1,'account modal stays inside the viewport');
+   if(width>=1440)assert.ok(box.width>=1200,'desktop account modal is widened');
+   assert.equal(await page.$$eval('[aria-labelledby="admin-account-action-modal-title"] button',els=>els.some(el=>el.textContent.trim()==='Delete account'&&!el.disabled)),true);
+   await page.screenshot({path:path.join(evidence,`account-modal-wide-${width}.png`),fullPage:true});
+  }
+  const savedUsers=props.accounts.initialUsers;
+  props.accounts.initialUsers=[{...user,userId:'protected-admin',name:'Aim4price administrator',email:'Aim4price@Gmail.com'}];
+  props.accounts.initialAccountId='protected-admin';await open('accounts');
+  await page.waitForSelector('[aria-labelledby="admin-account-action-modal-title"]');
+  assert.equal(await page.$$eval('[aria-labelledby="admin-account-action-modal-title"] button',els=>els.some(el=>el.textContent.trim()==='Delete account')),false);
+  assert.ok(await page.$eval('[aria-labelledby="admin-account-action-modal-title"]',el=>el.textContent.includes('this account cannot be deleted')));
+  await page.screenshot({path:path.join(evidence,'account-modal-protected.png'),fullPage:true});
+  props.accounts.initialUsers=savedUsers;delete props.accounts.initialAccountId;
+  console.log('PASS wider responsive account modal and protected administrator without a delete action');
+
   queuePaging=true;await open('capture-queue');await page.waitForFunction(()=>document.body.textContent.includes('PAGE-1'));
   await page.$$eval('[aria-label="Capture queue pages"] button',els=>els.find(e=>e.textContent==='Next').click());
   await page.waitForFunction(()=>document.body.textContent.includes('PAGE-2'));
