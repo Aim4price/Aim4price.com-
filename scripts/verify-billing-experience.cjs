@@ -75,7 +75,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
   const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
-   for(const mode of ['guest','pricing','business-join','business-register','signup-owner','signup-dealer','switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
+   for(const mode of ['guest','pricing','business-join','business-register','signup-owner','signup-dealer','signup-middleman','switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
     await page.goto('https://billing.test/');
     await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:12px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32;--modal-backdrop-color:rgba(12,32,26,.58);--modal-backdrop-filter:blur(7px)}button,input,textarea{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
     await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
@@ -183,6 +183,12 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      const typeField=async(name,value)=>{const selector='input[name="'+name+'"]';await page.type(selector,value);assert.equal(await page.$eval(selector,e=>e.value),value,'Signup field '+name+' receives every character');};
      if(mode.startsWith('signup-')){
       await page.waitForFunction(type=>document.querySelector('input[name="accountType"]')?.value===type,{},mode.slice(7));
+      if(mode==='signup-owner'){
+       await select('What would you like to use Aim4price for?','Middleman');
+       assert.equal(await page.$eval('input[name="accountSubtype"]',e=>e.value),'equipment-middleman');
+       await select('What would you like to use Aim4price for?','Owner');
+      }
+      if(mode==='signup-middleman')assert.equal(await page.$eval('input[name="accountSubtype"]',e=>e.value),'equipment-middleman');
       if(mode==='signup-dealer'){
        const trigger='button[aria-haspopup="dialog"]';
        assert.equal(await page.$('[role="dialog"]'),null);

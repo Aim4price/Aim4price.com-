@@ -133,6 +133,7 @@ const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
   { value: "owner", label: "Owner" },
   { value: "dealer", label: "Dealer" },
   { value: "business", label: "Business" },
+  { value: "middleman", label: "Middleman" },
 ];
 
 const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
@@ -456,10 +457,10 @@ function getModeFromHash(hash: string): Mode {
 
 function getSignupAccountTypeFromSearch(
   search: string,
-): Extract<SignupAccountType, "owner" | "dealer"> | null {
+): Extract<SignupAccountType, "owner" | "dealer" | "middleman"> | null {
   const accountType = new URLSearchParams(search).get("accountType");
 
-  return accountType === "owner" || accountType === "dealer"
+  return accountType === "owner" || accountType === "dealer" || accountType === "middleman"
     ? accountType
     : null;
 }
