@@ -1069,7 +1069,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   };
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-public-photo="auth">
       <div className={`${styles.shell} ${mode === "signup" ? styles.signupShell : ""}`}>
         <div className={styles.topBar}>
           <Link href="/" className={styles.homeLink}>
