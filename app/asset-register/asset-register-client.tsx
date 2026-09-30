@@ -26,7 +26,7 @@ import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterCho
 
 import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
 import BusinessProfileCard from '../../components/business-network/BusinessProfileCard';
-import GoogleDirectoryMap, { googleDirectoryEnabled } from '../../components/business-network/GoogleDirectoryMap';
+import directoryStyles from '../../components/business-network/PartnerDirectory.module.css';
 import BusinessSharePreview from '../../components/business-network/BusinessSharePreview';
 import QrCodePreview from '../../components/QrCodePreview';
 import { resolveAssetUsage } from '../../lib/asset-usage';
@@ -130,7 +130,7 @@ type PartnerType = 'dealer' | 'finance' | 'insurance' | 'licensing';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
-type QuoteDirectoryStage = 'location' | 'map';
+type QuoteDirectoryStage = 'location' | 'directory';
 type AssetShareDestination = 'choice' | 'link' | 'inside' | 'outside';
 type ExternalShareReportScope = 'asset' | 'register' | 'group' | null;
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
@@ -6433,12 +6433,7 @@ function buildAssetPartnerNoteRows(asset: RegisterAsset, includeAssetTitle = fal
   }));
 }
 
-function quoteMarkerClassForPartnerType(partnerType: PartnerType | null | undefined): string {
-  if (partnerType === 'finance') return 'assetQuoteMapMarker--finance';
-  if (partnerType === 'insurance') return 'assetQuoteMapMarker--insurance';
-  if (partnerType === 'licensing') return 'assetQuoteMapMarker--licensing';
-  return 'assetQuoteMapMarker--dealer';
-}
+
 
 function quotePartnerName(partner: PartnerDirectoryEntry): string {
   return partner.businessName || partner.displayName || 'Aim4price business';
@@ -6661,7 +6656,6 @@ export default function AssetRegisterClient({
   const [quoteLocationInput, setQuoteLocationInput] = useState('');
   const [quoteLocationError, setQuoteLocationError] = useState('');
   const [isResolvingQuoteLocation, setIsResolvingQuoteLocation] = useState(false);
-  const [isQuoteMapExpanded, setIsQuoteMapExpanded] = useState(false);
   const [quotePartners, setQuotePartners] = useState<PartnerDirectoryEntry[]>([]);
   const [selectedQuotePartnerIds, setSelectedQuotePartnerIds] = useState<string[]>([]);
   const [quotePartnerSearch, setQuotePartnerSearch] = useState('');
@@ -6690,19 +6684,12 @@ export default function AssetRegisterClient({
   const [isLoadingDealerTrackingSettings, setIsLoadingDealerTrackingSettings] = useState(false);
   const [dealerTrackingAccess, setDealerTrackingAccess] = useState<DealerMaintenanceAccessSummary[]>([]);
   const [activeDealerTrackingByAssetId, setActiveDealerTrackingByAssetId] = useState<Record<string, boolean>>({});
-  const quoteMapElementRef = useRef<HTMLDivElement | null>(null);
-  const quoteLeafletMapRef = useRef<any>(null);
-  const quoteMarkerLayerRef = useRef<any>(null);
-  const quoteViewportTimeoutRef = useRef<number | null>(null);
+  const quoteDirectoryBoundsRef = useRef<{west:number;south:number;east:number;north:number} | null>(null);
   const quotePartnerRequestRef = useRef(0);
-  const quoteFitResultsRef = useRef(false);
-  const quoteInitialMapLocationRef = useRef<AssetSettingsApproximateMapLocation | null>(null);
   const suppressShareFocusRestoreRef = useRef(false);
   const shareReturnFocusRef = useRef<HTMLElement | null>(null);
   const shareFocusHandoffRef = useRef<'asset-report' | 'export' | 'group-report' | null>(null);
   const externalShareReportTriggerRef = useRef<HTMLElement | null>(null);
-  const selectedQuoteLeadTypeRef = useRef<AssetLeadType | null>(null);
-  const quotePartnerSearchRef = useRef('');
   const assetSettingsMapElementRef = useRef<HTMLDivElement | null>(null);
   const assetSettingsLeafletMapRef = useRef<any>(null);
   const assetSettingsMapMarkerRef = useRef<any>(null);
@@ -7947,12 +7934,7 @@ export default function AssetRegisterClient({
   const selectedQuotePartnerWebsiteHref = selectedQuotePartner ? normalizeWebsiteHref(selectedQuotePartner.websiteUrl) : '';
   const selectedQuotePartnerEmailHref = selectedQuotePartner ? normalizeEmailHref(selectedQuotePartner.email) : '';
   const selectedQuotePartnerPhoneHref = selectedQuotePartner ? normalizePhoneHref(selectedQuotePartner.phone) : '';
-  const quotePartnersWithCoordinates = useMemo(() => quotePartners.filter(hasQuotePartnerCoordinates), [quotePartners]);
 
-  useEffect(() => {
-    selectedQuoteLeadTypeRef.current = selectedQuoteLeadType;
-    quotePartnerSearchRef.current = quotePartnerSearch;
-  }, [quotePartnerSearch, selectedQuoteLeadType]);
 
   useEffect(() => {
     pendingPhotoFilesRef.current = pendingPhotoFiles;
@@ -8921,136 +8903,7 @@ export default function AssetRegisterClient({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
-
-  useEffect(() => {
-    if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map' || !quoteMapElementRef.current) {
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    async function setupQuoteMap() {
-      try {
-        const L = await loadLeaflet();
-        if (cancelled || !quoteMapElementRef.current) return;
-
-        if (!quoteLeafletMapRef.current) {
-          const initialMapLocation = quoteInitialMapLocationRef.current ?? {
-            center: DEFAULT_PARTNER_MAP_CENTER,
-            zoom: DEFAULT_PARTNER_MAP_ZOOM,
-          };
-          quoteLeafletMapRef.current = L.map(quoteMapElementRef.current, { zoomControl: true }).setView(
-            initialMapLocation.center,
-            initialMapLocation.zoom,
-          );
-
-          L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19,
-          }).addTo(quoteLeafletMapRef.current);
-
-          const handleViewportChange = () => {
-            if (quoteViewportTimeoutRef.current !== null) {
-              window.clearTimeout(quoteViewportTimeoutRef.current);
-            }
-            quoteViewportTimeoutRef.current = window.setTimeout(() => {
-              const map = quoteLeafletMapRef.current;
-              const leadType = selectedQuoteLeadTypeRef.current;
-              if (!map || !leadType) return;
-              const mapBounds = map.getBounds();
-              void loadQuotePartners(leadType, quotePartnerSearchRef.current, {
-                west: mapBounds.getWest(),
-                south: mapBounds.getSouth(),
-                east: mapBounds.getEast(),
-                north: mapBounds.getNorth(),
-              });
-            }, 220);
-          };
-          quoteLeafletMapRef.current.on('moveend', handleViewportChange);
-          handleViewportChange();
-        }
-
-        if (quoteMarkerLayerRef.current) {
-          quoteMarkerLayerRef.current.clearLayers();
-        } else {
-          quoteMarkerLayerRef.current = typeof L.markerClusterGroup === 'function'
-            ? L.markerClusterGroup({
-                chunkedLoading: true,
-                maxClusterRadius: 52,
-                showCoverageOnHover: false,
-                removeOutsideVisibleBounds: true,
-              }).addTo(quoteLeafletMapRef.current)
-            : L.layerGroup().addTo(quoteLeafletMapRef.current);
-        }
-
-        const bounds = L.latLngBounds([]);
-
-        quotePartnersWithCoordinates.forEach((partner) => {
-          const lat = Number(partner.latitude);
-          const lng = Number(partner.longitude);
-          const isActive = directoryBusiness?.userId === partner.userId;
-          const icon = L.divIcon({
-            className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${''}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
-            html: '<span class="assetQuoteMapMarkerPin"></span>',
-            iconSize: [38, 44],
-            iconAnchor: [19, 40],
-            popupAnchor: [0, -36],
-          });
-          const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
-          marker.on('click', () => { setDirectoryBusiness(partner); setIsQuoteMapExpanded(false); });
-          bounds.extend([lat, lng]);
-        });
-
-        if (quoteFitResultsRef.current && bounds.isValid()) {
-          quoteFitResultsRef.current = false;
-          quoteLeafletMapRef.current.fitBounds(bounds.pad(0.18), { maxZoom: 12 });
-        }
-
-        window.setTimeout(() => quoteLeafletMapRef.current?.invalidateSize({ animate: false, pan: false }), 80);
-      } catch (error) {
-        setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load the partner map.' });
-      }
-    }
-
-    void setupQuoteMap();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption, quotePartnersWithCoordinates, directoryBusiness]);
-
-  useEffect(() => {
-    if (!isQuoteModalOpen || quoteDirectoryStage !== 'map' || !quoteLeafletMapRef.current) return undefined;
-
-    const resizeMap = () => quoteLeafletMapRef.current?.invalidateSize({ animate: false, pan: false });
-    const immediateResize = window.setTimeout(resizeMap, 0);
-    const settledResize = window.setTimeout(resizeMap, 220);
-
-    return () => {
-      window.clearTimeout(immediateResize);
-      window.clearTimeout(settledResize);
-    };
-  }, [isQuoteMapExpanded, isQuoteModalOpen, quoteDirectoryStage, directoryBusiness]);
-
-  useEffect(() => {
-    if (isQuoteModalOpen && selectedQuoteOption && quoteDirectoryStage === 'map') {
-      return undefined;
-    }
-
-    if (quoteViewportTimeoutRef.current !== null) {
-      window.clearTimeout(quoteViewportTimeoutRef.current);
-      quoteViewportTimeoutRef.current = null;
-    }
-
-    if (quoteLeafletMapRef.current) {
-      quoteLeafletMapRef.current.remove();
-      quoteLeafletMapRef.current = null;
-      quoteMarkerLayerRef.current = null;
-    }
-
-    return undefined;
-  }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption]);
+  }, [assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isAssetSettingsModalOpen || assetSettingsView !== 'locationMap' || !assetSettingsMapElementRef.current) {
@@ -11458,43 +11311,25 @@ export default function AssetRegisterClient({
     setProjectionAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
   }
 
-  function removeQuoteMap() {
-    if (quoteViewportTimeoutRef.current !== null) {
-      window.clearTimeout(quoteViewportTimeoutRef.current);
-      quoteViewportTimeoutRef.current = null;
-    }
-
-    if (quoteLeafletMapRef.current) {
-      quoteLeafletMapRef.current.remove();
-      quoteLeafletMapRef.current = null;
-      quoteMarkerLayerRef.current = null;
-    }
-  }
-
   function prepareQuoteLocationStep(asset: RegisterAsset | null) {
     setDirectoryBusiness(null);
-    quoteInitialMapLocationRef.current = null;
-    quoteFitResultsRef.current = false;
-    quotePartnerSearchRef.current = '';
+    quoteDirectoryBoundsRef.current = null;
     setQuoteDirectoryStage('location');
     setQuoteLocationInput(defaultQuoteLocationInput(asset, accountProfile));
     setQuoteLocationError('');
     setIsResolvingQuoteLocation(false);
-    setIsQuoteMapExpanded(false);
   }
 
   function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
     setDirectoryBusiness(null);
     quotePartnerRequestRef.current += 1;
-    quoteFitResultsRef.current = false;
-    quoteInitialMapLocationRef.current = null;
+    quoteDirectoryBoundsRef.current = null;
     setQuoteScope(nextScope);
     setSelectedQuoteLeadType(null);
     setQuoteDirectoryStage('location');
     setQuoteLocationInput('');
     setQuoteLocationError('');
     setIsResolvingQuoteLocation(false);
-    setIsQuoteMapExpanded(false);
     setQuotePartners([]);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
@@ -11513,7 +11348,6 @@ export default function AssetRegisterClient({
     setQuoteIncludeCostLedger(true);
     setIsLoadingQuotePartners(false);
     setIsSendingQuoteLead(false);
-    removeQuoteMap();
   }
 
   function openAssetQuoteOptions(asset: RegisterAsset) {
@@ -11537,7 +11371,6 @@ export default function AssetRegisterClient({
 
   function backFromShareModal() {
     if (isSendingQuoteLead || isExporting) return;
-    if (isQuoteMapExpanded) { setIsQuoteMapExpanded(false); return; }
     if (quoteLeadStep === 'consent') { goBackToQuoteLeadMessage(); return; }
     if (quoteLeadStep) { closeQuoteLeadStep(); return; }
     if (selectedQuoteOption) { goBackToQuoteOptions(); return; }
@@ -11548,7 +11381,7 @@ export default function AssetRegisterClient({
       setQuoteScope(directoryReturn.register ? 'register' : 'asset');
       setIsRegisterShareModalOpen(false);
       setAssetShareDestination('inside');
-      setQuoteDirectoryStage('map');
+      setQuoteDirectoryStage('directory');
       return;
     }
     if (assetShareDestination !== 'choice') {
@@ -11579,15 +11412,7 @@ export default function AssetRegisterClient({
     try {
       const params = new URLSearchParams({ type: option.partnerType });
       if (searchValue.trim()) params.set('search', searchValue.trim());
-      const currentMapBounds = !bounds && quoteLeafletMapRef.current
-        ? quoteLeafletMapRef.current.getBounds()
-        : null;
-      const effectiveBounds = bounds ?? (currentMapBounds ? {
-        west: currentMapBounds.getWest(),
-        south: currentMapBounds.getSouth(),
-        east: currentMapBounds.getEast(),
-        north: currentMapBounds.getNorth(),
-      } : null);
+      const effectiveBounds = bounds ?? quoteDirectoryBoundsRef.current;
       if (effectiveBounds) {
         params.set('west', String(effectiveBounds.west));
         params.set('south', String(effectiveBounds.south));
@@ -11625,31 +11450,32 @@ export default function AssetRegisterClient({
     }
   }
 
-  function showQuoteMapForLocation(
+  function showAllQuotePartners() {
+    quoteDirectoryBoundsRef.current = null;
+    setQuoteLocationInput('');
+    setQuotePartnerSearch('');
+    setDirectoryBusiness(null);
+    setQuoteDirectoryStage('directory');
+    void loadQuotePartners(selectedQuoteLeadType, '');
+  }
+
+  function showQuoteDirectoryForLocation(
     location: AssetSettingsApproximateMapLocation,
     label: string,
-    options: { preservePartners?: boolean } = {},
   ) {
-    removeQuoteMap();
-    setIsQuoteMapExpanded(false);
-    quoteInitialMapLocationRef.current = location;
-    quoteFitResultsRef.current = false;
-    quotePartnerSearchRef.current = '';
+    const span = Math.min(10, 360 / Math.pow(2, location.zoom - 1));
+    quoteDirectoryBoundsRef.current = {
+      west: Math.max(-180, location.center[1] - span), east: Math.min(180, location.center[1] + span),
+      south: Math.max(-90, location.center[0] - span), north: Math.min(90, location.center[0] + span),
+    };
     setQuotePartnerSearch('');
     setQuoteLocationInput(label);
     setQuoteLocationError('');
     setSelectedQuotePartnerIds([]);
     setDirectoryBusiness(null);
-    if (!options.preservePartners) {
-      setQuotePartners([]);
-      // Keep the directory usable even if the map provider cannot load.
-      const span = Math.min(10, 360 / Math.pow(2, location.zoom - 1));
-      void loadQuotePartners(selectedQuoteLeadType, '', {
-        west: Math.max(-180, location.center[1] - span), east: Math.min(180, location.center[1] + span),
-        south: Math.max(-90, location.center[0] - span), north: Math.min(90, location.center[0] + span),
-      });
-    }
-    setQuoteDirectoryStage('map');
+    setQuotePartners([]);
+    void loadQuotePartners(selectedQuoteLeadType, '');
+    setQuoteDirectoryStage('directory');
   }
 
   async function submitQuoteLocation(event: FormEvent<HTMLFormElement>) {
@@ -11666,23 +11492,18 @@ export default function AssetRegisterClient({
     const knownLocation = resolveQuoteLocationMapTarget(locationValue);
     if (knownLocation) {
       quotePartnerRequestRef.current += 1;
-      showQuoteMapForLocation(knownLocation, locationValue);
+      showQuoteDirectoryForLocation(knownLocation, locationValue);
       return;
     }
 
     setIsResolvingQuoteLocation(true);
     try {
-      const matches = await loadQuotePartners(selectedQuoteOption.leadType, locationValue);
-      const firstLocatedMatch = matches.find(hasQuotePartnerCoordinates);
-      if (!firstLocatedMatch) {
-        setQuoteLocationError('We could not place that area on the map. Try the nearest town or province.');
-        return;
-      }
-
-      showQuoteMapForLocation({
-        center: [Number(firstLocatedMatch.latitude), Number(firstLocatedMatch.longitude)],
-        zoom: QUOTE_LOCATION_TOWN_ZOOM,
-      }, locationValue, { preservePartners: true });
+      quoteDirectoryBoundsRef.current = null;
+      setQuotePartnerSearch(locationValue);
+      setDirectoryBusiness(null);
+      setSelectedQuotePartnerIds([]);
+      await loadQuotePartners(selectedQuoteOption.leadType, locationValue);
+      setQuoteDirectoryStage('directory');
     } finally {
       setIsResolvingQuoteLocation(false);
     }
@@ -11712,7 +11533,7 @@ export default function AssetRegisterClient({
       }
 
       quotePartnerRequestRef.current += 1;
-      showQuoteMapForLocation({ center: [latitude, longitude], zoom: QUOTE_LOCATION_TOWN_ZOOM }, 'Current location');
+      showQuoteDirectoryForLocation({ center: [latitude, longitude], zoom: QUOTE_LOCATION_TOWN_ZOOM }, 'Current location');
     } catch (error) {
       const permissionDenied = typeof error === 'object' && error !== null && 'code' in error && Number((error as { code?: unknown }).code) === 1;
       setQuoteLocationError(permissionDenied
@@ -11726,11 +11547,7 @@ export default function AssetRegisterClient({
   function changeQuoteLocation() {
     if (isSendingQuoteLead) return;
     quotePartnerRequestRef.current += 1;
-    removeQuoteMap();
-    quoteInitialMapLocationRef.current = null;
-    quoteFitResultsRef.current = false;
-    quotePartnerSearchRef.current = '';
-    setIsQuoteMapExpanded(false);
+    quoteDirectoryBoundsRef.current = null;
     setDirectoryBusiness(null);
     setQuoteDirectoryStage('location');
     setQuoteLocationError('');
@@ -11781,8 +11598,7 @@ export default function AssetRegisterClient({
     setQuoteLocationInput('');
     setQuoteLocationError('');
     setIsResolvingQuoteLocation(false);
-    setIsQuoteMapExpanded(false);
-    quoteInitialMapLocationRef.current = null;
+    quoteDirectoryBoundsRef.current = null;
     setQuotePartners([]);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
@@ -11792,7 +11608,6 @@ export default function AssetRegisterClient({
     setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
     setIsQuoteTrackingSettingsOpen(false);
 
-    removeQuoteMap();
   }
 
   function openDirectoryExternalShare(recipient: {name:string;email:string;phone:string}) {
@@ -11808,8 +11623,6 @@ export default function AssetRegisterClient({
     setSelectedQuotePartnerIds([]);
     setQuoteLeadStep(null);
     setQuoteTrackMaintenance(false);
-    setIsQuoteMapExpanded(false);
-    removeQuoteMap();
     setAssetShareDestination('outside');
     if (registerScope) {
       setQuoteAsset(null);
@@ -11825,7 +11638,6 @@ export default function AssetRegisterClient({
     setSelectedQuotePartnerIds([partner.userId]);
     setQuoteTrackMaintenance(false);
     setQuoteConsentAccepted(false);
-    setIsQuoteMapExpanded(false);
     setQuoteLeadStep('message');
   }
 
@@ -20370,7 +20182,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={backFromShareModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption ? styles.businessDirectoryDialog : ''} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${isExternalAssetShareView ? `${styles.externalAssetShareModal} ${styles.modalCard} ${styles.assetEntryModal} ${styles.registerShareAccountModal} ${styles.registerShareModal} ${accountStyles.modalTheme}` : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption ? styles.businessDirectoryDialog : ''} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${isExternalAssetShareView ? `${styles.externalAssetShareModal} ${styles.modalCard} ${styles.assetEntryModal} ${styles.registerShareAccountModal} ${styles.registerShareModal} ${accountStyles.modalTheme}` : ''} ${selectedQuoteOption && quoteDirectoryStage === 'directory' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-hidden={externalShareReportScope === 'asset' ? true : undefined}
@@ -20512,6 +20324,8 @@ export default function AssetRegisterClient({
                           <span>Back</span>
                         </button>
 
+                        <button type="button" className={styles.secondaryButton} onClick={showAllQuotePartners} disabled={isResolvingQuoteLocation}>Browse all businesses</button>
+
                         <button type="submit" className={styles.primaryButton} disabled={isResolvingQuoteLocation || !quoteLocationInput.trim()}>
                           {isResolvingQuoteLocation ? 'Finding area...' : 'Show businesses'}
                         </button>
@@ -20525,7 +20339,7 @@ export default function AssetRegisterClient({
                     className={styles.assetQuoteSearchBar}
                     onSubmit={(event) => {
                       event.preventDefault();
-                      quoteFitResultsRef.current = Boolean(quotePartnerSearch.trim());
+                      setDirectoryBusiness(null);
                       void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch);
                     }}
                   >
@@ -20542,16 +20356,15 @@ export default function AssetRegisterClient({
                     </button>
                   </form>
 
-                  <div className={`${styles.assetQuoteMapStage} ${directoryBusiness ? styles.businessDirectorySelected : ''}`}>
-                    <aside className={styles.assetQuoteMapSidebar} aria-label="Available companies">
-                      <div className={styles.assetQuoteSidebarHeader}>
-                        <button type="button" className={styles.assetQuoteBackButton} onClick={goBackToQuoteOptions} disabled={isSendingQuoteLead}>
-                          <ChevronLeftIcon className={styles.buttonIcon} />
-                          <span>Back</span>
-                        </button>
-                      </div>
-
-                      <div className={styles.assetQuotePartnerList}>
+                  <div className={`${directoryStyles.layout} ${directoryBusiness ? directoryStyles.withProfile : ''}`}>
+                    <aside className={directoryStyles.results} aria-label="Available companies">
+                      <div className={directoryStyles.toolbar}>
+                        <div className={directoryStyles.area}>
+                          <strong>{isLoadingQuotePartners ? 'Finding businesses…' : `${quotePartners.length} ${quotePartners.length === 1 ? 'business' : 'businesses'}`}</strong>
+                          <span>{quoteLocationInput || 'All areas'}</span>
+                          <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={changeQuoteLocation}>Change area</button>
+                          <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={showAllQuotePartners}>All areas</button>
+                        </div>
                         <BusinessDirectoryTools
                           umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
                           senderName={activeRegister?.businessName || accountProfile?.businessName || ''}
@@ -20561,6 +20374,10 @@ export default function AssetRegisterClient({
                           onChooseReport={openDirectoryReport}
                           includePhotos={isFullRegisterQuoteLead || quoteIncludePhotos}
                         />
+                      </div>
+
+                      <div className={directoryStyles.list}>
+
                         {isLoadingQuotePartners ? (
                           <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
                         ) : quotePartners.length ? (
@@ -20592,7 +20409,7 @@ export default function AssetRegisterClient({
                                     <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>
                                   ) : null}
                                   <span className={styles.assetQuotePartnerAction}>
-                                    <span>{isSelected ? 'Viewing business' : 'View business'}</span>
+                                    <span>{selectedQuotePartnerIds.includes(partner.userId) ? 'Selected company' : isSelected ? 'Viewing business' : 'View business'}</span>
                                     <ChevronRightIcon className={styles.buttonIcon} />
                                   </span>
                                 </span>
@@ -20631,44 +20448,7 @@ export default function AssetRegisterClient({
                       </div> : null}
                     </aside>
 
-                    <div
-                      className={`${styles.assetQuoteMapShell} ${isQuoteMapExpanded ? styles.assetQuoteMapShellExpanded : ''}`}
-
-                    >
-                      {googleDirectoryEnabled ? <GoogleDirectoryMap
-                        fitResults={!isLoadingQuotePartners && quoteFitResultsRef.current}
-                        onFitted={() => { quoteFitResultsRef.current = false; }}
-                        partners={quotePartnersWithCoordinates}
-                        selectedId={directoryBusiness?.userId}
-                        center={quoteInitialMapLocationRef.current?.center ?? DEFAULT_PARTNER_MAP_CENTER}
-                        zoom={quoteInitialMapLocationRef.current?.zoom ?? DEFAULT_PARTNER_MAP_ZOOM}
-                        onSelect={id => { setDirectoryBusiness(quotePartners.find(p => p.userId === id) ?? null); setIsQuoteMapExpanded(false); }}
-                        onBounds={bounds => {
-                          if (quoteViewportTimeoutRef.current !== null) window.clearTimeout(quoteViewportTimeoutRef.current);
-                          quoteViewportTimeoutRef.current = window.setTimeout(() => { void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch, bounds); }, 300);
-                        }}
-                      /> : <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Business locations map" />}
-                      <div className={styles.assetQuoteMapControls} onClick={(event) => event.stopPropagation()}>
-                        <button
-                          type="button"
-                          className={styles.assetQuoteMapExpandButton}
-                          onClick={() => setIsQuoteMapExpanded((current) => !current)}
-                          aria-label={isQuoteMapExpanded ? 'Minimise partner map' : 'Expand partner map'}
-                          title={isQuoteMapExpanded ? 'Return to partner results' : 'Open full map'}
-                        >
-                          {isQuoteMapExpanded ? <CloseIcon className={styles.buttonIcon} /> : <ExpandIcon className={styles.buttonIcon} />}
-                          <span>{isQuoteMapExpanded ? 'Return to results' : 'Expand map'}</span>
-                        </button>
-                      </div>
-
-                      {!isLoadingQuotePartners && !quotePartnersWithCoordinates.length ? (
-                        <div className={styles.assetQuoteMapEmptyOverlay}>
-                          <OptionsIcon className={styles.buttonIcon} />
-                          <p>Move the map to explore another area.</p>
-                        </div>
-                      ) : null}
-                    </div>
-                    {directoryBusiness && !isQuoteMapExpanded ? <BusinessProfileCard
+                    {directoryBusiness ? <BusinessProfileCard
                       key={directoryBusiness.userId}
                       business={directoryBusiness}
                       onClose={() => setDirectoryBusiness(null)}
