@@ -234,7 +234,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(preview, /observer.disconnect\(\)/);
 
   assert.match(preview, /Register value[\s\S]*?R 359 550/);
-  assert.match(preview, /tabIndex=\{0\}/);
+  assert.match(preview, /aria-haspopup="dialog"/);
   assert.match(preview, /className=\{styles\.assetHeroStage\}[\s\S]*?data-active-question=\{activeQuestion\}/);
   assert.match(preview, /aria-label=\{showRegister \? 'Asset Register preview' : undefined\}/);
   assert.match(preview, /aria-labelledby=\{showRegister \? undefined : `home-asset-question-/);

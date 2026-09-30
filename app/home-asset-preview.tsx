@@ -225,6 +225,19 @@ export default function HomeAssetPreview({
 function ExpandedPreview({ preview, onClose }: { preview: PreviewKey; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [fitScale, setFitScale] = useState(0);
+  const width = preview === 'manage' ? 1376 : 768;
+  const height = preview === 'register' ? 708 : preview === 'manage' ? 640 : 592;
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+    if (!frame) return;
+    const fit = () => setFitScale(Math.max(0, Math.min(1.5, (frame.clientWidth - 24) / width, (frame.clientHeight - 24) / height)));
+    const observer = new ResizeObserver(fit);
+    observer.observe(frame);
+    fit();
+    return () => observer.disconnect();
+  }, [width, height]);
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -258,8 +271,9 @@ function ExpandedPreview({ preview, onClose }: { preview: PreviewKey; onClose: (
         <div><h2 id="home-preview-title">{title}</h2><p>Aim4price demo preview</p></div>
         <button type="button" onClick={onClose} aria-label="Close enlarged preview">Close ×</button>
       </header>
-      <div className={modalStyles.scroll} tabIndex={0} aria-label="Enlarged demo card — scroll to explore">
-        <div className={modalStyles.card} data-preview={preview}>
+      <div ref={frameRef} className={modalStyles.frame}>
+        <div className={modalStyles.card} data-preview={preview}
+          style={{ width, height, transform: `translate(-50%, -50%) scale(${fitScale})` }}>
           <div className={modalStyles.canvas}><PreviewContent activeQuestion={preview} /></div>
         </div>
       </div>
