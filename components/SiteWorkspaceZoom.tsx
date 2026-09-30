@@ -302,7 +302,6 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
                 value={percentage} aria-valuetext={`${percentage} percent`}
                 onChange={(event) => setPreference({ mode: 'manual', scale: Number(event.target.value) / 100 })} />
               <button type="button" className={styles.fitButton} onClick={() => setPreference({ mode: 'auto' })}>Fit to screen</button>
-              <p>Automatically fits your screen each time you return.</p>
             </div>
           </dialog> : null}
         </div>
