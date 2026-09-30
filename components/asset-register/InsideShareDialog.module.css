@@ -39,3 +39,11 @@
 .copy { display:flex; flex-direction:column; align-items:center; gap:.22rem; min-width:0; text-align:center; }
 .card .copy strong,.card .copy small { display:block; margin:0; padding:0; }
 .pickerGrid { padding-top:0; }
+
+/* Only the destination chooser has three columns; partner choices keep their grid. */
+.destinationGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.destinationBody { padding-top: 1.6rem; min-height: 0; overflow-y: auto; }
+.card[data-tone='link'] { --tone: #7c3aed; --border: #d8c4ff; --tint: #fcf9ff; }
+@media (max-width: 640px) {
+  :global(body:not(:has([data-website-canvas]))) .destinationGrid { grid-template-columns: minmax(0, 1fr); }
+}

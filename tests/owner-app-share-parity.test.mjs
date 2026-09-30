@@ -6,7 +6,7 @@ const ownerOptionsUrl = new URL('../app/owner-app/assets/[assetId]/owner-asset-o
 const ownerDetailUrl = new URL('../app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx', import.meta.url);
 const ownerReportsUrl = new URL('../app/owner-app/assets/[assetId]/owner-asset-report-picker.tsx', import.meta.url);
 
-test('Owner App Share reuses the Inside or Outside chooser and the simplified external share flow', async () => {
+test('Owner App Share reuses the three-option chooser and the simplified external share flow', async () => {
   const [options, detail, reportPicker] = await Promise.all([
     readFile(ownerOptionsUrl, 'utf8'),
     readFile(ownerDetailUrl, 'utf8'),
@@ -15,9 +15,11 @@ test('Owner App Share reuses the Inside or Outside chooser and the simplified ex
 
   assert.match(options, /AssetShareDestinationPicker/);
   assert.match(options, /AssetExternalShare/);
+  assert.match(options, /onSendLink=\{\(\) => returnToStage\('link'\)\}/);
+  assert.match(options, /<BusinessListingInvite sendLink assetIds=\{\[assetId\]\}/);
   assert.match(options, /useState<OptionsStage>\('destination'\)/);
   assert.match(options, /onInside=\{\(\) => returnToStage\('inside'\)\}/);
-  assert.match(options, /onOutside=\{\(\) => returnToStage\('outside'\)\}/);
+  assert.match(options, /onOutside=\{\(\) => \{ setExternalRecipient\(null\); returnToStage\('outside'\); \}\}/);
   assert.match(options, /stage === 'outside'[\s\S]*?<AssetExternalShare/);
   assert.match(options, /onAddAim4priceReport=/);
   assert.match(options, /onRemoveAim4priceReport=/);

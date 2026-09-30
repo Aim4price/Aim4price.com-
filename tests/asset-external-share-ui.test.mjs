@@ -2,18 +2,19 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-test('Share Asset opens the inside or outside Aim4price choice before either flow', async () => {
+test('Share Asset opens Send link, inside and outside Aim4price choices before sharing', async () => {
   const [client, component] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetExternalShare.tsx', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(client, /type AssetShareDestination = 'choice' \| 'inside' \| 'outside'/);
+  assert.match(client, /type AssetShareDestination = 'choice' \| 'link' \| 'inside' \| 'outside'/);
   assert.match(client, /setAssetShareDestination\('choice'\);[\s\S]*?setQuoteAsset\(asset\)/);
   assert.equal((client.match(/<AssetShareDestinationPicker/g) ?? []).length, 2);
   assert.equal((client.match(/<AssetExternalShare/g) ?? []).length, 2);
   assert.match(client, /onInside=\{\(\) => setAssetShareDestination\('inside'\)\}/);
   assert.match(client, /onOutside=\{\(\) => \{ directoryShareReturnRef\.current = null; setExternalBusinessRecipient\(null\); setDirectoryShareAssetIds\(null\); setAssetShareDestination\('outside'\); \}\}/);
+  assert.match(component, /<strong>Send link<\/strong>/);
   assert.match(component, /<strong>Inside Aim4price<\/strong>/);
   assert.match(component, /<strong>Outside Aim4price<\/strong>/);
 });

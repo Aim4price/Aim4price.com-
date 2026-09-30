@@ -1,9 +1,10 @@
 'use client';
 
+import BusinessListingInvite from '../../../../components/business-network/BusinessListingInvite';
 import BusinessInvite from '../../../../components/business-network/BusinessInvite';
 import BusinessSharePreview from '../../../../components/business-network/BusinessSharePreview';
 import Link from 'next/link';
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState, type FormEvent } from 'react';
 import AssetExternalShare, {
   AssetShareDestinationPicker,
   type ExternalShareFileSource,
@@ -21,7 +22,7 @@ import OwnerAssetReportPicker, { type OwnerAssetReportPickerAsset } from './owne
 
 type PartnerType = 'dealer' | 'finance' | 'insurance' | 'licensing';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
-type OptionsStage = 'destination' | 'inside' | 'outside' | 'partners' | 'message' | 'consent' | 'sent';
+type OptionsStage = 'destination' | 'link' | 'inside' | 'outside' | 'partners' | 'message' | 'consent' | 'sent';
 type IconProps = { className?: string };
 
 type Partner = {
@@ -237,6 +238,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [reportFiles, setReportFiles] = useState<ExternalShareFileSource[]>([]);
   const [reportPickerOpen, setReportPickerOpen] = useState(false);
+  const linkReportComplete = useRef<((source: ExternalShareFileSource | null) => void) | null>(null);
 
   const availableOptions = useMemo(
     () => assetKind === 'property' ? QUOTE_OPTIONS.filter((option) => option.leadType !== 'replacement_quote') : QUOTE_OPTIONS,
@@ -254,11 +256,13 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
   const assetTitle = asset.title;
 
   function returnToStage(nextStage: OptionsStage) {
+    linkReportComplete.current = null;
+    setReportPickerOpen(false);
     setNotice(null);
     setStage(nextStage);
   }
 
-  const topBackLabel = stage === 'inside' || stage === 'outside'
+  const topBackLabel = stage === 'inside' || stage === 'outside' || stage === 'link'
     ? 'Share'
     : stage === 'partners'
       ? 'Inside Aim4price'
@@ -267,7 +271,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
       : stage === 'consent'
         ? 'Message'
         : 'Asset';
-  const topBackAction = stage === 'inside' || stage === 'outside'
+  const topBackAction = stage === 'inside' || stage === 'outside' || stage === 'link'
     ? () => returnToStage('destination')
     : stage === 'partners'
       ? () => returnToStage('inside')
@@ -317,6 +321,12 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
   }
 
   function addReport(source: ExternalShareFileSource) {
+    if (linkReportComplete.current) {
+      linkReportComplete.current(source);
+      linkReportComplete.current = null;
+      setReportPickerOpen(false);
+      return;
+    }
     setReportFiles((current) => current.some((report) => report.id === source.id)
       ? current
       : [...current, source]);
@@ -441,11 +451,17 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
       {stage === 'destination' ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection} ${styles.ownerShareDestinationSection}`}>
           <AssetShareDestinationPicker
+            onSendLink={() => returnToStage('link')}
             onInside={() => returnToStage('inside')}
             onOutside={() => { setExternalRecipient(null); returnToStage('outside'); }}
           />
         </section>
       ) : null}
+
+      {stage === 'link' ? <BusinessListingInvite sendLink assetIds={[assetId]}
+        onDismiss={() => returnToStage('destination')}
+        onChooseReport={(_id, complete) => { linkReportComplete.current = complete; setReportPickerOpen(true); }}
+      /> : null}
 
       {stage === 'inside' ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
@@ -657,13 +673,13 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
         </div>
       ) : null}
 
-      {stage === 'outside' && reportPickerOpen ? (
+      {(stage === 'outside' || stage === 'link') && reportPickerOpen ? (
         <OwnerAssetReportPicker
           asset={reportAsset}
           mode="attach"
           valuationReportHtml={valuationReportHtml}
           onAttach={addReport}
-          onDismiss={() => setReportPickerOpen(false)}
+          onDismiss={() => { linkReportComplete.current?.(null); linkReportComplete.current = null; setReportPickerOpen(false); }}
         />
       ) : null}
     </>

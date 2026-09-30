@@ -1,4 +1,5 @@
 'use client';
+import { AssetShareDestinationPicker } from './AssetExternalShare';
 import ShareModalCloseButton from './ShareModalCloseButton';
 
 import base from './ShareDestinationDialog.module.css';
@@ -10,12 +11,13 @@ type Props = {
   subject: string;
   disabled?: boolean;
   onClose: () => void;
+  onSendLink: () => void;
   onInside: () => void;
   onOutside: () => void;
 };
 
 /** Shared entry point; the existing sharing flows still own recipients and sending. */
-export default function ShareDestinationDialog({ kind, titleId, subject, disabled = false, onClose, onInside, onOutside }: Props) {
+export default function ShareDestinationDialog({ kind, titleId, subject, disabled = false, onClose, onSendLink, onInside, onOutside }: Props) {
   return (
     <div className={base.overlay} data-website-overlay>
       <div className={base.backdrop} data-website-overlay onClick={disabled ? undefined : onClose} />
@@ -27,15 +29,8 @@ export default function ShareDestinationDialog({ kind, titleId, subject, disable
           </div>
           <ShareModalCloseButton onClick={onClose} disabled={disabled} aria-label="Close share options" />
         </header>
-        <div className={styles.grid}>
-          <button className={styles.card} type="button" onClick={onInside} disabled={disabled}>
-            <span className={styles.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-9h6v9M9 8h6" /></svg></span>
-            <span className={styles.copy}><strong>Inside Aim4price</strong><small>Share with a partner</small></span>
-          </button>
-          <button className={styles.card} data-tone="outside" type="button" onClick={onOutside} disabled={disabled}>
-            <span className={styles.icon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="5" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4M8.6 13.5l6.8 4"/></svg></span>
-            <span className={styles.copy}><strong>Outside Aim4price</strong><small>WhatsApp or email</small></span>
-          </button>
+        <div className={styles.destinationBody}>
+          <AssetShareDestinationPicker onSendLink={onSendLink} onInside={onInside} onOutside={onOutside} disabled={disabled} />
         </div>
       </section>
     </div>
