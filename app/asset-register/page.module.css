@@ -41298,3 +41298,37 @@ button.documentOpenLink {
   padding: 1.5rem !important;
   gap: 1rem !important;
 }
+
+/* Fit the sharing steps to the canonical desktop canvas. Keep overflow as a
+   fallback for unusually long content, without reserving an empty scrollbar. */
+.quoteTrackingSettingsModal {
+  width: min(var(--website-dialog-reference-width, 100%), 1160px) !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 2rem) !important;
+  padding: 1.3rem !important;
+}
+.quoteTrackingSettingsModal .dealerTrackingBody {
+  padding: 0.6rem 0 0.15rem !important;
+  gap: 0.65rem !important;
+  scrollbar-gutter: auto;
+}
+.quoteTrackingSettingsModal .dealerTrackingHeader h3 {
+  font-size: 1.8rem !important;
+  line-height: 1.2 !important;
+}
+.assetQuoteStepModal.assetQuoteConsentStepModal {
+  width: min(var(--website-dialog-reference-width, 100%), 1040px) !important;
+}
+.assetQuoteConsentStepModal .assetQuoteStepBody {
+  padding: 1.25rem 1.75rem !important;
+  gap: 1rem !important;
+}
+.assetQuoteConsentStepModal .assetQuotePopiaBox {
+  padding: 1.1rem 1.25rem !important;
+}
+.assetQuoteConsentStepModal .assetQuotePopiaBox p {
+  line-height: 1.5 !important;
+}
+
+.quoteTrackingSettingsModal .dealerTrackingIntro {
+  padding: 0.7rem 1rem;
+}

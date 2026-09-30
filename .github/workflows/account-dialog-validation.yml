@@ -30,7 +30,7 @@ jobs:
       - run: npm run typecheck
       - run: node --test tests/dealer-app-maintenance-ui-refinement.test.mjs tests/dealer-maintenance-tracker-ui.test.mjs
       - name: Dealer scheduling flow regression
-        run: node --test --test-name-pattern="dealer proposal wizard" tests/dealer-maintenance-schedule-proposals.test.mjs
+        run: node --test tests/dealer-maintenance-direct-scheduling.test.cjs tests/dealer-maintenance-schedule-proposals.test.mjs
       - run: node scripts/verify-account-dialogs.cjs
       - uses: actions/upload-artifact@v4
         if: always()

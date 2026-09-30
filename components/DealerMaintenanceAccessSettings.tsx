@@ -54,7 +54,7 @@ export const dealerMaintenancePermissionOptions: Array<{
   {
     key: 'canCreateMaintenanceSchedules',
     title: 'Create Maintenance Schedules',
-    description: 'Let the dealer propose schedules that require owner approval before becoming official.',
+    description: 'Let the business/dealer create active maintenance schedules directly.',
   },
   {
     key: 'canUpdateSerial',

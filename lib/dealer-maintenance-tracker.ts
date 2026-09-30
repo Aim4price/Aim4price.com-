@@ -937,14 +937,15 @@ export async function listPendingOwnerDealerMaintenanceScheduleProposals(
   return result.rows.map(mapScheduleProposal);
 }
 
-export async function createDealerMaintenanceScheduleProposal(input: {
+export async function createDealerMaintenanceSchedule(input: {
   dealerUserId: string;
+  proposalId?: string;
   draft: DealerMaintenanceScheduleProposalInput;
-}): Promise<DealerMaintenanceScheduleProposal> {
+}): Promise<{ accessId: string; maintenanceRecordId: string }> {
   await ensureDealerMaintenanceTrackerTables();
   const accessId = asText(input.draft.accessId);
   const leadId = asText(input.draft.leadId);
-  if (!UUID_PATTERN.test(accessId) || (leadId && !UUID_PATTERN.test(leadId))) {
+  if (!UUID_PATTERN.test(accessId) || (leadId && !UUID_PATTERN.test(leadId)) || (input.proposalId && !UUID_PATTERN.test(input.proposalId))) {
     throw new Error('TRACKING_ACCESS_NOT_FOUND');
   }
 
@@ -993,7 +994,8 @@ export async function createDealerMaintenanceScheduleProposal(input: {
     currentProposals.some(
       (proposal) =>
         proposal.status === 'pending'
-        && proposal.maintenanceType === maintenanceType,
+        && proposal.maintenanceType === maintenanceType
+        && proposal.id !== input.proposalId,
     )
   ) {
     throw new Error('MAINTENANCE_PROPOSAL_ALREADY_EXISTS');
@@ -1040,64 +1042,76 @@ export async function createDealerMaintenanceScheduleProposal(input: {
     || (maintenanceType === 'checkup' ? 'Scheduled checkup' : 'Scheduled service');
   const notes = asText(input.draft.notes).slice(0, 4000);
 
-  const result = await getDb().query<{ id: string }>(
-    `
-      insert into public.dealer_maintenance_schedule_proposals (
-        access_id,
-        owner_user_id,
-        dealer_user_id,
-        asset_register_item_id,
-        lead_id,
-        proposal_status,
-        maintenance_type,
-        trigger_type,
-        title,
-        notes,
-        due_date,
-        due_usage,
-        usage_metric,
-        alert_before_value,
-        alert_before_unit,
-        recurring_enabled,
-        recurring_interval_value,
-        recurring_interval_unit,
-        created_at,
-        updated_at
-      )
-      values (
-        $1::uuid, $2, $3, $4::uuid, $5::uuid, 'pending', $6, $7, $8, $9,
-        $10::date, $11, $12, $13, $14, $15, $16, $17, now(), now()
-      )
-      returning id::text
-    `,
-    [
-      accessId,
-      access.owner_user_id,
-      input.dealerUserId,
-      access.asset_register_item_id,
-      leadId || null,
-      maintenanceType,
-      triggerType,
-      title,
-      notes,
-      dueDate,
-      dueUsage,
-      usageMetric,
-      alertBeforeValue,
-      alertBeforeUnit,
-      recurringEnabled,
-      recurringIntervalValue,
-      recurringIntervalUnit,
-    ],
-  );
-  const proposalId = result.rows[0]?.id;
-  const proposals = await listDealerMaintenanceScheduleProposals({
-    dealerUserId: input.dealerUserId,
-    accessId,
-  });
-  const proposal = proposals.find((entry) => entry.id === proposalId);
-  if (!proposal) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
-  return proposal;
+  // Serialize creation for this asset and recheck permission inside the write
+  // transaction so revoked access cannot create a schedule from a stale modal.
+  const client = await getDb().connect();
+  try {
+    await client.query('begin');
+    const lockedAsset = await client.query(
+      'select id from public.asset_register_items where id = $1::uuid and user_id = $2 for update',
+      [access.asset_register_item_id, access.owner_user_id],
+    );
+    if (!lockedAsset.rows[0]) throw new Error('ASSET_NOT_FOUND');
+    const lockedAccess = await client.query<{ can_create_maintenance_schedules: boolean }>(
+      `select can_create_maintenance_schedules from public.dealer_maintenance_access
+       where id = $1::uuid and dealer_user_id = $2 and owner_user_id = $3
+         and asset_register_item_id = $4::uuid and is_active = true for update`,
+      [accessId, input.dealerUserId, access.owner_user_id, access.asset_register_item_id],
+    );
+    if (!lockedAccess.rows[0]) throw new Error('TRACKING_ACCESS_NOT_FOUND');
+    if (!lockedAccess.rows[0].can_create_maintenance_schedules) {
+      throw new Error('MAINTENANCE_SCHEDULE_PERMISSION_REQUIRED');
+    }
+    if (input.proposalId) {
+      const pending = await client.query(
+        `select id from public.dealer_maintenance_schedule_proposals
+         where id = $1::uuid and access_id = $2::uuid and dealer_user_id = $3
+           and proposal_status = 'pending' for update`,
+        [input.proposalId, accessId, input.dealerUserId],
+      );
+      if (!pending.rows[0]) throw new Error('MAINTENANCE_PROPOSAL_NOT_FOUND');
+    }
+    const existing = await client.query(
+      `select id from public.asset_maintenance_records
+       where user_id = $1 and asset_register_item_id = $2::uuid
+         and maintenance_type = $3 and status = 'upcoming' limit 1`,
+      [access.owner_user_id, access.asset_register_item_id, maintenanceType],
+    );
+    if (existing.rows[0]) throw new Error('MAINTENANCE_ALREADY_SCHEDULED');
+    const result = await client.query<{ id: string }>(
+      `insert into public.asset_maintenance_records (
+        user_id, asset_register_item_id, maintenance_type, trigger_type, status,
+        title, notes, assigned_field_manager_id, assigned_name,
+        due_date, due_usage, usage_metric, alert_before_value, alert_before_unit,
+        recurring_enabled, recurring_interval_value, recurring_interval_unit,
+        created_at, updated_at
+      ) values ($1, $2::uuid, $3, $4, 'upcoming', $5, $6, null, '',
+        $7::date, $8, $9, $10, $11, $12, $13, $14, now(), now()) returning id::text`,
+      [access.owner_user_id, access.asset_register_item_id, maintenanceType, triggerType,
+        title, notes, dueDate, dueUsage, usageMetric, alertBeforeValue, alertBeforeUnit,
+        recurringEnabled, recurringIntervalValue, recurringIntervalUnit],
+    );
+    const maintenanceRecordId = result.rows[0]?.id;
+    if (!maintenanceRecordId) throw new Error('MAINTENANCE_NOT_CREATED');
+    if (input.proposalId) {
+      // Retain the old proposal as history, linked to the schedule activated by
+      // the dealer under the owner's current permission.
+      await client.query(
+        `update public.dealer_maintenance_schedule_proposals
+         set proposal_status = 'approved', created_maintenance_record_id = $2::uuid,
+             decided_at = now(), updated_at = now()
+         where id = $1::uuid`,
+        [input.proposalId, maintenanceRecordId],
+      );
+    }
+    await client.query('commit');
+    return { accessId, maintenanceRecordId };
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function updateDealerMaintenanceScheduleProposal(input: {
