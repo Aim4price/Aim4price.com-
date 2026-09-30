@@ -692,14 +692,14 @@ function AppAccessManagement({ kind, configOverride }: {
   function renderAccountNameSetup() {
     if (accountName) return null;
     const setup = <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
-      <form className={baseStyles.form} onSubmit={confirmAccountName}>
+      <form className={styles.businessLoginForm} onSubmit={confirmAccountName}>
         <label className={`${baseStyles.field} ${styles.field}`}>
           <span>Business login ID</span>
           <input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
             autoCapitalize="none" autoComplete="off" minLength={3} maxLength={32} required disabled={namespaceBusy} />
         </label>
         <p className={styles.loginExample} aria-live="polite">App login example: <strong>john@{accountNameDraft.trim() || 'yourbusiness'}</strong></p>
-        <p className={styles.loginHint}>Choose once. This ID stays the same for all your apps.</p>
+        <p className={styles.loginHint}>A permanent ID shared by all your app logins.</p>
         <details className={styles.loginHelp}>
           <summary>How does this work?</summary>
           <p>Your team uses <strong>person@business</strong> to sign in. This is an app username, not an email address.</p>
@@ -714,7 +714,7 @@ function AppAccessManagement({ kind, configOverride }: {
         </div>
       </form>
     </section>;
-    if (activeFlow === 'manage' && !selectedId && records.length > 0) {
+    if (activeFlow === 'manage' && records.length > 0) {
       return <details className={styles.loginSetupDisclosure}>
         <summary>Set up a business login ID <span>Existing logins still work</span></summary>
         {setup}
@@ -974,9 +974,9 @@ function AppAccessManagement({ kind, configOverride }: {
           <span>{record.username}</span>
           {roleSummary ? <small className={baseStyles.rolePill}>{roleSummary}</small> : null}
         </div>
-        <div className={`${baseStyles.managerSummaryMeta} ${styles.managerSummaryMeta}`} aria-label={`${config.itemLabel} dates`}>
+        <div className={`${baseStyles.managerSummaryMeta} ${styles.managerSummaryMeta} ${includeManageButton ? styles.listDates : ''}`} aria-label={`${config.itemLabel} dates`}>
           <span><b>Last login</b>{formatDateTime(record.lastLoginAtIso)}</span>
-          <span><b>Updated</b>{formatDateTime(record.updatedAtIso)}</span>
+          {!includeManageButton ? <span><b>Updated</b>{formatDateTime(record.updatedAtIso)}</span> : null}
         </div>
         <span className={`${baseStyles.statusText} ${record.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>
           {record.isActive ? 'Active' : 'Inactive'}
