@@ -178,6 +178,7 @@ export async function saveBusiness(
 export async function listExternalBusinesses(input: {
   partnerType?: string | null;
   search?: string | null;
+  area?: string | null;
   bounds?: PartnerMapBounds | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -196,6 +197,8 @@ export async function listExternalBusinesses(input: {
     .filter(({ details: b }) => {
       // Published businesses are recipients, not a category-based marketplace.
       if (query && !b.name.toLowerCase().includes(query)) return false;
+      const areaParts = (input.area || '').toLowerCase().split(',').map(value => value.trim()).filter(Boolean);
+      if (!b.nationwide && !areaParts.every(area => `${b.town} ${b.address}`.toLowerCase().includes(area))) return false;
       const bounds = input.bounds;
       const latitude =
         input.latitude ?? (bounds ? (bounds.south + bounds.north) / 2 : null);

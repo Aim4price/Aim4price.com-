@@ -1185,6 +1185,7 @@ export async function listPartnerDirectory(input: {
   currentUserId: string;
   partnerType?: PartnerType | null;
   search?: string | null;
+  area?: string | null;
   bounds?: PartnerMapBounds | null;
   includeExternal?: boolean;
 }): Promise<PartnerDirectoryEntry[]> {
@@ -1223,6 +1224,11 @@ export async function listPartnerDirectory(input: {
     filters.push(west <= east
       ? `partner_longitude between $${westIndex} and $${eastIndex}`
       : `(partner_longitude >= $${westIndex} or partner_longitude <= $${eastIndex})`);
+  }
+
+  for (const area of (input.area || '').toLowerCase().split(',').map(value => value.trim()).filter(Boolean)) {
+    params.push(`%${area}%`);
+    filters.push(`lower(concat_ws(' ', town_city, province, address_line_1)) like $${params.length}`);
   }
 
   const result = await db.query<AccountPartnerProfileRow>(

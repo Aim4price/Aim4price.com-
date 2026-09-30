@@ -11311,13 +11311,15 @@ export default function AssetRegisterClient({
     setProjectionAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
   }
 
-  function prepareQuoteLocationStep(asset: RegisterAsset | null) {
+  function prepareQuoteLocationStep(asset: RegisterAsset | null, leadType: AssetLeadType) {
     setDirectoryBusiness(null);
     quoteDirectoryBoundsRef.current = null;
-    setQuoteDirectoryStage('location');
-    setQuoteLocationInput(defaultQuoteLocationInput(asset, accountProfile));
+    const area = defaultQuoteLocationInput(asset, accountProfile);
+    setQuoteDirectoryStage('directory');
+    setQuoteLocationInput(area);
     setQuoteLocationError('');
     setIsResolvingQuoteLocation(false);
+    void loadQuotePartners(leadType, '', undefined, area, false);
   }
 
   function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
@@ -11396,6 +11398,8 @@ export default function AssetRegisterClient({
     leadType: AssetLeadType | null = selectedQuoteLeadType,
     searchValue = quotePartnerSearch,
     bounds?: { west: number; south: number; east: number; north: number },
+    areaValue = quoteLocationInput,
+    preserveSelections = true,
   ): Promise<PartnerDirectoryEntry[]> {
     const option = quoteOptionForLeadType(leadType);
 
@@ -11412,6 +11416,7 @@ export default function AssetRegisterClient({
     try {
       const params = new URLSearchParams({ type: option.partnerType });
       if (searchValue.trim()) params.set('search', searchValue.trim());
+      if (areaValue.trim()) params.set('area', areaValue.trim());
       const effectiveBounds = bounds ?? quoteDirectoryBoundsRef.current;
       if (effectiveBounds) {
         params.set('west', String(effectiveBounds.west));
@@ -11432,7 +11437,7 @@ export default function AssetRegisterClient({
 
       const loadedPartners = data.partners;
       setQuotePartners((current) => {
-        const preservedSelections = current.filter((partner) => selectedQuotePartnerIds.includes(partner.userId));
+        const preservedSelections = preserveSelections ? current.filter((partner) => selectedQuotePartnerIds.includes(partner.userId)) : [];
         const nextPartners = new Map(
           [...preservedSelections, ...loadedPartners].map((partner) => [partner.userId, partner]),
         );
@@ -11453,107 +11458,20 @@ export default function AssetRegisterClient({
   function showAllQuotePartners() {
     quoteDirectoryBoundsRef.current = null;
     setQuoteLocationInput('');
-    setQuotePartnerSearch('');
     setDirectoryBusiness(null);
     setQuoteDirectoryStage('directory');
-    void loadQuotePartners(selectedQuoteLeadType, '');
+    void loadQuotePartners(selectedQuoteLeadType, quotePartnerSearch, undefined, '');
   }
 
-  function showQuoteDirectoryForLocation(
-    location: AssetSettingsApproximateMapLocation,
-    label: string,
-  ) {
-    const span = Math.min(10, 360 / Math.pow(2, location.zoom - 1));
-    quoteDirectoryBoundsRef.current = {
-      west: Math.max(-180, location.center[1] - span), east: Math.min(180, location.center[1] + span),
-      south: Math.max(-90, location.center[0] - span), north: Math.min(90, location.center[0] + span),
-    };
-    setQuotePartnerSearch('');
-    setQuoteLocationInput(label);
-    setQuoteLocationError('');
-    setSelectedQuotePartnerIds([]);
-    setDirectoryBusiness(null);
-    setQuotePartners([]);
-    void loadQuotePartners(selectedQuoteLeadType, '');
-    setQuoteDirectoryStage('directory');
-  }
-
-  async function submitQuoteLocation(event: FormEvent<HTMLFormElement>) {
+  function applyQuoteDirectoryFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedQuoteOption || isResolvingQuoteLocation) return;
-
-    const locationValue = quoteLocationInput.replace(/\s+/g, ' ').trim();
-    if (locationValue.length < 2) {
-      setQuoteLocationError('Enter a town, city or province to show nearby businesses.');
-      return;
-    }
-
-    setQuoteLocationError('');
-    const knownLocation = resolveQuoteLocationMapTarget(locationValue);
-    if (knownLocation) {
-      quotePartnerRequestRef.current += 1;
-      showQuoteDirectoryForLocation(knownLocation, locationValue);
-      return;
-    }
-
-    setIsResolvingQuoteLocation(true);
-    try {
-      quoteDirectoryBoundsRef.current = null;
-      setQuotePartnerSearch(locationValue);
-      setDirectoryBusiness(null);
-      setSelectedQuotePartnerIds([]);
-      await loadQuotePartners(selectedQuoteOption.leadType, locationValue);
-      setQuoteDirectoryStage('directory');
-    } finally {
-      setIsResolvingQuoteLocation(false);
-    }
-  }
-
-  async function useCurrentQuoteLocation() {
-    if (isResolvingQuoteLocation) return;
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setQuoteLocationError('Current location is not available in this browser. Enter your town or province instead.');
-      return;
-    }
-
-    setQuoteLocationError('');
-    setIsResolvingQuoteLocation(true);
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,
-          timeout: 10000,
-          maximumAge: 300000,
-        });
-      });
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        throw new Error('Your current location could not be read. Enter your town or province instead.');
-      }
-
-      quotePartnerRequestRef.current += 1;
-      showQuoteDirectoryForLocation({ center: [latitude, longitude], zoom: QUOTE_LOCATION_TOWN_ZOOM }, 'Current location');
-    } catch (error) {
-      const permissionDenied = typeof error === 'object' && error !== null && 'code' in error && Number((error as { code?: unknown }).code) === 1;
-      setQuoteLocationError(permissionDenied
-        ? 'Location permission was denied. Enter your town or province instead.'
-        : error instanceof Error ? error.message : 'Your current location could not be read. Enter your town or province instead.');
-    } finally {
-      setIsResolvingQuoteLocation(false);
-    }
+    setDirectoryBusiness(null);
+    quoteDirectoryBoundsRef.current = null;
+    void loadQuotePartners(selectedQuoteLeadType, quotePartnerSearch);
   }
 
   function changeQuoteLocation() {
-    if (isSendingQuoteLead) return;
-    quotePartnerRequestRef.current += 1;
-    quoteDirectoryBoundsRef.current = null;
-    setDirectoryBusiness(null);
-    setQuoteDirectoryStage('location');
-    setQuoteLocationError('');
-    setQuotePartnerSearch('');
-    setQuotePartners([]);
-    setSelectedQuotePartnerIds([]);
+    document.getElementById('partner-directory-area')?.focus();
   }
 
   function openQuotePartnerPicker(leadType: AssetLeadType) {
@@ -11570,7 +11488,7 @@ export default function AssetRegisterClient({
     }
     setBusinessAdditionalContact('');
     setSelectedQuoteLeadType(leadType);
-    prepareQuoteLocationStep(quoteAsset);
+    prepareQuoteLocationStep(quoteAsset, leadType);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
     setQuoteOwnerMessage('');
@@ -14833,7 +14751,7 @@ export default function AssetRegisterClient({
     setQuoteAsset(anchorAsset);
     setBusinessAdditionalContact('');
     setSelectedQuoteLeadType(leadType);
-    prepareQuoteLocationStep(anchorAsset);
+    prepareQuoteLocationStep(anchorAsset, leadType);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
     setQuoteOwnerMessage('');
@@ -20191,7 +20109,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${isExternalAssetShareView ? styles.registerShareModalHeader : ''}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-quote-title" tabIndex={-1}>{selectedQuoteOption
-                  ? quoteDirectoryStage === 'location' ? 'Where are you looking?' : selectedQuoteOption.mapTitle
+                  ? selectedQuoteOption.mapTitle
                   : assetShareDestination === 'inside'
                     ? 'Share inside Aim4price'
                     : assetShareDestination === 'outside'
@@ -20203,8 +20121,6 @@ export default function AssetRegisterClient({
                     : assetShareDestination === 'outside'
                       ? 'Choose attachments, then share.'
                       : quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
-                ) : quoteDirectoryStage === 'location' ? (
-                  <p>Choose an area to see businesses near you.</p>
                 ) : isFullRegisterQuoteLead ? (
                   selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal' ? (
                     <p>{isAssetGroupShare
@@ -20274,97 +20190,15 @@ export default function AssetRegisterClient({
 
                   </div>
                 )
-              ) : quoteDirectoryStage === 'location' ? (
-                <div className={styles.assetQuoteLocationStage}>
-                  <section className={styles.assetQuoteLocationCard} aria-labelledby="asset-quote-location-heading">
-                    <span className={styles.assetQuoteLocationIcon} aria-hidden="true">
-                      <SearchIcon className={styles.buttonIcon} />
-                    </span>
-
-                    <div className={styles.assetQuoteLocationCopy}>
-                      <h4 id="asset-quote-location-heading">Choose your location</h4>
-                    </div>
-
-                    <form className={styles.assetQuoteLocationForm} onSubmit={submitQuoteLocation}>
-                      <label htmlFor="asset-quote-location-input">Town, city or province</label>
-                      <input
-                        id="asset-quote-location-input"
-                        className={styles.assetQuoteLocationInput}
-                        value={quoteLocationInput}
-                        onChange={(event) => {
-                          setQuoteLocationInput(event.target.value);
-                          if (quoteLocationError) setQuoteLocationError('');
-                        }}
-                        placeholder="e.g. Johannesburg or Northern Cape"
-                        list="asset-quote-location-options"
-                        autoComplete="address-level2"
-                        autoFocus
-                        aria-describedby="asset-quote-location-hint"
-                        aria-invalid={Boolean(quoteLocationError)}
-                      />
-                      <datalist id="asset-quote-location-options">
-                        {QUOTE_LOCATION_SUGGESTIONS.map((location) => (
-                          <option key={location} value={location} />
-                        ))}
-                      </datalist>
-
-                      <button type="button" className={styles.directoryUseLocation} onClick={() => void useCurrentQuoteLocation()} disabled={isResolvingQuoteLocation}>
-                        Use current location
-                      </button>
-                      <small id="asset-quote-location-hint" className={styles.assetQuoteLocationHint}>
-                        Your location is only used to centre this search.
-                      </small>
-                      {quoteLocationError ? (
-                        <p className={styles.assetQuoteLocationError} role="alert">{quoteLocationError}</p>
-                      ) : null}
-
-                      <div className={styles.assetQuoteLocationActions}>
-                        <button type="button" className={styles.assetQuoteBackButton} onClick={goBackToQuoteOptions} disabled={isResolvingQuoteLocation}>
-                          <ChevronLeftIcon className={styles.buttonIcon} />
-                          <span>Back</span>
-                        </button>
-
-                        <button type="button" className={styles.secondaryButton} onClick={showAllQuotePartners} disabled={isResolvingQuoteLocation}>Browse all businesses</button>
-
-                        <button type="submit" className={styles.primaryButton} disabled={isResolvingQuoteLocation || !quoteLocationInput.trim()}>
-                          {isResolvingQuoteLocation ? 'Finding area...' : 'Show businesses'}
-                        </button>
-                      </div>
-                    </form>
-                  </section>
-                </div>
               ) : (
                 <div className={styles.assetQuoteContent}>
-                  <form
-                    className={styles.assetQuoteSearchBar}
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      setDirectoryBusiness(null);
-                      void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch);
-                    }}
-                  >
-                    <input
-                      className={styles.assetQuoteSearchInput}
-                      value={quotePartnerSearch}
-                      onChange={(event) => setQuotePartnerSearch(event.target.value)}
-                      placeholder="Find a business by name"
-                      aria-label="Search business directory"
-                    />
-                    <button type="submit" className={styles.secondaryButton} disabled={isLoadingQuotePartners}>
-                      <SearchIcon className={styles.buttonIcon} />
-                      <span>{isLoadingQuotePartners ? 'Searching...' : 'Search'}</span>
-                    </button>
-                  </form>
-
-                  <div className={`${directoryStyles.layout} ${directoryBusiness ? directoryStyles.withProfile : ''}`}>
-                    <aside className={directoryStyles.results} aria-label="Available companies">
-                      <div className={directoryStyles.toolbar}>
-                        <div className={directoryStyles.area}>
-                          <strong>{isLoadingQuotePartners ? 'Finding businesses…' : `${quotePartners.length} ${quotePartners.length === 1 ? 'business' : 'businesses'}`}</strong>
-                          <span>{quoteLocationInput || 'All areas'}</span>
-                          <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={changeQuoteLocation}>Change area</button>
-                          <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={showAllQuotePartners}>All areas</button>
-                        </div>
+                  <div className={directoryStyles.controls}>
+                    <form className={directoryStyles.filters} onSubmit={applyQuoteDirectoryFilters}>
+                      <label>Business<input value={quotePartnerSearch} onChange={event => setQuotePartnerSearch(event.target.value)} placeholder="Find a business by name" /></label>
+                      <label>Area<input id="partner-directory-area" value={quoteLocationInput} onChange={event => setQuoteLocationInput(event.target.value)} placeholder="All areas" /></label>
+                      <button type="submit" disabled={isLoadingQuotePartners}>{isLoadingQuotePartners ? 'Searching…' : 'Search'}</button>
+                      <button type="button" onClick={showAllQuotePartners} disabled={isLoadingQuotePartners}>All areas</button>
+                    </form>
                         <BusinessDirectoryTools
                           umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
                           senderName={activeRegister?.businessName || accountProfile?.businessName || ''}
@@ -20374,6 +20208,12 @@ export default function AssetRegisterClient({
                           onChooseReport={openDirectoryReport}
                           includePhotos={isFullRegisterQuoteLead || quoteIncludePhotos}
                         />
+                  </div>
+
+                  <div className={`${directoryStyles.layout} ${directoryBusiness ? directoryStyles.withProfile : ''}`}>
+                    <aside className={directoryStyles.results} aria-label="Available companies">
+                      <div className={directoryStyles.summary} role="status">
+                        {isLoadingQuotePartners ? 'Finding businesses…' : `${quotePartners.length} ${quotePartners.length === 1 ? 'business' : 'businesses'}`}
                       </div>
 
                       <div className={directoryStyles.list}>
@@ -20384,36 +20224,19 @@ export default function AssetRegisterClient({
                           quotePartners.map((partner) => {
                             const isSelected = directoryBusiness?.userId === partner.userId;
                             return (
-                              <button
-                                key={partner.userId}
-                                type="button"
-                                className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${isSelected ? styles.assetQuotePartnerCardActive : ''}`}
-                                onClick={() => setDirectoryBusiness(partner)}
-                                aria-label={`View ${quotePartnerName(partner)}`}
-                                aria-pressed={isSelected}
-                              >
-                                <span className={styles.assetQuotePartnerBody}>
-                                  {partner.logoUrl ? <img className={styles.businessDirectoryLogo} src={partner.logoUrl} alt="" /> : null}
-                                  <span className={styles.assetQuotePartnerHeader}>
-                                    <strong>{quotePartnerName(partner)}</strong>
-                                    <small className={`${styles.businessDirectoryBadge} ${!partner.isExternalBusiness ? styles.businessAccountBadge : ''}`}>{partner.isExternalBusiness ? 'Directory listing' : 'Aim4price account'}</small>
-                                  </span>
-                                  <span className={styles.assetQuotePartnerMeta}>
-                                    <span>{quotePartnerLocation(partner)}</span>
-                                    {(
-                                      <span>{quotePartnerServicesDisplay(partner)}</span>
-                                    )}
-                                    {partner.serviceRadiusKm != null ? <span>{quotePartnerRadiusDisplay(partner)}</span> : null}
-                                  </span>
-                                  {partner.brandFocus ? (
-                                    <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>
-                                  ) : null}
-                                  <span className={styles.assetQuotePartnerAction}>
-                                    <span>{selectedQuotePartnerIds.includes(partner.userId) ? 'Selected company' : isSelected ? 'Viewing business' : 'View business'}</span>
-                                    <ChevronRightIcon className={styles.buttonIcon} />
-                                  </span>
-                                </span>
-                              </button>
+                              <article key={partner.userId} className={`${directoryStyles.row} ${selectedQuotePartnerIds.includes(partner.userId) ? directoryStyles.selected : ''}`}>
+                                <div className={directoryStyles.identity}>
+                                  {partner.logoUrl ? <img src={partner.logoUrl} alt="" /> : <span className={directoryStyles.initial} aria-hidden="true">{quotePartnerName(partner).charAt(0)}</span>}
+                                  <div><strong>{quotePartnerName(partner)}</strong><small>{partner.isExternalBusiness ? 'Directory listing' : 'Aim4price account'}</small></div>
+                                </div>
+                                <div className={directoryStyles.description}><span>{quotePartnerLocation(partner)}</span><small>{quotePartnerServicesDisplay(partner)}</small></div>
+                                <div className={directoryStyles.rowActions}>
+                                  <button type="button" onClick={() => setDirectoryBusiness(partner)} aria-expanded={isSelected}>View details</button>
+                                  <button type="button" aria-pressed={partner.isExternalBusiness ? undefined : selectedQuotePartnerIds.includes(partner.userId)} onClick={() => toggleQuotePartnerSelection(partner)}>
+                                    {partner.isExternalBusiness ? 'Share outside' : selectedQuotePartnerIds.includes(partner.userId) ? 'Selected ✓' : 'Select'}
+                                  </button>
+                                </div>
+                              </article>
                             );
                           })
                         ) : (
@@ -20431,10 +20254,10 @@ export default function AssetRegisterClient({
                         )}
                       </div>
 
-                      {isAssetGroupShare ? <div className={styles.assetQuoteSidebarFooter}>
+                      <div className={directoryStyles.footer}>
                         <span>
                           {selectedQuotePartners.length
-                            ? `${selectedQuotePartners.length} selected`
+                            ? `${selectedQuotePartners.length} ${selectedQuotePartners.length === 1 ? 'business' : 'businesses'} selected`
                             : isAssetGroupShare ? 'Select companies' : 'Select one company'}
                         </span>
                         <button
@@ -20445,7 +20268,7 @@ export default function AssetRegisterClient({
                         >
                           {selectedQuotePartners.length ? `Continue with ${selectedQuotePartners.length}` : 'Continue'}
                         </button>
-                      </div> : null}
+                      </div>
                     </aside>
 
                     {directoryBusiness ? <BusinessProfileCard
