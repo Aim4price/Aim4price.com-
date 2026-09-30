@@ -14,7 +14,7 @@ export default function SharedEnquiryAccess({returnTo,access,embedded=false}: {r
  const title=access==='request-access'?'Request access from the sender':access==='wrong-recipient'?'Use the invited account':access==='verify-email'?'Verify your email':access==='suspended'?'Account access is paused':'Open your shared enquiry';
  const description=access==='request-access'?'The sender needs to approve your account before you can view this enquiry.':access==='wrong-recipient'?'This enquiry belongs to another recipient. Sign in with the invited account or ask the sender for access.':access==='verify-email'?'Verify your account email, then return to this enquiry.':access==='suspended'?'Contact Aim4price to review your account access.':'Create a free account or sign in. You will return to this enquiry after signing in.';
  if (embedded && access === 'sign-in') return <div className={entryStyles.signInBody}>
-  <p>Use your Aim4price account. You’ll return to this enquiry after signing in.</p>
+  <p>Sign in with your Aim4price account to continue.</p>
   <Link className={`${styles.button} ${entryStyles.signInButton}`} href={`/auth?${query}#login`}>Sign in</Link>
   <div className={entryStyles.createAccount}>
    <span>New to Aim4price?</span>
