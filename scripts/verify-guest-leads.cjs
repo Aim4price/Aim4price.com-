@@ -37,7 +37,7 @@ export default function Validation(){
  {mode==='inside'&&<InsideShareDialog titleId="fixture-inside" subject="Test asset" onClose={()=>setMode('find')} options={['finance','insurance','replacement_quote','license_renewal'].map((id,i)=>({id,title:['Finance & accounting','Insurance','Dealer','Licence renewal'][i],description:['Accountant, financier or bank','Insurer or broker','Share with a dealer','Renewal date required'][i],icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V8l8-5 8 5v12ZM9 20v-8h6v8"/></svg>,onSelect:()=>setMode('find')}))}/>}
  {mode==='accept'&&<BusinessAcceptanceForm/>}
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
- {mode==='recipient'&&<><button onClick={()=>setAccess('approval-required')}>Fixture verified</button><button onClick={()=>setAccess('guest')}>Fixture guest</button><button onClick={()=>setAccess('request-access')}>Fixture request access</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><SharedAssetCards request={<SharedEnquiryRequest sender="Aim4price.com" request="Please review the shared assets."/>} share={{createdAt:'2026-09-26',assets:[{title:'Test bakkie',serialNumber:'TEST-1',yearModel:2022,usage:'100 km',condition:'Good',valueExVat:200000,replacementPriceExVat:300000,photoUrls:[],publicUrl:null}]}} enquiry={{token:'g'.repeat(43),permissions:{reports:true,serialNumber:true,replacementPrice:true,documents:true},reports:[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}],access}}/></>}
+ {mode==='recipient'&&<><button onClick={()=>setAccess('approval-required')}>Fixture verified</button><button onClick={()=>setAccess('read-only')}>Fixture read-only</button><button onClick={()=>setAccess('request-access')}>Fixture request access</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><SharedAssetCards request={<SharedEnquiryRequest sender="Aim4price.com" request="Please review the shared assets."/>} share={{createdAt:'2026-09-26',assets:[{title:'Test bakkie',serialNumber:'TEST-1',yearModel:2022,usage:'100 km',condition:'Good',valueExVat:200000,replacementPriceExVat:300000,photoUrls:[],publicUrl:null}]}} enquiry={{token:'g'.repeat(43),permissions:{reports:true,serialNumber:true,replacementPrice:true,documents:true},reports:[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}],access}}/></>}
 
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
  {mode==='find'&&<><BusinessDirectoryTools senderName="X Farms" assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={false} reportAssets={[reportAsset]} onChooseReport={(_id,done)=>{reportDone.current=done;setReportOpen(true);}}/>
@@ -245,22 +245,22 @@ export default function Validation(){
    if(width===1440)assert.ok(manageLayout.height<650,'Manage fits its actions without an empty full-height panel');
    await page.screenshot({path:path.join(output,`manage-actions-${width}.png`),fullPage:true});
    await click('Update replacement price');
-   await page.waitForSelector('a[href^="/business/guest?returnTo="]');
-   const guestLink=await page.$eval('a[href^="/business/guest?returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
-   assert.equal(guestLink.text,'Continue as guest');assert.equal(guestLink.returnTo,`/asset-share/${token}`);
+   await page.waitForSelector('a[href^="/business/join?returnTo="]');
+   const guestLink=await page.$eval('a[href^="/business/join?returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
+   assert.equal(guestLink.text,'Create free account');assert.equal(guestLink.returnTo,`/asset-share/${token}`);
    assert.equal(await page.$('dialog form'),null,'Visitors cannot submit updates');
    await page.screenshot({path:path.join(output,`signup-gate-${width}.png`),fullPage:true});
    await click('Back to Manage');await click('Reports');
    assert.equal(await page.$$eval('a[href*="/reports/"]',els=>els.length),0,'Locked reports expose no download link');
    assert.ok(await page.$('a[href^="/auth?returnTo="]'),'Sign-in keeps the enquiry return path');
-   await page.click('[aria-label="Close enquiry management"]');await click('Fixture guest');await page.click('button[aria-label="Manage Test bakkie"]');
+   await page.click('[aria-label="Close enquiry management"]');await click('Fixture read-only');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await page.waitForSelector('a[href*="/reports/"]');
    for(const action of ['Update replacement price','Invoices & quotes']){
     await click('Back to Manage');await click(action);
-    const accountLink=await page.$eval('dialog a[href^="/business/join?mode=account&returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
-    assert.equal(accountLink.text,'Create account');assert.equal(accountLink.returnTo,`/asset-share/${token}`);
-    assert.equal(await page.$('dialog form'),null,'Guests cannot submit updates or documents');
-    assert.equal(await page.$('dialog input[type=file]'),null,'Guests cannot upload documents');
+    const accountLink=await page.$eval('dialog a[href^="/business?details=1&returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
+    assert.equal(accountLink.text,'Verify business');assert.equal(accountLink.returnTo,`/asset-share/${token}`);
+    assert.equal(await page.$('dialog form'),null,'Read-only recipients cannot submit updates or documents');
+    assert.equal(await page.$('dialog input[type=file]'),null,'Read-only recipients cannot upload documents');
    }
    await page.click('[aria-label="Close enquiry management"]');await click('Fixture request access');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await click('Request access');
