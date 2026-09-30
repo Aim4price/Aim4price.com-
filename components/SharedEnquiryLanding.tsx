@@ -7,9 +7,10 @@ import ShareDisclosureDialog from './asset-register/ShareDisclosureDialog';
 import styles from '../app/business-network/accept/page.module.css';
 import gateStyles from './SharedEnquiryLanding.module.css';
 
-/** Only public entry copy belongs here. Asset data stays behind the server access check. */
-export default function SharedEnquiryLanding({ returnTo, access, prompt = false }: {
+/** The landing receives only the sender and shared titles; full records stay behind access checks. */
+export default function SharedEnquiryLanding({ returnTo, access, summary, prompt = false }: {
   returnTo: string; access: string; prompt?: boolean;
+  summary: { senderName: string; umbrellaName: string; assetTitles: string[]; assetCount: number };
 }) {
   const [open, setOpen] = useState(prompt);
   const titleId = useId();
@@ -23,6 +24,14 @@ export default function SharedEnquiryLanding({ returnTo, access, prompt = false 
     <div className={styles.layout}>
       <section className={styles.copy}>
         <h1><span>Asset details.</span><span>Shared with you.</span></h1>
+        <p className={styles.sender}><strong>{summary.senderName || 'An Aim4price business'}</strong> would like to share asset details with you.</p>
+        <div className={styles.summary}>
+          <span className={styles.assetIcon} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5ZM3 8v9l9 5 9-5V8M12 13v9"/></svg></span>
+          <div>
+            <h2>{summary.assetCount} {summary.assetCount === 1 ? 'asset shared' : 'assets shared'}</h2>
+            {summary.umbrellaName ? <p className={styles.umbrella}>{summary.umbrellaName}</p> : <ul>{summary.assetTitles.map((title, index) => <li key={index}>{title}</li>)}</ul>}
+          </div>
+        </div>
       </section>
       {allowed ? <Link className={styles.action} href={returnTo}>{contents}</Link> :
         <button ref={trigger} type="button" className={`${styles.action} ${gateStyles.openButton}`} onClick={() => setOpen(true)}>{contents}</button>}

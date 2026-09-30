@@ -17,11 +17,11 @@ test('protected enquiry page keeps asset data behind access checks and shows the
   const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>true}});
   const output=await page.default({params:{token}});
   assert.equal(output.props.children[1].type,'Landing');
-  assert.deepEqual(output.props.children[1].props,{returnTo:'/asset-share/'+token+'?open=1',access,prompt:false});
+  assert.deepEqual(output.props.children[1].props,{returnTo:'/asset-share/'+token+'?open=1',access,prompt:false,summary:{senderName:'Private sender',umbrellaName:'',assetCount:1,assetTitles:['Private tractor']}});
   const opened=await page.default({params:{token},searchParams:{open:'1'}});
   assert.equal(opened.props.children[1].type,'Landing');
   assert.equal(opened.props.children[1].props.prompt,true);
-  assert.ok(!JSON.stringify(opened).includes('Private'));
+  for(const secret of ['PRIVATE-SERIAL','private@example.test','Private request','Private report']) assert.ok(!JSON.stringify(opened).includes(secret));
  }
  for(const access of ['read-only','active','owner']){
   const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>true}});
@@ -34,4 +34,12 @@ test('protected enquiry page keeps asset data behind access checks and shows the
 test('old invitation URLs redirect enquiries before serializing asset names',async()=>{
  const page=load('app/business-network/accept/page.tsx',{...mocks,'next/navigation':{redirect:path=>{throw Error(path);}}});
  await assert.rejects(page.default({searchParams:{share:token}}),{message:'/asset-share/'+token});
+});
+
+test('umbrella landing identifies the group without serializing the member records',async()=>{
+ const grouped={...lead,share:{...lead.share,umbrellaName:'Vehicles'}};
+ const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/guest-leads':{readLeadPage:async()=>grouped},'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access:'sign-in'}),leadAllows:()=>true}});
+ const output=await page.default({params:{token}});
+ assert.deepEqual(output.props.children[1].props.summary,{senderName:'Private sender',umbrellaName:'Vehicles',assetCount:1,assetTitles:[]});
+ assert.ok(!JSON.stringify(output).includes('PRIVATE-SERIAL'));
 });
