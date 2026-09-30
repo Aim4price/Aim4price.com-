@@ -279,8 +279,11 @@ async function check(browser, url) {
   for(let i=0;i<3;i++) {const g=await dropdownGeometry();assert.ok(g.inRoot);assert.ok(Math.abs(g.left)<1);assert.ok(Math.abs(g.width)<1);assert.ok(Math.abs(g.gap-8*g.scale)<1);await page.click('[aria-label="Zoom in"]');await page.click('[aria-label="Close page size"]');await page.evaluate(()=>window.scrollTo({left:0,top:0,behavior:'instant'}));await delay(150);}
   await page.reload({waitUntil:'networkidle2'});
   // A fresh visit drops the manual override and fits the current screen.
-  await page.waitForFunction(expected=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===expected,{timeout:15000},768/1440);
-  assert.equal(await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale)),768/1440);
+  // The reserved scrollbar gutter reduces the usable canvas width below outerWidth.
+  // Check Auto against the actual page box, rather than assuming all 768 pixels are available.
+  await page.waitForFunction(()=>document.querySelector('[data-site-workspace-zoom-controls]')?.getAttribute('data-zoom-preference')==='auto' && Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===document.documentElement.getBoundingClientRect().width/1440,{timeout:15000});
+  const resetGeometry=await page.evaluate(()=>({scale:Number(document.querySelector('[data-website-canvas]').dataset.websiteScale),width:document.documentElement.getBoundingClientRect().width}));
+  assert.equal(resetGeometry.scale,resetGeometry.width/1440);
   await page.click('[aria-controls="canvas-test-dropdown"]');
   await page.click('[aria-haspopup="listbox"]:not([aria-controls="canvas-test-dropdown"])');
   await page.waitForSelector('[role="option"]');await page.$$eval('[role="option"]',els=>els.find(e=>e.textContent.includes('Second option')).click());
