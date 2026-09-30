@@ -499,7 +499,6 @@
 .sliderLabel output { font-weight: 800; }
 .zoomSlider { display: block; width: 100%; height: 2.75rem; margin: .5rem 0 1rem; accent-color: #25896b; cursor: pointer; }
 .fitButton { width: 100%; border: 1px solid #57987e; border-radius: .65rem; padding: .75rem; background: #e5f3ec; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
-.zoomPanel p { margin: 1rem 0 0; font-size: .9rem; line-height: 1.5; opacity: .8; }
 .zoomPanel button:focus-visible, .zoomSlider:focus-visible { outline: 3px solid #43b78d; outline-offset: 3px; }
 :global(html[data-background='dark']) .zoomDialog { background: #142a23; color: #f0f8f4; border-color: #426354; }
 :global(html[data-background='dark']) .fitButton { background: #244d3d; border-color: #57987e; }
