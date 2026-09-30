@@ -26,7 +26,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
   const dealer = audience === 'dealer';
   const firstStep = dealer ? 6 : 0;
   const [step, setStep] = useState(firstStep);
-  const [detail, setDetail] = useState<'funding' | 'commission' | 'setup' | 'admin' | null>(null);
+  const [detail, setDetail] = useState<'funding' | 'commission' | 'setup' | 'admin' | 'billing' | null>(null);
   const [editing, setEditing] = useState(false);
   const [assetBand, setAssetBand] = useState<number | null>(null);
   const [yearly, setYearly] = useState(false);
@@ -39,7 +39,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
   const ready = step === 7 ? help !== null : step === 8 ? setup !== null : step === 6 ? customers !== null : step === 0 ? assetBand !== null : step === 5 ? setup === 'visit' || setup === 'inspection' : step === 1 ? setup !== null : admin !== null;
   const titles = ['How many assets?', dealer ? 'How will you add your stock?' : 'How will you add your assets?', dealer ? 'Who will manage the records?' : 'Who will manage your register?', dealer ? 'Your Dealer package' : 'Your Owner package', 'How much admin help do you need?', 'What help do you need?', 'Will you manage customers’ asset registers?', 'Would you like help from Aim4price?', 'What would you like help setting up?'];
-  const detailTitles = { funding: 'Client register billing', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help' };
+  const detailTitles = { funding: 'Client register billing', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help', billing: 'Good to know' };
   useEffect(() => { onTitleChange?.(detail ? detailTitles[detail] : titles[step]); }, [step, detail, onTitleChange, dealer]);
   const move = (next: number) => {
     if (next === 3) setEditing(false);
@@ -208,11 +208,17 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         <div className={styles.optionalHelp} aria-label="Optional help and pricing details">
           <button type="button" onClick={() => openDetail('setup')}>Need help uploading?</button>
           <button type="button" onClick={() => { setEditing(true); move(4); }}>Need monthly admin help?</button>
-          <details><summary>What else should I know?</summary><p>Only active assets count; sold and archived assets are excluded. Hosting is billed to your Owner account’s email. Optional services cost extra and are confirmed before work starts. Prices are in rand. No payment or booking is made here.</p></details>
+          <button type="button" onClick={() => openDetail('billing')}>What else should I know?</button>
         </div>
       </div>}
 
       {detail && <div className={styles.detailPage}>
+        {detail === 'billing' && <dl className={styles.billingNotes}>
+          <div><dt>Your asset limit</dt><dd>Only active assets count. Sold and archived assets are excluded.</dd></div>
+          <div><dt>Account billing</dt><dd>Hosting is billed to your Owner account’s email. All prices are in rand.</dd></div>
+          <div><dt>Optional services</dt><dd>Extra costs are confirmed before work starts.</dd></div>
+          <div><dt>No commitment yet</dt><dd>No payment or booking is made here.</dd></div>
+        </dl>}
         {['funding', 'commission'].includes(detail) && <DealerDetails topic={detail as 'funding' | 'commission'} />}
         {detail === 'setup' && !dealer && setup === 'self' && <><p>Uploading your own details, photos and documents is free.</p><p>If you’d like us to visit and record your assets:</p><dl className={styles.dealerRates}><div><dt>Road-licensed asset</dt><dd>R100 per asset</dd></div><div><dt>Other asset</dt><dd>R50 per asset</dd></div><div><dt>Return travel</dt><dd>R7.50/km</dd></div></dl><p>We confirm a quote first. Formal inspections and valuations are quoted separately.</p><button type="button" className={styles.secondary} onClick={() => { setEditing(true); move(5); }}>Explore visit options</button></>}
         {detail === 'setup' && (dealer || setup !== 'self') && (setup === 'custom' ? <p>We’ll discuss your setup requirements and confirm a separate quote before starting. No setup fee is included in your subscription total.</p> : setup === 'assisted' ? <>
