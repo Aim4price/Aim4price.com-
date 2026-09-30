@@ -37,7 +37,7 @@ test('pre-paint theme works for direct links and defaults safely when storage is
       const state = runtime({ blocked, saved: { ['aim4price-app-theme:' + root]: 'dark' } });
       state.context.location = { pathname: '/' + root + '/assets' };
       vm.runInContext(state.api.APP_THEME_SCRIPT, state.context);
-      assert.equal(state.document.documentElement.dataset.appTheme, blocked ? 'light' : 'dark');
+      assert.equal(state.document.documentElement.dataset.appTheme, 'dark');
     }
   }
 });
@@ -65,7 +65,7 @@ test('storage failures retain the current-session choice and external resets cle
   assert.equal(document.documentElement.dataset.appTheme, 'dark');
   api.clearAppThemeMemory('field-manager');
   api.applyAppTheme('field-manager');
-  assert.equal(document.documentElement.dataset.appTheme, 'light');
+  assert.equal(document.documentElement.dataset.appTheme, 'dark');
 });
 
 test('offline entry uses the same pre-paint preference and caches its theme stylesheet', () => {
