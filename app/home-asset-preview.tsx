@@ -6,7 +6,6 @@ import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode }
 import styles from './page.module.css';
 import { createPortal } from '../components/WebsitePortal';
 import modalStyles from './home-preview-modal.module.css';
-import { currentWebsiteScale } from '../lib/website-canvas';
 
 export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 
@@ -244,13 +243,8 @@ function ExpandedPreview({ preview, onClose }: { preview: PreviewKey; onClose: (
     returnFocusRef.current ??= document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    // A reading view must not shrink with the homepage's fit-to-screen canvas.
-    const syncReadingScale = () => { dialog.style.zoom = String(1 / currentWebsiteScale()); };
-    syncReadingScale();
-    window.addEventListener('aim4price:canvas-geometry', syncReadingScale);
     dialog.showModal();
     return () => {
-      window.removeEventListener('aim4price:canvas-geometry', syncReadingScale);
       document.body.style.overflow = previousOverflow;
       queueMicrotask(() => returnFocusRef.current?.focus({ preventScroll: true }));
     };
