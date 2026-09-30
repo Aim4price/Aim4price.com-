@@ -36,7 +36,7 @@ export default function SharedEnquiryLanding({ returnTo, access, summary, prompt
       {allowed ? <Link className={styles.action} href={returnTo}>{contents}</Link> :
         <button ref={trigger} type="button" className={`${styles.action} ${gateStyles.openButton}`} onClick={() => setOpen(true)}>{contents}</button>}
     </div>
-    {open && !allowed ? <ShareDisclosureDialog title={access === 'sign-in' ? 'Please sign in to view this enquiry' : 'Open your shared enquiry'} titleId={titleId} closeLabel="Back to shared enquiry" onClose={() => { setOpen(false); trigger.current?.focus(); }} className={gateStyles.dialog}>
+    {open && !allowed ? <ShareDisclosureDialog title={access === 'sign-in' ? 'Sign in to open enquiry' : 'Open your shared enquiry'} titleId={titleId} closeLabel="Back to shared enquiry" onClose={() => { setOpen(false); trigger.current?.focus(); }} className={gateStyles.dialog}>
       <SharedEnquiryAccess returnTo={returnTo} access={access} embedded />
     </ShareDisclosureDialog> : null}
   </main>;
