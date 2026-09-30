@@ -150,8 +150,15 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.screenshot({path:path.join(evidence,`owner-admin-options-${width}.png`)});
      await choose('[aria-label="Admin package"] button');
      await choose('[data-pricing-content] + div button:last-child');
-     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month extra.*R598\/month total/);
+     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month included.*R598\/month total/);
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R598/month total');
+     await clickText('Yearly');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R6 987/year total');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/billed monthly/);
      await clickText('Remove');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year');
+     await clickText('Monthly');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R99/month');
      // Review the same setup-only, combined-service and detail layouts customers see.
      await clickText('Need help uploading?');
      await clickText('Explore visit options');

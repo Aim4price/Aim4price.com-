@@ -37,6 +37,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
   const heading = useRef<HTMLHeadingElement>(null);
   const plan = dealer ? { name: 'Dealer Partner', monthly: 199, yearly: 1999, limit: 0 } : assetBand !== null ? plans[assetBand] : undefined;
   const adminPlan = adminPlans.find(item => String(item.hours) === admin);
+  const packagePrice = plan ? (yearly ? plan.yearly + (adminPlan?.price ?? 0) * 12 : plan.monthly + (adminPlan?.price ?? 0)) : null;
   const ready = step === 7 ? help !== null : step === 8 ? setup !== null : step === 6 ? customers !== null : step === 0 ? assetBand !== null : step === 5 ? setup === 'visit' || setup === 'inspection' : step === 1 ? setup !== null : admin !== null;
   const titles = ['How many assets?', dealer ? 'How will you add your stock?' : 'How will you add your assets?', dealer ? 'Who will manage the records?' : 'Who will manage your register?', dealer ? 'Your Dealer package' : 'Your Owner package', 'How much admin help do you need?', 'What help do you need?', 'Will you manage customers’ asset registers?', 'Would you like help from Aim4price?', 'What would you like help setting up?'];
   const detailTitles = { funding: 'Client register billing', commission: 'Partner commission', setup: 'Setup details', admin: 'Monthly admin help', billing: 'Good to know' };
@@ -194,7 +195,9 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         <div className={styles.reviewTotal}>
           <div aria-live="polite">
             <p className={styles.label}>{plan ? `${plan.name} · up to ${plan.limit} active assets` : 'Enterprise · 301+ assets'}</p>
-            <p className={styles.price}>{plan ? money(yearly ? plan.yearly : plan.monthly) : 'Custom quote'}{plan && <span>/{yearly ? 'year' : 'month'}</span>}</p>
+            <p className={styles.price} data-owner-package-price>{packagePrice !== null ? money(packagePrice) : 'Custom quote'}{plan && <span>/{yearly ? 'year' : 'month'}{adminPlan ? ' total' : ''}</span>}</p>
+            {adminPlan && <p className={styles.totalCaption}>{yearly ? 'Includes 12 months of admin help, billed monthly.' : 'Includes your selected admin help.'}</p>}
+            {admin === 'custom' && <p className={styles.totalCaption}>Custom admin help quoted separately.</p>}
             <button type="button" className={styles.restart} onClick={() => { setEditing(true); move(0); }}>Change asset range</button>
           </div>
           {plan && <div className={styles.reviewBilling}>{billing}<p className={styles.yearlySaving}><strong>Save {money(plan.monthly * 12 - plan.yearly)}/year</strong><span>{((1 - plan.yearly / (plan.monthly * 12)) * 100).toFixed(1)}% off hosting</span></p></div>}
@@ -202,7 +205,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         <p className={styles.included}>Self-service uploads and unlimited registers included within your asset limit.</p>
         {(setup !== 'self' || admin !== 'self') && <div className={styles.reviewRows} aria-label="Optional services">
           {setup !== 'self' && <div className={styles.reviewRow}><strong>{setupLabel}</strong><span>Separate quote</span><button type="button" onClick={() => setSetup('self')}>Remove</button></div>}
-          {admin !== 'self' && <div className={styles.reviewRow}><strong>{adminLabel}</strong><span>{adminPlan ? `${money(adminPlan.price)}/month extra` : 'Separate quote'}</span><button type="button" onClick={() => setAdmin('self')}>Remove</button></div>}
+          {admin !== 'self' && <div className={styles.reviewRow}><strong>{adminLabel}</strong><span>{adminPlan ? `${money(adminPlan.price)}/month${plan ? ' included' : ' admin'}` : 'Separate quote'}</span><button type="button" onClick={() => setAdmin('self')}>Remove</button></div>}
           {plan && adminPlan && <p className={styles.packageTotal}>{yearly ? `${money(plan.yearly)}/year hosting + ${money(adminPlan.price)}/month admin` : `${money(plan.monthly + adminPlan.price)}/month total`}{setup !== 'self' ? ', plus quoted setup costs.' : '.'}</p>}
         </div>}
         <div className={styles.optionalHelp} aria-label="Optional help and pricing details">
