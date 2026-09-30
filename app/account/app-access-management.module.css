@@ -1220,3 +1220,35 @@
 .loginSetupDisclosure > summary span { margin-left: 1rem; color: var(--app-muted, #52675d); font-size: .85rem; font-weight: 400; }
 .loginSetupDisclosure[open] > summary { margin-bottom: 1rem; }
 .loginSetupDisclosure summary:focus-visible, .loginHelp summary:focus-visible { outline: 2px solid #398d67; outline-offset: 4px; }
+
+/* Keep the initial setup focused and existing-login rows easy to scan. */
+.businessLoginSetup.businessLoginSetup { margin-bottom: 0; }
+.businessLoginForm { display: grid; gap: .8rem; max-width: 40rem; margin-inline: auto; }
+.businessLoginForm .field { gap: .5rem; }
+.businessLoginForm .loginExample {
+  padding: .75rem 1rem; border-radius: .65rem;
+  background: var(--app-surface-soft, #f2f7f4);
+}
+.businessLoginForm .loginSetupActions {
+  margin-top: .35rem; padding-top: 1rem;
+  border-top: 1px solid var(--app-line, #d5e4db);
+}
+.loginSetupDisclosure > summary span { display: block; margin-left: 1.1rem; }
+.loginSetupDisclosure[open] .businessLoginSetup { padding-top: .5rem; }
+.modal .directoryCard .managerSummary { grid-template-columns: minmax(0, 1fr) auto auto; gap: .35rem .85rem; align-items: center; }
+.modal .directoryCard .listDates { grid-column: 1; grid-row: 2; font-size: .8rem; }
+.modal .directoryCard .managerSummary > span { grid-column: 2; grid-row: 1 / 3; }
+.modal .directoryCard .manageButton {
+  grid-column: 3; grid-row: 1 / 3; min-height: 2.75rem; padding: .5rem .8rem;
+  border-radius: .65rem; background: var(--app-surface-soft, #f2f7f4);
+  color: var(--app-text, #195440); border: 1px solid var(--app-line, #d5e4db);
+  box-shadow: none; font-size: .9rem;
+}
+.modal .directoryCard .manageButton:hover { background: var(--app-info-soft, #e4efe9); }
+.modal .directoryCard .managerSummary > div:first-child { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .directoryCard .managerSummary { grid-template-columns: minmax(0, 1fr) auto; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .directoryCard .managerSummary > span { grid-column: 2; grid-row: 1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .directoryCard .listDates { grid-column: 1 / -1; grid-row: 2; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal .directoryCard .manageButton { grid-column: 1 / -1; grid-row: 3; }
+}
