@@ -51,9 +51,7 @@ export async function requireActivePageAccess(options: { allowBusiness?: boolean
   if ((await getAccountProfile(realSession.user)).accountType === "business") {
     const access = await getAccountAccess(realSession.user);
     if (!access.isActive) redirect("/pending-payment");
-    const { canBusinessContribute } = await import("./business-accounts");
-    if (!options.allowBusiness || !(await canBusinessContribute(realSession.user))) redirect("/business");
-    return { session: realSession, access };
+    redirect("/business");
   }
 
   const [effectiveSession, access] = await Promise.all([

@@ -240,7 +240,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
   { href: '/ad-studio', label: 'Ad Studio', accountTypes: ['dealer'] },
   { href: '/my-showroom', label: 'My Showroom', accountTypes: ['dealer'] },
-  { href: '/leads', label: 'Leads', accountTypes: ['dealer', 'business'] },
+  { href: '/leads', label: 'Leads', accountTypes: ['dealer'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
 ];
 
@@ -283,10 +283,8 @@ function buildNavItems(
   }
 
   if (accountType === 'business') return [
-    { key: 'home', href: '/', label: 'Home' },
-    { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
-    { key: 'leads', href: '/leads', label: 'Leads' },
-    { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+    { key: 'leads', href: '/business', label: 'Shared enquiries' },
+    { key: 'account', href: '/business?details=1', label: 'Account' },
   ];
 
   if (accountType === 'public') {
@@ -2498,6 +2496,7 @@ export default function AppHeader({
                           <>
                             {sortAccountMenuItems(isMiddlemanAccount
                                   ? MIDDLEMAN_ACCOUNT_MENU_ITEMS
+                                  : session?.accountType === 'business' ? [{ href: '/business', label: 'Shared enquiries' }, { href: '/business?details=1', label: 'Account' }, { href: '/pricing', label: 'Explore Desktop plans' }]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {
                               const isActive = isAccountMenuLinkActive(item.href);

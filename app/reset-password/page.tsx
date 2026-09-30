@@ -1,3 +1,4 @@
+import { sharedEnquiryReturnTo } from '../../lib/external-share-permissions';
 import { redirectAdminToAdmin } from "../../lib/account-access";
 import ResetPasswordClient from "./reset-password-client";
 
@@ -19,6 +20,7 @@ export default async function ResetPasswordPage({
 
   return (
     <ResetPasswordClient
+      returnTo={sharedEnquiryReturnTo(firstSearchValue(searchParams?.returnTo))}
       token={firstSearchValue(searchParams?.token)}
       error={firstSearchValue(searchParams?.error)}
     />

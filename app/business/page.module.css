@@ -42,3 +42,11 @@
 
 .secondaryButton { display:inline-flex; justify-content:center; align-items:center; padding:.7rem .9rem; border:1px solid #cddfd3; border-radius:.7rem; background:#f5f9f6; color:#24533e; font:inherit; font-size:.85rem; font-weight:650; cursor:pointer; text-decoration:none; }
 .secondaryButton:hover { background:#eaf3ed; }.secondaryButton:disabled { opacity:.6; cursor:wait; }.secondaryButton:focus-visible { outline:3px solid #168a65; outline-offset:3px; }
+
+.workspaceHeading { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:20px; margin:12px 0 24px; }
+.workspaceHeading .title { margin:10px 0; }
+.eyebrow { font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted,#566e63); }
+.details { margin-top:24px; }.details summary { cursor:pointer; font-weight:700; font-size:18px; }.details[open] summary { margin-bottom:24px; }
+.footer { margin-top:28px; }
+:global(html[data-background='dark']) .page { color:#edf7f0; }
+:global(html[data-background='dark']) .secondaryButton { background:#17342a; color:#edf7f0; border-color:#75998c; }

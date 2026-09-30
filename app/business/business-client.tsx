@@ -14,7 +14,7 @@ export default function BusinessDetails({ businessName, phone, website, evidence
     returnTo?: string|null;
 }) {
     const router = useRouter(), [busy, setBusy] = useState(false), [notice, setNotice] = useState('');
-    return <><p className={styles.muted}>Signed in as {email}. {emailVerified ? 'Email verified.' : 'Verify your email before Admin can approve your business.'}</p>
+    return <><p className={styles.muted}>Signed in as {email}. {emailVerified ? 'Email verified.' : 'Verify your email to open authorised enquiries.'}</p>
  {!emailVerified && <button className={styles.button} disabled={busy} onClick={async () => { setBusy(true); try {
         const r = await fetch('/api/auth/send-verification-email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, callbackURL: returnTo||'/business' }) });
         if (!r.ok)
@@ -44,7 +44,7 @@ export default function BusinessDetails({ businessName, phone, website, evidence
  <label>Contact number<input name="phone" type="tel" maxLength={40} defaultValue={phone}/></label>
  <label>Website or business listing<input name="website" type="url" maxLength={500} defaultValue={website} placeholder="https://"/></label>
  <label>Information for verification<textarea name="evidence" maxLength={2000} defaultValue={evidence} placeholder="Tell Aim4price about your business and how we can confirm it."/></label>
- <p className={styles.muted}>No online listing? Aim4price will contact you for supporting information. Updating these details sends your business for review again.</p>
+ <p className={styles.muted}>Business verification enables contributions. No online listing? Aim4price can contact you for supporting information. Changed details require a new review.</p>
  <button className={styles.button} disabled={busy}>Save business details</button>
  </form>{notice && <p className={styles.notice} role="status">{notice}</p>}</>;
 }

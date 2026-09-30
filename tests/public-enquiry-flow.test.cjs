@@ -15,7 +15,7 @@ const share = {senderName:'Farm & Co',createdAt:'2026-09-26T10:00:00Z',assets:['
 test('invitation shows every selected asset, opens the real enquiry and has no signup or Google form',async()=>{
   const Page = load('app/business-network/accept/page.tsx',{
     '../../../components/AppHeader':()=>null,
-    '../../../lib/asset-share-links':{readPublicAssetShare:async value=>{assert.equal(value,token);return share;}},
+    '../../../lib/guest-leads':{readLeadPage:async value=>{assert.equal(value,token);return {share,details:null};}},
   }).default;
   const html=renderToStaticMarkup(await Page({searchParams:{share:token,from:'Combined Asset Registers'}}));
   for(const asset of share.assets)assert.ok(html.includes(asset.title));
@@ -29,7 +29,7 @@ test('revoked and missing invitations do not offer a fabricated enquiry',async()
   let reads=0;
   const Page=load('app/business-network/accept/page.tsx',{
     '../../../components/AppHeader':()=>null,
-    '../../../lib/asset-share-links':{readPublicAssetShare:async()=>{reads++;return null;}},
+    '../../../lib/guest-leads':{readLeadPage:async()=>{reads++;return null;}},
   }).default;
   const revoked=renderToStaticMarkup(await Page({searchParams:{share:token}}));
   assert.match(revoked,/no longer available/);
@@ -109,7 +109,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
  test('umbrella invitation shows its saved name and asset count without listing every member',async()=>{
   const Page=load('app/business-network/accept/page.tsx',{
     '../../../components/AppHeader':()=>null,
-    '../../../lib/asset-share-links':{readPublicAssetShare:async()=>({...share,umbrellaName:'Harvest fleet'})},
+    '../../../lib/guest-leads':{readLeadPage:async()=>({share:{...share,umbrellaName:'Harvest fleet'},details:null})},
   }).default;
   const html=renderToStaticMarkup(await Page({searchParams:{share:token}}));
   assert.match(html,/Harvest fleet/);

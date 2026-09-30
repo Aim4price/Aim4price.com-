@@ -17,7 +17,7 @@ async function setup(){
  const base=load('lib/asset-share-links.ts',{'./db':{getDb:()=>db},'./asset-share-snapshot':snapshot,'./asset-register-db':assetDb});
  const schema=load('lib/guest-lead-schema.ts',{'./db':{getDb:()=>db},'./asset-share-links':base,'./business-network':{ensureBusinessNetwork:async()=>{}}});
  const state={guestAccess:'sign-in',user:null,approved:false,type:'business',status:'active'};
- const mocks={'./guest-enquiry-credits':{guestEnquiryAccess:async()=>({access:state.guestAccess})},'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':load('lib/business-network-shared.ts'),'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async options=>state.user&&(!options?.requireActive||state.type!=='business')?{user:state.user}:null},'./asset-register-account-access':{getAssetRegisterAccountAccess:async s=>s.user.id==='owner'?{}:null},'./business-accounts':{canBusinessContribute:async()=>state.approved},'./account-profile':{getAccountProfile:async()=>({accountType:state.type,accountStatus:state.status,businessName:'Verified Workshop'})},'./external-share-permissions':permissions};
+ const mocks={'./guest-enquiry-credits':{guestEnquiryAccess:async()=>({access:state.guestAccess})},'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':load('lib/business-network-shared.ts'),'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async options=>state.user&&(!options?.requireActive||state.type!=='business')?{user:state.user}:null},'./asset-register-account-access':{getAssetRegisterAccountAccess:async s=>s.user.id==='owner'?{}:null},'./business-accounts':{canBusinessContribute:async()=>state.approved,canBusinessRead:async()=>state.status==='active'},'./account-profile':{getAccountProfile:async()=>({accountType:state.type,accountStatus:state.status,businessName:'Verified Workshop'})},'./external-share-permissions':permissions};
  const leads=load('lib/guest-leads.ts',mocks);mocks['./guest-leads']=leads;
  const access=load('lib/external-lead-access.ts',mocks);mocks['./external-lead-access']=access;
  // Guest leads resolves the same access module lazily through this proxy.
@@ -36,7 +36,7 @@ test('permission input defaults to read-only and signup returns only to valid en
  for(const value of ['https://evil.test','//evil.test','/\\evil.test','/admin','/asset-share/short'])assert.equal(permissions.sharedEnquiryReturnTo(value),null);
  assert.equal(permissions.sharedEnquiryReturnTo('/asset-share/'+'x'.repeat(43)),'/asset-share/'+'x'.repeat(43));
 });
-test('public preview remains available; protected actions require the invited verified and approved account',async()=>{
+test('verified recipients can read; contributions require the invited approved account',async()=>{
  const x=await setup();try{
   const lead=await x.leads.readLeadPage(x.link.token);
   assert.equal(lead.share.umbrellaName,'Vehicle fleet');assert.equal(lead.share.senderName,'Owner Business');assert.equal(lead.share.assets.length,2);
@@ -45,11 +45,12 @@ test('public preview remains available; protected actions require the invited ve
   x.signIn({email:'forwarded@example.com'});x.state.approved=true;
   assert.equal((await x.access.externalLeadAccess(lead)).access,'wrong-recipient');await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'serialNumber'),e=>e.status===403);
   x.signIn({emailVerified:false});assert.equal((await x.access.externalLeadAccess(lead)).access,'verify-email');
-  x.signIn();x.state.approved=false;assert.equal((await x.access.externalLeadAccess(lead)).access,'approval-required');
+  x.signIn();x.state.approved=false;assert.equal((await x.access.externalLeadAccess(lead)).access,'read-only');
+  await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===403);
   x.state.approved=true;x.state.status='suspended';assert.equal((await x.access.externalLeadAccess(lead)).access,'suspended');
   x.state.status='active';assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
   assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,lead.reports[0].id)).status,200);
-  x.state.approved=false;assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,lead.reports[0].id)).status,403);
+  x.state.approved=false;assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,lead.reports[0].id)).status,200);
   x.state.type='dealer';assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
   x.state.type='owner';x.signIn({id:'owner',email:'owner@example.com'});assert.equal((await x.access.externalLeadAccess(lead)).access,'owner');
   await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'serialNumber'));
@@ -115,7 +116,7 @@ test('untargeted links require verification and explicit owner approval; forward
   x.signIn({emailVerified:false});x.state.approved=true;
   await assert.rejects(x.access.requestExternalLeadAccess(token),e=>e.status===403);
   x.signIn();x.state.approved=false;
-  await assert.rejects(x.access.requestExternalLeadAccess(token),e=>e.status===403);
+  await x.access.requestExternalLeadAccess(token); // Verified reading requests do not wait for business approval.
   x.state.approved=true;
   assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(token))).access,'request-access');
   await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===403);
@@ -189,17 +190,34 @@ test('shared Excel reports retain their format and remain gated like PDFs',async
  }finally{await x.pg.close();}
 });
 
-test('verified guest report downloads honour the credit decision without granting account actions',async()=>{
+test('legacy guests must sign in to a permanent account before downloading reports',async()=>{
  const x=await setup();
  try{
   const lead=await x.leads.readLeadPage(x.link.token),id=lead.reports[0].id;
   x.state.guestAccess='guest';
-  assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,id)).status,200);
+  assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,id)).status,403);
   await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===401);
   for(const access of ['signup-required','wrong-recipient','suspended','sign-in']){
    x.state.guestAccess=access;assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,id)).status,403);
   }
   x.state.guestAccess='guest';await x.base.revokeAssetShareLink('owner',x.link.token);
   assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,id)).status,404);
+ }finally{await x.pg.close();}
+});
+
+test('legacy WhatsApp-only enquiries require an owner-approved permanent account',async()=>{
+ const x=await setup();try{
+  const link=await x.leads.createGuestLead('owner',[A],false,{...x.details,recipientEmail:'',recipientWhatsApp:'+27821234567',permissions:permissions.EMPTY_EXTERNAL_PERMISSIONS},[]);
+  const lead=()=>x.leads.readLeadPage(link.token);
+  assert.equal((await x.access.externalLeadAccess(await lead())).access,'sign-in');
+  x.signIn();
+  assert.equal((await x.access.externalLeadAccess(await lead())).access,'request-access');
+  await x.access.requestExternalLeadAccess(link.token);
+  x.state.type='owner';x.signIn({id:'owner',email:'owner@example.com'});
+  await x.access.reviewExternalAccessRequest(link.token,'recipient','approved');
+  x.state.type='business';x.signIn();
+  assert.equal((await x.access.externalLeadAccess(await lead())).access,'read-only');
+  x.signIn({id:'forwarded',email:'another@example.com'});
+  assert.equal((await x.access.externalLeadAccess(await lead())).access,'wrong-recipient');
  }finally{await x.pg.close();}
 });

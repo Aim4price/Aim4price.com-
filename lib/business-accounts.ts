@@ -1,3 +1,4 @@
+import { businessWorkspaceSummary } from './business-workspaces';
 import { getDb } from './db';
 import { getAccountProfile } from './account-profile';
 export const BUSINESS_ACCOUNT_SCHEMA = `
@@ -37,12 +38,20 @@ export async function readBusinessAccount(user: {
     const row = (await getDb().query<BusinessReview>('SELECT website,evidence,verified_at,verified_by,verified_email,review_note FROM business_account_reviews WHERE user_id=$1', [user.id])).rows[0];
     return { profile, review: row || { website: '', evidence: '', verified_at: null, verified_by: null, verified_email: null, review_note: '' } };
 }
+/** Viewing a sender-authorised enquiry does not require business approval. */
+export async function canBusinessRead(user: {id:string;email?:string|null;emailVerified?:boolean|null}) {
+    if (user.emailVerified !== true) return false;
+    const profile = await getAccountProfile(user);
+    if (profile.accountType !== 'business' || profile.accountStatus !== 'active') return false;
+    const workspace = await businessWorkspaceSummary(user.id);
+    return Boolean(workspace && !workspace.suspended);
+}
 export async function canBusinessContribute(user: {
     id: string;
     email?: string | null;
     emailVerified?: boolean | null;
 }) {
-    if (user.emailVerified !== true)
+    if (!(await canBusinessRead(user)))
         return false;
     const account = await readBusinessAccount(user);
     return Boolean(account && account.profile.accountStatus === 'active' && account.review.verified_at && account.review.verified_email === user.email?.toLowerCase());
@@ -124,7 +133,7 @@ export async function listBusinessEnquiries(user: {
     email: string;
     emailVerified?: boolean | null;
 }) {
-    if (!await canBusinessContribute(user))
+    if (!await canBusinessRead(user))
         return [];
     const { ensureGuestLeadSchema } = await import('./guest-lead-schema');
     await ensureGuestLeadSchema();
@@ -134,5 +143,5 @@ export async function listBusinessEnquiries(user: {
         sender: string;
         created_at: string;
     }>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s
-    WHERE lower(lead_details->>'recipientEmail')=$1 AND revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) ORDER BY created_at DESC LIMIT 50`, [user.email.toLowerCase()])).rows;
+    WHERE lower(lead_details->>'recipientEmail')=$1 AND (coalesce(lead_details->>'recipientUserId','')='' OR lead_details->>'recipientUserId'=$2) AND revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) ORDER BY created_at DESC LIMIT 50`, [user.email.toLowerCase(),user.id])).rows;
 }

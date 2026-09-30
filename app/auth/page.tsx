@@ -56,5 +56,6 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
     redirect("/pending-payment");
   }
 
-  return <AuthClient />;
+  const returnTo = sharedEnquiryReturnTo(searchParams?.returnTo);
+  return <AuthClient businessSignup={Boolean(returnTo)} returnTo={returnTo}/>;
 }
