@@ -41194,7 +41194,7 @@ button.documentOpenLink {
 .businessDirectoryDialog .assetQuoteLocationActions { grid-template-columns: auto minmax(0, 1fr) !important; border-top: 1px solid var(--app-line, #dce6e0); padding-top: 1rem; margin-top: .5rem; gap: 1rem !important; }
 .businessDirectoryDialog .assetQuoteLocationActions .primaryButton { justify-self: end; width: auto !important; min-width: 12rem; }
 .businessDirectoryDialog .assetQuoteLocationActions .primaryButton, .businessDirectoryDialog .assetQuoteSidebarFooter .primaryButton, .businessDirectoryDialog .assetQuoteSearchBar .secondaryButton { min-height: 2.75rem !important; height: auto !important; border-radius: .65rem !important; box-shadow: none !important; font-size: .85rem !important; }
-.optionsModal.assetQuoteModal.businessDirectoryDialog.assetQuotePartnerPickerModal { width: min(calc(var(--website-design-vw, 1vw) * 100 - 3rem), 1120px) !important; height: auto !important; max-height: calc(var(--website-visible-height, 100dvh) - 3rem) !important; }
+.optionsModal.assetQuoteModal.businessDirectoryDialog.assetQuotePartnerPickerModal { width: min(calc(var(--website-design-vw, 1vw) * 100 - 3rem), 1240px) !important; height: auto !important; max-height: calc(var(--website-visible-height, 100dvh) - 3rem) !important; }
 .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody { display: flex !important; flex: 1 1 auto !important; overflow: hidden !important; }
 .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteContent { display: flex !important; flex-direction: column !important; flex: 1 1 auto !important; min-height: 0 !important; width: 100%; gap: .85rem !important; }
 .businessDirectoryDialog .assetQuoteSearchBar { flex: 0 0 auto; gap: .6rem !important; }
@@ -41235,3 +41235,66 @@ button.documentOpenLink {
 .businessDirectoryDialog .assetQuotePartnerCard .assetQuotePartnerHeader small.businessDirectoryBadge { display: inline-flex !important; font-size: .65rem !important; padding: .3rem .45rem !important; border-radius: .35rem !important; }
 
 .businessDirectoryDialog .assetQuotePartnerCard .assetQuotePartnerHeader small.businessAccountBadge { color: #116347 !important; background: #e3f3e9 !important; border-color: #c5e3d3 !important; }
+
+/* Refine the message step without changing the canonical canvas or sharing flow. */
+.assetQuoteMessageStepModal .assetQuoteStepHeader {
+  padding: 1.35rem 1.5rem !important;
+  gap: 1.5rem;
+}
+.assetQuoteMessageStepModal .assetQuoteStepHeader h4 {
+  font-size: 1.7rem !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.035em !important;
+}
+.assetQuoteMessageStepModal .assetQuoteStepHeader > button {
+  align-self: center;
+  width: 3rem;
+  min-width: 3rem;
+  height: 3rem;
+}
+.assetQuoteMessageStepModal .assetQuoteStepHeader > button > span {
+  margin: 0 !important;
+  color: inherit !important;
+  font-size: 1.65rem !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+}
+.assetQuoteMessageStepModal .assetQuoteSelectedCompanyInfo {
+  padding: 1.5rem !important;
+  gap: 1.5rem !important;
+}
+.assetQuoteMessageStepModal .assetQuoteSelectedCompanyHero {
+  grid-template-columns: 4.5rem minmax(0, 1fr) !important;
+  gap: 1rem !important;
+}
+.assetQuoteMessageStepModal .assetQuoteSelectedCompanyHero .assetQuoteSelectedMediaTile {
+  box-sizing: border-box;
+  width: 4.5rem !important;
+  height: 4.5rem !important;
+  min-height: 4.5rem !important;
+  box-shadow: none !important;
+}
+.assetQuoteMessageStepModal .assetQuoteSelectedCompanyTitle strong {
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere;
+}
+.assetQuoteMessageStepModal .assetQuoteSelectedContactRow {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: .35rem !important;
+  padding: .9rem 0 !important;
+  align-items: start;
+}
+.assetQuoteMessageStepModal .assetQuoteSelectedContactRow small {
+  font-size: .7rem !important;
+  line-height: 1.4;
+}
+.assetQuoteMessageStepModal .assetQuoteSelectedContactRow span {
+  font-size: .875rem !important;
+  line-height: 1.5 !important;
+  font-weight: 500 !important;
+}
+.assetQuoteMessageStepModal .assetQuoteMessagePanel {
+  padding: 1.5rem !important;
+  gap: 1rem !important;
+}
