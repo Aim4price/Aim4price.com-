@@ -693,19 +693,25 @@ function AppAccessManagement({ kind, configOverride }: {
     if (accountName) return null;
     return <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
       <div className={styles.surfaceHeader}>
-        <h3>Business login name</h3>
-        <p>Choose once for all your apps. Existing logins will keep working.</p>
+        <h3>Choose your business login ID</h3>
+        <p>Each person signs in with their name followed by your business ID.</p>
       </div>
       <form className={baseStyles.form} onSubmit={confirmAccountName}>
         <label className={`${baseStyles.field} ${styles.field}`}>
-          <span>Business name for logins</span>
+          <span>Business ID · the part after @</span>
           <input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
             autoCapitalize="none" autoComplete="off" minLength={3} maxLength={32} required disabled={namespaceBusy} />
-          <small>Example: kuyler@{accountNameDraft || 'vasbyt'}. This stays the same if your business name changes.</small>
+          <small>3–32 letters, numbers or hyphens. No spaces or @ symbol.</small>
         </label>
+        <div className={styles.loginExample} aria-live="polite">
+          <span>Example app login</span>
+          <strong>john@{accountNameDraft.trim() || 'yourbusiness'}</strong>
+          <p><b>john</b> is the person’s username. <b>{accountNameDraft.trim() || 'yourbusiness'}</b> identifies your business. This is not an email address.</p>
+        </div>
+        <p className={styles.loginHint}>Choose this ID once for all your apps. It stays fixed if your business name changes. Existing app logins keep working.</p>
         {namespaceError ? <p role="alert" className={baseStyles.fieldError}>{namespaceError}</p> : null}
         <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={namespaceBusy}>
-          {namespaceBusy ? 'Loading…' : 'Confirm business login name'}
+          {namespaceBusy ? 'Loading…' : 'Confirm business ID'}
         </button>
         {namespaceError ? <button type="button" className={styles.emptyAction} onClick={() => void loadAccountName()}>Reload</button> : null}
       </form>
@@ -713,7 +719,7 @@ function AppAccessManagement({ kind, configOverride }: {
   }
 
   function usernamePreview(value: string) {
-    if (!accountName) return 'Confirm your business login name before renaming this login.';
+    if (!accountName) return 'Confirm your business ID before renaming this login.';
     try { return accountAppUsername(value, accountName); }
     catch { return `Use a name followed by @${accountName}.`; }
   }
@@ -1030,20 +1036,20 @@ function AppAccessManagement({ kind, configOverride }: {
               />
             </label>
             <label className={`${baseStyles.field} ${styles.field}`}>
-              <span>App username</span>
+              <span>Person’s username</span>
               <input
                 value={draft.username}
                 onChange={(event) => {
                   setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }));
                   setCreateUsernameError('');
                 }}
-                placeholder="kuyler"
+                placeholder="john"
                 maxLength={32}
                 autoCapitalize="none"
                 autoComplete="off"
                 aria-invalid={Boolean(createUsernameError)}
               />
-              <small className={styles.usernamePreview}>{usernamePreview(draft.username || 'kuyler')}</small>
+              <small className={styles.usernamePreview}>{`Full app login: ${usernamePreview(draft.username || 'john')}`}</small>
               {createUsernameError ? <small className={baseStyles.fieldError} role="alert">{createUsernameError}</small> : null}
             </label>
             {renderRoleSelect(draft.role, (role) => setDraft((current) => ({ ...current, role })))}
@@ -1135,7 +1141,7 @@ function AppAccessManagement({ kind, configOverride }: {
                     <input value={selectedEdit.displayName} onChange={(event) => updateEditDraft(selectedRecord.id, { displayName: event.target.value })} />
                   </label>
                   <label className={`${baseStyles.compactField} ${styles.compactField}`}>
-                    <span>App username</span>
+                    <span>Person’s username</span>
                     <input
                       value={selectedEdit.username}
                       onChange={(event) => {
