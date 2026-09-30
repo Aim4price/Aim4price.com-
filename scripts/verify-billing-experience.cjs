@@ -132,11 +132,32 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      const choose = async selector => { await page.$eval(selector, e => e.click()); };
      await choose('[aria-label="Number of active assets"] button');
      await choose('[data-pricing-content] + div button:last-child');
-     await choose('[aria-label="Setup preference"] button');
-     await choose('[data-pricing-content] + div button:last-child');
-     await choose('[aria-label="Ongoing administration"] button');
-     await choose('[data-pricing-content] + div button:last-child');
      await page.waitForFunction(()=>document.querySelector('[role="dialog"] h2')?.textContent==='Your Owner package');
+     const clickText = async text => { await page.$$eval('[role="dialog"] button', (els, text) => els.find(e => e.textContent.trim() === text).click(), text); };
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent), /R99/);
+     assert.equal(await page.$('[aria-label="Optional services"]'),null,'Self-service has no extra charges');
+     await clickText('Yearly');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent), /R999/);
+     await clickText('Monthly');
+     await clickText('Need help uploading?');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent), /R100 per asset.*R50 per asset.*R7.50\/km/);
+     await clickText('Explore visit options');
+     await choose('[aria-label="Visit type"] button');
+     await choose('[data-pricing-content] + div button:last-child');
+     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /Asset recording visit.*Separate quote/);
+     await clickText('Remove');
+     await clickText('Need monthly admin help?');
+     await choose('[aria-label="Admin package"] button');
+     await choose('[data-pricing-content] + div button:last-child');
+     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month extra.*R598\/month total/);
+     await clickText('Remove');
+     await clickText('Change asset range');
+     await page.$$eval('[aria-label="Number of active assets"] button',els=>els[3].click());
+     await choose('[data-pricing-content] + div button:last-child');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent), /Enterprise.*Custom quote/);
+     await clickText('Start again');
+     await choose('[aria-label="Number of active assets"] button');
+     await choose('[data-pricing-content] + div button:last-child');
      for (const height of [600, 450]) {
       await page.setViewport({width,height});
       const bounds = await page.$eval('[role="dialog"]', e => {
@@ -146,7 +167,8 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
       });
       assert.ok(bounds.top>=0 && bounds.bottom<=height && bounds.left>=0 && bounds.right<=width, 'Pricing dialog fits the visible screen');
       assert.ok(bounds.signupBottom<=height, 'Sign up stays visible');
-      assert.ok(bounds.overflow && bounds.track>=12, 'Package has a visible internal scrollbar');
+      if (bounds.overflow) {
+      assert.ok(bounds.track>=12, 'Overflowing content retains a usable scrollbar');
       const content=await page.$('[data-pricing-content]');
       await content.hover();
       await page.mouse.wheel({deltaY:1000});
@@ -157,6 +179,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
       await page.keyboard.press('End');
       await page.keyboard.up('Control');
       await page.waitForFunction(()=>{const e=document.querySelector('[data-pricing-content]');return e.scrollTop+e.clientHeight>=e.scrollHeight-2;});
+      }
       await page.screenshot({path:path.join(evidence,`owner-scroll-${width}-${height}.png`)});
      }
      await page.setViewport({width,height:1000});
