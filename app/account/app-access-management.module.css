@@ -582,7 +582,7 @@
 .modal {
   position: relative;
   z-index: 1;
-  width: min(var(--website-dialog-reference-width, 100%), 42rem);
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 58rem);
   max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 4.4), 3.2rem));
   min-height: 0;
   display: grid;
@@ -1121,7 +1121,7 @@
 
 /* Owner and Field Manager dialogs follow the account Notifications surface. */
 .notificationStyle.notificationStyle {
-  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 46rem);
+  width: min(var(--website-dialog-reference-width, 100%), calc(var(--website-visible-width, 100vw) - 3rem), 58rem);
   background: var(--app-surface, #fff);
   border: 1px solid var(--app-line, #dce4df);
   border-radius: 1.5rem;
@@ -1205,3 +1205,10 @@
   padding-top: 1rem; border-top: 1px solid var(--app-line, rgba(18,45,37,.11));
 }
 .notificationStyle .formActions > button { width: auto; flex: 0 1 auto; min-width: 8.75rem; }
+
+/* Explain the two parts of an app login without suggesting an email address. */
+.loginExample { display: grid; gap: .45rem; padding: 1rem 1.2rem; border: 1px solid var(--app-line, #d5e4db); border-radius: 1rem; background: var(--app-surface-soft, #eef6f1); color: var(--app-text, #183b30); }
+.loginExample > span { font-size: .85rem; font-weight: 650; }
+.loginExample strong { font-size: 1.3rem; line-height: 1.4; overflow-wrap: anywhere; }
+.loginExample p { margin: 0; font-size: .9rem; line-height: 1.6; }
+.businessLoginSetup .loginHint { margin: 0; font-size: .9rem; line-height: 1.65; color: var(--app-muted, #52675d); }
