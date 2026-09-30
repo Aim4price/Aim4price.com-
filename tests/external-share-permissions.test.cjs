@@ -52,7 +52,8 @@ test('verified recipients can read; contributions require the invited approved a
   assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,lead.reports[0].id)).status,200);
   x.state.approved=false;assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,lead.reports[0].id)).status,200);
   x.state.type='dealer';assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
-  x.state.type='owner';x.signIn({id:'owner',email:'owner@example.com'});assert.equal((await x.access.externalLeadAccess(lead)).access,'owner');
+  x.state.type='owner';assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
+  x.signIn({id:'owner',email:'owner@example.com'});assert.equal((await x.access.externalLeadAccess(lead)).access,'owner');
   await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'serialNumber'));
  }finally{await x.pg.close();}
 });

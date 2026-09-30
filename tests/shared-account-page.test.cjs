@@ -5,23 +5,29 @@ function load(file,mocks){const exports={};new Function('require','exports',ts.t
 const token='a'.repeat(43);
 const lead={share:{senderName:'Private sender',assets:[{title:'Private tractor',serialNumber:'PRIVATE-SERIAL'}]},details:{recipientEmail:'private@example.test',request:'Private request'},reports:[{id:'report',label:'Private report'}]};
 const mocks={
- '../../../components/SharedEnquiryAccess':{default:'AccountGate'},
+ '../../../components/SharedEnquiryLanding':{default:'Landing'},
  '../../../components/AppHeader':{default:'Header'},
  '../../../components/asset-register/SharedEnquiryRequest':{default:'Request'},
  '../../../components/asset-register/SharedAssetCards':{default:'AssetCards'},
  '../../../lib/guest-leads':{readLeadPage:async()=>lead},
  './page.module.css':{},
 };
-test('protected enquiry page sends only the account gate to unauthorized recipients',async()=>{
+test('protected enquiry page keeps asset data behind access checks and shows the landing before opening',async()=>{
  for(const access of ['sign-in','wrong-recipient','verify-email','request-access','suspended','approval-required']){
   const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>true}});
   const output=await page.default({params:{token}});
-  assert.equal(output.type,'AccountGate');
-  assert.deepEqual(output.props,{returnTo:'/asset-share/'+token,access});
+  assert.equal(output.props.children[1].type,'Landing');
+  assert.deepEqual(output.props.children[1].props,{returnTo:'/asset-share/'+token+'?open=1',access,prompt:false});
+  const opened=await page.default({params:{token},searchParams:{open:'1'}});
+  assert.equal(opened.props.children[1].type,'Landing');
+  assert.equal(opened.props.children[1].props.prompt,true);
+  assert.ok(!JSON.stringify(opened).includes('Private'));
  }
  for(const access of ['read-only','active','owner']){
   const page=load('app/asset-share/[token]/page.tsx',{...mocks,'../../../lib/external-lead-access':{externalLeadAccess:async()=>({access}),leadAllows:()=>true}});
-  const output=await page.default({params:{token}});
+  const landing=await page.default({params:{token}});
+  assert.equal(landing.props.children[1].type,'Landing');
+  const output=await page.default({params:{token},searchParams:{open:'1'}});
   assert.equal(output.props.children[1].props.share,lead.share);
  }
 });

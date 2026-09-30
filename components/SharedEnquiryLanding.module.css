@@ -1,0 +1,4 @@
+/* The global Aim4price photo background remains visible at every canvas zoom. */
+.page { background:transparent; color:var(--app-text,#123b2e); }
+.openButton { font:inherit; cursor:pointer; box-sizing:border-box; }
+.dialog { width:min(38rem,calc(var(--website-design-vw,1vw) * 100 - 3rem)); }
