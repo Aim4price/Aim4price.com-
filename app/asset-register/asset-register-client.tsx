@@ -25,7 +25,6 @@ import CardVatToggle from '../../components/CardVatToggle';
 import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
 
 import BusinessDirectoryTools from '../../components/business-network/BusinessDirectoryTools';
-import BusinessProfileCard from '../../components/business-network/BusinessProfileCard';
 import directoryStyles from '../../components/business-network/PartnerDirectory.module.css';
 import BusinessSharePreview from '../../components/business-network/BusinessSharePreview';
 import QrCodePreview from '../../components/QrCodePreview';
@@ -11465,12 +11464,15 @@ export default function AssetRegisterClient({
 
   function applyQuoteDirectoryFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    document.getElementById('partner-directory-area-filter')?.removeAttribute('open');
     setDirectoryBusiness(null);
     quoteDirectoryBoundsRef.current = null;
     void loadQuotePartners(selectedQuoteLeadType, quotePartnerSearch);
   }
 
   function changeQuoteLocation() {
+    const filter = document.getElementById('partner-directory-area-filter');
+    if (filter instanceof HTMLDetailsElement) filter.open = true;
     document.getElementById('partner-directory-area')?.focus();
   }
 
@@ -20195,22 +20197,19 @@ export default function AssetRegisterClient({
                   <div className={directoryStyles.controls}>
                     <form className={directoryStyles.filters} onSubmit={applyQuoteDirectoryFilters}>
                       <label>Business<input value={quotePartnerSearch} onChange={event => setQuotePartnerSearch(event.target.value)} placeholder="Find a business by name" /></label>
-                      <label>Area<input id="partner-directory-area" value={quoteLocationInput} onChange={event => setQuoteLocationInput(event.target.value)} placeholder="All areas" /></label>
+                      <details id="partner-directory-area-filter" className={directoryStyles.areaFilter}>
+                        <summary>{quoteLocationInput || 'All areas'} <span aria-hidden="true">⌄</span></summary>
+                        <div className={directoryStyles.areaPopover}>
+                          <label>Area<input id="partner-directory-area" value={quoteLocationInput} onChange={event => setQuoteLocationInput(event.target.value)} placeholder="Town or province" /></label>
+                          <button type="button" onClick={() => { document.getElementById('partner-directory-area-filter')?.removeAttribute('open'); showAllQuotePartners(); }} disabled={isLoadingQuotePartners}>Search all areas</button>
+                        </div>
+                      </details>
                       <button type="submit" disabled={isLoadingQuotePartners}>{isLoadingQuotePartners ? 'Searching…' : 'Search'}</button>
-                      <button type="button" onClick={showAllQuotePartners} disabled={isLoadingQuotePartners}>All areas</button>
                     </form>
-                        <BusinessDirectoryTools
-                          umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
-                          senderName={activeRegister?.businessName || accountProfile?.businessName || ''}
-                          assetIds={directoryInvitationAssetIds}
-                          reportAssets={assets.filter(asset=>directoryInvitationAssetIds.includes(asset.id)).map(asset=>({id:asset.id,title:asset.title}))}
-                          reportUmbrellaName={directoryReportGroup?.name}
-                          onChooseReport={openDirectoryReport}
-                          includePhotos={isFullRegisterQuoteLead || quoteIncludePhotos}
-                        />
+
                   </div>
 
-                  <div className={`${directoryStyles.layout} ${directoryBusiness ? directoryStyles.withProfile : ''}`}>
+                  <div className={directoryStyles.layout}>
                     <aside className={directoryStyles.results} aria-label="Available companies">
                       <div className={directoryStyles.summary} role="status">
                         {isLoadingQuotePartners ? 'Finding businesses…' : `${quotePartners.length} ${quotePartners.length === 1 ? 'business' : 'businesses'}`}
@@ -20231,11 +20230,21 @@ export default function AssetRegisterClient({
                                 </div>
                                 <div className={directoryStyles.description}><span>{quotePartnerLocation(partner)}</span><small>{quotePartnerServicesDisplay(partner)}</small></div>
                                 <div className={directoryStyles.rowActions}>
-                                  <button type="button" onClick={() => setDirectoryBusiness(partner)} aria-expanded={isSelected}>View details</button>
+                                  <button type="button" onClick={() => setDirectoryBusiness(isSelected ? null : partner)} aria-expanded={isSelected} aria-controls={`partner-details-${partner.userId}`}>{isSelected ? 'Hide details' : 'Details'}</button>
                                   <button type="button" aria-pressed={partner.isExternalBusiness ? undefined : selectedQuotePartnerIds.includes(partner.userId)} onClick={() => toggleQuotePartnerSelection(partner)}>
                                     {partner.isExternalBusiness ? 'Share outside' : selectedQuotePartnerIds.includes(partner.userId) ? 'Selected ✓' : 'Select'}
                                   </button>
                                 </div>
+                                {isSelected ? <div id={`partner-details-${partner.userId}`} className={directoryStyles.details}>
+                                  {partner.description ? <p>{partner.description}</p> : null}
+                                  <dl>
+                                    <div><dt>Address</dt><dd>{quotePartnerAddress(partner) || 'Not provided'}</dd></div>
+                                    <div><dt>Services</dt><dd>{quotePartnerServicesDisplay(partner) || 'Not provided'}</dd></div>
+                                    <div><dt>Phone</dt><dd>{partner.phone || 'Not provided'}</dd></div>
+                                    <div><dt>Email</dt><dd>{partner.email || 'Not provided'}</dd></div>
+                                    {normalizeWebsiteHref(partner.websiteUrl) ? <div><dt>Website</dt><dd><a href={normalizeWebsiteHref(partner.websiteUrl)} target="_blank" rel="noreferrer">{quotePartnerWebsiteDisplay(partner)}</a></dd></div> : null}
+                                  </dl>
+                                </div> : null}
                               </article>
                             );
                           })
@@ -20271,14 +20280,17 @@ export default function AssetRegisterClient({
                       </div>
                     </aside>
 
-                    {directoryBusiness ? <BusinessProfileCard
-                      key={directoryBusiness.userId}
-                      business={directoryBusiness}
-                      onClose={() => setDirectoryBusiness(null)}
-                      onMessage={() => messageDirectoryBusiness(directoryBusiness)}
-                      onAdd={isAssetGroupShare && !directoryBusiness.isExternalBusiness ? () => toggleQuotePartnerSelection(directoryBusiness) : undefined}
-                      selected={selectedQuotePartnerIds.includes(directoryBusiness.userId)}
-                    /> : null}
+                  </div>
+                  <div className={directoryStyles.invitation}>
+                        <BusinessDirectoryTools
+                          umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
+                          senderName={activeRegister?.businessName || accountProfile?.businessName || ''}
+                          assetIds={directoryInvitationAssetIds}
+                          reportAssets={assets.filter(asset=>directoryInvitationAssetIds.includes(asset.id)).map(asset=>({id:asset.id,title:asset.title}))}
+                          reportUmbrellaName={directoryReportGroup?.name}
+                          onChooseReport={openDirectoryReport}
+                          includePhotos={isFullRegisterQuoteLead || quoteIncludePhotos}
+                        />
                   </div>
 
                   {quoteLeadStep && selectedQuoteOption && selectedQuotePartner ? (
