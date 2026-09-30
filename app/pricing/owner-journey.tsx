@@ -81,7 +81,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
     requestAnimationFrame(() => { heading.current?.focus({ preventScroll: true }); heading.current?.closest('[data-pricing-content]')?.scrollTo(0, 0); });
   };
 
-  return <section className={`${styles.journey} ${!dealer ? styles.simpleOwner : ''}`} aria-label={`Build your ${dealer ? 'Dealer' : 'Owner'} package`}>
+  return <section className={`${styles.journey} ${!dealer ? styles.simpleOwner : ''}`} data-pricing-view={detail ? 'details' : step === 3 ? 'summary' : 'question'} aria-label={`Build your ${dealer ? 'Dealer' : 'Owner'} package`}>
     <div className={styles.panel}>
       <div className={styles.content} data-pricing-content tabIndex={0} role="region" aria-label="Package options and details" key={detail ?? step}>
       <div className={styles.heading}>
@@ -199,11 +199,11 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
           </div>
           {plan && <div className={styles.reviewBilling}>{billing}<p className={styles.yearlySaving}><strong>Save {money(plan.monthly * 12 - plan.yearly)}/year</strong><span>{((1 - plan.yearly / (plan.monthly * 12)) * 100).toFixed(1)}% off hosting</span></p></div>}
         </div>
-        <p className={styles.included}>Upload and manage your own assets at no extra charge. Unlimited registers within your asset limit.</p>
+        <p className={styles.included}>Self-service uploads and unlimited registers included within your asset limit.</p>
         {(setup !== 'self' || admin !== 'self') && <div className={styles.reviewRows} aria-label="Optional services">
           {setup !== 'self' && <div className={styles.reviewRow}><strong>{setupLabel}</strong><span>Separate quote</span><button type="button" onClick={() => setSetup('self')}>Remove</button></div>}
           {admin !== 'self' && <div className={styles.reviewRow}><strong>{adminLabel}</strong><span>{adminPlan ? `${money(adminPlan.price)}/month extra` : 'Separate quote'}</span><button type="button" onClick={() => setAdmin('self')}>Remove</button></div>}
-          {plan && adminPlan && <p className={styles.included}>{yearly ? `${money(plan.yearly)}/year hosting + ${money(adminPlan.price)}/month admin` : `${money(plan.monthly + adminPlan.price)}/month total`}{setup !== 'self' ? ', plus quoted setup costs.' : '.'}</p>}
+          {plan && adminPlan && <p className={styles.packageTotal}>{yearly ? `${money(plan.yearly)}/year hosting + ${money(adminPlan.price)}/month admin` : `${money(plan.monthly + adminPlan.price)}/month total`}{setup !== 'self' ? ', plus quoted setup costs.' : '.'}</p>}
         </div>}
         <div className={styles.optionalHelp} aria-label="Optional help and pricing details">
           <button type="button" onClick={() => openDetail('setup')}>Need help uploading?</button>

@@ -42,3 +42,10 @@
   :global(html:not(:has([data-website-canvas]))) .compact .header { padding: 1.15rem 3rem; }
   :global(html:not(:has([data-website-canvas]))) .compact .body { padding: 1rem 1.15rem 1.25rem; }
 }
+
+/* Package summaries and short explanations use widths suited to their content. */
+.owner:has([data-pricing-view='summary']) { width: min(58rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem)); }
+.owner:has([data-pricing-view='details']) { width: min(44rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem)); }
+.owner:has([data-pricing-view]) .header { display: flex; gap: 1.5rem; padding-block: 1.1rem; }
+.owner:has([data-pricing-view]) .header::before { content: none; }
+.owner:has([data-pricing-view]) .header h2 { text-align: left; font-size: 1.65rem; line-height: 1.25; letter-spacing: -.035em; }

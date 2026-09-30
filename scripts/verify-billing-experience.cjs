@@ -151,6 +151,20 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await choose('[data-pricing-content] + div button:last-child');
      assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month extra.*R598\/month total/);
      await clickText('Remove');
+     // Review the same setup-only, combined-service and detail layouts customers see.
+     await clickText('Need help uploading?');
+     await clickText('Explore visit options');
+     await choose('[aria-label="Visit type"] button:last-child');
+     await choose('[data-pricing-content] + div button:last-child');
+     await page.screenshot({path:path.join(evidence,`owner-inspection-${width}.png`)});
+     await clickText('Need monthly admin help?');
+     await choose('[aria-label="Admin package"] button');
+     await choose('[data-pricing-content] + div button:last-child');
+     await page.screenshot({path:path.join(evidence,`owner-combined-${width}.png`)});
+     if (width >= 1000) assert.equal(await page.$eval('[data-pricing-content]',e=>e.scrollHeight>e.clientHeight),false,'Combined package fits without internal scrolling on desktop');
+     await clickText('Need help uploading?');
+     await page.screenshot({path:path.join(evidence,`owner-setup-details-${width}.png`)});
+     await clickText('Back to package');
      await clickText('Change asset range');
      await page.$$eval('[aria-label="Number of active assets"] button',els=>els[3].click());
      await choose('[data-pricing-content] + div button:last-child');
