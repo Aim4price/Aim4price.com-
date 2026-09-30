@@ -1,3 +1,4 @@
+import { sharingPlan } from '../../lib/sharing-foundation';
 import { sharedEnquiryReturnTo } from '../../lib/external-share-permissions';
 import AppHeader from '../../components/AppHeader';
 import SwitchAccountButton from '../../components/SwitchAccountButton';
@@ -12,7 +13,7 @@ import AuthClient from "./auth-client";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export default async function AuthPage({ searchParams }: { searchParams?: { switchAccount?: string; returnTo?: string } }) {
+export default async function AuthPage({ searchParams }: { searchParams?: { switchAccount?: string; returnTo?: string; accountAccess?: string } }) {
   const session = await getAnyServerSession();
 
   if (session?.user?.id) {
@@ -20,6 +21,11 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
       id: session.user.id,
       email: session.user.email,
     });
+
+    const profile = await getAccountProfile(session.user);
+    if (searchParams?.switchAccount !== '1' && profile.accountStatus !== 'suspended' && await sharingPlan(session.user.id, profile.accountType) === 'free') {
+      redirect(sharedEnquiryReturnTo(searchParams?.returnTo) || (profile.accountType === 'business' ? '/business' : '/shared-enquiries'));
+    }
 
     if (!access.isActive || searchParams?.switchAccount === '1') {
       return <main className={`${styles.page} ${styles.switchPage}`}>
@@ -57,5 +63,5 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
   }
 
   const returnTo = sharedEnquiryReturnTo(searchParams?.returnTo);
-  return <AuthClient businessSignup={Boolean(returnTo)} returnTo={returnTo}/>;
+  return <AuthClient businessSignup={Boolean(returnTo) && searchParams?.accountAccess !== 'desktop'} returnTo={returnTo}/>;
 }

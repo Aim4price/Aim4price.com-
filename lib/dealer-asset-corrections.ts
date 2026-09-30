@@ -1,3 +1,4 @@
+import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundation';
 import type { PoolClient } from 'pg';
 import {
   getAssetRegisterItemById,
@@ -566,6 +567,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
   const roundedReplacementPrice = replacementPriceExVat === null
     ? null
     : Math.round(replacementPriceExVat * 100) / 100;
+  if(input.sourceType==='external')await ensureSharingFoundation();
   const db = getDb();
   const client = await db.connect();
 
@@ -574,7 +576,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
     if (input.sourceType === 'external') {
       const [token] = sourceId.split(':');
       const permission = input.field === 'serialNumber' ? 'serialNumber' : 'replacementPrice';
-      const link = await client.query(`SELECT token FROM asset_share_links WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL AND asset_ids @> ARRAY[$3::uuid] AND lead_details->'permissions'->>$4='true' FOR SHARE`, [token, access.owner_user_id, asset.id, permission]);
+      const link = await client.query(`SELECT token FROM asset_share_links WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL AND ((umbrella_id IS NULL AND asset_ids @> ARRAY[$3::uuid]) OR (umbrella_id IS NOT NULL AND EXISTS(SELECT 1 FROM asset_groups g JOIN asset_group_members m ON m.group_id=g.id WHERE g.id=umbrella_id AND g.user_id=$2 AND m.asset_id=$3::uuid))) AND lead_details->'permissions'->>$4='true' FOR SHARE`, [token, access.owner_user_id, asset.id, permission]);
       if (!link.rows.length) throw new Error('CORRECTION_FORBIDDEN');
     }
     const lockedAsset = await client.query(
@@ -680,6 +682,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       `${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,
       [correctionId],
     );
+    if(input.sourceType==='external')await recordSharingUsage({accountId:input.dealerUserId,actorId:input.dealerUserId,token:sourceId.split(':')[0],assetId:asset.id,metric:'contribution',eventKey:correctionId+':'+input.field},client);
     await client.query('commit');
     if (!loaded.rows[0]) throw new Error('CORRECTION_NOT_CREATED');
     return mapCorrection(loaded.rows[0]);

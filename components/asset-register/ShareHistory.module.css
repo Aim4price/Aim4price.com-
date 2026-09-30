@@ -1,0 +1,8 @@
+.panel { padding:1.25rem 1.5rem; color:var(--app-text,#15392f); }
+.panel p { margin:0 0 1rem; line-height:1.5; }
+.list { display:grid; gap:.65rem; max-height:24rem; overflow:auto; }
+.row { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.9rem 1rem; background:var(--app-surface,#fff); border:1px solid var(--app-line,#d4e4dc); border-radius:1rem; }
+.row strong,.row small { display:block; overflow-wrap:anywhere; }
+.row small { margin-top:.3rem; color:var(--app-info,#526b60); }
+.panel button,.panel a { padding:.65rem .9rem; border:1px solid var(--app-line,#c5d9cc); border-radius:.7rem; background:var(--app-surface,#fff); color:var(--app-text,#15392f); cursor:pointer; white-space:nowrap; }
+.panel footer { display:flex; gap:.7rem; margin-top:1.1rem; }

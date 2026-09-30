@@ -42,7 +42,7 @@ test('Desktop entitlement is distinct from business approval and active status',
 test('reset links preserve only a valid enquiry through Better Auth callback nesting',()=>{
  const old=process.env.NEXT_PUBLIC_SITE_URL;process.env.NEXT_PUBLIC_SITE_URL='https://aim4price.com';
  try{
-  const m=load('lib/email.ts',{'./email-brand':load('lib/email-brand.ts'),'./external-share-permissions':load('lib/external-share-permissions.ts')});
+  const m=load('lib/email.ts',{'./sharing-foundation':{recordSharingUsage:async()=>{}},'./email-brand':load('lib/email-brand.ts'),'./external-share-permissions':load('lib/external-share-permissions.ts')});
   const enquiry='/asset-share/'+'a'.repeat(43);
   const callback='https://aim4price.com/reset-password?returnTo='+encodeURIComponent(enquiry);
   const nested='https://aim4price.com/api/auth/reset-password/token?callbackURL='+encodeURIComponent(callback);

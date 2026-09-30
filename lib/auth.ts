@@ -1,3 +1,4 @@
+import { registerFreeSharingAccount } from './sharing-foundation';
 import { ensureBusinessWorkspace } from './business-workspaces';
 import { getSiteOrigin } from './email';
 import { buildAccessEmail } from './access-email';
@@ -174,12 +175,13 @@ export const auth = betterAuth({
               },
             );
           } catch (error) {
-            if (readSignupField(context, "accountType") === "business") throw error;
+            if (readSignupField(context, "accountType") === "business" || readSignupField(context, "accountAccess") === "free") throw error;
             console.error(
               "Failed to create initial Aim4price account profile",
               error,
             );
           }
+          if (readSignupField(context, "accountAccess") === "free" || readSignupField(context, "accountType") === "business") await registerFreeSharingAccount(user.id);
           if (readSignupField(context, "accountType") === "business") await ensureBusinessWorkspace(user.id);
           const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;
           if (billing) await queueSignupInvoice(user.id, billing);

@@ -12,5 +12,5 @@ export function normalizeExternalPermissions(value: unknown): ExternalSharePermi
     return Object.fromEntries(EXTERNAL_SHARE_OPTIONS.map(({ key }) => [key, input[key] === true])) as ExternalSharePermissions;
 }
 export function sharedEnquiryReturnTo(value: unknown): string | null {
-    return typeof value === 'string' && /^\/asset-share\/[A-Za-z0-9_-]{43}$/.test(value) ? value : null;
+    return typeof value === 'string' && /^\/asset-share\/[A-Za-z0-9_-]{43}(?:\?open=1)?$/.test(value) ? value : null;
 }

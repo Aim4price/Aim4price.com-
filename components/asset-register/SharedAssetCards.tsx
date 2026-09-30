@@ -1,5 +1,5 @@
 "use client";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { PublicAssetShare } from "../../lib/asset-share-links";
 import ExternalLeadActions, { type ExternalLeadActionData } from "./ExternalLeadActions";
 import ShareModalCloseButton from "./ShareModalCloseButton";
@@ -45,6 +45,8 @@ export default function SharedAssetCards({
     assetIndex: number;
     photoIndex: number;
   } | null>(null);
+  const selectionKey=share?.assets.map(asset=>asset.assetId||asset.title).join('|')||'';
+  useEffect(()=>{setOpened(null);setManaged(null);setPhotoViewer(null);},[selectionKey]);
   const dialog = useRef<HTMLDialogElement | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const photoTrigger = useRef<HTMLElement | null>(null);
@@ -95,7 +97,7 @@ export default function SharedAssetCards({
               const photoIndex = photoIndexes[index] ?? 0;
               return (
                 <article
-                  key={index}
+                  key={item.assetId || index}
                   className={`${leadStyles.leadThread} ${leadStyles.leadThreadTracking} ${isOpen ? leadStyles.leadThreadOpen : ""}`}
                 >
                   <LeadCardSummary
@@ -316,7 +318,7 @@ export default function SharedAssetCards({
               />
             </header>
             <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${leadStyles.leadManageScrollBody} ${dialogStyles.body}`}>
-              {enquiry ? <ExternalLeadActions key={managed} {...enquiry} assetIndex={managed!} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
+              {enquiry ? <ExternalLeadActions key={asset.assetId||managed} {...enquiry} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
                   <p className={styles.note}>
                     These actions apply to the shared enquiry.

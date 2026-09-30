@@ -60,3 +60,7 @@
 
 .destinationDialog .copy strong { font-size: 1.1rem; }
 .destinationDialog .copy small { font-size: .95rem; }
+
+.historyActions { display:flex; justify-content:center; gap:1rem; padding-top:1.2rem; }
+.historyActions button { border:1px solid var(--app-line,#ccdcd4); border-radius:.8rem; padding:.7rem 1.1rem; background:var(--app-surface,#fff); color:var(--app-text,#15392f); font:inherit; font-weight:650; cursor:pointer; }
+.historyActions button:hover { background:var(--app-surface-soft,#edf6f1); }

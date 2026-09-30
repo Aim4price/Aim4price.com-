@@ -1,3 +1,4 @@
+import { sharingPlan } from './sharing-foundation';
 import { hasDesktopAccess } from './account-entitlements';
 import { retiredBusinessSubtype, isRetiredAssistanceAccount } from "./retired-workspaces";
 import { getDb } from "./db";
@@ -1360,7 +1361,7 @@ export async function isAccountActive(user: {
   const result = await getDb().query<{ account_type: string; account_status: string }>(
     'SELECT account_type, account_status FROM account_profiles WHERE user_id = $1 LIMIT 1', [user.id],
   );
-  return !isRetiredAssistanceAccount(user) && hasDesktopAccess({accountType: result.rows[0]?.account_type, accountStatus: normalizeAccountStatus(result.rows[0]?.account_status)});
+  return await sharingPlan(user.id, result.rows[0]?.account_type) !== 'free' && !isRetiredAssistanceAccount(user) && hasDesktopAccess({accountType: result.rows[0]?.account_type, accountStatus: normalizeAccountStatus(result.rows[0]?.account_status)});
 }
 
 export async function markAccountLastActive(user: {

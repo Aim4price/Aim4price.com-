@@ -35,7 +35,7 @@ test('guest credits require the recipient, count once per enquiry, and enforce l
 test('legacy guest sessions no longer authorise enquiry access or contributions',async()=>{
  const lead={token:'test',details:{recipientEmail:'guest@example.test',permissions:{reports:true,documents:true,serialNumber:true}},reports:[]};
  const permissions=load('lib/external-share-permissions.ts',{});
- const mod=load('lib/external-lead-access.ts',{'./db':{},'./auth-session':{getServerSession:async()=>null},'./account-profile':{},'./business-accounts':{},'./asset-register-account-access':{},'./guest-leads':{readLeadPage:async()=>lead},'./external-share-permissions':permissions,'./guest-enquiry-credits':{guestEnquiryAccess:async()=>({access:'guest'})}});
+ const mod=load('lib/external-lead-access.ts',{'./sharing-foundation':{},'./asset-share-links':{},'./db':{},'./auth-session':{getServerSession:async()=>null},'./account-profile':{},'./business-accounts':{},'./asset-register-account-access':{},'./guest-leads':{readLeadPage:async()=>lead},'./external-share-permissions':permissions,'./guest-enquiry-credits':{guestEnquiryAccess:async()=>({access:'guest'})}});
  assert.equal((await mod.externalLeadAccess(lead)).access,'sign-in');
  await assert.rejects(mod.requireExternalLeadAction('test','documents'),e=>e.status===401);
  await assert.rejects(mod.requireExternalLeadAction('test','serialNumber'),e=>e.status===401);

@@ -1,3 +1,4 @@
+import { sharingPlan } from '../../../lib/sharing-foundation';
 import { NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
     const candidate = await getServerSession({ requireActive: false });
     if (candidate?.user) {
       const account = await getAccountProfile(candidate.user);
-      if (account.accountType === 'business' && account.accountStatus !== 'suspended') session = candidate;
+      if ((account.accountType === 'business' || await sharingPlan(candidate.user.id,account.accountType)==='free') && account.accountStatus !== 'suspended') session = candidate;
     }
   }
   if (!session) {
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
       name: profile.name || session.user.name,
       email: session.user.email,
       accountType: profile.accountType,
+      sharingPlan: await sharingPlan(session.user.id,profile.accountType),
       accountSubtype: profile.accountSubtype,
       logoUrl: profile.logoUrl,
     },

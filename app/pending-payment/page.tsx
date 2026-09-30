@@ -1,3 +1,5 @@
+import { sharingPlan } from '../../lib/sharing-foundation';
+import { getAccountProfile } from '../../lib/account-profile';
 import { redirect } from "next/navigation";
 import { getAccountAccess } from "../../lib/account-access";
 import { getAnyServerSession } from "../../lib/auth-session";
@@ -15,6 +17,8 @@ export default async function PendingPaymentPage() {
   }
 
   const access = await getAccountAccess(session.user);
+  const profile = await getAccountProfile(session.user);
+  if (profile.accountStatus !== 'suspended' && await sharingPlan(session.user.id, profile.accountType) === 'free') redirect(profile.accountType === 'business' ? '/business' : '/shared-enquiries');
 
   if (access.isActive) {
     redirect(access.isAdmin ? "/admin" : "/asset-register");

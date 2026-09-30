@@ -10,14 +10,17 @@ async function setup(){
  const pg=new PGlite();
  await pg.exec(`CREATE TABLE account_profiles(user_id text PRIMARY KEY, business_name text); CREATE TABLE asset_register_items(id uuid PRIMARY KEY,user_id text,title text,serial_number text,replacement_price_ex_vat numeric); INSERT INTO account_profiles VALUES('owner','Owner Business');INSERT INTO asset_register_items VALUES('${A}','owner','Bakkie','OLD-A',100000),('${B}','owner','Truck','OLD-B',200000);`);
  await pg.exec('CREATE TABLE asset_leads(id uuid PRIMARY KEY,owner_user_id text,asset_register_item_id uuid,asset_snapshot_json jsonb,included_sections_json jsonb,updated_at timestamptz)');
+ await pg.exec(`CREATE TABLE "user"(id text PRIMARY KEY,email text,"emailVerified" boolean);INSERT INTO "user" VALUES('owner','owner@example.com',true),('recipient','workshop@example.com',true);CREATE TABLE asset_groups(id uuid PRIMARY KEY,user_id text,name text);CREATE TABLE asset_group_members(group_id uuid,asset_id uuid);INSERT INTO asset_groups VALUES('30000000-0000-4000-8000-000000000001','owner','Vehicle fleet');INSERT INTO asset_group_members VALUES('30000000-0000-4000-8000-000000000001','${A}'),('30000000-0000-4000-8000-000000000001','${B}');`);
  const query=(sql,p)=> /create extension/i.test(sql)?Promise.resolve({rows:[]}):p?pg.query(sql,p):pg.exec(sql).then(r=>r.at(-1));
  const db={query,connect:async()=>({query,release(){}})};
  const assetDb={getAssetRegisterItemsByRefs:async refs=>(await pg.query('SELECT * FROM asset_register_items')).rows.filter(r=>refs.some(ref=>ref.userId===r.user_id&&ref.assetId===r.id)).map(r=>({id:r.id,title:r.title,serialNumber:r.serial_number,replacementPriceExVat:Number(r.replacement_price_ex_vat),photos:[]})),getAssetRegisterItemById:async(user,id)=>(await assetDb.getAssetRegisterItemsByRefs([{userId:user,assetId:id}]))[0]};
  const snapshot=load('lib/asset-share-snapshot.ts',{'./asset-usage':load('lib/asset-usage.ts'),'./tractor-logic':{conditionLabel:k=>k}});
- const base=load('lib/asset-share-links.ts',{'./db':{getDb:()=>db},'./asset-share-snapshot':snapshot,'./asset-register-db':assetDb});
+ const groups={getAssetGroupById:async(user,id)=>{const g=(await pg.query('SELECT * FROM asset_groups WHERE id=$1 AND user_id=$2',[id,user])).rows[0];return g?{id:g.id,name:g.name,members:(await pg.query('SELECT asset_id FROM asset_group_members WHERE group_id=$1',[id])).rows.map(r=>({assetId:r.asset_id}))}:null;}};
+ const base=load('lib/asset-share-links.ts',{'./asset-groups':groups,'./db':{getDb:()=>db},'./asset-share-snapshot':snapshot,'./asset-register-db':assetDb});
  const schema=load('lib/guest-lead-schema.ts',{'./db':{getDb:()=>db},'./asset-share-links':base,'./business-network':{ensureBusinessNetwork:async()=>{}}});
  const state={guestAccess:'sign-in',user:null,approved:false,type:'business',status:'active'};
- const mocks={'./guest-enquiry-credits':{guestEnquiryAccess:async()=>({access:state.guestAccess})},'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':load('lib/business-network-shared.ts'),'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async options=>state.user&&(!options?.requireActive||state.type!=='business')?{user:state.user}:null},'./asset-register-account-access':{getAssetRegisterAccountAccess:async s=>s.user.id==='owner'?{}:null},'./business-accounts':{canBusinessContribute:async()=>state.approved,canBusinessRead:async()=>state.status==='active'},'./account-profile':{getAccountProfile:async()=>({accountType:state.type,accountStatus:state.status,businessName:'Verified Workshop'})},'./external-share-permissions':permissions};
+ const foundation=load('lib/sharing-foundation.ts',{'./db':{getDb:()=>db}});
+ const mocks={'./sharing-foundation':foundation,'./guest-enquiry-credits':{guestEnquiryAccess:async()=>({access:state.guestAccess})},'./db':{getDb:()=>db},'./guest-lead-schema':schema,'./business-network-shared':load('lib/business-network-shared.ts'),'./asset-register-db':assetDb,'./asset-share-snapshot':snapshot,'./asset-share-links':base,'./guest-business-access':{getGuestViewer:async()=>null},'./auth-session':{getServerSession:async options=>state.user&&(!options?.requireActive||state.type!=='business')?{user:state.user}:null},'./asset-register-account-access':{getAssetRegisterAccountAccess:async s=>s.user.id==='owner'?{}:null},'./business-accounts':{canBusinessContribute:async()=>state.approved,canBusinessRead:async()=>state.status==='active'},'./account-profile':{getAccountProfile:async()=>({accountType:state.type,accountStatus:state.status,businessName:'Verified Workshop'})},'./external-share-permissions':permissions};
  const leads=load('lib/guest-leads.ts',mocks);mocks['./guest-leads']=leads;
  const access=load('lib/external-lead-access.ts',mocks);mocks['./external-lead-access']=access;
  // Guest leads resolves the same access module lazily through this proxy.
@@ -27,19 +30,19 @@ async function setup(){
  const corrections=load('lib/dealer-asset-corrections.ts',{...mocks,'./asset-register-revaluation':{revalueAssetRegisterItem:async()=>{}},'./database-schema-readiness':load('lib/database-schema-readiness.ts')});
  const details={recipientName:'Workshop',recipientEmail:'workshop@example.com',request:'Please check the assets.',replyName:'Owner Business',replyEmail:'owner@example.com',replyPhone:'',allowReply:false,permissions:{reports:true,replacementPrice:true,serialNumber:true,documents:true}};
  const report={label:'Selected report',fileName:'asset.pdf',data:Buffer.from('%PDF-1.4\nreport')};
- const link=await leads.createGuestLead('owner',[B,A],false,details,[report],{id:'fleet',name:'Vehicle fleet'});
+ const link=await leads.createGuestLead('owner',[B,A],false,details,[report]);
  const signIn=(overrides={})=>{state.user={id:'recipient',name:'Manager',email:'workshop@example.com',emailVerified:true,...overrides};};
- return{mocks,pg,state,leads:fullLeads,access,docs,corrections,details,report,link,base,signIn};
+ return{mocks,pg,state,leads:fullLeads,access,docs,corrections,details,report,link,base,signIn,foundation,groups};
 }
 test('permission input defaults to read-only and signup returns only to valid enquiry paths',()=>{
  assert.deepEqual(permissions.normalizeExternalPermissions({reports:'true',serialNumber:true,admin:true}),{reports:false,serialNumber:true,replacementPrice:false,documents:false});
- for(const value of ['https://evil.test','//evil.test','/\\evil.test','/admin','/asset-share/short'])assert.equal(permissions.sharedEnquiryReturnTo(value),null);
+ for(const value of ['https://evil.test','//evil.test','/\\evil.test','/admin','/asset-share/short','/asset-share/'+'x'.repeat(43)+'?open=1&redirect=https://evil.test'])assert.equal(permissions.sharedEnquiryReturnTo(value),null);
  assert.equal(permissions.sharedEnquiryReturnTo('/asset-share/'+'x'.repeat(43)),'/asset-share/'+'x'.repeat(43));
 });
 test('verified recipients can read; contributions require the invited approved account',async()=>{
  const x=await setup();try{
   const lead=await x.leads.readLeadPage(x.link.token);
-  assert.equal(lead.share.umbrellaName,'Vehicle fleet');assert.equal(lead.share.senderName,'Owner Business');assert.equal(lead.share.assets.length,2);
+  assert.equal(lead.share.umbrellaName,'');assert.equal(lead.share.senderName,'Owner Business');assert.equal(lead.share.assets.length,2);
   assert.equal((await x.access.externalLeadAccess(lead)).access,'sign-in');
   await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===401);
   x.signIn({email:'forwarded@example.com'});x.state.approved=true;
@@ -95,7 +98,7 @@ test('correction endpoint rejects foreign requests and forged access, then attri
  const x=await setup();try{
   const {NextRequest}=require('next/server');
   const route=load('app/api/asset-share-links/[token]/corrections/route.ts',{
-   '../../../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.test')throw Error('Foreign origin');},businessBody:r=>r.json(),businessJson:(d,status=200)=>Response.json(d,{status}),businessError:e=>Response.json({error:e.message},{status:400})},
+   '../../../../../lib/sharing-foundation':x.foundation,'../../../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.test')throw Error('Foreign origin');},businessBody:r=>r.json(),businessJson:(d,status=200)=>Response.json(d,{status}),businessError:e=>Response.json({error:e.message},{status:400})},
    '../../../../../lib/external-lead-access':x.access,'../../../../../lib/dealer-asset-corrections':x.corrections,'../../../../../lib/account-profile':x.mocks['./account-profile'],'../../../../../lib/business-network':{limitBusinessAction:async()=>{}},
   });
   const ctx={params:{token:x.link.token}},url='https://aim4price.test/api/asset-share-links/'+x.link.token+'/corrections';
@@ -106,7 +109,8 @@ test('correction endpoint rejects foreign requests and forged access, then attri
   x.signIn({emailVerified:false});assert.equal((await route.POST(request(),ctx)).status,403);
   x.signIn();x.state.approved=false;assert.equal((await route.POST(request(),ctx)).status,403);
   x.state.approved=true;assert.equal((await route.POST(request({assetIndex:100}),ctx)).status,400);assert.equal((await route.POST(request({field:'ownerUserId'}),ctx)).status,400);
-  const response=await route.POST(request({dealerUserId:'spoofed',ownerUserId:'other',assetId:B}),ctx);assert.equal(response.status,200);const result=await response.json();assert.equal(result.correction.dealerUserId,'recipient');assert.equal(result.correction.ownerUserId,'owner');assert.equal(result.correction.assetId,A);
+  const response=await route.POST(request({dealerUserId:'spoofed',ownerUserId:'other',assetId:B}),ctx);assert.equal(response.status,200);const result=await response.json();assert.equal(result.correction.dealerUserId,'recipient');assert.equal(result.correction.ownerUserId,'owner');assert.equal(result.correction.assetId,B);
+  assert.equal((await route.POST(request({assetId:'99999999-0000-4000-8000-000000000001'}),ctx)).status,400);
  }finally{await x.pg.close();}
 });
 
@@ -155,7 +159,7 @@ test('access API ignores supplied identity and rejects foreign writes and non-ow
   const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'owner-approval',recipientEmail:''},[x.report]);
   const {NextRequest}=require('next/server');
   const route=load('app/api/asset-share-links/[token]/access/route.ts',{
-   '../../../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.test')throw Error('Foreign origin');},businessBody:r=>r.json(),businessJson:(data,status=200)=>Response.json(data,{status}),businessError:e=>Response.json({error:e.message},{status:400})},
+   '../../../../../lib/sharing-foundation':x.foundation,'../../../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.test')throw Error('Foreign origin');},businessBody:r=>r.json(),businessJson:(data,status=200)=>Response.json(data,{status}),businessError:e=>Response.json({error:e.message},{status:400})},
    '../../../../../lib/external-lead-access':x.access,'../../../../../lib/business-network':{limitBusinessAction:async()=>{}},'../../../../../lib/auth-session':x.mocks['./auth-session'],
   });
   const ctx={params:{token}},url='https://aim4price.test/api/asset-share-links/'+token+'/access';
@@ -220,5 +224,47 @@ test('legacy WhatsApp-only enquiries require an owner-approved permanent account
   assert.equal((await x.access.externalLeadAccess(await lead())).access,'read-only');
   x.signIn({id:'forwarded',email:'another@example.com'});
   assert.equal((await x.access.externalLeadAccess(await lead())).access,'wrong-recipient');
+ }finally{await x.pg.close();}
+});
+
+test('live links reflect owner edits and umbrella membership; removed members cannot receive corrections',async()=>{
+ const x=await setup();try{
+  const group='30000000-0000-4000-8000-000000000001';
+  const link=await x.leads.createGuestLead('owner',[A],false,x.details,[x.report],{id:group,name:'Vehicle fleet'});
+  assert.equal((await x.leads.readLeadPage(link.token)).share.assets.length,2);
+  await x.pg.query("UPDATE asset_register_items SET title='Updated bakkie',serial_number='LIVE-SERIAL',replacement_price_ex_vat=98765 WHERE id=$1",[A]);
+  let lead=await x.leads.readLeadPage(link.token);
+  assert.equal(lead.share.assets.find(a=>a.assetId===A).serialNumber,'LIVE-SERIAL');
+  assert.equal(lead.share.assets.find(a=>a.assetId===A).replacementPriceExVat,98765);
+  await x.pg.query('DELETE FROM asset_group_members WHERE asset_id=$1',[A]);
+  x.signIn();x.state.approved=true;
+  assert.equal(await x.access.resolveExternalCorrectionAccess({dealerUserId:'recipient',sourceId:link.token+':'+A,field:'serialNumber'}),null);
+  assert.equal((await x.access.resolveExternalCorrectionAccess({dealerUserId:'recipient',sourceId:link.token+':'+B,field:'serialNumber'})).asset_register_item_id,B);
+  await x.pg.query('INSERT INTO asset_group_members VALUES($1,$2)',[group,A]);
+  assert.equal((await x.leads.readLeadPage(link.token)).share.assets.length,2);
+  await x.base.revokeAssetShareLink('owner',link.token);
+  assert.equal(await x.leads.readLeadPage(link.token),null);
+ }finally{await x.pg.close();}
+});
+test('free Dealer recipients keep verified access without Desktop and zero draft allowances never block contributions',async()=>{
+ const x=await setup();try{
+  x.signIn();x.state.type='dealer';x.state.status='pending_payment';
+  await x.foundation.registerFreeSharingAccount('recipient');
+  await x.foundation.saveSharingAllowances('admin',{assets:0,uploads:0,interactions:0,emails:0});
+  assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(x.link.token))).access,'active');
+  await x.docs.submitLeadDocument(x.link.token,{kind:'invoice'},{data:Buffer.from('%PDF-1.4'),fileName:'invoice.pdf',contentType:'application/pdf'},'recipient');
+  const usage=await x.foundation.sharingUsageSummary('recipient');
+  assert.equal(usage.asset_received.count,2);assert.equal(usage.upload.count,1);assert.equal(usage.upload.bytes,8);
+  x.state.status='suspended';assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(x.link.token))).access,'suspended');
+ }finally{await x.pg.close();}
+});
+
+test('directory live projection retains the selected valuation and photo boundaries',async()=>{
+ const x=await setup();try{
+  const details={...x.details,permissions:permissions.EMPTY_EXTERNAL_PERMISSIONS};
+  const link=await x.leads.createGuestLead('owner',[A],true,details,[],undefined,{valuation:false,replacementPrice:false,mainPhotoOnly:true});
+  await x.pg.query('UPDATE asset_register_items SET replacement_price_ex_vat=99999 WHERE id=$1',[A]);
+  const item=(await x.leads.readLeadPage(link.token)).share.assets[0];
+  assert.equal(item.valueExVat,null);assert.equal(item.replacementPriceExVat,null);assert.equal(item.serialNumber,'OLD-A');
  }finally{await x.pg.close();}
 });

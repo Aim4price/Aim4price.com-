@@ -609,7 +609,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   const [createdBusinessEmail,setCreatedBusinessEmail]=useState('');
   const [verificationSent,setVerificationSent]=useState(false);
   async function sendBusinessVerification(email:string){
-    await postAuth('/send-verification-email',{email,callbackURL:sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/business'});
+    await postAuth('/send-verification-email',{email,callbackURL:sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/shared-enquiries'});
     setVerificationSent(true);
   }
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
@@ -622,6 +622,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   }, []);
 
   const [mode, setMode] = useState<Mode>("signup");
+  const [accountAccess, setAccountAccess] = useState<'free'|'desktop'>(businessSignup ? 'free' : 'desktop');
   const [signupStep, setSignupStep] = useState<SignupStep>(1);
   const [showDealerRegisterInfo, setShowDealerRegisterInfo] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -746,7 +747,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   };
 
   const validateSignupStep = (step: SignupStep) => {
-    if (step === 3 && signupForm.accountType !== "business" && (billingPricingError || (selectedBillingPlan && (!billing.accepted || !billing.address.trim())))) {
+    if (step === 3 && accountAccess !== 'free' && signupForm.accountType !== "business" && (billingPricingError || (selectedBillingPlan && (!billing.accepted || !billing.address.trim())))) {
       setNotice({tone:"error",title:"Invoice details required",text:billingPricingError || "Add your billing address and accept the signup invoice price."});
       returnToSignupStep(3);return false;
     }
@@ -851,7 +852,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
     return true;
   };
 
-  const selectedBillingPlan = (signupForm.accountType === "middleman" || signupForm.accountType === "business") ? undefined : billingPlans.find(plan=>plan.accountType===signupForm.accountType);
+  const selectedBillingPlan = (accountAccess === "free" || signupForm.accountType === "middleman" || signupForm.accountType === "business") ? undefined : billingPlans.find(plan=>plan.accountType===signupForm.accountType);
   useEffect(()=>{setBilling(current=>({...current,accepted:false}));},[selectedBillingPlan?.accountType,selectedBillingPlan?.version]);
 
   const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -898,6 +899,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         acceptedTerms: signupForm.acceptTerms,
         accountType: signupForm.accountType === "middleman" ? "dealer" : signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
+        accountAccess,
         province,
         townCity,
         partnerDirectoryEnabled:
@@ -913,7 +915,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         ),
       });
 
-      if(signupForm.accountType==='business'){
+      if(signupForm.accountType==='business'||accountAccess==='free'){
         setCreatedBusinessEmail(email);
         try{await sendBusinessVerification(email);}catch{
           setNotice({tone:'error',title:'Verification email not sent',text:'Your account was created. Please resend the verification email below.'});
@@ -994,7 +996,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         : authenticatedSession?.accountType === "licensing"
           ? getAbsoluteUrl("/")
           : getAbsoluteUrl("/leads");
-      const redirectUrl = authenticatedSession?.accountType === "business" ? getAbsoluteUrl(sharedEnquiryReturnTo(getSafeReturnTo()) || "/business") :
+      const redirectUrl = (authenticatedSession as {sharingPlan?:string}|null)?.sharingPlan === "free" ? getAbsoluteUrl(sharedEnquiryReturnTo(getSafeReturnTo()) || "/shared-enquiries") : authenticatedSession?.accountType === "business" ? getAbsoluteUrl(sharedEnquiryReturnTo(getSafeReturnTo()) || "/business") :
         !getSafeReturnTo() &&
         normalizeEmail(email) !== ADMIN_EMAIL &&
         (authenticatedSession?.accountType === "dealer" ||
@@ -1138,7 +1140,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                 {notice&&<p role="alert">{notice.text}</p>}
                 <div className={styles.signupFooter}>
                   <button type="button" className={styles.secondaryButton} disabled={isSubmitting} onClick={async()=>{setIsSubmitting(true);setNotice(null);try{await sendBusinessVerification(createdBusinessEmail);}catch{setNotice({tone:'error',title:'Unable to send email',text:'Please try resending the verification email.'});}finally{setIsSubmitting(false);}}}>{isSubmitting?'Sending…':'Resend verification email'}</button>
-                  <a className={`${styles.primaryButton} ${styles.signupPrimaryButton}`} href={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/business'}>Continue</a>
+                  <a className={`${styles.primaryButton} ${styles.signupPrimaryButton}`} href={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())||'/shared-enquiries'}>Continue</a>
                 </div>
               </section>
             ) : mode === "signup" ? (
@@ -1188,13 +1190,21 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
 
                         <div className={styles.signupFieldGrid}>
                           <div className={styles.field}>
+                            <span className={styles.label}>Choose your access</span>
+                            <CustomSelect name="accountAccess" ariaLabel="Choose your access" value={accountAccess}
+                              options={[{value:'free',label:'Free sharing account'},{value:'desktop',label:'Full Aim4price Desktop'}]}
+                              onChange={(value) => { setAccountAccess(value as 'free'|'desktop'); if((value==='free' && !['dealer','business'].includes(signupForm.accountType)) || (value==='desktop' && signupForm.accountType==='business')) setSignupForm(current=>({...current,accountType:'dealer',accountSubtype:getDefaultSubtype('dealer')})); }}/>
+                            <small>{accountAccess==='free'?'Receive assets and contribute. Upgrade this same account later.':'Full workspace access after subscription activation.'}</small>
+                          </div>
+                          <div className={styles.field}>
                             <span className={styles.label}>What would you like to use Aim4price for?</span>
                             <CustomSelect
                               name="accountType"
                               ariaLabel="What would you like to use Aim4price for?"
                               value={signupForm.accountType}
-                              options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
+                              options={accountAccess==='free'?SIGNUP_ACCOUNT_TYPE_OPTIONS.filter(option=>option.value==='dealer'||option.value==='business'):SIGNUP_ACCOUNT_TYPE_OPTIONS}
                               onChange={(accountType) => {
+                                if(accountType==='business') setAccountAccess('free');
                                 setSignupForm((current) => ({
                                   ...current,
                                   accountType,
@@ -1412,7 +1422,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           </div>
                         </div>
 
-                        {billingPricingError && signupForm.accountType!=="business" ? <p role="alert">{billingPricingError}</p> : null}
+                        {billingPricingError && accountAccess!=="free" && signupForm.accountType!=="business" ? <p role="alert">{billingPricingError}</p> : null}
                         {selectedBillingPlan ? <div className={styles.billingSignup}>
                           <strong>Your signup invoice · {money(selectedBillingPlan.amountCents)}</strong>
                           <p>{selectedBillingPlan.description} · {selectedBillingPlan.interval === 'once' ? 'One-time charge' : selectedBillingPlan.interval === 'monthly' ? 'Monthly' : 'Annual'} · No VAT applicable.</p>

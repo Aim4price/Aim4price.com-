@@ -1,3 +1,5 @@
+import { sharingUsageSummary } from '../../lib/sharing-foundation';
+import { listReceivedSharedEnquiries } from '../../lib/guest-leads';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
@@ -18,7 +20,8 @@ export default async function BusinessPage({searchParams}:{searchParams?:{return
  if(!account)redirect('/account');
  const workspace=await businessWorkspaceSummary(session.user.id);
  const paused=account.profile.accountStatus!=='active'||!workspace||workspace.suspended;
- const enquiries=paused?[]:await listBusinessEnquiries(session.user);
+ const enquiries=paused?[]:await listReceivedSharedEnquiries();
+ const usage=await sharingUsageSummary(session.user.id);
  return <><AppHeader active="none"/><main className={styles.page}>
   <div className={styles.workspaceHeading}><div><span className={styles.eyebrow}>Free account</span><h1 className={styles.title}>Shared enquiries</h1><p className={styles.intro}>Open information shared with your business and return to it whenever you need it.</p></div><Link className={styles.secondaryButton} href="/pricing">Explore Desktop plans</Link></div>
   {paused?<p className={styles.notice} role="status">Account access is paused. Contact Aim4price to review your access.</p>:returnTo?<Link className={styles.button} href={returnTo}>Return to enquiry</Link>:null}
@@ -26,7 +29,7 @@ export default async function BusinessPage({searchParams}:{searchParams?:{return
    <section className={styles.panel} aria-labelledby="enquiries-title"><h2 id="enquiries-title">Received enquiries</h2>
     {!session.user.emailVerified?<p>Verify your email below to view enquiries shared with you.</p>:!enquiries.length?<p className={styles.muted}>Your authorised enquiries will appear here. If you received a link by email or WhatsApp, open that link to get started.</p>:enquiries.map(enquiry=><article className={styles.lead} key={enquiry.token}><h3>{enquiry.sender||'Asset enquiry'}</h3><p>{enquiry.request}</p><small>{new Date(enquiry.created_at).toLocaleDateString('en-ZA')}</small><Link className={styles.button} href={`/asset-share/${enquiry.token}`}>Open enquiry</Link></article>)}
    </section>
-   <aside className={styles.panel}><h2>Your access</h2><p>View authorised enquiries and reports. Business verification is required before you can submit documents or proposed changes.</p><p className={styles.muted}>Full Aim4price Desktop access requires an upgrade.</p><h2>Credits</h2>{Boolean(workspace?.legacyOpened)&&<p>{workspace!.legacyOpened} previously opened {workspace!.legacyOpened===1?'enquiry':'enquiries'} carried over from guest access.</p>}<p className={styles.muted}>Your free allowance will be shown here once available. No subscription payment is required to create this account.</p></aside>
+   <aside className={styles.panel}><h2>Your access</h2><p>View authorised enquiries and reports. Business verification is required before you can submit documents or proposed changes.</p><p className={styles.muted}>Full Aim4price Desktop access requires an upgrade.</p><h2>Your usage</h2><p>{usage.asset_received?.count||0} assets received · {usage.upload?.count||0} uploads · {usage.contribution?.count||0} contributions</p>{Boolean(workspace?.legacyOpened)&&<p>{workspace!.legacyOpened} previously opened {workspace!.legacyOpened===1?'enquiry':'enquiries'} carried over from guest access.</p>}<p className={styles.muted}>Usage is being recorded. No free allowance limits are currently enforced.</p></aside>
   </div>
   <details className={`${styles.panel} ${styles.details}`} open={searchParams?.details==='1'||!session.user.emailVerified}><summary>Account details & business verification</summary><BusinessDetails returnTo={returnTo} businessName={account.profile.businessName||''} phone={account.profile.phone||''} website={account.review.website} evidence={account.review.evidence} email={session.user.email} emailVerified={session.user.emailVerified===true}/></details>
   <div className={styles.footer}><SignOut/></div>

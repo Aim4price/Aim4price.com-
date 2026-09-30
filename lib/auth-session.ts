@@ -1,3 +1,4 @@
+import { sharingSessionIsActive } from './sharing-foundation';
 import { isRetiredAssistanceAccount } from "./retired-workspaces";
 import { currentAppRealm } from './app-realm-server';
 import { cookies, headers } from "next/headers";
@@ -82,6 +83,7 @@ function toDate(value: string | Date | null | undefined, fallback: Date): Date {
 
 async function readAuthSession(): Promise<ServerSession> {
   const session = await auth.api.getSession({ headers: await headers() });
+  if(session?.user && !await sharingSessionIsActive(session)) return null;
   return session?.user && isRetiredAssistanceAccount(session.user) ? null : session;
 }
 
@@ -286,6 +288,7 @@ export async function getServerSession(
     return options.allowDealerApp ? await readDealerAppSupportSession() : null;
   }
   const session = options.authSession ?? await readAuthSession();
+  if(options.authSession && session && !await sharingSessionIsActive(session))return null;
 
   if (session?.user && isRetiredAssistanceAccount(session.user)) return null;
   if (!session?.user?.id) {

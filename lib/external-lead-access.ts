@@ -1,3 +1,5 @@
+import { sharingPlan } from './sharing-foundation';
+import { liveShareOwnershipSql } from './asset-share-links';
 import { getServerSession } from './auth-session';
 import { getAccountProfile } from './account-profile';
 import { canBusinessRead, canBusinessContribute } from './business-accounts';
@@ -19,18 +21,21 @@ export async function externalLeadAccess(lead: Lead) {
         return result('owner');
     // Older WhatsApp-only enquiries also need an owner-approved account binding.
     const unbound = Boolean(lead.details && !lead.details.recipientEmail && !lead.details.recipientUserId && (lead.details.accessMode === 'owner-approval' || lead.details.recipientWhatsApp));
-    if (!unbound && (!lead.details?.recipientEmail || user.email.toLowerCase() !== lead.details.recipientEmail.toLowerCase() || (lead.details.recipientUserId && lead.details.recipientUserId !== user.id)))
+    if (lead.details && !unbound && (!lead.details?.recipientEmail || user.email.toLowerCase() !== lead.details.recipientEmail.toLowerCase() || (lead.details.recipientUserId && lead.details.recipientUserId !== user.id)))
         return result('wrong-recipient');
     if (user.emailVerified !== true)
         return result('verify-email');
     const profile = await getAccountProfile(user);
     if (profile.accountStatus === 'suspended')
         return result('suspended');
+    if (!lead.details) return result('read-only');
     if (profile.accountType === 'business') {
         if (!(await canBusinessRead(user))) return result('suspended');
         if (unbound) return result('request-access');
         return result(await canBusinessContribute(user) ? 'active' : 'read-only');
     }
+    if (profile.accountType === 'dealer' && await sharingPlan(user.id, profile.accountType) === 'free')
+        return result(unbound ? 'request-access' : 'active');
     const active = await getServerSession({ requireActive: true, allowDealerApp: true, allowOwnerApp: true });
     return result(active?.user.id === user.id && profile.accountStatus === 'active' ? (unbound ? 'request-access' : 'active') : 'approval-required');
 }
@@ -55,19 +60,15 @@ export async function resolveExternalCorrectionAccess(input: {
     sourceId: string;
     field: string;
 }) {
-    const match = /^([A-Za-z0-9_-]{43}):(\d{1,2})$/.exec(input.sourceId);
+    const match = /^([A-Za-z0-9_-]{43}):([0-9a-f-]{36}|\d{1,2})$/i.exec(input.sourceId);
     const permission = input.field === 'serialNumber' ? 'serialNumber' : input.field === 'replacementPriceExVat' ? 'replacementPrice' : null;
-    if (!match || !permission)
-        return null;
+    if (!match || !permission) return null;
     const { lead, user } = await requireExternalLeadAction(match[1], permission);
-    if (user.id !== input.dealerUserId)
-        return null;
-    const row = (await getDb().query<{
-        owner_user_id: string;
-        asset_register_item_id: string;
-    }>(`SELECT user_id AS owner_user_id, asset_ids[$2::int + 1]::text AS asset_register_item_id FROM asset_share_links s
-    WHERE token=$1 AND revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id))`, [match[1], Number(match[2])])).rows[0];
-    return row?.asset_register_item_id && row.owner_user_id === lead.ownerId ? row : null;
+    if (user.id !== input.dealerUserId) return null;
+    const asset = /^\d+$/.test(match[2])
+      ? lead.share.assets[Number(match[2])]
+      : lead.share.assets.find(asset => asset.assetId === match[2]);
+    return asset?.assetId ? { owner_user_id: lead.ownerId, asset_register_item_id: asset.assetId } : null;
 }
 
 /** Only the owner may bind an untargeted invitation to one verified account. */
@@ -81,7 +82,7 @@ export async function requestExternalLeadAccess(token: string) {
       SELECT token,$2,$3,$4 FROM asset_share_links s WHERE token=$1 AND revoked_at IS NULL
       AND (lead_details->>'accessMode'='owner-approval' OR coalesce(lead_details->>'recipientWhatsApp','')<>'')
       AND coalesce(lead_details->>'recipientEmail','')='' AND coalesce(lead_details->>'recipientUserId','')=''
-      AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id))
+      AND ${liveShareOwnershipSql()}
       ON CONFLICT(token,user_id) DO UPDATE SET email=EXCLUDED.email,business_name=EXCLUDED.business_name WHERE asset_share_access_requests.status='pending'
       RETURNING status`, [token,user.id,user.email.toLowerCase(),profile.businessName||user.name||user.email]);
     if (!result.rows.length) throw new ExternalLeadAccessError('This invitation is assigned, disabled or your request was declined.', 403);
@@ -102,7 +103,7 @@ export async function reviewExternalAccessRequest(token: string, userId: string,
         const row = (await db.query(`SELECT token FROM asset_share_links s WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL
           AND (lead_details->>'accessMode'='owner-approval' OR coalesce(lead_details->>'recipientWhatsApp','')<>'')
       AND coalesce(lead_details->>'recipientEmail','')='' AND coalesce(lead_details->>'recipientUserId','')=''
-          AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) FOR UPDATE`, [token,user.id])).rows[0];
+          AND ${liveShareOwnershipSql()} FOR UPDATE`, [token,user.id])).rows[0];
         if (!row) throw new ExternalLeadAccessError('This invitation is already assigned or unavailable.', 409);
         const request = (await db.query(`UPDATE asset_share_access_requests SET status=$3,reviewed_at=now() WHERE token=$1 AND user_id=$2 AND status='pending' RETURNING email,business_name`, [token,userId,decision])).rows[0];
         if (!request) throw new ExternalLeadAccessError('This access request has already been reviewed.', 409);

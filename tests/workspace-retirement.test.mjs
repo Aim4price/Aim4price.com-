@@ -111,5 +111,5 @@ test('retired roles are rejected but former assistance emails can sign in and re
       assert.equal(response.status,200, `${email}: ${accountType}`);
     }
   }
-  assert.equal(authCalls,21); assert.equal(billingCalls,20);
+  assert.equal(authCalls,21); assert.equal(billingCalls,15);
 });

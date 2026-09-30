@@ -1,0 +1,28 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from '../../../../lib/auth-session';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
+import { ensureGuestLeadSchema } from '../../../../lib/guest-lead-schema';
+import { getDb } from '../../../../lib/db';
+import { parseShareAssetIds } from '../../../../lib/asset-share-snapshot';
+export const dynamic = 'force-dynamic';
+export async function GET(request: NextRequest) {
+    const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+    if (!session || !await getAssetRegisterAccountAccess(session))
+        return NextResponse.json({ error: 'Owner access required.' }, { status: 403 });
+    try {
+        const ids = parseShareAssetIds(request.nextUrl.searchParams.getAll('assetId'));
+        const umbrella = request.nextUrl.searchParams.get('umbrellaId') || null;
+        if (umbrella && !/^[0-9a-f-]{36}$/i.test(umbrella))
+            throw Error('Invalid umbrella.');
+        const offset = Math.max(0, Math.min(10000, Number(request.nextUrl.searchParams.get('offset')) || 0));
+        await ensureGuestLeadSchema();
+        const rows = (await getDb().query(`SELECT token,created_at,revoked_at,umbrella_name,
+    lead_details->>'recipientName' AS recipient_name,lead_details->>'recipientEmail' AS recipient_email
+    FROM asset_share_links WHERE user_id=$1 AND (asset_ids && $2::uuid[] OR ($3::uuid IS NOT NULL AND umbrella_id=$3::uuid))
+    ORDER BY created_at DESC,token LIMIT 6 OFFSET $4`, [session.user.id, ids, umbrella, Math.floor(offset)])).rows;
+        return NextResponse.json({ shares: rows.slice(0, 5), hasMore: rows.length > 5 }, { headers: { 'Cache-Control': 'private, no-store' } });
+    }
+    catch {
+        return NextResponse.json({ error: 'Select saved assets to view sharing history.' }, { status: 400 });
+    }
+}

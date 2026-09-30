@@ -42,6 +42,8 @@ export default function Fixture(){const [mode,setMode]=useState('signup'),[ready
     await page.waitForSelector('[data-mobile-landscape-entry]',{hidden:true});
    }
    assert.equal(await page.$eval('[data-website-canvas]',e=>e.style.width),'1440px');
+   await page.evaluate(()=>[...document.querySelectorAll('button')].find(e=>e.textContent==='Free sharing account').click());
+   await page.waitForSelector('input[name=password]');
    assert.equal(await page.$eval('input[name=password]',e=>e.autocomplete),'new-password');
    assert.equal(await page.$eval('input[name=email]',e=>e.autocomplete),'username');
    await page.screenshot({path:path.join(output,label+'.png'),fullPage:true});
@@ -51,7 +53,7 @@ export default function Fixture(){const [mode,setMode]=useState('signup'),[ready
   await page.click('input[name=terms]');await page.click('button[type=submit]');
   await page.waitForFunction(()=>document.body.innerText.includes('Check your email'));
   const signup=JSON.parse(requests.find(r=>r.path==='/api/auth/sign-up/email').body);
-  assert.equal(signup.accountType,'business');assert.equal(signup.callbackURL,enquiry);assert.equal(signup.acceptedTerms,true);
+  assert.equal(signup.accountType,'business');assert.equal(signup.accountAccess,'free');assert.equal(signup.callbackURL,enquiry);assert.equal(signup.acceptedTerms,true);
   assert.equal(JSON.parse(requests.find(r=>r.path==='/api/auth/send-verification-email').body).callbackURL,enquiry);
   await page.evaluate(()=>[...document.querySelectorAll('nav button')].find(e=>e.textContent==='request-access').click());
   await page.waitForFunction(()=>document.body.innerText.includes('Request access from the sender'));

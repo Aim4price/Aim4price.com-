@@ -19,11 +19,14 @@ export async function POST(request: NextRequest, { params }: {
             return businessJson({ error: 'Choose the serial number or replacement price.' }, 400);
         const index = body.assetIndex;
         const { lead, user } = await requireExternalLeadAction(params.token, field === 'serialNumber' ? 'serialNumber' : 'replacementPrice');
-        if (!Number.isInteger(index) || Number(index) < 0 || Number(index) >= lead.share.assets.length)
-            return businessJson({ error: 'Choose a shared asset.' }, 400);
+        // New clients send a stable ID. Numeric indexes remain only for older links.
+        const asset = typeof body.assetId === 'string'
+            ? lead.share.assets.find(asset => asset.assetId === body.assetId)
+            : Number.isInteger(index) ? lead.share.assets[Number(index)] : undefined;
+        if (!asset?.assetId) return businessJson({ error: 'Choose a currently shared asset.' }, 400);
         await limitBusinessAction(`external-correction:${user.id}`, 30);
         const profile = await getAccountProfile(user);
-        const correction = await createOrUpdateDealerAssetCorrection({ dealerUserId: user.id, dealerName: profile.businessName || user.name, actorName: user.name, sourceType: 'external', sourceId: `${params.token}:${index}`, field, value: body.value });
+        const correction = await createOrUpdateDealerAssetCorrection({ dealerUserId: user.id, dealerName: profile.businessName || user.name, actorName: user.name, sourceType: 'external', sourceId: `${params.token}:${asset.assetId}`, field, value: body.value });
         return businessJson({ correction });
     }
     catch (e) {

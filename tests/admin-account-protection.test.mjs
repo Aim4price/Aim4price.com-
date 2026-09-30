@@ -19,7 +19,7 @@ function authOptions(onDelete) {
     './account-constants': constants,
     './account-deletion': { deleteUserWorkspaceData: onDelete },
     './db': { getDb: () => ({}) },
-    './business-workspaces': {}, './email': {}, './access-email': {}, './billing': {}, './account-profile': {},
+    './sharing-foundation': {}, './business-workspaces': {}, './email': {}, './access-email': {}, './billing': {}, './account-profile': {},
     './admin-usage-events': {}, './signup-workspace-context': {},
   }).auth;
 }

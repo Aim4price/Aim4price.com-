@@ -996,10 +996,10 @@ export default function AppHeader({
     ? accountProfileLogoState.logoUrl
     : sessionAccountLogoUrl;
   const isOwnerAccount = session?.accountType === 'owner';
-  const isDealerAccount = session?.accountType === 'dealer';
+  const isDealerAccount = session?.accountType === 'dealer' && session.sharingPlan !== 'free';
   const isMiddlemanAccount = isDealerAccount && isMiddlemanAccountSubtype(session?.accountSubtype);
 
-  const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
+  const navAccountType = isLoadingSession ? null : (session?.sharingPlan === 'free' ? 'business' : session?.accountType ?? 'public');
   const navItems = useMemo(
     () => buildNavItems(navAccountType, session?.accountSubtype, ),
     [navAccountType, session?.accountSubtype],
@@ -2496,7 +2496,7 @@ export default function AppHeader({
                           <>
                             {sortAccountMenuItems(isMiddlemanAccount
                                   ? MIDDLEMAN_ACCOUNT_MENU_ITEMS
-                                  : session?.accountType === 'business' ? [{ href: '/business', label: 'Shared enquiries' }, { href: '/business?details=1', label: 'Account' }, { href: '/pricing', label: 'Explore Desktop plans' }]
+                                  : session?.sharingPlan === 'free' ? [{ href: '/shared-enquiries', label: 'Shared enquiries' }, { href: '/pricing', label: 'Explore Desktop plans' }] : session?.accountType === 'business' ? [{ href: '/business', label: 'Shared enquiries' }, { href: '/business?details=1', label: 'Account' }, { href: '/pricing', label: 'Explore Desktop plans' }]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {
                               const isActive = isAccountMenuLinkActive(item.href);
