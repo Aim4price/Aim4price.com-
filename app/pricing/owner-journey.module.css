@@ -274,3 +274,20 @@
 .content::-webkit-scrollbar-thumb { background: #648674; border: 3px solid #edf4ef; border-radius: 8px; min-height: 40px; }
 .content::-webkit-scrollbar-thumb:hover { background: #24533e; }
 .content:focus-visible { outline: 2px solid #398d67; outline-offset: -2px; }
+
+/* The Owner path asks only for an asset range; extra help stays optional. */
+.simpleOwner .content { overflow-y: auto; }
+.simpleOwner .choice, .simpleOwner .assetChoices .choice { min-height: 5.5rem; padding: 1rem 1.25rem; }
+.simpleOwner .choiceCopy, .simpleOwner .heading > p:last-child { font-size: 1rem; }
+.simpleOwner .reviewTotal .label, .simpleOwner .price span { font-size: 1.05rem; }
+.simpleOwner .reviewTotal .price { font-size: 2.65rem; }
+.simpleOwner .reviewBilling .yearlySaving { flex-direction: column; font-size: .95rem; }
+.simpleOwner .yearlySaving strong, .simpleOwner .billing button { font-size: 1rem; }
+.included { margin: .3rem 0; color: #365448; font-size: 1rem; line-height: 1.6; }
+.optionalHelp { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; margin-top: .5rem; border-top: 1px solid #dce5df; padding-top: .6rem; }
+.optionalHelp > button, .optionalHelp summary { width: fit-content; border: 0; background: transparent; color: #24533e; font: inherit; font-size: 1rem; font-weight: 650; text-align: left; text-decoration: underline; text-underline-offset: .25rem; padding: .5rem 0; cursor: pointer; }
+.optionalHelp details { margin: 0; padding: 0; }
+.optionalHelp summary { gap: 1rem; }
+.optionalHelp p { margin: .4rem 0; font-size: 1rem; line-height: 1.6; color: #365448; }
+.simpleOwner .detailPage, .simpleOwner .dealerRates > div, .simpleOwner .reviewRow strong, .simpleOwner .reviewRow > span, .simpleOwner .reviewRow button, .simpleOwner .restart { font-size: 1rem; }
+.simpleOwner .review { gap: .8rem; }
