@@ -220,9 +220,9 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(preview, /tabIndex=\{isActive \? 0 : -1\}/);
   assert.match(preview, /role=\{showRegister \? 'region' : 'tabpanel'\}/);
   assert.match(hero, /showRegister=\{storyStepIndex < FEATURE_START_INDEX\}/);
-  assert.match(preview, /aria-haspopup="dialog"/);
-  assert.match(preview, /dialog\.showModal\(\)/);
-  assert.match(preview, /<PreviewContent activeQuestion=\{preview\}/);
+  assert.doesNotMatch(preview, /aria-haspopup="dialog"|View larger|ExpandedPreview/);
+
+  assert.match(preview, /<PreviewContent activeQuestion=\{showRegister \? 'register' : activeQuestion\}/);
   assert.match(preview, /case 'register':[\s\S]*?<RegisterPreview \/>/);
   assert.match(preview, /DEMO BUSINESS PTY LTD/);
   assert.doesNotMatch(preview, /visibility: 'hidden'/);
@@ -234,7 +234,6 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(preview, /observer.disconnect\(\)/);
 
   assert.match(preview, /Register value[\s\S]*?R 359 550/);
-  assert.match(preview, /aria-haspopup="dialog"/);
   assert.match(preview, /className=\{styles\.assetHeroStage\}[\s\S]*?data-active-question=\{activeQuestion\}/);
   assert.match(preview, /aria-label=\{showRegister \? 'Asset Register preview' : undefined\}/);
   assert.match(preview, /aria-labelledby=\{showRegister \? undefined : `home-asset-question-/);

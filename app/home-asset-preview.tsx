@@ -4,8 +4,6 @@ import Image from 'next/image';
 import AssetReportTypeIcon from '../components/asset-register/AssetReportTypeIcon';
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import styles from './page.module.css';
-import { createPortal } from '../components/WebsitePortal';
-import modalStyles from './home-preview-modal.module.css';
 
 export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 
@@ -104,7 +102,6 @@ export default function HomeAssetPreview({
   onInteraction,
 }: HomeAssetPreviewProps) {
   const [feedback, setFeedback] = useState('');
-  const [expandedPreview, setExpandedPreview] = useState<PreviewKey | null>(null);
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const selectQuestion = (index: number, moveFocus = false) => {
@@ -190,25 +187,11 @@ export default function HomeAssetPreview({
         onPointerEnter={() => onInteraction?.('pointer')}
         onFocusCapture={() => onInteraction?.('focus')}
       >
-        <button
-          type="button"
-          className={modalStyles.expand}
-          aria-label={`Enlarge ${showRegister ? 'asset register' : QUESTIONS[activeIndex]?.label ?? 'asset'} preview`}
-          aria-haspopup="dialog"
-          onClick={() => {
-            onInteraction?.('focus');
-            setExpandedPreview(showRegister ? 'register' : activeQuestion);
-          }}
-        ><span>⤢ View larger</span></button>
         <div key={activeQuestion} className={styles.assetPreviewState}>
           <PreviewContent activeQuestion={showRegister ? 'register' : activeQuestion} />
         </div>
       </article>
 
-      {expandedPreview && createPortal(
-        <ExpandedPreview preview={expandedPreview} onClose={() => setExpandedPreview(null)} />,
-        document.body,
-      )}
       <span
         className={styles.assetQuestionFeedback}
         role="status"
@@ -218,60 +201,6 @@ export default function HomeAssetPreview({
         {feedback}
       </span>
     </div>
-  );
-}
-
-function ExpandedPreview({ preview, onClose }: { preview: PreviewKey; onClose: () => void }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
-  const [fitScale, setFitScale] = useState(0);
-  const width = preview === 'manage' ? 1376 : 768;
-  const height = preview === 'register' ? 708 : preview === 'manage' ? 640 : 592;
-  useLayoutEffect(() => {
-    const frame = frameRef.current;
-    if (!frame) return;
-    const fit = () => setFitScale(Math.max(0, Math.min(1.5, (frame.clientWidth - 24) / width, (frame.clientHeight - 24) / height)));
-    const observer = new ResizeObserver(fit);
-    observer.observe(frame);
-    fit();
-    return () => observer.disconnect();
-  }, [width, height]);
-  useLayoutEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    returnFocusRef.current ??= document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    dialog.showModal();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      queueMicrotask(() => returnFocusRef.current?.focus({ preventScroll: true }));
-    };
-  }, []);
-  const title = preview === 'register' ? 'Asset register' : QUESTIONS.find(({ key }) => key === preview)?.label;
-  return (
-    <dialog ref={dialogRef} className={modalStyles.dialog} aria-labelledby="home-preview-title"
-      onCancel={onClose} onClose={onClose}
-      onFocus={(event) => event.stopPropagation()}
-      onClick={(event) => {
-        event.stopPropagation();
-        if (event.target === event.currentTarget) {
-          const bounds = event.currentTarget.getBoundingClientRect();
-          if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
-        }
-      }}>
-      <header className={modalStyles.header}>
-        <div><h2 id="home-preview-title">{title}</h2><p>Aim4price demo preview</p></div>
-        <button type="button" onClick={onClose} aria-label="Close enlarged preview">Close ×</button>
-      </header>
-      <div ref={frameRef} className={modalStyles.frame}>
-        <div className={modalStyles.card} data-preview={preview}
-          style={{ width, height, transform: `translate(-50%, -50%) scale(${fitScale})` }}>
-          <div className={modalStyles.canvas}><PreviewContent activeQuestion={preview} /></div>
-        </div>
-      </div>
-    </dialog>
   );
 }
 
