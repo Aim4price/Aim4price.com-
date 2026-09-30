@@ -3674,7 +3674,7 @@ export default function ScanClient({
                     </span>
                     <span className={styles.shareTrackingChoiceCopy}>
                       <strong>Enable dealer tracking</strong>
-                      <small>The dealer can download maintenance reports and create schedules. New schedules only enter the owner&apos;s Asset Register after approval.</small>
+                      <small>The dealer can download maintenance reports and create schedules. Enabled schedules take effect immediately.</small>
                       <em>{shareTrackMaintenance ? "Permissions selected. Tap to review." : "Choose what the dealer can see and update."}</em>
                     </span>
                   </button>
@@ -3721,7 +3721,7 @@ export default function ScanClient({
                       {sharePhotoUrls.length ? ", attached photos" : ""} and
                       relevant documents will be shared with this dealer.
                     </p>
-                    {shareTrackMaintenance ? <p>This dealer will receive ongoing Maintenance Tracker access with the permissions selected. Proposed schedules and asset changes still require owner approval.</p> : null}
+                    {shareTrackMaintenance ? <p>This dealer will receive ongoing Maintenance Tracker access with the permissions selected. Enabled maintenance schedules take effect immediately. Serial-number and replacement-price changes still require owner approval.</p> : null}
                   </div>
 
                   <label className={styles.shareConsentCheck}>
@@ -3791,7 +3791,7 @@ export default function ScanClient({
                 type="button"
                 className={styles.shareTrackingPermissionBackdrop}
                 onClick={cancelShareTrackingPermissions}
-                aria-label="Close dealer tracking settings"
+                aria-label="Close Business/Dealer asset settings"
               />
               <section
                 className={styles.shareTrackingPermissionModal}
@@ -3801,20 +3801,20 @@ export default function ScanClient({
               >
                 <header className={styles.shareTrackingPermissionHeader}>
                   <div>
-                    <h3 id="share-tracking-permission-title">Dealer tracking settings</h3>
+                    <h3 id="share-tracking-permission-title">Business/Dealer asset settings</h3>
                     <p>{asset.title}</p>
                   </div>
                   <button
                     type="button"
                     onClick={cancelShareTrackingPermissions}
-                    aria-label="Close dealer tracking settings"
+                    aria-label="Close Business/Dealer asset settings"
                   >
                     <CloseIcon className={styles.closeIcon} />
                   </button>
                 </header>
                 <div className={styles.shareTrackingPermissionBody}>
                   <div className={styles.shareTrackingPermissionIntro}>
-                    <strong>Choose what this dealer can access</strong>
+                    <strong>Choose what this business/dealer can access</strong>
                     <p>Select the permissions to activate as soon as the asset is shared.</p>
                   </div>
                   <DealerMaintenancePermissionPicker
@@ -3827,7 +3827,7 @@ export default function ScanClient({
                   {shareTrackMaintenance ? (
                     <button type="button" className={styles.secondaryButton} onClick={disableShareTracking}>Disable tracking</button>
                   ) : null}
-                  <button type="button" className={styles.primaryButton} onClick={confirmShareTrackingPermissions}>Save tracking settings</button>
+                  <button type="button" className={styles.primaryButton} onClick={confirmShareTrackingPermissions}>Save asset settings</button>
                 </footer>
               </section>
             </div>

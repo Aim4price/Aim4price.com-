@@ -60,15 +60,18 @@ test('Owner desktop uses the same explicit choice without changing the scheduled
   assert.match(ownerCompletionApi, /completeAssetMaintenanceRecord\(userId, maintenanceId, body\)/);
 });
 
-test('Dealer proposals remain visible while pending and become contextual edit actions', () => {
+test('Legacy dealer proposals remain visible and can activate schedules directly', () => {
   assert.match(dealerClient, /Awaiting approval/);
   assert.match(dealerClient, /pendingScheduleProposals/);
-  assert.match(dealerClient, /Edit proposal/);
+  assert.match(dealerClient, /Create schedule/);
   assert.match(dealerClient, /Edit schedule/);
   assert.match(dealerScheduleModal, /initialProposal/);
   assert.match(dealerScheduleModal, /initialRecord/);
   assert.match(dealerScheduleModal, /method: editingActiveSchedule \|\| editingProposal \? 'PATCH' : 'POST'/);
-  assert.match(proposalApi, /updateDealerMaintenanceScheduleProposal/);
+  assert.match(proposalApi, /createDealerMaintenanceSchedule\(\{ dealerUserId, proposalId, draft \}\)/);
+  assert.match(proposalApi, /getDealerTrackedAsset\(dealerUserId, created\.accessId\)/);
+  assert.match(dealerScheduleModal, /onAssetUpdated\?\.\(payload\.asset\)/);
+  assert.doesNotMatch(proposalApi, /updateDealerMaintenanceScheduleProposal/);
   assert.match(dealerApi, /export async function PATCH/);
   assert.match(dealerTracker, /asset\.maintenanceRecords\.length > 0[\s\S]*?asset\.scheduleProposals\.some/);
 });

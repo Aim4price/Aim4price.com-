@@ -15,7 +15,7 @@ const ownerShare = read('app/asset-register/asset-register-client.tsx');
 const scheduleModal = read('components/DealerMaintenanceScheduleModal.tsx');
 const trackerClient = read('components/DealerMaintenanceTrackerClient.tsx');
 
-test('new tracking shares enable reports and dealer schedule proposals without requiring an existing schedule', () => {
+test('new tracking shares enable reports and direct maintenance schedules without requiring an existing schedule', () => {
   assert.match(
     tracker,
     /can_view_maintenance_reports,\s*can_view_cost_of_ownership,\s*can_create_maintenance_schedules/,
@@ -32,50 +32,43 @@ test('new tracking shares enable reports and dealer schedule proposals without r
 });
 
 test('My Leads exposes the owner-style maintenance report and schedule creation action', () => {
-  assert.match(
-    leads,
-    /<WorkspaceTitlePanel title=\{accountantWorkspaceMode \? 'CLIENT MANAGEMENT SYSTEM' : 'LEAD MANAGEMENT SYSTEM'\} \/>/,
-  );
-  assert.match(leads, /<h1>LEAD MANAGEMENT SYSTEM<\/h1>/);
-  assert.match(leads, /<strong>PDF reports<\/strong>/);
-  assert.match(leads, /assetReportOptionsGrid/);
-  assert.match(leads, /<strong>Download asset valuation<\/strong>/);
+  assert.match(leads, /<strong>Reports<\/strong>/);
   assert.match(leads, /<strong>Maintenance report<\/strong>/);
-  assert.match(leads, /<strong>Send a proposed schedule<\/strong>/);
+  assert.match(leads, /<strong>Schedule maintenance<\/strong>/);
   assert.match(leads, /DealerMaintenanceReportModal/);
   assert.match(leads, /DealerMaintenanceScheduleModal/);
 });
 
-test('Tracking uses the same proposed schedule helper text as My Leads', () => {
-  assert.match(leads, /The owner can approve or disapprove it\./);
-  assert.match(trackerClient, /The owner can approve or disapprove it\./);
+test('Tracking uses the same direct schedule helper text as My Leads', () => {
+  assert.match(leads, /Create a schedule for this asset\./);
+  assert.match(trackerClient, /Create a schedule for this asset\./);
   assert.doesNotMatch(trackerClient, /Send a proposed schedule for owner approval\./);
 });
 
-test('empty shared assets stay in My Leads until approved maintenance exists', () => {
+test('empty shared assets stay in My Leads until maintenance exists', () => {
   assert.match(tracker, /hasMaintenanceRecords: Boolean\(row\.has_maintenance_records\)/);
-  assert.match(tracker, /asset !== null && asset\.maintenanceRecords\.length > 0/);
+  assert.match(tracker, /asset !== null[\s\S]*asset\.maintenanceRecords\.length > 0/);
   assert.match(leads, /lead\.maintenanceAccess\?\.hasMaintenanceRecords/);
 });
 
-test('dealer proposal wizard reuses the owner maintenance flow without the asset picker', () => {
+test('dealer scheduling wizard reuses the owner maintenance flow without the asset picker', () => {
   assert.match(scheduleModal, /from '\.\.\/app\/maintenance\/page\.module\.css'/);
   assert.match(scheduleModal, />What are you scheduling\?</);
   assert.match(scheduleModal, />When should it be due\?</);
   assert.match(scheduleModal, /maintenanceChoiceGrid/);
   assert.match(scheduleModal, /maintenanceFieldGrid/);
-  assert.match(scheduleModal, /'Send proposal'/);
+  assert.match(scheduleModal, /'Create schedule'/);
   assert.doesNotMatch(scheduleModal, /Choose asset for maintenance/);
 });
 
-test('dealer proposal creation is bound to the active share, permission and exact lead asset', () => {
+test('dealer schedule creation is bound to the active share, permission and exact lead asset', () => {
   assert.match(tracker, /access\.dealer_user_id = \$1 and access\.id = \$2::uuid and access\.is_active = true/);
   assert.match(tracker, /canCreateMaintenanceSchedules/);
   assert.match(tracker, /owner_user_id = \$2[\s\S]*partner_user_id = \$3[\s\S]*asset_register_item_id = \$4::uuid/);
   assert.match(dealerRoute, /getServerSession\(\{ allowDealerApp: true \}\)/);
 });
 
-test('owner approval atomically creates the official maintenance record', () => {
+test('legacy owner approval atomically creates the official maintenance record', () => {
   assert.match(tracker, /for update of proposal/);
   assert.match(tracker, /insert into public\.asset_maintenance_records/);
   assert.match(tracker, /created_maintenance_record_id = \$4::uuid/);
@@ -88,12 +81,20 @@ test('disapproved schedules remain dealer-only and disappear from owner notifica
   assert.match(tracker, /proposal\.proposal_status = 'pending'/);
   assert.match(tracker, /nextStatus[\s\S]*'approved'[\s\S]*'declined'/);
   assert.match(notifications, /listPendingOwnerDealerMaintenanceScheduleProposals/);
-  assert.match(ownerNotifications, /current\.filter\([\s\S]*dealerMaintenanceScheduleProposalId !== proposalId/);
+  assert.match(ownerNotifications, /resolveMatching\(\(item\) => item\.dealerMaintenanceScheduleProposalId === proposalId\)/);
   assert.match(ownerRoute, /no longer visible on the owner side/);
 });
 
 test('owner tracking settings include the new schedule permission and clear sharing copy', () => {
   assert.match(accessSettings, /title: 'Create Maintenance Schedules'/);
-  assert.match(accessSettings, /require owner approval before becoming official/);
-  assert.match(ownerShare, /create maintenance schedules, which will only appear in your Asset Register after you approve them/);
+  assert.match(accessSettings, /create active maintenance schedules directly/);
+  assert.match(ownerShare, /Enabled maintenance schedules take effect immediately/);
+});
+
+
+test('Manage hides scheduling unless the owner grants maintenance creation permission', () => {
+  assert.match(leads, /isTrackingLead\(managedLead\) && managedLead\.maintenanceAccess\?\.isActive && managedLead\.maintenanceAccess\.permissions\.canCreateMaintenanceSchedules \? \(/);
+  assert.match(trackerClient, /\{managedAsset\.permissions\.canCreateMaintenanceSchedules \? \(/);
+  assert.doesNotMatch(scheduleModal, /'Send proposal'/);
+  assert.match(dealerRoute, /createDealerMaintenanceSchedule\(\{ dealerUserId, draft \}\)/);
 });

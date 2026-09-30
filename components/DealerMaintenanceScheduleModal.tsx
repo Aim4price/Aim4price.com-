@@ -17,7 +17,6 @@ type Props = {
   initialProposal?: DealerMaintenanceScheduleProposal | null;
   initialRecord?: DealerMaintenanceRecordSummary | null;
   onClose: () => void;
-  onCreated?: (proposals: DealerMaintenanceScheduleProposal[]) => void;
   onAssetUpdated?: (asset: DealerMaintenanceTrackedAsset) => void;
   onError?: (message: string) => void;
 };
@@ -48,8 +47,6 @@ type AssetResponse = {
 
 type SaveResponse = {
   ok?: boolean;
-  proposal?: DealerMaintenanceScheduleProposal;
-  proposals?: DealerMaintenanceScheduleProposal[];
   asset?: DealerMaintenanceTrackedAsset;
   error?: string;
 };
@@ -309,7 +306,6 @@ export default function DealerMaintenanceScheduleModal({
   initialProposal = null,
   initialRecord = null,
   onClose,
-  onCreated,
   onAssetUpdated,
   onError,
 }: Props) {
@@ -435,20 +431,13 @@ export default function DealerMaintenanceScheduleModal({
       if (!response.ok || !payload?.ok) {
         throw new Error(payload?.error || (editingActiveSchedule || editingProposal
           ? 'Failed to update the maintenance schedule.'
-          : 'Failed to send the proposed schedule.'));
+          : 'Failed to save the maintenance schedule.'));
       }
-      if (editingActiveSchedule) {
-        if (!payload.asset) throw new Error('The updated maintenance schedule could not be loaded.');
-        onAssetUpdated?.(payload.asset);
-      } else {
-        if (!payload.proposal || !Array.isArray(payload.proposals)) {
-          throw new Error('The maintenance proposal could not be loaded.');
-        }
-        onCreated?.(payload.proposals);
-      }
+      if (!payload.asset) throw new Error('The saved maintenance schedule could not be loaded.');
+      onAssetUpdated?.(payload.asset);
       onClose();
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Failed to send the proposed schedule.';
+      const message = cause instanceof Error ? cause.message : 'Failed to save the maintenance schedule.';
       setError(message);
       onError?.(message);
     } finally {
@@ -462,10 +451,10 @@ export default function DealerMaintenanceScheduleModal({
         <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
-              <h2 id="dealer-schedule-loading-title">{initialRecord ? 'Edit schedule' : initialProposal ? 'Edit proposal' : 'Send a proposed schedule'}</h2>
+              <h2 id="dealer-schedule-loading-title">{initialRecord ? 'Edit schedule' : initialProposal ? 'Create schedule' : 'Schedule maintenance'}</h2>
               <p>{loading ? 'Loading the shared asset…' : 'The shared asset could not be opened.'}</p>
             </div>
-            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close proposed schedule">
+            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close maintenance schedule">
               <CloseIcon />
             </button>
           </header>
@@ -591,9 +580,7 @@ export default function DealerMaintenanceScheduleModal({
             <h2 id="dealer-maintenance-form-title">
               {initialRecord
                 ? `Edit ${draft.maintenanceType} schedule`
-                : initialProposal
-                  ? `Edit ${draft.maintenanceType} proposal`
-                  : `Schedule ${draft.maintenanceType}`}
+                : `Schedule ${draft.maintenanceType}`}
             </h2>
             <p>{`${triggerLabel(draft.triggerType)} • ${selectedAssetLabel(asset)}`}</p>
           </div>
@@ -696,8 +683,8 @@ export default function DealerMaintenanceScheduleModal({
           <button className={styles.secondaryButton} type="button" onClick={onClose} disabled={saving}>Cancel</button>
           <button className={styles.primaryButton} type="button" onClick={() => void submit()} disabled={saving}>
             {saving
-              ? initialProposal || initialRecord ? 'Saving…' : 'Sending…'
-              : initialProposal || initialRecord ? 'Save changes' : 'Send proposal'}
+              ? 'Saving…'
+              : initialRecord ? 'Save changes' : 'Create schedule'}
           </button>
         </footer>
       </section>

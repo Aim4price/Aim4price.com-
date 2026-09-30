@@ -11792,7 +11792,7 @@ export default function AssetRegisterClient({
         error?: string;
       } | null;
       if (!response.ok || !payload?.ok || !Array.isArray(payload.trackingAccess)) {
-        throw new Error(payload?.error || 'Failed to load dealer tracking settings.');
+        throw new Error(payload?.error || 'Failed to load Business/Dealer asset settings.');
       }
       const trackingAccess = payload.trackingAccess;
       setDealerTrackingAccess(trackingAccess);
@@ -11801,7 +11801,7 @@ export default function AssetRegisterClient({
         [asset.id]: trackingAccess.length > 0,
       }));
     } catch (cause) {
-      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load dealer tracking settings.' });
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load Business/Dealer asset settings.' });
     } finally {
       setIsLoadingDealerTrackingSettings(false);
     }
@@ -20303,12 +20303,12 @@ export default function AssetRegisterClient({
                         disabled={isSendingQuoteLead}
                       />
 
-                      <section className={`${styles.assetQuoteStepModal} ${quoteLeadStep === 'message' ? styles.assetQuoteMessageStepModal : ''}`} aria-live="polite">
+                      <section className={`${styles.assetQuoteStepModal} ${quoteLeadStep === 'message' ? styles.assetQuoteMessageStepModal : styles.assetQuoteConsentStepModal}`} aria-live="polite">
                         <div className={styles.assetQuoteStepHeader}>
                           <div>
                             <h4>{quoteLeadStep === 'message'
                               ? `Message to selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}`
-                              : 'Confirm and send request'}</h4>
+                              : 'Confirm and send asset'}</h4>
                           </div>
                           <ShareModalCloseButton
                             onClick={backFromShareModal}
@@ -20490,7 +20490,7 @@ export default function AssetRegisterClient({
                                       ? isAssetGroupShare
                                         ? 'Apply these permissions to every grouped asset in this umbrella. Access stays revocable.'
                                         : 'Apply these permissions to every selected asset. Access stays revocable.'
-                                      : 'The dealer can download maintenance reports and propose maintenance schedules for your approval.'}</small>
+                                      : 'The business/dealer can access reports and create active schedules with your selected permissions.'}</small>
                                     <em>{quoteTrackMaintenance ? 'Permissions selected. Click to review.' : 'Choose the dealer permissions before sharing.'}</em>
                                   </span>
                                 </button>
@@ -20522,7 +20522,7 @@ export default function AssetRegisterClient({
                                   : `You confirm that you have permission to share this asset information and understand that the selected ${selectedQuotePartners.length === 1 ? 'company may' : 'companies may'} contact you outside Aim4price.`}
                               </p>
                               {selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance ? (
-                                <p>The selected {selectedQuotePartners.length === 1 ? 'dealer will' : 'dealers will'} receive ongoing Maintenance Tracker access with the permissions you selected. Proposed schedules and asset changes still require your approval.</p>
+                                <p>The selected {selectedQuotePartners.length === 1 ? 'dealer will' : 'dealers will'} receive ongoing Maintenance Tracker access with the permissions you selected. Enabled maintenance schedules take effect immediately. Serial-number and replacement-price changes still require your approval.</p>
                               ) : null}
                             </div>
 
@@ -20590,16 +20590,16 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="quote-tracking-settings-title" tabIndex={-1}>Dealer tracking settings</h3>
+                <h3 id="quote-tracking-settings-title" tabIndex={-1}>Business/Dealer asset settings</h3>
                 <p>{quoteAsset.title}</p>
               </div>
 
-              <ShareModalCloseButton onClick={cancelQuoteTrackingSettings} aria-label="Close dealer tracking settings" />
+              <ShareModalCloseButton onClick={cancelQuoteTrackingSettings} aria-label="Close Business/Dealer asset settings" />
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody}`}>
               <div className={styles.dealerTrackingIntro}>
-                <strong>Choose what this dealer can access</strong>
+                <strong>Choose what this business/dealer can access</strong>
                 <p>Select the permissions to activate as soon as the asset is shared.</p>
               </div>
 
@@ -20625,7 +20625,7 @@ export default function AssetRegisterClient({
                   </button>
                 ) : null}
                 <button type="button" className={styles.primaryButton} onClick={confirmQuoteTrackingSettings}>
-                  Save tracking settings
+                  Save asset settings
                 </button>
               </div>
             </div>
@@ -20923,7 +20923,7 @@ export default function AssetRegisterClient({
                   >
                     <ManageIcon className={styles.buttonIcon} />
                     <span>
-                      <strong>Dealer tracking settings</strong>
+                      <strong>Business/Dealer asset settings</strong>
                     </span>
                   </button>
                 ) : null}
@@ -20940,18 +20940,18 @@ export default function AssetRegisterClient({
           <div className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal}`} role="dialog" aria-modal="true" aria-labelledby="dealer-tracking-settings-title">
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="dealer-tracking-settings-title">Dealer tracking settings</h3>
+                <h3 id="dealer-tracking-settings-title">Business/Dealer asset settings</h3>
                 <p>{activeAsset.title}</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={() => setIsDealerTrackingSettingsOpen(false)} aria-label="Close dealer tracking settings">
+              <button type="button" className={styles.modalCloseButton} onClick={() => setIsDealerTrackingSettingsOpen(false)} aria-label="Close Business/Dealer asset settings">
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody}`}>
               {isLoadingDealerTrackingSettings ? (
-                <div className={styles.emptyState}>Loading dealer tracking settings…</div>
+                <div className={styles.emptyState}>Loading Business/Dealer asset settings…</div>
               ) : (
                 <>
                   <div className={styles.dealerTrackingIntro}>

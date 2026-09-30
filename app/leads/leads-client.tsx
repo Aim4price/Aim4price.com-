@@ -3852,15 +3852,15 @@ export default function LeadsClient({
         />
       ) : null}
 
-      {maintenanceScheduleLead?.maintenanceAccess?.isActive ? (
+      {maintenanceScheduleLead?.maintenanceAccess?.isActive && maintenanceScheduleLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? (
         <DealerMaintenanceScheduleModal
           accessId={maintenanceScheduleLead.maintenanceAccess.accessId}
           leadId={maintenanceScheduleLead.id}
           onClose={() => setMaintenanceScheduleLead(null)}
-          onCreated={() => setNotice({
-            tone: 'success',
-            message: 'Proposed schedule sent to the owner for approval.',
-          })}
+          onAssetUpdated={() => {
+            setNotice({ tone: 'success', message: 'Maintenance schedule created.' });
+            void loadData(false);
+          }}
           onError={(message) => setNotice({ tone: 'error', message })}
         />
       ) : null}
@@ -3961,23 +3961,17 @@ export default function LeadsClient({
                         </button>
                       ) : null}
 
-                      {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
+                      {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive && managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? (
                         <button
                           type="button"
                           className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           onClick={() => openMaintenanceSchedule(managedLead)}
-                          disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
-                          title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                            ? 'The asset owner has not enabled dealer-created schedules.'
-                            : undefined}
                         >
                           <MaintenanceTrackingIcon className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Schedule maintenance</strong>
                             <small>
-                              {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                                ? 'Send for owner approval.'
-                                : 'Owner permission is required.'}
+                              Create a schedule for this asset.
                             </small>
                           </span>
                         </button>

@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import { getServerSession } from '../../../../../lib/auth-session';
 import {
-  createDealerMaintenanceScheduleProposal,
+  createDealerMaintenanceSchedule,
+  getDealerTrackedAsset,
   listDealerMaintenanceScheduleProposals,
-  updateDealerMaintenanceScheduleProposal,
   type DealerMaintenanceScheduleProposalInput,
 } from '../../../../../lib/dealer-maintenance-tracker';
 
@@ -56,7 +56,7 @@ function proposalError(error: unknown): { message: string; status: number } {
   if (code === 'MAINTENANCE_PROPOSAL_NOT_FOUND') {
     return { message: 'This pending proposal is no longer available.', status: 404 };
   }
-  return { message: 'The maintenance schedule could not be sent to the owner.', status: 500 };
+  return { message: 'The maintenance schedule could not be saved.', status: 500 };
 }
 
 export async function GET(request: NextRequest) {
@@ -89,12 +89,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Send a valid maintenance schedule.' }, { status: 400 });
   }
   try {
-    const proposal = await createDealerMaintenanceScheduleProposal({ dealerUserId, draft });
-    const proposals = await listDealerMaintenanceScheduleProposals({
-      dealerUserId,
-      accessId: proposal.accessId,
-    });
-    return NextResponse.json({ ok: true, proposal, proposals });
+    const created = await createDealerMaintenanceSchedule({ dealerUserId, draft });
+    const asset = await getDealerTrackedAsset(dealerUserId, created.accessId);
+    return NextResponse.json({ ok: true, asset, maintenanceRecordId: created.maintenanceRecordId });
   } catch (error) {
     const outcome = proposalError(error);
     if (outcome.status === 500) {
@@ -120,16 +117,9 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Choose the pending proposal to edit.' }, { status: 400 });
   }
   try {
-    const proposal = await updateDealerMaintenanceScheduleProposal({
-      dealerUserId,
-      proposalId,
-      draft,
-    });
-    const proposals = await listDealerMaintenanceScheduleProposals({
-      dealerUserId,
-      accessId: proposal.accessId,
-    });
-    return NextResponse.json({ ok: true, proposal, proposals });
+    const created = await createDealerMaintenanceSchedule({ dealerUserId, proposalId, draft });
+    const asset = await getDealerTrackedAsset(dealerUserId, created.accessId);
+    return NextResponse.json({ ok: true, asset, maintenanceRecordId: created.maintenanceRecordId });
   } catch (error) {
     const outcome = proposalError(error);
     if (outcome.status === 500) {
