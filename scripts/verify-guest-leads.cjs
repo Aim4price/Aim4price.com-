@@ -6,6 +6,7 @@ const {spawn} = require('node:child_process');
 const puppeteer = require('puppeteer-core');
 const root = path.resolve(__dirname, '..');
 const fixture = path.join(root, 'app/business-network/guest-validation');
+const canonicalFixture = path.join(root, 'app/business/send-link-validation');
 const output = path.join(root, '.next/guest-lead-validation');
 const token = 'g'.repeat(43);
 async function main() {
@@ -13,6 +14,8 @@ async function main() {
  const pdf=await require('pdf-lib').PDFDocument.create();pdf.addPage();const reportPdf=Buffer.from(await pdf.save());
  try {
   await fs.mkdir(fixture,{recursive:true});
+  await fs.mkdir(canonicalFixture,{recursive:true});
+  await fs.writeFile(path.join(canonicalFixture,'page.tsx'), "export {default} from '../../business-network/guest-validation/page';\n");
   await fs.writeFile(path.join(fixture,'page.tsx'), `'use client';
 import {useEffect,useState,useRef} from 'react';
 import GroupReports from '../../../components/asset-register/AssetGroupManagerModal';
@@ -89,7 +92,7 @@ export default function Validation(){
   const labelInput=async(label,value)=>{const handle=await page.evaluateHandle(t=>[...document.querySelectorAll('label')].find(e=>e.textContent.trim()===t)?.querySelector('input,textarea'),label);assert.ok(handle.asElement(),`Missing input ${label}`);await handle.asElement().type(value);await handle.dispose();};
   await fs.mkdir(output,{recursive:true});
   await page.setViewport({width:1440,height:900});
-  await page.goto('http://127.0.0.1:3033/business-network/guest-validation',{waitUntil:'networkidle2'});
+  await page.goto('http://127.0.0.1:3033/business/send-link-validation',{waitUntil:'networkidle2'});
   await page.waitForSelector('[data-hydrated=true]');await click('asset');
   await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"] strong').length===3);
   const cards=await page.$$eval('[role="dialog"] button:has(strong)',nodes=>nodes.map(n=>({text:n.querySelector('strong').textContent,x:n.getBoundingClientRect().x,y:n.getBoundingClientRect().y,width:n.getBoundingClientRect().width})));
@@ -389,6 +392,8 @@ export default function Validation(){
  }finally{
   if(browser)await browser.close();if(server)server.kill();
   await fs.rm(fixture,{recursive:true,force:true});
+  await fs.rm(canonicalFixture,{recursive:true,force:true});
+  await fs.rm(path.join(root,'.next/types/app/business/send-link-validation'),{recursive:true,force:true});
   await fs.rm(path.join(root,'.next/types/app/business-network/guest-validation'),{recursive:true,force:true});
  }
 }
