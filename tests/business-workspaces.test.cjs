@@ -55,8 +55,8 @@ test('reset links preserve only a valid enquiry through Better Auth callback nes
  }finally{if(old===undefined)delete process.env.NEXT_PUBLIC_SITE_URL;else process.env.NEXT_PUBLIC_SITE_URL=old;}
 });
 
-test('account and sharing entry screens use native sizing, while Desktop retains its canvas',()=>{
+test('account and sharing entry screens retain the canonical website canvas',()=>{
  const {isNativeWorkspace}=load('lib/website-canvas.ts');
- for(const route of ['/business','/business/join','/auth','/reset-password','/asset-share/abc'])assert.equal(isNativeWorkspace(route),true);
+ for(const route of ['/business','/business/join','/auth','/reset-password','/asset-share/abc'])assert.equal(isNativeWorkspace(route),false);
  for(const route of ['/asset-register','/leads','/pricing','/business-network/example'])assert.equal(isNativeWorkspace(route),false);
 });

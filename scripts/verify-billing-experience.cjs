@@ -9,7 +9,7 @@ const stubs={
  'components/AppHeader':'module.exports=()=>null;',
  'lib/account-access':'exports.getAccountAccess=async()=>({isActive:false,isAdmin:false});',
  'lib/account-profile':'exports.getAccountProfile=async()=>({accountType:"owner"});',
- 'lib/auth-session':'exports.getAnyServerSession=async()=>({user:{id:"test",email:"customer@example.test"}});',
+ 'lib/auth-session':'exports.getAnyServerSession=async()=>globalThis.fixtureAnonymous?null:({user:{id:"test",email:"customer@example.test"}});',
  'lib/middleman-account':'exports.isMiddlemanAccountSubtype=()=>false;'
 };
 function cssModule(file){
@@ -63,7 +63,7 @@ function loadNode(file,deps={}){const code=ts.transpileModule(fs.readFileSync(pa
 const shared=loadNode('lib/billing-shared.ts');
 const report=loadNode('lib/billing-report.ts',{'./billing-shared':shared,'./report-theme':loadNode('lib/report-theme.ts')});
 const template=loadNode('lib/billing-email-template.ts',{'./billing-shared':shared,'./billing-report':report,'./email-brand':loadNode('lib/email-brand.ts')});
-const resetEmail=loadNode('lib/email.ts',{'./email-brand':loadNode('lib/email-brand.ts')});
+const resetEmail=loadNode('lib/email.ts',{'./email-brand':loadNode('lib/email-brand.ts'),'./external-share-permissions':loadNode('lib/external-share-permissions.ts')});
 const invoice={id:'10000000-0000-4000-8000-000000000001',userId:'owner',number:'A4P-2026-000001',status:'issued',customer:{name:'Example Customer',businessName:'Example Farming',email:'customer@example.test',address:'George'},lines:[{description:'Monthly account subscription',quantity:1,unitCents:39900,totalCents:39900}],totalCents:39900,paidCents:0,dueDate:'2026-09-27',issuedAt:'2026-09-26T10:00:00Z',note:'',version:2};
 const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSync(evidence,{recursive:true});
 (async()=>{
@@ -71,7 +71,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),headless:true,pipe:true,ignoreDefaultArgs:["--hide-scrollbars"],args:["--no-sandbox","--disable-setuid-sandbox","--disable-dev-shm-usage","--disable-gpu"]});
  try{
   const page=await browser.newPage();let verificationRequests=0;const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.setRequestInterception(true);
-  page.on('request',request=>{const url=request.url();if(url.endsWith('/api/billing/plans'))return request.respond({status:503,contentType:'application/json',body:'{}'});if(url.endsWith('/api/auth/sign-up/email')){const payload=JSON.parse(request.postData());assert.equal(payload.accountType,'business');assert.ok(['insurance-services','finance-services'].includes(payload.accountSubtype));return request.respond({contentType:'application/json',body:'{"ok":true}'});}if(url.endsWith('/api/auth/send-verification-email'))return request.respond({status:++verificationRequests%2?503:200,contentType:'application/json',body:'{}'});if(url.endsWith('/api/guest-access'))return request.respond({contentType:'application/json',body:'{"ok":true}'});if(url.startsWith('https://billing.test/asset-share/'))return request.respond({contentType:'text/html',body:'<h1>Shared enquiry</h1>'});if(url.endsWith('/api/auth/sign-out')){assert.equal(request.method(),'POST');return request.respond({contentType:'application/json',body:'{}'});}if(url.endsWith('/api/auth/get-session'))return request.respond({contentType:'application/json',body:'null'});if(new URL(url).origin==='https://billing.test'&&new URL(url).pathname==='/auth')return request.respond({contentType:'text/html',body:'<h1>Login</h1>'});if(url.includes('/brand/invoice-drop-hero.webp'))return request.respond({contentType:'image/webp',body:fs.readFileSync(path.join(root,'public/brand/invoice-drop-hero.webp'))});if(url.includes('/brand/aim4price-mark-black.png'))return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});if(url.includes('/api/billing/invoices/'))return request.respond({contentType:'text/html',body:html});if(url.includes('/api/billing/invoices?'))return request.respond({contentType:'application/json',body:JSON.stringify({invoices:Array.from({length:8},(_,i)=>({...invoice,id:invoice.id.slice(0,-1)+i,number:'A4P-2026-00000'+(i+1)})),total:8,preparing:false})});if(url.startsWith('data:'))return request.continue();if(url==='https://billing.test/')return request.respond({contentType:'text/html',body:'<html></html>'});return request.abort();});
+  page.on('request',request=>{const url=request.url();if(url.endsWith('/api/billing/plans'))return request.respond({status:503,contentType:'application/json',body:'{}'});if(url.endsWith('/api/auth/sign-up/email')){const payload=JSON.parse(request.postData());assert.equal(payload.accountType,'business');assert.equal(payload.accountSubtype,'contributor');assert.equal(payload.acceptedTerms,true);return request.respond({contentType:'application/json',body:'{"ok":true}'});}if(url.endsWith('/api/auth/send-verification-email'))return request.respond({status:++verificationRequests%2?503:200,contentType:'application/json',body:'{}'});if(url.endsWith('/api/guest-access'))return request.respond({contentType:'application/json',body:'{"ok":true}'});if(url.startsWith('https://billing.test/asset-share/'))return request.respond({contentType:'text/html',body:'<h1>Shared enquiry</h1>'});if(url.endsWith('/api/auth/sign-out')){assert.equal(request.method(),'POST');return request.respond({contentType:'application/json',body:'{}'});}if(url.endsWith('/api/auth/get-session'))return request.respond({contentType:'application/json',body:'null'});if(new URL(url).origin==='https://billing.test'&&new URL(url).pathname==='/auth')return request.respond({contentType:'text/html',body:'<h1>Login</h1>'});if(url.includes('/brand/invoice-drop-hero.webp'))return request.respond({contentType:'image/webp',body:fs.readFileSync(path.join(root,'public/brand/invoice-drop-hero.webp'))});if(url.includes('/brand/aim4price-mark-black.png'))return request.respond({contentType:'image/png',body:fs.readFileSync(path.join(root,'public/brand/aim4price-mark-black.png'))});if(url.includes('/api/billing/invoices/'))return request.respond({contentType:'text/html',body:html});if(url.includes('/api/billing/invoices?'))return request.respond({contentType:'application/json',body:JSON.stringify({invoices:Array.from({length:8},(_,i)=>({...invoice,id:invoice.id.slice(0,-1)+i,number:'A4P-2026-00000'+(i+1)})),total:8,preparing:false})});if(url.startsWith('data:'))return request.continue();if(url==='https://billing.test/')return request.respond({contentType:'text/html',body:'<html></html>'});return request.abort();});
   const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
@@ -84,6 +84,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     const billing='ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/billing/billing-overview").default,'+JSON.stringify({invoices:[invoice,{...invoice,id:invoice.id.slice(0,-1)+'2',number:'A4P-2026-000002',paidCents:39900}],total:2,page:1,preparing:false})+'));';
     const switchPage='require("app/auth/page").default({}).then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));';
     if(mode.startsWith('signup-'))await page.evaluate(type=>history.replaceState(null,'','/auth?accountType='+type+'#signup'),mode.slice(7));
+    await page.evaluate(anonymous=>{globalThis.fixtureAnonymous=anonymous;},mode==='business-join'||mode==='business-register');
     await page.addScriptTag({content:runtime+(mode==='pricing'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/pricing/pricing-content").default));':mode==='business-join'||mode==='business-register'?'require("app/business/join/page").default('+JSON.stringify({searchParams:{mode:mode==='business-register'?'account':undefined,businessType:width===390?'insurance-services':undefined}})+').then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));':mode.startsWith('signup-')?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/auth/auth-client").default));':mode==='guest'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("components/GuestEnquiryAccess").default,{returnTo:"/asset-share/'+ 't'*43 +'"}));':mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
     if(mode==='account'||mode==='suspended')await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));else await page.waitForSelector('h1');
     if(mode==='suspended-unlinked'||mode==='suspended-void'){assert.equal(await page.$('button[aria-label="Open invoice"]'),null);assert.equal(await page.$('iframe'),null);assert.match(await page.$eval('h1',e=>e.textContent),/temporarily paused/);}
@@ -150,8 +151,15 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.screenshot({path:path.join(evidence,`owner-admin-options-${width}.png`)});
      await choose('[aria-label="Admin package"] button');
      await choose('[data-pricing-content] + div button:last-child');
-     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month extra.*R598\/month total/);
+     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month included.*R598\/month total/);
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R598/month total');
+     await clickText('Yearly');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R6 987/year total');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/billed monthly/);
      await clickText('Remove');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year');
+     await clickText('Monthly');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R99/month');
      // Review the same setup-only, combined-service and detail layouts customers see.
      await clickText('Need help uploading?');
      await clickText('Explore visit options');
@@ -221,8 +229,16 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      const frame=await page.$eval('h1',e=>e.closest('section').getBoundingClientRect().width);
      assert.ok(width===390?frame<=390:frame>=800,'Onboarding retains the original signup width');
     }
-    if(mode==='business-join')assert.ok(await page.$('a[href="/business/guest"]'));
-    if(mode==='business-register'||mode.startsWith('signup-')){
+    if(mode==='business-join'||mode==='business-register'){
+     assert.equal(await page.$('a[href="/business/guest"]'),null);
+     for(const [name,value] of Object.entries({name:'Test Recipient',businessName:'Test Business',email:'recipient@example.test',password:'Synthetic-password-123'}))await page.type('input[name="'+name+'"]',value);
+     await page.click('input[name="terms"]');await page.click('button[type="submit"]');
+     await page.waitForFunction(()=>document.body.textContent.includes('verification email could not be sent'));
+     assert.equal(await page.$('form'),null,'Verification retry cannot create a second account');
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Resend verification email').click());
+     await page.waitForFunction(()=>document.body.textContent.includes('Check your inbox and verify your email'));
+    }
+    if(mode.startsWith('signup-')){
      const clickText=async text=>{assert.ok(await page.evaluate(t=>{const e=[...document.querySelectorAll('button')].find(e=>e.textContent.trim()===t);e?.click();return !!e;},text),text);};
      const select=async(label,text)=>{const selector='button[aria-label^="'+label+'"]';await page.click(selector);await page.waitForSelector('[role="option"]');assert.ok(await page.evaluate(t=>{const e=[...document.querySelectorAll('[role=option]')].find(e=>e.textContent.trim().startsWith(t));e?.click();return !!e;},text));await page.waitForFunction(selector=>{const button=document.querySelector(selector);return button?.getAttribute('aria-expanded')==='false'&&document.activeElement===button;},{},selector);};
      const settledStep=async id=>page.waitForFunction(id=>document.activeElement===document.querySelector('[aria-labelledby="'+id+'"]'),{},id);
@@ -262,38 +278,12 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      }
      await page.click('button[aria-label^="Which best describes your work?"]');await page.waitForSelector('[role="option"]');
      const options=await page.$$eval('[role="option"]',els=>els.map(e=>e.textContent));
-     if(mode==='business-register'){assert.ok(options.some(t=>t.includes('Insurance')));assert.ok(options.some(t=>t.includes('Finance')));}
-     else{assert.ok(options.every(t=>!/(Insurance|Finance|Licensing|Other business)/.test(t)),mode+' excludes business services');}
+     assert.ok(options.every(t=>!/(Insurance|Finance|Licensing|Other business)/.test(t)),mode+' excludes business services');
      await page.keyboard.press('Escape');
-     if(mode==='business-register')await select('Which best describes your work?',width===390?'Insurance':'Finance');
      await clickText('Next');await page.waitForSelector('input[name="name"]');await settledStep('signup-step-details');
      assert.ok(await page.$('#signup-step-details'),'Every account uses the same second step');
      await page.screenshot({path:path.join(evidence,mode+'-step2-'+width+'.png'),fullPage:true});
-     if(mode.startsWith('signup-'))continue;
-     await clickText('Back');await page.waitForSelector('input[name="accountSubtype"]');
-     assert.equal(await page.$eval('input[name="accountSubtype"]',e=>e.value),width===390?'insurance-services':'finance-services');
-     await clickText('Next');await page.waitForSelector('input[name="businessName"]');await settledStep('signup-step-details');
-     await typeField('name','Test Recipient');await typeField('businessName','Test Business');await typeField('phone','0821234567');
-     await select('Who introduced you to Aim4price?','No one / direct signup');await page.click('button[aria-label^="Province"]');
-     await page.waitForSelector('[role="option"]');
-     await page.evaluate(()=>{
-      const option=[...document.querySelectorAll('[role="option"]')].find(e=>e.textContent.trim().startsWith('Western Cape'));
-      if(!option)throw Error('Western Cape option missing');
-      option.click();
-      document.querySelector('input[name="townCity"]').focus();
-     });
-     await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-     assert.equal(await page.$eval('input[name="townCity"]',e=>document.activeElement===e),true,'Closing Province must not steal focus from Town / City');
-     await typeField('townCity','George');
-     await clickText('Next');await page.waitForFunction(()=>!!document.querySelector('input[name="email"]')||!!document.querySelector('[role="alert"]'));assert.equal(await page.$eval('body',e=>e.querySelector('[role="alert"]')?.textContent||''),'');await page.waitForSelector('input[name="email"]');await settledStep('signup-step-account');
-     assert.doesNotMatch(await page.$eval('form',e=>e.textContent),/Business pricing:|Creating an account does not take a payment/);
-     await typeField('email','guest@example.test');await typeField('password','Synthetic-password-only-123');await typeField('confirmPassword','Synthetic-password-only-123');await page.click('input[type="checkbox"]');
-     await page.screenshot({path:path.join(evidence,'business-step3-'+width+'.png'),fullPage:true});
-     await clickText('Create account');
-     await page.waitForSelector('[role="alert"]');assert.match(await page.$eval('[role="alert"]',e=>e.textContent),/account was created/i);
-     assert.equal(await page.$('form'),null,'Verification retry cannot create a second account');
-     await clickText('Resend verification email');await page.waitForFunction(()=>document.body.textContent.includes('We sent a verification link'));
-     await page.screenshot({path:path.join(evidence,'business-email-sent-'+width+'.png'),fullPage:true});
+     continue;
     }
     if(mode==='guest'){
      await page.type('input[type="email"]','guest@example.test');await page.click('form button');

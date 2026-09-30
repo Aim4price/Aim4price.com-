@@ -11,7 +11,7 @@ External enquiry recipients now create a normal Aim4price email/password account
 - Recipient email/account binding, revocation, suspension and asset ownership checks remain in force. Anonymous enquiry requests return an account gate without asset data in client props.
 - Legacy guest cookies can prefill signup email but no longer authorise enquiries or reports. POST `/api/guest-access` returns 410; old guest URLs forward to signup.
 - Signup, verification, login, password reset and account switching retain validated enquiry return paths. Password fields support password managers.
-- Account and shared-enquiry routes use responsive sizing; the full Desktop canvas remains unchanged.
+- Account and shared-enquiry routes retain the canonical desktop canvas, automatic scaling, zoom controls and phone landscape entry.
 
 ## Business identity and migration
 
