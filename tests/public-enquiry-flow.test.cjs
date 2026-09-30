@@ -118,3 +118,47 @@ test('invitation requires consent, freezes all selected assets and handles failu
   assert.doesNotMatch(html,/Tractor|Trailer|Bakkie|→/);
   assert.ok(html.includes(`/asset-share/${token}`));
 });
+
+test('Send link creates protected read-only enquiries, requires consent and handles failure and clipboard denial', async()=>{
+ const previous={fetch:global.fetch,window:global.window};
+ const walk=(node,predicate)=>!node||typeof node!=='object'?null:predicate(node)?node:React.Children.toArray(node.props?.children).map(child=>walk(child,predicate)).find(Boolean);
+ try {
+  global.window={location:{origin:'https://aim4price.test'}};
+  for(const failed of [false,true]) {
+   let cursor=0,view,sent,closed=false;const slots=[];
+   const hook=initial=>{const i=cursor++;if(!(i in slots))slots[i]=initial;return[slots[i],v=>{slots[i]=typeof v==='function'?v(slots[i]):v;}];};
+   const Disclaimer=()=>null;
+   global.fetch=async(url,options)=>{sent={url,body:options.body};return{ok:!failed,json:async()=>failed?{error:'Could not create link'}:{share:{token}}};};
+   const Invite=load('components/business-network/BusinessListingInvite.tsx',{
+    react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:v=>hook({current:v})[0],useState:hook},
+    '../asset-register/ShareDisclaimer':Disclaimer,
+    '../../lib/external-file-share':load('lib/external-file-share.ts'),
+    '../asset-register/ShareDisclosureDialog':'dialog',
+    '../../lib/external-share-permissions':load('lib/external-share-permissions.ts'),
+    '../../lib/asset-external-share':{buildEmailShareUrl:()=>'',buildWhatsAppShareUrl:()=>''},
+   }).default;
+   const render=()=>{cursor=0;view=Invite({sendLink:true,assetIds:['asset-a'],umbrellaId:'fleet',onDismiss:()=>{closed=true;}});};
+   const button=text=>walk(view,n=>n.type==='button'&&React.Children.toArray(n.props.children).includes(text));
+   render();assert.equal(sent,undefined);
+   button('Share read-only').props.onClick();render();
+   await walk(view,n=>n.type==='form').props.onSubmit({preventDefault(){}});
+   assert.equal(sent,undefined);assert.equal(button('Create asset link').props.disabled,true);
+   walk(view,n=>n.type===Disclaimer).props.onChange(true);render();
+   await walk(view,n=>n.type==='form').props.onSubmit({preventDefault(){}});
+   await new Promise(resolve=>setImmediate(resolve));render();
+   assert.equal(sent.url,'/api/asset-share-links/leads');
+   assert.equal(sent.body.get('umbrellaId'),'fleet');
+   assert.deepEqual(JSON.parse(sent.body.get('assetIds')),['asset-a']);
+   const details=JSON.parse(sent.body.get('details'));
+   assert.equal(details.accessMode,'owner-approval');assert.ok(Object.values(details.permissions).every(v=>v===false));
+   if(failed){assert.ok(walk(view,n=>n.props?.role==='alert'));assert.ok(!button('Copy link'));}
+   else {
+    assert.ok(walk(view,n=>n.type==='a'&&n.props.href===`https://aim4price.test/asset-share/${token}`));
+    // Node has no clipboard; a denied/unavailable clipboard must leave a selectable URL.
+    await button('Copy link').props.onClick();await new Promise(resolve=>setImmediate(resolve));render();
+    assert.equal(walk(view,n=>n.type==='input'&&n.props['aria-label']==='Asset link').props.value,`https://aim4price.test/asset-share/${token}`);
+   }
+   walk(view,n=>n.type==='dialog').props.onClose();assert.equal(closed,true);
+  }
+ } finally {Object.assign(global,previous);}
+});

@@ -8,8 +8,8 @@ import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-exter
 import styles from './BusinessListingInvite.module.css';
 import { EXTERNAL_SHARE_OPTIONS, EMPTY_EXTERNAL_PERMISSIONS, type ExternalSharePermissions } from '../../lib/external-share-permissions';
 
-export type BusinessListingInviteProps = { senderName?: string; umbrellaId?: string; assetIds: string[]; includePhotos?: boolean; reportAssets?: {id:string;title:string}[]; reportUmbrellaName?: string; onChooseReport?: (assetId:string|null, onComplete:(source:ExternalShareFileSource|null)=>void)=>void };
-export default function BusinessListingInvite({ assetIds, includePhotos = false, umbrellaId, reportAssets = [], reportUmbrellaName, onChooseReport }: BusinessListingInviteProps) {
+export type BusinessListingInviteProps = { sendLink?: boolean; onDismiss?: () => void; senderName?: string; umbrellaId?: string; assetIds: string[]; includePhotos?: boolean; reportAssets?: {id:string;title:string}[]; reportUmbrellaName?: string; onChooseReport?: (assetId:string|null, onComplete:(source:ExternalShareFileSource|null)=>void)=>void };
+export default function BusinessListingInvite({ sendLink = false, onDismiss, assetIds, includePhotos = false, umbrellaId, reportAssets = [], reportUmbrellaName, onChooseReport }: BusinessListingInviteProps) {
   const titleId = useId();
   const descriptionId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -22,9 +22,10 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const opening = useRef(false);
-  const [selection, setSelection] = useState<{assetIds: string[]; includePhotos: boolean; umbrellaId?: string} | null>(null);
+  const [selection, setSelection] = useState<{assetIds: string[]; includePhotos: boolean; umbrellaId?: string} | null>(sendLink ? {assetIds: [...assetIds], includePhotos, umbrellaId} : null);
   const [accepted, setAccepted] = useState(false);
   const requestVersion = useRef(0);
+  useEffect(() => () => { requestVersion.current++; }, []);
   const [senderName, setSenderName] = useState('');
   const [link, setLink] = useState('');
   const copyButton = useRef<HTMLButtonElement>(null);
@@ -35,7 +36,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
   useEffect(()=>{if(!historyKey)return;const controller=new AbortController();const params=new URLSearchParams();historyKey.split(',').forEach(id=>params.append('assetId',id));void fetch(`/api/asset-share-links/leads?${params}`,{signal:controller.signal,cache:'no-store'}).then(r=>r.json()).then(d=>{if(!controller.signal.aborted)setHistory(d.leads||[]);}).catch(()=>{});return()=>controller.abort();},[historyKey]);
   const [showCopyField, setShowCopyField] = useState(false);
   const copy = {
-    subject: 'An invitation to the Aim4price business directory',
+    subject: sendLink ? 'Shared assets on Aim4price' : 'An invitation to the Aim4price business directory',
     body: `${senderName || 'We'} would like to share asset details and requests with you through Aim4price. Open the enquiry to view the selected assets.\n\nView the enquiry here:\n${link}`,
   };
 
@@ -54,6 +55,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
     setSelection(null); setLink(''); setAccepted(false);
     opening.current = false; setBusy(false);
     trigger.current?.focus();
+    onDismiss?.();
   }
 
   async function prepare() {
@@ -66,7 +68,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
       if (!selection.assetIds.length) throw new Error('Select the assets you want to include in this enquiry.');
       const url = new URL('/business-network/accept', window.location.origin);
       let response: Response;
-      if (protectedActions) {
+      if (sendLink || protectedActions) {
         const form = new FormData();
         form.set('assetIds', JSON.stringify(selection.assetIds));
         form.set('includePhotos', String(selection.includePhotos));
@@ -85,7 +87,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
       if (!response.ok || !data.share?.token) throw new Error(data.error || 'Unable to prepare the enquiry. Please try again.');
       url.searchParams.set('share', data.share.token);
       if (version === requestVersion.current) setSenderName(typeof data.share.sender_name === 'string' ? data.share.sender_name.trim().slice(0, 120) : '');
-      if (version === requestVersion.current) setLink(url.href);
+      if (version === requestVersion.current) setLink(sendLink ? new URL(`/asset-share/${data.share.token}`, window.location.origin).href : url.href);
     } catch (cause) {
       if (version === requestVersion.current) setError(cause instanceof Error ? cause.message : 'Unable to prepare the enquiry. Please try again.');
     } finally { if (version === requestVersion.current) { opening.current = false; setBusy(false); } }
@@ -115,7 +117,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(link);
-      setNotice('Invitation link copied.');
+      setNotice(sendLink ? 'Asset link copied.' : 'Invitation link copied.');
     } catch {
       setShowCopyField(true);
       setNotice('Select and copy the link below.');
@@ -123,14 +125,14 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
   }
 
   return <>
-    <button ref={trigger} type="button" className={styles.trigger} aria-haspopup="dialog" disabled={busy} onClick={() => void open()}>
+    {!sendLink && <button ref={trigger} type="button" className={styles.trigger} aria-haspopup="dialog" disabled={busy} onClick={() => void open()}>
       <span>{busy ? 'Preparing enquiry…' : 'Business not listed?'}</span><span aria-hidden="true">+</span>
-    </button>
+    </button>}
     {error && !selection && <p role="alert">{error}</p>}
-    {selection && !choosingReport && <ShareDisclosureDialog className={styles.inviteDialog} title={link ? "Invite a business" : step === 'permissions' ? "Choose what to share" : step === 'reports' ? "Choose report source" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel="Close business invitation" onClose={close}>
+    {selection && !choosingReport && <ShareDisclosureDialog className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Choose what to share" : step === 'reports' ? "Choose report source" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close}>
         {(link || (step !== 'recipient' && step !== 'reports')) && <p id={descriptionId} className={styles.description}>{`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`}</p>}
         {!link && step === 'permissions' && <>
-          <p className={styles.hint}>Asset details are read-only. Enable the actions you want the recipient to use after verification.</p>
+          <p className={styles.hint}>{sendLink && 'Recipients sign in with a free Aim4price account and request your approval before viewing. This link contains the asset details saved when it is created. '}Asset details are read-only. Enable the actions you want the recipient to use after verification.</p>
           <div className={styles.permissions}>
             <label className={styles.permission}><input type="checkbox" checked={selection.includePhotos} onChange={e => {setSelection({...selection, includePhotos:e.target.checked});setAccepted(false);}}/><span><strong>Asset photos</strong><small>Include saved photos in the link preview.</small></span></label>
             {EXTERNAL_SHARE_OPTIONS.map(option => option.key === 'reports' ? <button type="button" key={option.key} className={`${styles.permission} ${styles.reportButton}`} onClick={chooseReports}><span className={styles.reportIndicator} aria-hidden="true">{permissions.reports ? '✓' : '+'}</span><span><strong>Reports</strong><small>{permissions.reports ? `${reports.length} selected · Add another report` : 'Choose an Aim4price report'}</small></span></button> : <label key={option.key} className={styles.permission}><input type="checkbox" checked={permissions[option.key]} onChange={e => {setPermissions(current=>({...current,[option.key]:e.target.checked}));setAccepted(false);}}/><span><strong>{option.label}</strong><small>{option.description}</small></span></label>)}
@@ -142,7 +144,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
         {!link && step === 'recipient' && <form className={styles.form} onSubmit={e=>{e.preventDefault();void prepare();}}>
           <fieldset disabled={busy}>
             <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink ownerApproval />
-            <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('permissions');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : 'Create invitation link'}</button></div>
+            <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('permissions');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : sendLink ? 'Create asset link' : 'Create invitation link'}</button></div>
           </fieldset>
         </form>}
         {!link && step === 'reports' && <><p className={styles.description}>Choose an asset to open its report options.</p><div className={styles.permissions}>{reportUmbrellaName && <button type="button" className={styles.permission} onClick={()=>openReport(null)}><span><strong>{reportUmbrellaName}</strong><small>Umbrella reports</small></span></button>}{selection.assetIds.map(id=><button type="button" className={styles.permission} key={id} onClick={()=>openReport(id)}><span><strong>{reportAssets.find(asset=>asset.id===id)?.title || 'Selected asset'}</strong><small>Choose report</small></span></button>)}</div><button type="button" className={styles.copy} onClick={()=>setStep('permissions')}>Back</button></>}
@@ -168,7 +170,7 @@ export default function BusinessListingInvite({ assetIds, includePhotos = false,
           </button>
           {notice && <p className={styles.notice} role="status">{notice}</p>}
         </footer>
-        {showCopyField && <input className={styles.copyField} aria-label="Business invitation link" readOnly value={link} onFocus={event => event.currentTarget.select()}/>}
+        {showCopyField && <input className={styles.copyField} aria-label={sendLink ? "Asset link" : "Business invitation link"} readOnly value={link} onFocus={event => event.currentTarget.select()}/>}
         </>}
       </ShareDisclosureDialog>}
   </>;

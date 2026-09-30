@@ -46,6 +46,7 @@ import AssetGroupManagerModal, {
 } from '../../components/asset-register/AssetGroupManagerModal';
 import groupModalStyles from '../../components/asset-register/AssetGroupManagerModal.module.css';
 import InsideShareDialog from '../../components/asset-register/InsideShareDialog';
+import BusinessListingInvite from '../../components/business-network/BusinessListingInvite';
 import ShareDestinationDialog from '../../components/asset-register/ShareDestinationDialog';
 import AssetExternalShare, {
   AssetShareDestinationPicker,
@@ -130,7 +131,7 @@ type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_re
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
 type QuoteDirectoryStage = 'location' | 'map';
-type AssetShareDestination = 'choice' | 'inside' | 'outside';
+type AssetShareDestination = 'choice' | 'link' | 'inside' | 'outside';
 type ExternalShareReportScope = 'asset' | 'register' | 'group' | null;
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
 type OutcomeInfluence = 'yes' | 'no' | 'unsure';
@@ -7902,7 +7903,9 @@ export default function AssetRegisterClient({
     [quoteAsset],
   );
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
-  const directoryInvitationAssetIds = isFullRegisterQuoteLead
+  const directoryInvitationAssetIds = assetShareDestination === 'link' && isRegisterShareModalOpen
+    ? activeShareAssets.map(asset => asset.id)
+    : isFullRegisterQuoteLead
     ? selectedQuoteOption?.leadType === 'replacement_quote' || selectedQuoteOption?.leadType === 'license_renewal'
       ? selectedDealerShareAssetIds : activeShareAssets.map(asset => asset.id)
     : quoteAsset ? [quoteAsset.id] : [];
@@ -18029,6 +18032,7 @@ export default function AssetRegisterClient({
           subject={activeShareName}
           disabled={isExporting || isSendingQuoteLead}
           onClose={backFromShareModal}
+          onSendLink={() => setAssetShareDestination('link')}
           onInside={() => setAssetShareDestination('inside')}
           onOutside={() => { directoryShareReturnRef.current = null; setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
         />
@@ -18047,6 +18051,13 @@ export default function AssetRegisterClient({
             icon: renderQuoteOptionIcon(option.id as AssetLeadType, styles.buttonIcon),
             onSelect: () => openFullRegisterQuotePartnerPicker(option.id as AssetLeadType),
           }))}
+        />
+      ) : isRegisterShareModalOpen && assetShareDestination === 'link' ? (
+        <BusinessListingInvite sendLink onDismiss={backFromShareModal}
+          assetIds={directoryInvitationAssetIds}
+          umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
+          reportAssets={assets.filter(asset => directoryInvitationAssetIds.includes(asset.id)).map(asset => ({id: asset.id, title: asset.title}))}
+          reportUmbrellaName={directoryReportGroup?.name} onChooseReport={openDirectoryReport}
         />
       ) : isRegisterShareModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.assetEntryOverlay}`} data-website-overlay>
@@ -18089,6 +18100,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${styles.registerShareModalBody} ${externalShareStyles.accountShareTheme}`}>
               {assetShareDestination === 'choice' ? (
                 <AssetShareDestinationPicker
+                  onSendLink={() => setAssetShareDestination('link')}
                   onInside={() => setAssetShareDestination('inside')}
                   onOutside={() => { directoryShareReturnRef.current = null; setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
                   disabled={isExporting || isSendingQuoteLead}
@@ -20326,6 +20338,7 @@ export default function AssetRegisterClient({
           subject={quoteAsset?.title || 'Asset'}
           disabled={isSendingQuoteLead}
           onClose={backFromShareModal}
+          onSendLink={() => setAssetShareDestination('link')}
           onInside={() => setAssetShareDestination('inside')}
           onOutside={() => { directoryShareReturnRef.current = null; setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
         />
@@ -20344,6 +20357,13 @@ export default function AssetRegisterClient({
             icon: renderQuoteOptionIcon(option.leadType, styles.buttonIcon),
             onSelect: () => openQuotePartnerPicker(option.leadType),
           }))}
+        />
+      ) : isQuoteModalOpen && !selectedQuoteOption && assetShareDestination === 'link' ? (
+        <BusinessListingInvite sendLink onDismiss={backFromShareModal}
+          assetIds={directoryInvitationAssetIds}
+          umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
+          reportAssets={assets.filter(asset => directoryInvitationAssetIds.includes(asset.id)).map(asset => ({id: asset.id, title: asset.title}))}
+          reportUmbrellaName={directoryReportGroup?.name} onChooseReport={openDirectoryReport}
         />
       ) : isQuoteModalOpen ? (
         <div className={`${styles.modalOverlay} ${isExternalAssetShareView ? styles.assetEntryOverlay : ''}`} data-website-overlay>
@@ -20395,6 +20415,7 @@ export default function AssetRegisterClient({
               {!selectedQuoteOption ? (
                 assetShareDestination === 'choice' ? (
                   <AssetShareDestinationPicker
+                    onSendLink={() => setAssetShareDestination('link')}
                     onInside={() => setAssetShareDestination('inside')}
                     onOutside={() => { directoryShareReturnRef.current = null; setExternalBusinessRecipient(null); setDirectoryShareAssetIds(null); setAssetShareDestination('outside'); }}
                     disabled={isSendingQuoteLead}
