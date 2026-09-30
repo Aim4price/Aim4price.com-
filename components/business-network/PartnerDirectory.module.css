@@ -1,0 +1,18 @@
+.layout { display:grid; grid-template-columns:minmax(0,1fr); min-height:0; height:100%; flex:1; overflow:hidden; border:1px solid var(--app-line,#d6e2dc); border-radius:1.2rem; background:var(--app-surface,#fff); }
+.withProfile { grid-template-columns:minmax(0,1fr) minmax(19rem,25rem); }
+.results { display:flex; flex-direction:column; min-height:0; min-width:0; overflow:hidden; }
+.toolbar { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:1rem 1.2rem; border-bottom:1px solid var(--app-line,#d6e2dc); }
+.toolbar > :last-child { flex:0 0 17rem; }
+.area { display:flex; flex-wrap:wrap; align-items:center; gap:.65rem 1rem; min-width:0; color:var(--app-text,#17362c); }
+.area > span { color:var(--app-muted,#62766e); }
+.list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); align-content:start; align-items:start; grid-auto-rows:max-content; gap:1rem; padding:1.2rem; overflow-y:auto; min-height:0; flex:1; scrollbar-width:thin; }
+.withProfile .list { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.list > button { min-width:0; box-sizing:border-box; height:auto; }
+.list > :not(button) { grid-column:1 / -1; }
+@media(max-width:800px) {
+ :global(body:not(:has([data-website-canvas]))) .withProfile { grid-template-columns:minmax(0,1fr); overflow-y:auto; }
+ :global(body:not(:has([data-website-canvas]))) .toolbar { flex-wrap:wrap; }
+ :global(body:not(:has([data-website-canvas]))) .list { grid-template-columns:minmax(0,1fr); }
+}
+/* Size each row from its full card content, including logos and action text. */
+.list > button > span { height:auto !important; }
