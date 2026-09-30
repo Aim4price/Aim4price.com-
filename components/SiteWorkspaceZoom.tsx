@@ -8,7 +8,7 @@ import {
   WEBSITE_DESIGN_WIDTH, WEBSITE_DESIGN_HEIGHT, WEBSITE_MIN_MANUAL_SCALE,
   WEBSITE_MAX_MANUAL_SCALE, WEBSITE_SCALE_STEP, WEBSITE_PREFERENCE_KEY,
   WEBSITE_OVERLAY_ROOT_ID, WEBSITE_LANDSCAPE_BYPASS_KEY, calculateWebsiteScale,
-  stepWebsiteScale, isNativeWorkspace, parseWebsitePreference,
+  stepWebsiteScale, isNativeWorkspace,
   type WebsitePreference,
 } from '../lib/website-canvas';
 import { listenToMediaQuery, observePhoneGeometry, phoneNeedsLandscape } from '../lib/website-phone';
@@ -35,6 +35,8 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
   const native = isNativeWorkspace(pathname);
   const canvasRef = useRef<HTMLDivElement>(null);
   const landscapeDialogRef = useRef<HTMLElement>(null);
+  const zoomDialogRef = useRef<HTMLDialogElement>(null);
+  const [showZoom, setShowZoom] = useState(false);
   const landscapeBypassRef = useRef(false);
   const syncOverlayWidths = useCallback(() => {
     canvasRef.current?.querySelectorAll<HTMLElement>('[data-website-overlay]').forEach((overlay) => {
@@ -53,16 +55,24 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
 
   useLayoutEffect(() => {
     if (native) return;
-    try { setPreference(parseWebsitePreference(localStorage.getItem(WEBSITE_PREFERENCE_KEY))); }
-    catch { setPreference({ mode: 'auto' }); }
+    // Manual adjustments last only for this visit; never restore a stale device size.
+    setPreference({ mode: 'auto' });
+    try { localStorage.removeItem(WEBSITE_PREFERENCE_KEY); } catch { /* Storage is optional. */ }
     const coarsePointer = window.matchMedia('(hover: none) and (pointer: coarse)');
     const syncAutomaticScale = () => setAutomaticScale(calculateWebsiteScale(availableUnzoomedWidth(coarsePointer.matches)));
+    const resetForVisit = () => {
+      setPreference({ mode: 'auto' });
+      setShowZoom(false);
+      syncAutomaticScale();
+    };
+    window.addEventListener('pageshow', resetForVisit);
     syncAutomaticScale();
     setLoaded(true);
     window.addEventListener('resize', syncAutomaticScale);
     window.addEventListener('orientationchange', syncAutomaticScale);
     const stopMedia = listenToMediaQuery(coarsePointer, syncAutomaticScale);
     return () => {
+      window.removeEventListener('pageshow', resetForVisit);
       window.removeEventListener('resize', syncAutomaticScale);
       window.removeEventListener('orientationchange', syncAutomaticScale);
       stopMedia();
@@ -106,10 +116,13 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
   }, [native, showLandscapeEntry]);
 
   useEffect(() => {
-    if (native || !loaded) return;
-    try { localStorage.setItem(WEBSITE_PREFERENCE_KEY, JSON.stringify(preference)); }
-    catch { /* Controls remain available when persistent storage is blocked. */ }
-  }, [loaded, native, preference]);
+    if (!showZoom || native) return;
+    const previousFocus = document.activeElement;
+    zoomDialogRef.current?.showModal();
+    return () => {
+      if (previousFocus instanceof HTMLElement) queueMicrotask(() => previousFocus.focus({ preventScroll: true }));
+    };
+  }, [showZoom, native]);
 
   useLayoutEffect(() => {
     if (native) return;
@@ -156,6 +169,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
 
   const changeScale = useCallback((delta: number) => {
     setShowIntro(false);
+    setShowZoom(true);
     setPreference((current) => ({
       mode: 'manual',
       scale: stepWebsiteScale(current.mode === 'manual' ? current.scale : automaticScale, delta),
@@ -205,12 +219,12 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     <div className={`${styles.controls} ${showIntro ? styles.controlsIntro : ''}`} role="toolbar" aria-label="Aim4price page size controls"
       data-site-workspace-zoom-controls data-zoom-preference={preference.mode}>
       <button type="button" className={styles.zoomButton} onClick={() => changeScale(-WEBSITE_SCALE_STEP)}
-        disabled={scale <= WEBSITE_MIN_MANUAL_SCALE} aria-label="Zoom out" data-tooltip="Zoom out">−</button>
-      <button type="button" className={styles.zoomValue} onClick={() => { setShowIntro(false); setPreference({ mode: 'auto' }); }}
+        disabled={scale <= WEBSITE_MIN_MANUAL_SCALE} aria-haspopup="dialog" aria-expanded={showZoom} aria-label="Zoom out" data-tooltip="Zoom out">−</button>
+      <button type="button" className={styles.zoomValue} onClick={() => { setShowIntro(false); setPreference({ mode: 'auto' }); setShowZoom(true); }}
         aria-label={`${preference.mode === 'auto' ? 'Automatic page size' : 'Page size'} ${percentage} percent. Return to automatic sizing.`}
         title={preference.mode === 'auto' ? 'Page size is automatic' : 'Return to automatic page size'}>{percentage}%</button>
       <button type="button" className={styles.zoomButton} onClick={() => changeScale(WEBSITE_SCALE_STEP)}
-        disabled={scale >= WEBSITE_MAX_MANUAL_SCALE} aria-label="Zoom in" data-tooltip="Zoom in">+</button>
+        disabled={scale >= WEBSITE_MAX_MANUAL_SCALE} aria-haspopup="dialog" aria-expanded={showZoom} aria-label="Zoom in" data-tooltip="Zoom in">+</button>
       {showIntro ? <span className={styles.introNote} role="status">Page size adjusts automatically. Use − or + if needed.</span> : null}
     </div>
   );
@@ -273,7 +287,25 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
         {children}
         {operational}
         {footer}
-        <div id={WEBSITE_OVERLAY_ROOT_ID} />
+        <div id={WEBSITE_OVERLAY_ROOT_ID}>
+          {showZoom ? <dialog ref={zoomDialogRef} className={styles.zoomDialog}
+            aria-labelledby="website-zoom-title" onCancel={() => setShowZoom(false)}
+            onClick={(event) => { if (event.target === event.currentTarget) setShowZoom(false); }}>
+            <div className={styles.zoomPanel}>
+              <div className={styles.zoomHeading}>
+                <h2 id="website-zoom-title">Page size</h2>
+                <button type="button" aria-label="Close page size" onClick={() => setShowZoom(false)}>×</button>
+              </div>
+              <label className={styles.sliderLabel} htmlFor="website-zoom-slider">Adjust size <output>{percentage}%</output></label>
+              <input id="website-zoom-slider" className={styles.zoomSlider} type="range"
+                min={WEBSITE_MIN_MANUAL_SCALE * 100} max={WEBSITE_MAX_MANUAL_SCALE * 100} step="1"
+                value={percentage} aria-valuetext={`${percentage} percent`}
+                onChange={(event) => setPreference({ mode: 'manual', scale: Number(event.target.value) / 100 })} />
+              <button type="button" className={styles.fitButton} onClick={() => setPreference({ mode: 'auto' })}>Fit to screen</button>
+              <p>Automatically fits your screen each time you return.</p>
+            </div>
+          </dialog> : null}
+        </div>
         {controlHost ? createPortal(controls, controlHost) : null}
       </div>
     </div>

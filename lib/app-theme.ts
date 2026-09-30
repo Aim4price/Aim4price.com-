@@ -14,7 +14,7 @@ export function readAppTheme(root: string): AppTheme {
     const saved = localStorage.getItem(APP_THEME_KEY_PREFIX + root);
     if (saved === 'dark' || saved === 'light') return saved;
   } catch { /* Private browsing may disable storage. Keep the in-session choice. */ }
-  return 'light';
+  return 'dark';
 }
 
 export function clearAppThemeMemory(root?: string) {
@@ -36,4 +36,4 @@ export function setAppTheme(root: string, theme: AppTheme) {
 }
 
 // Use the same app-specific preference before React mounts, including direct links.
-export const APP_THEME_SCRIPT = `(function(){var root=location.pathname.match(/^\\/(owner-app|dealer|middleman|field-manager)(?:\\/|$)/);if(!root)return;var theme='light';try{if(localStorage.getItem('${APP_THEME_KEY_PREFIX}'+root[1])==='dark')theme='dark';}catch(e){}document.documentElement.dataset.appTheme=theme;})();`;
+export const APP_THEME_SCRIPT = `(function(){var root=location.pathname.match(/^\\/(owner-app|dealer|middleman|field-manager)(?:\\/|$)/);if(!root)return;var theme='dark';try{if(localStorage.getItem('${APP_THEME_KEY_PREFIX}'+root[1])==='light')theme='light';}catch(e){}document.documentElement.dataset.appTheme=theme;})();`;

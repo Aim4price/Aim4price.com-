@@ -32,7 +32,8 @@ test('manual preferences use a clean versioned contract and retain the current a
   assert.equal(clampManualWebsiteScale(starting + .1), starting + .1);
   const host = await read('components/SiteWorkspaceZoom.tsx');
   assert.match(host, /stepWebsiteScale\(current.mode === 'manual' \? current.scale : automaticScale, delta\)/);
-  assert.match(host, /localStorage\.setItem\(WEBSITE_PREFERENCE_KEY, JSON\.stringify\(preference\)\)/);
+  assert.match(host, /localStorage\.removeItem\(WEBSITE_PREFERENCE_KEY\)/);
+  assert.doesNotMatch(host, /localStorage\.setItem\(WEBSITE_PREFERENCE_KEY/);
   assert.match(host, /setPreference\(\{ mode: 'auto' \}\)/);
   assert.doesNotMatch(host, /workspace-zoom\.v1|workspace-zoom-mode\.v1/);
 });

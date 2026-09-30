@@ -276,12 +276,11 @@ async function check(browser, url) {
       return {gap:rect.top-anchor.bottom,left:rect.left-anchor.left,width:rect.width-anchor.width,scale:Number(document.querySelector('[data-website-canvas]').dataset.websiteScale),scrollX:window.scrollX,bodyScrollLeft:document.body.scrollLeft,inRoot:!!menu.closest('#aim4price-website-overlays')};
     });
   }
-  for(let i=0;i<3;i++) {const g=await dropdownGeometry();assert.ok(g.inRoot);assert.ok(Math.abs(g.left)<1);assert.ok(Math.abs(g.width)<1);assert.ok(Math.abs(g.gap-8*g.scale)<1);await page.click('[aria-label="Zoom in"]');await page.evaluate(()=>window.scrollTo({left:0,top:0,behavior:'instant'}));await delay(150);}
-  const manual=await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale));
+  for(let i=0;i<3;i++) {const g=await dropdownGeometry();assert.ok(g.inRoot);assert.ok(Math.abs(g.left)<1);assert.ok(Math.abs(g.width)<1);assert.ok(Math.abs(g.gap-8*g.scale)<1);await page.click('[aria-label="Zoom in"]');await page.click('[aria-label="Close page size"]');await page.evaluate(()=>window.scrollTo({left:0,top:0,behavior:'instant'}));await delay(150);}
   await page.reload({waitUntil:'networkidle2'});
-  // The server renders scale 1; hydration restores the saved preference.
-  await page.waitForFunction(expected=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===expected,{timeout:15000},manual);
-  assert.equal(await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale)),manual);
+  // A fresh visit drops the manual override and fits the current screen.
+  await page.waitForFunction(expected=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===expected,{timeout:15000},768/1440);
+  assert.equal(await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale)),768/1440);
   await page.click('[aria-controls="canvas-test-dropdown"]');
   await page.click('[aria-haspopup="listbox"]:not([aria-controls="canvas-test-dropdown"])');
   await page.waitForSelector('[role="option"]');await page.$$eval('[role="option"]',els=>els.find(e=>e.textContent.includes('Second option')).click());
@@ -315,6 +314,7 @@ async function check(browser, url) {
   await page.click('[aria-label="Close add asset options"]');
   for(let i=0;i<150;i++) await page.$eval('[aria-label="Zoom in"]',e=>e.click());
   await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]').dataset.websiteScale)===1.5);
+  await page.$eval('[aria-label="Close page size"]',e=>e.click());
   await openAssetChoice();
   const safety=await page.$eval('[aria-labelledby="add-asset-choice-title"]',dialog=>{
     const overlay=dialog.closest('[data-website-overlay]'),r=dialog.getBoundingClientRect();
@@ -335,12 +335,14 @@ async function check(browser, url) {
   await page.evaluate(()=>sessionStorage.setItem('canvas-test-unzoomed-width',String(innerWidth)));
   await page.setViewport({width:512,height:600,deviceScaleFactor:1.5});await delay(150);
   assert.equal(await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale)),before);
-  console.log('PASS height, portals, anchored menus, manual persistence/Auto, footer, Manage, notifications, browser-zoom geometry');
+  console.log('PASS height, portals, anchored menus, manual sizing/fresh-visit Auto, footer, Manage, notifications, browser-zoom geometry');
   // Website surfaces must reach the screen edges without widening their content.
   for (const requestedScale of [.91, .5]) {
     await page.setViewport({width:1920,height:1080,deviceScaleFactor:1});
-    await page.evaluate(scale=>localStorage.setItem('aim4price.website-canvas.v2',JSON.stringify({mode:'manual',scale})),requestedScale);
     await page.goto(url+'/valuation',{waitUntil:'networkidle2',timeout:120000});
+    await page.click('[aria-label="Zoom in"]');
+    await page.$eval('#website-zoom-slider',(e,scale)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,String(scale*100));e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));},requestedScale);
+    await page.click('[aria-label="Close page size"]');
     await page.waitForFunction(scale=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===scale,{},requestedScale);
     const surfaces=await page.evaluate(()=>{
       const header=document.querySelector('header:has(a[aria-label="Go to Aim4price home"])');
