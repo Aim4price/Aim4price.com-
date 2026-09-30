@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
       currentUserId: session.user.id,
       partnerType,
       search,
+      area: searchParams.get('area'),
       bounds,
     });
 
