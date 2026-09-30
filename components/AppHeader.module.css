@@ -4579,3 +4579,8 @@
 .navRailWindowed .navLink:focus-visible {
   outline-offset: -3px;
 }
+
+/* Background preference changes the page photo, never the header surface. */
+.header.header {
+  background: #f7faf8 !important;
+}

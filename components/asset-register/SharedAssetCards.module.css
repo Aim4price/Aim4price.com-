@@ -79,3 +79,11 @@
 .manageDialog > div::-webkit-scrollbar { display:none; }
 /* Native dialogs need intrinsic height; the Leads surface normally sits in a flex overlay. */
 .manageDialog.manageDialog.manageDialog { position:fixed; inset:0; height:fit-content !important; min-height:0 !important; }
+
+/* Only text directly over the photograph switches to white. Cards retain their own contrast. */
+:global(html[data-background='dark']) .intro h1,
+:global(html[data-background='dark']) .intro > span,
+:global(html[data-background='dark']) .empty,
+:global(html[data-background='dark']) .page > section > .note {
+  color: #fff;
+}
