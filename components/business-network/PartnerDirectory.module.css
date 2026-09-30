@@ -8,7 +8,7 @@
 .layout { display:grid; grid-template-columns:minmax(0,1fr); flex:0 1 auto; min-height:0; overflow:hidden; border:0; border-radius:0; background:var(--app-surface,#fff); }
 .results { display:flex; flex-direction:column; min-height:0; min-width:0; overflow:hidden; }
 .summary { flex:none; padding:.6rem 0 .85rem; color:var(--app-muted,#62766e); font-size:.8rem; border-bottom:1px solid var(--app-line,#d6e2dc); border:0; }
-.list { display:flex; flex-direction:column; gap:0; padding:0; overflow-y:auto; min-height:0; flex:1; scrollbar-width:thin; max-height:27rem; }
+.list { display:flex; flex-direction:column; gap:0; padding:0; overflow-y:auto; min-height:0; flex:1; scrollbar-width:thin; max-height:30rem; }
 .row { display:grid; grid-template-columns:minmax(12rem,1.2fr) minmax(9rem,1fr) auto; align-items:center; gap:1.25rem; flex:none; padding:1.25rem .75rem; border:0; border-radius:0; border-top:1px solid var(--app-line,#d6e2dc); }
 .selected { border-color:#146b50; background:var(--app-surface-soft,#eef7f2); }
 .identity { display:flex; align-items:center; gap:1rem; min-width:0; }
@@ -34,9 +34,27 @@
 .details dl { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem 2rem; margin:0; }
 .details dt { font-size:.75rem; color:var(--app-muted,#62766e); }
 .details dd { margin:.2rem 0 0; overflow-wrap:anywhere; }
-.invitation { flex:none; align-self:flex-start; }
+.invitation { flex:none; align-self:flex-start; padding-top:.25rem; }
 .invitation > section { padding:0; margin:0; border:0; }
-.invitation button[aria-haspopup=dialog] { min-height:2.5rem; padding:.5rem 0; border:0; background:transparent; font-size:.8rem; color:var(--app-muted,#62766e); }
+.invitation button[aria-haspopup=dialog] { min-height:3rem; padding:.75rem 1rem; gap:1rem; border:1px solid var(--app-line,#b9d2c5); border-radius:.65rem; background:var(--app-surface-soft,#eef7f2); font-size:.9rem; font-weight:700; color:var(--app-text,#17362c); }
 .areaFilter summary:focus-visible { outline:3px solid #7ab49c; outline-offset:2px; }
 
 .footer button { min-width:9rem; min-height:3rem; }
+
+.areaFilter summary > span[aria-hidden=true] {
+  display:block;
+  flex:none;
+  width:.55rem;
+  height:.55rem;
+  margin:-.25rem .25rem 0 .5rem;
+  border-right:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  font-size:0;
+  transform:rotate(45deg);
+}
+.areaFilter[open] summary > span[aria-hidden=true] {
+  margin-top:.25rem;
+  transform:rotate(225deg);
+}
+.invitation button[aria-haspopup=dialog]:hover { border-color:#146b50; }
+.invitation button[aria-haspopup=dialog]:focus-visible { outline:3px solid #7ab49c; outline-offset:3px; }
