@@ -49,3 +49,5 @@
 .owner:has([data-pricing-view]) .header { display: flex; gap: 1.5rem; padding-block: 1.1rem; }
 .owner:has([data-pricing-view]) .header::before { content: none; }
 .owner:has([data-pricing-view]) .header h2 { text-align: left; font-size: 1.65rem; line-height: 1.25; letter-spacing: -.035em; }
+
+.owner:has([data-pricing-view='question']) { width: min(58rem, calc(var(--website-design-vw, 1vw) * 100 - 2rem)); }

@@ -147,6 +147,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /Asset recording visit.*Separate quote/);
      await clickText('Remove');
      await clickText('Need monthly admin help?');
+     await page.screenshot({path:path.join(evidence,`owner-admin-options-${width}.png`)});
      await choose('[aria-label="Admin package"] button');
      await choose('[data-pricing-content] + div button:last-child');
      assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month extra.*R598\/month total/);
@@ -165,6 +166,12 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await clickText('Need help uploading?');
      await page.screenshot({path:path.join(evidence,`owner-setup-details-${width}.png`)});
      await clickText('Back to package');
+     await clickText('What else should I know?');
+     await page.waitForFunction(()=>document.querySelector('[role="dialog"] h2')?.textContent==='Good to know');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/Sold and archived assets are excluded/);
+     await page.screenshot({path:path.join(evidence,`owner-billing-notes-${width}.png`)});
+     await clickText('Back to package');
+     assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent),/R598\/month total/);
      await clickText('Change asset range');
      await page.$$eval('[aria-label="Number of active assets"] button',els=>els[3].click());
      await choose('[data-pricing-content] + div button:last-child');
@@ -184,7 +191,9 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
       if (bounds.overflow) {
       assert.ok(bounds.track>=12, 'Overflowing content retains a usable scrollbar');
       const content=await page.$('[data-pricing-content]');
-      await content.hover();
+      const scrollBox = await content.boundingBox();
+      await page.mouse.move(scrollBox.x + 24, scrollBox.y + 24);
+      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       await page.mouse.wheel({deltaY:1000});
       await page.waitForFunction(()=>document.querySelector('[data-pricing-content]').scrollTop>0);
       await content.focus();
