@@ -2,6 +2,7 @@
 
 import { currentWebsiteScale } from '../lib/website-canvas';
 import { attachHomeStorySwipe } from '../lib/home-story-swipe';
+import { attachHomeStoryScroll } from '../lib/home-story-scroll';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -386,6 +387,23 @@ export default function HomeHeroExperience() {
       updateStoryStep(nextIndex);
 
       alignStoryScroll(nextIndex);
+    });
+  }, [alignStoryScroll, claimManualControl, isDesktopStory, updateStoryStep]);
+
+  useEffect(() => {
+    const sticky = stickyRef.current;
+    if (!sticky || !isDesktopStory) return;
+    return attachHomeStoryScroll(sticky, (direction) => {
+      if (document.querySelector('dialog[open]')) return false;
+      const next = storyStepRef.current + direction;
+      return next >= 0 && next < HERO_STORY_STEPS.length;
+    }, (direction) => {
+      const next = clampStoryIndex(storyStepRef.current + direction);
+      autoplayFinishedRef.current = true;
+      setHasAutoplayFinished(true);
+      claimManualControl();
+      updateStoryStep(next);
+      alignStoryScroll(next);
     });
   }, [alignStoryScroll, claimManualControl, isDesktopStory, updateStoryStep]);
 

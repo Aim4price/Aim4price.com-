@@ -46,6 +46,7 @@ function mountHero({ reducedMotion = false } = {}) {
   const mocks = {
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
     '../lib/website-canvas': { currentWebsiteScale: () => 1 },
+    '../lib/home-story-scroll': { attachHomeStoryScroll: () => () => {} },
     '../lib/home-story-swipe': { attachHomeStorySwipe: () => () => {} },
     './home-asset-preview': { __esModule: true, default: 'Preview' },
     './page.module.css': { __esModule: true, default: new Proxy({}, { get: (_, key) => key }) },
