@@ -1,10 +1,12 @@
 "use client";
 
+import { sharedEnquiryReturnTo } from '../../lib/external-share-permissions';
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import styles from "../auth/page.module.css";
 
 type ResetPasswordClientProps = {
+  returnTo?: string | null;
   token: string;
   error: string;
 };
@@ -72,7 +74,10 @@ function extractErrorMessage(payload: unknown): string | null {
 export default function ResetPasswordClient({
   token,
   error,
+  returnTo,
 }: ResetPasswordClientProps) {
+  const enquiry = sharedEnquiryReturnTo(returnTo);
+  const authPath = '/auth' + (enquiry ? '?returnTo=' + encodeURIComponent(enquiry) : '');
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -167,7 +172,7 @@ export default function ResetPasswordClient({
     <main className={styles.page}>
       <div className={styles.shell}>
         <div className={styles.topBar}>
-          <Link href="/auth#login" className={styles.homeLink}>
+          <Link href={`${authPath}#login`} className={styles.homeLink}>
             Back to login
           </Link>
         </div>
@@ -267,7 +272,7 @@ export default function ResetPasswordClient({
 
             <p className={styles.footerText}>
               Need another link?{" "}
-              <Link href="/auth#forgot" className={styles.footerButton}>
+              <Link href={`${authPath}#forgot`} className={styles.footerButton}>
                 Send reset email
               </Link>
             </p>

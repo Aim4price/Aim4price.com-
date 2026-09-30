@@ -11,7 +11,7 @@ export default function SignupFlow({title,description,children,returnTo,guest=fa
    <div className={auth.topBar}><Link href="/" className={auth.homeLink}>Back to home</Link></div>
    <section className={auth.frame}><div className={`${auth.authCard} ${styles.content}`}>
     <nav className={auth.modeRail} aria-label="Authentication mode">
-     <Link href={'/auth'+query+'#signup'} className={`${auth.modeButton} ${!guest?auth.modeButtonActive:''} ${styles.tab}`}>Sign up</Link>
+     <Link href={'/business/join'+query} className={`${auth.modeButton} ${!guest?auth.modeButtonActive:''} ${styles.tab}`}>Sign up</Link>
      <Link href={'/auth?switchAccount=1'+(returnTo?'&returnTo='+encodeURIComponent(returnTo):'')+'#login'} className={`${auth.modeButton} ${styles.tab}`}>Login</Link>
     </nav>
     <header className={auth.authHeader}><h1 className={auth.authTitle}>{title}</h1><p className={auth.authText}>{description}</p></header>

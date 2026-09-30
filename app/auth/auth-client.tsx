@@ -17,6 +17,7 @@ import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
 import PricingModal from "../pricing/pricing-modal";
 
+import BusinessSignup from "../business/join/business-signup";
 import { BUSINESS_SERVICE_OPTIONS, isBusinessService, type BusinessService } from "../../lib/business-service-options";
 
 type Mode = "signup" | "login" | "forgot";
@@ -560,7 +561,7 @@ function normalizeEmail(value: string) {
 function getSafeReturnTo(): string | null {
   if (typeof window === "undefined") return null;
   const value = new URLSearchParams(window.location.search).get("returnTo");
-  return value && value.startsWith("/") && !value.startsWith("//") ? value : null;
+  return value && value.startsWith("/") && !value.startsWith("//") && !/[\\\x00-\x20]/.test(value) ? value : null;
 }
 
 function getCallbackUrl(email?: string, preferredPath?: string) {
@@ -572,7 +573,8 @@ function getCallbackUrl(email?: string, preferredPath?: string) {
 }
 
 function getResetPasswordUrl() {
-  return getAbsoluteUrl("/reset-password");
+  const returnTo = sharedEnquiryReturnTo(getSafeReturnTo());
+  return getAbsoluteUrl("/reset-password" + (returnTo ? "?returnTo=" + encodeURIComponent(returnTo) : ""));
 }
 
 async function postAuth(path: string, body: Record<string, unknown>) {
@@ -1067,6 +1069,8 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
       setIsSubmitting(false);
     }
   };
+
+  if (businessSignup && mode === 'signup') return <BusinessSignup returnTo={sharedEnquiryReturnTo(returnTo)||sharedEnquiryReturnTo(getSafeReturnTo())} initialEmail={initialEmail}/>;
 
   return (
     <main className={styles.page} data-public-photo="auth">
@@ -1679,8 +1683,8 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
             ) : null}
 
             {mode === "login" && <aside className={styles.sharedEntry}>
-              <div><strong>Received a shared enquiry?</strong><span>Open it for free using your email.</span></div>
-              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/guest?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/guest'}>Guest access</Link>
+              <div><strong>Received a shared enquiry?</strong><span>Create a free account to keep your shared enquiries.</span></div>
+              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/join?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/join'}>Create free account</Link>
             </aside>}
 
             <p className={styles.footerText}>

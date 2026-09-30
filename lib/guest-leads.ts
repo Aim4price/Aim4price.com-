@@ -1,5 +1,5 @@
 import { normalizeExternalPermissions, type ExternalSharePermissions } from './external-share-permissions';
-import { canBusinessContribute } from './business-accounts';
+import { canBusinessRead } from './business-accounts';
 import { randomBytes,randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import { ensureGuestLeadSchema } from './guest-lead-schema';
@@ -7,7 +7,6 @@ import { businessEmail,businessText } from './business-network-shared';
 import { getAssetRegisterItemsByRefs } from './asset-register-db';
 import { assetShareSnapshot,parseShareAssetIds } from './asset-share-snapshot';
 import { readPublicAssetShare } from './asset-share-links';
-import { getGuestViewer } from './guest-business-access';
 import { getServerSession } from './auth-session';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 export type LeadDetails={accessMode?:'owner-approval';recipientUserId?:string;permissions?:ExternalSharePermissions;recipientName:string;recipientEmail:string;recipientWhatsApp?:string;allowSubmissions?:boolean;request:string;replyName:string;replyEmail:string;replyPhone:string;allowReply:boolean};
@@ -67,9 +66,8 @@ export async function resolveLeadAccess(ownerId:string,recipientEmail:string):Pr
  // Existing full accounts may use their own verified identity; guest accounts never become full accounts.
  if(session?.user?.emailVerified===true&&session.user.email.toLowerCase()===recipientEmail)return 'active';
  const businessSession=await getServerSession({requireActive:false});
- if(businessSession?.user?.email?.toLowerCase()===recipientEmail.toLowerCase()&&await canBusinessContribute(businessSession.user))return 'active';
- const guest=await getGuestViewer();
- if(!guest)return 'sign-in';if(guest.email!==recipientEmail)return 'wrong-recipient';return guest.active?'active':'payment-required';
+ if(businessSession?.user?.email?.toLowerCase()===recipientEmail.toLowerCase()&&await canBusinessRead(businessSession.user))return 'active';
+ return businessSession?.user ? 'wrong-recipient' : 'sign-in';
 }
 export async function loadProtectedLeadReport(token:string,reportId:string){
  if(!/^[0-9a-f-]{36}$/i.test(reportId))return{status:404 as const};
@@ -77,7 +75,7 @@ export async function loadProtectedLeadReport(token:string,reportId:string){
  const { externalLeadAccess, leadAllows } = await import('./external-lead-access');
  if(!leadAllows(lead,'reports'))return{status:403 as const};
  const { access }=await externalLeadAccess(lead);
- if(access!=='active'&&access!=='owner'&&access!=='guest')return{status:403 as const};
+ if(access!=='active'&&access!=='owner'&&access!=='read-only')return{status:403 as const};
  const report=(await getDb().query(`SELECT r.pdf,r.file_name,r.content_type FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.id=$1 AND r.token=$2 AND s.revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id))`,[reportId,token])).rows[0];
  return report?{status:200 as const,report}:{status:404 as const};
 }

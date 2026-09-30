@@ -1,3 +1,4 @@
+import { sharedEnquiryReturnTo } from './external-share-permissions';
 import { AIM4PRICE_EMAIL_FONT_STACK, AIM4PRICE_EMAIL_LOGO_PATH, buildEmailBrandHeader } from './email-brand';
 
 type SendAim4priceEmailInput = {
@@ -59,6 +60,13 @@ export function buildAim4priceResetPasswordUrl(
 
   const resetUrl = new URL(getResetPasswordRedirectUrl());
   resetUrl.searchParams.set("token", cleanedToken);
+  // Better Auth nests the original redirect in callbackURL. Retain only a valid enquiry path.
+  try {
+    const source = new URL(fallbackUrl || '', getSiteOrigin());
+    const callback = new URL(source.searchParams.get('callbackURL') || source.toString(), getSiteOrigin());
+    const returnTo = sharedEnquiryReturnTo(callback.searchParams.get('returnTo'));
+    if (returnTo) resetUrl.searchParams.set('returnTo', returnTo);
+  } catch { /* Invalid callback context cannot affect the reset destination. */ }
   return resetUrl.toString();
 }
 

@@ -32,11 +32,11 @@ test('guest credits require the recipient, count once per enquiry, and enforce l
   assert.equal(Number((await query('SELECT count(*) AS n FROM guest_enquiry_usage')).rows[0].n),2);
  }finally{if(old===undefined)delete process.env.AIM4PRICE_GUEST_ENQUIRY_CREDITS;else process.env.AIM4PRICE_GUEST_ENQUIRY_CREDITS=old;await pg.close();}
 });
-test('guest report access cannot become permission to change assets or upload documents',async()=>{
+test('legacy guest sessions no longer authorise enquiry access or contributions',async()=>{
  const lead={token:'test',details:{recipientEmail:'guest@example.test',permissions:{reports:true,documents:true,serialNumber:true}},reports:[]};
  const permissions=load('lib/external-share-permissions.ts',{});
  const mod=load('lib/external-lead-access.ts',{'./db':{},'./auth-session':{getServerSession:async()=>null},'./account-profile':{},'./business-accounts':{},'./asset-register-account-access':{},'./guest-leads':{readLeadPage:async()=>lead},'./external-share-permissions':permissions,'./guest-enquiry-credits':{guestEnquiryAccess:async()=>({access:'guest'})}});
- assert.equal((await mod.externalLeadAccess(lead)).access,'guest');
+ assert.equal((await mod.externalLeadAccess(lead)).access,'sign-in');
  await assert.rejects(mod.requireExternalLeadAction('test','documents'),e=>e.status===401);
  await assert.rejects(mod.requireExternalLeadAction('test','serialNumber'),e=>e.status===401);
 });

@@ -33,8 +33,8 @@ test('Business sessions require explicit endpoint opt-in and current verificatio
   realm=null; activeFullAccount=true;
   assert.equal(await mod.getServerSession(),session,'Existing full accounts remain supported');
   user.email = 'Accounting@aim4price.com';
-  assert.equal(await mod.getAnyServerSession(), null);
-  assert.equal(await mod.getServerSession({ requireActive:false, allowBusiness:true, authSession:session }), null);
+  assert.equal(await mod.getAnyServerSession(), session, 'Released specialist email can belong to a normal account');
+  assert.equal(await mod.getServerSession({ requireActive:false, allowBusiness:true, authSession:session }), session);
   user.email = 'normal@example.com'; user.id = 'aim4price-assistance-finance';
   assert.equal(await mod.getAnyServerSession(), null);
 });
@@ -49,7 +49,7 @@ test('Business page access preserves approval, suspension and full-account bound
     './business-accounts':{canBusinessContribute:async()=>verified},
   });
   await assert.rejects(mod.requireActivePageAccess(),/\/business/);
-  assert.equal((await mod.requireActivePageAccess({allowBusiness:true})).session,session);
+  await assert.rejects(mod.requireActivePageAccess({allowBusiness:true}),/\/business/,'Free Business accounts cannot enter Desktop Leads');
   verified=false;
   await assert.rejects(mod.requireActivePageAccess({allowBusiness:true}),/\/business/);
   status='suspended';

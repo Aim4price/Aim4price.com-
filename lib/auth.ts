@@ -1,3 +1,4 @@
+import { ensureBusinessWorkspace } from './business-workspaces';
 import { getSiteOrigin } from './email';
 import { buildAccessEmail } from './access-email';
 import { queueSignupInvoice, type SignupBilling } from "./billing";
@@ -179,6 +180,7 @@ export const auth = betterAuth({
               error,
             );
           }
+          if (readSignupField(context, "accountType") === "business") await ensureBusinessWorkspace(user.id);
           const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;
           if (billing) await queueSignupInvoice(user.id, billing);
 

@@ -1,11 +1,11 @@
 import { getServerSession } from './auth-session';
 import { getAccountProfile } from './account-profile';
-import { canBusinessContribute } from './business-accounts';
+import { canBusinessRead, canBusinessContribute } from './business-accounts';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 import { readLeadPage } from './guest-leads';
 import { getDb } from './db';
 import { normalizeExternalPermissions, type ExternalSharePermission } from './external-share-permissions';
-export type ExternalLeadAccess = 'guest' | 'signup-required' | 'request-access' | 'sign-in' | 'verify-email' | 'approval-required' | 'wrong-recipient' | 'suspended' | 'owner' | 'active';
+export type ExternalLeadAccess = 'read-only' | 'signup-required' | 'request-access' | 'sign-in' | 'verify-email' | 'approval-required' | 'wrong-recipient' | 'suspended' | 'owner' | 'active';
 export class ExternalLeadAccessError extends Error {
     constructor(message: string, readonly status: number) { super(message); }
 }
@@ -14,13 +14,11 @@ export async function externalLeadAccess(lead: Lead) {
     const session = await getServerSession({ requireActive: false, allowDealerApp: true, allowOwnerApp: true });
     const user = session?.user;
     const result = (access: ExternalLeadAccess) => ({ access, user: user || null });
-    if (!user) {
-        const { guestEnquiryAccess } = await import('./guest-enquiry-credits');
-        return result((await guestEnquiryAccess(lead.token,lead.details?.recipientEmail || '',lead.details?.recipientUserId)).access);
-    }
+    if (!user) return result('sign-in');
     if (user.id === lead.ownerId && await getAssetRegisterAccountAccess(session!))
         return result('owner');
-    const unbound = lead.details?.accessMode === 'owner-approval' && !lead.details.recipientEmail;
+    // Older WhatsApp-only enquiries also need an owner-approved account binding.
+    const unbound = Boolean(lead.details && !lead.details.recipientEmail && !lead.details.recipientUserId && (lead.details.accessMode === 'owner-approval' || lead.details.recipientWhatsApp));
     if (!unbound && (!lead.details?.recipientEmail || user.email.toLowerCase() !== lead.details.recipientEmail.toLowerCase() || (lead.details.recipientUserId && lead.details.recipientUserId !== user.id)))
         return result('wrong-recipient');
     if (user.emailVerified !== true)
@@ -28,8 +26,11 @@ export async function externalLeadAccess(lead: Lead) {
     const profile = await getAccountProfile(user);
     if (profile.accountStatus === 'suspended')
         return result('suspended');
-    if (profile.accountType === 'business')
-        return result(await canBusinessContribute(user) ? (unbound ? 'request-access' : 'active') : 'approval-required');
+    if (profile.accountType === 'business') {
+        if (!(await canBusinessRead(user))) return result('suspended');
+        if (unbound) return result('request-access');
+        return result(await canBusinessContribute(user) ? 'active' : 'read-only');
+    }
     const active = await getServerSession({ requireActive: true, allowDealerApp: true, allowOwnerApp: true });
     return result(active?.user.id === user.id && profile.accountStatus === 'active' ? (unbound ? 'request-access' : 'active') : 'approval-required');
 }
@@ -72,13 +73,14 @@ export async function resolveExternalCorrectionAccess(input: {
 /** Only the owner may bind an untargeted invitation to one verified account. */
 export async function requestExternalLeadAccess(token: string) {
     const lead = await readLeadPage(token);
-    if (!lead || !Object.values(normalizeExternalPermissions(lead.details?.permissions)).some(Boolean)) throw new ExternalLeadAccessError('This enquiry has no actions to request.', 404);
+    if (!lead || !lead.details) throw new ExternalLeadAccessError('This enquiry is unavailable.', 404);
     const { access, user } = await externalLeadAccess(lead);
-    if (access !== 'request-access' || !user) throw new ExternalLeadAccessError('This request requires a verified, approved business account.', 403);
+    if (access !== 'request-access' || !user) throw new ExternalLeadAccessError('Sign in with a verified account to request access.', 403);
     const profile = await getAccountProfile(user);
     const result = await getDb().query(`INSERT INTO asset_share_access_requests(token,user_id,email,business_name)
       SELECT token,$2,$3,$4 FROM asset_share_links s WHERE token=$1 AND revoked_at IS NULL
-      AND lead_details->>'accessMode'='owner-approval' AND coalesce(lead_details->>'recipientEmail','')=''
+      AND (lead_details->>'accessMode'='owner-approval' OR coalesce(lead_details->>'recipientWhatsApp','')<>'')
+      AND coalesce(lead_details->>'recipientEmail','')='' AND coalesce(lead_details->>'recipientUserId','')=''
       AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id))
       ON CONFLICT(token,user_id) DO UPDATE SET email=EXCLUDED.email,business_name=EXCLUDED.business_name WHERE asset_share_access_requests.status='pending'
       RETURNING status`, [token,user.id,user.email.toLowerCase(),profile.businessName||user.name||user.email]);
@@ -98,7 +100,8 @@ export async function reviewExternalAccessRequest(token: string, userId: string,
     try {
         await db.query('BEGIN');
         const row = (await db.query(`SELECT token FROM asset_share_links s WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL
-          AND lead_details->>'accessMode'='owner-approval' AND coalesce(lead_details->>'recipientEmail','')=''
+          AND (lead_details->>'accessMode'='owner-approval' OR coalesce(lead_details->>'recipientWhatsApp','')<>'')
+      AND coalesce(lead_details->>'recipientEmail','')='' AND coalesce(lead_details->>'recipientUserId','')=''
           AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) FOR UPDATE`, [token,user.id])).rows[0];
         if (!row) throw new ExternalLeadAccessError('This invitation is already assigned or unavailable.', 409);
         const request = (await db.query(`UPDATE asset_share_access_requests SET status=$3,reviewed_at=now() WHERE token=$1 AND user_id=$2 AND status='pending' RETURNING email,business_name`, [token,userId,decision])).rows[0];

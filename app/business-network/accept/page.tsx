@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import AppHeader from '../../../components/AppHeader';
-import { readPublicAssetShare } from '../../../lib/asset-share-links';
+import { redirect } from 'next/navigation';
+import { readLeadPage } from '../../../lib/guest-leads';
 import styles from './page.module.css';
 
 export const runtime = 'nodejs';
@@ -9,7 +10,10 @@ export const metadata = { title: 'Asset enquiry', robots: { index: false, follow
 
 export default async function Page({ searchParams }: { searchParams: { from?: string | string[]; share?: string | string[] } }) {
   const token = typeof searchParams.share === 'string' ? searchParams.share : '';
-  const share = token ? await readPublicAssetShare(token) : null;
+  const lead = token ? await readLeadPage(token) : null;
+  // Enquiries always enter through the authenticated recipient gate, including old invitation URLs.
+  if (lead?.details) redirect(`/asset-share/${encodeURIComponent(token)}`);
+  const share = lead?.share ?? null;
   return <><Suspense fallback={null}><AppHeader active="none"/></Suspense>
     <main className={styles.page}>
       <div className={styles.overlay} aria-hidden="true"/>
