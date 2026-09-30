@@ -691,31 +691,36 @@ function AppAccessManagement({ kind, configOverride }: {
 
   function renderAccountNameSetup() {
     if (accountName) return null;
-    return <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
-      <div className={styles.surfaceHeader}>
-        <h3>Choose your business login ID</h3>
-        <p>Each person signs in with their name followed by your business ID.</p>
-      </div>
+    const setup = <section className={`${baseStyles.card} ${styles.surface} ${styles.businessLoginSetup}`}>
       <form className={baseStyles.form} onSubmit={confirmAccountName}>
         <label className={`${baseStyles.field} ${styles.field}`}>
-          <span>Business ID · the part after @</span>
+          <span>Business login ID</span>
           <input value={accountNameDraft} onChange={event => setAccountNameDraft(event.target.value.toLowerCase())}
             autoCapitalize="none" autoComplete="off" minLength={3} maxLength={32} required disabled={namespaceBusy} />
-          <small>3–32 letters, numbers or hyphens. No spaces or @ symbol.</small>
         </label>
-        <div className={styles.loginExample} aria-live="polite">
-          <span>Example app login</span>
-          <strong>john@{accountNameDraft.trim() || 'yourbusiness'}</strong>
-          <p><b>john</b> is the person’s username. <b>{accountNameDraft.trim() || 'yourbusiness'}</b> identifies your business. This is not an email address.</p>
-        </div>
-        <p className={styles.loginHint}>Choose this ID once for all your apps. It stays fixed if your business name changes. Existing app logins keep working.</p>
+        <p className={styles.loginExample} aria-live="polite">App login example: <strong>john@{accountNameDraft.trim() || 'yourbusiness'}</strong></p>
+        <p className={styles.loginHint}>Choose once. This ID stays the same for all your apps.</p>
+        <details className={styles.loginHelp}>
+          <summary>How does this work?</summary>
+          <p>Your team uses <strong>person@business</strong> to sign in. This is an app username, not an email address.</p>
+          <p>Use 3–32 letters, numbers or hyphens for the business ID, without spaces or @. Existing logins keep working, even if your business name changes.</p>
+        </details>
         {namespaceError ? <p role="alert" className={baseStyles.fieldError}>{namespaceError}</p> : null}
-        <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={namespaceBusy}>
-          {namespaceBusy ? 'Loading…' : 'Confirm business ID'}
-        </button>
-        {namespaceError ? <button type="button" className={styles.emptyAction} onClick={() => void loadAccountName()}>Reload</button> : null}
+        <div className={styles.loginSetupActions}>
+          <button type="submit" className={`${baseStyles.primaryButton} ${styles.primaryButton}`} disabled={namespaceBusy}>
+            {namespaceBusy ? 'Loading…' : 'Confirm business ID'}
+          </button>
+          {namespaceError ? <button type="button" className={styles.emptyAction} onClick={() => void loadAccountName()}>Reload</button> : null}
+        </div>
       </form>
     </section>;
+    if (activeFlow === 'manage' && !selectedId && records.length > 0) {
+      return <details className={styles.loginSetupDisclosure}>
+        <summary>Set up a business login ID <span>Existing logins still work</span></summary>
+        {setup}
+      </details>;
+    }
+    return setup;
   }
 
   function usernamePreview(value: string) {

@@ -1206,9 +1206,17 @@
 }
 .notificationStyle .formActions > button { width: auto; flex: 0 1 auto; min-width: 8.75rem; }
 
-/* Explain the two parts of an app login without suggesting an email address. */
-.loginExample { display: grid; gap: .45rem; padding: 1rem 1.2rem; border: 1px solid var(--app-line, #d5e4db); border-radius: 1rem; background: var(--app-surface-soft, #eef6f1); color: var(--app-text, #183b30); }
-.loginExample > span { font-size: .85rem; font-weight: 650; }
-.loginExample strong { font-size: 1.3rem; line-height: 1.4; overflow-wrap: anywhere; }
-.loginExample p { margin: 0; font-size: .9rem; line-height: 1.6; }
-.businessLoginSetup .loginHint { margin: 0; font-size: .9rem; line-height: 1.65; color: var(--app-muted, #52675d); }
+/* Keep setup brief and let existing logins lead the management screen. */
+.businessLoginSetup .loginExample { margin: 0; color: var(--app-muted, #52675d); font-size: .95rem; line-height: 1.6; }
+.loginExample strong { color: var(--app-text, #183b30); overflow-wrap: anywhere; }
+.businessLoginSetup .loginHint { margin: 0; font-size: .9rem; line-height: 1.6; color: var(--app-muted, #52675d); }
+.loginHelp { color: var(--app-muted, #52675d); font-size: .9rem; line-height: 1.65; }
+.loginHelp summary { width: fit-content; color: var(--app-text, #24533e); cursor: pointer; text-decoration: underline; text-underline-offset: .25rem; }
+.loginHelp p { max-width: 60ch; margin: .65rem 0 0; }
+.loginSetupActions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .75rem; padding-top: .5rem; }
+.loginSetupActions .primaryButton { width: auto; min-width: 12rem; }
+.loginSetupDisclosure { margin-bottom: 1.25rem; padding: .9rem 1rem; border: 1px solid var(--app-line, #d5e4db); border-radius: .8rem; color: var(--app-text, #183b30); }
+.loginSetupDisclosure > summary { cursor: pointer; font-size: .95rem; font-weight: 650; line-height: 1.6; }
+.loginSetupDisclosure > summary span { margin-left: 1rem; color: var(--app-muted, #52675d); font-size: .85rem; font-weight: 400; }
+.loginSetupDisclosure[open] > summary { margin-bottom: 1rem; }
+.loginSetupDisclosure summary:focus-visible, .loginHelp summary:focus-visible { outline: 2px solid #398d67; outline-offset: 4px; }
