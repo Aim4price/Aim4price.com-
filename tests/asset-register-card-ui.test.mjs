@@ -307,7 +307,9 @@ test('Manage map setup is a focused workflow without the Settings back button', 
   assert.match(settingsModal, /\{isManageMapLocationFlow \? 'Map asset' : 'Settings'\}/);
   assert.match(settingsModal, /assetSettingsView !== 'menu' && !\(isManageMapLocationFlow && assetSettingsView === 'location'\)/);
   assert.doesNotMatch(settingsModal, /Choose how to map this asset/);
-  assert.match(settingsModal, /Use current location/);
+  assert.match(settingsModal, /<strong>\{assetSettingsDeviceGpsButtonLabel\}<\/strong>/);
+  assert.match(client, /const assetSettingsDeviceGpsButtonLabel =[\s\S]*?'Finding location\.\.\.'[\s\S]*?'Saving location\.\.\.'[\s\S]*?'Use current location'/);
+  assert.match(settingsModal, /onClick=\{\(\) => void updateAssetSettingsGpsPosition\(\)\}/);
   assert.match(settingsModal, /Choose on map/);
   assert.match(settingsModal, /Enter coordinates/);
   assert.match(settingsModal, /View on asset map/);

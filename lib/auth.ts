@@ -110,7 +110,8 @@ function assertAuthUserCanBeDeleted(user: { email?: string | null }): void {
 
 const authBaseUrl = readAuthBaseUrl();
 
-export const auth = betterAuth({
+function createAuth() {
+  return betterAuth({
   database: getDb(),
   baseURL: authBaseUrl,
   secret: process.env.BETTER_AUTH_SECRET,
@@ -198,5 +199,23 @@ export const auth = betterAuth({
         await deleteUserWorkspaceData(user.id);
       },
     },
+  },
+});
+}
+
+// Route discovery during a production build must not initialise the database.
+// The first real auth operation still requires valid runtime credentials.
+type Auth = ReturnType<typeof createAuth>;
+let instance: Auth | undefined;
+function getAuth(): Auth {
+  return instance ??= createAuth();
+}
+export const auth: Auth = new Proxy({} as Auth, {
+  get(_target, property) {
+    const current = getAuth();
+    return Reflect.get(current, property, current);
+  },
+  has(_target, property) {
+    return Reflect.has(getAuth(), property);
   },
 });

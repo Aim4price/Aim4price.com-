@@ -4,6 +4,7 @@ const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('pup
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
 const stubs={
+ 'lib/sharing-foundation':'exports.sharingPlan=async()=>"desktop";',
  'lib/guest-enquiry-credits':'exports.guestCreditLimit=()=>null;',
  'lib/guest-business-access':'exports.getGuestViewer=async()=>null;',
  'components/AppHeader':'module.exports=()=>null;',
@@ -63,7 +64,7 @@ function loadNode(file,deps={}){const code=ts.transpileModule(fs.readFileSync(pa
 const shared=loadNode('lib/billing-shared.ts');
 const report=loadNode('lib/billing-report.ts',{'./billing-shared':shared,'./report-theme':loadNode('lib/report-theme.ts')});
 const template=loadNode('lib/billing-email-template.ts',{'./billing-shared':shared,'./billing-report':report,'./email-brand':loadNode('lib/email-brand.ts')});
-const resetEmail=loadNode('lib/email.ts',{'./email-brand':loadNode('lib/email-brand.ts'),'./external-share-permissions':loadNode('lib/external-share-permissions.ts')});
+const resetEmail=loadNode('lib/email.ts',{'./sharing-foundation':{recordSharingUsage:async()=>{}},'./email-brand':loadNode('lib/email-brand.ts'),'./external-share-permissions':loadNode('lib/external-share-permissions.ts')});
 const invoice={id:'10000000-0000-4000-8000-000000000001',userId:'owner',number:'A4P-2026-000001',status:'issued',customer:{name:'Example Customer',businessName:'Example Farming',email:'customer@example.test',address:'George'},lines:[{description:'Monthly account subscription',quantity:1,unitCents:39900,totalCents:39900}],totalCents:39900,paidCents:0,dueDate:'2026-09-27',issuedAt:'2026-09-26T10:00:00Z',note:'',version:2};
 const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSync(evidence,{recursive:true});
 (async()=>{
@@ -200,7 +201,8 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
       assert.ok(bounds.track>=12, 'Overflowing content retains a usable scrollbar');
       const content=await page.$('[data-pricing-content]');
       const scrollBox = await content.boundingBox();
-      await page.mouse.move(scrollBox.x + 24, scrollBox.y + 24);
+      // Wheel over the visible content centre, clear of the rounded edge/header.
+      await page.mouse.move(scrollBox.x + scrollBox.width / 2, scrollBox.y + scrollBox.height / 2);
       await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
       await page.mouse.wheel({deltaY:1000});
       await page.waitForFunction(()=>document.querySelector('[data-pricing-content]').scrollTop>0);
@@ -231,6 +233,8 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     }
     if(mode==='business-join'||mode==='business-register'){
      assert.equal(await page.$('a[href="/business/guest"]'),null);
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Free sharing account').click());
+     await page.waitForSelector('input[name="password"]');
      for(const [name,value] of Object.entries({name:'Test Recipient',businessName:'Test Business',email:'recipient@example.test',password:'Synthetic-password-123'}))await page.type('input[name="'+name+'"]',value);
      await page.click('input[name="terms"]');await page.click('button[type="submit"]');
      await page.waitForFunction(()=>document.body.textContent.includes('verification email could not be sent'));
