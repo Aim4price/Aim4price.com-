@@ -907,3 +907,11 @@
 .dealerRegisterPrice { display: grid; gap: .65rem; padding: 1.15rem 1.4rem; border: 1px solid #d5e7dd; border-radius: 1rem; background: #f0f7f3; }
 .dealerRegisterPrice strong { color: #164d38; font-size: 1.05rem; line-height: 1.4; }
 .dealerRegisterNote { font-size: .82rem; color: #64776e; }
+
+/* Keep workspace choices aligned independently of explanatory copy. */
+.workspaceGrid { gap:1.15rem 1.35rem; align-items:start; }
+.workspaceGrid > .field { align-content:start; gap:.55rem; }
+.workspaceGrid > .field small { color:#667b73; font-size:.82rem; line-height:1.4; }
+.workspaceGrid > .signupFieldWide:first-child { padding-bottom:1.1rem; border-bottom:1px solid #d9e8e2; }
+.workspaceGrid .dealerRegisterInfoRow { margin:0; text-align:left; justify-content:flex-start; }
+.workspaceGrid .directoryChoice { margin:0; padding:.85rem 1rem; }

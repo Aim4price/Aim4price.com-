@@ -1,3 +1,4 @@
+import { signOutSharingAccount } from '../../../../lib/sharing-admin';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnyServerSession } from '../../../../lib/auth-session';
 import { isAim4priceAdminEmail } from '../../../../lib/account-constants';
@@ -11,7 +12,11 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
     try {
         const input = await request.json();
-        if (input.action === 'activate-desktop') {
+        if (input.action === 'sign-out') {
+            if(typeof input.userId !== 'string') throw Error('Choose an account.');
+            await signOutSharingAccount(session.user.id,input.userId);
+        }
+        else if (input.action === 'activate-desktop') {
             if (typeof input.userId !== 'string' || input.subscriptionConfirmed !== true)
                 throw Error('Confirm that the subscription has been arranged.');
             await activateSharingDesktop(session.user.id, input.userId);

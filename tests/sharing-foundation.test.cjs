@@ -51,6 +51,7 @@ test('usage endpoint ignores supplied identity, rejects unauthorised reads and n
 test('allowances and activation are admin-only and require same-origin explicit subscription confirmation',async()=>{
  const {NextRequest}=require('next/server');let session=null;const changes=[];
  const route=load('app/api/admin/sharing/route.ts',{
+ '../../../../lib/sharing-admin':{signOutSharingAccount:async(...args)=>changes.push(args)},
  'next/server':require('next/server'), '../../../../lib/auth-session':{getAnyServerSession:async()=>session},
  '../../../../lib/account-constants':{isAim4priceAdminEmail:email=>email==='admin@example.test'},
  '../../../../lib/trusted-request-origin':{isTrustedRequestOrigin:origin=>origin==='https://aim4price.test'},
@@ -62,6 +63,9 @@ test('allowances and activation are admin-only and require same-origin explicit 
  session={user:{id:'admin',email:'admin@example.test'}};assert.equal((await call(input,'https://evil.test')).status,403);
  assert.equal((await call({...input,subscriptionConfirmed:false})).status,400);assert.equal(changes.length,0);
  assert.equal((await call(input)).status,200);assert.deepEqual(changes,[['admin','free-user']]);
+ assert.equal((await call({action:'sign-out',userId:'free-user'},'https://evil.test')).status,403);
+ assert.equal((await call({action:'sign-out',userId:'free-user'})).status,200);assert.deepEqual(changes[1],['admin','free-user']);
+ session={user:{id:'ordinary',email:'user@example.test'}};assert.equal((await call({action:'sign-out',userId:'free-user'})).status,403);
 });
 
 test('free Dealer signup bypasses invoices but cannot request a free Owner account',async()=>{

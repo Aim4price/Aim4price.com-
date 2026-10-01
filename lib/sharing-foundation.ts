@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS sharing_session_activity(
  session_id text PRIMARY KEY, user_id text NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
  last_seen_at timestamptz NOT NULL DEFAULT now(), expires_at timestamptz NOT NULL
 );
+CREATE TABLE IF NOT EXISTS sharing_revoked_sessions (
+ session_id text PRIMARY KEY, user_id text NOT NULL, revoked_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE TABLE IF NOT EXISTS sharing_admin_events (
  id bigserial PRIMARY KEY, actor_id text NOT NULL, account_id text, action text NOT NULL,
  detail jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
@@ -153,6 +156,7 @@ export async function sharingSessionIsActive(session: {
     };
 }) {
     await ensureSharingFoundation();
+    if ((await getDb().query('SELECT session_id FROM sharing_revoked_sessions WHERE session_id=$1 AND user_id=$2',[session.session.id,session.user.id])).rows.length) return false;
     const account = (await getDb().query(`SELECT p.account_type,a.plan FROM account_profiles p LEFT JOIN sharing_account_access a ON a.user_id=p.user_id WHERE p.user_id=$1`, [session.user.id])).rows[0];
     if (account?.plan !== 'free' && !(account?.account_type === 'business' && !account.plan))
         return true;

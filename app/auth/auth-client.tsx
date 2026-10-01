@@ -1188,16 +1188,16 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           </div>
                         </div>
 
-                        <div className={styles.signupFieldGrid}>
-                          <div className={styles.field}>
+                        <div className={`${styles.signupFieldGrid} ${styles.workspaceGrid}`}>
+                          <div className={`${styles.field} ${styles.signupFieldWide}`}>
                             <span className={styles.label}>Choose your access</span>
                             <CustomSelect name="accountAccess" ariaLabel="Choose your access" value={accountAccess}
                               options={[{value:'free',label:'Free sharing account'},{value:'desktop',label:'Full Aim4price Desktop'}]}
                               onChange={(value) => { setAccountAccess(value as 'free'|'desktop'); if((value==='free' && !['dealer','business'].includes(signupForm.accountType)) || (value==='desktop' && signupForm.accountType==='business')) setSignupForm(current=>({...current,accountType:'dealer',accountSubtype:getDefaultSubtype('dealer')})); }}/>
-                            <small>{accountAccess==='free'?'Receive assets and contribute. Upgrade this same account later.':'Full workspace access after subscription activation.'}</small>
+                            <small>{accountAccess==='free'?'Receive shared assets. Upgrade this account anytime.':'Full workspace access after subscription activation.'}</small>
                           </div>
                           <div className={styles.field}>
-                            <span className={styles.label}>What would you like to use Aim4price for?</span>
+                            <span className={styles.label}>Account type</span>
                             <CustomSelect
                               name="accountType"
                               ariaLabel="What would you like to use Aim4price for?"
@@ -1218,7 +1218,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
 
                           <div className={styles.field}>
                             <span className={styles.label}>
-                              Which best describes your work?
+                              Your business or work
                             </span>
                             <CustomSelect
                               name="accountSubtype"
@@ -1264,7 +1264,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                   }))
                                 }
                               />
-                              <span>List my business in the Aim4price partner directory so owners can find me by location. I can refine or disable this later.</span>
+                              <span>Show my business in the partner directory. You can change this later.</span>
                             </label>
                           ) : null}
                         </div>

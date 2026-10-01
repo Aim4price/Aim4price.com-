@@ -127,7 +127,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
     if(mode==='pricing'){
      assert.equal(await page.$eval('a[href="/business/join"]',e=>e.textContent.includes('R199')),true);
-     assert.match(await page.$eval('a[href="/business/join"]',e=>e.textContent),/after x credits/);
+     assert.match(await page.$eval('a[href="/business/join"]',e=>e.textContent),/after credits/);
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
