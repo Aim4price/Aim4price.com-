@@ -13,7 +13,7 @@ export default function SharedEnquiryAccess({returnTo,access,embedded=false}: {r
  const query=`returnTo=${encodeURIComponent(returnTo)}`;
  const title=access==='request-access'?'Request access from the sender':access==='wrong-recipient'?'Use the invited account':access==='verify-email'?'Verify your email':access==='suspended'?'Account access is paused':'Oops, we need you to sign in.';
  const description=access==='request-access'?'The sender needs to approve your account before you can view this enquiry.':access==='wrong-recipient'?'This enquiry belongs to another recipient. Sign in with the invited account or ask the sender for access.':access==='verify-email'?'You’re signed in, but your email still needs verification. Verify your email to open this enquiry.':access==='suspended'?'Contact Aim4price to review your account access.':'Create a free account or sign in. You will return to this enquiry after signing in.';
- if (access === 'sign-in') { const signIn = <div className={entryStyles.signInBody}>
+ if (access === 'sign-in' || access === 'verify-email') { const signIn = <div className={entryStyles.signInBody}>
   <p>Sign in to view the shared assets. Your existing Owner, Dealer or Business account works here.</p>
   <Link className={`${styles.button} ${entryStyles.signInButton}`} href={`/auth?${query}#login`}>Sign in</Link>
   <div className={entryStyles.createAccount}>
@@ -24,7 +24,7 @@ export default function SharedEnquiryAccess({returnTo,access,embedded=false}: {r
  return embedded ? signIn : <SignupFlow title={title} description="Sign in to open your shared enquiry." returnTo={returnTo}>{signIn}</SignupFlow>;
  }
  const content = <>
-  <div className={styles.guestActions}>
+  <div className={entryStyles.accessActions}>
    {access==='sign-in'?<><Link className={styles.button} href={`/auth?${query}#login`}>Sign in</Link><span>Don’t have an account? <Link href={`/business/join?${query}`}>Create a free account</Link></span></>:access==='wrong-recipient'?<SwitchAccountButton primary returnTo={returnTo}/>:access==='request-access'?<button className={styles.button} disabled={busy} onClick={async()=>{setBusy(true);setNotice('');try{const response=await fetch(`${returnTo.split('?')[0].replace('/asset-share/','/api/asset-share-links/')}/access`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});const data=await response.json();if(!response.ok)throw Error(data.error||'Unable to request access.');setNotice('Access requested. Return here after the sender approves your account.');}catch(error){setNotice(error instanceof Error?error.message:'Please try again.');}finally{setBusy(false);}}}>Request access</button>:<Link className={styles.button} href={`/business?${query}`}>Account details</Link>}
    {access==='verify-email'&&<SwitchAccountButton returnTo={returnTo}/>}
    {access!=='sign-in'&&<button className={styles.secondaryButton} onClick={()=>router.refresh()}>Check access again</button>}

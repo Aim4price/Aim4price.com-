@@ -23,8 +23,8 @@ export async function externalLeadAccess(lead: Lead) {
     const unbound = Boolean(lead.details && !lead.details.recipientEmail && !lead.details.recipientUserId && (lead.details.accessMode === 'owner-approval' || lead.details.recipientWhatsApp));
     if (lead.details && !unbound && (!lead.details?.recipientEmail || user.email.toLowerCase() !== lead.details.recipientEmail.toLowerCase() || (lead.details.recipientUserId && lead.details.recipientUserId !== user.id)))
         return result('wrong-recipient');
-    if (user.emailVerified !== true)
-        return result('verify-email');
+    // A normal signed-in account satisfies identity access; mailbox verification is separate.
+    if (!user.email) return result('sign-in');
     const profile = await getAccountProfile(user);
     if (profile.accountStatus === 'suspended')
         return result('suspended');
@@ -42,7 +42,7 @@ export async function externalLeadAccess(lead: Lead) {
 export function leadAllows(lead: Lead, permission: ExternalSharePermission): boolean {
     if (lead.details?.permissions)
         return normalizeExternalPermissions(lead.details.permissions)[permission] === true;
-    // Older links retain their chosen reports/documents, but now require verified account access.
+    // Older links retain their chosen reports/documents, but now require signed-in account access.
     return permission === 'reports' ? lead.reports.length > 0 : permission === 'documents' && lead.details?.allowSubmissions === true;
 }
 export async function requireExternalLeadAction(token: string, permission: ExternalSharePermission) {
@@ -51,7 +51,7 @@ export async function requireExternalLeadAction(token: string, permission: Exter
         throw new ExternalLeadAccessError('This action was not shared or the enquiry is no longer available.', lead ? 403 : 404);
     const { access, user } = await externalLeadAccess(lead);
     if (access !== 'active' || !user)
-        throw new ExternalLeadAccessError('This action requires the recipient’s verified, approved account.', user ? 403 : 401);
+        throw new ExternalLeadAccessError('This action requires the recipient’s signed-in, approved account.', user ? 403 : 401);
     return { lead, user };
 }
 // Reuse the existing owner approval and revaluation workflow for external proposals.
@@ -71,12 +71,12 @@ export async function resolveExternalCorrectionAccess(input: {
     return asset?.assetId ? { owner_user_id: lead.ownerId, asset_register_item_id: asset.assetId } : null;
 }
 
-/** Only the owner may bind an untargeted invitation to one verified account. */
+/** Only the owner may bind an untargeted invitation to one signed-in account. */
 export async function requestExternalLeadAccess(token: string) {
     const lead = await readLeadPage(token);
     if (!lead || !lead.details) throw new ExternalLeadAccessError('This enquiry is unavailable.', 404);
     const { access, user } = await externalLeadAccess(lead);
-    if (access !== 'request-access' || !user) throw new ExternalLeadAccessError('Sign in with a verified account to request access.', 403);
+    if (access !== 'request-access' || !user) throw new ExternalLeadAccessError('Sign in with your account to request access.', 403);
     const profile = await getAccountProfile(user);
     const result = await getDb().query(`INSERT INTO asset_share_access_requests(token,user_id,email,business_name)
       SELECT token,$2,$3,$4 FROM asset_share_links s WHERE token=$1 AND revoked_at IS NULL
