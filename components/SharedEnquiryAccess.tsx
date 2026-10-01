@@ -13,7 +13,7 @@ export default function SharedEnquiryAccess({returnTo,access,embedded=false}: {r
  const query=`returnTo=${encodeURIComponent(returnTo)}`;
  const title=access==='request-access'?'Request access from the sender':access==='wrong-recipient'?'Use the invited account':access==='verify-email'?'Verify your email':access==='suspended'?'Account access is paused':'Oops, we need you to sign in.';
  const description=access==='request-access'?'The sender needs to approve your account before you can view this enquiry.':access==='wrong-recipient'?'This enquiry belongs to another recipient. Sign in with the invited account or ask the sender for access.':access==='verify-email'?'You’re signed in, but your email still needs verification. Verify your email to open this enquiry.':access==='suspended'?'Contact Aim4price to review your account access.':'Create a free account or sign in. You will return to this enquiry after signing in.';
- if (access === 'sign-in' || access === 'verify-email') { const signIn = <div className={entryStyles.signInBody}>
+ if (access === 'sign-in') { const signIn = <div className={entryStyles.signInBody}>
   <p>Sign in to view the shared assets. Your existing Owner, Dealer or Business account works here.</p>
   <Link className={`${styles.button} ${entryStyles.signInButton}`} href={`/auth?${query}#login`}>Sign in</Link>
   <div className={entryStyles.createAccount}>
@@ -22,6 +22,18 @@ export default function SharedEnquiryAccess({returnTo,access,embedded=false}: {r
   </div>
  </div>;
  return embedded ? signIn : <SignupFlow title={title} description="Sign in to open your shared enquiry." returnTo={returnTo}>{signIn}</SignupFlow>;
+ }
+ if(access==='verify-email') {
+  const verification=<div className={entryStyles.signInBody}>
+   <p>Verify your email once to activate your free sharing account.</p>
+   <div className={entryStyles.accessActions}>
+    <button className={styles.button} disabled={busy} onClick={async()=>{setBusy(true);setNotice('');try{const response=await fetch('/api/shared-account/verification',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnTo})});const data=await response.json();if(!response.ok)throw Error(data.error||'Please try again.');setNotice('Verification email sent. Check your inbox.');}catch(error){setNotice(error instanceof Error?error.message:'Please try again.');}finally{setBusy(false);}}}>{busy?'Sending…':'Resend verification email'}</button>
+    <button className={styles.secondaryButton} onClick={()=>router.refresh()}>I’ve verified my email</button>
+    <SwitchAccountButton returnTo={returnTo}/>
+   </div>
+   {notice&&<p role="status" className={styles.notice}>{notice}</p>}
+  </div>;
+  return embedded?verification:<SignupFlow title="Verify your email" description="One last step to activate your free account." returnTo={returnTo}>{verification}</SignupFlow>;
  }
  const content = <>
   <div className={entryStyles.accessActions}>

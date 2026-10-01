@@ -18,7 +18,7 @@ export default async function PendingPaymentPage() {
 
   const access = await getAccountAccess(session.user);
   const profile = await getAccountProfile(session.user);
-  if (profile.accountStatus !== 'suspended' && await sharingPlan(session.user.id, profile.accountType) === 'free') redirect(profile.accountType === 'business' ? '/business' : '/shared-enquiries');
+  if (profile.accountStatus !== 'suspended' && await sharingPlan(session.user.id, profile.accountType) === 'free') redirect('/upgrade-account');
 
   if (access.isActive) {
     redirect(access.isAdmin ? "/admin" : "/asset-register");

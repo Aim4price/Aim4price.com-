@@ -52,7 +52,7 @@ export async function requireActivePageAccess(options: { allowBusiness?: boolean
   if ((await getAccountProfile(realSession.user)).accountType === "business") {
     const access = await getAccountAccess(realSession.user);
     if (!access.isActive) redirect("/pending-payment");
-    redirect("/business");
+    redirect("/upgrade-account");
   }
 
   const [effectiveSession, access] = await Promise.all([
@@ -79,7 +79,7 @@ export async function requireActivePageAccess(options: { allowBusiness?: boolean
     redirect("/admin");
   }
 
-  if (await sharingPlan(realSession.user.id) === "free") redirect("/shared-enquiries");
+  if (await sharingPlan(realSession.user.id) === "free") redirect("/upgrade-account");
 
   if (!access.isActive) {
     redirect("/pending-payment");

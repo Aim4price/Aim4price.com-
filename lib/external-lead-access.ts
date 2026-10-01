@@ -19,25 +19,27 @@ export async function externalLeadAccess(lead: Lead) {
     if (!user) return result('sign-in');
     if (user.id === lead.ownerId && await getAssetRegisterAccountAccess(session!))
         return result('owner');
-    // Older WhatsApp-only enquiries also need an owner-approved account binding.
-    const unbound = Boolean(lead.details && !lead.details.recipientEmail && !lead.details.recipientUserId && (lead.details.accessMode === 'owner-approval' || lead.details.recipientWhatsApp));
+    // Untargeted links carry the sender-selected permissions for signed-in recipients.
+    const unbound = Boolean(lead.details && !lead.details.recipientEmail && !lead.details.recipientUserId && (['owner-approval','signed-in'].includes(lead.details.accessMode || '') || lead.details.recipientWhatsApp));
     if (lead.details && !unbound && (!lead.details?.recipientEmail || user.email.toLowerCase() !== lead.details.recipientEmail.toLowerCase() || (lead.details.recipientUserId && lead.details.recipientUserId !== user.id)))
         return result('wrong-recipient');
     // A normal signed-in account satisfies identity access; mailbox verification is separate.
     if (!user.email) return result('sign-in');
     const profile = await getAccountProfile(user);
+    const plan = await sharingPlan(user.id, profile.accountType);
+    if (plan === 'free' && user.emailVerified !== true) return result('verify-email');
     if (profile.accountStatus === 'suspended')
         return result('suspended');
     if (!lead.details) return result('read-only');
     if (profile.accountType === 'business') {
         if (!(await canBusinessRead(user))) return result('suspended');
-        if (unbound) return result('request-access');
+        if (unbound) return result('active');
         return result(await canBusinessContribute(user) ? 'active' : 'read-only');
     }
-    if (profile.accountType === 'dealer' && await sharingPlan(user.id, profile.accountType) === 'free')
-        return result(unbound ? 'request-access' : 'active');
+    if (profile.accountType === 'dealer' && plan === 'free')
+        return result('active');
     const active = await getServerSession({ requireActive: true, allowDealerApp: true, allowOwnerApp: true });
-    return result(active?.user.id === user.id && profile.accountStatus === 'active' ? (unbound ? 'request-access' : 'active') : 'approval-required');
+    return result(active?.user.id === user.id && profile.accountStatus === 'active' ? 'active' : 'approval-required');
 }
 export function leadAllows(lead: Lead, permission: ExternalSharePermission): boolean {
     if (lead.details?.permissions)

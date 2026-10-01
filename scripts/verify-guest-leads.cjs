@@ -105,7 +105,7 @@ export default function Validation(){
   assert.equal(await page.$eval('dialog button[type="submit"], dialog button:not([type])',b=>b.disabled),true);
   await page.click('dialog input[type="checkbox"]');await click('Create asset link');
   await page.waitForSelector('dialog a[href^="/asset-share/"], dialog a[href*="/asset-share/"]');
-  assert.equal(JSON.parse(await page.evaluate(()=>window.__selectedLeadDetails)).accessMode,'owner-approval');
+  assert.equal(JSON.parse(await page.evaluate(()=>window.__selectedLeadDetails)).accessMode,'signed-in');
   assert.ok(requests.some(r=>r.path==='/api/asset-share-links/leads'&&r.method==='POST'));
   assert.ok(!requests.some(r=>r.path==='/api/asset-share-links'&&r.method==='POST'),'Send link never uses the public snapshot endpoint');
   await page.evaluate(()=>Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async()=>{throw Error('Clipboard unavailable')}}}));
@@ -231,7 +231,7 @@ export default function Validation(){
    await page.screenshot({path:path.join(output,`selected-disclosure-${width}.png`),fullPage:true});
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
-   assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'owner-approval');
+   assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');

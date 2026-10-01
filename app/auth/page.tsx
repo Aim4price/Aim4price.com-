@@ -24,7 +24,7 @@ export default async function AuthPage({ searchParams }: { searchParams?: { swit
 
     const profile = await getAccountProfile(session.user);
     if (searchParams?.switchAccount !== '1' && profile.accountStatus !== 'suspended' && await sharingPlan(session.user.id, profile.accountType) === 'free') {
-      redirect(sharedEnquiryReturnTo(searchParams?.returnTo) || (profile.accountType === 'business' ? '/business' : '/shared-enquiries'));
+      redirect(sharedEnquiryReturnTo(searchParams?.returnTo) || '/upgrade-account');
     }
 
     if (!access.isActive || searchParams?.switchAccount === '1') {

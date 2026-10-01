@@ -49,10 +49,10 @@ test('Business page access preserves approval, suspension and full-account bound
     './auth-session':{getAnyServerSession:async()=>session},
     './business-accounts':{canBusinessContribute:async()=>verified},
   });
-  await assert.rejects(mod.requireActivePageAccess(),/\/business/);
-  await assert.rejects(mod.requireActivePageAccess({allowBusiness:true}),/\/business/,'Free Business accounts cannot enter Desktop Leads');
+  await assert.rejects(mod.requireActivePageAccess(),/\/upgrade-account/);
+  await assert.rejects(mod.requireActivePageAccess({allowBusiness:true}),/\/upgrade-account/,'Free Business accounts cannot enter Desktop Leads');
   verified=false;
-  await assert.rejects(mod.requireActivePageAccess({allowBusiness:true}),/\/business/);
+  await assert.rejects(mod.requireActivePageAccess({allowBusiness:true}),/\/upgrade-account/);
   status='suspended';
   await assert.rejects(mod.requireActivePageAccess({allowBusiness:true}),/\/pending-payment/);
 });
@@ -66,4 +66,17 @@ test('Partner setup does not reclassify Business accounts on repeated runs',asyn
     for(let pass=0;pass<2;pass++)for(const sql of migrations)await pg.exec(sql);
     assert.deepEqual((await pg.query('SELECT account_type FROM account_profiles ORDER BY account_type')).rows.map(r=>r.account_type),['business','business','dealer','finance']);
   }finally{await pg.close();}
+});
+
+test('free Dealer desktop URLs lead to upgrade while signed-out visitors must log in',async()=>{
+ let session={user:{id:'free-dealer',email:'dealer@example.test'}};
+ const mod=load('lib/account-access.ts',{
+  './sharing-foundation':{sharingPlan:async()=> 'free'},
+  'next/navigation':{redirect:path=>{throw Error(path);}},
+  './account-constants':{accountStatusLabel:s=>s,isAim4priceAdminEmail:()=>false},
+  './account-profile':{getAccountProfile:async()=>({accountType:'dealer'}),getAccountStatusForUser:async()=> 'active'},
+  './auth-session':{getAnyServerSession:async()=>session,getServerSession:async()=>session,isAdminSupportSession:()=>false},
+ });
+ await assert.rejects(mod.requireActivePageAccess(),/\/upgrade-account/);
+ session=null;await assert.rejects(mod.requireActivePageAccess(),/\/auth#login/);
 });

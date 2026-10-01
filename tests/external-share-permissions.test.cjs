@@ -48,9 +48,9 @@ test('signed-in recipients can read without email verification; contributions re
   await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===401);
   x.signIn({email:'forwarded@example.com'});x.state.approved=true;
   assert.equal((await x.access.externalLeadAccess(lead)).access,'wrong-recipient');await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'serialNumber'),e=>e.status===403);
-  x.signIn({emailVerified:false});assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
-  for(const type of ['owner','dealer','business']){x.state.type=type;assert.equal((await x.access.externalLeadAccess(lead)).access,'active');}
-  assert.equal((await x.leads.listReceivedSharedEnquiries()).length,1);
+  x.signIn({emailVerified:false});assert.equal((await x.access.externalLeadAccess(lead)).access,'verify-email');
+  for(const type of ['owner','dealer']){x.state.type=type;assert.equal((await x.access.externalLeadAccess(lead)).access,'active');}
+  x.state.type='business';x.signIn();assert.equal((await x.leads.listReceivedSharedEnquiries()).length,1);
   x.signIn();x.state.approved=false;assert.equal((await x.access.externalLeadAccess(lead)).access,'read-only');
   await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===403);
   x.state.approved=true;x.state.status='suspended';assert.equal((await x.access.externalLeadAccess(lead)).access,'suspended');
@@ -109,7 +109,7 @@ test('correction endpoint rejects foreign requests and forged access, then attri
   assert.equal((await route.POST(request({},'https://foreign.test'),ctx)).status,400);
   assert.equal((await route.POST(request(),ctx)).status,401);
   x.signIn({email:'forwarded@example.com'});x.state.approved=true;assert.equal((await route.POST(request(),ctx)).status,403);
-  x.signIn({emailVerified:false});assert.equal((await route.POST(request({assetIndex:100}),ctx)).status,400);
+  x.signIn({emailVerified:false});assert.equal((await route.POST(request({assetIndex:100}),ctx)).status,403);
   x.signIn();x.state.approved=false;assert.equal((await route.POST(request(),ctx)).status,403);
   x.state.approved=true;assert.equal((await route.POST(request({assetIndex:100}),ctx)).status,400);assert.equal((await route.POST(request({field:'ownerUserId'}),ctx)).status,400);
   const response=await route.POST(request({dealerUserId:'spoofed',ownerUserId:'other',assetId:B}),ctx);assert.equal(response.status,200);const result=await response.json();assert.equal(result.correction.dealerUserId,'recipient');assert.equal(result.correction.ownerUserId,'owner');assert.equal(result.correction.assetId,B);
@@ -117,69 +117,41 @@ test('correction endpoint rejects foreign requests and forged access, then attri
  }finally{await x.pg.close();}
 });
 
-test('untargeted links require sign-in and explicit owner approval; forwarded and revoked links stay locked',async()=>{
+test('untargeted links open after verification or existing-account sign-in, without sender approval',async()=>{
  const x=await setup();try{
-  const created=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'owner-approval',recipientName:'',recipientEmail:''},[x.report]);
-  const token=created.token;
-  x.signIn({emailVerified:false});x.state.approved=true;
-  await x.access.requestExternalLeadAccess(token);
-  x.signIn();x.state.approved=false;
-  await x.access.requestExternalLeadAccess(token); // Verified reading requests do not wait for business approval.
-  x.state.approved=true;
-  assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(token))).access,'request-access');
-  await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===403);
-  await x.access.requestExternalLeadAccess(token);await x.access.requestExternalLeadAccess(token);
-  await assert.rejects(x.access.listExternalAccessRequests(token),e=>e.status===403);
-  await assert.rejects(x.access.reviewExternalAccessRequest(token,'recipient','approved'),e=>e.status===403);
-  x.signIn({id:'forwarded',email:'forwarded@example.com'});await x.access.requestExternalLeadAccess(token);
-  x.signIn({id:'owner',email:'owner@example.com'});
-  const rows=await x.access.listExternalAccessRequests(token);assert.equal(rows.length,2);
-  await x.access.reviewExternalAccessRequest(token,'recipient','approved');
-  await assert.rejects(x.access.reviewExternalAccessRequest(token,'forwarded','approved'),e=>e.status===409);
-  x.signIn();assert.equal((await x.access.requireExternalLeadAction(token,'reports')).user.id,'recipient');
-  const lead=await x.leads.readLeadPage(token);assert.equal(lead.details.recipientUserId,'recipient');
-  const pdf={fileName:'quote.pdf',contentType:'application/pdf',data:Buffer.from('%PDF-1.4 fixture')};
-  await x.docs.submitLeadDocument(token,{kind:'quote'},pdf,'recipient');
-  x.signIn({id:'different-account'});await assert.rejects(x.access.requireExternalLeadAction(token,'documents'),e=>e.status===403);
-  x.signIn({id:'forwarded',email:'forwarded@example.com'});await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===403);
-  x.signIn();x.state.approved=false;await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===403);
-  x.state.approved=true;await x.base.revokeAssetShareLink('owner',token);await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===404);
+  for(const accessMode of ['owner-approval','signed-in']){
+   const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode,recipientEmail:''},[x.report]);
+   x.state.user=null;assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(token))).access,'sign-in');
+   x.signIn({emailVerified:false});x.state.type='business';assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(token))).access,'verify-email');
+   x.signIn();x.state.approved=false;assert.equal((await x.access.requireExternalLeadAction(token,'reports')).user.id,'recipient');
+   x.state.type='owner';x.signIn({emailVerified:false});assert.equal((await x.access.requireExternalLeadAction(token,'reports')).user.id,'recipient');
+   x.state.type='dealer';assert.equal((await x.access.requireExternalLeadAction(token,'reports')).user.id,'recipient');
+   x.signIn({id:'forwarded',email:'forwarded@example.com'});assert.equal((await x.access.requireExternalLeadAction(token,'reports')).user.id,'forwarded');
+   await x.base.revokeAssetShareLink('owner',token);await assert.rejects(x.access.requireExternalLeadAction(token,'reports'),e=>e.status===404);
+  }
  }finally{await x.pg.close();}
 });
-test('declined access cannot be reclaimed and transferred assets cannot be approved',async()=>{
+test('bearer write locks preserve permissions, ownership and revocation',async()=>{
  const x=await setup();try{
-  const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'owner-approval',recipientEmail:''},[x.report]);
-  x.signIn();x.state.approved=true;await x.access.requestExternalLeadAccess(token);
-  x.signIn({id:'owner',email:'owner@example.com'});await x.access.reviewExternalAccessRequest(token,'recipient','rejected');
-  x.signIn();await assert.rejects(x.access.requestExternalLeadAccess(token),e=>e.status===403);
-  x.signIn({id:'other',email:'other@example.com'});await x.access.requestExternalLeadAccess(token);
+  const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'signed-in',recipientEmail:''},[x.report]);
+  x.signIn();const live=x.mocks['./live-shared-asset-access'];
+  const scope=await live.requireLiveSharedAsset(token,A,'serialNumber',true);
+  const client={query:(sql,args)=>x.pg.query(sql,args)};
+  await live.lockLiveSharedAsset(client,scope);
+  await assert.rejects(live.requireLiveSharedAsset(token,B,'serialNumber',true));
+  await assert.rejects(live.requireLiveSharedAsset(token,A,'maintenanceSchedules',true));
+  await x.base.revokeAssetShareLink('owner',token);await assert.rejects(live.lockLiveSharedAsset(client,scope));
+ }finally{await x.pg.close();}
+});
+test('targeted links remain bound to the selected account',async()=>{
+ const x=await setup();try{
+  await x.pg.query("UPDATE asset_share_links SET lead_details=lead_details || $2::jsonb WHERE token=$1",[x.link.token,JSON.stringify({recipientUserId:'recipient'})]);
+  x.signIn({id:'another-account'});await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'reports'));
+  x.signIn();x.state.approved=true;assert.equal((await x.access.requireExternalLeadAction(x.link.token,'reports')).user.id,'recipient');
   await x.pg.query('UPDATE asset_register_items SET user_id=$1 WHERE id=$2',['new-owner',A]);
-  x.signIn({id:'owner',email:'owner@example.com'});await assert.rejects(x.access.reviewExternalAccessRequest(token,'other','approved'),e=>e.status===403);
+  await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'reports'));
  }finally{await x.pg.close();}
 });
-test('access API ignores supplied identity and rejects foreign writes and non-owner approvals',async()=>{
- const x=await setup();try{
-  const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'owner-approval',recipientEmail:''},[x.report]);
-  const {NextRequest}=require('next/server');
-  const route=load('app/api/asset-share-links/[token]/access/route.ts',{
-   '../../../../../lib/sharing-foundation':x.foundation,'../../../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.test')throw Error('Foreign origin');},businessBody:r=>r.json(),businessJson:(data,status=200)=>Response.json(data,{status}),businessError:e=>Response.json({error:e.message},{status:400})},
-   '../../../../../lib/external-lead-access':x.access,'../../../../../lib/business-network':{limitBusinessAction:async()=>{}},'../../../../../lib/auth-session':x.mocks['./auth-session'],
-  });
-  const ctx={params:{token}},url='https://aim4price.test/api/asset-share-links/'+token+'/access';
-  const request=(method,body={},origin='https://aim4price.test')=>new NextRequest(url,{method,headers:{origin,'Content-Type':'application/json'},...(method==='GET'?{}:{body:JSON.stringify(body)})});
-  assert.equal((await route.POST(request('POST'),ctx)).status,401);
-  x.signIn();x.state.approved=true;
-  assert.equal((await route.POST(request('POST',{},'https://foreign.test'),ctx)).status,400);
-  assert.equal((await route.POST(request('POST',{userId:'owner',email:'spoofed@example.com'}),ctx)).status,200);
-  const saved=(await x.pg.query('SELECT * FROM asset_share_access_requests WHERE token=$1',[token])).rows[0];assert.equal(saved.user_id,'recipient');assert.equal(saved.email,'workshop@example.com');
-  assert.equal((await route.GET(request('GET'),ctx)).status,403);
-  assert.equal((await route.PATCH(request('PATCH',{userId:'recipient',decision:'approved'}),ctx)).status,403);
-  x.signIn({id:'owner',email:'owner@example.com'});
-  assert.equal((await route.PATCH(request('PATCH',{userId:'recipient',decision:'approved'},'https://foreign.test'),ctx)).status,400);
-  assert.equal((await route.PATCH(request('PATCH',{userId:'recipient',decision:'approved'}),ctx)).status,200);
- }finally{await x.pg.close();}
-});
-
 test('shared Excel reports retain their format and remain gated like PDFs',async()=>{
  const x=await setup();try{
   const workbook=load('lib/simple-xlsx.ts').createXlsxWorkbook([{name:'Asset report',rows:[['Asset','Value'],['Bakkie',100000]]}]);
@@ -213,20 +185,16 @@ test('legacy guests must sign in to a permanent account before downloading repor
  }finally{await x.pg.close();}
 });
 
-test('legacy WhatsApp-only enquiries require an owner-approved permanent account',async()=>{
+test('legacy WhatsApp links also open with the sender-selected permissions after sign-in',async()=>{
  const x=await setup();try{
   const link=await x.leads.createGuestLead('owner',[A],false,{...x.details,recipientEmail:'',recipientWhatsApp:'+27821234567',permissions:permissions.EMPTY_EXTERNAL_PERMISSIONS},[]);
   const lead=()=>x.leads.readLeadPage(link.token);
   assert.equal((await x.access.externalLeadAccess(await lead())).access,'sign-in');
-  x.signIn();
-  assert.equal((await x.access.externalLeadAccess(await lead())).access,'request-access');
-  await x.access.requestExternalLeadAccess(link.token);
-  x.state.type='owner';x.signIn({id:'owner',email:'owner@example.com'});
-  await x.access.reviewExternalAccessRequest(link.token,'recipient','approved');
-  x.state.type='business';x.signIn();
-  assert.equal((await x.access.externalLeadAccess(await lead())).access,'read-only');
-  x.signIn({id:'forwarded',email:'another@example.com'});
-  assert.equal((await x.access.externalLeadAccess(await lead())).access,'wrong-recipient');
+  x.signIn();assert.equal((await x.access.externalLeadAccess(await lead())).access,'active');
+  await assert.rejects(x.access.requireExternalLeadAction(link.token,'serialNumber'));
+  await x.foundation.recordSharingUsage({accountId:'recipient',actorId:'recipient',token:link.token,metric:'enquiry_opened',eventKey:link.token});
+  assert.ok((await x.leads.listReceivedSharedEnquiries()).some(item=>item.token===link.token));
+  x.signIn({id:'forwarded',email:'another@example.com'});assert.equal((await x.access.externalLeadAccess(await lead())).access,'active');
  }finally{await x.pg.close();}
 });
 
@@ -253,6 +221,8 @@ test('free Dealer recipients keep verified access without Desktop and zero draft
  const x=await setup();try{
   x.signIn();x.state.type='dealer';x.state.status='pending_payment';
   await x.foundation.registerFreeSharingAccount('recipient');
+  x.signIn({emailVerified:false});assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(x.link.token))).access,'verify-email');
+  x.signIn();
   await x.foundation.saveSharingAllowances('admin',{assets:0,uploads:0,interactions:0,emails:0});
   assert.equal((await x.access.externalLeadAccess(await x.leads.readLeadPage(x.link.token))).access,'active');
   await x.docs.submitLeadDocument(x.link.token,{kind:'invoice'},{data:Buffer.from('%PDF-1.4'),fileName:'invoice.pdf',contentType:'application/pdf'},'recipient');
