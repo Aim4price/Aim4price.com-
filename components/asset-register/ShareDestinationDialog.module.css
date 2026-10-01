@@ -64,3 +64,14 @@
 .historyActions { display:flex; justify-content:center; gap:1rem; padding-top:1.2rem; }
 .historyActions button { border:1px solid var(--app-line,#ccdcd4); border-radius:.8rem; padding:.7rem 1.1rem; background:var(--app-surface,#fff); color:var(--app-text,#15392f); font:inherit; font-weight:650; cursor:pointer; }
 .historyActions button:hover { background:var(--app-surface-soft,#edf6f1); }
+
+.subject { min-width:0; }
+.eyebrow { display:block; margin-bottom:.6rem; font-size:.8rem; font-weight:750; letter-spacing:.08em; text-transform:uppercase; color:var(--app-muted,#64746a); }
+.header .subject h3 { white-space:normal; overflow-wrap:anywhere; font-size:1.65rem; line-height:1.25; }
+.header .subject p { white-space:normal; font-weight:500; }
+.historyActions { border-top:1px solid var(--app-line,#dce5df); margin-top:1.5rem; padding-top:1.2rem; }
+.historyActions button { display:flex; align-items:center; gap:.8rem; width:100%; padding:1rem 1.1rem; text-align:left; }
+.historyActions svg { width:1.3rem; height:1.3rem; flex:none; }
+.historyHint { margin-left:auto; color:var(--app-muted,#64746a); font-size:.85rem; font-weight:500; }
+.historyActions button:focus-visible { outline:3px solid var(--app-accent,#719e8f); outline-offset:3px; }
+.liveNote { margin:0 0 1rem; color:var(--app-muted,#64746a); font-size:.85rem; line-height:1.5; }
