@@ -15,6 +15,7 @@ export const ASSET_SHARE_SCHEMA = `CREATE TABLE IF NOT EXISTS public.asset_share
   revoked_at timestamptz
 );
 ALTER TABLE public.asset_share_links ADD COLUMN IF NOT EXISTS umbrella_name text;
+ALTER TABLE public.asset_share_links ADD COLUMN IF NOT EXISTS history_deleted_at timestamptz;
 ALTER TABLE public.asset_share_links ADD COLUMN IF NOT EXISTS umbrella_id uuid;
 ALTER TABLE public.asset_share_links ADD COLUMN IF NOT EXISTS include_photos boolean;
 ALTER TABLE public.asset_share_links ADD COLUMN IF NOT EXISTS display_options jsonb;
