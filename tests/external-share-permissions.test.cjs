@@ -131,6 +131,17 @@ test('untargeted links open after verification or existing-account sign-in, with
   }
  }finally{await x.pg.close();}
 });
+test('shared-link uploads are recorded only after an authorised file is saved',async()=>{
+ const x=await setup();try{
+  const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'signed-in',recipientEmail:''},[x.report]);
+  x.signIn();const file={fileName:'invoice.pdf',contentType:'application/pdf',data:Buffer.from('%PDF-1.4')};
+  await x.docs.submitLeadDocument(token,{kind:'invoice'},file,'recipient');
+  assert.equal((await x.foundation.sharingUsageSummary('recipient')).upload.count,1);
+  await x.base.revokeAssetShareLink('owner',token);
+  await assert.rejects(x.docs.submitLeadDocument(token,{kind:'invoice'},file,'recipient'));
+  assert.equal((await x.foundation.sharingUsageSummary('recipient')).upload.count,1);
+ }finally{await x.pg.close();}
+});
 test('bearer write locks preserve permissions, ownership and revocation',async()=>{
  const x=await setup();try{
   const {token}=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'signed-in',recipientEmail:''},[x.report]);

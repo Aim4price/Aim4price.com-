@@ -31,7 +31,7 @@ export default function PricingContent() {
         <Link href="/business/join" className={styles.accountCard}>
           <strong className={styles.accountTitle}>Business</strong>
           <span className={styles.accountDescription}>Get estimates, receive leads and browse the marketplace.</span>
-          <span className={styles.cardPrice}><strong>R199</strong> / month after x credits</span>
+          <span className={styles.cardPrice}><strong>R199</strong> / month after credits</span>
           <span className={styles.cardAction}>Create Business account</span>
         </Link>
       </section>

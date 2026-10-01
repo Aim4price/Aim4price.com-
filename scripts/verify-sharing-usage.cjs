@@ -1,0 +1,86 @@
+/* Customer billing and email visual checks with synthetic data; no real email or account writes. */
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('puppeteer-core'),chromium=require('@sparticuz/chromium');
+const root=path.resolve(__dirname,'..'),modules={},sheets=[];
+let cssIndex=0;
+const stubs={
+ 'lib/sharing-foundation':'exports.sharingPlan=async()=>"desktop";',
+ 'lib/guest-enquiry-credits':'exports.guestCreditLimit=()=>null;',
+ 'lib/guest-business-access':'exports.getGuestViewer=async()=>null;',
+ 'components/AppHeader':'module.exports=()=>null;',
+ 'lib/account-access':'exports.getAccountAccess=async()=>({isActive:false,isAdmin:false});',
+ 'lib/account-profile':'exports.getAccountProfile=async()=>({accountType:"owner"});',
+ 'lib/auth-session':'exports.getAnyServerSession=async()=>globalThis.fixtureAnonymous?null:({user:{id:"test",email:"customer@example.test"}});',
+ 'lib/middleman-account':'exports.isMiddlemanAccountSubtype=()=>false;'
+};
+function cssModule(file){
+ const prefix='c'+cssIndex+++'_',map={},sheet=postcss.parse(fs.readFileSync(path.join(root,file),'utf8'));
+ sheet.walkRules(rule=>{
+  const globals=[];let selector=rule.selector;
+  while(selector.includes(':global(')){
+   const start=selector.indexOf(':global(');let end=start+8,depth=1;
+   for(;depth&&end<selector.length;end++){if(selector[end]==='(')depth++;else if(selector[end]===')')depth--;}
+   const token='GLOBALTOKEN'+globals.length;
+   globals.push(selector.slice(start+8,end-1));selector=selector.slice(0,start)+token+selector.slice(end);
+  }
+  selector=selector.replace(/\.([a-zA-Z_][\w-]*)/g,(_,name)=>{map[name]=prefix+name;return '.'+prefix+name;});
+  globals.forEach((value,index)=>{selector=selector.replace('GLOBALTOKEN'+index,value);});
+  rule.selector=selector;
+ });
+ sheets.push(sheet.toString());modules[file]='module.exports='+JSON.stringify(map);
+}
+function add(file){
+ if(Object.hasOwn(modules,file))return;
+ if(file.endsWith('.css')){cssModule(file);return;}
+ if(stubs[file]){modules[file]=stubs[file];return;}
+ const filename=['.tsx','.ts','.json',''].map(ext=>path.join(root,file+ext)).find(fs.existsSync);
+ if(!filename)throw Error('Missing module '+file);
+ if(filename.endsWith('.json')){modules[file]='module.exports='+fs.readFileSync(filename,'utf8');return;}
+ modules[file]='';
+ const code=ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
+ modules[file]=code.replace(/require\(["']([^"']+)["']\)/g,(match,name)=>{
+  if(!name.startsWith('.'))return match;
+  const resolved=path.posix.normalize(path.posix.join(path.posix.dirname(file),name));add(resolved);
+  return 'require('+JSON.stringify(resolved)+')';
+ });
+}
+
+add('app/auth/auth-client');
+add('app/admin/sharing/usage');
+add('app/pricing/pricing-content');
+const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
+const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
+const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
+ 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({prefetch:()=>{},refresh:()=>{},push:()=>{}}),usePathname:()=>"/admin"};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
+
+(async()=>{
+ const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true});
+ try{
+ const page=await browser.newPage();const requests=[],errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message);});
+ await page.setRequestInterception(true);page.on('request',r=>{const u=new URL(r.url());if(u.pathname==='/api/admin/sharing'){requests.push(JSON.parse(r.postData()));return r.respond({contentType:'application/json',body:'{"ok":true}'});}if(u.pathname==='/api/billing/plans')return r.respond({status:503,contentType:'application/json',body:'{}'});if(u.pathname.startsWith('/api/'))return r.respond({contentType:'application/json',body:u.pathname.includes('session')?'null':'{}'});return r.respond({contentType:'text/html',body:'<html></html>'});});
+ const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
+ await page.setViewport({width:1440,height:1000});
+ async function render(module,props,url='/'){
+  await page.goto('https://usage.test'+url);
+  await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:10px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32}button,input,select{font:inherit}'+sheets.join('\n')+'</style><div id="app" style="padding:24px"></div>');
+  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
+  await page.addScriptTag({content:runtime+'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require('+JSON.stringify(module)+').default,'+JSON.stringify(props)+'));'});
+  await page.evaluate(()=>document.fonts.ready);
+ }
+ const accounts=[{user_id:'free',name:'Example Workshop',email:'workshop@example.test',plan:'free',account_status:'active',assets:12,opens:34,uploads:5,bytes:'5242880',contributions:8,emails:4,failed:1,sessions:2,last_activity:'2026-10-01T10:00:00Z'},{user_id:'owner',name:'Example Farm',email:'farm@example.test',plan:'desktop',account_status:'active',assets:0,opens:1,uploads:0,bytes:'0',contributions:0,emails:1,failed:0,sessions:1,last_activity:null}];
+ await render('app/admin/sharing/usage',{accounts,period:'month',adminId:'admin'});
+ await page.waitForSelector('tbody tr');assert.equal(await page.$$eval('tbody tr',nodes=>nodes.length),2);
+ await page.screenshot({path:'/tmp/sharing-usage-admin.png'});
+ await page.type('input[type=search]','Workshop');assert.equal(await page.$$eval('tbody tr',nodes=>nodes.length),1);
+ await page.click('tbody button');await page.waitForSelector('dialog[open]');
+ async function click(text){await page.$$eval('button',(nodes,text)=>nodes.find(n=>n.textContent===text).click(),text);}
+ await click('Sign out user');assert.equal(requests.length,0);await click('Cancel');assert.equal(requests.length,0);await click('Sign out user');await click('Confirm sign out');await page.waitForFunction(()=>document.body.textContent.includes('User signed out.'));
+ assert.deepEqual(requests,[{action:'sign-out',userId:'free'}]);await page.screenshot({path:'/tmp/sharing-usage-manage.png'});await page.keyboard.press('Escape');assert.equal(await page.$('dialog[open]'),null);
+ await render('app/auth/auth-client',{},'/auth?accountType=dealer#signup');await page.waitForSelector('h1');await page.waitForSelector('[aria-label^="Choose your access"]');
+ const geometry=await page.evaluate(()=>['What would you like to use Aim4price for?','Which best describes your work?'].map(label=>document.querySelector('[aria-label^="'+label+'"]')?.getBoundingClientRect().top));
+ assert(Math.abs(geometry[0]-geometry[1])<2,'Account type and work controls align');
+ await page.screenshot({path:'/tmp/sharing-signup-alignment.png',fullPage:true});
+ await render('app/pricing/pricing-content',{});await page.waitForSelector('h1');assert(!await page.evaluate(()=>document.body.textContent.includes('x credits')));
+ assert.deepEqual(errors,[]);console.log('PASS signup alignment, pricing copy, usage search, sign-out confirmation and request identity');
+ }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});
