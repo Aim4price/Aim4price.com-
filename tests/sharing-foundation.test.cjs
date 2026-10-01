@@ -98,3 +98,34 @@ test('migration can be repeated without changing existing account usage',async()
  assert.equal(await x.lib.sharingPlan('dealer'),'free');assert.equal((await x.lib.sharingUsageSummary('dealer')).enquiry_opened.count,1);
  }finally{await x.pg.close();}
 });
+
+test('History deletion is owner-only, requires revocation and keeps the revoked link record',async()=>{
+ const {NextRequest}=require('next/server');const pg=new PGlite();
+ const active='a'.repeat(43),revoked='r'.repeat(43),foreign='f'.repeat(43),assetId='10000000-0000-4000-8000-000000000001';
+ let session={user:{id:'owner'}};let allowed=true;
+ try {
+  await pg.exec('CREATE TABLE asset_share_links(token text PRIMARY KEY,user_id text,revoked_at timestamptz,created_at timestamptz DEFAULT now(),asset_ids uuid[],umbrella_id uuid,umbrella_name text,lead_details jsonb);');
+  const migration=fs.readFileSync('database/migrations/124-share-history-removal.sql','utf8');await pg.exec(migration);await pg.exec(migration);
+  for(const [token,owner,isRevoked] of [[active,'owner',false],[revoked,'owner',true],[foreign,'other',true]])await pg.query('INSERT INTO asset_share_links(token,user_id,revoked_at,asset_ids) VALUES($1,$2,$3,$4)',[token,owner,isRevoked?new Date():null,[assetId]]);
+  const route=load('app/api/asset-share-links/history/route.ts',{
+   '../../../../lib/auth-session':{getServerSession:async()=>session},
+   '../../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>allowed},
+   '../../../../lib/guest-lead-schema':{ensureGuestLeadSchema:async()=>{}},
+   '../../../../lib/db':{getDb:()=>pg},
+   '../../../../lib/asset-share-snapshot':{parseShareAssetIds:ids=>ids},
+   '../../../../lib/business-network-api':{requireBusinessOrigin:r=>{if(r.headers.get('origin')!=='https://aim4price.com')throw Error('Origin');},businessBody:r=>r.json()},
+  });
+  const remove=(token,origin='https://aim4price.com')=>route.DELETE(new NextRequest('https://aim4price.com/api/asset-share-links/history',{method:'DELETE',headers:{origin,'content-type':'application/json'},body:JSON.stringify({token})}));
+  session=null;assert.equal((await remove(revoked)).status,403);session={user:{id:'owner'}};
+  allowed=false;assert.equal((await remove(revoked)).status,403);allowed=true;
+  assert.equal((await remove(revoked,'https://other.test')).status,400);
+  assert.equal((await remove(active)).status,409);assert.equal((await remove(foreign)).status,409);
+  assert.equal((await remove('bad')).status,400);
+  assert.equal((await remove(revoked)).status,200);assert.equal((await remove(revoked)).status,200);
+  const rows=(await pg.query('SELECT * FROM asset_share_links ORDER BY token')).rows;
+  assert.equal(rows.length,3);assert.ok(rows.find(r=>r.token===revoked).revoked_at);assert.ok(rows.find(r=>r.token===revoked).history_deleted_at);
+  assert.equal(rows.find(r=>r.token===foreign).history_deleted_at,null);
+  const history=await route.GET(new NextRequest('https://aim4price.com/api/asset-share-links/history?assetId='+assetId));
+  assert.deepEqual((await history.json()).shares.map(r=>r.token),[active]);
+ } finally {await pg.close();}
+});
