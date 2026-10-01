@@ -1,5 +1,7 @@
 'use client';
-import { createExternalShareFileCache, prepareExternalShareFiles, type ExternalShareFileSource } from '../../lib/external-file-share';
+import { type ExternalShareFileSource } from '../../lib/external-file-share';
+import AssetAccessSettingsDialog from '../asset-register/AssetAccessSettingsDialog';
+import assetStyles from '../../app/asset-register/page.module.css';
 import { DealerMaintenancePermissionPicker } from '../DealerMaintenanceAccessSettings';
 import ShareDisclaimer from '../asset-register/ShareDisclaimer';
 import ShareDisclosureDialog from '../asset-register/ShareDisclosureDialog';
@@ -7,23 +9,19 @@ import ShareDisclosureDialog from '../asset-register/ShareDisclosureDialog';
 import { useEffect, useId, useRef, useState } from 'react';
 import { buildEmailShareUrl, buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import styles from './BusinessListingInvite.module.css';
-import { EXTERNAL_SHARE_OPTIONS, EMPTY_EXTERNAL_PERMISSIONS, type ExternalSharePermissions } from '../../lib/external-share-permissions';
+import { assetLinkPermissions, type ExternalSharePermissions } from '../../lib/external-share-permissions';
 
 export type BusinessListingInviteProps = { sendLink?: boolean; onDismiss?: () => void; senderName?: string; umbrellaId?: string; assetIds: string[]; includePhotos?: boolean; reportAssets?: {id:string;title:string}[]; reportUmbrellaName?: string; onChooseReport?: (assetId:string|null, onComplete:(source:ExternalShareFileSource|null)=>void)=>void };
-export default function BusinessListingInvite({ sendLink = false, onDismiss, assetIds, includePhotos = false, umbrellaId, reportAssets = [], reportUmbrellaName, onChooseReport }: BusinessListingInviteProps) {
+export default function BusinessListingInvite({ sendLink = false, onDismiss, assetIds, umbrellaId, reportAssets = [], reportUmbrellaName, onChooseReport }: BusinessListingInviteProps) {
   const titleId = useId();
   const descriptionId = useId();
   const trigger = useRef<HTMLButtonElement>(null);
-  const [step, setStep] = useState<'permissions'|'recipient'|'reports'>('permissions');
-  const [permissions, setPermissions] = useState<ExternalSharePermissions>({...EMPTY_EXTERNAL_PERMISSIONS});
-  const [reports, setReports] = useState<ExternalShareFileSource[]>([]);
-  const fileCache = useRef(createExternalShareFileCache());
-  const [choosingReport,setChoosingReport] = useState(false);
-  const protectedActions = EXTERNAL_SHARE_OPTIONS.some(option=>permissions[option.key]);
+  const [step, setStep] = useState<'permissions'|'recipient'>('permissions');
+  const [permissions, setPermissions] = useState<ExternalSharePermissions>(assetLinkPermissions());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const opening = useRef(false);
-  const [selection, setSelection] = useState<{assetIds: string[]; includePhotos: boolean; umbrellaId?: string} | null>(sendLink ? {assetIds: [...assetIds], includePhotos, umbrellaId} : null);
+  const [selection, setSelection] = useState<{assetIds: string[]; includePhotos: boolean; umbrellaId?: string} | null>(sendLink ? {assetIds: [...assetIds], includePhotos:true, umbrellaId} : null);
   const [accepted, setAccepted] = useState(false);
   const requestVersion = useRef(0);
   useEffect(() => () => { requestVersion.current++; }, []);
@@ -32,9 +30,6 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
   const copyButton = useRef<HTMLButtonElement>(null);
   useEffect(() => { if (link) copyButton.current?.focus(); }, [link]);
   const [notice, setNotice] = useState('');
-  const [history,setHistory]=useState<{token:string;recipient_name:string;recipient_email:string;revoked_at:string|null;pending_documents:number;pending_access?:number}[]>([]);
-  const historyKey=selection?.assetIds.join(',')||'';
-  useEffect(()=>{if(sendLink || !historyKey)return;const controller=new AbortController();const params=new URLSearchParams();historyKey.split(',').forEach(id=>params.append('assetId',id));void fetch(`/api/asset-share-links/leads?${params}`,{signal:controller.signal,cache:'no-store'}).then(r=>r.json()).then(d=>{if(!controller.signal.aborted)setHistory(d.leads||[]);}).catch(()=>{});return()=>controller.abort();},[historyKey,sendLink]);
   const [showCopyField, setShowCopyField] = useState(false);
   const copy = {
     subject: sendLink ? 'Shared assets on Aim4price' : 'An invitation to the Aim4price business directory',
@@ -43,15 +38,12 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
 
   function open() {
     if (!assetIds.length) { setError('Select the assets you want to include in this enquiry.'); return; }
-    setSelection({assetIds: [...assetIds], includePhotos, ...(umbrellaId ? { umbrellaId } : {})});
-    setHistory([]); setStep('permissions'); setPermissions({...EMPTY_EXTERNAL_PERMISSIONS}); setReports([]);
-    setChoosingReport(false);fileCache.current.clear();
+    setSelection({assetIds: [...assetIds], includePhotos:true, ...(umbrellaId ? { umbrellaId } : {})});
+    setStep('permissions'); setPermissions(assetLinkPermissions());
     setAccepted(false); setLink(''); setError(''); setNotice(''); setShowCopyField(false);
   }
 
   function close() {
-    fileCache.current.clear();
-    setChoosingReport(false);
     requestVersion.current++;
     setSelection(null); setLink(''); setAccepted(false);
     opening.current = false; setBusy(false);
@@ -69,20 +61,13 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
       if (!selection.assetIds.length) throw new Error('Select the assets you want to include in this enquiry.');
       const url = new URL('/business-network/accept', window.location.origin);
       let response: Response;
-      if (sendLink || protectedActions) {
+      {
         const form = new FormData();
         form.set('assetIds', JSON.stringify(selection.assetIds));
         form.set('includePhotos', String(selection.includePhotos));
         if (selection.umbrellaId) form.set('umbrellaId', selection.umbrellaId);
         form.set('details', JSON.stringify({ accessMode: 'owner-approval', recipientName: '', recipientEmail: '', request: 'Please open the shared assets.', replyPhone: '', allowReply: false, permissions }));
-        if (permissions.reports) {
-          const files = await prepareExternalShareFiles(reports, fileCache.current);
-          if (version !== requestVersion.current) return;
-          files.forEach(file => form.append('reports', file));
-        }
         response = await fetch('/api/asset-share-links/leads', { method: 'POST', body: form });
-      } else {
-        response = await fetch('/api/asset-share-links', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(selection) });
       }
       const data = await response.json();
       if (!response.ok || !data.share?.token) throw new Error(data.error || 'Unable to prepare the enquiry. Please try again.');
@@ -92,27 +77,6 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
     } catch (cause) {
       if (version === requestVersion.current) setError(cause instanceof Error ? cause.message : 'Unable to prepare the enquiry. Please try again.');
     } finally { if (version === requestVersion.current) { opening.current = false; setBusy(false); } }
-  }
-
-  function chooseReports() {
-    if (!selection) return;
-    if (!onChooseReport) { setError('Report options are unavailable. Please reopen sharing from the asset register.'); return; }
-    if (reportUmbrellaName) openReport(null);
-    else if (selection.assetIds.length === 1) openReport(selection.assetIds[0]);
-    else setStep('reports');
-  }
-  function openReport(assetId:string|null) {
-    if (!onChooseReport) return;
-    const version=requestVersion.current;
-    setChoosingReport(true);setError('');
-    onChooseReport(assetId,source=>{
-      if(version!==requestVersion.current)return;
-      setChoosingReport(false);setStep('permissions');
-      if(!source)return;
-      if(reports.some(report=>report.id===source.id))return;
-      if(reports.length>=6){setError('Choose up to six reports. Remove a report before adding another.');return;}
-      setReports(current=>[...current,source]);setPermissions(current=>({...current,reports:true}));setAccepted(false);
-    });
   }
 
   async function copyLink() {
@@ -125,24 +89,28 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
     }
   }
 
+  const Dialog = !link && step === 'permissions' ? AssetAccessSettingsDialog : ShareDisclosureDialog;
   return <>
     {!sendLink && <button ref={trigger} type="button" className={styles.trigger} aria-haspopup="dialog" disabled={busy} onClick={() => void open()}>
       <span>{busy ? 'Preparing enquiry…' : 'Business not listed?'}</span><span aria-hidden="true">+</span>
     </button>}
     {error && !selection && <p role="alert">{error}</p>}
-    {selection && !choosingReport && <ShareDisclosureDialog className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Business/Dealer asset settings" : step === 'reports' ? "Choose report source" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close}>
-        {(link || (step !== 'recipient' && step !== 'reports')) && <p id={descriptionId} className={styles.description}>{`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`}</p>}
+    {selection && <Dialog linkSettings assetTitle={reportUmbrellaName || (selection.assetIds.length===1 ? reportAssets.find(asset=>asset.id===selection.assetIds[0])?.title || 'Selected asset' : `${selection.assetIds.length} selected assets`)} className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Asset link settings" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close}>
+        {link && <p id={descriptionId} className={styles.description}>{`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`}</p>}
         {!link && step === 'permissions' && <>
-          <p className={styles.hint}>Choose what this business/dealer can view and update. These permissions apply to the live owner asset as soon as recipient access is approved. Use Share read-only to allow viewing without changes.</p>
-          <div className={styles.permissions}>
-            <label className={styles.permission}><input type="checkbox" checked={selection.includePhotos} onChange={e => {setSelection({...selection, includePhotos:e.target.checked});setAccepted(false);}}/><span><strong>Asset photos</strong><small>Include saved photos in the link preview.</small></span></label>
-            <button type="button" className={`${styles.permission} ${styles.reportButton}`} onClick={chooseReports}><span><strong>Attach reports</strong><small>{reports.length} selected</small></span></button>
-
+          <div className={assetStyles.dealerTrackingIntro}>
+            <strong>Choose what this business/dealer can access</strong>
+            <p>Asset photos and all reports are always included, using the latest asset information.</p>
           </div>
-          <DealerMaintenancePermissionPicker value={{canViewLoggedProblems:permissions.loggedProblems===true,canViewMaintenanceReports:permissions.maintenanceReports===true,canViewCostOfOwnership:permissions.costOfOwnership===true,canCreateMaintenanceSchedules:permissions.maintenanceSchedules===true,canUpdateSerial:permissions.serialNumber,canUpdateReplacementPrice:permissions.replacementPrice}} onChange={value=>{setPermissions(current=>({...current,loggedProblems:value.canViewLoggedProblems,maintenanceReports:value.canViewMaintenanceReports,costOfOwnership:value.canViewCostOfOwnership,maintenanceSchedules:value.canCreateMaintenanceSchedules,serialNumber:value.canUpdateSerial,replacementPrice:value.canUpdateReplacementPrice,directUpdates:true}));setAccepted(false);}}/>
-          {reports.length > 0 && permissions.reports && <div className={styles.reportSummary}>{reports.map(report=><div key={report.id}><span>{report.label}</span><button type="button" className={styles.copy} aria-label={`Remove ${report.label}`} onClick={()=>{const next=reports.filter(item=>item.id!==report.id);setReports(next);setPermissions(current=>({...current,reports:next.length>0}));setAccepted(false);}}>Remove</button></div>)}</div>}
-          {!sendLink&&history.length>0&&<details className={styles.history}><summary>Previous invitations ({history.length})</summary>{history.map(item=><div key={item.token}><span>{item.recipient_name||item.recipient_email||'Awaiting recipient approval'}{item.revoked_at?' · Disabled':''}{item.pending_access?` · ${item.pending_access} access request(s)`:''}{item.pending_documents?` · ${item.pending_documents} document(s) to review`:''}</span>{!item.revoked_at&&<><a href={`/asset-share/${item.token}`} target="_blank" rel="noreferrer">Review enquiry</a><button type="button" className={styles.copy} disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const r=await fetch('/api/asset-share-links',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:item.token})});if(!r.ok)throw Error('Could not disable the invitation.');setHistory(current=>current.map(row=>row.token===item.token?{...row,revoked_at:new Date().toISOString()}:row));}catch(e){setError(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}}>Disable</button></>}</div>)}</details>}
-          <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setPermissions({...EMPTY_EXTERNAL_PERMISSIONS});setStep('recipient');}}>Share read-only</button><button type="button" className={styles.primary} onClick={()=>setStep('recipient')}>Continue</button></div>
+          <DealerMaintenancePermissionPicker
+            value={{canViewLoggedProblems:permissions.loggedProblems===true,canViewMaintenanceReports:true,canViewCostOfOwnership:true,canCreateMaintenanceSchedules:permissions.maintenanceSchedules===true,canUpdateSerial:permissions.serialNumber,canUpdateReplacementPrice:permissions.replacementPrice}}
+            lockedPermissions={['canViewMaintenanceReports','canViewCostOfOwnership']}
+            onChange={value=>{setPermissions(assetLinkPermissions({loggedProblems:value.canViewLoggedProblems,maintenanceSchedules:value.canCreateMaintenanceSchedules,serialNumber:value.canUpdateSerial,replacementPrice:value.canUpdateReplacementPrice}));setAccepted(false);}}
+          />
+          <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
+            <button type="button" className={assetStyles.secondaryButton} onClick={()=>{setPermissions(assetLinkPermissions());setStep('recipient');}}>Share read-only</button>
+            <button type="button" className={assetStyles.primaryButton} onClick={()=>setStep('recipient')}>Continue</button>
+          </div>
         </>}
         {!link && step === 'recipient' && <form className={styles.form} onSubmit={e=>{e.preventDefault();void prepare();}}>
           <fieldset disabled={busy}>
@@ -150,7 +118,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
             <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('permissions');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : sendLink ? 'Create asset link' : 'Create invitation link'}</button></div>
           </fieldset>
         </form>}
-        {!link && step === 'reports' && <><p className={styles.description}>Choose an asset to open its report options.</p><div className={styles.permissions}>{reportUmbrellaName && <button type="button" className={styles.permission} onClick={()=>openReport(null)}><span><strong>{reportUmbrellaName}</strong><small>Umbrella reports</small></span></button>}{selection.assetIds.map(id=><button type="button" className={styles.permission} key={id} onClick={()=>openReport(id)}><span><strong>{reportAssets.find(asset=>asset.id===id)?.title || 'Selected asset'}</strong><small>Choose report</small></span></button>)}</div><button type="button" className={styles.copy} onClick={()=>setStep('permissions')}>Back</button></>}
+
 
         {error && <p role="alert">{error}</p>}
         {link && <>
@@ -175,6 +143,6 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
         </footer>
         {showCopyField && <input className={styles.copyField} aria-label={sendLink ? "Asset link" : "Business invitation link"} readOnly value={link} onFocus={event => event.currentTarget.select()}/>}
         </>}
-      </ShareDisclosureDialog>}
+      </Dialog>}
   </>;
 }

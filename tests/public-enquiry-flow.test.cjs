@@ -71,10 +71,11 @@ test('invitation requires consent, freezes all selected assets and handles failu
       const slots=[];
       const hook=initial=>{const index=cursor++;if(!(index in slots))slots[index]=initial;return [slots[index],value=>{slots[index]=value}];};
       const Disclaimer=()=>null;
-      global.fetch=async(url,options)=>{sent=JSON.parse(options.body);return{ok:!failed,json:async()=>failed?{error:'Unable to share selected assets'}:{share:{token}}};};
+      global.fetch=async(url,options)=>{sent=options.body;return{ok:!failed,json:async()=>failed?{error:'Unable to share selected assets'}:{share:{token}}};};
       const Invite=load('components/business-network/BusinessListingInvite.tsx',{
         react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:value=>hook({current:value})[0],useState:hook},
-        '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
+        '../asset-register/AssetAccessSettingsDialog':'dialog',
+    '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
         '../../lib/external-file-share':load('lib/external-file-share.ts'),
         '../asset-register/ShareDisclosureDialog':'dialog',
@@ -97,7 +98,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       render(['different-asset']);
       await walk(view,node=>node.type==='form').props.onSubmit({preventDefault(){}});
       await new Promise(resolve=>setImmediate(resolve));render();
-      assert.deepEqual(sent,{assetIds:ids,includePhotos:false},'Original complete selection is preserved');
+      assert.deepEqual(JSON.parse(sent.get('assetIds')),ids,'Original complete selection is preserved');assert.equal(sent.get('includePhotos'),'true');assert.equal(JSON.parse(sent.get('details')).permissions.allReports,true);
       if(failed){assert.ok(walk(view,node=>node.props?.role==='alert'));assert.ok(!button('Copy link'));}
       else assert.ok(button('Copy link'));
       walk(view,node=>node.type==='dialog').props.onClose();render();
@@ -133,6 +134,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    global.fetch=async(url,options)=>{sent={url,body:options.body};return{ok:!failed,json:async()=>failed?{error:'Could not create link'}:{share:{token}}};};
    const Invite=load('components/business-network/BusinessListingInvite.tsx',{
     react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:v=>hook({current:v})[0],useState:hook},
+    '../asset-register/AssetAccessSettingsDialog':'dialog',
     '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
     '../../lib/external-file-share':load('lib/external-file-share.ts'),
@@ -153,7 +155,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    assert.equal(sent.body.get('umbrellaId'),'fleet');
    assert.deepEqual(JSON.parse(sent.body.get('assetIds')),['asset-a']);
    const details=JSON.parse(sent.body.get('details'));
-   assert.equal(details.accessMode,'owner-approval');assert.ok(Object.values(details.permissions).every(v=>v===false));
+   assert.equal(details.accessMode,'owner-approval');assert.equal(details.permissions.allReports,true);assert.equal(sent.body.get('includePhotos'),'true');for(const key of ['serialNumber','replacementPrice','maintenanceSchedules','documents'])assert.equal(details.permissions[key],false);
    if(failed){assert.ok(walk(view,n=>n.props?.role==='alert'));assert.ok(!button('Copy link'));}
    else {
     assert.ok(walk(view,n=>n.type==='a'&&n.props.href===`https://aim4price.test/asset-share/${token}`));

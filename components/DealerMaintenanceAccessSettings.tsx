@@ -73,6 +73,7 @@ function copyPermissions(value: DealerMaintenancePermissions): DealerMaintenance
 }
 
 type PermissionPickerProps = {
+  lockedPermissions?: Array<keyof DealerMaintenancePermissions>;
   value: DealerMaintenancePermissions;
   onChange: (permissions: DealerMaintenancePermissions) => void;
   disabled?: boolean;
@@ -82,6 +83,7 @@ export function DealerMaintenancePermissionPicker({
   value,
   onChange,
   disabled = false,
+  lockedPermissions = [],
 }: PermissionPickerProps) {
   return (
     <div className={styles.permissions}>
@@ -94,11 +96,11 @@ export function DealerMaintenancePermissionPicker({
             type="checkbox"
             checked={value[option.key]}
             onChange={(event) => onChange({ ...value, [option.key]: event.target.checked })}
-            disabled={disabled}
+            disabled={disabled || lockedPermissions.includes(option.key)}
           />
           <span>
             <strong>{option.title}</strong>
-            <small>{option.description}</small>
+            <small>{lockedPermissions.includes(option.key) ? 'Always included with this asset link.' : option.description}</small>
           </span>
         </label>
       ))}

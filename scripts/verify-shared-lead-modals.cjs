@@ -39,6 +39,7 @@ function add(file){
 
 add('components/asset-register/ExternalLeadActions');
 add('components/leads/LeadManageDialog');
+add('components/business-network/BusinessListingInvite');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -50,7 +51,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  try {
  const page=await browser.newPage(); await page.setViewport({width:1440,height:1000});
  page.on('pageerror',error=>{throw error;});
- await page.setContent('<style>body{margin:0;background:#dce7e0;font-family:Arial;--modal-backdrop-color:rgba(12,24,35,.42);--modal-backdrop-filter:blur(12px)}'+sheets.join('\n')+'</style><div id="app"></div>');
+ await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#dce7e0;font-family:Arial;--modal-backdrop-color:rgba(12,24,35,.42);--modal-backdrop-filter:blur(12px)}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.evaluate(()=>{window.requests=[];window.fetch=async(url,opts)=>{window.requests.push({url,body:opts?.body});return {ok:true,json:async()=>({correction:{id:'correction',status:'pending',serialNumberChanged:true,proposedSerialNumber:'NEW-456'}})}}});
  const props={token:'a'.repeat(43),assetId:'10000000-0000-4000-8000-000000000001',assetIndex:0,assetTitle:'John Deere 6155M',serialNumber:'OLD-123',replacementPrice:900000,permissions:{serialNumber:true,replacementPrice:true,documents:true,reports:true},access:'active',reports:[{id:'report-1',label:'Asset valuation'}]};
@@ -83,6 +84,23 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Cost of Ownership');await page.waitForFunction(()=>document.body.textContent.includes('PDF'));await page.keyboard.press('Escape');
  await click('Create Maintenance Schedules');await page.waitForFunction(()=>document.body.textContent.includes('What are you scheduling?'));assert(await page.$eval('#dealer-maintenance-type-title',node=>{const r=node.getBoundingClientRect();return node.contains(document.elementFromPoint(r.x+5,r.y+5));}),'Schedule must be above Manage');await page.screenshot({path:'/tmp/shared-live-schedule.png'});await page.keyboard.press('Escape');
  await click('Logged Problems');await page.waitForFunction(()=>document.body.textContent.includes('No logged problems.'));await page.keyboard.press('Escape');
+ await page.evaluate(p=>window.renderFixture({...p,permissions:{reports:true,allReports:true,maintenanceReports:true,costOfOwnership:true,serialNumber:false,replacementPrice:false,documents:false}}),props);
+ await page.waitForFunction(()=>!document.body.textContent.includes('Update serial number'));await click('Reports');
+ await page.waitForFunction(()=>document.body.textContent.includes('All reports · latest asset information'));
+ for(const label of ['Asset valuation','Maintenance report','Fuel report','Depreciation log','Cost of ownership','Asset map'])assert(await page.evaluate(t=>document.querySelector('[data-download-dialog]').textContent.includes(t),label));
+ await click('Asset valuation');await page.waitForFunction(()=>document.body.textContent.includes('Choose export format'));
+ assert(!await page.evaluate(()=>document.body.textContent.includes('Choose report timeline')));await page.keyboard.press('Escape');
+ await page.setViewport({width:1440,height:900});
+ await page.addScriptTag({content:'window.fixtureRoot.render(React.createElement(require("components/business-network/BusinessListingInvite").default,{sendLink:true,assetIds:["10000000-0000-4000-8000-000000000001"],reportAssets:[{id:"10000000-0000-4000-8000-000000000001",title:"2023 Toyota Hilux"}]}));'});
+ await page.waitForSelector('[data-asset-link-dialog]');
+ const box=await page.$eval('[data-asset-link-dialog]',node=>({width:node.getBoundingClientRect().width,x:node.getBoundingClientRect().x,scrollHeight:node.scrollHeight,height:node.clientHeight,text:node.textContent}));
+ assert.equal(Math.round(box.width),1160);assert.equal(Math.round(box.x),140);assert(box.scrollHeight<=box.height+1,'Settings fit without scrolling');
+ assert(box.text.includes('Asset link settings'));assert(box.text.includes('2023 Toyota Hilux'));assert(box.text.includes('Asset photos and all reports are always included'));
+ assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',nodes=>nodes.length),2,'Both report permissions are always included');
+ assert(!box.text.includes('Attach reports'));
+ await page.screenshot({path:'/tmp/asset-link-settings.png'});
+ await click('Share read-only');await page.waitForSelector('dialog[open]');
+ assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Before you share')));
  console.log('PASS: shared dialogs, correction endpoint/stable asset ID, Escape return, report link, documents, verification gate and hidden permissions');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

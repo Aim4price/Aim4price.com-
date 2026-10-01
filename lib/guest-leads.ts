@@ -1,5 +1,5 @@
 import { ensureSharingFoundation, recordDeliveredAssets } from './sharing-foundation';
-import { normalizeExternalPermissions, type ExternalSharePermissions } from './external-share-permissions';
+import { assetLinkPermissions, normalizeExternalPermissions, type ExternalSharePermissions } from './external-share-permissions';
 import { canBusinessRead } from './business-accounts';
 import { randomBytes,randomUUID } from 'node:crypto';
 import { getDb } from './db';
@@ -21,7 +21,8 @@ export function validateLeadDetails(input:Record<string,unknown>):LeadDetails{
  if(details.recipientWhatsApp&&!/^\+[1-9]\d{7,14}$/.test(details.recipientWhatsApp))throw new Error('Enter the confirmed WhatsApp number with country code, for example +27821234567.');
  if(!ownerApproval&&details.allowSubmissions&&!details.recipientEmail)throw new Error('Enter the recipient email to protect document submissions.');
  if(input.permissions !== undefined) {
-  const permissions=normalizeExternalPermissions(input.permissions);
+  const normalized=normalizeExternalPermissions(input.permissions);
+  const permissions=normalized.allReports ? assetLinkPermissions(normalized) : normalized;
   if(!ownerApproval&&Object.values(permissions).some(Boolean)&&!details.recipientEmail)throw new Error('Enter the recipient email to protect the selected actions.');
   return {...details,permissions,allowSubmissions:permissions.documents};
  }
@@ -36,8 +37,9 @@ export function sharedReportContentType(report:LeadPdf) {
 }
 export async function createGuestLead(ownerId:string,idsInput:unknown,includePhotos:boolean,details:LeadDetails,reports:LeadPdf[],umbrella?:{id:string;name:string},displayOptions?:{valuation:boolean;replacementPrice:boolean;mainPhotoOnly:boolean}){
  const ids=parseShareAssetIds(idsInput),safe=validateLeadDetails(details);
+ if(safe.permissions?.allReports) includePhotos=true;
  if(safe.permissions && reports.length && !safe.permissions.reports)throw new Error('Enable Reports before attaching reports.');
- if(safe.permissions?.reports && !reports.length)throw new Error('Choose at least one report or switch Reports off.');
+ if(safe.permissions?.reports && !safe.permissions.allReports && !reports.length)throw new Error('Choose at least one report or switch Reports off.');
  if(reports.length&&!safe.recipientEmail&&safe.accessMode!=='owner-approval')throw new Error('Enter the recipient email to restrict report access to their verified account.');
  if(reports.length>6||reports.reduce((n,r)=>n+r.data.length,0)>30*1024*1024||reports.some(r=>r.data.length>8*1024*1024||r.data.length<5||!r.label||r.label.length>200||r.fileName.length>200))throw new Error('Choose up to six PDF or Excel reports, each under 8 MB and 30 MB in total.');
  reports.forEach(sharedReportContentType);

@@ -71,7 +71,7 @@ export default function Validation(){
    if(p==='/api/fixture-pdf')return req.respond({status:200,contentType:'application/pdf',body:'%PDF-1.4 fixture'});
    let body={ok:true};requests.push({path:p,method:req.method(),data:req.postData()});
    if(p==='/api/asset-share-links/leads'){
-    if(req.method()==='POST'){history=[{token,recipient_name:'George Workshop',recipient_email:'business@example.com',created_at:'2026-09-22T00:00:00Z'}];body={share:{token}};}
+    if(req.method()==='POST'){history=[{token,recipient_name:'George Workshop',recipient_email:'business@example.com',created_at:'2026-09-22T00:00:00Z'}];body={share:{token,sender_name:'Saved Business Ltd'}};}
     else body={leads:history,replyName:'Asset Owner',replyEmail:'owner@example.com'};
    }
    if(p==='/api/asset-share-links'&&req.method()==='POST')body={share:{token,sender_name:'Saved Business Ltd'}};
@@ -198,7 +198,7 @@ export default function Validation(){
    await click('find');
    assert.ok(!(await page.evaluate(()=>document.body.textContent)).includes('Invitations & history'));
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');
    await click('Share read-only');
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
@@ -218,23 +218,12 @@ export default function Validation(){
    await page.evaluate(()=>{window.__escapedToParent=false;document.addEventListener('keydown',event=>{if(event.key==='Escape')window.__escapedToParent=true;},{once:true});});
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
    assert.equal(await page.evaluate(()=>window.__escapedToParent),false,'Escape stays inside the invitation');
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
-   assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Business/Dealer asset settings')));
-   await page.$$eval('dialog label input[type=checkbox]',inputs=>inputs.forEach(input=>{if(!input.checked)input.click();}));
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');
+   assert.ok(await page.evaluate(()=>document.querySelector('[data-asset-link-dialog]').textContent.includes('Asset link settings')));
+   assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',inputs=>inputs.length),2);
+   await page.$$eval('[data-asset-link-dialog] label input[type=checkbox]',inputs=>inputs.forEach(input=>{if(!input.checked&&!input.disabled)input.click();}));
+   assert.ok(await page.$eval('[data-asset-link-dialog]',e=>e.scrollHeight<=e.clientHeight+1),'Asset link settings fit without scrolling');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
-   await click('Attach reports');
-   await page.waitForSelector('[data-download-dialog]');
-   for(const title of ['Umbrella valuation','Maintenance report','Fuel report','Depreciation log','Cost of ownership','Asset map'])assert.ok(await page.evaluate(t=>document.querySelector('[data-download-dialog]').textContent.includes(t),title));
-   assert.equal(await page.$('dialog[open]'),null,'Invitation yields to the existing report modal');
-   await page.screenshot({path:path.join(output,`report-picker-${width}.png`),fullPage:true});
-   await click('Maintenance report');await click('Next');
-   await page.screenshot({path:path.join(output,`report-timeline-${width}.png`),fullPage:true});
-   await click('Add PDF report');await page.waitForSelector('dialog[open]');
-   await click('Attach reports');await page.waitForSelector('[data-download-dialog]');await click('Asset map');await page.waitForSelector('dialog[open]');
-   assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('2 selected')));
-   await click('Attach reports');await page.waitForSelector('[data-download-dialog]');
-   await page.click('[data-download-header] button');await page.waitForSelector('dialog[open]');
-   assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('2 selected')),'Cancelling preserves selected reports');
    await click('Continue');
    assert.equal(await page.$('dialog input[type=email]'),null);
    assert.equal(await page.$('dialog input[type=file]'),null);
@@ -242,13 +231,11 @@ export default function Validation(){
    await page.screenshot({path:path.join(output,`selected-disclosure-${width}.png`),fullPage:true});
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
-   assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'owner-approval');
-   const reportRequest=requests.find(r=>r.url?.includes('report=maintenance'));
-   assert.equal(new URL(reportRequest.url).searchParams.get('assetId'),'10000000-0000-4000-8000-000000000001');
+   assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'owner-approval');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');
    await click('Share read-only');
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
@@ -257,8 +244,8 @@ export default function Validation(){
    await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');
    assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept?share='+token);
    await page.click('button[aria-label="Close business invitation"]');await page.waitForFunction(()=>!document.querySelector('dialog'));
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
-   await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('dialog'));
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');
+   await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('[data-asset-link-dialog]'));
    assert.equal(requests.filter(r=>r.path.startsWith('/api/business-network/')).length,invitationRequests,'Inviting creates no database record and calls no invitation API');
    for(const kind of ['asset','register','umbrella']){
     await click(kind);await page.waitForSelector('[role=dialog]');

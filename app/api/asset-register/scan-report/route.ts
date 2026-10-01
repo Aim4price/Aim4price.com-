@@ -3941,11 +3941,11 @@ export async function GET(request: NextRequest) {
   let isDealerMaintenanceReport = false;
 
   if (shareToken) {
-    if (groupId || dealerAccessId || reportKind !== 'maintenance') return NextResponse.json({error:'Shared report access supports maintenance for one asset.'},{status:403});
+    if (groupId || dealerAccessId) return NextResponse.json({error:'Shared report access supports one asset.'},{status:403});
     try {
-      const scope = await requireLiveSharedAsset(shareToken,assetId,'maintenanceReports');
+      const scope = await requireLiveSharedAsset(shareToken,assetId,reportKind === 'maintenance' ? 'maintenanceReports' : 'allReports');
       ownerUserId = scope.lead.ownerId;
-      isDealerMaintenanceReport = true;
+      isDealerMaintenanceReport = reportKind === 'maintenance';
     } catch { return NextResponse.json({error:'Shared report access is no longer available.'},{status:403}); }
   } else if (dealerAccessId) {
     if (groupId || reportKind !== 'maintenance' || !UUID_PATTERN.test(dealerAccessId)) {
