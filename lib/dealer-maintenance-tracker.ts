@@ -1,3 +1,6 @@
+import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundation';
+import { requireLiveSharedAsset, lockLiveSharedAsset } from './live-shared-asset-access';
+import type { ExternalSharePermission } from './external-share-permissions';
 import { maintenanceIdentity, type MaintenanceIdentity } from './maintenance-catalogue';
 import { getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
@@ -941,6 +944,7 @@ export async function createDealerMaintenanceSchedule(input: {
   dealerUserId: string;
   proposalId?: string;
   draft: DealerMaintenanceScheduleProposalInput;
+  sharedLink?: { token: string; assetId: string };
 }): Promise<{ accessId: string; maintenanceRecordId: string }> {
   await ensureDealerMaintenanceTrackerTables();
   const accessId = asText(input.draft.accessId);
@@ -949,11 +953,12 @@ export async function createDealerMaintenanceSchedule(input: {
     throw new Error('TRACKING_ACCESS_NOT_FOUND');
   }
 
-  const accessRows = await listAccessRows(
+  const sharedScope = input.sharedLink ? await requireLiveSharedAsset(input.sharedLink.token,input.sharedLink.assetId,'maintenanceSchedules',true) : null;
+  if (sharedScope && (sharedScope.user.id !== input.dealerUserId || accessId !== sharedScope.assetId || leadId || input.proposalId)) throw new Error('TRACKING_ACCESS_NOT_FOUND');
+  const access = sharedScope ? sharedAccessRow(sharedScope) : (await listAccessRows(
     'where access.dealer_user_id = $1 and access.id = $2::uuid and access.is_active = true',
     [input.dealerUserId, accessId],
-  );
-  const access = accessRows[0];
+  ))[0];
   if (!access) throw new Error('TRACKING_ACCESS_NOT_FOUND');
   if (!rowPermissions(access).canCreateMaintenanceSchedules) {
     throw new Error('MAINTENANCE_SCHEDULE_PERMISSION_REQUIRED');
@@ -1044,14 +1049,17 @@ export async function createDealerMaintenanceSchedule(input: {
 
   // Serialize creation for this asset and recheck permission inside the write
   // transaction so revoked access cannot create a schedule from a stale modal.
+  if(sharedScope) await ensureSharingFoundation();
   const client = await getDb().connect();
   try {
     await client.query('begin');
+    if (sharedScope) await lockLiveSharedAsset(client, sharedScope);
     const lockedAsset = await client.query(
       'select id from public.asset_register_items where id = $1::uuid and user_id = $2 for update',
       [access.asset_register_item_id, access.owner_user_id],
     );
     if (!lockedAsset.rows[0]) throw new Error('ASSET_NOT_FOUND');
+    if (!sharedScope) {
     const lockedAccess = await client.query<{ can_create_maintenance_schedules: boolean }>(
       `select can_create_maintenance_schedules from public.dealer_maintenance_access
        where id = $1::uuid and dealer_user_id = $2 and owner_user_id = $3
@@ -1061,6 +1069,7 @@ export async function createDealerMaintenanceSchedule(input: {
     if (!lockedAccess.rows[0]) throw new Error('TRACKING_ACCESS_NOT_FOUND');
     if (!lockedAccess.rows[0].can_create_maintenance_schedules) {
       throw new Error('MAINTENANCE_SCHEDULE_PERMISSION_REQUIRED');
+    }
     }
     if (input.proposalId) {
       const pending = await client.query(
@@ -1104,6 +1113,7 @@ export async function createDealerMaintenanceSchedule(input: {
         [input.proposalId, maintenanceRecordId],
       );
     }
+    if(sharedScope) await recordSharingUsage({accountId:input.dealerUserId,actorId:input.dealerUserId,token:sharedScope.token,assetId:sharedScope.assetId,metric:'contribution',eventKey:maintenanceRecordId+':schedule'},client);
     await client.query('commit');
     return { accessId, maintenanceRecordId };
   } catch (error) {
@@ -1381,14 +1391,14 @@ export async function resolveDealerMaintenanceScheduleProposal(input: {
   }
 }
 
-async function buildTrackedAsset(row: DealerMaintenanceAccessRow): Promise<DealerMaintenanceTrackedAsset | null> {
+async function buildTrackedAsset(row: DealerMaintenanceAccessRow, shared = false): Promise<DealerMaintenanceTrackedAsset | null> {
   const permissions = rowPermissions(row);
   const [asset, records, scheduleProposals] = await Promise.all([
     getAssetRegisterItemById(row.owner_user_id, row.asset_register_item_id),
     listAssetMaintenanceRecords(row.owner_user_id, {
       assetId: row.asset_register_item_id,
     }),
-    listDealerMaintenanceScheduleProposals({
+    shared ? Promise.resolve([]) : listDealerMaintenanceScheduleProposals({
       dealerUserId: row.dealer_user_id,
       accessId: row.id,
     }),
@@ -1503,7 +1513,7 @@ export async function listDealerTrackedAssets(dealerUserId: string): Promise<Dea
     'where access.dealer_user_id = $1 and access.is_active = true',
     [dealerUserId],
   );
-  const builtAssets = await Promise.all(rows.map(buildTrackedAsset));
+  const builtAssets = await Promise.all(rows.map(row => buildTrackedAsset(row)));
   const assets = await hydrateTrackedAssetCorrections(
     dealerUserId,
     builtAssets.filter(
@@ -1521,6 +1531,32 @@ export async function listDealerTrackedAssets(dealerUserId: string): Promise<Dea
       if (priority) return priority;
       return left.assetTitle.localeCompare(right.assetTitle);
     });
+}
+
+export async function getLiveSharedTrackedAsset(token: string, assetId: string, permission: ExternalSharePermission) {
+  const scope = await requireLiveSharedAsset(token, assetId, permission);
+  const row = sharedAccessRow(scope);
+  const asset = await buildTrackedAsset(row, true);
+  if (!asset) throw new Error('ASSET_NOT_FOUND');
+  const shared = scope.lead.share.assets.find(item => item.assetId === assetId)!;
+  asset.photoUrls = shared.photoUrls; asset.photoUrl = shared.photoUrls[0] || '';
+  // Do not expose records through an unrelated permission.
+  if (!asset.permissions.canViewMaintenanceReports && !asset.permissions.canCreateMaintenanceSchedules) {
+    asset.maintenanceRecords=[]; asset.openMaintenanceRecords=[]; asset.completedMaintenanceRecords=[]; asset.nextMaintenance=null;
+  }
+  if (!asset.permissions.canViewMaintenanceReports) { asset.completedMaintenanceRecords=[]; asset.maintenanceRecords=asset.openMaintenanceRecords; }
+  return asset;
+}
+
+function sharedAccessRow(scope: Awaited<ReturnType<typeof requireLiveSharedAsset>>): DealerMaintenanceAccessRow {
+  const p=scope.lead.details?.permissions;
+  return {id:scope.assetId,owner_user_id:scope.lead.ownerId,dealer_user_id:scope.user.id,asset_register_item_id:scope.assetId,
+    granted_by_name:scope.lead.share.senderName || '',created_at:null,updated_at:null,
+    can_view_logged_problems:p?.loggedProblems===true,can_view_maintenance_reports:p?.maintenanceReports===true,
+    can_view_cost_of_ownership:p?.costOfOwnership===true,can_create_maintenance_schedules:p?.maintenanceSchedules===true,
+    can_update_serial:p?.serialNumber===true,can_update_replacement_price:p?.replacementPrice===true,
+    has_maintenance_records:null,owner_display_name:scope.lead.share.senderName||'',owner_business_name:null,
+    owner_phone:null,owner_email:null,dealer_display_name:null,dealer_business_name:null};
 }
 
 export async function getDealerTrackedAsset(

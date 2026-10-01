@@ -2268,7 +2268,7 @@ export default function LeadsClient({
     ));
     setNotice({
       tone: 'success',
-      message: correction.licenseRenewalDateChanged
+      message: correction.status === 'accepted' ? 'Asset updated successfully.' : correction.licenseRenewalDateChanged
         ? 'Renewal date sent to the owner for approval.'
         : 'Dealer correction sent to the owner for approval.',
     });
@@ -3976,6 +3976,9 @@ export default function LeadsClient({
                           sourceId={managedLead.id}
                           serialNumber={asText(managedLead.assetSnapshot.serialNumber)}
                           replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
+                          directUpdates={managedLead.maintenanceAccess?.isActive === true}
+                          canUpdateSerial={managedLead.maintenanceAccess?.isActive ? managedLead.maintenanceAccess.permissions.canUpdateSerial : !isTrackingLead(managedLead)}
+                          canUpdateReplacementPrice={managedLead.maintenanceAccess?.isActive ? managedLead.maintenanceAccess.permissions.canUpdateReplacementPrice : !isTrackingLead(managedLead)}
                           correction={managedLead.dealerCorrection}
                           actionClassName={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           iconClassName={assetStyles.buttonIcon}

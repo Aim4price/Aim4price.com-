@@ -59,12 +59,12 @@ export const dealerMaintenancePermissionOptions: Array<{
   {
     key: 'canUpdateSerial',
     title: 'Update Serial',
-    description: 'Let the dealer suggest serial-number corrections for your approval.',
+    description: 'Allow this business/dealer to update the serial number.',
   },
   {
     key: 'canUpdateReplacementPrice',
     title: 'Update Replacement Price',
-    description: 'Let the dealer suggest replacement-price changes for your approval.',
+    description: 'Allow this business/dealer to update the replacement price.',
   },
 ];
 

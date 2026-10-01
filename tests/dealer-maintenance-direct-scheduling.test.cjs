@@ -13,10 +13,13 @@ async function setup(){
  CREATE TABLE asset_leads(id uuid PRIMARY KEY,owner_user_id text,partner_user_id text,asset_register_item_id uuid);
  CREATE TABLE asset_maintenance_records(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),user_id text,asset_register_item_id uuid,maintenance_type text,trigger_type text,status text,title text,notes text,assigned_field_manager_id uuid,assigned_name text,due_date date,due_usage numeric,usage_metric text,alert_before_value numeric,alert_before_unit text,recurring_enabled boolean,recurring_interval_value numeric,recurring_interval_unit text,created_at timestamptz,updated_at timestamptz);
  INSERT INTO asset_register_items VALUES('${A}','owner','Tractor');`);
- let beforeWrite=null;
+ let beforeWrite=null, linkActive=true;const usage=[];
+ const sharedScope={token:'a'.repeat(43),assetId:A,user:{id:'free-recipient',email:'free@example.test'},lead:{ownerId:'owner',share:{senderName:'Owner'},details:{permissions:{maintenanceSchedules:true}}}};
  const query=(sql,params)=>/create extension/i.test(sql)?Promise.resolve({rows:[]}):params?pg.query(sql,params):pg.exec(sql).then(r=>r.at(-1));
  const db={query,connect:async()=>{if(beforeWrite){const fn=beforeWrite;beforeWrite=null;await fn();}return {query,release(){}};}};
  const mocks={
+ './sharing-foundation':{ensureSharingFoundation:async()=>{},recordSharingUsage:async event=>usage.push(event)},
+ './live-shared-asset-access':{requireLiveSharedAsset:async()=>{if(!linkActive)throw Error('LINK_REVOKED');return sharedScope;},lockLiveSharedAsset:async()=>{if(!linkActive)throw Error('LINK_REVOKED');}},
  './db':{getDb:()=>db},'./database-schema-readiness':{isDatabaseSchemaReady:async()=>false},
  './maintenance-catalogue':{},'./account-profile':{},'./asset-issue-notes':{},'./dealer-asset-corrections':{},
  './asset-register-db':{getAssetRegisterItemById:async(user,id)=>(await pg.query('SELECT id,title FROM asset_register_items WHERE id=$1 AND user_id=$2',[id,user])).rows[0]},
@@ -26,7 +29,7 @@ async function setup(){
  await exports.ensureDealerMaintenanceTrackerTables();
  await pg.query(`INSERT INTO dealer_maintenance_access(id,owner_user_id,dealer_user_id,asset_register_item_id,can_create_maintenance_schedules) VALUES($1,'owner','dealer',$2,true)`,[S,A]);
  const create=(overrides={})=>exports.createDealerMaintenanceSchedule({dealerUserId:'dealer',draft:{accessId:S,maintenanceType:'service',triggerType:'date',dueDate:'2026-12-01',recurringEnabled:true,recurringIntervalValue:6,recurringIntervalUnit:'months'},...overrides});
- return {pg,create,beforeWrite:fn=>beforeWrite=fn};
+ return {pg,create,usage,sharedScope,revoke:()=>{linkActive=false;},beforeWrite:fn=>beforeWrite=fn};
 }
 test('permitted dealer creates an active owner schedule immediately, without a pending proposal; retries cannot duplicate it',async()=>{
  const x=await setup();try{
@@ -64,5 +67,24 @@ test('saving a legacy pending proposal activates it once and removes it from the
  const saved=(await x.pg.query('SELECT * FROM dealer_maintenance_schedule_proposals WHERE id=$1',[p.id])).rows[0];
  assert.equal(saved.proposal_status,'approved');assert.equal(saved.created_maintenance_record_id,created.maintenanceRecordId);
  await assert.rejects(x.create({proposalId:p.id}),/MAINTENANCE_PROPOSAL_NOT_FOUND/);
+ }finally{await x.pg.close();}
+});
+
+test('free shared-link recipients create an active owner schedule without a permanent tracking grant',async()=>{
+ const x=await setup();try{
+  await x.pg.query('DELETE FROM dealer_maintenance_access');
+  const input={dealerUserId:'free-recipient',sharedLink:{token:x.sharedScope.token,assetId:A},draft:{accessId:A,maintenanceType:'service',triggerType:'date',dueDate:'2026-12-01'}};
+  const result=await x.create(input);
+  const record=(await x.pg.query('SELECT * FROM asset_maintenance_records')).rows[0];assert.equal(record.id,result.maintenanceRecordId);assert.equal(record.user_id,'owner');assert.equal(record.status,'upcoming');
+  assert.equal((await x.pg.query('SELECT * FROM dealer_maintenance_access')).rows.length,0);
+  assert.equal(x.usage.length,1);assert.equal(x.usage[0].accountId,'free-recipient');assert.equal(x.usage[0].token,x.sharedScope.token);
+ }finally{await x.pg.close();}
+});
+test('shared scheduling checks revocation again while saving and rejects a forged actor',async()=>{
+ const x=await setup();try{
+  const input={dealerUserId:'free-recipient',sharedLink:{token:x.sharedScope.token,assetId:A},draft:{accessId:A,maintenanceType:'service',triggerType:'date',dueDate:'2026-12-01'}};
+  await assert.rejects(x.create({...input,dealerUserId:'forged'}),/TRACKING_ACCESS_NOT_FOUND/);
+  x.beforeWrite(async()=>x.revoke());await assert.rejects(x.create(input),/LINK_REVOKED/);
+  assert.equal((await x.pg.query('SELECT * FROM asset_maintenance_records')).rows.length,0);assert.equal(x.usage.length,0);
  }finally{await x.pg.close();}
 });

@@ -30,6 +30,7 @@ type DealerAssetCorrectionEditorProps = {
   canUpdateReplacementPrice?: boolean;
   actionClassName?: string;
   iconClassName?: string;
+  directUpdates?: boolean;
   externalShare?: { token: string; assetId: string };
   onSaved?: (correction: DealerAssetCorrectionRequest) => void;
 };
@@ -92,6 +93,7 @@ export default function DealerAssetCorrectionEditor({
   iconClassName = '',
   onSaved,
   externalShare,
+  directUpdates = false,
 }: DealerAssetCorrectionEditorProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
@@ -246,7 +248,7 @@ export default function DealerAssetCorrectionEditor({
       {mounted && activeField ? createPortal(
         <LeadActionDialog closeLabel="Close correction form" title={fieldIsSerial ? 'Update serial number' : fieldIsLicenseRenewal ? 'Update renewal date' : 'Update replacement price'} assetTitle={assetTitle} onClose={closeEditor} busy={saving} footer={<>
           <button type="button" className={styles.cancelButton} onClick={closeEditor} disabled={saving}>Cancel</button>
-          <button type="button" className={styles.saveButton} onClick={() => void submitCorrection()} disabled={saving || !draft.trim()}>{saving ? 'Sending…' : 'Send to owner'}</button>
+          <button type="button" className={styles.saveButton} onClick={() => void submitCorrection()} disabled={saving || !draft.trim()}>{saving ? 'Saving…' : directUpdates ? 'Save changes' : 'Send to owner'}</button>
         </>}>
               <div className={styles.currentValue}>
                 <span>Owner&apos;s current value</span>
@@ -272,7 +274,7 @@ export default function DealerAssetCorrectionEditor({
 
               <div className={styles.explainer}>
                 <strong>How this works</strong>
-                <p>Your view updates immediately. The owner receives an approval notification, and the owner&apos;s Asset Register changes only after acceptance.</p>
+                <p>{directUpdates ? 'The owner has authorised this update. Saving changes updates the live asset immediately.' : <>Your view updates immediately. The owner receives an approval notification, and the owner&apos;s Asset Register changes only after acceptance.</>}</p>
               </div>
 
               {error ? <p className={styles.error} role="alert">{error}</p> : null}

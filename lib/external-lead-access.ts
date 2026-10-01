@@ -41,7 +41,7 @@ export async function externalLeadAccess(lead: Lead) {
 }
 export function leadAllows(lead: Lead, permission: ExternalSharePermission): boolean {
     if (lead.details?.permissions)
-        return normalizeExternalPermissions(lead.details.permissions)[permission];
+        return normalizeExternalPermissions(lead.details.permissions)[permission] === true;
     // Older links retain their chosen reports/documents, but now require verified account access.
     return permission === 'reports' ? lead.reports.length > 0 : permission === 'documents' && lead.details?.allowSubmissions === true;
 }

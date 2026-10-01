@@ -1,4 +1,5 @@
 'use client';
+import { useLeadDialog } from './leads/useLeadDialog';
 import DateInput from './DateInput';
 
 import DropdownOverlay from './DropdownOverlay';
@@ -12,6 +13,7 @@ import styles from '../app/maintenance/page.module.css';
 import accountStyles from '../app/account/page.module.css';
 
 type Props = {
+  externalShare?: { token: string; assetId: string };
   accessId: string;
   leadId?: string | null;
   initialProposal?: DealerMaintenanceScheduleProposal | null;
@@ -302,6 +304,7 @@ function ReadOnlyField({ label, value }: { label: string; value: string }) {
 
 export default function DealerMaintenanceScheduleModal({
   accessId,
+  externalShare,
   leadId,
   initialProposal = null,
   initialRecord = null,
@@ -309,6 +312,7 @@ export default function DealerMaintenanceScheduleModal({
   onAssetUpdated,
   onError,
 }: Props) {
+  const dialogRef = useLeadDialog(onClose);
   const [asset, setAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [draft, setDraft] = useState<Draft>(() => emptyDraft());
   const [step, setStep] = useState<ScheduleStep>('maintenance-type');
@@ -322,7 +326,7 @@ export default function DealerMaintenanceScheduleModal({
       setLoading(true);
       setError('');
       try {
-        const response = await fetch(`/api/dealer/maintenance/${encodeURIComponent(accessId)}`, {
+        const response = await fetch(externalShare ? `/api/asset-share-links/${externalShare.token}/assets/${externalShare.assetId}` : `/api/dealer/maintenance/${encodeURIComponent(accessId)}`, {
           credentials: 'include',
           cache: 'no-store',
           signal: controller.signal,
@@ -356,7 +360,7 @@ export default function DealerMaintenanceScheduleModal({
     }
     void load();
     return () => controller.abort();
-  }, [accessId, initialProposal?.id, initialRecord?.id]);
+  }, [accessId, initialProposal?.id, initialRecord?.id, externalShare?.token, externalShare?.assetId]);
 
   function updateDraft(update: Partial<Draft>) {
     setDraft((current) => {
@@ -414,7 +418,7 @@ export default function DealerMaintenanceScheduleModal({
       };
       const editingActiveSchedule = Boolean(initialRecord);
       const editingProposal = Boolean(initialProposal);
-      const endpoint = editingActiveSchedule
+      const endpoint = externalShare ? `/api/asset-share-links/${externalShare.token}/assets/${externalShare.assetId}` : editingActiveSchedule
         ? `/api/dealer/maintenance/${encodeURIComponent(accessId)}`
         : '/api/dealer/maintenance/schedule-proposals';
       const response = await fetch(endpoint, {
@@ -447,7 +451,7 @@ export default function DealerMaintenanceScheduleModal({
 
   if (loading || !asset) {
     return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-schedule-loading-title">
+      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-schedule-loading-title">
         <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
@@ -472,7 +476,7 @@ export default function DealerMaintenanceScheduleModal({
 
   if (step === 'maintenance-type') {
     return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-type-title">
+      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-maintenance-type-title">
         <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
@@ -523,7 +527,7 @@ export default function DealerMaintenanceScheduleModal({
 
   if (step === 'trigger-type') {
     return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-trigger-title">
+      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-maintenance-trigger-title">
         <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
           <header className={styles.modalHeader}>
             <div>
@@ -573,7 +577,7 @@ export default function DealerMaintenanceScheduleModal({
   }
 
   return (
-    <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-form-title">
+    <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-maintenance-form-title">
       <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
         <header className={styles.modalHeader}>
           <div>

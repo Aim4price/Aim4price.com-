@@ -1,4 +1,5 @@
 'use client';
+import { useLeadDialog } from './leads/useLeadDialog';
 import downloadStyles from "./ReportDownload.module.css";
 
 import DropdownOverlay from './DropdownOverlay';
@@ -14,6 +15,7 @@ type ReportSelectKey = 'year' | 'month';
 type ReportOption = { value: string; label: string };
 
 type Props = {
+  externalShare?: { token: string; assetId: string };
   accessId: string;
   assetTitle: string;
   assetMeta: string;
@@ -165,6 +167,7 @@ function ReportSelect({
 
 export default function DealerCostOfOwnershipReportModal({
   accessId,
+  externalShare,
   assetTitle,
   assetMeta,
   createdAtIso,
@@ -174,6 +177,7 @@ export default function DealerCostOfOwnershipReportModal({
   onClose,
   onError,
 }: Props) {
+  const dialogRef = useLeadDialog(onClose);
   const [step, setStep] = useState<ReportStep>(pdfOnly ? 'timeline' : 'format');
   const [format, setFormat] = useState<DownloadFormat>('pdf');
   const [reportYear, setReportYear] = useState('all');
@@ -191,6 +195,7 @@ export default function DealerCostOfOwnershipReportModal({
       accessId,
       format: routeFormat,
     });
+    if (externalShare) { params.delete('accessId'); params.set('assetId',externalShare.assetId); params.set('shareToken',externalShare.token); }
     if (reportYear !== 'all') {
       params.set('year', reportYear);
       if (reportMonth !== 'all') params.set('month', reportMonth);
@@ -252,7 +257,7 @@ export default function DealerCostOfOwnershipReportModal({
       <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose} data-download-shade="true" />
       <div
         className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${assetStyles.assetFuelReportModal} ${downloadStyles.dialog}`}
-        role="dialog"
+        role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1}
         aria-modal="true"
         aria-labelledby="dealer-cost-of-ownership-report-title" data-download-dialog="true"
       >

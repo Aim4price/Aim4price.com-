@@ -1,3 +1,4 @@
+import { requireLiveSharedAsset } from '../../../../lib/live-shared-asset-access';
 import { expandOwnershipBudgetHistory } from '../../../../lib/ownership-budget-tracker';
 import { listCostBudgetHistory } from '../../../../lib/cost-budgets';
 import { NextRequest, NextResponse } from 'next/server';
@@ -120,11 +121,19 @@ function findSelectedAsset(assets: MyInvoiceAssetOption[], filters: MyInvoiceLis
 }
 
 export async function GET(request: NextRequest) {
-  const resolved = await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
-  if (!resolved.ok) return resolved.response;
-  const workspace = resolved.context;
-
   try {
+    const shareToken = request.nextUrl.searchParams.get('shareToken');
+    let sharedScope: Awaited<ReturnType<typeof requireLiveSharedAsset>> | null = null;
+    if (shareToken) {
+      if (request.nextUrl.searchParams.get('groupId') || request.nextUrl.searchParams.get('accessId')) return NextResponse.json({error:'Shared reports support one asset.'},{status:403});
+      try { sharedScope = await requireLiveSharedAsset(shareToken,request.nextUrl.searchParams.get('assetId') || '', 'costOfOwnership'); }
+      catch { return NextResponse.json({error:'Shared report access is no longer available.'},{status:403}); }
+    }
+    const resolved = sharedScope ? null : await resolveOwnerWorkspaceContext(request, { ledger: 'cost' });
+    if (resolved && !resolved.ok) return resolved.response;
+    const workspace = sharedScope ? {ownerUserId:sharedScope.lead.ownerId,actorUserId:sharedScope.user.id,actorName:'',actorEmail:''} : resolved!.ok ? resolved!.context : null;
+    if (!workspace) return NextResponse.json({error:'Access denied'},{status:403});
+
     const rawFormat = request.nextUrl.searchParams.get('format');
     if (rawFormat && !['pdf', 'xlsx', 'html'].includes(rawFormat.toLowerCase())) {
       return NextResponse.json({ ok: false, error: 'Unsupported report format. Choose PDF or XLSX.' }, { status: 400 });

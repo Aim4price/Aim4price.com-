@@ -219,10 +219,10 @@ export default function Validation(){
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
    assert.equal(await page.evaluate(()=>window.__escapedToParent),false,'Escape stays inside the invitation');
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('dialog[open]');
-   assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Choose what to share')));
+   assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Business/Dealer asset settings')));
    await page.$$eval('dialog label input[type=checkbox]',inputs=>inputs.forEach(input=>{if(!input.checked)input.click();}));
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
-   await click('Reports');
+   await click('Attach reports');
    await page.waitForSelector('[data-download-dialog]');
    for(const title of ['Umbrella valuation','Maintenance report','Fuel report','Depreciation log','Cost of ownership','Asset map'])assert.ok(await page.evaluate(t=>document.querySelector('[data-download-dialog]').textContent.includes(t),title));
    assert.equal(await page.$('dialog[open]'),null,'Invitation yields to the existing report modal');
@@ -230,9 +230,9 @@ export default function Validation(){
    await click('Maintenance report');await click('Next');
    await page.screenshot({path:path.join(output,`report-timeline-${width}.png`),fullPage:true});
    await click('Add PDF report');await page.waitForSelector('dialog[open]');
-   await click('Reports');await page.waitForSelector('[data-download-dialog]');await click('Asset map');await page.waitForSelector('dialog[open]');
+   await click('Attach reports');await page.waitForSelector('[data-download-dialog]');await click('Asset map');await page.waitForSelector('dialog[open]');
    assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('2 selected')));
-   await click('Reports');await page.waitForSelector('[data-download-dialog]');
+   await click('Attach reports');await page.waitForSelector('[data-download-dialog]');
    await page.click('[data-download-header] button');await page.waitForSelector('dialog[open]');
    assert.ok(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('2 selected')),'Cancelling preserves selected reports');
    await click('Continue');
@@ -242,7 +242,7 @@ export default function Validation(){
    await page.screenshot({path:path.join(output,`selected-disclosure-${width}.png`),fullPage:true});
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
-   assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'owner-approval');
+   assert.deepEqual(selectedDetails.permissions,{reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'owner-approval');
    const reportRequest=requests.find(r=>r.url?.includes('report=maintenance'));
    assert.equal(new URL(reportRequest.url).searchParams.get('assetId'),'10000000-0000-4000-8000-000000000001');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
