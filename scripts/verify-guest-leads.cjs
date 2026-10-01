@@ -169,14 +169,14 @@ export default function Validation(){
    });
    assert.ok(layout.rightGap<3&&layout.below,'Manage sits at the far right below the value');
    assert.ok(layout.leftGutter>0&&Math.abs(layout.leftGutter-layout.rightGutter)<3,'Standard shell has equal side gutters');
-   await page.click(manageCard);await page.waitForSelector('dialog[open]');
+   await page.click(manageCard);await page.waitForSelector('[role="dialog"] [aria-label="Close lead management"]');
    await click('Reply by email');await page.waitForFunction(()=>document.body.textContent.includes('this opens your email app'));
    await click('Reply on WhatsApp');await page.waitForFunction(()=>document.body.textContent.includes('this opens WhatsApp'));
    await click('Send an invoice or quote');await page.waitForFunction(()=>document.body.textContent.includes('does not upload files'));
    await page.screenshot({path:path.join(output,`enquiry-example-${width}.png`),fullPage:true});
    assert.equal(requests.filter(r=>r.method==='POST').length,writesBefore,'Demo never sends or uploads anything');
    assert.equal(await page.$eval('a[href^="/business-network/accept"]',a=>new URL(a.href).searchParams.get('from')),'X Farms');
-   await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});
+   await page.keyboard.press('Escape');await page.waitForSelector('[role="dialog"] [aria-label="Close lead management"]',{hidden:true});
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Manage Example Toyota Hilux','Closing Manage restores focus');
    await page.click(closeCard);await page.waitForSelector(openCard);
    assert.equal(await page.$(manageCard),null,'Closing the card hides its management controls');

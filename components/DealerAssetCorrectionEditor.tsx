@@ -244,7 +244,7 @@ export default function DealerAssetCorrectionEditor({
       ) : null}
 
       {mounted && activeField ? createPortal(
-        <LeadActionDialog title={fieldIsSerial ? 'Update serial number' : fieldIsLicenseRenewal ? 'Update renewal date' : 'Update replacement price'} assetTitle={assetTitle} onClose={closeEditor} busy={saving} footer={<>
+        <LeadActionDialog closeLabel="Close correction form" title={fieldIsSerial ? 'Update serial number' : fieldIsLicenseRenewal ? 'Update renewal date' : 'Update replacement price'} assetTitle={assetTitle} onClose={closeEditor} busy={saving} footer={<>
           <button type="button" className={styles.cancelButton} onClick={closeEditor} disabled={saving}>Cancel</button>
           <button type="button" className={styles.saveButton} onClick={() => void submitCorrection()} disabled={saving || !draft.trim()}>{saving ? 'Sending…' : 'Send to owner'}</button>
         </>}>
