@@ -2385,7 +2385,8 @@ function buildReportHtml(
 }
 
 export async function GET(request: Request) {
-  const session = await getServerSession();
+  const shareToken = new URL(request.url).searchParams.get("shareToken");
+  const session = await getServerSession(shareToken ? {requireActive:false,allowDealerApp:true,allowOwnerApp:true} : undefined);
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -2393,6 +2394,17 @@ export async function GET(request: Request) {
 
   try {
     const url = new URL(request.url);
+    let reportOwnerId = session.user.id;
+    let reportOwnerEmail = asText(session.user.email);
+    if (shareToken) {
+      if ([...url.searchParams.keys()].some(key=>!['shareToken','assetId','format'].includes(key)) || url.searchParams.getAll('assetId').length !== 1) return NextResponse.json({error:'Shared map reports require one shared asset.'},{status:403});
+      try {
+        const {requireLiveSharedAsset} = await import('../../../../lib/live-shared-asset-access');
+        const scope = await requireLiveSharedAsset(shareToken,url.searchParams.get('assetId') || '', 'allReports');
+        reportOwnerId=scope.lead.ownerId;
+        reportOwnerEmail=scope.lead.details?.replyEmail || '';
+      } catch { return NextResponse.json({error:'Shared report access is no longer available.'},{status:403}); }
+    }
     const rawFormat = asText(url.searchParams.get("format")).toLowerCase();
     const format = rawFormat || "pdf";
 
@@ -2407,7 +2419,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const scopedResult = await loadScopedMappedAssets(session.user.id, url);
+    const scopedResult = await loadScopedMappedAssets(reportOwnerId, url);
     const printableAssets = scopedResult.assets.map(toPrintableAsset);
     const now = new Date();
 
@@ -2431,14 +2443,14 @@ export async function GET(request: Request) {
       });
     }
 
-    const rawLogoUrl = await getAssetRegisterReportLogoUrl(session.user.id).catch(
+    const rawLogoUrl = await getAssetRegisterReportLogoUrl(reportOwnerId).catch(
       () => "",
     );
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
     const html = buildReportHtml(printableAssets, {
       generatedDate: formatDate(now),
       generatedTime: formatTime(now),
-      ownerEmail: asText(session.user.email),
+      ownerEmail: reportOwnerEmail,
       logoUrl,
       scopeLabel: scopedResult.scopeLabel,
     });

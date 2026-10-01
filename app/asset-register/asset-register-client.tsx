@@ -1,4 +1,5 @@
 'use client';
+import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 import LicenceShareReview from '../../components/asset-register/LicenceShareReview';
 import { licenceShareMissingDetails } from '../../lib/licence-share-readiness';
 import ShareModalCloseButton from '../../components/asset-register/ShareModalCloseButton';
@@ -20584,25 +20585,7 @@ export default function AssetRegisterClient({
       ) : null}
 
       {quoteAsset && isQuoteTrackingSettingsOpen ? (
-        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.quoteTrackingSettingsOverlay}`} data-website-overlay>
-          <div className={styles.modalBackdrop} data-website-overlay onClick={cancelQuoteTrackingSettings} />
-
-          <div
-            className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal} ${styles.quoteTrackingSettingsModal}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="quote-tracking-settings-title"
-          >
-            <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="quote-tracking-settings-title" tabIndex={-1}>Business/Dealer asset settings</h3>
-                <p>{quoteAsset.title}</p>
-              </div>
-
-              <ShareModalCloseButton onClick={cancelQuoteTrackingSettings} aria-label="Close Business/Dealer asset settings" />
-            </div>
-
-            <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody}`}>
+        <AssetAccessSettingsDialog title="Business/Dealer asset settings" assetTitle={quoteAsset.title} onClose={cancelQuoteTrackingSettings}>
               <div className={styles.dealerTrackingIntro}>
                 <strong>Choose what this business/dealer can access</strong>
                 <p>Select the permissions to activate as soon as the asset is shared.</p>
@@ -20633,9 +20616,7 @@ export default function AssetRegisterClient({
                   Save asset settings
                 </button>
               </div>
-            </div>
-          </div>
-        </div>
+        </AssetAccessSettingsDialog>
       ) : null}
 
       {replacementPriceRevaluePrompt ? (

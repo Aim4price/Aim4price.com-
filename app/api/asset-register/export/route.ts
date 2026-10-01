@@ -3102,12 +3102,27 @@ function buildRegisterSummaryHtmlResponse(html: string, fileName: string): NextR
 }
 
 export async function GET(request: NextRequest) {
-  const resolved = await resolveOwnerWorkspaceContext(request);
-  if (!resolved.ok) return resolved.response;
-  const workspace = resolved.context;
+  const params = new URL(request.url).searchParams;
+  const shareToken = params.get('shareToken');
+  let sharedScope: Awaited<ReturnType<typeof import('../../../../lib/live-shared-asset-access').requireLiveSharedAsset>> | null = null;
+  if (shareToken) {
+    const selection = parseRequestedAssetIds(params);
+    if (selection.error || selection.ids.length !== 1 || params.has('groupId') || params.has('scope') || params.has('registerId') || params.has('registerIds')) return NextResponse.json({error:'Shared exports require one shared asset.'},{status:403});
+    try {
+      const { requireLiveSharedAsset } = await import('../../../../lib/live-shared-asset-access');
+      sharedScope = await requireLiveSharedAsset(shareToken,selection.ids[0],'allReports');
+      const { getAssetRegisterItemById } = await import('../../../../lib/asset-register-db');
+      const item = await getAssetRegisterItemById(sharedScope.lead.ownerId,selection.ids[0]);
+      if (!item) return requestedAssetsNotFound();
+      if (item.registerId) params.set('registerId',item.registerId);
+    } catch { return NextResponse.json({error:'Shared report access is no longer available.'},{status:403}); }
+  }
+  const resolved = sharedScope ? null : await resolveOwnerWorkspaceContext(request);
+  if (resolved && !resolved.ok) return resolved.response;
+  const workspace = sharedScope ? {ownerUserId:sharedScope.lead.ownerId,actorName:'',actorEmail:''} : resolved!.ok ? resolved!.context : null;
+  if (!workspace) return NextResponse.json({error:'Access denied'},{status:403});
   const ownerUserId = workspace.ownerUserId;
 
-  const params = new URL(request.url).searchParams;
   const format = params.get('format');
   const reportKind = cleanText(params.get('reportKind')).toLowerCase() || 'full';
 

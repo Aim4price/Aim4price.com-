@@ -36,7 +36,7 @@ async function setup(){
  return{mocks,pg,state,leads:fullLeads,access,docs,corrections,details,report,link,base,signIn,foundation,groups};
 }
 test('permission input defaults to read-only and signup returns only to valid enquiry paths',()=>{
- assert.deepEqual(permissions.normalizeExternalPermissions({reports:'true',serialNumber:true,admin:true}),{...permissions.EMPTY_EXTERNAL_PERMISSIONS,serialNumber:true,directUpdates:false});
+ assert.deepEqual(permissions.normalizeExternalPermissions({reports:'true',serialNumber:true,admin:true}),{...permissions.EMPTY_EXTERNAL_PERMISSIONS,serialNumber:true,directUpdates:false,allReports:false});
  for(const value of ['https://evil.test','//evil.test','/\\evil.test','/admin','/asset-share/short','/asset-share/'+'x'.repeat(43)+'?open=1&redirect=https://evil.test'])assert.equal(permissions.sharedEnquiryReturnTo(value),null);
  assert.equal(permissions.sharedEnquiryReturnTo('/asset-share/'+'x'.repeat(43)),'/asset-share/'+'x'.repeat(43));
 });
@@ -297,5 +297,19 @@ test('live shared asset access denies other assets, missing permissions and unap
   const scope=await live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true);
   await x.pg.query(`UPDATE asset_share_links SET lead_details=jsonb_set(lead_details,'{recipientUserId}','"another-account"') WHERE token=$1`,[x.link.token]);
   await assert.rejects(live.lockLiveSharedAsset({query:(sql,p)=>x.pg.query(sql,p)},scope));
+ }finally{await x.pg.close();}
+});
+
+test('asset links include photos and every live report automatically, including read-only links',async()=>{
+ const x=await setup();try{
+  const link=await x.leads.createGuestLead('owner',[A],false,{...x.details,permissions:permissions.assetLinkPermissions()},[]);
+  const row=(await x.pg.query('SELECT include_photos,lead_details FROM asset_share_links WHERE token=$1',[link.token])).rows[0];
+  assert.equal(row.include_photos,true);
+  for(const key of ['allReports','reports','maintenanceReports','costOfOwnership'])assert.equal(row.lead_details.permissions[key],true);
+  for(const key of ['serialNumber','replacementPrice','maintenanceSchedules','documents'])assert.equal(row.lead_details.permissions[key],false);
+  assert.equal((await x.pg.query('SELECT * FROM asset_share_reports WHERE token=$1',[link.token])).rows.length,0,'Reports load current data instead of storing attachments');
+  x.signIn();x.state.approved=true;
+  await x.mocks['./live-shared-asset-access'].requireLiveSharedAsset(link.token,A,'allReports');
+  await assert.rejects(x.mocks['./live-shared-asset-access'].requireLiveSharedAsset(x.link.token,A,'allReports'),'Older links do not acquire new report permissions');
  }finally{await x.pg.close();}
 });

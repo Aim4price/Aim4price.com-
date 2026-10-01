@@ -12,7 +12,7 @@ type Choice = { value: string; label: string };
 type Props = {
   title: string; allLabel: string;
   assets: Array<{ id: string; title: string; serialNumber?: string; meta?: string; selectedMethod?: string; categoryLabel?: string }>;
-  years?: string[]; budgetPeriods?: boolean; lockedAssetId?: string;
+  skipTimeline?: boolean; years?: string[]; budgetPeriods?: boolean; lockedAssetId?: string;
   fields?: Array<{ key: string; label: string; initial: string; options: Choice[]; allAssetsOnly?: boolean }>;
   scopes?: Array<{ label: string; description: string; field: string; value: string }>;
   onClose: () => void; onDownload: (selection: ReportSelection) => void | Promise<void>;
@@ -27,8 +27,8 @@ function ScopeIcon({ kind = 'all' }: { kind?: string }) {
   </svg>;
 }
 
-export default function ReportDownloadFlow({ title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, fields = [], scopes = [], onClose, onDownload }: Props) {
-  const [step, setStep] = useState<'scope' | 'asset' | 'timeline' | 'format'>(lockedAssetId ? 'timeline' : 'scope');
+export default function ReportDownloadFlow({ title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
+  const [step, setStep] = useState<'scope' | 'asset' | 'timeline' | 'format'>(lockedAssetId ? (skipTimeline ? 'format' : 'timeline') : 'scope');
   const [selection, setSelection] = useState<ReportSelection>({ assetId: lockedAssetId || 'all', year: 'all', month: 'all', format: 'pdf', fields: Object.fromEntries(fields.map(field => [field.key, field.initial])) });
   const [search, setSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -92,7 +92,7 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
         </>}
         {busy ? <p role="status">Preparing report…</p> : null}{error ? <p role="alert" className={styles.error}>{error}</p> : null}
       </div>
-      <footer data-download-footer="true" data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>{step !== 'scope' && !(lockedAssetId && step === 'timeline') ? <button type="button" disabled={busy} onClick={back}>Back</button> : null}<button type="button" disabled={busy} onClick={onClose}>Cancel</button>{step === 'timeline' || step === 'format' ? <button type="button" disabled={busy} data-download-primary="true" onClick={()=>step === 'format' ? void submit(selection.format) : setStep('format')}>{busy ? 'Preparing…' : 'Next'}</button> : null}</footer>
+      <footer data-download-footer="true" data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>{step !== 'scope' && !(lockedAssetId && (step === 'timeline' || skipTimeline)) ? <button type="button" disabled={busy} onClick={back}>Back</button> : null}<button type="button" disabled={busy} onClick={onClose}>Cancel</button>{step === 'timeline' || step === 'format' ? <button type="button" disabled={busy} data-download-primary="true" onClick={()=>step === 'format' ? void submit(selection.format) : setStep('format')}>{busy ? 'Preparing…' : 'Next'}</button> : null}</footer>
     </div>
   </div>;
 }

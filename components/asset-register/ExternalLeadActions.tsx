@@ -4,6 +4,7 @@ import type { ExternalLeadAccess } from '../../lib/external-lead-access';
 import { EXTERNAL_SHARE_OPTIONS, type ExternalSharePermission, type ExternalSharePermissions } from '../../lib/external-share-permissions';
 import { buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import type { LeadReport } from '../../lib/guest-leads';
+import SharedLiveReports from './SharedLiveReports';
 import ExternalAccessRequests from './ExternalAccessRequests';
 import LeadDocuments from './LeadDocuments';
 import leadStyles from '../../app/leads/page.module.css';
@@ -56,7 +57,7 @@ export default function ExternalLeadActions({ token, permissions, reports, acces
   return <>
     <div className={assetStyles.optionsContent}>
       <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid} ${dialogStyles.actions}`}>
-        {EXTERNAL_SHARE_OPTIONS.filter(option => permissions[option.key] && !(canCorrect && ['serialNumber','replacementPrice'].includes(option.key))).map(option => <button key={option.key} type="button" className={actionClassName} onClick={() => setAction(option.key)}>
+        {EXTERNAL_SHARE_OPTIONS.filter(option => permissions[option.key] && !(permissions.allReports && ['maintenanceReports','costOfOwnership'].includes(option.key)) && !(canCorrect && ['serialNumber','replacementPrice'].includes(option.key))).map(option => <button key={option.key} type="button" className={actionClassName} onClick={() => setAction(option.key)}>
           <svg className={assetStyles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
           <span><strong>{option.label}</strong><small>{option.description}</small></span>
         </button>)}
@@ -66,7 +67,7 @@ export default function ExternalLeadActions({ token, permissions, reports, acces
     </div>
     {reply && <div className={styles.actions}>{reply.email && <a className={styles.secondary} href={`mailto:${encodeURIComponent(reply.email)}?subject=${encodeURIComponent('Re: Aim4price asset enquiry')}`}>Email owner</a>}{reply.phone && <a className={styles.secondary} href={buildWhatsAppShareUrl({ subject: 'Asset enquiry', body: `Hello ${reply.name}, regarding your Aim4price asset enquiry.` }, reply.phone)} target="_blank" rel="noreferrer">WhatsApp owner</a>}</div>}
     {!EXTERNAL_SHARE_OPTIONS.some(option=>permissions[option.key]) && <p className={styles.hint}>The sender shared read-only asset details. No additional actions are enabled.</p>}
-    {action === 'maintenanceReports' && canRead && sharedAsset ? createPortal(<DealerMaintenanceReportModal accessId={assetId!} externalShare={sharedAsset} onClose={close}/>,document.body) : action === 'costOfOwnership' && canRead && sharedAsset ? createPortal(<DealerCostOfOwnershipReportModal accessId={assetId!} externalShare={sharedAsset} assetTitle={assetTitle} assetMeta="Shared asset" onClose={close}/>,document.body) : action === 'maintenanceSchedules' && access === 'active' && sharedAsset ? createPortal(<DealerMaintenanceScheduleModal accessId={assetId!} externalShare={sharedAsset} onClose={close} onAssetUpdated={()=>close()}/>,document.body) : action && createPortal(action === 'reports' && allowed ? <LeadReportDialog title={assetTitle} description="Shared reports" onClose={close}>
+    {action === 'maintenanceReports' && canRead && sharedAsset ? createPortal(<DealerMaintenanceReportModal accessId={assetId!} externalShare={sharedAsset} onClose={close}/>,document.body) : action === 'costOfOwnership' && canRead && sharedAsset ? createPortal(<DealerCostOfOwnershipReportModal accessId={assetId!} externalShare={sharedAsset} assetTitle={assetTitle} assetMeta="Shared asset" onClose={close}/>,document.body) : action === 'maintenanceSchedules' && access === 'active' && sharedAsset ? createPortal(<DealerMaintenanceScheduleModal accessId={assetId!} externalShare={sharedAsset} onClose={close} onAssetUpdated={()=>close()}/>,document.body) : action && createPortal(action === 'reports' && allowed && permissions.allReports && assetId ? <SharedLiveReports token={token} assetId={assetId} assetTitle={assetTitle} onClose={close}/> : action === 'reports' && allowed ? <LeadReportDialog title={assetTitle} description="Shared reports" onClose={close}>
       {reports.map(report => <a className={assetStyles.assetReportOptionButton} data-download-option="true" key={report.id} href={`/api/asset-share-links/${token}/reports/${report.id}`} target="_blank" rel="noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6"/></svg><span><strong>{report.label}</strong><small>Open shared report</small></span></a>)}
       {!reports.length && <p>No reports were attached.</p>}
     </LeadReportDialog> : <LeadActionDialog title={title} assetTitle={assetTitle} onClose={close}>
