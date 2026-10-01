@@ -19,11 +19,18 @@ test('Excel exports native percentage bars with fixed 100 percent scale and stat
 if(process.env.OWNERSHIP_REPORT_FIXTURE){const realReport=load('lib/my-invoices-report.ts',{'./ownership-budget-tracker.ts':tracker,'./report-theme.ts':load('lib/report-theme.ts')});fs.writeFileSync('/tmp/ownership-budget.html',realReport.buildMyInvoicesReportHtml(options));const xlsx=load('lib/simple-xlsx.ts');fs.writeFileSync('/tmp/ownership-budget.xlsx',xlsx.createXlsxWorkbook(realReport.buildMyInvoicesWorkbook(options)));}
 test('single and umbrella routes scope budget history to authorized assets and do not send alerts',async()=>{
   let captured;
+  let sharedAccessAllowed=true, workspaceReads=0;
+  const sharedChecks=[];
   const {NextRequest,NextResponse}=require('next/server');
   const assets=[{id:'a',title:'Tractor'},{id:'private',title:'Private asset'}];
   const route=load('app/api/my-invoices/report/route.ts',{
     'next/server':{NextResponse},
-    '../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{ownerUserId:'owner',actorName:'Example'}}),filterCostLedgerForWorkspace:async(_,data)=>({...data,assets:data.assets.filter(a=>a.id==='a'),invoices:data.invoices.filter(i=>i.assetId==='a')})},
+    '../../../../lib/live-shared-asset-access':{requireLiveSharedAsset:async(token,assetId,permission)=>{
+      sharedChecks.push({token,assetId,permission});
+      if(!sharedAccessAllowed || token!=='shared-token' || assetId!=='a' || permission!=='costOfOwnership')throw Error('Access denied');
+      return {lead:{ownerId:'owner'},user:{id:'recipient'}};
+    }},
+    '../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>{workspaceReads++;return {ok:true,context:{ownerUserId:'owner',actorName:'Example'}};},filterCostLedgerForWorkspace:async(_,data)=>({...data,assets:data.assets.filter(a=>a.id==='a'),invoices:data.invoices.filter(i=>i.assetId==='a')})},
     '../../../../lib/owner-app-access':{getOwnerAppAccess:async()=>null},
     '../../../../lib/ownership-budget-tracker':tracker,
     '../../../../lib/cost-budgets':{listCostBudgetHistory:async(id)=>{assert.equal(id,'owner');return [budget,{...budget,id:'private-budget',assetId:'private'}];}},
@@ -38,6 +45,17 @@ test('single and umbrella routes scope budget history to authorized assets and d
     '../../../../lib/report-pdf':{},
   });
   for(const scope of ['assetId=a','groupId=group']){const url=new URL('https://example.com/api/my-invoices/report?format=xlsx&'+scope);const res=await route.GET(new NextRequest(url));assert.equal(res.status,200);assert.deepEqual(captured.budgets.map(b=>b.id),['b:2026-09-01']);assert.ok(captured.budgetInvoices.every(i=>i.assetId==='a'));assert.equal(captured.budgetInvoices.length,3);}
+  const sharedRequest=(scope='assetId=a')=>route.GET(new NextRequest('https://example.com/api/my-invoices/report?format=xlsx&shareToken=shared-token&'+scope));
+  const workspaceReadsBefore=workspaceReads;
+  assert.equal((await sharedRequest()).status,200);
+  assert.equal(workspaceReads,workspaceReadsBefore,'Shared access uses the approved link instead of requiring Desktop access');
+  assert.deepEqual(sharedChecks,[{token:'shared-token',assetId:'a',permission:'costOfOwnership'}]);
+  assert.deepEqual(captured.budgets.map(b=>b.id),['b:2026-09-01']);
+  assert.ok(captured.budgetInvoices.every(i=>i.assetId==='a'));
+  for(const scope of ['assetId=private','assetId=a&groupId=group','assetId=a&accessId=dealer-access'])assert.equal((await sharedRequest(scope)).status,403);
+  sharedAccessAllowed=false;
+  assert.equal((await sharedRequest()).status,403,'Revoked or denied links cannot export a report');
+
 });
 
 test('historical monthly and annual budgets follow cost dates and reset at calendar boundaries',()=>{
