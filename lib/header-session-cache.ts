@@ -6,6 +6,7 @@ export type HeaderSessionUser = {
   email: string;
   accountType: HeaderAccountType;
   accountSubtype: string | null;
+  sharingPlan?: 'free'|'desktop';
   logo?: string | null;
   logoUrl?: string | null;
   accountLogo?: string | null;
@@ -59,6 +60,7 @@ function normalizeHeaderSessionUser(value: unknown): HeaderSessionUser | null {
     email: normalizeText(source.email),
     accountType,
     accountSubtype: normalizeOptionalText(source.accountSubtype),
+    sharingPlan: source.sharingPlan==='free'?'free':'desktop',
     logo: normalizeOptionalText(source.logo),
     logoUrl: normalizeOptionalText(source.logoUrl),
     accountLogo: normalizeOptionalText(source.accountLogo),

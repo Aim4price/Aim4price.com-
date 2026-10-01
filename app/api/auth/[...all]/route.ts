@@ -27,8 +27,12 @@ export async function POST(request: Request): Promise<Response> {
     if (accountType === 'business' && (typeof signupInput.businessName !== 'string' || !signupInput.businessName.trim() || signupInput.businessName.length > 200 || signupInput.acceptedTerms !== true)) {
       return Response.json({ message: 'Enter your business name and accept the terms.' }, { status: 400 });
     }
-    const billingSignup = await validateSignupBilling(signupInput ?? {});
-    return await withSignupWorkspaceInput({ ...signupInput, accountType, billingSignup }, () => authHandlers.POST(request));
+    const accountAccess = signupInput?.accountAccess === 'free' || accountType === 'business' ? 'free' : 'desktop';
+    if (accountAccess === 'free' && !['dealer','business'].includes(accountType)) {
+      return Response.json({message:'Free sharing is available for Dealer and Business accounts.'},{status:400});
+    }
+    const billingSignup = accountAccess === 'free' ? null : await validateSignupBilling(signupInput ?? {});
+    return await withSignupWorkspaceInput({ ...signupInput, accountType, accountAccess, billingSignup }, () => authHandlers.POST(request));
   } catch (error) {
     if (error instanceof BillingError) return Response.json({ message: error.message }, { status: 400 });
     console.error("Signup billing preparation failed", error);

@@ -117,7 +117,24 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     documents: [{ url: "private-report.pdf" }],
   };
   let incompleteLicenceAssetId = null;
+  const liveShares = new Map();
+  let authorised = true;
   const network = load("lib/business-network.ts", {
+    './guest-leads': {
+      createGuestLead: async (ownerId, ids, photos, details, reports, umbrella, display) => {
+        assert.equal(ownerId, owner.id);
+        assert.equal(display.replacementPrice, false);
+        const token = String(liveShares.size + 1).padStart(43, 'a');
+        liveShares.set(token, {details, ids, photos, display});
+        return {token};
+      },
+      readLeadPage: async token => {
+        const share = liveShares.get(token);
+        return share ? {details:share.details, share:{senderName:'Farm',assets:share.ids.map(id=>({assetId:id,title:asset.title,serialNumber:asset.serialNumber,usage:String(asset.hours),condition:asset.condition,photoUrls:share.photos?asset.photos:[]}))}} : null;
+      },
+    },
+    './external-lead-access': {externalLeadAccess:async()=>({access:authorised?'active':'sign-in'})},
+    './asset-share-links': {revokeAssetShareLink:async (ownerId,token)=>{assert.equal(ownerId,owner.id);liveShares.delete(token);}},
     "./licence-share-readiness": load("lib/licence-share-readiness.ts"),
     "./business-network-shared": shared,
     "./db": {
@@ -150,7 +167,7 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     "./asset-groups": {
       getAssetGroupById: async (user, id) =>
         user === owner.id && id === "group-one"
-          ? { members: [{ assetId }, { assetId: asset2 }] }
+          ? { id:"group-one", name:"Farm fleet", members: [{ assetId }, { assetId: asset2 }] }
           : null,
     },
   });
@@ -282,7 +299,7 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     );
     assert.equal(sent.at(-1).replyTo, "owner@example.com");
     assert.ok(!sent.at(-1).html.includes("<script>"));
-    const requestToken = sent.at(-1).text.match(/#([a-f0-9]{64})/)[1];
+    const requestToken = sent.at(-1).text.match(/asset-share\/([A-Za-z0-9_-]{43})/)[1];
     assert.equal(
       (await network.getBusinessRequest(requestToken)).assets[0].title,
       "Tractor",
@@ -328,7 +345,13 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     await db.query(
       "update business_network_requests set expires_at=now()-interval '1 day'",
     );
-    await assert.rejects(network.getBusinessRequest(requestToken), /expired/);
+    assert.equal((await network.getBusinessRequest(requestToken)).assets.length,1,'Live links remain valid until revoked');
+    asset.title='Updated tractor';
+    assert.equal((await network.getBusinessRequest(requestToken)).assets[0].title,'Updated tractor');
+    authorised=false;
+    await assert.rejects(network.getBusinessRequest(requestToken),/Sign in/);
+    authorised=true;
+
     await db.query(
       "update business_network_requests set expires_at=now()+interval '1 day'",
     );
@@ -357,6 +380,8 @@ test("business lifecycle and request access use actual PostgreSQL constraints", 
     assert.equal((await network.listExternalBusinesses({})).length,0,'editing a hidden listing does not republish it');
     await manualAdmin.saveAdminBusiness('admin', {id:b.id,action:'publish'});
     assert.ok(await network.getBusinessRequest(requestToken), 'directory visibility is separate from enquiry access');
+    await network.revokeBusinessRequest(owner.id,requestRow.id);
+    await assert.rejects(network.getBusinessRequest(requestToken),/unavailable/);
     await network.limitBusinessAction("test-limit", 1);
     await assert.rejects(
       network.limitBusinessAction("test-limit", 1),

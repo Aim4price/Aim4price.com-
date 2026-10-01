@@ -17759,6 +17759,8 @@ export default function AssetRegisterClient({
 
       {isRegisterShareModalOpen && assetShareDestination === 'choice' ? (
         <ShareDestinationDialog
+          assetIds={activeShareAssets.map(asset => asset.id)}
+          umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
           kind={isAssetGroupShare ? 'umbrella' : 'register'}
           titleId="asset-register-share-title"
           subject={activeShareName}
@@ -20065,6 +20067,8 @@ export default function AssetRegisterClient({
 
       {isQuoteModalOpen && !selectedQuoteOption && assetShareDestination === 'choice' ? (
         <ShareDestinationDialog
+          assetIds={directoryInvitationAssetIds}
+          umbrellaId={isAssetGroupShare ? assetGroupShareTarget?.id : undefined}
           kind="asset"
           titleId="asset-quote-title"
           subject={quoteAsset?.title || 'Asset'}

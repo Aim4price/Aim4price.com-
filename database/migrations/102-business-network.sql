@@ -17,6 +17,7 @@ create table if not exists business_network_requests (
  expires_at timestamptz not null, revoked_at timestamptz, created_at timestamptz not null default now(),
  unique(owner_id, business_id, request_key)
 );
+alter table business_network_requests add column if not exists live_share_token text;
 create table if not exists business_network_rate_limits (
  key text primary key, count integer not null, started_at timestamptz not null default now()
 );

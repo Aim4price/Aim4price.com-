@@ -1,3 +1,5 @@
+import {randomUUID} from 'node:crypto';
+import {recordSharingUsage} from './sharing-foundation';
 import { sharedEnquiryReturnTo } from './external-share-permissions';
 import { AIM4PRICE_EMAIL_FONT_STACK, AIM4PRICE_EMAIL_LOGO_PATH, buildEmailBrandHeader } from './email-brand';
 
@@ -7,6 +9,7 @@ type SendAim4priceEmailInput = {
   html: string;
   text: string;
   replyTo?: string;
+  usage?: {accountId:string;actorId:string;eventKey:string};
 };
 
 function readEnv(name: string): string {
@@ -105,6 +108,12 @@ export async function sendAim4priceEmail(
     return;
   }
 
+  const attemptKey=input.usage?`${input.usage.eventKey}:${randomUUID()}`:'';
+  const meter=async(metric:'email_attempt'|'email_accepted'|'email_failed')=>{
+    if(input.usage)await recordSharingUsage({...input.usage,metric,eventKey:attemptKey});
+  };
+  await meter('email_attempt');
+  try {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -127,6 +136,8 @@ export async function sendAim4priceEmail(
       `Resend email failed with status ${response.status}${errorText ? `: ${errorText}` : ""}`,
     );
   }
+  } catch(error) { await meter('email_failed').catch(e=>console.error('Email failure metering failed',e)); throw error; }
+  await meter('email_accepted').catch(error=>console.error('Email acceptance metering failed',error));
 }
 
 function escapeHtml(value: string): string {

@@ -22,8 +22,8 @@ export type ExternalLeadActionData = {
         name: string;
     };
 };
-export default function ExternalLeadActions({ token, permissions, reports, access, reply, assetIndex, serialNumber, replacementPrice }: ExternalLeadActionData & {
-    assetIndex: number;
+export default function ExternalLeadActions({ token, permissions, reports, access, reply, assetIndex, assetId, serialNumber, replacementPrice }: ExternalLeadActionData & {
+    assetIndex: number; assetId?: string;
     serialNumber: string;
     replacementPrice: number | null;
 }) {
@@ -69,7 +69,7 @@ export default function ExternalLeadActions({ token, permissions, reports, acces
     </div> : action === 'reports' ? <div className={styles.reports}>{reports.map(report => <a className={styles.secondary} key={report.id} href={`/api/asset-share-links/${token}/reports/${report.id}`} target="_blank" rel="noreferrer">{report.label}</a>)}{!reports.length && <p>No reports were attached.</p>}</div> : action === 'documents' ? <LeadDocuments token={token} owner={access === 'owner'}/> : access === 'owner' ? <p className={styles.hint}>The recipient enters a proposed {action === 'serialNumber' ? 'serial number' : 'replacement price'} here. You review and approve it from the asset register before anything changes.</p> : <form className={styles.form} onSubmit={async (e) => { e.preventDefault(); if (busy)
             return; setBusy(true); setNotice(''); try {
             const value = action === 'serialNumber' ? draft : Math.round(Number(draft) / (vat ? 1.15 : 1) * 100) / 100;
-            const r = await fetch(`/api/asset-share-links/${token}/corrections`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assetIndex, field: action === 'serialNumber' ? 'serialNumber' : 'replacementPriceExVat', value }) });
+            const r = await fetch(`/api/asset-share-links/${token}/corrections`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ assetId, assetIndex, field: action === 'serialNumber' ? 'serialNumber' : 'replacementPriceExVat', value }) });
             const d = await r.json();
             if (!r.ok)
                 throw Error(d.error || 'Unable to send the update.');

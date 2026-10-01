@@ -13,13 +13,13 @@ function load(file, deps = {}) {
   return module.exports;
 }
 const constants = load('lib/account-constants.ts');
-function authOptions(onDelete) {
+function authOptions(onDelete, getDb = () => ({})) {
   return load('lib/auth.ts', {
-    'better-auth': { betterAuth: options => options },
+    'better-auth': { betterAuth: options => ({ ...options, handler: async () => Response.json({ ok: true }) }) },
     './account-constants': constants,
     './account-deletion': { deleteUserWorkspaceData: onDelete },
-    './db': { getDb: () => ({}) },
-    './business-workspaces': {}, './email': {}, './access-email': {}, './billing': {}, './account-profile': {},
+    './db': { getDb },
+    './sharing-foundation': {}, './business-workspaces': {}, './email': {}, './access-email': {}, './billing': {}, './account-profile': {},
     './admin-usage-events': {}, './signup-workspace-context': {},
   }).auth;
 }
@@ -58,4 +58,17 @@ test('admin deletion reads the stored email and rejects a protected target befor
   assert.equal(cleanupCalls, 0);
   assert.equal(queries.length, 1);
   assert.match(queries[0], /select id, name, email/);
+});
+
+// Importing a route is safe without database credentials; actual auth is not.
+test('auth initialisation is lazy, shared and fails closed when runtime configuration is absent', async () => {
+  let calls = 0;
+  const auth = authOptions(async () => {}, () => { calls++; return {}; });
+  assert.equal(calls, 0);
+  assert.equal('handler' in auth, true);
+  assert.equal((await auth.handler(new Request('https://example.test/api/auth/get-session'))).status, 200);
+  assert.ok(auth.databaseHooks.user.delete.before);
+  assert.equal(calls, 1);
+  const missing = authOptions(async () => {}, () => { throw Error('Database configuration missing'); });
+  assert.throws(() => missing.api, /Database configuration missing/);
 });

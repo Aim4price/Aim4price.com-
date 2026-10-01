@@ -1,3 +1,4 @@
+import { registerFreeSharingAccount } from './sharing-foundation';
 import { ensureBusinessWorkspace } from './business-workspaces';
 import { getSiteOrigin } from './email';
 import { buildAccessEmail } from './access-email';
@@ -109,7 +110,8 @@ function assertAuthUserCanBeDeleted(user: { email?: string | null }): void {
 
 const authBaseUrl = readAuthBaseUrl();
 
-export const auth = betterAuth({
+function createAuth() {
+  return betterAuth({
   database: getDb(),
   baseURL: authBaseUrl,
   secret: process.env.BETTER_AUTH_SECRET,
@@ -174,12 +176,13 @@ export const auth = betterAuth({
               },
             );
           } catch (error) {
-            if (readSignupField(context, "accountType") === "business") throw error;
+            if (readSignupField(context, "accountType") === "business" || readSignupField(context, "accountAccess") === "free") throw error;
             console.error(
               "Failed to create initial Aim4price account profile",
               error,
             );
           }
+          if (readSignupField(context, "accountAccess") === "free" || readSignupField(context, "accountType") === "business") await registerFreeSharingAccount(user.id);
           if (readSignupField(context, "accountType") === "business") await ensureBusinessWorkspace(user.id);
           const billing = readSignupWorkspaceField("billingSignup") as SignupBilling | null;
           if (billing) await queueSignupInvoice(user.id, billing);
@@ -196,5 +199,23 @@ export const auth = betterAuth({
         await deleteUserWorkspaceData(user.id);
       },
     },
+  },
+});
+}
+
+// Route discovery during a production build must not initialise the database.
+// The first real auth operation still requires valid runtime credentials.
+type Auth = ReturnType<typeof createAuth>;
+let instance: Auth | undefined;
+function getAuth(): Auth {
+  return instance ??= createAuth();
+}
+export const auth: Auth = new Proxy({} as Auth, {
+  get(_target, property) {
+    const current = getAuth();
+    return Reflect.get(current, property, current);
+  },
+  has(_target, property) {
+    return Reflect.has(getAuth(), property);
   },
 });

@@ -1,3 +1,4 @@
+import { ensureSharingFoundation, recordDeliveredAssets } from './sharing-foundation';
 import { normalizeExternalPermissions, type ExternalSharePermissions } from './external-share-permissions';
 import { canBusinessRead } from './business-accounts';
 import { randomBytes,randomUUID } from 'node:crypto';
@@ -6,7 +7,7 @@ import { ensureGuestLeadSchema } from './guest-lead-schema';
 import { businessEmail,businessText } from './business-network-shared';
 import { getAssetRegisterItemsByRefs } from './asset-register-db';
 import { assetShareSnapshot,parseShareAssetIds } from './asset-share-snapshot';
-import { readPublicAssetShare } from './asset-share-links';
+import { readPublicAssetShare, liveShareOwnershipSql } from './asset-share-links';
 import { getServerSession } from './auth-session';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 export type LeadDetails={accessMode?:'owner-approval';recipientUserId?:string;permissions?:ExternalSharePermissions;recipientName:string;recipientEmail:string;recipientWhatsApp?:string;allowSubmissions?:boolean;request:string;replyName:string;replyEmail:string;replyPhone:string;allowReply:boolean};
@@ -33,7 +34,7 @@ export function sharedReportContentType(report:LeadPdf) {
  if(!pdf&&!xlsx)throw new Error('Choose valid PDF or Excel reports.');
  return pdf?'application/pdf':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 }
-export async function createGuestLead(ownerId:string,idsInput:unknown,includePhotos:boolean,details:LeadDetails,reports:LeadPdf[],umbrella?:{id:string;name:string}){
+export async function createGuestLead(ownerId:string,idsInput:unknown,includePhotos:boolean,details:LeadDetails,reports:LeadPdf[],umbrella?:{id:string;name:string},displayOptions?:{valuation:boolean;replacementPrice:boolean;mainPhotoOnly:boolean}){
  const ids=parseShareAssetIds(idsInput),safe=validateLeadDetails(details);
  if(safe.permissions && reports.length && !safe.permissions.reports)throw new Error('Enable Reports before attaching reports.');
  if(safe.permissions?.reports && !reports.length)throw new Error('Choose at least one report or switch Reports off.');
@@ -42,10 +43,11 @@ export async function createGuestLead(ownerId:string,idsInput:unknown,includePho
  reports.forEach(sharedReportContentType);
  const assets=await getAssetRegisterItemsByRefs(ids.map(assetId=>({userId:ownerId,assetId})));
  if(assets.length!==ids.length)throw new Error('This account does not own all the selected assets.');
- await ensureGuestLeadSchema();const db=await getDb().connect(),token=randomBytes(32).toString('base64url');
+ await ensureGuestLeadSchema();await ensureSharingFoundation();const db=await getDb().connect(),token=randomBytes(32).toString('base64url');
  try{await db.query('BEGIN');
- await db.query(`INSERT INTO asset_share_links(token,user_id,selection_key,asset_ids,snapshot,lead_details,umbrella_name) VALUES($1,$2,$3,$4::uuid[],$5::jsonb,$6::jsonb,$7)`,[token,ownerId,`lead:${randomUUID()}`,ids,JSON.stringify(ids.map(id=>assetShareSnapshot(assets.find(a=>a.id===id)!,includePhotos))),JSON.stringify(safe),umbrella?.name||null]);
+ await db.query(`INSERT INTO asset_share_links(token,user_id,selection_key,asset_ids,snapshot,lead_details,umbrella_name,umbrella_id,include_photos,display_options) VALUES($1,$2,$3,$4::uuid[],$5::jsonb,$6::jsonb,$7,$8::uuid,$9,$10::jsonb)`,[token,ownerId,`lead:${randomUUID()}`,ids,JSON.stringify(ids.map(id=>assetShareSnapshot(assets.find(a=>a.id===id)!,includePhotos))),JSON.stringify(safe),umbrella?.name||null,umbrella?.id||null,includePhotos,displayOptions?JSON.stringify(displayOptions):null]);
  for(const report of reports)await db.query('INSERT INTO asset_share_reports(id,token,label,file_name,pdf,content_type) VALUES($1,$2,$3,$4,$5,$6)',[randomUUID(),token,report.label,report.fileName,report.data,sharedReportContentType(report)]);
+ if(safe.recipientEmail)await recordDeliveredAssets(safe.recipientEmail,token,ids,db);
  await db.query('COMMIT');return{token,created_at:new Date().toISOString()};
  }catch(error){await db.query('ROLLBACK');throw error;}finally{db.release();}
 }
@@ -76,14 +78,23 @@ export async function loadProtectedLeadReport(token:string,reportId:string){
  if(!leadAllows(lead,'reports'))return{status:403 as const};
  const { access }=await externalLeadAccess(lead);
  if(access!=='active'&&access!=='owner'&&access!=='read-only')return{status:403 as const};
- const report=(await getDb().query(`SELECT r.pdf,r.file_name,r.content_type FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.id=$1 AND r.token=$2 AND s.revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id))`,[reportId,token])).rows[0];
+ const report=(await getDb().query(`SELECT r.pdf,r.file_name,r.content_type FROM asset_share_reports r JOIN asset_share_links s ON s.token=r.token WHERE r.id=$1 AND r.token=$2 AND s.revoked_at IS NULL AND ${liveShareOwnershipSql()}`,[reportId,token])).rows[0];
  return report?{status:200 as const,report}:{status:404 as const};
 }
 
 // The shared page and this inbox reference the same enquiry, not a copied lead.
 export async function listReceivedSharedEnquiries(){
- const session=await getServerSession({requireActive:true,allowBusiness:true,allowDealerApp:true});
+ const session=await getServerSession({requireActive:false,allowDealerApp:true});
  if(!session?.user?.emailVerified||!session.user.email)return[];
  await ensureGuestLeadSchema();
- return (await getDb().query<{token:string;request:string;sender:string;created_at:string}>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE lower(lead_details->>'recipientEmail')=$1 AND revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) ORDER BY created_at DESC LIMIT 50`,[session.user.email.toLowerCase()])).rows;
+ const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string}>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE lower(lead_details->>'recipientEmail')=$1 AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC LIMIT 50`,[session.user.email.toLowerCase()])).rows;
+ const {externalLeadAccess}=await import('./external-lead-access');
+ const result:typeof candidates=[];
+ for(const candidate of candidates){
+  const lead=await readLeadPage(candidate.token);
+  if(!lead||!['active','read-only','owner'].includes((await externalLeadAccess(lead)).access))continue;
+  await recordDeliveredAssets(session.user.email,candidate.token,lead.share.assets.flatMap(asset=>asset.assetId?[asset.assetId]:[]));
+  result.push(candidate);
+ }
+ return result;
 }

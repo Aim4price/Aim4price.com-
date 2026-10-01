@@ -5,6 +5,7 @@ import SignupFlow from '../../../components/SignupFlow';
 import styles from '../../../components/SignupFlow.module.css';
 
 export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:string|null;initialEmail?:string}) {
+ const [chosen,setChosen]=useState(false);
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[createdEmail,setCreatedEmail]=useState('');
  const destination=returnTo||'/business';
  async function verify(email:string) {
@@ -17,12 +18,13 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
   const form=new FormData(event.currentTarget),email=String(form.get('email')||'').trim();
   setBusy(true);setNotice('');
   try {
-   const response=await fetch('/api/auth/sign-up/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:String(form.get('name')||'').trim(),businessName:String(form.get('businessName')||'').trim(),email,password:form.get('password'),acceptedTerms:form.get('terms')==='on',accountType:'business',accountSubtype:'contributor',callbackURL:destination})});
+   const response=await fetch('/api/auth/sign-up/email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:String(form.get('name')||'').trim(),businessName:String(form.get('businessName')||'').trim(),email,password:form.get('password'),acceptedTerms:form.get('terms')==='on',accountType:'business',accountSubtype:'contributor',accountAccess:'free',callbackURL:destination})});
    const data=await response.json().catch(()=>null);
    if(!response.ok)throw Error(data?.message||'Unable to create your account. If you already have one, sign in instead.');
    setCreatedEmail(email);await verify(email);
   }catch(error){setNotice(error instanceof Error?error.message:'Please try again.');}finally{setBusy(false);}
  }
+ if(!chosen)return <SignupFlow title="Choose your access" description="Start free or set up your full Aim4price workspace." returnTo={returnTo}><div className={styles.guestActions}><button className={styles.button} onClick={()=>setChosen(true)}>Free sharing account</button><Link className={styles.secondaryButton} href={`/auth?accountType=dealer&accountAccess=desktop${returnTo?'&returnTo='+encodeURIComponent(returnTo):''}#signup`}>Full Aim4price Desktop</Link></div></SignupFlow>;
  return <SignupFlow title={createdEmail?'Check your email':'Create your free account'} description={createdEmail?`Verify ${createdEmail} to open your shared enquiries.`:'Save your shared enquiries in one place. Upgrade when you need the full Aim4price Desktop.'} returnTo={returnTo}>
   {createdEmail?<div className={styles.guestActions}><button className={styles.secondaryButton} disabled={busy} onClick={async()=>{setBusy(true);try{await verify(createdEmail);}catch(error){setNotice((error as Error).message);}finally{setBusy(false);}}}>Resend verification email</button><Link className={styles.button} href={destination}>Continue</Link></div>:<form className={styles.form} onSubmit={submit}>
    <label>Your name<input name="name" autoComplete="name" required maxLength={150}/></label>

@@ -14,6 +14,7 @@ test('Business sessions require explicit endpoint opt-in and current verificatio
   const user = {id:'business-1',email:'business@example.test',emailVerified:true};
   const session = {user};
   const mod = load('lib/auth-session.ts', {
+    './sharing-foundation':{sharingSessionIsActive:async()=>true,sharingPlan:async()=> 'desktop'},
     './retired-workspaces': load('lib/retired-workspaces.ts', {}),
     './app-realm-server':{currentAppRealm:async()=>realm},
     'next/headers':{cookies:async()=>({get:()=>undefined}),headers:async()=>new Headers()},
@@ -41,7 +42,7 @@ test('Business sessions require explicit endpoint opt-in and current verificatio
 test('Business page access preserves approval, suspension and full-account boundaries',async()=>{
   let status='active',verified=true;
   const session={user:{id:'business-1'}};
-  const mod=load('lib/account-access.ts',{
+  const mod=load('lib/account-access.ts',{'./sharing-foundation':{sharingPlan:async()=> 'desktop'},
     'next/navigation':{redirect:path=>{throw Error(path);}},
     './account-constants':{accountStatusLabel:s=>s,isAim4priceAdminEmail:()=>false},
     './account-profile':{getAccountProfile:async()=>({accountType:'business'}),getAccountStatusForUser:async()=>status},

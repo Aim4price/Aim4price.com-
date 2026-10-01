@@ -55,11 +55,11 @@ export default function AssetShareLinkControl({ assetIds, includePhotos, onChang
     finally { setBusy(false); }
   }
   return <section className={styles.panel} aria-label="Asset page link">
-    <div><h4>Asset page link</h4><p>A simple, read-only snapshot. Anyone with the link can view it without signing in. No automatic expiry; you can disable it here.</p><p>{includePhotos ? 'Includes the selected asset photos.' : 'Asset details only. Turn on Include photos to add photos.'} Reports remain separate attachments.</p></div>
+    <div><h4>Asset page link</h4><p>A live, read-only asset page. Recipients sign in to view the latest saved information. You can revoke access at any time.</p><p>{includePhotos ? 'Includes the selected asset photos.' : 'Asset details only. Turn on Include photos to add photos.'} Reports remain separate attachments.</p></div>
     <ShareDisclaimer publicLink accepted={accepted} onChange={value => { setAccepted(value); if (!value) { setIncluded(false); onChange(''); } }} disabled={busy}/>
     {token ? <>
       <label className={styles.toggle}><input type="checkbox" checked={included} disabled={busy || !accepted} onChange={event => { setIncluded(event.target.checked); onChange(event.target.checked ? url : ''); }} />Include link in message</label>
-      <small>Snapshot saved {new Date(createdAt).toLocaleDateString('en-ZA')}. Disable and create a new link to share updated details.</small>
+      <small>Link created {new Date(createdAt).toLocaleDateString('en-ZA')}. Asset details update automatically.</small>
       {accepted && <input className={styles.url} aria-label="Asset page URL" value={url} readOnly onFocus={event => event.target.select()} />}
       <div className={styles.actions}><a href={url} target="_blank" rel="noreferrer">Preview</a><button type="button" disabled={busy || !accepted} onClick={() => void copyLink()}>Copy link</button><button type="button" disabled={busy} onClick={() => void revoke()}>Disable link</button></div>
     </> : <button type="button" disabled={busy || !accepted} onClick={() => void create()}>{busy ? 'Checking link…' : 'Create asset link'}</button>}

@@ -1,3 +1,4 @@
+import { liveShareOwnershipSql } from './asset-share-links';
 import { businessWorkspaceSummary } from './business-workspaces';
 import { getDb } from './db';
 import { getAccountProfile } from './account-profile';
@@ -143,5 +144,5 @@ export async function listBusinessEnquiries(user: {
         sender: string;
         created_at: string;
     }>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s
-    WHERE lower(lead_details->>'recipientEmail')=$1 AND (coalesce(lead_details->>'recipientUserId','')='' OR lead_details->>'recipientUserId'=$2) AND revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM unnest(s.asset_ids) requested(id) WHERE NOT EXISTS(SELECT 1 FROM asset_register_items a WHERE a.id=requested.id AND a.user_id=s.user_id)) ORDER BY created_at DESC LIMIT 50`, [user.email.toLowerCase(),user.id])).rows;
+    WHERE lower(lead_details->>'recipientEmail')=$1 AND (coalesce(lead_details->>'recipientUserId','')='' OR lead_details->>'recipientUserId'=$2) AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC LIMIT 50`, [user.email.toLowerCase(),user.id])).rows;
 }

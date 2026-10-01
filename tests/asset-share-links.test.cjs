@@ -26,7 +26,7 @@ test('snapshot includes only public fields, opt-in photos and correct usage', ()
   assert.deepEqual(snapshot.assetShareSnapshot(asset, true).photoUrls, ['/api/asset-register/uploads/abc-123']);
   for (const ids of [null, [], ['not-id'], Array(101).fill(A)]) assert.throws(() => snapshot.parseShareAssetIds(ids));
 });
-test('SQL persists and reuses snapshots, enforces owner scope, revocation and asset lifecycle', async () => {
+test('SQL reuses live links, enforces owner scope, revocation and asset lifecycle', async () => {
   const pg = new PGlite();
   await pg.exec('CREATE TABLE asset_register_items(id uuid PRIMARY KEY, user_id text NOT NULL)');
   await pg.query('INSERT INTO asset_register_items VALUES($1,$2),($3,$4)', [A, 'alice', B, 'bob']);
@@ -34,6 +34,7 @@ test('SQL persists and reuses snapshots, enforces owner scope, revocation and as
   let title = 'Original tractor';
   const db = { query: (sql, params) => params ? pg.query(sql, params) : pg.exec(sql) };
   const mod = load('lib/asset-share-links.ts', {
+    './asset-groups':{getAssetGroupById:async()=>({id:'30000000-0000-4000-8000-000000000001',name:'Tractor fleet',members:[{assetId:A}]})},
     './db': { getDb: () => db }, './asset-share-snapshot': snapshot,
     './asset-register-db': { getAssetRegisterItemsByRefs: async refs => {
       const rows = (await pg.query('SELECT * FROM asset_register_items')).rows;
@@ -42,7 +43,7 @@ test('SQL persists and reuses snapshots, enforces owner scope, revocation and as
   });
   try {
     await assert.rejects(mod.createAssetShareLink('alice', [B], false), /FORBIDDEN/);
-    const grouped = await mod.createAssetShareLink('alice', [A], false, {id:'group-a',name:'Tractor fleet'});
+    const grouped = await mod.createAssetShareLink('alice', [A], false, {id:'30000000-0000-4000-8000-000000000001',name:'Tractor fleet'});
     assert.equal((await mod.readPublicAssetShare(grouped.token)).umbrellaName, 'Tractor fleet');
     const first = await mod.createAssetShareLink('alice', [A], false);
     assert.notEqual(grouped.token, first.token);
@@ -56,7 +57,7 @@ test('SQL persists and reuses snapshots, enforces owner scope, revocation and as
     assert.match(first.token, /^[A-Za-z0-9_-]{43}$/);
     title = 'Changed tractor';
     assert.equal((await mod.createAssetShareLink('alice', [A], false)).token, first.token);
-    assert.equal((await mod.readPublicAssetShare(first.token)).assets[0].title, 'Original tractor');
+    assert.equal((await mod.readPublicAssetShare(first.token)).assets[0].title, 'Changed tractor');
     assert.equal(await mod.findAssetShareLink('bob', [A], false), null);
     await mod.revokeAssetShareLink('bob', first.token);
     assert.ok(await mod.readPublicAssetShare(first.token));

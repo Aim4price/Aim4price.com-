@@ -1,3 +1,4 @@
+import { sharingPlan } from './sharing-foundation';
 import { redirect } from "next/navigation";
 import {
   accountStatusLabel,
@@ -77,6 +78,8 @@ export async function requireActivePageAccess(options: { allowBusiness?: boolean
   if (access.isAdmin) {
     redirect("/admin");
   }
+
+  if (await sharingPlan(realSession.user.id) === "free") redirect("/shared-enquiries");
 
   if (!access.isActive) {
     redirect("/pending-payment");

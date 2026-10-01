@@ -34,6 +34,7 @@ create table if not exists business_network_requests (
  expires_at timestamptz not null, revoked_at timestamptz, created_at timestamptz not null default now(),
  unique(owner_id, business_id, request_key)
 );
+alter table business_network_requests add column if not exists live_share_token text;
 create table if not exists business_network_rate_limits (
  key text primary key, count integer not null, started_at timestamptz not null default now()
 );`;
@@ -381,11 +382,25 @@ export async function sendBusinessLead(
       "This request is already being processed or delivery failed. Refresh the preview to try again.",
     );
   }
-  const url = `${getSiteOrigin()}/business-network/request#${token}`;
-  const titles = view.assets.map((a) => a.title).join(", ");
+  let liveToken: string | undefined;
   try {
+  const {createGuestLead}=await import('./guest-leads');
+  const {getAssetGroupById}=await import('./asset-groups');
+  const group=input.assetGroupId?await getAssetGroupById(user.id,String(input.assetGroupId)):null;
+  const ids=group?group.members.map(member=>member.assetId):Array.isArray(input.assetIds)?input.assetIds:[input.assetId];
+  const sections=input.includedSections as Record<string,unknown>|undefined;
+  const share=await createGuestLead(user.id,ids,sections?.photos===true||sections?.mainPhoto===true,{
+    recipientName:view.businessName,recipientEmail:email,request:view.message||'Please review the shared assets.',
+    replyName:view.contact.name,replyEmail:view.contact.email,replyPhone:view.contact.phone,allowReply:true,
+    permissions:{reports:false,documents:false,serialNumber:false,replacementPrice:false},
+  },[],group?{id:group.id,name:group.name}:undefined,{valuation:sections?.valuationSummary===true,replacementPrice:false,mainPhotoOnly:sections?.photos!==true});
+  liveToken=share.token;
+  await getDb().query('UPDATE business_network_requests SET live_share_token=$2 WHERE id=$1',[id,share.token]);
+  const url = `${getSiteOrigin()}/asset-share/${share.token}`;
+  const titles = view.assets.map((a) => a.title).join(", ");
     await sendAim4priceEmail({
       to: email,
+      usage: { accountId:user.id, actorId:user.id, eventKey:`business-share:${id}` },
       replyTo: view.contact.email,
       subject: `Asset enquiry: ${titles.slice(0, 120)}`,
       text: `${view.contact.name}\n${view.contact.email}\n${view.contact.phone}\n${view.contact.additional}\n\n${view.message}\n\n${titles}\nView the shared assets and photos: ${url}\nReply to this email to contact the owner.`,
@@ -399,6 +414,8 @@ export async function sendBusinessLead(
       [id],
     );
   } catch (e) {
+    const {revokeAssetShareLink}=await import('./asset-share-links');
+    if(liveToken)await revokeAssetShareLink(user.id,liveToken);
     await getDb().query(
       `update business_network_requests set status='failed' where id=$1`,
       [id],
@@ -410,21 +427,31 @@ export async function getBusinessRequest(
   token: string,
 ): Promise<BusinessLeadView> {
   await ensureBusinessNetwork();
-  readBusinessToken(token);
-  const result = await getDb().query<{ snapshot: BusinessLeadView }>(
-    `select r.snapshot from business_network_requests r join business_network b on b.id=r.business_id where r.token_hash=$1 and r.expires_at>now() and r.revoked_at is null and r.status='sent'`,
-    [hashBusinessToken(token)],
-  );
-  if (!result.rows[0])
-    throw new Error("This request is unavailable or its link has expired.");
-  return result.rows[0].snapshot;
+  let shareToken=token;
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) {
+    readBusinessToken(token);
+    const row=(await getDb().query<{live_share_token:string}>(`SELECT live_share_token FROM business_network_requests WHERE token_hash=$1 AND revoked_at IS NULL AND status='sent'`,[hashBusinessToken(token)])).rows[0];
+    if(!row?.live_share_token)throw new Error('This older enquiry is unavailable or expired. Ask the owner for a new live asset link.');
+    shareToken=row.live_share_token;
+  }
+  const {readLeadPage}=await import('./guest-leads');
+  const {externalLeadAccess}=await import('./external-lead-access');
+  const lead=await readLeadPage(shareToken);
+  if(!lead?.details)throw new Error('This enquiry is unavailable or expired.');
+  if(!['active','read-only','owner'].includes((await externalLeadAccess(lead)).access))throw new Error('Sign in with the authorised recipient account to view this enquiry.');
+  return {
+    businessName:lead.details.recipientName,message:lead.details.request,umbrella:lead.share.umbrellaName||'',
+    contact:{name:lead.share.senderName||lead.details.replyName,email:lead.details.replyEmail,phone:lead.details.replyPhone,additional:''},
+    assets:lead.share.assets.map(asset=>({title:asset.title,details:[['Serial number',asset.serialNumber],['Usage',asset.usage],['Condition',asset.condition]],photos:asset.photoUrls})),
+  };
 }
 export async function revokeBusinessRequest(ownerId: string, id: string) {
   await ensureBusinessNetwork();
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error("Choose a valid enquiry.");
   const result = await getDb().query(
-    `update business_network_requests set revoked_at=now() where id=$1 and owner_id=$2 returning id`,
+    `update business_network_requests set revoked_at=now() where id=$1 and owner_id=$2 returning id,live_share_token`,
     [id, ownerId],
   );
   if (!result.rows.length) throw new Error("This enquiry is unavailable.");
+  if(result.rows[0].live_share_token){const {revokeAssetShareLink}=await import('./asset-share-links');await revokeAssetShareLink(ownerId,result.rows[0].live_share_token);}
 }

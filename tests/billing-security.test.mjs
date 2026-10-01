@@ -65,7 +65,7 @@ test('Signup wizard permits early steps and requires invoice consent only at the
  const code=ts.transpileModule(source.slice(start,end),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
  const form={name:'Example',phone:'0821234567',email:'example@example.test',introducedByName:'',introducedByOption:'direct',province:'Western Cape',townCity:'George',password:'long-password',confirmPassword:'long-password',acceptTerms:true};
  const billing={accepted:false,address:''};const notices=[];
- const validate=Function('billingPricingError','selectedBillingPlan','billing','signupForm','setNotice','returnToSignupStep',code+';return validateSignupStep;')('',{amountCents:50000},billing,form,n=>notices.push(n),()=>{});
+ const validate=Function('accountAccess','billingPricingError','selectedBillingPlan','billing','signupForm','setNotice','returnToSignupStep',code+';return validateSignupStep;')('desktop','',{amountCents:50000},billing,form,n=>notices.push(n),()=>{});
  assert.equal(validate(1),true);assert.equal(validate(2),true);assert.equal(validate(3),false);
  billing.accepted=true;billing.address='George';assert.equal(validate(3),true);
  assert.equal(notices[0].title,'Invoice details required');
