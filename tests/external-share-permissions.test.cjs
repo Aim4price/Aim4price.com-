@@ -40,7 +40,7 @@ test('permission input defaults to read-only and signup returns only to valid en
  for(const value of ['https://evil.test','//evil.test','/\\evil.test','/admin','/asset-share/short','/asset-share/'+'x'.repeat(43)+'?open=1&redirect=https://evil.test'])assert.equal(permissions.sharedEnquiryReturnTo(value),null);
  assert.equal(permissions.sharedEnquiryReturnTo('/asset-share/'+'x'.repeat(43)),'/asset-share/'+'x'.repeat(43));
 });
-test('verified recipients can read; contributions require the invited approved account',async()=>{
+test('signed-in recipients can read without email verification; contributions require the invited approved account',async()=>{
  const x=await setup();try{
   const lead=await x.leads.readLeadPage(x.link.token);
   assert.equal(lead.share.umbrellaName,'');assert.equal(lead.share.senderName,'Owner Business');assert.equal(lead.share.assets.length,2);
@@ -48,7 +48,9 @@ test('verified recipients can read; contributions require the invited approved a
   await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===401);
   x.signIn({email:'forwarded@example.com'});x.state.approved=true;
   assert.equal((await x.access.externalLeadAccess(lead)).access,'wrong-recipient');await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'serialNumber'),e=>e.status===403);
-  x.signIn({emailVerified:false});assert.equal((await x.access.externalLeadAccess(lead)).access,'verify-email');
+  x.signIn({emailVerified:false});assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
+  for(const type of ['owner','dealer','business']){x.state.type=type;assert.equal((await x.access.externalLeadAccess(lead)).access,'active');}
+  assert.equal((await x.leads.listReceivedSharedEnquiries()).length,1);
   x.signIn();x.state.approved=false;assert.equal((await x.access.externalLeadAccess(lead)).access,'read-only');
   await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===403);
   x.state.approved=true;x.state.status='suspended';assert.equal((await x.access.externalLeadAccess(lead)).access,'suspended');
@@ -107,7 +109,7 @@ test('correction endpoint rejects foreign requests and forged access, then attri
   assert.equal((await route.POST(request({},'https://foreign.test'),ctx)).status,400);
   assert.equal((await route.POST(request(),ctx)).status,401);
   x.signIn({email:'forwarded@example.com'});x.state.approved=true;assert.equal((await route.POST(request(),ctx)).status,403);
-  x.signIn({emailVerified:false});assert.equal((await route.POST(request(),ctx)).status,403);
+  x.signIn({emailVerified:false});assert.equal((await route.POST(request({assetIndex:100}),ctx)).status,400);
   x.signIn();x.state.approved=false;assert.equal((await route.POST(request(),ctx)).status,403);
   x.state.approved=true;assert.equal((await route.POST(request({assetIndex:100}),ctx)).status,400);assert.equal((await route.POST(request({field:'ownerUserId'}),ctx)).status,400);
   const response=await route.POST(request({dealerUserId:'spoofed',ownerUserId:'other',assetId:B}),ctx);assert.equal(response.status,200);const result=await response.json();assert.equal(result.correction.dealerUserId,'recipient');assert.equal(result.correction.ownerUserId,'owner');assert.equal(result.correction.assetId,B);
@@ -115,12 +117,12 @@ test('correction endpoint rejects foreign requests and forged access, then attri
  }finally{await x.pg.close();}
 });
 
-test('untargeted links require verification and explicit owner approval; forwarded and revoked links stay locked',async()=>{
+test('untargeted links require sign-in and explicit owner approval; forwarded and revoked links stay locked',async()=>{
  const x=await setup();try{
   const created=await x.leads.createGuestLead('owner',[A],false,{...x.details,accessMode:'owner-approval',recipientName:'',recipientEmail:''},[x.report]);
   const token=created.token;
   x.signIn({emailVerified:false});x.state.approved=true;
-  await assert.rejects(x.access.requestExternalLeadAccess(token),e=>e.status===403);
+  await x.access.requestExternalLeadAccess(token);
   x.signIn();x.state.approved=false;
   await x.access.requestExternalLeadAccess(token); // Verified reading requests do not wait for business approval.
   x.state.approved=true;

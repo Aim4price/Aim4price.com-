@@ -77,7 +77,7 @@ test('each lead and report is owner/recipient scoped; payment never bypasses own
  guest={email:details.recipientEmail,active:false};assert.equal(await mod.resolveLeadAccess('owner',details.recipientEmail),'sign-in');assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);
  guest={email:'second@example.com',active:true};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);
  guest={email:details.recipientEmail,active:true};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);session={user:{id:'recipient',email:details.recipientEmail,emailVerified:true}};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);assert.equal((await mod.loadProtectedLeadReport(one.token,other.reports[0].id)).status,404);assert.equal((await mod.loadProtectedLeadReport(two.token,other.reports[0].id)).status,403);
- guest=null;session={user:{id:'other',email:details.recipientEmail,emailVerified:false}};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,403);session.user.emailVerified=true;assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);
+ guest=null;session={user:{id:'other',email:details.recipientEmail,emailVerified:false}};assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);session.user.emailVerified=true;assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,200);
  session={user:{id:'owner'}};assert.equal(await mod.resolveLeadAccess('owner',details.recipientEmail),'owner');session=null;
  await base.revokeAssetShareLink('other',one.token);assert.ok(await mod.readLeadPage(one.token));await base.revokeAssetShareLink('owner',one.token);assert.equal(await mod.readLeadPage(one.token),null);assert.equal((await mod.loadProtectedLeadReport(one.token,reportId)).status,404);
  guest={email:'second@example.com',active:true};await pg.query('UPDATE asset_register_items SET user_id=$1 WHERE id=$2',['other',A]);assert.equal((await mod.loadProtectedLeadReport(two.token,other.reports[0].id)).status,404);
@@ -112,7 +112,7 @@ test('incoming documents are opt-in, owner-private, review-only and respect link
   const disabled=await lead.createGuestLead('owner',[A],false,details,[]);
   await assert.rejects(docs.submitLeadDocument(disabled.token,input,file,'receiver'),/not shared/);
   const one=await lead.createGuestLead('owner',[A],false,{...details,allowSubmissions:true},[]);
-  await assert.rejects(docs.submitLeadDocument(one.token,input,file,'receiver'),/verified/);
+  await assert.rejects(docs.submitLeadDocument(one.token,input,file,'receiver'),/signed-in, approved/);
   session={user:{id:'receiver',name:'Workshop',email:details.recipientEmail,emailVerified:true}};
   await docs.submitLeadDocument(one.token,input,file,'receiver');
   assert.deepEqual(await docs.listLeadSubmissions('other',one.token),[]);
@@ -126,7 +126,7 @@ test('incoming documents are opt-in, owner-private, review-only and respect link
   assert.equal((await pg.query('SELECT user_id FROM asset_register_items WHERE id=$1',[A])).rows[0].user_id,'owner');
   session={user:{id:'receiver',email:details.recipientEmail,emailVerified:true}};
   assert.equal((await lead.listReceivedSharedEnquiries()).length,2);
-  session={user:{id:'receiver',email:details.recipientEmail,emailVerified:false}};assert.deepEqual(await lead.listReceivedSharedEnquiries(),[]);
+  session={user:{id:'receiver',email:details.recipientEmail,emailVerified:false}};assert.equal((await lead.listReceivedSharedEnquiries()).length,2);
   await base.revokeAssetShareLink('owner',one.token);
   await assert.rejects(docs.submitLeadDocument(one.token,input,file,'receiver'),/no longer available/);
   assert.ok(await docs.downloadLeadSubmission('owner',one.token,submission.id),'owner retains received documents after revocation');

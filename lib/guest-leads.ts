@@ -67,8 +67,8 @@ export async function readLeadPage(token:string){
 export async function resolveLeadAccess(ownerId:string,recipientEmail:string):Promise<LeadAccess>{
  const session=await getServerSession({requireActive:true,allowOwnerApp:true,allowDealerApp:true});
  if(session?.user?.id===ownerId&&await getAssetRegisterAccountAccess(session))return 'owner';
- // Existing full accounts may use their own verified identity; guest accounts never become full accounts.
- if(session?.user?.emailVerified===true&&session.user.email.toLowerCase()===recipientEmail)return 'active';
+ // Existing full accounts may use their signed-in identity; guest accounts never become full accounts.
+ if(session?.user?.email&&session.user.email.toLowerCase()===recipientEmail.toLowerCase())return 'active';
  const businessSession=await getServerSession({requireActive:false});
  if(businessSession?.user?.email?.toLowerCase()===recipientEmail.toLowerCase()&&await canBusinessRead(businessSession.user))return 'active';
  return businessSession?.user ? 'wrong-recipient' : 'sign-in';
@@ -87,7 +87,7 @@ export async function loadProtectedLeadReport(token:string,reportId:string){
 // The shared page and this inbox reference the same enquiry, not a copied lead.
 export async function listReceivedSharedEnquiries(){
  const session=await getServerSession({requireActive:false,allowDealerApp:true});
- if(!session?.user?.emailVerified||!session.user.email)return[];
+ if(!session?.user?.email)return[];
  await ensureGuestLeadSchema();
  const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string}>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE lower(lead_details->>'recipientEmail')=$1 AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC LIMIT 50`,[session.user.email.toLowerCase()])).rows;
  const {externalLeadAccess}=await import('./external-lead-access');
