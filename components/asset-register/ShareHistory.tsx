@@ -9,10 +9,9 @@ type Entry = {
     recipient_email: string | null;
     umbrella_name: string | null;
 };
-export default function ShareHistory({ assetIds, umbrellaId, mode, onBack }: {
+export default function ShareHistory({ assetIds, umbrellaId, onBack }: {
     assetIds: string[];
     umbrellaId?: string;
-    mode: 'history' | 'revoke';
     onBack: () => void;
 }) {
     const [rows, setRows] = useState<Entry[]>([]), [offset, setOffset] = useState(0), [more, setMore] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('');
@@ -48,12 +47,12 @@ export default function ShareHistory({ assetIds, umbrellaId, mode, onBack }: {
         }
     }
     return <div className={styles.panel}>
-  <p>{mode === 'revoke' ? 'Choose the link whose access you want to revoke. Other shares stay active.' : 'Your created links. A copied link does not confirm that it was sent or opened.'}</p>
-  {error && <p role="alert">{error}</p>}
-  {!rows.length ? <p>{busy ? 'Loading…' : 'No links have been created for this selection.'}</p> : <div className={styles.list}>{rows.map(row => <article className={styles.row} key={row.token}>
-   <div><strong>{row.recipient_name || row.recipient_email || row.umbrella_name || 'Shared link'}</strong><small>{new Date(row.created_at).toLocaleString('en-ZA')} · {row.revoked_at ? 'Revoked' : 'Active'}</small></div>
-   {!row.revoked_at && (mode === 'revoke' ? <button type="button" disabled={busy} onClick={() => void revoke(row.token)}>Revoke access</button> : <a href={`/asset-share/${row.token}`} target="_blank" rel="noreferrer">Open link</a>)}
+  <p className={styles.intro}>Open a shared link or revoke its access.</p>
+  {error && <p role="alert" className={styles.error}>{error}</p>}
+  {!rows.length ? <p className={styles.empty} role="status">{busy ? 'Loading shared links…' : 'No shared links yet.'}</p> : <div className={styles.list} aria-busy={busy}>{rows.map(row => <article className={styles.row} key={row.token}>
+   <div className={styles.details}><strong>{row.recipient_name || row.recipient_email || row.umbrella_name || 'Shared link'}</strong><small>{new Date(row.created_at).toLocaleString('en-ZA', {dateStyle: 'medium', timeStyle: 'short'})}</small><span className={styles.status} data-revoked={Boolean(row.revoked_at)}>{row.revoked_at ? 'Access revoked' : 'Active'}</span></div>
+   <div className={styles.actions}>{row.revoked_at ? <span className={styles.revoked}>This link no longer grants access</span> : <><a href={`/asset-share/${row.token}`} target="_blank" rel="noreferrer">Open<span className={styles.srOnly}> shared link in a new tab</span><span aria-hidden="true"> ↗</span></a><button className={styles.revoke} type="button" disabled={busy} onClick={() => void revoke(row.token)}>Revoke access</button></>}</div>
   </article>)}</div>}
-  <footer><button type="button" onClick={onBack}>Back</button>{offset > 0 && <button type="button" disabled={busy} onClick={() => setOffset(offset - 5)}>Previous</button>}{more && <button type="button" disabled={busy} onClick={() => setOffset(offset + 5)}>Next</button>}</footer>
+  <footer><button type="button" onClick={onBack}>← Share options</button><span className={styles.page}>Page {offset / 5 + 1}</span>{offset > 0 && <button type="button" disabled={busy} onClick={() => setOffset(offset - 5)}>Previous</button>}{more && <button type="button" disabled={busy} onClick={() => setOffset(offset + 5)}>Next</button>}</footer>
  </div>;
 }

@@ -20072,6 +20072,7 @@ export default function AssetRegisterClient({
           kind="asset"
           titleId="asset-quote-title"
           subject={quoteAsset?.title || 'Asset'}
+          serialNumber={quoteAsset?.serialNumber}
           disabled={isSendingQuoteLead}
           onClose={backFromShareModal}
           onSendLink={() => setAssetShareDestination('link')}
