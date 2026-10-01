@@ -58,7 +58,27 @@ test('signed-in free Dealers return to their enquiry or hub instead of the unpai
   '../../lib/middleman-account':{},'./auth-client':{default:'Auth'},
  });
  await assert.rejects(page.default({searchParams:{returnTo:'/asset-share/'+token+'?open=1'}}),{message:'/asset-share/'+token+'?open=1'});
- await assert.rejects(page.default({}),{message:'/shared-enquiries'});
+ await assert.rejects(page.default({}),{message:'/upgrade-account'});
  assert.ok(await page.default({searchParams:{switchAccount:'1'}}));
  status='suspended';assert.ok(await page.default({}));
+});
+
+test('resend verification uses the signed-in email and a safe return destination',async()=>{
+ let session=null,sent=null,limited=0;
+ const route=load('app/api/shared-account/verification/route.ts',{
+  '../../../../lib/auth-session':{getAnyServerSession:async()=>session},
+  '../../../../lib/auth':{auth:{api:{sendVerificationEmail:async value=>{sent=value.body;}}}},
+  '../../../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
+  '../../../../lib/trusted-request-origin':{isTrustedRequestOrigin:(a,b)=>a===b},
+  '../../../../lib/business-network':{limitBusinessAction:async()=>{limited++;}},
+ });
+ const request=(body={},origin='https://aim4price.test')=>new Request('https://aim4price.test/api/shared-account/verification',{method:'POST',headers:{origin,'Content-Type':'application/json'},body:JSON.stringify(body)});
+ assert.equal((await route.POST(request())).status,401);
+ session={user:{id:'free',email:'real@example.test'}};
+ assert.equal((await route.POST(request({},'https://evil.test'))).status,403);
+ assert.equal((await route.POST(request({email:'forged@example.test',returnTo:'https://evil.test'}))).status,200);
+ assert.deepEqual(sent,{email:'real@example.test',callbackURL:'/shared-enquiries'});
+ const returnTo='/asset-share/'+token+'?open=1';
+ assert.equal((await route.POST(request({returnTo}))).status,200);
+ assert.equal(sent.callbackURL,returnTo);assert.equal(limited,2);
 });

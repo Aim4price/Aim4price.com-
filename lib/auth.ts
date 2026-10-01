@@ -137,6 +137,7 @@ function createAuth() {
   },
   emailVerification: {
     sendOnSignUp: false,
+    autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
       await sendAim4priceEmail({to:user.email,...buildAccessEmail({url,origin:getSiteOrigin()})});
     },

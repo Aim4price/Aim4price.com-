@@ -66,7 +66,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
         form.set('assetIds', JSON.stringify(selection.assetIds));
         form.set('includePhotos', String(selection.includePhotos));
         if (selection.umbrellaId) form.set('umbrellaId', selection.umbrellaId);
-        form.set('details', JSON.stringify({ accessMode: 'owner-approval', recipientName: '', recipientEmail: '', request: 'Please open the shared assets.', replyPhone: '', allowReply: false, permissions }));
+        form.set('details', JSON.stringify({ accessMode: 'signed-in', recipientName: '', recipientEmail: '', request: 'Please open the shared assets.', replyPhone: '', allowReply: false, permissions }));
         response = await fetch('/api/asset-share-links/leads', { method: 'POST', body: form });
       }
       const data = await response.json();
@@ -132,7 +132,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
             <strong>Email</strong>
           </a>
         </div>
-        <p className={styles.hint}>Choose the recipient in WhatsApp or your email app. Viewing the link is free. Selected actions require a verified account and your approval of its access request; a basic Business account needs no subscription.</p>
+        <p className={styles.hint}>Choose the recipient in WhatsApp or your email app. Anyone with this link can sign in to view the assets and use the permissions you selected. New free accounts verify their email once. You can revoke the link in History.</p>
         <footer className={styles.footer}>
           <a className={styles.copy} href={link} target="_blank" rel="noreferrer">Preview enquiry</a>
           <button ref={copyButton} type="button" className={styles.copy} onClick={() => void copyLink()}>

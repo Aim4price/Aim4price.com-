@@ -155,7 +155,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    assert.equal(sent.body.get('umbrellaId'),'fleet');
    assert.deepEqual(JSON.parse(sent.body.get('assetIds')),['asset-a']);
    const details=JSON.parse(sent.body.get('details'));
-   assert.equal(details.accessMode,'owner-approval');assert.equal(details.permissions.allReports,true);assert.equal(sent.body.get('includePhotos'),'true');for(const key of ['serialNumber','replacementPrice','maintenanceSchedules','documents'])assert.equal(details.permissions[key],false);
+   assert.equal(details.accessMode,'signed-in');assert.equal(details.permissions.allReports,true);assert.equal(sent.body.get('includePhotos'),'true');for(const key of ['serialNumber','replacementPrice','maintenanceSchedules','documents'])assert.equal(details.permissions[key],false);
    if(failed){assert.ok(walk(view,n=>n.props?.role==='alert'));assert.ok(!button('Copy link'));}
    else {
     assert.ok(walk(view,n=>n.type==='a'&&n.props.href===`https://aim4price.test/asset-share/${token}`));

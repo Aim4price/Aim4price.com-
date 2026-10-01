@@ -40,6 +40,8 @@ function add(file){
 add('components/asset-register/ExternalLeadActions');
 add('components/leads/LeadManageDialog');
 add('components/business-network/BusinessListingInvite');
+add('components/SharedEnquiryLanding');
+add('app/business/join/business-signup');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -101,6 +103,16 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/asset-link-settings.png'});
  await click('Share read-only');await page.waitForSelector('dialog[open]');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Before you share')));
+ await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('components/SharedEnquiryLanding').default,{returnTo:'/asset-share/'+ 'a'.repeat(43)+'?open=1',access:'verify-email',prompt:true,summary:{senderName:'Example farm',assetCount:1,assetTitles:['Tractor'],umbrellaName:''}})));
+ await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Verify your email'));
+ const gate=await page.$eval('dialog[open]',node=>({scroll:node.scrollHeight,height:node.clientHeight,width:node.getBoundingClientRect().width,heading:node.querySelector('h2').getBoundingClientRect().height}));
+ assert(gate.scroll<=gate.height+1);assert(gate.width>=700);assert(gate.heading<40,'Heading fits on one line');
+ await click('Resend verification email');await page.waitForFunction(()=>document.body.textContent.includes('Verification email sent'));
+ assert(await page.evaluate(()=>window.requests.some(request=>request.url==='/api/shared-account/verification')));
+ await page.screenshot({path:'/tmp/shared-email-verification.png'});
+ await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('app/business/join/business-signup').default,{returnTo:null})));
+ await page.waitForFunction(()=>document.body.textContent.includes('Choose your access'));
+ await page.screenshot({path:'/tmp/shared-account-choice.png'});
  console.log('PASS: shared dialogs, correction endpoint/stable asset ID, Escape return, report link, documents, verification gate and hidden permissions');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

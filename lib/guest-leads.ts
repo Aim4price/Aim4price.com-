@@ -10,12 +10,12 @@ import { assetShareSnapshot,parseShareAssetIds } from './asset-share-snapshot';
 import { readPublicAssetShare, liveShareOwnershipSql } from './asset-share-links';
 import { getServerSession } from './auth-session';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
-export type LeadDetails={accessMode?:'owner-approval';recipientUserId?:string;permissions?:ExternalSharePermissions;recipientName:string;recipientEmail:string;recipientWhatsApp?:string;allowSubmissions?:boolean;request:string;replyName:string;replyEmail:string;replyPhone:string;allowReply:boolean};
+export type LeadDetails={accessMode?:'owner-approval'|'signed-in';recipientUserId?:string;permissions?:ExternalSharePermissions;recipientName:string;recipientEmail:string;recipientWhatsApp?:string;allowSubmissions?:boolean;request:string;replyName:string;replyEmail:string;replyPhone:string;allowReply:boolean};
 export type LeadReport={id:string;label:string};
 export type LeadAccess='owner'|'active'|'sign-in'|'wrong-recipient'|'payment-required';
 export function validateLeadDetails(input:Record<string,unknown>):LeadDetails{
- const ownerApproval=input.accessMode==='owner-approval';
- const details={...(ownerApproval?{accessMode:'owner-approval' as const}:{}),recipientName:businessText(input.recipientName),recipientEmail:businessText(input.recipientEmail)?businessEmail(input.recipientEmail):'',recipientWhatsApp:businessText(input.recipientWhatsApp).replace(/[\s()-]/g,''),allowSubmissions:input.allowSubmissions===true,request:String(input.request||'').trim(),replyName:businessText(input.replyName),replyEmail:businessEmail(input.replyEmail),replyPhone:businessText(input.replyPhone),allowReply:input.allowReply===true};
+ const ownerApproval=input.accessMode==='owner-approval'||input.accessMode==='signed-in';
+ const details={...(ownerApproval?{accessMode:input.accessMode as 'owner-approval'|'signed-in'}:{}),recipientName:businessText(input.recipientName),recipientEmail:businessText(input.recipientEmail)?businessEmail(input.recipientEmail):'',recipientWhatsApp:businessText(input.recipientWhatsApp).replace(/[\s()-]/g,''),allowSubmissions:input.allowSubmissions===true,request:String(input.request||'').trim(),replyName:businessText(input.replyName),replyEmail:businessEmail(input.replyEmail),replyPhone:businessText(input.replyPhone),allowReply:input.allowReply===true};
  if(!details.request||details.request.length>3000||!details.replyName||details.replyName.length>150||details.recipientName.length>200||details.replyPhone.length>40)throw new Error('Enter your request, name and valid contact details.');
  if(!ownerApproval&&!details.recipientEmail&&!details.recipientWhatsApp)throw new Error('Enter a recipient email or confirmed WhatsApp number.');
  if(details.recipientWhatsApp&&!/^\+[1-9]\d{7,14}$/.test(details.recipientWhatsApp))throw new Error('Enter the confirmed WhatsApp number with country code, for example +27821234567.');
@@ -40,7 +40,7 @@ export async function createGuestLead(ownerId:string,idsInput:unknown,includePho
  if(safe.permissions?.allReports) includePhotos=true;
  if(safe.permissions && reports.length && !safe.permissions.reports)throw new Error('Enable Reports before attaching reports.');
  if(safe.permissions?.reports && !safe.permissions.allReports && !reports.length)throw new Error('Choose at least one report or switch Reports off.');
- if(reports.length&&!safe.recipientEmail&&safe.accessMode!=='owner-approval')throw new Error('Enter the recipient email to restrict report access to their verified account.');
+ if(reports.length&&!safe.recipientEmail&&!['owner-approval','signed-in'].includes(safe.accessMode || ''))throw new Error('Enter the recipient email to restrict report access to their verified account.');
  if(reports.length>6||reports.reduce((n,r)=>n+r.data.length,0)>30*1024*1024||reports.some(r=>r.data.length>8*1024*1024||r.data.length<5||!r.label||r.label.length>200||r.fileName.length>200))throw new Error('Choose up to six PDF or Excel reports, each under 8 MB and 30 MB in total.');
  reports.forEach(sharedReportContentType);
  const assets=await getAssetRegisterItemsByRefs(ids.map(assetId=>({userId:ownerId,assetId})));
@@ -88,8 +88,8 @@ export async function loadProtectedLeadReport(token:string,reportId:string){
 export async function listReceivedSharedEnquiries(){
  const session=await getServerSession({requireActive:false,allowDealerApp:true});
  if(!session?.user?.email)return[];
- await ensureGuestLeadSchema();
- const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string}>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE lower(lead_details->>'recipientEmail')=$1 AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC LIMIT 50`,[session.user.email.toLowerCase()])).rows;
+ await ensureGuestLeadSchema();await ensureSharingFoundation();
+ const candidates = (await getDb().query<{token:string;request:string;sender:string;created_at:string}>(`SELECT token,lead_details->>'request' AS request,lead_details->>'replyName' AS sender,created_at FROM asset_share_links s WHERE (lower(lead_details->>'recipientEmail')=$1 OR EXISTS(SELECT 1 FROM sharing_usage_events e WHERE e.token=s.token AND e.account_id=$2 AND e.metric='enquiry_opened')) AND revoked_at IS NULL AND ${liveShareOwnershipSql()} ORDER BY created_at DESC LIMIT 50`,[session.user.email.toLowerCase(),session.user.id])).rows;
  const {externalLeadAccess}=await import('./external-lead-access');
  const result:typeof candidates=[];
  for(const candidate of candidates){
