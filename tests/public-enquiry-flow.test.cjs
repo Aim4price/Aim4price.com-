@@ -49,6 +49,7 @@ test('public enquiry renders an expandable Leads card for every selected asset',
     '../LeadPhotoViewerModal':()=>null,
     './ExternalLeadActions':()=>null,
     './ShareModalCloseButton':()=>null,
+    '../leads/LeadManageDialog':()=>null,
     '../business-network/BusinessAcceptanceForm':()=>React.createElement('div',null,'Business lookup'),
     '../WebsitePortal':{createPortal:()=>{throw new Error('No modal should be mounted before Manage is clicked');}},
   }).default;

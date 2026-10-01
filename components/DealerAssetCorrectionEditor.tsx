@@ -1,7 +1,8 @@
 'use client';
 import DateInput from './DateInput';
+import LeadActionDialog from './leads/LeadActionDialog';
 
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from './WebsitePortal';
 import { useRouter } from 'next/navigation';
 import type {
@@ -10,7 +11,6 @@ import type {
   DealerAssetCorrectionSource,
 } from '../lib/dealer-asset-corrections';
 import styles from './DealerAssetCorrectionEditor.module.css';
-import dialogStyles from './AccountDialog.module.css';
 
 type CorrectionResponse = {
   ok?: boolean;
@@ -30,6 +30,7 @@ type DealerAssetCorrectionEditorProps = {
   canUpdateReplacementPrice?: boolean;
   actionClassName?: string;
   iconClassName?: string;
+  externalShare?: { token: string; assetId: string };
   onSaved?: (correction: DealerAssetCorrectionRequest) => void;
 };
 
@@ -90,9 +91,9 @@ export default function DealerAssetCorrectionEditor({
   actionClassName = '',
   iconClassName = '',
   onSaved,
+  externalShare,
 }: DealerAssetCorrectionEditorProps) {
   const router = useRouter();
-  const titleId = useId();
   const [mounted, setMounted] = useState(false);
   const [localCorrection, setLocalCorrection] = useState<DealerAssetCorrectionRequest | null>(correction ?? null);
   const [activeField, setActiveField] = useState<DealerAssetCorrectionField | null>(null);
@@ -164,7 +165,7 @@ export default function DealerAssetCorrectionEditor({
 
     try {
       const response = await fetch(
-        '/api/dealer/asset-corrections',
+        externalShare ? `/api/asset-share-links/${externalShare.token}/corrections` : '/api/dealer/asset-corrections',
         {
         method: 'POST',
         credentials: 'include',
@@ -172,12 +173,13 @@ export default function DealerAssetCorrectionEditor({
         body: JSON.stringify({
           sourceType,
           sourceId,
+          ...(externalShare ? { assetId: externalShare.assetId } : {}),
           field: activeField,
           value: activeField === 'replacementPriceExVat' ? Number(draft) : draft,
         }),
       });
       const payload = await response.json().catch(() => null) as CorrectionResponse | null;
-      if (!response.ok || !payload?.ok || !payload.correction) {
+      if (!response.ok || (!externalShare && !payload?.ok) || !payload?.correction) {
         throw new Error(payload?.error || 'Failed to send the correction to the owner.');
       }
 
@@ -242,21 +244,10 @@ export default function DealerAssetCorrectionEditor({
       ) : null}
 
       {mounted && activeField ? createPortal(
-        <div className={styles.overlay} data-website-overlay role="presentation" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) closeEditor();
-        }}>
-          <section className={`${styles.modal} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
-            <header className={`${styles.modalHeader} ${dialogStyles.header}`}>
-              <div className={styles.modalTitleGroup}>
-                <div className={styles.modalHeaderCopy}>
-                  <h2 id={titleId}>{fieldIsSerial ? 'Update serial number' : fieldIsLicenseRenewal ? 'Update renewal date' : 'Update replacement price'}</h2>
-                  <p>{assetTitle}</p>
-                </div>
-              </div>
-              <button type="button" className={`${styles.closeButton} ${dialogStyles.close}`} onClick={closeEditor} disabled={saving} aria-label="Close correction form">×</button>
-            </header>
-
-            <div className={`${styles.modalBody} ${dialogStyles.body}`}>
+        <LeadActionDialog title={fieldIsSerial ? 'Update serial number' : fieldIsLicenseRenewal ? 'Update renewal date' : 'Update replacement price'} assetTitle={assetTitle} onClose={closeEditor} busy={saving} footer={<>
+          <button type="button" className={styles.cancelButton} onClick={closeEditor} disabled={saving}>Cancel</button>
+          <button type="button" className={styles.saveButton} onClick={() => void submitCorrection()} disabled={saving || !draft.trim()}>{saving ? 'Sending…' : 'Send to owner'}</button>
+        </>}>
               <div className={styles.currentValue}>
                 <span>Owner&apos;s current value</span>
                 <strong>{ownerValue}</strong>
@@ -285,16 +276,7 @@ export default function DealerAssetCorrectionEditor({
               </div>
 
               {error ? <p className={styles.error} role="alert">{error}</p> : null}
-            </div>
-
-            <footer className={`${styles.modalFooter} ${dialogStyles.footer}`}>
-              <button type="button" className={styles.cancelButton} onClick={closeEditor} disabled={saving}>Cancel</button>
-              <button type="button" className={styles.saveButton} onClick={() => void submitCorrection()} disabled={saving || !draft.trim()}>
-                {saving ? 'Sending…' : 'Send to owner'}
-              </button>
-            </footer>
-          </section>
-        </div>,
+        </LeadActionDialog>,
         document.body,
       ) : null}
     </>
