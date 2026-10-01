@@ -42,7 +42,7 @@ export default function Validation(){
  {mode==='inside'&&<InsideShareDialog titleId="fixture-inside" subject="Test asset" onClose={()=>setMode('find')} options={['finance','insurance','replacement_quote','license_renewal'].map((id,i)=>({id,title:['Finance & accounting','Insurance','Dealer','Licence renewal'][i],description:['Accountant, financier or bank','Insurer or broker','Share with a dealer','Renewal date required'][i],icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20V8l8-5 8 5v12ZM9 20v-8h6v8"/></svg>,onSelect:()=>setMode('find')}))}/>}
  {mode==='accept'&&<BusinessAcceptanceForm/>}
  {mode==='compose'&&<><button onClick={()=>{setSelection('two');setLink('')}}>Change report selection</button><GuestLeadComposer selectionKey={selection} assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={true} recipient={{name:'George Workshop',email:'business@example.com',phone:''}} reports={[{label:'Valuation report',file:new File(['%PDF-1.4 fixture'],'valuation.pdf',{type:'application/pdf'})}]} ready onChange={setLink}/><output data-link>{link}</output></>}
- {mode==='recipient'&&<><button onClick={()=>setAccess('approval-required')}>Fixture verified</button><button onClick={()=>setAccess('read-only')}>Fixture read-only</button><button onClick={()=>setAccess('request-access')}>Fixture request access</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><SharedAssetCards request={<SharedEnquiryRequest sender="Aim4price.com" request="Please review the shared assets."/>} share={{createdAt:'2026-09-26',assets:[{title:'Test bakkie',serialNumber:'TEST-1',yearModel:2022,usage:'100 km',condition:'Good',valueExVat:200000,replacementPriceExVat:300000,photoUrls:[],publicUrl:null}]}} enquiry={{token:'g'.repeat(43),permissions:{reports:true,serialNumber:true,replacementPrice:true,documents:true},reports:[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}],access}}/></>}
+ {mode==='recipient'&&<><button onClick={()=>setAccess('approval-required')}>Fixture verified</button><button onClick={()=>setAccess('read-only')}>Fixture read-only</button><button onClick={()=>setAccess('request-access')}>Fixture request access</button><button onClick={()=>setAccess('active')}>Fixture activated</button><button onClick={()=>setAccess('owner')}>Fixture owner</button><SharedAssetCards request={<SharedEnquiryRequest sender="Aim4price.com" request="Please review the shared assets."/>} share={{createdAt:'2026-09-26',assets:[{assetId:reportAsset.id,title:'Test bakkie',serialNumber:'TEST-1',yearModel:2022,usage:'100 km',condition:'Good',valueExVat:200000,replacementPriceExVat:300000,photoUrls:[],publicUrl:null}]}} enquiry={{token:'g'.repeat(43),permissions:{reports:true,serialNumber:true,replacementPrice:true,documents:true},reports:[{id:'10000000-0000-4000-8000-000000000002',label:'Valuation report'}],access}}/></>}
 
  {mode==='external'&&<AssetExternalShare shareName="Test tractor" assets={[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',photoUrls:[],serialNumber:'TEST-1',yearModel:2022,usage:'120 hours',condition:'Good',replacementPriceExVat:500000,valueExVat:300000,publicUrl:null}]} recipient={{name:'George Workshop',email:'business@example.com',phone:'27820000000'}} reportFiles={[{id:'pdf',kind:'report',label:'Valuation report',description:'Selected report',fileName:'valuation.pdf',url:'/api/fixture-pdf',contentType:'application/pdf'}]} onAddAim4priceReport={()=>{}} onRemoveAim4priceReport={()=>{}}/>}
  {mode==='find'&&<><BusinessDirectoryTools senderName="X Farms" assetIds={['10000000-0000-4000-8000-000000000001']} includePhotos={false} reportAssets={[reportAsset]} onChooseReport={(_id,done)=>{reportDone.current=done;setReportOpen(true);}}/>
@@ -76,6 +76,7 @@ export default function Validation(){
    }
    if(p==='/api/asset-share-links'&&req.method()==='POST')body={share:{token,sender_name:'Saved Business Ltd'}};
    if(p==='/api/asset-share-links'&&req.method()==='DELETE')history=history.map(x=>({...x,revoked_at:'2026-09-22T00:00:00Z'}));
+   if(p.endsWith('/corrections'))body={correction:{id:'fixture-correction',status:'pending',replacementPriceChanged:true,proposedReplacementPriceExVat:JSON.parse(req.postData()).value}};
    if(p.endsWith('/submissions')){
     if(req.method()==='POST')documents=[{id:'10000000-0000-4000-8000-000000000003',kind:'quote',sender_name:'Sam',sender_contact:'sam@example.com',note:'Service quote',file_name:'quote.pdf',status:'pending',created_at:'2026-09-24T00:00:00Z'}];
     if(req.method()==='PATCH')documents=documents.map(d=>({...d,status:JSON.parse(req.postData()).status}));
@@ -88,6 +89,7 @@ export default function Validation(){
    return req.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
   });
   const click=async text=>assert.ok(await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(e=>(e.textContent.trim()===t||e.querySelector('strong')?.textContent.trim()===t)&&!e.disabled);b?.click();return !!b},text),`Missing button: ${text}`);
+  const closeChild=async()=>{await page.keyboard.press('Escape');await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);};
   const fill=async(selector,value)=>{await page.$eval(selector,(e,v)=>{const setter=Object.getOwnPropertyDescriptor(e instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set;setter.call(e,v);e.dispatchEvent(new Event('input',{bubbles:true}));},value);};
   const labelInput=async(label,value)=>{const handle=await page.evaluateHandle(t=>[...document.querySelectorAll('label')].find(e=>e.textContent.trim()===t)?.querySelector('input,textarea'),label);assert.ok(handle.asElement(),`Missing input ${label}`);await handle.asElement().type(value);await handle.dispose();};
   await fs.mkdir(output,{recursive:true});
@@ -169,14 +171,14 @@ export default function Validation(){
    });
    assert.ok(layout.rightGap<3&&layout.below,'Manage sits at the far right below the value');
    assert.ok(layout.leftGutter>0&&Math.abs(layout.leftGutter-layout.rightGutter)<3,'Standard shell has equal side gutters');
-   await page.click(manageCard);await page.waitForSelector('dialog[open]');
+   await page.click(manageCard);await page.waitForSelector('[role="dialog"] [aria-label="Close lead management"]');
    await click('Reply by email');await page.waitForFunction(()=>document.body.textContent.includes('this opens your email app'));
    await click('Reply on WhatsApp');await page.waitForFunction(()=>document.body.textContent.includes('this opens WhatsApp'));
    await click('Send an invoice or quote');await page.waitForFunction(()=>document.body.textContent.includes('does not upload files'));
    await page.screenshot({path:path.join(output,`enquiry-example-${width}.png`),fullPage:true});
    assert.equal(requests.filter(r=>r.method==='POST').length,writesBefore,'Demo never sends or uploads anything');
    assert.equal(await page.$eval('a[href^="/business-network/accept"]',a=>new URL(a.href).searchParams.get('from')),'X Farms');
-   await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});
+   await page.keyboard.press('Escape');await page.waitForSelector('[role="dialog"] [aria-label="Close lead management"]',{hidden:true});
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-label')),'Manage Example Toyota Hilux','Closing Manage restores focus');
    await page.click(closeCard);await page.waitForSelector(openCard);
    assert.equal(await page.$(manageCard),null,'Closing the card hides its management controls');
@@ -280,40 +282,40 @@ export default function Validation(){
    await click('recipient');
    await page.screenshot({path:path.join(output,`request-bar-${width}.png`),fullPage:true});
    await page.click('button[aria-label="Open Test bakkie"]');await page.click('button[aria-label="Manage Test bakkie"]');
-   const manageLayout=await page.$eval('dialog',dialog=>{const button=dialog.querySelector('button:has(strong)'),title=button.querySelector('strong').getBoundingClientRect(),copy=button.querySelector('small').getBoundingClientRect();return{height:dialog.getBoundingClientRect().height,stacked:copy.top>=title.bottom-1,overflow:dialog.scrollWidth>dialog.clientWidth+1};});
+   const manageLayout=await page.$eval('[role="dialog"]',dialog=>{const button=dialog.querySelector('button:has(strong)'),title=button.querySelector('strong').getBoundingClientRect(),copy=button.querySelector('small').getBoundingClientRect();return{height:dialog.getBoundingClientRect().height,stacked:copy.top>=title.bottom-1,overflow:dialog.scrollWidth>dialog.clientWidth+1};});
    assert.ok(manageLayout.stacked,'Manage action description sits below its title');assert.equal(manageLayout.overflow,false);
    if(width===1440)assert.ok(manageLayout.height<650,'Manage fits its actions without an empty full-height panel');
    await page.screenshot({path:path.join(output,`manage-actions-${width}.png`),fullPage:true});
    await click('Update replacement price');
    await page.waitForSelector('a[href^="/business/join?returnTo="]');
    const guestLink=await page.$eval('a[href^="/business/join?returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
-   assert.equal(guestLink.text,'Create free account');assert.equal(guestLink.returnTo,`/asset-share/${token}`);
-   assert.equal(await page.$('dialog form'),null,'Visitors cannot submit updates');
+   assert.equal(guestLink.text,'Create a free account');assert.equal(guestLink.returnTo,`/asset-share/${token}?open=1`);
+   assert.equal(await page.$('[role="dialog"] form'),null,'Visitors cannot submit updates');
    await page.screenshot({path:path.join(output,`signup-gate-${width}.png`),fullPage:true});
-   await click('Back to Manage');await click('Reports');
+   await closeChild();await click('Reports');
    assert.equal(await page.$$eval('a[href*="/reports/"]',els=>els.length),0,'Locked reports expose no download link');
    assert.ok(await page.$('a[href^="/auth?returnTo="]'),'Sign-in keeps the enquiry return path');
-   await page.click('[aria-label="Close enquiry management"]');await click('Fixture read-only');await page.click('button[aria-label="Manage Test bakkie"]');
+   await closeChild();await page.click('[aria-label="Close lead management"]');await click('Fixture read-only');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await page.waitForSelector('a[href*="/reports/"]');
    for(const action of ['Update replacement price','Invoices & quotes']){
-    await click('Back to Manage');await click(action);
-    const accountLink=await page.$eval('dialog a[href^="/business?details=1&returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
-    assert.equal(accountLink.text,'Verify business');assert.equal(accountLink.returnTo,`/asset-share/${token}`);
-    assert.equal(await page.$('dialog form'),null,'Read-only recipients cannot submit updates or documents');
-    assert.equal(await page.$('dialog input[type=file]'),null,'Read-only recipients cannot upload documents');
+    await closeChild();await click(action);
+    const accountLink=await page.$eval('[role="dialog"] a[href^="/business?details=1&returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
+    assert.equal(accountLink.text,'Verify business');assert.equal(accountLink.returnTo,`/asset-share/${token}?open=1`);
+    assert.equal(await page.$('[role="dialog"] form'),null,'Read-only recipients cannot submit updates or documents');
+    assert.equal(await page.$('[role="dialog"] input[type=file]'),null,'Read-only recipients cannot upload documents');
    }
-   await page.click('[aria-label="Close enquiry management"]');await click('Fixture request access');await page.click('button[aria-label="Manage Test bakkie"]');
+   await closeChild();await page.click('[aria-label="Close lead management"]');await click('Fixture request access');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await click('Request access');
    await page.waitForFunction(()=>document.body.textContent.includes('Access requested.'));
    assert.equal(await page.$$eval('a[href*="/reports/"]',els=>els.length),0,'Requesting access does not unlock reports');
    assert.ok(requests.some(r=>r.path.endsWith('/access')&&r.method==='POST'));
-   await page.click('[aria-label="Close enquiry management"]');await click('Fixture activated');await page.click('button[aria-label="Manage Test bakkie"]');
+   await closeChild();await page.click('[aria-label="Close lead management"]');await click('Fixture activated');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await page.waitForSelector('a[href*="/reports/"]');
-   await click('Back to Manage');await click('Update replacement price');
-   await page.click('dialog input[type=checkbox]');await fill('dialog input[type=number]','115000');await click('Send for approval');
-   await page.waitForFunction(()=>document.body.textContent.includes('Sent to the owner for approval.'));
-   const proposed=requests.filter(r=>r.path.endsWith('/corrections')).at(-1);assert.equal(JSON.parse(proposed.data).value,100000);assert.equal(JSON.parse(proposed.data).assetIndex,0);
-   await click('Back to Manage');await click('Invoices & quotes');
+   await closeChild();await click('Update replacement price');
+   await fill('[role="dialog"] input[type=number]','100000');await click('Send to owner');
+   await page.waitForFunction(()=>document.body.textContent.includes('update waiting for owner approval'));
+   const proposed=requests.filter(r=>r.path.endsWith('/corrections')).at(-1);assert.equal(JSON.parse(proposed.data).value,100000);assert.equal(JSON.parse(proposed.data).assetId,'10000000-0000-4000-8000-000000000001');
+   await click('Invoices & quotes');
    assert.equal(await page.$('[name=name]'),null,'Verified identity cannot be edited');
    await page.type('[name=note]','Service quote');
    const filePath=path.join(output,'quote.pdf');await fs.writeFile(filePath,'%PDF-1.4 fixture');
@@ -321,16 +323,16 @@ export default function Validation(){
    await page.waitForFunction(()=>document.body.textContent.includes('Document sent to the owner'));
    assert.equal(await page.$$eval('a[href*="submissions?id="]',els=>els.length),0,'Recipient cannot see received documents');
    await page.screenshot({path:path.join(output,`active-${width}.png`),fullPage:true});
-   await page.click('[aria-label="Close enquiry management"]');await click('Fixture owner');await page.click('button[aria-label="Manage Test bakkie"]');await click('Recipient access');
+   await closeChild();await page.click('[aria-label="Close lead management"]');await click('Fixture owner');await page.click('button[aria-label="Manage Test bakkie"]');await click('Recipient access');
    await page.waitForFunction(()=>document.body.textContent.includes('Verified Workshop'));await click('Approve access');
    await page.waitForFunction(()=>document.body.textContent.includes('Recipient approved.'));
    assert.equal(JSON.parse(requests.filter(r=>r.path.endsWith('/access')&&r.method==='PATCH').at(-1).data).userId,'recipient');
-   await click('Back to Manage');await click('Invoices & quotes');
+   await closeChild();await click('Invoices & quotes');
    await page.waitForSelector('a[href*="submissions?id="]');await click('Accept document');
    await page.waitForFunction(()=>document.body.textContent.includes('Review saved. No asset details or costs were changed.'));
    assert.equal(documents[0].status,'accepted');
    await page.screenshot({path:path.join(output,`review-${width}.png`),fullPage:true});
-   await page.click('[aria-label="Close enquiry management"]');
+   await closeChild();await page.click('[aria-label="Close lead management"]');
    await click('admin');await page.waitForFunction(()=>document.body.textContent.includes('Business acceptances (1)'));
    await page.$$eval('details',els=>els.forEach(e=>e.open=true));await click('Prepare listing');
    await fill('[name=until]','2099-12-31');await page.type('[name=note]','Manual test payment');await click('Activate paid access');await page.waitForFunction(()=>document.body.textContent.includes('Guest access updated'));

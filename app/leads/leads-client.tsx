@@ -1,4 +1,6 @@
 'use client';
+import LeadManageDialog from '../../components/leads/LeadManageDialog';
+import LeadReportDialog from '../../components/leads/LeadReportDialog';
 import LeadCardSummary from '../../components/leads/LeadCardSummary';
 import LeadManageButton from '../../components/leads/LeadManageButton';
 import LeadAssetFacts from '../../components/leads/LeadAssetFacts';
@@ -3889,22 +3891,12 @@ export default function LeadsClient({
       ) : null}
 
       {managedLead ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`}`} data-website-overlay data-account-asset-modal={useOwnerManageLayout ? true : undefined}>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setManagedLead(null)} />
-
-          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${useOwnerManageLayout ? `${assetStyles.managementAccountModal} ${accountStyles.modalTheme}` : `${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''} ${''}`}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
-            <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`}`}>
-              <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
-                <p>{leadAssetMeta(managedLead)}</p>
-              </div>
-
-              <button type="button" className={`${useOwnerManageLayout ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : `${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`}`} onClick={() => setManagedLead(null)} aria-label="Close lead management">
-                {useOwnerManageLayout ? <span aria-hidden="true">×</span> : <CloseIcon className={assetStyles.buttonIcon} />}
-              </button>
-            </div>
-
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}`}>
+        <LeadManageDialog title={assetTitle(managedLead)} description={leadAssetMeta(managedLead)} onClose={() => setManagedLead(null)} ownerLayout={useOwnerManageLayout} classes={{
+          overlay: useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`,
+          modal: useOwnerManageLayout ? `${assetStyles.managementAccountModal} ${accountStyles.modalTheme}` : `${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''}`,
+          header: useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`,
+          body: useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`,
+        }}>
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${useOwnerManageLayout ? '' : `${styles.manageOptionsGrid} ${isDealerLeadsMode ? dialogStyles.actions : ''}`}`}>
                   {(
@@ -4010,9 +4002,7 @@ export default function LeadsClient({
                   )}
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
+        </LeadManageDialog>
       ) : null}
 
       {qrLeadAsset ? (
@@ -4211,34 +4201,7 @@ export default function LeadsClient({
       ) : null}
 
       {reportLead ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadReportModal} data-download-shade="true" />
-
-          <div
-            className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${downloadStyles.dialog}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="lead-report-title" data-download-dialog="true"
-          >
-            <div className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`} data-download-header="true">
-              <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-report-title">{assetTitle(reportLead)}</h3>
-                <p>{leadAssetMeta(reportLead)}</p>
-              </div>
-
-              <button
-                type="button"
-                className={assetStyles.modalCloseButton}
-                onClick={closeLeadReportModal}
-                aria-label="Close PDF reports"
-                disabled={isDownloadingLeadReport}
-              >
-                <CloseIcon className={assetStyles.buttonIcon} />
-              </button>
-            </div>
-
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`} data-download-body="true">
-              <div className={assetStyles.assetReportOptionsGrid} data-download-grid="true">
+        <LeadReportDialog title={assetTitle(reportLead)} description={leadAssetMeta(reportLead)} onClose={closeLeadReportModal} busy={isDownloadingLeadReport}>
                 <button
                   type="button"
                   className={assetStyles.assetReportOptionButton}
@@ -4299,11 +4262,7 @@ export default function LeadsClient({
                     </button>
                   </>
                 ) : null}
-              </div>
-            </div>
-          <footer data-download-footer="true"><button type="button" onClick={closeLeadReportModal}>Cancel</button></footer>
-</div>
-        </div>
+        </LeadReportDialog>
       ) : null}
 
       {deleteLeadTarget ? (

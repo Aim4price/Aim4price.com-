@@ -2,7 +2,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { PublicAssetShare } from "../../lib/asset-share-links";
 import ExternalLeadActions, { type ExternalLeadActionData } from "./ExternalLeadActions";
-import ShareModalCloseButton from "./ShareModalCloseButton";
+import LeadManageDialog from "../leads/LeadManageDialog";
 import BusinessAcceptanceForm from "../business-network/BusinessAcceptanceForm";
 import { createPortal } from "../WebsitePortal";
 import LeadCardSummary from "../leads/LeadCardSummary";
@@ -13,7 +13,6 @@ import LeadAssetFacts from "../leads/LeadAssetFacts";
 import LeadPhotoViewerModal from "../LeadPhotoViewerModal";
 import assetStyles from "../../app/asset-register/page.module.css";
 import leadStyles from "../../app/leads/page.module.css";
-import dialogStyles from "../AccountDialog.module.css";
 import styles from "./SharedAssetCards.module.css";
 
 const money = (value: number | null) =>
@@ -47,10 +46,8 @@ export default function SharedAssetCards({
   } | null>(null);
   const selectionKey=share?.assets.map(asset=>asset.assetId||asset.title).join('|')||'';
   useEffect(()=>{setOpened(null);setManaged(null);setPhotoViewer(null);},[selectionKey]);
-  const dialog = useRef<HTMLDialogElement | null>(null);
   const trigger = useRef<HTMLButtonElement | null>(null);
   const photoTrigger = useRef<HTMLElement | null>(null);
-  const titleId = useId();
   const panelPrefix = useId();
   const asset = managed == null ? null : share?.assets[managed];
   const viewedAsset = photoViewer
@@ -284,41 +281,8 @@ export default function SharedAssetCards({
       )}
       {asset &&
         createPortal(
-          <dialog
-            ref={(node) => {
-              dialog.current = node;
-              if (node && !node.open) node.showModal();
-            }}
-            className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${leadStyles.leadManageModal} ${dialogStyles.surface} ${dialogStyles.flush} ${styles.manageDialog}`}
-            aria-labelledby={titleId}
-            onClose={() => {
-              setManaged(null);
-              trigger.current?.focus();
-            }}
-            onClick={(event) => {
-              if (event.target !== event.currentTarget) return;
-              const rect = event.currentTarget.getBoundingClientRect();
-              if (
-                event.clientX < rect.left ||
-                event.clientX > rect.right ||
-                event.clientY < rect.top ||
-                event.clientY > rect.bottom
-              )
-                dialog.current?.close();
-            }}
-          >
-            <header className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dialogStyles.header}`}>
-              <div className={assetStyles.modalHeaderText}>
-                <h3 id={titleId}>{asset.title}</h3>
-                <p>Manage enquiry</p>
-              </div>
-              <ShareModalCloseButton
-                aria-label="Close enquiry management"
-                onClick={() => dialog.current?.close()}
-              />
-            </header>
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${leadStyles.leadManageScrollBody} ${dialogStyles.body}`}>
-              {enquiry ? <ExternalLeadActions key={asset.assetId||managed} {...enquiry} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
+          <LeadManageDialog title={asset.title} description={asset.serialNumber ? `Serial: ${asset.serialNumber}` : 'Manage enquiry'} onClose={() => { setManaged(null); trigger.current?.focus(); }}>
+              {enquiry ? <ExternalLeadActions key={asset.assetId||managed} {...enquiry} assetTitle={asset.title} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
                   <p className={styles.note}>
                     These actions apply to the shared enquiry.
@@ -331,8 +295,7 @@ export default function SharedAssetCards({
                   actions were included.
                 </p>
               )}
-            </div>
-          </dialog>,
+          </LeadManageDialog>,
           document.body,
         )}
     </main>
