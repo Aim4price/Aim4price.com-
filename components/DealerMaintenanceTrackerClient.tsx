@@ -1,5 +1,6 @@
 'use client';
 import dialogStyles from './AccountDialog.module.css';
+import ProblemCard from './leads/LeadProblemCard';
 import DateInput from './DateInput';
 
 import FilterFlow, { FilterQuestion, FilterThresholdQuestion } from './FilterFlow';
@@ -638,35 +639,6 @@ function RecordCard({ record, asset }: { record: DealerMaintenanceRecordSummary;
   );
 }
 
-function ProblemCard({
-  problem,
-  historical = false,
-}: {
-  problem: DealerMaintenanceTrackedAsset['loggedProblems'][number];
-  historical?: boolean;
-}) {
-  const resolved = Boolean(problem.notedAtIso);
-  return (
-    <article className={`${styles.problemCard} ${resolved ? styles.problemCardResolved : ''}`}>
-      <header>
-        <div>
-          <span>{historical ? 'Problem or note' : 'Active problem or note'}</span>
-          <h4>{problem.summary || 'Logged problem or note'}</h4>
-        </div>
-        <strong className={resolved ? styles.problemResolved : styles.problemOpen}>
-          {resolved ? 'Noted / resolved' : 'Open'}
-        </strong>
-      </header>
-      <p>{problem.note}</p>
-      <div className={styles.problemMetaGrid}>
-        <div><span>Logged</span><strong>{formatDate(problem.createdAtIso, true)}</strong></div>
-        <div><span>Logged by</span><strong>{problem.operatorName || 'Not recorded'}</strong></div>
-        <div><span>Status</span><strong>{resolved ? 'Noted / resolved' : 'Open'}</strong></div>
-        <div><span>Resolution</span><strong>{problem.notedAtIso ? formatDate(problem.notedAtIso, true) : 'Not resolved yet'}</strong></div>
-      </div>
-    </article>
-  );
-}
 
 function ProposalCard({ proposal }: { proposal: DealerMaintenanceScheduleProposal }) {
   const status = proposal.status === 'approved'

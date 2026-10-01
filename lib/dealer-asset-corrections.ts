@@ -1,3 +1,4 @@
+import { requireLiveSharedAsset, lockLiveSharedAsset } from './live-shared-asset-access';
 import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundation';
 import type { PoolClient } from 'pg';
 import {
@@ -568,16 +569,20 @@ export async function createOrUpdateDealerAssetCorrection(input: {
     ? null
     : Math.round(replacementPriceExVat * 100) / 100;
   if(input.sourceType==='external')await ensureSharingFoundation();
+  const sharedScope = input.sourceType === 'external' ? await requireLiveSharedAsset(sourceId.split(':')[0],asset.id,input.field === 'serialNumber' ? 'serialNumber' : 'replacementPrice',true) : null;
   const db = getDb();
   const client = await db.connect();
 
   try {
     await client.query('begin');
+    let directUpdates = false;
+    if(sharedScope) await lockLiveSharedAsset(client,sharedScope);
     if (input.sourceType === 'external') {
       const [token] = sourceId.split(':');
       const permission = input.field === 'serialNumber' ? 'serialNumber' : 'replacementPrice';
-      const link = await client.query(`SELECT token FROM asset_share_links WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL AND ((umbrella_id IS NULL AND asset_ids @> ARRAY[$3::uuid]) OR (umbrella_id IS NOT NULL AND EXISTS(SELECT 1 FROM asset_groups g JOIN asset_group_members m ON m.group_id=g.id WHERE g.id=umbrella_id AND g.user_id=$2 AND m.asset_id=$3::uuid))) AND lead_details->'permissions'->>$4='true' FOR SHARE`, [token, access.owner_user_id, asset.id, permission]);
+      const link = await client.query(`SELECT token, lead_details->'permissions'->>'directUpdates' AS direct_updates FROM asset_share_links WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL AND ((umbrella_id IS NULL AND asset_ids @> ARRAY[$3::uuid]) OR (umbrella_id IS NOT NULL AND EXISTS(SELECT 1 FROM asset_groups g JOIN asset_group_members m ON m.group_id=g.id WHERE g.id=umbrella_id AND g.user_id=$2 AND m.asset_id=$3::uuid))) AND lead_details->'permissions'->>$4='true' FOR SHARE`, [token, access.owner_user_id, asset.id, permission]);
       if (!link.rows.length) throw new Error('CORRECTION_FORBIDDEN');
+      directUpdates = link.rows[0].direct_updates === 'true';
     }
     const lockedAsset = await client.query(
       `
@@ -589,6 +594,14 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       [asset.id, access.owner_user_id],
     );
     if (!lockedAsset.rows.length) throw new Error('ASSET_NOT_FOUND');
+    if (input.sourceType !== 'external' && input.field !== 'licenseRenewalDate') {
+      const grants = await client.query<{can_update_serial:boolean;can_update_replacement_price:boolean}>(`SELECT can_update_serial,can_update_replacement_price FROM public.dealer_maintenance_access WHERE owner_user_id=$1 AND dealer_user_id=$2 AND asset_register_item_id=$3::uuid AND is_active=true FOR SHARE`,[access.owner_user_id,input.dealerUserId,asset.id]);
+      if (grants.rows[0]) {
+        directUpdates = input.field === 'serialNumber' ? grants.rows[0].can_update_serial : grants.rows[0].can_update_replacement_price;
+        if (!directUpdates) throw new Error('CORRECTION_FORBIDDEN');
+      } else if (input.sourceType === 'maintenance') throw new Error('CORRECTION_FORBIDDEN');
+    }
+
     const existingResult = await client.query<DealerAssetCorrectionRow>(
       `${correctionSelectSql(`
         where correction.owner_user_id = $1
@@ -682,9 +695,26 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       `${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,
       [correctionId],
     );
+    if (!loaded.rows[0]) throw new Error('CORRECTION_NOT_CREATED');
+    if (directUpdates) {
+      const current = mapCorrection(loaded.rows[0]);
+      const { assetColumns } = await loadCorrectionTableColumns(client);
+      const previous = await lockAndReadAssetValuationState({client,current,ownerUserId:access.owner_user_id,assetColumns});
+      await applyAcceptedCorrectionToAsset({client,current,ownerUserId:access.owner_user_id,assetColumns});
+      await client.query(`UPDATE public.dealer_asset_correction_requests SET status='accepted', resolved_by_user_id=$2,resolved_at=now(),revaluation_status=$3,revaluation_previous_run_id=$4,revaluation_previous_value_ex_vat=$5,updated_at=now() WHERE id=$1::uuid`,[correctionId,input.dealerUserId,current.replacementPriceChanged?'pending':'not_required',previous.valuationRunId,previous.valueExVat]);
+      const accepted = await client.query<DealerAssetCorrectionRow>(`${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,[correctionId]);
+      loaded.rows[0] = accepted.rows[0];
+    }
     if(input.sourceType==='external')await recordSharingUsage({accountId:input.dealerUserId,actorId:input.dealerUserId,token:sourceId.split(':')[0],assetId:asset.id,metric:'contribution',eventKey:correctionId+':'+input.field},client);
     await client.query('commit');
     if (!loaded.rows[0]) throw new Error('CORRECTION_NOT_CREATED');
+    if (directUpdates) {
+      await syncDealerLeadSnapshotsWithAsset(access.owner_user_id,asset.id).catch(error=>console.error('Could not refresh lead asset data',error));
+      if (replacementPriceChanged) {
+        try { return (await attemptDealerAssetCorrectionRevaluation({ownerUserId:access.owner_user_id,correctionId})).correction; }
+        catch(error) { console.error('Saved asset update; revaluation remains pending',error); }
+      }
+    }
     return mapCorrection(loaded.rows[0]);
   } catch (error) {
     await client.query('rollback').catch(() => undefined);

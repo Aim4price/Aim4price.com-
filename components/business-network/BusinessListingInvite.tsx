@@ -1,5 +1,6 @@
 'use client';
 import { createExternalShareFileCache, prepareExternalShareFiles, type ExternalShareFileSource } from '../../lib/external-file-share';
+import { DealerMaintenancePermissionPicker } from '../DealerMaintenanceAccessSettings';
 import ShareDisclaimer from '../asset-register/ShareDisclaimer';
 import ShareDisclosureDialog from '../asset-register/ShareDisclosureDialog';
 
@@ -18,7 +19,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
   const [reports, setReports] = useState<ExternalShareFileSource[]>([]);
   const fileCache = useRef(createExternalShareFileCache());
   const [choosingReport,setChoosingReport] = useState(false);
-  const protectedActions = Object.values(permissions).some(Boolean);
+  const protectedActions = EXTERNAL_SHARE_OPTIONS.some(option=>permissions[option.key]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const opening = useRef(false);
@@ -73,7 +74,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
         form.set('assetIds', JSON.stringify(selection.assetIds));
         form.set('includePhotos', String(selection.includePhotos));
         if (selection.umbrellaId) form.set('umbrellaId', selection.umbrellaId);
-        form.set('details', JSON.stringify({ accessMode: 'owner-approval', recipientName: '', recipientEmail: '', request: 'Please review the shared assets.', replyPhone: '', allowReply: false, permissions }));
+        form.set('details', JSON.stringify({ accessMode: 'owner-approval', recipientName: '', recipientEmail: '', request: 'Please open the shared assets.', replyPhone: '', allowReply: false, permissions }));
         if (permissions.reports) {
           const files = await prepareExternalShareFiles(reports, fileCache.current);
           if (version !== requestVersion.current) return;
@@ -129,14 +130,16 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
       <span>{busy ? 'Preparing enquiry…' : 'Business not listed?'}</span><span aria-hidden="true">+</span>
     </button>}
     {error && !selection && <p role="alert">{error}</p>}
-    {selection && !choosingReport && <ShareDisclosureDialog className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Choose what to share" : step === 'reports' ? "Choose report source" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close}>
+    {selection && !choosingReport && <ShareDisclosureDialog className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Business/Dealer asset settings" : step === 'reports' ? "Choose report source" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close}>
         {(link || (step !== 'recipient' && step !== 'reports')) && <p id={descriptionId} className={styles.description}>{`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`}</p>}
         {!link && step === 'permissions' && <>
-          <p className={styles.hint}>{sendLink && 'Recipients sign in with a free Aim4price account and request your approval before viewing. This link contains the asset details saved when it is created. '}Asset details are read-only. Enable the actions you want the recipient to use after verification.</p>
+          <p className={styles.hint}>Choose what this business/dealer can view and update. These permissions apply to the live owner asset as soon as recipient access is approved. Use Share read-only to allow viewing without changes.</p>
           <div className={styles.permissions}>
             <label className={styles.permission}><input type="checkbox" checked={selection.includePhotos} onChange={e => {setSelection({...selection, includePhotos:e.target.checked});setAccepted(false);}}/><span><strong>Asset photos</strong><small>Include saved photos in the link preview.</small></span></label>
-            {EXTERNAL_SHARE_OPTIONS.map(option => option.key === 'reports' ? <button type="button" key={option.key} className={`${styles.permission} ${styles.reportButton}`} onClick={chooseReports}><span className={styles.reportIndicator} aria-hidden="true">{permissions.reports ? '✓' : '+'}</span><span><strong>Reports</strong><small>{permissions.reports ? `${reports.length} selected · Add another report` : 'Choose an Aim4price report'}</small></span></button> : <label key={option.key} className={styles.permission}><input type="checkbox" checked={permissions[option.key]} onChange={e => {setPermissions(current=>({...current,[option.key]:e.target.checked}));setAccepted(false);}}/><span><strong>{option.label}</strong><small>{option.description}</small></span></label>)}
+            <button type="button" className={`${styles.permission} ${styles.reportButton}`} onClick={chooseReports}><span><strong>Attach reports</strong><small>{reports.length} selected</small></span></button>
+
           </div>
+          <DealerMaintenancePermissionPicker value={{canViewLoggedProblems:permissions.loggedProblems===true,canViewMaintenanceReports:permissions.maintenanceReports===true,canViewCostOfOwnership:permissions.costOfOwnership===true,canCreateMaintenanceSchedules:permissions.maintenanceSchedules===true,canUpdateSerial:permissions.serialNumber,canUpdateReplacementPrice:permissions.replacementPrice}} onChange={value=>{setPermissions(current=>({...current,loggedProblems:value.canViewLoggedProblems,maintenanceReports:value.canViewMaintenanceReports,costOfOwnership:value.canViewCostOfOwnership,maintenanceSchedules:value.canCreateMaintenanceSchedules,serialNumber:value.canUpdateSerial,replacementPrice:value.canUpdateReplacementPrice,directUpdates:true}));setAccepted(false);}}/>
           {reports.length > 0 && permissions.reports && <div className={styles.reportSummary}>{reports.map(report=><div key={report.id}><span>{report.label}</span><button type="button" className={styles.copy} aria-label={`Remove ${report.label}`} onClick={()=>{const next=reports.filter(item=>item.id!==report.id);setReports(next);setPermissions(current=>({...current,reports:next.length>0}));setAccepted(false);}}>Remove</button></div>)}</div>}
           {!sendLink&&history.length>0&&<details className={styles.history}><summary>Previous invitations ({history.length})</summary>{history.map(item=><div key={item.token}><span>{item.recipient_name||item.recipient_email||'Awaiting recipient approval'}{item.revoked_at?' · Disabled':''}{item.pending_access?` · ${item.pending_access} access request(s)`:''}{item.pending_documents?` · ${item.pending_documents} document(s) to review`:''}</span>{!item.revoked_at&&<><a href={`/asset-share/${item.token}`} target="_blank" rel="noreferrer">Review enquiry</a><button type="button" className={styles.copy} disabled={busy} onClick={async()=>{setBusy(true);setError('');try{const r=await fetch('/api/asset-share-links',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:item.token})});if(!r.ok)throw Error('Could not disable the invitation.');setHistory(current=>current.map(row=>row.token===item.token?{...row,revoked_at:new Date().toISOString()}:row));}catch(e){setError(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}}>Disable</button></>}</div>)}</details>}
           <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setPermissions({...EMPTY_EXTERNAL_PERMISSIONS});setStep('recipient');}}>Share read-only</button><button type="button" className={styles.primary} onClick={()=>setStep('recipient')}>Continue</button></div>

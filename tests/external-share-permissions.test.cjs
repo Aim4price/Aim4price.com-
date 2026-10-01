@@ -27,6 +27,7 @@ async function setup(){
  // Re-load to bind the completed mocks for protected report downloads.
  const fullLeads=load('lib/guest-leads.ts',mocks);
  const docs=load('lib/lead-submissions.ts',mocks);
+ mocks['./live-shared-asset-access']=load('lib/live-shared-asset-access.ts',mocks);
  const corrections=load('lib/dealer-asset-corrections.ts',{...mocks,'./asset-register-revaluation':{revalueAssetRegisterItem:async()=>{}},'./database-schema-readiness':load('lib/database-schema-readiness.ts')});
  const details={recipientName:'Workshop',recipientEmail:'workshop@example.com',request:'Please check the assets.',replyName:'Owner Business',replyEmail:'owner@example.com',replyPhone:'',allowReply:false,permissions:{reports:true,replacementPrice:true,serialNumber:true,documents:true}};
  const report={label:'Selected report',fileName:'asset.pdf',data:Buffer.from('%PDF-1.4\nreport')};
@@ -35,7 +36,7 @@ async function setup(){
  return{mocks,pg,state,leads:fullLeads,access,docs,corrections,details,report,link,base,signIn,foundation,groups};
 }
 test('permission input defaults to read-only and signup returns only to valid enquiry paths',()=>{
- assert.deepEqual(permissions.normalizeExternalPermissions({reports:'true',serialNumber:true,admin:true}),{reports:false,serialNumber:true,replacementPrice:false,documents:false});
+ assert.deepEqual(permissions.normalizeExternalPermissions({reports:'true',serialNumber:true,admin:true}),{...permissions.EMPTY_EXTERNAL_PERMISSIONS,serialNumber:true,directUpdates:false});
  for(const value of ['https://evil.test','//evil.test','/\\evil.test','/admin','/asset-share/short','/asset-share/'+'x'.repeat(43)+'?open=1&redirect=https://evil.test'])assert.equal(permissions.sharedEnquiryReturnTo(value),null);
  assert.equal(permissions.sharedEnquiryReturnTo('/asset-share/'+'x'.repeat(43)),'/asset-share/'+'x'.repeat(43));
 });
@@ -266,5 +267,35 @@ test('directory live projection retains the selected valuation and photo boundar
   await x.pg.query('UPDATE asset_register_items SET replacement_price_ex_vat=99999 WHERE id=$1',[A]);
   const item=(await x.leads.readLeadPage(link.token)).share.assets[0];
   assert.equal(item.valueExVat,null);assert.equal(item.replacementPriceExVat,null);assert.equal(item.serialNumber,'OLD-A');
+ }finally{await x.pg.close();}
+});
+
+test('explicit update permissions save the live owner asset directly and retain an accepted audit record',async()=>{
+ const x=await setup();try {
+  x.signIn();x.state.approved=true;
+  await x.pg.query(`UPDATE asset_share_links SET lead_details=jsonb_set(lead_details,'{permissions,directUpdates}','true') WHERE token=$1`,[x.link.token]);
+  const result=await x.corrections.createOrUpdateDealerAssetCorrection({dealerUserId:'recipient',dealerName:'Workshop',actorName:'Manager',sourceType:'external',sourceId:x.link.token+':'+B,field:'serialNumber',value:'DIRECT-NEW'});
+  assert.equal(result.status,'accepted');
+  assert.equal((await x.pg.query('SELECT serial_number FROM asset_register_items WHERE id=$1',[B])).rows[0].serial_number,'DIRECT-NEW');
+  assert.equal((await x.corrections.listPendingOwnerAssetCorrections('owner')).length,0);
+  const reread=await x.leads.readLeadPage(x.link.token);assert.equal(reread.share.assets.find(a=>a.assetId===B).serialNumber,'DIRECT-NEW');
+  await x.pg.query('UPDATE asset_share_links SET revoked_at=now() WHERE token=$1',[x.link.token]);
+  await assert.rejects(x.corrections.createOrUpdateDealerAssetCorrection({dealerUserId:'recipient',dealerName:'Workshop',actorName:'Manager',sourceType:'external',sourceId:x.link.token+':'+B,field:'serialNumber',value:'FORBIDDEN'}));
+  assert.equal((await x.pg.query('SELECT serial_number FROM asset_register_items WHERE id=$1',[B])).rows[0].serial_number,'DIRECT-NEW');
+ } finally {await x.pg.close();}
+});
+
+test('live shared asset access denies other assets, missing permissions and unapproved writes',async()=>{
+ const x=await setup();try{
+  const live=x.mocks['./live-shared-asset-access'];
+  await assert.rejects(live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true));
+  x.signIn();await assert.rejects(live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true));
+  x.state.approved=true;
+  await live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true);
+  await assert.rejects(live.requireLiveSharedAsset(x.link.token,'99999999-0000-4000-8000-000000000001','serialNumber',true));
+  await assert.rejects(live.requireLiveSharedAsset(x.link.token,B,'maintenanceReports'));
+  const scope=await live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true);
+  await x.pg.query(`UPDATE asset_share_links SET lead_details=jsonb_set(lead_details,'{recipientUserId}','"another-account"') WHERE token=$1`,[x.link.token]);
+  await assert.rejects(live.lockLiveSharedAsset({query:(sql,p)=>x.pg.query(sql,p)},scope));
  }finally{await x.pg.close();}
 });

@@ -74,7 +74,8 @@ test('invitation requires consent, freezes all selected assets and handles failu
       global.fetch=async(url,options)=>{sent=JSON.parse(options.body);return{ok:!failed,json:async()=>failed?{error:'Unable to share selected assets'}:{share:{token}}};};
       const Invite=load('components/business-network/BusinessListingInvite.tsx',{
         react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:value=>hook({current:value})[0],useState:hook},
-        '../asset-register/ShareDisclaimer':Disclaimer,
+        '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
+    '../asset-register/ShareDisclaimer':Disclaimer,
         '../../lib/external-file-share':load('lib/external-file-share.ts'),
         '../asset-register/ShareDisclosureDialog':'dialog',
         '../asset-register/ShareModalCloseButton':()=>null,
@@ -132,6 +133,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    global.fetch=async(url,options)=>{sent={url,body:options.body};return{ok:!failed,json:async()=>failed?{error:'Could not create link'}:{share:{token}}};};
    const Invite=load('components/business-network/BusinessListingInvite.tsx',{
     react:{...React,useEffect:()=>{},useId:()=> 'test',useRef:v=>hook({current:v})[0],useState:hook},
+    '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
     '../../lib/external-file-share':load('lib/external-file-share.ts'),
     '../asset-register/ShareDisclosureDialog':'dialog',

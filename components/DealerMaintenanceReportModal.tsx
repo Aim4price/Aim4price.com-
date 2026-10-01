@@ -1,4 +1,5 @@
 'use client';
+import { useLeadDialog } from './leads/useLeadDialog';
 import downloadStyles from "./ReportDownload.module.css";
 
 import DropdownOverlay from './DropdownOverlay';
@@ -15,6 +16,7 @@ type ReportSelectKey = 'type' | 'year' | 'month';
 type ReportOption = { value: string; label: string };
 
 type Props = {
+  externalShare?: { token: string; assetId: string };
   accessId: string;
   pdfOnly?: boolean;
   onBack?: () => void;
@@ -195,11 +197,13 @@ function ReportSelect({
 
 export default function DealerMaintenanceReportModal({
   accessId,
+  externalShare,
   pdfOnly = false,
   onBack,
   onClose,
   onError,
 }: Props) {
+  const dialogRef = useLeadDialog(onClose);
   const [asset, setAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [step, setStep] = useState<ReportStep>(pdfOnly ? 'timeline' : 'format');
   const [format, setFormat] = useState<DownloadFormat>('pdf');
@@ -218,7 +222,7 @@ export default function DealerMaintenanceReportModal({
       setLoading(true);
       setError('');
       try {
-        const response = await fetch('/api/dealer/maintenance', {
+        const response = await fetch(externalShare ? `/api/asset-share-links/${externalShare.token}/assets/${externalShare.assetId}` : '/api/dealer/maintenance', {
           credentials: 'include',
           cache: 'no-store',
           signal: controller.signal,
@@ -245,7 +249,7 @@ export default function DealerMaintenanceReportModal({
 
     void loadLiveAccess();
     return () => controller.abort();
-  }, [accessId]);
+  }, [accessId, externalShare?.token, externalShare?.assetId]);
 
   const yearOptions = useMemo(() => reportYearOptions(asset), [asset]);
   const assetMeta = asset
@@ -260,6 +264,7 @@ export default function DealerMaintenanceReportModal({
       report: 'maintenance',
       maintenanceType: reportType,
     });
+    if (externalShare) { params.delete('accessId'); params.set('shareToken',externalShare.token); }
     if (format !== 'pdf') params.set('format', format);
     if (reportYear !== 'all') {
       params.set('year', reportYear);
@@ -319,7 +324,7 @@ export default function DealerMaintenanceReportModal({
       <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose} data-download-shade="true" />
       <div
         className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${assetStyles.assetFuelReportModal} ${downloadStyles.dialog}`}
-        role="dialog"
+        role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1}
         aria-modal="true"
         aria-labelledby="dealer-maintenance-report-title" data-download-dialog="true"
       >

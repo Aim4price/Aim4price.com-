@@ -1,3 +1,4 @@
+import { requireLiveSharedAsset } from '../../../../lib/live-shared-asset-access';
 import { REPORT_THEME_CSS } from '../../../../lib/report-theme.ts';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
@@ -3890,7 +3891,8 @@ async function buildReportDocumentResponse(
 
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession({ allowOwnerApp: true, allowDealerApp: true });
+  const shareToken = request.nextUrl.searchParams.get('shareToken');
+  const session = await getServerSession({ allowOwnerApp: true, allowDealerApp: true, ...(shareToken ? {requireActive:false} : {}) });
 
   if (!session?.user?.id) {
     return NextResponse.redirect(new URL('/auth', request.url), { status: 302 });
@@ -3938,7 +3940,14 @@ export async function GET(request: NextRequest) {
   let ownerUserId = session.user.id;
   let isDealerMaintenanceReport = false;
 
-  if (dealerAccessId) {
+  if (shareToken) {
+    if (groupId || dealerAccessId || reportKind !== 'maintenance') return NextResponse.json({error:'Shared report access supports maintenance for one asset.'},{status:403});
+    try {
+      const scope = await requireLiveSharedAsset(shareToken,assetId,'maintenanceReports');
+      ownerUserId = scope.lead.ownerId;
+      isDealerMaintenanceReport = true;
+    } catch { return NextResponse.json({error:'Shared report access is no longer available.'},{status:403}); }
+  } else if (dealerAccessId) {
     if (groupId || reportKind !== 'maintenance' || !UUID_PATTERN.test(dealerAccessId)) {
       return NextResponse.json({ ok: false, error: 'Dealer tracking access only supports maintenance reports for one asset.' }, { status: 403 });
     }
