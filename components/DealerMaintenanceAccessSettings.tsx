@@ -56,7 +56,7 @@ export const dealerMaintenancePermissionOptions: Array<{
   {
     key: 'canCreateMaintenanceSchedules',
     title: 'Create Maintenance Schedules',
-    description: 'Create maintenance schedules for this asset.',
+    description: 'Create active maintenance schedules directly.',
   },
   {
     key: 'canUpdateSerial',

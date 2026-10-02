@@ -87,7 +87,7 @@ test('disapproved schedules remain dealer-only and disappear from owner notifica
 
 test('owner tracking settings include the new schedule permission and clear sharing copy', () => {
   assert.match(accessSettings, /title: 'Create Maintenance Schedules'/);
-  assert.match(accessSettings, /create active maintenance schedules directly/);
+  assert.match(accessSettings, /create active maintenance schedules directly/i);
   assert.match(ownerShare, /Enabled maintenance schedules take effect immediately/);
 });
 
