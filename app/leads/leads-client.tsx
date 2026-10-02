@@ -1,4 +1,5 @@
 'use client';
+import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import LeadNoteDialog from '../../components/leads/LeadNoteDialog';
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import SharedAssetContributionDialog from '../../components/leads/SharedAssetContributionDialog';
@@ -3995,9 +3996,9 @@ export default function LeadsClient({
                       ) : null}
 
                       {managedLead.maintenanceAccess?.isActive && !isFullRegisterLead(managedLead) && <>
-                        {(managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><span><strong>Update asset details</strong><small>Year, usage and condition.</small></span></button>}
-                        {managedLead.maintenanceAccess.permissions.canAddMaintenance&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'maintenance'})}><span><strong>Add maintenance</strong><small>Record completed work.</small></span></button>}
-                        {(managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition||managedLead.maintenanceAccess.permissions.canAddMaintenance)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><span><strong>History</strong><small>View shared changes.</small></span></button>}
+                        {(managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset details</strong><small>Year, usage and condition.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canAddMaintenance&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'maintenance'})}><AssetActionIcon action="addMaintenance" className={assetStyles.buttonIcon} /><span><strong>Add maintenance</strong><small>Record completed work.</small></span></button>}
+                        {(managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition||managedLead.maintenanceAccess.permissions.canAddMaintenance)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
                       </>}
                       {null}
 

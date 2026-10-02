@@ -1,4 +1,5 @@
 'use client';
+import AssetActionIcon from './AssetActionIcon';
 import { useEffect, useState } from 'react';
 import type { ExternalLeadAccess } from '../../lib/external-lead-access';
 import { EXTERNAL_SHARE_OPTIONS, type ExternalSharePermission, type ExternalSharePermissions } from '../../lib/external-share-permissions';
@@ -61,13 +62,13 @@ export default function ExternalLeadActions({ token, permissions: suppliedPermis
     <div className={assetStyles.optionsContent}>
       <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid} ${dialogStyles.actions}`}>
         {EXTERNAL_SHARE_OPTIONS.filter(option => !['yearModel','usage','condition'].includes(option.key) && permissions[option.key] && !(permissions.allReports && ['maintenanceReports','costOfOwnership'].includes(option.key)) && !(canCorrect && ['serialNumber','replacementPrice'].includes(option.key))).map(option => <button key={option.key} type="button" className={actionClassName} onClick={() => setAction(option.key)}>
-          <svg className={assetStyles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          <AssetActionIcon action={option.key} className={assetStyles.buttonIcon} />
           <span><strong>{option.label}</strong><small>{option.description}</small></span>
         </button>)}
-        {(permissions.yearModel||permissions.usage||permissions.condition)&&<button type="button" className={actionClassName} onClick={()=>setAction('yearModel')}><span><strong>Update asset details</strong><small>Year, usage and condition.</small></span></button>}
+        {(permissions.yearModel||permissions.usage||permissions.condition)&&<button type="button" className={actionClassName} onClick={()=>setAction('yearModel')}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset details</strong><small>Year, usage and condition.</small></span></button>}
         {canCorrect && <DealerAssetCorrectionEditor assetTitle={assetTitle} sourceType="external" sourceId={`${token}:${assetId}`} externalShare={{token, assetId: assetId!}} directUpdates={permissions.directUpdates===true} serialNumber={serialNumber} replacementPriceExVat={replacementPrice} canUpdateSerial={permissions.serialNumber} canUpdateReplacementPrice={permissions.replacementPrice} actionClassName={actionClassName} iconClassName={assetStyles.buttonIcon}/>}
-        {(permissions.yearModel||permissions.usage||permissions.condition||permissions.addMaintenance)&&<button type="button" className={actionClassName} onClick={()=>setAction('history')}><span><strong>History</strong><small>View shared changes.</small></span></button>}
-        {access === 'owner' && <button type="button" className={actionClassName} onClick={() => setAction('access')}><span><strong>Recipient access</strong><small>Review access requests.</small></span></button>}
+        {(permissions.yearModel||permissions.usage||permissions.condition||permissions.addMaintenance)&&<button type="button" className={actionClassName} onClick={()=>setAction('history')}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
+        {access === 'owner' && <button type="button" className={actionClassName} onClick={() => setAction('access')}><AssetActionIcon action="access" className={assetStyles.buttonIcon} /><span><strong>Recipient access</strong><small>Review access requests.</small></span></button>}
       </div>
     </div>
     {reply && <div className={styles.actions}>{reply.email && <a className={styles.secondary} href={`mailto:${encodeURIComponent(reply.email)}?subject=${encodeURIComponent('Re: Aim4price asset enquiry')}`}>Email owner</a>}{reply.phone && <a className={styles.secondary} href={buildWhatsAppShareUrl({ subject: 'Asset enquiry', body: `Hello ${reply.name}, regarding your Aim4price asset enquiry.` }, reply.phone)} target="_blank" rel="noreferrer">WhatsApp owner</a>}</div>}
