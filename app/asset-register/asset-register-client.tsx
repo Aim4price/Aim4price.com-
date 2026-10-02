@@ -1,4 +1,5 @@
 'use client';
+import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import AssetDetailsFields from '../../components/AssetDetailsFields';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
@@ -20672,7 +20673,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
               <div className={styles.optionsContent}>
                 <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
-                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title})}><span><strong>History</strong><small>View shared asset changes.</small></span></button>
+                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View shared asset changes.</small></span></button>
                   <button
                     type="button"
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}
