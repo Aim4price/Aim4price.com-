@@ -37,6 +37,10 @@ export const dealerMaintenancePermissionOptions: Array<{
   description: string;
 }> = [
   {key:'canAddPhotos', title:'Add photos', description:'Allow photos to be added to the live asset.'},
+  {key:'canUpdateYear', title:'Update year', description:'Change the asset year.'},
+  {key:'canUpdateUsage', title:'Update usage', description:'Update hours or kilometres.'},
+  {key:'canUpdateCondition', title:'Update condition', description:'Update the asset condition.'},
+  {key:'canAddMaintenance', title:'Add maintenance', description:'Record completed work.'},
   {key:'canAddCosts', title:'Add costs', description:'Add costs and supporting documents.'},
   {
     key: 'canViewLoggedProblems',

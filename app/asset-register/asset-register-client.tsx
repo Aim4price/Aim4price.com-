@@ -1,4 +1,6 @@
 'use client';
+import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
+import AssetDetailsFields from '../../components/AssetDetailsFields';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 import LicenceShareReview from '../../components/asset-register/LicenceShareReview';
 import { licenceShareMissingDetails } from '../../lib/licence-share-readiness';
@@ -6602,6 +6604,7 @@ export default function AssetRegisterClient({
   const [isMovingAssetRegister, setIsMovingAssetRegister] = useState(false);
   const assetRegisterMoveGroupsRequestRef = useRef(0);
 
+  const [historyAsset,setHistoryAsset]=useState<{id:string;title:string}|null>(null);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [assetStatusDraft, setAssetStatusDraft] = useState<AssetStatusDraft>(initialAssetStatusDraft);
   const [assetDetailFocusTarget, setAssetDetailFocusTarget] = useState<AssetDetailEditTarget | null>(null);
@@ -18215,6 +18218,7 @@ export default function AssetRegisterClient({
         onClose={() => { setLicenceReviewAssetIds(null); setIsRegisterShareModalOpen(true); }}
         onContinue={() => openFullRegisterQuotePartnerPicker('license_renewal', true)}
       />}
+      {historyAsset&&<SharedAssetWorkDialog endpoint={`/api/asset-register/${historyAsset.id}`} action="history" assetTitle={historyAsset.title} onClose={()=>setHistoryAsset(null)}/>}
       {isAssetModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
@@ -18680,26 +18684,8 @@ export default function AssetRegisterClient({
                           ) : null}
                         </div>
                       ) : assetFormKind !== 'stock' ? (
-                        <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
-                          <label className={styles.field} data-asset-detail-edit-target="year">
-                            <span>{yearFieldLabel}</span>
-                            <input
-                              type="number"
-                              min="1800"
-                              max={new Date().getFullYear() + 1}
-                              step="1"
-                              value={assetDraft.yearModel}
-                              onChange={(event) =>
-                                setAssetDraft((current) => ({
-                                  ...current,
-                                  yearModel: event.target.value,
-                                }))
-                              }
-                              placeholder="Optional"
-                            />
-                          </label>
-
-                          <div
+                        <AssetDetailsFields className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`} year={assetDraft.yearModel} yearLabel={yearFieldLabel} onYear={yearModel=>setAssetDraft(current=>({...current,yearModel}))} canCondition={showConditionField}
+                          usageControl={<div
                             className={`${styles.field} ${updateStyles.usageEditor}`}
                             data-asset-detail-edit-target="usage"
                           >
@@ -18752,10 +18738,8 @@ export default function AssetRegisterClient({
                                 />
                               )}
                             </label>
-                          </div>
-
-                          {showConditionField ? (
-                            <ModalSelect<AssetConditionValue>
+                          </div>}
+                          conditionControl={<ModalSelect<AssetConditionValue>
                               label="Condition"
                               value={assetDraft.condition}
                               options={CONDITION_OPTIONS}
@@ -18767,9 +18751,8 @@ export default function AssetRegisterClient({
                               }
                               className={styles.assetConditionField}
                               assetDetailEditTarget="condition"
-                            />
-                          ) : null}
-                        </div>
+                            />}
+                        />
                       ) : null}
 
                       <div className={`${styles.assetValueBoxGrid} ${updateStyles.valueGrid}`}>
@@ -20689,6 +20672,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
               <div className={styles.optionsContent}>
                 <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
+                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title})}><span><strong>History</strong><small>View shared asset changes.</small></span></button>
                   <button
                     type="button"
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}

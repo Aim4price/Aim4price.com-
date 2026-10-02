@@ -1,0 +1,5 @@
+.choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;}
+.event{padding:1rem 0;border-bottom:1px solid #d9e5e0;}
+.event p{margin:.4rem 0;}
+
+.fields { display: grid; gap: 16px; }

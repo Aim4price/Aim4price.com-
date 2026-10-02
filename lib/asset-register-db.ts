@@ -1,3 +1,4 @@
+import { resolveAssetUsage as resolveSharedAssetUsage } from './asset-usage';
 import { hydrateLegacyValuationRow, normalizeSavedValuationMethod } from './asset-register-legacy-valuation';
 import { assetDisplayTitle } from './asset-display-title';
 import { getDb } from './db';
@@ -3929,4 +3930,34 @@ export async function appendSharedAssetPhotos(client: import('pg').PoolClient, u
   const update = buildUpdateSetClause(fields);
   await client.query(`UPDATE asset_register_items SET ${update.clause} WHERE user_id=$1 AND id=$2`,[userId,assetId,...update.values]);
   return {...asset,photos};
+}
+
+/** Restricted shared edits use the same normalization and stale-valuation rules as owner edits. */
+export async function updateSharedAssetDetails(client: import('pg').PoolClient, userId:string, assetId:string, patch:{yearModel?:number|null;usage?:number;condition?:string}) {
+ const schema=await getAssetRegisterSchema();
+ const selected=await client.query<AssetRegisterRow>(`SELECT ${buildSelectList(schema)} FROM asset_register_items WHERE user_id=$1 AND id=$2 FOR UPDATE`,[userId,assetId]);
+ if(!selected.rows[0])throw new Error('ASSET_NOT_FOUND');
+ const existing=mapAssetRegisterRow(selected.rows[0]);
+ const year=patch.yearModel===undefined?existing.yearModel:patch.yearModel;
+ const metric=resolveSharedAssetUsage(existing).metric;
+ if(patch.usage!==undefined&&metric==='not_applicable')throw new Error('Usage does not apply to this asset.');
+ const percentage=metric==='percentage';
+ const current=resolveSharedAssetUsage(existing).value;
+ if(patch.usage!==undefined && (patch.usage<(current||0)||(percentage&&patch.usage>100)))throw new Error('Usage cannot decrease. Ask the owner to correct the reading in Settings.');
+ const hours=patch.usage!==undefined&&!percentage?patch.usage:existing.hours;
+ const life=patch.usage!==undefined&&percentage?patch.usage:existing.lifeWorkedPercent;
+ const condition=patch.condition===undefined?normalizeConditionForDb(existing.condition):normalizeConditionForDb(patch.condition);
+ const now=new Date();
+ let specs=buildYearModelSpecsJson(existing.specsJson??{},year,year===null);
+ if(patch.usage!==undefined)specs={...specs,...(percentage?{lifeWorkedPercent:life,life_worked_percent:life}:{hours,usage:hours,usageAmount:hours,usage_amount:hours})};
+ const reasons=buildValuationStaleReasons({existing,nextYearModel:year,nextHours:hours,nextLifeWorkedPercent:life,nextCondition:condition});
+ specs=markValuationNeedsUpdate(specs,reasons,now);
+ const fields:SqlField[]=[];
+ if(patch.yearModel!==undefined)pushField(fields,schema,['year_model','year'],year);
+ if(patch.usage!==undefined)pushField(fields,schema,percentage?['life_worked_percent']:['hours','engine_hours'],percentage?life:hours);
+ if(patch.condition!==undefined)pushField(fields,schema,['condition'],condition);
+ pushField(fields,schema,['specs_json'],specs,'::jsonb');pushField(fields,schema,['updated_at','modified_at','updatedon'],now);
+ const update=buildUpdateSetClause(fields);
+ const result=await client.query<AssetRegisterRow>(`UPDATE asset_register_items SET ${update.clause} WHERE user_id=$1 AND id=$2 RETURNING ${buildSelectList(schema)}`,[userId,assetId,...update.values]);
+ return {before:{yearModel:existing.yearModel,usage:current,condition:existing.condition},after:{yearModel:year,usage:percentage?life:hours,condition},item:mapAssetRegisterRow(result.rows[0])};
 }

@@ -1,5 +1,6 @@
 'use client';
 import LeadNoteDialog from '../../components/leads/LeadNoteDialog';
+import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import SharedAssetContributionDialog from '../../components/leads/SharedAssetContributionDialog';
 import LeadManageDialog from '../../components/leads/LeadManageDialog';
 import LeadReportDialog from '../../components/leads/LeadReportDialog';
@@ -125,6 +126,7 @@ type AssetLead = {
       canViewCostOfOwnership: boolean;
       canCreateMaintenanceSchedules: boolean;
       canAddPhotos?: boolean;
+      canUpdateYear?:boolean;canUpdateUsage?:boolean;canUpdateCondition?:boolean;canAddMaintenance?:boolean;
       canAddCosts?: boolean;
       canUpdateSerial: boolean;
       canUpdateReplacementPrice: boolean;
@@ -1797,6 +1799,7 @@ export default function LeadsClient({
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [qrLeadAsset, setQrLeadAsset] = useState<LeadQrModalState | null>(null);
   const [copiedQrLeadId, setCopiedQrLeadId] = useState<string | null>(null);
+  const [sharedWork,setSharedWork]=useState<{lead:AssetLead;action:'details'|'maintenance'|'history'}|null>(null);
   const [contribution,setContribution] = useState<{lead:AssetLead;kind:'photos'|'costs'}|null>(null);
   const [photoUploadLead, setPhotoUploadLead] = useState<AssetLead | null>(null);
   const [pendingLeadPhotos, setPendingLeadPhotos] = useState<PendingLeadPhoto[]>([]);
@@ -3991,6 +3994,11 @@ export default function LeadsClient({
                         />
                       ) : null}
 
+                      {managedLead.maintenanceAccess?.isActive && !isFullRegisterLead(managedLead) && <>
+                        {(managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><span><strong>Update asset details</strong><small>Year, usage and condition.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canAddMaintenance&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'maintenance'})}><span><strong>Add maintenance</strong><small>Record completed work.</small></span></button>}
+                        {(managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition||managedLead.maintenanceAccess.permissions.canAddMaintenance)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><span><strong>History</strong><small>View shared changes.</small></span></button>}
+                      </>}
                       {null}
 
                       {isDealerLeadsMode && managedLead.maintenanceAccess?.permissions.canAddCosts && !isFullRegisterLead(managedLead) ? (
@@ -4013,6 +4021,7 @@ export default function LeadsClient({
         </LeadManageDialog>
       ) : null}
 
+      {sharedWork&&createPortal(<SharedAssetWorkDialog endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{setManagedLead(null);void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
       {contribution ? createPortal(<SharedAssetContributionDialog kind={contribution.kind} endpoint={`/api/asset-leads/${contribution.lead.id}/${contribution.kind}`} assetTitle={assetTitle(contribution.lead)} onClose={()=>setContribution(null)} onSaved={()=>{void fetch(`/api/asset-leads/${contribution.lead.id}/media`,{cache:'no-store'}).then(r=>r.json()).then(data=>{if(data.asset)mergeLeadAssetMedia(contribution.lead,data.asset);}).catch(()=>{});}}/>,document.body) : null}
       {qrLeadAsset ? (
         <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>

@@ -32,6 +32,11 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
     canCreateMaintenanceSchedules: permissions.canCreateMaintenanceSchedules as boolean,
     canAddPhotos: permissions.canAddPhotos === true,
     canAddCosts: permissions.canAddCosts === true,
+    canUpdateYear: permissions.canUpdateYear === true,
+    canUpdateUsage: permissions.canUpdateUsage === true,
+    canUpdateCondition: permissions.canUpdateCondition === true,
+    canAddMaintenance: permissions.canAddMaintenance === true,
+
     canUpdateSerial: permissions.canUpdateSerial as boolean,
     canUpdateReplacementPrice: permissions.canUpdateReplacementPrice as boolean,
   };

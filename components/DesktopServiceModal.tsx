@@ -51,6 +51,7 @@ export type DesktopServiceRecord = {
 };
 
 type Props = {
+  checklistEndpoint?: string;
   record: DesktopServiceRecord;
   busy?: boolean;
   askScheduleLink?: boolean;
@@ -92,6 +93,7 @@ export default function DesktopServiceModal({
   record,
   busy = false,
   askScheduleLink = false,
+  checklistEndpoint,
   dealerAppMode = false,
   standalone = false,
   onBack,
@@ -108,7 +110,7 @@ export default function DesktopServiceModal({
   const copy = serviceCopyForProfile(profile);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const baseChecklist = useMaintenanceChecklist(record, selectedItems.length > 0);
-  const savedChecklist = useAssetChecklistItems(dealerAppMode ? undefined : record.assetId);
+  const savedChecklist = useAssetChecklistItems(dealerAppMode ? undefined : record.assetId, checklistEndpoint);
   const checklist = { ...baseChecklist, customItems: savedChecklist.items };
   const repairChecklist = { ...checklist, items: [] };
   const repairOptions = mode === 'serviced' ? checklistOptions(repairChecklist, 'repaired') : [];
