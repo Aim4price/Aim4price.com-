@@ -49,6 +49,8 @@ export type DealerMaintenancePermissions = {
   canViewMaintenanceReports: boolean;
   canViewCostOfOwnership: boolean;
   canCreateMaintenanceSchedules: boolean;
+  canAddPhotos?: boolean;
+  canAddCosts?: boolean;
   canUpdateSerial: boolean;
   canUpdateReplacementPrice: boolean;
 };
@@ -210,6 +212,8 @@ type DealerMaintenanceAccessRow = {
   can_view_maintenance_reports: boolean | null;
   can_view_cost_of_ownership: boolean | null;
   can_create_maintenance_schedules: boolean | null;
+  can_add_photos?: boolean | null;
+  can_add_costs?: boolean | null;
   can_update_serial: boolean | null;
   can_update_replacement_price: boolean | null;
   has_maintenance_records: boolean | null;
@@ -407,6 +411,8 @@ function rowPermissions(row: DealerMaintenanceAccessRow): DealerMaintenancePermi
     canViewMaintenanceReports: Boolean(row.can_view_maintenance_reports),
     canViewCostOfOwnership: Boolean(row.can_view_cost_of_ownership),
     canCreateMaintenanceSchedules: row.can_create_maintenance_schedules !== false,
+    canAddPhotos: row.can_add_photos === true,
+    canAddCosts: row.can_add_costs === true,
     canUpdateSerial: row.can_update_serial !== false,
     canUpdateReplacementPrice: row.can_update_replacement_price !== false,
   };
@@ -447,6 +453,8 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
         can_view_maintenance_reports,
         can_view_cost_of_ownership,
         can_create_maintenance_schedules,
+        can_add_photos,
+        can_add_costs,
         can_update_serial,
         can_update_replacement_price,
         created_at,
@@ -509,6 +517,8 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
       add column if not exists can_view_maintenance_reports boolean not null default false,
       add column if not exists can_view_cost_of_ownership boolean not null default false,
       add column if not exists can_create_maintenance_schedules boolean not null default true,
+      add column if not exists can_add_photos boolean not null default false,
+      add column if not exists can_add_costs boolean not null default false,
       add column if not exists can_update_serial boolean not null default true,
       add column if not exists can_update_replacement_price boolean not null default true
   `);
@@ -602,6 +612,8 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         access.can_view_maintenance_reports,
         access.can_view_cost_of_ownership,
         access.can_create_maintenance_schedules,
+        access.can_add_photos,
+        access.can_add_costs,
         access.can_update_serial,
         access.can_update_replacement_price,
         exists (
@@ -669,7 +681,7 @@ export async function grantDealerMaintenanceTracking(input: {
     getAccountProfile({ id: input.dealerUserId }),
   ]);
   if (!asset) throw new Error('ASSET_NOT_FOUND');
-  if (dealer.accountType !== 'dealer' || dealer.accountStatus !== 'active') throw new Error('DEALER_NOT_FOUND');
+  if (!['dealer','business'].includes(dealer.accountType) || dealer.accountStatus !== 'active') throw new Error('DEALER_NOT_FOUND');
   const permissions: DealerMaintenancePermissions = input.permissions ?? {
     canViewLoggedProblems: false,
     canViewMaintenanceReports: true,
@@ -692,6 +704,8 @@ export async function grantDealerMaintenanceTracking(input: {
         can_view_maintenance_reports,
         can_view_cost_of_ownership,
         can_create_maintenance_schedules,
+        can_add_photos,
+        can_add_costs,
         can_update_serial,
         can_update_replacement_price,
         is_active,
@@ -699,7 +713,7 @@ export async function grantDealerMaintenanceTracking(input: {
         created_at,
         updated_at
       )
-      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12, true, null, now(), now())
+      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $13, $14, $11, $12, true, null, now(), now())
       on conflict (owner_user_id, dealer_user_id, asset_register_item_id)
       do update set
         granted_by_actor_type = excluded.granted_by_actor_type,
@@ -709,6 +723,8 @@ export async function grantDealerMaintenanceTracking(input: {
         can_view_maintenance_reports = excluded.can_view_maintenance_reports,
         can_view_cost_of_ownership = excluded.can_view_cost_of_ownership,
         can_create_maintenance_schedules = excluded.can_create_maintenance_schedules,
+        can_add_photos = excluded.can_add_photos,
+        can_add_costs = excluded.can_add_costs,
         can_update_serial = excluded.can_update_serial,
         can_update_replacement_price = excluded.can_update_replacement_price,
         is_active = true,
@@ -729,6 +745,8 @@ export async function grantDealerMaintenanceTracking(input: {
       permissions.canCreateMaintenanceSchedules,
       permissions.canUpdateSerial,
       permissions.canUpdateReplacementPrice,
+      permissions.canAddPhotos === true,
+      permissions.canAddCosts === true,
     ],
   );
   const id = result.rows[0]?.id;
@@ -769,6 +787,8 @@ export async function updateDealerMaintenancePermissions(input: {
         can_view_maintenance_reports = $5,
         can_view_cost_of_ownership = $6,
         can_create_maintenance_schedules = $7,
+        can_add_photos = $10,
+        can_add_costs = $11,
         can_update_serial = $8,
         can_update_replacement_price = $9,
         updated_at = now()
@@ -787,6 +807,8 @@ export async function updateDealerMaintenancePermissions(input: {
       input.permissions.canCreateMaintenanceSchedules,
       input.permissions.canUpdateSerial,
       input.permissions.canUpdateReplacementPrice,
+      input.permissions.canAddPhotos === true,
+      input.permissions.canAddCosts === true,
     ],
   );
   if (!result.rowCount) return null;
@@ -1549,7 +1571,7 @@ export async function getLiveSharedTrackedAsset(token: string, assetId: string, 
 }
 
 function sharedAccessRow(scope: Awaited<ReturnType<typeof requireLiveSharedAsset>>): DealerMaintenanceAccessRow {
-  const p=scope.lead.details?.permissions;
+  const p=scope.user.id === scope.lead.ownerId ? {loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,serialNumber:true,replacementPrice:true} : scope.lead.details?.permissions;
   return {id:scope.assetId,owner_user_id:scope.lead.ownerId,dealer_user_id:scope.user.id,asset_register_item_id:scope.assetId,
     granted_by_name:scope.lead.share.senderName || '',created_at:null,updated_at:null,
     can_view_logged_problems:p?.loggedProblems===true,can_view_maintenance_reports:p?.maintenanceReports===true,

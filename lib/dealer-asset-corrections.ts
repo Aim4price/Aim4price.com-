@@ -580,9 +580,9 @@ export async function createOrUpdateDealerAssetCorrection(input: {
     if (input.sourceType === 'external') {
       const [token] = sourceId.split(':');
       const permission = input.field === 'serialNumber' ? 'serialNumber' : 'replacementPrice';
-      const link = await client.query(`SELECT token, lead_details->'permissions'->>'directUpdates' AS direct_updates FROM asset_share_links WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL AND ((umbrella_id IS NULL AND asset_ids @> ARRAY[$3::uuid]) OR (umbrella_id IS NOT NULL AND EXISTS(SELECT 1 FROM asset_groups g JOIN asset_group_members m ON m.group_id=g.id WHERE g.id=umbrella_id AND g.user_id=$2 AND m.asset_id=$3::uuid))) AND lead_details->'permissions'->>$4='true' FOR SHARE`, [token, access.owner_user_id, asset.id, permission]);
+      const link = await client.query(`SELECT token, lead_details->'permissions'->>'directUpdates' AS direct_updates FROM asset_share_links WHERE token=$1 AND user_id=$2 AND revoked_at IS NULL AND ((umbrella_id IS NULL AND asset_ids @> ARRAY[$3::uuid]) OR (umbrella_id IS NOT NULL AND EXISTS(SELECT 1 FROM asset_groups g JOIN asset_group_members m ON m.group_id=g.id WHERE g.id=umbrella_id AND g.user_id=$2 AND m.asset_id=$3::uuid))) AND (user_id=$5 OR lead_details->'permissions'->>$4='true') FOR SHARE`, [token, access.owner_user_id, asset.id, permission,input.dealerUserId]);
       if (!link.rows.length) throw new Error('CORRECTION_FORBIDDEN');
-      directUpdates = link.rows[0].direct_updates === 'true';
+      directUpdates = input.dealerUserId === access.owner_user_id || link.rows[0].direct_updates === 'true';
     }
     const lockedAsset = await client.query(
       `

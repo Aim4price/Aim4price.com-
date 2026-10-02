@@ -103,9 +103,9 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
             <p>Asset photos and all reports are always included, using the latest asset information.</p>
           </div>
           <DealerMaintenancePermissionPicker
-            value={{canViewLoggedProblems:permissions.loggedProblems===true,canViewMaintenanceReports:true,canViewCostOfOwnership:true,canCreateMaintenanceSchedules:permissions.maintenanceSchedules===true,canUpdateSerial:permissions.serialNumber,canUpdateReplacementPrice:permissions.replacementPrice}}
+            value={{canAddPhotos:permissions.addPhotos===true,canAddCosts:permissions.addCosts===true,canViewLoggedProblems:permissions.loggedProblems===true,canViewMaintenanceReports:true,canViewCostOfOwnership:true,canCreateMaintenanceSchedules:permissions.maintenanceSchedules===true,canUpdateSerial:permissions.serialNumber,canUpdateReplacementPrice:permissions.replacementPrice}}
             lockedPermissions={['canViewMaintenanceReports','canViewCostOfOwnership']}
-            onChange={value=>{setPermissions(assetLinkPermissions({loggedProblems:value.canViewLoggedProblems,maintenanceSchedules:value.canCreateMaintenanceSchedules,serialNumber:value.canUpdateSerial,replacementPrice:value.canUpdateReplacementPrice}));setAccepted(false);}}
+            onChange={value=>{setPermissions(assetLinkPermissions({addPhotos:value.canAddPhotos,addCosts:value.canAddCosts,loggedProblems:value.canViewLoggedProblems,maintenanceSchedules:value.canCreateMaintenanceSchedules,serialNumber:value.canUpdateSerial,replacementPrice:value.canUpdateReplacementPrice}));setAccepted(false);}}
           />
           <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
             <button type="button" className={assetStyles.secondaryButton} onClick={()=>{setPermissions(assetLinkPermissions());setStep('recipient');}}>Share read-only</button>

@@ -49,10 +49,10 @@ export function leadAllows(lead: Lead, permission: ExternalSharePermission): boo
 }
 export async function requireExternalLeadAction(token: string, permission: ExternalSharePermission) {
     const lead = await readLeadPage(token);
-    if (!lead || !leadAllows(lead, permission))
+    if (!lead)
         throw new ExternalLeadAccessError('This action was not shared or the enquiry is no longer available.', lead ? 403 : 404);
     const { access, user } = await externalLeadAccess(lead);
-    if (access !== 'active' || !user)
+    if (!user || (access !== 'owner' && (access !== 'active' || !leadAllows(lead,permission))))
         throw new ExternalLeadAccessError('This action requires the recipient’s signed-in, approved account.', user ? 403 : 401);
     return { lead, user };
 }

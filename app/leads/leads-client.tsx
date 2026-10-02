@@ -1,4 +1,5 @@
 'use client';
+import SharedAssetContributionDialog from '../../components/leads/SharedAssetContributionDialog';
 import LeadManageDialog from '../../components/leads/LeadManageDialog';
 import LeadReportDialog from '../../components/leads/LeadReportDialog';
 import LeadCardSummary from '../../components/leads/LeadCardSummary';
@@ -122,6 +123,8 @@ type AssetLead = {
       canViewMaintenanceReports: boolean;
       canViewCostOfOwnership: boolean;
       canCreateMaintenanceSchedules: boolean;
+      canAddPhotos?: boolean;
+      canAddCosts?: boolean;
       canUpdateSerial: boolean;
       canUpdateReplacementPrice: boolean;
     };
@@ -1793,6 +1796,7 @@ export default function LeadsClient({
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [qrLeadAsset, setQrLeadAsset] = useState<LeadQrModalState | null>(null);
   const [copiedQrLeadId, setCopiedQrLeadId] = useState<string | null>(null);
+  const [contribution,setContribution] = useState<{lead:AssetLead;kind:'photos'|'costs'}|null>(null);
   const [photoUploadLead, setPhotoUploadLead] = useState<AssetLead | null>(null);
   const [pendingLeadPhotos, setPendingLeadPhotos] = useState<PendingLeadPhoto[]>([]);
   const [isLeadPhotoDragging, setIsLeadPhotoDragging] = useState(false);
@@ -3943,8 +3947,8 @@ export default function LeadsClient({
                         </button>
                       ) : null}
 
-                      {isDealerLeadsMode ? (
-                        <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => void openLeadPhotoUploadModal(managedLead)}>
+                      {isDealerLeadsMode && managedLead.maintenanceAccess?.permissions.canAddPhotos ? (
+                        <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => setContribution({lead:managedLead,kind:'photos'})}>
                           <PhotosIcon className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Photos</strong>
@@ -3988,11 +3992,11 @@ export default function LeadsClient({
 
                       {null}
 
-                      {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
+                      {isDealerLeadsMode && managedLead.maintenanceAccess?.permissions.canAddCosts && !isFullRegisterLead(managedLead) ? (
                         <button
                           type="button"
                           className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
-                          onClick={() => openDealerCost(managedLead)}
+                          onClick={() => setContribution({lead:managedLead,kind:'costs'})}
                         >
                           <CostIcon className={assetStyles.buttonIcon} />
                           <span>
@@ -4008,6 +4012,7 @@ export default function LeadsClient({
         </LeadManageDialog>
       ) : null}
 
+      {contribution ? createPortal(<SharedAssetContributionDialog kind={contribution.kind} endpoint={`/api/asset-leads/${contribution.lead.id}/${contribution.kind}`} assetTitle={assetTitle(contribution.lead)} onClose={()=>setContribution(null)} onSaved={()=>{void fetch(`/api/asset-leads/${contribution.lead.id}/media`,{cache:'no-store'}).then(r=>r.json()).then(data=>{if(data.asset)mergeLeadAssetMedia(contribution.lead,data.asset);}).catch(()=>{});}}/>,document.body) : null}
       {qrLeadAsset ? (
         <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>
           <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadQrModal} />

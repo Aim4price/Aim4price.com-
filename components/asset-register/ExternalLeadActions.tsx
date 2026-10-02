@@ -4,6 +4,7 @@ import type { ExternalLeadAccess } from '../../lib/external-lead-access';
 import { EXTERNAL_SHARE_OPTIONS, type ExternalSharePermission, type ExternalSharePermissions } from '../../lib/external-share-permissions';
 import { buildWhatsAppShareUrl } from '../../lib/asset-external-share';
 import type { LeadReport } from '../../lib/guest-leads';
+import SharedAssetContributionDialog from '../leads/SharedAssetContributionDialog';
 import SharedLiveReports from './SharedLiveReports';
 import ExternalAccessRequests from './ExternalAccessRequests';
 import LeadDocuments from './LeadDocuments';
@@ -33,9 +34,10 @@ import LeadActionDialog from '../leads/LeadActionDialog';
 import LeadReportDialog from '../leads/LeadReportDialog';
 import { createPortal } from '../WebsitePortal';
 import SharedEnquiryAccess from '../SharedEnquiryAccess';
-export default function ExternalLeadActions({ token, permissions, reports, access, reply, assetTitle, assetId, serialNumber, replacementPrice }: ExternalLeadActionData & {
+export default function ExternalLeadActions({ token, permissions: suppliedPermissions, reports, access, reply, assetTitle, assetId, serialNumber, replacementPrice }: ExternalLeadActionData & {
   assetIndex: number; assetId?: string; assetTitle: string; serialNumber: string; replacementPrice: number | null;
 }) {
+  const permissions = access === 'owner' ? {...suppliedPermissions,addPhotos:true,addCosts:true,serialNumber:true,replacementPrice:true,maintenanceSchedules:true,directUpdates:true} : suppliedPermissions;
   const [action, setAction] = useState<ExternalSharePermission | 'access' | null>(null);
   const [liveAsset,setLiveAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [loadError,setLoadError] = useState('');
@@ -49,7 +51,7 @@ export default function ExternalLeadActions({ token, permissions, reports, acces
   },[action,assetId,token,access]);
   const sharedAsset = assetId ? {token,assetId} : undefined;
   const canRead = ['active','read-only','owner'].includes(access);
-  const canCorrect = access === 'active' && Boolean(assetId);
+  const canCorrect = ['active','owner'].includes(access) && Boolean(assetId);
   const allowed = access === 'active' || access === 'owner' || (access === 'read-only' && ['reports','loggedProblems','maintenanceReports','costOfOwnership'].includes(action || ''));
   const close = () => setAction(null);
   const actionClassName = `${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`;
@@ -67,7 +69,7 @@ export default function ExternalLeadActions({ token, permissions, reports, acces
     </div>
     {reply && <div className={styles.actions}>{reply.email && <a className={styles.secondary} href={`mailto:${encodeURIComponent(reply.email)}?subject=${encodeURIComponent('Re: Aim4price asset enquiry')}`}>Email owner</a>}{reply.phone && <a className={styles.secondary} href={buildWhatsAppShareUrl({ subject: 'Asset enquiry', body: `Hello ${reply.name}, regarding your Aim4price asset enquiry.` }, reply.phone)} target="_blank" rel="noreferrer">WhatsApp owner</a>}</div>}
     {!EXTERNAL_SHARE_OPTIONS.some(option=>permissions[option.key]) && <p className={styles.hint}>The sender shared read-only asset details. No additional actions are enabled.</p>}
-    {action === 'maintenanceReports' && canRead && sharedAsset ? createPortal(<DealerMaintenanceReportModal accessId={assetId!} externalShare={sharedAsset} onClose={close}/>,document.body) : action === 'costOfOwnership' && canRead && sharedAsset ? createPortal(<DealerCostOfOwnershipReportModal accessId={assetId!} externalShare={sharedAsset} assetTitle={assetTitle} assetMeta="Shared asset" onClose={close}/>,document.body) : action === 'maintenanceSchedules' && access === 'active' && sharedAsset ? createPortal(<DealerMaintenanceScheduleModal accessId={assetId!} externalShare={sharedAsset} onClose={close} onAssetUpdated={()=>close()}/>,document.body) : action && createPortal(action === 'reports' && allowed && permissions.allReports && assetId ? <SharedLiveReports token={token} assetId={assetId} assetTitle={assetTitle} onClose={close}/> : action === 'reports' && allowed ? <LeadReportDialog title={assetTitle} description="Shared reports" onClose={close}>
+    {(action === 'addPhotos' || action === 'addCosts') && ['active','owner'].includes(access) && assetId ? createPortal(<SharedAssetContributionDialog kind={action === 'addPhotos' ? 'photos' : 'costs'} endpoint={`/api/asset-share-links/${token}/assets/${assetId}/${action === 'addPhotos' ? 'photos' : 'costs'}`} assetTitle={assetTitle} onClose={close}/>,document.body) : action === 'maintenanceReports' && canRead && sharedAsset ? createPortal(<DealerMaintenanceReportModal accessId={assetId!} externalShare={sharedAsset} onClose={close}/>,document.body) : action === 'costOfOwnership' && canRead && sharedAsset ? createPortal(<DealerCostOfOwnershipReportModal accessId={assetId!} externalShare={sharedAsset} assetTitle={assetTitle} assetMeta="Shared asset" onClose={close}/>,document.body) : action === 'maintenanceSchedules' && ['active','owner'].includes(access) && sharedAsset ? createPortal(<DealerMaintenanceScheduleModal accessId={assetId!} externalShare={sharedAsset} onClose={close} onAssetUpdated={()=>close()}/>,document.body) : action && createPortal(action === 'reports' && allowed && permissions.allReports && assetId ? <SharedLiveReports token={token} assetId={assetId} assetTitle={assetTitle} onClose={close}/> : action === 'reports' && allowed ? <LeadReportDialog title={assetTitle} description="Shared reports" onClose={close}>
       {reports.map(report => <a className={assetStyles.assetReportOptionButton} data-download-option="true" key={report.id} href={`/api/asset-share-links/${token}/reports/${report.id}`} target="_blank" rel="noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6"/></svg><span><strong>{report.label}</strong><small>Open shared report</small></span></a>)}
       {!reports.length && <p>No reports were attached.</p>}
     </LeadReportDialog> : <LeadActionDialog title={title} assetTitle={assetTitle} onClose={close}>

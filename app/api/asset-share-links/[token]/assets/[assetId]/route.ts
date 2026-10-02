@@ -11,8 +11,7 @@ type Context={params:{token:string;assetId:string}};
 export async function GET(_request:NextRequest,{params}:Context){
  try{
   const lead=await readLeadPage(params.token);
-  const permission=(['loggedProblems','maintenanceReports','costOfOwnership','maintenanceSchedules'] as ExternalSharePermission[]).find(key=>lead?.details?.permissions?.[key]);
-  if(!permission)return businessJson({error:'This asset data was not shared.'},403);
+  const permission=(['loggedProblems','maintenanceReports','costOfOwnership','maintenanceSchedules'] as ExternalSharePermission[]).find(key=>lead?.details?.permissions?.[key]) || 'maintenanceSchedules';
   const asset=await getLiveSharedTrackedAsset(params.token,params.assetId,permission);
   return businessJson({ok:true,asset,assets:[asset]});
  }catch(e){return e instanceof ExternalLeadAccessError ? businessJson({error:e.message},e.status) : businessError(e);}

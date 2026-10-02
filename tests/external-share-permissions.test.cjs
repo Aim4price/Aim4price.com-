@@ -33,7 +33,7 @@ async function setup(){
  const report={label:'Selected report',fileName:'asset.pdf',data:Buffer.from('%PDF-1.4\nreport')};
  const link=await leads.createGuestLead('owner',[B,A],false,details,[report]);
  const signIn=(overrides={})=>{state.user={id:'recipient',name:'Manager',email:'workshop@example.com',emailVerified:true,...overrides};};
- return{mocks,pg,state,leads:fullLeads,access,docs,corrections,details,report,link,base,signIn,foundation,groups};
+ return{db,mocks,pg,state,leads:fullLeads,access,docs,corrections,details,report,link,base,signIn,foundation,groups};
 }
 test('permission input defaults to read-only and signup returns only to valid enquiry paths',()=>{
  assert.deepEqual(permissions.normalizeExternalPermissions({reports:'true',serialNumber:true,admin:true}),{...permissions.EMPTY_EXTERNAL_PERMISSIONS,serialNumber:true,directUpdates:false,allReports:false});
@@ -60,7 +60,7 @@ test('signed-in recipients can read without email verification; contributions re
   x.state.type='dealer';assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
   x.state.type='owner';assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
   x.signIn({id:'owner',email:'owner@example.com'});assert.equal((await x.access.externalLeadAccess(lead)).access,'owner');
-  await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'serialNumber'));
+  assert.equal((await x.access.requireExternalLeadAction(x.link.token,'serialNumber')).user.id,'owner');
  }finally{await x.pg.close();}
 });
 test('per-link permissions, reports, revocation, transfers, and asset indexes are enforced',async()=>{
@@ -294,5 +294,20 @@ test('asset links include photos and every live report automatically, including 
   x.signIn();x.state.approved=true;
   await x.mocks['./live-shared-asset-access'].requireLiveSharedAsset(link.token,A,'allReports');
   await assert.rejects(x.mocks['./live-shared-asset-access'].requireLiveSharedAsset(x.link.token,A,'allReports'),'Older links do not acquire new report permissions');
+ }finally{await x.pg.close();}
+});
+
+test('owners can update through their own read-only link while recipients cannot; revocation still wins',async()=>{
+ const x=await setup();try{
+  const link=await x.leads.createGuestLead('owner',[A],true,{...x.details,permissions:permissions.EMPTY_EXTERNAL_PERMISSIONS},[]);
+  const live=load('lib/live-shared-asset-access.ts',{'./guest-leads':x.leads,'./external-lead-access':x.access});
+  x.signIn();x.state.approved=true;await assert.rejects(live.requireLiveSharedAsset(link.token,A,'addPhotos',true));
+  x.signIn({id:'owner',email:'owner@example.com'});x.state.type='owner';
+  const scope=await live.requireLiveSharedAsset(link.token,A,'addPhotos',true);
+  const client=await x.db.connect();await client.query('BEGIN');await live.lockLiveSharedAsset(client,scope);await client.query('COMMIT');
+  await assert.rejects(live.requireLiveSharedAsset(link.token,B,'addPhotos',true));
+  const correction=await x.corrections.createOrUpdateDealerAssetCorrection({dealerUserId:'owner',dealerName:'Owner',actorName:'Owner',sourceType:'external',sourceId:`${link.token}:${A}`,field:'serialNumber',value:'OWNER-UPDATED'});
+  assert.equal((await x.pg.query('SELECT serial_number FROM asset_register_items WHERE id=$1',[A])).rows[0].serial_number,'OWNER-UPDATED');
+  await x.base.revokeAssetShareLink('owner',link.token);await assert.rejects(live.requireLiveSharedAsset(link.token,A,'addPhotos',true));
  }finally{await x.pg.close();}
 });

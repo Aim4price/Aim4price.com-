@@ -1,3 +1,4 @@
+import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundation';
 import { getAssetRegisterItemsByRefs } from './asset-register-db';
 import { ensureDealerMaintenanceTrackerTables } from './dealer-maintenance-tracker';
 import { getDb } from './db';
@@ -161,7 +162,10 @@ export async function getDealerCostAssetAccess(
   assetId: string,
 ): Promise<DealerCostAssetRef | null> {
   const refs = await listDealerCostAssetRefs(dealerUserId, assetId);
-  return refs[0] ?? null;
+  const ref = refs[0];
+  if (!ref) return null;
+  const grant = await getDb().query(`SELECT id FROM dealer_maintenance_access WHERE owner_user_id=$1 AND dealer_user_id=$2 AND asset_register_item_id=$3::uuid AND is_active=true AND can_add_costs=true`,[ref.owner_user_id,dealerUserId,assetId]);
+  return grant.rows.length ? ref : null;
 }
 
 export async function listDealerCostsData(
@@ -231,10 +235,18 @@ export async function createDealerCost(
   const access = assetId ? await getDealerCostAssetAccess(actor.dealerUserId, assetId) : null;
   if (!access) throw new Error('DEALER_COST_ASSET_FORBIDDEN');
 
+  await ensureSharingFoundation();
   return createMyInvoice(
     access.owner_user_id,
     withDefaultSupplier(input, actor.supplierName),
-    actorContext(actor),
+    {...actorContext(actor),ownerApproved:true},
+    {
+      before:async client=>{
+        const grant=await client.query(`SELECT a.id FROM dealer_maintenance_access a JOIN asset_register_items asset ON asset.id=a.asset_register_item_id AND asset.user_id=a.owner_user_id WHERE a.owner_user_id=$1 AND a.dealer_user_id=$2 AND a.asset_register_item_id=$3::uuid AND a.is_active=true AND a.can_add_costs=true FOR SHARE OF a,asset`,[access.owner_user_id,actor.dealerUserId,assetId]);
+        if(!grant.rows.length)throw new Error('DEALER_COST_ASSET_FORBIDDEN');
+      },
+      after:async (client,invoiceId)=>{await recordSharingUsage({accountId:actor.dealerUserId,actorId:actor.dealerUserId,assetId,metric:'contribution',eventKey:`cost:${invoiceId}`},client);},
+    },
   );
 }
 
