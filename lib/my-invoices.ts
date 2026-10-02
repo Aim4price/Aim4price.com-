@@ -1373,14 +1373,16 @@ export async function createInvoiceDocumentRecord(input: {
   byteSize?: number | null;
   source?: MyInvoiceSource;
   actor?: MyInvoiceActorContext;
-}): Promise<MyInvoiceDocument> {
-  await ensureMyInvoiceTables();
-  await verifyAssetBelongsToUser(input.userId, input.assetId);
+}, writer?: PoolClient): Promise<MyInvoiceDocument> {
+  if (!writer) {
+    await ensureMyInvoiceTables();
+    await verifyAssetBelongsToUser(input.userId, input.assetId);
+  }
 
   const captureRequestId = asOptionalCaptureRequestId(input.captureRequestId);
   const uploadId = asText(input.uploadId);
   const uploadUrl = asText(input.uploadUrl) || buildAssetRegisterUploadUrl(uploadId);
-  const result = await getDb().query<MyInvoiceDocumentRow>(
+  const result = await (writer || getDb()).query<MyInvoiceDocumentRow>(
     `
       insert into public.asset_invoice_documents (
         user_id,
@@ -1416,7 +1418,7 @@ export async function createInvoiceDocumentRecord(input: {
   );
 
   const existing = !result.rows[0] && captureRequestId
-    ? await getDb().query<MyInvoiceDocumentRow>(
+    ? await (writer || getDb()).query<MyInvoiceDocumentRow>(
         `select * from public.asset_invoice_documents
           where capture_request_id = $1::uuid
             and user_id = $2
@@ -1574,6 +1576,7 @@ export async function createMyInvoice(
   userId: string,
   input: MyInvoiceDraftInput,
   actor: MyInvoiceActorContext = {},
+  transaction?: { before: (client: PoolClient) => Promise<string | void>; after: (client: PoolClient, invoiceId: string) => Promise<void> },
 ): Promise<{
   invoice: MyInvoiceRecord | null;
   duplicateWarnings: string[];
@@ -1593,6 +1596,8 @@ export async function createMyInvoice(
 
   try {
     await client.query('begin');
+    const sharedDocumentId = await transaction?.before(client);
+    if (sharedDocumentId) draft.invoiceDocumentId = sharedDocumentId;
     const result = await client.query<{ id: string }>(
       `
         insert into public.asset_invoices (
@@ -1657,6 +1662,7 @@ export async function createMyInvoice(
     if (!invoiceId) throw new Error('INVOICE_CREATE_FAILED');
 
     if (result.rows[0]) await replaceInvoiceBlocks(client, invoiceId, blocks);
+    await transaction?.after(client,invoiceId);
     await client.query('commit');
 
     return {

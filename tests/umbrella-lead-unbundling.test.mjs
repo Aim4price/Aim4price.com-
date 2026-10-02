@@ -42,7 +42,9 @@ test('umbrella children reuse the exact single-asset lead rendering and actions'
   assert.match(leadsClient, /if \(isAssetGroupLead\(lead\)\) return false/);
   assert.match(leadsClient, /renderLeadDetails\(lead\)/);
   assert.match(leadsClient, /openLeadQrModal\(managedLead\)/);
-  assert.match(leadsClient, /openLeadPhotoUploadModal\(managedLead\)/);
+  assert.match(leadsClient, /maintenanceAccess\?\.permissions.canAddPhotos/);
+  assert.match(leadsClient, /setContribution\(\{lead:managedLead,kind:'photos'\}\)/);
+  assert.match(leadsClient, /<SharedAssetContributionDialog/);
   assert.doesNotMatch(leadsClient, /Shared umbrella|umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
   assert.doesNotMatch(leadsStyles, /umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
 });

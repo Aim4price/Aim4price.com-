@@ -3914,3 +3914,19 @@ function toRoundedNumber(value: number | null): number | null {
   return value === null || !Number.isFinite(value) ? null : Math.round(value);
 }
 
+
+/** Append under the caller's transaction so concurrent contributions never replace photos. */
+export async function appendSharedAssetPhotos(client: import('pg').PoolClient, userId: string, assetId: string, urls: string[]) {
+  const schema = await getAssetRegisterSchema();
+  const result = await client.query(`SELECT ${buildSelectList(schema)} FROM asset_register_items WHERE user_id=$1 AND id=$2 FOR UPDATE`,[userId,assetId]);
+  if (!result.rows[0]) throw new Error('This asset is no longer available.');
+  const asset = mapAssetRegisterRow(result.rows[0]);
+  const photos = Array.from(new Set([...asset.photos,...urls]));
+  if (photos.length > 12) throw new Error('This asset can have up to 12 photos.');
+  const fields: SqlField[] = [];
+  pushPhotoField(fields,schema,photos);
+  pushField(fields,schema,['updated_at','modified_at','updatedon'],new Date());
+  const update = buildUpdateSetClause(fields);
+  await client.query(`UPDATE asset_register_items SET ${update.clause} WHERE user_id=$1 AND id=$2`,[userId,assetId,...update.values]);
+  return {...asset,photos};
+}

@@ -36,6 +36,8 @@ export const dealerMaintenancePermissionOptions: Array<{
   title: string;
   description: string;
 }> = [
+  {key:'canAddPhotos', title:'Add photos', description:'Allow photos to be added to the live asset.'},
+  {key:'canAddCosts', title:'Add costs', description:'Allow costs and supporting documents to be added directly.'},
   {
     key: 'canViewLoggedProblems',
     title: 'Logged Problems',
@@ -94,7 +96,7 @@ export function DealerMaintenancePermissionPicker({
         >
           <input
             type="checkbox"
-            checked={value[option.key]}
+            checked={value[option.key] === true}
             onChange={(event) => onChange({ ...value, [option.key]: event.target.checked })}
             disabled={disabled || lockedPermissions.includes(option.key)}
           />

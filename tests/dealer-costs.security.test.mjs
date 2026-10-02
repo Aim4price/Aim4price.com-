@@ -105,13 +105,13 @@ test('dealer cost creation stays separate from maintenance history', () => {
   assert.match(invoices, /const ownerStorageStatus = asText\(actor\.dealerUserId\)[\s\S]*?actor\.ownerApproved \? 'approved' : 'pending'[\s\S]*?: 'owner'/);
 });
 
-test('both dealer workspaces show the Manage action and open the correct cost page', () => {
-  assert.match(leads, /<strong>Add asset cost<\/strong>/);
-  assert.match(leads, /Upload an invoice or enter a cost manually/);
-  assert.match(leads, /const canAddDealerCosts = isDealerLeadsMode/);
-  assert.match(leads, /\{canAddDealerCosts && !isFullRegisterLead\(managedLead\) \? \(/);
-  assert.match(leads, /dealerAppMode \? '\/dealer\/cost' : '\/dealer-costs'/);
-  assert.match(leads, /assetId=\$\{encodeURIComponent\(lead\.assetRegisterItemId\)\}&add=1/);
+test('Leads uses the shared contribution dialog with explicit cost permission', () => {
+  assert.match(leads, /<strong>Add cost<\/strong>/);
+  assert.match(leads, /maintenanceAccess\?\.permissions.canAddCosts/);
+  assert.match(leads, /setContribution\(\{lead:managedLead,kind:'costs'\}\)/);
+  assert.match(leads, /<SharedAssetContributionDialog/);
+  assert.match(dealerCosts, /a.can_add_costs=true FOR SHARE/);
+  assert.match(dealerCosts, /ownerApproved:true/);
 });
 
 test('dealer cost page reuses manual and Aim4price-assisted entry without owner-only reports', () => {
@@ -143,12 +143,12 @@ test('dealer shared asset query orders by the selected DISTINCT expression', () 
   );
 });
 
-test('dealer costs stay out of the header and remain available from Manage and Dealer App tools', () => {
+test('dealer cost pages remain available alongside the permission-scoped Manage dialog', () => {
   assert.doesNotMatch(appHeader, /\{ key: 'cost', href: '\/dealer-costs', label: 'Costs' \}/);
   assert.match(appHeader, /\{ href: '\/dealer-costs', label: 'Client Costs', accountTypes: \['dealer'\] \}/);
   assert.match(standardDealerPage, /getDealerCostRequestContext\(\)/);
   assert.match(standardDealerPage, /dealerMode[\s\S]*showAppHeader/);
-  assert.match(dealerAppHome, /\{ label: 'Client Costs', href: '\/dealer\/cost', capability: 'client_costs' \}/);
+  assert.match(leads, /<SharedAssetContributionDialog/);
   assert.match(dealerAppPage, /dealerMode/);
   assert.doesNotMatch(dealerAppPage, /showAppHeader/);
 });
