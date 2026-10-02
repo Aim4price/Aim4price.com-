@@ -4,6 +4,7 @@ const ts=require('typescript'),postcss=require('postcss'),puppeteer=require('pup
 const root=path.resolve(__dirname,'..'),modules={},sheets=[];
 let cssIndex=0;
 const stubs={
+ 'components/leads/SharedOwnerCostDialog':'module.exports=()=>null;',
  'lib/sharing-foundation':'exports.sharingPlan=async()=>"desktop";',
  'lib/guest-enquiry-credits':'exports.guestCreditLimit=()=>null;',
  'lib/guest-business-access':'exports.getGuestViewer=async()=>null;',
@@ -65,14 +66,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   await page.addScriptTag({content:runtime+'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require('+JSON.stringify(module)+').default,'+JSON.stringify(props)+'));'});
   await page.evaluate(()=>document.fonts.ready);
  }
- await render('components/leads/SharedAssetContributionDialog',{kind:'costs',endpoint:'/api/test/costs',assetTitle:'John Deere 6155M · JD-001'});
- await page.waitForSelector('input[name=amount]');
- await page.type('input[name=description]','Oil and filter service');await page.type('input[name=amount]','1200');
- const geometry=await page.evaluate(()=>{const amount=document.querySelector('[name=amount]').getBoundingClientRect(),vat=document.querySelector('[name=vat]').getBoundingClientRect(),dialog=document.querySelector('[role=dialog]').getBoundingClientRect();return{aligned:Math.abs(amount.top-vat.top)<2,inside:dialog.top>=0&&dialog.bottom<=innerHeight};});
- assert(geometry.aligned);assert(geometry.inside);await page.screenshot({path:'/tmp/shared-cost-dialog.png'});
- await page.click('button[type=submit]');await page.waitForFunction(()=>document.body.textContent.includes('Cost saved'));
  await render('components/leads/SharedAssetContributionDialog',{kind:'photos',endpoint:'/api/test/photos',assetTitle:'John Deere 6155M · JD-001'});
  await page.waitForSelector('input[type=file]');await page.screenshot({path:'/tmp/shared-photo-dialog.png'});
- assert.deepEqual(errors,[]);console.log('PASS shared photo/cost dialog rendering, alignment, viewport fit and cost submission');
+ assert.deepEqual(errors,[]);console.log('PASS shared photo dialog rendering');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

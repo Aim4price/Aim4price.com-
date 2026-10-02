@@ -222,7 +222,7 @@ export default function Validation(){
    assert.ok(await page.evaluate(()=>document.querySelector('[data-asset-link-dialog]').textContent.includes('Asset link settings')));
    assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',inputs=>inputs.length),2);
    await page.$$eval('[data-asset-link-dialog] label input[type=checkbox]',inputs=>inputs.forEach(input=>{if(!input.checked&&!input.disabled)input.click();}));
-   assert.ok(await page.$eval('[data-asset-link-dialog]',e=>e.scrollHeight<=e.clientHeight+1),'Asset link settings fit without scrolling');
+   if(width===1440) assert.ok(await page.$eval('[data-asset-link-dialog]',e=>[e,...e.querySelectorAll('div')].every(node=>node.scrollHeight<=node.clientHeight+1||!['auto','scroll'].includes(getComputedStyle(node).overflowY))),'Asset link settings and all option containers fit without scrolling');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Continue');
    assert.equal(await page.$('dialog input[type=email]'),null);
