@@ -1,4 +1,5 @@
 'use client';
+import LeadNoteDialog from '../../components/leads/LeadNoteDialog';
 import SharedAssetContributionDialog from '../../components/leads/SharedAssetContributionDialog';
 import LeadManageDialog from '../../components/leads/LeadManageDialog';
 import LeadReportDialog from '../../components/leads/LeadReportDialog';
@@ -4456,86 +4457,7 @@ export default function LeadsClient({
         )
         : null}
 
-      {noteLead ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadNoteOverlay}`} data-website-overlay>
-          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeNoteModal} />
-
-          <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
-            <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''} ${styles.leadNoteHeader}`}>
-              <div className={`${assetStyles.modalHeaderText} ${styles.leadModalTitleGroup}`}>
-                <h3 id="lead-note-title">Send note or quote</h3>
-                <p>{assetTitle(noteLead)} · {ownerDisplayName(noteLead)}</p>
-              </div>
-
-              <button type="button" className={`${assetStyles.modalCloseButton} ${dealerWorkspaceClass(workspaceStyles.modalClose)} ${isDealerLeadsMode ? dialogStyles.close : ''}`} onClick={closeNoteModal} aria-label="Close note modal" disabled={isSavingNote}>
-                <CloseIcon className={assetStyles.buttonIcon} />
-              </button>
-            </div>
-
-            <div className={`${styles.leadNoteBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`}>
-              <label className={`${assetStyles.field} ${assetStyles.sharedNoteField}`}>
-                <span>Note to asset owner</span>
-                <textarea
-                  className={assetStyles.sharedNoteTextarea}
-                  value={noteDraft}
-                  onChange={(event) => setNoteDraft(event.target.value)}
-                  placeholder="Example: Please find the attached quote PDF for this asset."
-                  autoFocus
-                />
-              </label>
-
-              <label
-                className={`${styles.leadNoteAttachmentDropzone} ${isNoteAttachmentDragging ? styles.leadNoteAttachmentDropzoneDragging : ''}`}
-                onDragEnter={(event) => {
-                  event.preventDefault();
-                  setIsNoteAttachmentDragging(true);
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsNoteAttachmentDragging(true);
-                }}
-                onDragLeave={() => setIsNoteAttachmentDragging(false)}
-                onDrop={handleLeadNoteAttachmentDrop}
-              >
-                <input
-                  className={styles.leadNoteAttachmentInput}
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  onChange={handleLeadNoteAttachmentChange}
-                  disabled={isSavingNote}
-                />
-                <PdfIcon className={styles.leadNoteAttachmentIcon} />
-                <span className={styles.leadNoteAttachmentEyebrow}>Attach quote PDF — optional</span>
-                <strong>Drop quote PDF here or click to upload</strong>
-                <small>PDF only · maximum {formatByteSize(MAX_LEAD_NOTE_PDF_BYTES)}.</small>
-              </label>
-
-              {noteAttachmentFile ? (
-                <div className={styles.leadNoteAttachmentPreview}>
-                  <div>
-                    <strong>{noteAttachmentFile.name}</strong>
-                    <span>{formatByteSize(noteAttachmentFile.size)}</span>
-                  </div>
-                  <button type="button" onClick={() => setNoteAttachmentFile(null)} disabled={isSavingNote}>
-                    Remove PDF
-                  </button>
-                </div>
-              ) : null}
-
-              <p className={styles.leadNoteDeliveryHint}>This note and any attached quote will appear in the owner&apos;s Asset Register.</p>
-            </div>
-
-            <div className={`${assetStyles.formActions} ${assetStyles.sharedNoteActions} ${dealerWorkspaceClass(workspaceStyles.modalFooter)} ${styles.leadNoteActions} ${isDealerLeadsMode ? dialogStyles.footer : ''}`}>
-              <button type="button" className={`${assetStyles.secondaryButton} ${styles.leadModalCancelButton}`} onClick={closeNoteModal} disabled={isSavingNote}>
-                Cancel
-              </button>
-              <button type="button" className={assetStyles.primaryButton} onClick={() => void submitLeadNote()} disabled={isSavingNote}>
-                {isSavingNote ? 'Sending...' : 'Send note'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {noteLead ? <LeadNoteDialog lockScroll={false} assetTitle={`${assetTitle(noteLead)} · ${ownerDisplayName(noteLead)}`} noteDraft={noteDraft} setNoteDraft={setNoteDraft} noteAttachmentFile={noteAttachmentFile} setNoteAttachmentFile={setNoteAttachmentFile} isSavingNote={isSavingNote} isNoteAttachmentDragging={isNoteAttachmentDragging} setIsNoteAttachmentDragging={setIsNoteAttachmentDragging} handleLeadNoteAttachmentDrop={handleLeadNoteAttachmentDrop} handleLeadNoteAttachmentChange={handleLeadNoteAttachmentChange} closeNoteModal={closeNoteModal} onSend={()=>void submitLeadNote()}/> : null}
     </main>
   );
 }

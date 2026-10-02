@@ -1,4 +1,3 @@
-import SharedEnquiryInbox from "../../../components/asset-register/SharedEnquiryInbox";
 import { redirect } from 'next/navigation';
 import { getServerSession } from '../../../lib/auth-session';
 import { getDealerAppSession } from '../../../lib/dealer-app-session';
@@ -34,7 +33,6 @@ export default async function DealerLeadsPage() {
 
   return (
     <div className={`${styles.module} ${styles.leadsModule}`}>
-      <SharedEnquiryInbox/>
       <DealerLeadsClient dealerUserId={dealerUserId} initialLeads={initialLeads} />
     </div>
   );

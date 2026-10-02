@@ -59,6 +59,11 @@ on:
       - 'scripts/verify-guest-leads.cjs'
       - 'lib/shared-asset-contributions*'
       - 'lib/shared-cost-capture.ts'
+      - 'lib/shared-asset-notes.ts'
+      - 'components/asset-register/SharedAssetSend.tsx'
+      - 'components/leads/LeadNoteDialog.tsx'
+      - 'tests/shared-asset-notes.test.cjs'
+      - 'scripts/verify-shared-send.cjs'
       - 'tests/shared-cost-capture.test.cjs'
       - 'components/leads/SharedOwnerCostDialog*'
       - 'scripts/verify-shared-owner-cost.cjs'
@@ -100,7 +105,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/shared-cost-capture.test.cjs tests/shared-asset-contributions.test.cjs tests/sharing-admin.test.cjs tests/sharing-foundation.test.cjs tests/business-network.test.mjs tests/workspace-retirement.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/guest-enquiry-credits.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/invitation-report-handoff.test.cjs tests/partner-directory.test.cjs tests/business-accounts.test.cjs tests/business-workspaces.test.cjs tests/basic-business-access.test.cjs tests/shared-account-page.test.cjs
+      - run: node --test tests/shared-asset-notes.test.cjs tests/shared-cost-capture.test.cjs tests/shared-asset-contributions.test.cjs tests/sharing-admin.test.cjs tests/sharing-foundation.test.cjs tests/business-network.test.mjs tests/workspace-retirement.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/guest-enquiry-credits.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/invitation-report-handoff.test.cjs tests/partner-directory.test.cjs tests/business-accounts.test.cjs tests/business-workspaces.test.cjs tests/basic-business-access.test.cjs tests/shared-account-page.test.cjs
       - run: node scripts/verify-business-network.cjs
       - run: node scripts/verify-guest-leads.cjs
       - run: node scripts/verify-business-admin-entry.cjs
@@ -108,3 +113,4 @@ jobs:
       - run: node scripts/verify-sharing-usage.cjs
       - run: node scripts/verify-shared-contributions.cjs
       - run: node scripts/verify-shared-owner-cost.cjs
+      - run: node scripts/verify-shared-send.cjs
