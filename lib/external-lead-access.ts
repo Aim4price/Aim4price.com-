@@ -52,7 +52,9 @@ export async function requireExternalLeadAction(token: string, permission: Exter
     if (!lead)
         throw new ExternalLeadAccessError('This action was not shared or the enquiry is no longer available.', lead ? 403 : 404);
     const { access, user } = await externalLeadAccess(lead);
-    if (!user || (access !== 'owner' && (access !== 'active' || !leadAllows(lead,permission))))
+    if (access !== 'owner' && !leadAllows(lead, permission))
+        throw new ExternalLeadAccessError('This action was not shared.', 403);
+    if (!user || (access !== 'owner' && access !== 'active'))
         throw new ExternalLeadAccessError('This action requires the recipient’s signed-in, approved account.', user ? 403 : 401);
     return { lead, user };
 }
