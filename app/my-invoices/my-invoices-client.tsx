@@ -41,7 +41,7 @@ type UsageMetric = 'none' | 'hours' | 'km' | 'percentage';
 type NoticeTone = 'success' | 'error';
 type OwnerStorageStatus = 'owner' | 'pending' | 'approved' | 'declined';
 
-type AssetOption = {
+export type AssetOption = {
   id: string;
   ownerUserId?: string;
   title: string;
@@ -184,7 +184,16 @@ type DealerDefaults = {
   address: string;
 };
 
+export type SharedCostFlow = {
+  asset: AssetOption;
+  allowanceEndpoint: string;
+  save: (draft: Record<string, unknown>, file: File | null) => Promise<void>;
+  capture: (file: File, note: string) => Promise<{referenceCode:string}>;
+  onClose: () => void;
+  onSaved: (message: string) => void;
+};
 type MyInvoicesClientProps = {
+  sharedFlow?: SharedCostFlow;
   budgetsPage?: boolean;
 
   dealerMode?: boolean;
@@ -961,6 +970,7 @@ function buildReportUrl(
 }
 
 export default function MyInvoicesClient({
+  sharedFlow,
   budgetsPage = false,
   dealerMode = false,
   showAppHeader,
@@ -976,14 +986,14 @@ export default function MyInvoicesClient({
       : '/api/my-invoices';
   const captureApiRoot = dealerMode ? '/api/dealer/capture-requests' : '/api/capture-requests';
   const accountScopedUrl = (url: string) => url;
-  const shouldShowAppHeader = showAppHeader ?? !dealerMode;
-  const canManageInvoiceDropCodes = !dealerMode;
-  const canRetractCaptureRequests = !dealerMode;
-  const canManageBudgets = !dealerMode;
-  const [assets, setAssets] = useState<AssetOption[]>([]);
+  const shouldShowAppHeader = !sharedFlow && (showAppHeader ?? !dealerMode);
+  const canManageInvoiceDropCodes = !dealerMode && !sharedFlow;
+  const canRetractCaptureRequests = !dealerMode && !sharedFlow;
+  const canManageBudgets = !dealerMode && !sharedFlow;
+  const [assets, setAssets] = useState<AssetOption[]>(sharedFlow ? [sharedFlow.asset] : []);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!sharedFlow);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
   const [captureReviewRequestId, setCaptureReviewRequestId] = useState<string | null>(null);
@@ -1106,7 +1116,7 @@ export default function MyInvoicesClient({
     let cancelled = false;
 
     async function loadInvoices() {
-      if (budgetsPage) { setIsLoading(false); return; }
+      if (sharedFlow || budgetsPage) { setIsLoading(false); return; }
       setIsLoading(true);
 
       try {
@@ -1230,7 +1240,7 @@ export default function MyInvoicesClient({
     let cancelled = false;
 
     async function loadCaptureRequests() {
-      if (budgetsPage) return;
+      if (sharedFlow || budgetsPage) return;
       const requests = await fetchCaptureRequests();
       if (!cancelled && requests) setCaptureRequests(requests);
     }
@@ -1580,7 +1590,7 @@ export default function MyInvoicesClient({
   );
   const quickLaunchReturnTo = initialOpenAdd && initialAssetId ? initialReturnTo : '';
 
-  const allowanceEndpoint = accountScopedUrl(`/api/capture-allowance?type=invoice${dealerMode ? `&dealer=1&assetId=${encodeURIComponent(selectedAssetId)}` : ''}`);
+  const allowanceEndpoint = sharedFlow?.allowanceEndpoint || accountScopedUrl(`/api/capture-allowance?type=invoice${dealerMode ? `&dealer=1&assetId=${encodeURIComponent(selectedAssetId)}` : ''}`);
   const captureAllowance = useCaptureAllowance(flow === 'upload', allowanceEndpoint);
   const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
@@ -2387,6 +2397,7 @@ export default function MyInvoicesClient({
   }
 
   function closeModal() {
+    if (sharedFlow) { sharedFlow.onClose(); return; }
     const shouldReturn = quickLaunchActive && quickLaunchReturnTo;
     setFlow(null);
     setPickerOwnerId('');
@@ -2978,6 +2989,11 @@ export default function MyInvoicesClient({
     setNotice(null);
 
     try {
+      if (sharedFlow) {
+        const request = await sharedFlow.capture(await prepareInvoiceUpload(automaticUploadPages),captureNote.trim());
+        sharedFlow.onSaved(`${request.referenceCode} received. Aim4price will capture and verify it within 24 hours.`);
+        return;
+      }
       const formData = new FormData();
       formData.append('assetId', selectedAssetId);
       formData.append('file', await prepareInvoiceUpload(automaticUploadPages));
@@ -3003,6 +3019,7 @@ export default function MyInvoicesClient({
           : `${data.request.referenceCode} received. Aim4price will capture and verify it within 24 hours.`,
       });
     } catch (error) {
+      if (error instanceof Error && error.message === 'CAPTURE_DAILY_LIMIT') { captureAllowance.markBlocked(); return; }
       setCaptureUploadError(error instanceof Error ? error.message : 'The invoice could not be sent. Please try again.');
     } finally {
       setIsExtracting(false);
@@ -3047,7 +3064,7 @@ export default function MyInvoicesClient({
     try {
       let invoiceDocumentId = draft.invoiceDocumentId;
 
-      if (manualUploadFile) {
+      if (manualUploadFile && !sharedFlow) {
         const document = await uploadInvoiceFile(selectedAssetId, draft.source, manualUploadFile);
         invoiceDocumentId = document.id;
       }
@@ -3070,6 +3087,11 @@ export default function MyInvoicesClient({
         notes: draft.notes,
       };
 
+      if (sharedFlow) {
+        await sharedFlow.save(payload,manualUploadFile);
+        sharedFlow.onSaved('Cost record saved to the asset.');
+        return;
+      }
       const response = await fetch(accountScopedUrl(editingInvoiceId ? `${apiRoot}/${editingInvoiceId}` : apiRoot), {
         method: editingInvoiceId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3250,9 +3272,9 @@ export default function MyInvoicesClient({
   }
 
   return (
-    <main className={`${styles.page} ${dealerMode ? styles.dealerCostsPage : ''}`}>
+    <main className={sharedFlow ? styles.sharedCostFlow : `${styles.page} ${dealerMode ? styles.dealerCostsPage : ''}`}>
       {shouldShowAppHeader ? <AppHeader active={dealerMode ? 'cost' : 'none'} /> : null}
-      <section ref={pageShellRef} className={styles.shell}>
+      {!sharedFlow && <section ref={pageShellRef} className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
         {budgetLaunchReturnTo ? <a className={styles.secondaryButton} href={budgetLaunchReturnTo}>Back to asset</a> : null}
@@ -3499,7 +3521,7 @@ export default function MyInvoicesClient({
           ) : null}
         </section>
         </>}
-      </section>
+      </section>}
 
       {canManageInvoiceDropCodes ? (
         <CaptureRequestDecisionModal
@@ -4415,7 +4437,7 @@ export default function MyInvoicesClient({
                   <ChevronRightIcon />
                 </span>
               </button>
-              {!dealerMode ? (
+              {!dealerMode && !sharedFlow ? (
                 <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.recurringChoiceOption}`} onClick={startRecurringCommitment}>
                   <span className={styles.choiceGraphic}>
                     <ManualInvoiceIcon />

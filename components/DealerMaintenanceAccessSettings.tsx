@@ -37,11 +37,11 @@ export const dealerMaintenancePermissionOptions: Array<{
   description: string;
 }> = [
   {key:'canAddPhotos', title:'Add photos', description:'Allow photos to be added to the live asset.'},
-  {key:'canAddCosts', title:'Add costs', description:'Allow costs and supporting documents to be added directly.'},
+  {key:'canAddCosts', title:'Add costs', description:'Add costs and supporting documents.'},
   {
     key: 'canViewLoggedProblems',
     title: 'Logged Problems',
-    description: 'Let the dealer view owner and Field Manager problem notes for this asset.',
+    description: 'View owner and Field Manager problem notes.',
   },
   {
     key: 'canViewMaintenanceReports',
@@ -56,17 +56,17 @@ export const dealerMaintenancePermissionOptions: Array<{
   {
     key: 'canCreateMaintenanceSchedules',
     title: 'Create Maintenance Schedules',
-    description: 'Let the business/dealer create active maintenance schedules directly.',
+    description: 'Create active maintenance schedules directly.',
   },
   {
     key: 'canUpdateSerial',
     title: 'Update Serial',
-    description: 'Allow this business/dealer to update the serial number.',
+    description: 'Update the asset serial number.',
   },
   {
     key: 'canUpdateReplacementPrice',
     title: 'Update Replacement Price',
-    description: 'Allow this business/dealer to update the replacement price.',
+    description: 'Update the asset replacement price.',
   },
 ];
 
@@ -88,7 +88,7 @@ export function DealerMaintenancePermissionPicker({
   lockedPermissions = [],
 }: PermissionPickerProps) {
   return (
-    <div className={styles.permissions}>
+    <div className={styles.permissions} data-permission-grid>
       {dealerMaintenancePermissionOptions.map((option) => (
         <label
           key={option.key}

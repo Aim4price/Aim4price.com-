@@ -806,6 +806,7 @@ async function assertTargetOwnership(
 export async function createCaptureRequest(
   input: CreateCaptureRequestInput,
   eventActor: CaptureEventActor,
+  transaction?: { before: (client: PoolClient) => Promise<void>; after: (client: PoolClient, request: CaptureRequest) => Promise<void> },
 ): Promise<CaptureRequest> {
   const requestType = enumValue(input.requestType, CAPTURE_REQUEST_TYPES, 'CAPTURE_TYPE_INVALID');
   const submissionChannel = enumValue(
@@ -850,6 +851,7 @@ export async function createCaptureRequest(
     : 'needs_matching';
 
   return withTransaction(async (client) => {
+    await transaction?.before(client);
     if (ownerUserId) {
       await assertTargetOwnership(client, { ownerUserId, assetId, fuelStorageId });
     }
@@ -942,7 +944,9 @@ export async function createCaptureRequest(
       toStatus: initialStatus,
       metadata: { requestType, submissionChannel, dueInHours: CAPTURE_SLA_HOURS },
     });
-    return mapRequestRow(row);
+    const request = mapRequestRow(row);
+    await transaction?.after(client,request);
+    return request;
   });
 }
 
@@ -986,12 +990,13 @@ export async function addCaptureRequestFile(
   requestId: string,
   input: CaptureRequestFileInput,
   eventActor: CaptureEventActor,
+  writer?: PoolClient,
 ): Promise<CaptureRequestFile> {
   const id = asUuid(requestId, 'CAPTURE_REQUEST_NOT_FOUND');
   const file = normalizeCaptureFileInput(input);
   const actor = normalizeActor(eventActor);
 
-  return withTransaction(async (client) => {
+  const save = async (client: PoolClient) => {
     await assertCaptureRequestNotFinalizing(client, id);
     const requestRow = await getLockedRequest(client, id);
     const status = enumValue(requestRow.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
@@ -1075,7 +1080,8 @@ export async function addCaptureRequestFile(
       },
     });
     return mapFileRow(row);
-  });
+  };
+  return writer ? save(writer) : withTransaction(save);
 }
 
 export async function listCaptureRequestFiles(requestId: string): Promise<CaptureRequestFile[]> {

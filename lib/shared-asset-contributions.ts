@@ -7,7 +7,7 @@ import { requireLiveSharedAsset, lockLiveSharedAsset } from './live-shared-asset
 import { ExternalLeadAccessError } from './external-lead-access';
 import { ensurePartnerAccessTables, getAssetLeadForPartner } from './partner-access';
 import { appendSharedAssetPhotos } from './asset-register-db';
-import { createAssetRegisterUpload, ALLOWED_ASSET_REGISTER_IMAGE_TYPES, MAX_ASSET_REGISTER_UPLOAD_BYTES } from './asset-register-uploads';
+import { createAssetRegisterUpload, ALLOWED_ASSET_REGISTER_IMAGE_TYPES, MAX_ASSET_REGISTER_UPLOAD_BYTES, MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES } from './asset-register-uploads';
 import { createMyInvoice, createInvoiceDocumentRecord, type MyInvoiceDraftInput } from './my-invoices';
 import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundation';
 
@@ -68,8 +68,8 @@ export async function addSharedCost(target:ContributionTarget, input:MyInvoiceDr
   const scope = await contributionScope(target,'addCosts');
   const captureRequestId = requestKey(input.captureRequestId);
   const amount = Number(input.subtotalExVat), vat = Number(input.vatAmount);
-  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(vat) || vat < 0 || !String(input.notes || '').trim() || !/^\d{4}-\d{2}-\d{2}$/.test(String(input.invoiceDate))) throw new Error('Enter a date, description, amount and VAT.');
-  if (file && (!['application/pdf',...ALLOWED_ASSET_REGISTER_IMAGE_TYPES].includes(file.type) || !file.size || file.size > MAX_ASSET_REGISTER_UPLOAD_BYTES)) throw new Error('Choose a PDF or image up to 5 MB.');
+  if (!Number.isFinite(amount) || amount <= 0 || !Number.isFinite(vat) || vat < 0 || !/^\d{4}-\d{2}-\d{2}$/.test(String(input.invoiceDate))) throw new Error('Enter a valid date, amount and VAT.');
+  if (file && (!['application/pdf',...ALLOWED_ASSET_REGISTER_IMAGE_TYPES].includes(file.type) || !file.size || file.size > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES)) throw new Error('Choose a PDF or image up to 12 MB.');
   await ensureSharingFoundation();
   const actor = {dealerUserId:scope.user.id === scope.ownerId ? null : scope.user.id,displayName:scope.user.name || scope.user.email,ownerApproved:true};
   // The canonical invoice ledger owns the cost and the supporting document; no second expense is created.
