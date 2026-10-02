@@ -48,6 +48,8 @@ test('public enquiry renders an expandable Leads card for every selected asset',
     '../leads/LeadManageButton':load('components/leads/LeadManageButton.tsx').default,
     '../LeadPhotoViewerModal':()=>null,
     './ExternalLeadActions':()=>null,
+    // Interactive Send is exercised by verify-shared-send.cjs.
+    './SharedAssetSend':()=>null,
     './ShareModalCloseButton':()=>null,
     '../leads/LeadManageDialog':()=>null,
     '../business-network/BusinessAcceptanceForm':()=>React.createElement('div',null,'Business lookup'),
