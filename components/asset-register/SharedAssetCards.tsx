@@ -6,6 +6,7 @@ import LeadManageDialog from "../leads/LeadManageDialog";
 import BusinessAcceptanceForm from "../business-network/BusinessAcceptanceForm";
 import { createPortal } from "../WebsitePortal";
 import LeadCardSummary from "../leads/LeadCardSummary";
+import SharedAssetSend from "./SharedAssetSend";
 import LeadManageButton from "../leads/LeadManageButton";
 import LeadAssetCard from "../leads/LeadAssetCard";
 import LeadAssetDetails from "../leads/LeadAssetDetails";
@@ -166,6 +167,7 @@ export default function SharedAssetCards({
                           <div
                             className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}
                           >
+                            {enquiry && item.assetId && <SharedAssetSend enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>}
                             <LeadManageButton
                               label={`Manage ${item.title}`}
                               onClick={(event) => {
