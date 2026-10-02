@@ -165,6 +165,8 @@ export type AssetMaintenanceCompletionGuard = {
 
 export type AssetMaintenanceCompletionOptions = {
   allowUnknownDetails?: boolean;
+  before?: (client: import('pg').PoolClient) => Promise<void>;
+  after?: (client: import('pg').PoolClient, record: AssetMaintenanceRecord) => Promise<void>;
 };
 
 export type AssetMaintenanceProcedureKind = 'checked' | 'serviced' | 'repaired';
@@ -1497,6 +1499,7 @@ export async function recordStandaloneAssetMaintenanceCompletion(
 
   try {
     await client.query('begin');
+    await options.before?.(client);
 
     const existing = await getAssetMaintenanceRecordBySourceScanEventIdWithClient(
       client,
@@ -1588,6 +1591,7 @@ export async function recordStandaloneAssetMaintenanceCompletion(
       throw new Error('MAINTENANCE_NOT_FOUND');
     }
 
+    await options.after?.(client,record);
     await client.query('commit');
     return record;
   } catch (error) {

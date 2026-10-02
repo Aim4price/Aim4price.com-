@@ -1,4 +1,9 @@
 export const EXTERNAL_SHARE_OPTIONS = [
+    { key: 'yearModel', label: 'Update year', description: 'Change the asset year.' },
+    { key: 'usage', label: 'Update usage', description: 'Update hours or kilometres.' },
+    { key: 'condition', label: 'Update condition', description: 'Update the asset condition.' },
+    { key: 'addMaintenance', label: 'Add maintenance', description: 'Record completed work.' },
+
     { key: 'addPhotos', label: 'Add photos', description: 'Add photos to the live asset.' },
     { key: 'addCosts', label: 'Add costs', description: 'Record costs and supporting documents.' },
     { key: 'reports', label: 'Reports', description: 'Choose reports & timelines' },
@@ -12,7 +17,7 @@ export const EXTERNAL_SHARE_OPTIONS = [
 ] as const;
 export type ExternalSharePermission = typeof EXTERNAL_SHARE_OPTIONS[number]['key'] | 'allReports';
 export type ExternalSharePermissions = Record<'reports' | 'replacementPrice' | 'serialNumber' | 'documents', boolean> & Partial<Record<ExternalSharePermission, boolean>> & { directUpdates?: boolean; allReports?: boolean };
-export const EMPTY_EXTERNAL_PERMISSIONS: ExternalSharePermissions = { addPhotos:false, addCosts:false, reports: false, replacementPrice: false, serialNumber: false, documents: false, loggedProblems: false, maintenanceReports: false, costOfOwnership: false, maintenanceSchedules: false };
+export const EMPTY_EXTERNAL_PERMISSIONS: ExternalSharePermissions = { yearModel:false,usage:false,condition:false,addMaintenance:false,addPhotos:false, addCosts:false, reports: false, replacementPrice: false, serialNumber: false, documents: false, loggedProblems: false, maintenanceReports: false, costOfOwnership: false, maintenanceSchedules: false };
 export function normalizeExternalPermissions(value: unknown): ExternalSharePermissions {
     const input = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
     return { ...Object.fromEntries(EXTERNAL_SHARE_OPTIONS.map(({ key }) => [key, input[key] === true])), directUpdates: input.directUpdates === true, allReports: input.allReports === true } as ExternalSharePermissions;
