@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { PublicAssetShare } from "../../lib/asset-share-links";
+import SharedProblems from "../leads/SharedProblems";
 import ExternalLeadActions, { type ExternalLeadActionData } from "./ExternalLeadActions";
 import LeadManageDialog from "../leads/LeadManageDialog";
 import BusinessAcceptanceForm from "../business-network/BusinessAcceptanceForm";
@@ -198,7 +199,9 @@ export default function SharedAssetCards({
                             photoIndex: next,
                           });
                         }}
-                        details={
+                        details={<>
+                          {enquiry && item.assetId && (enquiry.permissions.loggedProblems || enquiry.access === 'owner') && ['owner','active','read-only'].includes(enquiry.access) && <SharedProblems endpoint={`/api/asset-share-links/${enquiry.token}/assets/${item.assetId}/problems`} assetTitle={item.title} notesOnly canWrite={enquiry.access !== 'read-only'}/>}
+
                           <LeadAssetFacts
                             rows={[
                               {
@@ -240,7 +243,7 @@ export default function SharedAssetCards({
                               </>
                             }
                           />
-                        }
+                        </>}
                       >
                         <div
                           className={assetStyles.assetReplacementPriceBubble}

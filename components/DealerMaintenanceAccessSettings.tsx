@@ -24,7 +24,7 @@ type AccessResponse = {
 
 export const DEFAULT_DEALER_MAINTENANCE_PERMISSIONS: DealerMaintenancePermissions = {
   canViewLoggedProblems: false,
-  canViewMaintenanceReports: true,
+  canViewMaintenanceReports: false,
   canViewCostOfOwnership: false,
   canCreateMaintenanceSchedules: true,
   canUpdateSerial: true,
@@ -44,8 +44,8 @@ export const dealerMaintenancePermissionOptions: Array<{
   {key:'canAddCosts', title:'Add costs', description:'Add costs and supporting documents.'},
   {
     key: 'canViewLoggedProblems',
-    title: 'Logged Problems',
-    description: 'View owner and Field Manager problem notes.',
+    title: 'Log problems',
+    description: 'Log, view and resolve asset problems.',
   },
   {
     key: 'canViewMaintenanceReports',
@@ -92,6 +92,11 @@ export function DealerMaintenancePermissionPicker({
   lockedPermissions = [],
 }: PermissionPickerProps) {
   return (
+    <>
+    <label className={styles.selectAll}>
+      <input type="checkbox" disabled={disabled} checked={dealerMaintenancePermissionOptions.every(({key}) => value[key] === true)} onChange={event => onChange({...value,...Object.fromEntries(dealerMaintenancePermissionOptions.filter(({key}) => !lockedPermissions.includes(key)).map(({key}) => [key,event.target.checked]))})}/>
+      <span>Select all</span>
+    </label>
     <div className={styles.permissions} data-permission-grid>
       {dealerMaintenancePermissionOptions.map((option) => (
         <label
@@ -111,6 +116,7 @@ export function DealerMaintenancePermissionPicker({
         </label>
       ))}
     </div>
+    </>
   );
 }
 

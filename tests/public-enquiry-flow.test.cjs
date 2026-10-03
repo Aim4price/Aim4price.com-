@@ -48,6 +48,8 @@ test('public enquiry renders an expandable Leads card for every selected asset',
     '../leads/LeadManageButton':load('components/leads/LeadManageButton.tsx').default,
     '../LeadPhotoViewerModal':()=>null,
     './ExternalLeadActions':()=>null,
+    // Interactive problem logging and resolution are exercised by verify-shared-lead-modals.cjs.
+    '../leads/SharedProblems':()=>null,
     // Interactive Send is exercised by verify-shared-send.cjs.
     './SharedAssetSend':()=>null,
     './ShareModalCloseButton':()=>null,

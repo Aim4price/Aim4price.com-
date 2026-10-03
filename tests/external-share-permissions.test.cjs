@@ -283,16 +283,17 @@ test('live shared asset access denies other assets, missing permissions and unap
  }finally{await x.pg.close();}
 });
 
-test('asset links include photos and every live report automatically, including read-only links',async()=>{
+test('asset links include photos and general reports while maintenance and costs require selection',async()=>{
  const x=await setup();try{
   const link=await x.leads.createGuestLead('owner',[A],false,{...x.details,permissions:permissions.assetLinkPermissions()},[]);
   const row=(await x.pg.query('SELECT include_photos,lead_details FROM asset_share_links WHERE token=$1',[link.token])).rows[0];
   assert.equal(row.include_photos,true);
-  for(const key of ['allReports','reports','maintenanceReports','costOfOwnership'])assert.equal(row.lead_details.permissions[key],true);
-  for(const key of ['serialNumber','replacementPrice','maintenanceSchedules','documents'])assert.equal(row.lead_details.permissions[key],false);
+  for(const key of ['allReports','reports'])assert.equal(row.lead_details.permissions[key],true);
+  for(const key of ['maintenanceReports','costOfOwnership','serialNumber','replacementPrice','maintenanceSchedules','documents'])assert.equal(row.lead_details.permissions[key],false);
   assert.equal((await x.pg.query('SELECT * FROM asset_share_reports WHERE token=$1',[link.token])).rows.length,0,'Reports load current data instead of storing attachments');
   x.signIn();x.state.approved=true;
   await x.mocks['./live-shared-asset-access'].requireLiveSharedAsset(link.token,A,'allReports');
+  for(const permission of ['maintenanceReports','costOfOwnership'])await assert.rejects(x.mocks['./live-shared-asset-access'].requireLiveSharedAsset(link.token,A,permission));
   await assert.rejects(x.mocks['./live-shared-asset-access'].requireLiveSharedAsset(x.link.token,A,'allReports'),'Older links do not acquire new report permissions');
  }finally{await x.pg.close();}
 });

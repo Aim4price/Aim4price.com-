@@ -76,7 +76,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.click('button[aria-label="Remove shared-photo-one.png"]');await page.waitForFunction(()=>document.body.textContent.includes('1 photo ready'));
  await page.click('button[type=submit]');await page.waitForFunction(()=>document.body.textContent.includes('Photos added'));
  await render('RecipientFixture',{});await page.waitForFunction(()=>document.body.textContent.includes('They can view'));
- const copy=await page.$eval('[role=dialog]',n=>n.textContent);assert(copy.includes('All asset reports'));assert(copy.includes('Add photos'));assert(!copy.includes('Update usage'));assert(!copy.includes('No access requests yet'));
+ const copy=await page.$eval('[role=dialog]',n=>n.textContent);assert(copy.includes('General asset reports'));assert(copy.includes('Add photos'));assert(!copy.includes('Update usage'));assert(!copy.includes('No access requests yet'));
  await page.screenshot({path:'/tmp/shared-recipient-access.png'});
  assert(await page.$eval('[role=dialog]',n=>Array.from(n.querySelectorAll('*')).every(e=>e.clientHeight===0||e.scrollHeight<=e.clientHeight+2||getComputedStyle(e).overflowY!=='auto')),'Recipient overview should fit without a scrollbar');
  overviewMalformed=true;await render('RecipientFixture',{});await page.waitForFunction(()=>document.body.textContent.includes('Link permissions could not be loaded.'));

@@ -29,7 +29,7 @@ test('shared capture is scoped, retry safe and atomic with file, allowance and u
  './business-network':{limitBusinessAction:async()=>{}},
  });
  function request(id=randomUUID()){const f=new FormData();f.set('requestId',id);f.set('file',new File(['%PDF-test'],'invoice.pdf',{type:'application/pdf'}));return new Request('https://example.test/capture',{method:'POST',body:f});}
- const target={token:'link',assetId},id=randomUUID();
+ const target={token:'link',assetId},id='10000000-0000-4000-8000-000000000001';
  const first=await service.submitSharedCostCapture(request(id),target);assert.equal(first.status,202,JSON.stringify(first));
  const retry=await service.submitSharedCostCapture(request(id),target);assert.equal(retry.status,202,JSON.stringify(retry));assert.equal(retry.data.request.id,first.data.request.id);assert.equal(state.uploads,1);
  async function counts(){return Promise.all(['document_capture_requests','document_capture_files','capture_daily_usage','sharing_usage_events'].map(async t=>(await pg.query(`select count(*)::int as n from ${t}`)).rows[0].n));}

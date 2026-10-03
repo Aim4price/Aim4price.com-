@@ -537,6 +537,12 @@ export function redactCapturePayload(value: unknown): unknown {
       continue;
     }
 
+    // This validated UUID is the retry key, not payment data. Masking its digits
+    // changes the key and can create a second capture for the same submission.
+    if (key === 'sharedSaveId' && typeof rawValue === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(rawValue)) {
+      output[key] = rawValue;
+      continue;
+    }
     output[key] = redactCapturePayload(rawValue);
   }
   return output;
