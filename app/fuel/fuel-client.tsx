@@ -36,7 +36,7 @@ import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-sli
 import { ManageFuelStorageChoiceModal, MissingFuelEntryModal, ReconcileFuelBalanceModal, type MissingFuelLedgerPayload } from './missing-fuel-entry-modal';
 
 type FuelStorageStatus = 'active' | 'archived';
-type ModalMode = 'create-storage' | 'edit-storage' | 'manage-storage-choice' | 'missing-entry' | 'reconcile-balance' | 'pin' | 'report' | 'qr' | 'fuel-slip' | 'fuel-slip-menu' | 'fuel-slip-manager' | 'exclusions' | null;
+type ModalMode = 'add-fuel-choice' | 'asset-storage-choice' | 'create-storage' | 'edit-storage' | 'manage-storage-choice' | 'missing-entry' | 'reconcile-balance' | 'pin' | 'report' | 'qr' | 'fuel-slip' | 'fuel-slip-menu' | 'fuel-slip-manager' | 'exclusions' | null;
 type FuelSlipFlowStep = 'source-choice' | 'target-manual' | 'target-automatic' | 'manual-form' | 'upload' | 'review' | null;
 type FuelSlipFormPage = 'details' | 'extra';
 type ReportFormat = 'pdf' | 'xlsx';
@@ -1947,7 +1947,7 @@ export default function FuelClient({
     setFuelSlipUploadFileName('');
     setIsStorageFuelSelectOpen(false);
     setNotice(null);
-    setModalMode('fuel-slip');
+    setModalMode('add-fuel-choice');
   }, [assets, hasLoadedLedger, initialAssetId, initialOpenAdd, isLoading]);
 
   useEffect(() => {
@@ -4175,6 +4175,37 @@ export default function FuelClient({
         </div>
       ) : null}
 
+      {(modalMode === 'add-fuel-choice' || modalMode === 'asset-storage-choice') && quickLaunchAsset ? (
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="asset-add-fuel-title">
+          <div className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
+            <div className={styles.modalHeader}>
+              <div><h2 id="asset-add-fuel-title">{modalMode === 'add-fuel-choice' ? 'Add fuel' : 'Choose fuel storage'}</h2><p>{quickLaunchAsset.title}</p></div>
+              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton}`} onClick={closeModal} aria-label="Close add fuel">×</button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.sourceChoiceGrid}>
+              {modalMode === 'add-fuel-choice' ? <>
+                <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={() => setModalMode('fuel-slip')}>
+                  <span className={styles.choiceGraphic}><ManualFuelSlipIcon /></span>
+                  <span className={styles.choiceTitleBlock}><strong>Fuel slip</strong><small>Enter a slip manually or upload it for capture.</small></span>
+                </button>
+                <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={() => setModalMode('asset-storage-choice')}>
+                  <span className={styles.choiceGraphic}><StorageViewIcon /></span>
+                  <span className={styles.choiceTitleBlock}><strong>From fuel storage</strong><small>Record fuel issued from one of your tanks.</small></span>
+                </button>
+              </> : storages.filter(storage => storage.publicFuelStorageCode).map(storage => (
+                <a key={storage.id} className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} href={`${buildFuelScanUrl(storage)}?assetId=${encodeURIComponent(quickLaunchAsset.id)}`}>
+                  <span className={styles.choiceGraphic}><StorageViewIcon /></span>
+                  <span className={styles.choiceTitleBlock}><strong>{storage.name}</strong><small>{formatFuelType(storage.fuelType)} · {formatLitres(storage.currentLitres)} available</small></span>
+                </a>
+              ))}
+            </div>
+            {modalMode === 'asset-storage-choice' && !storages.some(storage => storage.publicFuelStorageCode) ? <p>No fuel storage is available yet. Add a tank in the Fuel Ledger first.</p> : null}
+            <div className={styles.modalFooter}><button type="button" className={styles.secondaryButton} onClick={modalMode === 'asset-storage-choice' ? () => setModalMode('add-fuel-choice') : closeModal}>{modalMode === 'asset-storage-choice' ? 'Back' : 'Cancel'}</button></div>
+          </div>
+        </div>
+      ) : null}
+
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'source-choice' ? (
         <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Add fuel slip">
           <div
@@ -4218,7 +4249,7 @@ export default function FuelClient({
               </button>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => closeFuelSlipFlow()}>Cancel</button>
+              <button type="button" className={styles.secondaryButton} onClick={quickLaunchAsset ? () => setModalMode('add-fuel-choice') : () => closeFuelSlipFlow()}>{quickLaunchAsset ? 'Back' : 'Cancel'}</button>
             </div>
           </div>
         </div>

@@ -8,10 +8,11 @@ import assetStyles from '../../app/asset-register/page.module.css';
 import LeadActionDialog from './LeadActionDialog';
 import type { AssetOption } from '../../app/my-invoices/my-invoices-client';
 import type { MaintenanceIdentity } from '../../lib/maintenance-catalogue';
-export default function SharedAssetWorkDialog({ endpoint, action, assetTitle, onClose, onSaved }: {
+export default function SharedAssetWorkDialog({ endpoint, action, assetTitle, assetSubtitle, onClose, onSaved }: {
     endpoint: string;
     action: 'details' | 'maintenance' | 'history';
     assetTitle: string;
+    assetSubtitle?: string;
     onClose: () => void;
     onSaved?: () => void;
 }) {
@@ -52,7 +53,7 @@ export default function SharedAssetWorkDialog({ endpoint, action, assetTitle, on
     } }
     if (action === 'maintenance' && asset && type && !saved)
         return <><DesktopServiceModal checklistEndpoint={`${endpoint}/checklist`} standalone record={{ id: asset.id, assetId: asset.id, assetTitle: asset.title, assetKind: asset.kind, assetCategoryLabel: asset.categoryLabel, assetYearModel: asset.yearModel, assetCondition: asset.condition, maintenanceIdentity: asset.maintenanceIdentity, maintenanceType: type, title: type === 'service' ? 'Service or repair' : 'Check-up', currentUsage: asset.usageReading, usageMetric: asset.usageMetric === 'none' ? null : asset.usageMetric }} busy={busy} onClose={onClose} onBack={() => setType(null)} onSubmit={completion => save({ ...completion, maintenanceType: type })}/></>;
-    return <LeadActionDialog title={action === 'details' ? 'Update asset' : action === 'history' ? 'Asset history' : 'Add maintenance'} assetTitle={assetTitle} onClose={onClose} busy={busy} footer={action === 'details' && asset && !saved ? <><button type="button" className={assetStyles.secondaryButton} onClick={onClose}>Cancel</button><button className={assetStyles.primaryButton} disabled={busy || !(permissions.yearModel && year !== String(asset.yearModel || '') || permissions.usage && usage !== String(asset.usageReading ?? '') || permissions.condition && condition !== asset.condition)} onClick={() => { const patch: Record<string, unknown> = {}; if (permissions.yearModel && year !== String(asset.yearModel || ''))
+    return <LeadActionDialog title={action === 'details' ? 'Update asset' : action === 'history' ? 'Asset history' : 'Add maintenance'} assetTitle={assetSubtitle ?? assetTitle} onClose={onClose} busy={busy} footer={action === 'details' && asset && !saved ? <><button type="button" className={assetStyles.secondaryButton} onClick={onClose}>Cancel</button><button className={assetStyles.primaryButton} disabled={busy || !(permissions.yearModel && year !== String(asset.yearModel || '') || permissions.usage && usage !== String(asset.usageReading ?? '') || permissions.condition && condition !== asset.condition)} onClick={() => { const patch: Record<string, unknown> = {}; if (permissions.yearModel && year !== String(asset.yearModel || ''))
         patch.yearModel = year ? Number(year) : null; if (permissions.usage && usage !== String(asset.usageReading ?? ''))
         patch.usage = Number(usage); if (permissions.condition && condition !== asset.condition)
         patch.condition = condition; void save({ patch }).catch(() => { }); }}>{busy ? 'Saving…' : 'Save changes'}</button></> : undefined}>

@@ -6605,7 +6605,7 @@ export default function AssetRegisterClient({
   const [isMovingAssetRegister, setIsMovingAssetRegister] = useState(false);
   const assetRegisterMoveGroupsRequestRef = useRef(0);
 
-  const [historyAsset,setHistoryAsset]=useState<{id:string;title:string}|null>(null);
+  const [historyAsset,setHistoryAsset]=useState<{id:string;title:string;details:string}|null>(null);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [assetStatusDraft, setAssetStatusDraft] = useState<AssetStatusDraft>(initialAssetStatusDraft);
   const [assetDetailFocusTarget, setAssetDetailFocusTarget] = useState<AssetDetailEditTarget | null>(null);
@@ -18223,7 +18223,7 @@ export default function AssetRegisterClient({
         onClose={() => { setLicenceReviewAssetIds(null); setIsRegisterShareModalOpen(true); }}
         onContinue={() => openFullRegisterQuotePartnerPicker('license_renewal', true)}
       />}
-      {historyAsset&&<SharedAssetWorkDialog endpoint={`/api/asset-register/${historyAsset.id}`} action="history" assetTitle={historyAsset.title} onClose={()=>setHistoryAsset(null)}/>}
+      {historyAsset&&<SharedAssetWorkDialog endpoint={`/api/asset-register/${historyAsset.id}`} action="history" assetTitle={historyAsset.title} assetSubtitle={historyAsset.details} onClose={()=>setHistoryAsset(null)}/>}
       {isAssetModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => { if (!isAssetAutosaveBusy) navigateBackFromAssetForm(); }} />
@@ -20677,7 +20677,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
               <div className={styles.optionsContent}>
                 <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
-                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View shared asset changes.</small></span></button>
+                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:buildAssetMeta(activeAsset)})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View shared asset changes.</small></span></button>
                   <button
                     type="button"
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}
@@ -20851,7 +20851,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.ownerCommandChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="owner-command-choice-title">Maintenance</h3>
-                <p>{activeAsset.title}</p>
+                <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
               <button
