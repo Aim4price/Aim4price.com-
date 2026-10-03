@@ -60,7 +60,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(()=>{if(!crypto.randomUUID)crypto.randomUUID=()=> '10000000-0000-4000-8000-000000000002';window.requests=[];window.fetch=async(url,opts)=>{window.requests.push({url,body:opts?.body});return {ok:true,json:async()=>({correction:{id:'correction',status:'pending',serialNumberChanged:true,proposedSerialNumber:'NEW-456'}})}}});
  const props={token:'a'.repeat(43),assetId:'10000000-0000-4000-8000-000000000001',assetIndex:0,assetTitle:'John Deere 6155M',serialNumber:'OLD-123',replacementPrice:900000,permissions:{serialNumber:true,replacementPrice:true,documents:true,reports:true},access:'active',reports:[{id:'report-1',label:'Asset valuation'}]};
  await page.addScriptTag({content:runtime+'window.renderFixture=(props)=>{window.fixtureRoot??=ReactDOM.createRoot(document.getElementById("app"));window.fixtureRoot.render(React.createElement(require("components/leads/LeadManageDialog").default,{title:props.assetTitle,description:"Manage enquiry",onClose:()=>{}},React.createElement(require("components/asset-register/ExternalLeadActions").default,{...props,key:props.access+JSON.stringify(props.permissions)})));};window.renderFixture('+JSON.stringify(props)+');'});
- async function click(text){await page.evaluate(text=>{const button=[...document.querySelectorAll('button')].find(node=>node.textContent.includes(text));if(!button)throw Error('Missing button '+text);button.click();},text);}
+ async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(node=>node.textContent.includes(text)),{},text);await page.evaluate(text=>{const button=[...document.querySelectorAll('button')].find(node=>node.textContent.includes(text));if(!button)throw Error('Missing button '+text);button.click();},text);}
  await page.waitForFunction(()=>document.body.textContent.includes('Update serial number'));
  await click('Update serial number');await page.waitForSelector('input');
  assert.equal(await page.$$eval('[role="dialog"]',nodes=>nodes.length),2);
@@ -86,7 +86,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Maintenance Reports');await page.waitForFunction(()=>document.body.textContent.includes('PDF') && !document.body.textContent.includes('Checking current maintenance'));
  await page.screenshot({path:'/tmp/shared-live-maintenance-report.png'});await page.keyboard.press('Escape');
  await click('Cost of Ownership');await page.waitForFunction(()=>document.body.textContent.includes('PDF'));await page.keyboard.press('Escape');
- await click('Create Maintenance Schedules');await page.waitForFunction(()=>document.body.textContent.includes('What are you scheduling?'));assert(await page.$eval('#dealer-maintenance-type-title',node=>{const r=node.getBoundingClientRect();return node.contains(document.elementFromPoint(r.x+5,r.y+5));}),'Schedule must be above Manage');await page.screenshot({path:'/tmp/shared-live-schedule.png'});await page.keyboard.press('Escape');
+ await click('Create Maintenance Schedules');await page.waitForFunction(()=>document.body.textContent.includes('What needs doing?'));assert(await page.$eval('[role=dialog] h2',node=>{const r=node.getBoundingClientRect();return node.contains(document.elementFromPoint(r.x+5,r.y+5));}),'Schedule must be above Manage');await page.screenshot({path:'/tmp/shared-live-schedule.png'});await page.keyboard.press('Escape');
  await click('Log problems');await click('Logged problems');await page.waitForFunction(()=>document.body.textContent.includes('No logged problems.'));await page.keyboard.press('Escape');
  await page.evaluate(p=>window.renderFixture({...p,permissions:{reports:true,allReports:true,maintenanceReports:true,costOfOwnership:true,serialNumber:false,replacementPrice:false,documents:false}}),props);
  await page.waitForFunction(()=>!document.body.textContent.includes('Update serial number'));await click('Reports');
@@ -141,7 +141,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
     }
     return {ok:true,json:async()=>({items:window.problemItems})};
   };
-  window.fixtureRoot.render(React.createElement(require('components/leads/SharedProblems').default,{endpoint:'/api/test/problems',assetTitle:'2023 Toyota Hilux',onClose:()=>{}}));
+  window.fixtureRoot.render(React.createElement(require('components/leads/SharedProblems').default,{endpoint:'/api/test/problems',assetTitle:'2023 Toyota Hilux',canWrite:true,onClose:()=>{}}));
  });
  await click('Log problem');await page.waitForSelector('textarea');await page.type('textarea','Hydraulic leak');await click('Save problem');
  await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(button=>button.textContent==='Resolved'));

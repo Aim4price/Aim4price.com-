@@ -19,7 +19,10 @@ export default function Page(){const [action,setAction]=useState<'details'|'main
  await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner'));
  assert.deepEqual(writes[0].body.patch,{yearModel:2021});
  await page.$$eval('button',nodes=>nodes.find(n=>n.getAttribute('aria-label')?.includes('Close')).click());
- await click('Maintenance');await page.waitForFunction(()=>document.body.textContent.includes('Check-up completed'));await click('Check-up completed');
+ await click('Maintenance');await page.waitForFunction(()=>document.body.textContent.includes('Already done or upcoming?'));
+ assert.equal(await page.$$eval('[role=dialog] button',nodes=>nodes.find(n=>n.querySelector('strong')?.textContent==='Upcoming').disabled),true,'Scheduling requires its own permission');
+ await page.screenshot({path:'/tmp/shared-maintenance-timing.png'});
+ await click('Already done');await page.waitForFunction(()=>document.body.textContent.includes('What was done?'));await click('Back');await page.waitForFunction(()=>document.body.textContent.includes('Already done or upcoming?'));await click('Already done');await click('Checkup');
  await page.waitForSelector('input[placeholder="e.g. Checked trailer brake lights"]');await page.type('input[placeholder="e.g. Checked trailer brake lights"]','Checked brake lights');await click('Next');
  await page.waitForSelector('input[type=number]');await page.type('input[type=number]','120');await click('Next');
  await page.waitForSelector('input[placeholder="Name of person who checked the asset"]');await page.type('input[placeholder="Name of person who checked the asset"]','Workshop technician');

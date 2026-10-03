@@ -40,7 +40,7 @@ test('owner Cost Ledger parses asset quick-add entry and returns only that flow'
   assert.match(costClient, /const shouldReturn = quickLaunchActive && quickLaunchReturnTo;/);
   assert.match(costClient, /window\.location\.assign\(shouldReturn\)/);
   assert.match(costClient, /setAssetLockedForFlow\(Boolean\(normalizedAssetId\)\)/);
-  assert.match(costClient, /disabled=\{assetLockedForFlow\}/);
+  assert.match(costClient, /disabled=\{isSaving \|\| assetLockedForFlow \|\| !assets\.length\}/);
   assert.match(costClient, /This asset is fixed for this quick add\./);
 });
 
@@ -55,8 +55,8 @@ test('maintenance supports filtered asset entry and locked quick-add return', ()
   assert.match(maintenanceClient, /useState<MaintenanceFilters>\(initialFilters\)/);
   assert.match(maintenanceClient, /setDraft\(emptyDraftForAsset\(requestedAsset\)\);[\s\S]*?setModalMode\('maintenance-type'\)/);
   assert.match(maintenanceClient, /const assetEntryLocked = quickLaunchActive/);
-  assert.match(maintenanceClient, /!assetEntryLocked \? \([\s\S]*?returnToAssetPicker/);
+  assert.match(maintenanceClient, /onBack=\{!assetEntryLocked \? returnToAssetPicker : undefined\}/);
   assert.match(maintenanceClient, /const shouldReturn = quickLaunchActive && quickLaunchReturnTo;/);
   assert.match(maintenanceClient, /window\.location\.assign\(shouldReturn\)/);
-  assert.match(maintenanceClient, /href=\{filteredAssetReturnTo\}>← Back to asset<\/a>/);
+  assert.match(maintenanceClient, /href=\{filteredAssetReturnTo\}><span aria-hidden="true">←<\/span> Back to asset<\/a>/);
 });

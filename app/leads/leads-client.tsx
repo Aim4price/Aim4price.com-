@@ -4027,7 +4027,7 @@ export default function LeadsClient({
       ) : null}
 
       {problemLead&&createPortal(<SharedProblems endpoint={`/api/asset-leads/${problemLead.id}/problems`} assetTitle={assetTitle(problemLead)} onClose={()=>setProblemLead(null)}/>,document.body)}
-      {sharedWork&&createPortal(<SharedAssetWorkDialog endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{setManagedLead(null);void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
+      {sharedWork&&createPortal(<SharedAssetWorkDialog endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} onSchedule={sharedWork.lead.maintenanceAccess?.isActive && sharedWork.lead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? () => { openMaintenanceSchedule(sharedWork.lead); setSharedWork(null); } : undefined} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{setManagedLead(null);void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
       {contribution ? createPortal(<SharedAssetContributionDialog kind={contribution.kind} endpoint={`/api/asset-leads/${contribution.lead.id}/${contribution.kind}`} assetTitle={assetTitle(contribution.lead)} onClose={()=>setContribution(null)} onSaved={()=>{void fetch(`/api/asset-leads/${contribution.lead.id}/media`,{cache:'no-store'}).then(r=>r.json()).then(data=>{if(data.asset)mergeLeadAssetMedia(contribution.lead,data.asset);}).catch(()=>{});}}/>,document.body) : null}
       {qrLeadAsset ? (
         <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>

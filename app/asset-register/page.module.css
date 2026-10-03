@@ -41333,12 +41333,12 @@ button.documentOpenLink {
   padding: 0.7rem 1rem;
 }
 
-/* Keep the three maintenance choices together on the canonical desktop canvas. */
+/* Available maintenance choices fill the canonical desktop row. */
 .managementAccountModal.ownerCommandChoiceModal {
   width: min(var(--website-dialog-reference-width, 100%), 1120px) !important;
 }
 :global(:where([data-website-canvas])) .managementAccountModal .ownerCommandChoiceGrid {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)) !important;
 }
 .managementAccountModal.ownerCommandChoiceModal .ownerCommandChoiceAction strong {
   max-width: none;

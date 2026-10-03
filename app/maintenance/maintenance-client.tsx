@@ -1,4 +1,5 @@
 'use client';
+import MaintenanceEntryChoice from '../../components/MaintenanceEntryChoice';
 import manageStyles from '../../components/LedgerManageActions.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
 import focusStyles from '../../components/LedgerCardFocus.module.css';
@@ -256,13 +257,6 @@ function CheckIcon() {
   );
 }
 
-function ServiceGearIcon() {
-  return (
-    <svg className={styles.maintenanceChoiceSvg} viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 .1-1 7.7 7.7 0 0 0-.1-1l2.1-1.6-2-3.4-2.5 1a8.2 8.2 0 0 0-1.7-1L15 3.3h-4L10.6 6a8.2 8.2 0 0 0-1.7 1L6.4 6 4.4 9.4 6.5 11a7.7 7.7 0 0 0-.1 1c0 .3 0 .7.1 1l-2.1 1.6 2 3.4 2.5-1a8.2 8.2 0 0 0 1.7 1l.4 2.7h4l.4-2.7a8.2 8.2 0 0 0 1.7-1l2.5 1 2-3.4-2.2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
-    </svg>
-  );
-}
 
 function TrashIcon() {
   return (
@@ -1310,8 +1304,8 @@ export default function MaintenanceClient({
           <div>
             <h1>ASSET MAINTENANCE</h1>
             {filteredAssetReturnTo ? (
-              <p className={styles.helperText}>
-                <a className={styles.secondaryButton} href={filteredAssetReturnTo}>← Back to asset</a>
+              <p className={styles.assetReturn}>
+                <a className={styles.secondaryButton} href={filteredAssetReturnTo}><span aria-hidden="true">←</span> Back to asset</a>
               </p>
             ) : null}
           </div>
@@ -1553,31 +1547,10 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'timing' && draft ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-timing-title">
-          <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
-            <header className={styles.modalHeader}>
-              <div><h2 id="maintenance-timing-title">Already done or upcoming?</h2><p>{selectedDraftAsset?.title}</p></div>
-              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance"><CloseIcon /></button>
-            </header>
-            <div className={styles.modalDivider} />
-            <div className={styles.maintenanceChoiceBody}>
-              <div className={styles.maintenanceChoiceGrid}>
-                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => { setEntryTiming('done'); setModalMode('maintenance-type'); }}>
-                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><CheckIcon /></span>
-                  <strong>Already done</strong><small>Record past services, repairs or checks.</small>
-                </button>
-                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => { setEntryTiming('upcoming'); setModalMode('maintenance-type'); }}>
-                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">31</span>
-                  <strong>Upcoming</strong><small>Schedule work and reminders.</small>
-                </button>
-              </div>
-            </div>
-            <footer className={styles.modalFooter}>
-              {!assetEntryLocked ? <button className={styles.secondaryButton} type="button" onClick={returnToAssetPicker}>Back</button> : null}
-              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-            </footer>
-          </section>
-        </div>
+        <MaintenanceEntryChoice step="timing" assetTitle={selectedDraftAsset?.title || ''} onClose={closeModal}
+          onBack={!assetEntryLocked ? returnToAssetPicker : undefined}
+          onDone={() => { setEntryTiming('done'); setModalMode('maintenance-type'); }}
+          onUpcoming={() => { setEntryTiming('upcoming'); setModalMode('maintenance-type'); }} />
       ) : null}
 
       {modalMode === 'record-work' && draft && selectedDraftAsset ? (
@@ -1597,38 +1570,8 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'maintenance-type' && draft ? (
-        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-type-title">
-          <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
-            <header className={styles.modalHeader}>
-              <div>
-                <h2 id="maintenance-type-title">{entryTiming === 'done' ? 'What was done?' : 'What needs doing?'}</h2>
-                <p>{selectedAssetLabel(selectedDraftAsset)}</p>
-              </div>
-              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeModal} aria-label="Close maintenance type selection">
-                <CloseIcon />
-              </button>
-            </header>
-            <div className={styles.modalDivider} />
-            <div className={styles.maintenanceChoiceBody}>
-              <div className={styles.maintenanceChoiceGrid}>
-                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseMaintenanceType('service')}>
-                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><ServiceGearIcon /></span>
-                  <strong>Service</strong>
-                  <small>Servicing, repairs or maintenance.</small>
-                </button>
-                <button className={styles.maintenanceChoiceCard} type="button" onClick={() => chooseMaintenanceType('checkup')}>
-                  <span className={styles.maintenanceChoiceIcon} aria-hidden="true">✓</span>
-                  <strong>Checkup</strong>
-                  <small>Inspection or condition check.</small>
-                </button>
-              </div>
-            </div>
-            <footer className={styles.modalFooter}>
-              <button className={styles.secondaryButton} type="button" onClick={() => setModalMode('timing')}>Back</button>
-              <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
-            </footer>
-          </section>
-        </div>
+        <MaintenanceEntryChoice step="type" timing={entryTiming} assetTitle={selectedAssetLabel(selectedDraftAsset)}
+          onClose={closeModal} onBack={() => setModalMode('timing')} onType={chooseMaintenanceType} />
       ) : null}
 
       {modalMode === 'trigger-type' && draft ? (
