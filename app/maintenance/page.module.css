@@ -5233,3 +5233,8 @@
 .simpleScheduleDialog .scheduleQuestion .filterField > span { font-weight: 550; text-transform: none; letter-spacing: 0; font-size: .85rem; }
 .simpleScheduleDialog .scheduleQuestion .scheduleRepeat button { font-weight: 550; }
 .simpleScheduleDialog .scheduleQuestion .maintenanceCurrentUsage strong { font-weight: 500; }
+
+/* Give the asset return action its own space below the page heading. */
+.assetReturn { margin: 1.1rem 0 0; }
+.assetReturn .secondaryButton { display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.8rem 1.15rem; }
+.maintenanceChoiceCard:disabled { opacity: 0.6; cursor: not-allowed; }

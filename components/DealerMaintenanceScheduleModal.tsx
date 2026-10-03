@@ -1,4 +1,5 @@
 'use client';
+import MaintenanceEntryChoice from './MaintenanceEntryChoice';
 import { useLeadDialog } from './leads/useLeadDialog';
 import DateInput from './DateInput';
 
@@ -80,13 +81,6 @@ function ChevronDownIcon({ className }: { className?: string }) {
   );
 }
 
-function ServiceGearIcon() {
-  return (
-    <svg className={styles.maintenanceChoiceSvg} viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 .1-1 7.7 7.7 0 0 0-.1-1l2.1-1.6-2-3.4-2.5 1a8.2 8.2 0 0 0-1.7-1L15 3.3h-4L10.6 6a8.2 8.2 0 0 0-1.7 1L6.4 6 4.4 9.4 6.5 11a7.7 7.7 0 0 0-.1 1c0 .3 0 .7.1 1l-2.1 1.6 2 3.4 2.5-1a8.2 8.2 0 0 0 1.7 1l.4 2.7h4l.4-2.7a8.2 8.2 0 0 0 1.7-1l2.5 1 2-3.4-2.2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" />
-    </svg>
-  );
-}
 
 function todayInputDate(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -475,54 +469,8 @@ export default function DealerMaintenanceScheduleModal({
   }
 
   if (step === 'maintenance-type') {
-    return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={externalShare ? { zIndex: 26000 } : undefined} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby="dealer-maintenance-type-title">
-        <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
-          <header className={styles.modalHeader}>
-            <div>
-              <h2 id="dealer-maintenance-type-title">What are you scheduling?</h2>
-              <p>{selectedAssetLabel(asset)}</p>
-            </div>
-            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close maintenance type selection">
-              <CloseIcon />
-            </button>
-          </header>
-          <div className={styles.modalDivider} />
-          <div className={styles.maintenanceChoiceBody}>
-            <div className={styles.maintenanceChoiceGrid}>
-              <button
-                className={styles.maintenanceChoiceCard}
-                type="button"
-                onClick={() => {
-                  updateDraft({ maintenanceType: 'service' });
-                  setStep('trigger-type');
-                }}
-              >
-                <span className={styles.maintenanceChoiceIcon} aria-hidden="true"><ServiceGearIcon /></span>
-                <strong>Service</strong>
-                <small>Routine servicing or repairs.</small>
-              </button>
-              <button
-                className={styles.maintenanceChoiceCard}
-                type="button"
-                onClick={() => {
-                  updateDraft({ maintenanceType: 'checkup' });
-                  setStep('trigger-type');
-                }}
-              >
-                <span className={styles.maintenanceChoiceIcon} aria-hidden="true">✓</span>
-                <strong>Checkup</strong>
-                <small>Inspection or condition check.</small>
-              </button>
-            </div>
-          </div>
-          <footer className={styles.modalFooter}>
-            <button className={styles.secondaryButton} type="button" onClick={onClose}>Back</button>
-            <button className={styles.secondaryButton} type="button" onClick={onClose}>Cancel</button>
-          </footer>
-        </section>
-      </div>
-    );
+    return <MaintenanceEntryChoice step="type" timing="upcoming" assetTitle={selectedAssetLabel(asset)}
+      onClose={onClose} onBack={onClose} onType={maintenanceType => { updateDraft({ maintenanceType }); setStep('trigger-type'); }} />;
   }
 
   if (step === 'trigger-type') {
