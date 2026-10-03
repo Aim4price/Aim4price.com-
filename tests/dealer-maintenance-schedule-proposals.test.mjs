@@ -15,14 +15,14 @@ const ownerShare = read('app/asset-register/asset-register-client.tsx');
 const scheduleModal = read('components/DealerMaintenanceScheduleModal.tsx');
 const trackerClient = read('components/DealerMaintenanceTrackerClient.tsx');
 
-test('new tracking shares enable reports and direct maintenance schedules without requiring an existing schedule', () => {
+test('new tracking shares keep reports opt-in and allow direct maintenance schedules without an existing schedule', () => {
   assert.match(
     tracker,
     /can_view_maintenance_reports,\s*can_view_cost_of_ownership,\s*can_create_maintenance_schedules/,
   );
   assert.match(
     tracker,
-    /canViewMaintenanceReports: true,[\s\S]*canViewCostOfOwnership: false,[\s\S]*canCreateMaintenanceSchedules: true/,
+    /canViewMaintenanceReports: false,[\s\S]*canViewCostOfOwnership: false,[\s\S]*canCreateMaintenanceSchedules: true/,
   );
   assert.match(
     tracker,
