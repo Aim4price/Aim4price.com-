@@ -37,9 +37,8 @@ export const dealerMaintenancePermissionOptions: Array<{
   description: string;
 }> = [
   {key:'canAddPhotos', title:'Add photos', description:'Allow photos to be added to the live asset.'},
-  {key:'canUpdateYear', title:'Update year', description:'Change the asset year.'},
-  {key:'canUpdateUsage', title:'Update usage', description:'Update hours or kilometres.'},
-  {key:'canUpdateCondition', title:'Update condition', description:'Update the asset condition.'},
+  {key:'canUpdateDetails', title:'Update details', description:'Year, usage, condition, finance, insurance and licensing.'},
+  {key:'canAccessLocation', title:'Location access', description:'View and update the asset location.'},
   {key:'canAddMaintenance', title:'Add maintenance', description:'Record completed work.'},
   {key:'canAddCosts', title:'Add costs', description:'Add costs and supporting documents.'},
   {
@@ -94,7 +93,7 @@ export function DealerMaintenancePermissionPicker({
   return (
     <>
     <label className={styles.selectAll}>
-      <input type="checkbox" disabled={disabled} checked={dealerMaintenancePermissionOptions.every(({key}) => value[key] === true)} onChange={event => onChange({...value,...Object.fromEntries(dealerMaintenancePermissionOptions.filter(({key}) => !lockedPermissions.includes(key)).map(({key}) => [key,event.target.checked]))})}/>
+      <input type="checkbox" disabled={disabled} checked={dealerMaintenancePermissionOptions.every(({key}) => value[key] === true)} onChange={event => onChange({...value,canUpdateYear:event.target.checked,canUpdateUsage:event.target.checked,canUpdateCondition:event.target.checked,...Object.fromEntries(dealerMaintenancePermissionOptions.filter(({key}) => !lockedPermissions.includes(key)).map(({key}) => [key,event.target.checked]))})}/>
       <span>Select all</span>
     </label>
     <div className={styles.permissions} data-permission-grid>
@@ -106,7 +105,7 @@ export function DealerMaintenancePermissionPicker({
           <input
             type="checkbox"
             checked={value[option.key] === true}
-            onChange={(event) => onChange({ ...value, [option.key]: event.target.checked })}
+            onChange={(event) => onChange({ ...value, [option.key]: event.target.checked, ...(option.key === 'canUpdateDetails' ? {canUpdateYear:event.target.checked,canUpdateUsage:event.target.checked,canUpdateCondition:event.target.checked} : {}) })}
             disabled={disabled || lockedPermissions.includes(option.key)}
           />
           <span>

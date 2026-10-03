@@ -2462,8 +2462,8 @@ function buildUpdateSetClause(fields: SqlField[]): { clause: string; values: unk
   };
 }
 
-export async function getAssetRegisterItemById(userId: string, assetId: string): Promise<AssetRegisterItem | null> {
-  const db = getDb();
+export async function getAssetRegisterItemById(userId: string, assetId: string, transaction?: import('pg').PoolClient): Promise<AssetRegisterItem | null> {
+  const db = transaction || getDb();
   const schema = await getAssetRegisterSchema();
   const result = await db.query<AssetRegisterRow>(
     `
@@ -2472,6 +2472,7 @@ export async function getAssetRegisterItemById(userId: string, assetId: string):
       from asset_register_items
       where user_id = $1 and id = $2
       limit 1
+      ${transaction ? 'FOR UPDATE' : ''}
     `,
     [userId, assetId],
   );
@@ -2899,6 +2900,7 @@ export async function updateAssetRegisterItemYearModel(
 export async function updateAssetRegisterItemLocation(
   userId: string,
   input: UpdateAssetRegisterItemLocationInput,
+  transaction?: import('pg').PoolClient,
 ): Promise<AssetRegisterItem> {
   const assetId = asText(input.assetId);
   const latitude = Number(input.latitude);
@@ -2940,10 +2942,10 @@ export async function updateAssetRegisterItemLocation(
 
   const db = getDb();
   const schema = await getAssetRegisterSchema();
-  const client = await db.connect();
+  const client = transaction || await db.connect();
 
   try {
-    await client.query('BEGIN');
+    if (!transaction) await client.query('BEGIN');
 
     const result = await client.query<AssetRegisterRow>(
       `
@@ -3013,14 +3015,14 @@ export async function updateAssetRegisterItemLocation(
       [assetId, latitude, longitude, locationText, capturedAt, gpsAccuracyMeters, activityText, eventNote],
     );
 
-    await client.query('COMMIT');
+    if (!transaction) await client.query('COMMIT');
 
     return mapAssetRegisterRow(row);
   } catch (error) {
-    await client.query('ROLLBACK').catch(() => undefined);
+    if (!transaction) await client.query('ROLLBACK').catch(() => undefined);
     throw error;
   } finally {
-    client.release();
+    if (!transaction) client.release();
   }
 }
 
@@ -3028,6 +3030,7 @@ export async function updateAssetRegisterItemLocation(
 export async function updateAssetRegisterItemStatusDetails(
   userId: string,
   input: UpdateAssetRegisterItemStatusDetailsInput,
+  transaction?: import('pg').PoolClient,
 ): Promise<AssetRegisterItem> {
   const assetId = asText(input.assetId);
 
@@ -3035,9 +3038,10 @@ export async function updateAssetRegisterItemStatusDetails(
     throw new Error('ASSET_ID_REQUIRED');
   }
 
-  const db = getDb();
+  const db = transaction || getDb();
   const schema = await getAssetRegisterSchema();
-  const existing = await getAssetRegisterItemById(userId, assetId);
+  const locked = transaction ? await transaction.query<AssetRegisterRow>(`SELECT ${buildSelectList(schema)} FROM asset_register_items WHERE user_id=$1 AND id=$2 FOR UPDATE`,[userId,assetId]) : null;
+  const existing = locked ? (locked.rows[0] ? mapAssetRegisterRow(locked.rows[0]) : null) : await getAssetRegisterItemById(userId, assetId);
 
   if (!existing) {
     throw new Error('ASSET_NOT_FOUND');

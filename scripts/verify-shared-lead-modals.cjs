@@ -98,12 +98,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.addScriptTag({content:'window.fixtureRoot.render(React.createElement(require("components/business-network/BusinessListingInvite").default,{sendLink:true,assetIds:["10000000-0000-4000-8000-000000000001"],reportAssets:[{id:"10000000-0000-4000-8000-000000000001",title:"2023 Toyota Hilux"}]}));'});
  await page.waitForSelector('[data-asset-link-dialog]');
  const box=await page.$eval('[data-asset-link-dialog]',node=>({width:node.getBoundingClientRect().width,x:node.getBoundingClientRect().x,scrollHeight:node.scrollHeight,height:node.clientHeight,text:node.textContent}));
- assert.equal(Math.round(box.width),1160);assert.equal(Math.round(box.x),140);assert(box.scrollHeight<=box.height+1,'Settings fit without scrolling');
+ assert.equal(Math.round(box.width),1280);assert.equal(Math.round(box.x),80);assert(box.scrollHeight<=box.height+1,'Settings fit without scrolling');
  assert(box.text.includes('Asset link settings'));assert(box.text.includes('2023 Toyota Hilux'));assert(box.text.includes('Asset photos are included.'));
  assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',nodes=>nodes.length),0,'Report permissions are selectable');
  assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),0,'Permissions start off');
  await page.click('[data-asset-link-dialog] input[type=checkbox]');
- assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),12,'Select all enables all settings');
+ assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),11,'Select all enables all settings');
  await page.click('[data-asset-link-dialog] input[type=checkbox]');
  assert(!box.text.includes('Attach reports'));
  await page.screenshot({path:'/tmp/asset-link-settings.png'});

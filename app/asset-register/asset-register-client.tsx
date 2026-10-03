@@ -1,4 +1,8 @@
 'use client';
+import {loadLeaflet} from '../../lib/asset-location-map';
+import AssetLocationEditor from '../../components/AssetLocationEditor';
+import ModalSelect, {type ModalSelectOption} from '../../components/AssetModalSelect';
+import AssetPaperworkFields, {type AssetStatusDraft} from '../../components/AssetPaperworkFields';
 import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import LeadActionDialog from '../../components/leads/LeadActionDialog';
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
@@ -1086,32 +1090,7 @@ type AssetDraft = {
   condition: AssetConditionValue;
 };
 
-type AssetStatusDraft = {
-  financeStatus: FinanceStatusChoice;
-  financeType: string;
-  financeCurrentOutstandingExVat: string;
-  financierName: string;
-  financeNote: string;
-  financeBoughtWhen: string;
-  financeBoughtForExVat: string;
-  financeOriginalAmountExVat: string;
-  financeMonthlyPaymentExVat: string;
-  financeInterestRatePercent: string;
-  financeTermMonths: string;
-  financeBalloonPaymentExVat: string;
-  financeSettlementDate: string;
-  financeReferenceNumber: string;
-  insuranceStatus: AssetStatusChoice;
-  insuredValueExVat: string;
-  insuranceInsurerName: string;
-  insurancePolicyNumber: string;
-  insuranceRenewalDate: string;
-  insuranceNote: string;
-  licenseStatus: AssetStatusChoice;
-  licenseRegistrationNumber: string;
-  licenseRenewalDate: string;
-  licenseNote: string;
-};
+
 
 type PendingPhotoFile = {
   id: string;
@@ -1377,35 +1356,6 @@ const LICENSE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; d
   { value: 'no', label: 'Is not licensed', description: 'This asset is not currently licensed.' },
   { value: 'not_applicable', label: 'Not applicable', description: 'Licensing does not apply to this asset.' },
   { value: 'unknown', label: 'Not sure', description: 'You can confirm the licence status later.' },
-];
-
-const QUICK_FINANCE_STATUS_OPTIONS: Array<{ value: FinanceStatusChoice; label: string; description: string }> = [
-  { value: 'yes', label: 'Financed', description: 'This asset has active finance or forms part of financed group debt.' },
-  { value: 'paid', label: 'Paid off', description: 'Finance has been settled and is retained as history.' },
-  { value: 'no', label: 'Not financed', description: 'This asset is not currently financed.' },
-  { value: 'unknown', label: 'Not sure', description: 'You can confirm the finance status later.' },
-  { value: 'not_applicable', label: 'Not applicable', description: 'Finance status does not apply to this asset.' },
-];
-
-const QUICK_INSURANCE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
-  { value: 'yes', label: 'Insured', description: 'This asset is covered on an insurance policy.' },
-  { value: 'no', label: 'Not insured', description: 'This asset is not currently insured.' },
-  { value: 'unknown', label: 'Not sure', description: 'You can confirm the insurance status later.' },
-  { value: 'not_applicable', label: 'Not applicable', description: 'Insurance status does not apply to this asset.' },
-];
-
-const QUICK_LICENSE_STATUS_OPTIONS: Array<{ value: AssetStatusChoice; label: string; description: string }> = [
-  { value: 'yes', label: 'Licensed', description: 'This asset has an active licence or registration.' },
-  { value: 'no', label: 'Not licensed', description: 'This asset is not currently licensed.' },
-  { value: 'unknown', label: 'Not sure', description: 'You can confirm the licence status later.' },
-  { value: 'not_applicable', label: 'Not applicable', description: 'Licensing does not apply to this asset.' },
-];
-
-const FINANCE_TYPE_OPTIONS: Array<{ value: string; label: string; description: string }> = [
-  { value: '', label: 'Select finance type', description: 'Optional.' },
-  { value: 'asset_specific', label: 'Asset-specific finance', description: 'Finance is linked to this specific asset.' },
-  { value: 'bulk_group', label: 'Bulk / group finance', description: 'Finance covers more than one asset.' },
-  { value: 'unknown', label: 'Not sure', description: 'Confirm the finance type later.' },
 ];
 
 const MANUAL_FORM_STEPS: Array<{ step: ManualAssetStep; label: string }> = [
@@ -1688,7 +1638,7 @@ function getAssetSettingsInitialMapLocation(profile: AccountProfile | null): Ass
   return resolveAssetSettingsProfileMapLocation(profile) ?? { center: DEFAULT_PARTNER_MAP_CENTER, zoom: DEFAULT_PARTNER_MAP_ZOOM };
 }
 
-let leafletLoaderPromise: Promise<any> | null = null;
+
 
 const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
   {
@@ -2411,218 +2361,6 @@ function AssetReportFormatPicker({ value, deliveryMode = 'download', onChange }:
   );
 }
 
-type ModalSelectOption<T extends string> = {
-  value: T;
-  label: string;
-  description?: string;
-};
-
-type ModalSelectPortalStyle = CSSProperties & {
-  '--asset-select-top': string;
-  '--asset-select-left': string;
-  '--asset-select-width': string;
-  '--asset-select-max-height': string;
-};
-
-type ModalSelectProps<T extends string> = {
-  label: string;
-  value: T | '';
-  options: Array<ModalSelectOption<T>>;
-  onChange: (value: T) => void;
-  placeholder?: string;
-  className?: string;
-  menuClassName?: string;
-  autoFocus?: boolean;
-  showDescriptions?: boolean;
-  usePortal?: boolean;
-  assetDetailEditTarget?: AssetDetailEditTarget;
-  buttonLabel?: string;
-};
-
-function ModalSelect<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-  placeholder = 'Select option',
-  className = '',
-  menuClassName = '',
-  autoFocus = false,
-  showDescriptions = true,
-  usePortal = true,
-  assetDetailEditTarget,
-  buttonLabel,
-}: ModalSelectProps<T>) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [portalMenuStyle, setPortalMenuStyle] = useState<ModalSelectPortalStyle | null>(null);
-  const wrapRef = useRef<HTMLDivElement | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const selectedOption = options.find((option) => option.value === value) ?? null;
-
-  useEffect(() => {
-    if (!isOpen) {
-      return undefined;
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      if (isViewportScrollbarInteraction(event)) {
-        return;
-      }
-
-      const target = event.target;
-
-      if (!(target instanceof Node)) {
-        return;
-      }
-
-      if (wrapRef.current?.contains(target) || menuRef.current?.contains(target)) {
-        return;
-      }
-
-      setIsOpen(false);
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || !usePortal) {
-      setPortalMenuStyle(null);
-      return undefined;
-    }
-
-    function updatePortalPosition() {
-      const button = buttonRef.current;
-      if (!button) {
-        return;
-      }
-
-      const rect = websiteLogicalRect(button.getBoundingClientRect());
-      const viewportWidth = websiteVisibleViewport().width;
-      const viewportHeight = websiteVisibleViewport().height;
-      const viewportLeft = websiteVisibleViewport().left;
-      const viewportTop = websiteVisibleViewport().top;
-      const gap = 8;
-      const edgeGap = 12;
-      const availableWidth = Math.max(160, viewportWidth - edgeGap * 2);
-      const menuWidth = Math.min(Math.max(220, rect.width), availableWidth);
-      const left = Math.min(Math.max(rect.left, viewportLeft + edgeGap), viewportLeft + viewportWidth - menuWidth - edgeGap);
-      const spaceBelow = viewportTop + viewportHeight - rect.bottom - gap - edgeGap;
-      const spaceAbove = rect.top - viewportTop - gap - edgeGap;
-      const openAbove = spaceBelow < 180 && spaceAbove > spaceBelow;
-      const availableHeight = Math.max(144, openAbove ? spaceAbove : spaceBelow);
-      const maxHeight = Math.min(288, availableHeight);
-      const top = openAbove ? Math.max(viewportTop + edgeGap, rect.top - gap - maxHeight) : Math.min(viewportTop + viewportHeight - edgeGap, rect.bottom + gap);
-
-      setPortalMenuStyle({
-        '--asset-select-top': `${Math.round(top)}px`,
-        '--asset-select-left': `${Math.round(left)}px`,
-        '--asset-select-width': `${Math.round(menuWidth)}px`,
-        '--asset-select-max-height': `${Math.round(maxHeight)}px`,
-      });
-    }
-
-    updatePortalPosition();
-    window.addEventListener('resize', updatePortalPosition);
-    window.addEventListener('aim4price:canvas-geometry', updatePortalPosition);
-    window.addEventListener('scroll', updatePortalPosition, true);
-    window.visualViewport?.addEventListener('resize', updatePortalPosition);
-    window.visualViewport?.addEventListener('scroll', updatePortalPosition);
-
-    return () => {
-      window.removeEventListener('resize', updatePortalPosition);
-      window.removeEventListener('aim4price:canvas-geometry', updatePortalPosition);
-      window.removeEventListener('scroll', updatePortalPosition, true);
-      window.visualViewport?.removeEventListener('resize', updatePortalPosition);
-      window.visualViewport?.removeEventListener('scroll', updatePortalPosition);
-    };
-  }, [isOpen, usePortal]);
-
-  const menu = (
-    <div
-      ref={menuRef}
-      className={`${styles.customSelectMenu} ${usePortal ? styles.customSelectMenuPortal : ''} ${!showDescriptions ? styles.customSelectMenuSingleLine : ''} ${menuClassName}`}
-      style={usePortal ? portalMenuStyle ?? undefined : undefined}
-      data-dropdown-overlay-portal="true"
-      role="listbox"
-      aria-label={label}
-    >
-      {options.map((option) => {
-        const isSelected = option.value === value;
-
-        return (
-          <button
-            type="button"
-            role="option"
-            aria-selected={isSelected}
-            key={option.value || option.label}
-            className={`${styles.customSelectOption} ${!showDescriptions ? styles.customSelectOptionSingleLine : ''} ${isSelected ? styles.customSelectOptionActive : ''}`}
-            onClick={() => {
-              onChange(option.value);
-              setIsOpen(false);
-            }}
-          >
-            {showDescriptions ? (
-              <span className={styles.customSelectOptionText}>
-                <strong>{option.label}</strong>
-                {option.description ? <small>{option.description}</small> : null}
-              </span>
-            ) : (
-              <span className={styles.customSelectOptionLabel}>{option.label}</span>
-            )}
-            {isSelected ? <b aria-hidden="true">&#10003;</b> : null}
-          </button>
-        );
-      })}
-    </div>
-  );
-
-  return (
-    <div
-      className={`${styles.field} ${styles.customSelectField} ${className}`}
-      ref={wrapRef}
-      data-asset-detail-edit-target={assetDetailEditTarget}
-    >
-      <span>{label}</span>
-      <button
-        ref={buttonRef}
-        type="button"
-        className={`${styles.customSelectButton} ${isOpen ? styles.customSelectButtonOpen : ''} ${!selectedOption ? styles.customSelectButtonPlaceholder : ''}`}
-        onClick={() => setIsOpen((current) => !current)}
-        aria-haspopup="listbox"
-        aria-label={buttonLabel}
-        aria-expanded={isOpen}
-        autoFocus={autoFocus}
-      >
-        <span className={styles.customSelectButtonText}>
-          <span className={styles.customSelectButtonCopy}>
-            <span>{selectedOption?.label ?? placeholder}</span>
-          </span>
-        </span>
-        <ChevronDownIcon className={styles.customSelectChevron} />
-      </button>
-
-      {isOpen && (!usePortal || portalMenuStyle)
-        ? usePortal && typeof document !== 'undefined'
-          ? createPortal(menu, document.body)
-          : menu
-        : null}
-    </div>
-  );
-}
 
 function money(value: number | null | undefined): string {
   return new Intl.NumberFormat('en-ZA', {
@@ -6262,105 +6000,6 @@ function mergeProfileWithRegister(profile: AccountProfile | null, register: Asse
 
 function getRegisterReportLogoUrl(register: AssetRegisterSummary | null): string {
   return toAbsoluteUrl(selectReportLogoUrl('', register)) ?? '';
-}
-
-function loadLeafletMarkerCluster(leaflet: any): Promise<any> {
-  if (leaflet?.markerClusterGroup) return Promise.resolve(leaflet);
-
-  if (!document.getElementById(LEAFLET_CLUSTER_CSS_ID)) {
-    const link = document.createElement('link');
-    link.id = LEAFLET_CLUSTER_CSS_ID;
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css';
-    link.crossOrigin = '';
-    document.head.appendChild(link);
-  }
-  if (!document.getElementById(LEAFLET_CLUSTER_DEFAULT_CSS_ID)) {
-    const link = document.createElement('link');
-    link.id = LEAFLET_CLUSTER_DEFAULT_CSS_ID;
-    link.rel = 'stylesheet';
-    link.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css';
-    link.crossOrigin = '';
-    document.head.appendChild(link);
-  }
-
-  return new Promise((resolve, reject) => {
-    const existingScript = document.getElementById(LEAFLET_CLUSTER_SCRIPT_ID) as HTMLScriptElement | null;
-    const handleLoaded = () => leaflet?.markerClusterGroup
-      ? resolve(leaflet)
-      : reject(new Error('Marker clustering did not initialise correctly.'));
-    if (existingScript) {
-      existingScript.addEventListener('load', handleLoaded, { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('Failed to load marker clustering.')), { once: true });
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = LEAFLET_CLUSTER_SCRIPT_ID;
-    script.src = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';
-    script.async = true;
-    script.crossOrigin = '';
-    script.addEventListener('load', handleLoaded, { once: true });
-    script.addEventListener('error', () => reject(new Error('Failed to load marker clustering.')), { once: true });
-    document.body.appendChild(script);
-  });
-}
-
-function loadLeaflet(): Promise<any> {
-  if (typeof window === 'undefined') {
-    return Promise.reject(new Error('Leaflet can only load in the browser.'));
-  }
-
-  if (window.L?.markerClusterGroup) {
-    return Promise.resolve(window.L);
-  }
-
-  if (leafletLoaderPromise) {
-    return leafletLoaderPromise;
-  }
-
-  leafletLoaderPromise = new Promise((resolve, reject) => {
-    if (window.L) {
-      void loadLeafletMarkerCluster(window.L).then(resolve, () => resolve(window.L));
-      return;
-    }
-
-    if (!document.getElementById(LEAFLET_CSS_ID)) {
-      const link = document.createElement('link');
-      link.id = LEAFLET_CSS_ID;
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      link.crossOrigin = '';
-      document.head.appendChild(link);
-    }
-
-    const existingScript = document.getElementById(LEAFLET_SCRIPT_ID) as HTMLScriptElement | null;
-
-    const handleLoaded = () => {
-      if (window.L) {
-        void loadLeafletMarkerCluster(window.L).then(resolve, () => resolve(window.L));
-        return;
-      }
-
-      reject(new Error('The partner map did not initialise correctly.'));
-    };
-
-    if (existingScript) {
-      existingScript.addEventListener('load', handleLoaded, { once: true });
-      existingScript.addEventListener('error', () => reject(new Error('Failed to load the partner map.')), { once: true });
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.id = LEAFLET_SCRIPT_ID;
-    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.async = true;
-    script.crossOrigin = '';
-    script.addEventListener('load', handleLoaded, { once: true });
-    script.addEventListener('error', () => reject(new Error('Failed to load the partner map.')), { once: true });
-    document.body.appendChild(script);
-  });
-
-  return leafletLoaderPromise;
 }
 
 function quoteOptionForLeadType(leadType: AssetLeadType | null): AssetQuoteOption | null {
@@ -18864,126 +18503,23 @@ export default function AssetRegisterClient({
                 ) : null}
 
                 {manualAssetStep === 3 ? (
-                  <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth} ${styles.assetStatusStageCard}`}>
-                    {assetStatusEditView === 'hub' ? (
-                      <div className={styles.assetStatusHubGrid}>
-                        <button
-                          type="button"
-                          className={styles.assetStatusHubCard}
-                          onClick={() => openAssetStatusEditView('finance')}
-                        >
-                          <strong>Finance</strong>
-                          <small>{financeStatusSummary(assetStatusDraft)}</small>
-                        </button>
-
-                        <button
-                          type="button"
-                          className={styles.assetStatusHubCard}
-                          onClick={() => openAssetStatusEditView('insurance')}
-                        >
-                          <strong>Insurance</strong>
-                          <small>{insuranceStatusSummary(assetStatusDraft)}</small>
-                        </button>
-
-                        {assetLicenseApplicable ? (
-                          <button
-                            type="button"
-                            className={styles.assetStatusHubCard}
-                            onClick={() => openAssetStatusEditView('license')}
-                          >
-                            <strong>License</strong>
-                            <small>{licenseStatusSummary(assetStatusDraft)}</small>
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : null}
-
-                    {assetStatusEditView === 'finance' ? (
-                      <div className={styles.assetStatusFocusedForm}>
-                        <div className={styles.assetStatusFocusedHeader}>
-                          <strong>Finance</strong>
-                        </div>
-
-                        <div className={styles.assetStatusEditGrid}>
-                          <ModalSelect<FinanceStatusChoice>
-                            label="Finance status"
-                            value={assetStatusDraft.financeStatus}
-                            options={QUICK_FINANCE_STATUS_OPTIONS}
-                            onChange={setAssetFinanceStatus}
-                            showDescriptions={false}
-                            usePortal
-                          />
-
-                          <div className={`${styles.assetStatusAcquisitionPanel} ${styles.assetStatusWideField}`}>
-                            <div className={styles.assetStatusAcquisitionHeader}>
-                              <strong>Acquisition details</strong>
-                              <small>Kept with finance and paperwork.</small>
-                            </div>
-                            <div className={styles.assetStatusAcquisitionGrid}>
-                              <label className={styles.field}>
-                                <span>Acquisition date <small>(optional)</small></span>
-                                <DateInput value={assetStatusDraft.financeBoughtWhen} onValueChange={(value) => updateAssetStatusDraftField('financeBoughtWhen', value)} />
-                              </label>
-                              <label className={styles.field}>
-                                <span>Acquisition amount excl. VAT <small>(optional)</small></span>
-                                <input type="text" inputMode="numeric" value={assetStatusDraft.financeBoughtForExVat} onChange={(event) => updateAssetStatusDraftField('financeBoughtForExVat', formatRegisterValueInput(event.target.value))} placeholder="Optional" />
-                              </label>
-                            </div>
-                          </div>
-
-                          {assetStatusDraft.financeStatus === 'yes' || assetStatusDraft.financeStatus === 'paid' ? (
-                            <>
-                              <ModalSelect<string>
-                                label="Finance type"
-                                value={assetStatusDraft.financeType}
-                                options={FINANCE_TYPE_OPTIONS}
-                                onChange={setAssetFinanceType}
-                                placeholder="Select finance type"
-                                showDescriptions={false}
-                                usePortal
-                              />
-
-                              {assetStatusDraft.financeType === 'bulk_group' && editingAsset ? (
-                                <div className={`${styles.bulkFinanceLinkCard} ${styles.assetStatusWideField}`}>
-                                  <div>
-                                    <strong>Assets in this finance agreement</strong>
-                                    <small>Choose every asset covered by the same facility.</small>
-                                  </div>
-                                  <button type="button" className={styles.bulkFinanceChooseButton} onClick={() => setBulkFinanceAssetPickerOpen(true)}>
-                                    <span>{bulkFinanceAssetIds.length} selected</span>
-                                    <strong>Choose assets</strong>
-                                  </button>
-                                  <div className={styles.bulkFinanceSelectedAssets}>
-                                    {selectedBulkFinanceAssets.map((asset) => <span key={asset.id}>{asset.title}</span>)}
-                                  </div>
-                                </div>
-                              ) : null}
-
-                              {assetStatusDraft.financeStatus === 'yes' ? <label className={styles.field}>
-                                <span>Current outstanding amount excl. VAT <small>(optional)</small></span>
-                                <input type="text" inputMode="numeric" value={assetStatusDraft.financeCurrentOutstandingExVat} onChange={(event) => updateAssetStatusDraftField('financeCurrentOutstandingExVat', formatRegisterValueInput(event.target.value))} placeholder="Optional" />
-                              </label> : null}
-
-                              <label className={styles.field}>
-                                <span>Financier <small>(optional)</small></span>
-                                <input
-                                  value={assetStatusDraft.financierName}
-                                  onChange={(event) => updateAssetStatusDraftField('financierName', event.target.value)}
-                                  placeholder="Example: Bank or finance house"
-                                />
-                              </label>
-
-                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
-                                <span>Finance note <small>(optional)</small></span>
-                                <textarea
-                                  value={assetStatusDraft.financeNote}
-                                  onChange={(event) => updateAssetStatusDraftField('financeNote', event.target.value)}
-                                  placeholder="Optional"
-                                  rows={3}
-                                />
-                              </label>
-
-                              <div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
+                  <AssetPaperworkFields
+                    assetStatusDraft={assetStatusDraft}
+                    assetStatusEditView={assetStatusEditView}
+                    assetLicenseApplicable={assetLicenseApplicable}
+                    openAssetStatusEditView={openAssetStatusEditView}
+                    updateAssetStatusDraftField={updateAssetStatusDraftField}
+                    setAssetFinanceStatus={setAssetFinanceStatus}
+                    setAssetFinanceType={setAssetFinanceType}
+                    setAssetInsuranceStatus={setAssetInsuranceStatus}
+                    setAssetLicenseStatus={setAssetLicenseStatus}
+                    handleInsuredValueChange={handleInsuredValueChange}
+                    formatRegisterValueInput={formatRegisterValueInput}
+                    finishAssetStatusSection={finishAssetStatusSection}
+                    isSavingAssetStatus={isSavingAssetStatus}
+                    assetStatusError={assetStatusError}
+                    summaries={{finance:financeStatusSummary(assetStatusDraft),insurance:insuranceStatusSummary(assetStatusDraft),license:licenseStatusSummary(assetStatusDraft)}}
+                    documentControls={{finance: (<div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
                                 <div className={styles.assetStatusDocumentUploadCopy}>
                                   <strong>Finance documents</strong>
                                   <small>Agreements, statements or settlement letters</small>
@@ -19001,184 +18537,7 @@ export default function AssetRegisterClient({
                                   />
                                 </label>
                                 <small className={styles.assetStatusDocumentCount}>{manualDraftDocumentCount} / {MAX_DOCUMENTS} documents</small>
-                              </div>
-                            </>
-                          ) : null}
-                        </div>
-
-                        {assetStatusDraft.financeStatus === 'yes' || assetStatusDraft.financeStatus === 'paid' ? (
-                          <>
-                            <button
-                              type="button"
-                              className={styles.assetStatusAdvancedToggle}
-                              onClick={() => setAssetStatusAdvancedOpen((current) => !current)}
-                              aria-expanded={assetStatusAdvancedOpen}
-                            >
-                              <span>Advanced details</span>
-                              <strong>{assetStatusAdvancedOpen ? 'Hide' : 'Show'}</strong>
-                            </button>
-
-                            {assetStatusAdvancedOpen ? (
-                              <div className={styles.assetStatusAdvancedGrid}>
-                                <label className={styles.field}>
-                                  <span>Original financed amount excl. VAT <small>(optional)</small></span>
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={assetStatusDraft.financeOriginalAmountExVat}
-                                    onChange={(event) => updateAssetStatusDraftField('financeOriginalAmountExVat', formatRegisterValueInput(event.target.value))}
-                                    placeholder="Optional"
-                                  />
-                                </label>
-
-                                <label className={styles.field}>
-                                  <span>Monthly payment <small>(optional)</small></span>
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={assetStatusDraft.financeMonthlyPaymentExVat}
-                                    onChange={(event) => updateAssetStatusDraftField('financeMonthlyPaymentExVat', formatRegisterValueInput(event.target.value))}
-                                    placeholder="Optional"
-                                  />
-                                </label>
-
-                                <label className={styles.field}>
-                                  <span>Interest rate % <small>(optional)</small></span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={assetStatusDraft.financeInterestRatePercent}
-                                    onChange={(event) => updateAssetStatusDraftField('financeInterestRatePercent', event.target.value)}
-                                    placeholder="Optional"
-                                  />
-                                </label>
-
-                                <label className={styles.field}>
-                                  <span>Finance term months <small>(optional)</small></span>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    value={assetStatusDraft.financeTermMonths}
-                                    onChange={(event) => updateAssetStatusDraftField('financeTermMonths', event.target.value)}
-                                    placeholder="Optional"
-                                  />
-                                </label>
-
-                                <label className={styles.field}>
-                                  <span>Balloon / residual amount excl. VAT <small>(optional)</small></span>
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    value={assetStatusDraft.financeBalloonPaymentExVat}
-                                    onChange={(event) => updateAssetStatusDraftField('financeBalloonPaymentExVat', formatRegisterValueInput(event.target.value))}
-                                    placeholder="Optional"
-                                  />
-                                </label>
-
-                                <label className={styles.field}>
-                                  <span>Settlement / expiry date <small>(optional)</small></span>
-                                  <DateInput
-                                    value={assetStatusDraft.financeSettlementDate}
-                                    onValueChange={(value) => updateAssetStatusDraftField('financeSettlementDate', value)}
-                                  />
-                                </label>
-
-                                <label className={styles.field}>
-                                  <span>Agreement / reference number <small>(optional)</small></span>
-                                  <input
-                                    value={assetStatusDraft.financeReferenceNumber}
-                                    onChange={(event) => updateAssetStatusDraftField('financeReferenceNumber', event.target.value)}
-                                    placeholder="Optional"
-                                  />
-                                </label>
-                              </div>
-                            ) : null}
-                          </>
-                        ) : null}
-
-                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
-
-                        <div className={styles.assetStatusSubActions}>
-                          <button
-                            type="button"
-                            className={styles.primaryButton}
-                            onClick={() => void finishAssetStatusSection('finance')}
-                            disabled={isSavingAssetStatus}
-                          >
-                            {isSavingAssetStatus ? 'Saving...' : 'Done'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {assetStatusEditView === 'insurance' ? (
-                      <div className={styles.assetStatusFocusedForm}>
-                        <div className={styles.assetStatusFocusedHeader}>
-                          <strong>Insurance</strong>
-                        </div>
-
-                        <div className={styles.assetStatusEditGrid}>
-                          <ModalSelect<AssetStatusChoice>
-                            label="Insurance status"
-                            value={assetStatusDraft.insuranceStatus}
-                            options={QUICK_INSURANCE_STATUS_OPTIONS}
-                            onChange={setAssetInsuranceStatus}
-                            showDescriptions={false}
-                            usePortal
-                          />
-
-                          {assetStatusDraft.insuranceStatus === 'yes' ? (
-                            <>
-                              <label className={styles.field}>
-                                <span>Insured amount excl. VAT <small>(optional)</small></span>
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  value={assetStatusDraft.insuredValueExVat}
-                                  onChange={(event) => handleInsuredValueChange(event.target.value)}
-                                  placeholder="Optional"
-                                />
-                              </label>
-
-                              <label className={styles.field}>
-                                <span>Insurer name <small>(optional)</small></span>
-                                <input
-                                  value={assetStatusDraft.insuranceInsurerName}
-                                  onChange={(event) => updateAssetStatusDraftField('insuranceInsurerName', event.target.value)}
-                                  placeholder="Optional"
-                                />
-                              </label>
-
-                              <label className={styles.field}>
-                                <span>Policy number <small>(optional)</small></span>
-                                <input
-                                  value={assetStatusDraft.insurancePolicyNumber}
-                                  onChange={(event) => updateAssetStatusDraftField('insurancePolicyNumber', event.target.value)}
-                                  placeholder="Optional"
-                                />
-                              </label>
-
-                              <label className={styles.field}>
-                                <span>Renewal / expiry date <small>(optional)</small></span>
-                                <DateInput
-                                  value={assetStatusDraft.insuranceRenewalDate}
-                                  onValueChange={(value) => updateAssetStatusDraftField('insuranceRenewalDate', value)}
-                                />
-                              </label>
-
-                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
-                                <span>Insurance note <small>(optional)</small></span>
-                                <textarea
-                                  value={assetStatusDraft.insuranceNote}
-                                  onChange={(event) => updateAssetStatusDraftField('insuranceNote', event.target.value)}
-                                  placeholder="Optional"
-                                  rows={3}
-                                />
-                              </label>
-
-                              <div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
+                              </div>),insurance: (<div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
                                 <div className={styles.assetStatusDocumentUploadCopy}>
                                   <strong>Insurance documents</strong>
                                   <small>Policy schedules, certificates or claims paperwork</small>
@@ -19196,72 +18555,7 @@ export default function AssetRegisterClient({
                                   />
                                 </label>
                                 <small className={styles.assetStatusDocumentCount}>{manualDraftDocumentCount} / {MAX_DOCUMENTS} documents</small>
-                              </div>
-                            </>
-                          ) : null}
-                        </div>
-
-                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
-
-                        <div className={styles.assetStatusSubActions}>
-                          <button
-                            type="button"
-                            className={styles.primaryButton}
-                            onClick={() => void finishAssetStatusSection('insurance')}
-                            disabled={isSavingAssetStatus}
-                          >
-                            {isSavingAssetStatus ? 'Saving...' : 'Done'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {assetStatusEditView === 'license' && assetLicenseApplicable ? (
-                      <div className={styles.assetStatusFocusedForm}>
-                        <div className={styles.assetStatusFocusedHeader}>
-                          <strong>License</strong>
-                        </div>
-
-                        <div className={styles.assetStatusEditGrid}>
-                          <ModalSelect<AssetStatusChoice>
-                            label="License status"
-                            value={assetStatusDraft.licenseStatus}
-                            options={QUICK_LICENSE_STATUS_OPTIONS}
-                            onChange={setAssetLicenseStatus}
-                            showDescriptions={false}
-                            usePortal
-                          />
-
-                          {assetStatusDraft.licenseStatus === 'yes' ? (
-                            <>
-                              <label className={styles.field}>
-                                <span>Registration number <small>(optional)</small></span>
-                                <input
-                                  value={assetStatusDraft.licenseRegistrationNumber}
-                                  onChange={(event) => updateAssetStatusDraftField('licenseRegistrationNumber', event.target.value.toUpperCase())}
-                                  placeholder="Example: CAW 124120"
-                                />
-                              </label>
-
-                              <label className={styles.field}>
-                                <span>Renewal / expiry date <small>(optional)</small></span>
-                                <DateInput
-                                  value={assetStatusDraft.licenseRenewalDate}
-                                  onValueChange={(value) => updateAssetStatusDraftField('licenseRenewalDate', value)}
-                                />
-                              </label>
-
-                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
-                                <span>License note <small>(optional)</small></span>
-                                <textarea
-                                  value={assetStatusDraft.licenseNote}
-                                  onChange={(event) => updateAssetStatusDraftField('licenseNote', event.target.value)}
-                                  placeholder="Optional"
-                                  rows={3}
-                                />
-                              </label>
-
-                              <div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
+                              </div>),license: (<div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
                                 <div className={styles.assetStatusDocumentUploadCopy}>
                                   <strong>Licence documents</strong>
                                   <small>Current or older licensing papers</small>
@@ -19279,26 +18573,23 @@ export default function AssetRegisterClient({
                                   />
                                 </label>
                                 <small className={styles.assetStatusDocumentCount}>{manualDraftDocumentCount} / {MAX_DOCUMENTS} documents</small>
-                              </div>
-                            </>
-                          ) : null}
-                        </div>
-
-                        {assetStatusError ? <p className={styles.assetStatusError}>{assetStatusError}</p> : null}
-
-                        <div className={styles.assetStatusSubActions}>
-                          <button
-                            type="button"
-                            className={styles.primaryButton}
-                            onClick={() => void finishAssetStatusSection('license')}
-                            disabled={isSavingAssetStatus}
-                          >
-                            {isSavingAssetStatus ? 'Saving...' : 'Done'}
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </section>
+                              </div>)}}
+                    bulkFinanceControl={assetStatusDraft.financeType === 'bulk_group' && editingAsset ? (
+                                <div className={`${styles.bulkFinanceLinkCard} ${styles.assetStatusWideField}`}>
+                                  <div>
+                                    <strong>Assets in this finance agreement</strong>
+                                    <small>Choose every asset covered by the same facility.</small>
+                                  </div>
+                                  <button type="button" className={styles.bulkFinanceChooseButton} onClick={() => setBulkFinanceAssetPickerOpen(true)}>
+                                    <span>{bulkFinanceAssetIds.length} selected</span>
+                                    <strong>Choose assets</strong>
+                                  </button>
+                                  <div className={styles.bulkFinanceSelectedAssets}>
+                                    {selectedBulkFinanceAssets.map((asset) => <span key={asset.id}>{asset.title}</span>)}
+                                  </div>
+                                </div>
+                              ) : null}
+                  />
                 ) : null}
 
                 {manualAssetStep === 4 ? (
@@ -19632,233 +18923,9 @@ export default function AssetRegisterClient({
                 </div>
               ) : null}
 
-              {assetSettingsView === 'location' ? (
-                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
-                  {!isManageMapLocationFlow ? (
-                    <div className={styles.assetSettingsSectionCopy}>
-                      <span>Location</span>
-                      <h4>Update asset location</h4>
-                      <p>Choose the easiest way to save where this asset is kept.</p>
-                    </div>
-                  ) : null}
-
-                  <div className={styles.assetSettingsLocationCurrent}>
-                    <div className={styles.assetSettingsLocationCurrentMain}>
-                      <span className={styles.assetSettingsLocationCurrentIcon} aria-hidden="true">
-                        {isManageMapLocationFlow
-                          ? <MapPinIcon className={styles.buttonIcon} />
-                          : <FlagIcon className={styles.buttonIcon} />}
-                      </span>
-
-                      <div className={styles.assetSettingsLocationCurrentCopy}>
-                        {!isManageMapLocationFlow ? <span>Current location</span> : null}
-                        <strong>
-                          {assetSettingsLocationText || (hasAssetGpsCoordinates(editingAsset)
-                            ? formatAssetSettingsGpsPosition(editingAsset)
-                            : isManageMapLocationFlow ? 'Not mapped yet' : 'No location saved')}
-                        </strong>
-                      </div>
-
-                      {isManageMapLocationFlow && hasAssetGpsCoordinates(editingAsset) ? (
-                        <button
-                          type="button"
-                          className={`${styles.assetSettingsMapLink} ${styles.assetSettingsMapAssetButton}`}
-                          onClick={() => window.location.assign(buildFocusedAssetMapHref(editingAsset))}
-                        >
-                          View on asset map
-                        </button>
-                      ) : assetSettingsMapsUrl ? (
-                        <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
-                          View map
-                        </a>
-                      ) : null}
-                    </div>
-
-                    {!isManageMapLocationFlow ? (
-                      <div className={styles.assetSettingsLocationCurrentMeta}>
-                        <div>
-                          <span>Last updated</span>
-                          <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
-                        </div>
-                        <div>
-                          <span>GPS position</span>
-                          <strong>{formatAssetSettingsGpsPosition(editingAsset)}</strong>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className={styles.assetSettingsLocationChoiceGrid}>
-                    <button
-                      type="button"
-                      className={`${styles.assetSettingsOptionButton} ${styles.assetSettingsLocationPrimaryChoice}`}
-                      onClick={() => void updateAssetSettingsGpsPosition()}
-                      disabled={isAssetSettingsBusy}
-                    >
-                      <RefreshIcon className={styles.assetSettingsOptionIcon} />
-                      <span>
-                        {!isManageMapLocationFlow ? <span className={styles.assetSettingsRecommendedBadge}>Recommended</span> : null}
-                        <strong>{assetSettingsDeviceGpsButtonLabel}</strong>
-                        {!isManageMapLocationFlow ? <small>Save this device’s current GPS position.</small> : null}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={styles.assetSettingsOptionButton}
-                      onClick={openAssetSettingsMapLocationView}
-                      disabled={isAssetSettingsBusy}
-                    >
-                      <MapPinIcon className={styles.assetSettingsOptionIcon} />
-                      <span>
-                        <strong>Choose on map</strong>
-                        {!isManageMapLocationFlow ? <small>Drop and adjust a map pin.</small> : null}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={styles.assetSettingsOptionButton}
-                      onClick={openAssetSettingsManualLocationView}
-                      disabled={isAssetSettingsBusy}
-                    >
-                      <DocumentIcon className={styles.assetSettingsOptionIcon} />
-                      <span>
-                        <strong>Enter coordinates</strong>
-                        {!isManageMapLocationFlow ? <small>Paste a saved GPS position.</small> : null}
-                      </span>
-                    </button>
-                  </div>
-
-                  {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
-                  {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
-                </section>
-              ) : null}
-
-              {assetSettingsView === 'locationManual' ? (
-                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
-                  <div className={styles.assetSettingsSectionCopy}>
-                    <span>Manual location</span>
-                    <h4>Enter GPS Coordinates</h4>
-                    <p>Paste coordinates from Google Maps, or type the latitude and longitude below.</p>
-                  </div>
-
-                  <div className={styles.assetSettingsCoordinateGrid}>
-                    <label className={styles.assetSettingsField}>
-                      <span>Latitude</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={assetSettingsManualLatInput}
-                        onChange={(event) => {
-                          setAssetSettingsManualLatInput(event.target.value);
-                          clearAssetSettingsLocationFeedback();
-                        }}
-                        onPaste={(event) => {
-                          const pastedText = event.clipboardData.getData('text');
-                          if (applyAssetSettingsCoordinatePair(pastedText)) {
-                            event.preventDefault();
-                          }
-                        }}
-                        placeholder="-33.924869"
-                      />
-                    </label>
-
-                    <label className={styles.assetSettingsField}>
-                      <span>Longitude</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={assetSettingsManualLngInput}
-                        onChange={(event) => {
-                          setAssetSettingsManualLngInput(event.target.value);
-                          clearAssetSettingsLocationFeedback();
-                        }}
-                        placeholder="18.424055"
-                      />
-                    </label>
-                  </div>
-
-                  <label className={styles.assetSettingsField}>
-                    <span>Optional location note</span>
-                    <textarea
-                      rows={2}
-                      value={assetSettingsManualLocationText}
-                      onChange={(event) => {
-                        setAssetSettingsManualLocationText(event.target.value.slice(0, MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH));
-                        clearAssetSettingsLocationFeedback();
-                      }}
-                      placeholder="Example: Main shed, north camp, client yard"
-                    />
-                  </label>
-
-                  <p className={styles.assetSettingsFieldTip}>Tip: You can copy coordinates from Google Maps and paste them here.</p>
-
-                  <div className={styles.assetSettingsActions}>
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
-                      onClick={() => void saveAssetSettingsManualGpsPosition()}
-                      disabled={isAssetSettingsBusy}
-                    >
-                      {assetSettingsManualGpsButtonLabel}
-                    </button>
-                  </div>
-
-                  {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
-                  {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
-                </section>
-              ) : null}
-
-              {assetSettingsView === 'locationMap' ? (
-                <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
-                  <div className={styles.assetSettingsSectionCopy}>
-                    <span>Map</span>
-                    <h4>Drop a GPS Pin</h4>
-                    <p>Click or tap the map to place the asset position. Drag the marker to fine-tune the coordinates.</p>
-                  </div>
-
-                  <div className={styles.assetSettingsMapShell}>
-                    <div ref={assetSettingsMapElementRef} className={styles.assetSettingsMapCanvas} aria-label="Asset location map" />
-                    <div className={styles.assetSettingsMapSelectedGrid}>
-                      <div>
-                        <span>Selected latitude</span>
-                        <strong>{assetSettingsMapLatInput || 'No pin selected'}</strong>
-                      </div>
-                      <div>
-                        <span>Selected longitude</span>
-                        <strong>{assetSettingsMapLngInput || 'No pin selected'}</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  <label className={styles.assetSettingsField}>
-                    <span>Optional location note</span>
-                    <textarea
-                      rows={2}
-                      value={assetSettingsMapLocationText}
-                      onChange={(event) => {
-                        setAssetSettingsMapLocationText(event.target.value.slice(0, MAX_ASSET_SETTINGS_LOCATION_TEXT_LENGTH));
-                        clearAssetSettingsLocationFeedback();
-                      }}
-                      placeholder="Example: Main shed, north camp, client yard"
-                    />
-                  </label>
-
-                  <div className={styles.assetSettingsActions}>
-                    <button
-                      type="button"
-                      className={styles.primaryButton}
-                      onClick={() => void saveAssetSettingsMapGpsPosition()}
-                      disabled={isAssetSettingsBusy}
-                    >
-                      {assetSettingsMapGpsButtonLabel}
-                    </button>
-                  </div>
-
-                  {assetSettingsLocationSuccess ? <p className={styles.assetSettingsLocationSuccess}>{assetSettingsLocationSuccess}</p> : null}
-                  {assetSettingsLocationError ? <p className={styles.assetSettingsError}>{assetSettingsLocationError}</p> : null}
-                </section>
+              {['location','locationManual','locationMap'].includes(assetSettingsView) ? (
+                <AssetLocationEditor viewMapHref={buildFocusedAssetMapHref(editingAsset)} key={editingAsset.id} location={{latitude:editingAsset.lastKnownLat,longitude:editingAsset.lastKnownLng,locationText:editingAsset.lastKnownLocationText}}
+                  onSave={async input => { await persistAssetSettingsGpsPosition({...input,assetId:editingAsset.id,clientCapturedAt:new Date().toISOString()}); }} />
               ) : null}
 
               {assetSettingsView === 'type' && isSavedManualAsset(editingAsset) ? (

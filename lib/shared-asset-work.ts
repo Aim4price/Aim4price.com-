@@ -17,8 +17,12 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
     try {
         if (request.method !== 'GET')
             requireBusinessOrigin(request);
+        let detailsScope: Awaited<ReturnType<typeof contributionScope>> | null = null;
+        try { detailsScope = await contributionScope(target, 'updateDetails'); } catch (e) { if (!(e instanceof ExternalLeadAccessError)) throw e; }
+        let locationScope: Awaited<ReturnType<typeof contributionScope>> | null = null;
+        if(action === 'history') { try { locationScope = await contributionScope(target,'location'); } catch(e) { if(!(e instanceof ExternalLeadAccessError)) throw e; } }
         const scopes = await Promise.all(fields.map(async (field) => { try {
-            return await contributionScope(target, field);
+            return detailsScope || await contributionScope(target, field);
         }
         catch (e) {
             if (e instanceof ExternalLeadAccessError)
@@ -33,7 +37,7 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
             if (!(e instanceof ExternalLeadAccessError))
                 throw e;
         }
-        const scope = action === 'maintenance' || action === 'checklist' ? maintenance : scopes.find(Boolean) || maintenance;
+        const scope = action === 'maintenance' || action === 'checklist' ? maintenance : scopes.find(Boolean) || maintenance || locationScope;
         if (!scope)
             throw new ExternalLeadAccessError('The owner has not enabled this action.', 403);
         const asset = await getAssetRegisterItemById(scope.ownerId, scope.assetId);
@@ -44,10 +48,10 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
                 return businessJson({ items: await listAssetChecklistItems(scope.ownerId, scope.assetId) });
             if (action === 'history') {
                 await ensureSharedAssetActivity();
-                return businessJson({ items: (await getDb().query('SELECT actor_name,action,before_data,after_data,created_at FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid ORDER BY created_at DESC LIMIT 100', [scope.ownerId, scope.assetId])).rows });
+                return businessJson({ items: (await getDb().query('SELECT actor_name,action,before_data,after_data,created_at FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid ORDER BY created_at DESC LIMIT 100', [scope.ownerId, scope.assetId])).rows.filter(row => ['finance updated','insurance updated','license updated'].includes(row.action) ? Boolean(detailsScope) : row.action === 'Location updated' ? Boolean(locationScope) : true) });
             }
             const usage = resolveAssetUsage(asset);
-            return businessJson({ asset: { ...mapMyInvoiceAssetOption(asset), usageMetric: usage.metric === 'not_applicable' ? 'none' : usage.metric, usageReading: usage.value, condition: asset.condition || '', maintenanceIdentity: maintenanceIdentity(asset) }, permissions: Object.fromEntries(fields.map((f, i) => [f, Boolean(scopes[i])])) });
+            return businessJson({ asset: { ...mapMyInvoiceAssetOption(asset), usageMetric: usage.metric === 'not_applicable' ? 'none' : usage.metric, usageReading: usage.value, condition: asset.condition || '', maintenanceIdentity: maintenanceIdentity(asset) }, permissions: {...Object.fromEntries(fields.map((f, i) => [f, Boolean(scopes[i])])), updateDetails: Boolean(detailsScope)} });
         }
         await limitBusinessAction(`shared-work:${scope.user.id}`, 30);
         const body = await businessBody(request), id = String(body.requestId || body.clientEventId || '');

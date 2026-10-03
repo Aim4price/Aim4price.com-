@@ -12,7 +12,7 @@ export default function AssetActionIcon({ action, className }: IconProps & { act
     case 'maintenanceSchedules': return <MaintenanceTrackingIcon className={className} />;
   }
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-    {action === 'history' ? <><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7"/><path d="M12 7v5l3 2"/></>
+    {action === 'location' ? <><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></> : action === 'history' ? <><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7"/><path d="M12 7v5l3 2"/></>
       : action === 'access' ? <><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 9-5.2M17 11l4 2v3c0 2.5-1.5 4.1-4 5-2.5-.9-4-2.5-4-5v-3z"/><path d="m15 16 1.5 1.5L19 15"/></>
       : action === 'loggedProblems' ? <><path d="m10.3 4-8 14a2 2 0 0 0 1.7 3h16a2 2 0 0 0 1.7-3l-8-14a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></>
       : action === 'serialNumber' ? <><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h6M7 16h3"/></>
