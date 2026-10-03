@@ -1,0 +1,26 @@
+.modal.modal { width: min(100%, 1120px); }
+.content { display: grid; gap: 1.1rem; }
+.hint { margin: 0; color: var(--app-muted, #64746a); font-size: .9rem; line-height: 1.5; }
+.picker { display: grid; grid-template-columns: 4rem minmax(0, 1fr) 1.6rem; align-items: center; gap: 1rem; padding: 1.2rem; border: 1px solid var(--app-info-line, #c2d3dc); border-radius: 1.15rem; background: var(--app-surface, #fff); color: var(--app-text, #12352d); text-align: left; font: inherit; cursor: pointer; box-shadow: 0 9px 20px rgba(18,55,45,.035); }
+.picker:hover:not(:disabled) { border-color: var(--app-accent, #197454); background: var(--app-surface-soft, #f3faf6); }
+.picker:focus-visible, .preview button:focus-visible { outline: 3px solid var(--app-accent, #197454); outline-offset: 3px; }
+.picker:disabled { opacity: .6; cursor: wait; }
+.icon { width: 4rem; height: 4rem; display: grid; place-items: center; border: 1px solid var(--app-line, #b2d2c3); border-radius: 1rem; background: var(--app-surface-soft, #e8f6ee); color: var(--app-accent, #126c4e); }
+.icon svg { width: 1.9rem; height: 1.9rem; }
+.copy { display: grid; gap: .4rem; }
+.copy strong { font-size: 1rem; font-weight: 800; }
+.copy small { color: var(--app-muted, #64746a); font-size: .85rem; line-height: 1.5; }
+.arrow { width: 1.6rem; height: 1.6rem; color: var(--app-accent, #126c4e); }
+.input { display: none; }
+.selection { display: grid; gap: .7rem; }
+.selection > strong { font-size: .85rem; }
+.previews { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .75rem; }
+.preview { position: relative; margin: 0; min-width: 0; }
+.preview img { display: block; width: 100%; height: 72px; object-fit: cover; border-radius: .65rem; border: 1px solid var(--app-line, #d5dfda); }
+.preview figcaption { font-size: .65rem; margin-top: .3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--app-muted, #64746a); }
+.preview button { position: absolute; top: .25rem; right: .25rem; width: 1.5rem; height: 1.5rem; border: 1px solid #d5dfda; border-radius: 50%; background: #fff; color: #12352d; cursor: pointer; font-size: 1rem; line-height: 1; }
+.error { margin: 0; color: var(--app-danger, #b42318); font-size: .85rem; }
+.success { display: flex; align-items: center; gap: 1rem; padding: .6rem 0; }
+.success strong { display: block; margin-bottom: .35rem; font-size: 1.05rem; }
+.modal > footer { display: flex; justify-content: flex-end; }
+.modal > footer > button { flex: 0 0 auto; min-width: 120px; }

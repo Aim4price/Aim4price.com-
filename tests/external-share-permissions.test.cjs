@@ -311,3 +311,18 @@ test('owners can update through their own read-only link while recipients cannot
   await x.base.revokeAssetShareLink('owner',link.token);await assert.rejects(live.requireLiveSharedAsset(link.token,A,'addPhotos',true));
  }finally{await x.pg.close();}
 });
+
+test('recipient overview exposes saved permissions only to the owner and respects revocation',async()=>{
+ const x=await setup();try{
+  await assert.rejects(x.access.externalRecipientAccessOverview(x.link.token),e=>e.status===403);
+  x.signIn();x.state.approved=true;
+  await assert.rejects(x.access.externalRecipientAccessOverview(x.link.token),e=>e.status===403);
+  x.signIn({id:'owner',email:'owner@example.com'});
+  const overview=await x.access.externalRecipientAccessOverview(x.link.token);
+  assert.equal(overview.assigned,true);assert.equal(overview.recipientEmail,x.details.recipientEmail);
+  for(const {key}of permissions.EXTERNAL_SHARE_OPTIONS)assert.equal(overview.permissions[key],x.details.permissions[key]===true);
+  assert.equal(overview.permissions.addPhotos,false); // Owner access must not inflate recipient permissions.
+  await x.base.revokeAssetShareLink('owner',x.link.token);
+  await assert.rejects(x.access.externalRecipientAccessOverview(x.link.token),e=>e.status===403);
+ }finally{await x.pg.close();}
+});

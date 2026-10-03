@@ -47,6 +47,8 @@ function add(file){
 }
 
 add('components/leads/SharedAssetContributionDialog');
+add('components/asset-register/ExternalAccessRequests');
+modules['RecipientFixture']=`const React=require('react'),Dialog=require('components/leads/LeadActionDialog').default,Access=require('components/asset-register/ExternalAccessRequests').default;exports.default=()=>React.createElement(Dialog,{title:'Recipient access',assetTitle:'John Deere 6155M',onClose:()=>{},className:'recipientFixture'},React.createElement(Access,{token:'fixture'}));`;
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -55,19 +57,29 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 (async()=>{
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true});
  try{
- const page=await browser.newPage();const requests=[],errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message);});
- await page.setRequestInterception(true);page.on('request',r=>{const u=new URL(r.url());if(u.pathname==='/api/admin/sharing'){requests.push(JSON.parse(r.postData()));return r.respond({contentType:'application/json',body:'{"ok":true}'});}if(u.pathname==='/api/billing/plans')return r.respond({status:503,contentType:'application/json',body:'{}'});if(u.pathname.startsWith('/api/test/'))return r.respond({contentType:'application/json',body:'{"ok":true}'});if(u.pathname.startsWith('/api/'))return r.respond({contentType:'application/json',body:u.pathname.includes('session')?'null':'{}'});return r.respond({contentType:'text/html',body:'<html></html>'});});
+ const page=await browser.newPage();const requests=[],errors=[];let overviewMalformed=false;page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error:',e.message);});
+ await page.setRequestInterception(true);page.on('request',r=>{const u=new URL(r.url());if(u.pathname==='/api/asset-share-links/fixture/access')return r.respond({contentType:'application/json',body:JSON.stringify(overviewMalformed?{}:{requests:[],recipientEmail:null,assigned:false,allowReply:true,permissions:{reports:true,allReports:true,addPhotos:true,addCosts:true,yearModel:true,condition:true,addMaintenance:true,maintenanceSchedules:true,directUpdates:true}})});if(u.pathname==='/api/admin/sharing'){requests.push(JSON.parse(r.postData()));return r.respond({contentType:'application/json',body:'{"ok":true}'});}if(u.pathname==='/api/billing/plans')return r.respond({status:503,contentType:'application/json',body:'{}'});if(u.pathname.startsWith('/api/test/'))return r.respond({contentType:'application/json',body:'{"ok":true}'});if(u.pathname.startsWith('/api/'))return r.respond({contentType:'application/json',body:u.pathname.includes('session')?'null':'{}'});return r.respond({contentType:'text/html',body:'<html></html>'});});
  const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
  await page.setViewport({width:1440,height:1000});
  async function render(module,props,url='/'){
   await page.goto('https://usage.test'+url);
-  await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:10px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32}button,input,select{font:inherit}'+sheets.join('\n')+'</style><div id="app" style="padding:24px"></div>');
+  await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:10px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32}button,input,select{font:inherit}.recipientFixture.recipientFixture{width:min(100%,1120px)}'+sheets.join('\n')+'</style><div id="app" style="padding:24px"></div>');
   await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
   await page.addScriptTag({content:runtime+'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require('+JSON.stringify(module)+').default,'+JSON.stringify(props)+'));'});
   await page.evaluate(()=>document.fonts.ready);
  }
  await render('components/leads/SharedAssetContributionDialog',{kind:'photos',endpoint:'/api/test/photos',assetTitle:'John Deere 6155M · JD-001'});
  await page.waitForSelector('input[type=file]');await page.screenshot({path:'/tmp/shared-photo-dialog.png'});
- assert.deepEqual(errors,[]);console.log('PASS shared photo dialog rendering');
+ const photos=['/tmp/shared-photo-one.png','/tmp/shared-photo-two.png'];
+ photos.forEach(p=>fs.writeFileSync(p,Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=','base64')));
+ await (await page.$('input[type=file]')).uploadFile(...photos);await page.waitForFunction(()=>document.body.textContent.includes('2 photos ready'));
+ await page.click('button[aria-label="Remove shared-photo-one.png"]');await page.waitForFunction(()=>document.body.textContent.includes('1 photo ready'));
+ await page.click('button[type=submit]');await page.waitForFunction(()=>document.body.textContent.includes('Photos added'));
+ await render('RecipientFixture',{});await page.waitForFunction(()=>document.body.textContent.includes('They can view'));
+ const copy=await page.$eval('[role=dialog]',n=>n.textContent);assert(copy.includes('All asset reports'));assert(copy.includes('Add photos'));assert(!copy.includes('Update usage'));assert(!copy.includes('No access requests yet'));
+ await page.screenshot({path:'/tmp/shared-recipient-access.png'});
+ assert(await page.$eval('[role=dialog]',n=>Array.from(n.querySelectorAll('*')).every(e=>e.clientHeight===0||e.scrollHeight<=e.clientHeight+2||getComputedStyle(e).overflowY!=='auto')),'Recipient overview should fit without a scrollbar');
+ overviewMalformed=true;await render('RecipientFixture',{});await page.waitForFunction(()=>document.body.textContent.includes('Link permissions could not be loaded.'));
+ assert.deepEqual(errors,[]);console.log('PASS photo picker, recipient summary and graceful handling of missing permission data');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

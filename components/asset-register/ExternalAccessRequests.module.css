@@ -1,0 +1,17 @@
+.panel { display: grid; gap: 1.1rem; }
+.audience { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.2rem; border: 1px solid var(--app-line, #cde0d5); border-radius: 1rem; background: var(--app-surface-soft, #f0f8f3); }
+.icon { width: 2rem; height: 2rem; flex-shrink: 0; color: var(--app-accent, #197454); }
+.audience strong { font-size: .95rem; }
+.panel p { margin: .35rem 0 0; font-size: .85rem; line-height: 1.55; color: var(--app-muted, #64746a); }
+.columns { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.card { padding: 1.1rem 1.2rem; border: 1px solid var(--app-info-line, #d5dfe6); border-radius: 1rem; background: var(--app-surface, #fff); min-width: 0; }
+.card h3 { margin: 0 0 .7rem; color: var(--app-text, #12352d); font-size: .95rem; font-weight: 800; }
+.card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.card li { display: flex; gap: .6rem; align-items: center; color: var(--app-text, #12352d); font-size: .82rem; line-height: 1.4; }
+.card li svg { width: 1.1rem; height: 1.1rem; flex-shrink: 0; color: var(--app-accent, #197454); }
+.note { border-top: 1px solid var(--app-line, #d5dfda); padding-top: .85rem; }
+.request { display: flex; gap: 1rem; justify-content: space-between; align-items: center; padding: .85rem 0; border-top: 1px solid var(--app-line, #d5dfda); }
+.request p { overflow-wrap: anywhere; }
+.requests h3 { font-size: .95rem; margin: 0; }
+.actions { display: flex; gap: .6rem; }
+.error { color: var(--app-danger, #b42318) !important; }

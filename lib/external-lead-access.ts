@@ -6,7 +6,7 @@ import { canBusinessRead, canBusinessContribute } from './business-accounts';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 import { readLeadPage } from './guest-leads';
 import { getDb } from './db';
-import { normalizeExternalPermissions, type ExternalSharePermission } from './external-share-permissions';
+import { EXTERNAL_SHARE_OPTIONS, normalizeExternalPermissions, type ExternalSharePermission } from './external-share-permissions';
 export type ExternalLeadAccess = 'read-only' | 'signup-required' | 'request-access' | 'sign-in' | 'verify-email' | 'approval-required' | 'wrong-recipient' | 'suspended' | 'owner' | 'active';
 export class ExternalLeadAccessError extends Error {
     constructor(message: string, readonly status: number) { super(message); }
@@ -117,4 +117,22 @@ export async function reviewExternalAccessRequest(token: string, userId: string,
         }
         await db.query('COMMIT');
     } catch(error) { await db.query('ROLLBACK'); throw error; } finally { db.release(); }
+}
+
+/** Owner-only explanation of the saved link rules, without owner permission overrides. */
+export async function externalRecipientAccessOverview(token: string) {
+    const lead = await readLeadPage(token);
+    if (!lead || (await externalLeadAccess(lead)).access !== 'owner') throw new ExternalLeadAccessError('This action requires the asset owner.', 403);
+    const requests = await listExternalAccessRequests(token);
+    return {
+        requests,
+        recipientEmail: lead.details?.recipientEmail || null,
+        assigned: Boolean(lead.details?.recipientEmail || lead.details?.recipientUserId),
+        permissions: {
+            ...Object.fromEntries(EXTERNAL_SHARE_OPTIONS.map(({key}) => [key, leadAllows(lead,key)])),
+            allReports: lead.details?.permissions?.allReports === true,
+            directUpdates: lead.details?.permissions?.directUpdates === true,
+        },
+        allowReply: lead.details?.allowReply === true,
+    };
 }
