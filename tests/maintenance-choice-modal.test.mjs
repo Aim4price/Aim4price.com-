@@ -22,7 +22,7 @@ test('maintenance choice modal uses concise add-asset-style action cards', () =>
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'expected maintenance choice modal');
   assert.match(modal, /<strong>Add maintenance<\/strong>/);
   assert.match(modal, /<strong>Manage<\/strong>/);
-  assert.match(modal, /<strong>Dealer tracking settings<\/strong>/);
+  assert.match(modal, /<strong>Shared maintenance<\/strong>/);
   assert.doesNotMatch(modal, /<small>/);
   assert.doesNotMatch(
     modal,
@@ -75,3 +75,11 @@ test('maintenance choice modal uses concise add-asset-style action cards', () =>
   assert.doesNotMatch(actionStyles, /\.ownerCommandChoiceAction small/);
 });
 
+
+
+test('shared maintenance requires active tracking and closes when access is removed', () => {
+  assert.match(client, /activeDealerTrackingByAssetId\[activeAsset\.id\] === true/);
+  const open = client.slice(client.indexOf('  async function openDealerTrackingSettings('), client.indexOf('  function openDeleteConfirmDialog'));
+  assert.match(open, /if \(trackingAccess\.length === 0\) \{\s*setIsDealerTrackingSettingsOpen\(false\)/);
+  assert.match(client, /if \(entries\.length === 0\) setIsDealerTrackingSettingsOpen\(false\)/);
+});

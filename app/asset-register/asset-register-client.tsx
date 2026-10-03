@@ -11797,16 +11797,20 @@ export default function AssetRegisterClient({
         error?: string;
       } | null;
       if (!response.ok || !payload?.ok || !Array.isArray(payload.trackingAccess)) {
-        throw new Error(payload?.error || 'Failed to load Business/Dealer asset settings.');
+        throw new Error(payload?.error || 'Failed to load shared maintenance.');
       }
       const trackingAccess = payload.trackingAccess;
       setDealerTrackingAccess(trackingAccess);
+      if (trackingAccess.length === 0) {
+        setIsDealerTrackingSettingsOpen(false);
+        setNotice({ tone: 'warning', message: 'Maintenance is no longer shared for tracking.' });
+      }
       setActiveDealerTrackingByAssetId((current) => ({
         ...current,
         [asset.id]: trackingAccess.length > 0,
       }));
     } catch (cause) {
-      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load Business/Dealer asset settings.' });
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load shared maintenance.' });
     } finally {
       setIsLoadingDealerTrackingSettings(false);
     }
@@ -20894,7 +20898,7 @@ export default function AssetRegisterClient({
                   >
                     <ManageIcon className={styles.buttonIcon} />
                     <span>
-                      <strong>Business/Dealer asset settings</strong>
+                      <strong>Shared maintenance</strong>
                     </span>
                   </button>
                 ) : null}
@@ -20911,23 +20915,23 @@ export default function AssetRegisterClient({
           <div className={`${styles.modalCard} ${styles.pricingModal} ${styles.dealerTrackingModal}`} role="dialog" aria-modal="true" aria-labelledby="dealer-tracking-settings-title">
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="dealer-tracking-settings-title">Business/Dealer asset settings</h3>
+                <h3 id="dealer-tracking-settings-title">Shared maintenance</h3>
                 <p>{activeAsset.title}</p>
               </div>
 
-              <button type="button" className={styles.modalCloseButton} onClick={() => setIsDealerTrackingSettingsOpen(false)} aria-label="Close Business/Dealer asset settings">
+              <button type="button" className={styles.modalCloseButton} onClick={() => setIsDealerTrackingSettingsOpen(false)} aria-label="Close Shared maintenance">
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody}`}>
               {isLoadingDealerTrackingSettings ? (
-                <div className={styles.emptyState}>Loading Business/Dealer asset settings…</div>
+                <div className={styles.emptyState}>Loading Shared maintenance…</div>
               ) : (
                 <>
                   <div className={styles.dealerTrackingIntro}>
-                    <strong>Dealers with access</strong>
-                    <p>Select a dealer to review or change their access. Owner approval is still required for schedules and asset changes.</p>
+                    <strong>Businesses and dealers with access</strong>
+                    <p>Manage access for businesses and dealers tracking this asset’s maintenance.</p>
                   </div>
                   <DealerMaintenanceAccessSettings
                     assetId={activeAsset.id}
@@ -20935,6 +20939,7 @@ export default function AssetRegisterClient({
                     mutationUrl="/api/dealer-maintenance-access"
                     onEntriesChange={(entries) => {
                       setDealerTrackingAccess(entries);
+                      if (entries.length === 0) setIsDealerTrackingSettingsOpen(false);
                       setActiveDealerTrackingByAssetId((current) => ({
                         ...current,
                         [activeAsset.id]: entries.length > 0,

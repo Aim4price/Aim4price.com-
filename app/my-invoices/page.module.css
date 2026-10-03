@@ -7173,3 +7173,9 @@ button[aria-expanded='true'] .invoiceDetailsChevron { transform: rotate(180deg);
 /* Shared links mount the owner cost wizard without the surrounding ledger. */
 .sharedCostFlow { display: contents; }
 .sharedCostFlow .accountCostBackdrop { z-index: 210; }
+
+/* Separate the asset return action from the budget header below it. */
+.budgetBackToAsset {
+  align-self: flex-start;
+  margin-bottom: 20px;
+}
