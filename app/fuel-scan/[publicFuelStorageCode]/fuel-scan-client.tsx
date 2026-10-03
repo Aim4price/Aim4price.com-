@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import FuelLocationModal, { type FuelLocationCoordinates } from '../../../components/FuelLocationModal';
 import FieldManagerNavLink from '../../field-manager/field-manager-nav-link';
 import styles from './page.module.css';
@@ -120,6 +120,7 @@ type Notice = {
 type Coordinates = FuelLocationCoordinates;
 
 type FuelScanClientProps = {
+  initialAssetId?: string;
   publicFuelStorageCode: string;
   fieldManagerMode?: boolean;
   ownerAppMode?: boolean;
@@ -261,6 +262,7 @@ function gpsAccuracyPayload(coordinates: Coordinates): number | '' {
 
 export default function FuelScanClient({
   publicFuelStorageCode,
+  initialAssetId = '',
   fieldManagerMode = false,
   ownerAppMode = false,
   ownerAppOperatorName = '',
@@ -275,6 +277,7 @@ export default function FuelScanClient({
   const [operatorName, setOperatorName] = useState(() => normalizeOperatorName(ownerAppOperatorName));
   const [scanAccessMode, setScanAccessMode] = useState<FuelScanAccessMode | null>(null);
   const [assetId, setAssetId] = useState('');
+  const initialAssetSelected = useRef(false);
   const [assetSearch, setAssetSearch] = useState('');
   const [litres, setLitres] = useState('');
   const [assetFuelPercentBefore, setAssetFuelPercentBefore] = useState('');
@@ -494,6 +497,13 @@ export default function FuelScanClient({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fieldManagerMode, ownerAppMode, normalizedCode]);
+
+  useEffect(() => {
+    if (initialAssetSelected.current || !initialAssetId || !appVisibleAssets.some(asset => asset.id === initialAssetId)) return;
+    initialAssetSelected.current = true;
+    setAssetId(initialAssetId);
+    setScanMode('fuel-assets');
+  }, [appVisibleAssets, initialAssetId]);
 
   useEffect(() => {
     if (!assetId) {

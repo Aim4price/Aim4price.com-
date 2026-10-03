@@ -20,6 +20,7 @@ test('maintenance choice modal uses concise add-asset-style action cards', () =>
   const modal = client.slice(modalStart, modalEnd);
 
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'expected maintenance choice modal');
+  assert.match(modal, /<p>\{buildAssetMeta\(activeAsset\)\}<\/p>/);
   assert.match(modal, /<strong>Add maintenance<\/strong>/);
   assert.match(modal, /<strong>Manage<\/strong>/);
   assert.match(modal, /<strong>Shared maintenance<\/strong>/);

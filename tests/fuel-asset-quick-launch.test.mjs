@@ -98,3 +98,15 @@ test('Fuel quick-launch source remains valid TypeScript and TSX', () => {
     assert.equal(errors.length, 0, `${fileName}: ${errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('\n')}`);
   }
 });
+
+
+test('asset Add fuel asks for a slip or storage before opening capture', async () => {
+  const launch = fuelClient.slice(fuelClient.indexOf('    if (!initialOpenAdd'), fuelClient.indexOf('  }, [assets, hasLoadedLedger'));
+  assert.match(launch, /setModalMode\('add-fuel-choice'\)/);
+  assert.doesNotMatch(launch, /setModalMode\('fuel-slip'\)/);
+  assert.match(fuelClient, /<strong>Fuel slip<\/strong>/);
+  assert.match(fuelClient, /<strong>From fuel storage<\/strong>/);
+  assert.match(fuelClient, /encodeURIComponent\(quickLaunchAsset.id\)/);
+  const scan = await read('app/fuel-scan/[publicFuelStorageCode]/fuel-scan-client.tsx');
+  assert.match(scan, /appVisibleAssets.some\(asset => asset.id === initialAssetId\)/);
+});
