@@ -213,6 +213,7 @@ test('owner Manage keeps disposal and mapping inside the gated command grid with
   );
 
   for (const label of [
+    'History',
     'Update asset',
     'Reports',
     'Add cost',
@@ -230,7 +231,7 @@ test('owner Manage keeps disposal and mapping inside the gated command grid with
     assert.match(ownerManage, new RegExp(label.replace('&amp;', '&amp;')));
   }
 
-  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 11);
+  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 12);
   assert.ok(ownerManage.indexOf('Update asset') < ownerManage.indexOf('Reports'));
   assert.ok(ownerManage.indexOf('Reports') < ownerManage.indexOf('Add cost'));
   assert.ok(ownerManage.indexOf('Manage pricing') < ownerManage.indexOf('Asset map'));

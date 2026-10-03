@@ -67,7 +67,7 @@ export default function Validation(){
    if(!p.startsWith('/api/'))return req.continue();
    if(p==='/api/business-network/accept/search')return req.respond({status:200,contentType:'application/json',body:JSON.stringify({places:[{id:'fixture-place',displayName:{text:'George Workshop'},formattedAddress:'George, Western Cape',googleMapsUri:'https://maps.google.com/?cid=123'}]})});
    if(p==='/api/asset-register/scan-report'||p==='/api/my-invoices/report'){requests.push({path:p,url:req.url(),method:req.method()});return req.respond({status:200,contentType:'application/pdf',body:reportPdf});}
-   if(p.endsWith('/access')){requests.push({path:p,method:req.method(),data:req.postData()});return req.respond({status:200,contentType:'application/json',body:JSON.stringify({requests:[{user_id:'recipient',email:'business@example.com',business_name:'Verified Workshop',status:'pending'}],ok:true})});}
+   if(p.endsWith('/access')){requests.push({path:p,method:req.method(),data:req.postData()});return req.respond({status:200,contentType:'application/json',body:JSON.stringify({assigned:false,recipientEmail:null,allowReply:true,permissions:{reports:true,replacementPrice:true,serialNumber:true,documents:true},requests:[{user_id:'recipient',email:'business@example.com',business_name:'Verified Workshop',status:'pending'}],ok:true})});}
    if(p==='/api/fixture-pdf')return req.respond({status:200,contentType:'application/pdf',body:'%PDF-1.4 fixture'});
    let body={ok:true};requests.push({path:p,method:req.method(),data:req.postData()});
    if(p==='/api/asset-share-links/leads'){
@@ -313,7 +313,9 @@ export default function Validation(){
    assert.equal(await page.$$eval('a[href*="submissions?id="]',els=>els.length),0,'Recipient cannot see received documents');
    await page.screenshot({path:path.join(output,`active-${width}.png`),fullPage:true});
    await closeChild();await page.click('[aria-label="Close lead management"]');await click('Fixture owner');await page.click('button[aria-label="Manage Test bakkie"]');await click('Recipient access');
-   await page.waitForFunction(()=>document.body.textContent.includes('Verified Workshop'));await click('Approve access');
+   await page.waitForFunction(()=>document.body.textContent.includes('Verified Workshop'));
+   assert.ok(await page.$eval('[aria-label="Recipient access"]',el=>el.textContent.includes('They can view')&&el.textContent.includes('Suggest a replacement price change')));
+   await click('Approve access');
    await page.waitForFunction(()=>document.body.textContent.includes('Recipient approved.'));
    assert.equal(JSON.parse(requests.filter(r=>r.path.endsWith('/access')&&r.method==='PATCH').at(-1).data).userId,'recipient');
    await closeChild();await click('Invoices & quotes');
