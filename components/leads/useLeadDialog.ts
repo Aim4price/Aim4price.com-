@@ -21,6 +21,7 @@ export function useLeadDialog(onClose: () => void, busy = false) {
       };
       dialogs.sort((a, b) => layer(a) - layer(b));
       if (dialogs.at(-1) !== element) return;
+      if (event.target instanceof Element && event.target.closest('[role="listbox"]')) return;
       if (event.key === 'Escape') {
         event.preventDefault(); event.stopImmediatePropagation();
         if (!latest.current.busy) latest.current.onClose();

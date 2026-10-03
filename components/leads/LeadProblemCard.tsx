@@ -25,18 +25,18 @@ export default function ProblemCard({
     <article className={`${styles.problemCard} ${resolved ? styles.problemCardResolved : ''}`}>
       <header>
         <div>
-          <span>{historical ? 'Problem or note' : 'Active problem or note'}</span>
+          <span>{resolved || historical ? 'Problem or note' : 'Active problem or note'}</span>
           <h4>{problem.summary || 'Logged problem or note'}</h4>
         </div>
         <strong className={resolved ? styles.problemResolved : styles.problemOpen}>
-          {resolved ? 'Noted / resolved' : 'Open'}
+          {resolved ? 'Resolved' : 'Open'}
         </strong>
       </header>
       <p>{problem.note}</p>
       <div className={styles.problemMetaGrid}>
         <div><span>Logged</span><strong>{formatDate(problem.createdAtIso, true)}</strong></div>
         <div><span>Logged by</span><strong>{problem.operatorName || 'Not recorded'}</strong></div>
-        <div><span>Status</span><strong>{resolved ? 'Noted / resolved' : 'Open'}</strong></div>
+        <div><span>Status</span><strong>{resolved ? 'Resolved' : 'Open'}</strong></div>
         <div><span>Resolution</span><strong>{problem.notedAtIso ? formatDate(problem.notedAtIso, true) : 'Not resolved yet'}</strong></div>
       </div>
     </article>

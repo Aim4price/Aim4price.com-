@@ -1,4 +1,5 @@
 'use client';
+import type { ExternalSharePermissions } from '../../lib/external-share-permissions';
 import { useState } from 'react';
 import LeadReportDialog from '../leads/LeadReportDialog';
 import DealerMaintenanceReportModal from '../DealerMaintenanceReportModal';
@@ -17,7 +18,7 @@ const reports = [
 ] as const;
 type Report = typeof reports[number]['key'];
 
-export default function SharedLiveReports({token,assetId,assetTitle,onClose}:{token:string;assetId:string;assetTitle:string;onClose:()=>void}) {
+export default function SharedLiveReports({token,assetId,assetTitle,onClose,permissions}:{permissions:ExternalSharePermissions;token:string;assetId:string;assetTitle:string;onClose:()=>void}) {
   const [selected,setSelected]=useState<Report|null>(null);
   const back=()=>setSelected(null);
   const externalShare={token,assetId};
@@ -33,8 +34,8 @@ export default function SharedLiveReports({token,assetId,assetTitle,onClose}:{to
     if(selection.format==='pdf'){if(!openCanonicalReportUrl(url))throw Error('Enable pop-ups to open this report.');}
     else await downloadCanonicalReportFile(url);
   }}/>;
-  return <LeadReportDialog title={assetTitle} description="All reports · latest asset information" onClose={onClose}>
-    {reports.map(report=><button key={report.key} type="button" className={styles.assetReportOptionButton} data-download-option="true" onClick={()=>setSelected(report.key)}>
+  return <LeadReportDialog title={assetTitle} description="Shared reports · latest asset information" onClose={onClose}>
+    {reports.filter(report => report.key === 'maintenance' ? permissions.maintenanceReports : report.key === 'cost' ? permissions.costOfOwnership : true).map(report=><button key={report.key} type="button" className={styles.assetReportOptionButton} data-download-option="true" onClick={()=>setSelected(report.key)}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6"/></svg>
       <span><strong>{report.label}</strong><small>{report.description}</small></span>
     </button>)}

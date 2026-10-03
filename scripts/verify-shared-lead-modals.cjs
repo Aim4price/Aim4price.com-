@@ -37,6 +37,8 @@ function add(file){
 }
 
 
+add('components/AssetConditionPicker');
+add('components/leads/LeadActionDialog');
 add('components/asset-register/ExternalLeadActions');
 add('components/leads/LeadManageDialog');
 add('components/business-network/BusinessListingInvite');
@@ -45,7 +47,7 @@ add('app/business/join/business-signup');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
- 'function require(name){if(name==="react")return React;if(name==="react-dom")return ReactDOM;if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({prefetch:()=>{},refresh:()=>{},push:()=>{}}),usePathname:()=>"/admin"};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
+ 'function require(name){if(name==="react")return React;if(name==="next/dynamic")return ()=>()=>null;if(name==="react-dom")return ReactDOM;if(name==="next/link")return ({prefetch,...props})=>React.createElement("a",props);if(name==="next/navigation")return {useRouter:()=>({prefetch:()=>{},refresh:()=>{},push:()=>{}}),usePathname:()=>"/admin"};if(name==="react/jsx-runtime")return {jsx:(type,props,key)=>React.createElement(type,{...props,key}),jsxs:(type,props,key)=>React.createElement(type,{...props,key}),Fragment:React.Fragment};if(cache[name])return cache[name].exports;const module={exports:{}};cache[name]=module;if(!sources[name])throw Error("Missing module "+name);new Function("require","module","exports",sources[name])(require,module,module.exports);return module.exports;}';
 
 
 (async()=>{
@@ -55,7 +57,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  page.on('pageerror',error=>{throw error;});
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#dce7e0;font-family:Arial;--modal-backdrop-color:rgba(12,24,35,.42);--modal-backdrop-filter:blur(12px)}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
- await page.evaluate(()=>{window.requests=[];window.fetch=async(url,opts)=>{window.requests.push({url,body:opts?.body});return {ok:true,json:async()=>({correction:{id:'correction',status:'pending',serialNumberChanged:true,proposedSerialNumber:'NEW-456'}})}}});
+ await page.evaluate(()=>{if(!crypto.randomUUID)crypto.randomUUID=()=> '10000000-0000-4000-8000-000000000002';window.requests=[];window.fetch=async(url,opts)=>{window.requests.push({url,body:opts?.body});return {ok:true,json:async()=>({correction:{id:'correction',status:'pending',serialNumberChanged:true,proposedSerialNumber:'NEW-456'}})}}});
  const props={token:'a'.repeat(43),assetId:'10000000-0000-4000-8000-000000000001',assetIndex:0,assetTitle:'John Deere 6155M',serialNumber:'OLD-123',replacementPrice:900000,permissions:{serialNumber:true,replacementPrice:true,documents:true,reports:true},access:'active',reports:[{id:'report-1',label:'Asset valuation'}]};
  await page.addScriptTag({content:runtime+'window.renderFixture=(props)=>{window.fixtureRoot??=ReactDOM.createRoot(document.getElementById("app"));window.fixtureRoot.render(React.createElement(require("components/leads/LeadManageDialog").default,{title:props.assetTitle,description:"Manage enquiry",onClose:()=>{}},React.createElement(require("components/asset-register/ExternalLeadActions").default,{...props,key:props.access+JSON.stringify(props.permissions)})));};window.renderFixture('+JSON.stringify(props)+');'});
  async function click(text){await page.evaluate(text=>{const button=[...document.querySelectorAll('button')].find(node=>node.textContent.includes(text));if(!button)throw Error('Missing button '+text);button.click();},text);}
@@ -85,10 +87,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/shared-live-maintenance-report.png'});await page.keyboard.press('Escape');
  await click('Cost of Ownership');await page.waitForFunction(()=>document.body.textContent.includes('PDF'));await page.keyboard.press('Escape');
  await click('Create Maintenance Schedules');await page.waitForFunction(()=>document.body.textContent.includes('What are you scheduling?'));assert(await page.$eval('#dealer-maintenance-type-title',node=>{const r=node.getBoundingClientRect();return node.contains(document.elementFromPoint(r.x+5,r.y+5));}),'Schedule must be above Manage');await page.screenshot({path:'/tmp/shared-live-schedule.png'});await page.keyboard.press('Escape');
- await click('Logged Problems');await page.waitForFunction(()=>document.body.textContent.includes('No logged problems.'));await page.keyboard.press('Escape');
+ await click('Log problems');await click('Logged problems');await page.waitForFunction(()=>document.body.textContent.includes('No logged problems.'));await page.keyboard.press('Escape');
  await page.evaluate(p=>window.renderFixture({...p,permissions:{reports:true,allReports:true,maintenanceReports:true,costOfOwnership:true,serialNumber:false,replacementPrice:false,documents:false}}),props);
  await page.waitForFunction(()=>!document.body.textContent.includes('Update serial number'));await click('Reports');
- await page.waitForFunction(()=>document.body.textContent.includes('All reports · latest asset information'));
+ await page.waitForFunction(()=>document.body.textContent.includes('Shared reports · latest asset information'));
  for(const label of ['Asset valuation','Maintenance report','Fuel report','Depreciation log','Cost of ownership','Asset map'])assert(await page.evaluate(t=>document.querySelector('[data-download-dialog]').textContent.includes(t),label));
  await click('Asset valuation');await page.waitForFunction(()=>document.body.textContent.includes('Choose export format'));
  assert(!await page.evaluate(()=>document.body.textContent.includes('Choose report timeline')));await page.keyboard.press('Escape');
@@ -97,8 +99,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForSelector('[data-asset-link-dialog]');
  const box=await page.$eval('[data-asset-link-dialog]',node=>({width:node.getBoundingClientRect().width,x:node.getBoundingClientRect().x,scrollHeight:node.scrollHeight,height:node.clientHeight,text:node.textContent}));
  assert.equal(Math.round(box.width),1160);assert.equal(Math.round(box.x),140);assert(box.scrollHeight<=box.height+1,'Settings fit without scrolling');
- assert(box.text.includes('Asset link settings'));assert(box.text.includes('2023 Toyota Hilux'));assert(box.text.includes('Asset photos and all reports are always included'));
- assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',nodes=>nodes.length),2,'Both report permissions are always included');
+ assert(box.text.includes('Asset link settings'));assert(box.text.includes('2023 Toyota Hilux'));assert(box.text.includes('Asset photos are included.'));
+ assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',nodes=>nodes.length),0,'Report permissions are selectable');
+ assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),0,'Permissions start off');
+ await page.click('[data-asset-link-dialog] input[type=checkbox]');
+ assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),12,'Select all enables all settings');
+ await page.click('[data-asset-link-dialog] input[type=checkbox]');
  assert(!box.text.includes('Attach reports'));
  await page.screenshot({path:'/tmp/asset-link-settings.png'});
  await click('Share read-only');await page.waitForSelector('dialog[open]');
@@ -113,6 +119,38 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('app/business/join/business-signup').default,{returnTo:null})));
  await page.waitForFunction(()=>document.body.textContent.includes('Choose your access'));
  await page.screenshot({path:'/tmp/shared-account-choice.png'});
+ await page.evaluate(()=>{
+   function Fixture(){const [value,setValue]=React.useState('good');return React.createElement(require('components/leads/LeadActionDialog').default,{title:'Update asset',assetTitle:'2023 Toyota Hilux',onClose:()=>{window.dropdownDialogClosed=true;}},React.createElement(require('components/AssetConditionPicker').default,{value,onChange:setValue}));}
+   window.fixtureRoot.render(React.createElement(Fixture));
+ });
+ await page.waitForSelector('[aria-label="Condition"][aria-haspopup="listbox"]');
+ await page.click('[aria-label="Condition"][aria-haspopup="listbox"]');
+ await page.waitForSelector('[role="listbox"]');
+ assert.equal(await page.$$eval('select',nodes=>nodes.length),0,'Condition uses a styled picker');
+ await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+ assert(await page.$eval('[aria-label="Condition"][aria-haspopup="listbox"]',node=>node.textContent.includes('Fair')));
+ await page.click('[aria-label="Condition"][aria-haspopup="listbox"]');await page.waitForSelector('[role="listbox"]');await page.keyboard.press('Escape');
+ assert(!await page.evaluate(()=>window.dropdownDialogClosed),'Escape closes only the condition list');
+ await page.evaluate(()=>{
+  window.problemItems=[];window.problemWrites=[];
+  window.fetch=async(url,options)=>{
+    if(options?.method==='POST'){
+      const body=JSON.parse(options.body);window.problemWrites.push(body);
+      if(body.action==='log')window.problemItems=[{id:'10000000-0000-4000-8000-000000000003',assetRegisterItemId:'asset',note:body.note,summary:'Hydraulic leak',operatorName:'Dealer',createdAtIso:'2026-10-03T10:00:00Z',notedAtIso:null}];
+      else window.problemItems=window.problemItems.map(item=>({...item,notedAtIso:'2026-10-03T11:00:00Z'}));
+    }
+    return {ok:true,json:async()=>({items:window.problemItems})};
+  };
+  window.fixtureRoot.render(React.createElement(require('components/leads/SharedProblems').default,{endpoint:'/api/test/problems',assetTitle:'2023 Toyota Hilux',onClose:()=>{}}));
+ });
+ await click('Log problem');await page.waitForSelector('textarea');await page.type('textarea','Hydraulic leak');await click('Save problem');
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(button=>button.textContent==='Resolved'));
+ await click('Resolved');await page.waitForFunction(()=>document.body.textContent.includes('Are you sure this problem is resolved?'));
+ assert.equal(await page.evaluate(()=>window.problemWrites.length),1,'Opening confirmation does not resolve');
+ await click('Cancel');await click('Resolved');await click('Yes, resolved');
+ await page.waitForFunction(()=>window.problemWrites.length===2);
+ assert(await page.evaluate(()=>window.problemWrites[1].confirmed===true));
+ await page.screenshot({path:'/tmp/shared-problems-resolved.png'});
  console.log('PASS: shared dialogs, correction endpoint/stable asset ID, Escape return, report link, documents, verification gate and hidden permissions');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

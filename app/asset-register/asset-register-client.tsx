@@ -1,5 +1,6 @@
 'use client';
 import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
+import LeadActionDialog from '../../components/leads/LeadActionDialog';
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import AssetDetailsFields from '../../components/AssetDetailsFields';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
@@ -6761,6 +6762,7 @@ export default function AssetRegisterClient({
   const locallyNotedAssetNoticesRef = useRef(new Map<string, Array<{ kind: 'partner' | 'maintenance' | 'issue' | 'reminder'; id: string }>>());
   const [isDownloadingIndividualAssetMap, setIsDownloadingIndividualAssetMap] = useState(false);
   const individualAssetMapDownloadRef = useRef(false);
+  const [resolveIssue,setResolveIssue]=useState<{id:string;assetId:string;title:string;note:string}|null>(null);
   const [busyIssueNoteStatusId, setBusyIssueNoteStatusId] = useState<string | null>(null);
   const [busyDealerCorrectionId, setBusyDealerCorrectionId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
@@ -13856,7 +13858,8 @@ export default function AssetRegisterClient({
       setActiveAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'issue', issueNoteStatusId) : current));
       setMarketplaceAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'issue', issueNoteStatusId) : current));
       setProjectionAsset((current) => (current?.id === assetId ? acknowledgeAssetNotice(current, 'issue', issueNoteStatusId) : current));
-      setNotice({ tone: 'success', message: 'Issue note marked as noted.' });
+      setResolveIssue(null);
+      setNotice({ tone: 'success', message: 'Problem marked as resolved.' });
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -17167,9 +17170,9 @@ export default function AssetRegisterClient({
                                   type="button"
                                   className={styles.partnerNoteButton}
                                   disabled={isMarkingIssueNoteNoted}
-                                  onClick={() => void handleMarkIssueNoteStatusNoted(latestIssueNoteStatus.id, asset.id)}
+                                  onClick={() => setResolveIssue({id:latestIssueNoteStatus.id,assetId:asset.id,title:asset.title,note:latestIssueNoteStatus.note})}
                                 >
-                                  {isMarkingIssueNoteNoted ? 'Noting...' : 'Noted'}
+                                  {isMarkingIssueNoteNoted ? 'Saving…' : 'Resolved'}
                                 </button>
                               ) : null}
                             </div>
@@ -18223,6 +18226,7 @@ export default function AssetRegisterClient({
         onClose={() => { setLicenceReviewAssetIds(null); setIsRegisterShareModalOpen(true); }}
         onContinue={() => openFullRegisterQuotePartnerPicker('license_renewal', true)}
       />}
+      {resolveIssue&&<LeadActionDialog title="Resolve problem" assetTitle={resolveIssue.title} busy={Boolean(busyIssueNoteStatusId)} onClose={()=>setResolveIssue(null)} footer={<><button className={styles.secondaryButton} disabled={Boolean(busyIssueNoteStatusId)} onClick={()=>setResolveIssue(null)}>Cancel</button><button className={styles.primaryButton} disabled={Boolean(busyIssueNoteStatusId)} onClick={()=>void handleMarkIssueNoteStatusNoted(resolveIssue.id,resolveIssue.assetId)}>{busyIssueNoteStatusId?'Saving…':'Yes, resolved'}</button></>}><p>Are you sure this problem is resolved?</p><p>{resolveIssue.note}</p></LeadActionDialog>}
       {historyAsset&&<SharedAssetWorkDialog endpoint={`/api/asset-register/${historyAsset.id}`} action="history" assetTitle={historyAsset.title} assetSubtitle={historyAsset.details} onClose={()=>setHistoryAsset(null)}/>}
       {isAssetModalOpen ? (
         <div className={styles.modalOverlay} data-website-overlay data-account-asset-modal>

@@ -1,6 +1,7 @@
 'use client';
 import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import LeadNoteDialog from '../../components/leads/LeadNoteDialog';
+import SharedProblems from '../../components/leads/SharedProblems';
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import SharedAssetContributionDialog from '../../components/leads/SharedAssetContributionDialog';
 import LeadManageDialog from '../../components/leads/LeadManageDialog';
@@ -1800,6 +1801,7 @@ export default function LeadsClient({
   const [managedLead, setManagedLead] = useState<AssetLead | null>(null);
   const [qrLeadAsset, setQrLeadAsset] = useState<LeadQrModalState | null>(null);
   const [copiedQrLeadId, setCopiedQrLeadId] = useState<string | null>(null);
+  const [problemLead,setProblemLead]=useState<AssetLead|null>(null);
   const [sharedWork,setSharedWork]=useState<{lead:AssetLead;action:'details'|'maintenance'|'history'}|null>(null);
   const [contribution,setContribution] = useState<{lead:AssetLead;kind:'photos'|'costs'}|null>(null);
   const [photoUploadLead, setPhotoUploadLead] = useState<AssetLead | null>(null);
@@ -3624,6 +3626,7 @@ export default function LeadsClient({
                           </div>
                           <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                           {null}
+                          {lead.maintenanceAccess?.isActive && lead.maintenanceAccess.permissions.canViewLoggedProblems && <SharedProblems endpoint={`/api/asset-leads/${lead.id}/problems`} assetTitle={assetTitle(lead)} notesOnly/>}
                           {lead.ownerMessage ? (
                             <span className={`${styles.trackingLeadPurpose} ${styles.leadOwnerMessagePreview}`}>
                               <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
@@ -3996,6 +3999,7 @@ export default function LeadsClient({
                       ) : null}
 
                       {managedLead.maintenanceAccess?.isActive && !isFullRegisterLead(managedLead) && <>
+                        {managedLead.maintenanceAccess.permissions.canViewLoggedProblems&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setProblemLead(managedLead)}><AssetActionIcon action="loggedProblems" className={assetStyles.buttonIcon}/><span><strong>Log problems</strong><small>Log a problem or view logged problems.</small></span></button>}
                         {(managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset details</strong><small>Year, usage and condition.</small></span></button>}
                         {managedLead.maintenanceAccess.permissions.canAddMaintenance&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'maintenance'})}><AssetActionIcon action="addMaintenance" className={assetStyles.buttonIcon} /><span><strong>Add maintenance</strong><small>Record completed work.</small></span></button>}
                         {(managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition||managedLead.maintenanceAccess.permissions.canAddMaintenance)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
@@ -4022,6 +4026,7 @@ export default function LeadsClient({
         </LeadManageDialog>
       ) : null}
 
+      {problemLead&&createPortal(<SharedProblems endpoint={`/api/asset-leads/${problemLead.id}/problems`} assetTitle={assetTitle(problemLead)} onClose={()=>setProblemLead(null)}/>,document.body)}
       {sharedWork&&createPortal(<SharedAssetWorkDialog endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{setManagedLead(null);void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
       {contribution ? createPortal(<SharedAssetContributionDialog kind={contribution.kind} endpoint={`/api/asset-leads/${contribution.lead.id}/${contribution.kind}`} assetTitle={assetTitle(contribution.lead)} onClose={()=>setContribution(null)} onSaved={()=>{void fetch(`/api/asset-leads/${contribution.lead.id}/media`,{cache:'no-store'}).then(r=>r.json()).then(data=>{if(data.asset)mergeLeadAssetMedia(contribution.lead,data.asset);}).catch(()=>{});}}/>,document.body) : null}
       {qrLeadAsset ? (

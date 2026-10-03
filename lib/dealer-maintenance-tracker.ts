@@ -544,7 +544,7 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
   `);
   await db.query(`
     alter table public.dealer_maintenance_access
-      alter column can_view_maintenance_reports set default true,
+      alter column can_view_maintenance_reports set default false,
       alter column can_create_maintenance_schedules set default true
   `);
   await db.query(`
@@ -708,7 +708,7 @@ export async function grantDealerMaintenanceTracking(input: {
   if (!['dealer','business'].includes(dealer.accountType) || dealer.accountStatus !== 'active') throw new Error('DEALER_NOT_FOUND');
   const permissions: DealerMaintenancePermissions = input.permissions ?? {
     canViewLoggedProblems: false,
-    canViewMaintenanceReports: true,
+    canViewMaintenanceReports: false,
     canViewCostOfOwnership: false,
     canCreateMaintenanceSchedules: true,
     canUpdateSerial: true,

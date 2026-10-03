@@ -9,7 +9,7 @@ export const EXTERNAL_SHARE_OPTIONS = [
     { key: 'reports', label: 'Reports', description: 'Choose reports & timelines' },
     { key: 'replacementPrice', label: 'Update replacement price', description: 'Update the asset replacement price.' },
     { key: 'serialNumber', label: 'Update serial number', description: 'Update the asset serial number.' },
-    { key: 'loggedProblems', label: 'Logged Problems', description: 'View logged problems for this asset.' },
+    { key: 'loggedProblems', label: 'Log problems', description: 'Log a problem or view logged problems.' },
     { key: 'maintenanceReports', label: 'Maintenance Reports', description: 'View current maintenance and download reports.' },
     { key: 'costOfOwnership', label: 'Cost of Ownership', description: 'View current ownership costs and VAT.' },
     { key: 'maintenanceSchedules', label: 'Create Maintenance Schedules', description: 'Create active maintenance schedules.' },
@@ -26,7 +26,7 @@ export function sharedEnquiryReturnTo(value: unknown): string | null {
     return typeof value === 'string' && /^\/asset-share\/[A-Za-z0-9_-]{43}(?:\?open=1)?$/.test(value) ? value : null;
 }
 
-/** Photos and live reports are always part of newly created asset links. */
+/** Photos and general reports are included; maintenance and costs require explicit selection. */
 export function assetLinkPermissions(value: unknown = {}): ExternalSharePermissions {
-  return {...normalizeExternalPermissions(value),allReports:true,reports:true,maintenanceReports:true,costOfOwnership:true,directUpdates:true};
+  return {...normalizeExternalPermissions(value),allReports:true,reports:true,directUpdates:true};
 }

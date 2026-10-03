@@ -387,3 +387,6 @@
   }
 }
 
+
+.selectAll { display:flex; align-items:center; gap:.65rem; padding:.25rem 0; margin:0 0 .35rem; font-weight:700; cursor:pointer; }
+.selectAll input { width:1.05rem; height:1.05rem; accent-color:#176348; }
