@@ -3277,7 +3277,7 @@ export default function MyInvoicesClient({
       {!sharedFlow && <section ref={pageShellRef} className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
-        {budgetLaunchReturnTo ? <a className={styles.secondaryButton} href={budgetLaunchReturnTo}>Back to asset</a> : null}
+        {budgetLaunchReturnTo ? <a className={`${styles.secondaryButton} ${styles.budgetBackToAsset}`} href={budgetLaunchReturnTo}>Back to asset</a> : null}
         {budgetsPage && canManageBudgets ? <BudgetTracking
           scopeAssetId={budgetLaunchAssetId}
           reportAssets={assets}
