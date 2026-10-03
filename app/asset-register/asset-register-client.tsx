@@ -20851,6 +20851,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.ownerCommandChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="owner-command-choice-title">Maintenance</h3>
+                <p>{activeAsset.title}</p>
                 <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
