@@ -3,3 +3,12 @@
 .event p{margin:.4rem 0;}
 
 .fields { display: grid; gap: 16px; }
+
+.detailsDialog { width: min(1050px, var(--website-dialog-reference-width, 100%)) !important; }
+.tabs { display:flex; gap:.75rem; margin-bottom:1.25rem; }
+.tabs button[aria-selected="true"] { border-color:#19634c; background:#e8f5ef; color:#123e30; }
+
+.detailsDialog [data-asset-paperwork] { padding: .75rem 1rem !important; margin-top: .6rem; }
+.detailsDialog [data-paperwork-header] { padding: 0 0 .5rem !important; border: 0 !important; border-bottom: 1px solid #d9e5e0 !important; border-radius: 0 !important; background: transparent !important; }
+.detailsDialog [data-asset-paperwork] textarea { min-height: 3.5rem !important; height: 3.5rem; }
+.detailsDialog [data-asset-paperwork] label > span small { display: none; }
