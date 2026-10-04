@@ -262,7 +262,9 @@ test('every custom listbox uses the shared overlay or a verified body portal', a
   assert.deepEqual(violations, []);
 
   const assetRegister = await read('app/asset-register/asset-register-client.tsx');
-  assert.match(assetRegister, /usePortal = true/);
+  assert.match(assetRegister, /import ModalSelect,.*from ['"]\.\.\/\.\.\/components\/AssetModalSelect['"]/);
+  const assetModalSelect = await read('components/AssetModalSelect.tsx');
+  assert.match(assetModalSelect, /usePortal = true/);
   assert.doesNotMatch(assetRegister, /usePortal\s*=\s*\{false\}/);
 });
 

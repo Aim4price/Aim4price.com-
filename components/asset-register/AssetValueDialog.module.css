@@ -14,4 +14,7 @@
 .request p {margin:0;white-space:pre-wrap;overflow-wrap:anywhere;}
 .error {color:#a52a2a;}
 .history {display:grid;gap:.75rem;}
-@media(max-width:600px){.fields,.summary{grid-template-columns:1fr;}}
+@media(max-width:600px){
+  :global(body:not(:has([data-website-canvas]))) .fields,
+  :global(body:not(:has([data-website-canvas]))) .summary {grid-template-columns:1fr;}
+}
