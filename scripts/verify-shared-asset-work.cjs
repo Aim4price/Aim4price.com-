@@ -13,13 +13,13 @@ export default function Page(){const [action,setAction]=useState<'details'|'main
  page.on('request',r=>{const u=new URL(r.url());if(!u.pathname.startsWith('/api/'))return r.continue();if(r.method()==='POST')writes.push({path:u.pathname,body:JSON.parse(r.postData()||'{}')});const data=u.pathname.includes('session')?null:u.pathname==='/api/fixture-work/checklist'?{items:[]}:u.pathname.startsWith('/api/fixture-work')&&r.method()==='GET'?{asset:{id:'10000000-0000-4000-8000-000000000001',title:'Toyota Hilux',kind:'vehicle',yearModel:2020,usageReading:100,usageMetric:'hours',condition:'good'},permissions:{yearModel:true,usage:true,condition:true}}:{ok:true};return r.respond({status:200,contentType:'application/json',body:JSON.stringify(data)});});
  async function click(text){await page.$$eval('button',(nodes,text)=>{const button=nodes.find(n=>n.textContent.trim()===text||n.querySelector('strong')?.textContent===text);if(!button)throw Error('Missing '+text);button.click();},text);}
  await page.setViewport({width:1440,height:900});await page.goto('http://127.0.0.1:3039/business/shared-work-validation',{waitUntil:'networkidle0',timeout:120000});
- await click('Details');await page.waitForSelector('[role=dialog] input');
+ await click('Details');await page.waitForSelector('[data-manage-action=details]');await page.click('[data-manage-action=details]');await page.waitForSelector('[role=dialog] input');
  const input=await page.$('[role=dialog] input');await input.click({clickCount:3});await input.type('2021');
  await page.screenshot({path:'/tmp/shared-work-details.png'});
  await click('Save changes');await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner'));
  assert.deepEqual(writes[0].body.patch,{yearModel:2021});
  await page.$$eval('button',nodes=>nodes.find(n=>n.getAttribute('aria-label')?.includes('Close')).click());
- await click('Maintenance');await page.waitForFunction(()=>document.body.textContent.includes('Already done or upcoming?'));
+ await click('Exit');await click('Maintenance');await page.waitForFunction(()=>document.body.textContent.includes('Already done or upcoming?'));
  assert.equal(await page.$$eval('[role=dialog] button',nodes=>nodes.find(n=>n.querySelector('strong')?.textContent==='Upcoming').disabled),true,'Scheduling requires its own permission');
  await page.screenshot({path:'/tmp/shared-maintenance-timing.png'});
  await click('Already done');await page.waitForFunction(()=>document.body.textContent.includes('What was done?'));await click('Back');await page.waitForFunction(()=>document.body.textContent.includes('Already done or upcoming?'));await click('Already done');await click('Checkup');

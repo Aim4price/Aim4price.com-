@@ -228,6 +228,20 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Resolved');await click('Yes, resolved');
  await page.waitForFunction(()=>!document.querySelector('[data-open-problems]'));
  assert.notEqual(await page.$eval('[data-test-problem-lead]',el=>getComputedStyle(el).backgroundImage),problemTint,'Resolving the last problem clears the red tint');
+ // The normal update action starts with owner-style section cards; shortcuts bypass it.
+ await page.evaluate(()=>{
+  window.fetch=async()=>({ok:true,json:async()=>({asset:{id:'asset',title:'2022 Test tractor',yearModel:2022,usageReading:1300,usageMetric:'hours',condition:'good'},permissions:{updateDetails:true,yearModel:true,usage:true,condition:true,addPhotos:true}})});
+  window.fixtureRoot.render(React.createElement(require('components/leads/SharedAssetWorkDialog').default,{endpoint:'/api/test',action:'details',assetTitle:'2022 Test tractor',onClose:()=>{}}));
+ });
+ await page.waitForSelector('[data-manage-action=details]');
+ assert.deepEqual(await page.$$eval('[data-manage-actions] button strong',els=>els.map(el=>el.textContent)),['Details','Paperwork','Documents']);
+ assert.equal(new Set(await page.$$eval('[data-manage-actions] > button',els=>els.map(el=>Math.round(el.getBoundingClientRect().top)))).size,1,'Update section cards share one row');
+ await page.screenshot({path:'/tmp/shared-update-menu.png'});
+ await page.click('[data-manage-action=details]');await page.waitForSelector('[data-asset-detail-edit-target=year] input');
+ const tops=await page.$$eval('[data-asset-detail-edit-target]',els=>els.map(el=>Math.round(el.getBoundingClientRect().top)));
+ assert.equal(new Set(tops).size,1,'Year, usage and condition share the owner-style row');
+ await page.screenshot({path:'/tmp/shared-update-details.png'});
+ await click('Back');await page.click('[data-manage-action=addPhotos]');await click('Add photos');await page.waitForSelector('input[type=file]');
  // Fact shortcuts keep all nine facts visible while enforcing edit permissions.
  await page.evaluate(()=>{
   window.fetch=async(url)=>({ok:true,json:async()=>String(url).endsWith('/paperwork')?{kind:'tractor',draft:{financeStatus:'no',insuranceStatus:'no',licenseStatus:'no'}}:String(url).endsWith('/location')?{location:{latitude:null,longitude:null,locationText:''}}:{asset:{id:'asset',title:'Test tractor',kind:'tractor',yearModel:2022,usageReading:1300,usageMetric:'hours',condition:'good'},permissions:{updateDetails:true,yearModel:true,usage:true,condition:true}}});
@@ -253,7 +267,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  for(const [label,section] of [['financed','finance'],['insured','insurance'],['licensed','license']]){
   await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
   await page.waitForFunction(()=>document.body.textContent.includes('Back to paperwork'));
-  assert(await page.evaluate(()=>Array.from(document.querySelectorAll('[role="tab"]')).some(tab=>tab.textContent==='Paperwork'&&tab.getAttribute('aria-selected')==='true')));
+  assert(await page.evaluate(()=>document.querySelector('[role=dialog] header')?.textContent.includes('Paperwork')));
   await page.keyboard.press('Escape');
  }
  for (const [access,permissions,expected] of [['read-only',{},0],['active',{usage:true},1],['owner',{},9]]) {
