@@ -58,8 +58,19 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#dce7e0;font-family:Arial;--modal-backdrop-color:rgba(12,24,35,.42);--modal-backdrop-filter:blur(12px)}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.evaluate(()=>{if(!crypto.randomUUID)crypto.randomUUID=()=> '10000000-0000-4000-8000-000000000002';window.requests=[];window.fetch=async(url,opts)=>{window.requests.push({url,body:opts?.body});return {ok:true,json:async()=>({correction:{id:'correction',status:'pending',serialNumberChanged:true,proposedSerialNumber:'NEW-456'}})}}});
+ // Both lead layouts must close from the visible outside layer, never from card content.
+ for (const ownerLayout of [false,true]) {
+  if (!ownerLayout) await page.addScriptTag({content:runtime+'window.fixtureRoot??=ReactDOM.createRoot(document.getElementById("app"));'});
+  await page.evaluate(ownerLayout=>{window.outsideCloseCount=0;window.fixtureRoot.render(React.createElement(require('components/leads/LeadManageDialog').default,{title:'Outside click check',description:'Asset',ownerLayout,onClose:()=>window.outsideCloseCount++},React.createElement('button',null,'Inside card')))},ownerLayout);
+  await page.waitForSelector('[role="dialog"]');
+  await page.click('[role="dialog"] button');assert.equal(await page.evaluate(()=>window.outsideCloseCount),1,'Close button closes');
+  await page.click('[role="dialog"] h3');assert.equal(await page.evaluate(()=>window.outsideCloseCount),1,'Card content stays open');
+  await page.$eval('[role="dialog"]',node=>node.parentElement.dispatchEvent(new MouseEvent('click',{bubbles:true})));
+  assert.equal(await page.evaluate(()=>window.outsideCloseCount),2,'Overlay closes');
+  await page.mouse.click(3,3);assert.equal(await page.evaluate(()=>window.outsideCloseCount),3,'Visible outside area closes once');
+ }
  const props={token:'a'.repeat(43),assetId:'10000000-0000-4000-8000-000000000001',assetIndex:0,assetTitle:'John Deere 6155M',serialNumber:'OLD-123',replacementPrice:900000,permissions:{serialNumber:true,replacementPrice:true,documents:true,reports:true},access:'active',reports:[{id:'report-1',label:'Asset valuation'}]};
- await page.addScriptTag({content:runtime+'window.renderFixture=(props)=>{window.fixtureRoot??=ReactDOM.createRoot(document.getElementById("app"));window.fixtureRoot.render(React.createElement(require("components/leads/LeadManageDialog").default,{title:props.assetTitle,description:"Manage enquiry",onClose:()=>{}},React.createElement(require("components/asset-register/ExternalLeadActions").default,{...props,key:props.access+JSON.stringify(props.permissions)})));};window.renderFixture('+JSON.stringify(props)+');'});
+ await page.addScriptTag({content:'window.renderFixture=(props)=>{window.fixtureRoot??=ReactDOM.createRoot(document.getElementById("app"));window.fixtureRoot.render(React.createElement(require("components/leads/LeadManageDialog").default,{title:props.assetTitle,description:"Manage enquiry",onClose:()=>{}},React.createElement(require("components/asset-register/ExternalLeadActions").default,{...props,key:props.access+JSON.stringify(props.permissions)})));};window.renderFixture('+JSON.stringify(props)+');'});
  async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(node=>node.textContent.includes(text)),{},text);await page.evaluate(text=>{const button=[...document.querySelectorAll('button')].find(node=>node.textContent.includes(text));if(!button)throw Error('Missing button '+text);button.click();},text);}
  await page.waitForFunction(()=>document.body.textContent.includes('Update serial number'));
  await click('Update serial number');await page.waitForSelector('input');
