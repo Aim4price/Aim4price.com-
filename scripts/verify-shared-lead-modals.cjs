@@ -44,6 +44,7 @@ add('components/leads/LeadManageDialog');
 add('components/business-network/BusinessListingInvite');
 add('components/SharedEnquiryLanding');
 add('components/asset-register/ShareLinkSettings');
+add('app/account/page.module.css');
 add('app/business/join/business-signup');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
@@ -141,6 +142,20 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/asset-link-settings-edit.png'});
  await toggleValue();await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===false);
  await page.evaluate(()=>{window.fetch=window.previousFetch;});
+ // Owner map uses the same editor, with its real owner wrapper classes.
+ await page.evaluate(()=>{
+  const s=require('app/asset-register/page.module.css'),a=require('app/account/page.module.css');
+  window.renderOwnerLocation=(location)=>window.fixtureRoot.render(React.createElement('div',{className:s.modalOverlay},React.createElement('section',{role:'dialog',className:[s.modalCard,s.assetSettingsModal,s.managementAccountModal,s.assetSettingsSubModal,s.assetSettingsLocationModal,s.assetSettingsMapEntryModal,a.modalTheme].join(' ')},React.createElement('header',{className:s.modalHeader+' '+s.assetSettingsHeader},React.createElement('div',{className:s.modalHeaderText},React.createElement('h3',null,'Map asset'),React.createElement('p',null,'2022 Test tractor')),React.createElement('button',{className:a.modalCloseButton+' '+a.passwordModalCloseButton,'aria-label':'Close map asset'},'×')),React.createElement('div',{className:s.modalScrollBody+' '+s.assetSettingsBody},React.createElement(require('components/AssetLocationEditor').default,{key:JSON.stringify(location),location,viewMapHref:'/asset-map?assetId=test',onSave:async value=>{window.ownerLocationSaved=value;}})))));
+  window.renderOwnerLocation({latitude:null,longitude:null,locationText:''});
+ });
+ await page.waitForFunction(()=>document.querySelector('[role="dialog"]')?.textContent.includes('No location saved yet.'));
+ const ownerMap=await page.$eval('[role="dialog"]',n=>{const buttons=[...n.querySelectorAll('button')].filter(b=>!b.getAttribute('aria-label')),r=n.getBoundingClientRect();return {width:r.width,scroll:n.scrollHeight>n.clientHeight+1,tops:buttons.map(b=>b.getBoundingClientRect().top)};});
+ assert.equal(Math.round(ownerMap.width),1050);assert.equal(ownerMap.scroll,false);assert(ownerMap.tops.every(top=>Math.abs(top-ownerMap.tops[0])<1),'Owner location choices share one row');
+ await page.screenshot({path:'/tmp/owner-location-choices.png'});
+ await click('Enter coordinates');await page.waitForSelector('input[placeholder="-33.924869"]');
+ await page.type('input[placeholder="-33.924869"]','-34');await page.type('input[placeholder="18.424055"]','22');await click('Save location');await page.waitForFunction(()=>window.ownerLocationSaved?.latitude===-34);
+ await page.waitForSelector('a[href="/asset-map?assetId=test"]');
+ assert.equal(await page.$eval('a[href="/asset-map?assetId=test"]',n=>n.textContent),'View on asset map');
  await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('components/SharedEnquiryLanding').default,{returnTo:'/asset-share/'+ 'a'.repeat(43)+'?open=1',access:'verify-email',prompt:true,summary:{senderName:'Example farm',assetCount:1,assetTitles:['Tractor'],umbrellaName:''}})));
  await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Verify your email'));
  const gate=await page.$eval('dialog[open]',node=>({scroll:node.scrollHeight,height:node.clientHeight,width:node.getBoundingClientRect().width,heading:node.querySelector('h2').getBoundingClientRect().height}));
