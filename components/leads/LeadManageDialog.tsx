@@ -14,7 +14,7 @@ export default function LeadManageDialog({title, description, onClose, children,
 }) {
   const titleId = useId();
   const dialogRef = useLeadDialog(onClose);
-  return <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${classes.overlay ?? `${leadStyles.dealerDesktopLeads} ${leadStyles.leadManageOverlay}`}`} data-website-overlay data-account-asset-modal={ownerLayout || undefined}>
+  return <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${classes.overlay ?? `${leadStyles.dealerDesktopLeads} ${leadStyles.leadManageOverlay}`}`} data-website-overlay data-account-asset-modal={ownerLayout || undefined} onClick={event => { if (event.target === event.currentTarget) onClose(); }}>
     <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose}/>
     <section ref={dialogRef} tabIndex={-1} className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${classes.modal ?? `${leadStyles.leadManageModal} ${dialogStyles.surface} ${dialogStyles.flush}`}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <header className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${classes.header ?? dialogStyles.header}`}>
