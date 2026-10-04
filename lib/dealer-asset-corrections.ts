@@ -30,6 +30,7 @@ export type DealerAssetCorrectionRequest = {
   sourceId: string;
   dealerName: string;
   actorName: string;
+  reason?: string;
   currentSerialNumber: string;
   proposedSerialNumber: string | null;
   currentReplacementPriceExVat: number | null;
@@ -73,6 +74,7 @@ type DealerAssetCorrectionRow = {
   source_id: string;
   dealer_name: string | null;
   actor_name: string | null;
+  reason?: string | null;
   current_serial_number: string | null;
   proposed_serial_number: string | null;
   current_replacement_price_ex_vat: string | number | null;
@@ -203,6 +205,7 @@ function mapCorrection(row: DealerAssetCorrectionRow): DealerAssetCorrectionRequ
     sourceId: row.source_id,
     dealerName: asText(row.dealer_name) || 'Dealer',
     actorName: asText(row.actor_name) || asText(row.dealer_name) || 'Dealer',
+    reason: asText(row.reason),
     currentSerialNumber: asText(row.current_serial_number),
     proposedSerialNumber: row.proposed_serial_number === null ? null : asText(row.proposed_serial_number),
     currentReplacementPriceExVat: asNumber(row.current_replacement_price_ex_vat),
@@ -248,6 +251,7 @@ function correctionSelectSql(whereClause: string): string {
       correction.source_id,
       correction.dealer_name,
       correction.actor_name,
+      correction.reason,
       correction.current_serial_number,
       correction.proposed_serial_number,
       correction.current_replacement_price_ex_vat,
@@ -292,6 +296,7 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
       license_renewal_date_changed,
       current_license_renewal_date,
       proposed_license_renewal_date,
+      reason,
       status,
       revaluation_status,
       revaluation_attempt_count,
@@ -343,6 +348,7 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
   `);
   await db.query(`
     alter table public.dealer_asset_correction_requests
+      add column if not exists reason text,
       add column if not exists current_license_renewal_date date,
       add column if not exists proposed_license_renewal_date date,
       add column if not exists license_renewal_date_changed boolean not null default false,
@@ -521,6 +527,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
   dealerUserId: string;
   dealerName: string;
   actorName: string;
+  reason?: string;
   sourceType: DealerAssetCorrectionSource;
   sourceId: string;
   field: DealerAssetCorrectionField;
@@ -693,6 +700,7 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       ],
     );
     const correctionId = inserted.rows[0]?.id ?? '';
+    if(input.reason?.trim())await client.query('UPDATE dealer_asset_correction_requests SET reason=$2 WHERE id=$1::uuid',[correctionId,input.reason.trim().slice(0,1500)]);
 
     const loaded = await client.query<DealerAssetCorrectionRow>(
       `${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,

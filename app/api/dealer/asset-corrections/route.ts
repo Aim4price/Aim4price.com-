@@ -11,6 +11,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type CorrectionBody = {
+  reason?: unknown;
   sourceType?: unknown;
   sourceId?: unknown;
   field?: unknown;
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       sourceType,
       sourceId,
       field,
-      value: body.value,
+      reason: typeof body.reason==='string'?body.reason.trim().slice(0,1500):undefined, value: body.value,
     });
     return NextResponse.json({ ok: true, correction });
   } catch (error) {

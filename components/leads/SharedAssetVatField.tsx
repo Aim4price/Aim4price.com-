@@ -6,7 +6,7 @@ import refinements from '../../app/asset-register/asset-update-refinements.modul
 import {pricingVatAmount,pricingInputExVat} from '../../lib/pricing-vat';
 
 // Match the owner editor: whole-rand entry, with the saved amount always excluding VAT.
-export default function SharedAssetVatField({label,value,onChange,className='',target,disabled=false}:{label:string;value:string;onChange?:(value:string)=>void;className?:string;target?:string;disabled?:boolean}) {
+export default function SharedAssetVatField({label,value,onChange,className='',target,disabled=false,onOpen}:{label:string;value:string;onChange?:(value:string)=>void;className?:string;target?:string;disabled?:boolean;onOpen?:()=>void}) {
  const [included,setIncluded]=useState(false);
  const [entry,setEntry]=useState<{canonical:string;included:boolean;text:string}|null>(null);
  const format=(amount:number)=>new Intl.NumberFormat('en-ZA',{maximumFractionDigits:0}).format(amount).replace(/[,\s]/g,' ');
@@ -15,7 +15,7 @@ export default function SharedAssetVatField({label,value,onChange,className='',t
   <span>{label}</span>
   <div className={refinements.vatValueRow}>
    <ModalSelect label={`${label} VAT`} buttonLabel={`${label} VAT`} className={refinements.vatValueSelect} value={included?'included':'excluded'} options={[{value:'excluded',label:'Excl. VAT'},{value:'included',label:'Incl. VAT'}]} onChange={mode=>{setIncluded(mode==='included');setEntry(null);}}/>
-   <div className={styles.manualCurrencyInput}><span>R</span><input aria-label={label} type="text" inputMode="numeric" value={displayed} readOnly={!onChange} disabled={disabled} placeholder="Not saved" onChange={event=>{const digits=event.target.value.replace(/[^0-9]/g,'');const text=digits?format(Number(digits)):'';const canonical=digits?String(pricingInputExVat(Number(digits),included)):'';setEntry({canonical,included,text});onChange?.(canonical);}}/></div>
+   <div className={styles.manualCurrencyInput}><span>R</span><input onClick={onOpen} onKeyDown={e=>{if(onOpen&&(e.key==='Enter'||e.key===' ')){e.preventDefault();onOpen();}}} role={onOpen?'button':undefined} aria-haspopup={onOpen?'dialog':undefined} aria-label={onOpen?`Change ${label.toLowerCase()}`:label} type="text" inputMode="numeric" value={displayed} readOnly={!onChange} disabled={disabled} placeholder="Not saved" onChange={event=>{const digits=event.target.value.replace(/[^0-9]/g,'');const text=digits?format(Number(digits)):'';const canonical=digits?String(pricingInputExVat(Number(digits),included)):'';setEntry({canonical,included,text});onChange?.(canonical);}}/></div>
   </div>
  </div>;
 }

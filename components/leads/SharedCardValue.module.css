@@ -1,2 +1,4 @@
 .value.value { position:relative; padding-right:2.75rem; }
 .value.value > button { right:0; color:var(--app-text,#073b30); }
+.value strong[role='button'] { cursor:pointer; border-radius:.3rem; }
+.value strong[role='button']:focus-visible { outline:3px solid #74b99c; outline-offset:4px; }

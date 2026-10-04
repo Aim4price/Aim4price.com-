@@ -4,6 +4,7 @@ import {useRouter} from 'next/navigation';
 import {useLeadDialog} from './useLeadDialog';
 import AssetDetailsFields from '../AssetDetailsFields';
 import AssetActionIcon from '../asset-register/AssetActionIcon';
+import SharedAssetValueDialog from './SharedAssetValueDialog';
 import SharedAssetVatField from './SharedAssetVatField';
 import SharedAssetPaperwork from './SharedAssetPaperwork';
 import AssetDocumentUploadModal from '../documents/AssetDocumentUploadModal';
@@ -13,13 +14,15 @@ import refinements from '../../app/asset-register/asset-update-refinements.modul
 import colours from './ManageActionGrid.module.css';
 import local from './SharedAssetUpdateDialog.module.css';
 
-export type SharedUpdateField='year'|'usage'|'condition'|'finance'|'insurance'|'license'|'serial'|'replacement'|'documents';
+export type SharedUpdateField='current'|'year'|'usage'|'condition'|'finance'|'insurance'|'license'|'serial'|'replacement'|'documents';
 type Asset={id:string;title:string;kind:string;categoryLabel?:string;brand?:string;model?:string;serialNumber?:string;note?:string;yearModel:number|null;usageReading:number|null;usageMetric:string;condition:string;replacementPriceExVat?:number|null;currentValue?:number|null;insuredValue?:number|null;photos?:string[]};
 type Draft={title:string;brand:string;model:string;note:string;year:string;usage:string;condition:string};
 type Document={id:string;title:string;fileName:string};
 function draftFor(a:Asset):Draft{return {title:a.title,brand:a.brand||'',model:a.model||'',note:a.note||'',year:String(a.yearModel??''),usage:String(a.usageReading??''),condition:a.condition||''};}
 export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onSaved,initialField}:{endpoint:string;assetTitle:string;onClose:()=>void;onSaved?:()=>void;initialField?:SharedUpdateField}) {
  const router=useRouter();
+ const [valueField,setValueField]=useState<'current'|'replacement'|null>(initialField==='current'||initialField==='replacement'?initialField:null);
+ const [valueRefresh,setValueRefresh]=useState(0);
  const [paperDirty,setPaperDirty]=useState(false);
  const [paperFocus,setPaperFocus]=useState<'finance'|'insurance'|'license'|undefined>(initialField==='finance'||initialField==='insurance'||initialField==='license'?initialField:undefined);
  const [section,setSection]=useState<'menu'|'details'|'paperwork'|'documents'>(initialField?['finance','insurance','license'].includes(initialField)?'paperwork':initialField==='documents'?'documents':'details':'menu');
@@ -30,7 +33,7 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
  const close=()=>{if(!saving.current&&!changed&&!paperDirty){if(section==='menu')onClose();else setSection('menu');}};
  const dialog=useLeadDialog(close,busy||paperDirty);
  const saved=()=>{router.refresh();onSaved?.();};
- useEffect(()=>{const controller=new AbortController();fetch(endpoint+'/details',{cache:'no-store',signal:controller.signal}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load this asset.');setAsset(d.asset);if(!d.asset||!d.permissions)throw Error('Could not load asset details.');setPermissions(d.permissions);const next=draftFor(d.asset);baseline.current=next;setDraft(next);setSerial(d.asset.serialNumber||'');setReplacement(String(d.asset.replacementPriceExVat??''));setStatus('Saved automatically');}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return()=>controller.abort();},[endpoint]);
+ useEffect(()=>{const controller=new AbortController();fetch(endpoint+'/details',{cache:'no-store',signal:controller.signal}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error||'Could not load this asset.');setAsset(d.asset);if(!d.asset||!d.permissions)throw Error('Could not load asset details.');setPermissions(d.permissions);const next=draftFor(d.asset);baseline.current=next;setDraft(next);setSerial(d.asset.serialNumber||'');setReplacement(String(d.asset.replacementPriceExVat??''));setStatus('Saved automatically');}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});return()=>controller.abort();},[endpoint,valueRefresh]);
  useEffect(()=>{if(!asset||!initialField||section!=='details')return;const target=(dialog.current?.querySelector<HTMLElement>(`[data-asset-detail-edit-target="${initialField}"] input`) || dialog.current?.querySelector<HTMLElement>(`[data-asset-detail-edit-target="${initialField}"] button`));target?.focus();target?.scrollIntoView({block:'nearest'});},[asset,initialField,section,dialog]);
  async function loadDocuments(){const r=await fetch(endpoint+'/documents',{cache:'no-store'}),d=await r.json();if(!r.ok)throw Error(d.error);setDocuments(d.documents);}
  useEffect(()=>{if(section==='documents'&&permissions.addDocuments)void loadDocuments().catch(e=>setError(e.message));},[section,permissions.addDocuments,endpoint]);
@@ -51,12 +54,12 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
  useEffect(()=>{if(!draft||!baseline.current||JSON.stringify(draft)===JSON.stringify(baseline.current))return;setStatus('Unsaved changes');const timer=setTimeout(()=>void saveDetails(draft),750);return()=>clearTimeout(timer);},[draft]);
  const changed=!!draft&&!!baseline.current&&JSON.stringify(draft)!==JSON.stringify(baseline.current);
  function update(key:keyof Draft,value:string){setDraft(d=>d?{...d,[key]:value}:d);}
- async function saveCorrection(field:'serialNumber'|'replacementPriceExVat') {
+ async function saveCorrection(field:'serialNumber') {
   if(saving.current)return;saving.current=true;setBusy(true);setError('');setCorrectionNotice('');
   const link=endpoint.match(/^\/api\/asset-share-links\/([^/]+)\/assets\/([^/]+)$/),lead=endpoint.match(/^\/api\/asset-leads\/([^/]+)$/);
   try {
    if(!link&&!lead)throw Error('This asset action is unavailable.');
-   const r=await fetch(link?`/api/asset-share-links/${link[1]}/corrections`:'/api/dealer/asset-corrections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceType:link?'external':'lead',sourceId:link?`${link[1]}:${link[2]}`:lead![1],...(link?{assetId:link[2]}:{}),field,value:field==='serialNumber'?serial:Number(replacement)})}),d=await r.json();
+   const r=await fetch(link?`/api/asset-share-links/${link[1]}/corrections`:'/api/dealer/asset-corrections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sourceType:link?'external':'lead',sourceId:link?`${link[1]}:${link[2]}`:lead![1],...(link?{assetId:link[2]}:{}),field,value:serial})}),d=await r.json();
    if(!r.ok)throw Error(d.error||'Could not save this change.');
    setCorrectionNotice(d.correction?.status==='pending'?'Sent to the owner for approval.':'Saved to the owner’s asset.');if(d.correction?.status!=='pending'&&field==='serialNumber')setAsset(a=>a?{...a,serialNumber:serial}:a);saved();
   }catch(e){setError(e instanceof Error?e.message:'Could not save.');}finally{saving.current=false;setBusy(false);}
@@ -65,6 +68,7 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
   try{const body=new FormData();body.set('requestId',crypto.randomUUID());Array.from(files).forEach(f=>body.append('files',f));const r=await fetch(endpoint+'/photos',{method:'POST',body}),d=await r.json();if(!r.ok)throw Error(d.error||'Could not upload photos.');const fresh=await fetch(endpoint+'/details',{cache:'no-store'}),data=await fresh.json();if(fresh.ok)setAsset(data.asset);setStatus('Photos saved');saved();}
   catch(e){setError(e instanceof Error?e.message:'Could not upload photos.');}finally{saving.current=false;setBusy(false);if(photoInput.current)photoInput.current.value='';}
  }
+ if(valueField)return <SharedAssetValueDialog endpoint={endpoint} assetTitle={assetTitle} field={valueField} onClose={()=>{if(initialField===valueField)onClose();else {setValueField(null);setValueRefresh(v=>v+1);}}} onSaved={saved}/>;
  const title=draft?.title.trim()||assetTitle;
  const shell=`${styles.modalCard} ${styles.assetFormModal} ${styles.managementAccountModal} ${account.modalTheme} ${styles.assetUpdateModal} ${section==='menu'?styles.assetUpdateMenuModal:''} ${local.shell}`;
  const canDetails=Object.values(permissions).some(Boolean);
@@ -97,13 +101,9 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
        </div>
        <fieldset disabled={busy} className={local.fieldset}><AssetDetailsFields className={`${styles.assetTripleGrid} ${refinements.compactGrid}`} year={draft.year} usage={draft.usage} condition={draft.condition} canYear={permissions.yearModel} canUsage={permissions.usage&&asset.usageMetric!=='none'} canCondition={permissions.condition} usageLabel={`Usage (${asset.usageMetric})`} onYear={v=>update('year',v)} onUsage={v=>update('usage',v)} onCondition={v=>update('condition',v)}/></fieldset>
        <div className={`${styles.assetValueBoxGrid} ${refinements.valueGrid}`}>
-        <SharedAssetVatField label="Current value" value={asset.currentValue==null?'':String(asset.currentValue)} className={styles.manualCurrentValueField}/>
-        <SharedAssetVatField label="Replacement price" target="replacement" value={replacement} onChange={permissions.replacementPrice?v=>{setReplacement(v);setCorrectionNotice('');}:undefined} disabled={busy} className={styles.manualReplacementValueField}/>
+        <SharedAssetVatField label="Current value" value={asset.currentValue==null?'':String(asset.currentValue)} className={styles.manualCurrentValueField} onOpen={permissions.suggestValue||permissions.owner?()=>setValueField('current'):undefined} disabled={busy||changed}/>
+        <SharedAssetVatField label="Replacement price" target="replacement" value={replacement} onOpen={permissions.replacementPrice?()=>setValueField('replacement'):undefined} disabled={busy||changed} className={styles.manualReplacementValueField}/>
         <SharedAssetVatField label="Insured value" value={asset.insuredValue==null?'':String(asset.insuredValue)} className={styles.assetInsuredValueField}/>
-       </div>
-       <div className={local.valueActions}>
-        <small>{permissions.replacementPrice?'Replacement price changes need owner approval. Depreciation continues until approved.':'Current value follows automatic depreciation and approved valuations.'}</small>
-        {permissions.replacementPrice&&<button type="button" className={styles.primaryButton} disabled={busy||correctionNotice.includes('approval')||!replacement||Number(replacement)===asset.replacementPriceExVat} onClick={()=>void saveCorrection('replacementPriceExVat')}>Send for approval</button>}
        </div>
        {correctionNotice&&<p role="status">{correctionNotice}</p>}
        <label className={`${styles.field} ${styles.fullWidth} ${styles.assetNotesField} ${refinements.notesField}`}><span>Notes</span><textarea rows={3} value={draft.note} readOnly={!permissions.note} disabled={busy} maxLength={4000} onChange={e=>update('note',e.target.value)}/></label>

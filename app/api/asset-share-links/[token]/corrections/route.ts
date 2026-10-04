@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: {
         if (!asset?.assetId) return businessJson({ error: 'Choose a currently shared asset.' }, 400);
         await limitBusinessAction(`external-correction:${user.id}`, 30);
         const profile = await getAccountProfile(user);
-        const correction = await createOrUpdateDealerAssetCorrection({ dealerUserId: user.id, dealerName: profile.businessName || user.name, actorName: user.name, sourceType: 'external', sourceId: `${params.token}:${asset.assetId}`, field, value: body.value });
+        const correction = await createOrUpdateDealerAssetCorrection({ dealerUserId: user.id, dealerName: profile.businessName || user.name, actorName: user.name, sourceType: 'external', sourceId: `${params.token}:${asset.assetId}`, field, reason: typeof body.reason==='string'?body.reason.trim().slice(0,1500):undefined, value: body.value });
         return businessJson({ correction });
     }
     catch (e) {

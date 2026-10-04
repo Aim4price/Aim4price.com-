@@ -3747,7 +3747,7 @@ export default function LeadsClient({
                         </>}
                         aside={<>
                             {(
-                              <SharedCardValue value={assetValue(lead)} included={!!vatIncluded[lead.id]} onToggle={()=>setVatIncluded(current=>({...current,[lead.id]:!current[lead.id]}))}/>
+                              <SharedCardValue onOpen={lead.maintenanceAccess?.isActive&&lead.maintenanceAccess.permissions.canSuggestCurrentValue?()=>setValueLead(lead):undefined} value={assetValue(lead)} included={!!vatIncluded[lead.id]} onToggle={()=>setVatIncluded(current=>({...current,[lead.id]:!current[lead.id]}))}/>
                             )}
 
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>

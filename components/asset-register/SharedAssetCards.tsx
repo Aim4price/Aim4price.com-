@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { PublicAssetShare } from "../../lib/asset-share-links";
+import SharedAssetValueDialog from "../leads/SharedAssetValueDialog";
 import SharedCardValue from "../leads/SharedCardValue";
 import SharedProblems from "../leads/SharedProblems";
 import ExternalLeadActions, { type ExternalLeadActionData } from "./ExternalLeadActions";
@@ -43,6 +44,7 @@ export default function SharedAssetCards({
   allowBusinessDetails?: boolean;
 }) {
   const router=useRouter();
+  const [valueAsset,setValueAsset]=useState<{id:string;title:string}|null>(null);
   const [vatIncluded,setVatIncluded]=useState<Record<string,boolean>>({});
   const [opened, setOpened] = useState<number | null>(null);
   const openedCardRef = useOutsideCardDismiss(opened !== null, () => setOpened(null));
@@ -73,6 +75,7 @@ export default function SharedAssetCards({
     <main
       className={`${assetStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${leadStyles.dealerDesktopLeads} ${styles.page}`}
     >
+      {valueAsset&&enquiry&&createPortal(<SharedAssetValueDialog endpoint={`/api/asset-share-links/${enquiry.token}/assets/${valueAsset.id}`} assetTitle={valueAsset.title} field="current" onClose={()=>setValueAsset(null)} onSaved={()=>router.refresh()}/>,document.body)}
       <section className={assetStyles.shell}>
       {!share ? (
         <section className={styles.empty}>
@@ -166,7 +169,7 @@ export default function SharedAssetCards({
                       }
                       aside={
                         <>
-                          <SharedCardValue value={item.valueExVat} included={!!vatIncluded[item.assetId||String(index)]} onToggle={()=>setVatIncluded(current=>({...current,[item.assetId||String(index)]:!current[item.assetId||String(index)]}))}/>
+                          <SharedCardValue onOpen={enquiry&&item.assetId&&(enquiry.access==='owner'||(enquiry.access==='active'&&enquiry.permissions.suggestValue))?()=>setValueAsset({id:item.assetId!,title:item.title}):undefined} value={item.valueExVat} included={!!vatIncluded[item.assetId||String(index)]} onToggle={()=>setVatIncluded(current=>({...current,[item.assetId||String(index)]:!current[item.assetId||String(index)]}))}/>
                           <div
                             className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}
                           >
