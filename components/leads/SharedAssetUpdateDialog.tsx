@@ -103,7 +103,6 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
        </div>
        <div className={local.valueActions}>
         <small>{permissions.replacementPrice?'Replacement price changes need owner approval. Depreciation continues until approved.':'Current value follows automatic depreciation and approved valuations.'}</small>
-        {permissions.updateDetails&&<button type="button" className={styles.secondaryButton} disabled={busy||changed||paperDirty} onClick={()=>{setPaperFocus('insurance');setSection('paperwork');}}>Update insurance</button>}
         {permissions.replacementPrice&&<button type="button" className={styles.primaryButton} disabled={busy||correctionNotice.includes('approval')||!replacement||Number(replacement)===asset.replacementPriceExVat} onClick={()=>void saveCorrection('replacementPriceExVat')}>Send for approval</button>}
        </div>
        {correctionNotice&&<p role="status">{correctionNotice}</p>}
