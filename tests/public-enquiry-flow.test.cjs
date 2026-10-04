@@ -48,6 +48,7 @@ test('public enquiry renders an expandable Leads card for every selected asset',
     '../leads/LeadAssetCard':load('components/leads/LeadAssetCard.tsx').default,
     '../leads/LeadAssetDetails':load('components/leads/LeadAssetDetails.tsx').default,
     // Facts and edit shortcuts must stay unmounted until the card is opened.
+    '../leads/SharedAssetValueDialog':()=>null,
     '../leads/SharedCardValue':()=>{throw new Error('Closed cards must not mount the expanded value');},
     '../leads/SharedAssetFacts':()=>{throw new Error('Closed cards must not mount asset facts');},
     'next/navigation':{useRouter:()=>({refresh:()=>{}})},

@@ -40,3 +40,9 @@
  :global(body:not(:has([data-website-canvas]))) .suggestionFooter > button { flex:1; min-width:0; }
 }
 .suggestionDialog .suggestionFooter { flex:1 1 100%; width:100%; justify-content:space-between; }
+
+.suggestionInputRow { display:grid; grid-template-columns:9rem minmax(0,1fr); gap:.6rem; align-items:center; }
+.vatSelect > span { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.vatSelect > button { min-height:3.5rem; padding:.65rem; }
+.suggestionDialog .vatSelect > button { padding:.65rem !important; gap:.35rem !important; }
+.suggestionDialog .vatSelect > button span { white-space:nowrap !important; }

@@ -88,8 +88,9 @@ export async function decideAssetValue(ownerId:string,assetId:string,actor:{id:s
   if(asset.updatedAtIso!==body.revision||asset.updatedAtIso!==initial.updatedAtIso)throw Error('This asset changed. Reload the review and confirm its latest value.');
   if(proposalId){const pending=(await client.query("SELECT id FROM asset_value_requests WHERE id=$1::uuid AND owner_id=$2 AND asset_id=$3::uuid AND status='pending' FOR UPDATE",[proposalId,ownerId,assetId])).rows[0];if(!pending)throw Error('This suggestion has already been reviewed.');}
   if(legacyId){
-   const correction=(await client.query("SELECT id,proposed_replacement_price_ex_vat FROM dealer_asset_correction_requests WHERE id=$1::uuid AND owner_user_id=$2 AND asset_register_item_id=$3::uuid AND status='pending' AND replacement_price_changed=true FOR UPDATE",[legacyId,ownerId,assetId])).rows[0];
+   const correction=(await client.query("SELECT id,proposed_replacement_price_ex_vat,reason FROM dealer_asset_correction_requests WHERE id=$1::uuid AND owner_user_id=$2 AND asset_register_item_id=$3::uuid AND status='pending' AND replacement_price_changed=true FOR UPDATE",[legacyId,ownerId,assetId])).rows[0];
    if(!correction||Number(correction.proposed_replacement_price_ex_vat)!==replacementPrice)throw Error('This replacement suggestion changed or was already reviewed.');
+   after.suggestionReason=correction.reason||null;
    await client.query("UPDATE dealer_asset_correction_requests SET status='accepted',resolved_by_user_id=$2,resolved_at=now(),revaluation_status='not_required',updated_at=now() WHERE id=$1::uuid",[legacyId,actor.id]);
   }
   if(kind!=='decline'){

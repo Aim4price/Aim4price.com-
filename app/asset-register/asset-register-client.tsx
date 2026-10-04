@@ -2395,7 +2395,7 @@ function dealerCorrectionDescription(correction: DealerAssetCorrectionRequest): 
     const currentValue = correction.currentReplacementPriceExVat === null
       ? 'not saved'
       : `${money(correction.currentReplacementPriceExVat)} excl. VAT`;
-    return `${actor} proposed changing the replacement price from ${currentValue} to ${money(correction.proposedReplacementPriceExVat)} excl. VAT.`;
+    return `${actor} proposed changing the replacement price from ${currentValue} to ${money(correction.proposedReplacementPriceExVat)} excl. VAT.${correction.reason?` Reason: ${correction.reason}`:''}`;
   }
 
   if (correction.licenseRenewalDateChanged && correction.proposedLicenseRenewalDate) {
@@ -2444,7 +2444,7 @@ function parseRegisterValueInput(value: unknown): number {
 
 type AssetPriceVatMode = 'excluded' | 'included';
 
-function AssetVatValueField({ label, value, onChange, initialVatMode, className, placeholder, target }: {
+function AssetVatValueField({ label, value, onChange, initialVatMode, className, placeholder, target, onOpen, disabled }: {
   label: string;
   value: string;
   onChange: (valueExVat: string) => void;
@@ -2452,6 +2452,8 @@ function AssetVatValueField({ label, value, onChange, initialVatMode, className,
   className: string;
   placeholder: string;
   target?: AssetDetailEditTarget;
+  onOpen?:()=>void;
+  disabled?:boolean;
 }) {
   const [vatMode, setVatMode] = useState(initialVatMode);
   // Keep the typed inclusive amount while storing the existing whole-rand, ex-VAT draft.
@@ -2477,6 +2479,12 @@ function AssetVatValueField({ label, value, onChange, initialVatMode, className,
         <div className={styles.manualCurrencyInput}>
           <span>R</span>
           <input
+            readOnly={!!onOpen}
+            disabled={disabled}
+            onClick={onOpen}
+            role={onOpen?'button':undefined}
+            aria-haspopup={onOpen?'dialog':undefined}
+            onKeyDown={event=>{if(onOpen&&(event.key==='Enter'||event.key===' ')){event.preventDefault();onOpen();}}}
             aria-label={label.replace(' *', '')}
             type="text"
             inputMode="numeric"
@@ -6426,6 +6434,12 @@ export default function AssetRegisterClient({
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
   const [valueReviewCorrectionId,setValueReviewCorrectionId]=useState<string|undefined>();
   const [valueReviewReplacement,setValueReviewReplacement]=useState<number|undefined>();
+  const [valueReviewInitial,setValueReviewInitial]=useState<'override'|'replacement'|undefined>();
+  const valueEditorReturn=useRef<RegisterAsset|null>(null);
+  function openConfirmedValue(asset:RegisterAsset,field:'override'|'replacement',fromEditor=false){
+    if(fromEditor){if(assetAutosaveState==='pending'||assetAutosaveState==='saving'||assetAutosaveState==='error')return;valueEditorReturn.current=asset;setIsAssetModalOpen(false);resetEditor();}
+    setValueReviewInitial(field);setValueReviewAsset(asset);
+  }
   const [valueReviewAsset,setValueReviewAsset]=useState<RegisterAsset|null>(null);
   const [pendingValueAssets,setPendingValueAssets]=useState<string[]>([]);
   const valueReviewOpened=useRef(false);
@@ -9658,6 +9672,7 @@ export default function AssetRegisterClient({
   ) {
     if (!canUseOwnerOnlyAssetActions || !canQuickEditAssetDetail(asset, target)) return;
 
+    if(target==='replacement'){openConfirmedValue(asset,'replacement');return;}
     rememberAssetModalReturn(asset, 'card', `detail-${target}`, trigger);
     setExpandedAssetId(asset.id);
     openUpdater(asset, target);
@@ -16648,7 +16663,7 @@ export default function AssetRegisterClient({
                               <div className={styles.assetValueVatDisplay}>
                                 <div className={styles.assetValueVatText}>
                                   <div className={styles.assetValueVatAmountRow}>
-                                    <strong>{money(displayedAssetValue)}</strong>
+                                    <strong role={canUseOwnerOnlyAssetActions?'button':undefined} tabIndex={canUseOwnerOnlyAssetActions?0:undefined} aria-label={canUseOwnerOnlyAssetActions?'Change current value':undefined} onClick={()=>{if(canUseOwnerOnlyAssetActions)openConfirmedValue(asset,'override');}} onKeyDown={event=>{if(canUseOwnerOnlyAssetActions&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openConfirmedValue(asset,'override');}}}>{money(displayedAssetValue)}</strong>
                                     <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />
                                   </div>
                                   <span>{assetValueVatLabel}</span>
@@ -18457,6 +18472,8 @@ export default function AssetRegisterClient({
                       <div className={`${styles.assetValueBoxGrid} ${updateStyles.valueGrid}`}>
                         <AssetVatValueField
                           key={`${editingAssetId ?? 'new'}-value`}
+                          onOpen={editingAsset?()=>openConfirmedValue(editingAsset,'override',true):undefined}
+                          disabled={!!editingAsset&&['pending','saving','error'].includes(assetAutosaveState)}
                           label={currentValueFieldLabel}
                           value={assetDraft.value}
                           onChange={(value) => setAssetDraft((current) => ({ ...current, value }))}
@@ -18467,6 +18484,8 @@ export default function AssetRegisterClient({
                         {replacementPriceRequiredForDraft ? (
                           <AssetVatValueField
                             key={`${editingAssetId ?? 'new'}-replacement`}
+                            onOpen={editingAsset?()=>openConfirmedValue(editingAsset,'replacement',true):undefined}
+                            disabled={!!editingAsset&&['pending','saving','error'].includes(assetAutosaveState)}
                             label={replacementValueFieldLabel}
                             value={assetDraft.replacementPrice}
                             onChange={(replacementPrice) => setAssetDraft((current) => ({ ...current, replacementPrice }))}
@@ -19729,7 +19748,7 @@ export default function AssetRegisterClient({
         </AssetAccessSettingsDialog>
       ) : null}
 
-      {valueReviewAsset&&createPortal(<AssetValueDialog endpoint={`/api/asset-register/${valueReviewAsset.id}/value`} assetTitle={valueReviewAsset.title} initialReplacement={valueReviewReplacement} legacyCorrectionId={valueReviewCorrectionId} onClose={()=>{setValueReviewAsset(null);setValueReviewReplacement(undefined);setValueReviewCorrectionId(undefined)}} onSaved={item=>{if(item)syncUpdatedAsset(item);void reloadValueRequests();}}/>,document.body)}
+      {valueReviewAsset&&createPortal(<AssetValueDialog endpoint={`/api/asset-register/${valueReviewAsset.id}/value`} assetTitle={valueReviewAsset.title} initialView={valueReviewInitial} initialReplacement={valueReviewReplacement} legacyCorrectionId={valueReviewCorrectionId} onClose={()=>{setValueReviewAsset(null);setValueReviewReplacement(undefined);setValueReviewCorrectionId(undefined);setValueReviewInitial(undefined);if(valueEditorReturn.current){openUpdater(valueEditorReturn.current);valueEditorReturn.current=null;}}} onSaved={item=>{if(item){syncUpdatedAsset(item);if(valueEditorReturn.current)valueEditorReturn.current=item;}void reloadValueRequests();}}/>,document.body)}
       {replacementPriceRevaluePrompt ? (
         <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeReplacementPriceRevaluePrompt} />

@@ -67,6 +67,24 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Override current value');await fill('input[type=number]','750000');await fill('textarea','Owner inspection');await click('Confirm override');await page.waitForFunction(()=>window.data.asset.value===750000);
  await click('Change replacement price');await fill('input[type=number]','1200000');await fill('textarea','Updated replacement quotation');await click('Preview change');await page.waitForFunction(()=>document.body.textContent.includes('960'));await page.screenshot({path:'/tmp/value-replacement.png'});await click('Keep current value');await page.waitForFunction(()=>window.writes.some(w=>w.mode==='keep'));assert.equal(await page.evaluate(()=>window.writes.find(w=>w.mode==='keep').replacementPrice),1200000);
  await page.evaluate(()=>window.renderValue(true));await fill('input[type=number]','850000');await fill('textarea','Professional inspection');await page.screenshot({path:'/tmp/value-suggestion-polished.png'});await click('Send suggestion');await page.waitForFunction(()=>document.body.textContent.includes('Suggestion sent.'));assert.equal(await page.evaluate(()=>window.writes.at(-1).action),'suggest');assert.equal(await page.evaluate(()=>window.data.asset.value),750000,'Suggestion does not mutate the live asset');
+ await page.evaluate(()=>{
+  const previous=window.fetch;window.scopeOwner=false;
+  window.fetch=async(url,options)=>String(url).endsWith('/details')?{ok:true,json:async()=>({asset:{id:'asset',replacementPriceExVat:1000000},permissions:{owner:window.scopeOwner,replacementPrice:true,suggestValue:true}})}:String(url).endsWith('/corrections')?{ok:true,json:async()=>{window.writes.push(JSON.parse(options.body));return {correction:{status:'pending'}};}}:previous(url,options);
+  window.renderSharedValue=(owner,field)=>{window.scopeOwner=owner;window.root.render(React.createElement(require('components/leads/SharedAssetValueDialog').default,{key:String(owner)+field,endpoint:'/api/asset-share-links/token/assets/asset',assetTitle:'2023 Tractor',field,onClose:()=>{}}));};
+  window.renderSharedValue(false,'replacement');
+ });
+ await page.waitForFunction(()=>document.body.textContent.includes('Suggest replacement price'));
+ await fill('input[type=number]','1150000');await fill('textarea','New supplier quotation');
+ await click('Send suggestion');await page.waitForFunction(()=>document.body.textContent.includes('Sent to the owner for approval.'));
+ assert.equal(await page.evaluate(()=>window.writes.at(-1).reason),'New supplier quotation');
+ assert.equal(await page.evaluate(()=>window.data.asset.value),750000,'Replacement suggestion does not mutate current value');
+ await page.evaluate(()=>window.renderSharedValue(true,'replacement'));
+ await page.waitForFunction(()=>document.body.textContent.includes('Change replacement price'));
+ await page.waitForFunction(()=>document.querySelector('input[type=number]')?.value==='1000000');
+ assert.equal(await page.$$eval('button',nodes=>nodes.filter(n=>n.textContent==='Send suggestion').length),0,'Owner opens confirmed replacement flow');
+ await page.evaluate(()=>window.renderSharedValue(true,'current'));
+ await page.waitForFunction(()=>document.body.textContent.includes('Override current value'));
+ assert(await page.evaluate(()=>[...document.querySelectorAll('button')].some(n=>n.textContent==='Confirm override')));
  assert.deepEqual(errors,[]);console.log('PASS owner approval, override, replacement preview/keep choice, and shared suggestion flow');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

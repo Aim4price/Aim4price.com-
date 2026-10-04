@@ -80,7 +80,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$$eval('[role="dialog"]',nodes=>nodes.length),2);
  await page.screenshot({path:'/tmp/shared-correction-modal.png'});
  await page.keyboard.press('Escape');await click('Exit');await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);
- await click('Update replacement price');await page.waitForSelector('[data-asset-detail-edit-target=replacement] input');await page.keyboard.press('Escape');await click('Exit');
+ await click('Update replacement price');await page.waitForFunction(()=>document.body.textContent.includes('Suggest replacement price'));await page.keyboard.press('Escape');
  await click('Reports');await page.waitForSelector('[data-download-dialog]');assert.equal(await page.$eval('[data-download-option]',a=>a.getAttribute('href')),'/api/asset-share-links/'+props.token+'/reports/report-1');await page.screenshot({path:'/tmp/shared-reports-modal.png'});await page.keyboard.press('Escape');
  await click('Invoices');await page.waitForSelector('input[type=file]');await page.screenshot({path:'/tmp/shared-documents-modal.png'});await page.keyboard.press('Escape');
  await click('Update serial number');await page.waitForSelector('input');await page.$eval('[data-asset-detail-edit-target=serial] input',node=>{const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(node,'NEW-456');node.dispatchEvent(new Event('input',{bubbles:true}));});await click('Save serial number');
@@ -275,7 +275,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  for(const [label,heading] of [['serial','Serial / reference'],['replacement price','Replacement price'],['mapped','Asset location']]){
   await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
   await page.waitForFunction(heading=>document.body.textContent.includes(heading),{},heading);
-  await page.keyboard.press('Escape');if(label!=='mapped')await click('Exit');
+  await page.keyboard.press('Escape');if(label==='serial')await click('Exit');
  }
  for(const [label,section] of [['financed','finance'],['insured','insurance'],['licensed','license']]){
   await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
