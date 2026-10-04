@@ -315,7 +315,15 @@ async function check(browser, url) {
   const autoModalWidth=await page.$eval('[aria-labelledby="add-asset-choice-title"]',e=>parseFloat(getComputedStyle(e).width));
   await page.screenshot({path:path.join(output,'register-modal-auto-430.png')});
   await page.click('[aria-label="Close add asset options"]');
-  for(let i=0;i<150;i++) await page.$eval('[aria-label="Zoom in"]',e=>e.click());
+  // Set the intended 150% scenario directly; repeated steps depend on the
+  // current automatic scale and no longer stop at the former 150% maximum.
+  await page.$eval('[aria-label="Zoom in"]',e=>e.click());
+  await page.waitForSelector('#website-zoom-slider', {visible:true});
+  await page.$eval('#website-zoom-slider',e=>{
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'150');
+    e.dispatchEvent(new Event('input',{bubbles:true}));
+    e.dispatchEvent(new Event('change',{bubbles:true}));
+  });
   await page.waitForFunction(()=>Number(document.querySelector('[data-website-canvas]').dataset.websiteScale)===1.5);
   await page.$eval('[aria-label="Close page size"]',e=>e.click());
   await openAssetChoice();
