@@ -112,6 +112,7 @@ test('History deletion is owner-only, requires revocation and keeps the revoked 
   const migration=fs.readFileSync('database/migrations/124-share-history-removal.sql','utf8');await pg.exec(migration);await pg.exec(migration);
   for(const [token,owner,isRevoked] of [[active,'owner',false],[revoked,'owner',true],[foreign,'other',true]])await pg.query('INSERT INTO asset_share_links(token,user_id,revoked_at,asset_ids) VALUES($1,$2,$3,$4)',[token,owner,isRevoked?new Date():null,[assetId]]);
   const route=load('app/api/asset-share-links/history/route.ts',{
+   '../../../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
    '../../../../lib/auth-session':{getServerSession:async()=>session},
    '../../../../lib/asset-register-account-access':{getAssetRegisterAccountAccess:async()=>allowed},
    '../../../../lib/guest-lead-schema':{ensureGuestLeadSchema:async()=>{}},

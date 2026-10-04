@@ -8,8 +8,8 @@
 .details small { color:var(--app-muted,#64746a); font-size:.78rem; grid-row:2; }
 .status { grid-column:2; grid-row:1 / 3; align-self:center; border-radius:2rem; padding:.3rem .6rem; background:var(--app-surface-soft,#edf6f1); color:var(--app-text,#15392f); font-size:.72rem; font-weight:650; white-space:nowrap; }
 .status[data-revoked=true] { color:var(--app-muted,#64746a); background:var(--app-surface-soft,#f3f5f4); }
-.actions { display:flex; align-items:center; gap:.6rem; flex:none; }
-.panel button,.panel a { display:inline-flex; align-items:center; justify-content:center; min-height:2.6rem; box-sizing:border-box; padding:.6rem .9rem; border:1px solid var(--app-line,#c5d9cc); border-radius:.65rem; background:var(--app-surface,#fff); color:var(--app-text,#15392f); font:600 .85rem/1.3 Montserrat,Arial,sans-serif; text-decoration:none; cursor:pointer; white-space:nowrap; }
+.actions { display:flex; flex-wrap:wrap; align-items:center; gap:.6rem; flex:none; }
+.panel button,.panel a { display:inline-flex; align-items:center; justify-content:center; min-height:2.6rem; box-sizing:border-box; padding:.6rem .9rem; border:1px solid var(--app-line,#c5d9cc); border-radius:.65rem; background:var(--app-surface,#fff); color:var(--app-text,#15392f); font:600 .85rem/1.3 var(--font-body, 'Montserrat'),sans-serif; text-decoration:none; cursor:pointer; white-space:nowrap; }
 .panel a { background:var(--app-surface-soft,#edf6f1); }
 .panel .revoke { color:var(--app-danger,#a33737); }
 .panel button:hover:not(:disabled),.panel a:hover { background:var(--app-surface-soft,#edf6f1); }

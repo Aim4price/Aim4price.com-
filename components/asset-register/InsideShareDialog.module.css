@@ -2,7 +2,7 @@
 .header { flex:none; padding-bottom:1.6rem; }
 .header.header p { margin-top:.65rem; font-size:1rem; }
 .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.1rem; padding-top:1.6rem; min-height:0; overflow-y:auto; }
-.card { --tone:#13775b; --border:#a5ddcc; --tint:#f4fffa; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.75rem; min-width:0; min-height:9rem; padding:1.25rem; border:1px solid var(--app-info-line, var(--border)); border-radius:1rem; background:radial-gradient(ellipse at top,color-mix(in srgb,var(--app-info-soft, var(--border)) 25%,transparent),transparent 60%),linear-gradient(var(--app-surface, #fff),var(--app-info-soft, var(--tint))); color:var(--app-text, #12352d); font-family:Montserrat,Arial,sans-serif; cursor:pointer; transition:box-shadow .15s,border-color .15s; }
+.card { --tone:#13775b; --border:#a5ddcc; --tint:#f4fffa; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.75rem; min-width:0; min-height:9rem; padding:1.25rem; border:1px solid var(--app-info-line, var(--border)); border-radius:1rem; background:radial-gradient(ellipse at top,color-mix(in srgb,var(--app-info-soft, var(--border)) 25%,transparent),transparent 60%),linear-gradient(var(--app-surface, #fff),var(--app-info-soft, var(--tint))); color:var(--app-text, #12352d); font-family:var(--font-body, 'Montserrat'),sans-serif; cursor:pointer; transition:box-shadow .15s,border-color .15s; }
 .card[data-tone=finance] { --tone:#926016; --border:#efd0a5; --tint:#fffbf3; }
 .card[data-tone=outside], .card[data-tone=insurance] { --tone:#2756d7; --border:#bbceff; --tint:#f7faff; }
 .card[data-tone=license_renewal] { --tone:#642abb; --border:#d8c4ff; --tint:#fcf9ff; }
@@ -47,3 +47,5 @@
 @media (max-width: 640px) {
   :global(body:not(:has([data-website-canvas]))) .destinationGrid { grid-template-columns: minmax(0, 1fr); }
 }
+
+.card strong { font-family: var(--font-heading, 'Montserrat'), sans-serif; }
