@@ -11,6 +11,7 @@ export type AdminSection =
   | "businesses"
   | "maintenance-catalogue"
   | "dashboard"
+  | "asset-values"
   | "valuations"
   | "marketplace"
   | "asset-map"
@@ -25,6 +26,7 @@ const ADMIN_LINKS: Array<{
   href: string;
   label: string;
 }> = [
+  {href:"/admin/asset-values",label:"Asset values",key:"asset-values"},
   { href: "/admin/billing", label: "Billing", key: "billing" },
   {
     href: "/admin",

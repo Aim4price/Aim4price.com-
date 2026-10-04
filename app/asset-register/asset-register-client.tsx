@@ -1,4 +1,5 @@
 'use client';
+import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
 import {loadLeaflet} from '../../lib/asset-location-map';
 import AssetLocationEditor from '../../components/AssetLocationEditor';
 import ModalSelect, {type ModalSelectOption} from '../../components/AssetModalSelect';
@@ -6422,6 +6423,14 @@ export default function AssetRegisterClient({
   const [busyIssueNoteStatusId, setBusyIssueNoteStatusId] = useState<string | null>(null);
   const [busyDealerCorrectionId, setBusyDealerCorrectionId] = useState<string | null>(null);
   const [busyRevalueAction, setBusyRevalueAction] = useState<RevalueMethod | null>(null);
+  const [valueReviewCorrectionId,setValueReviewCorrectionId]=useState<string|undefined>();
+  const [valueReviewReplacement,setValueReviewReplacement]=useState<number|undefined>();
+  const [valueReviewAsset,setValueReviewAsset]=useState<RegisterAsset|null>(null);
+  const [pendingValueAssets,setPendingValueAssets]=useState<string[]>([]);
+  const valueReviewOpened=useRef(false);
+  async function reloadValueRequests(){try{const r=await fetch('/api/asset-register/value-requests',{cache:'no-store'});if(r.ok){const d=await r.json();setPendingValueAssets((d.requests||[]).filter((x:{status:string})=>x.status==='pending').map((x:{asset_id:string})=>x.asset_id));}}catch{}}
+  useEffect(()=>{void reloadValueRequests();},[]);
+  useEffect(()=>{if(valueReviewOpened.current||isLoading)return;const p=new URLSearchParams(window.location.search);if(p.get('valueReview')!=='1')return;const asset=assets.find(a=>a.id===p.get('assetId'));if(asset){valueReviewOpened.current=true;setValueReviewAsset(asset);}},[assets,isLoading]);
   const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
   const revaluePreviewRequestSeqRef = useRef(0);
@@ -13278,6 +13287,7 @@ export default function AssetRegisterClient({
     correction: DealerAssetCorrectionRequest,
     decision: 'accept' | 'reject',
   ) {
+    if(decision==='accept'&&correction.replacementPriceChanged&&correction.proposedReplacementPriceExVat!==null){const asset=assets.find(a=>a.id===correction.assetId);if(asset){setValueReviewReplacement(correction.proposedReplacementPriceExVat);setValueReviewCorrectionId(correction.id);setValueReviewAsset(asset);}return;}
     setBusyDealerCorrectionId(correction.id);
 
     try {
@@ -16691,6 +16701,7 @@ export default function AssetRegisterClient({
                             </div>
                           </div>
 
+                          {pendingValueAssets.includes(asset.id)&&canUseOwnerOnlyAssetActions&&<div className={styles.partnerNoteBanner}><div className={styles.partnerNoteText}><strong>Value suggestion awaiting review</strong><p>The current asset value has not changed.</p></div><button className={styles.primaryButton} onClick={()=>setValueReviewAsset(asset)}>Review value</button></div>}
                           {dealerAssetCorrection && canUseOwnerOnlyAssetActions ? (
                             <div className={`${styles.dealerCorrectionBanner} ${dealerCorrectionRevaluationAlert ? styles.dealerCorrectionBannerWarning : ''}`} role="status">
                               <div className={styles.dealerCorrectionCopy}>
@@ -19711,6 +19722,7 @@ export default function AssetRegisterClient({
         </AssetAccessSettingsDialog>
       ) : null}
 
+      {valueReviewAsset&&createPortal(<AssetValueDialog endpoint={`/api/asset-register/${valueReviewAsset.id}/value`} assetTitle={valueReviewAsset.title} initialReplacement={valueReviewReplacement} legacyCorrectionId={valueReviewCorrectionId} onClose={()=>{setValueReviewAsset(null);setValueReviewReplacement(undefined);setValueReviewCorrectionId(undefined)}} onSaved={item=>{if(item)syncUpdatedAsset(item);void reloadValueRequests();}}/>,document.body)}
       {replacementPriceRevaluePrompt ? (
         <div className={`${styles.modalOverlay} ${styles.assetSettingsConfirmOverlay}`} data-website-overlay>
           <div className={styles.modalBackdrop} data-website-overlay onClick={closeReplacementPriceRevaluePrompt} />
@@ -19739,12 +19751,12 @@ export default function AssetRegisterClient({
 
             <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
               <p className={styles.assetSettingsConfirmCopy}>
-                Do you want to recalculate this asset’s Aim4price value using {money(replacementPriceRevaluePrompt.newReplacementPriceExVat)} excl. VAT?
+                Replacement price is now {money(replacementPriceRevaluePrompt.newReplacementPriceExVat)} excl. VAT. A higher or lower replacement price can change current value. Recalculate, or open value settings to preserve the current amount as the starting value for future depreciation.
               </p>
 
               <div className={styles.assetSettingsActions}>
-                <button type="button" className={styles.secondaryButton} onClick={closeReplacementPriceRevaluePrompt}>
-                  Not now
+                <button type="button" className={styles.secondaryButton} onClick={()=>{setValueReviewReplacement(replacementPriceRevaluePrompt.newReplacementPriceExVat);setValueReviewAsset(replacementPriceRevaluePrompt.asset);closeReplacementPriceRevaluePrompt();}}>
+                  Keep current value
                 </button>
                 <button type="button" className={styles.primaryButton} onClick={openReplacementPriceRevaluePromptFlow}>
                   Recalculate value
@@ -20079,6 +20091,7 @@ export default function AssetRegisterClient({
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
               <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
+                <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Override &amp; review values</strong><small>Current value, replacement price and history.</small></span></button>
                 <button
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
@@ -20307,7 +20320,7 @@ export default function AssetRegisterClient({
                 </>
               ) : (
                 <>
-                  <button type="button" className={styles.secondaryButton} onClick={closePricingPreviewDialog} disabled={isSavingPricingPreview}>
+                  <button type="button" className={styles.secondaryButton} onClick={()=>{if(pricingPreviewShouldSaveReplacement&&pricingPreview.replacementPriceExVat){setValueReviewReplacement(pricingPreview.replacementPriceExVat);setValueReviewAsset(pricingPreview.asset);}closePricingPreviewDialog();}} disabled={isSavingPricingPreview}>
                     Keep current value
                   </button>
                   <button

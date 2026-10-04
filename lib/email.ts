@@ -9,6 +9,7 @@ type SendAim4priceEmailInput = {
   html: string;
   text: string;
   replyTo?: string;
+  idempotencyKey?: string;
   usage?: {accountId:string;actorId:string;eventKey:string};
 };
 
@@ -119,6 +120,7 @@ export async function sendAim4priceEmail(
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
+      ...(input.idempotencyKey ? {"Idempotency-Key":input.idempotencyKey} : {}),
     },
     body: JSON.stringify({
       from: getEmailFromAddress(),

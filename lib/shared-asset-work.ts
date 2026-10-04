@@ -48,7 +48,7 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
                 return businessJson({ items: await listAssetChecklistItems(scope.ownerId, scope.assetId) });
             if (action === 'history') {
                 await ensureSharedAssetActivity();
-                return businessJson({ items: (await getDb().query('SELECT actor_name,action,before_data,after_data,created_at FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid ORDER BY created_at DESC LIMIT 100', [scope.ownerId, scope.assetId])).rows.filter(row => ['finance updated','insurance updated','license updated'].includes(row.action) ? Boolean(detailsScope) : row.action === 'Location updated' ? Boolean(locationScope) : true) });
+                return businessJson({ items: (await getDb().query('SELECT actor_name,action,before_data,after_data,created_at FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid ORDER BY created_at DESC LIMIT 100', [scope.ownerId, scope.assetId])).rows.filter(row => row.action.startsWith('Value ') ? scope.user.id === scope.ownerId : ['finance updated','insurance updated','license updated'].includes(row.action) ? Boolean(detailsScope) : row.action === 'Location updated' ? Boolean(locationScope) : true) });
             }
             const usage = resolveAssetUsage(asset);
             return businessJson({ asset: { ...mapMyInvoiceAssetOption(asset), usageMetric: usage.metric === 'not_applicable' ? 'none' : usage.metric, usageReading: usage.value, condition: asset.condition || '', maintenanceIdentity: maintenanceIdentity(asset) }, permissions: {...Object.fromEntries(fields.map((f, i) => [f, Boolean(scopes[i])])), updateDetails: Boolean(detailsScope)} });
