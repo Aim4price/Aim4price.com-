@@ -1,6 +1,7 @@
 'use client';
 import type { ExternalSharePermissions } from '../../lib/external-share-permissions';
 import { useState } from 'react';
+import AssetReportTypeIcon from './AssetReportTypeIcon';
 import LeadReportDialog from '../leads/LeadReportDialog';
 import DealerMaintenanceReportModal from '../DealerMaintenanceReportModal';
 import DealerCostOfOwnershipReportModal from '../DealerCostOfOwnershipReportModal';
@@ -36,7 +37,7 @@ export default function SharedLiveReports({token,assetId,assetTitle,onClose,perm
   }}/>;
   return <LeadReportDialog title={assetTitle} description="Shared reports · latest asset information" onClose={onClose}>
     {reports.filter(report => report.key === 'maintenance' ? permissions.maintenanceReports : report.key === 'cost' ? permissions.costOfOwnership : true).map(report=><button key={report.key} type="button" className={styles.assetReportOptionButton} data-download-option="true" onClick={()=>setSelected(report.key)}>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6"/></svg>
+      <AssetReportTypeIcon kind={report.key === 'cost' ? 'ownership' : report.key} className={styles.buttonIcon} />
       <span><strong>{report.label}</strong><small>{report.description}</small></span>
     </button>)}
   </LeadReportDialog>;
