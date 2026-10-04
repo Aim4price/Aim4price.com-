@@ -76,6 +76,7 @@ export default function Validation(){
    }
    if(p==='/api/asset-share-links'&&req.method()==='POST')body={share:{token,sender_name:'Saved Business Ltd'}};
    if(p==='/api/asset-share-links'&&req.method()==='DELETE')history=history.map(x=>({...x,revoked_at:'2026-09-22T00:00:00Z'}));
+   if(p.endsWith('/details')&&p.includes('/assets/')&&req.method()==='GET')body={asset:{id:'10000000-0000-4000-8000-000000000001',title:'Test bakkie',kind:'vehicle',serialNumber:'TEST-1',yearModel:2022,usageReading:100,usageMetric:'km',condition:'good',currentValue:200000,replacementPriceExVat:300000,photos:[]},permissions:{serialNumber:true,replacementPrice:true}};
    if(p.endsWith('/corrections'))body={correction:{id:'fixture-correction',status:'pending',replacementPriceChanged:true,proposedReplacementPriceExVat:JSON.parse(req.postData()).value}};
    if(p.endsWith('/submissions')){
     if(req.method()==='POST')documents=[{id:'10000000-0000-4000-8000-000000000003',kind:'quote',sender_name:'Sam',sender_contact:'sam@example.com',note:'Service quote',file_name:'quote.pdf',status:'pending',created_at:'2026-09-24T00:00:00Z'}];
@@ -303,9 +304,15 @@ export default function Validation(){
    await closeChild();await page.click('[aria-label="Close lead management"]');await click('Fixture activated');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await page.waitForSelector('a[href*="/reports/"]');
    await closeChild();await click('Update replacement price');
-   await fill('[role="dialog"] input[type=number]','100000');await click('Send to owner');
-   await page.waitForFunction(()=>document.body.textContent.includes('update waiting for owner approval'));
+   const priceField='[data-asset-detail-edit-target="replacement"] input';
+   await page.waitForSelector(priceField);
+   assert.equal(await page.$eval(priceField,input=>input.closest('[role="dialog"]').querySelector('h3').textContent),'Test bakkie','Price action opens the owner-style asset editor');
+   await page.waitForFunction(()=>document.activeElement?.closest('[data-asset-detail-edit-target="replacement"]'));
+   await fill(priceField,'100000');await click('Send for approval');
+   await page.waitForFunction(()=>document.body.textContent.includes('Sent to the owner for approval.'));
    const proposed=requests.filter(r=>r.path.endsWith('/corrections')).at(-1);assert.equal(JSON.parse(proposed.data).value,100000);assert.equal(JSON.parse(proposed.data).assetId,'10000000-0000-4000-8000-000000000001');
+   await click('Done');await page.waitForSelector('[role="dialog"][aria-label="Update asset"]');await click('Exit');
+   await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);
    await click('Invoices & quotes');
    assert.equal(await page.$('[name=name]'),null,'Verified identity cannot be edited');
    await page.type('[name=note]','Service quote');
