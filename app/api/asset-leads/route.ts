@@ -64,6 +64,8 @@ function readTrackingPermissions(value: unknown): DealerMaintenancePermissions |
     canCreateMaintenanceSchedules: permissions.canCreateMaintenanceSchedules as boolean,
     canAddPhotos: permissions.canAddPhotos === true,
     canAddCosts: permissions.canAddCosts === true,
+    canUpdateDetails: permissions.canUpdateDetails === true,
+    canAccessLocation: permissions.canAccessLocation === true,
     canUpdateYear: permissions.canUpdateYear === true,
     canUpdateUsage: permissions.canUpdateUsage === true,
     canUpdateCondition: permissions.canUpdateCondition === true,

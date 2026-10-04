@@ -23,9 +23,11 @@ export default function ExternalAccessRequests({token}: {token:string}) {
   if(p.maintenanceReports)views.push(['maintenanceReports','Maintenance reports']);
   if(p.costOfOwnership)views.push(['costOfOwnership','Cost of ownership']);
   const updates:Array<[ExternalSharePermission,string]>=[];
-  if(p.yearModel)updates.push(['yearModel','Update year']);
-  if(p.usage)updates.push(['usage','Update usage']);
-  if(p.condition)updates.push(['condition','Update condition']);
+  if(p.updateDetails)updates.push(['updateDetails','Update details, finance, insurance and licensing']);
+  if(p.location)updates.push(['location','View and update asset location']);
+  if(!p.updateDetails&&p.yearModel)updates.push(['yearModel','Update year']);
+  if(!p.updateDetails&&p.usage)updates.push(['usage','Update usage']);
+  if(!p.updateDetails&&p.condition)updates.push(['condition','Update condition']);
   if(p.serialNumber)updates.push(['serialNumber',p.directUpdates?'Update serial number':'Suggest a serial number change']);
   if(p.replacementPrice)updates.push(['replacementPrice',p.directUpdates?'Update replacement price':'Suggest a replacement price change']);
   if(p.addPhotos)updates.push(['addPhotos','Add photos']);

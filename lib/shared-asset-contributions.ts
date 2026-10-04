@@ -12,7 +12,7 @@ import { createMyInvoice, createInvoiceDocumentRecord, type MyInvoiceDraftInput 
 import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundation';
 
 export type ContributionTarget = {token:string;assetId:string} | {leadId:string};
-type Permission = 'loggedProblems' | 'addPhotos' | 'addCosts' | 'yearModel' | 'usage' | 'condition' | 'addMaintenance';
+type Permission = 'updateDetails' | 'location' | 'loggedProblems' | 'addPhotos' | 'addCosts' | 'yearModel' | 'usage' | 'condition' | 'addMaintenance';
 export async function contributionScope(target: ContributionTarget, permission: Permission) {
   if ('token' in target) {
     const scope = await requireLiveSharedAsset(target.token,target.assetId,permission,true);
@@ -26,7 +26,7 @@ export async function contributionScope(target: ContributionTarget, permission: 
   const lead = await getAssetLeadForPartner({dealerUserId:user.id,leadId:target.leadId});
   if (!lead) throw new ExternalLeadAccessError('This asset is no longer shared with you.',403);
   await ensureDealerMaintenanceTrackerTables();
-  const column = {loggedProblems:'can_view_logged_problems',addPhotos:'can_add_photos',addCosts:'can_add_costs',yearModel:'can_update_year',usage:'can_update_usage',condition:'can_update_condition',addMaintenance:'can_add_maintenance'}[permission];
+  const column = {updateDetails:'can_update_details',location:'can_access_location',loggedProblems:'can_view_logged_problems',addPhotos:'can_add_photos',addCosts:'can_add_costs',yearModel:'can_update_year',usage:'can_update_usage',condition:'can_update_condition',addMaintenance:'can_add_maintenance'}[permission];
   const lock = async (client:Pick<PoolClient,'query'>) => {
     const result = await client.query(`SELECT a.id FROM dealer_maintenance_access a JOIN asset_leads l ON l.owner_user_id=a.owner_user_id AND l.partner_user_id=a.dealer_user_id AND l.asset_register_item_id=a.asset_register_item_id WHERE l.id=$1::uuid AND a.dealer_user_id=$2 AND a.owner_user_id=$3 AND a.asset_register_item_id=$4::uuid AND a.is_active=true AND a.${column}=true FOR SHARE OF a,l`,[target.leadId,user.id,lead.ownerUserId,lead.assetRegisterItemId]);
     if (!result.rows.length) throw new ExternalLeadAccessError('The owner has not enabled this action.',403);

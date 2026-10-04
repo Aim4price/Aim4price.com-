@@ -121,7 +121,7 @@ test('quick detail editing scrolls and focuses the matching step-two control', (
   );
 
   for (const target of ['serial', 'year', 'usage', 'condition']) {
-    assert.match(client, new RegExp(`data-asset-detail-edit-target=[{\"](?:assetDetailEditTarget|${target})`));
+    assert.match(client + readFileSync(new URL('../components/AssetModalSelect.tsx', import.meta.url), 'utf8'), new RegExp(`data-asset-detail-edit-target=[{\"](?:assetDetailEditTarget|${target})`));
   }
   assert.match(focusEffect, /field\.scrollIntoView\(\{ behavior: 'smooth', block: 'center', inline: 'nearest' \}\);/);
   assert.match(focusEffect, /focusControl\?\.focus\(\{ preventScroll: true \}\);/);
@@ -308,21 +308,12 @@ test('Manage map setup is a focused workflow without the Settings back button', 
   assert.match(settingsModal, /\{isManageMapLocationFlow \? 'Map asset' : 'Settings'\}/);
   assert.match(settingsModal, /assetSettingsView !== 'menu' && !\(isManageMapLocationFlow && assetSettingsView === 'location'\)/);
   assert.doesNotMatch(settingsModal, /Choose how to map this asset/);
-  assert.match(settingsModal, /<strong>\{assetSettingsDeviceGpsButtonLabel\}<\/strong>/);
-  assert.match(client, /const assetSettingsDeviceGpsButtonLabel =[\s\S]*?'Finding location\.\.\.'[\s\S]*?'Saving location\.\.\.'[\s\S]*?'Use current location'/);
-  assert.match(settingsModal, /onClick=\{\(\) => void updateAssetSettingsGpsPosition\(\)\}/);
-  assert.match(settingsModal, /Choose on map/);
-  assert.match(settingsModal, /Enter coordinates/);
-  assert.match(settingsModal, /View on asset map/);
-  assert.doesNotMatch(settingsModal, />Asset map</);
-  assert.doesNotMatch(settingsModal, />Map status</);
-  assert.doesNotMatch(settingsModal, /Pick one simple method below/);
-  assert.doesNotMatch(settingsModal, /Choose an option below to place it on your Asset Map/);
-  assert.doesNotMatch(settingsModal, /Best when you are standing near the asset/);
-  assert.doesNotMatch(settingsModal, /Find the place visually and drop a pin/);
-  assert.doesNotMatch(settingsModal, /Paste a latitude and longitude from another source/);
-  assert.match(settingsModal, /!isManageMapLocationFlow \? <span className=\{styles\.assetSettingsRecommendedBadge\}>Recommended<\/span> : null/);
-  assert.match(settingsModal, /window\.location\.assign\(buildFocusedAssetMapHref\(editingAsset\)\)/);
+  const editor = readFileSync(new URL('../components/AssetLocationEditor.tsx', import.meta.url), 'utf8');
+  assert.match(settingsModal, /<AssetLocationEditor/);
+  assert.match(settingsModal, /viewMapHref=\{buildFocusedAssetMapHref\(editingAsset\)\}/);
+  assert.match(settingsModal, /persistAssetSettingsGpsPosition/);
+  for (const label of ['Use device location', 'Choose on map', 'Enter coordinates', 'View on asset map']) assert.ok(editor.includes(label));
+  assert.match(editor, /navigator.geolocation.getCurrentPosition/);
   assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsLocationSection\s*\{[\s\S]*?border:\s*0 !important;[\s\S]*?background:\s*transparent !important;/);
   assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsLocationChoiceGrid\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) !important;/);
   assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsLocationChoiceGrid \.assetSettingsLocationPrimaryChoice\s*\{[\s\S]*?grid-column:\s*auto !important;/);
