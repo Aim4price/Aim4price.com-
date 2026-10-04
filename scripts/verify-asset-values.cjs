@@ -102,7 +102,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  window.fetch=async(url,options)=>{if(options?.method==='POST'){window.writes.push(JSON.parse(options.body));return {ok:true,json:async()=>({ok:true})};}return {ok:true,json:async()=>({items:[window.historyItem],nextBefore:null})};};
  window.root.render(React.createElement(require('components/asset-register/AssetHistoryDialog').default,{endpoint:'/api/asset-register/asset',assetTitle:'2023 Tractor',assetSubtitle:'Year Model: 2023 • Usage: 1 300 hours • Condition: Good',onClose:()=>{}}));
  });
- await click('Restore previous details');await page.screenshot({path:'/tmp/asset-history-review.png'});await click('Confirm restoration');await page.waitForFunction(()=>document.body.textContent.includes('Restored. A new history entry'));
+ await page.screenshot({path:'/tmp/asset-history-list.png'});await click('Retract change');await page.screenshot({path:'/tmp/asset-history-review.png'});await click('Confirm retraction');await page.waitForFunction(()=>document.body.textContent.includes('Change retracted.'));
  assert.equal(await page.evaluate(()=>window.writes.at(-1).eventId),'event');
  assert.deepEqual(errors,[]);console.log('PASS value approval, manual edits, reset preview, history restoration, and shared value flows');
  }finally{await browser.close();}
