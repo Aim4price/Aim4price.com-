@@ -3634,7 +3634,6 @@ export default function LeadsClient({
                           </div>
                           <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                           {null}
-                          {lead.maintenanceAccess?.isActive && lead.maintenanceAccess.permissions.canViewLoggedProblems && <SharedProblems endpoint={`/api/asset-leads/${lead.id}/problems`} assetTitle={assetTitle(lead)} notesOnly/>}
                           {lead.ownerMessage ? (
                             <span className={`${styles.trackingLeadPurpose} ${styles.leadOwnerMessagePreview}`}>
                               <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
@@ -3744,6 +3743,8 @@ export default function LeadsClient({
                             )}
                           </div>
                     } />
+
+                    {lead.maintenanceAccess?.isActive && lead.maintenanceAccess.permissions.canViewLoggedProblems && <SharedProblems endpoint={`/api/asset-leads/${lead.id}/problems`} assetTitle={assetTitle(lead)} notesOnly detailsVisible={isLeadOpen}/>}
 
                     {isLeadOpen ? (
                       <LeadAssetCard className={isFullRegisterLead(lead) ? styles.fullRegisterLeadCard : ''}
