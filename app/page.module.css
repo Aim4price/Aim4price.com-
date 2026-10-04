@@ -2429,6 +2429,11 @@
   pointer-events: none;
 }
 
+/* The website glow lives in the unscaled viewport backdrop. */
+:global([data-website-canvas]) .heroStory .heroMedia::after {
+  display: none;
+}
+
 .heroStory .heroMedia .shell {
   width: min(calc(100% - 3rem), 100rem);
   min-height: inherit;

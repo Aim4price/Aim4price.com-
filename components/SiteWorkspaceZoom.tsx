@@ -14,6 +14,7 @@ import {
 import { listenToMediaQuery, observePhoneGeometry, phoneNeedsLandscape } from '../lib/website-phone';
 import styles from './SiteWorkspaceZoom.module.css';
 import { WebsiteCanvasContext } from './WebsitePortal';
+import { AppViewportBackground } from './AppPatternBackground';
 
 function availableUnzoomedWidth(coarsePointer: boolean): number {
   // Touch browsers and device emulation must fit the layout viewport. The outer
@@ -133,7 +134,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
     const syncViewport = () => {
       const height = window.visualViewport?.height ?? window.innerHeight;
       canvasRef.current?.style.setProperty('--website-visible-height', `${height / scale}px`);
-      canvasRef.current?.style.setProperty('--website-visible-width', `${document.documentElement.getBoundingClientRect().width / scale}px`);
+      canvasRef.current?.style.setProperty('--website-visible-width', `${document.documentElement.clientWidth / scale}px`);
       syncCanvasOrigin();
       syncOverlayWidths();
       window.dispatchEvent(new Event('aim4price:canvas-geometry'));
@@ -282,6 +283,7 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
 
   return <WebsiteCanvasContext.Provider value={true}>
     <div className={styles.viewport} data-website-viewport>
+      <AppViewportBackground />
       <div ref={canvasRef} className={styles.canvas} style={canvasStyle}
         data-website-canvas data-website-scale={scale}>
         {children}

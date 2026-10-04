@@ -10,6 +10,16 @@ type AppPatternBackgroundProps = {
 const ARC_RADII = [72, 104, 136, 168, 200];
 const DOT_POSITIONS = [6, 22, 38, 54];
 
+/** Website artwork stays in physical viewport coordinates, outside the zoomed canvas. */
+export function AppViewportBackground() {
+  return (
+    <div className={styles.viewportBackdrop} aria-hidden="true" data-website-backdrop>
+      <AppPatternBackground>{null}</AppPatternBackground>
+      <span className={styles.viewportHomeGlow} />
+    </div>
+  );
+}
+
 function CornerArcs({ className, origin }: { className: string; origin: 'start' | 'end' }) {
   const coordinate = origin === 'start' ? 0 : 240;
 
