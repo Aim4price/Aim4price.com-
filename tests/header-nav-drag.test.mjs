@@ -7,7 +7,7 @@ const source = readFileSync(new URL('../lib/header-nav-drag.ts', import.meta.url
 const js = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext } }).outputText;
 const { attachHeaderNavDrag, snapHeaderNav } = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`);
 
-function fixture(t, scale = 1) {
+function fixture(t, scale = 1, onSnap) {
   const originalWindow = globalThis.window;
   globalThis.window = new EventTarget();
   window.matchMedia = () => ({ matches: false });
@@ -29,7 +29,7 @@ function fixture(t, scale = 1) {
     releasePointerCapture() { this.capture = null; }
   }
   const rail = new Rail();
-  const cleanup = attachHeaderNavDrag(rail);
+  const cleanup = attachHeaderNavDrag(rail, onSnap && (() => onSnap(rail)));
   let position = { clientX: 500, clientY: 40 };
   t.after(() => { cleanup(); globalThis.window = originalWindow; });
   const dispatch = (type, properties = {}) => {
@@ -42,6 +42,27 @@ function fixture(t, scale = 1) {
   };
   return { rail, dispatch, cleanup };
 }
+
+test('wrapped summary cards can supply their own snap positions after dragging ends', t => {
+  let snaps = 0;
+  const { rail, dispatch } = fixture(t, 0.5, element => {
+    snaps++;
+    assert.equal(element.attributes.has('data-dragging'), false);
+    element.scrollTo({ left: Math.round(element.scrollLeft / 300) * 300, behavior: 'smooth' });
+  });
+  rail.children = [{ offsetLeft: 0 }]; // Cards live inside a track, unlike header links.
+  dispatch('pointerdown');
+  dispatch('pointermove', { clientX: 390 });
+  assert.equal(rail.scrollLeft, 520);
+  assert.equal(snaps, 0);
+  dispatch('pointerup');
+  assert.equal(snaps, 1);
+  assert.equal(rail.scrollLeft, 600);
+  assert.equal(dispatch('click').defaultPrevented, true);
+  dispatch('pointerdown');
+  dispatch('pointerup');
+  assert.equal(dispatch('click').defaultPrevented, false, 'ordinary VAT button clicks remain available');
+});
 
 for (const scale of [0.3, 0.5, 1, 1.5]) {
   test(`free dragging crosses multiple items and snaps only on release at scale ${scale}`, t => {

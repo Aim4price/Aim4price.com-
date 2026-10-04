@@ -21794,6 +21794,19 @@ button.documentOpenLink {
   display: none;
 }
 
+.assetSummaryViewport {
+  touch-action: pan-y pinch-zoom;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.assetSummaryViewport[data-dragging='true'] {
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  cursor: grabbing;
+}
+
 .assetSummaryTrack {
   width: 100% !important;
   min-width: 0 !important;
@@ -21882,6 +21895,22 @@ button.documentOpenLink {
   background: transparent;
   border: 0;
   box-shadow: none;
+}
+
+:global(html[data-background='dark']) .assetSummaryArrow,
+:global(html[data-app-theme='dark']) .assetSummaryArrow {
+  color: #f1f8f4;
+}
+
+:global(html[data-background='dark']) .assetSummaryArrow:hover:not(:disabled),
+:global(html[data-app-theme='dark']) .assetSummaryArrow:hover:not(:disabled) {
+  color: #fff;
+}
+
+:global(html[data-background='dark']) .assetSummaryArrow:focus-visible,
+:global(html[data-app-theme='dark']) .assetSummaryArrow:focus-visible {
+  outline: 3px solid #a5ddba;
+  outline-offset: 2px;
 }
 
 .assetSummaryCarousel > .assetSummaryArrow:first-of-type:disabled,

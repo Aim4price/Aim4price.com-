@@ -30,6 +30,7 @@ import AssetSerialNumber from '../../components/AssetSerialNumber';
 import PricingVatToggle from '../../components/PricingVatToggle';
 import { pricingVatAmount, pricingInputExVat } from '../../lib/pricing-vat';
 import CardVatToggle from '../../components/CardVatToggle';
+import { attachHeaderNavDrag } from '../../lib/header-nav-drag';
 
 import AssetFilterDialog, { replaceFilterGroup, type FilterGroup, type FilterChoice } from '../../components/AssetFilterDialog';
 
@@ -6648,9 +6649,24 @@ export default function AssetRegisterClient({
     const nextScrollLeft = registerSummaryMaxIndex > 0 ? (maxScrollLeft * safeIndex) / registerSummaryMaxIndex : 0;
 
     window.requestAnimationFrame(() => {
-      viewport.scrollTo({ left: nextScrollLeft, behavior: 'smooth' });
+      if (viewport.dataset.dragging === 'true') return;
+      viewport.scrollTo({ left: nextScrollLeft, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
     });
   }
+
+  useEffect(() => {
+    const viewport = registerSummaryViewportRef.current;
+    if (!viewport) return;
+    return attachHeaderNavDrag(viewport, () => {
+      if (registerSummaryScrollTimeoutRef.current) clearTimeout(registerSummaryScrollTimeoutRef.current);
+      const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+      const nextIndex = maxScrollLeft > 0
+        ? Math.min(registerSummaryMaxIndex, Math.max(0, Math.round((viewport.scrollLeft / maxScrollLeft) * registerSummaryMaxIndex)))
+        : 0;
+      setRegisterSummaryStartIndex(nextIndex);
+      scrollRegisterSummaryToIndex(nextIndex);
+    });
+  }, [registerSummaryMaxIndex]);
 
   function handleRegisterSummarySlide(direction: -1 | 1) {
     if (registerSummaryMaxIndex <= 0) return;
@@ -6671,6 +6687,7 @@ export default function AssetRegisterClient({
     }
 
     registerSummaryScrollTimeoutRef.current = setTimeout(() => {
+      if (viewport.dataset.dragging === 'true') return;
       const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
       if (maxScrollLeft <= 0) return;
 
