@@ -1,3 +1,4 @@
+import {restorableDetailFields,restorableChanges} from './asset-history-fields';
 import {getDb} from './db';
 import {ensureAssetHistorySchema} from './asset-history-schema';
 import {ensureSharedAssetActivity} from './shared-asset-activity';
@@ -7,7 +8,7 @@ const labels:Record<string,string>={asset_register_items:'Asset',asset_invoices:
 const fields=['reason','decision','title','serial_number','year_model','hours','condition','brand_name','model_name','note','value','selected_value_ex_vat','replacement_price_ex_vat','replacement_price_used_ex_vat','is_financed','is_insured','is_licensed','insured_value_ex_vat','last_known_lat','last_known_lng','last_known_location_text','supplier_name','invoice_number','invoice_date','subtotal_ex_vat','vat_amount','total_inc_vat','notes','litres','total_amount','document_date','issue_at','fuel_type','status','voided_at','void_reason','period','amount','warning_percent','include_fuel_slip_costs','maintenance_type','due_date','due_usage','completed_at','completed_by','completed_notes','completed_usage','trigger_type','assigned_name','maintenance_work','recurring_enabled','recurring_interval_value','recurring_interval_unit','category','document_type','file_name','expiry_date','deleted_at','activity_text','operator_name','issue_note','issue_note_resolved_at'];
 export const historyPaperworkFields=['finance_status', 'finance_type', 'finance_current_outstanding_ex_vat', 'financier_name', 'finance_note', 'finance_bought_when', 'finance_bought_for_ex_vat', 'finance_original_amount_ex_vat', 'finance_monthly_payment_ex_vat', 'finance_interest_rate_percent', 'finance_term_months', 'finance_balloon_payment_ex_vat', 'finance_settlement_date', 'finance_reference_number', 'insurance_status', 'insurance_insurer_name', 'insurance_policy_number', 'insurance_renewal_date', 'insurance_note', 'license_status', 'license_registration_number', 'license_renewal_date', 'license_note', 'issue_noted_at', 'usage_reading', 'life_worked_percent'];
 fields.push(...historyPaperworkFields);
-const detailsRestore=['title','year_model','condition','brand_name','model_name','note'];
+const detailsRestore=restorableDetailFields;
 function clean(data:Record<string,unknown>){
  const specs=(data.specs_json||{}) as Record<string,unknown>;
  const aliases:Record<string,string[]>={is_financed:['isFinanced','financed'],is_insured:['isInsured','insured'],is_licensed:['isLicensed','licensed'],insured_value_ex_vat:['insuredValueExVat'],last_known_lat:['lastKnownLat','latitude'],last_known_lng:['lastKnownLng','longitude'],last_known_location_text:['lastKnownLocationText','locationText']};
@@ -33,7 +34,7 @@ export function mapHistoryRow(row:any,owner:boolean,assetId:string):HistoryItem{
  // Documents/photos are represented by counts; URLs and unrelated private metadata never leave this API.
  for(const key of ['photos','documents']){if(JSON.stringify(row.before_data?.[key])!==JSON.stringify(row.after_data?.[key]))after[key+'_changed']='Updated';if(key in (row.before_data||{}))before[key]=Array.isArray(row.before_data[key])?row.before_data[key].length:0;if(key in (row.after_data||{}))after[key]=Array.isArray(row.after_data[key])?row.after_data[key].length:0;}
  const operation:Record<string,string>={INSERT:'added',UPDATE:'updated',DELETE:'removed',REASSIGNED:'reassigned',SNAPSHOT:'existing record',TRANSFERRED:'received'};
- return {id:row.id,category:row.category,action:row.semantic_action||`${row.category==='budgets'&&!row.asset_id?'Overall budget':labels[row.record_table]||'Record'} ${operation[row.operation]||'changed'}`,actorName:row.actor_name||'Not recorded',source:row.source==='record'?'Recorded activity':row.source,createdAt:row.created_at,before,after,recordId:row.record_id,recordTable:row.record_table,href:owner&&row.operation!=='DELETE'&&!row.record_removed?historyLink(row.category,assetId,row.record_id,row.record_table):undefined,restorable:owner&&row.record_table==='asset_register_items'&&row.operation==='UPDATE'&&keys.some(k=>detailsRestore.includes(k))};
+ return {id:row.id,category:row.category,action:row.semantic_action||`${row.category==='budgets'&&!row.asset_id?'Overall budget':labels[row.record_table]||'Record'} ${operation[row.operation]||'changed'}`,actorName:row.actor_name||'Not recorded',source:row.source==='record'?'Recorded activity':row.source,createdAt:row.created_at,before,after,recordId:row.record_id,recordTable:row.record_table,href:owner&&row.operation!=='DELETE'&&!row.record_removed?historyLink(row.category,assetId,row.record_id,row.record_table):undefined,restorable:owner&&row.record_table==='asset_register_items'&&row.operation==='UPDATE'&&restorableChanges(before,after).length>0};
 }
 export const historyCategories:HistoryCategory[]=['details','values','costs','fuel','budgets','maintenance','documents'];
 export async function listUnifiedAssetHistory(ownerId:string,assetId:string,options:{owner:boolean;actorId?:string;categories?:HistoryCategory[];detailFields?:string[];problems?:boolean;maintenance?:boolean;documents?:boolean;before?:string;category?:string}={owner:true}){
@@ -63,7 +64,7 @@ export async function listUnifiedAssetHistory(ownerId:string,assetId:string,opti
    for(const key of historyPaperworkFields)aliases[key.replace(/_([a-z])/g,(_,c:string)=>c.toUpperCase())]=key;
    Object.assign(aliases,{latitude:'last_known_lat',longitude:'last_known_lng',locationText:'last_known_location_text'});
    const safe=(d:Record<string,unknown>)=>Object.fromEntries(Object.entries(d||{}).filter(([k,v])=>!['requestSignature','legacyCorrectionId','proposalId','baseline'].includes(k)&&(['reason','suggestedBy','suggestionReason','kind','mode'].includes(k)||fields.includes(aliases[k]||k))).map(([k,v])=>[aliases[k]||k,v]));
-   item.before=safe(row.before_data);item.after=safe(row.after_data);item.restorable=false;
+   item.before=safe(row.before_data);item.after=safe(row.after_data);item.restorable=options.owner&&row.legacy_action==='Asset details updated'&&restorableChanges(item.before,item.after).length>0;
   }
   item.before=project(item.before,item.category);item.after=project(item.after,item.category);
   // Show only fields that changed, not unrelated account information on every event.
