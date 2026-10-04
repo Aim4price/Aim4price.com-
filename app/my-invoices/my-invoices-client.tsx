@@ -3122,6 +3122,14 @@ export default function MyInvoicesClient({
     }
   }
 
+  const historyInvoiceOpened = useRef<string | null>(null);
+  useEffect(() => {
+    const id=routeSearchParams.get('invoiceId');
+    if(!id||historyInvoiceOpened.current===id)return;
+    const invoice=invoices.find(item=>item.id===id);
+    if(invoice){historyInvoiceOpened.current=id;setManagedInvoice(invoice);}
+  },[invoices,routeSearchParams]);
+
   function editInvoice(invoice: InvoiceRecord) {
     setNotice(null);
     setSelectedAssetId(invoice.assetId);

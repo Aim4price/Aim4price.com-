@@ -1,3 +1,5 @@
+import {restoreAssetDetails} from './asset-history-restore';
+import {listUnifiedAssetHistory,historyPaperworkFields,type HistoryCategory} from './asset-history';
 import type { NextRequest } from 'next/server';
 import { resolveAssetUsage } from './asset-usage';
 import { getDb } from './db';
@@ -39,7 +41,7 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
                 throw e;
         }
         const extras: Record<string, Awaited<ReturnType<typeof contributionScope>> | null> = {};
-        if(action==='details') for(const permission of ['serialNumber','replacementPrice','addPhotos','suggestValue'] as const) {
+        if(action==='details'||action==='history') for(const permission of ['serialNumber','replacementPrice','addPhotos','suggestValue','addCosts','loggedProblems'] as const) {
             try { extras[permission]=await contributionScope(target,permission); } catch(e) { if(!(e instanceof ExternalLeadAccessError)) throw e; }
         }
         const scope = action === 'maintenance' || action === 'checklist' ? maintenance : scopes.find(Boolean) || maintenance || locationScope || Object.values(extras).find(Boolean);
@@ -48,15 +50,26 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
         const asset = await getAssetRegisterItemById(scope.ownerId, scope.assetId);
         if (!asset)
             throw new ExternalLeadAccessError('Asset unavailable.', 404);
+        if(action==='history'&&request.method!=='GET'){
+            if(scope.user.id!==scope.ownerId)throw new ExternalLeadAccessError('Only the owner can restore history.',403);
+            const body=await businessBody(request);if(typeof body.eventId!=='string'||! /^[0-9a-f-]{36}$/i.test(body.eventId))throw new Error('Choose a history entry.');
+            return businessJson(await restoreAssetDetails(scope.ownerId,scope.assetId,body.eventId,{id:scope.user.id,name:scope.user.name||scope.user.email},body.confirmed===true,scope.lock));
+        }
         if (request.method === 'GET') {
             if (action === 'checklist')
                 return businessJson({ items: await listAssetChecklistItems(scope.ownerId, scope.assetId) });
             if (action === 'history') {
-                await ensureSharedAssetActivity();
-                return businessJson({ items: (await getDb().query('SELECT actor_name,action,before_data,after_data,created_at FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid ORDER BY created_at DESC LIMIT 100', [scope.ownerId, scope.assetId])).rows.filter(row => row.action.startsWith('Value ') ? scope.user.id === scope.ownerId : ['finance updated','insurance updated','license updated','Document uploaded'].includes(row.action) ? Boolean(detailsScope) : row.action === 'Location updated' ? Boolean(locationScope) : true).map(row=>{if(detailsScope||row.action!=='Asset details updated')return row;const {note:beforeNote,...before}=row.before_data;const {note:afterNote,...after}=row.after_data;return {...row,before_data:before,after_data:after};}) });
+                const owner=scope.user.id===scope.ownerId;
+                const categories:HistoryCategory[]=['details'];
+                if(maintenance||extras.loggedProblems)categories.push('maintenance');
+                if(detailsScope||extras.addPhotos)categories.push('documents');
+                if(extras.suggestValue||extras.replacementPrice)categories.push('values');
+                if(extras.addCosts)categories.push('costs');
+                const detailFields=[...(detailsScope?[...historyPaperworkFields,'title','brand_name','model_name','note','is_financed','is_insured','is_licensed','insured_value_ex_vat']:[]),...(scopes[0]?['year_model']:[]),...(scopes[1]?['hours']:[]),...(scopes[2]?['condition']:[]),...(locationScope?['last_known_lat','last_known_lng','last_known_location_text']:[]),...(extras.serialNumber?['serial_number']:[]),...(extras.replacementPrice?['replacement_price_ex_vat','replacement_price_used_ex_vat']:[]),...(extras.suggestValue?['value','selected_value_ex_vat','reason','kind']:[])];
+                return businessJson(await listUnifiedAssetHistory(scope.ownerId,scope.assetId,{owner,actorId:scope.user.id,categories:owner?undefined:categories,detailFields,problems:!!extras.loggedProblems,maintenance:!!maintenance,documents:!!detailsScope,before:request.nextUrl.searchParams.get('before')||undefined,category:request.nextUrl.searchParams.get('category')||undefined}));
             }
             const usage = resolveAssetUsage(asset);
-            return businessJson({ asset: { ...mapMyInvoiceAssetOption(asset), usageMetric: usage.metric === 'not_applicable' ? 'none' : usage.metric, usageReading: usage.value, condition: asset.condition || '', title:asset.title, serialNumber:asset.serialNumber, brand:asset.brandName, model:asset.modelName, note:detailsScope?asset.note:'', replacementPriceExVat:asset.replacementPriceExVat, currentValue:asset.selectedValueExVat, insuredValue:detailsScope?asset.insuredValueExVat:null, photos:asset.photos, maintenanceIdentity: maintenanceIdentity(asset) }, permissions: {...Object.fromEntries(fields.map((f, i) => [f, Boolean(scopes[i])])), updateDetails: Boolean(detailsScope), addPhotos: Boolean(extras.addPhotos), serialNumber:Boolean(extras.serialNumber), replacementPrice:Boolean(extras.replacementPrice), addDocuments:Boolean(detailsScope), suggestValue:Boolean(extras.suggestValue), owner:scope.user.id===scope.ownerId} });
+            return businessJson({ asset: { ...mapMyInvoiceAssetOption(asset), usageMetric: usage.metric === 'not_applicable' ? 'none' : usage.metric, usageReading: usage.value, condition: asset.condition || '', title:asset.title, serialNumber:asset.serialNumber, brand:asset.brandName, model:asset.modelName, note:detailsScope?asset.note:'', replacementPriceExVat:asset.replacementPriceExVat, currentValue:asset.selectedValueExVat, manual:asset.selectedMethod==='manual',revision:asset.updatedAtIso, insuredValue:detailsScope?asset.insuredValueExVat:null, photos:asset.photos, maintenanceIdentity: maintenanceIdentity(asset) }, permissions: {...Object.fromEntries(fields.map((f, i) => [f, Boolean(scopes[i])])), updateDetails: Boolean(detailsScope), addPhotos: Boolean(extras.addPhotos), serialNumber:Boolean(extras.serialNumber), replacementPrice:Boolean(extras.replacementPrice), addDocuments:Boolean(detailsScope), suggestValue:Boolean(extras.suggestValue), owner:scope.user.id===scope.ownerId} });
         }
         await limitBusinessAction(`shared-work:${scope.user.id}`, 30);
         const body = await businessBody(request), id = String(body.requestId || body.clientEventId || '');

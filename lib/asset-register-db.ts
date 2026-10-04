@@ -1,3 +1,4 @@
+import {installAssetHistoryTriggers} from './asset-history-schema';
 import { resolveAssetUsage as resolveSharedAssetUsage } from './asset-usage';
 import { hydrateLegacyValuationRow, normalizeSavedValuationMethod } from './asset-register-legacy-valuation';
 import { assetDisplayTitle } from './asset-display-title';
@@ -1838,8 +1839,10 @@ async function getTableSchema(tableName: string): Promise<TableSchema> {
   return schema;
 }
 
+let historyInstalled:Promise<void>|undefined;
 async function getAssetRegisterSchema(): Promise<TableSchema> {
   await ensureAssetRegisterTables();
+  await (historyInstalled??=installAssetHistoryTriggers().catch(e=>{historyInstalled=undefined;throw e;}));
   return getTableSchema('asset_register_items');
 }
 
@@ -3982,12 +3985,12 @@ export async function updateSharedAssetDetails(client: import('pg').PoolClient, 
 }
 
 /** Called only after owner/admin authorization and a locked revision check. */
-export async function saveApprovedAssetValue(client: import('pg').PoolClient, asset: AssetRegisterItem, value: number, baseline: import('./approved-value-baseline').ApprovedValueBaseline, replacementPrice?: number): Promise<AssetRegisterItem> {
+export async function saveApprovedAssetValue(client: import('pg').PoolClient, asset: AssetRegisterItem, value: number, baseline: import('./approved-value-baseline').ApprovedValueBaseline | null, replacementPrice?: number): Promise<AssetRegisterItem> {
   const schema = await getAssetRegisterSchema();
   const fields: SqlField[] = [];
   pushField(fields,schema,['value','selected_value_ex_vat','selected_value','saved_value_ex_vat'],value);
   pushField(fields,schema,['selected_value_ex_vat','selected_value','value','saved_value_ex_vat'],value);
-  const specs = {...asset.specsJson,valuationNeedsUpdate:false,valuation_needs_update:false,valuationLastUpdatedAt:baseline.date,valuation_last_updated_at:baseline.date,valuationLastValueExVat:value,valuation_last_value_ex_vat:value,valuationLastHours:asset.hours,valuation_last_hours:asset.hours,valuationLastLifeWorkedPercent:asset.lifeWorkedPercent,valuation_last_life_worked_percent:asset.lifeWorkedPercent,valuationLastCondition:asset.condition,valuation_last_condition:asset.condition,approved_value_baseline:baseline,...(replacementPrice !== undefined ? {replacementPriceExVat:replacementPrice,replacement_price_ex_vat:replacementPrice,replacementPriceUsedExVat:replacementPrice,replacement_price_used_ex_vat:replacementPrice,userReplacementPriceExVat:replacementPrice,user_replacement_price_ex_vat:replacementPrice} : {})};
+  const specs = {...asset.specsJson,valuationNeedsUpdate:false,valuation_needs_update:false,valuationLastUpdatedAt:baseline?.date??new Date().toISOString(),valuation_last_updated_at:baseline?.date??new Date().toISOString(),valuationLastValueExVat:value,valuation_last_value_ex_vat:value,valuationLastHours:asset.hours,valuation_last_hours:asset.hours,valuationLastLifeWorkedPercent:asset.lifeWorkedPercent,valuation_last_life_worked_percent:asset.lifeWorkedPercent,valuationLastCondition:asset.condition,valuation_last_condition:asset.condition,approved_value_baseline:baseline,...(replacementPrice !== undefined ? {replacementPriceExVat:replacementPrice,replacement_price_ex_vat:replacementPrice,replacementPriceUsedExVat:replacementPrice,replacement_price_used_ex_vat:replacementPrice,userReplacementPriceExVat:replacementPrice,user_replacement_price_ex_vat:replacementPrice} : {})};
   pushField(fields,schema,['specs_json'],specs,'::jsonb');
   if(replacementPrice !== undefined) {
     pushField(fields,schema,['replacement_price_used_ex_vat','replacement_price_ex_vat','official_replacement_price_ex_vat'],replacementPrice);

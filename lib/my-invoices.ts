@@ -1,3 +1,4 @@
+import {installAssetHistoryTriggers} from './asset-history-schema';
 import type { PoolClient } from 'pg';
 import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
@@ -878,7 +879,7 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
 
 export async function ensureMyInvoiceTables(): Promise<void> {
   if (!myInvoiceTablesPromise) {
-    myInvoiceTablesPromise = ensureMyInvoiceTablesOnce().catch((error) => {
+    myInvoiceTablesPromise = ensureMyInvoiceTablesOnce().then(installAssetHistoryTriggers).catch((error) => {
       myInvoiceTablesPromise = null;
       throw error;
     });

@@ -1,3 +1,4 @@
+import {setAssetHistoryActor} from './asset-history-schema';
 import type { PoolClient } from 'pg';
 import { getDb } from './db';
 import { getServerSession } from './auth-session';
@@ -16,7 +17,7 @@ type Permission = 'serialNumber' | 'replacementPrice' | 'suggestValue' | 'update
 export async function contributionScope(target: ContributionTarget, permission: Permission) {
   if ('token' in target) {
     const scope = await requireLiveSharedAsset(target.token,target.assetId,permission,true);
-    return {ownerId:scope.lead.ownerId,assetId:scope.assetId,user:scope.user,token:target.token,lock:(client:PoolClient)=>lockLiveSharedAsset(client,scope)};
+    return {ownerId:scope.lead.ownerId,assetId:scope.assetId,user:scope.user,token:target.token,lock:async(client:PoolClient)=>{await lockLiveSharedAsset(client,scope);await setAssetHistoryActor(client,scope.user.id,scope.user.name||scope.user.email,'Shared link');}};
   }
   const session = await getServerSession({allowBusiness:true,allowDealerApp:true});
   if (!session?.user?.id) throw new ExternalLeadAccessError('Sign in to add to this asset.',401);
@@ -39,6 +40,7 @@ export async function contributionScope(target: ContributionTarget, permission: 
       }
       throw new ExternalLeadAccessError('The owner has not enabled this action.',403);
     }
+    if('release' in client)await setAssetHistoryActor(client,user.id,user.name||user.email,'Leads');
   };
   await lock(getDb());
   return {ownerId:lead.ownerUserId,assetId:lead.assetRegisterItemId,user,token:undefined,lock};

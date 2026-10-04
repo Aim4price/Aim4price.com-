@@ -6,7 +6,7 @@ const { PGlite } = require('@electric-sql/pglite');
 function load(file, mocks = {}) {
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  new Function('require', 'exports', code)(name => name in mocks ? mocks[name] : require(name), exports);
+  new Function('require', 'exports', code)(name => name in mocks ? mocks[name] : name==='./asset-history-schema'?load('lib/asset-history-schema.ts',{'./db':mocks['./db']}):require(name), exports);
   return exports;
 }
 const seedModule = load('lib/maintenance-catalogue-seed.ts');
@@ -73,7 +73,7 @@ test('Admin saves persist a complete catalogue and reject stale versions', async
   const pg = new PGlite();
   // PGlite is single-connection. PostgreSQL's transaction advisory lock is tested
   // by the production query; this adapter skips only that unsupported primitive.
-  const query = (sql, params) => sql.includes('pg_advisory_xact_lock') ? Promise.resolve({ rows: [] }) : pg.query(sql, params);
+  const query = (sql, params) => sql.includes('pg_advisory_xact_lock') ? Promise.resolve({ rows: [] }) : params?pg.query(sql,params):pg.exec(sql).then(r=>r.at(-1));
   const db = { query, connect: async () => ({ query, release() {} }) };
   const mod = load('lib/maintenance-catalogue-db.ts', { './db': { getDb: () => db }, './maintenance-catalogue-seed': seedModule, './maintenance-catalogue': shared });
   try {
@@ -107,7 +107,7 @@ test('Admin catalogue writes require admin identity, same origin and a valid imp
 test('actual maintenance SQL saves snapshots, preserves them on retry and leaves recurring work empty', async (t) => {
   const pg = new PGlite();
   const owner = 'owner-one'; const assetId = '11111111-1111-4111-8111-111111111111';
-  const query = (sql, params) => /create extension if not exists pgcrypto/.test(sql) ? Promise.resolve({ rows: [] }) : pg.query(sql, params);
+  const query = (sql, params) => /create extension if not exists pgcrypto/.test(sql) ? Promise.resolve({ rows: [] }) : params?pg.query(sql,params):pg.exec(sql).then(r=>r.at(-1));
   const db = { query, connect: async () => ({ query, release() {} }) };
   await pg.exec(`create table asset_register_items(id uuid primary key,user_id text,title text,kind text,hours numeric,specs_json jsonb,equipment_family_id bigint,sector_id bigint);
     create table equipment_families(id bigint primary key,family_key text,family_label text,sector_id bigint);

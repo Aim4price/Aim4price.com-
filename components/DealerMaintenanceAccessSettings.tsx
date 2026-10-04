@@ -38,7 +38,7 @@ export const dealerMaintenancePermissionOptions: Array<{
 }> = [
   {key:'canAddPhotos', title:'Add photos', description:'Add photos to the live asset.'},
   {key:'canUpdateDetails', title:'Update details', description:'Title, asset details, paperwork & documents (no invoices).'},
-  {key:'canSuggestCurrentValue', title:'Suggest current value', description:'Send a value to the owner for approval.'},
+  {key:'canSuggestCurrentValue', title:'Current value access', description:'Update manual values; suggest Aim4price values for owner approval.'},
   {key:'canAccessLocation', title:'Location access', description:'View and update the asset location.'},
   {key:'canAddMaintenance', title:'Add maintenance', description:'Record completed work.'},
   {key:'canAddCosts', title:'Add costs', description:'Add costs and supporting documents.'},
@@ -70,7 +70,7 @@ export const dealerMaintenancePermissionOptions: Array<{
   {
     key: 'canUpdateReplacementPrice',
     title: 'Update Replacement Price',
-    description: 'Update the asset replacement price.',
+    description: 'Update manual replacement prices; Aim4price prices need owner approval.',
   },
 ];
 

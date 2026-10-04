@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const ts=require('typescript');
 const {PGlite}=require('@electric-sql/pglite');
 const {randomUUID}=require('node:crypto');
-function load(file,mocks={}){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(n=>n in mocks?mocks[n]:require(n),exports);return exports;}
+function load(file,mocks={}){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(n=>n in mocks?mocks[n]:n==='./asset-history-schema'?load('lib/asset-history-schema.ts',{'./db':mocks['./db']}):n==='./shared-asset-activity'?load('lib/shared-asset-activity.ts',{'./db':mocks['./db']}):n==='./asset-replacement-mail'?{notifyReplacementSuggestion:async()=>{}}:require(n),exports);return exports;}
 const A='10000000-0000-4000-8000-000000000001',L='20000000-0000-4000-8000-000000000001';
 async function setup(){
  const pg=new PGlite();

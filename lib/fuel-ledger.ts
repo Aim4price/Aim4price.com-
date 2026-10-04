@@ -1,3 +1,4 @@
+import {installAssetHistoryTriggers} from './asset-history-schema';
 import { assetCanReceiveFuel } from './asset-fuel-eligibility';
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { PoolClient } from 'pg';
@@ -2575,7 +2576,7 @@ async function ensureFuelLedgerTablesOnce(): Promise<void> {
 
 export async function ensureFuelLedgerTables(): Promise<void> {
   if (!fuelLedgerTablesPromise) {
-    fuelLedgerTablesPromise = ensureFuelLedgerTablesOnce().catch((error) => {
+    fuelLedgerTablesPromise = ensureFuelLedgerTablesOnce().then(installAssetHistoryTriggers).catch((error) => {
       fuelLedgerTablesPromise = null;
       throw error;
     });

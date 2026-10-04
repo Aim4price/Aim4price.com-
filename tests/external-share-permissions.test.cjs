@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const ts=require('typescript');
 const {PGlite}=require('@electric-sql/pglite');
-function load(file,mocks={}){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(n=>n in mocks?mocks[n]:n==='./guest-enquiry-credits'?{guestEnquiryAccess:async()=>({access:'sign-in'})}:require(n),exports);return exports;}
+function load(file,mocks={}){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(n=>n in mocks?mocks[n]:n==='./asset-history-schema'?load('lib/asset-history-schema.ts',{'./db':mocks['./db']}):n==='./shared-asset-activity'?load('lib/shared-asset-activity.ts',{'./db':mocks['./db']}):n==='./asset-replacement-mail'?{notifyReplacementSuggestion:async()=>{}}:n==='./guest-enquiry-credits'?{guestEnquiryAccess:async()=>({access:'sign-in'})}:require(n),exports);return exports;}
 const permissions=load('lib/external-share-permissions.ts');
 const A='10000000-0000-4000-8000-000000000001',B='10000000-0000-4000-8000-000000000002';
 async function setup(){
@@ -325,5 +325,20 @@ test('recipient overview exposes saved permissions only to the owner and respect
   assert.equal(overview.permissions.addPhotos,false); // Owner access must not inflate recipient permissions.
   await x.base.revokeAssetShareLink('owner',x.link.token);
   await assert.rejects(x.access.externalRecipientAccessOverview(x.link.token),e=>e.status===403);
+ }finally{await x.pg.close();}
+});
+
+test('manual replacement updates require confirmation and explicit permission; Aim4price replacements stay pending',async()=>{
+ const x=await setup();try{
+  x.signIn();x.state.approved=true;
+  const assetDb=x.mocks['./asset-register-db'],read=assetDb.getAssetRegisterItemById;let manual=true,revision='v1',saves=0;
+  assetDb.getAssetRegisterItemById=async(owner,id)=>{const asset=await read(owner,id);return asset?{...asset,userId:owner,selectedMethod:manual?'manual':'aim4price',value:50000,updatedAtIso:revision,specsJson:{},hours:100,condition:'good'}:null;};
+  assetDb.saveApprovedAssetValue=async(client,asset,amount,baseline,replacement)=>{saves++;assert.equal(amount,50000);assert.equal(baseline.modelValue,null);await client.query('UPDATE asset_register_items SET replacement_price_ex_vat=$2 WHERE id=$1',[asset.id,replacement]);revision='v2';return {...asset,replacementPriceExVat:replacement};};
+  await x.pg.query(`UPDATE asset_share_links SET lead_details=jsonb_set(lead_details,'{permissions,directUpdates}','true') WHERE token=$1`,[x.link.token]);
+  const input={dealerUserId:'recipient',dealerName:'Workshop',actorName:'Manager',sourceType:'external',sourceId:x.link.token+':'+B,field:'replacementPriceExVat',value:250000,reason:'Supplier quotation',revision:'v1'};
+  await assert.rejects(x.corrections.createOrUpdateDealerAssetCorrection(input),/RELOAD_CONFIRM/);assert.equal(saves,0);
+  const result=await x.corrections.createOrUpdateDealerAssetCorrection({...input,confirmed:true});assert.equal(result.status,'accepted');assert.equal(result.revaluationStatus,'not_required');assert.equal(saves,1);
+  const event=(await x.pg.query("SELECT * FROM shared_asset_activity WHERE action='Value replacement changed'")).rows[0];assert.equal(event.before_data.amount,50000);assert.equal(event.after_data.amount,50000);assert.equal(event.after_data.replacementPrice,250000);
+  manual=false;const suggestion=await x.corrections.createOrUpdateDealerAssetCorrection({...input,confirmed:true,revision:'v2',value:300000});assert.equal(suggestion.status,'pending');assert.equal(saves,1);assert.equal(Number((await x.pg.query('SELECT replacement_price_ex_vat FROM asset_register_items WHERE id=$1',[B])).rows[0].replacement_price_ex_vat),250000);
  }finally{await x.pg.close();}
 });

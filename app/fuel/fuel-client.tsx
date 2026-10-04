@@ -1617,6 +1617,9 @@ export default function FuelClient({
   const [currentFuelSlipManagerPage, setCurrentFuelSlipManagerPage] = useState(1);
   const [expandedFuelSlipId, setExpandedFuelSlipId] = useLedgerCardFocus('fuel-slip');
   const [managedFuelSlip, setManagedFuelSlip] = useState<FuelSlipRecord | null>(null);
+  const historySlipOpened=useRef<string|null>(null);
+  useEffect(()=>{const id=searchParams.get('slipId');if(!id||historySlipOpened.current===id)return;const slip=recentFuelSlips.find(item=>item.id===id);if(slip){historySlipOpened.current=id;setManagedFuelSlip(slip);}},[recentFuelSlips,searchParams]);
+
   const [fuelSlipReturnToManager, setFuelSlipReturnToManager] = useState(false);
 
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);

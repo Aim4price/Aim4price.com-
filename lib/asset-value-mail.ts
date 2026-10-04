@@ -1,10 +1,10 @@
 import {getDb} from './db';
 import {getSiteOrigin,sendAim4priceEmail} from './email';
 import {ensureValueRequests} from './asset-value-requests';
-/** Claim once. Failed delivery is visible in admin; approval is always in-app. */
+/** Claim delivery; failed attempts may be retried after 15 minutes. Approval remains in-app. */
 export async function notifyValueSuggestion(id:string){
  await ensureValueRequests();
- const row=(await getDb().query(`UPDATE asset_value_requests SET email_attempted_at=now() WHERE id=$1::uuid AND email_attempted_at IS NULL AND status='pending' RETURNING *`,[id])).rows[0];if(!row)return;
+ const row=(await getDb().query(`UPDATE asset_value_requests SET email_attempted_at=now() WHERE id=$1::uuid AND email_sent_at IS NULL AND (email_attempted_at IS NULL OR email_attempted_at<now()-interval '15 minutes') AND status='pending' RETURNING *`,[id])).rows[0];if(!row)return;
  try{
   if(!process.env.RESEND_API_KEY)throw Error('Email service is not configured.');
   const owner=(await getDb().query('SELECT email FROM "user" WHERE id=$1',[row.owner_id])).rows[0];if(!owner?.email)throw Error('Owner email unavailable.');

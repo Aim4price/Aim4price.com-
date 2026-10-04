@@ -1,5 +1,5 @@
 export const EXTERNAL_SHARE_OPTIONS = [
-    {key:'suggestValue',label:'Suggest current value',description:'Send a value to the owner for approval.'},
+    {key:'suggestValue',label:'Current value access',description:'Update manual values; suggest Aim4price values for owner approval.'},
     { key: 'updateDetails', label: 'Update details', description: 'Title, asset details, paperwork and documents (no invoices).' },
     { key: 'location', label: 'Location access', description: 'View and update the asset location.' },
     { key: 'yearModel', label: 'Update year', description: 'Change the asset year.' },
@@ -10,7 +10,7 @@ export const EXTERNAL_SHARE_OPTIONS = [
     { key: 'addPhotos', label: 'Add photos', description: 'Add photos to the live asset.' },
     { key: 'addCosts', label: 'Add costs', description: 'Record costs and supporting documents.' },
     { key: 'reports', label: 'Reports', description: 'Choose reports & timelines' },
-    { key: 'replacementPrice', label: 'Update replacement price', description: 'Update the asset replacement price.' },
+    { key: 'replacementPrice', label: 'Update replacement price', description: 'Update manual replacement prices; Aim4price prices need owner approval.' },
     { key: 'serialNumber', label: 'Update serial number', description: 'Update the asset serial number.' },
     { key: 'loggedProblems', label: 'Log problems', description: 'Log a problem or view logged problems.' },
     { key: 'maintenanceReports', label: 'Maintenance Reports', description: 'View current maintenance and download reports.' },
