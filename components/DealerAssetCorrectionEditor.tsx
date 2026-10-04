@@ -207,7 +207,7 @@ export default function DealerAssetCorrectionEditor({
   return (
     <>
       {canUpdateSerial ? (
-        <button
+        <button data-manage-action="serialNumber"
           type="button"
           className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
           onClick={() => openEditor('serialNumber')}
@@ -223,7 +223,7 @@ export default function DealerAssetCorrectionEditor({
       ) : null}
 
       {canUpdateReplacementPrice ? (
-        <button
+        <button data-manage-action="replacementPrice"
           type="button"
           className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
           onClick={() => openEditor('replacementPriceExVat')}

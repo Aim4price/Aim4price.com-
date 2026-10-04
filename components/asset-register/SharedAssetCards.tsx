@@ -289,7 +289,7 @@ export default function SharedAssetCards({
       )}
       {asset &&
         createPortal(
-          <LeadManageDialog title={asset.title} description={asset.serialNumber ? `Serial: ${asset.serialNumber}` : 'Manage enquiry'} onClose={() => { setManaged(null); trigger.current?.focus(); }}>
+          <LeadManageDialog title={asset.title} description={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} onClose={() => { setManaged(null); trigger.current?.focus(); }}>
               {enquiry ? <ExternalLeadActions key={asset.assetId||managed} {...enquiry} assetTitle={asset.title} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
                   <p className={styles.note}>

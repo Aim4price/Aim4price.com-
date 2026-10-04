@@ -1,5 +1,6 @@
 'use client';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
+import ManageActionGrid from '../../components/leads/ManageActionGrid';
 import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import LeadNoteDialog from '../../components/leads/LeadNoteDialog';
 import SharedProblems from '../../components/leads/SharedProblems';
@@ -3917,10 +3918,10 @@ export default function LeadsClient({
           body: useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody} ${isDealerLeadsMode ? dialogStyles.body : ''}`,
         }}>
               <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${useOwnerManageLayout ? '' : `${styles.manageOptionsGrid} ${isDealerLeadsMode ? dialogStyles.actions : ''}`}`}>
+                <ManageActionGrid className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${useOwnerManageLayout ? '' : `${styles.manageOptionsGrid} ${isDealerLeadsMode ? dialogStyles.actions : ''}`}`}>
                   {(
                     <>
-                      <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
+                      <button data-manage-action="whatsapp" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
                         <WhatsAppIcon className={`${assetStyles.buttonIcon} ${styles.whatsAppIcon}`} />
                         <span>
                           <strong>WhatsApp client</strong>
@@ -3928,7 +3929,7 @@ export default function LeadsClient({
                         </span>
                       </button>
 
-                      <button
+                      <button data-manage-action="email"
                         type="button"
                         className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                         onClick={() => openEmail(managedLead)}
@@ -3943,7 +3944,7 @@ export default function LeadsClient({
                       </button>
 
                       {(
-                        <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => openLeadReportModal(managedLead)}>
+                        <button data-manage-action="reports" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => openLeadReportModal(managedLead)}>
                           <DownloadIcon className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Reports</strong>
@@ -3953,7 +3954,7 @@ export default function LeadsClient({
                       )}
 
                       {isDealerLeadsMode ? (
-                        <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => void openLeadQrModal(managedLead)}>
+                        <button data-manage-action="qr" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => void openLeadQrModal(managedLead)}>
                           <QrCodeIcon className={assetStyles.buttonIcon} />
                           <span>
                             <strong>QR code</strong>
@@ -3963,7 +3964,7 @@ export default function LeadsClient({
                       ) : null}
 
                       {isDealerLeadsMode && managedLead.maintenanceAccess?.permissions.canAddPhotos ? (
-                        <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => setContribution({lead:managedLead,kind:'photos'})}>
+                        <button data-manage-action="addPhotos" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => setContribution({lead:managedLead,kind:'photos'})}>
                           <PhotosIcon className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Photos</strong>
@@ -3973,7 +3974,7 @@ export default function LeadsClient({
                       ) : null}
 
                       {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive && managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? (
-                        <button
+                        <button data-manage-action="maintenanceSchedules"
                           type="button"
                           className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           onClick={() => openMaintenanceSchedule(managedLead)}
@@ -3989,7 +3990,7 @@ export default function LeadsClient({
                       ) : null}
 
                       {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
-                        <DealerAssetCorrectionEditor
+                        <DealerAssetCorrectionEditor data-manage-action="corrections"
                           assetTitle={assetTitle(managedLead)}
                           sourceType="lead"
                           sourceId={managedLead.id}
@@ -4006,17 +4007,17 @@ export default function LeadsClient({
                       ) : null}
 
                       {managedLead.maintenanceAccess?.isActive && !isFullRegisterLead(managedLead) && <>
-                        {managedLead.maintenanceAccess.permissions.canViewLoggedProblems&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setProblemLead(managedLead)}><AssetActionIcon action="loggedProblems" className={assetStyles.buttonIcon}/><span><strong>Log problems</strong><small>Log a problem or view logged problems.</small></span></button>}
-                        {managedLead.maintenanceAccess.permissions.canSuggestCurrentValue&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setValueLead(managedLead)}><AssetActionIcon action="replacementPrice" className={assetStyles.buttonIcon}/><span><strong>Suggest current value</strong><small>Send an estimate for owner approval.</small></span></button>}
-                        {managedLead.maintenanceAccess.permissions.canAccessLocation&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setLocationLead(managedLead)}><AssetActionIcon action="location" className={assetStyles.buttonIcon}/><span><strong>Asset location</strong><small>View or update where the asset is kept.</small></span></button>}
-                        {(managedLead.maintenanceAccess.permissions.canUpdateDetails||managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset details</strong><small>Details, finance, insurance and licensing.</small></span></button>}
-                        {managedLead.maintenanceAccess.permissions.canAddMaintenance&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'maintenance'})}><AssetActionIcon action="addMaintenance" className={assetStyles.buttonIcon} /><span><strong>Add maintenance</strong><small>Record completed work.</small></span></button>}
-                        {(managedLead.maintenanceAccess.permissions.canAccessLocation||managedLead.maintenanceAccess.permissions.canUpdateDetails||managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition||managedLead.maintenanceAccess.permissions.canAddMaintenance)&&<button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canViewLoggedProblems&&<button data-manage-action="loggedProblems" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setProblemLead(managedLead)}><AssetActionIcon action="loggedProblems" className={assetStyles.buttonIcon}/><span><strong>Log problems</strong><small>Log a problem or view logged problems.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canSuggestCurrentValue&&<button data-manage-action="suggestValue" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setValueLead(managedLead)}><AssetActionIcon action="replacementPrice" className={assetStyles.buttonIcon}/><span><strong>Suggest current value</strong><small>Send an estimate for owner approval.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canAccessLocation&&<button data-manage-action="location" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setLocationLead(managedLead)}><AssetActionIcon action="location" className={assetStyles.buttonIcon}/><span><strong>Asset location</strong><small>View or update where the asset is kept.</small></span></button>}
+                        {(managedLead.maintenanceAccess.permissions.canUpdateDetails||managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition)&&<button data-manage-action="details" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset details</strong><small>Details, finance, insurance and licensing.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canAddMaintenance&&<button data-manage-action="addMaintenance" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'maintenance'})}><AssetActionIcon action="addMaintenance" className={assetStyles.buttonIcon} /><span><strong>Add maintenance</strong><small>Record completed work.</small></span></button>}
+                        {(managedLead.maintenanceAccess.permissions.canAccessLocation||managedLead.maintenanceAccess.permissions.canUpdateDetails||managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition||managedLead.maintenanceAccess.permissions.canAddMaintenance)&&<button data-manage-action="history" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
                       </>}
                       {null}
 
                       {isDealerLeadsMode && managedLead.maintenanceAccess?.permissions.canAddCosts && !isFullRegisterLead(managedLead) ? (
-                        <button
+                        <button data-manage-action="addCosts"
                           type="button"
                           className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           onClick={() => setContribution({lead:managedLead,kind:'costs'})}
@@ -4030,7 +4031,7 @@ export default function LeadsClient({
                       ) : null}
                     </>
                   )}
-                </div>
+                </ManageActionGrid>
               </div>
         </LeadManageDialog>
       ) : null}
