@@ -15611,7 +15611,12 @@ export default function AssetRegisterClient({
                 aria-expanded={isSummaryModalOpen}
                 aria-controls="asset-register-summary-dialog"
               >
-                <OptionsIcon className={styles.buttonIcon} />
+                <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                  <path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M7 8h3M7 12h2M7 16h2" />
+                  <path d="M16 3a2.12 2.12 0 0 1 3 3l-7 7-4 1 1-4Z" />
+                  <path d="m14 5 3 3" />
+                </svg>
                 <span>Summary</span>
               </button>
 
