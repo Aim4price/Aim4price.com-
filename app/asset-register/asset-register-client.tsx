@@ -116,6 +116,7 @@ import {
   type AssetGroupSaveInput,
 } from '../../lib/asset-groups-shared';
 import styles from './page.module.css';
+import actionColours from '../../components/leads/ManageActionGrid.module.css';
 import accountStyles from '../account/page.module.css';
 import externalShareStyles from '../../components/asset-register/AssetExternalShare.module.css';
 import updateStyles from './asset-update-refinements.module.css';
@@ -17964,9 +17965,10 @@ export default function AssetRegisterClient({
 
             {showAssetUpdateMenu ? (
               <div className={`${styles.modalScrollBody} ${styles.assetUpdateMenuBody} ${styles.ownerCommandModal}`}>
-                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
+                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid}`} data-manage-actions>
                   {ASSET_FORM_SECTION_TABS.map((section) => (
                     <button key={section.step} type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${section.step === 2 ? styles.optionFeaturedButton : ''}`}
+                      data-manage-action={section.step === 2 ? 'details' : section.step === 3 ? 'documents' : 'addPhotos'}
                       data-asset-update-section={section.step} onClick={() => openAssetFormSection(section.step)}
                       autoFocus={section.step === 2}>
                       {section.step === 2 ? <UpdateAssetIcon className={styles.buttonIcon} /> : section.step === 3 ? <ShieldIcon className={styles.buttonIcon} /> : <DocumentIcon className={styles.buttonIcon} />}
@@ -19797,9 +19799,9 @@ export default function AssetRegisterClient({
 
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
               <div className={styles.optionsContent}>
-                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
-                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:buildAssetMeta(activeAsset)})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View shared asset changes.</small></span></button>
-                  <button
+                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid}`} data-manage-actions>
+                  <button data-manage-action="history" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:buildAssetMeta(activeAsset)})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View shared asset changes.</small></span></button>
+                  <button data-manage-action="details"
                     type="button"
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}
                     data-asset-return-action="manage-update"
@@ -19817,7 +19819,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
+                  <button data-manage-action="reports" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
                     <DownloadIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Reports</strong>
@@ -19825,7 +19827,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <Link
+                  <Link data-manage-action="addCosts"
                     href={buildOwnerAssetPageHref('/my-invoices', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                     className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   >
@@ -19837,7 +19839,7 @@ export default function AssetRegisterClient({
                   </Link>
 
                   {accountProfile?.accountType === 'owner' ? (
-                    <button
+                    <button data-manage-action="budget"
                       type="button"
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                       disabled={budgetLookupState === 'loading'}
@@ -19858,7 +19860,7 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {canAssetReceiveFuel(activeAsset) ? (
-                    <Link
+                    <Link data-manage-action="fuel"
                       href={buildOwnerAssetPageHref('/fuel', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     >
@@ -19870,7 +19872,7 @@ export default function AssetRegisterClient({
                     </Link>
                   ) : null}
 
-                  <button
+                  <button data-manage-action="addMaintenance"
                     type="button"
                     className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     data-asset-return-action="manage-maintenance"
@@ -19883,7 +19885,7 @@ export default function AssetRegisterClient({
                     </span>
                   </button>
 
-                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openPricingDialog}>
+                  <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openPricingDialog}>
                     <TrendIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Manage pricing</strong>
@@ -19892,7 +19894,7 @@ export default function AssetRegisterClient({
                   </button>
 
                   {canUseOwnerOnlyAssetActions ? (
-                    <button
+                    <button data-manage-action="location"
                       type="button"
                       className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                       data-asset-return-action="manage-map-location"
@@ -19919,7 +19921,7 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {canUseOwnerOnlyAssetActions ? (
-                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openQrDialog}>
+                    <button data-manage-action="qr" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openQrDialog}>
                       <QrIcon className={styles.buttonIcon} />
                       <span>
                         <strong>QR code</strong>
@@ -19929,7 +19931,7 @@ export default function AssetRegisterClient({
                   ) : null}
 
                   {canUseMarketplaceActions && isMarketplaceEligible(activeAsset) ? (
-                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => handlePublishFromDialog(activeAsset)}>
+                    <button data-manage-action="marketplace" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => handlePublishFromDialog(activeAsset)}>
                       <CartIcon className={styles.buttonIcon} />
                       <span>
                         <strong>Marketplace</strong>
@@ -19988,8 +19990,8 @@ export default function AssetRegisterClient({
 
             <div className={styles.ownerCommandChoiceBody}>
               {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.error ? <p role="alert">{maintenanceAvailability.error}</p> : null}
-              <div className={styles.ownerCommandChoiceGrid}>
-                <Link
+              <div className={`${styles.ownerCommandChoiceGrid} ${actionColours.grid}`} data-manage-actions>
+                <Link data-manage-action="addMaintenance"
                   href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                   className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction} ${styles.optionFeaturedButton}`}
                 >
@@ -20000,7 +20002,7 @@ export default function AssetRegisterClient({
                 </Link>
 
                 {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.hasRecords ? (
-                  <Link
+                  <Link data-manage-action="maintenanceSchedules"
                     href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, {}, ownerCommandReturnLocation)}
                     className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
                   >
@@ -20012,7 +20014,7 @@ export default function AssetRegisterClient({
                 ) : null}
 
                 {activeAsset.kind !== 'property' && activeDealerTrackingByAssetId[activeAsset.id] === true ? (
-                  <button
+                  <button data-manage-action="maintenanceSchedules"
                     type="button"
                     className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
                     onClick={() => {
@@ -20095,9 +20097,9 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
-              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
-                <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Override &amp; review values</strong><small>Current value, replacement price and history.</small></span></button>
-                <button
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid}`} data-manage-actions>
+                <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Override &amp; review values</strong><small>Current value, replacement price and history.</small></span></button>
+                <button data-manage-action="suggestValue"
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
@@ -20110,7 +20112,7 @@ export default function AssetRegisterClient({
                   </span>
                 </button>
 
-                <button
+                <button data-manage-action="replacementPrice"
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={!canProjectFuturePrice(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
@@ -20123,7 +20125,7 @@ export default function AssetRegisterClient({
                   </span>
                 </button>
 
-                <button
+                <button data-manage-action="marketplace"
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   disabled={isLoadingPricingPreview || isSavingPricingPreview}
