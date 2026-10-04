@@ -6445,7 +6445,7 @@ export default function AssetRegisterClient({
   const valueReviewOpened=useRef(false);
   async function reloadValueRequests(){try{const r=await fetch('/api/asset-register/value-requests',{cache:'no-store'});if(r.ok){const d=await r.json();setPendingValueAssets((d.requests||[]).filter((x:{status:string})=>x.status==='pending').map((x:{asset_id:string})=>x.asset_id));}}catch{}}
   useEffect(()=>{void reloadValueRequests();},[]);
-  useEffect(()=>{if(valueReviewOpened.current||isLoading)return;const p=new URLSearchParams(window.location.search);if(p.get('valueReview')!=='1')return;const asset=assets.find(a=>a.id===p.get('assetId'));if(asset){valueReviewOpened.current=true;setValueReviewAsset(asset);}},[assets,isLoading]);
+  useEffect(()=>{if(valueReviewOpened.current||isLoading)return;const p=new URLSearchParams(window.location.search);if(p.get('valueReview')!=='1')return;const asset=assets.find(a=>a.id===p.get('assetId'));if(asset){valueReviewOpened.current=true;const correction=asset.dealerAssetCorrection;if(p.get('replacementReview')&&correction?.id===p.get('replacementReview')&&correction.replacementPriceChanged){setValueReviewCorrectionId(correction.id);setValueReviewReplacement(correction.proposedReplacementPriceExVat??undefined);setValueReviewInitial('replacement');}setValueReviewAsset(asset);}},[assets,isLoading]);
   const [replacementPriceRevaluePrompt, setReplacementPriceRevaluePrompt] = useState<ReplacementPriceRevaluePrompt | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingRevaluePreview | null>(null);
   const revaluePreviewRequestSeqRef = useRef(0);
@@ -19819,7 +19819,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
               <div className={styles.optionsContent}>
                 <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid}`} data-manage-actions>
-                  <button data-manage-action="history" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:buildAssetMeta(activeAsset)})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View shared asset changes.</small></span></button>
+                  <button data-manage-action="history" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:buildAssetMeta(activeAsset)})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View asset changes and corrections.</small></span></button>
                   <button data-manage-action="details"
                     type="button"
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}

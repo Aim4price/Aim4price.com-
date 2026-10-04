@@ -56,10 +56,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  try{
  const page=await browser.newPage();await page.setViewport({width:1440,height:1000});const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#dce7e0;font-family:Arial;--modal-backdrop-color:rgba(12,24,35,.42)}'+sheets.join('\n')+'</style><div id="app"></div>');
- await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+'window.root=ReactDOM.createRoot(document.getElementById("app"));window.renderValue=(suggest=false)=>window.root.render(React.createElement(require("components/asset-register/AssetValueDialog").default,{key:String(suggest),suggest,endpoint:"/api/fixture/value",assetTitle:"2023 Tractor",onClose:()=>{}}));'});
+ await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+'window.root=ReactDOM.createRoot(document.getElementById("app"));window.renderValue=(suggest=false)=>window.root.render(React.createElement(require("components/asset-register/AssetValueDialog").default,{key:String(suggest)+String(window.renderCount=(window.renderCount||0)+1),suggest,endpoint:"/api/fixture/value",assetTitle:"2023 Tractor",onClose:()=>{}}));'});
  await page.evaluate(()=>{
  if(!crypto.randomUUID)crypto.randomUUID=()=>String(Math.random());window.writes=[];window.data={asset:{id:'asset',title:'2023 Tractor',value:700000,replacementPrice:1000000,revision:'v1',manual:false},requests:[{id:'proposal',amount:800000,reason:'Inspected equipment',actor_name:'Example Dealer',status:'pending',submitted_value:700000}],history:[]};
- window.fetch=async(url,options)=>{if(!options?.method)return {ok:true,json:async()=>({...window.data,value:window.data.asset.value})};const b=JSON.parse(options.body);window.writes.push(b);if(b.action==='previewReplacement')return {ok:true,json:async()=>({revision:'v1',currentValue:window.data.asset.value,recalculatedValue:960000})};if(b.action==='approve'){window.data.asset.value=800000;window.data.requests[0].status='approved';}if(b.action==='override')window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true})};};window.renderValue();
+ window.fetch=async(url,options)=>{if(!options?.method)return {ok:true,json:async()=>({...window.data,value:window.data.asset.value,manual:window.data.asset.manual,revision:window.data.asset.revision})};const b=JSON.parse(options.body);window.writes.push(b);if(b.action==='previewReset')return {ok:true,json:async()=>({revision:window.data.asset.revision,currentValue:window.data.asset.value,recalculatedValue:700000})};if(b.action==='resetAim4price'){window.data.asset.value=700000;window.data.asset.baseline=null;}if(b.action==='restoreManual')window.data.asset.value=600000;if(b.action==='suggest'&&window.data.asset.manual){window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true,direct:true})};}if(b.action==='previewReplacement')return {ok:true,json:async()=>({revision:'v1',currentValue:window.data.asset.value,recalculatedValue:960000})};if(b.action==='approve'){window.data.asset.value=800000;window.data.requests[0].status='approved';}if(b.action==='override')window.data.asset.value=b.amount;return {ok:true,json:async()=>({ok:true})};};window.renderValue();
  });
  async function click(text){await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent===t),{},text);await page.$$eval('button',(nodes,t)=>nodes.find(b=>b.textContent===t).click(),text);}
  async function fill(selector,value){await page.waitForSelector(selector);await page.$eval(selector,(n,v)=>{Object.getOwnPropertyDescriptor(n.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(n,v);n.dispatchEvent(new Event('input',{bubbles:true}));},value);}
@@ -85,6 +85,25 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(()=>window.renderSharedValue(true,'current'));
  await page.waitForFunction(()=>document.body.textContent.includes('Override current value'));
  assert(await page.evaluate(()=>[...document.querySelectorAll('button')].some(n=>n.textContent==='Confirm override')));
- assert.deepEqual(errors,[]);console.log('PASS owner approval, override, replacement preview/keep choice, and shared suggestion flow');
+ await page.evaluate(()=>{window.data.asset.manual=true;window.renderValue(true);});
+ await page.waitForFunction(()=>document.body.textContent.includes('Update manual value'));
+ await fill('input[type=number]','620000');await fill('textarea','Manual assessment');await click('Confirm update');
+ await page.waitForFunction(()=>document.body.textContent.includes('Manual value updated.'));
+ assert.equal(await page.evaluate(()=>window.writes.at(-1).confirmed),true);
+ assert.equal(await page.evaluate(()=>window.writes.at(-1).revision),'v1');
+ await page.evaluate(()=>{window.data.history=[{id:'previous',action:'Value manual update',actor_name:'Workshop',created_at:'2026-10-04',before_data:{amount:600000,replacementPrice:1000000},after_data:{amount:620000,reason:'Manual assessment'}}];window.renderValue();});
+ await click('History');await click('Restore previous manual value');await fill('textarea','Correct mistaken estimate');await click('Confirm restoration');
+ await page.waitForFunction(()=>window.writes.at(-1).action==='restoreManual');assert.equal(await page.evaluate(()=>window.writes.at(-1).historyId),'previous');
+ await page.evaluate(()=>{window.data.asset.manual=false;window.data.asset.baseline={amount:600000,actorName:'Owner',date:'2026-10-04',reason:'Approved'};window.renderValue();});
+ await click('Return to Aim4price value');await fill('textarea','Use current Aim4price calculation');await click('Preview today’s value');await page.waitForFunction(()=>document.body.textContent.includes('Confirm return to Aim4price'));
+ await page.screenshot({path:'/tmp/history-reset-preview.png'});await click('Confirm return to Aim4price');await page.waitForFunction(()=>window.writes.at(-1).action==='resetAim4price');assert.equal(await page.evaluate(()=>window.writes.at(-1).expectedValue),700000);
+ await page.evaluate(()=>{
+ window.historyItem={id:'event',category:'details',action:'Asset updated',actorName:'Example Workshop',source:'Leads',createdAt:'2026-10-04T10:00:00Z',before:{title:'Old tractor',year_model:2022},after:{title:'2023 Tractor',year_model:2023},recordId:'asset',recordTable:'asset_register_items',restorable:true,href:'/asset-register?assetId=asset'};
+ window.fetch=async(url,options)=>{if(options?.method==='POST'){window.writes.push(JSON.parse(options.body));return {ok:true,json:async()=>({ok:true})};}return {ok:true,json:async()=>({items:[window.historyItem],nextBefore:null})};};
+ window.root.render(React.createElement(require('components/asset-register/AssetHistoryDialog').default,{endpoint:'/api/asset-register/asset',assetTitle:'2023 Tractor',assetSubtitle:'Year Model: 2023 • Usage: 1 300 hours • Condition: Good',onClose:()=>{}}));
+ });
+ await click('Restore previous details');await page.screenshot({path:'/tmp/asset-history-review.png'});await click('Confirm restoration');await page.waitForFunction(()=>document.body.textContent.includes('Restored. A new history entry'));
+ assert.equal(await page.evaluate(()=>window.writes.at(-1).eventId),'event');
+ assert.deepEqual(errors,[]);console.log('PASS value approval, manual edits, reset preview, history restoration, and shared value flows');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

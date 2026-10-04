@@ -1,8 +1,11 @@
+import {setAssetHistoryActor} from './asset-history-schema';
+import {ensureSharedAssetActivity,recordSharedAssetActivity} from './shared-asset-activity';
+import {notifyReplacementSuggestion} from './asset-replacement-mail';
 import { requireLiveSharedAsset, lockLiveSharedAsset } from './live-shared-asset-access';
 import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundation';
 import type { PoolClient } from 'pg';
 import {
-  getAssetRegisterItemById,
+  getAssetRegisterItemById,saveApprovedAssetValue,
   type AssetRegisterItem,
 } from './asset-register-db';
 import { revalueAssetRegisterItem } from './asset-register-revaluation';
@@ -528,12 +531,15 @@ export async function createOrUpdateDealerAssetCorrection(input: {
   dealerName: string;
   actorName: string;
   reason?: string;
+  confirmed?: boolean;
+  revision?: string;
   sourceType: DealerAssetCorrectionSource;
   sourceId: string;
   field: DealerAssetCorrectionField;
   value: unknown;
 }): Promise<DealerAssetCorrectionRequest> {
   await ensureDealerAssetCorrectionTables();
+  await ensureSharedAssetActivity();
   if (input.sourceType === 'external') await ensureExternalCorrectionSource();
   const sourceId = asText(input.sourceId);
   if (!sourceId) throw new Error('CORRECTION_SOURCE_REQUIRED');
@@ -609,8 +615,15 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       } else if (input.sourceType === 'maintenance') throw new Error('CORRECTION_FORBIDDEN');
     }
 
-    // Value-affecting changes always require the owner's explicit valuation choice.
-    if (input.field === 'replacementPriceExVat') directUpdates = false;
+    // Only explicitly permitted manual assets may change immediately. Legacy enquiry rights remain proposals.
+    const latestAsset=await getAssetRegisterItemById(access.owner_user_id,asset.id,client);
+    if(!latestAsset)throw new Error('ASSET_NOT_FOUND');
+    const manualReplacement=input.field==='replacementPriceExVat'&&latestAsset.selectedMethod==='manual'&&directUpdates;
+    if(input.field==='replacementPriceExVat'){
+      directUpdates=manualReplacement;
+      if(manualReplacement&&(input.confirmed!==true||input.revision!==latestAsset.updatedAtIso))throw new Error('CORRECTION_RELOAD_CONFIRM');
+    }
+    await setAssetHistoryActor(client,input.dealerUserId,input.actorName,input.sourceType==='external'?'Shared link':'Leads');
 
     const existingResult = await client.query<DealerAssetCorrectionRow>(
       `${correctionSelectSql(`
@@ -711,8 +724,12 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       const current = mapCorrection(loaded.rows[0]);
       const { assetColumns } = await loadCorrectionTableColumns(client);
       const previous = await lockAndReadAssetValuationState({client,current,ownerUserId:access.owner_user_id,assetColumns});
-      await applyAcceptedCorrectionToAsset({client,current,ownerUserId:access.owner_user_id,assetColumns});
-      await client.query(`UPDATE public.dealer_asset_correction_requests SET status='accepted', resolved_by_user_id=$2,resolved_at=now(),revaluation_status=$3,revaluation_previous_run_id=$4,revaluation_previous_value_ex_vat=$5,updated_at=now() WHERE id=$1::uuid`,[correctionId,input.dealerUserId,current.replacementPriceChanged?'pending':'not_required',previous.valuationRunId,previous.valueExVat]);
+      if(manualReplacement){
+        const baseline={version:1 as const,amount:latestAsset.value,modelValue:null,date:new Date().toISOString(),actorId:input.dealerUserId,actorName,reason:input.reason||'Manual replacement price update',eventId:correctionId,usage:latestAsset.hours,condition:latestAsset.condition,replacementPrice:roundedReplacementPrice};
+        await saveApprovedAssetValue(client,latestAsset,latestAsset.value,baseline,roundedReplacementPrice!);
+        await recordSharedAssetActivity(client,{id:correctionId,ownerId:access.owner_user_id,assetId:asset.id,actorId:input.dealerUserId,actorName,action:'Value replacement changed',before:{amount:latestAsset.value,replacementPrice:latestAsset.replacementPriceExVat},after:{amount:latestAsset.value,replacementPrice:roundedReplacementPrice,reason:input.reason||'Manual replacement price update',mode:'keep'}});
+      }else await applyAcceptedCorrectionToAsset({client,current,ownerUserId:access.owner_user_id,assetColumns});
+      await client.query(`UPDATE public.dealer_asset_correction_requests SET status='accepted', resolved_by_user_id=$2,resolved_at=now(),revaluation_status=$3,revaluation_previous_run_id=$4,revaluation_previous_value_ex_vat=$5,updated_at=now() WHERE id=$1::uuid`,[correctionId,input.dealerUserId,current.replacementPriceChanged&&!manualReplacement?'pending':'not_required',previous.valuationRunId,previous.valueExVat]);
       const accepted = await client.query<DealerAssetCorrectionRow>(`${correctionSelectSql('where correction.id = $1::uuid')} limit 1`,[correctionId]);
       loaded.rows[0] = accepted.rows[0];
     }
@@ -721,11 +738,12 @@ export async function createOrUpdateDealerAssetCorrection(input: {
     if (!loaded.rows[0]) throw new Error('CORRECTION_NOT_CREATED');
     if (directUpdates) {
       await syncDealerLeadSnapshotsWithAsset(access.owner_user_id,asset.id).catch(error=>console.error('Could not refresh lead asset data',error));
-      if (replacementPriceChanged) {
+      if (replacementPriceChanged&&!manualReplacement) {
         try { return (await attemptDealerAssetCorrectionRevaluation({ownerUserId:access.owner_user_id,correctionId})).correction; }
         catch(error) { console.error('Saved asset update; revaluation remains pending',error); }
       }
     }
+    if(!directUpdates&&replacementPriceChanged)await notifyReplacementSuggestion(correctionId).catch(error=>console.error('Saved replacement suggestion; email pending',error));
     return mapCorrection(loaded.rows[0]);
   } catch (error) {
     await client.query('rollback').catch(() => undefined);

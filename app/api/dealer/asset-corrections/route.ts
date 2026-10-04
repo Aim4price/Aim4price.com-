@@ -1,3 +1,4 @@
+import {requireBusinessOrigin} from '../../../../lib/business-network-api';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession, isDealerAppSession } from '../../../../lib/auth-session';
@@ -12,6 +13,8 @@ export const dynamic = 'force-dynamic';
 
 type CorrectionBody = {
   reason?: unknown;
+  confirmed?:unknown;
+  revision?:unknown;
   sourceType?: unknown;
   sourceId?: unknown;
   field?: unknown;
@@ -23,7 +26,8 @@ function asText(value: unknown): string {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true });
+  try{requireBusinessOrigin(request);}catch{return NextResponse.json({error:'Untrusted request.'},{status:403});}
+  const session = await getServerSession({ allowDealerApp: true, allowBusiness:true });
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Dealer sign-in is required.' }, { status: 401 });
   }
@@ -33,7 +37,7 @@ export async function POST(request: NextRequest) {
     name: session.user.name,
     email: session.user.email,
   });
-  if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
+  if (!['dealer','business'].includes(profile.accountType) || profile.accountStatus !== 'active') {
     return NextResponse.json({ ok: false, error: 'Dealer access is required.' }, { status: 403 });
   }
 
@@ -67,11 +71,12 @@ export async function POST(request: NextRequest) {
       sourceType,
       sourceId,
       field,
-      reason: typeof body.reason==='string'?body.reason.trim().slice(0,1500):undefined, value: body.value,
+      confirmed:body.confirmed===true,revision:typeof body.revision==='string'?body.revision:undefined,reason: typeof body.reason==='string'?body.reason.trim().slice(0,1500):undefined, value: body.value,
     });
     return NextResponse.json({ ok: true, correction });
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
+    if(message==='CORRECTION_RELOAD_CONFIRM')return NextResponse.json({error:'Reload the latest asset and confirm the manual price change.'},{status:409});
     if (message === 'CORRECTION_FORBIDDEN') {
       return NextResponse.json({ ok: false, error: 'This asset is not shared with your dealership.' }, { status: 403 });
     }

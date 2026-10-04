@@ -137,8 +137,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   window.renderLinkSettings({suggestValue:false});
  });
  await page.waitForFunction(()=>document.querySelector('[data-asset-link-dialog]')?.textContent.includes('Save changes'));
- const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Suggest current value')).click());
- const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Suggest current value')).querySelector('input').checked);
+ const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value access')).click());
+ const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value access')).querySelector('input').checked);
  await toggleValue(); assert.equal(await valueChecked(),true,'Value permission responds to a card click');
  await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===true);
  assert.equal(await page.evaluate(()=>window.savedLink.permissions.suggestValue),true);

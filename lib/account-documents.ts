@@ -1,3 +1,4 @@
+import {installAssetHistoryTriggers} from './asset-history-schema';
 import { randomUUID } from 'node:crypto';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import {
@@ -390,7 +391,7 @@ async function ensureAccountDocumentTablesOnce(): Promise<void> {
 
 export async function ensureAccountDocumentTables(): Promise<void> {
   if (!accountDocumentTablesPromise) {
-    accountDocumentTablesPromise = ensureAccountDocumentTablesOnce().catch((error) => {
+    accountDocumentTablesPromise = ensureAccountDocumentTablesOnce().then(installAssetHistoryTriggers).catch((error) => {
       accountDocumentTablesPromise = null;
       throw error;
     });

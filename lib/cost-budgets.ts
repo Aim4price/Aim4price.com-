@@ -1,3 +1,4 @@
+import {installAssetHistoryTriggers} from './asset-history-schema';
 import { ensureCostBudgetHistory, readCostBudgetHistory } from './cost-budget-history';
 import { getAssetRegisterItemById } from './asset-register-db';
 import { getDb } from './db';
@@ -301,7 +302,7 @@ async function ensureCostBudgetTablesOnce(): Promise<void> {
 
 export async function ensureCostBudgetTables(): Promise<void> {
   if (!ensureCostBudgetTablesPromise) {
-    ensureCostBudgetTablesPromise = ensureCostBudgetTablesOnce().catch((error) => {
+    ensureCostBudgetTablesPromise = ensureCostBudgetTablesOnce().then(installAssetHistoryTriggers).catch((error) => {
       ensureCostBudgetTablesPromise = null;
       throw error;
     });

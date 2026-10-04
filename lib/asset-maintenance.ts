@@ -1,3 +1,4 @@
+import {installAssetHistoryTriggers} from './asset-history-schema';
 import { maintenanceIdentity, validateMaintenanceWork, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from './maintenance-catalogue';
 import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
@@ -954,7 +955,7 @@ async function ensureAssetMaintenanceTablesOnce(): Promise<void> {
 
 export async function ensureAssetMaintenanceTables(): Promise<void> {
   if (!assetMaintenanceTablesPromise) {
-    assetMaintenanceTablesPromise = ensureAssetMaintenanceTablesOnce().catch((error) => {
+    assetMaintenanceTablesPromise = ensureAssetMaintenanceTablesOnce().then(installAssetHistoryTriggers).catch((error) => {
       assetMaintenanceTablesPromise = null;
       throw error;
     });
