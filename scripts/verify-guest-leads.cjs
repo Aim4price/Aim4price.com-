@@ -223,7 +223,7 @@ export default function Validation(){
    assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',inputs=>inputs.length),0,'Report permissions are selectable');
    assert.equal(await page.$$eval('[data-permission-grid] input:checked',inputs=>inputs.length),0,'New link permissions start unchecked');
    await page.click('[data-asset-link-dialog] input[type=checkbox]');
-   await page.waitForFunction(()=>document.querySelectorAll('[data-permission-grid] input:checked').length===11);
+   await page.waitForFunction(()=>document.querySelectorAll('[data-permission-grid] input:checked').length===12);
    if(width===1440) assert.ok(await page.$eval('[data-asset-link-dialog]',e=>[e,...e.querySelectorAll('div')].every(node=>node.scrollHeight<=node.clientHeight+1||!['auto','scroll'].includes(getComputedStyle(node).overflowY))),'Asset link settings and all option containers fit without scrolling');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Continue');
@@ -233,7 +233,7 @@ export default function Validation(){
    await page.screenshot({path:path.join(output,`selected-disclosure-${width}.png`),fullPage:true});
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
-   assert.deepEqual(selectedDetails.permissions,{updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
+   assert.deepEqual(selectedDetails.permissions,{suggestValue:true,updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');

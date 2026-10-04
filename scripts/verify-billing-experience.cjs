@@ -200,12 +200,24 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
       if (bounds.overflow) {
       assert.ok(bounds.track>=12, 'Overflowing content retains a usable scrollbar');
       const content=await page.$('[data-pricing-content]');
-      const scrollBox = await content.boundingBox();
-      // Wheel over the visible content centre, clear of the rounded edge/header.
-      await page.mouse.move(scrollBox.x + scrollBox.width / 2, scrollBox.y + scrollBox.height / 2);
-      await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-      await page.mouse.wheel({deltaY:1000});
-      await page.waitForFunction(()=>document.querySelector('[data-pricing-content]').scrollTop>0);
+      // Viewport resizing can leave Chromium's compositor hit-test regions one
+      // frame behind layout. Remeasure after painting and retry real wheel input;
+      // never set scrollTop, so broken user scrolling still fails this check.
+      for (let attempt=0; attempt<3; attempt++) {
+       await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+       const scrollBox = await content.boundingBox();
+       assert.ok(scrollBox, 'Pricing content is visible');
+       const x=scrollBox.x+scrollBox.width/2,y=scrollBox.y+scrollBox.height/2;
+       assert.ok(await page.evaluate(({x,y})=>document.querySelector('[data-pricing-content]').contains(document.elementFromPoint(x,y)),{x,y}), 'Wheel target is inside pricing content');
+       await page.mouse.move(x,y);
+       await page.mouse.wheel({deltaY:1000});
+       try {
+        await page.waitForFunction(()=>document.querySelector('[data-pricing-content]').scrollTop>0,{timeout:1500});
+        break;
+       } catch (error) {
+        if (error.name!=='TimeoutError' || attempt===2) throw error;
+       }
+      }
       await content.focus();
       await page.keyboard.down('Control');
       await page.keyboard.press('Home');

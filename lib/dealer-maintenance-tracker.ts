@@ -52,6 +52,7 @@ export type DealerMaintenancePermissions = {
   canAddPhotos?: boolean;
   canUpdateDetails?: boolean;
   canAccessLocation?: boolean;
+  canSuggestCurrentValue?: boolean;
   canUpdateYear?: boolean;
   canUpdateUsage?: boolean;
   canUpdateCondition?: boolean;
@@ -221,6 +222,7 @@ type DealerMaintenanceAccessRow = {
   can_add_photos?: boolean | null;
   can_update_details?: boolean | null;
   can_access_location?: boolean | null;
+  can_suggest_current_value?: boolean | null;
   can_update_year?: boolean | null;
   can_update_usage?: boolean | null;
   can_update_condition?: boolean | null;
@@ -426,6 +428,7 @@ function rowPermissions(row: DealerMaintenanceAccessRow): DealerMaintenancePermi
     canAddPhotos: row.can_add_photos === true,
     canUpdateDetails: row.can_update_details === true,
     canAccessLocation: row.can_access_location === true,
+    canSuggestCurrentValue: row.can_suggest_current_value === true,
     canUpdateYear: row.can_update_year === true,
     canUpdateUsage: row.can_update_usage === true,
     canUpdateCondition: row.can_update_condition === true,
@@ -474,6 +477,7 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
         can_add_photos,
         can_update_details,
         can_access_location,
+        can_suggest_current_value,
         can_update_year,
         can_update_usage,
         can_update_condition,
@@ -544,6 +548,7 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
       add column if not exists can_add_photos boolean not null default false,
       add column if not exists can_update_details boolean not null default false,
       add column if not exists can_access_location boolean not null default false,
+      add column if not exists can_suggest_current_value boolean not null default false,
       add column if not exists can_update_year boolean not null default false,
       add column if not exists can_update_usage boolean not null default false,
       add column if not exists can_update_condition boolean not null default false,
@@ -645,6 +650,7 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         access.can_add_photos,
         access.can_update_details,
         access.can_access_location,
+        access.can_suggest_current_value,
         access.can_update_year,
         access.can_update_usage,
         access.can_update_condition,
@@ -743,6 +749,7 @@ export async function grantDealerMaintenanceTracking(input: {
         can_add_photos,
         can_update_details,
         can_access_location,
+        can_suggest_current_value,
         can_update_year,
         can_update_usage,
         can_update_condition,
@@ -755,7 +762,7 @@ export async function grantDealerMaintenanceTracking(input: {
         created_at,
         updated_at
       )
-      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $13, $19, $20, $15, $16, $17, $18, $14, $11, $12, true, null, now(), now())
+      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $13, $19, $20, $21, $15, $16, $17, $18, $14, $11, $12, true, null, now(), now())
       on conflict (owner_user_id, dealer_user_id, asset_register_item_id)
       do update set
         granted_by_actor_type = excluded.granted_by_actor_type,
@@ -768,6 +775,7 @@ export async function grantDealerMaintenanceTracking(input: {
         can_add_photos = excluded.can_add_photos,
         can_update_details = excluded.can_update_details,
         can_access_location = excluded.can_access_location,
+        can_suggest_current_value = excluded.can_suggest_current_value,
         can_update_year = excluded.can_update_year,
         can_update_usage = excluded.can_update_usage,
         can_update_condition = excluded.can_update_condition,
@@ -801,6 +809,7 @@ export async function grantDealerMaintenanceTracking(input: {
       permissions.canAddMaintenance === true,
       permissions.canUpdateDetails === true,
       permissions.canAccessLocation === true,
+      permissions.canSuggestCurrentValue === true,
 
     ],
   );
@@ -850,6 +859,7 @@ export async function updateDealerMaintenancePermissions(input: {
         can_add_maintenance = $15,
         can_update_details = $16,
         can_access_location = $17,
+        can_suggest_current_value = $18,
 
         can_update_serial = $8,
         can_update_replacement_price = $9,
@@ -877,6 +887,7 @@ export async function updateDealerMaintenancePermissions(input: {
       input.permissions.canAddMaintenance === true,
       input.permissions.canUpdateDetails === true,
       input.permissions.canAccessLocation === true,
+      input.permissions.canSuggestCurrentValue === true,
 
     ],
   );

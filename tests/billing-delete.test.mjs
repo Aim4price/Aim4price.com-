@@ -25,7 +25,7 @@ test('hard deletion removes invoice data atomically, retires identifiers, and sc
   await seed('draft');await seed('void');const other=await seed('issued',0,'other');
   const alerts=await notifications.listBillingNotifications('owner');assert.deepEqual(alerts.map(x=>x.id),['billing-invoice:'+paid.id]);assert.equal(alerts[0].href,'/billing');assert.equal(alerts[0].category,'billing');
   assert.deepEqual((await notifications.listBillingNotifications('other')).map(x=>x.id),['billing-invoice:'+other.id]);
-  const empty=new Proxy({},{get:()=>async()=>[]});const surfaceDeps=Object.fromEntries(['./fuel-ledger','./asset-discovery','./partner-access','./asset-maintenance','./dealer-asset-corrections','./dealer-maintenance-tracker','./dealer-costs','./capture-requests','./cost-budgets','./marketplace-sourcing-requests'].map(name=>[name,empty]));
+  const empty=new Proxy({},{get:()=>async()=>[]});const surfaceDeps=Object.fromEntries(['./asset-value-requests','./fuel-ledger','./asset-discovery','./partner-access','./asset-maintenance','./dealer-asset-corrections','./dealer-maintenance-tracker','./dealer-costs','./capture-requests','./cost-budgets','./marketplace-sourcing-requests'].map(name=>[name,empty]));
   const surface=load('lib/notifications.ts',{...surfaceDeps,'./db':{getDb:()=>({query:async()=>({rows:[]})})},'./billing-notifications':notifications});
   assert.deepEqual((await surface.listComputedHeaderNotifications({userId:'owner',accountType:'insurance'})).map(x=>x.id),['billing-invoice:'+paid.id],'the account bell includes billing events');
 

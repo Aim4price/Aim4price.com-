@@ -3290,6 +3290,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
   hours: number;
   condition: ConditionKey;
   saveReplacementPrice?: boolean;
+  expectedUpdatedAtIso?: string;
   allowUsageDecrease?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
@@ -3307,6 +3308,8 @@ export async function updateAssetRegisterItemFromValuation(input: {
     throw new Error('VALUATION_RUN_NOT_FOUND');
   }
 
+  if (input.expectedUpdatedAtIso && existing.updatedAtIso !== input.expectedUpdatedAtIso) throw new Error('The asset changed. Reopen the value preview and try again.');
+  const revisionColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon');
   const now = new Date();
   const model = input.result.model;
   const selectedValueExVat = Math.round(Number(input.selectedValueExVat) || 0);
@@ -3392,10 +3395,11 @@ export async function updateAssetRegisterItemFromValuation(input: {
       set
         ${update.clause}
       where user_id = $1 and id = $2
+        ${input.expectedUpdatedAtIso && revisionColumn ? `and date_trunc('milliseconds', ${revisionColumn}) = $${update.values.length + 3}::timestamptz` : ''}
       returning
         ${buildSelectList(schema)}
     `,
-    [input.userId, input.assetId, ...update.values],
+    [input.userId, input.assetId, ...update.values, ...(input.expectedUpdatedAtIso && revisionColumn ? [input.expectedUpdatedAtIso] : [])],
   );
 
   const row = result.rows[0];
@@ -3439,6 +3443,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
   marketAdjustmentDeltaExVat?: number | null;
   marketRawAverageExVat?: number | null;
   saveReplacementPrice?: boolean;
+  expectedUpdatedAtIso?: string;
   allowUsageDecrease?: boolean;
 }): Promise<AssetRegisterItem> {
   const db = getDb();
@@ -3456,6 +3461,8 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     throw new Error('VALUATION_RUN_NOT_FOUND');
   }
 
+  if (input.expectedUpdatedAtIso && existing.updatedAtIso !== input.expectedUpdatedAtIso) throw new Error('The asset changed. Reopen the value preview and try again.');
+  const revisionColumn = resolveColumn(schema, 'updated_at', 'modified_at', 'updatedon');
   const now = new Date();
   const valuationResult = input.result;
   const nextKind = getGenericAssetRegisterKind(valuationResult);
@@ -3566,10 +3573,11 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
       set
         ${update.clause}
       where user_id = $1 and id = $2
+        ${input.expectedUpdatedAtIso && revisionColumn ? `and date_trunc('milliseconds', ${revisionColumn}) = $${update.values.length + 3}::timestamptz` : ''}
       returning
         ${buildSelectList(schema)}
     `,
-    [input.userId, input.assetId, ...update.values],
+    [input.userId, input.assetId, ...update.values, ...(input.expectedUpdatedAtIso && revisionColumn ? [input.expectedUpdatedAtIso] : [])],
   );
 
   const row = result.rows[0];
@@ -3964,4 +3972,24 @@ export async function updateSharedAssetDetails(client: import('pg').PoolClient, 
  const update=buildUpdateSetClause(fields);
  const result=await client.query<AssetRegisterRow>(`UPDATE asset_register_items SET ${update.clause} WHERE user_id=$1 AND id=$2 RETURNING ${buildSelectList(schema)}`,[userId,assetId,...update.values]);
  return {before:{yearModel:existing.yearModel,usage:current,condition:existing.condition},after:{yearModel:year,usage:percentage?life:hours,condition},item:mapAssetRegisterRow(result.rows[0])};
+}
+
+/** Called only after owner/admin authorization and a locked revision check. */
+export async function saveApprovedAssetValue(client: import('pg').PoolClient, asset: AssetRegisterItem, value: number, baseline: import('./approved-value-baseline').ApprovedValueBaseline, replacementPrice?: number): Promise<AssetRegisterItem> {
+  const schema = await getAssetRegisterSchema();
+  const fields: SqlField[] = [];
+  pushField(fields,schema,['value','selected_value_ex_vat','selected_value','saved_value_ex_vat'],value);
+  pushField(fields,schema,['selected_value_ex_vat','selected_value','value','saved_value_ex_vat'],value);
+  const specs = {...asset.specsJson,valuationNeedsUpdate:false,valuation_needs_update:false,valuationLastUpdatedAt:baseline.date,valuation_last_updated_at:baseline.date,valuationLastValueExVat:value,valuation_last_value_ex_vat:value,valuationLastHours:asset.hours,valuation_last_hours:asset.hours,valuationLastLifeWorkedPercent:asset.lifeWorkedPercent,valuation_last_life_worked_percent:asset.lifeWorkedPercent,valuationLastCondition:asset.condition,valuation_last_condition:asset.condition,approved_value_baseline:baseline,...(replacementPrice !== undefined ? {replacementPriceExVat:replacementPrice,replacement_price_ex_vat:replacementPrice,replacementPriceUsedExVat:replacementPrice,replacement_price_used_ex_vat:replacementPrice,userReplacementPriceExVat:replacementPrice,user_replacement_price_ex_vat:replacementPrice} : {})};
+  pushField(fields,schema,['specs_json'],specs,'::jsonb');
+  if(replacementPrice !== undefined) {
+    pushField(fields,schema,['replacement_price_used_ex_vat','replacement_price_ex_vat','official_replacement_price_ex_vat'],replacementPrice);
+    pushField(fields,schema,['user_replacement_price_ex_vat'],replacementPrice);
+    pushField(fields,schema,['replacement_price_basis'],'user');
+  }
+  pushField(fields,schema,['updated_at','modified_at','updatedon'],new Date());
+  const update=buildUpdateSetClause(fields);
+  const result=await client.query<AssetRegisterRow>(`UPDATE asset_register_items SET ${update.clause} WHERE user_id=$1 AND id=$2 RETURNING ${buildSelectList(schema)}`,[asset.userId,asset.id,...update.values]);
+  if(!result.rows[0])throw new Error('Asset unavailable.');
+  return mapAssetRegisterRow(result.rows[0]);
 }

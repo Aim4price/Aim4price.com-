@@ -602,6 +602,9 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       } else if (input.sourceType === 'maintenance') throw new Error('CORRECTION_FORBIDDEN');
     }
 
+    // Value-affecting changes always require the owner's explicit valuation choice.
+    if (input.field === 'replacementPriceExVat') directUpdates = false;
+
     const existingResult = await client.query<DealerAssetCorrectionRow>(
       `${correctionSelectSql(`
         where correction.owner_user_id = $1
@@ -1511,6 +1514,7 @@ export async function resolveDealerAssetCorrection(input: {
     const current = currentResult.rows[0] ? mapCorrection(currentResult.rows[0]) : null;
     if (!current) throw new Error('CORRECTION_NOT_FOUND');
     if (current.status !== 'pending') throw new Error('CORRECTION_ALREADY_RESOLVED');
+    if (input.decision === 'accept' && current.replacementPriceChanged) throw new Error('Review this replacement price in Asset values and choose whether to keep or recalculate current value.');
 
     let previousValuationState: AssetValuationState = {
       valueExVat: null,
