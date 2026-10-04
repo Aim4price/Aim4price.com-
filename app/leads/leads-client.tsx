@@ -12,6 +12,7 @@ import AssetReportTypeIcon from '../../components/asset-register/AssetReportType
 import LeadReportDialog from '../../components/leads/LeadReportDialog';
 import LeadCardSummary from '../../components/leads/LeadCardSummary';
 import LeadManageButton from '../../components/leads/LeadManageButton';
+import SharedCardValue from '../../components/leads/SharedCardValue';
 import SharedAssetFacts from '../../components/leads/SharedAssetFacts';
 import LeadAssetCard from '../../components/leads/LeadAssetCard';
 import { useOutsideCardDismiss } from '../../components/leads/useOutsideCardDismiss';
@@ -1789,6 +1790,7 @@ export default function LeadsClient({
   const canAddDealerCosts = isDealerLeadsMode && allowDealerCosts;
   const dealerWorkspaceClass = (...classNames: string[]) =>
     useDealerWorkspaceStyles ? classNames.join(' ') : '';
+  const [vatIncluded,setVatIncluded]=useState<Record<string,boolean>>({});
   const [sessionUserId, setSessionUserId] = useState(initialSessionUserId);
   const [leads, setLeads] = useState<AssetLead[]>(initialLeads);
   const [statusFilter, setStatusFilter] = useState<LeadStatusFilter>('all');
@@ -3399,7 +3401,7 @@ export default function LeadsClient({
         familyLabel={familyLabel} onPhotoIndexChange={index => setLeadPhotoIndex(lead.id, index)}
         onOpenPhoto={index => openAssetPhotoModal(lead, photos, index)}
         details={
-          <SharedAssetFacts assetTitle={assetTitle(lead)} serial={asText(lead.assetSnapshot.serialNumber)} year={lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not saved'} usage={assetUsageValue(lead)} condition={conditionLabel(lead.assetSnapshot.condition)} replacementPrice={replacementPrice}
+          <SharedAssetFacts vatIncluded={!!vatIncluded[lead.id]} assetTitle={assetTitle(lead)} serial={asText(lead.assetSnapshot.serialNumber)} year={lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not saved'} usage={assetUsageValue(lead)} condition={conditionLabel(lead.assetSnapshot.condition)} replacementPrice={replacementPrice}
             statuses={{finance:renderLeadAssetStatusMark(readLeadFinanceStatusChoice(lead)),insurance:renderLeadAssetStatusMark(readLeadInsuranceStatusChoice(lead)),license:renderLeadAssetStatusMark(licenseStatus),location:renderLeadAssetStatusMark(typeof lead.assetSnapshot.lastKnownLat==='number' && typeof lead.assetSnapshot.lastKnownLng==='number' ? 'yes':'no')}}
             permissions={lead.maintenanceAccess?.isActive ? {
               serial:canAddDealerCosts && lead.maintenanceAccess.permissions.canUpdateSerial && lead.dealerCorrection?.status !== 'pending',
@@ -3745,10 +3747,7 @@ export default function LeadsClient({
                         </>}
                         aside={<>
                             {(
-                              <div className={`${assetStyles.valueBlock} ${styles.leadValueBlock}`}>
-                                <strong>{formatCurrency(assetValue(lead))}</strong>
-                                <span>Excl. VAT</span>
-                              </div>
+                              <SharedCardValue value={assetValue(lead)} included={!!vatIncluded[lead.id]} onToggle={()=>setVatIncluded(current=>({...current,[lead.id]:!current[lead.id]}))}/>
                             )}
 
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>

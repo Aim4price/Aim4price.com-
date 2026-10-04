@@ -272,7 +272,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   await page.waitForFunction(field=>document.activeElement?.closest(`[data-asset-detail-edit-target="${field}"]`),{},field);
   await page.keyboard.press('Escape');await click('Exit');
  }
- for(const [label,heading] of [['serial','Serial / reference'],['replacement price','Replacement price · Excl. VAT'],['mapped','Asset location']]){
+ for(const [label,heading] of [['serial','Serial / reference'],['replacement price','Replacement price'],['mapped','Asset location']]){
   await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
   await page.waitForFunction(heading=>document.body.textContent.includes(heading),{},heading);
   await page.keyboard.press('Escape');if(label!=='mapped')await click('Exit');
@@ -288,6 +288,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   await click('Open');
   await page.waitForFunction(()=>document.body.textContent.includes('Mapped'));
   assert.equal(await page.$$eval('button[aria-label^="Edit "]',els=>els.length),expected,`${access} card respects field permissions`);
+  await page.click('button[aria-label="Show incl. VAT"]');
+  await page.waitForFunction(()=>document.body.textContent.replace(/\s/g,' ').includes('376 203')&&document.body.textContent.replace(/\s/g,' ').includes('546 250'));
+  assert.equal(await page.$$eval('button[aria-label^="Edit "]',els=>els.length),expected,'VAT display does not change permissions');
+  await page.click('button[aria-label="Show excl. VAT"]');
   if(access==='owner'){await page.addStyleTag({content:'*{animation:none!important;transition:none!important}button,input{font-family:inherit}'});await page.screenshot({path:'/tmp/shared-card-shortcuts.png'});}
  }
  console.log('PASS: shared dialogs, correction endpoint/stable asset ID, Escape return, report link, documents, verification gate and hidden permissions');
