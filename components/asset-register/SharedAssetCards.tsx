@@ -10,6 +10,7 @@ import LeadCardSummary from "../leads/LeadCardSummary";
 import SharedAssetSend from "./SharedAssetSend";
 import LeadManageButton from "../leads/LeadManageButton";
 import LeadAssetCard from "../leads/LeadAssetCard";
+import { useOutsideCardDismiss } from "../leads/useOutsideCardDismiss";
 import LeadAssetDetails from "../leads/LeadAssetDetails";
 import LeadAssetFacts from "../leads/LeadAssetFacts";
 import LeadPhotoViewerModal from "../LeadPhotoViewerModal";
@@ -40,6 +41,7 @@ export default function SharedAssetCards({
   allowBusinessDetails?: boolean;
 }) {
   const [opened, setOpened] = useState<number | null>(null);
+  const openedCardRef = useOutsideCardDismiss(opened !== null, () => setOpened(null));
   const [managed, setManaged] = useState<number | null>(null);
   const [photoIndexes, setPhotoIndexes] = useState<Record<number, number>>({});
   const [photoViewer, setPhotoViewer] = useState<{
@@ -97,6 +99,7 @@ export default function SharedAssetCards({
               return (
                 <article
                   key={item.assetId || index}
+                  ref={isOpen ? openedCardRef : null}
                   className={`${leadStyles.leadThread} ${leadStyles.leadThreadTracking} ${isOpen ? leadStyles.leadThreadOpen : ""}`}
                 >
                   <LeadCardSummary

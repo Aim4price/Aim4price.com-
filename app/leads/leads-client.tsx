@@ -12,6 +12,7 @@ import LeadCardSummary from '../../components/leads/LeadCardSummary';
 import LeadManageButton from '../../components/leads/LeadManageButton';
 import LeadAssetFacts from '../../components/leads/LeadAssetFacts';
 import LeadAssetCard from '../../components/leads/LeadAssetCard';
+import { useOutsideCardDismiss } from '../../components/leads/useOutsideCardDismiss';
 import LeadAssetDetails from '../../components/leads/LeadAssetDetails';
 import dialogStyles from '../../components/AccountDialog.module.css';
 import downloadStyles from "../../components/ReportDownload.module.css";
@@ -1797,6 +1798,7 @@ export default function LeadsClient({
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [openFilterDropdown, setOpenFilterDropdown] = useState<FilterDropdownKey | null>(null);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
+  const openedCardRef = useOutsideCardDismiss(openLeadId !== null, () => setOpenLeadId(null));
   const [leadPhotoIndexes, setLeadPhotoIndexes] = useState<Record<string, number>>({});
   const [assetPhotoModal, setAssetPhotoModal] = useState<PhotoModalState | null>(null);
   const [sentPhotoModal, setSentPhotoModal] = useState<PhotoModalState | null>(null);
@@ -3619,7 +3621,7 @@ export default function LeadsClient({
                 const assetIdentifier = leadAssetIdentifier(lead);
 
                 return (
-                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+                  <article key={lead.id} ref={isLeadOpen ? openedCardRef : null} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
                     <LeadCardSummary headerClassName={''} identityClassName={`${''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`} identity={<>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{assetTitle(lead)}</h3>

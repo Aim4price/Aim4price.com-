@@ -36,6 +36,32 @@
 .button:hover { color: var(--app-text, #073b30); opacity: 1; transform: translate(.18rem, -50%); }
 .button[aria-pressed=true]:hover { transform: translate(-.18rem, -50%); }
 .button:focus-visible { outline: 3px solid var(--app-accent, rgba(43,138,99,.35)); outline-offset: 2px; }
+/* The arrow sits outside the white card, against the page background. */
+:global(html[data-background='dark']) .button,
+:global(html[data-app-theme='dark']) .button {
+  color: #f1f8f4;
+  opacity: 1;
+}
+:global(html[data-background='dark']) .button:hover,
+:global(html[data-app-theme='dark']) .button:hover {
+  color: #fff;
+}
+:global(html[data-background='dark']) .button:focus-visible,
+:global(html[data-app-theme='dark']) .button:focus-visible {
+  outline-color: #a5ddba;
+}
+/* Umbrella arrows sit on the light card surface, rather than the page background. */
+:global([data-asset-group-id]) .button.button {
+  color: rgba(7, 59, 48, .78);
+  opacity: .9;
+}
+:global([data-asset-group-id]) .button.button:hover {
+  color: #073b30;
+  opacity: 1;
+}
+:global([data-asset-group-id]) .button.button:focus-visible {
+  outline-color: rgba(43, 138, 99, .6);
+}
 @media(max-width:760px) {
   :global(:where(html:not(:has([data-website-canvas])))) .button {
     right: calc(-1 * var(--asset-card-vat-arrow-offset, 1rem) - 1.1rem);
