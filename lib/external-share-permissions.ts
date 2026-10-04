@@ -1,6 +1,6 @@
 export const EXTERNAL_SHARE_OPTIONS = [
     {key:'suggestValue',label:'Suggest current value',description:'Send a value to the owner for approval.'},
-    { key: 'updateDetails', label: 'Update details', description: 'Year, usage, condition, finance, insurance and licensing.' },
+    { key: 'updateDetails', label: 'Update details', description: 'Title, asset details, paperwork and documents (no invoices).' },
     { key: 'location', label: 'Location access', description: 'View and update the asset location.' },
     { key: 'yearModel', label: 'Update year', description: 'Change the asset year.' },
     { key: 'usage', label: 'Update usage', description: 'Update hours or kilometres.' },

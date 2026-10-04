@@ -16,6 +16,7 @@ test('details enforce separate permissions, locked writes, canonical fields, his
  const api=load('lib/shared-asset-work.ts',{'./db':db,'./shared-asset-contributions':{contributionScope:async(_,p)=>{if(!state.allow[p])throw new Denied('not shared');return scope;}},'./asset-register-db':{...out,getAssetRegisterItemById:async()=>({id,condition:'good'})},'./my-invoices':{mapMyInvoiceAssetOption:()=>({id})},'./maintenance-catalogue':{maintenanceIdentity:()=>({})},'./asset-checklist-db':{},'./asset-usage':{resolveAssetUsage:()=>({metric:'hours',value:100})}, './asset-maintenance':{recordStandaloneAssetMaintenanceCompletion:async(owner,input,hooks)=>{const client={query};await query('BEGIN');try{await hooks.before(client);const prior=(await query('SELECT * FROM asset_maintenance_records WHERE source_scan_event_id=$1',[input.sourceScanEventId])).rows[0];if(prior){await query('COMMIT');return prior;}const record={id:randomUUID(),title:'Check-up'};await query('INSERT INTO asset_maintenance_records VALUES($1,$2,$3,$4)',[record.id,owner,input.assetId,input.sourceScanEventId]);await hooks.after(client,record);await query('COMMIT');return record;}catch(e){await query('ROLLBACK');throw e;}}},'./shared-asset-activity':activity,'./sharing-foundation':foundation,'./business-network-api':{businessJson:(data,status=200)=>({data,status}),businessError:e=>({status:400,error:e.message}),requireBusinessOrigin:()=>{},businessBody:r=>r.json()},'./external-lead-access':{ExternalLeadAccessError:Denied},'./business-network':{limitBusinessAction:async()=>{}}});
  const send=(patch,requestId=randomUUID())=>api.sharedAssetWork(new Request('https://test/details',{method:'POST',body:JSON.stringify({patch,requestId})}),{token:'link',assetId:id},'details');
  assert.equal((await send({usage:120})).status,403);assert.equal((await send({ownerId:'other'})).status,400);assert.equal((await send({yearModel:5000})).status,400);
+ assert.equal((await send({title:'Changed title'})).status,403);
  const key=randomUUID();assert.equal((await send({yearModel:2021,condition:'excellent'},key)).status,200);assert.equal((await send({yearModel:2021,condition:'excellent'},key)).status,200);
  let row=(await pg.query('SELECT * FROM asset_register_items')).rows[0];assert.equal(row.year_model,2021);assert.equal(row.condition,'excellent');assert.equal(Number(row.hours),100);assert.equal(row.specs_json.valuationNeedsUpdate,true);
  const history=(await pg.query('SELECT * FROM shared_asset_activity')).rows;assert.equal(history.length,1);assert.equal(history[0].actor_id,'recipient');assert.equal(history[0].before_data.yearModel,2020);assert.equal(history[0].after_data.yearModel,2021);assert.equal((await foundation.sharingUsageSummary('recipient')).contribution.count,1);
@@ -32,6 +33,12 @@ test('details enforce separate permissions, locked writes, canonical fields, his
  assert.equal((await pg.query("SELECT * FROM shared_asset_activity WHERE action='Maintenance completed'")).rows.length,1);
  assert.equal((await foundation.sharingUsageSummary('recipient')).contribution.count,3);
  assert.equal((await send({yearModel:2022},work.requestId)).status,400);
+ await pg.exec("ALTER TABLE asset_register_items ADD COLUMN title text; CREATE TABLE asset_leads(owner_user_id text,asset_register_item_id uuid,asset_snapshot_json jsonb,updated_at timestamptz);");
+ state.allow.updateDetails=true;
+ assert.equal((await send({title:'   '})).status,400);
+ assert.equal((await send({title:'Updated tractor'})).status,200);
+ assert.equal((await pg.query('SELECT title FROM asset_register_items')).rows[0].title,'Updated tractor');
+ assert.equal((await pg.query("SELECT after_data FROM shared_asset_activity WHERE action='Asset details updated' ORDER BY created_at DESC LIMIT 1")).rows[0].after_data.title,'Updated tractor');
  state.revoked=true;assert.equal((await complete({...work,requestId:randomUUID()})).status,403);assert.equal((await send({condition:'fair'})).status,403);row=(await pg.query('SELECT * FROM asset_register_items')).rows[0];assert.equal(row.condition,'excellent');
  }finally{await pg.close();}
 });

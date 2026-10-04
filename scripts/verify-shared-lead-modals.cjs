@@ -60,7 +60,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  page.on('pageerror',error=>{throw error;});
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#dce7e0;font-family:Arial;--modal-backdrop-color:rgba(12,24,35,.42);--modal-backdrop-filter:blur(12px)}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
- await page.evaluate(()=>{if(!crypto.randomUUID)crypto.randomUUID=()=> '10000000-0000-4000-8000-000000000002';window.requests=[];window.fetch=async(url,opts)=>{window.requests.push({url,body:opts?.body});return {ok:true,json:async()=>({correction:{id:'correction',status:'pending',serialNumberChanged:true,proposedSerialNumber:'NEW-456'}})}}});
+ await page.evaluate(()=>{if(!crypto.randomUUID)crypto.randomUUID=()=> '10000000-0000-4000-8000-000000000002';window.requests=[];window.fetch=async(url,opts)=>{window.requests.push({url,body:opts?.body});if(String(url).endsWith('/details'))return {ok:true,json:async()=>({asset:{id:'10000000-0000-4000-8000-000000000001',title:'John Deere 6155M',serialNumber:'OLD-123',replacementPriceExVat:900000,kind:'tractor'},permissions:{serialNumber:true,replacementPrice:true}})};return {ok:true,json:async()=>({correction:{id:'correction',status:'pending',serialNumberChanged:true,proposedSerialNumber:'NEW-456'}})}}});
  // Both lead layouts must close from the visible outside layer, never from card content.
  for (const ownerLayout of [false,true]) {
   if (!ownerLayout) await page.addScriptTag({content:runtime+'window.fixtureRoot??=ReactDOM.createRoot(document.getElementById("app"));'});
@@ -79,14 +79,14 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Update serial number');await page.waitForSelector('input');
  assert.equal(await page.$$eval('[role="dialog"]',nodes=>nodes.length),2);
  await page.screenshot({path:'/tmp/shared-correction-modal.png'});
- await page.keyboard.press('Escape');await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);
- await click('Update replacement price');await page.waitForSelector('input[type=number]');await page.keyboard.press('Escape');
+ await page.keyboard.press('Escape');await click('Exit');await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);
+ await click('Update replacement price');await page.waitForSelector('[data-asset-detail-edit-target=replacement] input');await page.keyboard.press('Escape');await click('Exit');
  await click('Reports');await page.waitForSelector('[data-download-dialog]');assert.equal(await page.$eval('[data-download-option]',a=>a.getAttribute('href')),'/api/asset-share-links/'+props.token+'/reports/report-1');await page.screenshot({path:'/tmp/shared-reports-modal.png'});await page.keyboard.press('Escape');
  await click('Invoices');await page.waitForSelector('input[type=file]');await page.screenshot({path:'/tmp/shared-documents-modal.png'});await page.keyboard.press('Escape');
- await click('Update serial number');await page.waitForSelector('input');await page.$eval('input',node=>{const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(node,'NEW-456');node.dispatchEvent(new Event('input',{bubbles:true}));});await click('Send to owner');
- await page.waitForFunction(()=>document.body.textContent.includes('update waiting for owner approval'));
- const requests=await page.evaluate(()=>window.requests);assert.equal(requests.length,1);assert.equal(requests[0].url,'/api/asset-share-links/'+props.token+'/corrections');assert.equal(JSON.parse(requests[0].body).assetId,props.assetId);
- await page.evaluate(p=>window.renderFixture({...p,access:'read-only'}),props);await page.waitForFunction(()=>!document.body.textContent.includes('update waiting for owner approval'));await click('Update serial number');await page.waitForFunction(()=>document.body.textContent.includes('Verify business'));assert.equal(await page.$$eval('input',nodes=>nodes.length),0);await page.keyboard.press('Escape');
+ await click('Update serial number');await page.waitForSelector('input');await page.$eval('[data-asset-detail-edit-target=serial] input',node=>{const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;set.call(node,'NEW-456');node.dispatchEvent(new Event('input',{bubbles:true}));});await click('Save serial number');
+ await page.waitForFunction(()=>document.body.textContent.includes('Sent to the owner for approval.'));
+ const requests=await page.evaluate(()=>window.requests.filter(r=>r.url.endsWith('/corrections')));assert.equal(requests.length,1);assert.equal(requests[0].url,'/api/asset-share-links/'+props.token+'/corrections');assert.equal(JSON.parse(requests[0].body).assetId,props.assetId);
+ await page.evaluate(p=>window.renderFixture({...p,access:'read-only'}),props);await page.waitForFunction(()=>!document.body.textContent.includes('Sent to the owner for approval.'));await click('Update serial number');await page.waitForFunction(()=>document.body.textContent.includes('Verify business'));assert.equal(await page.$$eval('input',nodes=>nodes.length),0);await page.keyboard.press('Escape');
  await page.evaluate(p=>window.renderFixture({...p,permissions:{reports:true,documents:false,serialNumber:false,replacementPrice:false}}),props);await page.waitForFunction(()=>!document.body.textContent.includes('Update serial number'));assert(!await page.evaluate(()=>document.body.textContent.includes('Invoices & quotes')));
  // New links reuse the live Leads tools and save directly.
  await page.evaluate(p=>window.renderFixture({...p,permissions:{serialNumber:false,replacementPrice:false,updateDetails:true,addPhotos:true,location:true,addMaintenance:true,maintenanceSchedules:true,loggedProblems:true,addCosts:true,suggestValue:true,reports:true}}),props);
@@ -95,11 +95,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.notEqual(await page.$eval('[data-manage-action="details"]',n=>getComputedStyle(n).backgroundImage),await page.$eval('[data-manage-action="addCosts"]',n=>getComputedStyle(n).backgroundImage),'Action groups have distinct subtle colours');
  await page.screenshot({path:'/tmp/shared-manage-colours.png'});
  const live={accessId:props.assetId,assetId:props.assetId,assetTitle:props.assetTitle,assetKind:'tractor',currentUsage:100,usageMetric:'hours',maintenanceRecords:[],openMaintenanceRecords:[],completedMaintenanceRecords:[],scheduleProposals:[],loggedProblems:[],permissions:{canCreateMaintenanceSchedules:true,canViewMaintenanceReports:true}};
- await page.evaluate(({p,live})=>{window.fetch=async(url,options)=>{window.requests.push({url,body:options?.body});return{ok:true,json:async()=>options?.method==='POST'?{ok:true,correction:{id:'saved',status:'accepted',serialNumberChanged:true,proposedSerialNumber:'LIVE-SERIAL'}}:{ok:true,asset:live,assets:[live]}}};window.renderFixture({...p,permissions:{...p.permissions,directUpdates:true,documents:false,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,loggedProblems:true}});},{p:props,live});
+ await page.evaluate(({p,live})=>{window.fetch=async(url,options)=>{window.requests.push({url,body:options?.body});return{ok:true,json:async()=>options?.method==='POST'?{ok:true,correction:{id:'saved',status:'accepted',serialNumberChanged:true,proposedSerialNumber:'LIVE-SERIAL'}}:{ok:true,asset:{...live,id:live.assetId,title:live.assetTitle,serialNumber:'OLD-123',replacementPriceExVat:900000},assets:[live],permissions:{serialNumber:true,replacementPrice:true}}}};window.renderFixture({...p,permissions:{...p.permissions,directUpdates:true,documents:false,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,loggedProblems:true}});},{p:props,live});
  await page.waitForFunction(()=>document.body.textContent.includes('Maintenance Reports'));
  await click('Update serial number');await page.waitForSelector('input');
- assert(await page.evaluate(()=>document.body.textContent.includes('Saving changes updates the live asset immediately.')));
- await page.$eval('input',node=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(node,'LIVE-SERIAL');node.dispatchEvent(new Event('input',{bubbles:true}));});await click('Save changes');
+ assert(await page.evaluate(()=>document.querySelector('[data-asset-detail-edit-target=serial] input')!==null));
+ await page.$eval('[data-asset-detail-edit-target=serial] input',node=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(node,'LIVE-SERIAL');node.dispatchEvent(new Event('input',{bubbles:true}));});await click('Save serial number');
+ await page.waitForFunction(()=>document.body.textContent.includes('Saved to the owner’s asset.'));await page.keyboard.press('Escape');await click('Exit');
  await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);
  assert(!await page.evaluate(()=>document.body.textContent.includes('waiting for owner approval')));
  await click('Maintenance Reports');await page.waitForFunction(()=>document.body.textContent.includes('PDF') && !document.body.textContent.includes('Checking current maintenance'));
@@ -230,7 +231,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.notEqual(await page.$eval('[data-test-problem-lead]',el=>getComputedStyle(el).backgroundImage),problemTint,'Resolving the last problem clears the red tint');
  // The normal update action starts with owner-style section cards; shortcuts bypass it.
  await page.evaluate(()=>{
-  window.fetch=async()=>({ok:true,json:async()=>({asset:{id:'asset',title:'2022 Test tractor',yearModel:2022,usageReading:1300,usageMetric:'hours',condition:'good'},permissions:{updateDetails:true,yearModel:true,usage:true,condition:true,addPhotos:true}})});
+  window.editorWrites=[];window.fetch=async(url,options)=>{if(options?.method==='POST')window.editorWrites.push(JSON.parse(options.body));return ({ok:true,json:async()=>String(url).endsWith('/documents')?{documents:[]}:({asset:{id:'asset',title:'2022 Test tractor',yearModel:2022,usageReading:1300,usageMetric:'hours',condition:'good'},permissions:{updateDetails:true,title:true,brand:true,model:true,note:true,serialNumber:true,replacementPrice:true,yearModel:true,usage:true,condition:true,addPhotos:true,addDocuments:true}})});};
   window.fixtureRoot.render(React.createElement(require('components/leads/SharedAssetWorkDialog').default,{endpoint:'/api/test',action:'details',assetTitle:'2022 Test tractor',onClose:()=>{}}));
  });
  await page.waitForSelector('[data-manage-action=details]');
@@ -238,13 +239,25 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(new Set(await page.$$eval('[data-manage-actions] > button',els=>els.map(el=>Math.round(el.getBoundingClientRect().top)))).size,1,'Update section cards share one row');
  await page.screenshot({path:'/tmp/shared-update-menu.png'});
  await page.click('[data-manage-action=details]');await page.waitForSelector('[data-asset-detail-edit-target=year] input');
- const tops=await page.$$eval('[data-asset-detail-edit-target]',els=>els.map(el=>Math.round(el.getBoundingClientRect().top)));
+ const tops=await page.$$eval('[data-asset-detail-edit-target=year],[data-asset-detail-edit-target=usage],[data-asset-detail-edit-target=condition]',els=>els.map(el=>Math.round(el.getBoundingClientRect().top)));
  assert.equal(new Set(tops).size,1,'Year, usage and condition share the owner-style row');
  await page.screenshot({path:'/tmp/shared-update-details.png'});
- await click('Back');await page.click('[data-manage-action=addPhotos]');await click('Add photos');await page.waitForSelector('input[type=file]');
+ await page.$eval('input[maxlength="240"]',node=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(node,'Updated shared tractor');node.dispatchEvent(new Event('input',{bubbles:true}));});
+ await page.waitForFunction(()=>window.editorWrites?.some(write=>write.patch?.title==='Updated shared tractor'));
+ await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent==='Done'&&!b.disabled));
+ assert.equal(await page.$eval('[role=dialog] h3',n=>n.textContent),'Updated shared tractor');
+
+ await click('Done');await page.click('[data-manage-action=addPhotos]');await page.waitForSelector('input[type=file]',{visible:false});
+ await page.screenshot({path:'/tmp/shared-owner-documents.png'});
+ assert(await page.evaluate(()=>document.body.textContent.includes('no invoices')));
+ await click('Add documents');await page.waitForSelector('#asset-document-type');
+ await page.click('#asset-document-type');await page.waitForSelector('[role=option]');
+ assert(!await page.evaluate(()=>[...document.querySelectorAll('[role=option]')].some(n=>n.textContent.includes('Invoice / proof'))),'Shared upload excludes invoice type');
+ await page.screenshot({path:'/tmp/shared-owner-document-upload.png'});
+ await page.keyboard.press('Escape');await page.keyboard.press('Escape');
  // Fact shortcuts keep all nine facts visible while enforcing edit permissions.
  await page.evaluate(()=>{
-  window.fetch=async(url)=>({ok:true,json:async()=>String(url).endsWith('/paperwork')?{kind:'tractor',draft:{financeStatus:'no',insuranceStatus:'no',licenseStatus:'no'}}:String(url).endsWith('/location')?{location:{latitude:null,longitude:null,locationText:''}}:{asset:{id:'asset',title:'Test tractor',kind:'tractor',yearModel:2022,usageReading:1300,usageMetric:'hours',condition:'good'},permissions:{updateDetails:true,yearModel:true,usage:true,condition:true}}});
+  window.fetch=async(url)=>({ok:true,json:async()=>String(url).endsWith('/paperwork')?{kind:'tractor',draft:{financeStatus:'no',insuranceStatus:'no',licenseStatus:'no'}}:String(url).endsWith('/location')?{location:{latitude:null,longitude:null,locationText:''}}:{asset:{id:'asset',title:'Test tractor',kind:'tractor',yearModel:2022,usageReading:1300,usageMetric:'hours',condition:'good'},permissions:{updateDetails:true,serialNumber:true,replacementPrice:true,yearModel:true,usage:true,condition:true}}});
   window.renderFacts=(permissions)=>window.fixtureRoot.render(React.createElement(require('components/leads/SharedAssetFacts').default,{assetTitle:'Test tractor',serial:'ABC123',year:2022,usage:'1 300 hours',condition:'Good',replacementPrice:475000,statuses:{finance:'No',insurance:'Yes',license:'Yes',location:'No'},permissions,endpoint:'/api/asset-leads/test',sourceId:'test'}));
   window.renderFacts({});
  });
@@ -257,18 +270,18 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  for(const [label,field] of [['year','year'],['usage','usage'],['condition','condition']]){
   await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
   await page.waitForFunction(field=>document.activeElement?.closest(`[data-asset-detail-edit-target="${field}"]`),{},field);
-  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');await click('Exit');
  }
- for(const [label,heading] of [['serial','Update serial number'],['replacement price','Update replacement price'],['mapped','Asset location']]){
+ for(const [label,heading] of [['serial','Serial / reference'],['replacement price','Replacement price · Excl. VAT'],['mapped','Asset location']]){
   await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
   await page.waitForFunction(heading=>document.body.textContent.includes(heading),{},heading);
-  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');if(label!=='mapped')await click('Exit');
  }
  for(const [label,section] of [['financed','finance'],['insured','insurance'],['licensed','license']]){
   await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
   await page.waitForFunction(()=>document.body.textContent.includes('Back to paperwork'));
-  assert(await page.evaluate(()=>document.querySelector('[role=dialog] header')?.textContent.includes('Paperwork')));
-  await page.keyboard.press('Escape');
+  assert(await page.evaluate(()=>document.querySelector('[role=dialog]')?.textContent.includes('Paperwork')));
+  await page.keyboard.press('Escape');await click('Exit');
  }
  for (const [access,permissions,expected] of [['read-only',{},0],['active',{usage:true},1],['owner',{},9]]) {
   await page.evaluate(({access,permissions})=>window.fixtureRoot.render(React.createElement(require('components/asset-register/SharedAssetCards').default,{key:access,share:{createdAt:'2026-10-04',assets:[{assetId:'10000000-0000-4000-8000-000000000001',title:'2022 Test tractor',yearModel:2022,usage:'1 300 hours',condition:'Good',serialNumber:'ABC123',photoUrls:[],valueExVat:327133,replacementPriceExVat:475000,financeStatus:'no',insuranceStatus:'yes',licenseStatus:'unknown',mapped:false}]},enquiry:{token:'a'.repeat(43),access,permissions,reports:[]}})),{access,permissions});
