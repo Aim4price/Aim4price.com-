@@ -262,7 +262,10 @@ test('every custom listbox uses the shared overlay or a verified body portal', a
   assert.deepEqual(violations, []);
 
   const assetRegister = await read('app/asset-register/asset-register-client.tsx');
-  assert.match(assetRegister, /usePortal = true/);
+  const assetModalSelect = await read('components/AssetModalSelect.tsx');
+  assert.match(assetRegister, /import ModalSelect,.*from ['"]\.\.\/\.\.\/components\/AssetModalSelect['"]/);
+  assert.match(assetModalSelect, /usePortal = true/);
+  assert.match(assetModalSelect, /createPortal\([\s\S]*document\.body/);
   assert.doesNotMatch(assetRegister, /usePortal\s*=\s*\{false\}/);
 });
 
@@ -312,7 +315,7 @@ test('rendered anchor coordinates convert once into the website logical coordina
   const { websiteLogicalRect, websiteVisibleViewport } = (await import('./helpers/site-layout-audit.mjs')).websiteCanvas;
   const originalDocument = globalThis.document, originalWindow = globalThis.window;
   try {
-    for (const scale of [.15, 430 / 1440, .7, 1, 1.2, 1.5]) {
+    for (const scale of [.15, 430 / 1440, .7, 1, 1.2, 1.5, 2]) {
       globalThis.document = { querySelector: () => ({ dataset: { websiteScale: String(scale) } }) };
       globalThis.window = { visualViewport: { offsetLeft: 20 * scale, offsetTop: 30 * scale, width: 1000 * scale, height: 800 * scale } };
       const logical = websiteLogicalRect(rect({left:100*scale,top:100*scale,width:220*scale,height:44*scale}));

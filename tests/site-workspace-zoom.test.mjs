@@ -27,7 +27,10 @@ test('manual preferences use a clean versioned contract and retain the current a
   for (const saved of [null, 'corrupt', '{"mode":"other"}']) assert.deepEqual(parseWebsitePreference(saved), { mode: 'auto' });
   assert.deepEqual(parseWebsitePreference('{"mode":"manual","scale":0.8}'), { mode: 'manual', scale: .8 });
   assert.equal(clampManualWebsiteScale(0), .15);
-  assert.equal(clampManualWebsiteScale(3), 1.5);
+  assert.equal(clampManualWebsiteScale(3), 2);
+  assert.equal(stepWebsiteScale(1.99, .01), 2);
+  assert.equal(stepWebsiteScale(2, .01), 2);
+  assert.deepEqual(parseWebsitePreference('{"mode":"manual","scale":2}'), { mode: 'manual', scale: 2 });
   const starting = calculateWebsiteScale(430);
   assert.equal(clampManualWebsiteScale(starting + .1), starting + .1);
   const host = await read('components/SiteWorkspaceZoom.tsx');
@@ -37,10 +40,11 @@ test('manual preferences use a clean versioned contract and retain the current a
   assert.match(host, /setPreference\(\{ mode: 'auto' \}\)/);
   assert.doesNotMatch(host, /workspace-zoom\.v1|workspace-zoom-mode\.v1/);
 });
-test('header, pages, background, footer and overlays share one canvas independently of header discovery', async () => {
+test('content shares one canonical canvas while website artwork stays outside its zoom', async () => {
   const [layout, host, css] = await Promise.all([read('app/layout.tsx'), read('components/SiteWorkspaceZoom.tsx'), read('components/SiteWorkspaceZoom.module.css')]);
   assert.match(layout, /<SiteWorkspaceZoom footer=\{<AppFooter \/>\} operational=\{<AdminWorkTrackerBar \/>\}>[\s\S]*?<AppPatternBackground>\{children\}<\/AppPatternBackground>/);
   assert.match(host, /width: WEBSITE_DESIGN_WIDTH,[\s\S]*zoom: scale/);
+  assert.match(host, /<AppViewportBackground \/>[\s\S]*?<div ref=\{canvasRef\}/);
   assert.match(host, /data-website-canvas data-website-scale=\{scale\}>[\s\S]*?\{children\}[\s\S]*?\{footer\}[\s\S]*?id=\{WEBSITE_OVERLAY_ROOT_ID\}/);
   assert.match(host, /WebsiteCanvasContext\.Provider value=\{true\}/);
   assert.doesNotMatch(css, /\bzoom\s*:|overflow-x:\s*hidden|overflow-y:\s*scroll/);
@@ -147,8 +151,8 @@ test('website visual viewport units resolve through canonical variables', async 
 
 test('zoom moves by one displayed percentage point without drift and stops at limits', () => {
   assert.equal(WEBSITE_SCALE_STEP, .01);
-  for (let percentage = 15; percentage <= 150; percentage++) {
-    assert.equal(stepWebsiteScale(percentage / 100, WEBSITE_SCALE_STEP), Math.min(150, percentage + 1) / 100);
+  for (let percentage = 15; percentage <= 200; percentage++) {
+    assert.equal(stepWebsiteScale(percentage / 100, WEBSITE_SCALE_STEP), Math.min(200, percentage + 1) / 100);
     assert.equal(stepWebsiteScale(percentage / 100, -WEBSITE_SCALE_STEP), Math.max(15, percentage - 1) / 100);
   }
   assert.equal(stepWebsiteScale(calculateWebsiteScale(1530), WEBSITE_SCALE_STEP), 1.07);

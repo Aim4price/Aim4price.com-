@@ -3,7 +3,7 @@ export const WEBSITE_DESIGN_WIDTH = 1440;
 export const WEBSITE_DESIGN_HEIGHT = 900;
 export const WEBSITE_AUTO_MAX_SCALE = 1.2;
 export const WEBSITE_MIN_MANUAL_SCALE = 0.15;
-export const WEBSITE_MAX_MANUAL_SCALE = 1.5;
+export const WEBSITE_MAX_MANUAL_SCALE = 2;
 export const WEBSITE_SCALE_STEP = 0.01;
 export const WEBSITE_PREFERENCE_KEY = 'aim4price.website-canvas.v2';
 export const WEBSITE_OVERLAY_ROOT_ID = 'aim4price-website-overlays';
@@ -81,4 +81,3 @@ export function websiteVisibleViewport() {
     height: (viewport?.height ?? window.innerHeight) / scale,
   };
 }
-
