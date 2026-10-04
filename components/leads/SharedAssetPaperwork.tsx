@@ -3,8 +3,8 @@ import {useEffect,useState} from 'react';
 import AssetPaperworkFields,{type AssetStatusDraft} from '../AssetPaperworkFields';
 import styles from '../../app/asset-register/page.module.css';
 type Section='finance'|'insurance'|'license';
-export default function SharedAssetPaperwork({endpoint,onSaved}:{endpoint:string;onSaved?:()=>void}) {
- const [draft,setDraft]=useState<AssetStatusDraft|null>(null),[kind,setKind]=useState(''),[view,setView]=useState<Section|'hub'>('hub'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+export default function SharedAssetPaperwork({endpoint,onSaved,initialSection}:{endpoint:string;onSaved?:()=>void;initialSection?:Section}) {
+ const [draft,setDraft]=useState<AssetStatusDraft|null>(null),[kind,setKind]=useState(''),[view,setView]=useState<Section|'hub'>(initialSection || 'hub'),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [requestId,setRequestId]=useState(()=>crypto.randomUUID());
  useEffect(()=>{const c=new AbortController();fetch(`${endpoint}/paperwork`,{cache:'no-store',signal:c.signal}).then(async r=>{const d=await r.json();if(!r.ok)throw Error(d.error);setDraft(d.draft);setKind(d.kind)}).catch(e=>{if(!c.signal.aborted)setError(e.message)});return()=>c.abort()},[endpoint]);
  function update<K extends keyof AssetStatusDraft>(key:K,value:AssetStatusDraft[K]) {setDraft(d=>d?{...d,[key]:value}:d);setRequestId(crypto.randomUUID());setNotice('');}

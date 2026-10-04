@@ -19,6 +19,8 @@ type CorrectionResponse = {
 };
 
 type DealerAssetCorrectionEditorProps = {
+  initialField?: DealerAssetCorrectionField;
+  onClose?: () => void;
   assetTitle: string;
   sourceType: DealerAssetCorrectionSource;
   sourceId: string;
@@ -81,6 +83,8 @@ function formatDate(value: string | null | undefined): string {
 
 export default function DealerAssetCorrectionEditor({
   assetTitle,
+  initialField,
+  onClose,
   sourceType,
   sourceId,
   serialNumber,
@@ -98,8 +102,8 @@ export default function DealerAssetCorrectionEditor({
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [localCorrection, setLocalCorrection] = useState<DealerAssetCorrectionRequest | null>(correction ?? null);
-  const [activeField, setActiveField] = useState<DealerAssetCorrectionField | null>(null);
-  const [draft, setDraft] = useState('');
+  const [activeField, setActiveField] = useState<DealerAssetCorrectionField | null>(initialField ?? null);
+  const [draft, setDraft] = useState(initialField === 'serialNumber' ? serialNumber : initialField === 'replacementPriceExVat' ? String(replacementPriceExVat ?? '') : '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -130,7 +134,7 @@ export default function DealerAssetCorrectionEditor({
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !saving) setActiveField(null);
+      if (event.key === 'Escape' && !saving) closeEditor();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -157,6 +161,7 @@ export default function DealerAssetCorrectionEditor({
   function closeEditor() {
     if (saving) return;
     setActiveField(null);
+    onClose?.();
     setError('');
   }
 
@@ -206,7 +211,7 @@ export default function DealerAssetCorrectionEditor({
 
   return (
     <>
-      {canUpdateSerial ? (
+      {!initialField && canUpdateSerial ? (
         <button data-manage-action="serialNumber"
           type="button"
           className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
@@ -222,7 +227,7 @@ export default function DealerAssetCorrectionEditor({
         </button>
       ) : null}
 
-      {canUpdateReplacementPrice ? (
+      {!initialField && canUpdateReplacementPrice ? (
         <button data-manage-action="replacementPrice"
           type="button"
           className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}

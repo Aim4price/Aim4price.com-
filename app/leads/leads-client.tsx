@@ -12,7 +12,7 @@ import AssetReportTypeIcon from '../../components/asset-register/AssetReportType
 import LeadReportDialog from '../../components/leads/LeadReportDialog';
 import LeadCardSummary from '../../components/leads/LeadCardSummary';
 import LeadManageButton from '../../components/leads/LeadManageButton';
-import LeadAssetFacts from '../../components/leads/LeadAssetFacts';
+import SharedAssetFacts from '../../components/leads/SharedAssetFacts';
 import LeadAssetCard from '../../components/leads/LeadAssetCard';
 import { useOutsideCardDismiss } from '../../components/leads/useOutsideCardDismiss';
 import LeadAssetDetails from '../../components/leads/LeadAssetDetails';
@@ -3399,34 +3399,21 @@ export default function LeadsClient({
         familyLabel={familyLabel} onPhotoIndexChange={index => setLeadPhotoIndex(lead.id, index)}
         onOpenPhoto={index => openAssetPhotoModal(lead, photos, index)}
         details={
-          <LeadAssetFacts rows={[
-            { label: isLicenceRenewal ? 'Registration' : 'Serial', value: isLicenceRenewal ? licenseRegistrationNumber || '—' : asText(lead.assetSnapshot.serialNumber) || '—' },
-            { label: isLicenceRenewal ? 'Renewal date' : asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year', value: isLicenceRenewal ? formatDate(licenceRenewalDate) : lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—' },
-            { label: isLicenceRenewal ? 'Year' : 'Usage', value: isLicenceRenewal ? lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—' : assetUsageValue(lead) },
-            { label: isLicenceRenewal ? 'Asset type' : 'Condition', value: isLicenceRenewal ? familyLabel : conditionLabel(lead.assetSnapshot.condition) },
-          ]} statuses={<>
-              {!isLicenceRenewal ? (
-                <>
-                  <div className={assetStyles.assetStatusRow}>
-                    <span>Financed</span>
-                    {renderLeadAssetStatusMark(readLeadFinanceStatusChoice(lead))}
-                  </div>
-                  <div className={assetStyles.assetStatusRow}>
-                    <span>Insured</span>
-                    {renderLeadAssetStatusMark(readLeadInsuranceStatusChoice(lead))}
-                  </div>
-                </>
-              ) : null}
-              <div className={assetStyles.assetStatusRow}>
-                <span>Licensed</span>
-                {renderLeadAssetStatusMark(licenseStatus)}
-              </div>
-              {licenseStatus === 'yes' && licenseRegistrationNumber ? (
-                <div className={`${assetStyles.assetStatusRow} ${assetStyles.assetRegistrationRow}`}>
-                  <strong>{licenseRegistrationNumber}</strong>
-                </div>
-              ) : null}
-          </>} />
+          <SharedAssetFacts assetTitle={assetTitle(lead)} serial={asText(lead.assetSnapshot.serialNumber)} year={lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : 'Not saved'} usage={assetUsageValue(lead)} condition={conditionLabel(lead.assetSnapshot.condition)} replacementPrice={replacementPrice}
+            statuses={{finance:renderLeadAssetStatusMark(readLeadFinanceStatusChoice(lead)),insurance:renderLeadAssetStatusMark(readLeadInsuranceStatusChoice(lead)),license:renderLeadAssetStatusMark(licenseStatus),location:renderLeadAssetStatusMark(typeof lead.assetSnapshot.lastKnownLat==='number' && typeof lead.assetSnapshot.lastKnownLng==='number' ? 'yes':'no')}}
+            permissions={lead.maintenanceAccess?.isActive ? {
+              serial:canAddDealerCosts && lead.maintenanceAccess.permissions.canUpdateSerial && lead.dealerCorrection?.status !== 'pending',
+              replacement:canAddDealerCosts && lead.maintenanceAccess.permissions.canUpdateReplacementPrice && lead.dealerCorrection?.status !== 'pending',
+              year:lead.maintenanceAccess.permissions.canUpdateDetails||lead.maintenanceAccess.permissions.canUpdateYear,
+              usage:lead.maintenanceAccess.permissions.canUpdateDetails||lead.maintenanceAccess.permissions.canUpdateUsage,
+              condition:lead.maintenanceAccess.permissions.canUpdateDetails||lead.maintenanceAccess.permissions.canUpdateCondition,
+              finance:lead.maintenanceAccess.permissions.canUpdateDetails,
+              insurance:lead.maintenanceAccess.permissions.canUpdateDetails,
+              license:lead.maintenanceAccess.permissions.canUpdateDetails,
+              location:lead.maintenanceAccess.permissions.canAccessLocation,
+            } : {}}
+            endpoint={`/api/asset-leads/${lead.id}`} sourceId={lead.id} directUpdates={lead.maintenanceAccess?.isActive===true} correction={lead.dealerCorrection} onSaved={()=>{void loadData(false,true);}}/>
+
         }
       >
         {isLicenceRenewal ? (
@@ -3443,13 +3430,7 @@ export default function LeadsClient({
                 ) : null;
               })}
             </div>
-          ) : (
-            <div className={assetStyles.assetReplacementPriceBubble}>
-              <span>Replacement Price</span>
-              <strong>{replacementPrice === null ? 'Not set' : formatCurrency(replacementPrice)}</strong>
-              <small>Excl. VAT</small>
-            </div>
-          )}
+          ) : null}
 
           {renderOwnerMessageBlock(lead)}
       </LeadAssetDetails>
