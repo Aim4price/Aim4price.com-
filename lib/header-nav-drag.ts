@@ -24,7 +24,7 @@ export function snapHeaderNav(element: HTMLElement, direction: -1 | 0 | 1 = 0) {
 }
 
 /** Follow the pointer freely, then snap without activating a link on release. */
-export function attachHeaderNavDrag(element: HTMLElement) {
+export function attachHeaderNavDrag(element: HTMLElement, onSnap = () => snapHeaderNav(element)) {
   let gesture: {
     pointerId: number;
     x: number;
@@ -38,8 +38,8 @@ export function attachHeaderNavDrag(element: HTMLElement) {
   const finish = () => {
     const current = gesture;
     gesture = null;
-    if (current?.axis === 'horizontal') snapHeaderNav(element);
     element.removeAttribute('data-dragging');
+    if (current?.axis === 'horizontal') onSnap();
     if (current && element.hasPointerCapture(current.pointerId)) {
       element.releasePointerCapture(current.pointerId);
     }
