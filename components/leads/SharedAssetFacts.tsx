@@ -1,7 +1,6 @@
 'use client';
 import {useState,useEffect,useCallback, type ReactNode} from 'react';
 import {createPortal} from '../WebsitePortal';
-import DealerAssetCorrectionEditor from '../DealerAssetCorrectionEditor';
 import SharedAssetWorkDialog from './SharedAssetWorkDialog';
 import SharedAssetLocationDialog from './SharedAssetLocationDialog';
 import type {DealerAssetCorrectionRequest} from '../../lib/dealer-asset-corrections';
@@ -39,7 +38,7 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
    <div className={styles.assetStatusDetails}>{row('finance','Financed',statuses.finance,true)}{row('insurance','Insured',statuses.insurance,true)}{row('license','Licensed',statuses.license,true)}{row('location','Mapped',statuses.location,true)}</div>
   </div>
   {permissions.replacement?<button type="button" className={`${styles.assetReplacementPriceBubble} ${styles.assetReplacementPriceButton}`} aria-label={`Edit replacement price for ${assetTitle}`} onClick={()=>setField('replacement')}>{price}</button>:<div className={styles.assetReplacementPriceBubble}>{price}</div>}
-  {field && permissions[field] && (field==='serial'||field==='replacement' ? <DealerAssetCorrectionEditor key={field} initialField={field==='serial'?'serialNumber':'replacementPriceExVat'} onClose={close} assetTitle={assetTitle} sourceType={externalShare?'external':'lead'} sourceId={sourceId} serialNumber={serial} replacementPriceExVat={replacementPrice} externalShare={externalShare} directUpdates={directUpdates} correction={correction} canUpdateSerial={permissions.serial} canUpdateReplacementPrice={permissions.replacement} onSaved={()=>{saved();close();}}/> : createPortal(field==='location'?<SharedAssetLocationDialog endpoint={endpoint} assetTitle={assetTitle} onClose={close} onSaved={saved}/>:<SharedAssetWorkDialog endpoint={endpoint} action="details" initialField={field} assetTitle={assetTitle} onClose={close} onSaved={saved}/>,document.body))}
+  {field && permissions[field] && createPortal(field==='location'?<SharedAssetLocationDialog endpoint={endpoint} assetTitle={assetTitle} onClose={close} onSaved={saved}/>:<SharedAssetWorkDialog key={field} endpoint={endpoint} action="details" initialField={field} assetTitle={assetTitle} onClose={close} onSaved={saved}/>,document.body)}
  </>;
 }
 

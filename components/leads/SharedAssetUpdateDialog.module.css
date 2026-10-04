@@ -1,0 +1,18 @@
+.shell.shell { z-index: 1; }
+.shell .menu.menu { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+.footer { display:flex; align-items:center; justify-content:flex-end; gap:1rem; padding:1rem 2rem; border-top:1px solid var(--app-line,#dce6e0); }
+.footer > span { margin-right:auto; color:var(--app-muted,#677c72); font-weight:750; font-size:.85rem; }
+.footer > button { min-width:8rem; }
+.fieldset { margin:0; padding:0; border:0; min-width:0; }
+.notice { padding:1rem; border:1px solid var(--app-line,#dce6e0); border-radius:1rem; background:var(--app-surface-soft,#f2f8f5); }
+.error { color:var(--app-danger,#a33131); font-weight:750; }
+.photos { display:flex; flex-wrap:wrap; gap:1rem; margin-top:1rem; }
+.photos img { width:10rem; height:10rem; object-fit:cover; border-radius:1rem; }
+.documents { display:grid; gap:.75rem; margin-top:1rem; }
+.documents a { padding:1rem; border:1px solid var(--app-line,#dce6e0); border-radius:1rem; font-weight:750; }
+@media(max-width:640px) {
+ :global(body:not(:has([data-website-canvas]))) .shell .menu.menu { grid-template-columns:1fr !important; }
+}
+
+.shell .menu > button { gap:1rem; }
+.shell .menu small { font-size:.82rem; white-space:nowrap; }

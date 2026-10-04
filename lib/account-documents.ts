@@ -699,10 +699,11 @@ export async function getAccountDocumentSummary(userId: string): Promise<Account
 export async function createAccountDocument(
   userId: string,
   input: CreateAccountDocumentInput,
+  hooks?: { before?: (client: PoolClient) => Promise<string | void>; after?: (client: PoolClient, documentId: string) => Promise<void> },
 ): Promise<AccountDocument> {
   await ensureAccountDocumentTables();
 
-  const documentId = randomUUID();
+  let documentId: string = randomUUID();
   const fileName = cleanText(input.fileName, 240) || 'document';
   const title = cleanText(input.title, 180) || fileName.replace(/\.[^.]+$/, '') || 'Untitled document';
   const notes = cleanNotes(input.notes);
@@ -720,6 +721,9 @@ export async function createAccountDocument(
   const client = await getDb().connect();
   try {
     await client.query('begin');
+    const existingId = await hooks?.before?.(client);
+    if(existingId) documentId=existingId;
+    else {
     await assertOwnedAssetIds(client, userId, assetIds);
     await client.query(
       `
@@ -740,8 +744,10 @@ export async function createAccountDocument(
       [documentId, userId, uploadId, title, category, documentType, notes, expiryDate, fileName, contentType, byteSize],
     );
     await replaceAssetLinks(client, userId, documentId, assetIds);
+    await hooks?.after?.(client, documentId);
+    }
     await client.query('commit');
-    cacheAccountDocumentUploadOwner(uploadId, userId);
+    if(!existingId)cacheAccountDocumentUploadOwner(uploadId, userId);
   } catch (error) {
     await client.query('rollback');
     throw error;

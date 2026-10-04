@@ -12,7 +12,8 @@ import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundatio
 import { businessJson, businessError, requireBusinessOrigin, businessBody } from './business-network-api';
 import { ExternalLeadAccessError } from './external-lead-access';
 import { limitBusinessAction } from './business-network';
-const fields = ['yearModel', 'usage', 'condition'] as const;
+const fields = ['yearModel', 'usage', 'condition', 'title', 'brand', 'model', 'note'] as const;
+const identityFields = new Set<string>(['title','brand','model','note']);
 export async function sharedAssetWork(request: NextRequest, target: ContributionTarget, action: 'details' | 'maintenance' | 'history' | 'checklist') {
     try {
         if (request.method !== 'GET')
@@ -22,7 +23,7 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
         let locationScope: Awaited<ReturnType<typeof contributionScope>> | null = null;
         if(action === 'history') { try { locationScope = await contributionScope(target,'location'); } catch(e) { if(!(e instanceof ExternalLeadAccessError)) throw e; } }
         const scopes = await Promise.all(fields.map(async (field) => { try {
-            return detailsScope || await contributionScope(target, field);
+            return detailsScope || (identityFields.has(field) ? null : await contributionScope(target, field as 'yearModel'|'usage'|'condition'));
         }
         catch (e) {
             if (e instanceof ExternalLeadAccessError)
@@ -37,7 +38,11 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
             if (!(e instanceof ExternalLeadAccessError))
                 throw e;
         }
-        const scope = action === 'maintenance' || action === 'checklist' ? maintenance : scopes.find(Boolean) || maintenance || locationScope;
+        const extras: Record<string, Awaited<ReturnType<typeof contributionScope>> | null> = {};
+        if(action==='details') for(const permission of ['serialNumber','replacementPrice','addPhotos'] as const) {
+            try { extras[permission]=await contributionScope(target,permission); } catch(e) { if(!(e instanceof ExternalLeadAccessError)) throw e; }
+        }
+        const scope = action === 'maintenance' || action === 'checklist' ? maintenance : scopes.find(Boolean) || maintenance || locationScope || Object.values(extras).find(Boolean);
         if (!scope)
             throw new ExternalLeadAccessError('The owner has not enabled this action.', 403);
         const asset = await getAssetRegisterItemById(scope.ownerId, scope.assetId);
@@ -48,12 +53,10 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
                 return businessJson({ items: await listAssetChecklistItems(scope.ownerId, scope.assetId) });
             if (action === 'history') {
                 await ensureSharedAssetActivity();
-                return businessJson({ items: (await getDb().query('SELECT actor_name,action,before_data,after_data,created_at FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid ORDER BY created_at DESC LIMIT 100', [scope.ownerId, scope.assetId])).rows.filter(row => row.action.startsWith('Value ') ? scope.user.id === scope.ownerId : ['finance updated','insurance updated','license updated'].includes(row.action) ? Boolean(detailsScope) : row.action === 'Location updated' ? Boolean(locationScope) : true) });
+                return businessJson({ items: (await getDb().query('SELECT actor_name,action,before_data,after_data,created_at FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid ORDER BY created_at DESC LIMIT 100', [scope.ownerId, scope.assetId])).rows.filter(row => row.action.startsWith('Value ') ? scope.user.id === scope.ownerId : ['finance updated','insurance updated','license updated','Document uploaded'].includes(row.action) ? Boolean(detailsScope) : row.action === 'Location updated' ? Boolean(locationScope) : true).map(row=>{if(detailsScope||row.action!=='Asset details updated')return row;const {note:beforeNote,...before}=row.before_data;const {note:afterNote,...after}=row.after_data;return {...row,before_data:before,after_data:after};}) });
             }
-            let canAddPhotos = false;
-            if(action==='details') { try { await contributionScope(target,'addPhotos'); canAddPhotos=true; } catch(error) { if(!(error instanceof ExternalLeadAccessError)) throw error; } }
             const usage = resolveAssetUsage(asset);
-            return businessJson({ asset: { ...mapMyInvoiceAssetOption(asset), usageMetric: usage.metric === 'not_applicable' ? 'none' : usage.metric, usageReading: usage.value, condition: asset.condition || '', maintenanceIdentity: maintenanceIdentity(asset) }, permissions: {...Object.fromEntries(fields.map((f, i) => [f, Boolean(scopes[i])])), updateDetails: Boolean(detailsScope), addPhotos: canAddPhotos} });
+            return businessJson({ asset: { ...mapMyInvoiceAssetOption(asset), usageMetric: usage.metric === 'not_applicable' ? 'none' : usage.metric, usageReading: usage.value, condition: asset.condition || '', title:asset.title, serialNumber:asset.serialNumber, brand:asset.brandName, model:asset.modelName, note:detailsScope?asset.note:'', replacementPriceExVat:asset.replacementPriceExVat, currentValue:asset.selectedValueExVat, insuredValue:detailsScope?asset.insuredValueExVat:null, photos:asset.photos, maintenanceIdentity: maintenanceIdentity(asset) }, permissions: {...Object.fromEntries(fields.map((f, i) => [f, Boolean(scopes[i])])), updateDetails: Boolean(detailsScope), addPhotos: Boolean(extras.addPhotos), serialNumber:Boolean(extras.serialNumber), replacementPrice:Boolean(extras.replacementPrice), addDocuments:Boolean(detailsScope)} });
         }
         await limitBusinessAction(`shared-work:${scope.user.id}`, 30);
         const body = await businessBody(request), id = String(body.requestId || body.clientEventId || '');
@@ -93,6 +96,10 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
         for (const [i, f] of fields.entries())
             if (f in patch && !scopes[i])
                 throw new ExternalLeadAccessError(`The owner has not enabled ${f} updates.`, 403);
+        for(const field of ['title','brand','model','note']) if(field in patch) {
+            if(typeof patch[field] !== 'string' || String(patch[field]).length > (field==='note'?4000:240) || (field==='title'&&!String(patch[field]).trim())) throw new Error('Enter valid asset '+field+'.');
+            patch[field]=String(patch[field]).trim();
+        }
         if ('yearModel' in patch && patch.yearModel !== null && (!Number.isInteger(patch.yearModel) || Number(patch.yearModel) < 1800 || Number(patch.yearModel) > new Date().getFullYear() + 1))
             throw new Error('Enter a valid year.');
         if ('usage' in patch && (typeof patch.usage !== 'number' || !Number.isFinite(patch.usage) || patch.usage < 0))
@@ -113,6 +120,7 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
             }
             else {
                 const result = await updateSharedAssetDetails(client, scope.ownerId, scope.assetId, patch);
+                if('title' in patch)await client.query("UPDATE asset_leads SET asset_snapshot_json=coalesce(asset_snapshot_json,'{}'::jsonb)||$3::jsonb,updated_at=now() WHERE owner_user_id=$1 AND asset_register_item_id=$2::uuid",[scope.ownerId,scope.assetId,JSON.stringify({title:result.item.title,yearModel:result.item.yearModel,condition:result.item.condition})]);
                 await recordSharedAssetActivity(client, { ...base, action: 'Asset details updated', before: result.before, after: result.after });
                 await recordSharingUsage({ accountId: scope.user.id, actorId: scope.user.id, assetId: scope.assetId, token: scope.token, metric: 'contribution', eventKey: `details:${id}` }, client);
             }

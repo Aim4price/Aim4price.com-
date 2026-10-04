@@ -1810,7 +1810,7 @@ export default function LeadsClient({
   const [problemLead,setProblemLead]=useState<AssetLead|null>(null);
   const [valueLead,setValueLead]=useState<AssetLead|null>(null);
   const [locationLead,setLocationLead]=useState<AssetLead|null>(null);
-  const [sharedWork,setSharedWork]=useState<{lead:AssetLead;action:'details'|'maintenance'|'history'}|null>(null);
+  const [sharedWork,setSharedWork]=useState<{lead:AssetLead;action:'details'|'maintenance'|'history';initialField?:'serial'|'replacement'}|null>(null);
   const [contribution,setContribution] = useState<{lead:AssetLead;kind:'photos'|'costs'}|null>(null);
   const [photoUploadLead, setPhotoUploadLead] = useState<AssetLead | null>(null);
   const [pendingLeadPhotos, setPendingLeadPhotos] = useState<PendingLeadPhoto[]>([]);
@@ -3973,6 +3973,7 @@ export default function LeadsClient({
 
                       {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
                         <DealerAssetCorrectionEditor data-manage-action="corrections"
+                          onOpenField={field=>setSharedWork({lead:managedLead,action:'details',initialField:field==='serialNumber'?'serial':'replacement'})}
                           assetTitle={assetTitle(managedLead)}
                           sourceType="lead"
                           sourceId={managedLead.id}
@@ -4021,7 +4022,7 @@ export default function LeadsClient({
       {problemLead&&createPortal(<SharedProblems endpoint={`/api/asset-leads/${problemLead.id}/problems`} assetTitle={assetTitle(problemLead)} onClose={()=>setProblemLead(null)}/>,document.body)}
       {valueLead&&createPortal(<AssetValueDialog suggest endpoint={`/api/asset-leads/${valueLead.id}/value`} assetTitle={assetTitle(valueLead)} onClose={()=>setValueLead(null)}/>,document.body)}
       {locationLead&&createPortal(<SharedAssetLocationDialog endpoint={`/api/asset-leads/${locationLead.id}`} assetTitle={assetTitle(locationLead)} onSaved={()=>{void loadData(false,true)}} onClose={()=>setLocationLead(null)}/>,document.body)}
-      {sharedWork&&createPortal(<SharedAssetWorkDialog endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} onSchedule={sharedWork.lead.maintenanceAccess?.isActive && sharedWork.lead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? () => { openMaintenanceSchedule(sharedWork.lead); setSharedWork(null); } : undefined} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{setManagedLead(null);void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
+      {sharedWork&&createPortal(<SharedAssetWorkDialog initialField={sharedWork.initialField} endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} onSchedule={sharedWork.lead.maintenanceAccess?.isActive && sharedWork.lead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? () => { openMaintenanceSchedule(sharedWork.lead); setSharedWork(null); } : undefined} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{setManagedLead(null);void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
       {contribution ? createPortal(<SharedAssetContributionDialog kind={contribution.kind} endpoint={`/api/asset-leads/${contribution.lead.id}/${contribution.kind}`} assetTitle={assetTitle(contribution.lead)} onClose={()=>setContribution(null)} onSaved={()=>{void fetch(`/api/asset-leads/${contribution.lead.id}/media`,{cache:'no-store'}).then(r=>r.json()).then(data=>{if(data.asset)mergeLeadAssetMedia(contribution.lead,data.asset);}).catch(()=>{});}}/>,document.body) : null}
       {qrLeadAsset ? (
         <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>

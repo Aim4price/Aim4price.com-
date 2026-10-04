@@ -23,7 +23,7 @@ export default function ExternalAccessRequests({token}: {token:string}) {
   if(p.maintenanceReports)views.push(['maintenanceReports','Maintenance reports']);
   if(p.costOfOwnership)views.push(['costOfOwnership','Cost of ownership']);
   const updates:Array<[ExternalSharePermission,string]>=[];
-  if(p.updateDetails)updates.push(['updateDetails','Update details, finance, insurance and licensing']);
+  if(p.updateDetails)updates.push(['updateDetails','Update title, asset details, paperwork and documents (no invoices)']);
   if(p.location)updates.push(['location','View and update asset location']);
   if(!p.updateDetails&&p.yearModel)updates.push(['yearModel','Update year']);
   if(!p.updateDetails&&p.usage)updates.push(['usage','Update usage']);

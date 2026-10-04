@@ -46,6 +46,7 @@ type UploadResponse = {
 
 type AssetDocumentUploadModalProps = {
   accountDesign?: boolean;
+  excludeInvoices?: boolean;
   assetId: string;
   assetTitle: string;
   uploadEndpoint?: string;
@@ -95,9 +96,11 @@ export default function AssetDocumentUploadModal({
   assetTitle,
   uploadEndpoint = '/api/documents',
   accountDesign = false,
+  excludeInvoices = false,
   onClose,
   onUploaded,
 }: AssetDocumentUploadModalProps) {
+  const uploadKeys = useRef(new Map<File,string>());
   const [files, setFiles] = useState<File[]>([]);
   const [documentType, setDocumentType] = useState<AccountDocumentType | ''>('');
   const [documentTypeSearch, setDocumentTypeSearch] = useState('');
@@ -124,14 +127,15 @@ export default function AssetDocumentUploadModal({
   const selectedType = useMemo(() => getAccountDocumentType(documentType), [documentType]);
   const filteredTypes = useMemo(() => {
     const query = documentTypeSearch.trim().toLowerCase();
-    if (!query || documentType) return ACCOUNT_DOCUMENT_TYPES;
-    return ACCOUNT_DOCUMENT_TYPES.filter((option) => [
+    const types = excludeInvoices ? ACCOUNT_DOCUMENT_TYPES.filter(option=>option.value!=='invoice-proof-of-purchase') : ACCOUNT_DOCUMENT_TYPES;
+    if (!query || documentType) return types;
+    return types.filter((option) => [
       option.label,
       option.value,
       ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category],
       ...option.keywords,
     ].some((value) => value.toLowerCase().includes(query)));
-  }, [documentType, documentTypeSearch]);
+  }, [documentType, documentTypeSearch, excludeInvoices]);
 
   useEffect(() => {
     busyRef.current = busy;
@@ -332,6 +336,7 @@ export default function AssetDocumentUploadModal({
       try {
         const form = new FormData();
         form.set('file', file);
+        form.set('requestId', uploadKeys.current.get(file) || (()=>{const id=crypto.randomUUID();uploadKeys.current.set(file,id);return id;})());
         form.set('title', files.length === 1 ? title.trim() : cleanFileTitle(file.name) || file.name);
         form.set('documentType', selectedType.value);
         form.set('category', selectedType.category);
@@ -403,6 +408,7 @@ export default function AssetDocumentUploadModal({
           <div className={styles.content}>
             {error ? <div className={styles.error} role="alert">{error}</div> : null}
 
+            {excludeInvoices && <p role="note"><strong>Asset documents only — no invoices.</strong> Use Add cost for invoices and expenses.</p>}
             <div className={styles.assetBadge}>
               <span>Linked asset</span>
               <strong title={assetTitle}>{assetTitle}</strong>
@@ -425,7 +431,7 @@ export default function AssetDocumentUploadModal({
                     setActiveDocumentTypeIndex(0);
                   }}
                   onKeyDown={handleTypeKeyDown}
-                  placeholder="Search licence, insurance, invoice, service…"
+                  placeholder={excludeInvoices?"Search licence, insurance, service…":"Search licence, insurance, invoice, service…"}
                   role="combobox"
                   aria-autocomplete="list"
                   aria-expanded={showDocumentTypes}

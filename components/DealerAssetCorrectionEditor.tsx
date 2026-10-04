@@ -20,6 +20,7 @@ type CorrectionResponse = {
 
 type DealerAssetCorrectionEditorProps = {
   initialField?: DealerAssetCorrectionField;
+  onOpenField?: (field: DealerAssetCorrectionField) => void;
   onClose?: () => void;
   assetTitle: string;
   sourceType: DealerAssetCorrectionSource;
@@ -83,6 +84,7 @@ function formatDate(value: string | null | undefined): string {
 
 export default function DealerAssetCorrectionEditor({
   assetTitle,
+  onOpenField,
   initialField,
   onClose,
   sourceType,
@@ -145,6 +147,7 @@ export default function DealerAssetCorrectionEditor({
 
   function openEditor(field: DealerAssetCorrectionField) {
     if (effectiveCorrection) return;
+    if(onOpenField){onOpenField(field);return;}
     setError('');
     setActiveField(field);
     setDraft(

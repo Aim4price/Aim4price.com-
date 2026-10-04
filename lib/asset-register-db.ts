@@ -3945,7 +3945,7 @@ export async function appendSharedAssetPhotos(client: import('pg').PoolClient, u
 }
 
 /** Restricted shared edits use the same normalization and stale-valuation rules as owner edits. */
-export async function updateSharedAssetDetails(client: import('pg').PoolClient, userId:string, assetId:string, patch:{yearModel?:number|null;usage?:number;condition?:string}) {
+export async function updateSharedAssetDetails(client: import('pg').PoolClient, userId:string, assetId:string, patch:{yearModel?:number|null;usage?:number;condition?:string;title?:string;brand?:string;model?:string;note?:string}) {
  const schema=await getAssetRegisterSchema();
  const selected=await client.query<AssetRegisterRow>(`SELECT ${buildSelectList(schema)} FROM asset_register_items WHERE user_id=$1 AND id=$2 FOR UPDATE`,[userId,assetId]);
  if(!selected.rows[0])throw new Error('ASSET_NOT_FOUND');
@@ -3962,16 +3962,23 @@ export async function updateSharedAssetDetails(client: import('pg').PoolClient, 
  const now=new Date();
  let specs=buildYearModelSpecsJson(existing.specsJson??{},year,year===null);
  if(patch.usage!==undefined)specs={...specs,...(percentage?{lifeWorkedPercent:life,life_worked_percent:life}:{hours,usage:hours,usageAmount:hours,usage_amount:hours})};
+ if(patch.title!==undefined)specs={...specs,title:patch.title,assetTitle:patch.title,asset_title:patch.title};
+ if(patch.brand!==undefined)specs={...specs,unlisted_brand_name:patch.brand,typed_brand_name:patch.brand,manual_brand_name:patch.brand,brand:patch.brand,brandName:patch.brand,brand_name:patch.brand};
+ if(patch.model!==undefined)specs={...specs,manual_model_name:patch.model,manualModelName:patch.model,typedModelName:patch.model,typed_model_name:patch.model,model:patch.model,modelName:patch.model,model_name:patch.model};
  const reasons=buildValuationStaleReasons({existing,nextYearModel:year,nextHours:hours,nextLifeWorkedPercent:life,nextCondition:condition});
  specs=markValuationNeedsUpdate(specs,reasons,now);
  const fields:SqlField[]=[];
+ for(const key of ['title','brand','model','note'] as const) if(patch[key]!==undefined) {
+   const columns={title:['title','name','asset_name'],brand:['brand_name','brand'],model:['model_name','model'],note:['note','notes']};
+   pushField(fields,schema,columns[key],patch[key]);
+ }
  if(patch.yearModel!==undefined)pushField(fields,schema,['year_model','year'],year);
  if(patch.usage!==undefined)pushField(fields,schema,percentage?['life_worked_percent']:['hours','engine_hours'],percentage?life:hours);
  if(patch.condition!==undefined)pushField(fields,schema,['condition'],condition);
  pushField(fields,schema,['specs_json'],specs,'::jsonb');pushField(fields,schema,['updated_at','modified_at','updatedon'],now);
  const update=buildUpdateSetClause(fields);
  const result=await client.query<AssetRegisterRow>(`UPDATE asset_register_items SET ${update.clause} WHERE user_id=$1 AND id=$2 RETURNING ${buildSelectList(schema)}`,[userId,assetId,...update.values]);
- return {before:{yearModel:existing.yearModel,usage:current,condition:existing.condition},after:{yearModel:year,usage:percentage?life:hours,condition},item:mapAssetRegisterRow(result.rows[0])};
+ return {before:{title:existing.title,brand:existing.brandName,model:existing.modelName,note:existing.note,yearModel:existing.yearModel,usage:current,condition:existing.condition},after:{title:patch.title??existing.title,brand:patch.brand??existing.brandName,model:patch.model??existing.modelName,note:patch.note??existing.note,yearModel:year,usage:percentage?life:hours,condition},item:mapAssetRegisterRow(result.rows[0])};
 }
 
 /** Called only after owner/admin authorization and a locked revision check. */
