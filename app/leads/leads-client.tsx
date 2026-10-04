@@ -7,6 +7,7 @@ import SharedAssetLocationDialog from '../../components/leads/SharedAssetLocatio
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import SharedAssetContributionDialog from '../../components/leads/SharedAssetContributionDialog';
 import LeadManageDialog from '../../components/leads/LeadManageDialog';
+import AssetReportTypeIcon from '../../components/asset-register/AssetReportTypeIcon';
 import LeadReportDialog from '../../components/leads/LeadReportDialog';
 import LeadCardSummary from '../../components/leads/LeadCardSummary';
 import LeadManageButton from '../../components/leads/LeadManageButton';
@@ -4242,7 +4243,7 @@ export default function LeadsClient({
                   onClick={() => void handleLeadPdfReportDownload(reportLead, 'full')}
                   disabled={isDownloadingLeadReport} data-download-option="true"
                 >
-                  <PdfIcon className={assetStyles.buttonIcon} />
+                  <AssetReportTypeIcon kind="valuation" className={assetStyles.buttonIcon} />
                   <span>
                     <strong>Asset valuation</strong>
                     {dealerAppMode ? null : <small>Shared asset values.</small>}
@@ -4260,7 +4261,7 @@ export default function LeadsClient({
                         ? 'The asset owner has not enabled maintenance report access.'
                         : undefined} data-download-option="true"
                     >
-                      <DocumentIcon className={assetStyles.buttonIcon} />
+                      <AssetReportTypeIcon kind="maintenance" className={assetStyles.buttonIcon} />
                       <span>
                         <strong>Maintenance report</strong>
                         {dealerAppMode ? null : (
@@ -4282,7 +4283,7 @@ export default function LeadsClient({
                         ? 'The asset owner has not enabled Cost of Ownership access.'
                         : undefined} data-download-option="true"
                     >
-                      <DocumentIcon className={assetStyles.buttonIcon} />
+                      <AssetReportTypeIcon kind="ownership" className={assetStyles.buttonIcon} />
                       <span>
                         <strong>Cost of ownership</strong>
                         {dealerAppMode ? null : (
