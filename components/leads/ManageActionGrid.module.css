@@ -1,0 +1,31 @@
+.grid > button {
+  --action-tint: #f1f6fc;
+  --action-border: #d1dfed;
+  --action-ink: #254f77;
+}
+.grid.grid[data-manage-actions] > button[data-manage-action] {
+  background: linear-gradient(120deg, var(--app-surface, #fff), color-mix(in srgb, var(--app-surface, #fff) 15%, var(--action-tint))) !important;
+  border-color: var(--action-border) !important;
+}
+.grid > button[data-manage-action='details'],
+.grid > button[data-manage-action='addPhotos'],
+.grid > button[data-manage-action='location'],
+.grid > button[data-manage-action='serialNumber'] {
+  --action-tint: #edf8f2; --action-border: #c4dfd0; --action-ink: #24614a;
+}
+.grid > button[data-manage-action='addMaintenance'],
+.grid > button[data-manage-action='maintenanceSchedules'] {
+  --action-tint: #fff7e9; --action-border: #ebd9b8; --action-ink: #826124;
+}
+.grid > button[data-manage-action='loggedProblems'] {
+  --action-tint: #fff1ed; --action-border: #edcfc4; --action-ink: #995744;
+}
+.grid > button[data-manage-action='addCosts'],
+.grid > button[data-manage-action='suggestValue'],
+.grid > button[data-manage-action='replacementPrice'],
+.grid > button[data-manage-action='costOfOwnership'] {
+  --action-tint: #f5f0fc; --action-border: #dcd0ed; --action-ink: #695089;
+}
+.grid > button > svg { color: var(--action-ink) !important; }
+.grid > button:hover:not(:disabled) { box-shadow: 0 6px 18px #173b2f12; }
+.grid > button:focus-visible { outline: 3px solid var(--action-ink); outline-offset: 3px; }
