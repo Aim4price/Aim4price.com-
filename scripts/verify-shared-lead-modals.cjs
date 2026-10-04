@@ -43,6 +43,7 @@ add('components/asset-register/ExternalLeadActions');
 add('components/leads/LeadManageDialog');
 add('components/business-network/BusinessListingInvite');
 add('components/SharedEnquiryLanding');
+add('components/asset-register/ShareLinkSettings');
 add('app/business/join/business-signup');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
@@ -120,6 +121,26 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/asset-link-settings.png'});
  await click('Share read-only');await page.waitForSelector('dialog[open]');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Before you share')));
+ // Existing link settings must round-trip the current-value permission.
+ await page.evaluate(()=>{
+  window.previousFetch=window.fetch;
+  window.fetch=async(url,options)=>{const body=JSON.parse(options.body);window.savedLink=body;return {ok:true,json:async()=>({permissions:body.permissions})};};
+  window.renderLinkSettings=(permissions)=>window.fixtureRoot.render(React.createElement(require('components/asset-register/ShareLinkSettings').default,{key:JSON.stringify(permissions),token:'a'.repeat(43),subject:'2022 New Holland TT4.90 4WD Openstation',initialPermissions:permissions,onClose:()=>{},onSaved:permissions=>{window.savedPermissions=permissions;}}));
+  window.renderLinkSettings({suggestValue:false});
+ });
+ await page.waitForFunction(()=>document.querySelector('[data-asset-link-dialog]')?.textContent.includes('Save changes'));
+ const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Suggest current value')).click());
+ const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Suggest current value')).querySelector('input').checked);
+ await toggleValue(); assert.equal(await valueChecked(),true,'Value permission responds to a card click');
+ await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===true);
+ assert.equal(await page.evaluate(()=>window.savedLink.permissions.suggestValue),true);
+ await page.evaluate(()=>window.renderLinkSettings(window.savedPermissions));
+ await page.waitForSelector('[data-permission-grid]');assert.equal(await valueChecked(),true,'Saved value permission loads checked');
+ const geometry=await page.$$eval('[data-permission-grid] label',nodes=>nodes.map(node=>{const r=node.getBoundingClientRect(),i=node.querySelector('input').getBoundingClientRect();return Math.abs((r.top+r.height/2)-(i.top+i.height/2));}));
+ assert(geometry.every(offset=>offset<1),'Checkboxes are vertically centred in each card');
+ await page.screenshot({path:'/tmp/asset-link-settings-edit.png'});
+ await toggleValue();await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===false);
+ await page.evaluate(()=>{window.fetch=window.previousFetch;});
  await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('components/SharedEnquiryLanding').default,{returnTo:'/asset-share/'+ 'a'.repeat(43)+'?open=1',access:'verify-email',prompt:true,summary:{senderName:'Example farm',assetCount:1,assetTitles:['Tractor'],umbrellaName:''}})));
  await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Verify your email'));
  const gate=await page.$eval('dialog[open]',node=>({scroll:node.scrollHeight,height:node.clientHeight,width:node.getBoundingClientRect().width,heading:node.querySelector('h2').getBoundingClientRect().height}));

@@ -36,8 +36,8 @@ export const dealerMaintenancePermissionOptions: Array<{
   title: string;
   description: string;
 }> = [
-  {key:'canAddPhotos', title:'Add photos', description:'Allow photos to be added to the live asset.'},
-  {key:'canUpdateDetails', title:'Update details', description:'Year, usage, condition, finance, insurance and licensing.'},
+  {key:'canAddPhotos', title:'Add photos', description:'Add photos to the live asset.'},
+  {key:'canUpdateDetails', title:'Update details', description:'Year, usage, condition & paperwork.'},
   {key:'canSuggestCurrentValue', title:'Suggest current value', description:'Send a value to the owner for approval.'},
   {key:'canAccessLocation', title:'Location access', description:'View and update the asset location.'},
   {key:'canAddMaintenance', title:'Add maintenance', description:'Record completed work.'},
@@ -50,17 +50,17 @@ export const dealerMaintenancePermissionOptions: Array<{
   {
     key: 'canViewMaintenanceReports',
     title: 'Maintenance Reports',
-    description: 'Let the dealer download PDF and XLSX maintenance reports.',
+    description: 'Download maintenance reports (PDF/Excel).',
   },
   {
     key: 'canViewCostOfOwnership',
     title: 'Cost of Ownership',
-    description: 'Let the dealer download PDF and Excel ownership costs and VAT.',
+    description: 'Download ownership costs & VAT (PDF/Excel).',
   },
   {
     key: 'canCreateMaintenanceSchedules',
     title: 'Create Maintenance Schedules',
-    description: 'Create active maintenance schedules directly.',
+    description: 'Schedule upcoming maintenance.',
   },
   {
     key: 'canUpdateSerial',
