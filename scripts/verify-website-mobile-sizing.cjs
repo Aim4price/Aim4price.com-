@@ -14,6 +14,7 @@ const compile = file => ts.transpileModule(fs.readFileSync(path.join(root, file)
 const canvas = compile('lib/website-canvas.ts');
 const host = compile('components/SiteWorkspaceZoom.tsx');
 const phone = compile('lib/website-phone.ts');
+const background = compile('components/AppPatternBackground.tsx');
 const output = path.join(root, '.next/mobile-sizing-validation');
 fs.mkdirSync(output, { recursive: true });
 (async () => {
@@ -33,9 +34,20 @@ fs.mkdirSync(output, { recursive: true });
     await setViewport({width:1440,height:900,isMobile:false,hasTouch:false});
     await page.goto('https://canvas.test/');
     await page.addStyleTag({content:fs.readFileSync(path.join(root,'components/SiteWorkspaceZoom.module.css'),'utf8').replace(/:global\(([^)]+)\)/g,'$1')});
+    let backgroundCss = fs.readFileSync(path.join(root,'components/AppPatternBackground.module.css'),'utf8');
+    while (backgroundCss.includes(':global(')) {
+      const start = backgroundCss.indexOf(':global(');
+      let end = start + 8, depth = 1;
+      for (; depth && end < backgroundCss.length; end++) {
+        if (backgroundCss[end] === '(') depth++;
+        else if (backgroundCss[end] === ')') depth--;
+      }
+      backgroundCss = backgroundCss.slice(0,start) + backgroundCss.slice(start+8,end-1) + backgroundCss.slice(end);
+    }
+    await page.addStyleTag({content:backgroundCss});
     await page.addScriptTag({content:fs.readFileSync(path.join(path.dirname(require.resolve('react')),'umd/react.development.js'),'utf8')});
     await page.addScriptTag({content:fs.readFileSync(path.join(path.dirname(require.resolve('react-dom')),'umd/react-dom.development.js'),'utf8')});
-    await page.evaluate(({canvas,host,phone}) => {
+    await page.evaluate(({canvas,host,phone,background}) => {
       Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>1440});
       localStorage.clear(); sessionStorage.clear();
       localStorage.setItem('aim4price.website-canvas.v2.intro','seen');
@@ -52,11 +64,13 @@ fs.mkdirSync(output, { recursive: true });
         if(name.endsWith('.module.css'))return {default:new Proxy({},{get:(_,key)=>key})};
         if(name==='../lib/website-canvas'||name==='./website-canvas')return modules.canvas;
         if(name==='../lib/website-phone')return modules.phone;
+        if(name==='./AppPatternBackground')return modules.background;
         throw Error('Unexpected module '+name);
       }
       function evaluate(source) {const module={exports:{}};new Function('require','module','exports','React',source)(require,module,module.exports,React);return module.exports;}
       modules.canvas=evaluate(canvas);
       modules.phone=evaluate(phone);
+      modules.background=evaluate(background);
       const Host=evaluate(host).default;
       window.mount=()=> {
         window.fixtureRoot=ReactDOM.createRoot(document.getElementById('app'));
@@ -65,7 +79,7 @@ fs.mkdirSync(output, { recursive: true });
           React.createElement('main',null,React.createElement('h1',null,'Home'))));
       };
       window.mount();
-    },{canvas,host,phone});
+    },{canvas,host,phone,background});
     const waitScale=async expected=>{try {await page.waitForFunction(value=>Math.abs(Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)-value)<.001,{},expected);} catch(error) {console.error('Scale mismatch',expected,await page.evaluate(()=>({scale:document.querySelector('[data-website-canvas]')?.dataset.websiteScale,width:document.documentElement.clientWidth,coarse:matchMedia('(hover: none) and (pointer: coarse)').matches})),errors);throw error;}};
     await waitScale(1);
     await page.waitForSelector('[data-site-workspace-zoom-controls]');
@@ -107,6 +121,16 @@ fs.mkdirSync(output, { recursive: true });
     await page.focus('#website-zoom-slider');
     await page.keyboard.press('ArrowRight');
     await waitScale(.76);
+    await page.$eval('#website-zoom-slider',e=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,'200');e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));});
+    await waitScale(2);
+    assert.equal(await page.$eval('#website-zoom-slider',e=>e.max),'200');
+    assert.equal(await page.$eval('[aria-label="Zoom in"]',e=>e.disabled),true);
+    const backdrop = await page.$eval('[data-website-backdrop]',e=>{
+      const rect=e.getBoundingClientRect();
+      return {outsideCanvas:!e.closest('[data-website-canvas]'),left:rect.left,top:rect.top,width:rect.width};
+    });
+    assert.deepEqual(backdrop,{outsideCanvas:true,left:0,top:0,width:390});
+    console.log('PASS 200% limit and unscaled viewport backdrop');
     await page.$$eval('dialog button',els=>els.find(e=>e.textContent==='Fit to screen').click());
     await waitScale(390/1440);
     await page.keyboard.press('Escape');
