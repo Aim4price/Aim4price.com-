@@ -1,5 +1,9 @@
 export type ExternalAssetShareItem = {
   assetId?: string;
+  financeStatus?: string;
+  insuranceStatus?: string;
+  licenseStatus?: string;
+  mapped?: boolean;
   title: string;
   serialNumber: string;
   yearModel: number | null;

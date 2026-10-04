@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import SharedAssetPaperwork from './SharedAssetPaperwork';
 import MaintenanceEntryChoice from '../MaintenanceEntryChoice';
@@ -10,7 +10,8 @@ import assetStyles from '../../app/asset-register/page.module.css';
 import LeadActionDialog from './LeadActionDialog';
 import type { AssetOption } from '../../app/my-invoices/my-invoices-client';
 import type { MaintenanceIdentity } from '../../lib/maintenance-catalogue';
-export default function SharedAssetWorkDialog({ endpoint, action, assetTitle, assetSubtitle, onClose, onSaved, onSchedule }: {
+export default function SharedAssetWorkDialog({ endpoint, action, assetTitle, assetSubtitle, onClose, onSaved, onSchedule, initialField }: {
+    initialField?: 'year'|'usage'|'condition'|'finance'|'insurance'|'license';
     endpoint: string;
     action: 'details' | 'maintenance' | 'history';
     assetTitle: string;
@@ -19,7 +20,7 @@ export default function SharedAssetWorkDialog({ endpoint, action, assetTitle, as
     onSaved?: () => void;
     onSchedule?: () => void;
 }) {
-    const [detailsTab,setDetailsTab]=useState<'details'|'paperwork'>('details');
+    const [detailsTab,setDetailsTab]=useState<'details'|'paperwork'>(['finance','insurance','license'].includes(initialField || '') ? 'paperwork' : 'details');
     const [entryStep, setEntryStep] = useState<'timing' | 'type'>('timing');
     const router = useRouter(), [asset, setAsset] = useState<(Omit<AssetOption, 'usageMetric'> & {
         usageMetric: AssetOption['usageMetric'] | 'none';
@@ -40,6 +41,12 @@ export default function SharedAssetWorkDialog({ endpoint, action, assetTitle, as
         setPermissions(d.permissions);
     } setItems(d.items || []); }).catch(e => { if (!c.signal.aborted)
         setError(e.message); }); return () => c.abort(); }, [endpoint, action]);
+    const focusRoot = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+      if (!asset || !initialField) return;
+      const target = focusRoot.current?.querySelector<HTMLElement>(`[data-asset-detail-edit-target="${initialField}"] input, [data-asset-detail-edit-target="${initialField}"] button`);
+      target?.focus();
+    }, [asset, initialField]);
     async function save(body: Record<string, unknown>) { setBusy(true); setError(''); try {
         const r = await fetch(`${endpoint}/${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, requestId }) });
         const d = await r.json();
@@ -65,7 +72,7 @@ export default function SharedAssetWorkDialog({ endpoint, action, assetTitle, as
         patch.usage = Number(usage); if (permissions.condition && condition !== asset.condition)
         patch.condition = condition; void save({ patch }).catch(() => { }); }}>{busy ? 'Saving…' : 'Save changes'}</button></> : undefined}>
  {action === 'details' && permissions.updateDetails && <div className={styles.tabs} role="tablist" aria-label="Asset details sections"><button type="button" role="tab" aria-selected={detailsTab==='details'} className={assetStyles.secondaryButton} onClick={()=>setDetailsTab('details')}>Details</button><button type="button" role="tab" aria-selected={detailsTab==='paperwork'} className={assetStyles.secondaryButton} onClick={()=>setDetailsTab('paperwork')}>Paperwork</button></div>}
- {detailsTab === 'paperwork' && action === 'details' ? <SharedAssetPaperwork endpoint={endpoint} onSaved={()=>{router.refresh();onSaved?.()}}/> : <>{error && <p role="alert">{error}</p>}{saved ? <p role="status">Saved to the owner’s asset.</p> : action === 'history' ? <>{!items.length ? <p>No shared changes recorded yet.</p> : items.map((i, index) => <article className={styles.event} key={index}><strong>{i.actor_name} · {new Date(i.created_at).toLocaleString('en-ZA')}</strong><p>{i.action}</p>{i.action === 'Maintenance completed' && <p>{String(i.after_data.title || 'Maintenance')} · {String(i.after_data.date || '')}</p>}{['yearModel', 'usage', 'condition'].filter(k => i.before_data[k] !== i.after_data[k] && k in i.after_data).map(k => <p key={k}>{k === 'yearModel' ? 'Year' : k === 'usage' ? 'Usage' : 'Condition'}: {String(i.before_data[k] ?? 'Not saved')} → {String(i.after_data[k] ?? 'Not saved')}</p>)}</article>)}</> : !asset ? <p>Loading asset…</p> : <AssetDetailsFields className={styles.fields} year={year} usage={usage} condition={condition} onYear={setYear} onUsage={setUsage} onCondition={setCondition} canYear={permissions.yearModel} canUsage={permissions.usage && asset.usageMetric !== 'none'} canCondition={permissions.condition} usageLabel={`Usage (${asset.usageMetric})`}/>}
+ {detailsTab === 'paperwork' && action === 'details' ? <SharedAssetPaperwork initialSection={initialField === 'finance' || initialField === 'insurance' || initialField === 'license' ? initialField : undefined} endpoint={endpoint} onSaved={()=>{router.refresh();onSaved?.()}}/> : <>{error && <p role="alert">{error}</p>}{saved ? <p role="status">Saved to the owner’s asset.</p> : action === 'history' ? <>{!items.length ? <p>No shared changes recorded yet.</p> : items.map((i, index) => <article className={styles.event} key={index}><strong>{i.actor_name} · {new Date(i.created_at).toLocaleString('en-ZA')}</strong><p>{i.action}</p>{i.action === 'Maintenance completed' && <p>{String(i.after_data.title || 'Maintenance')} · {String(i.after_data.date || '')}</p>}{['yearModel', 'usage', 'condition'].filter(k => i.before_data[k] !== i.after_data[k] && k in i.after_data).map(k => <p key={k}>{k === 'yearModel' ? 'Year' : k === 'usage' ? 'Usage' : 'Condition'}: {String(i.before_data[k] ?? 'Not saved')} → {String(i.after_data[k] ?? 'Not saved')}</p>)}</article>)}</> : !asset ? <p>Loading asset…</p> : <div ref={focusRoot}><AssetDetailsFields className={styles.fields} year={year} usage={usage} condition={condition} onYear={setYear} onUsage={setUsage} onCondition={setCondition} canYear={permissions.yearModel} canUsage={permissions.usage && asset.usageMetric !== 'none'} canCondition={permissions.condition} usageLabel={`Usage (${asset.usageMetric})`}/></div>}
  </>}
  </LeadActionDialog>;
 }

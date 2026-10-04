@@ -12,7 +12,8 @@ import LeadManageButton from "../leads/LeadManageButton";
 import LeadAssetCard from "../leads/LeadAssetCard";
 import { useOutsideCardDismiss } from "../leads/useOutsideCardDismiss";
 import LeadAssetDetails from "../leads/LeadAssetDetails";
-import LeadAssetFacts from "../leads/LeadAssetFacts";
+import SharedAssetFacts, {factStatusMark as statusMark} from "../leads/SharedAssetFacts";
+import {useRouter} from "next/navigation";
 import LeadPhotoViewerModal from "../LeadPhotoViewerModal";
 import assetStyles from "../../app/asset-register/page.module.css";
 import leadStyles from "../../app/leads/page.module.css";
@@ -40,6 +41,7 @@ export default function SharedAssetCards({
   senderName?: string;
   allowBusinessDetails?: boolean;
 }) {
+  const router=useRouter();
   const [opened, setOpened] = useState<number | null>(null);
   const openedCardRef = useOutsideCardDismiss(opened !== null, () => setOpened(null));
   const [managed, setManaged] = useState<number | null>(null);
@@ -205,56 +207,22 @@ export default function SharedAssetCards({
                         details={<>
                           {enquiry && item.assetId && (enquiry.permissions.loggedProblems || enquiry.access === 'owner') && ['owner','active','read-only'].includes(enquiry.access) && <SharedProblems endpoint={`/api/asset-share-links/${enquiry.token}/assets/${item.assetId}/problems`} assetTitle={item.title} notesOnly canWrite={enquiry.access !== 'read-only'}/>}
 
-                          <LeadAssetFacts
-                            rows={[
-                              {
-                                label: "Serial",
-                                value: item.serialNumber || "Not saved",
-                              },
-                              {
-                                label: "Year",
-                                value: item.yearModel || "Not saved",
-                              },
-                              {
-                                label: "Usage",
-                                value: item.usage || "Not saved",
-                              },
-                              {
-                                label: "Condition",
-                                value: item.condition || "Not saved",
-                              },
-                            ]}
-                            statuses={
-                              <>
-                                {["Financed", "Insured", "Licensed"].map(
-                                  (label) => (
-                                    <div
-                                      key={label}
-                                      className={assetStyles.assetStatusRow}
-                                    >
-                                      <span>{label}</span>
-                                      <strong
-                                        className={`${assetStyles.assetStatusMark} ${assetStyles.statusMarkUnknown}`}
-                                        aria-label={`${label}: not shared`}
-                                        title="Not shared"
-                                      >
-                                        ?
-                                      </strong>
-                                    </div>
-                                  ),
-                                )}
-                              </>
-                            }
-                          />
+                          <SharedAssetFacts assetTitle={item.title} serial={item.serialNumber} year={item.yearModel} usage={item.usage} condition={item.condition} replacementPrice={item.replacementPriceExVat}
+                            statuses={{finance:statusMark(item.financeStatus),insurance:statusMark(item.insuranceStatus),license:statusMark(item.licenseStatus),location:statusMark(item.mapped===undefined?'unknown':item.mapped?'yes':'no')}}
+                            permissions={enquiry && item.assetId && ['active','owner'].includes(enquiry.access) ? {
+                              serial:enquiry.access==='owner'||enquiry.permissions.serialNumber,
+                              replacement:enquiry.access==='owner'||enquiry.permissions.replacementPrice,
+                              year:enquiry.access==='owner'||enquiry.permissions.updateDetails||enquiry.permissions.yearModel,
+                              usage:enquiry.access==='owner'||enquiry.permissions.updateDetails||enquiry.permissions.usage,
+                              condition:enquiry.access==='owner'||enquiry.permissions.updateDetails||enquiry.permissions.condition,
+                              finance:enquiry.access==='owner'||enquiry.permissions.updateDetails,
+                              insurance:enquiry.access==='owner'||enquiry.permissions.updateDetails,
+                              license:enquiry.access==='owner'||enquiry.permissions.updateDetails,
+                              location:enquiry.access==='owner'||enquiry.permissions.location,
+                            } : {}}
+                            endpoint={`/api/asset-share-links/${enquiry?.token}/assets/${item.assetId}`} sourceId={`${enquiry?.token}:${item.assetId}`} externalShare={enquiry && item.assetId ? {token:enquiry.token,assetId:item.assetId}:undefined} directUpdates={enquiry?.access==='owner'||enquiry?.permissions.directUpdates} onSaved={()=>router.refresh()}/>
                         </>}
                       >
-                        <div
-                          className={assetStyles.assetReplacementPriceBubble}
-                        >
-                          <span>Replacement Price</span>
-                          <strong>{money(item.replacementPriceExVat)}</strong>
-                          <small>Excl. VAT</small>
-                        </div>
                       </LeadAssetDetails>
                     </LeadAssetCard>
                   )}

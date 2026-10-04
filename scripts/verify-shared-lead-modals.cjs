@@ -228,6 +228,41 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Resolved');await click('Yes, resolved');
  await page.waitForFunction(()=>!document.querySelector('[data-open-problems]'));
  assert.notEqual(await page.$eval('[data-test-problem-lead]',el=>getComputedStyle(el).backgroundImage),problemTint,'Resolving the last problem clears the red tint');
+ // Fact shortcuts keep all nine facts visible while enforcing edit permissions.
+ await page.evaluate(()=>{
+  window.fetch=async(url)=>({ok:true,json:async()=>String(url).endsWith('/paperwork')?{kind:'tractor',draft:{financeStatus:'no',insuranceStatus:'no',licenseStatus:'no'}}:String(url).endsWith('/location')?{location:{latitude:null,longitude:null,locationText:''}}:{asset:{id:'asset',title:'Test tractor',kind:'tractor',yearModel:2022,usageReading:1300,usageMetric:'hours',condition:'good'},permissions:{updateDetails:true,yearModel:true,usage:true,condition:true}}});
+  window.renderFacts=(permissions)=>window.fixtureRoot.render(React.createElement(require('components/leads/SharedAssetFacts').default,{assetTitle:'Test tractor',serial:'ABC123',year:2022,usage:'1 300 hours',condition:'Good',replacementPrice:475000,statuses:{finance:'No',insurance:'Yes',license:'Yes',location:'No'},permissions,endpoint:'/api/asset-leads/test',sourceId:'test'}));
+  window.renderFacts({});
+ });
+ await page.waitForFunction(()=>document.body.textContent.includes('Mapped'));
+ assert.equal(await page.$$eval('button[aria-label^="Edit "]',els=>els.length),0,'No permission means plain facts, not edit buttons');
+ for(const label of ['Serial','Year','Usage','Condition','Replacement Price','Financed','Insured','Licensed','Mapped'])assert(await page.evaluate(label=>document.body.textContent.includes(label),label));
+ await page.evaluate(()=>window.renderFacts({serial:true,year:true,usage:true,condition:true,replacement:true,finance:true,insurance:true,license:true,location:true}));
+ await page.waitForFunction(()=>document.querySelectorAll('button[aria-label^="Edit "]').length===9);
+ await page.screenshot({path:'/tmp/shared-fact-shortcuts.png'});
+ for(const [label,field] of [['year','year'],['usage','usage'],['condition','condition']]){
+  await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
+  await page.waitForFunction(field=>document.activeElement?.closest(`[data-asset-detail-edit-target="${field}"]`),{},field);
+  await page.keyboard.press('Escape');
+ }
+ for(const [label,heading] of [['serial','Update serial number'],['replacement price','Update replacement price'],['mapped','Asset location']]){
+  await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
+  await page.waitForFunction(heading=>document.body.textContent.includes(heading),{},heading);
+  await page.keyboard.press('Escape');
+ }
+ for(const [label,section] of [['financed','finance'],['insured','insurance'],['licensed','license']]){
+  await page.click(`button[aria-label="Edit ${label} for Test tractor"]`);
+  await page.waitForFunction(()=>document.body.textContent.includes('Back to paperwork'));
+  assert(await page.evaluate(()=>Array.from(document.querySelectorAll('[role="tab"]')).some(tab=>tab.textContent==='Paperwork'&&tab.getAttribute('aria-selected')==='true')));
+  await page.keyboard.press('Escape');
+ }
+ for (const [access,permissions,expected] of [['read-only',{},0],['active',{usage:true},1],['owner',{},9]]) {
+  await page.evaluate(({access,permissions})=>window.fixtureRoot.render(React.createElement(require('components/asset-register/SharedAssetCards').default,{key:access,share:{createdAt:'2026-10-04',assets:[{assetId:'10000000-0000-4000-8000-000000000001',title:'2022 Test tractor',yearModel:2022,usage:'1 300 hours',condition:'Good',serialNumber:'ABC123',photoUrls:[],valueExVat:327133,replacementPriceExVat:475000,financeStatus:'no',insuranceStatus:'yes',licenseStatus:'unknown',mapped:false}]},enquiry:{token:'a'.repeat(43),access,permissions,reports:[]}})),{access,permissions});
+  await click('Open');
+  await page.waitForFunction(()=>document.body.textContent.includes('Mapped'));
+  assert.equal(await page.$$eval('button[aria-label^="Edit "]',els=>els.length),expected,`${access} card respects field permissions`);
+  if(access==='owner'){await page.addStyleTag({content:'*{animation:none!important;transition:none!important}button,input{font-family:inherit}'});await page.screenshot({path:'/tmp/shared-card-shortcuts.png'});}
+ }
  console.log('PASS: shared dialogs, correction endpoint/stable asset ID, Escape return, report link, documents, verification gate and hidden permissions');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

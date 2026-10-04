@@ -7,6 +7,10 @@ import { conditionLabel } from './tractor-logic';
 export function assetShareSnapshot(asset: AssetRegisterItem, includePhotos: boolean): ExternalAssetShareItem {
   return {
     title: asset.title,
+    financeStatus: String(asset.specsJson?.financeStatus ?? asset.specsJson?.finance_status ?? (typeof asset.isFinanced === 'boolean' ? asset.isFinanced ? 'yes' : 'no' : 'unknown')),
+    insuranceStatus: String(asset.specsJson?.insuranceStatus ?? asset.specsJson?.insurance_status ?? (typeof asset.isInsured === 'boolean' ? asset.isInsured ? 'yes' : 'no' : 'unknown')),
+    licenseStatus: asset.kind === 'property' ? 'not_applicable' : String(asset.specsJson?.licenseStatus ?? asset.specsJson?.license_status ?? (typeof asset.isLicensed === 'boolean' ? asset.isLicensed ? 'yes' : 'no' : 'unknown')),
+    mapped: Number.isFinite(asset.lastKnownLat) && Number.isFinite(asset.lastKnownLng),
     serialNumber: asset.serialNumber,
     yearModel: asset.yearModel,
     usage: formatResolvedAssetUsage(resolveAssetUsage(asset), 'Not saved'),
