@@ -5,11 +5,12 @@ import SharedAssetWorkDialog from './SharedAssetWorkDialog';
 import SharedAssetLocationDialog from './SharedAssetLocationDialog';
 import type {DealerAssetCorrectionRequest} from '../../lib/dealer-asset-corrections';
 import type {ExternalAssetShareItem} from '../../lib/asset-external-share';
+import {pricingVatAmount} from '../../lib/pricing-vat';
 import styles from '../../app/asset-register/page.module.css';
 export type FactField = 'serial'|'year'|'usage'|'condition'|'replacement'|'finance'|'insurance'|'license'|'location';
 export type FactPermissions = Partial<Record<FactField, boolean>>;
-export default function SharedAssetFacts({assetTitle,serial,year,usage,condition,replacementPrice,statuses,permissions={},endpoint,sourceId,externalShare,directUpdates=false,correction,onSaved}: {
- assetTitle:string;serial:string;year:ReactNode;usage:ReactNode;condition:ReactNode;replacementPrice:number|null;
+export default function SharedAssetFacts({assetTitle,serial,year,usage,condition,replacementPrice,vatIncluded=false,statuses,permissions={},endpoint,sourceId,externalShare,directUpdates=false,correction,onSaved}: {
+ assetTitle:string;serial:string;year:ReactNode;usage:ReactNode;condition:ReactNode;replacementPrice:number|null;vatIncluded?:boolean;
  statuses:{finance:ReactNode;insurance:ReactNode;license:ReactNode;location:ReactNode};permissions?:FactPermissions;
  endpoint:string;sourceId:string;externalShare?:{token:string;assetId:string};directUpdates?:boolean;correction?:DealerAssetCorrectionRequest|null;onSaved?:()=>void;
 }) {
@@ -30,7 +31,7 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
   const contents=<><span>{label}</span>{status?value:<strong>{value}</strong>}</>;
   return permissions[key] ? <button key={key} type="button" className={`${classes} ${status?styles.assetStatusRowButton:styles.assetDetailRowButton}`} aria-label={`Edit ${label.toLowerCase()} for ${assetTitle}`} onClick={()=>setField(key)}>{contents}</button> : <div key={key} className={classes}>{contents}</div>;
  }
- const price=<><span>Replacement Price</span><strong>{replacementPrice==null?'Not saved':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(replacementPrice)}</strong><small>Excl. VAT</small></>;
+ const price=<><span>Replacement Price</span><strong>{replacementPrice==null?'Not saved':new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR',maximumFractionDigits:0}).format(pricingVatAmount(replacementPrice,vatIncluded)).replace(/[,\s]/g,' ')}</strong><small>{vatIncluded?'Incl. VAT':'Excl. VAT'}</small></>;
  return <>
   {readError&&<p role="alert">{readError}</p>}
   <div className={styles.assetDetailsGrid}>

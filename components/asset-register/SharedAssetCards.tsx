@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import type { PublicAssetShare } from "../../lib/asset-share-links";
+import SharedCardValue from "../leads/SharedCardValue";
 import SharedProblems from "../leads/SharedProblems";
 import ExternalLeadActions, { type ExternalLeadActionData } from "./ExternalLeadActions";
 import LeadManageDialog from "../leads/LeadManageDialog";
@@ -42,6 +43,7 @@ export default function SharedAssetCards({
   allowBusinessDetails?: boolean;
 }) {
   const router=useRouter();
+  const [vatIncluded,setVatIncluded]=useState<Record<string,boolean>>({});
   const [opened, setOpened] = useState<number | null>(null);
   const openedCardRef = useOutsideCardDismiss(opened !== null, () => setOpened(null));
   const [managed, setManaged] = useState<number | null>(null);
@@ -164,12 +166,7 @@ export default function SharedAssetCards({
                       }
                       aside={
                         <>
-                          <div
-                            className={`${assetStyles.valueBlock} ${leadStyles.leadValueBlock}`}
-                          >
-                            <strong>{money(item.valueExVat)}</strong>
-                            <span>Excl. VAT</span>
-                          </div>
+                          <SharedCardValue value={item.valueExVat} included={!!vatIncluded[item.assetId||String(index)]} onToggle={()=>setVatIncluded(current=>({...current,[item.assetId||String(index)]:!current[item.assetId||String(index)]}))}/>
                           <div
                             className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}
                           >
@@ -207,7 +204,7 @@ export default function SharedAssetCards({
                         details={<>
                           {enquiry && item.assetId && (enquiry.permissions.loggedProblems || enquiry.access === 'owner') && ['owner','active','read-only'].includes(enquiry.access) && <SharedProblems endpoint={`/api/asset-share-links/${enquiry.token}/assets/${item.assetId}/problems`} assetTitle={item.title} notesOnly canWrite={enquiry.access !== 'read-only'}/>}
 
-                          <SharedAssetFacts assetTitle={item.title} serial={item.serialNumber} year={item.yearModel} usage={item.usage} condition={item.condition} replacementPrice={item.replacementPriceExVat}
+                          <SharedAssetFacts vatIncluded={!!vatIncluded[item.assetId||String(index)]} assetTitle={item.title} serial={item.serialNumber} year={item.yearModel} usage={item.usage} condition={item.condition} replacementPrice={item.replacementPriceExVat}
                             statuses={{finance:statusMark(item.financeStatus),insurance:statusMark(item.insuranceStatus),license:statusMark(item.licenseStatus),location:statusMark(item.mapped===undefined?'unknown':item.mapped?'yes':'no')}}
                             permissions={enquiry && item.assetId && ['active','owner'].includes(enquiry.access) ? {
                               serial:enquiry.access==='owner'||enquiry.permissions.serialNumber,

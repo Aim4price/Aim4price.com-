@@ -308,7 +308,10 @@ export default function Validation(){
    await page.waitForSelector(priceField);
    assert.equal(await page.$eval(priceField,input=>input.closest('[role="dialog"]').querySelector('h3').textContent),'Test bakkie','Price action opens the owner-style asset editor');
    await page.waitForFunction(()=>document.activeElement?.closest('[data-asset-detail-edit-target="replacement"]'));
-   await fill(priceField,'100000');await click('Send for approval');
+   await page.click('button[aria-label="Replacement price VAT"]');
+   await page.waitForSelector('[role="option"]');
+   await page.evaluate(()=>[...document.querySelectorAll('[role="option"]')].find(node=>node.textContent.includes('Incl. VAT')).click());
+   await fill(priceField,'115000');await click('Send for approval');
    await page.waitForFunction(()=>document.body.textContent.includes('Sent to the owner for approval.'));
    const proposed=requests.filter(r=>r.path.endsWith('/corrections')).at(-1);assert.equal(JSON.parse(proposed.data).value,100000);assert.equal(JSON.parse(proposed.data).assetId,'10000000-0000-4000-8000-000000000001');
    await click('Done');await page.waitForSelector('[role="dialog"][aria-label="Update asset"]');await click('Exit');

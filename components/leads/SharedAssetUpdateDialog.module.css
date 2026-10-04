@@ -16,3 +16,16 @@
 
 .shell .menu > button { gap:1rem; }
 .shell .menu small { font-size:.82rem; white-space:nowrap; }
+
+.shell .body.body { display:flex; flex-direction:column; gap:1rem !important; }
+.body > p { margin:0; }
+.valueActions { display:flex; align-items:center; gap:.75rem; }
+.valueActions > small { flex:1; color:var(--app-muted,#677c72); font-size:.8rem; line-height:1.5; }
+.valueActions > button { flex:0 0 auto; white-space:nowrap; }
+.shell .photos { margin-top:0; }
+.shell .photos img { width:8rem; height:8rem; }
+
+/* Keep the upload controls as compact as the owner's document rows. */
+.shell .uploadPanel.uploadPanel { min-height:6rem !important; padding:1rem !important; }
+.shell [class*="uploadRow"] { align-items:center; gap:1rem; }
+.shell [class*="uploadCount"] { display:grid; place-items:center; align-self:center; }
