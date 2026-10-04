@@ -123,7 +123,7 @@ export default function SharedAssetCards({
                           )}
                           {item.serialNumber && (
                             <span className={leadStyles.leadAssetIdentifier}>
-                              Serial {item.serialNumber}
+                              Serial / VIN {item.serialNumber}
                             </span>
                           )}
                         </div>

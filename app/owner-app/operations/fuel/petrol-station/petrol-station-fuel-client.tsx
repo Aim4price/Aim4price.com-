@@ -464,7 +464,7 @@ export default function PetrolStationFuelClient({
                 <h2><BalancedHeadingText text={assetName(asset)} /></h2>
                 <div className={styles.assetMetaGrid}>
                   <div>
-                    <span>Serial</span>
+                    <span>Serial / VIN</span>
                     <strong>{serialDisplayText(asset)}</strong>
                   </div>
                   <div>

@@ -155,7 +155,7 @@ test("map controls and selection preserve the user's context", () => {
 test("selected overlay keeps the original compact content without a duplicate number badge", () => {
   assert.match(assetMapClient, /styles\.selectedAssetIdentity/);
   assert.doesNotMatch(assetMapClient, /styles\.selectedAssetNumber/);
-  assert.match(assetMapClient, />Serial</);
+  assert.match(assetMapClient, />Serial \/ VIN</);
   assert.match(assetMapClient, />Last updated</);
   assert.match(assetMapClient, />Asset Register</);
   assert.match(assetMapClient, />Maps</);

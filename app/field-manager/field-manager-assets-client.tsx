@@ -253,7 +253,7 @@ export default function FieldManagerAssetsClient({ reportProblemMode = false }: 
 
         <div className={`${styles.assetMetaGrid} ${styles.assetMetaGridVertical}`}>
           <div>
-            <span>Serial</span>
+            <span>Serial / VIN</span>
             <strong>{serialDisplayText(asset)}</strong>
           </div>
           <div>

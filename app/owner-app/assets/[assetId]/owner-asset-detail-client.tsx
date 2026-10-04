@@ -1102,7 +1102,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
 
                 <Link className={styles.assetDetailsEditLink} href={`${manageBase}/details`} prefetch={false}>
                   <div className={styles.assetMirrorDetailGrid}>
-                    <div><span>Serial</span><strong>{draft.serialNumber || 'Not saved'}</strong></div>
+                    <div><span>Serial / VIN</span><strong>{draft.serialNumber || 'Not saved'}</strong></div>
                     <div><span>Year</span><strong>{draft.yearModel || 'Not saved'}</strong></div>
                     <div><span>Usage</span><strong>{usageText}</strong></div>
                     <div><span>Condition</span><strong>{conditionLabel(draft.condition)}</strong></div>
