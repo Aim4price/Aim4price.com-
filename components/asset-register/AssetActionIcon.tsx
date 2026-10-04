@@ -7,7 +7,7 @@ export default function AssetActionIcon({ action, className }: IconProps & { act
     case 'details': case 'yearModel': case 'usage': case 'condition': return <UpdateAssetIcon className={className} />;
     case 'addMaintenance': return <ManageIcon className={className} />;
     case 'addPhotos': return <PhotosIcon className={className} />;
-    case 'addCosts': case 'costOfOwnership': case 'replacementPrice': return <MoneyBagIcon className={className} />;
+    case 'suggestValue': case 'addCosts': case 'costOfOwnership': case 'replacementPrice': return <MoneyBagIcon className={className} />;
     case 'reports': case 'allReports': case 'maintenanceReports': return <DownloadIcon className={className} />;
     case 'maintenanceSchedules': return <MaintenanceTrackingIcon className={className} />;
   }

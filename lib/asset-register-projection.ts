@@ -1,3 +1,5 @@
+import {readApprovedValueBaseline} from './approved-value-baseline';
+import {revalueAssetRegisterItem} from './asset-register-revaluation';
 import { recoverLegacyValuationInput } from './asset-register-valuation-recovery';
 import { isLegacyHourProjectionAsset } from './asset-register-legacy-valuation';
 import { getDb } from './db';
@@ -486,7 +488,7 @@ function scaleSnapshotFromCurrentSavedValue(
   anchorFactor: number,
   forcedRetailExVat?: number,
 ): ProjectionSnapshot {
-  const safeFactor = Number.isFinite(anchorFactor) && anchorFactor > 0 ? anchorFactor : 1;
+  const safeFactor = Number.isFinite(anchorFactor) && anchorFactor >= 0 ? anchorFactor : 1;
   const retailExVat = Math.max(0, Math.round(forcedRetailExVat ?? snapshot.retailExVat * safeFactor));
   const loaderExVat = Math.max(0, roundMoney(snapshot.loaderExVat * safeFactor));
   const gpsExVat = Math.max(0, roundMoney(snapshot.gpsExVat * safeFactor));
@@ -758,13 +760,13 @@ function buildProjectionResult(input: {
   currentModelSnapshot: ProjectionSnapshot;
   projectedModelSnapshot: ProjectionSnapshot;
 }): AssetFutureProjection {
-  const anchorFactor = input.currentRegisterValueExVat > 0 && input.currentModelSnapshot.retailExVat > 0
+  const anchorFactor = input.currentRegisterValueExVat >= 0 && input.currentModelSnapshot.retailExVat > 0
     ? input.currentRegisterValueExVat / input.currentModelSnapshot.retailExVat
     : 1;
   const current = scaleSnapshotFromCurrentSavedValue(
     input.currentModelSnapshot,
     anchorFactor,
-    input.currentRegisterValueExVat || input.currentModelSnapshot.retailExVat,
+    input.currentRegisterValueExVat,
   );
   const projected = scaleSnapshotFromCurrentSavedValue(input.projectedModelSnapshot, anchorFactor);
 
@@ -1081,7 +1083,9 @@ export async function calculateFuturePriceForAsset(input: {
   const valuationOutput = valuationPayload.output;
 
   const selectedMethod = asset.selectedMethod;
-  const currentRegisterValueExVat = Math.max(0, Math.round(asNumber(asset.value) ?? asNumber(asset.selectedValueExVat) ?? 0));
+  const currentRegisterValueExVat = readApprovedValueBaseline(asset.specsJson)
+    ? (await revalueAssetRegisterItem({userId:input.userId,assetId:input.assetId,previewOnly:true})).newValueExVat
+    : Math.max(0, Math.round(asNumber(asset.value) ?? asNumber(asset.selectedValueExVat) ?? 0));
   const baseYear = new Date().getFullYear();
   const targetYear = Math.max(baseYear, Math.round(input.targetYear));
   const inflationRatePct = Number.isFinite(input.inflationRatePct) ? Number(input.inflationRatePct) : 0;

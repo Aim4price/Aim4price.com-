@@ -38,6 +38,7 @@ export const dealerMaintenancePermissionOptions: Array<{
 }> = [
   {key:'canAddPhotos', title:'Add photos', description:'Allow photos to be added to the live asset.'},
   {key:'canUpdateDetails', title:'Update details', description:'Year, usage, condition, finance, insurance and licensing.'},
+  {key:'canSuggestCurrentValue', title:'Suggest current value', description:'Send a value to the owner for approval.'},
   {key:'canAccessLocation', title:'Location access', description:'View and update the asset location.'},
   {key:'canAddMaintenance', title:'Add maintenance', description:'Record completed work.'},
   {key:'canAddCosts', title:'Add costs', description:'Add costs and supporting documents.'},

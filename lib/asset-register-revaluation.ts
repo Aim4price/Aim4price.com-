@@ -1,3 +1,4 @@
+import {applyApprovedValueBaseline} from './approved-value-baseline';
 import { recoverLegacyValuationInput } from './asset-register-valuation-recovery';
 import {
   getAssetRegisterItemById,
@@ -44,6 +45,7 @@ export type AssetRevaluationResult = {
   newValueExVat: number;
   warning?: string;
   previewOnly?: boolean;
+  ignoreApprovedBaseline?: boolean;
   marketAverageExVat?: number | null;
   marketLowExVat?: number | null;
   marketHighExVat?: number | null;
@@ -670,6 +672,7 @@ async function revalueTractorAsset(input: {
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
   previewOnly?: boolean;
+  ignoreApprovedBaseline?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
   advancedAssumptions?: AdvancedAssumptionsInput;
@@ -756,7 +759,8 @@ async function revalueTractorAsset(input: {
 
   const result = await runServerValuation(valuationInput);
   const selectedMethod = resolveTractorMethod(input.preferredMethod, result);
-  const selectedValueExVat = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
+  const rawValue = requireSelectedValue(getSelectedMethodValue(result, selectedMethod));
+  const selectedValueExVat = input.ignoreApprovedBaseline ? rawValue : applyApprovedValueBaseline(rawValue, input.asset.specsJson);
   const warning = yearModelUnknown
     ? 'Year unknown: Basic estimate uses usage and condition only.'
     : input.row.id === 0 ? 'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.' : undefined;
@@ -809,6 +813,7 @@ async function revalueTractorAsset(input: {
     yearModelUnknown,
     hours,
     condition,
+    expectedUpdatedAtIso: input.asset.updatedAtIso,
     saveReplacementPrice: input.saveReplacementPrice === true,
     allowUsageDecrease: input.allowUsageDecrease === true,
   });
@@ -833,6 +838,7 @@ async function revalueGenericAsset(input: {
   row: ValuationRunRow;
   preferredMethod: RevaluePreference;
   previewOnly?: boolean;
+  ignoreApprovedBaseline?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
   advancedAssumptions?: AdvancedAssumptionsInput;
@@ -953,7 +959,8 @@ async function revalueGenericAsset(input: {
     advancedAssumptions,
   });
   const selectedMethod = resolveGenericMethod(input.preferredMethod, result);
-  const selectedValueExVat = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
+  const rawValue = requireSelectedValue(getGenericSelectedMethodValue(result, selectedMethod));
+  const selectedValueExVat = input.ignoreApprovedBaseline ? rawValue : applyApprovedValueBaseline(rawValue, input.asset.specsJson);
   const warning = yearModelUnknown
     ? 'Year unknown: Basic estimate uses usage and condition only.'
     : input.row.id === 0 ? 'Basic estimate calculated from the saved asset details. The original valuation history was unavailable.' : undefined;
@@ -994,6 +1001,7 @@ async function revalueGenericAsset(input: {
     result,
     selectedMethod,
     selectedValueExVat,
+    expectedUpdatedAtIso: input.asset.updatedAtIso,
     saveReplacementPrice: input.saveReplacementPrice === true,
     allowUsageDecrease: input.allowUsageDecrease === true,
   });
@@ -1017,6 +1025,7 @@ export async function revalueAssetRegisterItem(input: {
   assetId: string;
   selectedMethod?: unknown;
   previewOnly?: boolean;
+  ignoreApprovedBaseline?: boolean;
   replacementPriceExVat?: number | null;
   saveReplacementPrice?: boolean;
   advancedAssumptions?: AdvancedAssumptionsInput;
@@ -1065,6 +1074,7 @@ export async function revalueAssetRegisterItem(input: {
       asset,
       row,
       preferredMethod,
+      ignoreApprovedBaseline: input.ignoreApprovedBaseline,
       previewOnly: input.previewOnly,
       replacementPriceExVat: input.replacementPriceExVat,
       saveReplacementPrice: input.saveReplacementPrice,
@@ -1079,7 +1089,8 @@ export async function revalueAssetRegisterItem(input: {
     asset,
     row,
     preferredMethod,
-    previewOnly: input.previewOnly,
+    ignoreApprovedBaseline: input.ignoreApprovedBaseline,
+      previewOnly: input.previewOnly,
     replacementPriceExVat: input.replacementPriceExVat,
     saveReplacementPrice: input.saveReplacementPrice,
     advancedAssumptions: input.advancedAssumptions,

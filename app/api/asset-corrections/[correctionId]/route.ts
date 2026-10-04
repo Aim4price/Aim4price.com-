@@ -66,6 +66,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
+    if (message.startsWith('Review this replacement price')) return NextResponse.json({ok:false,error:message},{status:409});
     if (message === 'CORRECTION_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'This asset update was not found.' }, { status: 404 });
     }
