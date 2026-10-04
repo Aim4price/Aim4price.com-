@@ -207,6 +207,27 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>window.problemWrites.length===2);
  assert(await page.evaluate(()=>window.problemWrites[1].confirmed===true));
  await page.screenshot({path:'/tmp/shared-problems-resolved.png'});
+ // A closed lead only shows the problem tint. Opening reveals the owner-style notice.
+ await page.evaluate(()=>{
+  window.problemItems=[{id:'10000000-0000-4000-8000-000000000004',note:'Rear light is not working.',summary:'Issue reported',operatorName:'George',createdAtIso:'2026-10-03T10:00:00Z',notedAtIso:null}];
+  const s=require('app/leads/page.module.css');
+  function ProblemLeadFixture(){
+   const [open,setOpen]=React.useState(false);
+   return React.createElement('main',{className:s.leadsPage},React.createElement('article',{className:s.leadThread,'data-test-problem-lead':true},React.createElement('h3',null,'2023 Toyota Hilux'),React.createElement('button',{onClick:()=>setOpen(!open)},open?'Close lead':'Open lead'),React.createElement(require('components/leads/SharedProblems').default,{endpoint:'/api/test/problems',assetTitle:'2023 Toyota Hilux',notesOnly:true,detailsVisible:open})));
+  }
+  window.fixtureRoot.render(React.createElement(ProblemLeadFixture));
+ });
+ await page.waitForSelector('[data-open-problems]');
+ assert.equal(await page.evaluate(()=>document.body.textContent.includes('Rear light is not working.')),false,'Closed lead hides problem details');
+ assert.equal(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Resolved')),false);
+ const problemTint=await page.$eval('[data-test-problem-lead]',el=>getComputedStyle(el).backgroundImage);
+ await click('Open lead');
+ await page.waitForFunction(()=>document.body.textContent.includes('Open issue reported'));
+ assert(await page.evaluate(()=>document.body.textContent.includes('By George')));
+ await page.screenshot({path:'/tmp/lead-problem-open.png'});
+ await click('Resolved');await click('Yes, resolved');
+ await page.waitForFunction(()=>!document.querySelector('[data-open-problems]'));
+ assert.notEqual(await page.$eval('[data-test-problem-lead]',el=>getComputedStyle(el).backgroundImage),problemTint,'Resolving the last problem clears the red tint');
  console.log('PASS: shared dialogs, correction endpoint/stable asset ID, Escape return, report link, documents, verification gate and hidden permissions');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
