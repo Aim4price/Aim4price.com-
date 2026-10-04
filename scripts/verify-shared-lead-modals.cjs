@@ -44,6 +44,7 @@ add('components/leads/LeadManageDialog');
 add('components/business-network/BusinessListingInvite');
 add('components/SharedEnquiryLanding');
 add('components/asset-register/ShareLinkSettings');
+add('app/account/page.module.css');
 add('components/asset-register/SharedAssetCards');
 add('app/business/join/business-signup');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
@@ -147,6 +148,20 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/asset-link-settings-edit.png'});
  await toggleValue();await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===false);
  await page.evaluate(()=>{window.fetch=window.previousFetch;});
+ // Owner map uses the same editor, with its real owner wrapper classes.
+ await page.evaluate(()=>{
+  const s=require('app/asset-register/page.module.css'),a=require('app/account/page.module.css');
+  window.renderOwnerLocation=(location)=>window.fixtureRoot.render(React.createElement('div',{className:s.modalOverlay},React.createElement('section',{role:'dialog',className:[s.modalCard,s.assetSettingsModal,s.managementAccountModal,s.assetSettingsSubModal,s.assetSettingsLocationModal,s.assetSettingsMapEntryModal,a.modalTheme].join(' ')},React.createElement('header',{className:s.modalHeader+' '+s.assetSettingsHeader},React.createElement('div',{className:s.modalHeaderText},React.createElement('h3',null,'Map asset'),React.createElement('p',null,'2022 Test tractor')),React.createElement('button',{className:a.modalCloseButton+' '+a.passwordModalCloseButton,'aria-label':'Close map asset'},'×')),React.createElement('div',{className:s.modalScrollBody+' '+s.assetSettingsBody},React.createElement(require('components/AssetLocationEditor').default,{key:JSON.stringify(location),location,viewMapHref:'/asset-map?assetId=test',onSave:async value=>{window.ownerLocationSaved=value;}})))));
+  window.renderOwnerLocation({latitude:null,longitude:null,locationText:''});
+ });
+ await page.waitForFunction(()=>document.querySelector('[role="dialog"]')?.textContent.includes('No location saved yet.'));
+ const ownerMap=await page.$eval('[role="dialog"]',n=>{const buttons=[...n.querySelectorAll('button')].filter(b=>!b.getAttribute('aria-label')),r=n.getBoundingClientRect();return {width:r.width,scroll:n.scrollHeight>n.clientHeight+1,tops:buttons.map(b=>b.getBoundingClientRect().top)};});
+ assert.equal(Math.round(ownerMap.width),1050);assert.equal(ownerMap.scroll,false);assert(ownerMap.tops.every(top=>Math.abs(top-ownerMap.tops[0])<1),'Owner location choices share one row');
+ await page.screenshot({path:'/tmp/owner-location-choices.png'});
+ await click('Enter coordinates');await page.waitForSelector('input[placeholder="-33.924869"]');
+ await page.type('input[placeholder="-33.924869"]','-34');await page.type('input[placeholder="18.424055"]','22');await click('Save location');await page.waitForFunction(()=>window.ownerLocationSaved?.latitude===-34);
+ await page.waitForSelector('a[href="/asset-map?assetId=test"]');
+ assert.equal(await page.$eval('a[href="/asset-map?assetId=test"]',n=>n.textContent),'View on asset map');
  await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('components/asset-register/SharedAssetCards').default,{share:{createdAt:'2026-10-04',assets:[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',yearModel:2022,usage:'1 300 hours',condition:'Good',serialNumber:'SERIAL-1',photoUrls:[],valueExVat:200000,replacementPriceExVat:400000}]}})));
  await page.waitForSelector('[aria-label="Open Test tractor"]');await page.click('[aria-label="Open Test tractor"]');await page.click('[aria-label="Manage Test tractor"]');
  assert.equal(await page.$eval('[aria-label="Close lead management"]',n=>n.closest('[role="dialog"]').querySelector('header p').textContent),'Year Model: 2022 • Usage: 1 300 hours • Condition: Good');

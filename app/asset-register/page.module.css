@@ -41375,3 +41375,49 @@ button.documentOpenLink {
   overflow-wrap: normal;
   text-wrap: nowrap;
 }
+
+/* Owner map entry uses the same wide, three-choice presentation as shared location. */
+.managementAccountModal.assetSettingsMapEntryModal {
+  width: min(var(--website-dialog-reference-width, 100%), 1050px) !important;
+  max-height: calc(var(--website-visible-height, 100dvh) - 2rem) !important;
+}
+.managementAccountModal.assetSettingsMapEntryModal .assetSettingsBody {
+  padding: 1.25rem 1.5rem 1.5rem !important;
+}
+.managementAccountModal.assetSettingsMapEntryModal .assetSettingsLocationSection {
+  padding: 1.1rem !important;
+  gap: 1rem !important;
+  border: 1px solid var(--app-line, rgba(23,116,90,.28)) !important;
+  border-radius: 1.15rem !important;
+  background: linear-gradient(120deg, var(--app-surface,#fff), var(--app-surface-soft,#f1f8f5)) !important;
+}
+.managementAccountModal.assetSettingsMapEntryModal .assetSettingsLocationCurrent {
+  background: var(--app-surface,#fff) !important;
+  border-color: var(--app-info-line,#c6dce6) !important;
+}
+.managementAccountModal.assetSettingsMapEntryModal .assetSettingsLocationChoiceGrid {
+  grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+  gap: .9rem !important;
+}
+.managementAccountModal.assetSettingsMapEntryModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton {
+  grid-template-columns: 1fr !important;
+  justify-items: center !important;
+  min-height: 7.2rem !important;
+  padding: 1.1rem .75rem !important;
+  gap: .72rem !important;
+  text-align: center !important;
+  border-color: var(--app-info-line,#ccdeea) !important;
+  background: linear-gradient(120deg,var(--app-surface-soft,#f2f8f5),var(--app-surface,#fff)) !important;
+}
+.managementAccountModal.assetSettingsMapEntryModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton > span {
+  justify-items: center !important;
+}
+.managementAccountModal.assetSettingsMapEntryModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton strong {
+  text-align: center !important;
+  font-size: 1.02rem !important;
+}
+@media(max-width:640px) {
+  :global(html:not(:has([data-website-canvas]))) .managementAccountModal.assetSettingsMapEntryModal .assetSettingsLocationChoiceGrid {
+    grid-template-columns: 1fr !important;
+  }
+}
