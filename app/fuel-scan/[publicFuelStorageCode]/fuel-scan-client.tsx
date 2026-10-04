@@ -1321,7 +1321,7 @@ export default function FuelScanClient({
 
                   <div className={styles.fieldManagerAssetMetaGrid}>
                     <div>
-                      <span>Serial</span>
+                      <span>Serial / VIN</span>
                       <strong>{assetSerialText(asset)}</strong>
                     </div>
                     <div>

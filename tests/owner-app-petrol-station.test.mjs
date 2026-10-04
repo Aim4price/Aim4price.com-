@@ -44,7 +44,7 @@ test('Petrol station asset picker shows the full Owner asset summary', async () 
   const client = await source('app/owner-app/operations/fuel/petrol-station/petrol-station-fuel-client.tsx');
 
   assert.match(client, /<BalancedHeadingText text=\{assetName\(asset\)\}/);
-  assert.match(client, /<span>Serial<\/span>/);
+  assert.match(client, /<span>Serial \/ VIN<\/span>/);
   assert.match(client, /<span>Year<\/span>/);
   assert.match(client, /<span>Usage<\/span>/);
   assert.match(client, /lifeWorkedPercent/);

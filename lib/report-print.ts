@@ -2612,7 +2612,7 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
               <div class="fullRegisterAssetDetails">
                 <div><span>Usage</span><strong>${escapeHtml(usage)}</strong></div>
                 <div><span>Condition</span><strong>${escapeHtml(condition)}</strong></div>
-                <div><span>Serial</span><strong>${escapeHtml(serial)}</strong></div>
+                <div><span>Serial / VIN</span><strong>${escapeHtml(serial)}</strong></div>
               </div>
 
               <div class="fullRegisterAssetStatus">

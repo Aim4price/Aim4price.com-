@@ -1095,7 +1095,7 @@ function leadAssetIdentifier(lead: AssetLead): string {
     || firstTextFromRecord(specs, ['serialNumber', 'serial_number']);
 
   if (registrationNumber) return `Registration ${registrationNumber.toUpperCase()}`;
-  if (serialNumber) return `Serial ${serialNumber}`;
+  if (serialNumber) return `Serial / VIN ${serialNumber}`;
 
   const publicAssetCode = asText(snapshot.publicAssetCode);
   return publicAssetCode ? `Asset ${publicAssetCode}` : '';
@@ -3251,7 +3251,7 @@ export default function LeadsClient({
             <div className={assetStyles.assetDetailsGrid}>
               <div className={assetStyles.assetPrimaryDetails}>
                 <div className={assetStyles.assetDetailRow}>
-                  <span>Serial</span>
+                  <span>Serial / VIN</span>
                   <strong>{serialNumber || '—'}</strong>
                 </div>
                 <div className={assetStyles.assetDetailRow}>

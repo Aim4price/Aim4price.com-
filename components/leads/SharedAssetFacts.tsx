@@ -36,7 +36,7 @@ export default function SharedAssetFacts({assetTitle,serial,year,usage,condition
  return <>
   {readError&&<p role="alert">{readError}</p>}
   <div className={styles.assetDetailsGrid}>
-   <div className={styles.assetPrimaryDetails}>{row('serial','Serial',serial||'Not saved')}{row('year','Year',year||'Not saved')}{row('usage','Usage',usage||'Not saved')}{row('condition','Condition',condition||'Not saved')}</div>
+   <div className={styles.assetPrimaryDetails}>{row('serial','Serial / VIN',serial||'Not saved')}{row('year','Year',year||'Not saved')}{row('usage','Usage',usage||'Not saved')}{row('condition','Condition',condition||'Not saved')}</div>
    <div className={styles.assetStatusDetails}>{row('finance','Financed',statuses.finance,true)}{row('insurance','Insured',statuses.insurance,true)}{row('license','Licensed',statuses.license,true)}{row('location','Mapped',statuses.location,true)}</div>
   </div>
   {permissions.replacement?<button type="button" className={`${styles.assetReplacementPriceBubble} ${styles.assetReplacementPriceButton}`} aria-label={`Edit replacement price for ${assetTitle}`} onClick={()=>setField('replacement')}>{price}</button>:<div className={styles.assetReplacementPriceBubble}>{price}</div>}

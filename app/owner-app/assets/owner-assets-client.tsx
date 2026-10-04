@@ -219,7 +219,7 @@ export default function OwnerAssetsClient({
 
         <div className={`${styles.managerAssetMetaGrid} ${styles.ownerAssetMetaStack}`}>
           <div>
-            <span>Serial</span>
+            <span>Serial / VIN</span>
             <strong>{serialDisplayText(asset)}</strong>
           </div>
           <div>

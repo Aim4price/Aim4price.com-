@@ -1415,7 +1415,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         <div className={`${assetStyles.assetDetailsPanel} ${styles.trackerDetailsPanel}`}>
                           <div className={`${assetStyles.assetDetailsGrid} ${styles.trackerDetailsGrid}`}>
                             <div className={assetStyles.assetPrimaryDetails}>
-                              <div className={assetStyles.assetDetailRow}><span>Serial</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
+                              <div className={assetStyles.assetDetailRow}><span>Serial / VIN</span><strong>{asset.serialNumber || 'Not saved'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Registration</span><strong>{asset.registrationNumber || 'Not saved'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Year</span><strong>{asset.yearModel || 'Not saved'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>Current usage</span><strong>{formatUsage(asset.currentUsage, asset.usageMetric)}</strong></div>

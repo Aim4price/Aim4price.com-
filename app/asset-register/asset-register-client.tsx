@@ -17205,7 +17205,7 @@ export default function AssetRegisterClient({
                                     <div className={styles.assetDetailsGrid}>
                                       <div className={styles.assetPrimaryDetails}>
                                         {asset.kind !== 'property' ? (
-                                          renderAssetDetailRow('serial', 'Serial', asset.serialNumber, asset.serialNumber || 'Not provided')
+                                          renderAssetDetailRow('serial', 'Serial / VIN', asset.serialNumber, asset.serialNumber || 'Not provided')
                                         ) : null}
                                         {renderAssetDetailRow(
                                           'year',

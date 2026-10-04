@@ -1002,7 +1002,7 @@ export default function AdminDiscoveryClient({
                     </dd>
                   </div>
                   <div><dt>Register</dt><dd>{selectedAsset.registerLabel}</dd></div>
-                  <div><dt>Serial</dt><dd>{selectedAsset.serialNumber || "Not saved"}</dd></div>
+                  <div><dt>Serial / VIN</dt><dd>{selectedAsset.serialNumber || "Not saved"}</dd></div>
                   <div><dt>Registration</dt><dd>{selectedAsset.registrationNumber || "Not saved"}</dd></div>
                   <div><dt>Public code</dt><dd>{selectedAsset.publicAssetCode || "Not saved"}</dd></div>
                   <div><dt>Condition</dt><dd>{titleCase(selectedAsset.condition || "Not saved")}</dd></div>

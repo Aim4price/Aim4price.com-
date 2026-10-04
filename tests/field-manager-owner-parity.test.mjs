@@ -61,7 +61,7 @@ test('Petrol station asset information is stacked as Serial, Year, and Usage', (
   const client = source('app/owner-app/operations/fuel/petrol-station/petrol-station-fuel-client.tsx');
   const styles = source('app/owner-app/operations/fuel/petrol-station/page.module.css');
 
-  assert.match(client, /<span>Serial<\/span>[\s\S]*<span>Year<\/span>[\s\S]*<span>Usage<\/span>/);
+  assert.match(client, /<span>Serial \/ VIN<\/span>[\s\S]*<span>Year<\/span>[\s\S]*<span>Usage<\/span>/);
   assert.match(styles, /\.assetMetaGrid\s*\{\s*display:\s*grid;\s*gap:/s);
   assert.doesNotMatch(styles, /\.assetMetaGrid\s*\{[^}]*grid-template-columns:/s);
 });

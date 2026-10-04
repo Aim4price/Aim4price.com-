@@ -2043,7 +2043,7 @@ export default function AssetMapClient() {
 
                       <div className={styles.selectedDetailGrid}>
                         <span>
-                          <small>Serial</small>
+                          <small>Serial / VIN</small>
                           <strong>{selectedAsset.serialNumber || "—"}</strong>
                         </span>
                         <span>

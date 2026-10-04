@@ -376,7 +376,7 @@ function AssetCardPreview() {
 
         <div className={styles.assetDetailsPanel}>
           <div className={styles.assetIdentityColumn}>
-            <AssetDetail label="Serial" value="SKB 5" />
+            <AssetDetail label="Serial / VIN" value="SKB 5" />
             <AssetDetail label="Year" value="2023" />
             <AssetDetail label="Usage" value="113 677 km" />
             <AssetDetail label="Condition" value="Good" />

@@ -689,7 +689,7 @@ export default function AdminAssetMapClient({
                 </header>
                 <div className={styles.assetDetailGrid}>
                   <span><small>Value</small><strong>{formatAdminAssetValue(selectedAsset)}</strong></span>
-                  <span><small>Serial</small><strong>{selectedAsset.serialNumber || "Not saved"}</strong></span>
+                  <span><small>Serial / VIN</small><strong>{selectedAsset.serialNumber || "Not saved"}</strong></span>
                   <span><small>Registration</small><strong>{selectedAsset.registrationNumber || "Not saved"}</strong></span>
                   <span><small>Usage</small><strong>{formatUsage(selectedAsset)}</strong></span>
                   <span><small>Last scanned</small><strong>{formatDate(selectedAsset.lastScannedAtIso)}</strong></span>
