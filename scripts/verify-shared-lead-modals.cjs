@@ -45,6 +45,7 @@ add('components/business-network/BusinessListingInvite');
 add('components/SharedEnquiryLanding');
 add('components/asset-register/ShareLinkSettings');
 add('app/account/page.module.css');
+add('components/asset-register/SharedAssetCards');
 add('app/business/join/business-signup');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
@@ -72,7 +73,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   await page.mouse.click(3,3);assert.equal(await page.evaluate(()=>window.outsideCloseCount),3,'Visible outside area closes once');
  }
  const props={token:'a'.repeat(43),assetId:'10000000-0000-4000-8000-000000000001',assetIndex:0,assetTitle:'John Deere 6155M',serialNumber:'OLD-123',replacementPrice:900000,permissions:{serialNumber:true,replacementPrice:true,documents:true,reports:true},access:'active',reports:[{id:'report-1',label:'Asset valuation'}]};
- await page.addScriptTag({content:'window.renderFixture=(props)=>{window.fixtureRoot??=ReactDOM.createRoot(document.getElementById("app"));window.fixtureRoot.render(React.createElement(require("components/leads/LeadManageDialog").default,{title:props.assetTitle,description:"Manage enquiry",onClose:()=>{}},React.createElement(require("components/asset-register/ExternalLeadActions").default,{...props,key:props.access+JSON.stringify(props.permissions)})));};window.renderFixture('+JSON.stringify(props)+');'});
+ await page.addScriptTag({content:'window.renderFixture=(props)=>{window.fixtureRoot??=ReactDOM.createRoot(document.getElementById("app"));window.fixtureRoot.render(React.createElement(require("components/leads/LeadManageDialog").default,{title:props.assetTitle,description:"Year Model: 2022 • Usage: 1 300 hours • Condition: Good",onClose:()=>{}},React.createElement(require("components/asset-register/ExternalLeadActions").default,{...props,key:props.access+JSON.stringify(props.permissions)})));};window.renderFixture('+JSON.stringify(props)+');'});
  async function click(text){await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(node=>node.textContent.includes(text)),{},text);await page.evaluate(text=>{const button=[...document.querySelectorAll('button')].find(node=>node.textContent.includes(text));if(!button)throw Error('Missing button '+text);button.click();},text);}
  await page.waitForFunction(()=>document.body.textContent.includes('Update serial number'));
  await click('Update serial number');await page.waitForSelector('input');
@@ -88,6 +89,11 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(p=>window.renderFixture({...p,access:'read-only'}),props);await page.waitForFunction(()=>!document.body.textContent.includes('update waiting for owner approval'));await click('Update serial number');await page.waitForFunction(()=>document.body.textContent.includes('Verify business'));assert.equal(await page.$$eval('input',nodes=>nodes.length),0);await page.keyboard.press('Escape');
  await page.evaluate(p=>window.renderFixture({...p,permissions:{reports:true,documents:false,serialNumber:false,replacementPrice:false}}),props);await page.waitForFunction(()=>!document.body.textContent.includes('Update serial number'));assert(!await page.evaluate(()=>document.body.textContent.includes('Invoices & quotes')));
  // New links reuse the live Leads tools and save directly.
+ await page.evaluate(p=>window.renderFixture({...p,permissions:{serialNumber:false,replacementPrice:false,updateDetails:true,addPhotos:true,location:true,addMaintenance:true,maintenanceSchedules:true,loggedProblems:true,addCosts:true,suggestValue:true,reports:true}}),props);
+ await page.waitForSelector('[data-manage-action="details"]');
+ assert.deepEqual(await page.$$eval('[data-manage-actions] > button',nodes=>nodes.map(n=>n.dataset.manageAction)),['history','details','reports','addPhotos','location','addMaintenance','maintenanceSchedules','loggedProblems','addCosts','suggestValue']);
+ assert.notEqual(await page.$eval('[data-manage-action="details"]',n=>getComputedStyle(n).backgroundImage),await page.$eval('[data-manage-action="addCosts"]',n=>getComputedStyle(n).backgroundImage),'Action groups have distinct subtle colours');
+ await page.screenshot({path:'/tmp/shared-manage-colours.png'});
  const live={accessId:props.assetId,assetId:props.assetId,assetTitle:props.assetTitle,assetKind:'tractor',currentUsage:100,usageMetric:'hours',maintenanceRecords:[],openMaintenanceRecords:[],completedMaintenanceRecords:[],scheduleProposals:[],loggedProblems:[],permissions:{canCreateMaintenanceSchedules:true,canViewMaintenanceReports:true}};
  await page.evaluate(({p,live})=>{window.fetch=async(url,options)=>{window.requests.push({url,body:options?.body});return{ok:true,json:async()=>options?.method==='POST'?{ok:true,correction:{id:'saved',status:'accepted',serialNumberChanged:true,proposedSerialNumber:'LIVE-SERIAL'}}:{ok:true,asset:live,assets:[live]}}};window.renderFixture({...p,permissions:{...p.permissions,directUpdates:true,documents:false,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,loggedProblems:true}});},{p:props,live});
  await page.waitForFunction(()=>document.body.textContent.includes('Maintenance Reports'));
@@ -156,6 +162,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.type('input[placeholder="-33.924869"]','-34');await page.type('input[placeholder="18.424055"]','22');await click('Save location');await page.waitForFunction(()=>window.ownerLocationSaved?.latitude===-34);
  await page.waitForSelector('a[href="/asset-map?assetId=test"]');
  assert.equal(await page.$eval('a[href="/asset-map?assetId=test"]',n=>n.textContent),'View on asset map');
+ await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('components/asset-register/SharedAssetCards').default,{share:{createdAt:'2026-10-04',assets:[{assetId:'10000000-0000-4000-8000-000000000001',title:'Test tractor',yearModel:2022,usage:'1 300 hours',condition:'Good',serialNumber:'SERIAL-1',photoUrls:[],valueExVat:200000,replacementPriceExVat:400000}]}})));
+ await page.waitForSelector('[aria-label="Open Test tractor"]');await page.click('[aria-label="Open Test tractor"]');await page.click('[aria-label="Manage Test tractor"]');
+ assert.equal(await page.$eval('[aria-label="Close lead management"]',n=>n.closest('[role="dialog"]').querySelector('header p').textContent),'Year Model: 2022 • Usage: 1 300 hours • Condition: Good');
  await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('components/SharedEnquiryLanding').default,{returnTo:'/asset-share/'+ 'a'.repeat(43)+'?open=1',access:'verify-email',prompt:true,summary:{senderName:'Example farm',assetCount:1,assetTitles:['Tractor'],umbrellaName:''}})));
  await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Verify your email'));
  const gate=await page.$eval('dialog[open]',node=>({scroll:node.scrollHeight,height:node.clientHeight,width:node.getBoundingClientRect().width,heading:node.querySelector('h2').getBoundingClientRect().height}));
