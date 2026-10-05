@@ -30,3 +30,5 @@
 .dialog .downloadButton:focus-visible{outline:3px solid #e6a2a6;outline-offset:3px}
 .dialog .downloadButton:disabled{opacity:.65;cursor:wait}
 .downloadButton svg{width:19px;height:19px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.restoreValues{display:flex;align-items:center;gap:24px;margin:20px 0}.restoreValues>div{flex:1;display:grid;gap:8px;padding:18px 22px;border:1px solid var(--app-line,#d5dfda);border-radius:12px;background:var(--app-surface-soft,#f1f6f4)}.restoreValues span{font-size:14px;font-weight:700;color:var(--app-muted,#64746a)}.restoreValues strong{font-size:24px;font-weight:800}.confirm dl[hidden]{display:none}

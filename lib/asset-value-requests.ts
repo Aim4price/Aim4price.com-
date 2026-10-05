@@ -54,7 +54,7 @@ export async function suggestAssetValue(target:ContributionTarget,body:Record<st
    await setAssetHistoryActor(client,scope.user.id,actorName,scope.token?'Shared link':'Leads');
    await saveApprovedAssetValue(client,asset,amount,baseline);
    await client.query("UPDATE asset_value_requests SET status='approved',decided_by=$2,decision_reason=$3,decided_at=now() WHERE id=$1::uuid",[id,scope.user.id,'Permitted manual-value update']);
-   await recordSharedAssetActivity(client,{id,ownerId:scope.ownerId,assetId:scope.assetId,actorId:scope.user.id,actorName,action:'Value manual update',before:{amount:asset.value,replacementPrice:asset.replacementPriceExVat},after:{amount,reason,baseline}});
+   await recordSharedAssetActivity(client,{id,ownerId:scope.ownerId,assetId:scope.assetId,actorId:scope.user.id,actorName,action:'Value manual update',before:{amount:asset.value,replacementPrice:asset.replacementPriceExVat,baseline:readApprovedValueBaseline(asset.specsJson)},after:{amount,reason,baseline}});
   }
   await recordSharingUsage({accountId:scope.user.id,actorId:scope.user.id,assetId:scope.assetId,token:scope.token,metric:'contribution',eventKey:`value-suggestion:${id}`},client);
   await client.query('COMMIT');return {id,ownerId:scope.ownerId,created:true,direct};

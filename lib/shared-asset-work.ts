@@ -53,6 +53,7 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
         if(action==='history'&&request.method!=='GET'){
             if(scope.user.id!==scope.ownerId)throw new ExternalLeadAccessError('Only the owner can restore history.',403);
             const body=await businessBody(request);if(typeof body.eventId!=='string'||! /^[0-9a-f-]{36}$/i.test(body.eventId))throw new Error('Choose a history entry.');
+            if(['previewValueRestore','restoreValue'].includes(String(body.action))){const {restoreAssetValueHistory}=await import('./asset-value-history-restore');try{return businessJson(await restoreAssetValueHistory(scope.ownerId,scope.assetId,body.eventId,{id:scope.user.id,name:scope.user.name||scope.user.email},body,scope.lock));}catch(e){if(e instanceof Error&&/^(Confirm |This history|Asset unavailable|Newer changes)/.test(e.message))throw new ExternalLeadAccessError(e.message,409);throw e;}}
             return businessJson(await restoreAssetDetails(scope.ownerId,scope.assetId,body.eventId,{id:scope.user.id,name:scope.user.name||scope.user.email},body.confirmed===true,scope.lock));
         }
         if (request.method === 'GET') {

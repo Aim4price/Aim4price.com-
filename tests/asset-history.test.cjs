@@ -30,3 +30,35 @@ test('legacy usage changes can be retracted by their owner, with newer readings 
  assert.equal((await pg.query("SELECT * FROM shared_asset_activity WHERE action='Asset change retracted'")).rows.length,1);
  }finally{await pg.close();}
 });
+
+test('value history restores the prior depreciation basis, requires preview confirmation and protects newer changes',async()=>{
+ const {pg,db,schema,history}=await setup();try{
+ const asset=randomUUID(),event=randomUUID();const previous={version:1,amount:500,modelValue:1000,date:'2025-01-01',eventId:randomUUID()},latest={...previous,amount:300,eventId:event};
+ await pg.query("INSERT INTO asset_register_items VALUES($1,'owner','Tractor',300,2023,'good','keep this note',$2,now())",[asset,JSON.stringify({approved_value_baseline:latest,unrelated:'keep'})]);
+ const activity=load('lib/shared-asset-activity.ts',{'./db':db});
+ await activity.recordSharedAssetActivity({query:(s,p)=>pg.query(s,p)},{id:event,ownerId:'owner',assetId:asset,actorId:'owner',actorName:'Owner',action:'Value overridden',before:{amount:500,replacementPrice:1000,baseline:previous},after:{amount:300,replacementPrice:null,baseline:latest}});
+ const get=async(owner,id,client)=>{const row=(await (client||db.getDb()).query('SELECT * FROM asset_register_items WHERE user_id=$1 AND id=$2',[owner,id])).rows[0];return row?{id,userId:owner,value:Number(row.value),replacementPriceExVat:1000,specsJson:row.specs_json,updatedAtIso:new Date(row.updated_at).toISOString(),selectedMethod:'aim4price'}:null;};
+ const restore=load('lib/asset-value-history-restore.ts',{'./db':db,'./asset-history-schema':schema,'./shared-asset-activity':activity,'./approved-value-baseline':load('lib/approved-value-baseline.ts',{}),'./asset-register-revaluation':{revalueAssetRegisterItem:async()=>({newValueExVat:800})},'./asset-register-db':{getAssetRegisterItemById:get,saveApprovedAssetValue:async(client,a,value,baseline)=>{await client.query("UPDATE asset_register_items SET value=$2,specs_json=jsonb_set(specs_json,'{approved_value_baseline}',$3::jsonb),updated_at=clock_timestamp() WHERE id=$1",[a.id,value,JSON.stringify(baseline)]);}}});
+ const entry=(await history.listUnifiedAssetHistory('owner',asset)).items.find(i=>i.id===event);assert.equal(entry.valueRestorable,true);assert.equal((await history.listUnifiedAssetHistory('owner',asset,{owner:false,actorId:'owner'})).items.some(i=>i.valueRestorable),false);
+ const actor={id:'owner',name:'Owner'},preview=await restore.restoreAssetValueHistory('owner',asset,event,actor,{action:'previewValueRestore'});assert.equal(preview.previousValue,400,'restores the old curve at today’s model value, not the old amount or a new anchor');
+ await assert.rejects(restore.restoreAssetValueHistory('other',asset,event,actor,{action:'previewValueRestore'}),/history entry/);
+ await assert.rejects(restore.restoreAssetValueHistory('owner',asset,event,actor,{confirmed:true,revision:preview.revision,expectedValue:500}),/Newer/);
+ await assert.rejects(restore.restoreAssetValueHistory('owner',asset,event,actor,{confirmed:false}),/Confirm/);
+ await assert.rejects(restore.restoreAssetValueHistory('owner',asset,event,actor,{confirmed:true,revision:preview.revision,expectedValue:400},async()=>{throw Error('Access revoked');}),/Access revoked/);
+ await restore.restoreAssetValueHistory('owner',asset,event,actor,{confirmed:true,revision:preview.revision,expectedValue:400});
+ const saved=await get('owner',asset);assert.equal(saved.value,400);assert.deepEqual(saved.specsJson.approved_value_baseline,previous);assert.equal(saved.specsJson.unrelated,'keep');assert.equal((await pg.query('SELECT note FROM asset_register_items WHERE id=$1',[asset])).rows[0].note,'keep this note');
+ assert.equal((await pg.query("SELECT count(*)::int AS n FROM shared_asset_activity WHERE action='Value restored'")).rows[0].n,1);await assert.rejects(restore.restoreAssetValueHistory('owner',asset,event,actor,{action:'previewValueRestore'}),/Newer/);
+ }finally{await pg.close();}
+});
+
+test('manual restoration uses the exact saved amount and a missing prior baseline returns to the original automatic curve',async()=>{
+ for(const manual of [true,false]){
+ const eventId=randomUUID(),baseline={version:1,amount:300,modelValue:manual?null:1000,date:'2026-10-05',eventId},previous={amount:327133,replacementPrice:500000,baseline:null};let saved;
+ const asset={id:'asset',userId:'owner',value:300000,replacementPriceExVat:500000,selectedMethod:manual?'manual':'automatic',updatedAtIso:'v1',specsJson:{approved_value_baseline:baseline}};
+ const query=async sql=>({rows:sql.includes('SELECT s.*')?[{id:eventId,before_data:previous,after_data:{amount:300000,baseline,replacementPrice:null},created_at:'2026-10-05'}]:[]});
+ const db={getDb:()=>({query,connect:async()=>({query,release(){}})})};
+ const restore=load('lib/asset-value-history-restore.ts',{'./db':db,'./asset-history-schema':{ensureAssetHistorySchema:async()=>{},setAssetHistoryActor:async()=>{}},'./shared-asset-activity':{ensureSharedAssetActivity:async()=>{},recordSharedAssetActivity:async()=>{}},'./approved-value-baseline':load('lib/approved-value-baseline.ts',{}),'./asset-register-revaluation':{revalueAssetRegisterItem:async()=>{assert.equal(manual,false);return {newValueExVat:320000};}},'./asset-register-db':{getAssetRegisterItemById:async()=>asset,saveApprovedAssetValue:async(c,a,value,b)=>{saved={value,baseline:b};}}});
+ const preview=await restore.restoreAssetValueHistory('owner','asset',eventId,{id:'owner',name:'Owner'},{action:'previewValueRestore'});
+ assert.equal(preview.previousValue,manual?327133:320000);await restore.restoreAssetValueHistory('owner','asset',eventId,{id:'owner',name:'Owner'},{confirmed:true,revision:'v1',expectedValue:preview.previousValue});assert.deepEqual(saved,{value:preview.previousValue,baseline:null});
+ }
+});

@@ -42,3 +42,11 @@ Use a test owner, a permitted business/dealer and a shared link. Use test assets
 Migrations 131 and 132 add the audit triggers and replacement-notification delivery records. Equivalent runtime initialization supports the repository's existing lazy-schema pattern. Apply migrations before enabling production traffic when using managed migrations.
 
 Automated coverage includes PGlite transactions, rollback, append-only records, owner isolation, recipient field redaction, pagination ties, canonical restoration, manual/approved value rules, replacement confirmation, email claims, and browser interactions for manual edits, approval, previews and restoration. The business-network workflow includes the new history suite.
+
+### Restore a previous current value
+
+Eligible owner history entries offer **Restore previous value** directly beside the change. The confirmation previews today's current value and the amount that will be restored, excluding VAT. Cancel does not write anything; Confirm restore records a new history entry.
+
+Manual values restore their recorded amount. Automatically valued assets restore the prior approved baseline (including its original date and model value), or the original Aim4price curve if there was no baseline. Today's calculation uses that prior basis; it does not restart depreciation from the historical amount.
+
+Only the owner can restore, including through a live shared link. Newer value decisions and changes between preview and confirmation are rejected. Entries lacking a recorded previous valuation basis, and replacement-price changes, retain the existing review flow instead of guessing a restoration. Existing approval decisions are not reopened.

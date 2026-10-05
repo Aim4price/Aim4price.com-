@@ -18,6 +18,6 @@ export async function GET(request:NextRequest,{params}:{params:{assetId:string}}
  requireBusinessOrigin(request);const body=await businessBody(request);
  if(typeof body.eventId!=='string'||! /^[0-9a-f-]{36}$/i.test(body.eventId))return businessJson({error:'Choose a history entry.'},400);
  const actor={id:isAdminSupportSession(session)?session.adminSupport.adminUserId:isOwnerAppSession(session)?session.ownerApp.ownerAppUserId:isDealerAppSession(session)?session.dealerApp.staffId:session.user.id,name:session.user.name||session.user.email};
- try{return businessJson(await restoreAssetDetails(session.user.id,params.assetId,body.eventId,actor,body.confirmed===true));}catch(e){const message=e instanceof Error?e.message:'';if(/^(Confirm |This history|Asset unavailable|Newer changes|Open the original)/.test(message))return businessJson({error:message},409);throw e;}
+ try{if(['previewValueRestore','restoreValue'].includes(String(body.action))){const {restoreAssetValueHistory}=await import('../../../../../lib/asset-value-history-restore');return businessJson(await restoreAssetValueHistory(session.user.id,params.assetId,body.eventId,actor,body));}return businessJson(await restoreAssetDetails(session.user.id,params.assetId,body.eventId,actor,body.confirmed===true));}catch(e){const message=e instanceof Error?e.message:'';if(/^(Confirm |This history|Asset unavailable|Newer changes|Open the original)/.test(message))return businessJson({error:message},409);throw e;}
  }catch(e){return businessError(e);}}
 export const POST=GET;
