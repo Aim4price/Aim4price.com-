@@ -55,6 +55,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu','--no-zygote'],headless:true,ignoreDefaultArgs:['--hide-scrollbars']});
  try{
  const page=await browser.newPage();await page.setViewport({width:1440,height:1000});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setRequestInterception(true);page.on('request',request=>request.respond({status:200,contentType:'text/html',body:'<html></html>'}));await page.goto('https://aim4price.example/asset-register');
  await page.setContent('<style>*{box-sizing:border-box}body{margin:0;background:#dce7e0;font-family:Arial;--modal-backdrop-color:rgba(12,24,35,.42)}'+sheets.join('\n')+'</style><div id="app"></div>');
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+'window.root=ReactDOM.createRoot(document.getElementById("app"));window.renderValue=(suggest=false)=>window.root.render(React.createElement(require("components/asset-register/AssetValueDialog").default,{key:String(suggest)+String(window.renderCount=(window.renderCount||0)+1),suggest,endpoint:"/api/fixture/value",assetTitle:"2023 Tractor",onClose:()=>{}}));'});
  await page.evaluate(()=>{
@@ -99,7 +100,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/history-reset-preview.png'});await click('Confirm return to Aim4price');await page.waitForFunction(()=>window.writes.at(-1).action==='resetAim4price');assert.equal(await page.evaluate(()=>window.writes.at(-1).expectedValue),700000);
  await page.evaluate(()=>{
  window.historyItem={id:'event',category:'details',action:'Asset updated',actorName:'Example Workshop',source:'Leads',createdAt:'2026-10-04T10:00:00Z',before:{title:'Old tractor',year_model:2022},after:{title:'2023 Tractor',year_model:2023},recordId:'asset',recordTable:'asset_register_items',restorable:true,href:'/asset-register?assetId=asset'};
- window.fetch=async(url,options)=>{if(options?.method==='POST'){window.writes.push(JSON.parse(options.body));return {ok:true,json:async()=>({ok:true})};}return {ok:true,json:async()=>({items:[window.historyItem,...Array.from({length:12},(_,i)=>({...window.historyItem,id:`older-${i}`,action:`Maintenance updated ${i+1}`,actorName:'Owner',category:'maintenance',restorable:false}))].filter(item=>!new URL(url,'https://example.test').searchParams.has('category')||item.category===new URL(url,'https://example.test').searchParams.get('category')),nextBefore:null})};};
+ window.fetch=async(url,options)=>{if(String(url).includes('format=pdf')){window.historyPdfUrl=String(url);return new Response('%PDF-test',{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="history.pdf"'}});}if(options?.method==='POST'){window.writes.push(JSON.parse(options.body));return {ok:true,json:async()=>({ok:true})};}return {ok:true,json:async()=>({items:[window.historyItem,...Array.from({length:12},(_,i)=>({...window.historyItem,id:`older-${i}`,action:`Maintenance updated ${i+1}`,actorName:'Owner',category:'maintenance',restorable:false}))].filter(item=>!new URL(url,'https://example.test').searchParams.has('category')||item.category===new URL(url,'https://example.test').searchParams.get('category')),nextBefore:null})};};
  window.root.render(React.createElement(require('components/asset-register/AssetHistoryDialog').default,{endpoint:'/api/asset-register/asset',assetTitle:'2023 Tractor',assetSubtitle:'Year Model: 2023 • Usage: 1 300 hours • Condition: Good',onClose:()=>{}}));
  });
  await page.waitForSelector('details');
@@ -115,6 +116,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$eval('details:nth-of-type(2)',node=>node.open),true);
  await fill('input[type="search"]','Example Workshop');
  assert.equal(await page.$$eval('details',nodes=>nodes.length),1);
+ await click('Download PDF report');await page.waitForFunction(()=>window.historyPdfUrl);assert.ok((await page.evaluate(()=>window.historyPdfUrl)).includes('search=example+workshop'));
  await page.click('details summary');assert.equal(await page.$$eval('details[open]',nodes=>nodes.length),1);
  await page.click('details summary');assert.equal(await page.$$eval('details[open]',nodes=>nodes.length),0);
  await fill('input[type="search"]','no such event');assert.equal(await page.$$eval('details',nodes=>nodes.length),0);
