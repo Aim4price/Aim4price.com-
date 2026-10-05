@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import AssetActionIcon from '../components/asset-register/AssetActionIcon';
 import AssetReportTypeIcon from '../components/asset-register/AssetReportTypeIcon';
 import { useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import styles from './page.module.css';
@@ -23,6 +24,7 @@ type Question = {
 };
 
 type ManageGlyph =
+  | 'history'
   | 'edit'
   | 'reports'
   | 'cost'
@@ -457,6 +459,7 @@ function WorthPreview() {
 // Use the exact SVG geometry and stroke styles from the Asset Register Manage modal.
 function ManageActionGlyph({ type }: { type: ManageGlyph | 'budget' | 'pricing' }) {
   const glyphs: Record<ManageGlyph | 'pricing', ReactNode> = {
+    history: <AssetActionIcon action="history" />,
     edit: (<svg
       viewBox="0 0 24 24"
       fill="none"
@@ -564,6 +567,7 @@ function ManagePreview() {
     return () => observer.disconnect();
   }, []);
   const actions: readonly { type: ManageGlyph | 'budget' | 'pricing'; title: string; description: string }[] = [
+    { type: 'history', title: 'History', description: 'View asset changes and corrections.' },
     { type: 'edit', title: 'Update asset', description: 'Edit details, documents and photos.' },
     { type: 'reports', title: 'Reports', description: 'Choose and download asset reports.' },
     { type: 'cost', title: 'Add cost', description: 'Record an expense for this asset.' },
@@ -590,12 +594,13 @@ function ManagePreview() {
           </header>
 
           <div className={styles.manageGrid}>
-            {actions.map((action, index) => (
+            {actions.map((action) => (
               <div
                 key={action.title}
+                data-manage-action={action.type}
                 className={[
                   styles.manageTile,
-                  index === 0 ? styles.manageTilePrimary : '',
+                  action.type === 'edit' ? styles.manageTilePrimary : '',
                   action.type === 'remove' ? styles.manageTileDanger : '',
                 ].filter(Boolean).join(' ')}
               >
