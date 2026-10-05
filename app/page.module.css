@@ -1630,16 +1630,36 @@
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border: 1px solid #d1dfee;
+  --action-tint: #f1f6fc;
+  --action-border: #d1dfed;
+  --action-ink: #254f77;
+  border: 1px solid var(--action-border);
   border-radius: 20px;
-  background: linear-gradient(180deg, #fff, #f5f8fa);
+  background: linear-gradient(120deg, #fff, color-mix(in srgb, #fff 15%, var(--action-tint)));
   box-shadow: 0 12px 26px rgba(24, 70, 55, 0.04);
 }
 
-.manageTilePrimary {
-  border-color: #bee0ce;
-  background: radial-gradient(circle at top left, #1653401a, transparent 42%),
-    linear-gradient(180deg, #fff, #edf8f2);
+/* Match the Asset Register's ManageActionGrid action palette. */
+.manageTilePrimary,
+.manageTile[data-manage-action='map'] {
+  --action-tint: #edf8f2;
+  --action-border: #c4dfd0;
+  --action-ink: #24614a;
+}
+
+.manageTile[data-manage-action='cost'],
+.manageTile[data-manage-action='budget'],
+.manageTile[data-manage-action='pricing'] {
+  --action-tint: #f5f0fc;
+  --action-border: #dcd0ed;
+  --action-ink: #695089;
+}
+
+.manageTile[data-manage-action='fuel'],
+.manageTile[data-manage-action='maintenance'] {
+  --action-tint: #fff7e9;
+  --action-border: #ebd9b8;
+  --action-ink: #826124;
 }
 
 .manageTileDanger {
@@ -1651,7 +1671,7 @@
   display: grid;
   width: 52px;
   place-items: center;
-  color: #234877;
+  color: var(--action-ink);
 }
 
 .manageTileIcon svg {
@@ -1659,7 +1679,6 @@
   height: 22px;
 }
 
-.manageTilePrimary .manageTileIcon { color: #195440; }
 .manageTileDanger .manageTileIcon,
 .manageTileDanger strong { color: #ac3035; }
 
