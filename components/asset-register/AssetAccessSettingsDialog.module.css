@@ -44,8 +44,15 @@
   :global(:where(html:not(:has([data-website-canvas])))) .dialog [data-permission-note] { grid-column: auto; }
 }
 
-.dialog.guideDialog { width: min(var(--website-dialog-reference-width, 100%), 540px) !important; padding: 1.5rem !important; }
-.guideBody { display: grid; gap: .85rem; }
-.guideBody p { margin: 0; color: var(--app-muted, #607286); font-size: .95rem; line-height: 1.5; }
-.guideBody p:first-child { color: var(--app-text, #15392f); font-weight: 750; }
-.guideBody button { width: 100%; margin-top: .35rem; font-family: var(--font-body, "Inter"), sans-serif; font-weight: 800; }
+/* The short guide belongs only to asset-link settings. */
+.dialog.guideDialog { width: min(var(--website-dialog-reference-width, 100%), 640px) !important; padding: 1.5rem 1.75rem !important; }
+.dialog.guideDialog .body > .guideBody { padding: 1.25rem 0 0 !important; }
+.guideBody { display: grid; justify-items: center; gap: 1rem; text-align: center; }
+.guideIcon { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; border-radius: 1rem; background: var(--app-surface-soft, #edf6f1); border: 1px solid var(--app-line, #d4e4db); color: var(--app-accent, #197454); }
+.guideIcon svg { width: 1.8rem; height: 1.8rem; }
+.guideBody p { margin: 0; color: var(--app-muted, #607286); font-size: .95rem; line-height: 1.6; }
+.guideBody .guideHeading { color: var(--app-text, #15392f); font-size: 1.05rem; font-weight: 800; line-height: 1.4; text-wrap: balance; }
+.guideInstructions { width: 100%; padding: .85rem 1rem; border-radius: .85rem; background: var(--app-surface-soft, #f4f8f6); }
+.guideBody button { box-shadow: none; width: 100%; margin-top: .25rem; font-family: var(--font-body, "Inter"), sans-serif; font-weight: 800; }
+
+.guideBody button:focus-visible { outline: 3px solid var(--app-accent, #43836d); outline-offset: 3px; }
