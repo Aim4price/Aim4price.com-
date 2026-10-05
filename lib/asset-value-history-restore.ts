@@ -19,8 +19,9 @@ export async function restoreAssetValueHistory(ownerId:string,assetId:string,eve
  if(previous&&!baseline)throw Error('This history entry has no valid previous valuation.');
  const same=(a:unknown,b:unknown)=>JSON.stringify(a)===JSON.stringify(b);
  if(!same(readApprovedValueBaseline(initial.specsJson),event.after_data.baseline)||Number(initial.replacementPriceExVat)!==Number(event.before_data.replacementPrice))throw Error('Newer changes exist. Review the latest value change before restoring this one.');
- // A reset has no baseline identifier: use later decisions to reject stale/double restores too.
- if((await db.query(`SELECT 1 FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid AND action LIKE 'Value %' AND after_data ? 'baseline' AND (created_at,id)>($3::timestamptz,$4::uuid) LIMIT 1`,[ownerId,assetId,event.created_at,event.id])).rows.length)throw Error('Newer changes exist. Restore the latest value change first.');
+ // Compare timestamps inside PostgreSQL: JavaScript Date drops microseconds and can mistake the selected event for a newer decision.
+ // A reset has no baseline identifier: later decisions also protect stale/double restores.
+ if((await db.query(`SELECT 1 FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid AND action LIKE 'Value %' AND after_data ? 'baseline' AND (created_at,id)>(SELECT created_at,id FROM shared_asset_activity WHERE id=$3::uuid AND owner_id=$1 AND asset_id=$2::uuid) LIMIT 1`,[ownerId,assetId,event.id])).rows.length)throw Error('Newer changes exist. Restore the latest value change first.');
  const manual=initial.selectedMethod==='manual';
  const amount=manual?event.before_data.amount:applyApprovedValueBaseline((await revalueAssetRegisterItem({userId:ownerId,assetId,previewOnly:true,ignoreApprovedBaseline:true})).newValueExVat,{approved_value_baseline:baseline});
  if(!Number.isFinite(amount)||amount<0)throw Error('This history entry cannot be restored with the current valuation.');
