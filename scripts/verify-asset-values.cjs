@@ -65,7 +65,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  async function click(text){await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent===t),{},text);await page.$$eval('button',(nodes,t)=>nodes.find(b=>b.textContent===t).click(),text);}
  async function fill(selector,value){await page.waitForSelector(selector);await page.$eval(selector,(n,v)=>{Object.getOwnPropertyDescriptor(n.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(n,v);n.dispatchEvent(new Event('input',{bubbles:true}));},value);}
  await click('Review suggestion');await page.waitForSelector('textarea');assert(await page.evaluate(()=>document.body.textContent.includes('Example Dealer')));await fill('textarea','Accept inspected value');await page.screenshot({path:'/tmp/value-approval.png'});await click('Approve value');await page.waitForFunction(()=>document.body.textContent.includes('Saved.'));assert.equal(await page.evaluate(()=>window.writes[0].proposalId),'proposal');
- await click('Override current value');await fill('input[type=number]','750000');await fill('textarea','Owner inspection');await click('Confirm override');await page.waitForFunction(()=>window.data.asset.value===750000);
+ await click('Change current value');await fill('input[type=number]','750000');await fill('textarea','Owner inspection');await click('Confirm value change');await page.waitForFunction(()=>window.data.asset.value===750000);
  await click('Change replacement price');await fill('input[type=number]','1200000');await fill('textarea','Updated replacement quotation');await click('Preview change');await page.waitForFunction(()=>document.body.textContent.includes('960'));await page.screenshot({path:'/tmp/value-replacement.png'});await click('Keep current value');await page.waitForFunction(()=>window.writes.some(w=>w.mode==='keep'));assert.equal(await page.evaluate(()=>window.writes.find(w=>w.mode==='keep').replacementPrice),1200000);
  await page.evaluate(()=>window.renderValue(true));await fill('input[type=number]','850000');await fill('textarea','Professional inspection');await page.screenshot({path:'/tmp/value-suggestion-polished.png'});await click('Send suggestion');await page.waitForFunction(()=>document.body.textContent.includes('Suggestion sent.'));assert.equal(await page.evaluate(()=>window.writes.at(-1).action),'suggest');assert.equal(await page.evaluate(()=>window.data.asset.value),750000,'Suggestion does not mutate the live asset');
  await page.evaluate(()=>{
@@ -84,8 +84,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>document.querySelector('input[type=number]')?.value==='1000000');
  assert.equal(await page.$$eval('button',nodes=>nodes.filter(n=>n.textContent==='Send suggestion').length),0,'Owner opens confirmed replacement flow');
  await page.evaluate(()=>window.renderSharedValue(true,'current'));
- await page.waitForFunction(()=>document.body.textContent.includes('Override current value'));
- assert(await page.evaluate(()=>[...document.querySelectorAll('button')].some(n=>n.textContent==='Confirm override')));
+ await page.waitForFunction(()=>document.body.textContent.includes('Change current value'));
+ assert(await page.evaluate(()=>[...document.querySelectorAll('button')].some(n=>n.textContent==='Confirm value change')));
  await page.evaluate(()=>{window.data.asset.manual=true;window.renderValue(true);});
  await page.waitForFunction(()=>document.body.textContent.includes('Update manual value'));
  await fill('input[type=number]','620000');await fill('textarea','Manual assessment');await click('Confirm update');

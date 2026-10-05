@@ -20117,7 +20117,7 @@ export default function AssetRegisterClient({
 
             <div className={`${styles.modalScrollBody} ${styles.pricingModalBody}`}>
               <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid}`} data-manage-actions>
-                <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Override &amp; review values</strong><small>Current value, replacement price and history.</small></span></button>
+                <button data-manage-action="suggestValue" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setValueReviewAsset(activeAsset)}><RecalculateIcon className={styles.buttonIcon}/><span><strong>Manage values</strong><small>Current value, replacement price and history.</small></span></button>
                 <button data-manage-action="suggestValue"
                   type="button"
                   className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
