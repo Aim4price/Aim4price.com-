@@ -8,7 +8,7 @@ test('fuel schema setup shares one cold-start promise across notification loader
   const fuelLedger = await read('lib/fuel-ledger.ts');
 
   assert.match(fuelLedger, /let fuelLedgerTablesPromise: Promise<void> \| null = null/);
-  assert.match(fuelLedger, /fuelLedgerTablesPromise = ensureFuelLedgerTablesOnce\(\)\.catch/);
+  assert.match(fuelLedger, /fuelLedgerTablesPromise = ensureFuelLedgerTablesOnce\(\)\.then\(installAssetHistoryTriggers\)\.catch/);
   assert.match(fuelLedger, /fuelLedgerTablesPromise = null/);
   assert.doesNotMatch(fuelLedger, /let fuelLedgerTablesEnsured = false/);
 });
