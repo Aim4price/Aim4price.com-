@@ -1,5 +1,7 @@
 'use client';
 import {useEffect,useState,useCallback,useId} from 'react';
+import {label,display,matchesHistorySearch} from '../../lib/asset-history-presentation';
+import {downloadCanonicalReportPdf} from '../../lib/report-open';
 import {useRouter} from 'next/navigation';
 import LeadActionDialog from '../leads/LeadActionDialog';
 import {restorableChanges} from '../../lib/asset-history-fields';
@@ -7,9 +9,6 @@ import type {HistoryItem} from '../../lib/asset-history';
 import styles from './AssetHistoryDialog.module.css';
 import buttons from '../../app/asset-register/page.module.css';
 const categories=['all','details','values','costs','fuel','budgets','maintenance','documents'];
-const friendly:Record<string,string>={value:'Current value · excl. VAT',selected_value_ex_vat:'Current value · excl. VAT',replacement_price_ex_vat:'Replacement price · excl. VAT',issue_noted_at:'Problem resolved',hours:'Usage',life_worked_percent:'Life worked · %',year_model:'Year model'};
-const label=(s:string)=>friendly[s]||s.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()).replace('Ex Vat','· excl. VAT');
-const display=(value:unknown,key?:string)=>value==null?'Not saved':typeof value==='boolean'?(value?'Yes':'No'):typeof value==='object'?JSON.stringify(value):typeof value==='number'&&key!=='year_model'?value.toLocaleString('en-ZA').replace(/,/g,' '):String(value);
 export default function AssetHistoryDialog({endpoint,assetTitle,assetSubtitle,onClose,onSaved}:{endpoint:string;assetTitle:string;assetSubtitle?:string;onClose:()=>void;onSaved?:()=>void}){
  const historyId=useId();
  const router=useRouter(),[items,setItems]=useState<HistoryItem[]>([]),[category,setCategory]=useState('all'),[search,setSearch]=useState(''),[next,setNext]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[confirm,setConfirm]=useState<HistoryItem|null>(null),[notice,setNotice]=useState('');
@@ -17,8 +16,11 @@ export default function AssetHistoryDialog({endpoint,assetTitle,assetSubtitle,on
  useEffect(()=>{const controller=new AbortController();void load(undefined,controller.signal);return()=>controller.abort();},[load]);
  async function restore(){if(!confirm)return;setBusy(true);setError('');try{const r=await fetch(`${endpoint}/history`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({eventId:confirm.id,confirmed:true})}),d=await r.json();if(!r.ok)throw Error(d.error||'Could not restore this change.');setConfirm(null);setNotice('Change retracted. The original entry and this correction stay in history.');await load();router.refresh();window.dispatchEvent(new CustomEvent('aim4price:asset-register-updated'));onSaved?.();}catch(e){setError(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false);}}
  const query=search.trim().toLocaleLowerCase();
- const visibleItems=items.filter(item=>[item.action,item.actorName,item.source,label(item.category),new Date(item.createdAt).toLocaleString('en-ZA'),...Object.entries({...item.before,...item.after}).map(([key])=>`${label(key)} ${display(item.before[key],key)} ${display(item.after[key],key)}`)].join(' ').toLocaleLowerCase().includes(query));
- return <LeadActionDialog title="Asset history" assetTitle={assetTitle} assetSubtitle={assetSubtitle} onClose={onClose} busy={busy} className={styles.dialog}>
+ const visibleItems=items.filter(item=>matchesHistorySearch(item,query));
+ const [downloading,setDownloading]=useState(false);
+ async function downloadReport(){setDownloading(true);setError('');try{const params=new URLSearchParams({format:'pdf'});if(category!=='all')params.set('category',category);if(query)params.set('search',query);await downloadCanonicalReportPdf(`${endpoint}/history?${params}`);}catch(e){setError(e instanceof Error?e.message:'The report could not be downloaded.');}finally{setDownloading(false);}}
+
+ return <LeadActionDialog title="Asset history" assetTitle={assetTitle} assetSubtitle={assetSubtitle} onClose={onClose} busy={busy} className={styles.dialog} footer={!confirm?<button type="button" className={buttons.secondaryButton} disabled={busy||downloading} onClick={()=>void downloadReport()}>{downloading?'Preparing PDF…':'Download PDF report'}</button>:undefined}>
  {!confirm&&<div className={styles.toolbar}><div className={styles.search}><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></svg><input aria-label="Search history" type="search" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Search history…" /></div><div className={styles.filters} role="group" aria-label="History category">{categories.map(value=><button key={value} type="button" aria-pressed={category===value} onClick={()=>{setConfirm(null);setCategory(value);}}>{value==='all'?'All':label(value)}</button>)}</div></div>}
  {error&&<p role="alert">{error}</p>}{notice&&<p role="status">{notice}</p>}
  {confirm?<section className={styles.confirm}><strong className={styles.confirmTitle}>Retract this change?</strong><p>Restore the previous details below? Newer edits are protected.</p><dl className={styles.changes}>{restorableChanges(confirm.before,confirm.after).map(key=><div key={key}><dt>{label(key)}</dt><dd><span className={styles.before}>{display(confirm.after[key],key)}</span><span className={styles.arrow} aria-label="restore to">→</span><strong>{display(confirm.before[key],key)}</strong></dd></div>)}</dl><p className={styles.hint}>Both the original change and this correction stay in history.</p><div className={styles.actions}><button className={buttons.secondaryButton} disabled={busy} onClick={()=>setConfirm(null)}>Keep change</button><button className={buttons.primaryButton} disabled={busy} onClick={()=>void restore()}>Confirm retraction</button></div></section>:null}

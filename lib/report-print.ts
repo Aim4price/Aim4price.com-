@@ -39,6 +39,7 @@ export type ValuationReportPayload = {
 
 
 export type AssetSheetPayload = {
+  activity?: {scope: string; events: {title: string; metadata: string; changes: {label: string; before: string; after: string}[]}[]};
   logoUrl: string;
   generatedAt: string;
   assetBadge: string;
@@ -2348,7 +2349,7 @@ export function buildAssetSheetReportHtml(payload: AssetSheetPayload): string {
         <header class="assetReportHeader">
           <div class="assetReportLogoWrap">${payload.logoUrl ? `<img class="assetReportLogo" src="${escapeHtml(payload.logoUrl)}" alt="Logo" />` : ''}</div>
           <div class="assetReportDocumentTitle">
-            <strong>Asset Valuation Report</strong>
+            <strong>${payload.activity ? 'Asset History Report' : 'Asset Valuation Report'}</strong>
             <span>Aim4price asset register</span>
           </div>
           <div class="assetReportHeaderMeta">
@@ -2368,13 +2369,16 @@ export function buildAssetSheetReportHtml(payload: AssetSheetPayload): string {
           <aside class="assetReportValuationCard">
             <h2>${escapeHtml(payload.valueLabel || 'Estimated Value')}</h2>
             <strong class="assetReportValue">${escapeHtml(payload.value)}</strong>
-            <span class="assetReportVat">VAT excluded</span>
+            <span class="assetReportVat">${payload.activity ? escapeHtml(payload.activity.scope) : 'VAT excluded'}</span>
             <div class="assetReportValueMeta">
               <div><span>Updated</span><strong>${escapeHtml(updatedLabel)}</strong></div>
             </div>
           </aside>
         </section>
 
+        ${payload.activity ? `<div class="assetHistoryReport">
+          ${payload.activity.events.length ? payload.activity.events.map(event => `<section class="assetReportSection" style="margin-top:12px;break-inside:avoid"><h2>${escapeHtml(event.title)}</h2><p class="assetReportMeta">${escapeHtml(event.metadata)}</p><table class="assetReportTable" style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:9.6px;text-align:left"><thead><tr><th style="width:26%;padding:7px">Detail</th><th style="padding:7px">Previous</th><th style="padding:7px">Updated</th></tr></thead><tbody>${event.changes.map(change=>`<tr><td style="padding:7px;border-bottom:1px solid var(--line)">${escapeHtml(change.label)}</td><td style="padding:7px;border-bottom:1px solid var(--line);white-space:pre-wrap">${escapeHtml(change.before)}</td><td style="padding:7px;border-bottom:1px solid var(--line);white-space:pre-wrap">${escapeHtml(change.after)}</td></tr>`).join('')}</tbody></table></section>`).join('') : '<section class="assetReportSection"><p>No matching activity recorded.</p></section>'}
+        </div>` : `
         <div class="assetReportContentGrid">
           <div class="assetReportMainStack">
             <section class="assetReportSection assetReportTechnical">
@@ -2399,6 +2403,7 @@ export function buildAssetSheetReportHtml(payload: AssetSheetPayload): string {
             ${photoSection}
           </aside>
         </div>
+`}
 
         <footer class="assetReportFooter">
           <div>

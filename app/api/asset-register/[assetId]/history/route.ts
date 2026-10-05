@@ -11,7 +11,9 @@ export async function GET(request:NextRequest,{params}:{params:{assetId:string}}
  const session=await getServerSession({allowOwnerApp:true,allowDealerApp:true});
  if(!session||!await getAssetRegisterAccountAccess(session))return businessJson({error:'Sign in as the asset owner.'},403);
  if(isOwnerAppSession(session)){const access=await getOwnerAppAccess();if(!access||!ownerAppCanAccessAsset(access,params.assetId)||!ownerAppCan(access,'manage_assets'))return businessJson({error:'Asset unavailable.'},403);}
- if(!await getAssetRegisterItemById(session.user.id,params.assetId))return businessJson({error:'Asset unavailable.'},404);
+ const asset=await getAssetRegisterItemById(session.user.id,params.assetId);
+ if(!asset)return businessJson({error:'Asset unavailable.'},404);
+ if(request.method==='GET'&&request.nextUrl.searchParams.get('format')==='pdf'){const {assetHistoryPdfResponse}=await import('../../../../../lib/asset-history-report');return await assetHistoryPdfResponse(request,session.user.id,asset,{owner:true,category:request.nextUrl.searchParams.get('category')||undefined});}
  if(request.method==='GET')return businessJson(await listUnifiedAssetHistory(session.user.id,params.assetId,{owner:true,before:request.nextUrl.searchParams.get('before')||undefined,category:request.nextUrl.searchParams.get('category')||undefined}));
  requireBusinessOrigin(request);const body=await businessBody(request);
  if(typeof body.eventId!=='string'||! /^[0-9a-f-]{36}$/i.test(body.eventId))return businessJson({error:'Choose a history entry.'},400);

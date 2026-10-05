@@ -133,3 +133,13 @@ export function submitCanonicalReportForm(form: HTMLFormElement): void {
   if (!reportWindow) throw new Error('Allow pop-ups for Aim4price, then try again.');
   openCanonicalReportUrl(target.href, reportWindow, new FormData(form));
 }
+
+/** Keep PDF downloads in the originating authenticated app/website session. */
+export async function downloadCanonicalReportPdf(url:string):Promise<void>{
+ const response=await fetchReport(reportUrl(url));
+ if(!response.headers.get('content-type')?.includes('application/pdf'))throw new Error('The PDF could not be prepared. Please try again.');
+ const blobUrl=URL.createObjectURL(await response.blob());
+ const link=document.createElement('a');link.href=blobUrl;
+ link.download=response.headers.get('content-disposition')?.match(/filename="([^"]+)"/)?.[1]||'asset-history.pdf';
+ document.body.append(link);link.click();link.remove();window.setTimeout(()=>URL.revokeObjectURL(blobUrl),60_000);
+}
