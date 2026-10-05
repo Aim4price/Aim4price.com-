@@ -106,6 +106,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$$eval('details[open]',nodes=>nodes.length),0);
  assert.equal(await page.$eval('[aria-label="History entries"]',node=>node.scrollHeight>node.clientHeight),true);
  await page.screenshot({path:'/tmp/asset-history-list.png'});
+ await page.click('details:nth-of-type(1) summary');await page.click('details:nth-of-type(2) summary');
+ assert.equal(await page.$$eval('details[open]',nodes=>nodes.length),1);
+ assert.equal(await page.$eval('details:nth-of-type(2)',node=>node.open),true);
  await fill('input[type="search"]','Example Workshop');
  assert.equal(await page.$$eval('details',nodes=>nodes.length),1);
  await page.click('details summary');assert.equal(await page.$$eval('details[open]',nodes=>nodes.length),1);
@@ -113,6 +116,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await fill('input[type="search"]','no such event');assert.equal(await page.$$eval('details',nodes=>nodes.length),0);
  await fill('input[type="search"]','2022');assert.equal(await page.$$eval('details',nodes=>nodes.length),13);
  await fill('input[type="search"]','Example Workshop');await page.click('details summary');
+ assert.equal(await page.$$eval('details[open] a',nodes=>nodes.length),0);
+ await page.screenshot({path:'/tmp/asset-history-expanded.png'});
  await click('Retract change');await page.screenshot({path:'/tmp/asset-history-review.png'});await click('Confirm retraction');await page.waitForFunction(()=>document.body.textContent.includes('Change retracted.'));
  assert.equal(await page.evaluate(()=>window.writes.at(-1).eventId),'event');
  assert.deepEqual(errors,[]);console.log('PASS value approval, manual edits, reset preview, history restoration, and shared value flows');
