@@ -101,7 +101,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       walk(view,node=>node.type==='button').props.onClick();render();
       assert.equal(sent,undefined,'Opening the invite does not publish asset data');
       assert.ok(!button('Create invitation link'),'Permission selection comes first');
-      button('Share read-only').props.onClick();render();
+      button('Read-only').props.onClick();render();
       assert.equal(button('Create invitation link').props.disabled,true);
       await walk(view,node=>node.type==='form').props.onSubmit({preventDefault(){}});
       assert.equal(sent,undefined,'Handler also enforces consent');
@@ -114,7 +114,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       else assert.ok(button('Copy link'));
       walk(view,node=>node.type==='dialog').props.onClose();render();
       walk(view,node=>node.type==='button').props.onClick();render();
-      button('Share read-only').props.onClick();render();
+      button('Read-only').props.onClick();render();
       assert.equal(button('Create invitation link').props.disabled,true,'Reopening requires fresh consent');
     }
   }finally{Object.assign(global,previous);}
@@ -156,7 +156,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    const render=()=>{cursor=0;view=Invite({sendLink:true,assetIds:['asset-a'],umbrellaId:'fleet',onDismiss:()=>{closed=true;}});};
    const button=text=>walk(view,n=>n.type==='button'&&React.Children.toArray(n.props.children).includes(text));
    render();assert.equal(sent,undefined);
-   button('Share read-only').props.onClick();render();
+   button('Read-only').props.onClick();render();
    await walk(view,n=>n.type==='form').props.onSubmit({preventDefault(){}});
    assert.equal(sent,undefined);assert.equal(button('Create asset link').props.disabled,true);
    walk(view,n=>n.type===Disclaimer).props.onChange(true);render();

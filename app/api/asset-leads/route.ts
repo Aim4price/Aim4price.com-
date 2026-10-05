@@ -67,6 +67,7 @@ function readTrackingPermissions(value: unknown): DealerMaintenancePermissions |
     canUpdateDetails: permissions.canUpdateDetails === true,
     canAccessLocation: permissions.canAccessLocation === true,
     canSuggestCurrentValue: permissions.canSuggestCurrentValue === true,
+    canViewHistory: permissions.canViewHistory === true,
     canUpdateYear: permissions.canUpdateYear === true,
     canUpdateUsage: permissions.canUpdateUsage === true,
     canUpdateCondition: permissions.canUpdateCondition === true,

@@ -134,7 +134,7 @@ type AssetLead = {
       canViewCostOfOwnership: boolean;
       canCreateMaintenanceSchedules: boolean;
       canAddPhotos?: boolean;
-      canUpdateDetails?:boolean;canAccessLocation?:boolean;canSuggestCurrentValue?:boolean;canUpdateYear?:boolean;canUpdateUsage?:boolean;canUpdateCondition?:boolean;canAddMaintenance?:boolean;
+      canUpdateDetails?:boolean;canAccessLocation?:boolean;canSuggestCurrentValue?:boolean;canViewHistory?:boolean;canUpdateYear?:boolean;canUpdateUsage?:boolean;canUpdateCondition?:boolean;canAddMaintenance?:boolean;
       canAddCosts?: boolean;
       canUpdateSerial: boolean;
       canUpdateReplacementPrice: boolean;
@@ -3994,7 +3994,7 @@ export default function LeadsClient({
                         {managedLead.maintenanceAccess.permissions.canAccessLocation&&<button data-manage-action="location" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setLocationLead(managedLead)}><AssetActionIcon action="location" className={assetStyles.buttonIcon}/><span><strong>Asset location</strong><small>View or update where the asset is kept.</small></span></button>}
                         {(managedLead.maintenanceAccess.permissions.canUpdateDetails||managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition)&&<button data-manage-action="details" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset details</strong><small>Details, finance, insurance and licensing.</small></span></button>}
                         {managedLead.maintenanceAccess.permissions.canAddMaintenance&&<button data-manage-action="addMaintenance" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'maintenance'})}><AssetActionIcon action="addMaintenance" className={assetStyles.buttonIcon} /><span><strong>Add maintenance</strong><small>Record completed work.</small></span></button>}
-                        {(managedLead.maintenanceAccess.permissions.canAccessLocation||managedLead.maintenanceAccess.permissions.canUpdateDetails||managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition||managedLead.maintenanceAccess.permissions.canAddMaintenance)&&<button data-manage-action="history" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
+                        {managedLead.maintenanceAccess.permissions.canViewHistory&&<button data-manage-action="history" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
                       </>}
                       {null}
 

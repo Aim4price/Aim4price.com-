@@ -23,6 +23,7 @@ type AccessResponse = {
 };
 
 export const DEFAULT_DEALER_MAINTENANCE_PERMISSIONS: DealerMaintenancePermissions = {
+  canViewHistory: false,
   canViewLoggedProblems: false,
   canViewMaintenanceReports: false,
   canViewCostOfOwnership: false,
@@ -36,42 +37,20 @@ export const dealerMaintenancePermissionOptions: Array<{
   title: string;
   description: string;
 }> = [
-  {key:'canAddPhotos', title:'Add photos', description:'Add photos to the live asset.'},
-  {key:'canUpdateDetails', title:'Update details', description:'Title, asset details, paperwork & documents (no invoices).'},
-  {key:'canSuggestCurrentValue', title:'Current value access', description:'Update manual values; suggest Aim4price values for owner approval.'},
-  {key:'canAccessLocation', title:'Location access', description:'View and update the asset location.'},
+  {key:'canUpdateDetails', title:'Update details', description:'Edit details and documents.'},
+  {key:'canUpdateSerial', title:'Update serial / VIN', description:'Edit the asset identifier.'},
+  {key:'canAccessLocation', title:'Update location', description:'Change the asset location.'},
+  {key:'canAddPhotos', title:'Add photos', description:'Upload asset photos.'},
+  {key:'canAddCosts', title:'Add costs', description:'Record costs and documents.'},
+  {key:'canViewLoggedProblems', title:'Log problems', description:'Record and resolve problems.'},
   {key:'canAddMaintenance', title:'Add maintenance', description:'Record completed work.'},
-  {key:'canAddCosts', title:'Add costs', description:'Add costs and supporting documents.'},
-  {
-    key: 'canViewLoggedProblems',
-    title: 'Log problems',
-    description: 'Log, view and resolve asset problems.',
-  },
-  {
-    key: 'canViewMaintenanceReports',
-    title: 'Maintenance Reports',
-    description: 'Download maintenance reports (PDF/Excel).',
-  },
-  {
-    key: 'canViewCostOfOwnership',
-    title: 'Cost of Ownership',
-    description: 'Download ownership costs & VAT (PDF/Excel).',
-  },
-  {
-    key: 'canCreateMaintenanceSchedules',
-    title: 'Create Maintenance Schedules',
-    description: 'Schedule upcoming maintenance.',
-  },
-  {
-    key: 'canUpdateSerial',
-    title: 'Update Serial',
-    description: 'Update the asset serial number.',
-  },
-  {
-    key: 'canUpdateReplacementPrice',
-    title: 'Update Replacement Price',
-    description: 'Update manual replacement prices; Aim4price prices need owner approval.',
-  },
+  {key:'canCreateMaintenanceSchedules', title:'Schedule maintenance', description:'Plan upcoming work.'},
+  {key:'canViewHistory', title:'View history', description:'Read permitted asset activity.'},
+  {key:'canSuggestCurrentValue', title:'Current value', description:'Update or suggest a value.'},
+  {key:'canUpdateReplacementPrice', title:'Replacement price', description:'Update or suggest a price.'},
+  {key:'canViewMaintenanceReports', title:'Maintenance reports', description:'View and download reports.'},
+  {key:'canViewCostOfOwnership', title:'Ownership costs', description:'View and download cost reports.'},
+
 ];
 
 function copyPermissions(value: DealerMaintenancePermissions): DealerMaintenancePermissions {
@@ -116,6 +95,7 @@ export function DealerMaintenancePermissionPicker({
         </label>
       ))}
     </div>
+    <p className={styles.permissionNote}>Manual values can be updated. Aim4price values require owner approval. Upload invoices through Add costs.</p>
     </>
   );
 }

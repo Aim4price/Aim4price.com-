@@ -391,3 +391,5 @@
 
 .selectAll { display:flex; align-items:center; gap:.65rem; padding:.25rem 0; margin:0 0 .35rem; font-weight:700; cursor:pointer; }
 .selectAll input { margin:0; flex-shrink:0; width:1.05rem; height:1.05rem; accent-color:#176348; }
+
+.permissionNote { margin: .35rem 0 0; color: var(--app-info, #607286); font-size: .8rem; line-height: 1.5; }
