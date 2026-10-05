@@ -1,3 +1,4 @@
+import {ensureMaintenanceReminders,saveMaintenanceSource} from './maintenance-reminders';
 import { ensureSharingFoundation, recordSharingUsage } from './sharing-foundation';
 import { requireLiveSharedAsset, lockLiveSharedAsset } from './live-shared-asset-access';
 import type { ExternalSharePermission } from './external-share-permissions';
@@ -1152,6 +1153,7 @@ export async function createDealerMaintenanceSchedule(input: {
   // Serialize creation for this asset and recheck permission inside the write
   // transaction so revoked access cannot create a schedule from a stale modal.
   if(sharedScope) await ensureSharingFoundation();
+  await ensureMaintenanceReminders();
   const client = await getDb().connect();
   try {
     await client.query('begin');
@@ -1204,6 +1206,7 @@ export async function createDealerMaintenanceSchedule(input: {
     );
     const maintenanceRecordId = result.rows[0]?.id;
     if (!maintenanceRecordId) throw new Error('MAINTENANCE_NOT_CREATED');
+    await saveMaintenanceSource(client,{record_id:maintenanceRecordId,owner_id:access.owner_user_id,asset_id:access.asset_register_item_id,scheduler_id:input.dealerUserId,access_id:sharedScope?null:accessId,share_token:sharedScope?.token||null});
     if (input.proposalId) {
       // Retain the old proposal as history, linked to the schedule activated by
       // the dealer under the owner's current permission.

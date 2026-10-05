@@ -38,6 +38,7 @@ function add(file){
 
 
 add('components/asset-register/AssetValueDialog');
+add('components/MaintenanceReminderDialog');
 add('components/AssetConditionPicker');
 add('components/leads/LeadActionDialog');
 add('components/asset-register/ExternalLeadActions');
@@ -126,6 +127,28 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/asset-history-expanded.png'});
  await click('Retract change');await page.screenshot({path:'/tmp/asset-history-review.png'});await click('Confirm retraction');await page.waitForFunction(()=>document.body.textContent.includes('Change retracted.'));
  assert.equal(await page.evaluate(()=>window.writes.at(-1).eventId),'event');
+ await page.evaluate(()=>{
+  window.data.requests=[{id:'proposal',amount:800000,reason:'Inspected equipment',actor_name:'Example Dealer',status:'pending',submitted_value:700000}];
+  window.fetch=async()=>({ok:true,json:async()=>structuredClone(window.data)});
+  window.root.render(React.createElement(require('components/asset-register/AssetValueDialog').default,{key:'deep-review',endpoint:'/api/fixture/value',initialRequestId:'proposal',assetTitle:'2023 Tractor',onClose:()=>{}}));
+ });
+ await page.waitForFunction(()=>document.body.textContent.includes('Approve value'));
+ await page.evaluate(()=>{window.data.requests[0].status='approved';window.data.requests[0].decided_by_name='Owner';window.data.requests[0].decided_at='2026-10-05T10:00:00Z';window.dispatchEvent(new Event('focus'));});
+ await page.waitForFunction(()=>document.body.textContent.includes('Already approved by Owner'));
+ assert.equal(await page.$$eval('button',nodes=>nodes.some(n=>n.textContent==='Approve value')),false);
+ await page.screenshot({path:'/tmp/value-already-addressed.png'});
+ await page.evaluate(()=>{
+  window.reminder={record:{id:'maintenance',assetId:'asset',assetTitle:'2023 Tractor',assetKind:'tractor',assetMeta:'Year Model: 2023 • Usage: 1 300 hours • Condition: Good',maintenanceType:'service',title:'Oil service',status:'upcoming',triggerType:'usage',dueUsage:1500,currentUsage:1300,usageMetric:'hours',computedStatusLabel:'Due soon'},scheduledBy:'Example Workshop',canComplete:true};
+  window.fetch=async url=>({ok:true,json:async()=>String(url).includes('checklist')?{items:[]}:structuredClone(window.reminder)});
+  window.root.render(React.createElement(require('components/MaintenanceReminderDialog').default,{id:'maintenance'}));
+ });
+ await page.waitForFunction(()=>document.body.textContent.includes('Example Workshop scheduled'));
+ await page.screenshot({path:'/tmp/maintenance-reminder.png'});
+ await click('Complete service');await page.waitForSelector('input');
+ await page.evaluate(()=>{window.reminder.record.status='done';window.reminder.record.completedBy='Example Workshop';window.dispatchEvent(new Event('focus'));});
+ await page.waitForFunction(()=>document.body.textContent.includes('Already completed'));
+ assert.equal(await page.$$eval('button',nodes=>nodes.some(n=>n.textContent==='Complete service')),false);
+ await page.screenshot({path:'/tmp/maintenance-already-completed.png'});
  assert.deepEqual(errors,[]);console.log('PASS value approval, manual edits, reset preview, history restoration, and shared value flows');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});

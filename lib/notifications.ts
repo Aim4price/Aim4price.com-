@@ -1,3 +1,4 @@
+import {listMaintenanceReminderNotifications} from './maintenance-reminders';
 import {listValueRequests} from './asset-value-requests';
 import { listBillingNotifications } from './billing-notifications';
 import { getDb } from './db';
@@ -947,8 +948,9 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
           : Promise.resolve([]),
       ]);
 
+  notificationGroups.push(await listMaintenanceReminderNotifications(input.userId));
   const valueRequests=await listValueRequests(input.userId);
-  notificationGroups.push(valueRequests.filter(r=>r.status==='pending').map(r=>({id:`value-request:${r.id}`,category:'dealer_correction' as const,tone:'info' as const,title:'Value suggestion awaiting review',body:`${r.actor_name} suggested a current value for ${r.title}.`,href:`/asset-register?assetId=${encodeURIComponent(r.asset_id)}&valueReview=1`,createdAtIso:new Date(r.created_at).toISOString(),assetId:r.asset_id,actionRequired:true})));
+  notificationGroups.push(valueRequests.filter(r=>r.status==='pending').map(r=>({id:`value-request:${r.id}`,category:'dealer_correction' as const,tone:'info' as const,title:'Value suggestion awaiting review',body:`${r.actor_name} suggested a current value for ${r.title}.`,href:`/value-review/${encodeURIComponent(r.asset_id)}/${encodeURIComponent(r.id)}`,createdAtIso:new Date(r.created_at).toISOString(),assetId:r.asset_id,actionRequired:true})));
   notificationGroups.push(await listBillingNotifications(input.userId));
   return notificationGroups
     .flat()

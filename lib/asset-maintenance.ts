@@ -158,6 +158,8 @@ export type AssetMaintenanceStandaloneCompletionInput = AssetMaintenanceComplete
 };
 
 export type AssetMaintenanceCompletionGuard = {
+  after?: (client: import('pg').PoolClient, record: AssetMaintenanceRecord) => Promise<void>;
+  before?: (client: import('pg').PoolClient) => Promise<void>;
   assetId?: string | null;
   assignedFieldManagerId?: string | null;
   maintenanceType?: AssetMaintenanceType | null;
@@ -1999,6 +2001,7 @@ export async function completeAssetMaintenanceRecord(
 
   try {
     await client.query('begin');
+    await guard.before?.(client);
 
     if (input.offlineEventId) {
       await client.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [userId + ':maintenance:' + input.offlineEventId]);
@@ -2117,6 +2120,7 @@ export async function completeAssetMaintenanceRecord(
     }
 
     const nextRecord = await createNextRecurringRecord(client, userId, completed);
+    await guard.after?.(client, completed);
     if (input.offlineEventId) await client.query('insert into public.app_offline_completions (user_id, maintenance_id, event_id) values ($1,$2::uuid,$3) on conflict do nothing', [userId, maintenanceId, input.offlineEventId]);
     await client.query('commit');
     return { completed, nextRecord };

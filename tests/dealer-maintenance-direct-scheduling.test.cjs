@@ -18,6 +18,7 @@ async function setup(){
  const query=(sql,params)=>/create extension/i.test(sql)?Promise.resolve({rows:[]}):params?pg.query(sql,params):pg.exec(sql).then(r=>r.at(-1));
  const db={query,connect:async()=>{if(beforeWrite){const fn=beforeWrite;beforeWrite=null;await fn();}return {query,release(){}};}};
  const mocks={
+ './maintenance-reminders':{ensureMaintenanceReminders:async()=>{},saveMaintenanceSource:async(client,source)=>{await client.query('CREATE TABLE IF NOT EXISTS test_sources(record_id uuid, scheduler_id text)');await client.query('INSERT INTO test_sources VALUES($1::uuid,$2)',[source.record_id,source.scheduler_id]);}},
  './sharing-foundation':{ensureSharingFoundation:async()=>{},recordSharingUsage:async event=>usage.push(event)},
  './live-shared-asset-access':{requireLiveSharedAsset:async()=>{if(!linkActive)throw Error('LINK_REVOKED');return sharedScope;},lockLiveSharedAsset:async()=>{if(!linkActive)throw Error('LINK_REVOKED');}},
  './db':{getDb:()=>db},'./database-schema-readiness':{isDatabaseSchemaReady:async()=>false},
@@ -34,6 +35,7 @@ async function setup(){
 test('permitted dealer creates an active owner schedule immediately, without a pending proposal; retries cannot duplicate it',async()=>{
  const x=await setup();try{
  const result=await x.create();const records=(await x.pg.query('SELECT * FROM asset_maintenance_records')).rows;
+ assert.equal((await x.pg.query('SELECT scheduler_id FROM test_sources')).rows[0].scheduler_id,'dealer');
  assert.equal(records.length,1);assert.equal(records[0].id,result.maintenanceRecordId);assert.equal(records[0].user_id,'owner');assert.equal(records[0].status,'upcoming');assert.equal(Number(records[0].recurring_interval_value),6);
  assert.equal((await x.pg.query('SELECT * FROM dealer_maintenance_schedule_proposals')).rows.length,0);
  await assert.rejects(x.create(),/MAINTENANCE_ALREADY_SCHEDULED/);

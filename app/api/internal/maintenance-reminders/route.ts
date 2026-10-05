@@ -1,0 +1,5 @@
+import {timingSafeEqual} from 'node:crypto';
+import {NextRequest,NextResponse} from 'next/server';
+import {sendMaintenanceReminderBatch} from '../../../../lib/maintenance-reminders';
+export const runtime='nodejs';export const dynamic='force-dynamic';export const maxDuration=300;
+export async function POST(request:NextRequest){const secret=process.env.MAINTENANCE_REMINDER_SECRET;const supplied=request.headers.get('authorization')||'';const expected=`Bearer ${secret}`;if(!secret||Buffer.byteLength(supplied)!==Buffer.byteLength(expected)||!timingSafeEqual(Buffer.from(supplied),Buffer.from(expected)))return NextResponse.json({error:'Unauthorized'},{status:401});try{const after=request.nextUrl.searchParams.get('after')||'';if(after.length>200)return NextResponse.json({error:'Invalid cursor'},{status:400});return NextResponse.json(await sendMaintenanceReminderBatch(after),{headers:{'Cache-Control':'no-store'}});}catch(e){console.error('Maintenance reminders failed',e);return NextResponse.json({error:'Reminder batch failed'},{status:500});}}
