@@ -116,10 +116,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(!await page.evaluate(()=>document.body.textContent.includes('Choose report timeline')));await page.keyboard.press('Escape');
  await page.setViewport({width:1440,height:900});
  await page.addScriptTag({content:'window.fixtureRoot.render(React.createElement(require("components/business-network/BusinessListingInvite").default,{sendLink:true,assetIds:["10000000-0000-4000-8000-000000000001"],reportAssets:[{id:"10000000-0000-4000-8000-000000000001",title:"2023 Toyota Hilux"}]}));'});
- await page.waitForSelector('[data-asset-link-dialog]');
+ await page.waitForSelector('[data-asset-link-dialog]');await click('Choose options');
  const box=await page.$eval('[data-asset-link-dialog]',node=>({width:node.getBoundingClientRect().width,x:node.getBoundingClientRect().x,scrollHeight:node.scrollHeight,height:node.clientHeight,text:node.textContent}));
  assert.equal(Math.round(box.width),1280);assert.equal(Math.round(box.x),80);assert(box.scrollHeight<=box.height+1,'Settings fit without scrolling');
- assert(box.text.includes('Asset link settings'));assert(box.text.includes('2023 Toyota Hilux'));assert(box.text.includes('Asset photos are included.'));
+ assert(box.text.includes('Asset link settings'));assert(box.text.includes('2023 Toyota Hilux'));assert(!box.text.includes('Choose what this business/dealer can access'));
  assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',nodes=>nodes.length),0,'Report permissions are selectable');
  assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),0,'Permissions start off');
  await page.click('[data-asset-link-dialog] input[type=checkbox]');
@@ -137,6 +137,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   window.renderLinkSettings=(permissions)=>window.fixtureRoot.render(React.createElement(require('components/asset-register/ShareLinkSettings').default,{key:JSON.stringify(permissions),token:'a'.repeat(43),subject:'2022 New Holland TT4.90 4WD Openstation',initialPermissions:permissions,onClose:()=>{},onSaved:permissions=>{window.savedPermissions=permissions;}}));
   window.renderLinkSettings({suggestValue:false});
  });
+ await page.waitForSelector('[data-access-start]');await click('Choose options');
  await page.waitForFunction(()=>document.querySelector('[data-asset-link-dialog]')?.textContent.includes('Save changes'));
  const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value')).click());
  const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value')).querySelector('input').checked);
@@ -144,6 +145,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===true);
  assert.equal(await page.evaluate(()=>window.savedLink.permissions.suggestValue),true);
  await page.evaluate(()=>window.renderLinkSettings(window.savedPermissions));
+ await page.waitForSelector('[data-access-start]');await click('Choose options');
  await page.waitForSelector('[data-permission-grid]');assert.equal(await valueChecked(),true,'Saved value permission loads checked');
  const geometry=await page.$$eval('[data-permission-grid] label',nodes=>nodes.map(node=>{const r=node.getBoundingClientRect(),i=node.querySelector('input').getBoundingClientRect();return Math.abs((r.top+r.height/2)-(i.top+i.height/2));}));
  assert(geometry.every(offset=>offset<1),'Checkboxes are vertically centred in each card');
