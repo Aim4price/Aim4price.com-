@@ -27,13 +27,14 @@ export function valueAmount(value:unknown):number {if(typeof value!=='number'||!
 export function valueReason(value:unknown):string {if(typeof value!=='string'||value.trim().length<3||value.length>1500)throw Error('Please give a short reason (3–1500 characters).');return value.trim();}
 export function valueRequestId(value:unknown):string {if(typeof value!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))throw Error('Reopen the form and try again.');return value;}
 export async function listValueRequests(ownerId:string,assetId?:string){await ensureValueRequests();return (await getDb().query(`SELECT r.*,a.title FROM asset_value_requests r JOIN asset_register_items a ON a.id=r.asset_id AND a.user_id=r.owner_id WHERE r.owner_id=$1 ${assetId?'AND r.asset_id=$2::uuid':''} ORDER BY (r.status='pending') DESC,r.created_at DESC LIMIT 100`,assetId?[ownerId,assetId]:[ownerId])).rows;}
-export async function readAssetValueReview(ownerId:string,assetId:string){
+export async function readAssetValueReview(ownerId:string,assetId:string,requestId?:string){
+ await ensureValueRequests();
  const asset=await getAssetRegisterItemById(ownerId,assetId);if(!asset)throw Error('Asset unavailable.');
  await ensureSharedAssetActivity();
  const history=(await getDb().query("SELECT id,actor_name,action,before_data,after_data,created_at FROM shared_asset_activity WHERE owner_id=$1 AND asset_id=$2::uuid AND action LIKE 'Value %' ORDER BY created_at DESC LIMIT 50",[ownerId,assetId])).rows;
  const replacementRequests=(await listPendingOwnerAssetCorrections(ownerId,[assetId])).filter(r=>r.replacementPriceChanged);
  const delivery=await replacementNotificationStatuses(replacementRequests.map(r=>r.id));
- return {asset:{id:asset.id,title:asset.title,value:asset.value,replacementPrice:asset.replacementPriceExVat,revision:asset.updatedAtIso,manual:asset.selectedMethod==='manual',baseline:readApprovedValueBaseline(asset.specsJson)},requests:await listValueRequests(ownerId,assetId),replacementRequests:replacementRequests.map(r=>({...r,...delivery[r.id]})),history};
+ return {asset:{id:asset.id,title:asset.title,value:asset.value,replacementPrice:asset.replacementPriceExVat,revision:asset.updatedAtIso,manual:asset.selectedMethod==='manual',baseline:readApprovedValueBaseline(asset.specsJson)},requests:requestId?(await getDb().query('SELECT r.*,u.name AS decided_by_name FROM asset_value_requests r LEFT JOIN \"user\" u ON u.id=r.decided_by WHERE r.owner_id=$1 AND r.asset_id=$2::uuid AND r.id=$3::uuid',[ownerId,assetId,valueRequestId(requestId)])).rows:await listValueRequests(ownerId,assetId),replacementRequests:replacementRequests.map(r=>({...r,...delivery[r.id]})),history};
 }
 export async function suggestAssetValue(target:ContributionTarget,body:Record<string,unknown>){
  const scope=await contributionScope(target,'suggestValue');await limitBusinessAction(`value-suggestion:${scope.user.id}`,20);

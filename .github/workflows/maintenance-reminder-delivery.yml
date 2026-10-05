@@ -1,0 +1,23 @@
+name: Maintenance reminder delivery
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: maintenance-reminder-delivery
+  cancel-in-progress: false
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/send-maintenance-reminders.mjs
+        env:
+          AIM4PRICE_SITE_URL: ${{ vars.AIM4PRICE_SITE_URL }}
+          MAINTENANCE_REMINDER_SECRET: ${{ secrets.MAINTENANCE_REMINDER_SECRET }}

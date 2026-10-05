@@ -26,6 +26,8 @@ export function normalizeExternalPermissions(value: unknown): ExternalSharePermi
     return { ...Object.fromEntries(EXTERNAL_SHARE_OPTIONS.map(({ key }) => [key, input[key] === true])), directUpdates: input.directUpdates === true, allReports: input.allReports === true } as ExternalSharePermissions;
 }
 export function sharedEnquiryReturnTo(value: unknown): string | null {
+    if (typeof value === 'string' && /^\/maintenance-reminder\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) return value;
+    if (typeof value === 'string' && /^\/value-review\/[0-9a-f-]{36}\/[0-9a-f-]{36}$/i.test(value)) return value;
     return typeof value === 'string' && /^\/asset-share\/[A-Za-z0-9_-]{43}(?:\?open=1)?$/.test(value) ? value : null;
 }
 

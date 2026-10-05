@@ -1,0 +1,6 @@
+const escape=(value:unknown)=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+export function valueSuggestionEmail(input:{title:string;serial:string;actor:string;before:number;amount:number;reason:string;url:string}){
+ const money=(n:number)=>new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR'}).format(n);
+ const lines=[input.title,`Serial / VIN: ${input.serial||'Not recorded'}`,`${input.actor} suggested a current value change.`,`Value when suggested: ${money(input.before)} → Proposed: ${money(input.amount)} (excl. VAT)`,`Reason: ${input.reason}`];
+ return {subject:`Review current value: ${input.title}`,text:`${lines.join('\n')}\n\nYour asset value has not changed. Sign in to approve or decline: ${input.url}`,html:`<div style="font-family:Arial,sans-serif;color:#173c32;max-width:600px;margin:auto;padding:28px;border:1px solid #d7e5dc;border-radius:16px"><strong>Aim4price</strong><h2>Review current value</h2>${lines.map(line=>`<p>${escape(line)}</p>`).join('')}<p>Your asset value has not changed.</p><p style="margin:28px 0"><a href="${escape(input.url)}" style="background:#176f51;color:white;padding:14px 22px;border-radius:8px;text-decoration:none">Review suggestion</a></p><p>Sign in to approve or decline. If already addressed, the link shows the saved decision.</p></div>`};
+}

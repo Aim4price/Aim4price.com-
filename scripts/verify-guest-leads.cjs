@@ -310,6 +310,8 @@ export default function Validation(){
    await page.click('button[aria-label="Suggested value VAT"]');await page.waitForSelector('[role="option"]');await page.evaluate(()=>[...document.querySelectorAll('[role="option"]')].find(n=>n.textContent.includes('Incl. VAT')).click());
    await fill(priceField,'115000');await fill('textarea','Updated replacement quotation');await click('Send suggestion');
    await page.waitForFunction(()=>document.body.textContent.includes('Sent to the owner for approval.'));
+   // The notice renders before the final refresh; Escape remains blocked until saving finishes.
+   await page.waitForSelector('[aria-label="Close action form"]:not(:disabled)');
    const proposed=requests.filter(r=>r.path.endsWith('/corrections')).at(-1);assert.equal(JSON.parse(proposed.data).value,100000);assert.equal(JSON.parse(proposed.data).assetId,'10000000-0000-4000-8000-000000000001');assert.equal(JSON.parse(proposed.data).reason,'Updated replacement quotation');
    await closeChild();
    await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);

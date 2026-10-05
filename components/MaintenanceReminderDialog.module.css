@@ -1,0 +1,4 @@
+.dialog{width:min(960px,var(--website-dialog-reference-width,100%))!important}
+.body{display:grid;gap:16px;padding:4px 0;color:var(--app-text,#173c32)}
+.body h3,.body p{margin:0;line-height:1.5}
+.footer{grid-column:1 / -1;display:flex;justify-content:flex-end;width:100%;gap:12px}

@@ -74,5 +74,5 @@
 @media(max-width:600px){
  :global(body:not(:has([data-website-canvas]))) .dialog .fields,
  :global(body:not(:has([data-website-canvas]))) .menuActions { grid-template-columns:1fr; }
- .toolbar { flex-wrap:wrap; }
+ :global(body:not(:has([data-website-canvas]))) .toolbar { flex-wrap:wrap; }
 }

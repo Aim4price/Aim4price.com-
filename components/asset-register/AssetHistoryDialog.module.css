@@ -1,5 +1,5 @@
 /* The standard account dialog supplies the asset header, theme and close button. */
-.dialog{width:min(920px,calc(100vw - 48px));max-width:920px}
+.dialog{width:min(920px,var(--website-dialog-reference-width,calc(100vw - 48px)));max-width:920px}
 .dialog.dialog.dialog.dialog.dialog{--account-dialog-padding:24px}
 .toolbar{display:grid;gap:10px;margin:0 0 6px}
 .search{position:relative}.search svg{position:absolute;left:14px;top:14px;width:18px;height:18px;stroke:var(--app-muted,#64746a);stroke-width:1.8;fill:none;pointer-events:none}
@@ -15,14 +15,14 @@
 .expanded{padding:0 4px 12px}.changes{margin:0;padding:4px 14px;border-radius:10px;background:var(--app-surface-soft,#f1f6f4)}.changes>div{display:flex;align-items:baseline;gap:18px;padding:9px 0}.changes>div+div{border-top:1px solid var(--app-line,#d5dfda)}.changes dt{flex:0 0 140px;font-size:14px;font-weight:700;overflow-wrap:anywhere}.changes dd{display:flex;align-items:baseline;flex-wrap:wrap;gap:12px;margin:0;font-size:14px;min-width:0;overflow-wrap:anywhere}.changes dd>span,.changes dd>strong{min-width:0;overflow-wrap:anywhere}.before{color:var(--muted,#64748b)}.arrow{color:var(--muted,#64748b)}
 .actions{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:12px}.actions:empty{display:none}.actions>a{text-decoration:none}.actions .retract{background:var(--app-surface,#fff);box-shadow:none;min-height:40px;padding:8px 14px;font-size:14px;border-radius:10px}
 .confirmTitle{font-size:17px;font-weight:800}.confirm>p{font-size:14px;line-height:1.5;margin:10px 0 16px}.confirm .hint,.hint{font-size:12px;color:var(--muted,#64748b)}.empty{text-align:center;padding:24px 12px;color:var(--muted,#64748b)}.loadMore{text-align:center;padding:12px}
-@media(max-width:650px){.filters{gap:4px}.filters button{padding:7px 9px}.heading{gap:10px;padding:12px 6px}.heading time{white-space:normal;max-width:110px}.expanded{padding:0 6px 12px}.changes>div{gap:12px}.changes dt{flex-basis:32%}.actions{flex-wrap:wrap}}
+@media(max-width:650px){:global(body:not(:has([data-website-canvas]))) .filters{gap:4px}:global(body:not(:has([data-website-canvas]))) .filters button{padding:7px 9px}:global(body:not(:has([data-website-canvas]))) .heading{gap:10px;padding:12px 6px}:global(body:not(:has([data-website-canvas]))) .heading time{white-space:normal;max-width:110px}:global(body:not(:has([data-website-canvas]))) .expanded{padding:0 6px 12px}:global(body:not(:has([data-website-canvas]))) .changes>div{gap:12px}:global(body:not(:has([data-website-canvas]))) .changes dt{flex-basis:32%}:global(body:not(:has([data-website-canvas]))) .actions{flex-wrap:wrap}}
 
 /* Keep the event-level action beside its changes, including multi-field edits. */
 .expanded:has(.retract){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin:0 4px 12px;padding:4px 14px;border-radius:10px;background:var(--app-surface-soft,#f1f6f4)}
 .expanded:has(.retract)>.changes{min-width:0;padding:0;background:transparent}
 .expanded:has(.retract)>.actions{margin:0;flex-wrap:nowrap}
 .expanded .retract{white-space:nowrap}
-@media(max-width:650px){.expanded:has(.retract){gap:10px;padding:8px 10px}.expanded:has(.retract) .changes>div{flex-direction:column;gap:4px}.expanded:has(.retract) .changes dt{flex-basis:auto}}
+@media(max-width:650px){:global(body:not(:has([data-website-canvas]))) .expanded:has(.retract){gap:10px;padding:8px 10px}:global(body:not(:has([data-website-canvas]))) .expanded:has(.retract) .changes>div{flex-direction:column;gap:4px}:global(body:not(:has([data-website-canvas]))) .expanded:has(.retract) .changes dt{flex-basis:auto}}
 
 .reportFooter{grid-column:1 / -1;display:flex;justify-content:flex-end;align-items:center;gap:12px;width:100%;padding:4px 0 0}
 .dialog .downloadButton{display:inline-flex;align-items:center;justify-content:center;gap:10px;flex:0 0 auto;min-height:46px;width:auto;padding:12px 20px;border:1px solid #a82b32;border-radius:12px;background:#b8323b;color:#fff;font:inherit;font-size:14px;font-weight:800;line-height:1.3;white-space:nowrap;box-shadow:0 3px 8px rgba(137,32,42,.12);cursor:pointer;transition:background .15s,box-shadow .15s}

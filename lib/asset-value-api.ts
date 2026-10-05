@@ -24,7 +24,7 @@ export async function ownerValueApi(request:NextRequest,assetId?:string,admin=fa
   if(admin){await ensureValueRequests();const q=(request.nextUrl.searchParams.get('search')||'').slice(0,120);return businessJson({items:(await getDb().query(`SELECT a.id,a.user_id,a.title,a.value,u.email,((SELECT count(*)::int FROM asset_value_requests r WHERE r.owner_id=a.user_id AND r.asset_id=a.id AND r.status='pending')+(SELECT count(*)::int FROM dealer_asset_correction_requests c WHERE c.owner_user_id=a.user_id AND c.asset_register_item_id=a.id AND c.status='pending' AND c.replacement_price_changed=true)) AS pending FROM asset_register_items a JOIN "user" u ON u.id=a.user_id WHERE ($1='' OR a.title ILIKE '%'||$1||'%' OR u.email ILIKE '%'||$1||'%') ORDER BY a.updated_at DESC LIMIT 50`,[q])).rows});}
   return businessJson({requests:await listValueRequests(ownerId)});
  }
- if(request.method==='GET')return businessJson(await readAssetValueReview(ownerId,assetId));
+ if(request.method==='GET')return businessJson(await readAssetValueReview(ownerId,assetId,request.nextUrl.searchParams.get('valueRequest')||undefined));
  const body=await businessBody(request);
  if(body.action==='retryNotification'){
   const review=await readAssetValueReview(ownerId,assetId);const id=String(body.notificationId||'');
