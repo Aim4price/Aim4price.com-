@@ -20,6 +20,8 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
     try {
         if (request.method !== 'GET')
             requireBusinessOrigin(request);
+        // History is a separate read permission, never inferred from edit access.
+        const historyScope = action === 'history' ? await contributionScope(target, 'history') : null;
         let detailsScope: Awaited<ReturnType<typeof contributionScope>> | null = null;
         try { detailsScope = await contributionScope(target, 'updateDetails'); } catch (e) { if (!(e instanceof ExternalLeadAccessError)) throw e; }
         let locationScope: Awaited<ReturnType<typeof contributionScope>> | null = null;
@@ -41,10 +43,10 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
                 throw e;
         }
         const extras: Record<string, Awaited<ReturnType<typeof contributionScope>> | null> = {};
-        if(action==='details'||action==='history') for(const permission of ['serialNumber','replacementPrice','addPhotos','suggestValue','addCosts','loggedProblems'] as const) {
+        if(action==='details'||action==='history') for(const permission of ['serialNumber','replacementPrice','addPhotos','suggestValue','addCosts','loggedProblems',...(action==='history' ? ['maintenanceReports','costOfOwnership'] as const : [])] as const) {
             try { extras[permission]=await contributionScope(target,permission); } catch(e) { if(!(e instanceof ExternalLeadAccessError)) throw e; }
         }
-        const scope = action === 'maintenance' || action === 'checklist' ? maintenance : scopes.find(Boolean) || maintenance || locationScope || Object.values(extras).find(Boolean);
+        const scope = historyScope || (action === 'maintenance' || action === 'checklist' ? maintenance : scopes.find(Boolean) || maintenance || locationScope || Object.values(extras).find(Boolean));
         if (!scope)
             throw new ExternalLeadAccessError('The owner has not enabled this action.', 403);
         const asset = await getAssetRegisterItemById(scope.ownerId, scope.assetId);
@@ -62,12 +64,12 @@ export async function sharedAssetWork(request: NextRequest, target: Contribution
             if (action === 'history') {
                 const owner=scope.user.id===scope.ownerId;
                 const categories:HistoryCategory[]=['details'];
-                if(maintenance||extras.loggedProblems)categories.push('maintenance');
+                if(maintenance||extras.maintenanceReports||extras.loggedProblems)categories.push('maintenance');
                 if(detailsScope||extras.addPhotos)categories.push('documents');
                 if(extras.suggestValue||extras.replacementPrice)categories.push('values');
-                if(extras.addCosts)categories.push('costs');
-                const detailFields=[...(detailsScope?[...historyPaperworkFields,'title','brand_name','model_name','note','is_financed','is_insured','is_licensed','insured_value_ex_vat']:[]),...(scopes[0]?['year_model']:[]),...(scopes[1]?['hours']:[]),...(scopes[2]?['condition']:[]),...(locationScope?['last_known_lat','last_known_lng','last_known_location_text']:[]),...(extras.serialNumber?['serial_number']:[]),...(extras.replacementPrice?['replacement_price_ex_vat','replacement_price_used_ex_vat']:[]),...(extras.suggestValue?['value','selected_value_ex_vat','reason','kind']:[])];
-                const historyOptions={owner,actorId:scope.user.id,categories:owner?undefined:categories,detailFields,problems:!!extras.loggedProblems,maintenance:!!maintenance,documents:!!detailsScope,before:request.nextUrl.searchParams.get('before')||undefined,category:request.nextUrl.searchParams.get('category')||undefined};
+                if(extras.addCosts||extras.costOfOwnership)categories.push('costs');
+                const detailFields=['title','brand_name','model_name','year_model','hours','condition','serial_number','is_financed','is_insured','is_licensed',...(detailsScope?[...historyPaperworkFields,'title','brand_name','model_name','note','is_financed','is_insured','is_licensed','insured_value_ex_vat']:[]),...(scopes[0]?['year_model']:[]),...(scopes[1]?['hours']:[]),...(scopes[2]?['condition']:[]),...(locationScope?['last_known_lat','last_known_lng','last_known_location_text']:[]),...(extras.serialNumber?['serial_number']:[]),...(extras.replacementPrice?['replacement_price_ex_vat','replacement_price_used_ex_vat']:[]),...(extras.suggestValue?['value','selected_value_ex_vat','reason','kind']:[])];
+                const historyOptions={owner,actorId:scope.user.id,categories:owner?undefined:categories,detailFields,problems:!!extras.loggedProblems,maintenance:!!(maintenance||extras.maintenanceReports),documents:!!detailsScope,before:request.nextUrl.searchParams.get('before')||undefined,category:request.nextUrl.searchParams.get('category')||undefined};
                 if(request.nextUrl.searchParams.get('format')==='pdf'){const {assetHistoryPdfResponse}=await import('./asset-history-report');return await assetHistoryPdfResponse(request,scope.ownerId,asset,historyOptions);}
                 return businessJson(await listUnifiedAssetHistory(scope.ownerId,scope.assetId,historyOptions));
             }

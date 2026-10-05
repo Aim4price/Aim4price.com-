@@ -25,7 +25,7 @@ test('owner can edit a live link in place, preserving recipient and non-editable
    '../../../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
   });
   const call=(input,origin='https://aim4price.test')=>route.PATCH(new NextRequest('https://aim4price.test/api/asset-share-links/history',{method:'PATCH',headers:{origin},body:JSON.stringify(input)}));
-  const input={token,permissions:{addPhotos:false,addCosts:true,directUpdates:true,reports:false,documents:false,allReports:true}};
+  const input={token,permissions:{history:true,addPhotos:false,addCosts:true,directUpdates:true,reports:false,documents:false,allReports:true}};
   session=null;assert.equal((await call(input)).status,403);
   session={user:{id:'other'}};assert.equal((await call(input)).status,409);
   session={user:{id:'owner'}};assert.equal((await call(input,'https://evil.test')).status,400);
@@ -37,6 +37,9 @@ test('owner can edit a live link in place, preserving recipient and non-editable
   const saved=(await pg.query('SELECT * FROM asset_share_links WHERE token=$1',[token])).rows[0];
   assert.equal(saved.token,token);assert.equal(saved.lead_details.recipientEmail,details.recipientEmail);
   assert.equal(saved.lead_details.accessMode,'signed-in');
+  assert.equal(saved.lead_details.permissions.history,true);
+  assert.equal((await call({...input,permissions:{...input.permissions,history:false}})).status,200);
+  assert.equal((await pg.query('SELECT lead_details FROM asset_share_links WHERE token=$1',[token])).rows[0].lead_details.permissions.history,false);
   assert.deepEqual(Object.fromEntries(['addPhotos','addCosts','reports','documents','directUpdates','allReports'].map(k=>[k,saved.lead_details.permissions[k]])),{addPhotos:false,addCosts:true,reports:true,documents:true,directUpdates:false,allReports:false});
   assert.equal((await response.json()).permissions.addCosts,true);
  } finally {await pg.close();}

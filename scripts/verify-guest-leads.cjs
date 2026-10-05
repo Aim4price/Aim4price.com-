@@ -102,7 +102,7 @@ export default function Validation(){
   assert.deepEqual(cards.map(c=>c.text),['Send link','Inside Aim4price','Outside Aim4price']);
   assert.ok(cards.every(c=>Math.abs(c.width-cards[0].width)<1&&Math.abs(c.y-cards[0].y)<1));
   await page.screenshot({path:path.join(output,'send-link-options.png')});
-  await click('Send link');await click('Share read-only');
+  await click('Send link');await click('Read-only');
   assert.equal(await page.$eval('dialog button[type="submit"], dialog button:not([type])',b=>b.disabled),true);
   await page.click('dialog input[type="checkbox"]');await click('Create asset link');
   await page.waitForSelector('dialog a[href^="/asset-share/"], dialog a[href*="/asset-share/"]');
@@ -200,7 +200,7 @@ export default function Validation(){
    assert.ok(!(await page.evaluate(()=>document.body.textContent)).includes('Invitations & history'));
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');
-   await click('Share read-only');
+   await click('Read-only');
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
    if(width===1440) assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Invitation fits desktop without scrolling');
@@ -224,8 +224,9 @@ export default function Validation(){
    assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',inputs=>inputs.length),0,'Report permissions are selectable');
    assert.equal(await page.$$eval('[data-permission-grid] input:checked',inputs=>inputs.length),0,'New link permissions start unchecked');
    await page.click('[data-asset-link-dialog] input[type=checkbox]');
-   await page.waitForFunction(()=>document.querySelectorAll('[data-permission-grid] input:checked').length===12);
+   await page.waitForFunction(()=>document.querySelectorAll('[data-permission-grid] input:checked').length===13);
    if(width===1440) assert.ok(await page.$eval('[data-asset-link-dialog]',e=>[e,...e.querySelectorAll('div')].every(node=>node.scrollHeight<=node.clientHeight+1||!['auto','scroll'].includes(getComputedStyle(node).overflowY))),'Asset link settings and all option containers fit without scrolling');
+   assert.ok(await page.$$eval('[data-permission-grid] small', nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)+1 && node.scrollWidth<=node.clientWidth+1)), 'Permission descriptions fit one line without clipping');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Continue');
    assert.equal(await page.$('dialog input[type=email]'),null);
@@ -234,12 +235,12 @@ export default function Validation(){
    await page.screenshot({path:path.join(output,`selected-disclosure-${width}.png`),fullPage:true});
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
    const selectedDetails=await page.evaluate(()=>JSON.parse(window.__selectedLeadDetails));
-   assert.deepEqual(selectedDetails.permissions,{suggestValue:true,updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
+   assert.deepEqual(selectedDetails.permissions,{history:true,suggestValue:true,updateDetails:true,location:true,yearModel:true,usage:true,condition:true,addMaintenance:true,addPhotos:true,addCosts:true,reports:true,replacementPrice:true,serialNumber:true,documents:false,loggedProblems:true,maintenanceReports:true,costOfOwnership:true,maintenanceSchedules:true,directUpdates:true,allReports:true});assert.equal(selectedDetails.recipientEmail,'');assert.equal(selectedDetails.accessMode,'signed-in');
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');
-   await click('Share read-only');
+   await click('Read-only');
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');

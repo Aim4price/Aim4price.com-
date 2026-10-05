@@ -89,7 +89,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.evaluate(p=>window.renderFixture({...p,access:'read-only'}),props);await page.waitForFunction(()=>!document.body.textContent.includes('Sent to the owner for approval.'));await click('Update serial number');await page.waitForFunction(()=>document.body.textContent.includes('Verify business'));assert.equal(await page.$$eval('input',nodes=>nodes.length),0);await page.keyboard.press('Escape');
  await page.evaluate(p=>window.renderFixture({...p,permissions:{reports:true,documents:false,serialNumber:false,replacementPrice:false}}),props);await page.waitForFunction(()=>!document.body.textContent.includes('Update serial number'));assert(!await page.evaluate(()=>document.body.textContent.includes('Invoices & quotes')));
  // New links reuse the live Leads tools and save directly.
- await page.evaluate(p=>window.renderFixture({...p,permissions:{serialNumber:false,replacementPrice:false,updateDetails:true,addPhotos:true,location:true,addMaintenance:true,maintenanceSchedules:true,loggedProblems:true,addCosts:true,suggestValue:true,reports:true}}),props);
+ await page.evaluate(p=>window.renderFixture({...p,permissions:{history:true,serialNumber:false,replacementPrice:false,updateDetails:true,addPhotos:true,location:true,addMaintenance:true,maintenanceSchedules:true,loggedProblems:true,addCosts:true,suggestValue:true,reports:true}}),props);
  await page.waitForSelector('[data-manage-action="details"]');
  assert.deepEqual(await page.$$eval('[data-manage-actions] > button',nodes=>nodes.map(n=>n.dataset.manageAction)),['history','details','reports','addPhotos','location','addMaintenance','maintenanceSchedules','loggedProblems','addCosts','suggestValue']);
  assert.notEqual(await page.$eval('[data-manage-action="details"]',n=>getComputedStyle(n).backgroundImage),await page.$eval('[data-manage-action="addCosts"]',n=>getComputedStyle(n).backgroundImage),'Action groups have distinct subtle colours');
@@ -123,11 +123,12 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',nodes=>nodes.length),0,'Report permissions are selectable');
  assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),0,'Permissions start off');
  await page.click('[data-asset-link-dialog] input[type=checkbox]');
- assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),12,'Select all enables all settings');
+ assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),13,'Select all enables all settings');
  await page.click('[data-asset-link-dialog] input[type=checkbox]');
+ assert.ok(await page.$$eval('[data-permission-grid] small',nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)+1 && node.scrollWidth<=node.clientWidth+1)), 'Settings descriptions stay on one line');
  assert(!box.text.includes('Attach reports'));
  await page.screenshot({path:'/tmp/asset-link-settings.png'});
- await click('Share read-only');await page.waitForSelector('dialog[open]');
+ await click('Read-only');await page.waitForSelector('dialog[open]');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Before you share')));
  // Existing link settings must round-trip the current-value permission.
  await page.evaluate(()=>{
@@ -137,8 +138,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   window.renderLinkSettings({suggestValue:false});
  });
  await page.waitForFunction(()=>document.querySelector('[data-asset-link-dialog]')?.textContent.includes('Save changes'));
- const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value access')).click());
- const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value access')).querySelector('input').checked);
+ const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value')).click());
+ const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value')).querySelector('input').checked);
  await toggleValue(); assert.equal(await valueChecked(),true,'Value permission responds to a card click');
  await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===true);
  assert.equal(await page.evaluate(()=>window.savedLink.permissions.suggestValue),true);

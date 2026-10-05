@@ -18,6 +18,7 @@ export default function ExternalAccessRequests({token}: {token:string}) {
   if(!overview)return <p className={error?styles.error:undefined} role={error?'alert':'status'}>{error||'Loading link permissions…'}</p>;
   const p=overview.permissions;
   const views:Array<[ExternalSharePermission|'details',string]>=[['documents','Shared asset details']];
+  if(p.history)views.push(['history','Asset history (read-only)']);
   if(p.reports)views.push(['reports',p.allReports?'General asset reports':'Selected reports and timelines']);
   if(p.loggedProblems)views.push(['loggedProblems','Logged problems']);
   if(p.maintenanceReports)views.push(['maintenanceReports','Maintenance reports']);
