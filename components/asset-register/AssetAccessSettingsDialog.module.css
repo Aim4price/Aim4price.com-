@@ -29,6 +29,9 @@
   margin: 0;
   padding: 0.4rem 0.85rem;
   line-height: 1.5;
+  border-left: 2px solid var(--app-info-line, #d3e1eb);
+  border-radius: 0 .5rem .5rem 0;
+  background: var(--app-surface-soft, #f4f8f6);
 }
 .dialog .body::-webkit-scrollbar { width: 7px; }
 .dialog .body::-webkit-scrollbar-track { background: transparent; }
