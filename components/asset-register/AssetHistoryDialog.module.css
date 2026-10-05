@@ -16,3 +16,10 @@
 .actions{display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-top:12px}.actions:empty{display:none}.actions>a{text-decoration:none}.actions .retract{background:var(--app-surface,#fff);box-shadow:none;min-height:40px;padding:8px 14px;font-size:14px;border-radius:10px}
 .confirmTitle{font-size:17px;font-weight:800}.confirm>p{font-size:14px;line-height:1.5;margin:10px 0 16px}.confirm .hint,.hint{font-size:12px;color:var(--muted,#64748b)}.empty{text-align:center;padding:24px 12px;color:var(--muted,#64748b)}.loadMore{text-align:center;padding:12px}
 @media(max-width:650px){.filters{gap:4px}.filters button{padding:7px 9px}.heading{gap:10px;padding:12px 6px}.heading time{white-space:normal;max-width:110px}.expanded{padding:0 6px 12px}.changes>div{gap:12px}.changes dt{flex-basis:32%}.actions{flex-wrap:wrap}}
+
+/* Keep the event-level action beside its changes, including multi-field edits. */
+.expanded:has(.retract){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;margin:0 4px 12px;padding:4px 14px;border-radius:10px;background:var(--app-surface-soft,#f1f6f4)}
+.expanded:has(.retract)>.changes{min-width:0;padding:0;background:transparent}
+.expanded:has(.retract)>.actions{margin:0;flex-wrap:nowrap}
+.expanded .retract{white-space:nowrap}
+@media(max-width:650px){.expanded:has(.retract){gap:10px;padding:8px 10px}.expanded:has(.retract) .changes>div{flex-direction:column;gap:4px}.expanded:has(.retract) .changes dt{flex-basis:auto}}
