@@ -94,8 +94,8 @@ export function DealerMaintenancePermissionPicker({
           </span>
         </label>
       ))}
+    <p className={styles.permissionNote} data-permission-note>Manual values can be updated. Aim4price values require owner approval. Upload invoices through Add costs.</p>
     </div>
-    <p className={styles.permissionNote}>Manual values can be updated. Aim4price values require owner approval. Upload invoices through Add costs.</p>
     </>
   );
 }
