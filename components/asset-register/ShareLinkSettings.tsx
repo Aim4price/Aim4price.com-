@@ -23,7 +23,6 @@ export default function ShareLinkSettings({token, subject, initialPermissions, o
     finally { setBusy(false); }
   }
   return <AssetAccessSettingsDialog title="Asset link settings" assetTitle={subject} linkSettings onClose={()=>{if(!busy) onClose();}}>
-    <div className={assetStyles.dealerTrackingIntro}><strong>Choose what recipients can access</strong><p>Changes apply to everyone using this shared link.</p></div>
           <DealerMaintenancePermissionPicker
             value={{canViewHistory:permissions.history===true,canSuggestCurrentValue:permissions.suggestValue===true,canUpdateDetails:permissions.updateDetails===true,canAccessLocation:permissions.location===true,canUpdateYear:permissions.yearModel===true,canUpdateUsage:permissions.usage===true,canUpdateCondition:permissions.condition===true,canAddMaintenance:permissions.addMaintenance===true,canAddPhotos:permissions.addPhotos===true,canAddCosts:permissions.addCosts===true,canViewLoggedProblems:permissions.loggedProblems===true,canViewMaintenanceReports:permissions.maintenanceReports===true,canViewCostOfOwnership:permissions.costOfOwnership===true,canCreateMaintenanceSchedules:permissions.maintenanceSchedules===true,canUpdateSerial:permissions.serialNumber,canUpdateReplacementPrice:permissions.replacementPrice}}
             disabled={busy}

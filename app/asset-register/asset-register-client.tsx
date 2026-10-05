@@ -19715,10 +19715,6 @@ export default function AssetRegisterClient({
 
       {quoteAsset && isQuoteTrackingSettingsOpen ? (
         <AssetAccessSettingsDialog title="Business/Dealer asset settings" assetTitle={quoteAsset.title} onClose={cancelQuoteTrackingSettings}>
-              <div className={styles.dealerTrackingIntro}>
-                <strong>Choose what this business/dealer can access</strong>
-                <p>Select the permissions to activate as soon as the asset is shared.</p>
-              </div>
 
               <DealerMaintenancePermissionPicker
                 value={quoteTrackingPermissions}
