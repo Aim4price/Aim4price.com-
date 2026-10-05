@@ -41421,3 +41421,14 @@ button.documentOpenLink {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Value tools: two balanced rows, with one-line labels and descriptions. */
+.managementAccountModal.pricingModal .ownerCommandGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.managementAccountModal.pricingModal .ownerCommandGrid .ownerCommandAction strong,
+.managementAccountModal.pricingModal .ownerCommandGrid .ownerCommandAction small {
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
+  overflow-wrap: normal;
+}
