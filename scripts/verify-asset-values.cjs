@@ -99,10 +99,14 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.screenshot({path:'/tmp/history-reset-preview.png'});await click('Confirm return to Aim4price');await page.waitForFunction(()=>window.writes.at(-1).action==='resetAim4price');assert.equal(await page.evaluate(()=>window.writes.at(-1).expectedValue),700000);
  await page.evaluate(()=>{
  window.historyItem={id:'event',category:'details',action:'Asset updated',actorName:'Example Workshop',source:'Leads',createdAt:'2026-10-04T10:00:00Z',before:{title:'Old tractor',year_model:2022},after:{title:'2023 Tractor',year_model:2023},recordId:'asset',recordTable:'asset_register_items',restorable:true,href:'/asset-register?assetId=asset'};
- window.fetch=async(url,options)=>{if(options?.method==='POST'){window.writes.push(JSON.parse(options.body));return {ok:true,json:async()=>({ok:true})};}return {ok:true,json:async()=>({items:[window.historyItem,...Array.from({length:12},(_,i)=>({...window.historyItem,id:`older-${i}`,action:`Maintenance updated ${i+1}`,actorName:'Owner',category:'maintenance',restorable:false}))],nextBefore:null})};};
+ window.fetch=async(url,options)=>{if(options?.method==='POST'){window.writes.push(JSON.parse(options.body));return {ok:true,json:async()=>({ok:true})};}return {ok:true,json:async()=>({items:[window.historyItem,...Array.from({length:12},(_,i)=>({...window.historyItem,id:`older-${i}`,action:`Maintenance updated ${i+1}`,actorName:'Owner',category:'maintenance',restorable:false}))].filter(item=>!new URL(url,'https://example.test').searchParams.has('category')||item.category===new URL(url,'https://example.test').searchParams.get('category')),nextBefore:null})};};
  window.root.render(React.createElement(require('components/asset-register/AssetHistoryDialog').default,{endpoint:'/api/asset-register/asset',assetTitle:'2023 Tractor',assetSubtitle:'Year Model: 2023 • Usage: 1 300 hours • Condition: Good',onClose:()=>{}}));
  });
  await page.waitForSelector('details');
+ await page.click('[aria-label="History category"] button:nth-child(5)');
+ await page.waitForFunction(()=>document.body.textContent.includes('No recorded activity'));
+ assert.equal(await page.$eval('[aria-label="History category"] button:nth-child(5)',node=>node.getAttribute('aria-pressed')),'true');
+ await page.click('[aria-label="History category"] button:first-child');await page.waitForSelector('details');
  assert.equal(await page.$$eval('details[open]',nodes=>nodes.length),0);
  assert.equal(await page.$eval('[aria-label="History entries"]',node=>node.scrollHeight>node.clientHeight),true);
  await page.screenshot({path:'/tmp/asset-history-list.png'});
