@@ -192,7 +192,7 @@
   -webkit-backdrop-filter: var(--modal-backdrop-filter);
   backdrop-filter: var(--modal-backdrop-filter);
 }
-.listingManagerDialog { width: min(700px,var(--website-dialog-reference-width, 100%)); max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem); overflow-y: auto; border: 1px solid var(--app-line, #d5e3dd); border-radius: 28px; padding: 0; color: var(--app-text, var(--ink)); background: var(--app-surface, #fff); box-shadow: 0 30px 84px var(--app-shadow-colour, rgba(7,27,21,.28)); outline: none; }
+.listingManagerDialog { width: min(960px,var(--website-dialog-reference-width, 100%)); max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem); overflow-y: auto; border: 1px solid var(--app-line, #d5e3dd); border-radius: 28px; padding: 0; color: var(--app-text, var(--ink)); background: var(--app-surface, #fff); box-shadow: 0 30px 84px var(--app-shadow-colour, rgba(7,27,21,.28)); outline: none; }
 .listingManagerHeader { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 1rem; padding: 1.5rem 1.6rem 1.2rem; border-bottom: 1px solid var(--app-line, #e2ebe7); }
 .listingManagerHeader h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.55rem,calc(var(--website-design-vw, 1vw) * 3),1.8rem); font-weight: 850; letter-spacing: -.035em; }
 .listingManagerHeader p { margin: .45rem 0 0; color: var(--app-muted, #687c74); font-size: .82rem; line-height: 1.5; }
@@ -399,3 +399,37 @@
 .deleteDialog { max-height: calc(var(--website-visible-height, 100dvh) - 2rem); overflow-y: auto; overscroll-behavior: contain; }
 .deleteDialog h2 { font-size: 1.55rem; }
 .deleteDialog p { font-size: 0.88rem; }
+
+/* Keep the showroom readable and the four advert actions visible together. */
+.managerHero { padding-block: 1.65rem; }
+.managerHero::after { opacity: .35; }
+.managerHeroCopy h1 { font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.8rem); line-height: 1.12; }
+.managerHeroCopy p { margin-top: .65rem; }
+.managerGrid { gap: 1.25rem; margin-top: 1.25rem; }
+.managerPage .primaryButton, .managerPage .secondaryButton { font-size: .9rem; }
+.sectionHeading p { font-size: .84rem; }
+.statusText, .stockCount { border: 1px solid var(--app-line, #d6e5de); border-radius: 999px; padding: .45rem .7rem; background: var(--app-surface-soft, #edf6f2); font-size: .78rem; }
+.managerListings { gap: .8rem; }
+.managerListing { padding: .85rem; gap: 1rem; }
+.listingTitleRow { flex-wrap: wrap; }
+.listingTitleRow > strong { white-space: normal; font-size: .95rem; line-height: 1.35; }
+.managerListing small { font-size: .8rem; }
+.managerListing b { font-size: .95rem; }
+.listingActions button { min-height: 2.85rem; font-size: .82rem; background: var(--app-surface-soft, #edf6f2); }
+.showroomLogoCopy span, .advertDesignField span { font-size: .8rem; }
+.publicLinkField > label, .settingsCard > label > span:first-child { font-size: .85rem; }
+.slugField { grid-template-columns: minmax(0,1fr) auto; }
+.slugPrefix { grid-column: 1 / -1; padding: .7rem .95rem 0; font-size: .75rem; }
+.slugField input { padding-left: .95rem; font-size: .88rem; }
+.copyLinkButton, .showroomLogoButton { font-size: .78rem; }
+.listingManagerSummary { margin-block: 1rem; }
+.listingManagerActions { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1rem; }
+.listingManagerActions > a, .listingManagerActions > button { min-height: 6.25rem; gap: .75rem; padding: 1rem; }
+.listingManagerActions .listingManagerPrimary { background: var(--app-surface-soft, #edf6f2); }
+.listingManagerActions .listingManagerRemove { background: var(--app-danger-soft, #fff5f3); border-color: var(--app-danger-line, #ead0cc); }
+.listingManagerActions > :is(a,button):focus-visible { outline: 3px solid var(--app-accent, #187053); outline-offset: 3px; }
+@media (max-width: 620px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions { grid-template-columns: minmax(0,1fr); gap: .65rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > a,
+  :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > button { min-height: 4.5rem; padding-block: .7rem; }
+}

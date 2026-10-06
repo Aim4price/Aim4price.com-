@@ -659,7 +659,7 @@ export function MiddlemanShowroomManager({
                     : `/asset-register?assetId=${encodeURIComponent(manageListingTarget.sourceAssetId)}&action=marketplace-edit`}
                 >
                   <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
-                  <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Update the price, description and seller details.</small></span>
+                  <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Price, description and seller details.</small></span>
                   <ShowroomManageActionArrow />
                 </Link>
               ) : (
@@ -682,7 +682,7 @@ export function MiddlemanShowroomManager({
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="download" /></span>
                 <span className={styles.listingManagerActionCopy}>
                   <strong>Download JPEG</strong>
-                  <small>{usesSavedBrandDesign && manageListingTarget.adBrand ? 'Use the Brand Kit saved with this advert.' : 'Use the standard Aim4price Marketplace advert design.'}</small>
+                  <small>{usesSavedBrandDesign && manageListingTarget.adBrand ? 'Download with your saved Brand Kit.' : 'Save a ready-to-share advert image.'}</small>
                 </span>
                 <ShowroomManageActionArrow direction="down" />
               </button>
@@ -690,7 +690,7 @@ export function MiddlemanShowroomManager({
                 href={`${dealerAppMode ? `${dealerAppRoot}/marketplace` : '/marketplace'}?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`}
               >
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span>
-                <span className={styles.listingManagerActionCopy}><strong>Open in Marketplace</strong><small>View the advert and continue managing it in Marketplace.</small></span>
+                <span className={styles.listingManagerActionCopy}><strong>Open in Marketplace</strong><small>View your live marketplace advert.</small></span>
                 <ShowroomManageActionArrow />
               </Link>
               <button
@@ -702,7 +702,7 @@ export function MiddlemanShowroomManager({
                 }}
               >
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="remove" /></span>
-                <span className={styles.listingManagerActionCopy}><strong>Remove advert</strong><small>Record the outcome and withdraw it everywhere.</small></span>
+                <span className={styles.listingManagerActionCopy}><strong>Remove advert</strong><small>Record the outcome and withdraw the advert.</small></span>
                 <ShowroomManageActionArrow />
               </button>
             </div>
