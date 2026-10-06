@@ -41224,8 +41224,8 @@ button.documentOpenLink {
 .businessDirectoryDialog .assetQuoteLocationActions .primaryButton { justify-self: end; width: auto !important; min-width: 12rem; }
 .businessDirectoryDialog .assetQuoteLocationActions .primaryButton, .businessDirectoryDialog .assetQuoteSidebarFooter .primaryButton, .businessDirectoryDialog .assetQuoteSearchBar .secondaryButton { min-height: 2.75rem !important; height: auto !important; border-radius: .65rem !important; box-shadow: none !important; font-size: .85rem !important; }
 .optionsModal.assetQuoteModal.businessDirectoryDialog.assetQuotePartnerPickerModal { width: min(calc(var(--website-design-vw, 1vw) * 100 - 3rem), 1240px) !important; height: auto !important; max-height: calc(var(--website-visible-height, 100dvh) - 3rem) !important; }
-.businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody { display: flex !important; flex: 1 1 auto !important; overflow: hidden !important; }
-.businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteContent { display: flex !important; flex-direction: column !important; flex: 1 1 auto !important; min-height: 0 !important; width: 100%; gap: .85rem !important; }
+.businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody { display: flex !important; flex: 1 1 auto !important; overflow-x: hidden !important; overflow-y: auto !important; scrollbar-width: thin; }
+.businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteContent { display: flex !important; flex-direction: column !important; flex: 0 0 auto !important; min-height: 0 !important; width: 100%; gap: .85rem !important; }
 .businessDirectoryDialog .assetQuoteSearchBar { flex: 0 0 auto; gap: .6rem !important; }
 .businessDirectoryDialog .assetQuoteSearchInput { height: 2.85rem !important; min-height: 2.85rem !important; font-size: .85rem !important; padding: .65rem .9rem !important; border-radius: .65rem !important; }
 .businessDirectoryDialog .assetQuoteSearchBar .secondaryButton { min-width: 7rem !important; }
