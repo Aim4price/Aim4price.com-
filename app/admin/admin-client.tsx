@@ -725,9 +725,9 @@ export default function AdminClient({
 
       const focusable = Array.from(
         modal.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
         ),
-      ).filter((element) => !element.hasAttribute("hidden"));
+      ).filter((element) => element.getClientRects().length > 0);
 
       if (focusable.length === 0) {
         event.preventDefault();
@@ -2132,6 +2132,7 @@ export default function AdminClient({
                 <h2 id="admin-account-action-modal-title">
                   {accountActionModal.name || "Unnamed account"}
                 </h2>
+                <p className={styles.accountIdentity}>{formatAccountValue(accountActionModal.accountType)} · {accountActionModal.accountStatusLabel} · {accountActionModal.email || "No email saved"}</p>
               </div>
 
               <button
@@ -2149,334 +2150,364 @@ export default function AdminClient({
               </button>
             </header>
 
-            <div className={styles.accountPrimaryActions} role="group" aria-label="Primary account actions">
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.workStartButton}`}
-                onClick={() => void startWork(accountActionModal)}
-                disabled={busyUserAction !== null || selectedAccountIsProtected}
-              >
-                {busyUserAction === `${accountActionModal.userId}:start_work`
-                  ? "Starting work..."
-                  : "Start work & open account"}
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.openButton}`}
-                onClick={() => runAction(accountActionModal, "open_account")}
-                disabled={busyUserAction !== null || selectedAccountIsProtected}
-              >
-                {busyUserAction === `${accountActionModal.userId}:open_account`
-                  ? getBusyText("open_account")
-                  : "Open without tracking"}
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.notificationButton}`}
-                onClick={() =>
-                  setNotificationComposer({
-                    userId: accountActionModal.userId,
-                    title: DEFAULT_NOTIFICATION_TITLE,
-                    body: "",
-                    priority: "normal",
-                    error: "",
-                  })
-                }
-                disabled={busyUserAction !== null}
-                aria-expanded={notificationComposer?.userId === accountActionModal.userId}
-                aria-controls="admin-notification-composer"
-              >
-                Send message
-              </button>
-            </div>
-
-            <nav className={styles.accountWorkspaceLinks} aria-label="Account workspaces">
-              <Link href={`/admin/billing?account=${encodeURIComponent(accountActionModal.userId)}`}>Billing & invoices</Link>
-              <Link href={`/admin/capture-queue?owner=${encodeURIComponent(accountActionModal.userId)}`}>Capture requests</Link>
-              <Link href={`/admin/work-tracker?account=${encodeURIComponent(accountActionModal.userId)}`}>Work history</Link>
-              <Link href={`/admin/discovery?owner=${encodeURIComponent(accountActionModal.userId)}`}>Discovery assets</Link>
-            </nav>
-            <div className={styles.accountActionSummary}>
-              <div><span>Email</span><strong>{accountActionModal.email || "Not saved"}</strong></div>
-              <div>
-                <span>Account</span>
-                <strong>
-                  {formatAccountValue(accountActionModal.accountType)} ·{" "}
-                  {formatAccountValue(accountActionModal.accountSubtype)}
-                </strong>
+            <section className={styles.accountToolSection} aria-label="Work on this account">
+              <div className={styles.accountSectionIntro}>
+                <h3>Work on this account</h3>
+                <p>Open the account with time tracking, browse without tracking, or send a message.</p>
               </div>
-              <div>
-                <span>Status</span>
-                <strong>{accountActionModal.accountStatusLabel}</strong>
-              </div>
-              <div>
-                <span>Province</span>
-                <strong>{formatProvince(accountActionModal.province)}</strong>
-              </div>
-              <div>
-                <span>Phone</span>
-                <strong>{accountActionModal.phone || "Not saved"}</strong>
-              </div>
-              <div>
-                <span>Introduced by</span>
-                <strong>{accountActionModal.introducedBy}</strong>
-              </div>
-              <div>
-                <span>Password</span>
-                <strong>{accountActionModal.passwordStatus}</strong>
-              </div>
-              <div>
-                <span>Last active</span>
-                <strong>{formatLastActive(accountActionModal.lastActiveAtIso)}</strong>
-              </div>
-              <div>
-                <span>Signed up</span>
-                <strong>{formatDate(accountActionModal.createdAtIso)}</strong>
-              </div>
-            </div>
-
-            <details className={styles.accountStorageDetails}>
-              <summary>
-                <span>Storage</span>
-                <strong>
-                  {accountActionModal.storageLabel} · {accountActionModal.storageFileCount.toLocaleString("en-ZA")} {" "}
-                  {accountActionModal.storageFileCount === 1 ? "file" : "files"}
-                </strong>
-              </summary>
-              <section className={styles.accountStorageOverview} aria-label="Account storage usage">
-                <div className={styles.accountStoragePrimary}>
-                  <span>Tracked client storage</span>
-                  <strong>{accountActionModal.storageLabel}</strong>
-                </div>
-                <div>
-                  <span>Bucket-only uploads</span>
-                  <strong>{accountActionModal.bucketStorageLabel}</strong>
-                </div>
-                <div>
-                  <span>PostgreSQL files</span>
-                  <strong>{accountActionModal.postgresStorageLabel}</strong>
-                </div>
-              </section>
-            </details>
-
-            <div className={styles.accountActionSectionHeading}>
-              <strong>Access &amp; account tools</strong>
-            </div>
-
-            <div
-              className={styles.accountActionGrid}
-              role="group"
-              aria-label="Account actions"
-            >
-              {accountActionModal.accountStatus !== "active" ? <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.activateButton}`}
-                onClick={() => runAction(accountActionModal, "activate")}
-                disabled={busyUserAction !== null}
-              >
-                {busyUserAction === `${accountActionModal.userId}:activate`
-                  ? getBusyText("activate")
-                  : "Activate account"}
-              </button> : null}
-
-              {accountActionModal.accountStatus !== "pending_payment" ? <button
-                type="button"
-                className={styles.accountActionButton}
-                onClick={() => runAction(accountActionModal, "pending")}
-                disabled={
-                  busyUserAction !== null ||
-                  selectedAccountIsProtected
-                }
-              >
-                {busyUserAction === `${accountActionModal.userId}:pending`
-                  ? getBusyText("pending")
-                  : "Set as pending"}
-              </button> : null}
-
-              {accountActionModal.accountStatus !== "suspended" ? <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.suspendButton}`}
-                onClick={() => runAction(accountActionModal, "suspend")}
-                disabled={
-                  busyUserAction !== null ||
-                  selectedAccountIsProtected
-                }
-              >
-                {busyUserAction === `${accountActionModal.userId}:suspend`
-                  ? getBusyText("suspend")
-                  : "Suspend account"}
-              </button> : null}
-
-              <button
-                type="button"
-                className={styles.accountActionButton}
-                onClick={() => runAction(accountActionModal, "send_reset")}
-                disabled={busyUserAction !== null}
-              >
-                {busyUserAction === `${accountActionModal.userId}:send_reset`
-                  ? getBusyText("send_reset")
-                  : "Send password reset"}
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.namesButton}`}
-                onClick={() => {
-                  const user = accountActionModal;
-                  accountModalTriggerRef.current = null;
-                  setNotificationComposer(null);
-                  setAccountActionModal(null);
-                  openAssetNameModal(user);
-                }}
-                disabled={busyUserAction !== null}
-              >
-                Manage asset names
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.qrButton}`}
-                onClick={() => {
-                  const user = accountActionModal;
-                  accountModalTriggerRef.current = null;
-                  setNotificationComposer(null);
-                  setAccountActionModal(null);
-                  void openQrModal(user);
-                }}
-                disabled={busyUserAction !== null}
-              >
-                Print QR labels
-              </button>
-            </div>
-
-            {notificationComposer?.userId === accountActionModal.userId ? (
-              <form
-                id="admin-notification-composer"
-                className={styles.notificationComposer}
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void sendAccountNotification(accountActionModal);
-                }}
-              >
-                <div className={styles.notificationComposerHeading}>
-                  <div>
-                    <strong>Send notification</strong>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setNotificationComposer(null)}
-                    disabled={busyUserAction !== null}
-                    aria-label="Close notification composer"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <label className={styles.notificationField}>
-                  <span>Title</span>
-                  <input
-                    type="text"
-                    value={notificationComposer.title}
-                    onChange={(event) =>
-                      setNotificationComposer((current) =>
-                        current
-                          ? { ...current, title: event.target.value, error: "" }
-                          : current,
-                      )
-                    }
-                    maxLength={MAX_NOTIFICATION_TITLE_LENGTH}
-                    disabled={busyUserAction !== null}
-                    autoFocus
-                  />
-                  <small>
-                    {notificationComposer.title.length}/
-                    {MAX_NOTIFICATION_TITLE_LENGTH}
-                  </small>
-                </label>
-
-                <label className={styles.notificationField}>
-                  <span>Message</span>
-                  <textarea
-                    value={notificationComposer.body}
-                    onChange={(event) =>
-                      setNotificationComposer((current) =>
-                        current
-                          ? { ...current, body: event.target.value, error: "" }
-                          : current,
-                      )
-                    }
-                    maxLength={MAX_NOTIFICATION_BODY_LENGTH}
-                    rows={5}
-                    placeholder="Write the message this account should receive"
-                    required
-                    disabled={busyUserAction !== null}
-                  />
-                  <small>
-                    {notificationComposer.body.length}/
-                    {MAX_NOTIFICATION_BODY_LENGTH}
-                  </small>
-                </label>
-
-                <NotificationPriorityPicker
-                  value={notificationComposer.priority}
-                  onChange={(priority) =>
-                    setNotificationComposer((current) =>
-                      current ? { ...current, priority, error: "" } : current,
-                    )
-                  }
-                  disabled={busyUserAction !== null}
-                />
-
-                {notificationComposer.error ? (
-                  <p className={styles.notificationComposerError} role="alert">
-                    {notificationComposer.error}
-                  </p>
-                ) : null}
-
-                <div className={styles.notificationComposerActions}>
-                  <button
-                    type="button"
-                    onClick={() => setNotificationComposer(null)}
-                    disabled={busyUserAction !== null}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className={styles.notificationSendButton}
-                    disabled={
-                      busyUserAction !== null ||
-                      !notificationComposer.body.trim()
-                    }
-                  >
-                    {busyUserAction ===
-                    `${accountActionModal.userId}:send_notification`
-                      ? getBusyText("send_notification")
-                      : "Send notification"}
-                  </button>
-                </div>
-              </form>
-            ) : null}
-
-            {selectedAccountIsProtected ? (
-              <p role="note">Protected administrator account — this account cannot be deleted.</p>
-            ) : (
-              <div className={styles.accountActionDanger}>
-                <strong>Delete account</strong>
+              <div className={styles.accountPrimaryActions} role="group" aria-label="Primary account actions">
                 <button
                   type="button"
-                  className={`${styles.accountActionButton} ${styles.deleteButton}`}
-                  onClick={() => runAction(accountActionModal, "delete_user")}
+                  className={`${styles.accountActionButton} ${styles.workStartButton}`}
+                  onClick={() => void startWork(accountActionModal)}
                   disabled={busyUserAction !== null || selectedAccountIsProtected}
                 >
-                  {busyUserAction === `${accountActionModal.userId}:delete_user`
-                    ? getBusyText("delete_user")
-                    : "Delete account"}
+                  {busyUserAction === `${accountActionModal.userId}:start_work`
+                    ? "Starting work..."
+                    : "Start work & open account"}
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.accountActionButton} ${styles.openButton}`}
+                  onClick={() => runAction(accountActionModal, "open_account")}
+                  disabled={busyUserAction !== null || selectedAccountIsProtected}
+                >
+                  {busyUserAction === `${accountActionModal.userId}:open_account`
+                    ? getBusyText("open_account")
+                    : "Open without tracking"}
+                </button>
+
+                <button
+                  type="button"
+                  className={`${styles.accountActionButton} ${styles.notificationButton}`}
+                  onClick={() =>
+                    setNotificationComposer({
+                      userId: accountActionModal.userId,
+                      title: DEFAULT_NOTIFICATION_TITLE,
+                      body: "",
+                      priority: "normal",
+                      error: "",
+                    })
+                  }
+                  disabled={busyUserAction !== null}
+                  aria-expanded={notificationComposer?.userId === accountActionModal.userId}
+                  aria-controls="admin-notification-composer"
+                >
+                  Send message
                 </button>
               </div>
-            )}
+              {notificationComposer?.userId === accountActionModal.userId ? (
+                <form
+                  id="admin-notification-composer"
+                  className={styles.notificationComposer}
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void sendAccountNotification(accountActionModal);
+                  }}
+                >
+                  <div className={styles.notificationComposerHeading}>
+                    <div>
+                      <strong>Send notification</strong>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNotificationComposer(null)}
+                      disabled={busyUserAction !== null}
+                      aria-label="Close notification composer"
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  <label className={styles.notificationField}>
+                    <span>Title</span>
+                    <input
+                      type="text"
+                      value={notificationComposer.title}
+                      onChange={(event) =>
+                        setNotificationComposer((current) =>
+                          current
+                            ? { ...current, title: event.target.value, error: "" }
+                            : current,
+                        )
+                      }
+                      maxLength={MAX_NOTIFICATION_TITLE_LENGTH}
+                      disabled={busyUserAction !== null}
+                      autoFocus
+                    />
+                    <small>
+                      {notificationComposer.title.length}/
+                      {MAX_NOTIFICATION_TITLE_LENGTH}
+                    </small>
+                  </label>
+
+                  <label className={styles.notificationField}>
+                    <span>Message</span>
+                    <textarea
+                      value={notificationComposer.body}
+                      onChange={(event) =>
+                        setNotificationComposer((current) =>
+                          current
+                            ? { ...current, body: event.target.value, error: "" }
+                            : current,
+                        )
+                      }
+                      maxLength={MAX_NOTIFICATION_BODY_LENGTH}
+                      rows={5}
+                      placeholder="Write the message this account should receive"
+                      required
+                      disabled={busyUserAction !== null}
+                    />
+                    <small>
+                      {notificationComposer.body.length}/
+                      {MAX_NOTIFICATION_BODY_LENGTH}
+                    </small>
+                  </label>
+
+                  <NotificationPriorityPicker
+                    value={notificationComposer.priority}
+                    onChange={(priority) =>
+                      setNotificationComposer((current) =>
+                        current ? { ...current, priority, error: "" } : current,
+                      )
+                    }
+                    disabled={busyUserAction !== null}
+                  />
+
+                  {notificationComposer.error ? (
+                    <p className={styles.notificationComposerError} role="alert">
+                      {notificationComposer.error}
+                    </p>
+                  ) : null}
+
+                  <div className={styles.notificationComposerActions}>
+                    <button
+                      type="button"
+                      onClick={() => setNotificationComposer(null)}
+                      disabled={busyUserAction !== null}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className={styles.notificationSendButton}
+                      disabled={
+                        busyUserAction !== null ||
+                        !notificationComposer.body.trim()
+                      }
+                    >
+                      {busyUserAction ===
+                        `${accountActionModal.userId}:send_notification`
+                        ? getBusyText("send_notification")
+                        : "Send notification"}
+                    </button>
+                  </div>
+                </form>
+              ) : null}
+
+            </section>
+            <div className={styles.accountToolsLayout}>
+              <section className={styles.accountToolSection} aria-label="Account workspaces">
+                <div className={styles.accountSectionIntro}>
+                  <h3>Account workspaces</h3>
+                  <p>Billing, requests and activity for this account.</p>
+                </div>
+
+                <nav className={styles.accountWorkspaceLinks} aria-label="Account workspaces">
+                  <Link href={`/admin/billing?account=${encodeURIComponent(accountActionModal.userId)}`}><strong>Billing & invoices</strong><span>Payments and subscription</span></Link>
+                  <Link href={`/admin/capture-queue?owner=${encodeURIComponent(accountActionModal.userId)}`}><strong>Capture requests</strong><span>Uploads needing assistance</span></Link>
+                  <Link href={`/admin/work-tracker?account=${encodeURIComponent(accountActionModal.userId)}`}><strong>Work history</strong><span>Recorded time and activity</span></Link>
+                  <Link href={`/admin/discovery?owner=${encodeURIComponent(accountActionModal.userId)}`}><strong>Discovery assets</strong><span>Assets shared for discovery</span></Link>
+                </nav>
+              </section>
+              <section className={styles.accountToolSection} aria-label="Asset tools">
+                <div className={styles.accountSectionIntro}>
+                  <h3>Asset tools</h3>
+                  <p>Keep asset records and identification organised.</p>
+                </div>
+                <div className={styles.accountActionGrid}>
+                  <button
+                    type="button"
+                    className={`${styles.accountActionButton} ${styles.namesButton}`}
+                    onClick={() => {
+                      const user = accountActionModal;
+                      accountModalTriggerRef.current = null;
+                      setNotificationComposer(null);
+                      setAccountActionModal(null);
+                      openAssetNameModal(user);
+                    }}
+                    disabled={busyUserAction !== null}
+                  >
+                    Manage asset names
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.accountActionButton} ${styles.qrButton}`}
+                    onClick={() => {
+                      const user = accountActionModal;
+                      accountModalTriggerRef.current = null;
+                      setNotificationComposer(null);
+                      setAccountActionModal(null);
+                      void openQrModal(user);
+                    }}
+                    disabled={busyUserAction !== null}
+                  >
+                    Print QR labels
+                  </button>
+                </div>
+
+              </section>
+            </div>
+            <details className={styles.accountDisclosure}>
+              <summary>Account details <span>Contact, registration and storage</span></summary>
+              <div className={styles.accountActionSummary}>
+                <div><span>Email</span><strong>{accountActionModal.email || "Not saved"}</strong></div>
+                <div>
+                  <span>Account</span>
+                  <strong>
+                    {formatAccountValue(accountActionModal.accountType)} ·{" "}
+                    {formatAccountValue(accountActionModal.accountSubtype)}
+                  </strong>
+                </div>
+                <div>
+                  <span>Status</span>
+                  <strong>{accountActionModal.accountStatusLabel}</strong>
+                </div>
+                <div>
+                  <span>Province</span>
+                  <strong>{formatProvince(accountActionModal.province)}</strong>
+                </div>
+                <div>
+                  <span>Phone</span>
+                  <strong>{accountActionModal.phone || "Not saved"}</strong>
+                </div>
+                <div>
+                  <span>Introduced by</span>
+                  <strong>{accountActionModal.introducedBy}</strong>
+                </div>
+                <div>
+                  <span>Password</span>
+                  <strong>{accountActionModal.passwordStatus}</strong>
+                </div>
+                <div>
+                  <span>Last active</span>
+                  <strong>{formatLastActive(accountActionModal.lastActiveAtIso)}</strong>
+                </div>
+                <div>
+                  <span>Signed up</span>
+                  <strong>{formatDate(accountActionModal.createdAtIso)}</strong>
+                </div>
+              </div>
+
+              <details className={styles.accountStorageDetails}>
+                <summary>
+                  <span>Storage</span>
+                  <strong>
+                    {accountActionModal.storageLabel} · {accountActionModal.storageFileCount.toLocaleString("en-ZA")} {" "}
+                    {accountActionModal.storageFileCount === 1 ? "file" : "files"}
+                  </strong>
+                </summary>
+                <section className={styles.accountStorageOverview} aria-label="Account storage usage">
+                  <div className={styles.accountStoragePrimary}>
+                    <span>Tracked client storage</span>
+                    <strong>{accountActionModal.storageLabel}</strong>
+                  </div>
+                  <div>
+                    <span>Bucket-only uploads</span>
+                    <strong>{accountActionModal.bucketStorageLabel}</strong>
+                  </div>
+                  <div>
+                    <span>PostgreSQL files</span>
+                    <strong>{accountActionModal.postgresStorageLabel}</strong>
+                  </div>
+                </section>
+              </details>
+            </details>
+            <details className={styles.accountDisclosure}>
+              <summary>Access & security <span>Status, password reset and account deletion</span></summary>
+              <section className={styles.accountToolSection} aria-label="Account access">
+                <div className={styles.accountSectionIntro}>
+                  <h3>Account access</h3>
+                  <p>Change account status or help the user sign in.</p>
+                </div>
+                <div
+                  className={styles.accountActionGrid}
+                  role="group"
+                  aria-label="Account actions"
+                >
+                  {accountActionModal.accountStatus !== "active" ? <button
+                    type="button"
+                    className={`${styles.accountActionButton} ${styles.activateButton}`}
+                    onClick={() => runAction(accountActionModal, "activate")}
+                    disabled={busyUserAction !== null}
+                  >
+                    {busyUserAction === `${accountActionModal.userId}:activate`
+                      ? getBusyText("activate")
+                      : "Activate account"}
+                  </button> : null}
+
+                  {accountActionModal.accountStatus !== "pending_payment" ? <button
+                    type="button"
+                    className={styles.accountActionButton}
+                    onClick={() => runAction(accountActionModal, "pending")}
+                    disabled={
+                      busyUserAction !== null ||
+                      selectedAccountIsProtected
+                    }
+                  >
+                    {busyUserAction === `${accountActionModal.userId}:pending`
+                      ? getBusyText("pending")
+                      : "Mark payment pending"}
+                  </button> : null}
+
+                  {accountActionModal.accountStatus !== "suspended" ? <button
+                    type="button"
+                    className={`${styles.accountActionButton} ${styles.suspendButton}`}
+                    onClick={() => runAction(accountActionModal, "suspend")}
+                    disabled={
+                      busyUserAction !== null ||
+                      selectedAccountIsProtected
+                    }
+                  >
+                    {busyUserAction === `${accountActionModal.userId}:suspend`
+                      ? getBusyText("suspend")
+                      : "Suspend account"}
+                  </button> : null}
+
+                  <button
+                    type="button"
+                    className={styles.accountActionButton}
+                    onClick={() => runAction(accountActionModal, "send_reset")}
+                    disabled={busyUserAction !== null}
+                  >
+                    {busyUserAction === `${accountActionModal.userId}:send_reset`
+                      ? getBusyText("send_reset")
+                      : "Send password reset"}
+                  </button>
+
+                </div>
+              </section>
+              {selectedAccountIsProtected ? (
+                <p role="note">Protected administrator account — this account cannot be deleted.</p>
+              ) : (
+                <div className={styles.accountActionDanger}>
+                  <strong>Delete account</strong>
+                  <button
+                    type="button"
+                    className={`${styles.accountActionButton} ${styles.deleteButton}`}
+                    onClick={() => runAction(accountActionModal, "delete_user")}
+                    disabled={busyUserAction !== null || selectedAccountIsProtected}
+                  >
+                    {busyUserAction === `${accountActionModal.userId}:delete_user`
+                      ? getBusyText("delete_user")
+                      : "Delete account"}
+                  </button>
+                </div>
+              )}
+            </details>
+
           </section>
         </div>
       ) : null}

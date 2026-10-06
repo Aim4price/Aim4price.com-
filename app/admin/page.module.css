@@ -2219,3 +2219,52 @@
 .accountWorkspaceLinks a { padding: .65rem .8rem; border: 1px solid #dce6df; border-radius: .45rem; color: #24583f; text-decoration: none; font-weight: 750; font-size: .8rem; }
 .accountWorkspaceLinks a:hover, .accountWorkspaceLinks a:focus-visible { background: #edf5ee; }
 @media(max-width: 1150px) { .filterBar { grid-template-columns: repeat(4, minmax(0, 1fr)); } .filterBar .searchField { grid-column: 1 / -1; } }
+
+/* Keep everyday work visible and infrequent account controls grouped. */
+.accountToolSection {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.15rem;
+  border: 1px solid #dce7e1;
+  border-radius: 0.85rem;
+  background: #fff;
+}
+.accountSectionIntro h3 { margin: 0; font-size: 1rem; color: #17362c; }
+.accountSectionIntro p { margin: 0.35rem 0 0; color: #60716a; font-size: 0.82rem; line-height: 1.5; }
+.accountToolsLayout { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 1rem; }
+.accountToolsLayout .accountActionGrid { grid-template-columns: 1fr; }
+.accountActionModal .accountWorkspaceLinks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; margin: 0; }
+.accountActionModal .accountWorkspaceLinks a {
+  position: relative; display: grid; align-content: center; gap: 0.3rem;
+  min-height: 4.4rem; padding: 0.8rem 2rem 0.8rem 1rem;
+  border-radius: 0.65rem; background: #f6faf8;
+}
+.accountWorkspaceLinks a::after { content: '›'; position: absolute; right: 0.9rem; top: 50%; transform: translateY(-50%); font-size: 1.4rem; }
+.accountWorkspaceLinks a strong { font-size: 0.88rem; }
+.accountWorkspaceLinks a span { font-size: 0.75rem; font-weight: 500; color: #60716a; line-height: 1.4; }
+.accountToolSection .accountActionButton { min-height: 3.3rem; font-weight: 700; white-space: normal; }
+.accountDisclosure { min-width: 0; padding: 0 1.15rem; border: 1px solid #dce7e1; border-radius: 0.85rem; background: #fff; }
+.accountDisclosure > summary { position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem 1rem; min-height: 3.8rem; padding: 0.8rem 1.8rem 0.8rem 0; cursor: pointer; list-style: none; color: #17362c; font-weight: 750; }
+.accountDisclosure > summary::-webkit-details-marker { display: none; }
+.accountDisclosure > summary::after { content: '+'; position: absolute; right: 0; font-size: 1.3rem; }
+.accountDisclosure[open] > summary::after { content: '−'; }
+.accountDisclosure > summary span { color: #60716a; font-size: 0.78rem; font-weight: 500; }
+.accountDisclosure[open] { padding-bottom: 1rem; }
+.accountDisclosure .accountActionSummary { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 0.85rem; }
+.accountDisclosure .accountActionSummary strong { white-space: normal; overflow-wrap: anywhere; font-weight: 650; }
+.accountDisclosure .accountToolSection { padding: 0.5rem 0 1rem; border: 0; }
+.accountDisclosure > summary:focus-visible { outline: 3px solid #8ab9a5; outline-offset: 2px; border-radius: 0.4rem; }
+@media (max-width: 850px) {
+  .accountToolsLayout { grid-template-columns: 1fr; }
+  .accountToolsLayout .accountActionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .accountActionModal .accountPrimaryActions,
+  .accountActionModal .accountActionGrid,
+  .accountActionModal .accountWorkspaceLinks,
+  .accountDisclosure .accountActionSummary { grid-template-columns: 1fr; }
+  .accountToolSection { padding: 0.85rem; }
+}
+.accountIdentity { margin: 0.5rem 0 0; color: #60716a; font-size: 0.8rem; line-height: 1.5; overflow-wrap: anywhere; }

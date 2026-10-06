@@ -90,6 +90,12 @@ const ADMIN_LINKS: Array<{
   },
 ];
 
+const ADMIN_GROUPS: Array<{ title: string; keys: AdminSection[] }> = [
+  { title: "Accounts & service", keys: ["accounts", "billing", "capture-queue", "work-tracker", "businesses"] },
+  { title: "Assets & marketplace", keys: ["discovery", "marketplace", "sold-assets", "asset-map"] },
+  { title: "Insights & tools", keys: ["dashboard", "valuations", "asset-values", "lifecycle", "maintenance-catalogue"] },
+];
+
 export default function AdminNavigation({ active, canGetEstimate = false, businessVerification, initialVerificationOpen = false }: {
   active: AdminSection;
   canGetEstimate?: boolean;
@@ -213,44 +219,51 @@ export default function AdminNavigation({ active, canGetEstimate = false, busine
                 <button type="button" className={styles.backButton} onClick={() => setShowVerification(false)}>Back to Manage</button>
                 {businessVerification}
               </div>
-            ) : <div className={styles.optionGrid}>
-              {hasVerification ? (
-                <button type="button" className={styles.link} onClick={() => setShowVerification(true)}>
-                  <strong>Business verification</strong>
-                  <span aria-hidden="true">›</span>
-                </button>
-              ) : null}
-              {canGetEstimate ? (
-                <Link
-                  href="/valuation"
-                  prefetch={false}
-                  className={styles.link}
-                  onMouseEnter={() => router.prefetch("/valuation")}
-                  onFocus={() => router.prefetch("/valuation")}
-                  onClick={() => setIsOpen(false)}
-                >
-                  <strong>Get estimate</strong>
-                  <span aria-hidden="true">›</span>
-                </Link>
-              ) : null}
-              {ADMIN_LINKS.map((item) => {
-                const isActive = item.key === active;
-                return (
+            ) : <div className={styles.navigationGroups}>
+              {hasVerification || canGetEstimate ? <div className={styles.optionGrid}>
+                {hasVerification ? (
+                  <button type="button" className={styles.link} onClick={() => setShowVerification(true)}>
+                    <strong>Business verification</strong>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                ) : null}
+                {canGetEstimate ? (
                   <Link
-                    key={item.key}
-                    href={item.href}
+                    href="/valuation"
                     prefetch={false}
-                    className={`${styles.link} ${isActive ? styles.active : ""}`}
-                    aria-current={isActive ? "page" : undefined}
-                    onMouseEnter={() => router.prefetch(item.href)}
-                    onFocus={() => router.prefetch(item.href)}
+                    className={styles.link}
+                    onMouseEnter={() => router.prefetch("/valuation")}
+                    onFocus={() => router.prefetch("/valuation")}
                     onClick={() => setIsOpen(false)}
                   >
-                    <strong>{item.label}</strong>
+                    <strong>Get estimate</strong>
                     <span aria-hidden="true">›</span>
                   </Link>
-                );
-              })}
+                ) : null}
+              </div> : null}
+              {ADMIN_GROUPS.map((group) => <section className={styles.navigationGroup} key={group.title} aria-label={group.title}>
+                <h3>{group.title}</h3>
+                <div className={styles.optionGrid}>
+                  {group.keys.map((key) => ADMIN_LINKS.find((item) => item.key === key)!).map((item) => {
+                    const isActive = item.key === active;
+                    return (
+                      <Link
+                        key={item.key}
+                        href={item.href}
+                        prefetch={false}
+                        className={`${styles.link} ${isActive ? styles.active : ""}`}
+                        aria-current={isActive ? "page" : undefined}
+                        onMouseEnter={() => router.prefetch(item.href)}
+                        onFocus={() => router.prefetch(item.href)}
+                        onClick={() => setIsOpen(false)}
+                      >
+                        <strong>{item.label}</strong>
+                        <span aria-hidden="true">›</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </section>)}
             </div>}
           </section>
         </div>
