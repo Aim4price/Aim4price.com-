@@ -37,3 +37,38 @@
   html[data-app-theme='dark'] select option { background: var(--app-surface); color: var(--app-text); }
   html[data-app-theme='dark'] :focus-visible { outline-color: var(--app-accent); }
 }
+
+/* Shared typing surfaces for website pages, portals, apps and offline forms.
+   A named important layer wins over legacy per-page !important backgrounds,
+   without replacing control geometry, date-picker icons or validation borders. */
+@layer aim4price-typing-surfaces {
+  @media screen and (forced-colors: none) {
+    :root {
+      --typing-field-surface: #edf5f0;
+      --typing-field-focus: #e3efe8;
+      --typing-field-text: #173e33;
+      --typing-field-placeholder: #536b60;
+    }
+    html[data-app-theme='dark'] {
+      --typing-field-surface: #182e25;
+      --typing-field-focus: #1c362b;
+      --typing-field-text: #edf5ef;
+      --typing-field-placeholder: #b7cbbf;
+    }
+    :is(input:not([type]), input[type=''], input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='tel'], input[type='url'], input[type='number'], input[type='date'], input[type='datetime-local'], input[type='time'], input[type='month'], input[type='week'], textarea):not(:disabled):not([readonly]) {
+      background-color: var(--typing-field-surface) !important;
+      color: var(--typing-field-text) !important;
+      caret-color: var(--typing-field-text) !important;
+    }
+    :is(input:not([type]), input[type=''], input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='tel'], input[type='url'], input[type='number'], input[type='date'], input[type='datetime-local'], input[type='time'], input[type='month'], input[type='week'], textarea):not(:disabled):not([readonly]):not([type='date']) {
+      background-image: none !important;
+    }
+    :is(input:not([type]), input[type=''], input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='tel'], input[type='url'], input[type='number'], input[type='date'], input[type='datetime-local'], input[type='time'], input[type='month'], input[type='week'], textarea):not(:disabled):not([readonly]):focus {
+      background-color: var(--typing-field-focus) !important;
+    }
+    :is(input:not([type]), input[type=''], input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='tel'], input[type='url'], input[type='number'], textarea):not(:disabled):not([readonly])::placeholder {
+      color: var(--typing-field-placeholder) !important;
+      opacity: 1 !important;
+    }
+  }
+}

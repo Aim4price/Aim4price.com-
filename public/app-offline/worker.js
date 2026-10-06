@@ -1,6 +1,6 @@
 /* Only public shell assets are cached. App data lives in the PIN-encrypted vault. */
 const ROOT = ({ owner: '/owner-app', field: '/field-manager', dealer: '/dealer', middleman: '/middleman' })[OFFLINE_APP];
-const SHELL_CACHE = 'aim4price-' + OFFLINE_APP + '-offline-shell-v5';
+const SHELL_CACHE = 'aim4price-' + OFFLINE_APP + '-offline-shell-v6';
 const SHELL_URL = ROOT + '/offline.html';
 const SHELL_FILES = [SHELL_URL, '/app-theme.css', '/app-offline/offline.css', '/field-manager/montserrat-latin.woff', '/app-offline/offline.mjs', '/app-offline/store.mjs', '/app-offline/config.mjs'];
 self.addEventListener('install', event => event.waitUntil(caches.open(SHELL_CACHE).then(cache => cache.addAll(SHELL_FILES)).then(() => self.skipWaiting())));
