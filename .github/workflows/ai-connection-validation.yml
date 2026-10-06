@@ -12,6 +12,7 @@ on:
       - 'database/migrations/135-read-only-ai-connections.sql'
       - 'tests/ai-connection.test.cjs'
       - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/ai-connection-validation.yml'
 permissions:
   contents: read
@@ -24,6 +25,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --ignore-scripts --no-package-lock
+      - run: npm ci --ignore-scripts
       - run: npm run test:ai-connection
       - run: npm run typecheck
