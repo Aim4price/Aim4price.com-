@@ -1075,6 +1075,7 @@ export default function MyInvoicesClient({
   const [budgetManagerSearch, setBudgetManagerSearch] = useState('');
   const [budgetManagerOpen, setBudgetManagerOpen] = useState(false);
   const handledAssetBudgetLaunch = useRef('');
+  const assetBudgetLaunchActive = useRef(false);
   const budgetLaunchAssetId = budgetsPage ? routeSearchParams.get('assetId')?.trim() || '' : '';
   const budgetLaunchReturnTo = budgetsPage ? normalizeInternalReturnPath(routeSearchParams.get('returnTo') ?? undefined) : '';
   const [budgetManagerView, setBudgetManagerView] = useState<'choice' | 'list'>('choice');
@@ -1185,9 +1186,12 @@ export default function MyInvoicesClient({
       return;
     }
     const existing = costBudgets.filter((budget) => budget.assetId === asset.id);
-    if (existing.length === 1) openEditBudget(existing[0]);
-    else if (!existing.length) openCreateBudget(asset.id);
-  }, [budgetsPage, canManageBudgets, budgetsLoading, budgetLoadError, budgetLaunchAssetId, routeSearchParams, budgetAssets, costBudgets]);
+    if (existing.length <= 1) {
+      assetBudgetLaunchActive.current = Boolean(budgetLaunchReturnTo);
+      if (existing.length === 1) openEditBudget(existing[0]);
+      else openCreateBudget(asset.id);
+    }
+  }, [budgetsPage, canManageBudgets, budgetsLoading, budgetLoadError, budgetLaunchAssetId, budgetLaunchReturnTo, routeSearchParams, budgetAssets, costBudgets]);
 
   useEffect(() => {
     if (!canManageBudgets || budgetsLoading || budgetLoadError) return;
@@ -2168,6 +2172,11 @@ export default function MyInvoicesClient({
   function closeBudgetModal() {
     if (budgetSaving) return;
     if (budgetWizardStep > (editingBudgetId ? 2 : 1)) { goBackBudgetWizard(); return; }
+    if (assetBudgetLaunchActive.current && budgetLaunchReturnTo) {
+      assetBudgetLaunchActive.current = false;
+      window.location.assign(budgetLaunchReturnTo);
+      return;
+    }
     setBudgetModalOpen(false);
     setBudgetAssetPickerOpen(false);
     setBudgetAssetSearch('');
@@ -2283,6 +2292,7 @@ export default function MyInvoicesClient({
       }
 
       await reloadBudgets();
+      assetBudgetLaunchActive.current = false;
       setBudgetModalOpen(false);
       setBudgetAssetPickerOpen(false);
       setBudgetAssetSearch('');
