@@ -40,7 +40,7 @@ test('permission input defaults to read-only and signup returns only to valid en
  for(const value of ['https://evil.test','//evil.test','/\\evil.test','/admin','/asset-share/short','/asset-share/'+'x'.repeat(43)+'?open=1&redirect=https://evil.test'])assert.equal(permissions.sharedEnquiryReturnTo(value),null);
  assert.equal(permissions.sharedEnquiryReturnTo('/asset-share/'+'x'.repeat(43)),'/asset-share/'+'x'.repeat(43));
 });
-test('signed-in recipients can read without email verification; contributions require the invited approved account',async()=>{
+test('shared contributions require the invited verified identity and owner permissions, not business approval',async()=>{
  const x=await setup();try{
   const lead=await x.leads.readLeadPage(x.link.token);
   assert.equal(lead.share.umbrellaName,'');assert.equal(lead.share.senderName,'Owner Business');assert.equal(lead.share.assets.length,2);
@@ -51,8 +51,8 @@ test('signed-in recipients can read without email verification; contributions re
   x.signIn({emailVerified:false});assert.equal((await x.access.externalLeadAccess(lead)).access,'verify-email');
   for(const type of ['owner','dealer']){x.state.type=type;assert.equal((await x.access.externalLeadAccess(lead)).access,'active');}
   x.state.type='business';x.signIn();assert.equal((await x.leads.listReceivedSharedEnquiries()).length,1);
-  x.signIn();x.state.approved=false;assert.equal((await x.access.externalLeadAccess(lead)).access,'read-only');
-  await assert.rejects(x.access.requireExternalLeadAction(x.link.token,'documents'),e=>e.status===403);
+  x.signIn();x.state.approved=false;assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
+  await x.access.requireExternalLeadAction(x.link.token,'documents');
   x.state.approved=true;x.state.status='suspended';assert.equal((await x.access.externalLeadAccess(lead)).access,'suspended');
   x.state.status='active';assert.equal((await x.access.externalLeadAccess(lead)).access,'active');
   assert.equal((await x.leads.loadProtectedLeadReport(x.link.token,lead.reports[0].id)).status,200);
@@ -97,7 +97,7 @@ test('uploads use verified identity and proposals enter the existing owner appro
  }finally{await x.pg.close();}
 });
 
-test('correction endpoint rejects foreign requests and forged access, then attributes the real approved recipient',async()=>{
+test('correction endpoint rejects foreign requests and forged access, then attributes the real verified recipient',async()=>{
  const x=await setup();try{
   const {NextRequest}=require('next/server');
   const route=load('app/api/asset-share-links/[token]/corrections/route.ts',{
@@ -110,7 +110,7 @@ test('correction endpoint rejects foreign requests and forged access, then attri
   assert.equal((await route.POST(request(),ctx)).status,401);
   x.signIn({email:'forwarded@example.com'});x.state.approved=true;assert.equal((await route.POST(request(),ctx)).status,403);
   x.signIn({emailVerified:false});assert.equal((await route.POST(request({assetIndex:100}),ctx)).status,403);
-  x.signIn();x.state.approved=false;assert.equal((await route.POST(request(),ctx)).status,403);
+  x.signIn();x.state.approved=false;assert.equal((await route.POST(request(),ctx)).status,200);
   x.state.approved=true;assert.equal((await route.POST(request({assetIndex:100}),ctx)).status,400);assert.equal((await route.POST(request({field:'ownerUserId'}),ctx)).status,400);
   const response=await route.POST(request({dealerUserId:'spoofed',ownerUserId:'other',assetId:B}),ctx);assert.equal(response.status,200);const result=await response.json();assert.equal(result.correction.dealerUserId,'recipient');assert.equal(result.correction.ownerUserId,'owner');assert.equal(result.correction.assetId,B);
   assert.equal((await route.POST(request({assetId:'99999999-0000-4000-8000-000000000001'}),ctx)).status,400);
@@ -268,11 +268,11 @@ test('explicit update permissions save the live owner asset directly and retain 
  } finally {await x.pg.close();}
 });
 
-test('live shared asset access denies other assets, missing permissions and unapproved writes',async()=>{
+test('live shared asset access denies other assets and missing permissions without requiring business approval',async()=>{
  const x=await setup();try{
   const live=x.mocks['./live-shared-asset-access'];
   await assert.rejects(live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true));
-  x.signIn();await assert.rejects(live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true));
+  x.signIn();await live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true);
   x.state.approved=true;
   await live.requireLiveSharedAsset(x.link.token,B,'serialNumber',true);
   await assert.rejects(live.requireLiveSharedAsset(x.link.token,'99999999-0000-4000-8000-000000000001','serialNumber',true));
