@@ -433,3 +433,23 @@
   :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > a,
   :global(:where(html:not(:has([data-website-canvas])))) .listingManagerActions > button { min-height: 4.5rem; padding-block: .7rem; }
 }
+
+.createAdvertActions { padding-top: 1.25rem; }
+/* Neutral settings surfaces; shared typing colours are overridden locally. */
+.settingsCard { --typing-field-surface: #f5f6f7; --typing-field-focus: #eef0f2; }
+.settingsCard .showroomLogoField,
+.settingsCard .advertDesignField,
+.settingsCard .switchRow,
+.settingsCard .slugField,
+.settingsCard .statusText { background: #f7f8f9; }
+.settingsCard :is(.showroomLogoCopy strong, .advertDesignField strong, .publicLinkField > label, .switchRow strong) { font-size: .9rem; font-weight: 800; }
+.settingsCard > label > span:first-child { font-size: .9rem; }
+.settingsCard :is(.showroomLogoCopy span, .advertDesignField span, .switchRow small, .dangerZone small) { font-size: .82rem; line-height: 1.5; font-weight: 500; }
+.settingsCard :is(input, textarea) { font-size: .9rem; line-height: 1.5; }
+.settingsCard :is(.showroomLogoButton, .copyLinkButton, .dangerZone button) { font-size: .82rem; }
+.settingsCard .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); gap: 1rem; padding: 1rem; }
+.settingsCard .showroomLogoActions { grid-column: 2; }
+.settingsCard .showroomLogoCopy span { max-width: none; }
+.settingsCard .showroomLogoCopy > small, .settingsCard label > small { font-size: .75rem; }
+:global(html[data-app-theme='dark']) .settingsCard { --typing-field-surface: #252b30; --typing-field-focus: #30383e; }
+:global(html[data-app-theme='dark']) .settingsCard :is(.showroomLogoField, .advertDesignField, .switchRow, .slugField, .statusText) { background: #252b30; }

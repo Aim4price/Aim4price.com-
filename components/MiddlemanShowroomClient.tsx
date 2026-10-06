@@ -20,6 +20,7 @@ type ManagerProps = {
   initialShowroom: MiddlemanShowroom;
   initialListings: MarketplaceListing[];
   dealerAppMode?: boolean;
+  ownerAccount?: boolean;
   advertDesign?: MarketplaceAdDesign;
   advertDesignHref?: string | null;
 };
@@ -165,6 +166,7 @@ export function MiddlemanShowroomManager({
   initialShowroom,
   initialListings,
   dealerAppMode = false,
+  ownerAccount = false,
   advertDesign = 'aim4price-marketplace',
   advertDesignHref = null,
 }: ManagerProps) {
@@ -179,6 +181,7 @@ export function MiddlemanShowroomManager({
   const [readingLogo, setReadingLogo] = useState(false);
   const [logoFeedback, setLogoFeedback] = useState<{ text: string; error: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deletingShowroom, setDeletingShowroom] = useState(false);
@@ -198,7 +201,7 @@ export function MiddlemanShowroomManager({
     || showroomLogoUrl !== showroom.showroomLogoUrl;
 
   useEffect(() => {
-    if (!manageListingTarget || typeof window === 'undefined') return undefined;
+    if ((!manageListingTarget && !createDialogOpen) || typeof window === 'undefined') return undefined;
 
     const dialog = manageDialogRef.current;
     const previousOverflow = document.body.style.overflow;
@@ -211,6 +214,7 @@ export function MiddlemanShowroomManager({
       if (event.key === 'Escape') {
         event.preventDefault();
         setManageListingTarget(null);
+        setCreateDialogOpen(false);
         return;
       }
       if (event.key !== 'Tab' || !dialog) return;
@@ -240,7 +244,7 @@ export function MiddlemanShowroomManager({
       document.body.style.overflow = previousOverflow;
       manageTriggerRef.current?.focus();
     };
-  }, [manageListingTarget]);
+  }, [manageListingTarget, createDialogOpen]);
 
   function applyShowroomLogoFile(file?: File) {
     if (!file || saving || readingLogo) return;
@@ -382,7 +386,7 @@ export function MiddlemanShowroomManager({
           <p>All your adverts. One link to share.</p>
         </div>
         <div className={styles.heroActions}>
-          <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Value and create advert</Link>
+          {ownerAccount ? <button type="button" className={styles.primaryButton} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button> : <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Value and create advert</Link>}
           {showroom.isPublic ? <Link className={styles.secondaryButton} href={publicHref(showroom.slug)} target="_blank" rel="noreferrer">Open public showroom <span aria-hidden="true">↗</span></Link> : null}
         </div>
       </section>
@@ -603,11 +607,34 @@ export function MiddlemanShowroomManager({
             <div className={styles.emptyStock}>
               <h3>Your showroom is ready</h3>
               <p>Create your first advert and it will appear here automatically.</p>
-              <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Create an advert</Link>
+              {ownerAccount ? <button type="button" className={styles.primaryButton} onClick={(event) => { manageTriggerRef.current = event.currentTarget; setCreateDialogOpen(true); }}><span aria-hidden="true">+</span> Create advert</button> : <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Create an advert</Link>}
             </div>
           )}
         </section>
       </div>
+
+      {createDialogOpen ? (
+        <div className={styles.listingManagerBackdrop} data-website-overlay onClick={(event) => { if (event.target === event.currentTarget) setCreateDialogOpen(false); }}>
+          <section ref={manageDialogRef} className={`${styles.listingManagerDialog} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="create-advert-title" tabIndex={-1}>
+            <header className={`${styles.listingManagerHeader} ${dialogStyles.header}`}>
+              <div><h2 id="create-advert-title">Create advert</h2><p>Start with an estimate or an asset you already own.</p></div>
+              <button type="button" className={dialogStyles.close} aria-label="Close create advert" onClick={() => setCreateDialogOpen(false)}>×</button>
+            </header>
+            <div className={`${styles.listingManagerActions} ${styles.createAdvertActions}`}>
+              <Link href={valuationHref}>
+                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
+                <span className={styles.listingManagerActionCopy}><strong>Create from estimate</strong><small>Value an asset and create its advert.</small></span>
+                <ShowroomManageActionArrow direction="right" />
+              </Link>
+              <Link href="/asset-register">
+                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span>
+                <span className={styles.listingManagerActionCopy}><strong>Create from asset register</strong><small>Choose an asset, then open Manage → Marketplace.</small></span>
+                <ShowroomManageActionArrow direction="right" />
+              </Link>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {manageListingTarget ? (
         <div
@@ -660,7 +687,7 @@ export function MiddlemanShowroomManager({
                 >
                   <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
                   <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Price, description and seller details.</small></span>
-                  <ShowroomManageActionArrow />
+                  <ShowroomManageActionArrow direction="right" />
                 </Link>
               ) : (
                 <button
@@ -671,7 +698,7 @@ export function MiddlemanShowroomManager({
                 >
                   <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
                   <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Editing requires a saved asset.</small></span>
-                  <ShowroomManageActionArrow />
+                  <ShowroomManageActionArrow direction="right" />
                 </button>
               )}
               <button
@@ -691,7 +718,7 @@ export function MiddlemanShowroomManager({
               >
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span>
                 <span className={styles.listingManagerActionCopy}><strong>Open in Marketplace</strong><small>View your live marketplace advert.</small></span>
-                <ShowroomManageActionArrow />
+                <ShowroomManageActionArrow direction="right" />
               </Link>
               <button
                 type="button"
@@ -703,7 +730,7 @@ export function MiddlemanShowroomManager({
               >
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="remove" /></span>
                 <span className={styles.listingManagerActionCopy}><strong>Remove advert</strong><small>Record the outcome and withdraw the advert.</small></span>
-                <ShowroomManageActionArrow />
+                <ShowroomManageActionArrow direction="right" />
               </button>
             </div>
           </section>

@@ -33,6 +33,7 @@ export default async function MyShowroomPage() {
     <main>
       <AppHeader active={profile.accountType === 'owner' ? 'account' : 'showroom'} />
       <MiddlemanShowroomManager
+        ownerAccount={profile.accountType === 'owner'}
         initialShowroom={showroom}
         initialListings={listings}
         advertDesign={profile.accountType === 'dealer' ? 'saved-brand' : 'aim4price-marketplace'}
