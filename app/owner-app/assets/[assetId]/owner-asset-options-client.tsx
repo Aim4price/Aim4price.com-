@@ -499,12 +499,14 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
           </div>
 
           <form className={styles.ownerPartnerSearch} onSubmit={submitSearch}>
-            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Find a business by name" aria-label="Search available companies" />
+            <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Business name" aria-label="Search available companies" />
             <button type="submit" disabled={loadingPartners}>{loadingPartners ? 'Searching…' : 'Search'}</button>
           </form>
 
-          <button type="button" className={styles.secondaryButton} onClick={() => shareWithExternalBusiness({name:'Aim4price',email:'aim4price@gmail.com',phone:'062 572 1650'})}>Need help?</button>
-          <BusinessInvite />
+          <div className={styles.ownerDirectorySummary} role="status">
+            <strong>{loadingPartners ? 'Finding businesses…' : `${partners.length} ${partners.length === 1 ? 'business' : 'businesses'}`}</strong>
+            <span>Choose a business to continue.</span>
+          </div>
           <div className={styles.ownerPartnerList}>
             {loadingPartners ? <p className={styles.ownerOptionsEmpty}>Loading available companies…</p> : partners.length ? partners.map((partner) => (
               <button type="button" className={styles.ownerPartnerCard} key={partner.userId} onClick={() => choosePartner(partner)}>
@@ -517,10 +519,16 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
                   <small>{partnerLocation(partner)}</small>
                   <small>{partner.services || partnerTypeLabel(partner.partnerType)}</small>
                 </span>
-                <b aria-hidden="true">›</b>
+                <span className={styles.ownerPartnerSelect}>Select <b aria-hidden="true">›</b></span>
               </button>
             )) : <p className={styles.ownerOptionsEmpty}>{selectedOption.emptyText}</p>}
           </div>
+          <details className={styles.ownerDirectoryInvite}>
+            <summary>Business not listed? <span aria-hidden="true">+</span></summary>
+            <BusinessInvite />
+          </details>
+          <button type="button" className={styles.ownerDirectoryHelp} onClick={() => shareWithExternalBusiness({name:'Aim4price',email:'aim4price@gmail.com',phone:'062 572 1650'})}>Ask Aim4price for help</button>
+
         </section>
       ) : null}
 

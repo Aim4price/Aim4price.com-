@@ -3536,3 +3536,21 @@
 .managerAssetCard.assetDirectoryAllCard { gap: 12px; padding: 16px; }
 .assetDirectoryUmbrellaCard > p,
 .assetDirectoryAllCard > p { margin: 0; }
+
+/* Business selection comes first; invitations stay available on demand. */
+.ownerDirectorySummary { display:grid; gap:4px; color:var(--app-text,var(--owner-ink)); }
+.ownerDirectorySummary strong { font-size:.9rem; font-weight:800; }
+.ownerDirectorySummary span { color:var(--app-muted,var(--owner-muted)); font-size:.82rem; line-height:1.5; }
+.ownerPartnerSelect { grid-column:2 / -1; display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:38px; border-top:1px solid var(--app-line,#cbded5); padding-top:8px; color:var(--app-text,var(--owner-ink)); font-size:.86rem; font-weight:800; }
+.ownerPartnerSelect b { font-size:1.4rem; }
+.ownerDirectoryInvite { border:1px solid var(--app-line,#cbded5); border-radius:15px; padding:0 14px; background:var(--app-surface-soft,#f4f8f6); }
+.ownerDirectoryInvite summary { display:flex; align-items:center; justify-content:space-between; min-height:54px; gap:12px; list-style:none; cursor:pointer; font-size:.9rem; font-weight:800; }
+.ownerDirectoryInvite summary::-webkit-details-marker { display:none; }
+.ownerDirectoryInvite summary span { font-size:1.35rem; }
+.ownerDirectoryInvite[open] summary span { transform:rotate(45deg); }
+.ownerDirectoryInvite > section { display:grid; gap:12px; padding:0 0 16px; border:0; background:transparent; }
+.ownerDirectoryInvite p { margin:0; line-height:1.55; font-size:.85rem; }
+.ownerDirectoryInvite a { padding:8px 0; }
+.ownerDirectoryHelp { min-height:44px; border:0; background:transparent; color:var(--app-text,var(--owner-ink)); font:700 .85rem Montserrat,sans-serif; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
+.ownerDirectoryHelp:focus-visible,.ownerDirectoryInvite summary:focus-visible { outline:3px solid var(--app-accent,#65a98a); outline-offset:3px; border-radius:8px; }
+.ownerPartnerSearch input::placeholder { color:var(--app-muted,var(--owner-muted)); opacity:1; }
