@@ -179,7 +179,12 @@ function formatUsage(value: number | null, metric: DealerMaintenanceTrackedAsset
 }
 
 function selectedAssetLabel(asset: DealerMaintenanceTrackedAsset): string {
-  return asset.currentUsage !== null ? formatUsage(asset.currentUsage, asset.usageMetric) : '';
+  const details = [
+    asset.yearModel ? `Year Model: ${asset.yearModel}` : '',
+    asset.currentUsage !== null ? `Usage: ${formatUsage(asset.currentUsage, asset.usageMetric)}` : '',
+    asset.condition ? `Condition: ${titleCase(asset.condition)}` : '',
+  ].filter(Boolean);
+  return details.length ? details.join(' • ') : asset.assetTitle;
 }
 
 function triggerLabel(triggerType: TriggerType): string {
@@ -463,7 +468,7 @@ export default function DealerMaintenanceScheduleModal({
   }
 
   if (step === 'maintenance-type') {
-    return <MaintenanceEntryChoice step="type" timing="upcoming" assetTitle={asset.assetTitle}
+    return <MaintenanceEntryChoice step="type" timing="upcoming" assetTitle={asset.assetTitle} assetDetails={selectedAssetLabel(asset)}
       onClose={onClose} onBack={onClose} onType={maintenanceType => { updateDraft({ maintenanceType }); setStep('trigger-type'); }} />;
   }
 
@@ -474,7 +479,8 @@ export default function DealerMaintenanceScheduleModal({
           <header className={styles.modalHeader}>
             <div>
               <h2 id="dealer-maintenance-trigger-title">When should it be due?</h2>
-              <p>{titleCase(draft.maintenanceType)} • {selectedAssetLabel(asset)}</p>
+              <p>{asset.assetTitle}</p>
+              <p>{selectedAssetLabel(asset)}</p>
             </div>
             <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close maintenance trigger selection">
               <CloseIcon />
@@ -529,7 +535,7 @@ export default function DealerMaintenanceScheduleModal({
                 : `Schedule ${draft.maintenanceType}`}
             </h2>
             <p>{asset.assetTitle}</p>
-            {selectedAssetLabel(asset) ? <p>{selectedAssetLabel(asset)}</p> : null}
+            <p>{selectedAssetLabel(asset)}</p>
           </div>
           <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} disabled={saving} aria-label="Close maintenance form">
             <CloseIcon />

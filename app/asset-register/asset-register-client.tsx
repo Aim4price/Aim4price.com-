@@ -1,5 +1,4 @@
 'use client';
-import { assetModalUsage } from '../../lib/asset-modal-usage';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
 import {loadLeaflet} from '../../lib/asset-location-map';
 import AssetLocationEditor from '../../components/AssetLocationEditor';
@@ -19800,7 +19799,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-manage-title">{activeAsset.title}</h3>
-                <p>{assetModalUsage(buildAssetMeta(activeAsset))}</p>
+                <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
               <button
@@ -19816,7 +19815,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
               <div className={styles.optionsContent}>
                 <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${actionColours.grid}`} data-manage-actions>
-                  <button data-manage-action="history" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:assetModalUsage(buildAssetMeta(activeAsset))})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View asset changes and corrections.</small></span></button>
+                  <button data-manage-action="history" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={()=>setHistoryAsset({id:activeAsset.id,title:activeAsset.title,details:buildAssetMeta(activeAsset)})}><AssetActionIcon action="history" className={styles.buttonIcon} /><span><strong>History</strong><small>View asset changes and corrections.</small></span></button>
                   <button data-manage-action="details"
                     type="button"
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}
@@ -19991,7 +19990,7 @@ export default function AssetRegisterClient({
               <div className={styles.modalHeaderText}>
                 <h3 id="owner-command-choice-title">Maintenance</h3>
                 <p>{activeAsset.title}</p>
-                <p>{assetModalUsage(buildAssetMeta(activeAsset))}</p>
+                <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
               <button
@@ -20104,7 +20103,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-pricing-title">{activeAsset.title}</h3>
-                <p>{assetModalUsage(buildAssetMeta(activeAsset))}</p>
+                <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closePricingDialog} aria-label="Close pricing options">
@@ -20179,7 +20178,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.pricingResultHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="pricing-preview-title">{pricingPreview.asset.title}</h3>
-                <p>{assetModalUsage(buildAssetMeta(pricingPreview.asset))}</p>
+                <p>{buildAssetMeta(pricingPreview.asset)}</p>
                 <PricingVatToggle included={pricingVatIncluded} onChange={setPricingVatIncluded} />
               </div>
 
@@ -20374,7 +20373,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`} data-download-header="true">
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-report-title" tabIndex={-1}>{reportAsset.title}</h3>
-                <p>{isAttachingExternalReport ? 'Choose a report to attach.' : assetModalUsage(buildAssetMeta(reportAsset))}</p>
+                <p>{isAttachingExternalReport ? 'Choose a report to attach.' : buildAssetMeta(reportAsset)}</p>
               </div>
 
               <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={closeAssetReportDialog} aria-label="Close report options">

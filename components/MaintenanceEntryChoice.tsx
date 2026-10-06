@@ -7,6 +7,7 @@ import accountStyles from '../app/account/page.module.css';
 
 type Props = {
   assetTitle: string;
+  assetDetails?: string;
   onClose: () => void;
   onBack?: () => void;
 } & ({
@@ -33,7 +34,7 @@ export default function MaintenanceEntryChoice(props: Props) {
   return <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={{ zIndex: 26000 }} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby={titleId}>
     <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
       <header className={styles.modalHeader}>
-        <div><h2 id={titleId}>{props.step === 'timing' ? 'Already done or upcoming?' : props.timing === 'done' ? 'What was done?' : 'What needs doing?'}</h2><p>{props.assetTitle}</p></div>
+        <div><h2 id={titleId}>{props.step === 'timing' ? 'Already done or upcoming?' : props.timing === 'done' ? 'What was done?' : 'What needs doing?'}</h2><p>{props.assetTitle}</p>{props.assetDetails ? <p>{props.assetDetails}</p> : null}</div>
         <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={props.onClose} aria-label="Close maintenance"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4 6.4 5Z" /></svg></button>
       </header>
       <div className={styles.modalDivider} />

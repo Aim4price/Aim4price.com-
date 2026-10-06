@@ -89,6 +89,16 @@ function CheckIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" /></svg>;
 }
 
+function serviceAssetDetails(record: DesktopServiceRecord): string {
+  if (record.assetMeta) return record.assetMeta;
+  const metric = record.assetUsageMetric ?? record.usageMetric;
+  const usage = record.currentUsage != null && metric
+    ? `${record.currentUsage.toLocaleString('en-ZA')} ${metric === 'percentage' ? '%' : metric}`
+    : 'Not recorded';
+  const condition = record.assetCondition?.replace(/[_-]+/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase()) || 'Not recorded';
+  return `Year Model: ${record.assetYearModel ?? 'Not recorded'} • Usage: ${usage} • Condition: ${condition}`;
+}
+
 export default function DesktopServiceModal({
   record,
   busy = false,
@@ -259,7 +269,7 @@ export default function DesktopServiceModal({
             <div>
               <h2 id="scheduled-service-choice-title">Which work was done?</h2>
               <p>{record.assetTitle}</p>
-              {record.currentUsage != null && record.usageMetric ? <p>{record.currentUsage.toLocaleString('en-ZA')} {record.usageMetric === 'percentage' ? '%' : record.usageMetric}</p> : null}
+              <p>{serviceAssetDetails(record)}</p>
             </div>
             <button className={`${styles.closeButton} ${!dealerAppMode ? dialogStyles.close : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
               <CloseIcon />
@@ -297,7 +307,7 @@ export default function DesktopServiceModal({
           <div>
             <h2 id="desktop-service-title">{standalone || isSeparateCompletion ? `Record completed ${actionName}` : `Complete scheduled ${actionName}`}</h2>
             <p>{record.assetTitle}</p>
-              {record.currentUsage != null && record.usageMetric ? <p>{record.currentUsage.toLocaleString('en-ZA')} {record.usageMetric === 'percentage' ? '%' : record.usageMetric}</p> : null}
+              <p>{serviceAssetDetails(record)}</p>
           </div>
           <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={onClose} aria-label="Close service form" disabled={busy}>
             <CloseIcon />

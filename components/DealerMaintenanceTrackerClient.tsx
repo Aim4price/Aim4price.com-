@@ -1,5 +1,4 @@
 'use client';
-import { assetModalUsage } from '../lib/asset-modal-usage';
 import dialogStyles from './AccountDialog.module.css';
 import ProblemCard from './leads/LeadProblemCard';
 import DateInput from './DateInput';
@@ -1796,7 +1795,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${workspaceStyles.modalHeader} ${dialogStyles.header}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="tracking-manage-title">{managedAsset.assetTitle}</h3>
-                <p>{assetModalUsage(trackingAssetMeta(managedAsset))}</p>
+                <p>{trackingAssetMeta(managedAsset)}</p>
               </div>
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose} ${dialogStyles.close}`} onClick={() => setManagedAccessId(null)} aria-label="Close tracking management">
                 <CloseIcon className={assetStyles.buttonIcon} />
