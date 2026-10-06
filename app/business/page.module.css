@@ -121,11 +121,11 @@
  :global(body:not(:has([data-website-canvas]))) .accountContent .lead .button { grid-column:2; grid-row:auto; }
 }
 
-/* Balance the welcome copy with the centred enquiry card. */
-.accountHeroCopy { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-.accountHeroCopy h1 { align-items:center; }
-.accountHeroCopy > p { align-self:center; }
-.accountHeroCopy > div { justify-content:center; }
+/* Keep the welcome content on one consistent left edge. */
+.accountHeroCopy { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; text-align:left; }
+.accountHeroCopy h1 { align-items:flex-start; }
+.accountHeroCopy > p { align-self:flex-start; }
+.accountHeroCopy > div { justify-content:flex-start; }
 .accountHero .heroLink { align-self:center; }
 
 .businessReview { grid-column:1 / -1; padding:1rem 1.2rem; border:1px solid #75998c33; border-radius:.85rem; }
