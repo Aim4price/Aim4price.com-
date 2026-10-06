@@ -69,7 +69,7 @@ test('budget coverage uses its own complete asset list, independent of fuel excl
     client.indexOf('const filteredCostBudgets = useMemo'),
   );
   const createBudget = client.slice(
-    client.indexOf('function openCreateBudget()'),
+    client.indexOf('function openCreateBudget('),
     client.indexOf('function openEditBudget('),
   );
 
