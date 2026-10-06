@@ -18,7 +18,14 @@ import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const FEATURE_START_INDEX = 3;
-const OPENING_TAGLINE = ['Asset Management Software', 'built for South Africa.'] as const;
+const OPENING_TAGLINES = [
+  ['Asset Management Software', 'built for South Africa.'],
+  ['South Africa’s assets.', 'Digitised, valued and managed.'],
+] as const;
+const FIRST_TAGLINE_LENGTH = OPENING_TAGLINES[0].join('').length;
+const TOTAL_TAGLINE_LENGTH = OPENING_TAGLINES.reduce((total, lines) => total + lines.join('').length, 0);
+const TAGLINE_TYPE_DELAY_MS = 45;
+const TAGLINE_HOLD_MS = 1800;
 
 // Leave time to read both feature paragraphs before the next automatic card.
 export const HERO_FEATURE_DURATION_MS = 10000;
@@ -48,7 +55,7 @@ type FeatureStory = {
 };
 
 const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
-  brand: 5200,
+  brand: 9500,
   promise: 4800,
   preview: 3600,
   have: HERO_FEATURE_DURATION_MS,
@@ -120,6 +127,7 @@ export default function HomeHeroExperience() {
 
   const updateStoryStep = useCallback((nextIndex: number) => {
     const safeIndex = clampStoryIndex(nextIndex);
+    if (safeIndex === 0 && storyStepRef.current !== 0) setTypedCount(0);
     storyStepRef.current = safeIndex;
     setStoryStepIndex(safeIndex);
     setIsTourFinished(false);
@@ -408,9 +416,12 @@ export default function HomeHeroExperience() {
   }, [alignStoryScroll, claimManualControl, isDesktopStory, updateStoryStep]);
 
   useEffect(() => {
-    const length = OPENING_TAGLINE.join('').length;
+    const length = TOTAL_TAGLINE_LENGTH;
     if (!canAutoplay || storyStepIndex !== 0 || isPaused || !isPageVisible || !isHeroVisible || typedCount >= length) return;
-    const timer = window.setTimeout(() => setTypedCount((count) => Math.min(count + 1, length)), typedCount === 0 ? 250 : 45);
+    const delay = typedCount === 0 ? 250
+      : typedCount === FIRST_TAGLINE_LENGTH ? TAGLINE_HOLD_MS
+      : TAGLINE_TYPE_DELAY_MS;
+    const timer = window.setTimeout(() => setTypedCount((count) => Math.min(count + 1, length)), delay);
     return () => window.clearTimeout(timer);
   }, [canAutoplay, storyStepIndex, isPaused, isPageVisible, isHeroVisible, typedCount]);
 
@@ -477,6 +488,9 @@ export default function HomeHeroExperience() {
     claimManualControl();
   };
 
+  const taglineIndex = typedCount > FIRST_TAGLINE_LENGTH ? 1 : 0;
+  const openingTagline = OPENING_TAGLINES[taglineIndex];
+  const taglineTypedCount = typedCount - (taglineIndex === 1 ? FIRST_TAGLINE_LENGTH : 0);
   const storyStep = HERO_STORY_STEPS[storyStepIndex] ?? HERO_STORY_STEPS[0];
   const storyMode =
     storyStepIndex < 2 ? 'opening' : storyStepIndex === 2 ? 'preview' : 'features';
@@ -526,11 +540,11 @@ export default function HomeHeroExperience() {
                         ) : null}
                       </span>
                     </span>
-                    {OPENING_TAGLINE.map((line, lineIndex) => (
+                    {openingTagline.map((line, lineIndex) => (
                       <span key={line} className={styles.typedLine}>
                         <span className={styles.typedReserve}>{line}</span>
                         <span className={styles.typedText}>{isDesktopStory
-                          ? line.slice(0, Math.max(0, typedCount - (lineIndex ? OPENING_TAGLINE[0].length : 0)))
+                          ? line.slice(0, Math.max(0, taglineTypedCount - (lineIndex ? openingTagline[0].length : 0)))
                           : line}</span>
                       </span>
                     ))}
@@ -542,7 +556,7 @@ export default function HomeHeroExperience() {
                   aria-hidden={storyStepIndex !== 1 && storyStepIndex !== 2}
                 >
                   <p className={styles.heroPromiseTitle}>
-                    <span>Know what you have.</span>
+                    <span>Know what you own.</span>
                     <span>Know what it’s worth.</span>
                     <span>Know what it costs.</span>
                   </p>
