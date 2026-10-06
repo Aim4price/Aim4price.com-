@@ -601,7 +601,7 @@ export default function InvoiceDropClient() {
                             <label className={styles.fieldWide}>
                               <span>Asset make, model or reference</span>
                               <input
-                                value={assetSearchQuery}
+                                data-search-input value={assetSearchQuery}
                                 onChange={(event) => {
                                   setAssetSearchQuery(event.currentTarget.value);
                                   setAssetSearchAccepted(null);

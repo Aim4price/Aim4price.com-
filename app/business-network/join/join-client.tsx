@@ -297,7 +297,7 @@ export default function BusinessJoin({
             <h2>Find a business on Google</h2>
             <label>
               Business name and town
-              <input value={query} placeholder="For example: S Haddad, George" onChange={(e) => setQuery(e.target.value)} />
+              <input data-search-input value={query} placeholder="For example: S Haddad, George" onChange={(e) => setQuery(e.target.value)} />
             </label>
             <button
               type="submit"

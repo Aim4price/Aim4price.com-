@@ -73,8 +73,8 @@ test('offline entry uses the same pre-paint preference and caches its theme styl
   const worker = readFileSync(new URL('../public/app-offline/worker.js', import.meta.url), 'utf8');
   const config = readFileSync(new URL('../public/app-offline/config.mjs', import.meta.url), 'utf8');
   const entry = readFileSync(new URL('../public/app-offline/offline.mjs', import.meta.url), 'utf8');
-  assert.ok(worker.includes("'-offline-shell-v7'"));
-  assert.ok(config.includes("'-offline-shell-v7'"));
+  assert.ok(worker.includes("'-offline-shell-v8'"));
+  assert.ok(config.includes("'-offline-shell-v8'"));
   assert.ok(entry.includes('cacheName: config.cache'));
   for (const root of ['owner-app', 'field-manager', 'dealer', 'middleman']) {
     const html = readFileSync(new URL('../public/' + root + '/offline.html', import.meta.url), 'utf8');
