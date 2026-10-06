@@ -211,6 +211,7 @@ export function MiddlemanShowroomManager({
     });
 
     function handleKeyDown(event: KeyboardEvent) {
+      if (!dialog?.getClientRects().length || event.defaultPrevented) return;
       if (event.key === 'Escape') {
         event.preventDefault();
         setManageListingTarget(null);
@@ -351,6 +352,7 @@ export function MiddlemanShowroomManager({
   function handleListingOutcomeRemoved(listing: MarketplaceListing) {
     setListings((current) => current.filter((item) => item.id !== listing.id));
     setOutcomeListingTarget(null);
+    setManageListingTarget(null);
     setMessage('Outcome saved. The advert was removed from Marketplace and your showroom.');
   }
 
@@ -638,7 +640,7 @@ export function MiddlemanShowroomManager({
 
       {manageListingTarget ? (
         <div
-          className={styles.listingManagerBackdrop} data-website-overlay
+          className={styles.listingManagerBackdrop} style={outcomeListingTarget ? { display: 'none' } : undefined} data-website-overlay
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setManageListingTarget(null);
           }}
@@ -725,7 +727,6 @@ export function MiddlemanShowroomManager({
                 className={styles.listingManagerRemove}
                 onClick={() => {
                   setOutcomeListingTarget(manageListingTarget);
-                  setManageListingTarget(null);
                 }}
               >
                 <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="remove" /></span>

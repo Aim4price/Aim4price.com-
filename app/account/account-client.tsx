@@ -1103,7 +1103,7 @@ export default function AccountClient({
         }
       });
     };
-  }, [activeAccountModal]);
+  }, [activeAccountModal, businessDetailsStep, partnerDirectoryStep]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -1685,6 +1685,14 @@ export default function AccountClient({
       return;
     }
 
+    if (activeAccountModal === 'business' && businessDetailsStep > 1) {
+      setBusinessDetailsStep((businessDetailsStep - 1) as BusinessDetailsStep);
+      return;
+    }
+    if (activeAccountModal === 'partnerDirectory' && partnerDirectoryStep > 1) {
+      goToPartnerDirectoryStep((partnerDirectoryStep - 1) as PartnerDirectoryStep);
+      return;
+    }
     destroyPartnerMap();
 
     if (profile) {

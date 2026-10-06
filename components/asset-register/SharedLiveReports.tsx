@@ -23,8 +23,8 @@ export default function SharedLiveReports({token,assetId,assetTitle,onClose,perm
   const [selected,setSelected]=useState<Report|null>(null);
   const back=()=>setSelected(null);
   const externalShare={token,assetId};
-  if(selected==='maintenance') return <DealerMaintenanceReportModal accessId={assetId} externalShare={externalShare} onBack={back} onClose={onClose}/>;
-  if(selected==='cost') return <DealerCostOfOwnershipReportModal accessId={assetId} externalShare={externalShare} assetTitle={assetTitle} assetMeta="Live asset report" onBack={back} onClose={onClose}/>;
+  if(selected==='maintenance') return <DealerMaintenanceReportModal accessId={assetId} externalShare={externalShare} onBack={back} onClose={back}/>;
+  if(selected==='cost') return <DealerCostOfOwnershipReportModal accessId={assetId} externalShare={externalShare} assetTitle={assetTitle} assetMeta="Live asset report" onBack={back} onClose={back}/>;
   if(selected) return <ReportDownloadFlow title={reports.find(report=>report.key===selected)!.label} allLabel={assetTitle} assets={[{id:assetId,title:assetTitle}]} lockedAssetId={assetId} skipTimeline={selected==='valuation'||selected==='map'} onClose={back} onDownload={async selection=>{
     const params=new URLSearchParams({shareToken:token,format:selection.format==='pdf' ? (selected==='map'?'pdf':'html') : 'xlsx'});
     let path:string;

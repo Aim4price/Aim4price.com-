@@ -9,9 +9,11 @@ export function useLeadDialog(onClose: () => void, busy = false) {
   useEffect(() => {
     const element = ref.current;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const controls = () => Array.from(element?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || []).filter(node => node.getClientRects().length);
+    const controls = () => Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') || []).filter(node => node.getClientRects().length);
     if (element && !element.contains(document.activeElement)) (controls()[0] || element).focus();
     function keydown(event: KeyboardEvent) {
+      const element = ref.current;
+      if (!element || !element.getClientRects().length || event.defaultPrevented) return;
       const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"],dialog[open]')).filter(node => node.getClientRects().length);
       // Existing Leads children can occur earlier in the DOM but sit above Manage.
       const layer = (node: HTMLElement) => {

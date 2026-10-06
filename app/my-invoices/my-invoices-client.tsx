@@ -2167,6 +2167,7 @@ export default function MyInvoicesClient({
 
   function closeBudgetModal() {
     if (budgetSaving) return;
+    if (budgetWizardStep > (editingBudgetId ? 2 : 1)) { goBackBudgetWizard(); return; }
     setBudgetModalOpen(false);
     setBudgetAssetPickerOpen(false);
     setBudgetAssetSearch('');
@@ -2397,6 +2398,27 @@ export default function MyInvoicesClient({
   }
 
   function closeModal() {
+    if (isSaving || isExtracting) return;
+    if (flow === 'manual-form') {
+      if (manualCostWizardStep > 1) goBackManualCostWizard();
+      else if (editingInvoiceId) finishModal();
+      else leaveManualCostWizard();
+      return;
+    }
+    if (flow === 'recurring') {
+      if (recurringWizardStep > 1) goBackRecurringWizard();
+      else setFlow('source-choice');
+      return;
+    }
+    if (flow === 'review') { setFlow('upload'); return; }
+    if (flow === 'upload') { setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic'); return; }
+    if (flow === 'asset-manual' || flow === 'asset-automatic') { setFlow('source-choice'); return; }
+    finishModal();
+  }
+
+  function finishModal() {
+    sourceDraftsRef.current = {};
+    recurringDraftStartedRef.current = false;
     if (sharedFlow) { sharedFlow.onClose(); return; }
     const shouldReturn = quickLaunchActive && quickLaunchReturnTo;
     setFlow(null);
@@ -2661,7 +2683,11 @@ export default function MyInvoicesClient({
     );
   }
 
+  const sourceDraftsRef = useRef<Partial<Record<InvoiceSource, InvoiceDraft>>>({});
+  const recurringDraftStartedRef = useRef(false);
   function openAddInvoiceModal(assetId = '') {
+    sourceDraftsRef.current = {};
+    recurringDraftStartedRef.current = false;
     const normalizedAssetId = assetId.trim();
     setNotice(null);
     setSelectedAssetId(normalizedAssetId);
@@ -2685,6 +2711,7 @@ export default function MyInvoicesClient({
   }
 
   function startFlow(source: InvoiceSource) {
+    sourceDraftsRef.current[draft.source] = draft;
     const presetAssetId = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
       ? selectedAssetId
       : '';
@@ -2693,20 +2720,16 @@ export default function MyInvoicesClient({
     setPickerOwnerId(assets.find((asset) => asset.id === presetAssetId)?.ownerUserId ?? '');
     setPickerSearch('');
     setEditingInvoiceId(null);
-    setManualUploadFile(null);
-    setAutomaticUploadFile(null);
-    setAutomaticUploadPages([]);
-    setCaptureNote('');
     setCaptureUploadError('');
-    setUploadedDocument(null);
-    setRawTextPreview('');
     setExtractionWarnings([]);
     setUsageMetricDropdownOpen(false);
     setManualCostWizardStep(1);
     setManualCostWizardError('');
-    setDraft(presetAssetId
-      ? buildDraftForAsset(source, presetAssetId)
-      : buildEmptyDraft(source, dealerMode ? dealerDefaults.supplierName : ''));
+    setDraft(current => {
+      const saved = sourceDraftsRef.current[source] ?? (current.source === source ? current : undefined);
+      if (saved && (!presetAssetId || saved.assetId === presetAssetId)) return saved;
+      return presetAssetId ? buildDraftForAsset(source, presetAssetId) : buildEmptyDraft(source, dealerMode ? dealerDefaults.supplierName : '');
+    });
     setAssetLockedForFlow(Boolean(presetAssetId));
     setFlow(presetAssetId
       ? source === 'manual' ? 'manual-form' : 'upload'
@@ -2714,6 +2737,8 @@ export default function MyInvoicesClient({
   }
 
   function startRecurringCommitment() {
+    if (recurringDraftStartedRef.current) { setFlow('recurring'); return; }
+    recurringDraftStartedRef.current = true;
     const presetAssetIds = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
       ? [selectedAssetId]
       : [];
@@ -2836,7 +2861,7 @@ export default function MyInvoicesClient({
       });
       const payload = await response.json() as RecurringCommitmentResponse;
       if (!response.ok || !payload.ok) throw new Error(payload.error || 'The recurring commitment could not be saved.');
-      closeModal();
+      finishModal();
       setNotice({ tone: 'success', message: 'Recurring commitment saved separately from incurred Cost Ledger expenses.' });
     } catch (error) {
       setRecurringError(error instanceof Error ? error.message : 'The recurring commitment could not be saved.');
@@ -2879,7 +2904,7 @@ export default function MyInvoicesClient({
     setManualCostWizardError('');
     setUsageMetricDropdownOpen(false);
     if (editingInvoiceId) {
-      closeModal();
+      finishModal();
       return;
     }
     setFlow(assetLockedForFlow ? 'source-choice' : 'asset-manual');
@@ -3011,7 +3036,7 @@ export default function MyInvoicesClient({
       }
 
       setCaptureRequests((current) => [data.request!, ...current.filter((request) => request.id !== data.request!.id)]);
-      closeModal();
+      finishModal();
       setNotice({
         tone: 'success',
         message: dealerMode
@@ -3106,7 +3131,7 @@ export default function MyInvoicesClient({
       await Promise.all([reloadData(), reloadBudgets()]);
       if (canManageBudgets) dispatchCostLedgerUpdated();
       const duplicateText = data.duplicateWarnings?.length ? ` ${data.duplicateWarnings.join(' ')}` : '';
-      closeModal();
+      finishModal();
       setNotice({
         tone: 'success',
         message: dealerMode

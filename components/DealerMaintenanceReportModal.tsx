@@ -203,13 +203,20 @@ export default function DealerMaintenanceReportModal({
   onClose,
   onError,
 }: Props) {
-  const dialogRef = useLeadDialog(onClose);
   const [asset, setAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [step, setStep] = useState<ReportStep>(pdfOnly ? 'timeline' : 'format');
   const [format, setFormat] = useState<DownloadFormat>('pdf');
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState<DownloadFormat | null>(null);
   const [error, setError] = useState('');
+  const dialogRef = useLeadDialog(dismiss, Boolean(downloading));
+  function dismiss() {
+    if (downloading) return;
+    setOpenSelect(null);
+    if (step === 'timeline' && !pdfOnly) setStep('format');
+    else (onBack ?? onClose)();
+  }
+
   const [reportType, setReportType] = useState('all');
   const [reportYear, setReportYear] = useState('all');
   const [reportMonth, setReportMonth] = useState('all');
@@ -321,7 +328,7 @@ export default function DealerMaintenanceReportModal({
 
   return (
     <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
-      <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose} data-download-shade="true" />
+      <div className={assetStyles.modalBackdrop} data-website-overlay onClick={dismiss} data-download-shade="true" />
       <div
         className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${assetStyles.assetFuelReportModal} ${downloadStyles.dialog}`}
         role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1}
@@ -333,7 +340,7 @@ export default function DealerMaintenanceReportModal({
             <h3 id="dealer-maintenance-report-title">{asset?.assetTitle || 'Maintenance report'}</h3>
             <p>{assetMeta}</p>
           </div>
-          <button type="button" className={assetStyles.modalCloseButton} onClick={onClose} aria-label="Close maintenance report">
+          <button type="button" className={assetStyles.modalCloseButton} onClick={dismiss} aria-label="Close maintenance report">
             <CloseIcon className={assetStyles.buttonIcon} />
           </button>
         </div>
@@ -386,7 +393,7 @@ export default function DealerMaintenanceReportModal({
                   <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onBack ?? onClose}>
                     Back
                   </button>
-                  <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onClose}>
+                  <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={dismiss}>
                     Cancel
                   </button>
                   <button type="button" className={assetStyles.primaryButton} onClick={() => setStep('timeline')} data-download-primary="true">
@@ -454,7 +461,7 @@ export default function DealerMaintenanceReportModal({
                 <button
                   type="button"
                   className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
-                  onClick={onClose}
+                  onClick={dismiss}
                   disabled={Boolean(downloading)}
                 >
                   Cancel
@@ -477,7 +484,7 @@ export default function DealerMaintenanceReportModal({
             )
           ) : (
             <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.assetFuelReportActions}`} data-download-footer="true">
-              <button type="button" className={assetStyles.secondaryButton} onClick={onClose}>Close</button>
+              <button type="button" className={assetStyles.secondaryButton} onClick={dismiss}>Close</button>
             </div>
           )}
         </div>

@@ -124,7 +124,7 @@ export default function MarketplaceOutcomeModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-  closeRef.current = onClose;
+  closeRef.current = closeModal;
   submittingRef.current = submitting;
 
   useEffect(() => {
@@ -212,7 +212,10 @@ export default function MarketplaceOutcomeModal({
   const location = listingLocation(listing);
 
   function closeModal() {
-    if (!submitting) onClose();
+    if (submitting) return;
+    if (stage === 'wizard' && step > 1) { previousStep(); return; }
+    if (stage === 'wizard') { setStage('confirm'); return; }
+    onClose();
   }
 
   function startRemoval() {

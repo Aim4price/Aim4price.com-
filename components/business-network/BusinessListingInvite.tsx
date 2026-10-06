@@ -44,6 +44,8 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
   }
 
   function close() {
+    if (busy) return;
+    if (step === 'recipient' && !link) { setStep('permissions'); return; }
     requestVersion.current++;
     setSelection(null); setLink(''); setAccepted(false);
     opening.current = false; setBusy(false);

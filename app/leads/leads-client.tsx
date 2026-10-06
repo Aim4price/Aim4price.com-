@@ -27,7 +27,7 @@ import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from '../../components/WebsitePortal';
 import dynamic from 'next/dynamic';
 import AppHeader from '../../components/AppHeader';
@@ -2355,7 +2355,6 @@ export default function LeadsClient({
 
   async function openLeadQrModal(lead: AssetLead) {
     setNotice(null);
-    setManagedLead(null);
 
     try {
       const { asset } = await loadLeadAssetMedia(lead);
@@ -2452,7 +2451,6 @@ export default function LeadsClient({
 
   async function openLeadPhotoUploadModal(lead: AssetLead) {
     setNotice(null);
-    setManagedLead(null);
 
     try {
       const { lead: hydratedLead } = await loadLeadAssetMedia(lead);
@@ -2575,7 +2573,6 @@ export default function LeadsClient({
 
   function openLeadReportModal(lead: AssetLead) {
     setNotice(null);
-    setManagedLead(null);
     setReportLead(lead);
   }
 
@@ -2589,8 +2586,6 @@ export default function LeadsClient({
       setNotice({ tone: 'error', message: 'The asset owner has not enabled maintenance report access.' });
       return;
     }
-    setManagedLead(null);
-    setReportLead(null);
     setMaintenanceReportAccessId(access.accessId);
   }
 
@@ -2604,8 +2599,6 @@ export default function LeadsClient({
       setNotice({ tone: 'error', message: 'The asset owner has not enabled Cost of Ownership access.' });
       return;
     }
-    setManagedLead(null);
-    setReportLead(null);
     setCostReportLead(lead);
   }
 
@@ -2619,7 +2612,6 @@ export default function LeadsClient({
       setNotice({ tone: 'error', message: 'The asset owner has not enabled dealer-created maintenance schedules.' });
       return;
     }
-    setManagedLead(null);
     setMaintenanceScheduleLead(lead);
   }
 
@@ -2653,16 +2645,17 @@ export default function LeadsClient({
     setIsNoteAttachmentDragging(false);
   }
 
+  const noteDraftLeadRef = useRef<string | null>(null);
   function openNoteModal(lead: AssetLead) {
     setNotice(null);
     setNoteLead(lead);
-    resetLeadNoteDraft();
+    if (noteDraftLeadRef.current !== lead.id) resetLeadNoteDraft();
+    noteDraftLeadRef.current = lead.id;
   }
 
   function closeNoteModal() {
     if (isSavingNote) return;
     setNoteLead(null);
-    resetLeadNoteDraft();
   }
 
   function handleLeadNotePdfFile(file: File | null) {
@@ -2779,6 +2772,7 @@ export default function LeadsClient({
     return `Good day ${ownerDisplayName(lead)},\n\nI received your Aim4price ${formatLeadDisplayType(lead).toLowerCase()} for ${leadFollowUpSubject(lead)}.\n\nKind regards`;
   }
 
+  const emailDraftLeadRef = useRef<string | null>(null);
   function openEmail(lead: AssetLead) {
     const email = leadEmailRecipient(lead);
     if (!email) {
@@ -2791,22 +2785,21 @@ export default function LeadsClient({
     if (dealerAppMode) {
       const subject = buildLeadEmailSubject(lead);
       const body = buildLeadEmailBody(lead);
-      setManagedLead(null);
-      window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
       return;
     }
 
     setEmailLead(lead);
-    setEmailSubjectDraft(buildLeadEmailSubject(lead));
-    setEmailBodyDraft(buildLeadEmailBody(lead));
+    if (emailDraftLeadRef.current !== lead.id) {
+      setEmailSubjectDraft(buildLeadEmailSubject(lead));
+      setEmailBodyDraft(buildLeadEmailBody(lead));
+      emailDraftLeadRef.current = lead.id;
+    }
     setIsEmailDraftCopied(false);
-    setManagedLead(null);
   }
 
   function closeEmailModal() {
     setEmailLead(null);
-    setEmailSubjectDraft('');
-    setEmailBodyDraft('');
     setIsEmailDraftCopied(false);
   }
 
@@ -3892,7 +3885,7 @@ export default function LeadsClient({
       ) : null}
 
       {managedLead ? (
-        <LeadManageDialog title={assetTitle(managedLead)} description={leadAssetMeta(managedLead)} onClose={() => setManagedLead(null)} ownerLayout={useOwnerManageLayout} classes={{
+        <LeadManageDialog suspended={Boolean(emailLead || reportLead || maintenanceReportAccessId || costReportLead || maintenanceScheduleLead || qrLeadAsset || photoUploadLead || noteLead || contribution || sharedWork || valueLead || locationLead || problemLead)} title={assetTitle(managedLead)} description={leadAssetMeta(managedLead)} onClose={() => setManagedLead(null)} ownerLayout={useOwnerManageLayout} classes={{
           overlay: useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`,
           modal: useOwnerManageLayout ? `${assetStyles.managementAccountModal} ${accountStyles.modalTheme}` : `${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''}`,
           header: useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`,
@@ -4021,7 +4014,7 @@ export default function LeadsClient({
       {problemLead&&createPortal(<SharedProblems endpoint={`/api/asset-leads/${problemLead.id}/problems`} assetTitle={assetTitle(problemLead)} onClose={()=>setProblemLead(null)}/>,document.body)}
       {valueLead&&createPortal(<AssetValueDialog suggest endpoint={`/api/asset-leads/${valueLead.id}/value`} assetTitle={assetTitle(valueLead)} onClose={()=>setValueLead(null)}/>,document.body)}
       {locationLead&&createPortal(<SharedAssetLocationDialog endpoint={`/api/asset-leads/${locationLead.id}`} assetTitle={assetTitle(locationLead)} onSaved={()=>{void loadData(false,true)}} onClose={()=>setLocationLead(null)}/>,document.body)}
-      {sharedWork&&createPortal(<SharedAssetWorkDialog initialField={sharedWork.initialField} endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} onSchedule={sharedWork.lead.maintenanceAccess?.isActive && sharedWork.lead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? () => { openMaintenanceSchedule(sharedWork.lead); setSharedWork(null); } : undefined} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{setManagedLead(null);void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
+      {sharedWork&&createPortal(<SharedAssetWorkDialog initialField={sharedWork.initialField} endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} onSchedule={sharedWork.lead.maintenanceAccess?.isActive && sharedWork.lead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? () => { openMaintenanceSchedule(sharedWork.lead); } : undefined} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
       {contribution ? createPortal(<SharedAssetContributionDialog kind={contribution.kind} endpoint={`/api/asset-leads/${contribution.lead.id}/${contribution.kind}`} assetTitle={assetTitle(contribution.lead)} onClose={()=>setContribution(null)} onSaved={()=>{void fetch(`/api/asset-leads/${contribution.lead.id}/media`,{cache:'no-store'}).then(r=>r.json()).then(data=>{if(data.asset)mergeLeadAssetMedia(contribution.lead,data.asset);}).catch(()=>{});}}/>,document.body) : null}
       {qrLeadAsset ? (
         <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>
@@ -4219,7 +4212,7 @@ export default function LeadsClient({
       ) : null}
 
       {reportLead ? (
-        <LeadReportDialog title={assetTitle(reportLead)} description={leadAssetMeta(reportLead)} onClose={closeLeadReportModal} busy={isDownloadingLeadReport}>
+        <LeadReportDialog suspended={Boolean(maintenanceReportAccessId || costReportLead)} title={assetTitle(reportLead)} description={leadAssetMeta(reportLead)} onClose={closeLeadReportModal} busy={isDownloadingLeadReport}>
                 <button
                   type="button"
                   className={assetStyles.assetReportOptionButton}

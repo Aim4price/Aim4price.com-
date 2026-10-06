@@ -305,13 +305,20 @@ export default function DealerMaintenanceScheduleModal({
   onAssetUpdated,
   onError,
 }: Props) {
-  const dialogRef = useLeadDialog(onClose);
   const [asset, setAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [draft, setDraft] = useState<Draft>(() => emptyDraft());
   const [step, setStep] = useState<ScheduleStep>('maintenance-type');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const dialogRef = useLeadDialog(dismiss, saving);
+  function dismiss() {
+    if (saving) return;
+    if (step === 'form' && !initialRecord && !initialProposal) setStep('trigger-type');
+    else if (step === 'trigger-type') setStep('maintenance-type');
+    else onClose();
+  }
+
 
   useEffect(() => {
     const controller = new AbortController();
@@ -451,7 +458,7 @@ export default function DealerMaintenanceScheduleModal({
               <h2 id="dealer-schedule-loading-title">{initialRecord ? 'Edit schedule' : initialProposal ? 'Create schedule' : 'Schedule maintenance'}</h2>
               <p>{loading ? 'Loading the shared asset…' : 'The shared asset could not be opened.'}</p>
             </div>
-            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close maintenance schedule">
+            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} aria-label="Close maintenance schedule">
               <CloseIcon />
             </button>
           </header>
@@ -460,7 +467,7 @@ export default function DealerMaintenanceScheduleModal({
             <div className={styles.emptyState}>{error || 'Loading…'}</div>
           </div>
           <footer className={styles.modalFooter}>
-            <button className={styles.secondaryButton} type="button" onClick={onClose}>Cancel</button>
+            <button className={styles.secondaryButton} type="button" onClick={dismiss}>Cancel</button>
           </footer>
         </section>
       </div>
@@ -469,7 +476,8 @@ export default function DealerMaintenanceScheduleModal({
 
   if (step === 'maintenance-type') {
     return <MaintenanceEntryChoice step="type" timing="upcoming" assetTitle={asset.assetTitle} assetDetails={selectedAssetLabel(asset)}
-      onClose={onClose} onBack={onClose} onType={maintenanceType => { updateDraft({ maintenanceType }); setStep('trigger-type'); }} />;
+      onClose={dismiss} onBack={dismiss} onType={maintenanceType => { updateDraft({ maintenanceType }); setStep('trigger-type'); }} />;
+
   }
 
   if (step === 'trigger-type') {
@@ -482,7 +490,7 @@ export default function DealerMaintenanceScheduleModal({
               <p>{asset.assetTitle}</p>
               <p>{selectedAssetLabel(asset)}</p>
             </div>
-            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} aria-label="Close maintenance trigger selection">
+            <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} aria-label="Close maintenance trigger selection">
               <CloseIcon />
             </button>
           </header>
@@ -517,7 +525,7 @@ export default function DealerMaintenanceScheduleModal({
           </div>
           <footer className={styles.modalFooter}>
             <button className={styles.secondaryButton} type="button" onClick={() => setStep('maintenance-type')}>Back</button>
-            <button className={styles.secondaryButton} type="button" onClick={onClose}>Cancel</button>
+            <button className={styles.secondaryButton} type="button" onClick={dismiss}>Cancel</button>
           </footer>
         </section>
       </div>
@@ -537,7 +545,7 @@ export default function DealerMaintenanceScheduleModal({
             <p>{asset.assetTitle}</p>
             <p>{selectedAssetLabel(asset)}</p>
           </div>
-          <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} disabled={saving} aria-label="Close maintenance form">
+          <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={dismiss} disabled={saving} aria-label="Close maintenance form">
             <CloseIcon />
           </button>
         </header>
@@ -631,9 +639,9 @@ export default function DealerMaintenanceScheduleModal({
         </div>
         <footer className={styles.modalFooter}>
           {!initialProposal && !initialRecord ? (
-            <button className={styles.secondaryButton} type="button" onClick={() => setStep('trigger-type')} disabled={saving}>Back</button>
+            <button className={styles.secondaryButton} type="button" onClick={dismiss} disabled={saving}>Back</button>
           ) : null}
-          <button className={styles.secondaryButton} type="button" onClick={onClose} disabled={saving}>Cancel</button>
+          <button className={styles.secondaryButton} type="button" onClick={dismiss} disabled={saving}>Cancel</button>
           <button className={styles.primaryButton} type="button" onClick={() => void submit()} disabled={saving}>
             {saving
               ? 'Saving…'

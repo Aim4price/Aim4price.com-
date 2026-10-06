@@ -6,12 +6,13 @@ import downloadStyles from '../ReportDownload.module.css';
 import ShareModalCloseButton from '../asset-register/ShareModalCloseButton';
 
 /** One report picker layout; each entry point supplies its authorised reports. */
-export default function LeadReportDialog({title, description, onClose, busy = false, children}: {
+export default function LeadReportDialog({title, description, suspended = false, onClose, busy = false, children}: {
+  suspended?: boolean;
   title: string; description: string; onClose: () => void; busy?: boolean; children: ReactNode;
 }) {
   const titleId = useId();
   const dialogRef = useLeadDialog(onClose, busy);
-  return <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
+  return <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay} ${downloadStyles.backdrop}`} style={suspended ? { display: 'none' } : undefined} data-website-overlay>
     <div className={assetStyles.modalBackdrop} data-website-overlay onClick={busy ? undefined : onClose} data-download-shade="true"/>
     <section ref={dialogRef} tabIndex={-1} className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${downloadStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby={titleId} data-download-dialog="true">
       <header className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`} data-download-header="true">
