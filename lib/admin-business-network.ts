@@ -13,6 +13,7 @@ export type AdminBusiness = {
   name: string;
   email: string;
   status: string;
+  has_logo?: boolean;
   details: Partial<BusinessDetails>;
 };
 export const ADMIN_BUSINESS_SCHEMA = `create table if not exists business_network_admin_actions (
@@ -27,7 +28,7 @@ export async function listAdminBusinesses() {
   await ensure();
   return (
     await getDb().query<AdminBusiness>(
-      "select id,name,email,case when status='active' and accepted_at is null then 'invited' else status end as status,details from business_network order by name,id",
+      "select id,name,email,case when status='active' and accepted_at is null then 'invited' else status end as status,details,exists(select 1 from account_directory_listings l where l.business_id=business_network.id and l.logo_data<>'') as has_logo from business_network order by name,id",
     )
   ).rows;
 }
@@ -77,7 +78,7 @@ export async function saveAdminBusiness(
     businessEmail(input.email) !== email
   )
     throw new Error("This business email cannot be changed here.");
-  const details = validateBusinessDetails(input, email);
+  const details = validateBusinessDetails({ ...existing?.details, ...input }, email);
   const businessId = id || randomUUID();
   const publish = input.action === "save_publish";
   try {

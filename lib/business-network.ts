@@ -38,11 +38,12 @@ alter table business_network_requests add column if not exists live_share_token 
 create table if not exists business_network_rate_limits (
  key text primary key, count integer not null, started_at timestamptz not null default now()
 );`;
+export const ACCOUNT_DIRECTORY_SCHEMA = `CREATE TABLE IF NOT EXISTS account_directory_listings (user_id text PRIMARY KEY,business_id uuid NOT NULL UNIQUE REFERENCES business_network(id),logo_data text NOT NULL DEFAULT '',updated_at timestamptz NOT NULL DEFAULT now());`;
 let schema: Promise<void> | undefined;
 export async function ensureBusinessNetwork() {
   if (!schema)
     schema = getDb()
-      .query(BUSINESS_SCHEMA)
+      .query(BUSINESS_SCHEMA + ACCOUNT_DIRECTORY_SCHEMA)
       .then(() => {})
       .catch((e) => {
         schema = undefined;
@@ -162,6 +163,8 @@ export async function saveBusiness(
     throw new Error(
       "Confirm that you want your business listed and to receive requests.",
     );
+  const linked = (await getDb().query("SELECT user_id FROM account_directory_listings WHERE business_id=$1", [b.id])).rows[0];
+  if (linked) throw new Error("This listing is managed from its Aim4price account.");
   const details = validateBusinessDetails(input, b.email);
   try {
     await getDb().query(
@@ -190,8 +193,9 @@ export async function listExternalBusinesses(input: {
     id: string;
     email: string;
     details: BusinessDetails;
+    has_logo: boolean;
   }>(
-    `select id,email,details from business_network where status='active' and accepted_at is not null order by name limit 1000`,
+    `select id,email,details,exists(select 1 from account_directory_listings l where l.business_id=business_network.id and l.logo_data<>'') as has_logo from business_network where status='active' and accepted_at is not null order by name limit 1000`,
   );
   const query = (input.search || "").trim().toLowerCase();
   return result.rows
@@ -199,19 +203,20 @@ export async function listExternalBusinesses(input: {
       // Published businesses are recipients, not a category-based marketplace.
       if (query && !b.name.toLowerCase().includes(query)) return false;
       const areaParts = (input.area || '').toLowerCase().split(',').map(value => value.trim()).filter(Boolean);
-      if (!b.nationwide && !areaParts.every(area => `${b.town} ${b.address}`.toLowerCase().includes(area))) return false;
+      if (!b.nationwide && !areaParts.every(area => `${b.town} ${b.address} ${b.serviceArea || ""}`.toLowerCase().includes(area))) return false;
       const bounds = input.bounds;
       const latitude =
         input.latitude ?? (bounds ? (bounds.south + bounds.north) / 2 : null);
       const longitude =
         input.longitude ?? (bounds ? (bounds.west + bounds.east) / 2 : null);
       return (
+        b.locationMode === "town" ||
         latitude == null ||
         longitude == null ||
         businessCoversLocation(b, latitude, longitude)
       );
     })
-    .map(({ id, email, details: b }) => ({
+    .map(({ id, email, details: b, has_logo }) => ({
       userId: `external:${id}`,
       googlePlaceId: b.googlePlaceId,
       partnerType: (input.partnerType || "dealer") as PartnerDirectoryEntry["partnerType"],
@@ -223,24 +228,24 @@ export async function listExternalBusinesses(input: {
       province: "",
       townCity: b.town,
       addressLine1: b.address,
-      logoUrl: "",
+      logoUrl: has_logo ? `/api/directory-logo/${id}` : "",
       websiteUrl: b.website,
       extraPhotoUrls: [],
       description: "",
       latitude: b.latitude,
       longitude: b.longitude,
-      serviceRadiusKm: b.nationwide ? null : b.radiusKm,
+      serviceRadiusKm: b.nationwide || b.locationMode === "town" ? null : b.radiusKm,
       brandFocus: "",
-      services: "",
+      services: (b.services || []).join(", "),
       isExternalBusiness: true,
       googleMapsUrl:
         b.googleMapsUrl ||
         (b.googlePlaceId
           ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.name)}&query_place_id=${encodeURIComponent(b.googlePlaceId)}`
           : ""),
-      serviceAreaNotice: b.nationwide
+      serviceAreaNotice: b.serviceArea || (b.locationMode === "town" ? b.town : b.nationwide
         ? "Nationwide"
-        : `Within ${b.radiusKm} km`,
+        : `Within ${b.radiusKm} km`),
     }));
 }
 export async function buildBusinessLeadView(

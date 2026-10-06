@@ -132,3 +132,14 @@
 .businessReview summary { cursor:pointer; font-size:.9rem; font-weight:750; }
 .businessReview[open] summary { margin-bottom:.8rem; }
 .businessReview textarea { min-height:6rem; }
+
+.directoryPanel { margin-top:1.5rem; }
+.directoryHeading { display:flex; align-items:center; justify-content:space-between; gap:1.5rem; margin-bottom:1.5rem; }
+.directoryHeading h2 { margin:0; }.directoryHeading p { margin:.5rem 0 0; }
+.directoryActions { display:flex; align-items:center; flex-wrap:wrap; gap:1rem; }.directoryActions p { flex:1; min-width:16rem; }
+.directoryActions > img,.directoryLogo > div { width:5rem; height:5rem; object-fit:contain; border:1px solid #75998c44; border-radius:.8rem; padding:.4rem; background:#fff; }
+.directoryLogo { grid-column:1 / -1; display:flex; align-items:center; gap:1.2rem; padding:1.2rem; border:1px solid #75998c33; border-radius:1rem; }
+.directoryLogo > div { display:grid; place-items:center; color:#526c61; flex-shrink:0; }.directoryLogo img { width:100%; height:100%; object-fit:contain; }.directoryLogo label { flex:1; }.directoryLogo small { font-weight:400; }
+.directoryConsent { grid-column:1 / -1; display:grid; gap:.7rem; }.directoryConsent p { margin:0; }.directoryConsent label { display:flex; align-items:center; gap:.75rem; }.directoryConsent input { width:1.25rem; height:1.25rem; flex-shrink:0; }
+
+.directoryLogo input::file-selector-button { border:1px solid #75998c55; border-radius:.55rem; padding:.55rem .8rem; margin-right:.8rem; font:inherit; font-weight:700; background:var(--app-surface-soft,#edf6f1); color:var(--app-text,#163b2f); cursor:pointer; }
