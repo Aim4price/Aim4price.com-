@@ -27,6 +27,14 @@ export function normalizeExternalPermissions(value: unknown): ExternalSharePermi
     return { ...Object.fromEntries(EXTERNAL_SHARE_OPTIONS.map(({ key }) => [key, input[key] === true])), directUpdates: input.directUpdates === true, allReports: input.allReports === true } as ExternalSharePermissions;
 }
 export function sharedEnquiryReturnTo(value: unknown): string | null {
+    // Local AI consent continuation only; OAuth validates all parameters again before use.
+    if (typeof value === 'string' && value.length <= 4096 && !/[\\\r\n]/.test(value)) {
+      try {
+        const url = new URL(value, 'https://aim4price.com');
+        if (value.startsWith('/account/ai-connect') && url.origin === 'https://aim4price.com' && url.pathname === '/account/ai-connect' && !url.hash) return url.pathname + url.search;
+      } catch { /* Reject malformed continuations. */ }
+    }
+
     if (typeof value === 'string' && /^\/maintenance-reminder\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) return value;
     if (typeof value === 'string' && /^\/value-review\/[0-9a-f-]{36}\/[0-9a-f-]{36}$/i.test(value)) return value;
     return typeof value === 'string' && /^\/asset-share\/[A-Za-z0-9_-]{43}(?:\?open=1)?$/.test(value) ? value : null;
@@ -42,3 +50,4 @@ export function readOnlyAssetLinkPermissions(value: Partial<ExternalSharePermiss
   const selected = normalizeExternalPermissions(value);
   return {...assetLinkPermissions(), history:selected.history, maintenanceReports:selected.maintenanceReports, costOfOwnership:selected.costOfOwnership};
 }
+
