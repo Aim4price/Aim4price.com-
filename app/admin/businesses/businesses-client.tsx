@@ -116,7 +116,7 @@ export default function AdminBusinesses({ initialVerificationOpen = false }: { i
                   </p>
                   {visible.map((b) => (
                     <article className={layout.businessCard} key={b.id}>
-                      <h2>{b.name}</h2>
+                      {b.has_logo&&<img src={`/api/directory-logo/${b.id}`} alt={`${b.name} logo`} width={64} height={64} style={{objectFit:"contain",borderRadius:8}}/>}<h2>{b.name}</h2>
                       <span className={layout.status}>
                         {b.status === "active"
                           ? "Published"
@@ -125,7 +125,7 @@ export default function AdminBusinesses({ initialVerificationOpen = false }: { i
                             : "Awaiting publication"}
                       </span>
                       <span>{b.details.town || "Location not added"}</span>
-                      <span>{b.email}</span>
+                      <span>{b.email}</span><span>{b.details.services?.join(", ")}</span><span>{b.details.serviceArea}</span>
                       <button
                         className={layout.secondary}
                         type="button"

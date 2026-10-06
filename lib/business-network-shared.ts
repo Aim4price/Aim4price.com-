@@ -1,12 +1,14 @@
 export type BusinessDetails = {
+  locationMode?: "town";
+  serviceArea?: string;
   name: string;
   email: string;
   phone: string;
   website: string;
   address: string;
   town: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   radiusKm: number;
   nationwide: boolean;
   /** Legacy metadata; no longer required or used to filter recipients. */
@@ -70,15 +72,17 @@ export function validateBusinessDetails(
   const number = (value: unknown) =>
     value === "" || value == null ? NaN : Number(value);
   const details: BusinessDetails = {
+    locationMode: input.locationMode === "town" ? "town" : undefined,
+    serviceArea: businessText(input.serviceArea, 300),
     name: businessText(input.name),
     email: businessEmail(email),
     phone: businessText(input.phone, 40),
     website: businessUrl(input.website),
     address: businessText(input.address, 300),
     town: businessText(input.town),
-    latitude: number(input.latitude),
-    longitude: number(input.longitude),
-    radiusKm: number(input.radiusKm),
+    latitude: input.locationMode === "town" ? null : number(input.latitude),
+    longitude: input.locationMode === "town" ? null : number(input.longitude),
+    radiusKm: input.locationMode === "town" ? 50 : number(input.radiusKm),
     nationwide: input.nationwide === true,
     headings: list(input.headings),
     services: list(input.services),
@@ -91,10 +95,11 @@ export function validateBusinessDetails(
   )
     throw new Error("Add your business name and town.");
   if (
+    details.locationMode !== "town" && (
     !Number.isFinite(details.latitude) ||
-    Math.abs(details.latitude) > 90 ||
+    Math.abs(details.latitude!) > 90 ||
     !Number.isFinite(details.longitude) ||
-    Math.abs(details.longitude) > 180
+    Math.abs(details.longitude!) > 180)
   )
     throw new Error("Choose your business location.");
   if (
@@ -127,7 +132,7 @@ export function businessCoversLocation(
 ): boolean {
   return (
     b.nationwide ||
-    businessDistanceKm(b.latitude, b.longitude, latitude, longitude) <=
-      b.radiusKm
+    (b.latitude != null && b.longitude != null && businessDistanceKm(b.latitude, b.longitude, latitude, longitude) <=
+      b.radiusKm)
   );
 }

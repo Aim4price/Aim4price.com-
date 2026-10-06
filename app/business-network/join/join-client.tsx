@@ -5,6 +5,8 @@ import BusinessLocation from "../../../components/business-network/BusinessLocat
 import styles from "../../../components/business-network/BusinessNetwork.module.css";
 import type { AdminBusiness } from "../../../lib/admin-business-network";
 type Fields = {
+  locationMode?: "town";
+  serviceArea?: string;
   name: string;
   phone: string;
   website: string;
@@ -395,7 +397,8 @@ export default function BusinessJoin({
                 />
               </label>
             ))}
-            <section className={styles.card}>
+            <label>Services offered<input value={fields.services.join(", ")} onChange={e=>set("services",e.target.value.split(",").map(v=>v.trim()))}/></label>
+            {fields.locationMode === "town" ? <label>Areas served<input value={fields.serviceArea || ""} onChange={e=>set("serviceArea",e.target.value)}/></label> : <section className={styles.card}>
               <h2>Business location</h2>
               {!linkedPlace && <BusinessLocation
                 latitude={fields.latitude}
@@ -477,7 +480,7 @@ export default function BusinessJoin({
                 />
                 Nationwide
               </label>
-            </section>
+            </section>}
             {linkedPlace && <label className={styles.check}>
               <input type="checkbox" required checked={detailsVerified} onChange={event => setDetailsVerified(event.target.checked)} />
               I have independently checked these listing details with the business or its own website and have permission to publish them.
