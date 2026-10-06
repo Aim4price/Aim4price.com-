@@ -174,6 +174,8 @@ let leafletLoaderPromise: Promise<any> | null = null;
 const ACCOUNT_TYPE_LABELS: Record<string, string> = {
   owner: "Owner",
   dealer: "Dealer",
+  business: "Business",
+  middleman: "Middleman",
   finance: "Finance — accountants, financiers and banks",
   insurance: "Insurance",
   broker: "Insurance",
@@ -710,7 +712,7 @@ function normalizePinInput(value: string): string {
 }
 
 function formatAccountTypeLabel(value: string, subtype = ''): string {
-  const normalized = String(value ?? "").trim();
+  const normalized = String(value ?? "").trim().toLowerCase();
   const normalizedSubtype = String(subtype ?? "").trim().toLowerCase();
 
   if (!normalized) {
@@ -855,6 +857,7 @@ export default function AccountClient({
 }: AccountClientProps) {
   const [profile, setProfile] =
     useState<AccountProfile | null>(initialProfile);
+  useEffect(() => { if (sharedAccount && initialProfile) { setProfile(initialProfile); setProfileDraft(buildProfileDraft(initialProfile)); } }, [sharedAccount, initialProfile]);
   const [profileDraft, setProfileDraft] =
     useState<ProfileDraft>(() =>
       initialProfile ? buildProfileDraft(initialProfile) : initialProfileDraft,
@@ -1112,11 +1115,11 @@ export default function AccountClient({
   }, []);
 
   const completedFields = useMemo(
-    () => countCompletedFields(profileDraft),
-    [profileDraft],
+    () => sharedAccount ? [profileDraft.businessName, profileDraft.phone].filter(value => value.trim()).length : countCompletedFields(profileDraft),
+    [profileDraft, sharedAccount],
   );
   const completionPercentage = Math.round(
-    (completedFields / PROFILE_COMPLETION_TOTAL) * 100,
+    (completedFields / (sharedAccount ? 2 : PROFILE_COMPLETION_TOTAL)) * 100,
   );
   const addressLines = useMemo(
     () => buildAddressLines(profileDraft),
@@ -1748,6 +1751,29 @@ export default function AccountClient({
     openActionModal("business");
   }
 
+  function openOverviewDetails(progress = false) {
+    if (sharedAccount) {
+      const section = document.getElementById('account-details');
+      if (section instanceof HTMLDetailsElement) section.open = true;
+      const target = section || document.getElementById('directory-listing-title');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const input = section?.querySelector<HTMLInputElement>(progress && profile?.businessName?.trim() ? 'input[name="phone"]' : progress ? 'input[name="businessName"]' : 'input[name="phone"]');
+      input?.focus({ preventScroll: true });
+      return;
+    }
+    openActionModal('business');
+    const saved = profile ? buildProfileDraft(profile) : profileDraft;
+    if (progress && [saved.displayName, saved.businessName, saved.phone, saved.marketplaceEmail].every(value => value.trim()) && [saved.province, saved.townCity, saved.addressLine1].some(value => !value.trim())) setBusinessDetailsStep(2);
+    else setBusinessDetailsStep(1);
+  }
+
+  function openOverviewAccess() {
+    if (sharedAccount) { window.location.assign('/pricing'); return; }
+    if (isOwnerAccount) openScanPinEditor();
+    else if (showPartnerDirectory) openPartnerDirectory();
+    else openBusinessEditor();
+  }
+
   function openAssetRegistersPage() {
     window.location.assign("/asset-registers");
   }
@@ -2054,15 +2080,15 @@ export default function AccountClient({
                 <strong>{accountTypeLabel}</strong>
               </div>
 
-              <div className={styles.metricTile}>
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={() => openOverviewDetails()} aria-label="Edit contact number">
                 <span>Contact number</span>
                 <strong>{profileDraft.phone.trim() || "Not saved"}</strong>
-              </div>
+              </button>
 
-              <div className={styles.metricTile}>
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={() => openOverviewDetails(true)} aria-label="Complete missing profile details">
                 <span>Profile progress</span>
                 <strong>
-                  {completedFields}/{PROFILE_COMPLETION_TOTAL}
+                  {completedFields}/{sharedAccount ? 2 : PROFILE_COMPLETION_TOTAL}
                 </strong>
                 <small>{completionPercentage}% complete</small>
                 <div
@@ -2076,16 +2102,16 @@ export default function AccountClient({
                 >
                   <span style={{ width: `${completionPercentage}%` }} />
                 </div>
-              </div>
+              </button>
 
-              <div className={styles.metricTile}>
+              <button type="button" className={`${styles.metricTile} ${styles.metricTileButton}`} onClick={openOverviewAccess}>
                 <span>
                   {sharedAccount ? "Account access" : isOwnerAccount ? "QR PIN status" : "Directory status"}
                 </span>
                 <strong>
                   {sharedAccount ? "Free sharing account" : isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
                 </strong>
-              </div>
+              </button>
             </div>
           </section>
 
@@ -2113,7 +2139,7 @@ export default function AccountClient({
                     <QuickActionIcon name="notifications" />
                     <strong>Notifications</strong>
                   </button> : null}
-                  {sharedAccount ? <Link className={styles.quickActionButton} href={normalizedAccountType === 'business' ? '#account-details' : '/shared-enquiries'}><QuickActionIcon name="business"/><strong>{normalizedAccountType === 'business' ? 'Business details' : 'Shared enquiries'}</strong></Link> : <button
+                  {sharedAccount ? <Link className={styles.quickActionButton} href="#account-details"><QuickActionIcon name="business"/><strong>Business details</strong></Link> : <button
                     type="button"
                     className={styles.quickActionButton}
                     onClick={openBusinessEditor}

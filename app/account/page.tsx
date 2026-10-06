@@ -20,7 +20,7 @@ export default async function AccountPage() {
       if (profile.accountStatus !== 'active') redirect('/pending-payment');
       const business = profile.accountType === 'business' ? await readBusinessAccount(signedIn.user) : null;
       const settings = <div className={sharedStyles.accountContent}>
-        {business && <details id="account-details" className={`${sharedStyles.panel} ${sharedStyles.details}`} open><summary>Business details</summary><BusinessDetails businessName={profile.businessName || ''} phone={profile.phone || ''} website={business.review.website} evidence={business.review.evidence} email={signedIn.user.email} emailVerified={signedIn.user.emailVerified === true}/></details>}
+        {<details id="account-details" className={`${sharedStyles.panel} ${sharedStyles.details}`} open><summary>Business details</summary><BusinessDetails businessName={profile.businessName || ''} phone={profile.phone || ''} website={business?.review.website || profile.websiteUrl || ''} evidence={business?.review.evidence || ''} email={signedIn.user.email} emailVerified={signedIn.user.emailVerified === true}/></details>}
         <AccountDirectoryListing name={profile.businessName || ''} phone={profile.phone || ''} emailVerified={signedIn.user.emailVerified === true}/>
       </div>;
       return <AccountClient initialProfile={profile} sharedAccount sharedSettings={settings} />;
