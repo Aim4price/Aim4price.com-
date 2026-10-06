@@ -2530,7 +2530,6 @@ export default function AppHeader({
                               );
                             })}
 
-                            <Link href="/auth?switchAccount=1#login" role="menuitem" className={styles.menuLink} onClick={closeAccountMenu}>Switch account</Link>
                             <button
                               type="button"
                               role="menuitem"
