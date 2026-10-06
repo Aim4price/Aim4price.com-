@@ -6,7 +6,7 @@ export default function SharedAccountHero({count}:{count:number}) {
  return <section className={`${hero.heroSection} ${styles.accountHero}`} aria-labelledby="shared-account-title">
   <div className={hero.heroOverlay} aria-hidden="true"/>
   <div className={`${hero.shell} ${hero.heroGrid}`}>
-   <div className={hero.heroCopy}>
+   <div className={`${hero.heroCopy} ${styles.accountHeroCopy}`}>
     <span className={styles.accountBadge}>Free sharing account</span>
     <h1 id="shared-account-title" className={hero.heroTitle}><span>Shared assets.</span><span>Ready when you are.</span></h1>
     <p className={hero.heroText}>Open the assets shared with you.<br/>View the latest information and make permitted updates.</p>
