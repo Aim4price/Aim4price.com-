@@ -996,7 +996,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
         : authenticatedSession?.accountType === "licensing"
           ? getAbsoluteUrl("/")
           : getAbsoluteUrl("/leads");
-      const redirectUrl = (authenticatedSession as {sharingPlan?:string}|null)?.sharingPlan === "free" ? getAbsoluteUrl(sharedEnquiryReturnTo(getSafeReturnTo()) || "/upgrade-account") : authenticatedSession?.accountType === "business" ? getAbsoluteUrl(sharedEnquiryReturnTo(getSafeReturnTo()) || "/upgrade-account") :
+      const redirectUrl = (authenticatedSession as {sharingPlan?:string}|null)?.sharingPlan === "free" ? getAbsoluteUrl(sharedEnquiryReturnTo(getSafeReturnTo()) || (authenticatedSession?.accountType === "business" ? "/business" : "/shared-enquiries")) : authenticatedSession?.accountType === "business" ? getAbsoluteUrl(sharedEnquiryReturnTo(getSafeReturnTo()) || "/business") :
         !getSafeReturnTo() &&
         normalizeEmail(email) !== ADMIN_EMAIL &&
         (authenticatedSession?.accountType === "dealer" ||

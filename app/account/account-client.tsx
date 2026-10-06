@@ -90,6 +90,7 @@ type ScanPinApiResponse = {
 
 type AccountClientProps = {
   sharedAccount?: boolean;
+  sharedSettings?: ReactNode;
   initialProfile?: AccountProfile | null;
   initialScanPinStatus?: AccountScanPinStatus | null;
 };
@@ -848,6 +849,7 @@ function ModalInlineNotice({ notice }: { notice: AccountNotice | null }) {
 
 export default function AccountClient({
   sharedAccount = false,
+  sharedSettings,
   initialProfile = null,
   initialScanPinStatus = null,
 }: AccountClientProps) {
@@ -2111,7 +2113,7 @@ export default function AccountClient({
                     <QuickActionIcon name="notifications" />
                     <strong>Notifications</strong>
                   </button> : null}
-                  {sharedAccount ? <Link className={styles.quickActionButton} href={normalizedAccountType === 'business' ? '/business?details=1#account-details' : '/shared-enquiries'}><QuickActionIcon name="business"/><strong>Shared account details</strong></Link> : <button
+                  {sharedAccount ? <Link className={styles.quickActionButton} href={normalizedAccountType === 'business' ? '#account-details' : '/shared-enquiries'}><QuickActionIcon name="business"/><strong>{normalizedAccountType === 'business' ? 'Business details' : 'Shared enquiries'}</strong></Link> : <button
                     type="button"
                     className={styles.quickActionButton}
                     onClick={openBusinessEditor}
@@ -2229,7 +2231,7 @@ export default function AccountClient({
                     </button>
                   ) : null}
 
-                  {sharedAccount && <><Link href={normalizedAccountType === 'business' ? '/business#directory-listing-title' : '/shared-enquiries#directory-listing-title'} className={styles.quickActionButton}><QuickActionIcon name="directory"/><strong>Directory listing</strong></Link><Link href="/pricing" className={styles.quickActionButton}><QuickActionIcon name="registers"/><strong>Explore Desktop plans</strong></Link></>}
+                  {sharedAccount && <><Link href="#directory-listing-title" className={styles.quickActionButton}><QuickActionIcon name="directory"/><strong>Directory listing</strong></Link><Link href="/pricing" className={styles.quickActionButton}><QuickActionIcon name="registers"/><strong>Explore Desktop plans</strong></Link></>}
                   {showPartnerDirectory ? (
                     <button
                       type="button"
@@ -2244,6 +2246,8 @@ export default function AccountClient({
               </section>
             </div>
           </section>
+
+          {sharedSettings && <div className={styles.sharedAccountSettings}>{sharedSettings}</div>}
 
           <section
             className={`${styles.card} ${styles.securityCard}`}
