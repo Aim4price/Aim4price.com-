@@ -259,6 +259,7 @@ export default function DesktopServiceModal({
             <div>
               <h2 id="scheduled-service-choice-title">Which work was done?</h2>
               <p>{record.assetTitle}</p>
+              {record.currentUsage != null && record.usageMetric ? <p>{record.currentUsage.toLocaleString('en-ZA')} {record.usageMetric === 'percentage' ? '%' : record.usageMetric}</p> : null}
             </div>
             <button className={`${styles.closeButton} ${!dealerAppMode ? dialogStyles.close : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
               <CloseIcon />
@@ -296,6 +297,7 @@ export default function DesktopServiceModal({
           <div>
             <h2 id="desktop-service-title">{standalone || isSeparateCompletion ? `Record completed ${actionName}` : `Complete scheduled ${actionName}`}</h2>
             <p>{record.assetTitle}</p>
+              {record.currentUsage != null && record.usageMetric ? <p>{record.currentUsage.toLocaleString('en-ZA')} {record.usageMetric === 'percentage' ? '%' : record.usageMetric}</p> : null}
           </div>
           <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={onClose} aria-label="Close service form" disabled={busy}>
             <CloseIcon />
