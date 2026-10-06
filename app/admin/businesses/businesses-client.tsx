@@ -80,7 +80,7 @@ export default function AdminBusinesses({ initialVerificationOpen = false }: { i
                 <label>
                   Find a business
                   <input
-                    value={search}
+                    data-search-input value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Name, email or town"
                   />

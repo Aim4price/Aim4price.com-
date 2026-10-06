@@ -50,7 +50,7 @@ export default function BusinessAcceptanceForm({ businessName = '', embedded = f
             <h2 id={`${id}-find`}>Find your business on Google</h2>
             <p>Find your listing, or enter your details below.</p>
             <form className={styles.search} onSubmit={event => { event.preventDefault(); void search(); }}>
-              <label className={styles.searchField}>Business name and town<input value={query} onChange={event => setQuery(event.target.value)} placeholder="e.g. S Haddad, George" maxLength={200}/></label>
+              <label className={styles.searchField}>Business name and town<input data-search-input value={query} onChange={event => setQuery(event.target.value)} placeholder="e.g. S Haddad, George" maxLength={200}/></label>
               <button type="submit" disabled={searching}>{searching ? 'Searching…' : 'Search Google'}</button>
             </form>
             <div className={styles.searchLinks}><button type="button" onClick={manual}>Enter details manually</button><a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query || 'businesses near me')}`} target="_blank" rel="noopener noreferrer">Open Google Maps ↗</a></div>
