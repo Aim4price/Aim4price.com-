@@ -96,13 +96,15 @@ test('QR rendering retains account access and missing-code checks',async()=>{
 });
 test('fuel QR preview and print use the same local renderer',async()=>{
  const route=load('app/api/fuel/storage/[storageId]/qr/route.ts',{
+  '../../../../../../lib/account-profile':{getAccountProfile:async()=>({businessName:'Tank owner'})},
+  '../../../../../../lib/report-logo':{getFallbackReportLogoUrl:async()=>'/brand/aim4price-mark-black.png',resolveReportLogoUrlForHtml:async()=>'/brand/aim4price-mark-black.png'},
   '../../../../../../lib/fuel-ledger':{getFuelStorageById:async()=>({name:'Diesel tank',publicFuelStorageCode:'FUEL-123',fuelType:'diesel',capacityLitres:1000})},
   '../../../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:true,context:{ownerUserId:'owner'}})},
  });
  for(const format of ['svg','png','print']) {
   const response=await route.GET(new NextRequest('https://www.aim4price.com/api/fuel/storage/tank/qr?format='+format),{params:{storageId:'tank'}});
   assert.equal(response.status,200);
-  if(format==='print')assert.match(await response.text(),/data:image\/png;base64,/);
+  if(format==='print'){const html=await response.text();assert.match(html,/data:image\/png;base64,/);assert.match(html,/Fuel tank label/);assert.match(html,/Tank owner/);assert.match(html,/Fuel PIN required/);assert.match(html,/1[\s,]?000 L/);assert.match(html,/class="printButton"/);}
  }
 });
 test('QR preview renders inline artwork without an image endpoint',()=>{
@@ -120,7 +122,7 @@ test('QR preview renders inline artwork without an image endpoint',()=>{
 test('QR label opens with explicit website/app context and displays authenticated HTML',async()=>{
  const originalWindow=global.window,originalFetch=global.fetch;
  try {
-  for(const [pathname,realm] of [['/asset-register','website'],['/owner-app/assets/1','owner'],['/dealer/assets/1','dealer']]) {
+  for(const [pathname,realm] of [['/asset-register','website'],['/fuel','website'],['/owner-app/assets/1','owner'],['/dealer/assets/1','dealer']]) {
    const events=[];let written='';
    const tab={opener:{},closed:false,document:{title:'',body:{textContent:''},open(){},write(html){written=html;},close(){}},close(){this.closed=true;}};
    global.window={location:{pathname},open:()=>{events.push('open');return tab;}};
@@ -129,7 +131,7 @@ test('QR label opens with explicit website/app context and displays authenticate
     assert.equal(options.credentials,'same-origin');assert.equal(options.cache,'no-store');
     return new Response('<html>QR label<img src="data:image/png;base64,test"></html>',{headers:{'content-type':'text/html'}});
    };
-   await load('lib/asset-qr-label.ts').openAssetQrLabel('/api/asset-register/qr?assetId=1&format=print');
+   await load('lib/asset-qr-label.ts').openAssetQrLabel(pathname==='/fuel'?'/api/fuel/storage/tank/qr?format=print':'/api/asset-register/qr?assetId=1&format=print');
    assert.deepEqual(events,['open','fetch']);assert.equal(tab.opener,null);
    assert.match(written,/QR label/);assert.equal(tab.closed,false);
   }
@@ -180,4 +182,16 @@ test('account name is escaped and dealer previews use the owner name',async()=>{
  const html=await (await branded.GET(new NextRequest(request('print').url+'&leadId=lead'))).text();
  assert.match(html,/<p class="accountName">Owner &lt;farm&gt;<\/p>/);
  assert.doesNotMatch(html,/Dealer business|Dealer name|<farm>/);
+});
+
+test('fuel label preserves workspace access checks',async()=>{
+ let reads=0;
+ const route=load('app/api/fuel/storage/[storageId]/qr/route.ts',{
+  '../../../../../../lib/account-profile':{getAccountProfile:async()=>({})},
+  '../../../../../../lib/report-logo':{},
+  '../../../../../../lib/fuel-ledger':{getFuelStorageById:async()=>{reads++;throw Error('Must not read storage');}},
+  '../../../../../../lib/owner-workspace-access':{resolveOwnerWorkspaceContext:async()=>({ok:false,response:new Response('Unauthorized',{status:401})})},
+ });
+ assert.equal((await route.GET(new NextRequest('https://www.aim4price.com/api/fuel/storage/tank/qr?format=print'),{params:{storageId:'tank'}})).status,401);
+ assert.equal(reads,0);
 });
