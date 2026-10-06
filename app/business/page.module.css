@@ -120,3 +120,10 @@
  :global(body:not(:has([data-website-canvas]))) .accountContent .lead { grid-template-columns:3rem minmax(0,1fr); }
  :global(body:not(:has([data-website-canvas]))) .accountContent .lead .button { grid-column:2; grid-row:auto; }
 }
+
+/* Balance the welcome copy with the centred enquiry card. */
+.accountHeroCopy { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.accountHeroCopy h1 { align-items:center; }
+.accountHeroCopy > p { align-self:center; }
+.accountHeroCopy > div { justify-content:center; }
+.accountHero .heroLink { align-self:center; }
