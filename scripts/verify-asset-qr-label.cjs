@@ -128,6 +128,21 @@ const evidence = path.join(__dirname, '../.next/qr-label-validation');
     assert.equal(mobilePrintColumns.split(' ').length, 2);
     const mobilePdf = await page.pdf({ preferCSSPageSize: true, printBackground: false });
     assert.equal((await PDFDocument.load(mobilePdf)).getPageCount(), 1);
+    await page.emulateMediaType('screen');
+    const fuelOptions = { ...options, labelKind: 'fuel', assetTitle: 'Main Diesel Tank', fuelDetails: { fuelType: 'Diesel', capacity: '10 000 L', tankCode: 'FUEL-ABC123' } };
+    for (const width of [1280, 390]) {
+      await page.setViewport({ width, height: 1000 });
+      await open(fuelOptions);
+      await checkGeometry();
+      assert.equal(await page.$eval('.toolbar h1', element => element.textContent), 'Fuel tank label');
+      assert.deepEqual(await page.$$eval('.detailRow', rows => rows.map(row => row.textContent.trim().replace(/\s+/g, ' '))), ['Fuel typeDiesel', 'Capacity10 000 L', 'Tank codeFUEL-ABC123']);
+      assert.match(await page.$eval('.scanHint', element => element.textContent), /Fuel PIN required/);
+      await page.screenshot({ path: path.join(evidence, `fuel-label-${width}.png`), fullPage: true });
+    }
+    await page.emulateMediaType('print');
+    const fuelPdf = await page.pdf({ preferCSSPageSize: true, printBackground: false, path: path.join(evidence, 'fuel-label.pdf') });
+    assert.equal((await PDFDocument.load(fuelPdf)).getPageCount(), 1, 'fuel label prints on one page');
+    console.log('PASS fuel details, desktop and phone geometry, and single-page PDF');
     assert.deepEqual(errors, []);
     console.log('PASS print action, keyboard focus, A4 single-page output, phone print layout');
   } finally { await browser.close(); }

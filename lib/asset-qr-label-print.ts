@@ -1,5 +1,7 @@
 type AssetQrLabelOptions = {
   assetTitle: string;
+  labelKind?: 'asset' | 'fuel';
+  fuelDetails?: { fuelType: string; capacity: string; tankCode: string };
   accountName?: string;
   serialNumber?: string;
   yearModel?: number | null;
@@ -23,7 +25,13 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
   const modelName = escapeHtml(options.modelName?.trim() || '');
   const yearModel = Number.isInteger(options.yearModel) && Number(options.yearModel) > 0
     ? String(options.yearModel) : '';
-  const details = [
+  const isFuel = options.labelKind === 'fuel';
+  const labelName = isFuel ? 'Fuel tank label' : 'Asset label';
+  const details = isFuel && options.fuelDetails ? [
+    ['Fuel type', options.fuelDetails.fuelType],
+    ['Capacity', options.fuelDetails.capacity],
+    ['Tank code', options.fuelDetails.tankCode],
+  ].map(([label,value]) => `<div class="detailRow"><dt>${label}</dt><dd>${escapeHtml(value)}</dd></div>`).join('') : [
     yearModel ? `<div class="detailRow"><dt>Year model</dt><dd>${yearModel}</dd></div>` : '',
     modelName ? `<div class="detailRow"><dt>Model</dt><dd>${modelName}</dd></div>` : '',
     serialNumber ? `<div class="detailRow serialBlock"><dt>Serial number</dt><dd>${serialNumber}</dd></div>` : '',
@@ -102,7 +110,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
     }
     .labelTitle { grid-column: 1 / -1; min-width: 0; padding-bottom: 30px; border-bottom: 1px solid var(--line); }
     .assetEyebrow { margin: 0 0 12px; color: #637b70; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
-    .assetTitle { margin: 0; font-size: clamp(26px, 3vw, 38px); font-weight: 650; line-height: 1.3; letter-spacing: -.025em; overflow-wrap: anywhere; }
+    .assetTitle { margin: 0; font-size: clamp(26px, 3vw, 38px); font-weight: 750; line-height: 1.3; letter-spacing: -.025em; overflow-wrap: anywhere; }
     .qrFrame { min-width: 0; width: 100%; max-width: 340px; align-self: center; justify-self: center; padding: 4px; background: #fff; }
     .qrFrame img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
     .labelCopy { min-width: 0; display: grid; align-content: center; gap: 32px; padding-left: 40px; border-left: 1px solid var(--line); }
@@ -110,11 +118,12 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
     .logoFrame { display: grid; place-items: center; width: 112px; height: 112px; padding: 12px; border: 1px solid #d8e3dd; border-radius: 20px; background: #fff; }
     .accountLogo { display: block; max-width: 100%; max-height: 100%; width: 100%; height: 100%; object-fit: contain; }
     .accountName { margin: 0; min-width: 0; font-size: clamp(22px, 2.3vw, 30px); font-weight: 600; line-height: 1.35; letter-spacing: -.02em; overflow-wrap: anywhere; }
-    .labelDetails { display: grid; align-content: start; gap: 22px; margin: 0; }
+    .labelDetails { display: grid; align-content: start; gap: 18px; margin: 0; padding: 20px; border: 1px solid #d8e3dd; border-radius: 16px; background: #f1f6f3; }
     .detailRow { display: grid; gap: 7px; }
     .detailRow dt { color: #52695f; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
-    .detailRow dd { margin: 0; font-size: clamp(18px, 1.8vw, 22px); font-weight: 550; line-height: 1.4; overflow-wrap: anywhere; }
+    .detailRow dd { margin: 0; font-size: clamp(18px, 1.8vw, 22px); font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
     .serialBlock dd { letter-spacing: .025em; }
+    .scanHint { grid-column: 1 / -1; margin: 0; padding-top: 18px; border-top: 1px solid var(--line); font-size: 14px; font-weight: 650; color: #355c4c; }
     .printStatus { margin: 16px 0 0; color: #52695f; font-size: 14px; }
     .printStatus:empty { display: none; }
     @media screen and (max-width: 800px) {
@@ -164,7 +173,8 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       .labelHeading { grid-template-columns: 22mm minmax(0, 1fr); gap: 4mm; }
       .logoFrame { width: 22mm; height: 22mm; padding: 2mm; border-radius: 3mm; }
       .accountName { font-size: 15pt; }
-      .labelDetails { gap: 4mm; }
+      .labelDetails { gap: 4mm; padding: 3mm; background: #fff; }
+      .scanHint { font-size: 9pt; padding-top: 3mm; }
       .detailRow { gap: 1.5mm; }
       .detailRow dt { font-size: 8pt; }
       .detailRow dd { font-size: 12pt; }
@@ -174,7 +184,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
 <body>
   <div class="shell">
     <header class="toolbar">
-      <h1>Asset label</h1>
+      <h1>${labelName}</h1>
       <div class="actions">
         <button type="button" onclick="window.close()" aria-label="Close label window">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6" /></svg>
@@ -187,9 +197,9 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
       </div>
     </header>
     <main>
-      <section class="qrLabel" aria-label="Printable asset QR label">
+      <section class="qrLabel" aria-label="Printable ${isFuel ? 'fuel tank' : 'asset'} QR label">
         <header class="labelTitle">
-          <p class="assetEyebrow">Asset</p>
+          <p class="assetEyebrow">${isFuel ? 'Fuel storage' : 'Asset'}</p>
           <h2 class="assetTitle">${assetTitle}</h2>
         </header>
         <div class="qrFrame"><img id="assetQr" src="${escapeHtml(options.qrImageUrl)}" alt="QR code for ${assetTitle}" /></div>
@@ -200,6 +210,7 @@ export function buildAssetQrLabelHtml(options: AssetQrLabelOptions): string {
           </div>
           ${details ? `<dl class="labelDetails" aria-label="Asset details">${details}</dl>` : ''}
         </div>
+        <p class="scanHint">${isFuel ? 'Scan to record fuel • Fuel PIN required' : 'Scan to open this asset in Aim4price'}</p>
       </section>
     </main>
     <p class="printStatus" id="printStatus" role="status" aria-live="polite"></p>

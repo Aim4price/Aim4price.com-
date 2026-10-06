@@ -1,4 +1,5 @@
 'use client';
+import { openAssetQrLabel } from '../../lib/asset-qr-label';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
 import { useCaptureAllowance } from '../../lib/use-capture-allowance';
 import DateInput from '../../components/DateInput';
@@ -1524,7 +1525,7 @@ function buildFuelScanUrl(storage: FuelLedgerStorage): string | null {
   return toAbsoluteUrl(`/fuel-scan/${encodeURIComponent(publicFuelStorageCode)}`);
 }
 
-function buildFuelQrPrintUrl(storage: FuelLedgerStorage, ): string {
+function buildFuelQrPrintUrl(storage: FuelLedgerStorage): string {
   return `/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=print`;
 }
 
@@ -2923,20 +2924,19 @@ export default function FuelClient({
     }
   }
 
-  function handlePrintFuelQrLabel(storage: FuelLedgerStorage) {
-    const opened = window.open(buildFuelQrPrintUrl(storage, ), '_blank', 'noopener,noreferrer');
-
-    if (!opened) {
-      setNotice({ tone: 'error', message: 'Unable to open the fuel QR print page. Please allow pop-ups and try again.' });
-      return;
+  async function handlePrintFuelQrLabel(storage: FuelLedgerStorage) {
+    try {
+      await openAssetQrLabel(scopedApiUrl(buildFuelQrPrintUrl(storage)));
+      setNotice({ tone: 'success', message: 'Fuel tank label opened. Choose Print / Save Label to print or save a PDF.' });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Unable to open the fuel tank label.' });
     }
-
-    setNotice({ tone: 'success', message: 'Fuel QR print label opened in a new tab.' });
   }
 
   async function handleDownloadFuelQr(storage: FuelLedgerStorage) {
     try {
       const response = await fetch(scopedApiUrl(`/api/fuel/storage/${encodeURIComponent(storage.id)}/qr?format=png&download=1`), {
+        headers: { 'x-aim4price-client-realm': appRealmForPath(window.location.pathname) ?? 'website' },
         credentials: 'include',
         cache: 'no-store',
       });
