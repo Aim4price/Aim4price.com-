@@ -89,6 +89,7 @@ type ScanPinApiResponse = {
 };
 
 type AccountClientProps = {
+  sharedAccount?: boolean;
   initialProfile?: AccountProfile | null;
   initialScanPinStatus?: AccountScanPinStatus | null;
 };
@@ -846,6 +847,7 @@ function ModalInlineNotice({ notice }: { notice: AccountNotice | null }) {
 }
 
 export default function AccountClient({
+  sharedAccount = false,
   initialProfile = null,
   initialScanPinStatus = null,
 }: AccountClientProps) {
@@ -866,7 +868,7 @@ export default function AccountClient({
     useState<AccountNotice | null>(null);
   const [isLoading, setIsLoading] = useState(!initialProfile);
   const [isLoadingScanPin, setIsLoadingScanPin] = useState(
-    !initialScanPinStatus,
+    !sharedAccount && !initialScanPinStatus,
   );
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingScanPin, setIsSavingScanPin] = useState(false);
@@ -996,7 +998,7 @@ export default function AccountClient({
       void loadProfile();
     }
 
-    if (!initialScanPinStatus) {
+    if (!sharedAccount && !initialScanPinStatus) {
       void loadScanPin();
     }
 
@@ -1127,12 +1129,12 @@ export default function AccountClient({
   )
     .trim()
     .toLowerCase();
-  const isOwnerAccount = normalizedAccountType === "owner";
-  const isDealerAccount = normalizedAccountType === "dealer";
+  const isOwnerAccount = !sharedAccount && normalizedAccountType === "owner";
+  const isDealerAccount = !sharedAccount && normalizedAccountType === "dealer";
   const isMiddlemanAccount =
     isDealerAccount && isMiddlemanAccountSubtype(profile?.accountSubtype);
   const isAssetRegisterAccount = isOwnerAccount || (isDealerAccount && !isMiddlemanAccount);
-  const isPartnerAccount = !isOwnerAccount && !isMiddlemanAccount;
+  const isPartnerAccount = !sharedAccount && !isOwnerAccount && !isMiddlemanAccount;
   const showScanPinControls = !isLoading && isOwnerAccount;
   const showPartnerDirectory = !isLoading && isPartnerAccount;
   const showMarketplaceContact = isLoading || isOwnerAccount || isDealerAccount;
@@ -1974,14 +1976,14 @@ export default function AccountClient({
             <div className={styles.heroAvatarControl}>
               <label
                 className={`${styles.heroAvatar} ${logoUrl ? styles.heroAvatarWithLogo : ""}`}
-                title="Upload account logo"
-                aria-label="Upload account logo"
+                title={sharedAccount ? "Account logo" : "Upload account logo"}
+                aria-label={sharedAccount ? "Account logo" : "Upload account logo"}
               >
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   onChange={handleLogoFileChange}
-                  disabled={isReadingLogo || isSavingProfile}
+                  disabled={sharedAccount || isReadingLogo || isSavingProfile}
                 />
                 {logoUrl ? (
                   <img src={logoUrl} alt="Business logo" />
@@ -1989,12 +1991,12 @@ export default function AccountClient({
                   <span>{profileInitials}</span>
                 )}
               </label>
-              <span className={styles.heroAvatarEditBadge} aria-hidden="true">
+              {!sharedAccount && <span className={styles.heroAvatarEditBadge} aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M8 7.25 9.2 5.5h5.6L16 7.25h2.25A1.75 1.75 0 0 1 20 9v8.25A1.75 1.75 0 0 1 18.25 19H5.75A1.75 1.75 0 0 1 4 17.25V9a1.75 1.75 0 0 1 1.75-1.75H8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
                   <circle cx="12" cy="13" r="3.15" stroke="currentColor" strokeWidth="1.8" />
                 </svg>
-              </span>
+              </span>}
             </div>
 
             <div className={styles.heroCopy}>
@@ -2076,10 +2078,10 @@ export default function AccountClient({
 
               <div className={styles.metricTile}>
                 <span>
-                  {isOwnerAccount ? "QR PIN status" : "Directory status"}
+                  {sharedAccount ? "Account access" : isOwnerAccount ? "QR PIN status" : "Directory status"}
                 </span>
                 <strong>
-                  {isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
+                  {sharedAccount ? "Free sharing account" : isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
                 </strong>
               </div>
             </div>
@@ -2109,14 +2111,14 @@ export default function AccountClient({
                     <QuickActionIcon name="notifications" />
                     <strong>Notifications</strong>
                   </button> : null}
-                  <button
+                  {sharedAccount ? <Link className={styles.quickActionButton} href={normalizedAccountType === 'business' ? '/business?details=1#account-details' : '/shared-enquiries'}><QuickActionIcon name="business"/><strong>Shared account details</strong></Link> : <button
                     type="button"
                     className={styles.quickActionButton}
                     onClick={openBusinessEditor}
                   >
                     <QuickActionIcon name="business" />
                     <strong>Edit business details</strong>
-                  </button>
+                  </button>}
 
                   {isAssetRegisterAccount ? (
                     <button
@@ -2227,6 +2229,7 @@ export default function AccountClient({
                     </button>
                   ) : null}
 
+                  {sharedAccount && <><Link href={normalizedAccountType === 'business' ? '/business#directory-listing-title' : '/shared-enquiries#directory-listing-title'} className={styles.quickActionButton}><QuickActionIcon name="directory"/><strong>Directory listing</strong></Link><Link href="/pricing" className={styles.quickActionButton}><QuickActionIcon name="registers"/><strong>Explore Desktop plans</strong></Link></>}
                   {showPartnerDirectory ? (
                     <button
                       type="button"
@@ -2595,7 +2598,7 @@ export default function AccountClient({
                               <p>JPG, PNG or WEBP. Maximum {formatUploadSize(MAX_LOGO_UPLOAD_BYTES)}.</p>
                               <div className={styles.businessMediaControls}>
                                 <label className={styles.uploadButton}>
-                                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoFileChange} disabled={isReadingLogo || isSavingProfile} />
+                                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoFileChange} disabled={sharedAccount || isReadingLogo || isSavingProfile} />
                                   {isReadingLogo ? "Reading logo..." : logoUrl ? "Replace logo" : "Upload logo"}
                                 </label>
                                 {logoUrl ? <button type="button" className={styles.ghostButton} onClick={handleRemoveLogo} disabled={isSavingProfile || isReadingLogo}>Remove logo</button> : null}

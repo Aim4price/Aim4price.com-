@@ -1,3 +1,4 @@
+import { sharingPlan } from '../../lib/sharing-foundation';
 import { getAnyServerSession } from '../../lib/auth-session';
 import { redirect } from 'next/navigation';
 import { getAccountProfile, getAccountScanPinStatus } from "../../lib/account-profile";
@@ -9,7 +10,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
   const signedIn = await getAnyServerSession();
-  if (signedIn?.user && (await getAccountProfile(signedIn.user)).accountType === "business") redirect("/business?details=1");
+  if (signedIn?.user) {
+    const profile = await getAccountProfile(signedIn.user);
+    if (profile.accountType === 'business' || await sharingPlan(signedIn.user.id, profile.accountType) === 'free') {
+      if (profile.accountStatus !== 'active') redirect('/pending-payment');
+      return <AccountClient initialProfile={profile} sharedAccount />;
+    }
+  }
   const { session } = await requireActivePageAccess();
   const [profile, scanPinStatus] = await Promise.all([
     getAccountProfile({
