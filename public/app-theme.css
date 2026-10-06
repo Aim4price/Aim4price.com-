@@ -70,6 +70,19 @@
     :is(input:not([type]), input[type=''], input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='tel'], input[type='url'], input[type='number'], input[type='date'], input[type='datetime-local'], input[type='time'], input[type='month'], input[type='week'], textarea):not(:disabled):not([readonly]):not(:is([type='search'], [role='searchbox'], [data-search-input], [placeholder*='search' i], [placeholder^='find ' i], [aria-label*='search' i], [class*='search' i], [role='search'] input)):focus {
       background-color: var(--typing-field-focus) !important;
     }
+    /* Compound value controls share one surface, including currency/unit prefixes.
+       Only the control wrapper is filled; labels, search and disabled fields stay unchanged. */
+    :is([class*='CurrencyInput'], [class*='currencyInput'], [class*='budgetMoneyInput'], [class*='budgetPercentInput'], [class*='moneyField'], [data-value-input-surface]):has(> input:not(:disabled):not([readonly]):not([type='search'])) {
+      background-color: var(--typing-field-surface) !important;
+      background-image: none !important;
+    }
+    :is([class*='CurrencyInput'], [class*='currencyInput'], [class*='budgetMoneyInput'], [class*='budgetPercentInput'], [class*='moneyField'], [data-value-input-surface]):has(> input:not(:disabled):not([readonly]):not([type='search'])):focus-within {
+      background-color: var(--typing-field-focus) !important;
+    }
+    :is([class*='CurrencyInput'], [class*='currencyInput'], [class*='budgetMoneyInput'], [class*='budgetPercentInput'], [class*='moneyField'], [data-value-input-surface]):has(> input:not(:disabled):not([readonly]):not([type='search'])) > :is(input:not(:disabled):not([readonly]), span, small, b) {
+      background-color: transparent !important;
+      background-image: none !important;
+    }
     :is(input:not([type]), input[type=''], input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='tel'], input[type='url'], input[type='number'], textarea):not(:disabled):not([readonly])::placeholder {
       color: var(--typing-field-placeholder) !important;
       opacity: 1 !important;
