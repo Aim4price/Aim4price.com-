@@ -59,6 +59,7 @@
       background-color: var(--typing-field-surface) !important;
       color: var(--typing-field-text) !important;
       caret-color: var(--typing-field-text) !important;
+      font-weight: 650 !important;
     }
     :is(input:not([type]), input[type=''], input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='tel'], input[type='url'], input[type='number'], input[type='date'], input[type='datetime-local'], input[type='time'], input[type='month'], input[type='week'], textarea):not(:disabled):not([readonly]):not([type='date']) {
       background-image: none !important;
@@ -69,6 +70,7 @@
     :is(input:not([type]), input[type=''], input[type='text'], input[type='search'], input[type='email'], input[type='password'], input[type='tel'], input[type='url'], input[type='number'], textarea):not(:disabled):not([readonly])::placeholder {
       color: var(--typing-field-placeholder) !important;
       opacity: 1 !important;
+      font-weight: 500 !important;
     }
   }
 }
