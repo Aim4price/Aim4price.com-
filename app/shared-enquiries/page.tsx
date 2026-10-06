@@ -1,3 +1,4 @@
+import SharedAccountHero from '../../components/SharedAccountHero';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
@@ -20,10 +21,10 @@ export default async function SharedEnquiries() {
         redirect('/leads');
     const enquiries = session.user.emailVerified ? await listReceivedSharedEnquiries() : [];
     const usage = await sharingUsageSummary(session.user.id);
-    return <><AppHeader active="none"/><main className={styles.page}>
-  <div className={styles.workspaceHeading}><div><span className={styles.eyebrow}>Free Dealer account</span><h1 className={styles.title}>Shared enquiries</h1><p className={styles.intro}>Your assets, uploads and activity stay with this account when you upgrade.</p></div><Link className={styles.secondaryButton} href="/pricing">Explore Desktop plans</Link></div>
+    return <><AppHeader active="none"/><main><SharedAccountHero count={enquiries.length}/><div className={`${styles.page} ${styles.accountContent}`}>
+
   {!session.user.emailVerified && <p className={styles.notice}>Verify your email using the message sent at registration, then reopen your enquiry.</p>}
-  <div className={styles.grid}><section className={styles.panel}><h2>Received enquiries</h2>{!enquiries.length ? <p>No authorised enquiries yet. Open a link sent to you to get started.</p> : enquiries.map(enquiry => <article key={enquiry.token} className={styles.lead}><h3>{enquiry.sender || 'Shared asset'}</h3><p>{enquiry.request}</p><Link className={styles.button} href={`/asset-share/${enquiry.token}`}>Open enquiry</Link></article>)}</section>
-  <aside className={styles.panel}><h2>Your usage</h2><p>{usage.asset_received?.count || 0} assets received</p><p>{usage.upload?.count || 0} uploads</p><p>{usage.contribution?.count || 0} contributions</p><p className={styles.muted}>Usage is being recorded. No free allowance limits are currently enforced.</p><p>Desktop access requires subscription activation. Your existing account and data stay in place.</p></aside></div>
- </main></>;
+  <div className={styles.grid}><section id="received-enquiries" className={`${styles.panel} ${styles.enquiriesPanel}`}><h2>Received enquiries <span className={styles.count}>{enquiries.length}</span></h2>{!enquiries.length ? <p>No authorised enquiries yet. Open a link sent to you to get started.</p> : enquiries.map(enquiry => <article key={enquiry.token} className={styles.lead}><h3>{enquiry.sender || 'Shared asset'}</h3><p>{enquiry.request}</p><Link className={styles.button} href={`/asset-share/${enquiry.token}`}>Open enquiry</Link></article>)}</section>
+  <aside className={`${styles.panel} ${styles.accountAside}`}><h2>Your usage</h2><dl className={styles.usageStats}><div><dt>Assets received</dt><dd>{usage.asset_received?.count||0}</dd></div><div><dt>Uploads</dt><dd>{usage.upload?.count||0}</dd></div><div><dt>Contributions</dt><dd>{usage.contribution?.count||0}</dd></div></dl><p className={styles.muted}>Usage is being recorded. No free allowance limits are currently enforced.</p><p>Desktop access requires subscription activation. Your existing account and data stay in place.</p><div className={styles.upgrade}><strong>Ready for Aim4price Desktop?</strong><p className={styles.muted}>Keep your account and existing activity when you upgrade.</p><Link className={styles.secondaryButton} href="/pricing">Explore Desktop plans</Link></div></aside></div>
+ </div></main></>;
 }

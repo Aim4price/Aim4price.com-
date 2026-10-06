@@ -50,3 +50,31 @@
 .footer { margin-top:28px; }
 :global(html[data-background='dark']) .page { color:#edf7f0; }
 :global(html[data-background='dark']) .secondaryButton { background:#17342a; color:#edf7f0; border-color:#75998c; }
+
+/* Match the public Invoice Drop welcome surface and preserve the canonical canvas. */
+.accountHero { min-height: max(28rem, calc(var(--website-visible-height, 100dvh) - 5.75rem)); }
+.accountBadge { display:inline-flex; margin-bottom:1.2rem; padding:.45rem .8rem; border:1px solid currentColor; border-radius:999px; font-size:.75rem; font-weight:750; letter-spacing:.035em; }
+.heroLink { text-decoration:none; }
+.accountContent { max-width:1280px; padding:0 0 3rem; }
+.accountContent .grid { grid-template-columns:minmax(0,1.65fr) minmax(18rem,1fr); gap:1.5rem; margin-top:0; }
+.accountContent .panel { border-radius:1.5rem; padding:1.6rem; }
+.enquiriesPanel { scroll-margin-top:8rem; }
+.enquiriesPanel h2 { display:flex; align-items:center; gap:.75rem; }
+.count { display:inline-grid; place-items:center; min-width:2rem; height:2rem; padding:0 .45rem; border-radius:.65rem; background:var(--app-surface-soft,#edf6f1); color:var(--app-text,#163b2f); font-size:.9rem; }
+.accountContent .lead { display:grid; gap:.65rem; padding:1.25rem; margin-top:1rem; border:1px solid #75998c33; border-radius:1rem; background:var(--app-surface-soft,#f5faf7); color:var(--app-text,#163b2f); }
+.accountContent .lead h3,.accountContent .lead p,.accountContent .lead small { margin:0; }
+.accountContent .lead h3 { font-size:1.15rem; font-weight:800; }
+.accountContent .lead p { font-size:.95rem; }
+.accountContent .lead small { color:var(--app-muted,#60766b); }
+.accountContent .lead .button { justify-self:start; margin-top:.3rem; min-height:2.8rem; }
+.accountAside > h2:not(:first-child) { margin-top:1.6rem; }
+.accountAside > p { font-size:.9rem; }
+.usageStats { display:grid; gap:.3rem; margin:0 0 1rem; }
+.usageStats div { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:.65rem 0; border-bottom:1px solid #75998c33; }
+.usageStats dt { font-size:.9rem; }.usageStats dd { margin:0; font-size:1.2rem; font-weight:800; }
+.upgrade { margin-top:1.4rem; padding-top:1.25rem; border-top:1px solid #75998c33; }
+.upgrade strong { font-size:1rem; }.upgrade .secondaryButton { width:100%; box-sizing:border-box; font-weight:750; }
+.accountContent .details { scroll-margin-top:8rem; }.accountContent .details summary { padding:.25rem 0; }
+@media(max-width:760px) {
+ :global(body:not(:has([data-website-canvas]))) .accountContent .grid { grid-template-columns:1fr; }
+}

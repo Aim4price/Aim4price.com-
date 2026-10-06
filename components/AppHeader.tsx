@@ -283,8 +283,10 @@ function buildNavItems(
   }
 
   if (accountType === 'business') return [
+    { key: 'home', href: '/', label: 'Home' },
+    { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
     { key: 'leads', href: '/business', label: 'Shared enquiries' },
-    { key: 'account', href: '/business?details=1', label: 'Account' },
+    { key: 'account', href: '/business?details=1#account-details', label: 'Account' },
   ];
 
   if (accountType === 'public') {
@@ -2496,7 +2498,7 @@ export default function AppHeader({
                           <>
                             {sortAccountMenuItems(isMiddlemanAccount
                                   ? MIDDLEMAN_ACCOUNT_MENU_ITEMS
-                                  : session?.sharingPlan === 'free' ? [{ href: '/shared-enquiries', label: 'Shared enquiries' }, { href: '/pricing', label: 'Explore Desktop plans' }] : session?.accountType === 'business' ? [{ href: '/business', label: 'Shared enquiries' }, { href: '/business?details=1', label: 'Account' }, { href: '/pricing', label: 'Explore Desktop plans' }]
+                                  : session?.sharingPlan === 'free' ? [{ href: '/shared-enquiries', label: 'Shared enquiries' }, { href: '/pricing', label: 'Explore Desktop plans' }] : session?.accountType === 'business' ? [{ href: '/business', label: 'Shared enquiries' }, { href: '/business?details=1#account-details', label: 'Account' }, { href: '/pricing', label: 'Explore Desktop plans' }]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {
                               const isActive = isAccountMenuLinkActive(item.href);
