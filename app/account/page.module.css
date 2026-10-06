@@ -4178,3 +4178,6 @@
 .invoiceFoldChevron svg { width:1rem; height:1rem; }
 .invoiceFoldToggle:hover { background:#f5faf7; }.invoiceFoldToggle:focus-visible,.invoiceListToolbar button:focus-visible { outline:2px solid #267152; outline-offset:-3px; }
 .invoiceFoldBody { border-top:1px solid #e0e9e3; }
+
+.sharedAccountSettings { grid-column:1 / -1; min-width:0; }
+.sharedAccountSettings [id] { scroll-margin-top:9rem; }

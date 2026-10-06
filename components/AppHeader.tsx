@@ -2503,7 +2503,7 @@ export default function AppHeader({
                                       { href: '/valuation', label: 'Get Estimate' },
                                       { href: '/account', label: 'Account' },
                                       { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared enquiries' },
-                                      { href: '/pricing', label: 'Explore Desktop plans' },
+                                      { href: '/pricing', label: 'Explore plans' },
                                     ]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {
@@ -2530,6 +2530,7 @@ export default function AppHeader({
                               );
                             })}
 
+                            <Link href="/auth?switchAccount=1#login" role="menuitem" className={styles.menuLink} onClick={closeAccountMenu}>Switch account</Link>
                             <button
                               type="button"
                               role="menuitem"

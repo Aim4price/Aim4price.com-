@@ -1,7 +1,7 @@
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs'),ts=require('typescript');
-function load(file,mocks){const exports={};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(id=>id in mocks?mocks[id]:require(id),exports);return exports;}
+function load(file,mocks){const exports={};mocks={ '../../components/AccountDirectoryListing':{default:'DirectoryListing'}, '../business/business-client':{default:'BusinessDetails'}, '../../lib/business-accounts':{readBusinessAccount:async()=>({review:{website:'',evidence:''}})}, '../business/page.module.css':{default:{}}, ...mocks};new Function('require','exports',ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText)(id=>id in mocks?mocks[id]:require(id),exports);return exports;}
 const token='a'.repeat(43);
 const lead={share:{senderName:'Private sender',assets:[{title:'Private tractor',serialNumber:'PRIVATE-SERIAL'}]},details:{recipientEmail:'private@example.test',request:'Private request'},reports:[{id:'report',label:'Private report'}]};
 const mocks={
@@ -58,7 +58,7 @@ test('signed-in free Dealers return to their enquiry or hub instead of the unpai
   '../../lib/middleman-account':{},'./auth-client':{default:'Auth'},
  });
  await assert.rejects(page.default({searchParams:{returnTo:'/asset-share/'+token+'?open=1'}}),{message:'/asset-share/'+token+'?open=1'});
- await assert.rejects(page.default({}),{message:'/upgrade-account'});
+ await assert.rejects(page.default({}),{message:'/shared-enquiries'});
  assert.ok(await page.default({searchParams:{switchAccount:'1'}}));
  status='suspended';assert.ok(await page.default({}));
 });
@@ -94,7 +94,7 @@ test('free Business and Dealer account pages open the real account with invoices
    'next/navigation':{redirect:path=>{throw Error('redirect:'+path);}},
    './account-client':{default:'AccountClient'},
   });
-  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);
+  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);assert.ok(result.props.sharedSettings);
  }
 });
 test('suspended free accounts still follow the account access block',async()=>{
@@ -105,4 +105,19 @@ test('suspended free accounts still follow the account access block',async()=>{
   '../../lib/account-access':{},'next/navigation':{redirect:path=>{throw Error('redirect:'+path);}},'./account-client':{default:'AccountClient'},
  });
  await assert.rejects(page.default(),/redirect:\/pending-payment/);
+});
+
+test('free Business login defaults to Shared enquiries while preserving explicit asset links',async()=>{
+ const page=load('app/auth/page.tsx',{
+  '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
+  '../../lib/external-share-permissions':load('lib/external-share-permissions.ts',{}),
+  '../../components/AppHeader':{default:'Header'},'../../components/SwitchAccountButton':{default:'Switch'},'./page.module.css':{default:{}},
+  'next/navigation':{redirect:path=>{throw Error(path);}},
+  '../../lib/account-access':{getAccountAccess:async()=>({isActive:true})},
+  '../../lib/account-profile':{getAccountProfile:async()=>({accountType:'business',accountStatus:'active'})},
+  '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'free',email:'free@example.test'}})},
+  '../../lib/middleman-account':{},'./auth-client':{default:'Auth'},
+ });
+ await assert.rejects(page.default({}),{message:'/business'});
+ await assert.rejects(page.default({searchParams:{returnTo:'/asset-share/'+token+'?open=1'}}),{message:'/asset-share/'+token+'?open=1'});
 });
