@@ -179,13 +179,7 @@ function formatUsage(value: number | null, metric: DealerMaintenanceTrackedAsset
 }
 
 function selectedAssetLabel(asset: DealerMaintenanceTrackedAsset): string {
-  const details = [
-    asset.yearModel ? `Year Model: ${asset.yearModel}` : '',
-    asset.currentUsage !== null ? `Usage: ${formatUsage(asset.currentUsage, asset.usageMetric)}` : '',
-    asset.condition ? `Condition: ${titleCase(asset.condition)}` : '',
-    asset.assetKind ? titleCase(asset.assetKind) : '',
-  ].filter(Boolean);
-  return details.length ? details.join(' • ') : asset.assetTitle;
+  return asset.currentUsage !== null ? formatUsage(asset.currentUsage, asset.usageMetric) : '';
 }
 
 function triggerLabel(triggerType: TriggerType): string {
@@ -469,7 +463,7 @@ export default function DealerMaintenanceScheduleModal({
   }
 
   if (step === 'maintenance-type') {
-    return <MaintenanceEntryChoice step="type" timing="upcoming" assetTitle={selectedAssetLabel(asset)}
+    return <MaintenanceEntryChoice step="type" timing="upcoming" assetTitle={asset.assetTitle}
       onClose={onClose} onBack={onClose} onType={maintenanceType => { updateDraft({ maintenanceType }); setStep('trigger-type'); }} />;
   }
 
@@ -534,7 +528,8 @@ export default function DealerMaintenanceScheduleModal({
                 ? `Edit ${draft.maintenanceType} schedule`
                 : `Schedule ${draft.maintenanceType}`}
             </h2>
-            <p>{`${triggerLabel(draft.triggerType)} • ${selectedAssetLabel(asset)}`}</p>
+            <p>{asset.assetTitle}</p>
+            {selectedAssetLabel(asset) ? <p>{selectedAssetLabel(asset)}</p> : null}
           </div>
           <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={onClose} disabled={saving} aria-label="Close maintenance form">
             <CloseIcon />

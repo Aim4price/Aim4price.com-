@@ -1,4 +1,5 @@
 'use client';
+import { assetModalUsage } from '../../lib/asset-modal-usage';
 import { useLeadDialog } from './useLeadDialog';
 import { useId, type ReactNode } from 'react';
 import assetStyles from '../../app/asset-register/page.module.css';
@@ -15,7 +16,7 @@ export default function LeadReportDialog({title, description, onClose, busy = fa
     <div className={assetStyles.modalBackdrop} data-website-overlay onClick={busy ? undefined : onClose} data-download-shade="true"/>
     <section ref={dialogRef} tabIndex={-1} className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${downloadStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby={titleId} data-download-dialog="true">
       <header className={`${assetStyles.modalHeader} ${assetStyles.assetReportModalHeader}`} data-download-header="true">
-        <div className={assetStyles.modalHeaderText}><h3 id={titleId}>{title}</h3><p>{description}</p></div>
+        <div className={assetStyles.modalHeaderText}><h3 id={titleId}>{title}</h3>{assetModalUsage(description) ? <p>{assetModalUsage(description)}</p> : null}</div>
         <ShareModalCloseButton onClick={onClose} disabled={busy} aria-label="Close PDF reports"/>
       </header>
       <div className={`${assetStyles.modalScrollBody} ${assetStyles.assetReportModalBody}`} data-download-body="true"><div className={assetStyles.assetReportOptionsGrid} data-download-grid="true">{children}</div></div>
