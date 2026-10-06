@@ -1,5 +1,4 @@
 'use client';
-import { assetModalUsage } from '../../lib/asset-modal-usage';
 import { openAssetQrLabel } from '../../lib/asset-qr-label';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
 import { useCaptureAllowance } from '../../lib/use-capture-allowance';
@@ -4183,7 +4182,7 @@ export default function FuelClient({
         <div className={`${styles.fuelSlipFlowBackdrop} ${styles.accountFuelBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="asset-add-fuel-title">
           <div className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.accountFuelModal} ${accountStyles.modalTheme}`}>
             <div className={styles.modalHeader}>
-              <div><h2 id="asset-add-fuel-title">{modalMode === 'add-fuel-choice' ? 'Add fuel' : 'Choose fuel storage'}</h2><p>{quickLaunchAsset.title}</p><p>{assetModalUsage(fuelSlipAssetMeta(quickLaunchAsset))}</p></div>
+              <div><h2 id="asset-add-fuel-title">{modalMode === 'add-fuel-choice' ? 'Add fuel' : 'Choose fuel storage'}</h2><p>{quickLaunchAsset.title}</p><p>{fuelSlipAssetMeta(quickLaunchAsset)}</p></div>
               <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton}`} onClick={closeModal} aria-label="Close add fuel">×</button>
             </div>
             <div className={styles.modalDivider} />

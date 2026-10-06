@@ -1,5 +1,4 @@
 'use client';
-import { assetModalUsage } from '../../lib/asset-modal-usage';
 import { useLeadDialog } from './useLeadDialog';
 import { useId, type ReactNode } from 'react';
 import assetStyles from '../../app/asset-register/page.module.css';
@@ -19,7 +18,7 @@ export default function LeadManageDialog({title, description, onClose, children,
     <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose}/>
     <section ref={dialogRef} tabIndex={-1} className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${classes.modal ?? `${leadStyles.leadManageModal} ${dialogStyles.surface} ${dialogStyles.flush}`}`} role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <header className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${classes.header ?? dialogStyles.header}`}>
-        <div className={assetStyles.modalHeaderText}><h3 id={titleId}>{title}</h3>{assetModalUsage(description) ? <p>{assetModalUsage(description)}</p> : null}</div>
+        <div className={assetStyles.modalHeaderText}><h3 id={titleId}>{title}</h3><p>{description}</p></div>
         <ShareModalCloseButton onClick={onClose} aria-label="Close lead management"/>
       </header>
       <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${classes.body ?? `${leadStyles.leadManageScrollBody} ${dialogStyles.body}`}`}>{children}</div>
