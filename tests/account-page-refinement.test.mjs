@@ -8,7 +8,7 @@ const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 test("account overview stays compact without redundant update metadata", async () => {
   const source = await read("app/account/account-client.tsx");
 
-  assert.equal((source.match(/className=\{styles\.metricTile\}/g) ?? []).length, 4);
+  assert.equal((source.match(/styles\.metricTile\b/g) ?? []).length, 4);
   assert.doesNotMatch(source, /styles\.overviewUpdated|updatedLabel|Last updated/);
   assert.doesNotMatch(source, /function formatDate/);
   assert.match(source, /role="progressbar"/);
@@ -176,3 +176,21 @@ test("logo editing and account feedback are always discoverable and announced", 
   assert.match(source, /className=\{styles\.noticeDismissButton\}/);
 });
 
+
+test("profile progress opens the first incomplete editable section", async () => {
+ const source = await read("app/account/account-client.tsx");
+ const ts = (await import('typescript')).default;
+ const start=source.indexOf('  function openOverviewDetails('), end=source.indexOf('  function openOverviewAccess(', start);
+ const code=ts.transpileModule(source.slice(start,end),{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
+ for (const [saved,expected] of [
+  [{displayName:'Name',businessName:'Business',phone:'',marketplaceEmail:'mail@test.com',province:'',townCity:'',addressLine1:''},1],
+  [{displayName:'Name',businessName:'Business',phone:'123',marketplaceEmail:'mail@test.com',province:'',townCity:'George',addressLine1:''},2],
+  [{displayName:'Name',businessName:'Business',phone:'123',marketplaceEmail:'mail@test.com',province:'Western Cape',townCity:'George',addressLine1:'Street'},1],
+ ]) {
+  let modal,step;
+  const open=new Function('sharedAccount','profile','profileDraft','buildProfileDraft','openActionModal','setBusinessDetailsStep',code+';return openOverviewDetails;')(false,saved,saved,v=>v,v=>modal=v,v=>step=v);
+  open(true);assert.equal(modal,'business');assert.equal(step,expected);
+ }
+ assert.match(source,/business: "Business"/);
+ assert.match(source,/Account type is locked after signup/);
+});

@@ -143,3 +143,7 @@
 .directoryConsent { grid-column:1 / -1; display:grid; gap:.7rem; }.directoryConsent p { margin:0; }.directoryConsent label { display:flex; align-items:center; gap:.75rem; }.directoryConsent input { width:1.25rem; height:1.25rem; flex-shrink:0; }
 
 .directoryLogo input::file-selector-button { border:1px solid #75998c55; border-radius:.55rem; padding:.55rem .8rem; margin-right:.8rem; font:inherit; font-weight:700; background:var(--app-surface-soft,#edf6f1); color:var(--app-text,#163b2f); cursor:pointer; }
+
+.businessForm input:not([type=checkbox]):not([type=hidden]),.businessForm textarea { background:var(--app-success-soft,#edf5f0); color:var(--app-text,#173e33); font-weight:650; border-color:var(--app-line-strong,#a9c4b7); }
+.businessForm input:focus,.businessForm textarea:focus { background:var(--app-info-soft,#e8f2ed); }
+.businessForm input::placeholder { color:var(--app-muted,#536b60); opacity:1; }

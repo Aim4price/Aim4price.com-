@@ -95,3 +95,11 @@ test('Admin verification endpoints reject non-admin reads and foreign-origin wri
     assert.equal((await route.PATCH(request('https://aim4price.com'))).status, 200);
     assert.equal(writes, 1);
 });
+
+test('Dealer contact edits preserve account type and cannot self-approve',async()=>{const {pg,mod}=await setup();try{
+ await pg.query("INSERT INTO account_profiles(user_id,account_type,account_status,business_name,phone) VALUES('dealer','dealer','active','Dealer','')");
+ await mod.saveBusinessDetails('dealer',{businessName:'Dealer Workshop',phone:'0821234567',website:'',accountType:'owner',verified:true});
+ const row=(await pg.query("SELECT account_type,phone FROM account_profiles WHERE user_id='dealer'")).rows[0];assert.equal(row.account_type,'dealer');assert.equal(row.phone,'0821234567');
+ assert.equal((await pg.query("SELECT verified_at FROM business_account_reviews WHERE user_id='dealer'")).rows[0].verified_at,null);
+ await pg.query("UPDATE account_profiles SET account_status='suspended' WHERE user_id='dealer'");await assert.rejects(mod.saveBusinessDetails('dealer',{businessName:'Changed',phone:'123'}),/unavailable/);
+}finally{await pg.close();}});

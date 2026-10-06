@@ -75,7 +75,7 @@ export async function saveBusinessDetails(userId: string, input: Record<string, 
     const db = await getDb().connect();
     try {
         await db.query('BEGIN');
-        const existing = (await db.query("SELECT business_name,phone FROM account_profiles WHERE user_id=$1 AND account_type='business' AND account_status <> 'suspended' FOR UPDATE", [userId])).rows[0];
+        const existing = (await db.query("SELECT business_name,phone FROM account_profiles WHERE user_id=$1 AND account_type IN ('business','dealer') AND account_status = 'active' FOR UPDATE", [userId])).rows[0];
         if (!existing)
             throw new Error('This business account is unavailable.');
         const prior = (await db.query('SELECT website,evidence FROM business_account_reviews WHERE user_id=$1', [userId])).rows[0];

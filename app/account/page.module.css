@@ -4181,3 +4181,12 @@
 
 .sharedAccountSettings { grid-column:1 / -1; min-width:0; }
 .sharedAccountSettings [id] { scroll-margin-top:9rem; }
+
+.metricTileButton { width:100%; font:inherit; text-align:left; cursor:pointer; transition:background .15s,border-color .15s; }
+.metricTileButton:hover { background:var(--app-success-soft,#e8f3ed); border-color:var(--app-accent,#318469); }
+.metricTileButton:focus-visible { outline:3px solid var(--app-accent,#318469); outline-offset:3px; }
+.businessDetailsModalCard .field input:not(:disabled),.businessDetailsModalCard .field textarea { background:var(--app-success-soft,#edf5f0); color:var(--app-text,#173e33); border-color:var(--app-line-strong,#a9c4b7); font-weight:650; }
+.businessDetailsModalCard .field input:focus,.businessDetailsModalCard .field textarea:focus { background:var(--app-info-soft,#e8f2ed); border-color:var(--app-accent,#27816a); box-shadow:0 0 0 3px var(--app-success-soft,#dcece3); }
+.businessDetailsModalCard .field input::placeholder { color:var(--app-muted,#536b60); opacity:1; font-weight:500; }
+.businessDetailsModalCard .field > span { color:var(--app-text,#173e33); font-weight:800; }
+.businessDetailsModalCard .fieldHint,.businessDetailsModalCard .modalSectionHeading p { color:var(--app-muted,#536b60); font-weight:600; }
