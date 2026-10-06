@@ -23,7 +23,19 @@
 .filters button:focus-visible,.rowActions button:focus-visible { outline:3px solid #7ab49c; outline-offset:2px; }
 .filters > label { flex:1; font-size:0; gap:0; }
 .filters > label input { font-size:.9rem; font-weight:650; }
-.rowActions button:first-child { border-color:transparent; background:transparent; color:var(--app-muted,#62766e); }
+.rowActions button:first-child {
+ display:inline-flex; align-items:center; justify-content:center; gap:.75rem;
+ border-color:var(--app-line,#b9d2c5); background:var(--app-surface,#fff);
+ color:var(--app-text,#17362c); font-weight:800;
+}
+.rowActions button[aria-expanded]::after {
+ content:""; width:.45rem; height:.45rem; flex:none;
+ border-right:2px solid currentColor; border-bottom:2px solid currentColor;
+ transform:translateY(-.15rem) rotate(45deg);
+}
+.rowActions button[aria-expanded=true] { border-color:var(--app-accent,#146b50); }
+.rowActions button[aria-expanded=true]::after { transform:translateY(.15rem) rotate(225deg); }
+.rowActions button:first-child:hover { border-color:var(--app-accent,#146b50); background:var(--app-surface-soft,#eef7f2); }
 .description small { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 .areaFilter { position:relative; flex:0 1 16rem; font-size:.85rem; }
 .areaFilter summary { display:flex; justify-content:space-between; align-items:center; box-sizing:border-box; min-height:3rem; gap:.75rem; padding:.75rem 1rem; cursor:pointer; list-style:none; border-radius:.6rem; background:var(--app-surface-soft,#f4f8f6); }
