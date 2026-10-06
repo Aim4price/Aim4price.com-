@@ -151,7 +151,7 @@ export default function DesktopServiceModal({
   }, []);
   useEffect(() => { dialogRef.current?.focus(); }, [scheduleDecision]);
   function dialogKeys(event: KeyboardEvent<HTMLElement>) {
-    if (event.key === 'Escape' && !busy) { event.stopPropagation(); onClose(); }
+    if (event.key === 'Escape' && !busy) { event.preventDefault(); event.stopPropagation(); previousStage(); }
     if (event.key !== 'Tab') return;
     const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]') ?? []).filter(element => element.getClientRects().length > 0);
     const first = controls[0], last = controls[controls.length - 1];
@@ -219,8 +219,9 @@ export default function DesktopServiceModal({
   function previousStage() {
     setError('');
     if (stage > 1) setStage(current => current - 1);
-    else if (askScheduleLink) setScheduleDecision(null);
-    else onBack?.();
+    else if (askScheduleLink && scheduleDecision !== null) setScheduleDecision(null);
+    else if (onBack) onBack();
+    else onClose();
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -263,7 +264,7 @@ export default function DesktopServiceModal({
   if (askScheduleLink && scheduleDecision === null) {
     return (
       <div className={`${styles.overlay} ${dealerAppMode ? styles.dealerChoiceOverlay : ''}`} data-website-overlay role="presentation">
-        <button className={`${styles.backdrop} ${!dealerAppMode ? dialogStyles.backdrop : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy} />
+        <button className={`${styles.backdrop} ${!dealerAppMode ? dialogStyles.backdrop : ''}`} type="button" onClick={previousStage} aria-label="Close service choice" disabled={busy} />
         <section className={`${styles.modal} ${styles.saveChoiceModal} ${!dealerAppMode ? dialogStyles.dialog : ''}`} ref={dialogRef} tabIndex={-1} onKeyDown={dialogKeys} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
           <header className={styles.header}>
             <div>
@@ -271,7 +272,7 @@ export default function DesktopServiceModal({
               <p>{record.assetTitle}</p>
               <p>{serviceAssetDetails(record)}</p>
             </div>
-            <button className={`${styles.closeButton} ${!dealerAppMode ? dialogStyles.close : ''}`} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
+            <button className={`${styles.closeButton} ${!dealerAppMode ? dialogStyles.close : ''}`} type="button" onClick={previousStage} aria-label="Close service choice" disabled={busy}>
               <CloseIcon />
             </button>
           </header>
@@ -293,7 +294,7 @@ export default function DesktopServiceModal({
               </button>
             </div>
           </div>
-          <footer className={styles.footer}><button className={styles.cancelButton} type="button" onClick={onClose} disabled={busy}>Cancel</button></footer>
+          <footer className={styles.footer}><button className={styles.cancelButton} type="button" onClick={previousStage} disabled={busy}>Cancel</button></footer>
         </section>
       </div>
     );
@@ -301,7 +302,7 @@ export default function DesktopServiceModal({
 
   return (
     <div className={styles.overlay} data-website-overlay role="presentation">
-      <button className={`${styles.backdrop} ${!dealerAppMode ? dialogStyles.backdrop : ''}`} type="button" onClick={onClose} aria-label="Close service form" disabled={busy} />
+      <button className={`${styles.backdrop} ${!dealerAppMode ? dialogStyles.backdrop : ''}`} type="button" onClick={previousStage} aria-label="Close service form" disabled={busy} />
       <section className={`${styles.modal} ${!dealerAppMode ? styles.completionModal : ''}`} ref={dialogRef} tabIndex={-1} onKeyDown={dialogKeys} role="dialog" aria-modal="true" aria-labelledby="desktop-service-title">
         <header className={styles.header}>
           <div>
@@ -309,7 +310,7 @@ export default function DesktopServiceModal({
             <p>{record.assetTitle}</p>
               <p>{serviceAssetDetails(record)}</p>
           </div>
-          <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={onClose} aria-label="Close service form" disabled={busy}>
+          <button className={`${styles.closeButton} ${!dealerAppMode ? styles.squareClose : ''}`} type="button" onClick={previousStage} aria-label="Close service form" disabled={busy}>
             <CloseIcon />
           </button>
         </header>
@@ -418,7 +419,7 @@ export default function DesktopServiceModal({
 
           <footer className={styles.footer}>
             {stage > 1 || onBack || askScheduleLink ? <button className={styles.cancelButton} type="button" disabled={busy} onClick={previousStage}>Back</button> : null}
-            <button className={styles.cancelButton} type="button" onClick={onClose} disabled={busy}>Cancel</button>
+            <button className={styles.cancelButton} type="button" onClick={previousStage} disabled={busy}>Cancel</button>
             <button className={styles.submitButton} type="submit" disabled={busy}>
               {stage < stageCount ? 'Next' : busy
                 ? `Saving…`

@@ -177,7 +177,6 @@ export default function DealerCostOfOwnershipReportModal({
   onClose,
   onError,
 }: Props) {
-  const dialogRef = useLeadDialog(onClose);
   const [step, setStep] = useState<ReportStep>(pdfOnly ? 'timeline' : 'format');
   const [format, setFormat] = useState<DownloadFormat>('pdf');
   const [reportYear, setReportYear] = useState('all');
@@ -185,6 +184,14 @@ export default function DealerCostOfOwnershipReportModal({
   const [openSelect, setOpenSelect] = useState<ReportSelectKey | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState('');
+  const dialogRef = useLeadDialog(dismiss, Boolean(downloading));
+  function dismiss() {
+    if (downloading) return;
+    setOpenSelect(null);
+    if (step === 'timeline' && !pdfOnly) setStep('format');
+    else (onBack ?? onClose)();
+  }
+
   const yearOptions = useMemo(
     () => reportYearOptions(createdAtIso, updatedAtIso),
     [createdAtIso, updatedAtIso],
@@ -254,7 +261,7 @@ export default function DealerCostOfOwnershipReportModal({
 
   return (
     <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay} ${downloadStyles.backdrop}`} data-website-overlay>
-      <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose} data-download-shade="true" />
+      <div className={assetStyles.modalBackdrop} data-website-overlay onClick={dismiss} data-download-shade="true" />
       <div
         className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${assetStyles.assetFuelReportModal} ${downloadStyles.dialog}`}
         role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1}
@@ -266,7 +273,7 @@ export default function DealerCostOfOwnershipReportModal({
             <h3 id="dealer-cost-of-ownership-report-title">{assetTitle}</h3>
             <p>{assetMeta}</p>
           </div>
-          <button type="button" className={assetStyles.modalCloseButton} onClick={onClose} aria-label="Close Cost of Ownership report">
+          <button type="button" className={assetStyles.modalCloseButton} onClick={dismiss} aria-label="Close Cost of Ownership report">
             <CloseIcon className={assetStyles.buttonIcon} />
           </button>
         </div>
@@ -317,7 +324,7 @@ export default function DealerCostOfOwnershipReportModal({
                 <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onBack ?? onClose}>
                   Back
                 </button>
-                <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={onClose}>
+                <button type="button" className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`} onClick={dismiss}>
                   Cancel
                 </button>
                 <button type="button" className={assetStyles.primaryButton} onClick={() => setStep('timeline')} data-download-primary="true">
@@ -376,7 +383,7 @@ export default function DealerCostOfOwnershipReportModal({
                 <button
                   type="button"
                   className={`${assetStyles.secondaryButton} ${assetStyles.assetTimelineSecondaryButton}`}
-                  onClick={onClose}
+                  onClick={dismiss}
                   disabled={downloading}
                 >
                   Cancel

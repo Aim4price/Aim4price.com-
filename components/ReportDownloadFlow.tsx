@@ -55,17 +55,24 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
     catch (e) { setError(e instanceof Error ? e.message : 'Unable to download this report. Please try again.'); }
     finally { setBusy(false); }
   }
-  function back() { setStep(step === 'format' ? 'timeline' : step === 'timeline' && selection.assetId !== 'all' && !lockedAssetId ? 'asset' : 'scope'); }
-  return <div className={`${styles.overlay} ${report.backdrop}`} data-website-overlay>
+  function back() {
+    if (busy) return;
+    if (step === 'format' && !skipTimeline) setStep('timeline');
+    else if ((step === 'timeline' || step === 'format') && !lockedAssetId) setStep(selection.assetId === 'all' ? 'scope' : 'asset');
+    else if (step === 'asset') setStep('scope');
+    else onClose();
+  }
+
+  return <div className={`${styles.overlay} ${report.backdrop}`} data-website-overlay onClick={event => { if (event.target === event.currentTarget) back(); }}>
     <div ref={dialog} className={`${styles.surface} ${step === 'asset' ? picker.modal : report.dialog}`} data-download-dialog={step !== 'asset' ? 'true' : undefined} data-asset-choice-modal={step === 'asset' ? 'true' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} onKeyDown={event => {
-      if (event.key === 'Escape') { event.stopPropagation(); if (!busy) onClose(); }
+      if (event.key === 'Escape') { event.stopPropagation(); if (!busy) back(); }
       if (event.key !== 'Tab') return;
       const items = Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]') || []).filter(item => item.getClientRects().length);
       const first=items[0], last=items[items.length-1];
       if (event.shiftKey && (document.activeElement === first || document.activeElement === heading.current)) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }}>
-      <header data-download-header="true" data-asset-choice-header={step === 'asset' ? 'true' : undefined}><div><h2 id={titleId} ref={heading} tabIndex={-1}>{step === 'scope' ? title : step === 'asset' ? `Choose asset for ${title.replace(/ reports$/i, '').toLowerCase()}` : step === 'timeline' ? 'Choose report timeline' : selectedAsset?.title || title}</h2><p>{step === 'scope' ? 'Choose the records to include.' : step === 'asset' ? 'Choose a saved asset.' : step === 'format' && selectedAsset?.meta ? selectedAsset.meta : `${selectedAsset?.title || allLabel} · ${periodLabel}`}</p></div><button type="button" disabled={busy} onClick={onClose} aria-label="Close download"><span aria-hidden="true">×</span></button></header>
+      <header data-download-header="true" data-asset-choice-header={step === 'asset' ? 'true' : undefined}><div><h2 id={titleId} ref={heading} tabIndex={-1}>{step === 'scope' ? title : step === 'asset' ? `Choose asset for ${title.replace(/ reports$/i, '').toLowerCase()}` : step === 'timeline' ? 'Choose report timeline' : selectedAsset?.title || title}</h2><p>{step === 'scope' ? 'Choose the records to include.' : step === 'asset' ? 'Choose a saved asset.' : step === 'format' && selectedAsset?.meta ? selectedAsset.meta : `${selectedAsset?.title || allLabel} · ${periodLabel}`}</p></div><button type="button" disabled={busy} onClick={back} aria-label="Close download"><span aria-hidden="true">×</span></button></header>
       <div className={step === 'asset' ? picker.contents : styles.body} data-download-body={step !== 'asset' ? 'true' : undefined}>
         {step === 'scope' ? <div data-download-grid="true">
           <button type="button" data-download-option="true" onClick={() => { setSelection(s=>({...s,assetId:'all',fields:Object.fromEntries(fields.map(field=>[field.key,field.initial]))})); setStep('timeline'); }}><span data-download-icon="true"><ScopeIcon /></span><span data-download-copy="true"><strong>{allLabel}</strong><small>All records in your chosen period.</small></span></button>
@@ -92,7 +99,7 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
         </>}
         {busy ? <p role="status">Preparing report…</p> : null}{error ? <p role="alert" className={styles.error}>{error}</p> : null}
       </div>
-      <footer data-download-footer="true" data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>{step !== 'scope' && !(lockedAssetId && (step === 'timeline' || skipTimeline)) ? <button type="button" disabled={busy} onClick={back}>Back</button> : null}<button type="button" disabled={busy} onClick={onClose}>Cancel</button>{step === 'timeline' || step === 'format' ? <button type="button" disabled={busy} data-download-primary="true" onClick={()=>step === 'format' ? void submit(selection.format) : setStep('format')}>{busy ? 'Preparing…' : 'Next'}</button> : null}</footer>
+      <footer data-download-footer="true" data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>{step !== 'scope' && !(lockedAssetId && (step === 'timeline' || skipTimeline)) ? <button type="button" disabled={busy} onClick={back}>Back</button> : null}<button type="button" disabled={busy} onClick={back}>Cancel</button>{step === 'timeline' || step === 'format' ? <button type="button" disabled={busy} data-download-primary="true" onClick={()=>step === 'format' ? void submit(selection.format) : setStep('format')}>{busy ? 'Preparing…' : 'Next'}</button> : null}</footer>
     </div>
   </div>;
 }

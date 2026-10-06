@@ -1,6 +1,7 @@
 'use client';
 // Temporary browser fixture, never a production route or connected to live accounts.
 import { useEffect, useState, type ComponentProps } from 'react';
+import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import LeadsClient from '../../app/leads/leads-client';
 import { useSearchParams, usePathname } from 'next/navigation';
 import dealerStyles from '../../app/dealer/dealer.module.css';
@@ -31,6 +32,7 @@ function FixtureContent() {
   const view=useSearchParams().get('view'); const [open,setOpen]=useState(true);
   const close=()=>setOpen(false);
   if (!open) return <p>Dialog closed</p>;
+  if(view==='download') return <ReportDownloadFlow title="Asset reports" allLabel="All assets" assets={[{id:'fixture',title:'Test asset'}]} onClose={close} onDownload={async()=>{}}/>;
   if(view==='leads') return <LeadsClient dealerWorkspaceMode initialSessionUserId="fixture-dealer" initialLeads={[lead]} />;
   if(view==='cost') return <DealerCostDecisionModal invoiceId="fixture-cost" onClose={close} onResolved={close} />;
   if(view==='schedule') return <DealerMaintenanceScheduleModal accessId={asset.accessId} onClose={close} />;

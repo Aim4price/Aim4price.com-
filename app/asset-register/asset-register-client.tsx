@@ -11553,6 +11553,7 @@ export default function AssetRegisterClient({
   }
 
   function closeAssetReportDialog() {
+    if (assetReportStep !== 'options') { setAssetReportStep('options'); setOpenAssetReportSelect(null); return; }
     setIsAssetReportModalOpen(false);
     setSharedReportAsset(null);
     setAssetReportStep('options');
