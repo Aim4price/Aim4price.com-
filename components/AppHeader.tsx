@@ -286,7 +286,7 @@ function buildNavItems(
     { key: 'home', href: '/', label: 'Home' },
     { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
     { key: 'leads', href: '/business', label: 'Shared enquiries' },
-    { key: 'account', href: '/business?details=1#account-details', label: 'Account' },
+    { key: 'account', href: '/account', label: 'Account' },
   ];
 
   if (accountType === 'public') {
@@ -1003,14 +1003,14 @@ export default function AppHeader({
 
   const navAccountType = isLoadingSession ? null : (session?.sharingPlan === 'free' ? 'business' : session?.accountType ?? 'public');
   const navItems = useMemo(
-    () => buildNavItems(navAccountType, session?.accountSubtype, ),
-    [navAccountType, session?.accountSubtype],
+    () => buildNavItems(navAccountType, session?.accountSubtype).map(item => item.key === 'leads' && session?.sharingPlan === 'free' && session?.accountType !== 'business' ? { ...item, href: '/shared-enquiries' } : item),
+    [navAccountType, session?.accountSubtype, session?.sharingPlan, session?.accountType],
   );
   const mobileNavItems = useMemo(
-    () => (session?.accountType
+    () => (session?.sharingPlan === 'free' || session?.accountType === 'business' ? navItems : session?.accountType
       ? buildMobileNavItems(session.accountType, session.accountSubtype, )
       : navItems),
-    [navItems, session?.accountType, session?.accountSubtype],
+    [navItems, session?.accountType, session?.accountSubtype, session?.sharingPlan],
   );
   const activeNavKey = useMemo(
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
@@ -2498,7 +2498,13 @@ export default function AppHeader({
                           <>
                             {sortAccountMenuItems(isMiddlemanAccount
                                   ? MIDDLEMAN_ACCOUNT_MENU_ITEMS
-                                  : session?.sharingPlan === 'free' ? [{ href: '/shared-enquiries', label: 'Shared enquiries' }, { href: '/pricing', label: 'Explore Desktop plans' }] : session?.accountType === 'business' ? [{ href: '/business', label: 'Shared enquiries' }, { href: '/business?details=1#account-details', label: 'Account' }, { href: '/pricing', label: 'Explore Desktop plans' }]
+                                  : session?.sharingPlan === 'free' || session?.accountType === 'business' ? [
+                                      { href: '/', label: 'Home' },
+                                      { href: '/valuation', label: 'Get Estimate' },
+                                      { href: '/account', label: 'Account' },
+                                      { href: session?.accountType === 'business' ? '/business' : '/shared-enquiries', label: 'Shared enquiries' },
+                                      { href: '/pricing', label: 'Explore Desktop plans' },
+                                    ]
                                   : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {
                               const isActive = isAccountMenuLinkActive(item.href);

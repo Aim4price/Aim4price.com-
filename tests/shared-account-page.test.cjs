@@ -82,3 +82,27 @@ test('resend verification uses the signed-in email and a safe return destination
  assert.equal((await route.POST(request({returnTo}))).status,200);
  assert.equal(sent.callbackURL,returnTo);assert.equal(limited,2);
 });
+
+test('free Business and Dealer account pages open the real account with invoices without Desktop access',async()=>{
+ for(const role of ['business','dealer']) {
+  const profile={accountType:role,accountStatus:'active',userId:'shared-user'};
+  const page=load('app/account/page.tsx',{
+   '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'shared-user'}})},
+   '../../lib/account-profile':{getAccountProfile:async()=>profile,getAccountScanPinStatus:async()=>{throw Error('Shared account must not load paid QR controls');}},
+   '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
+   '../../lib/account-access':{requireActivePageAccess:async()=>{throw Error('Shared account must not require Desktop');}},
+   'next/navigation':{redirect:path=>{throw Error('redirect:'+path);}},
+   './account-client':{default:'AccountClient'},
+  });
+  const result=await page.default();assert.equal(result.type,'AccountClient');assert.equal(result.props.initialProfile,profile);assert.equal(result.props.sharedAccount,true);
+ }
+});
+test('suspended free accounts still follow the account access block',async()=>{
+ const page=load('app/account/page.tsx',{
+  '../../lib/auth-session':{getAnyServerSession:async()=>({user:{id:'shared-user'}})},
+  '../../lib/account-profile':{getAccountProfile:async()=>({accountType:'business',accountStatus:'suspended'})},
+  '../../lib/sharing-foundation':{sharingPlan:async()=> 'free'},
+  '../../lib/account-access':{},'next/navigation':{redirect:path=>{throw Error('redirect:'+path);}},'./account-client':{default:'AccountClient'},
+ });
+ await assert.rejects(page.default(),/redirect:\/pending-payment/);
+});
