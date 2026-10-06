@@ -41432,3 +41432,19 @@ button.documentOpenLink {
   text-wrap: nowrap !important;
   overflow-wrap: normal;
 }
+
+/* One comfortable scroll rail for the directory, clear of cards and actions. */
+.businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody {
+ padding-right:.75rem !important;
+ scrollbar-gutter:stable !important;
+ scrollbar-width:thin;
+ scrollbar-color:#71988b var(--app-surface-soft,#edf3ef);
+}
+@supports selector(::-webkit-scrollbar) {
+ .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody { scrollbar-width:auto; scrollbar-color:auto; }
+ .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody::-webkit-scrollbar { width:12px; }
+ .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody::-webkit-scrollbar-track { background:var(--app-surface-soft,#edf3ef); border-radius:999px; margin-block:8px; }
+ .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody::-webkit-scrollbar-thumb { background:#71988b; border:3px solid var(--app-surface-soft,#edf3ef); border-radius:999px; min-height:48px; }
+ .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody::-webkit-scrollbar-thumb:hover { background:#477e68; }
+ .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody::-webkit-scrollbar-button { display:none; width:0; height:0; }
+}
