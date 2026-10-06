@@ -2683,7 +2683,7 @@ export default function MyInvoicesClient({
     );
   }
 
-  const sourceDraftsRef = useRef<Partial<Record<InvoiceSource, InvoiceDraft>>>({});
+  const sourceDraftsRef = useRef<Partial<Record<InvoiceSource, { assetId: string; draft: InvoiceDraft }>>>({});
   const recurringDraftStartedRef = useRef(false);
   function openAddInvoiceModal(assetId = '') {
     sourceDraftsRef.current = {};
@@ -2711,7 +2711,9 @@ export default function MyInvoicesClient({
   }
 
   function startFlow(source: InvoiceSource) {
-    sourceDraftsRef.current[draft.source] = draft;
+    if (sourceDraftsRef.current[draft.source]) {
+      sourceDraftsRef.current[draft.source] = { assetId: selectedAssetId, draft };
+    }
     const presetAssetId = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
       ? selectedAssetId
       : '';
@@ -2725,11 +2727,12 @@ export default function MyInvoicesClient({
     setUsageMetricDropdownOpen(false);
     setManualCostWizardStep(1);
     setManualCostWizardError('');
-    setDraft(current => {
-      const saved = sourceDraftsRef.current[source] ?? (current.source === source ? current : undefined);
-      if (saved && (!presetAssetId || saved.assetId === presetAssetId)) return saved;
-      return presetAssetId ? buildDraftForAsset(source, presetAssetId) : buildEmptyDraft(source, dealerMode ? dealerDefaults.supplierName : '');
-    });
+    const saved = sourceDraftsRef.current[source];
+    const nextDraft = saved && saved.assetId === presetAssetId
+      ? saved.draft
+      : presetAssetId ? buildDraftForAsset(source, presetAssetId) : buildEmptyDraft(source, dealerMode ? dealerDefaults.supplierName : '');
+    sourceDraftsRef.current[source] = { assetId: presetAssetId, draft: nextDraft };
+    setDraft(nextDraft);
     setAssetLockedForFlow(Boolean(presetAssetId));
     setFlow(presetAssetId
       ? source === 'manual' ? 'manual-form' : 'upload'
