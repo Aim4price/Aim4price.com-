@@ -263,3 +263,21 @@
     display: none !important;
   }
 }
+
+.navigationGroups { display: grid; gap: 1.4rem; padding-top: 1.2rem; }
+.navigationGroup h3 { margin: 0; color: #60716a; font-size: 0.82rem; font-weight: 700; }
+.navigationGroups .optionGrid { padding-top: 0.65rem; }
+.navigationGroups > .optionGrid { padding-top: 0; }
+.navigationGroups .link { min-height: 3.5rem; box-shadow: none; }
+.navigationGroups .link strong { white-space: normal; }
+.modal { width: min(64rem, var(--website-dialog-reference-width, 100%)); }
+.navigationGroups { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+.navigationGroups > .optionGrid { grid-column: 1 / -1; }
+.navigationGroup .optionGrid { grid-template-columns: 1fr; }
+@media (max-width: 760px) {
+  .navigationGroups { grid-template-columns: 1fr; }
+  .navigationGroup .optionGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 450px) {
+  .navigationGroup .optionGrid { grid-template-columns: 1fr; }
+}
