@@ -31,7 +31,7 @@ export default function BusinessDetails({ businessName, phone, website, evidence
         const r = await fetch('/api/business-account', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), d = await r.json();
         if (!r.ok)
             throw Error(d.error);
-        setNotice('Details saved. Changed details require Admin review.');
+        setNotice('Account details saved.');
         router.refresh();
     }
     catch (e) {
@@ -43,7 +43,7 @@ export default function BusinessDetails({ businessName, phone, website, evidence
  <label>Business name<input name="businessName" required maxLength={200} defaultValue={businessName}/></label>
  <label>Contact number<input name="phone" type="tel" maxLength={40} defaultValue={phone}/></label>
  <label>Website or business listing<input name="website" type="url" maxLength={500} defaultValue={website} placeholder="https://"/></label>
- <label className={styles.evidenceField}>Information for verification<textarea name="evidence" maxLength={2000} defaultValue={evidence} placeholder="Tell Aim4price about your business and how we can confirm it."/></label>
- <div className={styles.formFooter}><p className={styles.muted}>No online listing? Tell us how to confirm your business. Changed details are reviewed by Aim4price.</p><button className={styles.button} disabled={busy}>{busy ? 'Saving…' : 'Save details'}</button></div>
+ <details className={styles.businessReview}><summary>Business verification (optional)</summary><p className={styles.muted}>Aim4price can review your business information separately. This is not required to use shared assets; the sender controls your permissions.</p><label>Information for verification<textarea name="evidence" maxLength={2000} defaultValue={evidence} placeholder="Tell Aim4price about your business and how we can confirm it."/></label><p className={styles.muted}>Changing your business information requires a new business review. It does not remove your shared-asset permissions.</p></details>
+ <div className={styles.formFooter}><p className={styles.muted}>Keep your contact details up to date. Access to shared assets is controlled by the sender.</p><button className={styles.button} disabled={busy}>{busy ? 'Saving…' : 'Save details'}</button></div>
  </form>{notice && <p className={styles.notice} role="status">{notice}</p>}</>;
 }

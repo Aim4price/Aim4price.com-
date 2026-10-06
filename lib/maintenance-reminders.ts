@@ -1,5 +1,5 @@
 import {getAccountProfile} from './account-profile';
-import {canBusinessRead,canBusinessContribute} from './business-accounts';
+import {canBusinessRead} from './business-accounts';
 import {sharingPlan} from './sharing-foundation';
 import type {PoolClient} from 'pg';
 import {getDb} from './db';
@@ -29,8 +29,7 @@ export async function schedulerPermission(source:MaintenanceSource,user:{id:stri
  const plan=await sharingPlan(identity.id,profile.accountType);if(plan==='free'&&identity.emailVerified!==true)return false;
  if(profile.accountType==='business'&&!await canBusinessRead(identity))return false;
  if(source.share_token){const lead=await readLeadPage(source.share_token);if(!lead||lead.ownerId!==source.owner_id||!lead.share.assets.some(a=>a.assetId===source.asset_id))return false;
- const unbound=!!lead.details&&!lead.details.recipientEmail&&!lead.details.recipientUserId&&(['signed-in','owner-approval'].includes(lead.details.accessMode||'')||!!lead.details.recipientWhatsApp);
- if(profile.accountType==='business'&&!unbound&&!await canBusinessContribute(identity))return false;try{await lockLiveSharedAsset(client,{lead,user:user as any,token:source.share_token,assetId:source.asset_id,permission:write?'addMaintenance':'maintenanceSchedules'});return true;}catch{return false;}}
+ try{await lockLiveSharedAsset(client,{lead,user:user as any,token:source.share_token,assetId:source.asset_id,permission:write?'addMaintenance':'maintenanceSchedules'});return true;}catch{return false;}}
  if(!['dealer','business'].includes(profile.accountType))return false;
  const result=await client.query(`SELECT id FROM dealer_maintenance_access WHERE id=$1::uuid AND owner_user_id=$2 AND asset_register_item_id=$3::uuid AND dealer_user_id=$4 AND is_active=true AND ${write?'can_add_maintenance':'can_create_maintenance_schedules'}=true FOR SHARE`,[source.access_id,source.owner_id,source.asset_id,user.id]);return !!result.rows.length;
 }

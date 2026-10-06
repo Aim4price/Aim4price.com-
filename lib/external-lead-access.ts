@@ -2,7 +2,7 @@ import { sharingPlan } from './sharing-foundation';
 import { liveShareOwnershipSql } from './asset-share-links';
 import { getServerSession } from './auth-session';
 import { getAccountProfile } from './account-profile';
-import { canBusinessRead, canBusinessContribute } from './business-accounts';
+import { canBusinessRead } from './business-accounts';
 import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 import { readLeadPage } from './guest-leads';
 import { getDb } from './db';
@@ -33,8 +33,8 @@ export async function externalLeadAccess(lead: Lead) {
     if (!lead.details) return result('read-only');
     if (profile.accountType === 'business') {
         if (!(await canBusinessRead(user))) return result('suspended');
-        if (unbound) return result('active');
-        return result(await canBusinessContribute(user) ? 'active' : 'read-only');
+        // Owner-selected permissions govern both targeted and untargeted shares.
+        return result('active');
     }
     if (profile.accountType === 'dealer' && plan === 'free')
         return result('active');
