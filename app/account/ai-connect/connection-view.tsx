@@ -9,6 +9,7 @@ export type ConnectionViewProps = {
   connections?: Connection[];
   resource?: string;
   proof?: string;
+  authorization?: string;
   signInHref?: string;
   message?: string;
   disabled?: boolean;
@@ -34,7 +35,7 @@ const permissions = [
 function date(value: string) {
   return new Date(value).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Johannesburg' });
 }
-export default function ConnectionView({ account, connections, resource, proof, signInHref, message, disabled }: ConnectionViewProps) {
+export default function ConnectionView({ account, connections, resource, proof, authorization, signInHref, message, disabled }: ConnectionViewProps) {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
@@ -54,6 +55,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
               {account && <div className={styles.identity}><span>Account being connected</span><strong>{account.name}</strong><span>{account.email}</span></div>}
               <p>This private AI connection will be able to retrieve the information listed on this page from this account.</p>
               <form action="/api/ai/oauth/authorize" method="post">
+                <input type="hidden" name="authorization" value={authorization || ''} />
                 <input type="hidden" name="proof" value={proof} />
                 <label className={styles.consent}><input type="checkbox" name="terms" value="accepted" required /><span>I accept the Aim4price <Link href="/terms-of-service" target="_blank" rel="noopener noreferrer">Terms of Service</Link> and acknowledge the <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</Link>. I authorise read-only access and understand that requested information is shared with my AI provider.</span></label>
                 <div className={styles.actions}><button className={styles.primary} name="decision" value="allow">Allow read-only access</button><button name="decision" value="deny" formNoValidate>Cancel</button></div>

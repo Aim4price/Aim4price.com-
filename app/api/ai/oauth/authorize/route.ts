@@ -4,6 +4,8 @@ import { issueCode } from '../../../../../lib/ai-connection/store';
 import {
   authorizationRequest,
   connectionConfig,
+  connectionSignInHref,
+  ConnectionError,
   requireConsentTerms,
   errorResponse,
   limitedBody,
@@ -33,8 +35,22 @@ export async function POST(request: Request) {
   try {
     const config = connectionConfig();
     requireSameOrigin(request, config);
-    const owner = await connectionOwner(config);
     const form = new URLSearchParams(await limitedBody(request));
+    let owner;
+    try {
+      owner = await connectionOwner(config);
+    } catch (error) {
+      if (error instanceof ConnectionError && error.code === 'login_required') {
+        const params = new URLSearchParams(form.get('authorization') || '');
+        // Legacy consent pages lack resume parameters: sign in, then restart the connection.
+        const href = params.size ? connectionSignInHref(params, config)
+          : '/auth?accountAccess=desktop&returnTo=%2Faccount%2Fai-connect#login';
+        return new Response(null, { status: 303, headers: {
+          Location: config.origin + href, 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
+        } });
+      }
+      throw error;
+    }
     const proof = form.get('proof') || '';
     const auth = verifyConsent(
       proof,
