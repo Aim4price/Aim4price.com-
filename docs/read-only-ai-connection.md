@@ -7,7 +7,8 @@ An Owner can connect their own account to an AI assistant and ask about saved as
 - Stateless MCP Streamable HTTP endpoint: `https://aim4price.com/api/ai/mcp`.
 - Nine tools: `account_profile`, `list_assets`, `read_costs`, `read_fuel_slips`, `read_fuel_issues`, `read_budgets`, `read_maintenance`, `read_maintenance_activity`, `read_problems`.
 - OAuth authorization code flow using the existing Aim4price website sign-in, explicit consent, exact registered callback matching, S256 PKCE, single-use five-minute codes, one-hour opaque access tokens and rotating refresh tokens with connection revocation on replay. Connections expire after 30 days.
-- Account → AI connections: see the connected account, approve access and disconnect.
+- Account → AI connections is a dedicated page with assistant availability, readable-data categories, account identity, connection expiry and disconnect controls. The disabled pilot still shows an informative overview without claiming that connection records have been loaded.
+- Approval requires explicit acceptance of the Terms of Service and acknowledgement of the Privacy Policy/data-sharing notice, enforced on the server before issuing an authorization code. Cancel remains available without accepting terms. Provider cards do not imply a public app listing or working integration before setup and compatibility testing.
 - The connection is always bound to the real signed-in Owner. Admin support cookies, delegated app identities, free accounts and other account types cannot create connections.
 - Every tool call checks the token, audience/resource, scope, expiry, revocation, pilot allowlist and current active paid Owner entitlement.
 - Explicitly selected fields only: no credentials, scan PINs, card details, document URLs, OCR text or arbitrary database rows.

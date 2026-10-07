@@ -717,3 +717,10 @@ test('consent preserves website login with app cookies and no referrer; app cont
   const appRequest=new NextRequest(config.origin+'/api/ai/oauth/authorize',{method:'POST',headers:{Origin:config.origin,Cookie:cookie,'x-aim4price-client-realm':'owner'}});
   const response=middleware(appRequest);assert.equal(response.headers.get('x-middleware-request-x-aim4price-app-realm'),'owner');assert.ok(!response.headers.get('x-middleware-request-cookie').includes('better-auth'));
 });
+
+test('approval requires explicit terms acknowledgement', () => {
+  for (const value of ['', 'terms=no', 'terms=accepted&terms=accepted']) {
+    assert.throws(() => security.requireConsentTerms(new URLSearchParams(value)), { code: 'consent_required' });
+  }
+  assert.doesNotThrow(() => security.requireConsentTerms(new URLSearchParams('terms=accepted')));
+});
