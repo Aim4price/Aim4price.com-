@@ -304,3 +304,10 @@ export function requireConsentTerms(form: URLSearchParams): void {
   if (form.getAll('terms').length !== 1 || form.get('terms') !== 'accepted')
     throw new ConnectionError(400, 'consent_required', 'Accept the terms and data-sharing notice before allowing access.');
 }
+
+/** Resume only a validated OAuth request after website sign-in; never grants access. */
+export function connectionSignInHref(params: URLSearchParams, config: ConnectionConfig): string {
+  authorizationRequest(params, config);
+  const returnTo = '/account/ai-connect?' + params.toString();
+  return '/auth?accountAccess=desktop&returnTo=' + encodeURIComponent(returnTo) + '#login';
+}

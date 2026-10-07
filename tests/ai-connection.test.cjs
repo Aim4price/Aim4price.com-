@@ -716,9 +716,17 @@ test('consent preserves website login with app cookies and no referrer; app cont
   for (const origin of [null, 'null', 'https://evil.example']) {
     assert.throws(() => security.requireSameOrigin(new Request(config.origin, { headers: origin === null ? {} : { Origin: origin } }), config), { status: 403 });
   }
+  const previousOrigin = process.env.AIM4PRICE_AI_ORIGIN;
+  process.env.AIM4PRICE_AI_ORIGIN = config.origin;
   const cookie='better-auth.session_token=website; aim4price_owner_app=mobile';
   const request=new NextRequest(config.origin+'/api/ai/oauth/authorize',{method:'POST',headers:{Origin:config.origin,Cookie:cookie}});
   assert.equal(middleware(request).headers.get('x-middleware-request-cookie'),cookie);
+  const proxiedRequest = new NextRequest('http://internal.railway:3000/api/ai/oauth/authorize', {method:'POST',headers:{Origin:config.origin,Cookie:cookie}});
+  assert.equal(middleware(proxiedRequest).headers.get('x-middleware-request-cookie'), cookie);
+  const foreignRequest = new NextRequest('http://internal.railway:3000/api/ai/oauth/authorize', {method:'POST',headers:{Origin:'https://evil.example',Cookie:cookie}});
+  assert.ok(!middleware(foreignRequest).headers.get('x-middleware-request-cookie').includes('better-auth'));
+  if (previousOrigin === undefined) delete process.env.AIM4PRICE_AI_ORIGIN;
+  else process.env.AIM4PRICE_AI_ORIGIN = previousOrigin;
   const appRequest=new NextRequest(config.origin+'/api/ai/oauth/authorize',{method:'POST',headers:{Origin:config.origin,Cookie:cookie,'x-aim4price-client-realm':'owner'}});
   const response=middleware(appRequest);assert.equal(response.headers.get('x-middleware-request-x-aim4price-app-realm'),'owner');assert.ok(!response.headers.get('x-middleware-request-cookie').includes('better-auth'));
 });
@@ -728,4 +736,43 @@ test('approval requires explicit terms acknowledgement', () => {
     assert.throws(() => security.requireConsentTerms(new URLSearchParams(value)), { code: 'consent_required' });
   }
   assert.doesNotThrow(() => security.requireConsentTerms(new URLSearchParams('terms=accepted')));
+});
+
+test('login resumes validated OAuth parameters on the local consent page', () => {
+  const params = authParams();
+  const login = new URL(security.connectionSignInHref(params, config), config.origin);
+  assert.equal(login.pathname, '/auth');
+  assert.equal(login.searchParams.get('accountAccess'), 'desktop');
+  assert.equal(login.hash, '#login');
+  const resume = new URL(login.searchParams.get('returnTo'), config.origin);
+  assert.equal(resume.origin, config.origin);
+  assert.equal(resume.pathname, '/account/ai-connect');
+  assert.deepEqual([...resume.searchParams], [...params]);
+  assert.throws(() => security.connectionSignInHref(authParams({redirect_uri:'https://evil.example'}), config));
+});
+
+test('expired browser login redirects to login without issuing an authorization code', async () => {
+  const Module = require('node:module');
+  const filename = path.join(__dirname, '../app/api/ai/oauth/authorize/route.ts');
+  const route = new Module(filename, module);
+  route.filename = filename;
+  route.paths = module.paths;
+  let writes = 0;
+  route.require = id => {
+    if (id.endsWith('/security')) return { ...security, connectionConfig: () => config };
+    if (id.endsWith('/browser')) return { connectionOwner: async () => { throw new security.ConnectionError(401, 'login_required', 'Sign in first'); } };
+    if (id.endsWith('/store')) return { issueCode: async () => { writes++; throw new Error('must not issue a code'); } };
+    if (id.endsWith('/db')) return { getDb: () => { writes++; throw new Error('must not access database'); } };
+    throw new Error('Unexpected import: ' + id);
+  };
+  route._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), {compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText, filename);
+  const makeRequest = (params, origin = config.origin) => new Request(config.origin + '/api/ai/oauth/authorize', {
+    method:'POST', headers:{Origin:origin}, body:new URLSearchParams({authorization:params.toString(),decision:'allow',terms:'accepted'}),
+  });
+  const response = await route.exports.POST(makeRequest(authParams()));
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get('Location'), config.origin + security.connectionSignInHref(authParams(), config));
+  assert.equal((await route.exports.POST(makeRequest(authParams({redirect_uri:'https://evil.example'})))).status, 400);
+  assert.equal((await route.exports.POST(makeRequest(authParams(), 'https://evil.example'))).status, 403);
+  assert.equal(writes, 0);
 });

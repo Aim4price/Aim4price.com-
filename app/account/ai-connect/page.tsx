@@ -1,6 +1,7 @@
+import { redirect } from 'next/navigation';
 import { getDb } from '../../../lib/db';
 import { connectionOwner } from '../../../lib/ai-connection/browser';
-import { authorizationRequest, connectionConfig, ConnectionError, consentProof } from '../../../lib/ai-connection/security';
+import { authorizationRequest, connectionSignInHref, connectionConfig, ConnectionError, consentProof } from '../../../lib/ai-connection/security';
 import ConnectionView from './connection-view';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,9 +19,10 @@ export default async function AiConnectionPage({ searchParams = {} }: { searchPa
     const connections = (await getDb().query(
       `SELECT id,created_at,expires_at FROM public.ai_connections WHERE user_id=$1 AND revoked_at IS NULL AND expires_at>now() ORDER BY created_at DESC`, [owner.account.id],
     )).rows.map(c => ({ id: String(c.id), created_at: new Date(c.created_at).toISOString(), expires_at: new Date(c.expires_at).toISOString() }));
-    return <ConnectionView account={owner.account} connections={connections} resource={config.resource} proof={auth ? consentProof(auth, owner.account.id, owner.sessionId, config.signingSecret) : undefined} />;
+    return <ConnectionView account={owner.account} connections={connections} resource={config.resource} authorization={auth ? params.toString() : undefined} proof={auth ? consentProof(auth, owner.account.id, owner.sessionId, config.signingSecret) : undefined} />;
   } catch (error) {
     if (error instanceof ConnectionError && error.status === 401) {
+      if (params.size) redirect(connectionSignInHref(params, connectionConfig()));
       const returnTo = '/account/ai-connect' + (params.size ? '?' + params.toString() : '');
       return <ConnectionView signInHref={`/auth?accountAccess=desktop&returnTo=${encodeURIComponent(returnTo)}#login`} />;
     }

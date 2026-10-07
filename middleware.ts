@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
   // OAuth consent uses an ordinary HTML form; use its same-origin Origin header.
   // Preserve its real website session even when unrelated app cookies are present.
   const aiWebsiteAction = ['/api/ai/oauth/authorize', '/api/ai/connections'].includes(request.nextUrl.pathname)
-    && request.headers.get('origin') === request.nextUrl.origin;
+    && request.headers.get('origin') === process.env.AIM4PRICE_AI_ORIGIN;
   let websiteContext = aiWebsiteAction || request.headers.get('x-aim4price-client-realm') === 'website';
   if (!aiWebsiteAction && !request.headers.has('x-aim4price-client-realm')) {
     try {
