@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import DisconnectButton from './disconnect-button';
+import AccountSetup from './account-setup';
 import styles from './page.module.css';
 
 type Connection = { id: string; created_at: string; expires_at: string };
@@ -60,6 +61,7 @@ export default function ConnectionView({ account, connections, resource, proof, 
             </section> : <section className={styles.panel} aria-labelledby="choose-title">
               <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>GET CONNECTED</p><h2 id="choose-title">Choose your assistant</h2></div><span className={styles.smallBadge}>{disabled ? "Setup in progress" : "Private pilot"}</span></div>
               <p>Choose your assistant, sign in to Aim4price and approve access.</p>
+              {!resource && !signInHref && <AccountSetup />}
               {disabled && <div className={styles.pilotNotice} role="status"><span className={styles.statusDot} />Connections are being prepared for the private pilot.</div>}
               <div className={styles.provider}>
                 <div className={styles.providerIcon}><Icon /></div><div className={styles.providerText}><h3>ChatGPT</h3><p>Read-only answers from your Aim4price account.</p></div>

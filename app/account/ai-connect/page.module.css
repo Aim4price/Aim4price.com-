@@ -84,3 +84,16 @@
 
 .pilotNotice { display: flex; align-items: center; gap: 9px; padding: 11px 13px; border-radius: 10px; background: #bba46c14; font-size: 12px; line-height: 1.5; }
 .statusDot { width: 7px; height: 7px; border-radius: 50%; background: #bf984c; flex-shrink: 0; }
+
+.accountSetup { margin: 18px 0; padding: 16px; border: 1px solid #78958b66; border-radius: 14px; background: #6ab78c14; }
+.setupHeading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.setupHeading > div { flex: 1; min-width: 180px; }
+.setupHeading strong, .setupResult > strong { font-size: 14px; overflow-wrap: anywhere; }
+.setupHeading p { margin: 6px 0 0; font-size: 12px; }
+.setupResult { border-top: 1px solid #78958b44; margin-top: 16px; padding-top: 16px; }
+.accountDetails { margin: 14px 0; font-size: 13px; }
+.accountDetails summary { cursor: pointer; padding: 6px 0; font-weight: 650; }
+.accountDetails dl { padding: 12px; border-radius: 10px; background: #78958b14; user-select: text; }
+.accountDetails dl > div + div { margin-top: 12px; }
+.accountDetails dt { opacity: .75; font-size: 11px; margin-bottom: 3px; }
+.accountDetails dd { margin: 0; overflow-wrap: anywhere; }
