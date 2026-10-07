@@ -4,6 +4,7 @@ import { issueCode } from '../../../../../lib/ai-connection/store';
 import {
   authorizationRequest,
   connectionConfig,
+  requireConsentTerms,
   errorResponse,
   limitedBody,
   requireSameOrigin,
@@ -46,11 +47,13 @@ export async function POST(request: Request) {
     callback.searchParams.set('iss', config.origin);
     if (form.get('decision') !== 'allow')
       callback.searchParams.set('error', 'access_denied');
-    else
+    else {
+      requireConsentTerms(form);
       callback.searchParams.set(
         'code',
         await issueCode(getDb(), owner.account.id, auth, proof, config),
       );
+    }
     return new Response(null, {
       status: 303,
       headers: {

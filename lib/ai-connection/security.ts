@@ -298,3 +298,9 @@ export function errorResponse(error: unknown): Response {
     503,
   );
 }
+
+/** Approval requires explicit acknowledgement; cancellation does not. */
+export function requireConsentTerms(form: URLSearchParams): void {
+  if (form.getAll('terms').length !== 1 || form.get('terms') !== 'accepted')
+    throw new ConnectionError(400, 'consent_required', 'Accept the terms and data-sharing notice before allowing access.');
+}
