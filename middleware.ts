@@ -15,7 +15,7 @@ export function middleware(request: NextRequest) {
   requestHeaders.delete('x-aim4price-app-realm');
   const realm = requestAppRealm(request.nextUrl, request.headers.get('referer'), request.headers.get('x-aim4price-client-realm'));
   const cookie = request.headers.get('cookie') ?? '';
-  // OAuth consent uses an ordinary HTML form and deliberately sends no referrer.
+  // OAuth consent uses an ordinary HTML form; use its same-origin Origin header.
   // Preserve its real website session even when unrelated app cookies are present.
   const aiWebsiteAction = ['/api/ai/oauth/authorize', '/api/ai/connections'].includes(request.nextUrl.pathname)
     && request.headers.get('origin') === request.nextUrl.origin;
@@ -38,7 +38,9 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   if (request.nextUrl.pathname === '/account/ai-connect' || request.nextUrl.pathname.startsWith('/api/ai/') || request.nextUrl.pathname.startsWith('/.well-known/oauth-')) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0');
-    response.headers.set('Referrer-Policy', 'no-referrer');
+    // A no-referrer document makes native form POSTs send Origin: null.
+    // Keep the consent form same-origin while hiding referrers from other sites.
+    response.headers.set('Referrer-Policy', request.nextUrl.pathname === '/account/ai-connect' ? 'same-origin' : 'no-referrer');
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }
