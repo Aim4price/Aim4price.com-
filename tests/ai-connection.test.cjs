@@ -11,6 +11,8 @@ for (const file of [
   'ai-connection/security',
   'ai-connection/store',
   'ai-connection/data',
+  'ai-connection/extended-data',
+  'asset-usage',
   'ai-connection/rate-limit',
   'ai-connection/mcp',
   'external-share-permissions',
@@ -187,6 +189,33 @@ before(async () => {
  ('50000000-0000-4000-8000-000000000001','owner-a','asset_issue','manual',null,'${assetA}',null,12,'2026-08-31 23:00Z',now()),
  ('50000000-0000-4000-8000-000000000002','owner-a','asset_issue','fuel_slip','40000000-0000-4000-8000-000000000001','${assetA}',null,10,'2026-09-02 12:00Z',now()),
  ('50000000-0000-4000-8000-000000000003','owner-b','asset_issue','manual',null,'${assetB}',null,1000,'2026-09-02 12:00Z',now());`);
+
+  await db.exec(`
+    ALTER TABLE asset_register_items ADD COLUMN hours numeric;
+    ALTER TABLE asset_register_items ADD COLUMN kind text;
+    ALTER TABLE asset_register_items ADD COLUMN specs_json jsonb;
+    UPDATE asset_register_items SET hours=120,kind='tractor';
+    CREATE TABLE asset_cost_budgets(id uuid PRIMARY KEY,user_id text,asset_register_item_id uuid,period text,amount numeric,warning_percent integer,include_fuel_slip_costs boolean,revision integer,updated_at timestamptz);
+    INSERT INTO asset_cost_budgets VALUES
+    ('60000000-0000-4000-8000-000000000001','owner-a',null,'monthly',300,80,true,1,now()),
+    ('60000000-0000-4000-8000-000000000002','owner-a','${assetA}','annual',200,50,false,1,now()),
+    ('60000000-0000-4000-8000-000000000003','owner-b','${assetB}','monthly',99999,80,true,1,now()),
+    ('60000000-0000-4000-8000-000000000004','owner-a','${assetB}','monthly',99999,80,true,1,now());
+    CREATE TABLE asset_maintenance_records(id uuid PRIMARY KEY,user_id text,asset_register_item_id uuid,maintenance_type text,trigger_type text,status text,title text,notes text,assigned_name text,due_date date,due_usage numeric,usage_metric text,alert_before_value numeric,alert_before_unit text,recurring_enabled boolean,recurring_interval_value numeric,recurring_interval_unit text,completed_at timestamptz,completed_usage numeric,completed_notes text,completed_by text,source_scan_event_id uuid,updated_at timestamptz);
+    INSERT INTO asset_maintenance_records(id,user_id,asset_register_item_id,maintenance_type,trigger_type,status,title,due_date,due_usage,usage_metric) VALUES
+    ('70000000-0000-4000-8000-000000000001','owner-a','${assetA}','service','date','upcoming','Overdue service','2000-01-01',null,null),
+    ('70000000-0000-4000-8000-000000000002','owner-a','${assetA}','service','usage','upcoming','Usage due',null,120,'hours'),
+    ('70000000-0000-4000-8000-000000000003','owner-a','${assetA}','service','date','done','Completed work','2000-01-01',null,null),
+    ('70000000-0000-4000-8000-000000000004','owner-b','${assetB}','service','date','upcoming','SECRET','2000-01-01',null,null),
+    ('70000000-0000-4000-8000-000000000005','owner-a','${assetB}','service','date','upcoming','CORRUPT FOREIGN LINK','2000-01-01',null,null);
+    CREATE TABLE asset_scan_events(id uuid PRIMARY KEY,asset_id uuid,created_at timestamptz,note text,operator_name text,issue_noted_at timestamptz,hours numeric,asset_usage_reading numeric,asset_usage_metric text,photo_urls jsonb);
+    INSERT INTO asset_scan_events(id,asset_id,created_at,note,operator_name,issue_noted_at,photo_urls) VALUES
+    ('80000000-0000-4000-8000-000000000001','${assetA}','2026-08-31 23:00Z','Serviced: oil changed','Mechanic',null,'["secret-photo-url"]'),
+    ('80000000-0000-4000-8000-000000000002','${assetA}','2026-09-02 12:00Z','Notes/Problems: oil leak','Operator',null,'[]'),
+    ('80000000-0000-4000-8000-000000000003','${assetA}','2026-09-03 12:00Z','Notes / Problems: tyre puncture','Operator',now(),'[]'),
+    ('80000000-0000-4000-8000-000000000004','${assetB}','2026-09-02 12:00Z','Serviced: SECRET','SECRET',null,'[]'),
+    ('80000000-0000-4000-8000-000000000005','${assetB}','2026-09-02 12:00Z','Notes/Problems: SECRET','SECRET',null,'[]');
+  `);
   const grant = await createGrant();
   access = grant.tokens.access_token;
   refresh = grant.tokens.refresh_token;
@@ -338,7 +367,7 @@ test('all tools are read only and initialization works', async () => {
   assert.equal((await init.json()).result.protocolVersion, '2025-11-25');
   const list = await rpc('tools/list');
   const tools = (await list.json()).result.tools;
-  assert.equal(tools.length, 5);
+  assert.equal(tools.length, 9);
   assert.ok(
     tools.every(
       (t) =>
@@ -437,6 +466,71 @@ test('strict date and pagination validation', () => {
     { from: '2026-09-01', to: '2026-09-30', offset: -1 },
   ])
     assert.throws(() => parseReadArgs('read_costs', args));
+});
+
+test('budget progress covers full current period, respects fuel settings and never leaks foreign-linked budgets', async () => {
+  const dates = (await db.query('SELECT id,invoice_date::text AS date FROM asset_invoices')).rows;
+  try {
+    await db.exec("UPDATE asset_invoices SET invoice_date=(now() AT TIME ZONE 'Africa/Johannesburg')::date");
+    const first = (await call('read_budgets',{limit:1})).structuredContent;
+    assert.equal(first.pagination.totalRecords,2);
+    assert.equal(first.records[0].spent,'345');
+    assert.equal(first.records[0].over_by,'45');
+    assert.equal(first.records[0].status,'over_budget');
+    assert.equal(first.pagination.nextOffset,1);
+    const second = (await call('read_budgets',{assetId:assetA})).structuredContent;
+    assert.equal(second.records.length,1);
+    assert.equal(second.records[0].spent,'115');
+    assert.equal(second.records[0].remaining,'85');
+    assert.equal(second.records[0].status,'warning');
+    assert.equal(second.records[0].include_fuel_slip_costs,false);
+  } finally { for(const row of dates) await db.query('UPDATE asset_invoices SET invoice_date=$1::date WHERE id=$2',[row.date,row.id]); }
+});
+test('maintenance exposes schedules/completion and calculates due dates/usage only for owned assets',async()=>{
+  const result=(await call('read_maintenance')).structuredContent;
+  assert.equal(result.pagination.totalRecords,3);
+  assert.deepEqual(result.records.map(r=>r.computed_status),['overdue','due','done']);
+  assert.ok(result.records.every(r=>r.asset_id===assetA));
+  assert.ok(result.records.every(r=>!('asset_specs' in r)));
+  const paged=(await call('read_maintenance',{limit:1,offset:1})).structuredContent;
+  assert.equal(paged.records.length,1);assert.equal(paged.pagination.totalRecords,3);
+});
+test('maintenance cannot infer a safe due state from missing or incompatible readings',()=>{
+  const {maintenanceStatus}=require(path.join(tmp,'ai-connection/extended-data.js'));
+  const base={status:'upcoming',trigger_type:'usage',due_usage:100,current_usage:95,usage_metric:'hours',current_usage_metric:'hours'};
+  assert.equal(maintenanceStatus(base,'2026-09-01'),'due_soon');
+  assert.equal(maintenanceStatus({...base,current_usage:null},'2026-09-01'),'unknown');
+  assert.equal(maintenanceStatus({...base,current_usage_metric:'km'},'2026-09-01'),'unknown');
+  assert.equal(maintenanceStatus({...base,status:'cancelled'},'2026-09-01'),'cancelled');
+  assert.equal(maintenanceStatus({...base,trigger_type:'date',due_date:'2026-09-01'},'2026-09-01'),'due');
+});
+test('field activity and problems use SA dates, expose resolution state and exclude foreign data/photos',async()=>{
+  const period={from:'2026-09-01',to:'2026-09-30'};
+  const activity=(await call('read_maintenance_activity',period)).structuredContent;
+  assert.equal(activity.records.length,1);
+  assert.equal(activity.records[0].note,'Serviced: oil changed');
+  assert.ok(!JSON.stringify(activity).includes('secret-photo-url'));
+  const problems=(await call('read_problems',{...period,limit:1})).structuredContent;
+  assert.equal(problems.pagination.totalRecords,2);assert.equal(problems.records.length,1);
+  assert.ok(problems.records[0].noted_or_resolved_at);
+  const next=(await call('read_problems',{...period,offset:1})).structuredContent;
+  assert.equal(next.records[0].noted_or_resolved_at,null);
+});
+test('every extended tool rejects cross-account selectors and leaves business records unchanged',async()=>{
+  const before=(await db.query('SELECT jsonb_agg(to_jsonb(m)) AS rows FROM asset_maintenance_records m')).rows;
+  for(const name of ['read_budgets','read_maintenance','read_maintenance_activity','read_problems']){
+    const args=name==='read_budgets'||name==='read_maintenance'?{}:{from:'2026-09-01',to:'2026-09-30'};
+    assert.equal((await call(name,{...args,assetId:assetB})).isError,true);
+    assert.equal((await call(name,{...args,userId:'owner-b'})).isError,true);
+    assert.equal((await call(name,{...args,sql:'DELETE FROM asset_maintenance_records'})).isError,true);
+    assert.equal((await call(name,args)).isError,false);
+  }
+  assert.deepEqual((await db.query('SELECT jsonb_agg(to_jsonb(m)) AS rows FROM asset_maintenance_records m')).rows,before);
+});
+test('uninitialised optional data is unavailable, never an invented empty register',async()=>{
+  await db.exec('ALTER TABLE asset_cost_budgets RENAME TO hidden_budgets');
+  try {assert.equal((await call('read_budgets')).structuredContent.available,false);}
+  finally {await db.exec('ALTER TABLE hidden_budgets RENAME TO asset_cost_budgets');}
 });
 test('refresh rotation invalidates old access and refresh tokens', async () => {
   const tokens = await store.exchangeToken(
@@ -599,7 +693,7 @@ test('official MCP SDK client can initialize, discover and call the private read
   );
   await client.connect(transport);
   const list = await client.listTools();
-  assert.equal(list.tools.length, 5);
+  assert.equal(list.tools.length, 9);
   const result = await client.callTool({
     name: 'list_assets',
     arguments: { limit: 1 },

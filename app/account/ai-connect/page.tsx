@@ -69,8 +69,8 @@ export default async function AiConnectionPage({
           <span>{owner.account.email}</span>
         </div>
         <p>
-          Your assistant can read this account’s assets, saved valuations, costs
-          and fuel records to answer your questions.
+          Your assistant can read this account’s assets, saved valuations, costs,
+          fuel records, budgets, maintenance and logged problems to answer your questions.
         </p>
         <p>
           <strong>

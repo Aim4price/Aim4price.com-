@@ -1,5 +1,5 @@
 .page {
-  min-height: 75vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 75);
   padding: 48px 24px;
   color: var(--app-text, #edf4f1);
 }

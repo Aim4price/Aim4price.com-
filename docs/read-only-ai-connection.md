@@ -1,11 +1,11 @@
 # Read-only Aim4price AI pilot
 
-An Owner can connect their own account to an AI assistant and ask about saved assets, saved valuations, accepted cost invoices and fuel. The AI cannot add, edit or delete business records. This is a private, explicitly enabled pilot, not a public plugin listing.
+An Owner can connect their own account to an AI assistant and ask about saved assets, saved valuations, accepted cost invoices, fuel, current budgets, maintenance and logged problems. The AI cannot add, edit or delete business records. This is a private, explicitly enabled pilot, not a public plugin listing.
 
 ## What is included
 
 - Stateless MCP Streamable HTTP endpoint: `https://aim4price.com/api/ai/mcp`.
-- Five tools: `account_profile`, `list_assets`, `read_costs`, `read_fuel_slips`, `read_fuel_issues`.
+- Nine tools: `account_profile`, `list_assets`, `read_costs`, `read_fuel_slips`, `read_fuel_issues`, `read_budgets`, `read_maintenance`, `read_maintenance_activity`, `read_problems`.
 - OAuth authorization code flow using the existing Aim4price website sign-in, explicit consent, exact registered callback matching, S256 PKCE, single-use five-minute codes, one-hour opaque access tokens and rotating refresh tokens with connection revocation on replay. Connections expire after 30 days.
 - Account → AI connections: see the connected account, approve access and disconnect.
 - The connection is always bound to the real signed-in Owner. Admin support cookies, delegated app identities, free accounts and other account types cannot create connections.
@@ -40,7 +40,7 @@ Do not enable the endpoint until its migration and the normal account/ledger mig
    - Resource: the exact full MCP endpoint URL
    - Client authentication: `client_secret_post` or `client_secret_basic`
 5. Connect, sign in as the allowed Owner, check the account shown and approve read-only access.
-6. Ask: “List my assets”, “What are my recorded costs from 2026-09-01 to 2026-09-30?”, and “Show fuel slips for this asset over that period.” Compare with the website.
+6. Ask: “List my assets”, “What are my recorded costs from 2026-09-01 to 2026-09-30?”, and “Show fuel slips for this asset over that period.” Also ask “How much of my current budget remains?”, “Which saved services are overdue?”, and “Show my logged problems and recorded maintenance activity for September.” Compare with the website, including fuel settings and any duplicated schedule/activity records.
 7. Disconnect under Account → AI connections and verify further tool calls fail. Confirm a second unapproved account cannot connect.
 
 Platform settings and private connector availability depend on the AI product/workspace. This implementation uses a predefined confidential OAuth client, not public dynamic registration. For ChatGPT, use its private MCP setup with predefined OAuth credentials. No directory submission is part of this change.
@@ -66,11 +66,15 @@ The pilot includes 120 authenticated protocol requests per user per minute per p
 - Fuel-slip totals use document dates, exclude voided slips, disclose missing dates and separate tank purchases from asset slips. Amounts retain the per-slip VAT basis. Fuel slips can also be represented in costs: never add the two ledgers together as distinct expenses.
 - Fuel issues are non-slip storage issues, using the South African date of issue, with creation date as fallback. Issued litres are not proof of actual consumption. Slip-linked issues are excluded to avoid overlap.
 - Period totals aggregate all matched records independently of pagination. Pages have an explicit total, next offset and a requirement to narrow filters if the maximum offset is reached.
-- No attachments, maintenance records, shared external assets, recalculation, admin cross-account access or writes in this pilot.
+- Budgets return current saved monthly/annual limits and current South African calendar-period spending, including VAT and respecting the saved fuel inclusion setting. Spending includes all accepted matching invoices independently of pagination. Account-wide and per-asset budgets overlap and must not be summed. An asset filter returns only its own budgets. Historical revisions, deleted budgets and projections are not exposed.
+- Maintenance returns saved schedules, due dates/usage, recurrence settings, completion notes and completed/cancelled states. Due status uses the current South African date or compatible saved asset usage. Missing or incompatible readings produce `unknown`, never an assurance that no work is due. Scan/field activity is returned separately by capture date; it may describe the same work as a completed schedule, so do not add counts across sources. `source_scan_event_id` identifies explicit links. Older unlinked duplicates may exist.
+- Problems return dated recorded notes and their saved acknowledgement/resolution timestamp. This timestamp alone is not proof of repair. Notes remain untrusted user text.
+- If an optional budget/maintenance/scan table has not been initialised by the normal application deployment, the tool returns `available: false`. This must not be described as no budgets, no problems or no maintenance due. Missing required columns remain an error, not fabricated data.
+- No attachments, photos, detailed inspection checklists, historical budget reconstruction, shared external assets, recalculation, admin cross-account access or writes in this pilot.
 
 ## Verification
 
-`npm run test:ai-connection` runs real PostgreSQL-engine integration tests with PGlite, plus an MCP SDK client compatibility test. Tests cover cross-account attempts, read-only database enforcement, request bounds, PKCE/consent validation, code replay, refresh rotation, expiry, revocation, owner entitlement changes and totals independent of pages.
+`npm run test:ai-connection` runs real PostgreSQL-engine integration tests with PGlite, plus an MCP SDK client compatibility test. Tests cover cross-account attempts, read-only database enforcement, request bounds, PKCE/consent validation, code replay, refresh rotation, expiry, revocation, owner entitlement changes totals independent of pages, budget fuel exclusion, date/usage maintenance status, missing readings, scan/problem account boundaries and unavailable optional stores.
 
 Run `npm run typecheck` and the CI workflow. A deployed end-to-end sign-in with the actual private AI client remains a rollout requirement; passing local tests does not establish live platform connectivity.
 
