@@ -111,7 +111,7 @@ test('pause and page visibility preserve the remaining reading time', () => {
 });
 
 test('tour ends on Maintenance with signup and replay; replay starts a fresh tour', () => {
-  const h = mountHero(); h.advance(63601);
+  const h = mountHero(); h.advance(67901); // Includes the longer opening for both typed taglines.
   assert.equal(h.step(), 'attention'); assert.equal(h.playing(), 'false');
   assert.ok(h.find(n => n.props.className === 'featureEndActions'));
   assert.equal(h.find(n => n.props['data-feature-countdown'] !== undefined), undefined);
