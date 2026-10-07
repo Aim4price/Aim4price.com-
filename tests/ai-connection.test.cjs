@@ -711,6 +711,11 @@ test('consent preserves website login with app cookies and no referrer; app cont
     m._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,filename);return m.exports;
   }
   const {middleware}=compileSource('middleware.ts');const {NextRequest}=require('next/server');
+  assert.equal(middleware(new NextRequest(config.origin+'/account/ai-connect')).headers.get('Referrer-Policy'), 'same-origin');
+  assert.equal(middleware(new NextRequest(config.origin+'/api/ai/oauth/authorize')).headers.get('Referrer-Policy'), 'no-referrer');
+  for (const origin of [null, 'null', 'https://evil.example']) {
+    assert.throws(() => security.requireSameOrigin(new Request(config.origin, { headers: origin === null ? {} : { Origin: origin } }), config), { status: 403 });
+  }
   const cookie='better-auth.session_token=website; aim4price_owner_app=mobile';
   const request=new NextRequest(config.origin+'/api/ai/oauth/authorize',{method:'POST',headers:{Origin:config.origin,Cookie:cookie}});
   assert.equal(middleware(request).headers.get('x-middleware-request-cookie'),cookie);
