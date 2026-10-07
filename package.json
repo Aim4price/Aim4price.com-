@@ -47,7 +47,8 @@
     "test:phone-notifications": "node --test tests/phone-notifications.test.cjs tests/app-notification-expansion.test.cjs",
     "test:offline": "node --test tests/app-offline.test.cjs tests/offline-maintenance-retry.test.cjs tests/field-manager-offline.test.cjs",
     "test:app-theme": "node --test tests/app-theme.test.mjs",
-    "test:workspace-retirement": "node --test tests/workspace-retirement.test.mjs"
+    "test:workspace-retirement": "node --test tests/workspace-retirement.test.mjs",
+    "test:ai-connection": "node --test tests/ai-connection.test.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1029.0",
@@ -67,6 +68,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@types/node": "20.16.5",
     "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.5",

@@ -83,12 +83,12 @@
 .footer button:disabled { opacity:.5; cursor:not-allowed; }
 .invitation { padding-top:.5rem; }
 @media (max-width:700px) {
- .filters { flex-wrap:wrap; }
- .filters > label { flex-basis:100%; }
- .areaFilter { flex:1; }
- .areaPopover { width:min(20rem,80vw); left:0; right:auto; }
- .row { grid-template-columns:minmax(0,1fr); gap:.85rem; padding:1rem; }
- .rowActions { justify-content:flex-end; }
- .details { padding:.5rem 0; }
- .details dl { grid-template-columns:1fr; }
+ :global(body:not(:has([data-website-canvas]))) .filters { flex-wrap:wrap; }
+ :global(body:not(:has([data-website-canvas]))) .filters > label { flex-basis:100%; }
+ :global(body:not(:has([data-website-canvas]))) .areaFilter { flex:1; }
+ :global(body:not(:has([data-website-canvas]))) .areaPopover { width:min(20rem,80vw); left:0; right:auto; }
+ :global(body:not(:has([data-website-canvas]))) .row { grid-template-columns:minmax(0,1fr); gap:.85rem; padding:1rem; }
+ :global(body:not(:has([data-website-canvas]))) .rowActions { justify-content:flex-end; }
+ :global(body:not(:has([data-website-canvas]))) .details { padding:.5rem 0; }
+ :global(body:not(:has([data-website-canvas]))) .details dl { grid-template-columns:1fr; }
 }

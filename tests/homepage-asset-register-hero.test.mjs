@@ -48,7 +48,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(hero, /<span>\s*Aim4price\.com\s*<span className=\{styles\.openingProgress\}/);
   assert.match(hero, /'Asset Management Software'/);
   assert.match(hero, /'built for South Africa\.'/);
-  assert.match(hero, /Know what you have\./);
+  assert.match(hero, /Know what you own\./);
   assert.match(hero, /Know what it’s worth\./);
   assert.match(hero, /Know what it costs\./);
   assert.match(hero, /Manage your vehicles, machinery and equipment in one place/);
@@ -68,7 +68,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
 
   assert.match(hero, /const FEATURE_START_INDEX = 3/);
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 10000/);
-  assert.match(hero, /brand: 5200,[\s\S]*?promise: 4800,[\s\S]*?preview: 3600/);
+  assert.match(hero, /brand: 9500,[\s\S]*?promise: 4800,[\s\S]*?preview: 3600/);
   for (const question of featureSteps) {
     assert.match(hero, new RegExp(`${question}: HERO_FEATURE_DURATION_MS`));
   }

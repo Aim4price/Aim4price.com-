@@ -15,8 +15,12 @@ export function middleware(request: NextRequest) {
   requestHeaders.delete('x-aim4price-app-realm');
   const realm = requestAppRealm(request.nextUrl, request.headers.get('referer'), request.headers.get('x-aim4price-client-realm'));
   const cookie = request.headers.get('cookie') ?? '';
-  let websiteContext = request.headers.get('x-aim4price-client-realm') === 'website';
-  if (!request.headers.has('x-aim4price-client-realm')) {
+  // OAuth consent uses an ordinary HTML form and deliberately sends no referrer.
+  // Preserve its real website session even when unrelated app cookies are present.
+  const aiWebsiteAction = ['/api/ai/oauth/authorize', '/api/ai/connections'].includes(request.nextUrl.pathname)
+    && request.headers.get('origin') === request.nextUrl.origin;
+  let websiteContext = aiWebsiteAction || request.headers.get('x-aim4price-client-realm') === 'website';
+  if (!aiWebsiteAction && !request.headers.has('x-aim4price-client-realm')) {
     try {
       const source = new URL(request.headers.get('referer') ?? '');
       websiteContext = source.origin === request.nextUrl.origin && !appRealmForPath(source.pathname);
@@ -32,6 +36,13 @@ export function middleware(request: NextRequest) {
     requestHeaders.set('cookie', isolateAppCookies(cookie, null));
   }
   const response = NextResponse.next({ request: { headers: requestHeaders } });
+  if (request.nextUrl.pathname === '/account/ai-connect' || request.nextUrl.pathname.startsWith('/api/ai/') || request.nextUrl.pathname.startsWith('/.well-known/oauth-')) {
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0');
+    response.headers.set('Referrer-Policy', 'no-referrer');
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+  }
+
   if (request.nextUrl.pathname.startsWith('/asset-share/')) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0');
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
@@ -42,3 +53,4 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'] };
+

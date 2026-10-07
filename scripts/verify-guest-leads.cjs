@@ -282,7 +282,7 @@ export default function Validation(){
    await click('Update replacement price');
    await page.waitForSelector('a[href^="/business/join?returnTo="]');
    const guestLink=await page.$eval('a[href^="/business/join?returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
-   assert.equal(guestLink.text,'Create a free account');assert.equal(guestLink.returnTo,`/asset-share/${token}?open=1`);
+   assert.equal(guestLink.text.trim(),'Create a free account');assert.equal(guestLink.returnTo,`/asset-share/${token}?open=1`);
    assert.equal(await page.$('[role="dialog"] form'),null,'Visitors cannot submit updates');
    await page.screenshot({path:path.join(output,`signup-gate-${width}.png`),fullPage:true});
    await closeChild();await click('Reports');
@@ -293,7 +293,7 @@ export default function Validation(){
    for(const action of ['Update replacement price','Invoices & quotes']){
     await closeChild();await click(action);
     const accountLink=await page.$eval('[role="dialog"] a[href^="/business?details=1&returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
-    assert.equal(accountLink.text,'Verify business');assert.equal(accountLink.returnTo,`/asset-share/${token}?open=1`);
+    assert.equal(accountLink.text.trim(),'Verify business');assert.equal(accountLink.returnTo,`/asset-share/${token}?open=1`);
     assert.equal(await page.$('[role="dialog"] form'),null,'Read-only recipients cannot submit updates or documents');
     assert.equal(await page.$('[role="dialog"] input[type=file]'),null,'Read-only recipients cannot upload documents');
    }

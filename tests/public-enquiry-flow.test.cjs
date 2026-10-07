@@ -174,7 +174,9 @@ test('Send link creates protected read-only enquiries, requires consent and hand
     await button('Copy link').props.onClick();await new Promise(resolve=>setImmediate(resolve));render();
     assert.equal(walk(view,n=>n.type==='input'&&n.props['aria-label']==='Asset link').props.value,`https://aim4price.test/asset-share/${token}`);
    }
-   walk(view,n=>n.type==='dialog').props.onClose();assert.equal(closed,true);
+   walk(view,n=>n.type==='dialog').props.onClose();
+   if(failed){assert.equal(closed,false);render();assert.ok(button('Continue'));walk(view,n=>n.type==='dialog').props.onClose();}
+   assert.equal(closed,true);
   }
  } finally {Object.assign(global,previous);}
 });

@@ -1,0 +1,30 @@
+name: Read-only AI connection validation
+on:
+  pull_request:
+    paths:
+      - 'lib/ai-connection/**'
+      - 'app/api/ai/**'
+      - 'app/account/ai-connect/**'
+      - 'app/.well-known/**'
+      - 'lib/external-share-permissions.ts'
+      - 'lib/account-constants.ts'
+      - 'middleware.ts'
+      - 'database/migrations/135-read-only-ai-connections.sql'
+      - 'tests/ai-connection.test.cjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/ai-connection-validation.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: npm run test:ai-connection
+      - run: npm run typecheck

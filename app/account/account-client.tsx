@@ -2147,6 +2147,7 @@ export default function AccountClient({
                     <QuickActionIcon name="notifications" />
                     <strong>Notifications</strong>
                   </button> : null}
+                  {isOwnerAccount && !sharedAccount ? <Link className={styles.quickActionButton} href="/account/ai-connect"><QuickActionIcon name="notifications" /><strong>AI connections</strong></Link> : null}
                   {sharedAccount ? <Link className={styles.quickActionButton} href="#account-details"><QuickActionIcon name="business"/><strong>Business details</strong></Link> : <button
                     type="button"
                     className={styles.quickActionButton}
@@ -3251,3 +3252,4 @@ export default function AccountClient({
     </main>
   );
 }
+

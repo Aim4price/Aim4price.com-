@@ -1,0 +1,88 @@
+.page {
+  min-height: calc(var(--website-design-vh, 1vh) * 75);
+  padding: 48px 24px;
+  color: var(--app-text, #edf4f1);
+}
+.card {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 36px;
+  border: 1px solid rgba(125, 160, 140, 0.35);
+  border-radius: 24px;
+  background: var(--app-surface, #14251e);
+  box-shadow: 0 16px 50px #0002;
+}
+.card h1 {
+  font-size: 30px;
+  margin: 20px 0 12px;
+}
+.card p {
+  line-height: 1.65;
+}
+.card a {
+  color: inherit;
+}
+.identity {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: rgba(110, 190, 140, 0.14);
+  overflow-wrap: anywhere;
+}
+.identity strong,
+.identity span {
+  display: block;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0;
+}
+.card button,
+.primary {
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 14px 22px;
+  border: 1px solid #648774;
+  background: transparent;
+  color: inherit;
+}
+.card .primary {
+  background: #b9e6c4;
+  color: #14251e;
+  border-color: #b9e6c4;
+  text-decoration: none;
+  display: inline-block;
+}
+.card button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.card button:focus-visible,
+.card a:focus-visible {
+  outline: 3px solid #68aaff;
+  outline-offset: 4px;
+}
+.connection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px 0;
+  border-top: 1px solid #64877455;
+}
+.code {
+  display: block;
+  padding: 16px;
+  border-radius: 12px;
+  background: #0002;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.note {
+  font-size: 14px;
+  opacity: 0.8;
+}
