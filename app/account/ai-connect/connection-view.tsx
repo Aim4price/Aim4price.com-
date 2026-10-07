@@ -40,11 +40,11 @@ export default function ConnectionView({ account, connections, resource, proof, 
         <Link href="/account" className={styles.back}>← Back to account</Link>
         <header className={styles.hero}>
           <div className={styles.heroIcon}><Icon /></div>
-          <div><p className={styles.eyebrow}>YOUR ACCOUNT · YOUR CONTROL</p><h1>AI connections</h1><p className={styles.intro}>Your records. Clearer answers.<br />Ask your AI assistant about the assets you own and what they cost to run.</p></div>
+          <div><p className={styles.eyebrow}>YOUR ACCOUNT · YOUR CONTROL</p><h1>AI connections</h1><p className={styles.intro}>Ask your assistant about your assets, running costs and maintenance.</p></div>
           <span className={styles.badge}><Icon kind="shield" /> Read-only access</span>
+          <div className={styles.safety}><Icon kind="shield" /><p><strong>Your records stay in your control.</strong> AI can read information you approve. It cannot add, edit or delete business records.</p></div>
         </header>
-        <div className={styles.safety}><Icon kind="shield" /><p><strong>Your records stay in your control.</strong> AI can read information you approve. It cannot add, edit or delete business records.</p></div>
-        {message && <div className={styles.notice} role={disabled ? 'status' : 'alert'}><strong>{disabled ? 'Private pilot · setup in progress' : 'Connection unavailable'}</strong><p>{message}</p></div>}
+        {message && !disabled && <div className={styles.notice} role="alert"><strong>Connection unavailable</strong><p>{message}</p></div>}
         {signInHref && <section className={styles.panel}><h2>Sign in to your Owner account</h2><p>Check the account you want to connect before approving access.</p><Link className={styles.primary} href={signInHref}>Sign in to Aim4price →</Link></section>}
         <div className={styles.layout}>
           <div className={styles.mainColumn}>
@@ -58,20 +58,21 @@ export default function ConnectionView({ account, connections, resource, proof, 
                 <div className={styles.actions}><button className={styles.primary} name="decision" value="allow">Allow read-only access</button><button name="decision" value="deny" formNoValidate>Cancel</button></div>
               </form>
             </section> : <section className={styles.panel} aria-labelledby="choose-title">
-              <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>GET CONNECTED</p><h2 id="choose-title">Choose your assistant</h2></div><span className={styles.smallBadge}>Private pilot</span></div>
-              <p>Connect your own AI account, then sign in to Aim4price and approve read-only access.</p>
+              <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>GET CONNECTED</p><h2 id="choose-title">Choose your assistant</h2></div><span className={styles.smallBadge}>{disabled ? "Setup in progress" : "Private pilot"}</span></div>
+              <p>Choose your assistant, sign in to Aim4price and approve access.</p>
+              {disabled && <div className={styles.pilotNotice} role="status"><span className={styles.statusDot} />Connections are being prepared for the private pilot.</div>}
               <div className={styles.provider}>
-                <div className={styles.providerIcon}><Icon /></div><div className={styles.providerText}><h3>ChatGPT</h3><p>Our first planned connection. Available to invited Owners once setup is complete.</p></div>
+                <div className={styles.providerIcon}><Icon /></div><div className={styles.providerText}><h3>ChatGPT</h3><p>Read-only answers from your Aim4price account.</p></div>
                 <span className={styles.smallBadge}>{resource ? 'Pilot setup' : 'Not enabled yet'}</span>
               </div>
               {resource && <details className={styles.setup}><summary>View private connection setup</summary><p>The pilot organiser first sets up Aim4price in your AI assistant. Use this server address, then return here through the assistant to sign in and approve access.</p><code className={styles.code}>{resource}</code><p className={styles.note}>No personal API key to manage. Never paste your Aim4price password or a connection secret into a chat.</p></details>}
               <div className={styles.future}><span><strong>Claude</strong><small>Planned · not available</small></span><span><strong>Gemini</strong><small>Planned · not available</small></span></div>
-              <p className={styles.note}>Other assistants will be enabled after compatibility testing.</p>
+              <p className={styles.note}>Additional assistants will be enabled after testing.</p>
             </section>}
             <section className={styles.panel} aria-labelledby="connections-title">
               <div className={styles.sectionHeading}><h2 id="connections-title">Your connections</h2>{connections && <span className={styles.smallBadge}>{connections.length} active</span>}</div>
               {!proof && account && <div className={styles.accountLine}><strong>{account.name}</strong><span>{account.email}</span></div>}
-              {connections?.length ? connections.map(c => <div className={styles.connection} key={c.id}><div><span className={styles.active}>Active · read-only</span><h3>Aim4price private AI connection</h3><p>Connected {date(c.created_at)}<br />Expires {date(c.expires_at)}</p></div><DisconnectButton id={c.id} /></div>) : <div className={styles.empty}><span className={styles.emptyIcon}><Icon kind="shield" /></span><strong>{connections ? 'No assistants connected yet' : 'Connections are not available to view yet'}</strong><p>{connections ? 'Once you approve an assistant, you can manage its access here.' : 'When setup is ready, sign in to view and manage your connections.'}</p></div>}
+              {connections?.length ? connections.map(c => <div className={styles.connection} key={c.id}><div><span className={styles.active}>Active · read-only</span><h3>Aim4price private AI connection</h3><p>Connected {date(c.created_at)}<br />Expires {date(c.expires_at)}</p></div><DisconnectButton id={c.id} /></div>) : <div className={styles.empty}><span className={styles.emptyIcon}><Icon kind="shield" /></span><div><strong>{connections ? 'No assistants connected yet' : 'Your connections will appear here'}</strong><p>{connections ? 'Approve an assistant to manage its access here.' : 'Once setup is ready, sign in to manage access.'}</p></div></div>}
               <p className={styles.note}>Connections expire after 30 days. Disconnect here at any time to stop future access. Information already shared may remain in your AI conversations.</p>
             </section>
           </div>
