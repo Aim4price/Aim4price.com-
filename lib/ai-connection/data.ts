@@ -59,7 +59,7 @@ export const READ_TOOLS = [
   ),
   tool(
     'list_assets',
-    'List saved assets and saved valuations, not live recalculations. Values are ZAR excluding VAT. Includes sold/disposed assets with disposal date. Pagination is explicit; never treat a page as the complete register.',
+    'List saved assets and saved valuations, not live recalculations. Values are ZAR excluding VAT. Only active assets are listed. Use summary.total_assets and summary.register_value_ex_vat for totals across ALL matching assets, independent of pagination. Umbrella members may be excluded from value totals; never sum saved values blindly.',
     {
       ...pageProperties,
       query: { type: 'string', maxLength: 100 },
@@ -222,25 +222,42 @@ export async function runReadTool(
     return runExtendedRead(db, userId, name, args);
   if (name === 'list_assets') {
     // JSON field lookups tolerate the historical column aliases without returning whole rows/specs.
-    const where = `a.user_id=$1 AND ($2::text IS NULL OR a.id::text=$2) AND ($3='' OR strpos(lower(concat_ws(' ',j->>'title',j->>'brand_name',j->>'model_name',j->>'typed_model_name',j->>'serial_number',j->>'vin')),lower($3))>0)`;
-    const from =
-      'public.asset_register_items a CROSS JOIN LATERAL (SELECT to_jsonb(a) AS j) fields';
+    const where = `a.user_id=$1 AND coalesce(j->>'lifecycle_state','active')='active' AND ($2::text IS NULL OR a.id::text=$2) AND ($3='' OR strpos(lower(concat_ws(' ',j->>'title',j->>'brand_name',j->>'model_name',j->>'typed_model_name',j->>'serial_number',j->>'vin')),lower($3))>0)`;
+    // Read membership metadata directly: normal website loaders may initialize tables.
+    const tables = (await db.query(`SELECT to_regclass('public.asset_groups') AS groups,
+      to_regclass('public.asset_group_members') AS members`)).rows[0];
+    if (Boolean(tables.groups) !== Boolean(tables.members))
+      throw new ConnectionError(503, 'unavailable', 'Asset group data is incomplete. Register totals are unavailable.');
+    const groupJoin = tables.groups ? `LEFT JOIN LATERAL (
+      SELECT g.id AS group_id, g.name AS group_name, g.value_mode, m.role,
+        coalesce((to_jsonb(m)->>'counts_toward_total')::boolean, true) AS counts_toward_total
+      FROM public.asset_group_members m JOIN public.asset_groups g ON g.id=m.group_id
+      WHERE m.asset_id=a.id AND g.user_id=$1
+      LIMIT 1
+    ) membership ON true` : '';
+    const counted = tables.groups ? 'coalesce(membership.counts_toward_total,true)' : 'true';
+    const savedValue = "coalesce(j->>'value',j->>'selected_value_ex_vat',j->>'selected_value',j->>'saved_value_ex_vat')";
+    const from = `public.asset_register_items a CROSS JOIN LATERAL (SELECT to_jsonb(a) AS j) fields ${groupJoin}`;
     const params = [userId, args.assetId || null, args.query || ''];
-    const total = Number(
-      (
-        await db.query(
-          `SELECT count(*) AS count FROM ${from} WHERE ${where}`,
-          params,
-        )
-      ).rows[0].count,
-    );
+    // Match Math.round in the register and apply umbrella member value inclusion.
+    const roundedValue = `floor(coalesce((${savedValue})::numeric,0) + 0.5)`;
+    const summaryRow = (await db.query(`SELECT count(*) AS total_assets,
+      coalesce(sum(CASE WHEN ${counted} THEN ${roundedValue} ELSE 0 END),0)::text AS register_value_ex_vat,
+      count(*) FILTER (WHERE NOT ${counted}) AS excluded_from_value_count,
+      count(*) FILTER (WHERE ${savedValue} IS NULL) AS missing_value_count
+      FROM ${from} WHERE ${where}`, params)).rows[0];
+    const total = Number(summaryRow.total_assets);
     const rows = (
       await db.query(
         `SELECT a.id, j->>'title' AS title,j->>'register_id' AS register_id,
       j->>'kind' AS kind,j->>'brand_name' AS brand,coalesce(nullif(j->>'typed_model_name',''),j->>'model_name') AS model,
       coalesce(j->>'year_model',j->>'year') AS year,coalesce(j->>'serial_number',j->>'serial',j->>'vin') AS serial_vin,
       j->>'hours' AS recorded_usage,j->'specs_json'->>'usageMetricType' AS usage_metric,j->>'condition' AS condition,
-      coalesce(j->>'selected_value_ex_vat',j->>'selected_value',j->>'saved_value_ex_vat',j->>'value') AS saved_value_ex_vat,
+      ${savedValue} AS saved_value_ex_vat,
+      coalesce(j->>'lifecycle_state','active') AS lifecycle_state,
+      ${counted} AS counts_toward_register_value,
+      CASE WHEN ${counted} THEN ${roundedValue} ELSE 0 END::text AS register_value_contribution_ex_vat,
+      ${tables.groups ? 'membership.group_id, membership.group_name, membership.value_mode AS group_value_mode,' : 'null AS group_id, null AS group_name, null AS group_value_mode,'}
       j->>'selected_method' AS valuation_method,j->>'updated_at' AS updated_at,
       coalesce(j->>'disposal_date',j->'specs_json'->>'disposal_date') AS disposal_date
       FROM ${from} WHERE ${where} ORDER BY a.id LIMIT $4 OFFSET $5`,
@@ -250,6 +267,14 @@ export async function runReadTool(
     return {
       currency: 'ZAR',
       valueBasis: 'Saved value excluding VAT; no new valuation calculated.',
+      scope: 'Active assets in the connected account, across all registers; optional search/asset filters apply.',
+      summary: {
+        total_assets: total,
+        register_value_ex_vat: summaryRow.register_value_ex_vat,
+        excluded_from_value_count: Number(summaryRow.excluded_from_value_count),
+        missing_value_count: Number(summaryRow.missing_value_count),
+        basis: 'All matching active assets, independent of pagination. Umbrella value exclusions applied; missing values contribute zero.',
+      },
       records: rows,
       pagination: pagination(args, total),
     };
