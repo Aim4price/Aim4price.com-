@@ -19,8 +19,10 @@ test("quick actions keep their button treatment while gaining clear groups", asy
   const source = await read("app/account/account-client.tsx");
 
   assert.match(source, /className=\{styles\.quickActionGroups\}/);
-  assert.match(source, /Account &amp; assets/);
-  assert.match(source, /Apps &amp; visibility/);
+  assert.match(source, /Assets &amp; activity/);
+  assert.match(source, /Apps &amp; connections/);
+  assert.match(source, /Marketplace &amp; visibility/);
+  assert.match(source, /Account &amp; billing/);
   assert.match(source, /Manage asset registers/);
   assert.match(source, /Manage Field Manager access/);
   assert.match(source, /Manage Owner App access/);
