@@ -776,3 +776,46 @@ test('expired browser login redirects to login without issuing an authorization 
   assert.equal((await route.exports.POST(makeRequest(authParams(), 'https://evil.example'))).status, 403);
   assert.equal(writes, 0);
 });
+
+test('asset summary matches active register counts and umbrella values across pages', async () => {
+  const { runReadTool } = require(path.join(tmp, 'ai-connection/data.js'));
+  const { randomUUID } = require('node:crypto');
+  const ids = Array.from({length:5}, () => randomUUID());
+  const group = randomUUID(), foreignGroup = randomUUID();
+  await db.exec(`ALTER TABLE asset_register_items ADD COLUMN lifecycle_state text;
+    ALTER TABLE asset_register_items ADD COLUMN value numeric;
+    CREATE TABLE asset_groups(id uuid PRIMARY KEY,user_id text,name text,value_mode text);
+    CREATE TABLE asset_group_members(group_id uuid,asset_id uuid UNIQUE,role text,counts_toward_total boolean);`);
+  try {
+    for (const [i, value, state] of [[0,100.6,'active'],[1,999,'active'],[2,250.4,'active'],[3,200600,'disposed'],[4,1,'archived']])
+      await db.query(`INSERT INTO asset_register_items(id,user_id,title,selected_value_ex_vat,lifecycle_state)
+        VALUES($1,'owner-a',$2,$3,$4)`, [ids[i], 'Summary fixture '+i, value, state]);
+    await db.query(`INSERT INTO asset_groups VALUES($1,'owner-a','Own umbrella','included_in_primary'),($2,'owner-b','Foreign umbrella','separate')`,[group,foreignGroup]);
+    await db.query(`INSERT INTO asset_group_members VALUES($1,$2,'linked',false),($1,$3,'linked',true),($4,$5,'linked',false)`,[group,ids[1],ids[2],foreignGroup,assetA]);
+    await db.query('UPDATE asset_register_items SET value=100.6,selected_value_ex_vat=9999 WHERE id=$1',[ids[0]]);
+    const read = args => store.readOnly(pool, reader => runReadTool(reader, 'owner-a', 'list_assets', parseReadArgs('list_assets',args), {name:'Owner',email:'owner@example.com'}));
+    const first = await read({limit:1});
+    assert.equal(first.records.length,1);
+    assert.equal(first.summary.total_assets,4); // original asset + three active fixtures
+    assert.equal(first.summary.register_value_ex_vat,'500351'); // 500000 + round(100.6) + round(250.4)
+    assert.equal(first.summary.excluded_from_value_count,1);
+    assert.equal(first.pagination.totalRecords,4);
+    assert.equal(first.pagination.hasMore,true);
+    assert.deepEqual((await read({limit:1,offset:3})).summary,first.summary);
+    const all = await read({limit:100});
+    assert.ok(all.records.every(row => row.lifecycle_state === 'active'));
+    assert.ok(!all.records.some(row => [ids[3],ids[4],assetB].includes(row.id)));
+    assert.equal(all.records.find(row => row.id===ids[1]).register_value_contribution_ex_vat,'0');
+    assert.equal(all.records.find(row => row.id===assetA).group_name,null);
+    // Explicit member flags also override separate-value mode, as on the website.
+    await db.query(`UPDATE asset_groups SET value_mode='separate' WHERE id=$1`,[group]);
+    assert.equal((await read({})).summary.register_value_ex_vat,'500351');
+    assert.equal((await read({query:'Summary fixture'})).summary.total_assets,3);
+    assert.equal((await read({query:'Summary fixture'})).summary.register_value_ex_vat,'351');
+    assert.equal((await read({assetId:ids[3]})).summary.total_assets,0);
+    assert.equal((await read({query:'no matching asset'})).summary.register_value_ex_vat,'0');
+  } finally {
+    await db.query('DELETE FROM asset_register_items WHERE id=ANY($1::uuid[])',[ids]);
+    await db.exec('DROP TABLE asset_group_members; DROP TABLE asset_groups; ALTER TABLE asset_register_items DROP COLUMN lifecycle_state; ALTER TABLE asset_register_items DROP COLUMN value');
+  }
+});
