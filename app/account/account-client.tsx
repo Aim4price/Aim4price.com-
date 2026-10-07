@@ -184,6 +184,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 };
 
 type QuickActionIconName =
+  | "connections"
   | "invoices"
   | "notifications"
   | "business"
@@ -277,6 +278,10 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
     <span className={styles.quickActionIcon} aria-hidden="true">
       {name === "notifications" ? (
         <svg {...svgProps}><path {...strokeProps} d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" /><path {...strokeProps} d="M10 21h4M12 2V1" /></svg>
+      ) : name === "connections" ? (
+        <svg {...svgProps}>
+          <path {...strokeProps} d="m10 13 4-4m-6 6-1 1a3.54 3.54 0 0 1-5-5l4-4a3.54 3.54 0 0 1 5 0m2 2 1-1a3.54 3.54 0 0 1 5 5l-4 4a3.54 3.54 0 0 1-5 0" />
+        </svg>
       ) : name === "business" ? (
         <svg {...svgProps}>
           <path
@@ -2126,28 +2131,161 @@ export default function AccountClient({
           <section className={`${styles.card} ${styles.quickActionsCard}`}>
             <div className={styles.compactCardHeader}>
               <h2>Quick actions</h2>
-              <p>Frequently used actions</p>
+              <p>Everyday tasks first, account settings last.</p>
             </div>
 
             <div className={styles.quickActionGroups}>
+              {/* Task order is shared by every account: daily work, access, visibility, then administration. */}
+              {isOwnerAccount || isDealerAccount ? (
+                <section
+                  className={styles.quickActionGroup}
+                  aria-labelledby="assets-activity-actions-title"
+                >
+                  <div className={styles.quickActionGroupHeader}>
+                    <h3 id="assets-activity-actions-title">Assets &amp; activity</h3>
+                  </div>
+                  <div className={styles.quickActionList}>
+                    {isAssetRegisterAccount ? (
+                      <button
+                        type="button"
+                        className={styles.quickActionButton}
+                        onClick={openAssetRegistersPage}
+                      >
+                        <QuickActionIcon name="registers" />
+                        <strong>Manage asset registers</strong>
+                      </button>
+                    ) : null}
+
+                    {isAssetRegisterAccount ? (
+                      <button
+                        type="button"
+                        className={styles.quickActionButton}
+                        onClick={openAssetTransfersPage}
+                      >
+                        <QuickActionIcon name="claim" />
+                        <strong>Claim or send an asset</strong>
+                      </button>
+                    ) : null}
+
+                    {isOwnerAccount || isDealerAccount ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("notifications")}>
+                      <QuickActionIcon name="notifications" />
+                      <strong>Notifications</strong>
+                    </button> : null}
+                  </div>
+                </section>
+              ) : null}
+
+              {isOwnerAccount || isDealerAccount ? (
+                <section
+                  className={styles.quickActionGroup}
+                  aria-labelledby="apps-connections-actions-title"
+                >
+                  <div className={styles.quickActionGroupHeader}>
+                    <h3 id="apps-connections-actions-title">Apps &amp; connections</h3>
+                  </div>
+                  <div className={styles.quickActionList}>
+                    {isOwnerAccount ? (
+                      <button
+                        type="button"
+                        className={styles.quickActionButton}
+                        onClick={openOwnerAppAccessPage}
+                        aria-label="Manage Owner App access"
+                      >
+                        <QuickActionIcon name="ownerApp" />
+                        <strong>Owner App access</strong>
+                      </button>
+                    ) : null}
+
+                    {isOwnerAccount ? (
+                      <button
+                        type="button"
+                        className={styles.quickActionButton}
+                        onClick={openFieldManagerPage}
+                        aria-label="Manage Field Manager access"
+                      >
+                        <QuickActionIcon name="fieldManager" />
+                        <strong>Field Manager access</strong>
+                      </button>
+                    ) : null}
+
+                    {isDealerAccount ? (
+                      <button
+                        type="button"
+                        className={styles.quickActionButton}
+                        onClick={openDealerAppAccessPage}
+                      >
+                        <QuickActionIcon name="dealer" />
+                        <strong>{isMiddlemanAccount ? "Middleman app access" : "Manage Dealer App staff"}</strong>
+                      </button>
+                    ) : null}
+
+                    {isOwnerAccount && !sharedAccount ? <Link className={styles.quickActionButton} href="/account/ai-connect"><QuickActionIcon name="connections" /><strong>AI connections</strong></Link> : null}
+                  </div>
+                </section>
+              ) : null}
+
+              {isOwnerAccount || showMarketplaceContact || sharedAccount || showPartnerDirectory ? (
+                <section
+                  className={styles.quickActionGroup}
+                  aria-labelledby="marketplace-visibility-actions-title"
+                >
+                  <div className={styles.quickActionGroupHeader}>
+                    <h3 id="marketplace-visibility-actions-title">Marketplace &amp; visibility</h3>
+                  </div>
+                  <div className={styles.quickActionList}>
+                    {isOwnerAccount ? (
+                      <Link href="/my-showroom" className={styles.quickActionButton}>
+                        <QuickActionIcon name="showroom" />
+                        <strong>Manage my showroom</strong>
+                      </Link>
+                    ) : null}
+
+                    {showMarketplaceContact ? (
+                      <button
+                        type="button"
+                        className={styles.quickActionButton}
+                        onClick={openMarketplaceEditor}
+                        aria-label="Marketplace contact details"
+                      >
+                        <QuickActionIcon name="marketplace" />
+                        <strong>Marketplace contact</strong>
+                      </button>
+                    ) : null}
+
+                    {isOwnerAccount ? (
+                      <button
+                        type="button"
+                        className={styles.quickActionButton}
+                        onClick={openDiscoveryEditor}
+                      >
+                        <QuickActionIcon name="discovery" />
+                        <strong>Discovery settings</strong>
+                      </button>
+                    ) : null}
+
+                    {sharedAccount ? <Link href="#directory-listing-title" className={styles.quickActionButton}><QuickActionIcon name="directory" /><strong>Directory listing</strong></Link> : null}
+                    {showPartnerDirectory ? (
+                      <button
+                        type="button"
+                        className={styles.quickActionButton}
+                        onClick={openPartnerDirectory}
+                      >
+                        <QuickActionIcon name="directory" />
+                        <strong>Partner directory</strong>
+                      </button>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+
               <section
                 className={styles.quickActionGroup}
-                aria-labelledby="account-assets-actions-title"
+                aria-labelledby="account-billing-actions-title"
               >
                 <div className={styles.quickActionGroupHeader}>
-                  <h3 id="account-assets-actions-title">Account &amp; assets</h3>
+                  <h3 id="account-billing-actions-title">Account &amp; billing</h3>
                 </div>
-
                 <div className={styles.quickActionList}>
-                  <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")}>
-                    <QuickActionIcon name="invoices" />
-                    <strong>Aim4price invoices</strong>
-                  </button>
-                  {isOwnerAccount || isDealerAccount ? <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("notifications")}>
-                    <QuickActionIcon name="notifications" />
-                    <strong>Notifications</strong>
-                  </button> : null}
-                  {isOwnerAccount && !sharedAccount ? <Link className={styles.quickActionButton} href="/account/ai-connect"><QuickActionIcon name="notifications" /><strong>AI connections</strong></Link> : null}
                   {sharedAccount ? <Link className={styles.quickActionButton} href="#account-details"><QuickActionIcon name="business"/><strong>Business details</strong></Link> : <button
                     type="button"
                     className={styles.quickActionButton}
@@ -2157,126 +2295,11 @@ export default function AccountClient({
                     <strong>Edit business details</strong>
                   </button>}
 
-                  {isAssetRegisterAccount ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openAssetRegistersPage}
-                    >
-                      <QuickActionIcon name="registers" />
-                      <strong>Manage asset registers</strong>
-                    </button>
-                  ) : null}
-
-                  {isAssetRegisterAccount ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openAssetTransfersPage}
-                    >
-                      <QuickActionIcon name="claim" />
-                      <strong>Claim or send an asset</strong>
-                    </button>
-                  ) : null}
-
-                  {showScanPinControls ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openScanPinEditor}
-                    >
-                      <QuickActionIcon name="pin" />
-                      <strong>Update QR PIN</strong>
-                    </button>
-                  ) : null}
-                </div>
-              </section>
-
-              <section
-                className={styles.quickActionGroup}
-                aria-labelledby="apps-visibility-actions-title"
-              >
-                <div className={styles.quickActionGroupHeader}>
-                  <h3 id="apps-visibility-actions-title">Apps &amp; visibility</h3>
-                </div>
-
-                <div className={styles.quickActionList}>
-                  {isOwnerAccount ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openFieldManagerPage}
-                      aria-label="Manage Field Manager access"
-                    >
-                      <QuickActionIcon name="fieldManager" />
-                      <strong>Field Manager access</strong>
-                    </button>
-                  ) : null}
-
-                  {isOwnerAccount ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openOwnerAppAccessPage}
-                      aria-label="Manage Owner App access"
-                    >
-                      <QuickActionIcon name="ownerApp" />
-                      <strong>Owner App access</strong>
-                    </button>
-                  ) : null}
-
-                  {isDealerAccount ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openDealerAppAccessPage}
-                    >
-                      <QuickActionIcon name="dealer" />
-                      <strong>{isMiddlemanAccount ? "Middleman app access" : "Manage Dealer App staff"}</strong>
-                    </button>
-                  ) : null}
-
-                  {showMarketplaceContact ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openMarketplaceEditor}
-                      aria-label="Marketplace contact details"
-                    >
-                      <QuickActionIcon name="marketplace" />
-                      <strong>Marketplace contact</strong>
-                    </button>
-                  ) : null}
-
-                  {isOwnerAccount ? (
-                    <Link href="/my-showroom" className={styles.quickActionButton}>
-                      <QuickActionIcon name="showroom" />
-                      <strong>Manage my showroom</strong>
-                    </Link>
-                  ) : null}
-
-                  {isOwnerAccount ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openDiscoveryEditor}
-                    >
-                      <QuickActionIcon name="discovery" />
-                      <strong>Discovery settings</strong>
-                    </button>
-                  ) : null}
-
-                  {sharedAccount && <><Link href="#directory-listing-title" className={styles.quickActionButton}><QuickActionIcon name="directory"/><strong>Directory listing</strong></Link><Link href="/pricing" className={styles.quickActionButton}><QuickActionIcon name="registers"/><strong>Explore Desktop plans</strong></Link></>}
-                  {showPartnerDirectory ? (
-                    <button
-                      type="button"
-                      className={styles.quickActionButton}
-                      onClick={openPartnerDirectory}
-                    >
-                      <QuickActionIcon name="directory" />
-                      <strong>Partner directory</strong>
-                    </button>
-                  ) : null}
+                  <button type="button" className={styles.quickActionButton} onClick={() => openActionModal("invoices")}>
+                    <QuickActionIcon name="invoices" />
+                    <strong>Aim4price invoices</strong>
+                  </button>
+                  {sharedAccount ? <Link href="/pricing" className={styles.quickActionButton}><QuickActionIcon name="registers" /><strong>Explore Desktop plans</strong></Link> : null}
                 </div>
               </section>
             </div>
@@ -2318,6 +2341,18 @@ export default function AccountClient({
                   </strong>
                 </span>
               </button>
+              {showScanPinControls ? (
+                <button
+                  type="button"
+                  className={styles.securityActionCard}
+                  onClick={openScanPinEditor}
+                >
+                  <QuickActionIcon name="pin" />
+                  <span className={styles.securityActionCopy}>
+                    <strong>Update QR PIN</strong>
+                  </span>
+                </button>
+              ) : null}
             </div>
           </section>
         </section>
