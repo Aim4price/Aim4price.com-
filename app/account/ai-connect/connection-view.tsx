@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import CopyQuestion from './copy-question';
 import DisconnectButton from './disconnect-button';
 import AccountSetup from './account-setup';
 import ConnectionActions, { ServerAddress } from './connection-actions';
@@ -29,21 +30,21 @@ function Icon({ kind = 'spark' }: { kind?: string }) {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[kind] || paths.spark} /></svg>;
 }
 const permissions = [
-  ['asset', 'Assets & values', 'Assets, usage, condition and saved valuations.', '“What are my assets worth?”'],
-  ['cost', 'Costs & budgets', 'Recorded costs, budgets and remaining amounts.', '“How much of my budget is left?”'],
-  ['fuel', 'Fuel', 'Fuel slips, storage issues and recorded litres.', '“How much fuel have we used?”'],
-  ['service', 'Maintenance', 'Schedules, completed work and logged problems.', '“Which services are overdue?”'],
+  ['asset', 'Assets & values', 'Your active assets, recorded hours or kilometres, condition and saved values.', 'How many active assets do I have, and what is their total saved value?'],
+  ['cost', 'Costs & budgets', 'Recorded costs, monthly and annual budgets, spending and remaining amounts.', 'How much of my budget is left this month?'],
+  ['fuel', 'Fuel', 'Recorded fuel purchases, litres and fuel issued from storage to assets.', 'How many litres of fuel were issued from storage this month?'],
+  ['service', 'Maintenance', 'Service schedules, maintenance activity and logged asset problems.', 'Which services are overdue, and which assets have open problems?'],
 ];
 function date(value: string) {
   return new Date(value).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Africa/Johannesburg' });
 }
 
 function SharedInformation({ examples = false }: { examples?: boolean }) {
-  return <div className={styles.permissions}>
-    {permissions.map(([icon, title, detail, example]) => <div className={styles.permission} key={title}>
-      <span className={styles.permissionIcon}><Icon kind={icon} /></span>
-      <h3>{title}</h3>
-      <p>{examples ? example : detail}</p>
+  return <div className={examples ? styles.questionGrid : styles.permissions}>
+    {permissions.map(([icon, title, detail, example]) => <div className={examples ? styles.questionCard : styles.permission} key={title}>
+      <div className={styles.cardHeading}><span className={styles.permissionIcon}><Icon kind={icon} /></span><h3>{title}</h3></div>
+      <p>{detail}</p>
+      {examples && <div className={styles.question}><p>“{example}”</p><CopyQuestion question={example} category={title} /></div>}
     </div>)}
   </div>;
 }
@@ -120,9 +121,21 @@ export default function ConnectionView({ account, connections, resource, proof, 
           </section> : <ConnectionActions setup={setup} management={management} count={connections?.length} />}
         </section>
         {!proof && <section className={styles.examples} aria-labelledby="examples-title">
-          <div className={styles.sectionHeading}><h2 id="examples-title">What can I ask?</h2><p>Answers from your connected Owner account.</p></div>
+          <div className={styles.exampleHeading}>
+            <div><h2 id="examples-title">Turn your records into answers</h2><p>Start with a question about your connected Owner account.</p></div>
+            <span className={styles.readOnly}><Icon kind="shield" />Read-only access</span>
+          </div>
+          <p className={styles.questionHint}>Once connected, copy a question into ChatGPT and select Aim4price in your conversation.</p>
           <SharedInformation examples />
-          <details className={styles.disclosure}><summary>What information is shared?</summary><SharedInformation /></details>
+          <details className={styles.disclosure}>
+            <summary>What information is shared?</summary>
+            <div className={styles.sharingDetails}>
+              <div><h3>Only your connected account</h3><p>ChatGPT can retrieve your account profile and the records described above. It cannot access another Owner’s account through this connection.</p></div>
+              <div><h3>You stay in control</h3><p>Access is read-only: your AI cannot add, change or delete records. Disconnect at any time using Manage above.</p></div>
+              <div><h3>Based on what you have saved</h3><p>Answers depend on your recorded information. Missing records may leave gaps. Photos and document attachments are not shared through this connection.</p></div>
+            </div>
+            <p className={styles.sharingNote}>Requested information is shared with your AI provider. Disconnecting stops future access; information already shared may remain in your conversations.</p>
+          </details>
         </section>}
         <footer className={styles.footer}><span>You choose when to connect and disconnect.</span><nav aria-label="AI connection policies"><Link href="/terms-of-service">Terms of Service</Link><Link href="/privacy-policy">Privacy Policy</Link></nav></footer>
       </div>
