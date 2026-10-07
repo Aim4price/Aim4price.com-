@@ -108,13 +108,12 @@
 .empty { padding: 1.3rem 0 .3rem; }
 .empty p { margin: .5rem 0 1rem; color: var(--app-muted, #60746d); }
 .examples { border: 1px solid var(--app-line, #dce7e2); border-radius: 1.5rem; padding: 1.5rem; margin-top: 1.35rem; background: var(--app-surface, #fff); }
-.examples .sectionHeading p { margin: 0; font-size: .95rem; color: var(--app-muted, #60746d); }
 .permissions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-top: 1.3rem; }
 .permission { min-width: 0; padding: 1.05rem; border-radius: 1rem; border: 1px solid var(--app-line, #dce7e2); background: var(--app-surface-soft, #f6faf8); }
-.permissionIcon { margin-bottom: .8rem; background: var(--app-surface, #fff); }
+.permissionIcon { background: var(--app-surface, #fff); }
 .permission p { margin: .55rem 0 0; color: var(--app-muted, #60746d); font-size: .95rem; line-height: 1.6; }
 .disclosure { border-top: 1px solid var(--app-line, #dce7e2); padding-top: .8rem; margin-top: 1.1rem; }
-.disclosure .permissions { margin-top: .6rem; }
+
 .identity { display: grid; gap: .25rem; padding: 1rem 1.2rem; border-radius: 1rem; margin-top: 1.15rem; background: var(--app-surface-soft, #e9f6ef); overflow-wrap: anywhere; }
 .identity span { font-size: .95rem; }
 .consent { display: flex; gap: .85rem; align-items: flex-start; margin-top: 1.5rem; padding: 1.2rem; border: 1px solid var(--app-line, #c8dcd2); border-radius: 1rem; background: var(--app-surface-soft, #f3f8f5); font-size: .95rem; cursor: pointer; }
@@ -156,4 +155,30 @@
   :global(body:not(:has([data-website-canvas]))) .flowPanel,
   :global(body:not(:has([data-website-canvas]))) .approval,
   :global(body:not(:has([data-website-canvas]))) .examples { padding: 1.1rem; }
+}
+
+/* Question examples and sharing details */
+.exampleHeading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
+.exampleHeading p { margin: .55rem 0 0; color: var(--app-muted, #60746d); }
+.readOnly { display: inline-flex; align-items: center; gap: .5rem; padding: .45rem .8rem; border-radius: 2rem; background: var(--app-surface-soft, #edf8f2); font-size: .9rem; font-weight: 700; white-space: nowrap; }
+.readOnly svg { width: 18px; height: 18px; }
+.questionHint { margin: 1.3rem 0 0; font-size: .95rem; color: var(--app-muted, #60746d); }
+.questionGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
+.questionCard { display: flex; flex-direction: column; min-width: 0; padding: 1.35rem; border: 1px solid var(--app-line, #dce7e2); border-radius: 1.15rem; background: var(--app-surface-soft, #f6faf8); }
+.cardHeading { display: flex; align-items: center; gap: .8rem; }
+.questionCard h3 { font-size: 1.15rem; }
+.questionCard > p { margin: .85rem 0 1.15rem; color: var(--app-muted, #60746d); font-size: .95rem; line-height: 1.65; }
+.question { margin-top: auto; border-top: 1px solid var(--app-line, #dce7e2); padding-top: 1rem; }
+.question > p { margin: 0 0 .75rem; font-size: 1.05rem; line-height: 1.6; font-weight: 650; user-select: text; }
+.copyQuestion { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .75rem; }
+.copyQuestion button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding: .55rem .8rem; border: 1px solid var(--app-line, #dce7e2); border-radius: .7rem; background: var(--app-surface, #fff); color: inherit; font: inherit; font-size: .9rem; font-weight: 750; cursor: pointer; }
+.copyQuestion button:hover { border-color: var(--app-accent, #208460); }
+.copyQuestion span { font-size: .85rem; color: var(--app-muted, #60746d); }
+.sharingDetails { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; padding: 1rem 0; }
+.sharingDetails p { margin: .6rem 0 0; color: var(--app-muted, #60746d); font-size: .95rem; line-height: 1.7; }
+.sharingNote { margin: 0; padding: 1rem 1.15rem; border-radius: .85rem; background: var(--app-surface-soft, #f6faf8); color: var(--app-muted, #60746d); font-size: .9rem; }
+@media (max-width: 760px) {
+  :global(body:not(:has([data-website-canvas]))) .questionGrid,
+  :global(body:not(:has([data-website-canvas]))) .sharingDetails { grid-template-columns: 1fr; }
+  :global(body:not(:has([data-website-canvas]))) .questionCard { padding: 1.1rem; }
 }
