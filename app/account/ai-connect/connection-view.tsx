@@ -56,17 +56,24 @@ export default function ConnectionView({ account, connections, resource, proof, 
       <p>Use the Owner account you want ChatGPT to read.</p>
       <Link className={styles.primary} href={signInHref}>Sign in to Aim4price</Link>
     </div> : resource ? <>
-      <p className={styles.description}>Start in ChatGPT, then approve access with your Aim4price account.</p>
+      <p className={styles.description}>Connect in ChatGPT, then sign in to Aim4price and approve read-only access.</p>
+      <div className={styles.chatgptStart}>
+        <a className={styles.primary} href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">Open ChatGPT <span aria-hidden="true">↗</span></a>
+        <p>Opens ChatGPT in a new tab. Opening it does not connect your account automatically.</p>
+      </div>
       <ol className={styles.steps}>
-        <li><span className={styles.stepNumber} aria-hidden="true">1</span><div><h3>Open Aim4price in ChatGPT</h3><p>Choose Connect to begin. If Aim4price has not been added yet, use the setup details below.</p></div></li>
+        <li><span className={styles.stepNumber} aria-hidden="true">1</span><div><h3>Select your Aim4price plugin</h3><p>In ChatGPT, open Plugins and select the Aim4price plugin installed for your pilot. Choose Connect. If it already shows Connected, you can start asking questions.</p></div></li>
         <li><span className={styles.stepNumber} aria-hidden="true">2</span><div><h3>Sign in and approve</h3><p>Check your Owner account, review what will be shared and allow read-only access.</p></div></li>
         <li><span className={styles.stepNumber} aria-hidden="true">3</span><div><h3>Ask about your assets</h3><p>Return to ChatGPT and use the Aim4price connection in your conversation.</p></div></li>
       </ol>
       <details className={styles.setup}>
-        <summary>First-time setup details</summary>
-        <p>The person helping with the pilot can use this server address to add Aim4price to ChatGPT.</p>
+        <summary>Can’t find Aim4price in ChatGPT?</summary>
+        <p>Aim4price is currently a private pilot, so it may not appear in your ChatGPT plugins. Ask the person helping with your pilot to set it up first. Opening ChatGPT alone does not install it.</p>
+        <details className={styles.technicalSetup}><summary>Technical setup for the pilot</summary>
+        <p>Copy this address into the MCP server URL field when setting up the connection in ChatGPT. It is not a website or sign-in link; opening it in your browser will show an error.</p>
         <ServerAddress resource={resource} />
         <p className={styles.note}>No personal API key is needed. Never paste your password or a connection secret into a chat.</p>
+        </details>
       </details>
       <p className={styles.note}>ChatGPT is available in the private pilot. Other assistants are not available yet.</p>
     </> : <>
