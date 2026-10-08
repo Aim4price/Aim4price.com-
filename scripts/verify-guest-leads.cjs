@@ -281,7 +281,7 @@ export default function Validation(){
    await page.screenshot({path:path.join(output,`manage-actions-${width}.png`),fullPage:true});
    await click('Update replacement price');
    await page.waitForSelector('a[href^="/business/join?returnTo="]');
-   const guestLink=await page.$eval('a[href^="/business/join?returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
+   const guestLink=await page.$eval('a[href^="/business/join?returnTo="]',a=>({text:a.querySelector('[class*=signInButton]')?.textContent || a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
    assert.equal(guestLink.text.trim(),'Create a free account');assert.equal(guestLink.returnTo,`/asset-share/${token}?open=1`);
    assert.equal(await page.$('[role="dialog"] form'),null,'Visitors cannot submit updates');
    await page.screenshot({path:path.join(output,`signup-gate-${width}.png`),fullPage:true});

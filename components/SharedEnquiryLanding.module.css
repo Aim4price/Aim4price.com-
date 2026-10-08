@@ -1,10 +1,10 @@
 /* The global Aim4price photo background remains visible at every canvas zoom. */
 .page { background:transparent; color:var(--app-text,#123b2e); }
 .openButton { font:inherit; cursor:pointer; box-sizing:border-box; }
-.dialog.dialog { width:min(72rem,calc(var(--website-design-vw,1vw) * 100 - 3rem)); padding:clamp(1.25rem,3vw,3rem); border-radius:1.75rem; }
+.dialog.dialog { width:min(72rem,calc(var(--website-design-vw,1vw) * 100 - 3rem)); padding:clamp(1.25rem,calc(var(--website-design-vw,1vw) * 3),3rem); border-radius:1.75rem; }
 
 .dialog > header { border-bottom:0; padding-bottom:0; align-items:center; gap:1.5rem; }
-.dialog > header h2 { font-size:clamp(1.6rem,2.4vw,2.25rem); line-height:1.3; }
+.dialog > header h2 { font-size:clamp(1.6rem,calc(var(--website-design-vw,1vw) * 2.4),2.25rem); line-height:1.3; }
 .signInBody { display:grid; gap:1.5rem; padding-top:1rem; }
 .signInBody > p { text-align:center; margin:0; color:var(--app-muted,#657b72); font-size:.95rem; line-height:1.55; max-width:none; }
 .signInButton.signInButton { width:100%; box-sizing:border-box; min-height:3.25rem; text-align:center; }
@@ -36,7 +36,7 @@
 .choiceIcon { display:grid; place-items:center; width:6.5rem; height:6.5rem; flex-shrink:0; border-radius:1.5rem; background:#fff; color:#087f5b; border:1px solid #c5e2d6; }
 .choiceIcon svg { width:4rem; height:4rem; }
 .choiceCopy { display:grid; gap:.55rem; }
-.choiceCopy strong { font-size:clamp(1.5rem,2vw,2rem); font-weight:800; line-height:1.2; letter-spacing:-.025em; }
+.choiceCopy strong { font-size:clamp(1.5rem,calc(var(--website-design-vw,1vw) * 2),2rem); font-weight:800; line-height:1.2; letter-spacing:-.025em; }
 .choiceCopy small { font-size:1rem; line-height:1.5; color:#4d685e; }
 .newAccount { background:#eff6ff; border-color:#c0d6ef; }
 .newAccount:hover { border-color:#3878ba; box-shadow:0 14px 30px rgba(36,89,146,.13); }

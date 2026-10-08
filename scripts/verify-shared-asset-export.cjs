@@ -74,6 +74,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.click('[aria-label="Remove Shared valuation.pdf"]');
  await click('Add report');await page.waitForSelector('[data-download-dialog]');await page.keyboard.press('Escape');await page.waitForSelector('[data-download-dialog]',{hidden:true});
  assert(await page.$('[aria-label="Share outside Aim4price"]'),'Report cancel returns to outside sharing');
+ await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(button=>button.textContent.trim()==='Email'&&!button.disabled));
  await click('Email');await page.waitForSelector('dialog[open]');
  assert(await page.$eval('dialog[open]',n=>n.textContent.includes('Share via Email')));
  await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});

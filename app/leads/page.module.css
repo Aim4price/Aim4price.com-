@@ -5849,6 +5849,8 @@
 .dealerAppLeads .expandedLeadHeader.expandedLeadHeader:has(.exportHeaderActions) { grid-template-columns:minmax(0,1fr)!important; }
 .leadAssetHeaderActions.exportHeaderActions,
 :is(.dealerDesktopLeads,.dealerAppLeads,.leadsPage) .expandedLeadAside .leadAssetHeaderActions.exportHeaderActions { display:grid!important; grid-template-columns:repeat(3,minmax(0,1fr))!important; width:100%!important; gap:.6rem!important; }
+/* Keep Manage at the right edge when Send is unavailable. */
+.leadAssetHeaderActions.exportHeaderActions > :last-child { grid-column:-2 / -1; }
 .leadAssetHeaderActions.exportHeaderActions > button,
 :is(.dealerDesktopLeads,.dealerAppLeads,.leadsPage) .expandedLeadAside .leadAssetHeaderActions.exportHeaderActions > button { width:100%!important; min-width:0!important; max-width:none!important; padding-inline:.7rem!important; white-space:nowrap; }
 @media(max-width:900px) {
