@@ -8,6 +8,7 @@ export default function BusinessVerification() {
   const [accounts, setAccounts] = useState<BusinessVerificationAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("review");
   const load = useCallback(async (signal?: AbortSignal) => {
@@ -41,6 +42,7 @@ export default function BusinessVerification() {
         <button type="button" disabled={loading} onClick={() => void load()}>{loading ? "Refreshing…" : "Refresh"}</button>
       </div>
       {accounts.length > 0 && <label className={styles.search}>Find an account<input type="search" placeholder="Business name or email" value={search} onChange={e => setSearch(e.target.value)} /></label>}
+      {message && <p role="status">{message}</p>}
       {loading && <p role="status">Loading business accounts…</p>}
       {error && <div role="alert"><p>{error}</p><button className={styles.retry} type="button" onClick={() => void load()}>Try again</button></div>}
       {!loading && !error && !accounts.length && <p className={styles.empty}>No Business accounts found.</p>}
@@ -51,7 +53,7 @@ export default function BusinessVerification() {
             <span className={styles.identity}><strong>{account.business_name || account.email}</strong><span>{account.email}</span></span>
             <span className={styles.status}>{account.account_status === "suspended" ? "Suspended" : account.verified_at ? "Verified" : "Needs review"}</span>
           </summary>
-          <ReviewCard account={account} onSaved={() => void load()} />
+          <ReviewCard account={account} onSaved={() => { setMessage("Verification decision saved."); void load(); }} />
         </details>
       ))}
     </div>

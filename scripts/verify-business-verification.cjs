@@ -73,7 +73,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.click('form button');
  await page.waitForFunction(()=>window.saves.length===1);
  assert.equal(await page.evaluate(()=>window.saves[0].verified),false);
- const click=async text=>page.evaluate(text=>[...document.querySelectorAll('button')].find(b=>b.textContent===text).click(),text);
+ const click=async text=>{await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent===text&&!b.disabled),{},text);await page.evaluate(text=>[...document.querySelectorAll('button')].find(b=>b.textContent===text).click(),text);};
  await click('Verified');
  await page.waitForFunction(()=>document.querySelector('details')?.textContent.includes('Verified workshop'));
  assert.equal(await page.$$eval('details',nodes=>nodes.length),1);
