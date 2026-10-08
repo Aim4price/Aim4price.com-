@@ -133,18 +133,9 @@
 .accountDetails dl > div + div { margin-top: .8rem; }
 .accountDetails dt { color: var(--app-muted, #60746d); font-size: .9rem; margin-bottom: .2rem; }
 .accountDetails dd { margin: 0; overflow-wrap: anywhere; }
-:global(html[data-background='dark']) .page {
-  --app-surface: #20382f;
-  --app-surface-soft: #294338;
-  --app-text: #edf5ef;
-  --app-muted: #b7cbbf;
-  --app-line: #476354;
-  --app-accent: #a0dfbb;
-  --app-info: #b1d5f5;
-  --app-info-soft: #2a3d50;
-  --app-info-line: #526f87;
-  --app-shadow-colour: rgb(0 0 0 / 18%);
-  --ai-button-text: #14251f;
+/* The website background preference does not change card or dialog colours. */
+:global(html[data-background='dark']) .footer {
+  color: #edf5ef;
 }
 @media (max-width: 760px) {
   :global(body:not(:has([data-website-canvas]))) .page { padding: 1.2rem .85rem; }
