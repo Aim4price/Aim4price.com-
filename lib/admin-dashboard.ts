@@ -282,12 +282,13 @@ async function countAim4priceAssetRegisterItems(): Promise<PeriodCounts> {
   return countAssetRegisterItems("valuation_run_id is not null and lower(coalesce(selected_method, '')) <> 'manual'");
 }
 
-async function countAccountsByType(accountType?: 'owner' | 'dealer' | 'finance' | 'insurance'): Promise<MonthYearCounts> {
+export async function countAccountsByType(accountType?: 'owner' | 'dealer' | 'middleman' | 'business'): Promise<MonthYearCounts> {
   if (!(await tableExists('public."user"')) || !(await columnExists('user', 'createdAt'))) {
     return ZERO_MONTH_YEAR_COUNTS;
   }
 
   const hasProfiles = await tableExists('public.account_profiles');
+  const hasSubtype = hasProfiles && await columnExists('account_profiles', 'account_subtype');
   const typeFilter = accountType
     ? `and ${hasProfiles ? 'coalesce(account_type_group, \'owner\')' : '\'owner\''} = $2`
     : '';
@@ -300,6 +301,9 @@ async function countAccountsByType(accountType?: 'owner' | 'dealer' | 'finance' 
           u."createdAt" as created_at,
           ${hasProfiles ? `
             case
+              when lower(trim(coalesce(ap.account_type, ''))) in ('middleman', 'equipment-middleman', 'machinery-middleman') then 'middleman'
+              ${hasSubtype ? "when lower(trim(coalesce(ap.account_type, ''))) = 'dealer' and lower(trim(coalesce(ap.account_subtype, ''))) in ('middleman', 'equipment-middleman', 'machinery-middleman') then 'middleman'" : ''}
+              when lower(trim(coalesce(ap.account_type, ''))) = 'business' then 'business'
               when lower(trim(coalesce(ap.account_type, ''))) in ('dealer', 'auctioneer', 'auction-house') then 'dealer'
               when lower(trim(coalesce(ap.account_type, ''))) in ('finance', 'bank', 'finance-house', 'accountant') then 'finance'
               when lower(trim(coalesce(ap.account_type, ''))) in ('insurance', 'insurer', 'broker', 'short-term-insurer') then 'insurance'
@@ -616,8 +620,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     totalAccounts,
     ownerAccounts,
     dealerAccounts,
-    financeAccounts,
-    insurerAccounts,
+    businessAccounts,
+    middlemanAccounts,
     averageUserTimeValues,
     passwordResetClicks,
     optionMessages,
@@ -638,8 +642,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     countAccountsByType(),
     countAccountsByType('owner'),
     countAccountsByType('dealer'),
-    countAccountsByType('finance'),
-    countAccountsByType('insurance'),
+    countAccountsByType('business'),
+    countAccountsByType('middleman'),
     getAverageUserTimePerWeek(),
     countUsageEvents('password_reset_clicked'),
     countUsageEvents('message_sent_options'),
@@ -733,14 +737,14 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       values: monthYearValues(dealerAccounts),
     },
     {
-      id: 'finance-accounts-created',
-      title: 'Finance accounts created',
-      values: monthYearValues(financeAccounts),
+      id: 'business-accounts-created',
+      title: 'Business accounts created',
+      values: monthYearValues(businessAccounts),
     },
     {
-      id: 'insurer-accounts-created',
-      title: 'Insurer accounts created',
-      values: monthYearValues(insurerAccounts),
+      id: 'middleman-accounts-created',
+      title: 'Middleman accounts created',
+      values: monthYearValues(middlemanAccounts),
     },
     {
       id: 'average-user-time',

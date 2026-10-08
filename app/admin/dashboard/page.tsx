@@ -17,8 +17,8 @@ const CARD_TITLES: Record<string, string> = {
   "free-estimate-users": "Free-estimate users",
   "owner-accounts-created": "Owner accounts",
   "dealer-accounts-created": "Dealer accounts",
-  "finance-accounts-created": "Finance accounts",
-  "insurer-accounts-created": "Insurer accounts",
+  "business-accounts-created": "Business accounts",
+  "middleman-accounts-created": "Middleman accounts",
   "average-user-time": "Estimated weekly user time",
   "aim4price-assets-saved": "Aim4price assets",
   "marketplace-advertised": "Marketplace listings",
@@ -42,8 +42,8 @@ export default async function AdminDashboardPage() {
     "free-estimate-users",
     "owner-accounts-created",
     "dealer-accounts-created",
-    "finance-accounts-created",
-    "insurer-accounts-created",
+    "business-accounts-created",
+    "middleman-accounts-created",
     "average-user-time",
   ]);
   const productIds = new Set([
