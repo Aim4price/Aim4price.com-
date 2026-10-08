@@ -1,5 +1,5 @@
 'use client';
-import { useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from '../WebsitePortal';
 import ShareModalCloseButton from './ShareModalCloseButton';
 import styles from './ShareDisclosureDialog.module.css';
@@ -10,6 +10,10 @@ export default function ShareDisclosureDialog({ title, titleId, descriptionId, c
   onClose: () => void; children: ReactNode; className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  // Initially open enquiry gates also render on the server.
+  if (!mounted) return null;
   return createPortal(<dialog
     ref={node => { dialog.current = node; if (node && !node.open) node.showModal(); }}
     className={[styles.dialog, className].filter(Boolean).join(' ')} aria-labelledby={titleId} aria-describedby={descriptionId}
