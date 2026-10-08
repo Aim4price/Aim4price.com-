@@ -120,23 +120,25 @@ export default function ConnectionView({ account, connections, resource, proof, 
             </form>
           </section> : <ConnectionActions setup={setup} management={management} count={connections?.length} />}
         </section>
-        {!proof && <section className={styles.examples} aria-labelledby="examples-title">
-          <div className={styles.exampleHeading}>
-            <div><h2 id="examples-title">Turn your records into answers</h2><p>Start with a question about your connected Owner account.</p></div>
-            <span className={styles.readOnly}><Icon kind="shield" />Read-only access</span>
+        {!proof && <details className={styles.examples}>
+          <summary className={styles.exampleHeading}>
+            <span className={styles.exampleHeadingCopy}><span className={styles.exampleTitle}>Turn your records into answers</span><span>Explore questions about assets, budgets, fuel and maintenance.</span></span>
+            <span className={styles.exampleChevron} aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg></span>
+          </summary>
+          <div className={styles.examplesBody}>
+            <p className={styles.questionHint}>Once connected, copy a question into ChatGPT and select Aim4price in your conversation.</p>
+            <SharedInformation examples />
+            <details className={styles.disclosure}>
+              <summary>What information is shared?</summary>
+              <div className={styles.sharingDetails}>
+                <div><h3>Only your connected account</h3><p>ChatGPT can retrieve your account profile and the records described above. It cannot access another Owner’s account through this connection.</p></div>
+                <div><h3>You stay in control</h3><p>Access is read-only: your AI cannot add, change or delete records. Disconnect at any time using Manage above.</p></div>
+                <div><h3>Based on what you have saved</h3><p>Answers depend on your recorded information. Missing records may leave gaps. Photos and document attachments are not shared through this connection.</p></div>
+              </div>
+              <p className={styles.sharingNote}>Requested information is shared with your AI provider. Disconnecting stops future access; information already shared may remain in your conversations.</p>
+            </details>
           </div>
-          <p className={styles.questionHint}>Once connected, copy a question into ChatGPT and select Aim4price in your conversation.</p>
-          <SharedInformation examples />
-          <details className={styles.disclosure}>
-            <summary>What information is shared?</summary>
-            <div className={styles.sharingDetails}>
-              <div><h3>Only your connected account</h3><p>ChatGPT can retrieve your account profile and the records described above. It cannot access another Owner’s account through this connection.</p></div>
-              <div><h3>You stay in control</h3><p>Access is read-only: your AI cannot add, change or delete records. Disconnect at any time using Manage above.</p></div>
-              <div><h3>Based on what you have saved</h3><p>Answers depend on your recorded information. Missing records may leave gaps. Photos and document attachments are not shared through this connection.</p></div>
-            </div>
-            <p className={styles.sharingNote}>Requested information is shared with your AI provider. Disconnecting stops future access; information already shared may remain in your conversations.</p>
-          </details>
-        </section>}
+        </details>}
         <footer className={styles.footer}><span>You choose when to connect and disconnect.</span><nav aria-label="AI connection policies"><Link href="/terms-of-service">Terms of Service</Link><Link href="/privacy-policy">Privacy Policy</Link></nav></footer>
       </div>
     </main>

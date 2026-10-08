@@ -17,20 +17,71 @@ export default function ConnectionActions({ setup, management, count }: {
   const manageButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (flow) panel.current?.focus({ preventScroll: true });
+    if (!flow) return;
+    const trigger = flow === 'connect' ? connectButton.current : manageButton.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panel.current?.querySelector<HTMLButtonElement>('[data-dialog-close]')?.focus();
+
+    function focusable() {
+      return Array.from(panel.current?.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex="0"]'
+      ) || []).filter(element => {
+        if (!element.getClientRects().length || element.tabIndex < 0) return false;
+        // Closed details can still report rectangles for their hidden controls.
+        let ancestor: HTMLElement | null = element.parentElement;
+        while (ancestor && ancestor !== panel.current) {
+          if (ancestor instanceof HTMLDetailsElement && !ancestor.open) {
+            const summary = ancestor.querySelector(':scope > summary');
+            if (!summary?.contains(element)) return false;
+          }
+          ancestor = ancestor.parentElement;
+        }
+        return true;
+      });
+    }
+    function keyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        event.stopPropagation();
+        setFlow(null);
+      } else if (event.key === 'Tab') {
+        const elements = focusable();
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    }
+    function keepFocus(event: FocusEvent) {
+      if (panel.current && !panel.current.contains(event.target as Node)) {
+        focusable()[0]?.focus();
+      }
+    }
+    document.addEventListener('keydown', keyDown);
+    document.addEventListener('focusin', keepFocus);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', keyDown);
+      document.removeEventListener('focusin', keepFocus);
+      trigger?.focus({ preventScroll: true });
+    };
   }, [flow]);
 
   function close() {
-    const trigger = flow === 'connect' ? connectButton : manageButton;
     setFlow(null);
-    trigger.current?.focus();
   }
 
   return <>
     <div className={accessStyles.actionGrid} aria-label="AI connection actions">
       <button ref={connectButton} type="button"
         className={`${accessStyles.actionButton} ${accessStyles.actionButtonNew} ${styles.actionButton}`}
-        aria-expanded={flow === 'connect'} aria-controls="ai-connect-panel"
+        aria-haspopup="dialog" aria-expanded={flow === 'connect'} aria-controls={flow === 'connect' ? "ai-connect-panel" : undefined}
         onClick={() => flow === 'connect' ? close() : setFlow('connect')}>
         <span className={accessStyles.actionIcon} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -39,7 +90,7 @@ export default function ConnectionActions({ setup, management, count }: {
       </button>
       <button ref={manageButton} type="button"
         className={`${accessStyles.actionButton} ${accessStyles.actionButtonManage} ${styles.actionButton}`}
-        aria-expanded={flow === 'manage'} aria-controls="ai-manage-panel"
+        aria-haspopup="dialog" aria-expanded={flow === 'manage'} aria-controls={flow === 'manage' ? "ai-manage-panel" : undefined}
         onClick={() => flow === 'manage' ? close() : setFlow('manage')}>
         <span className={accessStyles.actionIcon} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6l-8-3Zm-4 9 3 3 5-6" /></svg>
@@ -48,16 +99,22 @@ export default function ConnectionActions({ setup, management, count }: {
         {count !== undefined && <span className={accessStyles.actionMeta}><span className={accessStyles.countPill} aria-label={`${count} active connections`}>{count}</span></span>}
       </button>
     </div>
-    {(['connect', 'manage'] as const).map(kind => <section key={kind}
-      id={`ai-${kind}-panel`} hidden={flow !== kind} ref={flow === kind ? panel : undefined}
-      className={styles.flowPanel} tabIndex={-1} aria-labelledby={`ai-${kind}-title`}
-      onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
-      <div className={styles.sectionHeading}>
-        <h2 id={`ai-${kind}-title`}>{kind === 'connect' ? 'Connect ChatGPT' : 'Your connections'}</h2>
-        <button type="button" className={styles.closeButton} onClick={close} aria-label={`Close ${kind === 'connect' ? 'connection setup' : 'your connections'}`}>Close <span aria-hidden="true">×</span></button>
-      </div>
-      {kind === 'connect' ? setup : management}
-    </section>)}
+    {flow && <div className={accessStyles.modalOverlay} data-website-overlay>
+      <button type="button" className={accessStyles.modalBackdrop} tabIndex={-1} aria-label="Close AI connection dialog" onClick={close} />
+      <section ref={panel} id={`ai-${flow}-panel`}
+        className={`${accessStyles.modal} ${accessStyles.notificationStyle}`}
+        role="dialog" aria-modal="true" aria-labelledby={`ai-${flow}-title`}
+        aria-describedby={`ai-${flow}-description`}>
+        <header className={accessStyles.modalHeader}>
+          <h2 id={`ai-${flow}-title`}>{flow === 'connect' ? 'Connect ChatGPT' : 'Your connections'}</h2>
+          <p id={`ai-${flow}-description`}>{flow === 'connect' ? 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
+          <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`}>×</button>
+        </header>
+        <div className={`${accessStyles.modalBody} ${styles.flowPanel}`}>
+          {flow === 'connect' ? setup : management}
+        </div>
+      </section>
+    </div>}
   </>;
 }
 
