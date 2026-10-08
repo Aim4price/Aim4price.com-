@@ -1,4 +1,5 @@
 'use client';
+import { createAssetShareCards } from '../../lib/asset-share-cards';
 import ShareDisclaimer from './ShareDisclaimer';
 import ShareDisclosureDialog from './ShareDisclosureDialog';
 import disclosureStyles from './ShareDisclosureDialog.module.css';
@@ -157,8 +158,9 @@ function credentialsForUrl(url: string): RequestCredentials {
   }
 }
 
-function attachmentSummary(photoCount: number, reportCount: number): string {
+function attachmentSummary(photoCount: number, reportCount: number, cardCount = 0): string {
   const parts = [
+    cardCount ? `${cardCount} asset ${cardCount === 1 ? 'card' : 'cards'}` : '',
     photoCount ? `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : '',
     reportCount ? `${reportCount} Aim4price ${reportCount === 1 ? 'report' : 'reports'}` : '',
   ].filter(Boolean);
@@ -219,6 +221,10 @@ export default function AssetExternalShare({
   onRemoveAim4priceReport: (reportId: string) => void;
 }) {
   const [includePhotos, setIncludePhotos] = useState(false);
+  const [includeOriginals, setIncludeOriginals] = useState(false);
+  const [editedMessage, setEditedMessage] = useState<{scope:string;body:string}|null>(null);
+  const messageScope = JSON.stringify([shareName, assets, messageBody]);
+  const [preparedSignature, setPreparedSignature] = useState('');
   const [preparationAttempt, setPreparationAttempt] = useState(0);
   const [sendingTarget, setSendingTarget] = useState<ShareTarget | null>(null);
   const [shareStatus, setShareStatus] = useState('');
@@ -238,7 +244,7 @@ export default function AssetExternalShare({
         kind: 'photo',
         label: `${asset.title} photo ${photoIndex + 1}`,
         description: 'Saved asset photo',
-        fileName: `${slugFileName(asset.title)}-photo-${photoIndex + 1}.${extension}`,
+        fileName: `asset-${assetIndex + 1}-${slugFileName(asset.title)}-${slugFileName(asset.serialNumber || "no-serial")}-photo-${photoIndex + 1}.${extension}`,
         contentType: photoContentType(extension),
         credentials: credentialsForUrl(preparedUrl),
         url: preparedUrl,
@@ -251,10 +257,8 @@ export default function AssetExternalShare({
     () => [...(includePhotos ? photoFiles : []), ...reportFiles],
     [includePhotos, photoFiles, reportFiles],
   );
-  const selectedSourceSignature = selectedSources
-    .map((source) => `${source.id}:${source.url}:${source.fileName}`)
-    .join('|');
-  const copy = useMemo(
+  const selectedSourceSignature = JSON.stringify([selectedSources, includePhotos, includeOriginals, assets]);
+  const defaultCopy = useMemo(
     () => {
       const generated = buildExternalAssetShareCopy(shareName, assets, {
         attachedPhotoCount: selectedPhotoCount,
@@ -264,16 +268,18 @@ export default function AssetExternalShare({
     },
     [assets, reportFiles.length, selectedPhotoCount, shareName, messageBody],
   );
+  const copy = { ...defaultCopy, body: editedMessage?.scope === messageScope ? editedMessage.body : defaultCopy.body };
+  const cardCount = includePhotos ? assets.reduce((total, asset) => total + Math.max(1, Math.ceil(asset.photoUrls.length / 4)), 0) : 0;
   const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
   const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
-  const selectedAttachmentCount = selectedSources.length;
-  const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient, messageBody]);
+  const selectedAttachmentCount = cardCount + (includePhotos && includeOriginals ? savedPhotoCount : 0) + reportFiles.length;
+  const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient, copy.body]);
   const [acceptedKey, setAcceptedKey] = useState('');
   const [pendingShare, setPendingShare] = useState<{target: ShareTarget; key: string} | null>(null);
   const disclosureId = useId();
   const shareTrigger = useRef<HTMLButtonElement | null>(null);
   const accepted = acceptedKey === consentKey;
-  const isPreparing = preparation.status === 'preparing';
+  const isPreparing = preparation.status === 'preparing' || (selectedAttachmentCount > 0 && preparedSignature !== selectedSourceSignature);
   const isSending = sendingTarget !== null;
 
   useEffect(() => {
@@ -286,10 +292,25 @@ export default function AssetExternalShare({
       };
     }
 
+    setPreparedSignature(selectedSourceSignature);
     setPreparation({ status: 'preparing', files: [], error: '' });
 
     void prepareExternalShareFiles(selectedSources, attachmentFileCache)
-      .then((files) => {
+      .then(async (sourceFiles) => {
+        if (cancelled) return;
+        const files: File[] = [];
+        if (includePhotos) {
+          let offset = 0;
+          for (let index = 0; index < assets.length; index++) {
+            if (cancelled) return;
+            const asset = assets[index];
+            const originals = sourceFiles.slice(offset, offset + asset.photoUrls.length);
+            files.push(...await createAssetShareCards(asset, originals, index));
+            if (includeOriginals) files.push(...originals);
+            offset += asset.photoUrls.length;
+          }
+          files.push(...sourceFiles.slice(offset));
+        } else files.push(...sourceFiles);
         if (cancelled) return;
         const oversized = files.find((file) => file.size > MAX_SHARE_FILE_BYTES);
         if (oversized) {
@@ -360,7 +381,7 @@ export default function AssetExternalShare({
       return;
     }
 
-    if (preparation.status !== 'ready' || preparation.files.length !== selectedAttachmentCount) {
+    if (preparedSignature !== selectedSourceSignature || preparation.status !== 'ready' || preparation.files.length !== selectedAttachmentCount) {
       setShareStatus('Please wait while the attachments finish preparing.');
       return;
     }
@@ -407,7 +428,7 @@ export default function AssetExternalShare({
     ? 'Preparing attachments…'
     : preparation.status === 'error'
       ? preparation.error
-      : attachmentSummary(selectedPhotoCount, reportFiles.length);
+      : attachmentSummary(includePhotos && includeOriginals ? selectedPhotoCount : 0, reportFiles.length, cardCount);
 
   return (
     <section className={styles.externalPanel} aria-label="Share outside Aim4price">
@@ -420,9 +441,10 @@ export default function AssetExternalShare({
       <div className={styles.shareLayout}>
         <article className={styles.messageCard}>
           <div className={styles.sectionHeader}>
-            <span>Message</span>
+            <label htmlFor={`${disclosureId}-message`}>Message</label>
+            <button type="button" onClick={() => setEditedMessage(null)} disabled={isSending}>Reset message</button>
           </div>
-          <pre className={styles.messagePreview} tabIndex={0} aria-label="External asset details message preview">{copy.body}</pre>
+          <textarea id={`${disclosureId}-message`} className={styles.messagePreview} aria-label="External asset details message" value={copy.body} onChange={event => { setEditedMessage({scope:messageScope,body:event.target.value}); setShareStatus(''); }} disabled={isSending} rows={14}/>
         </article>
 
         <aside className={styles.attachmentsCard} aria-labelledby="optional-attachments-title">
@@ -438,10 +460,12 @@ export default function AssetExternalShare({
             <span className={styles.attachmentIcon}><PhotosIcon /></span>
             <span className={styles.attachmentCopy}>
               <strong>Include photos</strong>
-              <small>{savedPhotoCount ? `${savedPhotoCount} available` : 'No saved photos'}</small>
+              <small>{savedPhotoCount ? `${savedPhotoCount} photos · grouped with each asset’s details` : 'No saved photos'}</small>
             </span>
             <span className={styles.toggleControl} aria-hidden="true"><span><CheckIcon /></span></span>
           </label>
+
+          {includePhotos && <label className={styles.originalPhotos}><input type="checkbox" checked={includeOriginals} onChange={event => setIncludeOriginals(event.target.checked)}/>Also attach original photos</label>}
 
           <button type="button" className={styles.addReportButton} onClick={onAddAim4priceReport}>
             <span className={styles.attachmentIcon}><ReportsIcon /></span>
@@ -489,7 +513,7 @@ export default function AssetExternalShare({
       </footer>
       {pendingShare && <ShareDisclosureDialog title={`Share via ${pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}`} titleId={disclosureId} closeLabel="Close sharing disclosure" onClose={closeDisclosure}>
         <p className={disclosureStyles.description}>Share {assets.length === 1 ? 'this asset' : `${assets.length} assets`} via {pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}.</p>
-        <p className={disclosureStyles.hint}>{attachmentSummary(selectedPhotoCount, reportFiles.length)}. {recipient ? `Recipient: ${recipient.name}.` : 'Choose the recipient in your sharing app.'}</p>
+        <p className={disclosureStyles.hint}>{attachmentSummary(includePhotos && includeOriginals ? selectedPhotoCount : 0, reportFiles.length, cardCount)}. {recipient ? `Recipient: ${recipient.name}.` : 'Choose the recipient in your sharing app.'}</p>
         <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? pendingShare.key : '')} />
         {pendingShare.key !== consentKey && <p role="alert">Your selection changed. Close this dialog and check the details before sharing.</p>}
         <div className={disclosureStyles.actions}>

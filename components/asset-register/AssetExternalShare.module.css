@@ -913,3 +913,9 @@
   font-size: 0.78rem;
   line-height: 1.45;
 }
+
+textarea.messagePreview { display:block; width:100%; box-sizing:border-box; resize:vertical; font-family:inherit; color:inherit; }
+textarea.messagePreview:focus { outline:2px solid #168461; outline-offset:2px; }
+.sectionHeader button { margin-left:auto; border:0; background:transparent; color:var(--app-accent,#197454); font:inherit; font-size:.8rem; cursor:pointer; }
+.originalPhotos { display:flex; align-items:center; gap:.65rem; margin:.75rem 0; color:var(--app-text,#29483d); font-size:.85rem; }
+.originalPhotos input { accent-color:#087f5b; }
