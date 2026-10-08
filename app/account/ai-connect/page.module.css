@@ -49,15 +49,14 @@
   border-color: var(--app-accent, #208460);
   box-shadow: 0 0 0 2px var(--app-accent, #208460);
 }
-.flowPanel, .approval {
+.approval {
   min-width: 0;
   border: 1px solid var(--app-line, #dce7e2);
   border-radius: 1.25rem;
   background: var(--app-surface, #fff);
   padding: 1.5rem;
 }
-.flowPanel[hidden] { display: none; }
-.flowPanel:focus { outline: none; }
+.flowPanel { min-width: 0; }
 .sectionHeading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .description { margin: .8rem 0 0; color: var(--app-muted, #60746d); }
 .note { font-size: .9rem; line-height: 1.65; color: var(--app-muted, #60746d); margin: 1.15rem 0 0; }
@@ -94,8 +93,6 @@
 }
 .flowPanel button:disabled { opacity: .65; cursor: wait; }
 .flowPanel button:hover:not(:disabled), .approval button:hover, .back:hover { border-color: var(--app-accent, #208460); }
-.flowPanel .closeButton { display: inline-flex; align-items: center; gap: .8rem; padding: .45rem .8rem; }
-.closeButton span { font-size: 1.4rem; line-height: 1; }
 .shell :is(button, a, input, summary):focus-visible { outline: 3px solid var(--app-info, #4b8edf); outline-offset: 4px; }
 .accountLine { display: grid; gap: .2rem; margin: 1.25rem 0; overflow-wrap: anywhere; }
 .accountLine span { color: var(--app-muted, #60746d); font-size: .95rem; }
@@ -107,7 +104,7 @@
 .active { border-radius: 2rem; padding: .4rem .8rem; background: var(--app-surface-soft, #e5f4eb); font-size: .9rem; font-weight: 700; }
 .empty { padding: 1.3rem 0 .3rem; }
 .empty p { margin: .5rem 0 1rem; color: var(--app-muted, #60746d); }
-.examples { border: 1px solid var(--app-line, #dce7e2); border-radius: 1.5rem; padding: 1.5rem; margin-top: 1.35rem; background: var(--app-surface, #fff); }
+.examples { border: 1px solid var(--app-line, #dce7e2); border-radius: 1.5rem; padding: 0; margin-top: 1.35rem; background: var(--app-surface, #fff); overflow: hidden; }
 .permissions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-top: 1.3rem; }
 .permission { min-width: 0; padding: 1.05rem; border-radius: 1rem; border: 1px solid var(--app-line, #dce7e2); background: var(--app-surface-soft, #f6faf8); }
 .permissionIcon { background: var(--app-surface, #fff); }
@@ -152,16 +149,21 @@
 @media (max-width: 760px) {
   :global(body:not(:has([data-website-canvas]))) .page { padding: 1.2rem .85rem; }
   :global(body:not(:has([data-website-canvas]))) .permissions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  :global(body:not(:has([data-website-canvas]))) .flowPanel,
-  :global(body:not(:has([data-website-canvas]))) .approval,
-  :global(body:not(:has([data-website-canvas]))) .examples { padding: 1.1rem; }
+  :global(body:not(:has([data-website-canvas]))) .approval { padding: 1.1rem; }
 }
 
 /* Question examples and sharing details */
-.exampleHeading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; }
-.exampleHeading p { margin: .55rem 0 0; color: var(--app-muted, #60746d); }
-.readOnly { display: inline-flex; align-items: center; gap: .5rem; padding: .45rem .8rem; border-radius: 2rem; background: var(--app-surface-soft, #edf8f2); font-size: .9rem; font-weight: 700; white-space: nowrap; }
-.readOnly svg { width: 18px; height: 18px; }
+.exampleHeading { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; padding: 1.5rem; cursor: pointer; list-style: none; background: linear-gradient(120deg, var(--app-surface-soft, #edf8f2), var(--app-surface, #fff)); }
+.exampleHeading::-webkit-details-marker { display: none; }
+.exampleHeading:hover { background: var(--app-surface-soft, #edf8f2); }
+.exampleHeadingCopy { display: grid; gap: .5rem; min-width: 0; }
+.exampleHeadingCopy > span:last-child { color: var(--app-muted, #60746d); font-size: .95rem; }
+.exampleTitle { font-size: 1.4rem; line-height: 1.25; font-weight: 850; letter-spacing: -.035em; }
+.exampleChevron { display: grid; place-items: center; flex-shrink: 0; width: 2.75rem; height: 2.75rem; border: 1px solid var(--app-line, #dce7e2); border-radius: .85rem; background: var(--app-surface, #fff); color: var(--app-text, #123e31); }
+.examples[open] > .exampleHeading .exampleChevron svg { transform: rotate(180deg); }
+.examples[open] > .exampleHeading { border-bottom: 1px solid var(--app-line, #dce7e2); }
+.examples > .exampleHeading:focus-visible { outline-offset: -4px; }
+.examplesBody { padding: 0 1.5rem 1.5rem; }
 .questionHint { margin: 1.3rem 0 0; font-size: .95rem; color: var(--app-muted, #60746d); }
 .questionGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
 .questionCard { display: flex; flex-direction: column; min-width: 0; padding: 1.35rem; border: 1px solid var(--app-line, #dce7e2); border-radius: 1.15rem; background: var(--app-surface-soft, #f6faf8); }
