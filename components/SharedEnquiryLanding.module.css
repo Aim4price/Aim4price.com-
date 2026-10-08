@@ -1,10 +1,10 @@
 /* The global Aim4price photo background remains visible at every canvas zoom. */
 .page { background:transparent; color:var(--app-text,#123b2e); }
 .openButton { font:inherit; cursor:pointer; box-sizing:border-box; }
-.dialog.dialog { width:min(64rem,calc(var(--website-design-vw,1vw) * 100 - 3rem)); padding:2.5rem; border-radius:1.25rem; }
+.dialog.dialog { width:min(72rem,calc(var(--website-design-vw,1vw) * 100 - 3rem)); padding:clamp(1.25rem,3vw,3rem); border-radius:1.75rem; }
 
 .dialog > header { border-bottom:0; padding-bottom:0; align-items:center; gap:1.5rem; }
-.dialog > header h2 { font-size:1.55rem; line-height:1.3; }
+.dialog > header h2 { font-size:clamp(1.6rem,2.4vw,2.25rem); line-height:1.3; }
 .signInBody { display:grid; gap:1.5rem; padding-top:1rem; }
 .signInBody > p { text-align:center; margin:0; color:var(--app-muted,#657b72); font-size:.95rem; line-height:1.55; max-width:none; }
 .signInButton.signInButton { width:100%; box-sizing:border-box; min-height:3.25rem; text-align:center; }
@@ -17,21 +17,42 @@
 .accessActions > a:focus-visible, .accessActions > button:focus-visible { outline:3px solid #74ac92; outline-offset:3px; }
 .dialog > header button { flex-shrink:0; align-self:flex-start; }
 
-.dialog > header h2 { white-space:nowrap; }
-.accessActions > a,.accessActions > button { white-space:nowrap; }
+.dialog > header h2 { white-space:normal; }
+.accessActions > a,.accessActions > button { white-space:normal; }
 .accessActions > div { margin:0; width:100%; }
 .accessActions > div > button { width:100%; min-height:2.75rem; border-color:transparent; background:transparent; box-shadow:none; white-space:nowrap; }
 
-.accountChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
-.accountChoice { display:flex; flex-direction:column; align-items:center; text-align:center; gap:1.5rem; min-width:0; padding:1.75rem; border:1px solid var(--app-line,#cfe2d9); border-radius:1rem; background:var(--app-surface-soft,#f5faf7); }
-.choiceIcon { display:grid; place-items:center; width:5rem; height:5rem; flex-shrink:0; border-radius:1.2rem; background:var(--app-surface,#fff); color:var(--app-accent,#197454); border:1px solid var(--app-line,#dce5e1); }
-.choiceIcon svg { width:3rem; height:3rem; }
-.newAccount { background:var(--app-info-soft,#f5f8fc); border-color:var(--app-info-line,#d7e3ee); }
-.newAccount .choiceIcon { color:var(--app-info,#345b81); border-color:var(--app-info-line,#d7e3ee); }
-.accountChoice .signInButton { display:flex; align-items:center; justify-content:center; gap:.75rem; margin-top:auto; white-space:nowrap; font-weight:800; }
-.accountChoice .signInButton svg { width:1.1rem; height:1.1rem; flex-shrink:0; }
-.signInBody > .returnHint { text-align:center; font-size:.8rem; padding-top:.15rem; }
+
+.accountChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.5rem; }
+.accountChoice {
+ display:flex; flex-direction:column; align-items:center; text-align:center;
+ gap:1.5rem; min-width:0; padding:2rem;
+ border:2px solid #b5dace; border-radius:1.4rem;
+ background:#f0faf5; color:#123e31; text-decoration:none;
+ box-shadow:0 8px 24px rgba(18,62,49,.06);
+ transition:transform 160ms ease,box-shadow 160ms ease,border-color 160ms ease;
+}
+.accountChoice:hover { transform:translateY(-3px); border-color:#168461; box-shadow:0 14px 30px rgba(18,62,49,.13); }
+.choiceIcon { display:grid; place-items:center; width:6.5rem; height:6.5rem; flex-shrink:0; border-radius:1.5rem; background:#fff; color:#087f5b; border:1px solid #c5e2d6; }
+.choiceIcon svg { width:4rem; height:4rem; }
+.choiceCopy { display:grid; gap:.55rem; }
+.choiceCopy strong { font-size:clamp(1.5rem,2vw,2rem); font-weight:800; line-height:1.2; letter-spacing:-.025em; }
+.choiceCopy small { font-size:1rem; line-height:1.5; color:#4d685e; }
+.newAccount { background:#eff6ff; border-color:#c0d6ef; }
+.newAccount:hover { border-color:#3878ba; box-shadow:0 14px 30px rgba(36,89,146,.13); }
+.newAccount .choiceIcon { color:#245d98; border-color:#cedff2; }
+.accountChoice .signInButton { display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:auto; min-height:4rem; padding:1rem; border-radius:1rem; background:#087f5b; color:#fff; font-size:1.1rem; font-weight:800; line-height:1.4; }
+.newAccount .signInButton { background:#245d98; }
+.accountChoice .signInButton svg { width:1.5rem; height:1.5rem; flex-shrink:0; }
+.signInBody > .returnHint { text-align:center; font-size:.9rem; padding-top:.15rem; }
+@media (prefers-reduced-motion:reduce) { .accountChoice { transition:none; } .accountChoice:hover { transform:none; } }
 @media (max-width: 720px) {
- :global(:where(html:not(:has([data-website-canvas])))) .accountChoices { grid-template-columns:1fr; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountChoices { grid-template-columns:1fr; gap:1rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .accountChoice { display:grid; grid-template-columns:4rem minmax(0,1fr); gap:1rem; padding:1.25rem; text-align:left; }
+ :global(:where(html:not(:has([data-website-canvas])))) .choiceIcon { width:4rem; height:4rem; border-radius:1rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .choiceIcon svg { width:2.5rem; height:2.5rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .choiceCopy strong { font-size:1.35rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .choiceCopy small { font-size:.9rem; }
+ :global(:where(html:not(:has([data-website-canvas])))) .signInButton { grid-column:1 / -1; min-height:3.5rem; }
  :global(:where(html:not(:has([data-website-canvas])))) .dialog > header h2 { white-space:normal; }
 }
