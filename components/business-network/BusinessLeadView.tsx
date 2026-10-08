@@ -1,15 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { BusinessLeadView as View } from "../../lib/business-network-shared";
+import SharedAssetExport from "../leads/SharedAssetExport";
 import styles from "./BusinessNetwork.module.css";
 function RequestPhoto({
   token,
   asset,
   photo,
+  onReady,
 }: {
   token: string;
   asset: number;
   photo: number;
+  onReady: (asset: number, photo: number, url: string) => void;
 }) {
   const [url, setUrl] = useState("");
   const [failed, setFailed] = useState(false);
@@ -24,10 +27,10 @@ function RequestPhoto({
         if (!r.ok) throw new Error();
         if (r.headers.get("content-type")?.includes("application/json")) {
           const data = await r.json();
-          if (live) setUrl(data.url);
+          if (live) { setUrl(data.url); onReady(asset, photo, data.url); }
         } else {
           objectUrl = URL.createObjectURL(await r.blob());
-          if (live) setUrl(objectUrl);
+          if (live) { setUrl(objectUrl); onReady(asset, photo, objectUrl); }
           else URL.revokeObjectURL(objectUrl);
         }
       })
@@ -38,7 +41,7 @@ function RequestPhoto({
       live = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [token, asset, photo]);
+  }, [token, asset, photo, onReady]);
   if (failed) return <span>Photo unavailable</span>;
   return url ? (
     <img
@@ -58,6 +61,11 @@ export default function BusinessLeadView({
   view: View;
   token?: string;
 }) {
+  const [loadedPhotos, setLoadedPhotos] = useState<Record<string, string>>({});
+  const photoReady = useCallback((asset: number, photo: number, url: string) => {
+    setLoadedPhotos(current => ({ ...current, [`${token || "preview"}:${asset}:${photo}`]: url }));
+  }, [token]);
+  useEffect(() => setLoadedPhotos({}), [token]);
   return (
     <div className={styles.panel}>
       <h2>{view.umbrella || "Asset enquiry"}</h2>
@@ -88,10 +96,11 @@ export default function BusinessLeadView({
               </div>
             ))}
           </dl>
+          <SharedAssetExport title={asset.title} details={asset.details.map(([label,value]) => `${label}: ${value}`).join('\n')} photos={token ? asset.photos.map((_,j) => loadedPhotos[`${token}:${i}:${j}`]).filter(Boolean) : asset.photos}/>
           <div className={styles.photos}>
             {asset.photos.map((photo, j) =>
               token ? (
-                <RequestPhoto key={j} token={token} asset={i} photo={j} />
+                <RequestPhoto key={`${token}:${i}:${j}`} token={token} asset={i} photo={j} onReady={photoReady} />
               ) : (
                 <img key={j} src={photo} alt="Shared asset" />
               ),

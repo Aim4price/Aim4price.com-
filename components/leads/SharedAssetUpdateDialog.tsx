@@ -1,4 +1,5 @@
 'use client';
+import SharedAssetExport from './SharedAssetExport';
 import {useEffect,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {useLeadDialog} from './useLeadDialog';
@@ -88,6 +89,7 @@ export default function SharedAssetUpdateDialog({endpoint,assetTitle,onClose,onS
       {permissions.addDocuments&&<div className={styles.field}><span>Other documents</span><div className={`${styles.documentUploadPanel} ${local.uploadPanel}`}><div className={styles.uploadRow}><button className={`${styles.secondaryButton} ${styles.filePickerButton}`} onClick={()=>setUpload(true)}>Add documents</button><span className={styles.uploadCount}>{documents.length}</span></div></div></div>}
       {permissions.addPhotos&&<div className={styles.field}><span>Photos</span><div className={`${styles.uploadPanel} ${local.uploadPanel}`}><div className={styles.uploadRow}><button className={`${styles.secondaryButton} ${styles.filePickerButton}`} disabled={busy} onClick={()=>photoInput.current?.click()}>Add photos</button><span className={styles.uploadCount}>{asset.photos?.length||0} / 12</span><input ref={photoInput} type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={e=>void addPhotos(e.target.files)}/></div></div></div>}
      </div>
+     {(documents.length > 0 || !!asset.photos?.length) && <SharedAssetExport title={title} photos={asset.photos || []} attachments={documents.map(d => ({name:d.title || d.fileName, url:endpoint+'/documents?id='+encodeURIComponent(d.id)}))}/>}
      {!!documents.length&&<div className={local.documents}>{documents.map(d=><a key={d.id} href={endpoint+'/documents?id='+encodeURIComponent(d.id)} target="_blank" rel="noreferrer">{d.title||d.fileName}</a>)}</div>}
      {!!asset.photos?.length&&<div className={local.photos}>{asset.photos.map((src,i)=><img key={src+i} src={src} alt={`${title} — photo ${i+1}`}/>)}</div>}
     </>:<form className={`${styles.modalForm} ${styles.manualAssetForm} ${styles.manualStepForm}`} onSubmit={e=>e.preventDefault()}>

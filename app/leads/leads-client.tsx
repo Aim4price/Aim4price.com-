@@ -14,6 +14,7 @@ import LeadCardSummary from '../../components/leads/LeadCardSummary';
 import LeadManageButton from '../../components/leads/LeadManageButton';
 import SharedCardValue from '../../components/leads/SharedCardValue';
 import SharedAssetFacts from '../../components/leads/SharedAssetFacts';
+import SharedAssetExport from '../../components/leads/SharedAssetExport';
 import LeadAssetCard from '../../components/leads/LeadAssetCard';
 import { useOutsideCardDismiss } from '../../components/leads/useOutsideCardDismiss';
 import LeadAssetDetails from '../../components/leads/LeadAssetDetails';
@@ -3172,6 +3173,8 @@ export default function LeadsClient({
           </div>
         </header>
 
+        <SharedAssetExport title={snapshotTitle(asset)} photos={photos} details={`Serial / VIN: ${serialNumber || 'Not recorded'}\nYear: ${asset.yearModel || 'Not recorded'}\nUsage: ${snapshotUsageValue(asset)}\nCondition: ${conditionLabel(asset.condition)}`} attachments={documents.map((document, index) => ({url:normalizeLeadPhotoUrl(document.url ?? document.href),name:asText(document.fileName) || asText(document.name) || `Document ${index + 1}`})).filter(document => !!document.url)}/>
+
         <div className={styles.fullRegisterAssetBody}>
           <div className={`${assetStyles.previewWrap} ${styles.leadPreviewWrap} ${styles.fullRegisterAssetPreview}`}>
             <div className={`${assetStyles.previewStage} ${styles.leadPreviewStage}`}>
@@ -3743,7 +3746,8 @@ export default function LeadsClient({
                               <SharedCardValue onOpen={lead.maintenanceAccess?.isActive&&lead.maintenanceAccess.permissions.canSuggestCurrentValue?()=>setValueLead(lead):undefined} value={assetValue(lead)} included={!!vatIncluded[lead.id]} onToggle={()=>setVatIncluded(current=>({...current,[lead.id]:!current[lead.id]}))}/>
                             )}
 
-                            <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>
+                            <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions} ${styles.exportHeaderActions}`}>
+                              <SharedAssetExport title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} details={`${leadAssetMeta(lead)}\nSerial / VIN: ${asText(lead.assetSnapshot.serialNumber) || 'Not recorded'}`}/>
                               <button
                                 type="button"
                                 className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}

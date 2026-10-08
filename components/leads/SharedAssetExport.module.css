@@ -1,0 +1,23 @@
+.trigger,.primary,.secondary { display:inline-flex; align-items:center; justify-content:center; gap:.55rem; min-height:3rem; padding:.7rem 1.15rem; border:1px solid #d69c68; border-radius:1rem; background:linear-gradient(#fffaf5,#fff0e2); color:#80400e; font:inherit; font-weight:750; cursor:pointer; }
+.trigger { white-space:nowrap; }
+.trigger svg { width:1.15rem; height:1.15rem; flex:none; }
+.trigger:hover { background:#ffe9d4; }
+.trigger:focus-visible,.primary:focus-visible,.secondary:focus-visible,.selection button:focus-visible { outline:3px solid #168a65; outline-offset:3px; }
+.dialog { width:min(64rem,calc(var(--website-design-vw,1vw) * 100 - 3rem))!important; }
+.intro,.hint { margin:0 0 1rem; line-height:1.6; color:var(--app-muted,#60766b); }
+.hint { margin:1rem 0 0; font-size:.85rem; }
+.selection { display:flex; flex-wrap:wrap; align-items:center; gap:.75rem; margin-bottom:1rem; }
+.selection button { border:1px solid var(--app-line,#d6e5df); border-radius:.65rem; background:var(--app-surface,#fff); color:var(--app-text,#204c3b); padding:.5rem .8rem; font:inherit; cursor:pointer; }
+.selection span { margin-left:auto; color:var(--app-muted,#60766b); }
+.items { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; }
+.item { display:flex; align-items:center; gap:.65rem; padding:.85rem; border:1px solid var(--app-line,#ccdfd6); border-radius:.9rem; background:var(--app-surface,#fff); cursor:pointer; min-width:0; }
+.item:has(input:checked) { background:var(--app-surface-soft,#eef8f2); border-color:#249c72; }
+.item input { width:1.1rem; height:1.1rem; flex:none; accent-color:#087f5b; }
+.item img { width:3.5rem; height:3.5rem; border-radius:.5rem; object-fit:cover; }
+.item span { display:grid; gap:.3rem; min-width:0; overflow-wrap:anywhere; color:var(--app-text,#204c3b); }
+.item small { color:var(--app-muted,#60766b); }
+.primary { background:#087f5b; border-color:#087f5b; color:#fff; }
+.secondary { background:var(--app-surface,#fff); border-color:var(--app-line,#ccdfd6); color:var(--app-text,#204c3b); }
+.primary:disabled,.secondary:disabled { opacity:.55; cursor:default; }
+.notice { padding:1rem; border-radius:.8rem; background:var(--app-surface-soft,#eff6f2); color:var(--app-text,#204c3b); line-height:1.5; }
+@media(max-width:640px) { :global(body:not(:has([data-website-canvas]))) .items { grid-template-columns:1fr; } }
