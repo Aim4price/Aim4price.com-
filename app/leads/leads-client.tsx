@@ -3173,7 +3173,7 @@ export default function LeadsClient({
           </div>
         </header>
 
-        <SharedAssetExport title={snapshotTitle(asset)} photos={photos} details={`Serial / VIN: ${serialNumber || 'Not recorded'}\nYear: ${asset.yearModel || 'Not recorded'}\nUsage: ${snapshotUsageValue(asset)}\nCondition: ${conditionLabel(asset.condition)}`} attachments={documents.map((document, index) => ({url:normalizeLeadPhotoUrl(document.url ?? document.href),name:asText(document.fileName) || asText(document.name) || `Document ${index + 1}`})).filter(document => !!document.url)}/>
+        <SharedAssetExport title={snapshotTitle(asset)} photos={photos} asset={{serialNumber,yearModel:asNumber(asset.yearModel),usage:snapshotUsageValue(asset),condition:conditionLabel(asset.condition),valueExVat:snapshotAssetValue(asset),replacementPriceExVat:replacementPrice}} attachments={documents.map((document, index) => ({url:normalizeLeadPhotoUrl(document.url ?? document.href),name:asText(document.fileName) || asText(document.name) || `Document ${index + 1}`})).filter(document => !!document.url)}/>
 
         <div className={styles.fullRegisterAssetBody}>
           <div className={`${assetStyles.previewWrap} ${styles.leadPreviewWrap} ${styles.fullRegisterAssetPreview}`}>
@@ -3747,7 +3747,7 @@ export default function LeadsClient({
                             )}
 
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions} ${styles.exportHeaderActions}`}>
-                              <SharedAssetExport title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} details={`${leadAssetMeta(lead)}\nSerial / VIN: ${asText(lead.assetSnapshot.serialNumber) || 'Not recorded'}`}/>
+                              <SharedAssetExport title={assetTitle(lead)} photos={[...assetPhotos(lead), ...leadSharedPhotoUrls(lead)]} asset={{serialNumber:asText(lead.assetSnapshot.serialNumber),yearModel:asNumber(lead.assetSnapshot.yearModel),usage:assetUsageValue(lead),condition:conditionLabel(lead.assetSnapshot.condition),valueExVat:assetValue(lead),replacementPriceExVat:snapshotReplacementPrice(lead.assetSnapshot)}}/>
                               <button
                                 type="button"
                                 className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}

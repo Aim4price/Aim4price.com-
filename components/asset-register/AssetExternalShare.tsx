@@ -203,6 +203,7 @@ export function AssetShareDestinationPicker({
 
 export default function AssetExternalShare({
   shareName,
+  messageBody,
   assets,
   recipient,
   reportFiles = EMPTY_REPORT_FILES,
@@ -210,6 +211,7 @@ export default function AssetExternalShare({
   onRemoveAim4priceReport,
 }: {
   shareName: string;
+  messageBody?: string;
   recipient?: {name:string;email:string;phone:string};
   assets: ExternalAssetShareItem[];
   reportFiles?: ExternalShareFileSource[];
@@ -253,16 +255,19 @@ export default function AssetExternalShare({
     .map((source) => `${source.id}:${source.url}:${source.fileName}`)
     .join('|');
   const copy = useMemo(
-    () => buildExternalAssetShareCopy(shareName, assets, {
-      attachedPhotoCount: selectedPhotoCount,
-      attachedReportCount: reportFiles.length,
-    }),
-    [assets, reportFiles.length, selectedPhotoCount, shareName],
+    () => {
+      const generated = buildExternalAssetShareCopy(shareName, assets, {
+        attachedPhotoCount: selectedPhotoCount,
+        attachedReportCount: reportFiles.length,
+      });
+      return messageBody ? { ...generated, body: messageBody } : generated;
+    },
+    [assets, reportFiles.length, selectedPhotoCount, shareName, messageBody],
   );
   const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
   const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
   const selectedAttachmentCount = selectedSources.length;
-  const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient]);
+  const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient, messageBody]);
   const [acceptedKey, setAcceptedKey] = useState('');
   const [pendingShare, setPendingShare] = useState<{target: ShareTarget; key: string} | null>(null);
   const disclosureId = useId();
