@@ -14,6 +14,9 @@ export function useLeadDialog(onClose: () => void, busy = false) {
     function keydown(event: KeyboardEvent) {
       const element = ref.current;
       if (!element || !element.getClientRects().length || event.defaultPrevented) return;
+      // Native modal disclosures occupy the browser top layer, above any CSS z-index.
+      const nativeDialog = Array.from(document.querySelectorAll<HTMLDialogElement>('dialog[open]')).at(-1);
+      if (nativeDialog && !nativeDialog.contains(element)) return;
       const dialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"],dialog[open]')).filter(node => node.getClientRects().length);
       // Existing Leads children can occur earlier in the DOM but sit above Manage.
       const layer = (node: HTMLElement) => {
