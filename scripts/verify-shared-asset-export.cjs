@@ -55,7 +55,8 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.addScriptTag({content:runtime+'window.fixtureRoot=ReactDOM.createRoot(document.getElementById("app"));'});
  await page.evaluate(()=>{
   window.requests=[];
-  window.fetch=async(url,options)=>{window.requests.push({url,options});return new Response(new Uint8Array([1,2,3]),{headers:{'Content-Type':'image/png'}});};
+  const photo=document.createElement('canvas');photo.width=40;photo.height=40;photo.getContext('2d').fillRect(0,0,40,40);
+  window.fetch=async(url,options)=>{window.requests.push({url,options});const blob=await new Promise(resolve=>photo.toBlob(resolve,'image/png'));return new Response(blob,{headers:{'Content-Type':'image/png'}});};
   window.fixtureRoot.render(React.createElement(require('components/leads/SharedAssetExport').default,{title:'2024 Landini Super 110',asset:{serialNumber:'SKB 17',yearModel:2024,usage:'439 hours',condition:'Good',replacementPriceExVat:700000,valueExVat:404600},photos:['https://files.example/photo.png'],attachments:[{name:'Shared valuation.pdf',url:'https://files.example/report.pdf'}]}));
  });
  const click=async text=>{await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>(b.textContent.trim()===text||b.querySelector("strong")?.textContent===text)),{},text);await page.evaluate(text=>[...document.querySelectorAll('button')].find(b=>(b.textContent.trim()===text||b.querySelector("strong")?.textContent===text)).click(),text);};
@@ -63,13 +64,13 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(await page.$eval('[role="dialog"] h3',n=>n.textContent),'Share outside Aim4price');
  assert.equal(await page.evaluate(()=>window.requests.length),0,'Opening shares no files');
  assert.equal(await page.evaluate(()=>document.body.textContent.includes('Prepare selected files')),false);
- const message=await page.$eval('[aria-label="External asset details message preview"]',n=>n.textContent);
+ const message=await page.$eval('[aria-label="External asset details message"]',n=>n.value);
  assert(message.includes('SKB 17')&&message.includes('R 404 600'));
  await page.screenshot({path:'/tmp/shared-outside-modal.png'});
- await page.click('input[type="checkbox"]');await page.waitForFunction(()=>document.body.textContent.includes('1 photo')&&!document.body.textContent.includes('Preparing attachments'));
+ await page.click('input[type="checkbox"]');await page.waitForFunction(()=>document.body.textContent.includes('1 asset card')&&!document.body.textContent.includes('Preparing attachments'));
  await click('Add report');await page.waitForSelector('[data-download-dialog]');
  await page.click('[data-download-grid] button');await page.waitForSelector('[data-download-dialog]',{hidden:true});
- await page.waitForFunction(()=>document.body.textContent.includes('1 photo and 1 Aim4price report'));
+ await page.waitForFunction(()=>document.body.textContent.includes('1 asset card and 1 Aim4price report'));
  await page.click('[aria-label="Remove Shared valuation.pdf"]');
  await click('Add report');await page.waitForSelector('[data-download-dialog]');await page.keyboard.press('Escape');await page.waitForSelector('[data-download-dialog]',{hidden:true});
  assert(await page.$('[aria-label="Share outside Aim4price"]'),'Report cancel returns to outside sharing');
