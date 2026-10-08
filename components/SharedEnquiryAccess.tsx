@@ -15,14 +15,16 @@ export default function SharedEnquiryAccess({returnTo,access,embedded=false}: {r
  const description=access==='request-access'?'The sender needs to approve your account before you can view this enquiry.':access==='wrong-recipient'?'This enquiry belongs to another recipient. Sign in with the invited account or ask the sender for access.':access==='verify-email'?'You’re signed in, but your email still needs verification. Verify your email to open this enquiry.':access==='suspended'?'Contact Aim4price to review your account access.':'Create a free account or sign in. You will return to this enquiry after signing in.';
  if (access === 'sign-in') { const signIn = <div className={entryStyles.signInBody}>
   <div className={entryStyles.accountChoices}>
-   <section className={entryStyles.accountChoice} aria-label="Existing account">
+   <Link className={entryStyles.accountChoice} href={`/auth?${query}#login`}>
     <span className={entryStyles.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4h5v16h-5M3 12h12m-4-4 4 4-4 4"/></svg></span>
-    <Link className={`${styles.button} ${entryStyles.signInButton}`} href={`/auth?${query}#login`}>Sign in <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></Link>
-   </section>
-   <section className={`${entryStyles.accountChoice} ${entryStyles.newAccount}`} aria-label="New account">
+    <span className={entryStyles.choiceCopy}><strong>Sign in</strong><small>I already have an account</small></span>
+    <span className={entryStyles.signInButton}>Continue <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span>
+   </Link>
+   <Link className={`${entryStyles.accountChoice} ${entryStyles.newAccount}`} href={`/business/join?${query}`}>
     <span className={entryStyles.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M19 7v6m-3-3h6"/></svg></span>
-    <Link className={`${styles.secondaryButton} ${entryStyles.signInButton}`} href={`/business/join?${query}`}>Create a free account <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></Link>
-   </section>
+    <span className={entryStyles.choiceCopy}><strong>Create an account</strong><small>New to Aim4price? Start free.</small></span>
+    <span className={entryStyles.signInButton}>Create a free account <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span>
+   </Link>
   </div>
   <p className={entryStyles.returnHint}>After signing in, you’ll return to these assets.</p>
  </div>;
