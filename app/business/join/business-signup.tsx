@@ -24,7 +24,22 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
    setCreatedEmail(email);await verify(email);
   }catch(error){setNotice(error instanceof Error?error.message:'Please try again.');}finally{setBusy(false);}
  }
- if(!chosen)return <SignupFlow title="Choose your access" description="Choose sharing access or the full Desktop." returnTo={returnTo}><div className={styles.accessChoices}><button className={styles.button} onClick={()=>setChosen(true)}>Free sharing account</button><Link className={styles.secondaryButton} href={`/auth?accountType=dealer&accountAccess=desktop${returnTo?'&returnTo='+encodeURIComponent(returnTo):''}#signup`}>Aim4price Desktop</Link></div></SignupFlow>;
+ if(!chosen)return <SignupFlow title="Choose your access" description="Open shared assets for free, or choose full Aim4price access to manage your own." returnTo={returnTo}>
+  <div className={styles.accessPlans}>
+   <section className={styles.accessPlan} aria-labelledby="free-access-title">
+    <h2 id="free-access-title">Free access</h2>
+    <p>For assets shared with you.</p>
+    <ul><li>View shared asset details.</li><li>Use the actions allowed by the sender.</li><li>Free usage limits apply. Upgrade when you need more.</li></ul>
+    <button type="button" className={styles.button} onClick={()=>setChosen(true)}>Continue with free access</button>
+   </section>
+   <section className={`${styles.accessPlan} ${styles.fullAccessPlan}`} aria-labelledby="full-access-title">
+    <h2 id="full-access-title">Full Aim4price access</h2>
+    <p>For managing your own assets and business.</p>
+    <ul><li>Access your Aim4price Desktop.</li><li>Manage asset registers, costs and maintenance.</li><li>Choose the account and package that suit you.</li></ul>
+    <Link className={styles.secondaryButton} href={`/auth?accountType=dealer&accountAccess=desktop${returnTo?'&returnTo='+encodeURIComponent(returnTo):''}#signup`}>Explore full access</Link>
+   </section>
+  </div>
+ </SignupFlow>;
  return <SignupFlow title={createdEmail?'Check your email':'Create your free account'} description={createdEmail?`Verify ${createdEmail} to open your shared enquiries.`:'One account for shared assets. Upgrade whenever you need Desktop.'} returnTo={returnTo}>
   {createdEmail?<div className={styles.accessChoices}><button className={styles.secondaryButton} disabled={busy} onClick={async()=>{setBusy(true);try{await verify(createdEmail);}catch(error){setNotice((error as Error).message);}finally{setBusy(false);}}}>Resend verification email</button><Link className={styles.button} href={destination}>Continue</Link></div>:<form className={styles.form} onSubmit={submit}>
    <label>Your name<input name="name" autoComplete="name" required maxLength={150}/></label>

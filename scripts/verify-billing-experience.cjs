@@ -245,7 +245,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     }
     if(mode==='business-join'||mode==='business-register'){
      assert.equal(await page.$('a[href="/business/guest"]'),null);
-     await page.$$eval('button',els=>els.find(e=>e.textContent==='Free sharing account').click());
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Continue with free access').click());
      await page.waitForSelector('input[name="password"]');
      for(const [name,value] of Object.entries({name:'Test Recipient',businessName:'Test Business',email:'recipient@example.test',password:'Synthetic-password-123'}))await page.type('input[name="'+name+'"]',value);
      await page.click('input[name="terms"]');await page.click('button[type="submit"]');
