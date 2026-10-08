@@ -9,6 +9,7 @@ import LeadManageDialog from "../leads/LeadManageDialog";
 import BusinessAcceptanceForm from "../business-network/BusinessAcceptanceForm";
 import { createPortal } from "../WebsitePortal";
 import LeadCardSummary from "../leads/LeadCardSummary";
+import SharedAssetExport from "../leads/SharedAssetExport";
 import SharedAssetSend from "./SharedAssetSend";
 import LeadManageButton from "../leads/LeadManageButton";
 import LeadAssetCard from "../leads/LeadAssetCard";
@@ -171,8 +172,9 @@ export default function SharedAssetCards({
                         <>
                           <SharedCardValue onOpen={enquiry&&item.assetId&&(enquiry.access==='owner'||(enquiry.access==='active'&&enquiry.permissions.suggestValue))?()=>setValueAsset({id:item.assetId!,title:item.title}):undefined} value={item.valueExVat} included={!!vatIncluded[item.assetId||String(index)]} onToggle={()=>setVatIncluded(current=>({...current,[item.assetId||String(index)]:!current[item.assetId||String(index)]}))}/>
                           <div
-                            className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}
+                            className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${leadStyles.exportHeaderActions}`}
                           >
+                            <SharedAssetExport title={item.title} photos={item.photoUrls} details={`Serial / VIN: ${item.serialNumber || 'Not recorded'}\nYear Model: ${item.yearModel || 'Not recorded'}\nUsage: ${item.usage || 'Not recorded'}\nCondition: ${item.condition || 'Not recorded'}`} attachments={enquiry && enquiry.permissions.reports && ['owner','active','read-only'].includes(enquiry.access) ? enquiry.reports.map(report => ({name:report.label, url:`/api/asset-share-links/${enquiry.token}/reports/${report.id}`})) : []}/>
                             {enquiry && item.assetId && <SharedAssetSend enquiry={enquiry} assetId={item.assetId} assetTitle={`${item.title}${senderName ? ` · ${senderName}` : ""}`}/>}
                             <LeadManageButton
                               label={`Manage ${item.title}`}

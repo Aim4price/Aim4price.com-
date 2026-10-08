@@ -5841,3 +5841,22 @@
 .leadsPage .leadThread:has([data-open-problems='true'])::before {
   background: #c94c4c !important;
 }
+
+/* Keep external sharing, replies and Manage together on expanded lead cards. */
+.expandedLeadHeader.expandedLeadHeader:has(.exportHeaderActions),
+:is(.dealerDesktopLeads,.dealerAppLeads,.leadsPage) .expandedLeadHeader.expandedLeadHeader:has(.exportHeaderActions) { grid-template-columns:minmax(0,1fr) minmax(0,35rem)!important; }
+.expandedLeadAside.expandedLeadAside:has(.exportHeaderActions) { width:100%!important; }
+.dealerAppLeads .expandedLeadHeader.expandedLeadHeader:has(.exportHeaderActions) { grid-template-columns:minmax(0,1fr)!important; }
+.leadAssetHeaderActions.exportHeaderActions,
+:is(.dealerDesktopLeads,.dealerAppLeads,.leadsPage) .expandedLeadAside .leadAssetHeaderActions.exportHeaderActions { display:grid!important; grid-template-columns:1.3fr 1fr 1fr!important; width:100%!important; gap:.6rem!important; }
+.leadAssetHeaderActions.exportHeaderActions > button,
+:is(.dealerDesktopLeads,.dealerAppLeads,.leadsPage) .expandedLeadAside .leadAssetHeaderActions.exportHeaderActions > button { width:100%!important; min-width:0!important; max-width:none!important; padding-inline:.7rem!important; white-space:nowrap; }
+@media(max-width:900px) {
+ :global(body:not(:has([data-website-canvas]))) .expandedLeadHeader.expandedLeadHeader:has(.exportHeaderActions),
+ :global(body:not(:has([data-website-canvas]))) :is(.dealerDesktopLeads,.dealerAppLeads,.leadsPage) .expandedLeadHeader.expandedLeadHeader:has(.exportHeaderActions) { grid-template-columns:minmax(0,1fr)!important; }
+ :global(body:not(:has([data-website-canvas]))) .expandedLeadAside.expandedLeadAside:has(.exportHeaderActions) { grid-area:auto!important; }
+}
+@media(max-width:600px) {
+ :global(body:not(:has([data-website-canvas]))) .leadAssetHeaderActions.exportHeaderActions,
+ :global(body:not(:has([data-website-canvas]))) :is(.dealerDesktopLeads,.dealerAppLeads,.leadsPage) .expandedLeadAside .leadAssetHeaderActions.exportHeaderActions { grid-template-columns:1fr!important; }
+}
