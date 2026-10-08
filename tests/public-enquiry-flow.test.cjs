@@ -47,6 +47,8 @@ test('public enquiry renders an expandable Leads card for every selected asset',
     '../leads/LeadCardSummary':load('components/leads/LeadCardSummary.tsx').default,
     '../leads/LeadAssetCard':load('components/leads/LeadAssetCard.tsx').default,
     '../leads/LeadAssetDetails':load('components/leads/LeadAssetDetails.tsx').default,
+    // Outside sharing is covered by verify-shared-asset-export.cjs.
+    '../leads/SharedAssetExport':()=>{throw new Error('Closed cards must not mount outside sharing');},
     // Facts and edit shortcuts must stay unmounted until the card is opened.
     '../leads/SharedAssetValueDialog':()=>null,
     '../leads/SharedCardValue':()=>{throw new Error('Closed cards must not mount the expanded value');},
