@@ -38,3 +38,16 @@
 
 .accessChoices { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:stretch; gap:1rem; padding-top:1.25rem; border-top:1px solid #d6e5df; }
 .accessChoices > a,.accessChoices > button { box-sizing:border-box; min-height:3.5rem; text-align:center; white-space:nowrap; }
+
+/* Explain the two access routes before the account form. */
+.accessPlans { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; }
+.accessPlan { display:flex; flex-direction:column; gap:.85rem; min-width:0; padding:1.5rem; border:1px solid #ccdfd6; border-radius:1.1rem; background:#f5faf7; color:#204c3b; }
+.accessPlan h2 { margin:0; font-family:var(--font-heading,inherit); font-size:1.3rem; font-weight:800; line-height:1.3; }
+.accessPlan p { margin:0; color:#526b60; font-size:.95rem; line-height:1.5; }
+.accessPlan ul { margin:0 0 .5rem; padding-left:1.15rem; color:#526b60; font-size:.88rem; line-height:1.65; }
+.accessPlan li + li { margin-top:.45rem; }
+.accessPlan > a,.accessPlan > button { margin-top:auto; box-sizing:border-box; width:100%; min-height:3.5rem; text-align:center; }
+.fullAccessPlan { background:#f5f8fc; border-color:#d7e3ee; }
+@media(max-width:640px) {
+ :global(body:not(:has([data-website-canvas]))) .accessPlans { grid-template-columns:1fr; }
+}

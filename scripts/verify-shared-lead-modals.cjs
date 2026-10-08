@@ -176,6 +176,11 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Resend verification email');await page.waitForFunction(()=>document.body.textContent.includes('Verification email sent'));
  assert(await page.evaluate(()=>window.requests.some(request=>request.url==='/api/shared-account/verification')));
  await page.screenshot({path:'/tmp/shared-email-verification.png'});
+ await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('components/SharedEnquiryLanding').default,{returnTo:'/asset-share/'+ 'a'.repeat(43)+'?open=1',access:'sign-in',prompt:true,summary:{senderName:'Example farm',assetCount:1,assetTitles:['Tractor'],umbrellaName:''}})));
+ await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Oops, we need you to sign in.'));
+ const signInGate=await page.$eval('dialog[open]',node=>({width:node.getBoundingClientRect().width,scroll:node.scrollHeight>node.clientHeight+1}));
+ assert(signInGate.width>=1000,'Sign-in dialog has the wider layout');assert.equal(signInGate.scroll,false);
+ await page.screenshot({path:'/tmp/shared-sign-in.png'});
  await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('app/business/join/business-signup').default,{returnTo:null})));
  await page.waitForFunction(()=>document.body.textContent.includes('Choose your access'));
  await page.screenshot({path:'/tmp/shared-account-choice.png'});
