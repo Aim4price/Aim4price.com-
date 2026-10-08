@@ -182,3 +182,13 @@ test('Send link creates protected read-only enquiries, requires consent and hand
   }
  } finally {Object.assign(global,previous);}
 });
+
+test('initially open sharing disclosure is safe during server rendering', () => {
+  const Dialog = load('components/asset-register/ShareDisclosureDialog.tsx', {
+    '../WebsitePortal': {createPortal: () => { throw Error('Portal must wait for client mount'); }},
+    './ShareModalCloseButton': () => null,
+  }).default;
+  assert.equal(renderToStaticMarkup(React.createElement(Dialog, {
+    title:'Sign in', titleId:'sign-in', closeLabel:'Close', onClose:()=>{},
+  })), '');
+});
