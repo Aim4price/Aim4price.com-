@@ -184,3 +184,8 @@
   :global(body:not(:has([data-website-canvas]))) .sharingDetails { grid-template-columns: 1fr; }
   :global(body:not(:has([data-website-canvas]))) .questionCard { padding: 1.1rem; }
 }
+
+.chatgptStart { display: flex; align-items: center; flex-wrap: wrap; gap: .8rem 1.25rem; margin-top: 1.25rem; }
+.chatgptStart .primary { gap: .75rem; min-height: 48px; }
+.chatgptStart p { flex: 1; min-width: 16rem; margin: 0; font-size: .9rem; color: var(--app-muted, #60746d); line-height: 1.6; }
+.technicalSetup { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--app-line, #dce7e2); }
