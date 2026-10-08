@@ -1,3 +1,5 @@
+import type { ExternalAssetShareItem } from './asset-external-share';
+
 export type BusinessDetails = {
   locationMode?: "town";
   serviceArea?: string;
@@ -28,6 +30,26 @@ export type BusinessLeadView = {
     photos: string[];
   }>;
 };
+/** Use only details already disclosed in the enquiry, including older saved views. */
+export function businessAssetShareDetails(asset: BusinessLeadView['assets'][number]): Partial<ExternalAssetShareItem> {
+  const details = new Map(asset.details.map(([label, value]) => [label.trim().toLowerCase(), value]));
+  const text = (...labels: string[]) => labels.map(label => details.get(label)).find(value => value?.trim())?.trim() || '';
+  const number = (value: string): number | null => {
+    if (!value) return null;
+    const parsed = Number(value.replace(/^R\s*/i, '').replace(/[\s,]/g, ''));
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  };
+  const hours = text('hours');
+  return {
+    serialNumber: text('serial / vin', 'serial number', 'serial', 'vin'),
+    yearModel: number(text('year', 'year model')),
+    usage: text('usage') || (hours ? `${hours} hours` : ''),
+    condition: text('condition'),
+    valueExVat: number(text('estimated value (excl. vat)', 'current value (excl. vat)')),
+    replacementPriceExVat: number(text('replacement value (excl. vat)', 'replacement price (excl. vat)')),
+  };
+}
+
 export const businessText = (value: unknown, max = 200) =>
   typeof value === "string" ? value.trim().slice(0, max) : "";
 export function businessEmail(value: unknown): string {

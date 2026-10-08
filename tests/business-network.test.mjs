@@ -672,3 +672,29 @@ test('Google lookup accepts public origins through a proxy, searches real endpoi
 test('Google suggestions require independent confirmation before saving', () => {
   assert.throws(() => shared.validateBusinessDetails({googleDetailsUsed:true,detailsVerified:false}, 'business@example.com'), /Confirm the listing details/);
 });
+
+test("outside-share cards use only the current asset's disclosed enquiry details", () => {
+  const { businessAssetShareDetails } = load("lib/business-network-shared.ts");
+  const first = businessAssetShareDetails({
+    title: "Tractor A", photos: [],
+    details: [["Serial number", "VIN-A"], ["Year", "2024"], ["Hours", "0"],
+      ["Condition", "Good"], ["Estimated value (excl. VAT)", "R 404 600"]],
+  });
+  assert.equal(first.serialNumber, "VIN-A");
+  assert.equal(first.yearModel, 2024);
+  assert.equal(first.usage, "0 hours");
+  assert.equal(first.condition, "Good");
+  assert.equal(first.valueExVat, 404600);
+  assert.equal(first.replacementPriceExVat, null);
+  const second = businessAssetShareDetails({
+    title: "Tractor B", photos: [],
+    details: [["Serial / VIN", "VIN-B"], ["Usage", "123 km"]],
+    valueExVat: 999999,
+  });
+  assert.equal(second.serialNumber, "VIN-B");
+  assert.equal(second.usage, "123 km");
+  assert.equal(second.yearModel, null);
+  assert.equal(second.valueExVat, null);
+  assert.equal(second.replacementPriceExVat, null);
+  assert.equal(businessAssetShareDetails({title:"C",photos:[],details:[["Current value (excl. VAT)","Not shared"]]}).valueExVat, null);
+});

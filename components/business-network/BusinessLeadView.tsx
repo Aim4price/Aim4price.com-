@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type { BusinessLeadView as View } from "../../lib/business-network-shared";
+import { businessAssetShareDetails } from "../../lib/business-network-shared";
 import SharedAssetExport from "../leads/SharedAssetExport";
 import styles from "./BusinessNetwork.module.css";
 function RequestPhoto({
@@ -96,7 +97,7 @@ export default function BusinessLeadView({
               </div>
             ))}
           </dl>
-          <SharedAssetExport title={asset.title} details={asset.details.map(([label,value]) => `${label}: ${value}`).join('\n')} photos={token ? asset.photos.map((_,j) => loadedPhotos[`${token}:${i}:${j}`]).filter(Boolean) : asset.photos}/>
+          <SharedAssetExport asset={businessAssetShareDetails(asset)} title={asset.title} details={asset.details.map(([label,value]) => `${label}: ${value}`).join('\n')} photos={token ? asset.photos.map((_,j) => loadedPhotos[`${token}:${i}:${j}`]).filter(Boolean) : asset.photos}/>
           <div className={styles.photos}>
             {asset.photos.map((photo, j) =>
               token ? (
