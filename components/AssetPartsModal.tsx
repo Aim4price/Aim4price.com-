@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useId, useRef, useState } from 'react';
-import LeadActionDialog from './leads/LeadActionDialog';
+import { useLeadDialog } from './leads/useLeadDialog';
+import maintenanceStyles from './MaintenanceDialog.module.css';
+import checklistStyles from './MaintenanceChecklistBrowser.module.css';
 import type { PartsData } from '../lib/asset-parts';
 import styles from './AssetPartsModal.module.css';
 
@@ -20,6 +22,8 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [draft, setDraft] = useState({ itemKey: '', name: '', partNumber: '', brand: '', maintenanceId: '', notes: '' });
   const id = useId();
+  const dialogRef = useLeadDialog(onClose, busy);
+  useEffect(() => { const previous = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = previous; }; }, []);
   async function load(signal?: AbortSignal) {
     const response = await fetch(endpoint, { cache: 'no-store', signal });
     const result = await response.json();
@@ -43,24 +47,27 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
   const parts = (data?.parts || []).filter(part => `${part.name} ${part.partNumber} ${part.brand} ${part.itemLabel}`.toLowerCase().includes(search.toLowerCase()));
   const steps = ['Choose an item', 'Part details', 'Review and save'];
   const cancel = () => { setError(''); data?.canView ? setAdding(false) : onClose(); };
-  const footer = data && <div className={styles.actions}>
+  const footer = data && <footer className={checklistStyles.footer}>
     {adding && data.canAdd ? <>
       <button type="button" disabled={busy} onClick={() => step ? setStep(step - 1) : cancel()}>Back</button>
       <button type="button" disabled={busy} onClick={cancel}>Cancel</button>
-      <button type="submit" form={`${id}-form`} className={styles.primary} disabled={busy || (step === 0 && !draft.itemKey)}>{busy ? 'Saving…' : step === 2 ? 'Save part' : 'Next'}</button>
+      <button type="submit" form={`${id}-form`} data-primary-action disabled={busy || (step === 0 && (!draft.itemKey || (draft.itemKey === 'other' && !draft.name.trim())))}>{busy ? 'Saving…' : step === 2 ? 'Save part' : 'Next'}</button>
     </> : <button type="button" onClick={onClose}>Back</button>}
-  </div>;
-  return <LeadActionDialog title="Parts" assetTitle={assetTitle} assetSubtitle={assetSubtitle} onClose={onClose} busy={busy} className={styles.modal} closeLabel="Back to maintenance" footer={footer}>
+  </footer>;
+  return <div className={`${checklistStyles.overlay} ${styles.overlay}`} data-website-overlay onMouseDown={event => { if (event.target === event.currentTarget && !busy) onClose(); }}>
+    <section ref={dialogRef} tabIndex={-1} className={`${checklistStyles.dialog} ${maintenanceStyles.dialog} ${styles.modal}`} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-context`}>
+      <header className={checklistStyles.header}><div><h2 id={`${id}-title`}>{assetTitle}</h2>{assetSubtitle && <p>{assetSubtitle}</p>}</div><button type="button" className={maintenanceStyles.close} onClick={onClose} disabled={busy} aria-label="Back to maintenance">×</button></header>
+      <div className={`${maintenanceStyles.body} ${styles.body}`}>
+
     {error && <p role="alert" className={styles.error}>{error}</p>}
     {notice && <p role="status" className={styles.notice}>{notice}</p>}
     {!data ? <p>{error ? 'Close and reopen Parts to try again.' : 'Loading parts…'}</p> : <>
       {adding && data.canAdd ? <form id={`${id}-form`} onSubmit={event => { if (step < 2) { event.preventDefault(); setError(''); setStep(step + 1); } else void save(event); }} className={styles.form}>
-        <ol className={styles.steps} aria-label="Add part steps">{steps.map((label, index) => <li key={label} aria-current={step === index ? 'step' : undefined}><span>{index + 1}</span>{label}</li>)}</ol>
-        <h3 ref={stepHeading} tabIndex={-1} className={styles.stepTitle}>{steps[step]}</h3>
-        <fieldset disabled={busy} className={styles.fields}>
+        <div className={checklistStyles.sectionHeading}><h3 id={`${id}-context`} ref={stepHeading} tabIndex={-1} className={styles.stepTitle}>Parts · {steps[step]}</h3><small className={styles.hint}>Step {step + 1} of 3</small></div>
+        <fieldset disabled={busy} className={`${styles.fields} ${step === 1 ? checklistStyles.editor : ''}`}>
           {step === 0 && <>
-            <p className={styles.full}>{data.family} · Choose the maintenance item this part belongs to.</p>
-            <button type="button" className={`${styles.addChoice} ${styles.full}`} aria-pressed={draft.itemKey === 'other'} onClick={() => setDraft(current => ({ ...current, itemKey: 'other', name: current.itemKey === 'other' ? current.name : '' }))}><strong>+ Add another part</strong><small>For a part that is not listed below.</small></button>
+            <div className={`${checklistStyles.sectionHeading} ${styles.full}`}><span className={styles.hint}>{draft.itemKey ? '1 selected' : 'Choose an item'} · {data.family}</span><button type="button" className={checklistStyles.addButton} disabled={draft.itemKey === 'other'} onClick={() => setDraft(current => ({ ...current, itemKey: 'other', name: '' }))}>+ Add item</button></div>
+            {draft.itemKey === 'other' && <div className={`${checklistStyles.editor} ${styles.full}`}><h3>Add item</h3><label>Part description<input autoFocus required maxLength={160} value={draft.name} onChange={event => update('name', event.target.value)} placeholder="e.g. Hydraulic hose"/></label><div className={checklistStyles.editorActions}><button type="button" onClick={() => setDraft(current => ({ ...current, itemKey: '', name: '' }))}>Cancel</button><button type="button" className={checklistStyles.primary} disabled={!draft.name.trim()} onClick={() => setStep(1)}>Continue</button></div></div>}
             {data.suggestions.map(item => <button type="button" key={item.id} className={styles.choice} aria-pressed={draft.itemKey === item.id} onClick={() => setDraft(current => ({ ...current, itemKey: item.id, name: current.itemKey === item.id ? current.name : item.label }))}><span className={styles.tick} aria-hidden="true">{draft.itemKey === item.id ? '✓' : ''}</span>{item.label}</button>)}
           </>}
           {step === 1 && <>
@@ -81,7 +88,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
           </>}
         </fieldset>
       </form> : data.canView && <>
-        {data.canAdd && <button type="button" className={`${styles.addChoice} ${styles.addTop}`} onClick={() => { setAdding(true); setStep(0); setError(''); setNotice(''); }}><strong>+ Add part</strong><small>Save a part number for this asset.</small></button>}
+        <div className={checklistStyles.sectionHeading}><h3 id={`${id}-context`} className={styles.stepTitle}>Parts</h3>{data.canAdd && <button type="button" className={checklistStyles.addButton} onClick={() => { setAdding(true); setStep(0); setError(''); setNotice(''); }}>+ Add part</button>}</div>
         <label className={styles.search} htmlFor={id}>Find a part<input id={id} type="search" value={search} placeholder="Search description, number or brand" onChange={event => { setSearch(event.target.value); setPage(0); }}/></label>
         {parts.length ? <div className={styles.list}>{parts.slice(page * 6, (page + 1) * 6).map(part => <article className={styles.part} key={part.id}>
           <div><small>{part.itemLabel}</small><h3>{part.name}</h3><strong className={styles.number}>{part.partNumber}</strong>{part.brand && <span> · {part.brand}</span>}</div>
@@ -89,8 +96,11 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
           {part.maintenanceId && <p className={styles.hint}>Linked to {data.maintenance.find(record => record.id === part.maintenanceId)?.title || 'maintenance'}</p>}
           <small>Added by {part.addedBy} · {new Date(part.createdAt).toLocaleDateString('en-ZA')}</small>
         </article>)}</div> : <p className={styles.empty}>{search ? 'No matching parts.' : 'No parts saved yet. Add the first part number for this asset.'}</p>}
-        {parts.length > 6 && <div className={styles.actions}><button type="button" disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page + 1} of {Math.ceil(parts.length / 6)}</span><button type="button" disabled={(page + 1) * 6 >= parts.length} onClick={() => setPage(page + 1)}>Next</button></div>}
+        {parts.length > 6 && <div className={styles.actions}><button type="button" className={checklistStyles.addButton} disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><span>Page {page + 1} of {Math.ceil(parts.length / 6)}</span><button type="button" className={checklistStyles.addButton} disabled={(page + 1) * 6 >= parts.length} onClick={() => setPage(page + 1)}>Next</button></div>}
       </>}
     </>}
-  </LeadActionDialog>;
+      </div>
+      {footer}
+    </section>
+  </div>;
 }
