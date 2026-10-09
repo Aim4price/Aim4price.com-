@@ -59,7 +59,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   window.fetch=async(url,options)=>{window.requests.push({url,options});const blob=await new Promise(resolve=>photo.toBlob(resolve,'image/png'));return new Response(blob,{headers:{'Content-Type':'image/png'}});};
   window.fixtureRoot.render(React.createElement(require('components/leads/SharedAssetExport').default,{title:'2024 Landini Super 110',asset:{serialNumber:'SKB 17',yearModel:2024,usage:'439 hours',condition:'Good',replacementPriceExVat:700000,valueExVat:404600},photos:['https://files.example/photo.png'],attachments:[{name:'Shared valuation.pdf',url:'https://files.example/report.pdf'}]}));
  });
- const click=async text=>{await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>(b.textContent.trim()===text||b.querySelector("strong")?.textContent===text)),{},text);await page.evaluate(text=>[...document.querySelectorAll('button')].find(b=>(b.textContent.trim()===text||b.querySelector("strong")?.textContent===text)).click(),text);};
+ const click=async text=>{await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>!b.disabled&&(b.textContent.trim()===text||b.querySelector("strong")?.textContent===text)),{},text);await page.evaluate(text=>[...document.querySelectorAll('button')].find(b=>(b.textContent.trim()===text||b.querySelector("strong")?.textContent===text)).click(),text);};
  await click('Share');await page.waitForSelector('[aria-label="Share outside Aim4price"]');
  assert.equal(await page.$eval('[role="dialog"] h3',n=>n.textContent),'Share outside Aim4price');
  assert.equal(await page.evaluate(()=>window.requests.length),0,'Opening shares no files');
@@ -77,7 +77,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(button=>button.textContent.trim()==='Email'&&!button.disabled));
  await click('Email');await page.waitForSelector('dialog[open]');
  assert(await page.$eval('dialog[open]',n=>n.textContent.includes('Share via Email')));
- await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});
+ await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog')); 
  await page.evaluate(()=>{
   window.shareCalls=[];
   Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});
@@ -121,7 +121,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(reconstructed,await page.evaluate(()=>window.longMessage),'Every edited part reaches WhatsApp in order');
  await click('Previous message');
  assert.equal(await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.textContent==='Next message').disabled),false);
- await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});
+ await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog')); 
  await page.setViewport({width:390,height:844});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Mobile has no horizontal overflow');
  await page.screenshot({path:'/tmp/shared-outside-mobile.png'});
