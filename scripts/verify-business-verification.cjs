@@ -71,7 +71,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(await page.$eval('input[type=checkbox]',node=>node.disabled),'Unverified email cannot be approved');
  await page.type('textarea','Awaiting email verification');
  await page.click('form button');
- await page.waitForFunction(()=>window.saves.length===1);
+ await page.waitForFunction(()=>window.saves.length===1 && document.body.textContent.includes('Verification decision saved.') && [...document.querySelectorAll('button')].some(button=>button.textContent==='Refresh'&&!button.disabled));
  assert.equal(await page.evaluate(()=>window.saves[0].verified),false);
  const click=async text=>{await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent===text&&!b.disabled),{},text);await page.evaluate(text=>[...document.querySelectorAll('button')].find(b=>b.textContent===text).click(),text);};
  await click('Verified');
