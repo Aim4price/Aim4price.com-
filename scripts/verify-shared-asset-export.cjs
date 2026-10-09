@@ -54,7 +54,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
  await page.addScriptTag({content:runtime+'window.fixtureRoot=ReactDOM.createRoot(document.getElementById("app"));'});
  await page.evaluate(()=>{
-  window.requests=[];
+  window.nativeFetch=window.fetch.bind(window);window.requests=[];window.encodes=0;const encode=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=function(...args){window.encodes++;return encode.apply(this,args);};
   const photo=document.createElement('canvas');photo.width=40;photo.height=40;photo.getContext('2d').fillRect(0,0,40,40);
   window.fetch=async(url,options)=>{window.requests.push({url,options});const blob=await new Promise(resolve=>photo.toBlob(resolve,'image/png'));return new Response(blob,{headers:{'Content-Type':'image/png'}});};
   window.fixtureRoot.render(React.createElement(require('components/leads/SharedAssetExport').default,{title:'2024 Landini Super 110',asset:{serialNumber:'SKB 17',yearModel:2024,usage:'439 hours',condition:'Good',replacementPriceExVat:700000,valueExVat:404600},photos:['https://files.example/photo.png'],attachments:[{name:'Shared valuation.pdf',url:'https://files.example/report.pdf'}]}));
@@ -78,6 +78,27 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Email');await page.waitForSelector('dialog[open]');
  assert(await page.$eval('dialog[open]',n=>n.textContent.includes('Share via Email')));
  await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});
+ await page.evaluate(()=>{
+  window.shareCalls=[];
+  Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>true});
+  Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shareCalls.push(data);throw new DOMException('Permission denied','NotAllowedError');}});
+ });
+ const encodes=await page.evaluate(()=>window.encodes);
+ await page.evaluate(()=>[...document.querySelectorAll('label')].find(n=>n.textContent.includes('Also include original photos')).querySelector('input').click());
+ await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='WhatsApp'&&!b.disabled));
+ assert.equal(await page.evaluate(()=>window.encodes),encodes,'Original toggle reuses rendered cards');
+ await click('WhatsApp');await page.waitForSelector('dialog[open]');
+ await page.click('[data-share-consent]');await click('Continue to WhatsApp');
+ await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Your browser blocked direct sharing'));
+ assert.equal(await page.$$eval('dialog a[download]',nodes=>nodes.length),2,'Card and original remain downloadable');
+ assert(await page.$('[aria-label="Share outside Aim4price"]'),'Share surface remains open after rejection');
+ const download=await page.$eval('dialog a[download]',async a=>({name:a.download,size:(await (await window.nativeFetch(a.href)).blob()).size}));
+ assert(download.name.endsWith('.jpg')&&download.size>0,'Fallback downloads prepared card bytes');
+ await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shareCalls.push(data);}}));
+ await click('Share files only');await page.waitForSelector('dialog[open]',{hidden:true});
+ assert.equal(await page.evaluate(()=>window.shareCalls.at(-1).files.length),2);
+ assert.equal(await page.evaluate(()=>window.shareCalls.at(-1).text),undefined,'Files-only never silently includes the message');
+ assert.equal(await page.evaluate(()=>window.encodes),encodes,'Retry reuses prepared photos');
  await page.setViewport({width:390,height:844});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Mobile has no horizontal overflow');
  await page.screenshot({path:'/tmp/shared-outside-mobile.png'});

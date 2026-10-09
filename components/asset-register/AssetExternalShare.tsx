@@ -228,6 +228,9 @@ export default function AssetExternalShare({
   const [preparationAttempt, setPreparationAttempt] = useState(0);
   const [sendingTarget, setSendingTarget] = useState<ShareTarget | null>(null);
   const [shareStatus, setShareStatus] = useState('');
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [downloadUrls, setDownloadUrls] = useState<string[]>([]);
+  const cardCache = useRef(new Map<string, Promise<File[]>>());
   const [preparation, setPreparation] = useState<AttachmentPreparation>({
     status: 'idle',
     files: [],
@@ -285,7 +288,7 @@ export default function AssetExternalShare({
   useEffect(() => {
     let cancelled = false;
 
-    if (!selectedSources.length) {
+    if (!selectedAttachmentCount) {
       setPreparation({ status: 'idle', files: [], error: '' });
       return () => {
         cancelled = true;
@@ -305,7 +308,14 @@ export default function AssetExternalShare({
             if (cancelled) return;
             const asset = assets[index];
             const originals = sourceFiles.slice(offset, offset + asset.photoUrls.length);
-            files.push(...await createAssetShareCards(asset, originals, index));
+            const cardKey = JSON.stringify([index, asset]);
+            let cards = cardCache.current.get(cardKey);
+            if (!cards) {
+              cards = createAssetShareCards(asset, originals, index);
+              cardCache.current.set(cardKey, cards);
+              void cards.catch(() => cardCache.current.delete(cardKey));
+            }
+            files.push(...await cards);
             if (includeOriginals) files.push(...originals);
             offset += asset.photoUrls.length;
           }
@@ -338,6 +348,12 @@ export default function AssetExternalShare({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attachmentFileCache, preparationAttempt, selectedSourceSignature]);
 
+  useEffect(() => {
+    const urls = preparation.files.map(file => URL.createObjectURL(file));
+    setDownloadUrls(urls);
+    return () => urls.forEach(url => URL.revokeObjectURL(url));
+  }, [preparation.files]);
+
   function togglePhotos() {
     setIncludePhotos((current) => !current);
     setShareStatus('');
@@ -350,6 +366,8 @@ export default function AssetExternalShare({
 
   function openDisclosure(target: ShareTarget, trigger: HTMLButtonElement) {
     shareTrigger.current = trigger;
+    setShowRecovery(false);
+    setShareStatus('');
     setAcceptedKey('');
     setPendingShare({target, key: consentKey});
   }
@@ -360,11 +378,10 @@ export default function AssetExternalShare({
     shareTrigger.current?.focus();
   }
 
-  async function sendShare(target: ShareTarget) {
+  async function sendShare(target: ShareTarget, filesOnly = false) {
     if (!accepted || !pendingShare || pendingShare.key !== consentKey || pendingShare.target !== target || isSending) return;
-    setPendingShare(null);
-    setAcceptedKey('');
     setShareStatus('');
+    setShowRecovery(false);
 
     if (!selectedAttachmentCount) {
       if (target === 'email') {
@@ -387,14 +404,14 @@ export default function AssetExternalShare({
     }
 
     if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
-      setShareStatus('This browser cannot attach files. Turn off attachments to send the message, or use a device that supports file sharing.');
+      setShowRecovery(true);
+      setShareStatus('This browser cannot send attachments directly. Download the files below and attach them in WhatsApp or email.');
       return;
     }
 
     const shareData: ShareData = {
       files: preparation.files,
-      title: copy.subject,
-      text: copy.body,
+      ...(filesOnly ? {} : { title: copy.subject, text: copy.body }),
     };
     let canSharePayload = false;
     try {
@@ -405,19 +422,22 @@ export default function AssetExternalShare({
       canSharePayload = false;
     }
     if (!canSharePayload) {
-      setShareStatus('This device cannot send the message and selected attachments together. Nothing was sent.');
+      setShowRecovery(true);
+      setShareStatus('This device cannot share this combination of files and message. Try files only, or download the files and attach them yourself.');
       return;
     }
 
     setSendingTarget(target);
     try {
       await navigator.share(shareData);
-      setShareStatus(`${preparation.files.length} ${preparation.files.length === 1 ? 'attachment was' : 'attachments were'} handed to your phone together with the message.`);
+      setShareStatus('Files handed to your device’s share menu. Complete sending in your chosen app.');
+      closeDisclosure();
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         setShareStatus('Sharing cancelled. Your message and attachments are still ready.');
       } else {
-        setShareStatus(error instanceof Error ? error.message : 'The message and attachments could not be shared.');
+        setShowRecovery(true);
+        setShareStatus('Your browser blocked direct sharing. Your message and photos are still here. Retry, try files only, or download them below to attach in your app.');
       }
     } finally {
       setSendingTarget(null);
@@ -465,7 +485,10 @@ export default function AssetExternalShare({
             <span className={styles.toggleControl} aria-hidden="true"><span><CheckIcon /></span></span>
           </label>
 
-          {includePhotos && <label className={styles.originalPhotos}><input type="checkbox" checked={includeOriginals} onChange={event => setIncludeOriginals(event.target.checked)}/>Also attach original photos</label>}
+          {includePhotos && <div className={styles.photoOptions}>
+            <p>Photos are shared on labelled cards, together with each asset’s details.</p>
+            <label className={styles.originalPhotos}><input type="checkbox" checked={includeOriginals} onChange={event => setIncludeOriginals(event.target.checked)}/><span><strong>Also include original photos</strong><small>Add separate photos without the asset details. More files may take longer to share.</small></span></label>
+          </div>}
 
           <button type="button" className={styles.addReportButton} onClick={onAddAim4priceReport}>
             <span className={styles.attachmentIcon}><ReportsIcon /></span>
@@ -516,6 +539,17 @@ export default function AssetExternalShare({
         <p className={disclosureStyles.hint}>{attachmentSummary(includePhotos && includeOriginals ? selectedPhotoCount : 0, reportFiles.length, cardCount)}. {recipient ? `Recipient: ${recipient.name}.` : 'Choose the recipient in your sharing app.'}</p>
         <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? pendingShare.key : '')} />
         {pendingShare.key !== consentKey && <p role="alert">Your selection changed. Close this dialog and check the details before sharing.</p>}
+        {shareStatus && <p role="status" aria-live="polite">{shareStatus}</p>}
+        {showRecovery && accepted && pendingShare.key === consentKey && preparation.status === 'ready' && <div className={styles.recovery}>
+          <strong>Keep your photos and details together</strong>
+          <p>Download each selected file, then attach it in your app. Asset cards already include their matching details.</p>
+          <div className={styles.downloads}>{preparation.files.map((file, index) => <a key={`${index}-${file.name}`} href={downloadUrls[index]} download={file.name}>{file.name}</a>)}</div>
+          <button type="button" disabled={isSending} onClick={async () => { try { await navigator.clipboard.writeText(copy.body); setShareStatus('Message copied. Paste it into your app.'); } catch { setShareStatus('Copy was blocked. Close this confirmation to select and copy your message.'); } }}>Copy message</button>
+          <button type="button" disabled={isSending} onClick={() => void sendShare(pendingShare.target, true)}>Share files only</button>
+          {pendingShare.target === 'whatsapp' && <a href={whatsappHref} target="_blank" rel="noopener noreferrer">Open WhatsApp with message</a>}
+          <p>Attach downloaded files yourself when opening WhatsApp with the message.</p>
+          <p>Files only excludes your edited message. Copy it separately if needed.</p>
+        </div>}
         <div className={disclosureStyles.actions}>
           <button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>Continue to {pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>
         </div>
