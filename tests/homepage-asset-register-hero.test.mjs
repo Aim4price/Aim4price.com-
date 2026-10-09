@@ -115,7 +115,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(hero, /trackStart = sectionTop - stickyTop/);
   assert.match(hero, /trackTravel = Math\.max\([\s\S]*?1,[\s\S]*?sectionRect\.height - stickyRect\.height,[\s\S]*?\)/);
   assert.match(hero, /localScroll = Math\.max\([\s\S]*?0,[\s\S]*?Math\.min\(trackTravel, currentScrollY - trackStart\),[\s\S]*?\)/);
-  assert.match(hero, /progress = localScroll \/ trackTravel/);
+  assert.match(hero, /progress = Math\.min\(1, localScroll \/ scrollTravel\)/);
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\),[\s\S]*?\)/);
   assert.match(hero, /if \(nextIndex !== storyStepRef\.current\) updateStoryStep\(nextIndex\)/);
   assert.match(hero, /if \(shouldClaimControl\) \{[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsManuallyControlled\(true\);[\s\S]*?setIsPaused\(false\);[\s\S]*?setIsAutoplaying\(false\)/);

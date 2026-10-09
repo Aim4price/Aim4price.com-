@@ -133,10 +133,40 @@ async function check(browser, url) {
       const section = document.querySelector('section[data-story-step]');
       const sticky = section.querySelector('[class*="heroSticky"]');
       const scale = Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);
-      const travel = section.getBoundingClientRect().height - sticky.getBoundingClientRect().height;
+      const start = section.getBoundingClientRect().top + scrollY - parseFloat(getComputedStyle(sticky).top) * scale;
+      const travel = Math.min(section.getBoundingClientRect().height - sticky.getBoundingClientRect().height, document.documentElement.scrollHeight - innerHeight - start);
       window.scrollTo({top: section.getBoundingClientRect().top + scrollY + travel * (3.5 / 8) - parseFloat(getComputedStyle(sticky).top) * scale, behavior: 'instant'});
     });
     await page.waitForFunction(() => document.querySelector('section[data-story-step]')?.dataset.storyStep === 'worth');
+    // Check rendered visibility too: a changing data attribute can hide a blank viewport.
+    const assertStoryPinned = async () => {
+      // Scroll synchronization runs on requestAnimationFrame. Wait for its
+      // observable result rather than assuming CI renders within 100 ms.
+      await page.waitForFunction(() => {
+        const stage = document.querySelector('[class*="heroSticky"]');
+        const scale = Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);
+        return Math.abs(stage.getBoundingClientRect().top - parseFloat(getComputedStyle(stage).top) * scale) < 2;
+      }, { timeout: 5000 });
+      const geometry = await page.evaluate(() => {
+        const stage = document.querySelector('[class*="heroSticky"]');
+        const scale = Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);
+        return { top: stage.getBoundingClientRect().top, expected: parseFloat(getComputedStyle(stage).top) * scale };
+      });
+      assert.ok(Math.abs(geometry.top - geometry.expected) < 2, `story stage left viewport: ${JSON.stringify(geometry)}`);
+    };
+    await assertStoryPinned();
+    // Simulate a browser losing sticky attachment inside the zoomed canvas.
+    await page.evaluate(() => {
+      document.querySelector('[class*="heroSticky"]').style.position = 'relative';
+      window.dispatchEvent(new Event('scroll'));
+    });
+    await assertStoryPinned();
+    await page.evaluate(() => {
+      document.querySelector('[class*="heroSticky"]').style.position = '';
+      window.dispatchEvent(new Event('scroll'));
+    });
+    await assertStoryPinned();
+
     for (const key of ['worth', 'have', 'manage', 'cost', 'attention']) {
       await page.click('#home-asset-question-' + key);
       await page.waitForFunction(key => document.querySelector('#home-asset-preview')?.dataset.activeQuestion === key, {}, key);
@@ -252,7 +282,7 @@ async function check(browser, url) {
   // Autoplay may have advanced before visit() pauses it. Scrolling is absolute:
   // 68.75% of the eight-stage track selects Manage (index 5); the top selects Brand.
   // Do not use the incidental paused autoplay frame as the return-to-top target.
-  await page.evaluate(()=>{const section=document.querySelector('section[data-story-step]'),sticky=section.querySelector('[class*="heroSticky"]'),scale=Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);window.scrollTo({top:section.getBoundingClientRect().top+scrollY+(section.getBoundingClientRect().height-sticky.getBoundingClientRect().height)*(5.5/8)-parseFloat(getComputedStyle(sticky).top)*scale,behavior:'instant'})});
+  await page.evaluate(()=>{const section=document.querySelector('section[data-story-step]'),sticky=section.querySelector('[class*="heroSticky"]'),scale=Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);window.scrollTo({top:section.getBoundingClientRect().top+scrollY+Math.min(section.getBoundingClientRect().height-sticky.getBoundingClientRect().height,document.documentElement.scrollHeight-innerHeight-(section.getBoundingClientRect().top+scrollY-parseFloat(getComputedStyle(sticky).top)*scale))*(5.5/8)-parseFloat(getComputedStyle(sticky).top)*scale,behavior:'instant'})});
   await page.waitForFunction(()=>document.querySelector('section[data-story-step]')?.dataset.storyStep==='manage',{timeout:10000});
   await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));
   await page.waitForFunction(()=>document.querySelector('section[data-story-step]')?.dataset.storyStep==='brand',{timeout:10000});
