@@ -2,7 +2,7 @@
 import { Children, Fragment, cloneElement, isValidElement, type ReactNode, type ReactElement } from 'react';
 import styles from './ManageActionGrid.module.css';
 
-const order = ['history','details','reports','addPhotos','location','addMaintenance','maintenanceSchedules','loggedProblems','addCosts','suggestValue','corrections','serialNumber','replacementPrice','maintenanceReports','costOfOwnership','documents','whatsapp','email','qr','access'];
+const order = ['history','details','reports','addPhotos','location','addMaintenance','viewParts','addParts','maintenanceSchedules','loggedProblems','addCosts','suggestValue','corrections','serialNumber','replacementPrice','maintenanceReports','costOfOwnership','documents','whatsapp','email','qr','access'];
 function flatten(children: ReactNode, prefix = ""): ReactElement[] {
   return Children.toArray(children).flatMap(child => isValidElement(child)
     ? child.type === Fragment ? flatten((child.props as {children:ReactNode}).children, `${prefix}${child.key}/`) : [cloneElement(child, {key: `${prefix}${child.key}`})]

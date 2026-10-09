@@ -1,4 +1,5 @@
 'use client';
+import AssetPartsModal from '../../components/AssetPartsModal';
 import PhotoViewerActions from '../../components/PhotoViewerActions';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
 import {loadLeaflet} from '../../lib/asset-location-map';
@@ -6303,6 +6304,8 @@ export default function AssetRegisterClient({
   const [showAssetUpdateMenu, setShowAssetUpdateMenu] = useState(false);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
+  const [partsOpen, setPartsOpen] = useState(false);
+  useEffect(() => { setPartsOpen(false); }, [activeAsset?.id]);
   const [ownerAssetCommandPanel, setOwnerAssetCommandPanel] = useState<OwnerAssetCommandPanel>(null);
   const [maintenanceAvailability, setMaintenanceAvailability] = useState<{ assetId: string; hasRecords: boolean; error?: string } | null>(null);
   useEffect(() => {
@@ -8451,7 +8454,7 @@ export default function AssetRegisterClient({
 
       // AssetDocumentUploadModal owns its Escape handling. Leaving this layer in
       // place keeps the parent Manage command centre available when it closes.
-      if (documentUploadAsset) return;
+      if (documentUploadAsset || partsOpen) return;
 
       if (ownerAssetCommandPanel) {
         setOwnerAssetCommandPanel(null);
@@ -8606,7 +8609,7 @@ export default function AssetRegisterClient({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [partsOpen, assetShareDestination, selectedQuoteOption, isExporting, isSendingQuoteLead, assetUpdateMenuEnabled, showAssetUpdateMenu, manualAssetStep, assetAutosaveState, activeAsset, anyModalOpen, assetRegisterMoveAsset, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isAssetSettingsModalOpen || assetSettingsView !== 'locationMap' || !assetSettingsMapElementRef.current) {
@@ -19984,7 +19987,9 @@ export default function AssetRegisterClient({
         </div>
       ) : null}
 
-      {activeAsset && ownerAssetCommandPanel ? (
+      {activeAsset && partsOpen && createPortal(<AssetPartsModal endpoint={`/api/asset-register/${activeAsset.id}/parts`} assetTitle={activeAsset.title} assetSubtitle={buildAssetMeta(activeAsset)} onClose={() => setPartsOpen(false)} />, document.body)}
+
+      {activeAsset && ownerAssetCommandPanel && !partsOpen ? (
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.ownerCommandChoiceOverlay}`} data-website-overlay data-account-asset-modal>
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => setOwnerAssetCommandPanel(null)} />
 
@@ -20023,6 +20028,10 @@ export default function AssetRegisterClient({
                     <strong>Add maintenance</strong>
                   </span>
                 </Link>
+
+                <button data-manage-action="viewParts" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`} onClick={() => setPartsOpen(true)}>
+                  <ManageIcon className={styles.buttonIcon} /><span><strong>Parts</strong></span>
+                </button>
 
                 {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.hasRecords ? (
                   <Link data-manage-action="maintenanceSchedules"

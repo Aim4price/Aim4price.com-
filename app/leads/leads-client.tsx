@@ -1,4 +1,5 @@
 'use client';
+import AssetPartsModal from '../../components/AssetPartsModal';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
 import ManageActionGrid from '../../components/leads/ManageActionGrid';
 import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
@@ -135,7 +136,7 @@ type AssetLead = {
       canViewCostOfOwnership: boolean;
       canCreateMaintenanceSchedules: boolean;
       canAddPhotos?: boolean;
-      canUpdateDetails?:boolean;canAccessLocation?:boolean;canSuggestCurrentValue?:boolean;canViewHistory?:boolean;canUpdateYear?:boolean;canUpdateUsage?:boolean;canUpdateCondition?:boolean;canAddMaintenance?:boolean;
+      canUpdateDetails?:boolean;canAccessLocation?:boolean;canSuggestCurrentValue?:boolean;canViewHistory?:boolean;canUpdateYear?:boolean;canUpdateUsage?:boolean;canUpdateCondition?:boolean;canAddMaintenance?:boolean;canViewParts?:boolean;canAddParts?:boolean;
       canAddCosts?: boolean;
       canUpdateSerial: boolean;
       canUpdateReplacementPrice: boolean;
@@ -1813,6 +1814,7 @@ export default function LeadsClient({
   const [problemLead,setProblemLead]=useState<AssetLead|null>(null);
   const [valueLead,setValueLead]=useState<AssetLead|null>(null);
   const [locationLead,setLocationLead]=useState<AssetLead|null>(null);
+  const [partsLead, setPartsLead] = useState<AssetLead | null>(null);
   const [sharedWork,setSharedWork]=useState<{lead:AssetLead;action:'details'|'maintenance'|'history';initialField?:'serial'|'replacement'}|null>(null);
   const [contribution,setContribution] = useState<{lead:AssetLead;kind:'photos'|'costs'}|null>(null);
   const [photoUploadLead, setPhotoUploadLead] = useState<AssetLead | null>(null);
@@ -3889,7 +3891,7 @@ export default function LeadsClient({
       ) : null}
 
       {managedLead ? (
-        <LeadManageDialog suspended={Boolean(emailLead || reportLead || maintenanceReportAccessId || costReportLead || maintenanceScheduleLead || qrLeadAsset || photoUploadLead || noteLead || contribution || sharedWork || valueLead || locationLead || problemLead)} title={assetTitle(managedLead)} description={leadAssetMeta(managedLead)} onClose={() => setManagedLead(null)} ownerLayout={useOwnerManageLayout} classes={{
+        <LeadManageDialog suspended={Boolean(partsLead || emailLead || reportLead || maintenanceReportAccessId || costReportLead || maintenanceScheduleLead || qrLeadAsset || photoUploadLead || noteLead || contribution || sharedWork || valueLead || locationLead || problemLead)} title={assetTitle(managedLead)} description={leadAssetMeta(managedLead)} onClose={() => setManagedLead(null)} ownerLayout={useOwnerManageLayout} classes={{
           overlay: useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`,
           modal: useOwnerManageLayout ? `${assetStyles.managementAccountModal} ${accountStyles.modalTheme}` : `${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${isDealerLeadsMode ? `${dialogStyles.surface} ${dialogStyles.flush}` : ''}`,
           header: useOwnerManageLayout ? '' : `${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${isDealerLeadsMode ? dialogStyles.header : ''}`,
@@ -3990,6 +3992,7 @@ export default function LeadsClient({
                         {managedLead.maintenanceAccess.permissions.canSuggestCurrentValue&&<button data-manage-action="suggestValue" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setValueLead(managedLead)}><AssetActionIcon action="replacementPrice" className={assetStyles.buttonIcon}/><span><strong>Suggest current value</strong><small>Send an estimate for owner approval.</small></span></button>}
                         {managedLead.maintenanceAccess.permissions.canAccessLocation&&<button data-manage-action="location" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setLocationLead(managedLead)}><AssetActionIcon action="location" className={assetStyles.buttonIcon}/><span><strong>Asset location</strong><small>View or update where the asset is kept.</small></span></button>}
                         {(managedLead.maintenanceAccess.permissions.canUpdateDetails||managedLead.maintenanceAccess.permissions.canUpdateYear||managedLead.maintenanceAccess.permissions.canUpdateUsage||managedLead.maintenanceAccess.permissions.canUpdateCondition)&&<button data-manage-action="details" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'details'})}><AssetActionIcon action="details" className={assetStyles.buttonIcon} /><span><strong>Update asset details</strong><small>Details, finance, insurance and licensing.</small></span></button>}
+                        {(managedLead.maintenanceAccess.permissions.canViewParts || managedLead.maintenanceAccess.permissions.canAddParts) && <button data-manage-action="viewParts" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => setPartsLead(managedLead)}><AssetActionIcon action="viewParts" className={assetStyles.buttonIcon}/><span><strong>Parts</strong><small>Part numbers linked to maintenance.</small></span></button>}
                         {managedLead.maintenanceAccess.permissions.canAddMaintenance&&<button data-manage-action="addMaintenance" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'maintenance'})}><AssetActionIcon action="addMaintenance" className={assetStyles.buttonIcon} /><span><strong>Add maintenance</strong><small>Record completed work.</small></span></button>}
                         {managedLead.maintenanceAccess.permissions.canViewHistory&&<button data-manage-action="history" type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={()=>setSharedWork({lead:managedLead,action:'history'})}><AssetActionIcon action="history" className={assetStyles.buttonIcon} /><span><strong>History</strong><small>View shared changes.</small></span></button>}
                       </>}
@@ -4018,6 +4021,7 @@ export default function LeadsClient({
       {problemLead&&createPortal(<SharedProblems endpoint={`/api/asset-leads/${problemLead.id}/problems`} assetTitle={assetTitle(problemLead)} onClose={()=>setProblemLead(null)}/>,document.body)}
       {valueLead&&createPortal(<AssetValueDialog suggest endpoint={`/api/asset-leads/${valueLead.id}/value`} assetTitle={assetTitle(valueLead)} onClose={()=>setValueLead(null)}/>,document.body)}
       {locationLead&&createPortal(<SharedAssetLocationDialog endpoint={`/api/asset-leads/${locationLead.id}`} assetTitle={assetTitle(locationLead)} onSaved={()=>{void loadData(false,true)}} onClose={()=>setLocationLead(null)}/>,document.body)}
+      {partsLead && createPortal(<AssetPartsModal endpoint={`/api/asset-leads/${partsLead.id}/parts`} assetTitle={assetTitle(partsLead)} assetSubtitle={leadAssetMeta(partsLead)} onClose={() => setPartsLead(null)}/>, document.body)}
       {sharedWork&&createPortal(<SharedAssetWorkDialog initialField={sharedWork.initialField} endpoint={`/api/asset-leads/${sharedWork.lead.id}`} action={sharedWork.action} onSchedule={sharedWork.lead.maintenanceAccess?.isActive && sharedWork.lead.maintenanceAccess.permissions.canCreateMaintenanceSchedules ? () => { openMaintenanceSchedule(sharedWork.lead); } : undefined} assetTitle={assetTitle(sharedWork.lead)} onSaved={()=>{void loadData(false,true);}} onClose={()=>setSharedWork(null)}/>,document.body)}
       {contribution ? createPortal(<SharedAssetContributionDialog kind={contribution.kind} endpoint={`/api/asset-leads/${contribution.lead.id}/${contribution.kind}`} assetTitle={assetTitle(contribution.lead)} onClose={()=>setContribution(null)} onSaved={()=>{void fetch(`/api/asset-leads/${contribution.lead.id}/media`,{cache:'no-store'}).then(r=>r.json()).then(data=>{if(data.asset)mergeLeadAssetMedia(contribution.lead,data.asset);}).catch(()=>{});}}/>,document.body) : null}
       {qrLeadAsset ? (

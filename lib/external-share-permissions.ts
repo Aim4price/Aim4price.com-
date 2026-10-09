@@ -1,4 +1,6 @@
 export const EXTERNAL_SHARE_OPTIONS = [
+  {key:'viewParts',label:'View parts',description:'View saved part numbers for this asset.'},
+  {key:'addParts',label:'Add parts',description:'Save part numbers and link them to maintenance.'},
   {key:'history',label:'History',description:'Read permitted asset activity.'},
     {key:'suggestValue',label:'Current value access',description:'Update manual values; suggest Aim4price values for owner approval.'},
     { key: 'updateDetails', label: 'Update details', description: 'Title, asset details, paperwork and documents (no invoices).' },
@@ -21,7 +23,7 @@ export const EXTERNAL_SHARE_OPTIONS = [
 ] as const;
 export type ExternalSharePermission = typeof EXTERNAL_SHARE_OPTIONS[number]['key'] | 'allReports';
 export type ExternalSharePermissions = Record<'reports' | 'replacementPrice' | 'serialNumber' | 'documents', boolean> & Partial<Record<ExternalSharePermission, boolean>> & { directUpdates?: boolean; allReports?: boolean };
-export const EMPTY_EXTERNAL_PERMISSIONS: ExternalSharePermissions = { history:false,suggestValue:false,updateDetails:false,location:false,yearModel:false,usage:false,condition:false,addMaintenance:false,addPhotos:false, addCosts:false, reports: false, replacementPrice: false, serialNumber: false, documents: false, loggedProblems: false, maintenanceReports: false, costOfOwnership: false, maintenanceSchedules: false };
+export const EMPTY_EXTERNAL_PERMISSIONS: ExternalSharePermissions = { viewParts:false,addParts:false,history:false,suggestValue:false,updateDetails:false,location:false,yearModel:false,usage:false,condition:false,addMaintenance:false,addPhotos:false, addCosts:false, reports: false, replacementPrice: false, serialNumber: false, documents: false, loggedProblems: false, maintenanceReports: false, costOfOwnership: false, maintenanceSchedules: false };
 export function normalizeExternalPermissions(value: unknown): ExternalSharePermissions {
     const input = value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
     return { ...Object.fromEntries(EXTERNAL_SHARE_OPTIONS.map(({ key }) => [key, input[key] === true])), directUpdates: input.directUpdates === true, allReports: input.allReports === true } as ExternalSharePermissions;
@@ -48,6 +50,6 @@ export function assetLinkPermissions(value: unknown = {}): ExternalSharePermissi
 /** Keep only the viewing access explicitly selected by the owner. */
 export function readOnlyAssetLinkPermissions(value: Partial<ExternalSharePermissions> = {}): ExternalSharePermissions {
   const selected = normalizeExternalPermissions(value);
-  return {...assetLinkPermissions(), history:selected.history, maintenanceReports:selected.maintenanceReports, costOfOwnership:selected.costOfOwnership};
+  return {...assetLinkPermissions(), viewParts:selected.viewParts, history:selected.history, maintenanceReports:selected.maintenanceReports, costOfOwnership:selected.costOfOwnership};
 }
 
