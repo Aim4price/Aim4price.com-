@@ -110,3 +110,24 @@ export function buildEmailShareUrl(copy: ExternalAssetShareCopy, email?: string)
   const recipient = /^[^\s@<>;,]+@[^\s@<>;,]+\.[^\s@<>;,]+$/.test(email || '') ? email! : '';
   return `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(copy.subject)}&body=${encodeURIComponent(copy.body)}`;
 }
+
+// Keep asset blocks together when possible and preserve every character of edited copy.
+export function splitWhatsAppMessages(body: string): string[] {
+  const parts: string[] = [];
+  let remaining = body;
+  const limit = 1800;
+  while (remaining.length > limit) {
+    const candidate = remaining.slice(0, limit);
+    const assetBoundary = candidate.lastIndexOf('\n------------------------------\n');
+    const paragraph = candidate.lastIndexOf('\n\n');
+    const line = candidate.lastIndexOf('\n');
+    const space = candidate.lastIndexOf(' ');
+    let end = assetBoundary > 0 ? assetBoundary + 32 : paragraph > 0 ? paragraph + 2 : line > 0 ? line + 1 : space > 0 ? space + 1 : limit;
+    // Never divide a Unicode surrogate pair.
+    if (/[\uD800-\uDBFF]/.test(remaining[end - 1])) end--;
+    parts.push(remaining.slice(0, end));
+    remaining = remaining.slice(end);
+  }
+  if (remaining || !parts.length) parts.push(remaining);
+  return parts;
+}

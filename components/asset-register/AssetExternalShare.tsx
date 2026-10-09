@@ -10,6 +10,7 @@ import {
   buildEmailShareUrl,
   buildExternalAssetShareCopy,
   buildWhatsAppShareUrl,
+  splitWhatsAppMessages,
   type ExternalAssetShareItem,
 } from '../../lib/asset-external-share';
 import {
@@ -229,7 +230,7 @@ export default function AssetExternalShare({
   const [sendingTarget, setSendingTarget] = useState<ShareTarget | null>(null);
   const [shareStatus, setShareStatus] = useState('');
   const [showRecovery, setShowRecovery] = useState(false);
-  const [downloadUrls, setDownloadUrls] = useState<string[]>([]);
+  const [messagePart, setMessagePart] = useState(0);
   const cardCache = useRef(new Map<string, Promise<File[]>>());
   const [preparation, setPreparation] = useState<AttachmentPreparation>({
     status: 'idle',
@@ -274,6 +275,9 @@ export default function AssetExternalShare({
   const copy = { ...defaultCopy, body: editedMessage?.scope === messageScope ? editedMessage.body : defaultCopy.body };
   const cardCount = includePhotos ? assets.reduce((total, asset) => total + Math.max(1, Math.ceil(asset.photoUrls.length / 4)), 0) : 0;
   const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
+  const messageParts = splitWhatsAppMessages(copy.body);
+  const activeMessagePart = Math.min(messagePart, messageParts.length - 1);
+  const messagePartHref = buildWhatsAppShareUrl({ ...copy, body: messageParts[activeMessagePart] }, recipient?.phone);
   const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
   const selectedAttachmentCount = cardCount + (includePhotos && includeOriginals ? savedPhotoCount : 0) + reportFiles.length;
   const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient, copy.body]);
@@ -348,12 +352,6 @@ export default function AssetExternalShare({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attachmentFileCache, preparationAttempt, selectedSourceSignature]);
 
-  useEffect(() => {
-    const urls = preparation.files.map(file => URL.createObjectURL(file));
-    setDownloadUrls(urls);
-    return () => urls.forEach(url => URL.revokeObjectURL(url));
-  }, [preparation.files]);
-
   function togglePhotos() {
     setIncludePhotos((current) => !current);
     setShareStatus('');
@@ -367,6 +365,7 @@ export default function AssetExternalShare({
   function openDisclosure(target: ShareTarget, trigger: HTMLButtonElement) {
     shareTrigger.current = trigger;
     setShowRecovery(false);
+    setMessagePart(0);
     setShareStatus('');
     setAcceptedKey('');
     setPendingShare({target, key: consentKey});
@@ -378,7 +377,7 @@ export default function AssetExternalShare({
     shareTrigger.current?.focus();
   }
 
-  async function sendShare(target: ShareTarget, filesOnly = false) {
+  async function sendShare(target: ShareTarget) {
     if (!accepted || !pendingShare || pendingShare.key !== consentKey || pendingShare.target !== target || isSending) return;
     setShareStatus('');
     setShowRecovery(false);
@@ -386,6 +385,8 @@ export default function AssetExternalShare({
     if (!selectedAttachmentCount) {
       if (target === 'email') {
         window.location.assign(emailHref);
+      } else if (messageParts.length > 1) {
+        setShowRecovery(true);
       } else {
         window.open(whatsappHref, '_blank', 'noopener,noreferrer');
       }
@@ -393,6 +394,11 @@ export default function AssetExternalShare({
     }
 
     if (preparation.status === 'error') {
+      if (target === 'whatsapp') {
+        setShowRecovery(true);
+        setShareStatus('Photos could not be prepared. Your asset details are ready to send as messages.');
+        return;
+      }
       setPreparationAttempt((current) => current + 1);
       setShareStatus('Trying to prepare the attachments again…');
       return;
@@ -405,13 +411,13 @@ export default function AssetExternalShare({
 
     if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
       setShowRecovery(true);
-      setShareStatus('This browser cannot send attachments directly. Download the files below and attach them in WhatsApp or email.');
+      setShareStatus(target === 'whatsapp' ? 'This browser cannot share attachments. Send your asset details as messages instead.' : 'This browser cannot share attachments. Try another browser or device.');
       return;
     }
 
     const shareData: ShareData = {
       files: preparation.files,
-      ...(filesOnly ? {} : { title: copy.subject, text: copy.body }),
+      title: copy.subject, text: copy.body,
     };
     let canSharePayload = false;
     try {
@@ -423,7 +429,7 @@ export default function AssetExternalShare({
     }
     if (!canSharePayload) {
       setShowRecovery(true);
-      setShareStatus('This device cannot share this combination of files and message. Try files only, or download the files and attach them yourself.');
+      setShareStatus(target === 'whatsapp' ? 'This device cannot share these attachments. Send your asset details as messages instead.' : 'This device cannot share these attachments and message. Try another browser or device.');
       return;
     }
 
@@ -437,7 +443,7 @@ export default function AssetExternalShare({
         setShareStatus('Sharing cancelled. Your message and attachments are still ready.');
       } else {
         setShowRecovery(true);
-        setShareStatus('Your browser blocked direct sharing. Your message and photos are still here. Retry, try files only, or download them below to attach in your app.');
+        setShareStatus(target === 'whatsapp' ? 'Photo sharing was blocked. Your asset details are ready to send as messages.' : 'Attachment sharing was blocked. Your message and attachments are still here. Try again or use another browser.');
       }
     } finally {
       setSendingTarget(null);
@@ -551,18 +557,19 @@ export default function AssetExternalShare({
         <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? pendingShare.key : '')} />
         {pendingShare.key !== consentKey && <p role="alert">Your selection changed. Close this dialog and check the details before sharing.</p>}
         {shareStatus && <p role="status" aria-live="polite">{shareStatus}</p>}
-        {showRecovery && accepted && pendingShare.key === consentKey && preparation.status === 'ready' && <div className={styles.recovery}>
-          <strong>Keep your photos and details together</strong>
-          <p>Download each selected file, then attach it in your app. Asset cards already include their matching details.</p>
-          <div className={styles.downloads}>{preparation.files.map((file, index) => <a key={`${index}-${file.name}`} href={downloadUrls[index]} download={file.name}>{file.name}</a>)}</div>
-          <button type="button" disabled={isSending} onClick={async () => { try { await navigator.clipboard.writeText(copy.body); setShareStatus('Message copied. Paste it into your app.'); } catch { setShareStatus('Copy was blocked. Close this confirmation to select and copy your message.'); } }}>Copy message</button>
-          <button type="button" disabled={isSending} onClick={() => void sendShare(pendingShare.target, true)}>Share files only</button>
-          {pendingShare.target === 'whatsapp' && <a href={whatsappHref} target="_blank" rel="noopener noreferrer">Open WhatsApp with message</a>}
-          <p>Attach downloaded files yourself when opening WhatsApp with the message.</p>
-          <p>Files only excludes your edited message. Copy it separately if needed.</p>
+        {showRecovery && pendingShare.target === 'whatsapp' && accepted && pendingShare.key === consentKey && <div className={styles.recovery}>
+          <strong>{messageParts.length > 1 ? `Message ${activeMessagePart + 1} of ${messageParts.length}` : 'Send asset details'}</strong>
+          <p>Open this message in WhatsApp, choose your recipient and press Send.{messageParts.length > 1 ? ' Then return here for the next message.' : ''}</p>
+          {selectedAttachmentCount > 0 && <p>Messages contain your text only. Photos and reports are not attached.</p>}
+          <pre className={styles.messagePartPreview}>{messageParts[activeMessagePart]}</pre>
+          <a className={styles.messagePartLink} href={messagePartHref} target="_blank" rel="noopener noreferrer">Open message in WhatsApp</a>
+          {messageParts.length > 1 && <div className={styles.messagePartNavigation}>
+            <button type="button" disabled={activeMessagePart === 0} onClick={() => setMessagePart(activeMessagePart - 1)}>Previous message</button>
+            <button type="button" disabled={activeMessagePart === messageParts.length - 1} onClick={() => setMessagePart(activeMessagePart + 1)}>Next message</button>
+          </div>}
         </div>}
         <div className={disclosureStyles.actions}>
-          <button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>Continue to {pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>
+          <button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>{showRecovery && pendingShare.target === 'whatsapp' ? 'Retry photos with ' : 'Continue to '}{pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>
         </div>
       </ShareDisclosureDialog>}
     </section>
