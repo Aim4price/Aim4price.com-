@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'lib/maintenance-catalogue*'
+      - 'lib/asset-parts*'
+      - 'components/AssetPartsModal*'
+      - 'app/api/**/parts/**'
+      - 'tests/asset-parts.test.cjs'
       - 'lib/use-maintenance-checklist.ts'
       - 'lib/asset-maintenance.ts'
       - 'lib/scan-assets.ts'
@@ -34,7 +38,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: node --test tests/maintenance-completion-stages.test.cjs tests/maintenance-catalogue.test.cjs tests/maintenance-card-refresh.test.cjs tests/desktop-service-modal.test.mjs tests/manual-maintenance-completion.test.mjs tests/maintenance-schedule-linking.test.mjs tests/maintenance-flow-guard.test.mjs tests/field-manager-offline.test.cjs
+      - run: node --test tests/asset-parts.test.cjs tests/maintenance-completion-stages.test.cjs tests/maintenance-catalogue.test.cjs tests/maintenance-card-refresh.test.cjs tests/desktop-service-modal.test.mjs tests/manual-maintenance-completion.test.mjs tests/maintenance-schedule-linking.test.mjs tests/maintenance-flow-guard.test.mjs tests/field-manager-offline.test.cjs
       - run: node scripts/verify-maintenance-catalogue.cjs
       - uses: actions/upload-artifact@v4
         if: always()

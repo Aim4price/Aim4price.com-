@@ -59,6 +59,8 @@ export type DealerMaintenancePermissions = {
   canUpdateUsage?: boolean;
   canUpdateCondition?: boolean;
   canAddMaintenance?: boolean;
+  canViewParts?: boolean;
+  canAddParts?: boolean;
   canAddCosts?: boolean;
   canUpdateSerial: boolean;
   canUpdateReplacementPrice: boolean;
@@ -230,6 +232,8 @@ type DealerMaintenanceAccessRow = {
   can_update_usage?: boolean | null;
   can_update_condition?: boolean | null;
   can_add_maintenance?: boolean | null;
+  can_view_parts?: boolean | null;
+  can_add_parts?: boolean | null;
   can_add_costs?: boolean | null;
   can_update_serial: boolean | null;
   can_update_replacement_price: boolean | null;
@@ -437,6 +441,8 @@ function rowPermissions(row: DealerMaintenanceAccessRow): DealerMaintenancePermi
     canUpdateUsage: row.can_update_usage === true,
     canUpdateCondition: row.can_update_condition === true,
     canAddMaintenance: row.can_add_maintenance === true,
+    canViewParts: row.can_view_parts === true,
+    canAddParts: row.can_add_parts === true,
     canAddCosts: row.can_add_costs === true,
     canUpdateSerial: row.can_update_serial !== false,
     canUpdateReplacementPrice: row.can_update_replacement_price !== false,
@@ -487,6 +493,8 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
         can_update_usage,
         can_update_condition,
         can_add_maintenance,
+        can_view_parts,
+        can_add_parts,
         can_add_costs,
         can_update_serial,
         can_update_replacement_price,
@@ -559,6 +567,8 @@ async function ensureDealerMaintenanceTablesOnce(): Promise<void> {
       add column if not exists can_update_usage boolean not null default false,
       add column if not exists can_update_condition boolean not null default false,
       add column if not exists can_add_maintenance boolean not null default false,
+      add column if not exists can_view_parts boolean not null default false,
+      add column if not exists can_add_parts boolean not null default false,
       add column if not exists can_add_costs boolean not null default false,
       add column if not exists can_update_serial boolean not null default true,
       add column if not exists can_update_replacement_price boolean not null default true
@@ -662,6 +672,8 @@ async function listAccessRows(whereSql: string, values: unknown[]): Promise<Deal
         access.can_update_usage,
         access.can_update_condition,
         access.can_add_maintenance,
+        access.can_view_parts,
+        access.can_add_parts,
         access.can_add_costs,
         access.can_update_serial,
         access.can_update_replacement_price,
@@ -762,6 +774,8 @@ export async function grantDealerMaintenanceTracking(input: {
         can_update_usage,
         can_update_condition,
         can_add_maintenance,
+        can_view_parts,
+        can_add_parts,
         can_add_costs,
         can_update_serial,
         can_update_replacement_price,
@@ -770,7 +784,7 @@ export async function grantDealerMaintenanceTracking(input: {
         created_at,
         updated_at
       )
-      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $13, $19, $20, $21, $22, $15, $16, $17, $18, $14, $11, $12, true, null, now(), now())
+      values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $13, $19, $20, $21, $22, $15, $16, $17, $18, $23, $24, $14, $11, $12, true, null, now(), now())
       on conflict (owner_user_id, dealer_user_id, asset_register_item_id)
       do update set
         granted_by_actor_type = excluded.granted_by_actor_type,
@@ -789,6 +803,8 @@ export async function grantDealerMaintenanceTracking(input: {
         can_update_usage = excluded.can_update_usage,
         can_update_condition = excluded.can_update_condition,
         can_add_maintenance = excluded.can_add_maintenance,
+        can_view_parts = excluded.can_view_parts,
+        can_add_parts = excluded.can_add_parts,
         can_add_costs = excluded.can_add_costs,
         can_update_serial = excluded.can_update_serial,
         can_update_replacement_price = excluded.can_update_replacement_price,
@@ -820,6 +836,8 @@ export async function grantDealerMaintenanceTracking(input: {
       permissions.canAccessLocation === true,
       permissions.canSuggestCurrentValue === true,
       permissions.canViewHistory === true,
+      permissions.canViewParts === true,
+      permissions.canAddParts === true,
 
     ],
   );
@@ -871,6 +889,8 @@ export async function updateDealerMaintenancePermissions(input: {
         can_access_location = $17,
         can_suggest_current_value = $18,
         can_view_history = $19,
+        can_view_parts = $20,
+        can_add_parts = $21,
 
         can_update_serial = $8,
         can_update_replacement_price = $9,
@@ -900,6 +920,8 @@ export async function updateDealerMaintenancePermissions(input: {
       input.permissions.canAccessLocation === true,
       input.permissions.canSuggestCurrentValue === true,
       input.permissions.canViewHistory === true,
+      input.permissions.canViewParts === true,
+      input.permissions.canAddParts === true,
 
     ],
   );

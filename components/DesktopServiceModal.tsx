@@ -1,4 +1,5 @@
 'use client';
+import type { AssetPart } from '../lib/asset-parts';
 import DateInput from './DateInput';
 
 import { useEffect, useRef, useMemo, useState, type KeyboardEvent, type FormEvent } from 'react';
@@ -52,6 +53,7 @@ export type DesktopServiceRecord = {
 
 type Props = {
   checklistEndpoint?: string;
+  partsEndpoint?: string;
   record: DesktopServiceRecord;
   busy?: boolean;
   askScheduleLink?: boolean;
@@ -108,8 +110,17 @@ export default function DesktopServiceModal({
   standalone = false,
   onBack,
   onClose,
+  partsEndpoint,
   onSubmit,
 }: Props) {
+  const [referenceParts, setReferenceParts] = useState<AssetPart[]>([]);
+  const referenceEndpoint = partsEndpoint || (!dealerAppMode && !checklistEndpoint && record.assetId ? `/api/asset-register/${record.assetId}/parts` : undefined);
+  useEffect(() => {
+    setReferenceParts([]); if (!referenceEndpoint) return;
+    const controller = new AbortController();
+    fetch(referenceEndpoint, { cache: 'no-store', signal: controller.signal }).then(async response => { if (response.ok) { const data = await response.json(); setReferenceParts(data.parts || []); } }).catch(() => {});
+    return () => controller.abort();
+  }, [referenceEndpoint]);
   const mode = record.maintenanceType === 'checkup' ? 'checked' : 'serviced';
   const profile = useMemo(() => resolveAssetServiceProfile({
     title: record.assetTitle,
@@ -350,7 +361,7 @@ export default function DesktopServiceModal({
                       disabled={busy}
                     >
                       <span className={styles.checkbox}>{selected ? <CheckIcon /> : null}</span>
-                      <span><strong>{option.label}</strong>{option.id.startsWith('asset_custom_') ? <small className={styles.customTag}>Your saved checklist item</small> : null}{option.description ? <small>{option.description}</small> : null}</span>
+                      <span><strong>{option.label}</strong>{referenceParts.filter(part => part.itemKey === option.id).map(part => <small key={part.id}>Saved part: {part.partNumber}{part.brand ? ` · ${part.brand}` : ''}</small>)}{option.id.startsWith('asset_custom_') ? <small className={styles.customTag}>Your saved checklist item</small> : null}{option.description ? <small>{option.description}</small> : null}</span>
                     </button>
                   );
                 })}

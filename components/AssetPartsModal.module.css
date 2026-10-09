@@ -1,0 +1,41 @@
+.modal { width:min(1120px,var(--website-dialog-reference-width,100%))!important; color:var(--app-text,#143e32); }
+.intro { display:flex; justify-content:space-between; align-items:center; gap:24px; margin-bottom:22px; }
+.intro p { margin:0; line-height:1.6; }
+.modal small,.hint { color:var(--app-muted,#61776e); font-size:.9rem; }
+.modal button { font:inherit; font-weight:650; padding:12px 22px; border:1px solid #c4d9d0; border-radius:12px; background:#f6faf8; color:#174c3a; cursor:pointer; }
+.modal button.primary { background:#086747; color:white; border-color:#086747; white-space:nowrap; }
+.modal button:disabled { opacity:.55; cursor:default; }
+.fields { border:0; padding:0; margin:0; min-width:0; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.selectField,.fields label,.search { display:flex; flex-direction:column; gap:8px; font-weight:600; }
+.modal input,.modal select,.modal textarea { box-sizing:border-box; width:100%; min-height:48px; padding:12px 14px; font:inherit; color:#143e32; background:#eaf7ef; border:1px solid #bbd9c7; border-radius:10px; }
+.modal textarea { resize:vertical; }
+.full { grid-column:1/-1; }
+.actions { display:flex; align-items:center; justify-content:flex-end; gap:14px; margin-top:22px; }
+.search { margin-bottom:20px; }
+.list { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.part { color:#143e32; padding:20px; border:1px solid #d4e4db; border-radius:16px; background:#f8fbf9; overflow-wrap:anywhere; }
+.part h3 { font-size:1.1rem; margin:5px 0 10px; }
+.part p { white-space:pre-wrap; margin:10px 0; }
+.part > small { display:block; margin-top:12px; }
+.number { font-size:1.1rem; }
+.empty { padding:32px; border-radius:16px; background:#f3f8f5; text-align:center; }
+.notice { background:#eaf7ef; padding:12px; border-radius:10px; }
+.error { color:#982e23; }
+.modal :is(button,input,select,textarea):focus-visible { outline:3px solid #52a58a; outline-offset:3px; }
+@media(max-width:650px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal { width:calc(100vw - 24px)!important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .fields,
+  :global(:where(html:not(:has([data-website-canvas])))) .list { grid-template-columns:1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .intro { align-items:flex-start; flex-direction:column; gap:12px; }
+}
+
+.selectField > div > button { width:100%; min-height:48px; background:#eaf7ef; color:#143e32; }
+
+.modal { max-height:calc(var(--website-visible-height,100dvh) - 40px)!important; }
+.modal .fields :is(input,textarea),.modal input[type="search"] { background:#eaf7ef!important; color:#143e32!important; border-color:#bbd9c7!important; }
+.modal :is(input,textarea)::placeholder { color:#61776e!important; opacity:1; }
+.modal .selectField > div > button { background:#eaf7ef!important; color:#143e32!important; }
+.part small,.part .hint { color:#61776e; }
+.modal.modal.modal .fields :is(input,textarea),.modal.modal.modal input[type="search"] { background:#eaf7ef!important; color:#143e32!important; }
+.modal.modal.modal .selectField button :is(span,strong,small) { color:#143e32!important; }
+.modal { --typing-field-surface:#eaf7ef; --typing-field-focus:#e1f2e7; --typing-field-text:#143e32; --typing-field-placeholder:#61776e; }

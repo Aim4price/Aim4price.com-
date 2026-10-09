@@ -5,7 +5,7 @@ type IconProps = { className?: string };
 export default function AssetActionIcon({ action, className }: IconProps & { action: ExternalSharePermission | 'details' | 'history' | 'access' }) {
   switch (action) {
     case 'details': case 'yearModel': case 'usage': case 'condition': return <UpdateAssetIcon className={className} />;
-    case 'addMaintenance': return <ManageIcon className={className} />;
+    case 'viewParts': case 'addParts': case 'addMaintenance': return <ManageIcon className={className} />;
     case 'addPhotos': return <PhotosIcon className={className} />;
     case 'suggestValue': case 'addCosts': case 'costOfOwnership': case 'replacementPrice': return <MoneyBagIcon className={className} />;
     case 'reports': case 'allReports': case 'maintenanceReports': return <DownloadIcon className={className} />;

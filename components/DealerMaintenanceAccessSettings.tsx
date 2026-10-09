@@ -24,6 +24,8 @@ type AccessResponse = {
 
 export const DEFAULT_DEALER_MAINTENANCE_PERMISSIONS: DealerMaintenancePermissions = {
   canViewHistory: false,
+  canViewParts: false,
+  canAddParts: false,
   canViewLoggedProblems: false,
   canViewMaintenanceReports: false,
   canViewCostOfOwnership: false,
@@ -43,6 +45,8 @@ export const dealerMaintenancePermissionOptions: Array<{
   {key:'canAddPhotos', title:'Add photos', description:'Upload asset photos.'},
   {key:'canAddCosts', title:'Add costs', description:'Record costs and documents.'},
   {key:'canViewLoggedProblems', title:'Log problems', description:'Record and resolve problems.'},
+  {key:'canViewParts', title:'View parts', description:'View saved part numbers.'},
+  {key:'canAddParts', title:'Add parts', description:'Save part numbers.'},
   {key:'canAddMaintenance', title:'Add maintenance', description:'Record completed work.'},
   {key:'canCreateMaintenanceSchedules', title:'Schedule maintenance', description:'Plan upcoming work.'},
   {key:'canViewHistory', title:'View history', description:'Read permitted asset activity.'},
