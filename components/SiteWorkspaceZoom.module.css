@@ -262,7 +262,7 @@
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.32;
+  opacity: 0.12;
   background-image:
     linear-gradient(rgba(20, 91, 70, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(20, 91, 70, 0.045) 1px, transparent 1px);
@@ -270,13 +270,14 @@
 }
 
 .landscapePanel {
-  width: min(100%, 31.5rem);
-  padding: 1.65rem 1.55rem 1.35rem;
+  width: min(100%, 23rem);
+  box-sizing: border-box;
+  padding: 1.65rem 1.5rem 1.5rem;
   border: 1px solid rgba(21, 91, 70, 0.12);
-  border-radius: 1.9rem;
+  border-radius: 1.5rem;
   background: rgba(255, 255, 255, 0.82);
   box-shadow:
-    0 1.5rem 4.4rem rgba(18, 73, 57, 0.12),
+    0 1rem 3rem rgba(18, 73, 57, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(18px) saturate(1.08);
   -webkit-backdrop-filter: blur(18px) saturate(1.08);
@@ -284,9 +285,9 @@
 
 .landscapeLogo {
   display: block;
-  width: 6.25rem;
+  width: 3.6rem;
   height: auto;
-  margin: 0 auto 0.45rem;
+  margin: 0 auto 1rem;
   object-fit: contain;
 }
 
@@ -294,37 +295,37 @@
   margin: 0 0 0.5rem;
   color: #187257;
   font-size: 0.72rem;
-  font-weight: 850;
+  font-weight: 500;
   line-height: 1.2;
-  letter-spacing: 0.115em;
-  text-transform: uppercase;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .landscapeTitle {
   margin: 0;
   color: #102f27;
-  font-size: 1.9rem;
-  font-weight: 900;
-  line-height: 1.02;
-  letter-spacing: -0.045em;
+  font-size: 1.65rem;
+  font-weight: 600;
+  line-height: 1.18;
+  letter-spacing: -0.035em;
 }
 
 .landscapeDescription {
-  max-width: 27rem;
+  max-width: 18rem;
   margin: 0.78rem auto 0;
   color: #48675e;
-  font-size: 0.98rem;
-  font-weight: 580;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.6;
   letter-spacing: -0.012em;
 }
 
 .landscapeRotateStage {
   position: relative;
   display: grid;
-  width: 12rem;
-  height: 8.7rem;
-  margin: 0.85rem auto 0.15rem;
+  width: 10rem;
+  height: 8rem;
+  margin: 1rem auto 0.5rem;
   place-items: center;
 }
 
@@ -336,7 +337,7 @@
   overflow: visible;
   fill: none;
   stroke: rgba(20, 114, 86, 0.56);
-  stroke-width: 5;
+  stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -344,13 +345,14 @@
 .landscapePhone {
   position: relative;
   z-index: 1;
-  width: 3.85rem;
-  height: 6.8rem;
+  width: 3.25rem;
+  height: 5.65rem;
+  box-sizing: border-box;
   padding: 0.42rem 0.34rem 0.38rem;
-  border: 0.22rem solid #164d3d;
+  border: 0.15rem solid #164d3d;
   border-radius: 1rem;
   background: #fcfefd;
-  box-shadow: 0 0.85rem 1.7rem rgba(13, 68, 51, 0.17);
+  box-shadow: 0 0.5rem 1.25rem rgba(13, 68, 51, 0.09);
   transform-origin: center;
   animation: landscapePhoneTurn 2.85s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
@@ -395,24 +397,14 @@
   margin: 0;
   color: #145e49;
   font-size: 0.9rem;
-  font-weight: 820;
+  font-weight: 500;
   line-height: 1.2;
-}
-
-.landscapeInstruction::before {
-  content: '';
-  width: 0.5rem;
-  height: 0.5rem;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: #23906d;
-  box-shadow: 0 0 0 0.3rem rgba(35, 144, 109, 0.11);
-  animation: landscapeReadyPulse 1.8s ease-in-out infinite;
 }
 
 .portraitBypass {
   appearance: none;
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   min-height: 2.8rem;
   margin-top: 1.15rem;
   padding: 0.7rem 1.15rem;
@@ -425,7 +417,7 @@
   box-shadow: 0 0.35rem 0.9rem rgba(18, 73, 57, 0.055);
   font: inherit;
   font-size: 0.83rem;
-  font-weight: 730;
+  font-weight: 500;
   line-height: 1;
   cursor: pointer;
   transition:
@@ -449,24 +441,18 @@
 
 @keyframes landscapePhoneTurn {
   0%, 18% { transform: rotate(0deg); }
-  48%, 72% { transform: rotate(90deg); }
+  48%, 72% { transform: rotate(-90deg); }
   100% { transform: rotate(0deg); }
-}
-
-@keyframes landscapeReadyPulse {
-  0%, 100% { opacity: 0.58; transform: scale(0.88); }
-  50% { opacity: 1; transform: scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .landscapePhone,
-  .landscapeInstruction::before,
   .portraitBypass {
     animation: none;
     transition: none;
   }
 
-  .landscapePhone { transform: rotate(90deg); }
+  .landscapePhone { transform: rotate(-90deg); }
 }
 
 @media (forced-colors: active) {
