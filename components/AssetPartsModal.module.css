@@ -1,64 +1,39 @@
-.modal { width:min(1120px,var(--website-dialog-reference-width,100%))!important; color:var(--app-text,#143e32); }
-.intro { display:flex; justify-content:space-between; align-items:center; gap:24px; margin-bottom:22px; }
-.intro p { margin:0; line-height:1.6; }
-.modal small,.hint { color:var(--app-muted,#61776e); font-size:.9rem; }
-.modal button { font:inherit; font-weight:650; padding:12px 22px; border:1px solid #c4d9d0; border-radius:12px; background:#f6faf8; color:#174c3a; cursor:pointer; }
-.modal button.primary { background:#086747; color:white; border-color:#086747; white-space:nowrap; }
-.modal button:disabled { opacity:.55; cursor:default; }
-.fields { border:0; padding:0; margin:0; min-width:0; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.selectField,.fields label,.search { display:flex; flex-direction:column; gap:8px; font-weight:600; }
-.modal input,.modal select,.modal textarea { box-sizing:border-box; width:100%; min-height:48px; padding:12px 14px; font:inherit; color:#143e32; background:#eaf7ef; border:1px solid #bbd9c7; border-radius:10px; }
+/* The shell, editor and actions use the same classes as MaintenanceChecklistBrowser. */
+.modal { --typing-field-surface:#eaf7ef; --typing-field-focus:#e1f2e7; --typing-field-text:#143e32; --typing-field-placeholder:#61776e; }
+.body { color:var(--app-text,#17362c); }
+.stepTitle { margin:0; font-size:1rem; line-height:1.4; }
+.stepTitle:focus { outline:none; }
+.hint,.modal small { color:var(--app-muted,#607168); font-size:.88rem; line-height:1.5; }
+.fields { border:0; padding:0; margin:0; min-width:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }
+.fields:has(> label) { padding:1rem; border:1px solid #d6e4dd; }
+.fields label,.search { display:grid; gap:.4rem; font-size:.88rem; font-weight:650; }
+.modal input,.modal textarea { box-sizing:border-box; width:100%; padding:.7rem .85rem; font:inherit; border:1px solid #b9d0c5; }
+.modal.modal input,.modal.modal textarea { background:#eaf7ef!important; color:#143e32!important; }
+.modal input::placeholder,.modal textarea::placeholder { color:#61776e!important; opacity:1; }
 .modal textarea { resize:vertical; }
 .full { grid-column:1/-1; }
-.actions { display:flex; align-items:center; justify-content:flex-end; gap:14px; margin-top:22px; }
-.search { margin-bottom:20px; }
-.list { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.part { color:#143e32; padding:20px; border:1px solid #d4e4db; border-radius:16px; background:#f8fbf9; overflow-wrap:anywhere; }
-.part h3 { font-size:1.1rem; margin:5px 0 10px; }
-.part p { white-space:pre-wrap; margin:10px 0; }
-.part > small { display:block; margin-top:12px; }
-.number { font-size:1.1rem; }
-.empty { padding:32px; border-radius:16px; background:#f3f8f5; text-align:center; }
-.notice { background:#eaf7ef; padding:12px; border-radius:10px; }
-.error { color:#982e23; }
-.modal :is(button,input,select,textarea):focus-visible { outline:3px solid #52a58a; outline-offset:3px; }
-@media(max-width:650px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .modal { width:calc(100vw - 24px)!important; }
+.fields p { margin:0; }
+.choice { composes:itemLabel from './MaintenanceChecklistBrowser.module.css'; font-size:.95rem!important; line-height:1.4; font-weight:700; border:1px solid #d6e4dd; border-radius:.8rem; background:var(--app-surface,#fff); color:var(--app-text,#17362c); text-align:left; overflow-wrap:anywhere; }
+.choice[aria-pressed=true] { border-color:#71ac92; background:var(--app-surface-soft,#f0f8f4); }
+.tick { width:1.1rem; height:1.1rem; flex:0 0 1.1rem; margin-top:.15rem; display:grid; place-items:center; border:1px solid #8daf9e; border-radius:3px; font-size:.8rem; }
+.choice[aria-pressed=true] .tick { background:#14553f; color:#fff; }
+.recordStatus { display:block; }
+.search { margin-bottom:.8rem; }
+.list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.65rem; }
+.part { padding:1rem; border:1px solid #d6e4dd; border-radius:.8rem; background:var(--app-surface,#fff); overflow-wrap:anywhere; }
+.part h3 { font-size:1rem; margin:.25rem 0 .6rem; }
+.part p { white-space:pre-wrap; margin:.5rem 0; }
+.part > small { display:block; margin-top:.6rem; }
+.number { font-size:1rem; }
+.actions { composes:editorActions from './MaintenanceChecklistBrowser.module.css'; margin-top:.8rem; align-items:center; }
+
+.empty { composes:empty from './MaintenanceChecklistBrowser.module.css'; }
+.notice { composes:notice from './MaintenanceChecklistBrowser.module.css'; }
+.error { composes:error from './MaintenanceChecklistBrowser.module.css'; }
+@media(max-width:640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .fields,
-  :global(:where(html:not(:has([data-website-canvas])))) .list { grid-template-columns:1fr; }
-  :global(:where(html:not(:has([data-website-canvas])))) .intro { align-items:flex-start; flex-direction:column; gap:12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .list { grid-template-columns:minmax(0,1fr); }
 }
 
-.selectField > div > button { width:100%; min-height:48px; background:#eaf7ef; color:#143e32; }
-
-.modal { max-height:calc(var(--website-visible-height,100dvh) - 40px)!important; }
-.modal .fields :is(input,textarea),.modal input[type="search"] { background:#eaf7ef!important; color:#143e32!important; border-color:#bbd9c7!important; }
-.modal :is(input,textarea)::placeholder { color:#61776e!important; opacity:1; }
-.modal .selectField > div > button { background:#eaf7ef!important; color:#143e32!important; }
-.part small,.part .hint { color:#61776e; }
-.modal.modal.modal .fields :is(input,textarea),.modal.modal.modal input[type="search"] { background:#eaf7ef!important; color:#143e32!important; }
-.modal.modal.modal .selectField button :is(span,strong,small) { color:#143e32!important; }
-.modal { --typing-field-surface:#eaf7ef; --typing-field-focus:#e1f2e7; --typing-field-text:#143e32; --typing-field-placeholder:#61776e; }
-
-.steps { display:flex; gap:20px; list-style:none; padding:0; margin:0 0 24px; }
-.steps li { display:flex; align-items:center; gap:8px; color:var(--app-muted,#61776e); font-size:.9rem; }
-.steps li span { display:grid; place-items:center; width:30px; height:30px; flex-shrink:0; border-radius:9px; background:#edf4f0; color:#174c3a; }
-.steps li[aria-current="step"] { color:var(--app-text,#143e32); font-weight:700; }
-.steps li[aria-current="step"] span { background:#086747; color:white; }
-.stepTitle { margin:0 0 16px; font-size:1.25rem; }
-.fields p { margin:0 0 6px; }
-.modal button.choice { display:flex; align-items:center; gap:12px; text-align:left; min-height:68px; background:#f8fbf9; overflow-wrap:anywhere; }
-.modal button[aria-pressed="true"] { background:#e5f5ed; border:2px solid #086747; }
-.tick { width:22px; height:22px; flex-shrink:0; display:grid; place-items:center; border:1px solid #8daf9e; border-radius:6px; }
-button[aria-pressed="true"] .tick { background:#086747; color:white; }
-.modal button.addChoice { display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:18px 20px; background:#edf8f2; border-color:#a7d5be; text-align:left; }
-.addChoice small,.recordStatus { display:block; color:#61776e; font-weight:400; }
-.addTop { width:100%; margin-bottom:24px; }
-.actions { margin-top:0; flex-wrap:wrap; }
-@media(max-width:650px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .steps { gap:8px; }
-  :global(:where(html:not(:has([data-website-canvas])))) .steps li { flex:1; flex-direction:column; align-items:flex-start; font-size:.75rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .actions { gap:8px; }
-}
-.modal > footer > .actions { grid-column:1/-1; width:100%; }
-.stepTitle:focus { outline:none; }
+/* Parts can open above an existing owner or shared-asset Manage dialog. */
+.overlay { z-index:26000; }
