@@ -3554,3 +3554,6 @@
 .ownerDirectoryHelp { min-height:44px; border:0; background:transparent; color:var(--app-text,var(--owner-ink)); font:700 .85rem Montserrat,sans-serif; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
 .ownerDirectoryHelp:focus-visible,.ownerDirectoryInvite summary:focus-visible { outline:3px solid var(--app-accent,#65a98a); outline-offset:3px; border-radius:8px; }
 .ownerPartnerSearch input::placeholder { color:var(--app-muted,var(--owner-muted)); opacity:1; }
+
+.ownerPhotoViewerCard {padding-top:3.6rem;max-height:calc(100dvh - 24px);overflow:auto;}
+.ownerPhotoViewerCard img {height:min(65dvh,760px);max-height:calc(100dvh - 220px);object-fit:contain;}

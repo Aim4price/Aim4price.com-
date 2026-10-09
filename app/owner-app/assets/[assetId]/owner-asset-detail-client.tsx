@@ -1,4 +1,5 @@
 'use client';
+import PhotoViewerActions from '../../../../components/PhotoViewerActions';
 import DateInput from '../../../../components/DateInput';
 
 import { legacyValuationRecoveryReason } from '../../../../lib/asset-register-legacy-valuation';
@@ -962,7 +963,14 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             <button type="button" className={styles.ownerPhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" />
             <div className={styles.ownerPhotoViewerCard}>
               <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer">×</button>
-              <img src={primaryPhoto} alt={`${draft.title} enlarged photo ${safePhotoIndex + 1}`} />
+              <PhotoViewerActions key={primaryPhoto} url={primaryPhoto} title={`${draft.title}-photo-${safePhotoIndex + 1}`}
+                onEdit={() => { window.location.assign(`/owner-app/assets/${encodeURIComponent(assetId)}/manage/media`); }}
+                onDelete={async () => {
+                  const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}/actions`, {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'media',photos:draft.photos.filter(photo=>photo!==primaryPhoto),documents:draft.documents})});
+                  const data=await response.json();if(!response.ok||!data.ok)throw Error('Unable to remove photo');
+                  await loadDetail(true);setPhotoViewerOpen(false);
+                }} />
+              <img src={primaryPhoto} decoding="async" alt={`${draft.title} enlarged photo ${safePhotoIndex + 1}`} />
               {photoCount > 1 ? (
                 <>
                   <button type="button" className={`${styles.ownerPhotoViewerNav} ${styles.ownerPhotoViewerPrevious}`} onClick={() => cyclePhoto(-1)} aria-label="Show previous photo">‹</button>
@@ -1179,7 +1187,14 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
             <button type="button" className={styles.ownerPhotoViewerBackdrop} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer" />
             <div className={styles.ownerPhotoViewerCard}>
               <button type="button" className={styles.ownerPhotoViewerClose} onClick={() => setPhotoViewerOpen(false)} aria-label="Close photo viewer">×</button>
-              <img src={primaryPhoto} alt={`${draft.title} enlarged photo ${safePhotoIndex + 1}`} />
+              <PhotoViewerActions key={primaryPhoto} url={primaryPhoto} title={`${draft.title}-photo-${safePhotoIndex + 1}`}
+                onEdit={() => { window.location.assign(`/owner-app/assets/${encodeURIComponent(assetId)}/manage/media`); }}
+                onDelete={async () => {
+                  const response = await fetch(`/api/owner-app/assets/${encodeURIComponent(assetId)}/actions`, {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'media',photos:draft.photos.filter(photo=>photo!==primaryPhoto),documents:draft.documents})});
+                  const data=await response.json();if(!response.ok||!data.ok)throw Error('Unable to remove photo');
+                  await loadDetail(true);setPhotoViewerOpen(false);
+                }} />
+              <img src={primaryPhoto} decoding="async" alt={`${draft.title} enlarged photo ${safePhotoIndex + 1}`} />
               {photoCount > 1 ? <>
                 <button type="button" className={`${styles.ownerPhotoViewerNav} ${styles.ownerPhotoViewerPrevious}`} onClick={() => cyclePhoto(-1)} aria-label="Show previous photo">‹</button>
                 <button type="button" className={`${styles.ownerPhotoViewerNav} ${styles.ownerPhotoViewerNext}`} onClick={() => cyclePhoto(1)} aria-label="Show next photo">›</button>
