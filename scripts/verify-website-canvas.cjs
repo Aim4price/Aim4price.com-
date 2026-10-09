@@ -140,6 +140,13 @@ async function check(browser, url) {
     await page.waitForFunction(() => document.querySelector('section[data-story-step]')?.dataset.storyStep === 'worth');
     // Check rendered visibility too: a changing data attribute can hide a blank viewport.
     const assertStoryPinned = async () => {
+      // Scroll synchronization runs on requestAnimationFrame. Wait for its
+      // observable result rather than assuming CI renders within 100 ms.
+      await page.waitForFunction(() => {
+        const stage = document.querySelector('[class*="heroSticky"]');
+        const scale = Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);
+        return Math.abs(stage.getBoundingClientRect().top - parseFloat(getComputedStyle(stage).top) * scale) < 2;
+      }, { timeout: 5000 });
       const geometry = await page.evaluate(() => {
         const stage = document.querySelector('[class*="heroSticky"]');
         const scale = Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);
@@ -153,13 +160,11 @@ async function check(browser, url) {
       document.querySelector('[class*="heroSticky"]').style.position = 'relative';
       window.dispatchEvent(new Event('scroll'));
     });
-    await delay(100);
     await assertStoryPinned();
     await page.evaluate(() => {
       document.querySelector('[class*="heroSticky"]').style.position = '';
       window.dispatchEvent(new Event('scroll'));
     });
-    await delay(100);
     await assertStoryPinned();
 
     for (const key of ['worth', 'have', 'manage', 'cost', 'attention']) {
