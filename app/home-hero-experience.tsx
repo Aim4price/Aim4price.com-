@@ -3,6 +3,7 @@
 import { currentWebsiteScale } from '../lib/website-canvas';
 import { attachHomeStorySwipe } from '../lib/home-story-swipe';
 import { attachHomeStoryScroll } from '../lib/home-story-scroll';
+import { homeStoryPositionCorrection, homeStoryScrollTravel } from '../lib/home-story-position';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -168,7 +169,7 @@ export default function HomeHeroExperience() {
     const sectionRect = section.getBoundingClientRect();
     const stickyTop = (parseFloat(getComputedStyle(sticky).top) || 0) * currentWebsiteScale();
     const trackStart = window.scrollY + sectionRect.top - stickyTop;
-    const travel = Math.max(1, sectionRect.height - sticky.getBoundingClientRect().height);
+    const travel = homeStoryScrollTravel(sectionRect.height - sticky.getBoundingClientRect().height, trackStart);
     const top = Math.max(0, trackStart + travel * ((index + 0.5) / HERO_STORY_STEPS.length));
     alignedScrollRef.current = top;
     window.scrollTo({ top, behavior: 'instant' });
@@ -274,6 +275,7 @@ export default function HomeHeroExperience() {
   useEffect(() => {
     if (!isDesktopStory) return undefined;
 
+    let positionCorrection = 0;
     const scheduleStorySync = (claimControl: boolean) => {
       if (claimControl) autoplayFinishedRef.current = true;
       scrollClaimRef.current = scrollClaimRef.current || claimControl;
@@ -308,7 +310,15 @@ export default function HomeHeroExperience() {
           0,
           Math.min(trackTravel, currentScrollY - trackStart),
         );
-        const progress = localScroll / trackTravel;
+        // Native sticky can lose its viewport attachment inside CSS zoom.
+        // Repair only the missing displacement; healthy sticky remains untouched.
+        positionCorrection = homeStoryPositionCorrection(
+          sectionRect.top, trackTravel, stickyTop, stickyRect.top,
+          positionCorrection, currentWebsiteScale(),
+        );
+        sticky.style.translate = positionCorrection ? `0 ${positionCorrection}px` : '';
+        const scrollTravel = homeStoryScrollTravel(trackTravel, trackStart);
+        const progress = Math.min(1, localScroll / scrollTravel);
         const nextIndex = clampStoryIndex(
           Math.floor(progress * HERO_STORY_STEPS.length),
         );
@@ -327,8 +337,7 @@ export default function HomeHeroExperience() {
     const handleScroll = () => {
       const alignedTop = alignedScrollRef.current;
       alignedScrollRef.current = null;
-      if (alignedTop !== null && Math.abs(window.scrollY - alignedTop) < 2) return;
-      scheduleStorySync(true);
+      scheduleStorySync(!(alignedTop !== null && Math.abs(window.scrollY - alignedTop) < 2));
     };
     const handleResize = () => {
       if (autoplayFinishedRef.current || window.scrollY > 4) {
@@ -345,6 +354,7 @@ export default function HomeHeroExperience() {
     if (window.scrollY > 4) scheduleStorySync(true);
 
     return () => {
+      if (stickyRef.current) stickyRef.current.style.translate = '';
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('aim4price:canvas-geometry', handleResize);
@@ -474,7 +484,7 @@ export default function HomeHeroExperience() {
     claimManualControl();
     const stickyTop = (parseFloat(getComputedStyle(sticky).top) || 0) * currentWebsiteScale();
     const trackStart = window.scrollY + section.getBoundingClientRect().top - stickyTop;
-    const travel = Math.max(1, section.getBoundingClientRect().height - sticky.getBoundingClientRect().height);
+    const travel = homeStoryScrollTravel(section.getBoundingClientRect().height - sticky.getBoundingClientRect().height, trackStart);
     window.scrollTo({
       top: Math.max(0, trackStart + travel * (1.25 / HERO_STORY_STEPS.length)),
       behavior: 'smooth',

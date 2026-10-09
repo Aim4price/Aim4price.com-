@@ -25,7 +25,7 @@ function mountHero({ reducedMotion = false } = {}) {
   const doc = { hidden: false, documentElement: {}, addEventListener: add, removeEventListener: win.removeEventListener };
   const nodes = {
     heroSection: { getBoundingClientRect: () => ({ top: -win.scrollY, height: 4400 }) },
-    heroSticky: { getBoundingClientRect: () => ({ height: 1000 }) },
+    heroSticky: { style: {}, getBoundingClientRect: () => ({ top: 0, height: 1000 }) },
   };
   const nodeFor = classes => {
     const key = classes.split(' ').find(k => nodes[k]) || classes;
@@ -43,7 +43,10 @@ function mountHero({ reducedMotion = false } = {}) {
   const code = ts.transpileModule(fs.readFileSync('app/home-hero-experience.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true },
   }).outputText;
+  const position = {};
+  new Function('exports', 'document', 'window', ts.transpileModule(fs.readFileSync('lib/home-story-position.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(position, doc, win);
   const mocks = {
+    '../lib/home-story-position': position,
     react, 'react/jsx-runtime': { jsx, jsxs: jsx },
     '../lib/website-canvas': { currentWebsiteScale: () => 1 },
     '../lib/home-story-scroll': { attachHomeStoryScroll: () => () => {} },

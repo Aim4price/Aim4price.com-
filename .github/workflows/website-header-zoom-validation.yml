@@ -15,6 +15,10 @@ on:
       - 'tests/header-nav-drag.test.mjs'
       - 'app/home-hero-experience.tsx'
       - 'lib/home-story-swipe.ts'
+      - 'lib/home-story-position.ts'
+      - 'lib/home-story-scroll.ts'
+      - 'tests/home-story-scroll.test.mjs'
+      - 'tests/home-story-position.test.mjs'
       - 'tests/home-story-swipe.test.mjs'
       - 'tests/home-story-playback.test.cjs'
       - 'tests/site-workspace-zoom.test.mjs'
@@ -44,7 +48,7 @@ jobs:
       - name: Website layout regressions
         run: node --test tests/website-phone.test.mjs tests/site-workspace-zoom.test.mjs tests/header-manage-layout.test.mjs tests/header-nav-drag.test.mjs
       - name: Homepage playback and swipe regressions
-        run: node --experimental-strip-types --test tests/home-story-playback.test.cjs tests/home-story-swipe.test.mjs tests/homepage-asset-register-hero.test.mjs
+        run: node --experimental-strip-types --test tests/home-story-scroll.test.mjs tests/home-story-position.test.mjs tests/home-story-playback.test.cjs tests/home-story-swipe.test.mjs tests/homepage-asset-register-hero.test.mjs
       - run: npm run typecheck
       - name: Production bundle validation
         shell: bash
