@@ -283,8 +283,9 @@ export default function Validation(){
    const manageLayout=await page.$eval('[role="dialog"]',dialog=>{const button=dialog.querySelector('button:has(strong)'),title=button.querySelector('strong').getBoundingClientRect(),copy=button.querySelector('small').getBoundingClientRect();return{height:dialog.getBoundingClientRect().height,stacked:copy.top>=title.bottom-1,overflow:dialog.scrollWidth>dialog.clientWidth+1};});
    assert.ok(manageLayout.stacked,'Manage action description sits below its title');assert.equal(manageLayout.overflow,false);
    if(width===1440)assert.ok(manageLayout.height<650,'Manage fits its actions without an empty full-height panel');
+   assert.equal(await page.$$eval('[data-manage-action=serialNumber],[data-manage-action=replacementPrice],[data-manage-action=suggestValue],[data-manage-action=corrections]',els=>els.length),0,'Value and serial edits belong inside Update asset details');
    await page.screenshot({path:path.join(output,`manage-actions-${width}.png`),fullPage:true});
-   await click('Update replacement price');
+   await click('Update asset details');
    await page.waitForSelector('a[href^="/business/join?returnTo="]');
    const guestLink=await page.$eval('a[href^="/business/join?returnTo="]',a=>({text:a.querySelector('[class*=signInButton]')?.textContent || a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
    assert.equal(guestLink.text.trim(),'Create a free account');assert.equal(guestLink.returnTo,`/asset-share/${token}?open=1`);
@@ -295,7 +296,7 @@ export default function Validation(){
    assert.ok(await page.$('a[href^="/auth?returnTo="]'),'Sign-in keeps the enquiry return path');
    await closeChild();await page.click('[aria-label="Close lead management"]');await click('Fixture read-only');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await page.waitForSelector('a[href*="/reports/"]');
-   for(const action of ['Update replacement price','Invoices & quotes']){
+   for(const action of ['Update asset details','Invoices & quotes']){
     await closeChild();await click(action);
     const accountLink=await page.$eval('[role="dialog"] a[href^="/business?details=1&returnTo="]',a=>({text:a.textContent,returnTo:new URL(a.href).searchParams.get('returnTo')}));
     assert.equal(accountLink.text.trim(),'Verify business');assert.equal(accountLink.returnTo,`/asset-share/${token}?open=1`);
@@ -309,7 +310,11 @@ export default function Validation(){
    assert.ok(requests.some(r=>r.path.endsWith('/access')&&r.method==='POST'));
    await closeChild();await page.click('[aria-label="Close lead management"]');await click('Fixture activated');await page.click('button[aria-label="Manage Test bakkie"]');
    await click('Reports');await page.waitForSelector('a[href*="/reports/"]');
-   await closeChild();await click('Update replacement price');
+   await closeChild();await click('Update asset details');
+   await page.waitForFunction(()=>[...document.querySelectorAll('button strong')].some(e=>e.textContent==='Details'));
+   await click('Details');
+   await page.waitForSelector('input[aria-label="Change replacement price"]');
+   await page.click('input[aria-label="Change replacement price"]');
    const priceField='input[aria-label="Suggested value"]';
    await page.waitForSelector(priceField);
    assert.equal(await page.$eval(priceField,input=>input.closest('[role="dialog"]').querySelector('h2').textContent),'Suggest replacement price','Price action opens the dedicated value suggestion dialog');
@@ -319,7 +324,9 @@ export default function Validation(){
    // The notice renders before the final refresh; Escape remains blocked until saving finishes.
    await page.waitForSelector('[aria-label="Close action form"]:not(:disabled)');
    const proposed=requests.filter(r=>r.path.endsWith('/corrections')).at(-1);assert.equal(JSON.parse(proposed.data).value,100000);assert.equal(JSON.parse(proposed.data).assetId,'10000000-0000-4000-8000-000000000001');assert.equal(JSON.parse(proposed.data).reason,'Updated replacement quotation');
-   await closeChild();
+   await page.keyboard.press('Escape');
+   await page.waitForSelector('input[aria-label="Change replacement price"]');
+   await click('Done');await click('Exit');
    await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);
    await click('Invoices & quotes');
    assert.equal(await page.$('[name=name]'),null,'Verified identity cannot be edited');
