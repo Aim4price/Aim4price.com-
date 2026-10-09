@@ -103,6 +103,7 @@ export default function Validation(){
   assert.ok(cards.every(c=>Math.abs(c.width-cards[0].width)<1&&Math.abs(c.y-cards[0].y)<1));
   await page.screenshot({path:path.join(output,'send-link-options.png')});
   await click('Send link');await click('Choose options');await click('Read-only');
+   await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
   assert.equal(await page.$eval('dialog button[type="submit"], dialog button:not([type])',b=>b.disabled),true);
   await page.click('dialog input[type="checkbox"]');await click('Create asset link');
   await page.waitForSelector('dialog a[href^="/asset-share/"], dialog a[href*="/asset-share/"]');
@@ -201,6 +202,7 @@ export default function Validation(){
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose options');
    await click('Read-only');
+   await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
    if(width===1440) assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Invitation fits desktop without scrolling');
@@ -229,6 +231,7 @@ export default function Validation(){
    assert.ok(await page.$$eval('[data-permission-grid] small', nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)+1 && node.scrollWidth<=node.clientWidth+1)), 'Permission descriptions fit one line without clipping');
    await page.screenshot({path:path.join(output,`permission-picker-${width}.png`),fullPage:true});
    await click('Continue');
+   await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$('dialog input[type=email]'),null);
    assert.equal(await page.$('dialog input[type=file]'),null);
    assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Disclaimer fits without scrolling');
@@ -241,6 +244,7 @@ export default function Validation(){
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
    await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose options');
    await click('Read-only');
+   await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
    await page.click('dialog [data-share-consent]');await click('Create invitation link');await page.waitForSelector('dialog a[href^="mailto:"]');
