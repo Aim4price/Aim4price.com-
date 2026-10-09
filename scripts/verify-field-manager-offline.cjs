@@ -50,8 +50,8 @@ async function main() {
     await page.waitForFunction(() => !document.querySelector('#sync').disabled);
     assert.match(await page.$eval('#assets', n => n.textContent), /Test tractor/);
     await page.waitForFunction(async () => !(await caches.keys()).includes('aim4price-field-offline-shell-v1'));
-    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v5' })), true);
-    assert.equal(await page.evaluate(async () => !!await caches.match('/app-theme.css', { cacheName: 'aim4price-field-offline-shell-v5' })), true);
+    assert.equal(await page.evaluate(async () => !!await caches.match('/field-manager/montserrat-latin.woff', { cacheName: 'aim4price-field-offline-shell-v8' })), true);
+    assert.equal(await page.evaluate(async () => !!await caches.match('/app-theme.css', { cacheName: 'aim4price-field-offline-shell-v8' })), true);
     console.log('PASS preparation, snapshot, upgraded shell and locally cached font');
     await page.setOfflineMode(true);
     await page.click('.asset'); await page.select('#action', 'Serviced'); await page.select('#task', 'task');

@@ -113,13 +113,13 @@ async function main(){
         const rects=buttons.map(el=>el.getBoundingClientRect());
         const overlaps=rects.some((r,i)=>rects.slice(i+1).some(s=>r.left<s.right&&r.right>s.left&&r.top<s.bottom&&r.bottom>s.top));
         card.scrollIntoView({block:'start'});
-        return {clipped,overlaps,actions:buttons.length,contained:bounds.left>=outer.left-2&&bounds.right<=outer.right+2};
+        return {clipped,overlaps,actions:buttons.map(button=>button.textContent.trim()),contained:bounds.left>=outer.left-2&&bounds.right<=outer.right+2};
       });
       await page.screenshot({path:path.join(output,`lead-card-website-${width}.png`),fullPage:false});
       assert.deepEqual(result.clipped,[],`Lead content clipped at ${width}`);
       assert.equal(result.overlaps,false,`Lead actions overlap at ${width}`);
       assert.equal(result.contained,true,`Lead card exceeds its outer card at ${width}`);
-      assert.equal(result.actions,2,'Send and Manage must both fit');
+      assert.deepEqual(result.actions,['Share','Send','Manage'],'Share, Send and Manage must all fit');
       console.log(`PASS expanded desktop lead at ${width}px`);
     }
     assert.deepEqual(errors,[],'Browser runtime errors');

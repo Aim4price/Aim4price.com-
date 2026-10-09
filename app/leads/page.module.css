@@ -5866,5 +5866,5 @@
 /* Keep the entire photo inside the available viewer area, including landscape screens. */
 .assetPhotoModal { width:min(calc(var(--website-design-vw, 1vw) * 100 - 2rem),1100px); }
 .assetPhotoModal .leadPhotoModalBody { grid-template-rows:minmax(0,1fr) auto; align-content:stretch; }
-.assetPhotoModal .leadPhotoModalFrame { height:min(58vh,650px); height:min(calc(var(--website-visible-height, 100dvh) - 17rem),650px); min-height:100px; max-height:none; }
+.assetPhotoModal .leadPhotoModalFrame { height:min(calc(var(--website-visible-height, 100dvh) - 17rem),650px); min-height:100px; max-height:none; }
 .assetPhotoModal .leadPhotoModalFrame > img { width:100% !important; height:100% !important; min-height:0; object-fit:contain !important; }
