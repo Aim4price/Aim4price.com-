@@ -39,6 +39,7 @@ export default async function MaintenancePage({ searchParams }: MaintenancePageP
     <MaintenanceClient
       initialAssetId={initialAssetId}
       initialOpenAdd={initialOpenAdd}
+      initialOpenChecklists={Boolean(initialAssetId) && requestedAction === 'checklists'}
       initialReturnTo={initialReturnTo}
     />
   );

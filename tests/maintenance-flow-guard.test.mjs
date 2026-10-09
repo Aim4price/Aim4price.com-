@@ -76,3 +76,14 @@ test('QR, Field Manager and Owner App maintenance require the current meter read
   assert.match(scanRoute, /Enter the current hour-meter reading before saving maintenance/);
   assert.match(scanRoute, /Enter the current kilometre reading before saving maintenance/);
 });
+
+test('Owner maintenance checklist shortcut carries the exact asset and opens its checklist', () => {
+  const register = source('app/asset-register/asset-register-client.tsx');
+  const page = source('app/maintenance/page.tsx');
+  const client = source('app/maintenance/maintenance-client.tsx');
+  assert.match(register, /buildOwnerAssetPageHref\('\/maintenance', activeAsset.id, \{ checklists: true \}, ownerCommandReturnLocation\)/);
+  assert.match(register, /options.checklists\) params.set\('action', 'checklists'\)/);
+  assert.match(page, /initialOpenChecklists=\{Boolean\(initialAssetId\) && requestedAction === 'checklists'\}/);
+  assert.match(client, /if \(initialOpenChecklists\) \{\s*setChecklistAssetId\(requestedAssetId\);\s*setQuickLaunchActive\(true\);\s*setModalMode\('checklists'\);/);
+  assert.match(client, /initialAssetId=\{checklistAssetId\}/);
+});

@@ -39,3 +39,26 @@
 .modal.modal.modal .fields :is(input,textarea),.modal.modal.modal input[type="search"] { background:#eaf7ef!important; color:#143e32!important; }
 .modal.modal.modal .selectField button :is(span,strong,small) { color:#143e32!important; }
 .modal { --typing-field-surface:#eaf7ef; --typing-field-focus:#e1f2e7; --typing-field-text:#143e32; --typing-field-placeholder:#61776e; }
+
+.steps { display:flex; gap:20px; list-style:none; padding:0; margin:0 0 24px; }
+.steps li { display:flex; align-items:center; gap:8px; color:var(--app-muted,#61776e); font-size:.9rem; }
+.steps li span { display:grid; place-items:center; width:30px; height:30px; flex-shrink:0; border-radius:9px; background:#edf4f0; color:#174c3a; }
+.steps li[aria-current="step"] { color:var(--app-text,#143e32); font-weight:700; }
+.steps li[aria-current="step"] span { background:#086747; color:white; }
+.stepTitle { margin:0 0 16px; font-size:1.25rem; }
+.fields p { margin:0 0 6px; }
+.modal button.choice { display:flex; align-items:center; gap:12px; text-align:left; min-height:68px; background:#f8fbf9; overflow-wrap:anywhere; }
+.modal button[aria-pressed="true"] { background:#e5f5ed; border:2px solid #086747; }
+.tick { width:22px; height:22px; flex-shrink:0; display:grid; place-items:center; border:1px solid #8daf9e; border-radius:6px; }
+button[aria-pressed="true"] .tick { background:#086747; color:white; }
+.modal button.addChoice { display:flex; flex-direction:column; align-items:flex-start; gap:6px; padding:18px 20px; background:#edf8f2; border-color:#a7d5be; text-align:left; }
+.addChoice small,.recordStatus { display:block; color:#61776e; font-weight:400; }
+.addTop { width:100%; margin-bottom:24px; }
+.actions { margin-top:0; flex-wrap:wrap; }
+@media(max-width:650px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .steps { gap:8px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .steps li { flex:1; flex-direction:column; align-items:flex-start; font-size:.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .actions { gap:8px; }
+}
+.modal > footer > .actions { grid-column:1/-1; width:100%; }
+.stepTitle:focus { outline:none; }
