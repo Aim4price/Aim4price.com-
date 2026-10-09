@@ -1,4 +1,4 @@
-.modal { width:min(1120px,calc(100vw - 40px))!important; color:var(--app-text,#143e32); }
+.modal { width:min(1120px,var(--website-dialog-reference-width,100%))!important; color:var(--app-text,#143e32); }
 .intro { display:flex; justify-content:space-between; align-items:center; gap:24px; margin-bottom:22px; }
 .intro p { margin:0; line-height:1.6; }
 .modal small,.hint { color:var(--app-muted,#61776e); font-size:.9rem; }
@@ -22,7 +22,12 @@
 .notice { background:#eaf7ef; padding:12px; border-radius:10px; }
 .error { color:#982e23; }
 .modal :is(button,input,select,textarea):focus-visible { outline:3px solid #52a58a; outline-offset:3px; }
-@media(max-width:650px) { .modal { width:calc(100vw - 24px)!important; } .fields,.list { grid-template-columns:1fr; } .intro { align-items:flex-start; flex-direction:column; gap:12px; } }
+@media(max-width:650px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal { width:calc(100vw - 24px)!important; }
+  :global(:where(html:not(:has([data-website-canvas])))) .fields,
+  :global(:where(html:not(:has([data-website-canvas])))) .list { grid-template-columns:1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .intro { align-items:flex-start; flex-direction:column; gap:12px; }
+}
 
 .selectField > div > button { width:100%; min-height:48px; background:#eaf7ef; color:#143e32; }
 
