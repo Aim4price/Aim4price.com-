@@ -917,57 +917,8 @@
 textarea.messagePreview { display:block; width:100%; box-sizing:border-box; resize:vertical; font-family:inherit; color:inherit; }
 textarea.messagePreview:focus { outline:2px solid #168461; outline-offset:2px; }
 .sectionHeader button { margin-left:auto; border:0; background:transparent; color:var(--app-accent,#197454); font:inherit; font-size:.8rem; cursor:pointer; }
-/* Expanded photo options share the same surface and controls in every composer. */
-.photoOptions {
-  margin-top: -.35rem;
-  padding: .875rem;
-  border: 1px solid var(--app-line, #d6e3de);
-  border-radius: 1rem;
-  background: var(--app-surface-soft, #f4f8f6);
-  color: var(--app-text, #244b40);
-}
-.photoOptionsHeading { display: flex; align-items: center; gap: .5rem; margin-bottom: .75rem; }
-.photoOptionsHeading > span { display: grid; place-items: center; flex: 0 0 1.5rem; height: 1.5rem; border-radius: 50%; color: var(--app-accent, #197454); background: var(--app-surface, #fff); }
-.photoOptionsHeading svg { width: .9rem; height: .9rem; }
-.photoOptionsHeading p { margin: 0; font-size: .82rem; font-weight: 650; line-height: 1.45; }
-.photoOptions .originalPhotos {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 2.75rem;
-  align-items: center;
-  gap: .875rem;
-  min-height: 4.75rem;
-  margin: 0;
-  padding: .875rem;
-  border: 1px solid var(--app-line, #d6e3de);
-  border-radius: .75rem;
-  background: var(--app-surface, #fff);
-  color: var(--app-text, #244b40);
-  text-align: left;
-  cursor: pointer;
-}
-.photoOptions .originalPhotos:hover { border-color: var(--app-accent, #197454); }
-.photoOptions .originalPhotos:focus-within { outline: 2px solid var(--app-accent, #197454); outline-offset: 3px; }
-.photoOptions .originalPhotosSelected { border-color: var(--app-accent, #197454); }
-.photoOptions .originalPhotos > input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  min-height: 0 !important;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-.originalPhotosCopy { display: grid; min-width: 0; gap: .35rem; }
-.originalPhotosCopy strong { font-size: .9rem; font-weight: 750; line-height: 1.4; letter-spacing: normal; }
-.originalPhotosCopy small { color: var(--app-muted, #64746a); font-size: .8rem; line-height: 1.5; letter-spacing: normal; }
-.originalPhotosSwitch { display: flex; align-items: center; width: 2.75rem; height: 1.625rem; padding: 3px; border: 1px solid var(--app-muted, #64746a); border-radius: 999px; background: var(--app-line, #d6e3de); }
-.originalPhotosSwitch > span { width: 1.125rem; height: 1.125rem; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #0003; }
-.originalPhotosSelected .originalPhotosSwitch { border-color: #197454; background: #197454; }
-.originalPhotosSelected .originalPhotosSwitch > span { transform: translateX(1.125rem); }
-.photoOptions .photoOptionsHint { margin: .75rem .125rem 0; color: var(--app-muted, #64746a); font-size: .75rem; line-height: 1.5; }
+/* Explain the photo/list numbering without a second attachment mode. */
+.photoOptions { margin:0; padding:.875rem; border:1px solid var(--app-line,#d6e3de); border-radius:1rem; background:var(--app-surface-soft,#f4f8f6); color:var(--app-text,#244b40); font-size:.85rem; line-height:1.5; }
 .recovery { padding:1rem; border:1px solid var(--app-line,#cdded4); border-radius:12px; }
 .recovery p { font-size:.9rem; line-height:1.5; }
 .recovery button, .messagePartLink { display:inline-block; padding:.75rem; margin:.3rem; border:1px solid var(--app-line,#cdded4); border-radius:8px; background:var(--app-surface,#fff); color:var(--app-text,#173f31); font:inherit; cursor:pointer; }

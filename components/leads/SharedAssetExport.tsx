@@ -53,7 +53,7 @@ function OutsideShareDialog({ title, photos, details, asset, attachments = [], o
         </div>
         <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${styles.registerShareModalBody} ${externalStyles.accountShareTheme}`}>
           <AssetExternalShare shareName={title} assets={assets}
-            messageBody={details ? `AIM4PRICE ASSET DETAILS\n\n${title}\n${details}\n\nShared from Aim4price. Values are saved estimates and remain subject to inspection.` : undefined}
+            messageBody={details ? `AIM4PRICE ASSET DETAILS\n\n1. ${title}\n${details}\n\nShared from Aim4price. Values are saved estimates and remain subject to inspection.` : undefined}
             reportFiles={reportFiles} onAddAim4priceReport={() => setChoosingReports(true)}
             onRemoveAim4priceReport={id => setReportFiles(current => current.filter(file => file.id !== id))}/>
         </div>

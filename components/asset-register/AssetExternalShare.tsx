@@ -159,9 +159,8 @@ function credentialsForUrl(url: string): RequestCredentials {
   }
 }
 
-function attachmentSummary(photoCount: number, reportCount: number, cardCount = 0): string {
+function attachmentSummary(photoCount: number, reportCount: number): string {
   const parts = [
-    cardCount ? `${cardCount} asset ${cardCount === 1 ? 'card' : 'cards'}` : '',
     photoCount ? `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : '',
     reportCount ? `${reportCount} Aim4price ${reportCount === 1 ? 'report' : 'reports'}` : '',
   ].filter(Boolean);
@@ -222,7 +221,6 @@ export default function AssetExternalShare({
   onRemoveAim4priceReport: (reportId: string) => void;
 }) {
   const [includePhotos, setIncludePhotos] = useState(false);
-  const [includeOriginals, setIncludeOriginals] = useState(false);
   const [editedMessage, setEditedMessage] = useState<{scope:string;body:string}|null>(null);
   const messageScope = JSON.stringify([shareName, assets, messageBody]);
   const [preparedSignature, setPreparedSignature] = useState('');
@@ -261,7 +259,7 @@ export default function AssetExternalShare({
     () => [...(includePhotos ? photoFiles : []), ...reportFiles],
     [includePhotos, photoFiles, reportFiles],
   );
-  const selectedSourceSignature = JSON.stringify([selectedSources, includePhotos, includeOriginals, assets]);
+  const selectedSourceSignature = JSON.stringify([selectedSources, includePhotos, assets]);
   const defaultCopy = useMemo(
     () => {
       const generated = buildExternalAssetShareCopy(shareName, assets, {
@@ -273,13 +271,12 @@ export default function AssetExternalShare({
     [assets, reportFiles.length, selectedPhotoCount, shareName, messageBody],
   );
   const copy = { ...defaultCopy, body: editedMessage?.scope === messageScope ? editedMessage.body : defaultCopy.body };
-  const cardCount = includePhotos ? assets.reduce((total, asset) => total + Math.max(1, Math.ceil(asset.photoUrls.length / 4)), 0) : 0;
   const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
   const messageParts = splitWhatsAppMessages(copy.body);
   const activeMessagePart = Math.min(messagePart, messageParts.length - 1);
   const messagePartHref = buildWhatsAppShareUrl({ ...copy, body: messageParts[activeMessagePart] }, recipient?.phone);
   const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
-  const selectedAttachmentCount = cardCount + (includePhotos && includeOriginals ? savedPhotoCount : 0) + reportFiles.length;
+  const selectedAttachmentCount = selectedPhotoCount + reportFiles.length;
   const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient, copy.body]);
   const [acceptedKey, setAcceptedKey] = useState('');
   const [pendingShare, setPendingShare] = useState<{target: ShareTarget; key: string} | null>(null);
@@ -320,7 +317,6 @@ export default function AssetExternalShare({
               void cards.catch(() => cardCache.current.delete(cardKey));
             }
             files.push(...await cards);
-            if (includeOriginals) files.push(...originals);
             offset += asset.photoUrls.length;
           }
           files.push(...sourceFiles.slice(offset));
@@ -454,7 +450,7 @@ export default function AssetExternalShare({
     ? 'Preparing attachments…'
     : preparation.status === 'error'
       ? preparation.error
-      : attachmentSummary(includePhotos && includeOriginals ? selectedPhotoCount : 0, reportFiles.length, cardCount);
+      : attachmentSummary(selectedPhotoCount, reportFiles.length);
 
   return (
     <section className={styles.externalPanel} aria-label="Share outside Aim4price">
@@ -486,26 +482,12 @@ export default function AssetExternalShare({
             <span className={styles.attachmentIcon}><PhotosIcon /></span>
             <span className={styles.attachmentCopy}>
               <strong>Include photos</strong>
-              <small>{savedPhotoCount ? `${savedPhotoCount} photos · grouped with each asset’s details` : 'No saved photos'}</small>
+              <small>{savedPhotoCount ? `${savedPhotoCount} photos · numbered to match the asset list` : 'No saved photos'}</small>
             </span>
             <span className={styles.toggleControl} aria-hidden="true"><span><CheckIcon /></span></span>
           </label>
 
-          {includePhotos && <div className={styles.photoOptions}>
-            <div className={styles.photoOptionsHeading}>
-              <span aria-hidden="true"><CheckIcon /></span>
-              <p>Asset details stay with each photo</p>
-            </div>
-            <label className={`${styles.originalPhotos} ${includeOriginals ? styles.originalPhotosSelected : ''}`}>
-              <input type="checkbox" checked={includeOriginals} onChange={event => setIncludeOriginals(event.target.checked)} aria-describedby={`${disclosureId}-originals-help`} />
-              <span className={styles.originalPhotosCopy}>
-                <strong>Also include original photos</strong>
-                <small id={`${disclosureId}-originals-help`}>Add separate copies without the asset details.</small>
-              </span>
-              <span className={styles.originalPhotosSwitch} aria-hidden="true"><span /></span>
-            </label>
-            <p className={styles.photoOptionsHint}>{includeOriginals ? 'Originals included · more files may take longer to send.' : 'Optional · asset photo cards are already included.'}</p>
-          </div>}
+          {includePhotos && <p className={styles.photoOptions}>Each photo carries its asset’s number from the message. All photos of the same asset use the same number.</p>}
 
           <button type="button" className={styles.addReportButton} onClick={onAddAim4priceReport}>
             <span className={styles.attachmentIcon}><ReportsIcon /></span>
@@ -553,7 +535,7 @@ export default function AssetExternalShare({
       </footer>
       {pendingShare && <ShareDisclosureDialog title={`Share via ${pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}`} titleId={disclosureId} closeLabel="Close sharing disclosure" onClose={closeDisclosure}>
         <p className={disclosureStyles.description}>Share {assets.length === 1 ? 'this asset' : `${assets.length} assets`} via {pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}.</p>
-        <p className={disclosureStyles.hint}>{attachmentSummary(includePhotos && includeOriginals ? selectedPhotoCount : 0, reportFiles.length, cardCount)}. {recipient ? `Recipient: ${recipient.name}.` : 'Choose the recipient in your sharing app.'}</p>
+        <p className={disclosureStyles.hint}>{attachmentSummary(selectedPhotoCount, reportFiles.length)}. {recipient ? `Recipient: ${recipient.name}.` : 'Choose the recipient in your sharing app.'}</p>
         <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? pendingShare.key : '')} />
         {pendingShare.key !== consentKey && <p role="alert">Your selection changed. Close this dialog and check the details before sharing.</p>}
         {shareStatus && <p role="status" aria-live="polite">{shareStatus}</p>}
