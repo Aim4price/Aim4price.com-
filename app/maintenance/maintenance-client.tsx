@@ -137,6 +137,7 @@ type MaintenanceFilters = {
 type MaintenanceClientProps = {
   initialAssetId?: string;
   initialOpenAdd?: boolean;
+  initialOpenChecklists?: boolean;
   initialReturnTo?: string;
 };
 
@@ -758,6 +759,7 @@ function recordSearchText(record: MaintenanceRecord): string {
 export default function MaintenanceClient({
   initialAssetId = '',
   initialOpenAdd = false,
+  initialOpenChecklists = false,
   initialReturnTo = '',
 }: MaintenanceClientProps = {}) {
   const initialFilters = filtersForInitialAsset(initialAssetId);
@@ -779,7 +781,7 @@ export default function MaintenanceClient({
   const [draftFilters, setDraftFilters] = useState<MaintenanceFilters>(initialFilters);
   const [entryTiming, setEntryTiming] = useState<'done' | 'upcoming'>('upcoming');
   const [draft, setDraft] = useState<MaintenanceDraft | null>(null);
-  const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
+  const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd && !initialOpenChecklists);
   const [quickLaunchActive, setQuickLaunchActive] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [recordPendingDelete, setRecordPendingDelete] = useState<MaintenanceRecord | null>(null);
@@ -833,7 +835,7 @@ export default function MaintenanceClient({
 
   const assetById = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
   const selectedDraftAsset = draft ? assetById.get(draft.assetId) : undefined;
-  const quickLaunchReturnTo = initialOpenAdd && initialAssetId ? initialReturnTo : '';
+  const quickLaunchReturnTo = (initialOpenAdd || initialOpenChecklists) && initialAssetId ? initialReturnTo : '';
   const assetEntryLocked = quickLaunchActive && Boolean(initialAssetId && assetById.has(initialAssetId));
   const filteredAssetReturnTo = !initialOpenAdd && initialAssetId && assetById.has(initialAssetId)
     ? initialReturnTo
@@ -889,6 +891,12 @@ export default function MaintenanceClient({
     const requestedAsset = assets.find((asset) => asset.id === requestedAssetId);
     if (requestedAsset) {
       setNotice(null);
+      if (initialOpenChecklists) {
+        setChecklistAssetId(requestedAssetId);
+        setQuickLaunchActive(true);
+        setModalMode('checklists');
+        return;
+      }
       setEditingRecordId(null);
       setDraft(emptyDraftForAsset(requestedAsset));
       setPickerSearch('');
@@ -900,7 +908,7 @@ export default function MaintenanceClient({
     if (requestedAssetId) {
       setNotice({ type: 'error', text: 'This asset is not available for maintenance.' });
     }
-  }, [assets, initialAssetId, initialLaunchHandled, isLoading]);
+  }, [assets, initialAssetId, initialOpenChecklists, initialLaunchHandled, isLoading]);
 
   useEffect(() => {
     const refresh = () => {

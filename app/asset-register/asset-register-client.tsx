@@ -4175,11 +4175,12 @@ function buildAssetRegisterManageReturnPath(assetId: string, currentLocation = '
 function buildOwnerAssetPageHref(
   pathname: '/my-invoices' | '/fuel' | '/maintenance' | '/documents' | '/budgets',
   assetId: string,
-  options: { add?: boolean; budgetAction?: boolean } = {},
+  options: { add?: boolean; budgetAction?: boolean; checklists?: boolean } = {},
   currentLocation = '/asset-register',
 ): string {
   const params = new URLSearchParams({ assetId });
   if (options.add) params.set('add', '1');
+  if (options.checklists) params.set('action', 'checklists');
   if (options.budgetAction) params.set('budgetAction', 'open');
   params.set('returnTo', buildAssetRegisterManageReturnPath(assetId, currentLocation));
   return `${pathname}?${params.toString()}`;
@@ -20027,6 +20028,13 @@ export default function AssetRegisterClient({
                   <span>
                     <strong>Add maintenance</strong>
                   </span>
+                </Link>
+
+                <Link data-manage-action="maintenanceChecklists"
+                  href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { checklists: true }, ownerCommandReturnLocation)}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                >
+                  <ManageIcon className={styles.buttonIcon} /><span><strong>Maintenance checklists</strong></span>
                 </Link>
 
                 <button data-manage-action="viewParts" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`} onClick={() => setPartsOpen(true)}>
