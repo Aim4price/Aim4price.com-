@@ -1,5 +1,6 @@
 'use client';
 
+import PhotoViewerActions from './PhotoViewerActions';
 import { useEffect, useState } from 'react';
 import { createPortal } from './WebsitePortal';
 import assetStyles from '../app/asset-register/page.module.css';
@@ -47,6 +48,9 @@ export default function LeadPhotoViewerModal({
   onClose,
   closeButtonClassName = '',
 }: LeadPhotoViewerModalProps) {
+  const [loadedUrl,setLoadedUrl] = useState('');
+  const [failedUrl,setFailedUrl] = useState('');
+  const [retry,setRetry] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(() =>
     Math.min(Math.max(initialIndex, 0), Math.max(urls.length - 1, 0)),
   );
@@ -114,6 +118,7 @@ export default function LeadPhotoViewerModal({
 
       <div
         className={`${leadStyles.leadPhotoModal} ${leadStyles.assetPhotoModal}`}
+        onClick={event => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${assetKey}-photo-modal-title`}
@@ -136,10 +141,13 @@ export default function LeadPhotoViewerModal({
           </button>
         </div>
 
+        <PhotoViewerActions key={activeUrl} url={activeUrl} title={`${title}-photo-${safeIndex + 1}`} />
+        {loadedUrl !== activeUrl && failedUrl !== activeUrl && <p role="status" style={{margin:'.4rem 1rem'}}>Loading photo…</p>}
+        {failedUrl === activeUrl && <p role="alert" style={{margin:'.4rem 1rem'}}>Photo could not load. <button type="button" onClick={() => {setFailedUrl('');setRetry(value=>value+1);}}>Retry photo</button></p>}
         <div className={leadStyles.leadPhotoModalBody}>
           <div className={leadStyles.leadPhotoModalFrame}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={activeUrl} alt={`${title} asset photo ${safeIndex + 1}`} />
+            <img key={`${activeUrl}-${retry}`} onLoad={() => {setLoadedUrl(activeUrl);setFailedUrl('');}} onError={() => setFailedUrl(activeUrl)} decoding="async" fetchPriority="high" src={activeUrl} alt={`${title} asset photo ${safeIndex + 1}`} />
 
             {hasMultiplePhotos ? (
               <>
@@ -179,7 +187,7 @@ export default function LeadPhotoViewerModal({
                   aria-current={index === safeIndex ? 'true' : undefined}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" />
+                  {Math.abs(index - safeIndex) <= 1 ? <img src={url} alt="" loading="lazy" decoding="async" fetchPriority="low" /> : <span>{index + 1}</span>}
                 </button>
               ))}
             </div>

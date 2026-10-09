@@ -1,4 +1,5 @@
 'use client';
+import PhotoViewerActions from '../../components/PhotoViewerActions';
 import AssetValueDialog from '../../components/asset-register/AssetValueDialog';
 import {loadLeaflet} from '../../lib/asset-location-map';
 import AssetLocationEditor from '../../components/AssetLocationEditor';
@@ -17437,6 +17438,12 @@ export default function AssetRegisterClient({
               <CloseIcon className={styles.buttonIcon} />
             </button>
 
+            <PhotoViewerActions key={photoViewerPhoto} url={photoViewerPhoto} title={`${photoViewerAsset.title}-photo-${photoViewerIndex + 1}`}
+              onEdit={canUseOwnerOnlyAssetActions ? () => { closePhotoViewer(); openUpdater(photoViewerAsset); setShowAssetUpdateMenu(false); } : undefined}
+              onDelete={canUseOwnerOnlyAssetActions && normalizePhotos(photoViewerAsset.photos).includes(photoViewerPhoto) ? async () => {
+                const updated = await patchAssetMedia(photoViewerAsset, normalizePhotos(photoViewerAsset.photos).filter(photo => photo !== photoViewerPhoto), assetDocuments(photoViewerAsset));
+                syncMediaUpdatedAsset(updated); closePhotoViewer();
+              } : undefined} />
             <div className={styles.photoViewerStage}>
               <img
                 src={photoViewerPhoto}

@@ -2,6 +2,9 @@ name: Business network validation
 on:
   pull_request:
     paths:
+      - 'components/LeadPhotoViewerModal.tsx'
+      - 'components/PhotoViewerActions*'
+      - 'scripts/verify-photo-viewer.cjs'
       - 'lib/asset-history*.ts'
       - 'lib/asset-replacement-mail.ts'
       - 'components/asset-register/AssetHistoryDialog*'
@@ -154,6 +157,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: node --test tests/admin-dashboard-accounts.test.mjs tests/account-directory.test.cjs tests/shared-history-access.test.cjs tests/maintenance-reminders.test.cjs tests/asset-history-report.test.cjs tests/asset-history.test.cjs tests/shared-asset-documents.test.cjs tests/shared-asset-facts.test.cjs tests/approved-value-baseline.test.cjs tests/shared-asset-settings.test.cjs tests/shared-asset-problems.test.cjs tests/shared-asset-work.test.cjs tests/shared-asset-notes.test.cjs tests/shared-cost-capture.test.cjs tests/shared-asset-contributions.test.cjs tests/sharing-admin.test.cjs tests/sharing-foundation.test.cjs tests/share-link-settings.test.cjs tests/business-network.test.mjs tests/workspace-retirement.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/guest-enquiry-credits.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/invitation-report-handoff.test.cjs tests/partner-directory.test.cjs tests/business-accounts.test.cjs tests/business-workspaces.test.cjs tests/basic-business-access.test.cjs tests/shared-account-page.test.cjs
+      - run: node scripts/verify-photo-viewer.cjs
       - run: node scripts/verify-shared-asset-export.cjs
       - run: node scripts/verify-business-verification.cjs
       - run: node scripts/verify-business-network.cjs

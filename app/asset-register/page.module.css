@@ -41448,3 +41448,9 @@ button.documentOpenLink {
  .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody::-webkit-scrollbar-thumb:hover { background:#477e68; }
  .businessDirectoryDialog.assetQuotePartnerPickerModal .assetQuoteScrollBody::-webkit-scrollbar-button { display:none; width:0; height:0; }
 }
+
+.photoViewerModal { grid-template-rows:auto minmax(0,1fr); padding-top:3.7rem !important; }
+.photoViewerStage { min-height:0 !important; }
+
+.photoViewerModal { height:calc(var(--website-visible-height,100dvh) - 2rem) !important; }
+.photoViewerImage { height:100% !important;max-height:100% !important;min-height:0 !important; }

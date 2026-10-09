@@ -37,8 +37,8 @@ function add(file){
 }
 
 
-add('app/admin/business-accounts/verification-client');
-
+add('components/LeadPhotoViewerModal');
+add('components/PhotoViewerActions');
 const react=fs.readFileSync(path.join(path.dirname(require.resolve('react/package.json')),'umd/react.production.min.js'),'utf8');
 const reactDOM=fs.readFileSync(path.join(path.dirname(require.resolve('react-dom/package.json')),'umd/react-dom.production.min.js'),'utf8');
 const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
@@ -47,42 +47,29 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
 
 
 (async()=>{
- const browser=await puppeteer.launch({executablePath:await chromium.executablePath(),args:['--no-sandbox'],headless:true});
+ const browser=await puppeteer.launch({executablePath:await chromium.executablePath(),args:['--no-sandbox','--disable-dev-shm-usage'],headless:true});
  try {
- const page=await browser.newPage();await page.setViewport({width:1100,height:900});
- await page.setContent('<style>*{box-sizing:border-box}body{font-family:Arial;padding:24px}'+sheets.join('\n')+'</style><div id="app"></div>');
- await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
- await page.addScriptTag({content:runtime});
- await page.evaluate(()=>{
- window.failLoad=false;window.saves=[];
- window.fetch=async(url,options={})=>{
- if(options.method==='PATCH'){window.saves.push(JSON.parse(options.body));return Response.json({ok:true});}
- if(window.failLoad)return Response.json({error:'Verification queue unavailable'},{status:503});
- return Response.json({accounts:[
- {user_id:'a',business_name:'Pending workshop',email:'pending@example.test',email_verified:false,account_status:'active',review_note:'',verified_at:null},
- {user_id:'b',business_name:'Verified workshop',email:'verified@example.test',email_verified:true,account_status:'active',review_note:'Checked ownership',verified_at:'2026-01-01'},
- {user_id:'c',business_name:'Ready workshop',email:'ready@example.test',email_verified:true,account_status:'active',review_note:'',verified_at:null}
- ]});};
- ReactDOM.createRoot(document.getElementById('app')).render(React.createElement(require('app/admin/business-accounts/verification-client').default));
- });
- await page.waitForFunction(()=>document.body.textContent.includes('Needs review (2)'));
- assert.equal(await page.$$eval('details',nodes=>nodes.length),2);
- await page.click('details summary');
- assert(await page.$eval('input[type=checkbox]',node=>node.disabled),'Unverified email cannot be approved');
- await page.type('textarea','Awaiting email verification');
- await page.click('form button');
- await page.waitForFunction(()=>window.saves.length===1 && document.body.textContent.includes('Verification decision saved.') && [...document.querySelectorAll('button')].some(button=>button.textContent==='Refresh'&&!button.disabled));
- assert.equal(await page.evaluate(()=>window.saves[0].verified),false);
- const click=async text=>{await page.waitForFunction(text=>[...document.querySelectorAll('button')].some(b=>b.textContent===text&&!b.disabled),{},text);await page.evaluate(text=>[...document.querySelectorAll('button')].find(b=>b.textContent===text).click(),text);};
- await click('Verified');
- await page.waitForFunction(()=>document.querySelector('details')?.textContent.includes('Verified workshop'));
- assert.equal(await page.$$eval('details',nodes=>nodes.length),1);
- await page.evaluate(()=>window.failLoad=true);await click('Refresh');
- await page.waitForSelector('[role=alert]');
- assert.equal(await page.$$eval('details',nodes=>nodes.length),0,'Failed refresh hides stale decisions');
- await page.evaluate(()=>window.failLoad=false);await click('Try again');
- await page.waitForSelector('details');
- await page.screenshot({path:'/tmp/admin-verification-audit.png'});
- console.log('PASS verification filters, email approval blocker, review notes, failed-load safety and retry');
+ const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.setContent('<style>*{box-sizing:border-box}body{margin:0;font-family:Arial}'+sheets.join('\n')+'</style><div id="app"></div>');
+ await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});await page.addScriptTag({content:runtime+'window.root=ReactDOM.createRoot(document.getElementById("app"));'});
+ for(const [width,height] of [[1440,1000],[390,844],[844,390]]) {
+  await page.setViewport({width,height});
+  await page.evaluate(()=>{const c=document.createElement('canvas');c.width=500;c.height=1200;const ctx=c.getContext('2d');ctx.fillStyle='green';ctx.fillRect(0,0,500,1200);window.photo=c.toDataURL();window.root.render(React.createElement(require('components/LeadPhotoViewerModal').default,{assetKey:'fixture',title:'Test tractor',urls:Array(8).fill(window.photo),initialIndex:0,onClose:()=>{}}));});
+  await page.waitForSelector('[role=dialog] img');await page.waitForFunction(()=>[...document.images].every(i=>i.complete));
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true,'No horizontal overflow');
+  const bounds=await page.$eval('[role=dialog] img',img=>({fit:getComputedStyle(img).objectFit,height:img.getBoundingClientRect().height,parent:img.parentElement.getBoundingClientRect().height}));
+  assert.equal(await page.$$eval('[role=dialog] img',nodes=>nodes.length),3,'Only active and neighbouring thumbnails load');
+  assert.equal(bounds.fit,'contain');assert(bounds.height<=bounds.parent+1,'Image fits its frame');
+  assert.equal(await page.$$eval('[role=dialog] button',nodes=>nodes.some(n=>n.textContent==='Delete photo')),false,'Recipients cannot delete');
+  await page.screenshot({path:'/tmp/photo-viewer-'+width+'.png'});
+ }
+ await page.evaluate(()=>{window.deleted=0;window.edited=0;window.root.render(React.createElement(require('components/PhotoViewerActions').default,{url:window.photo,title:'Tractor',onEdit:()=>window.edited++,onDelete:async()=>window.deleted++}));});
+ const click=async text=>{await page.waitForFunction(t=>[...document.querySelectorAll('button')].some(b=>b.textContent===t),{},text);await page.evaluate(t=>[...document.querySelectorAll('button')].find(b=>b.textContent===t).click(),text);};
+ await click('Edit photos');assert.equal(await page.evaluate(()=>window.edited),1);
+ await click('Delete photo');assert.equal(await page.evaluate(()=>window.deleted),0);await click('Cancel');assert.equal(await page.evaluate(()=>window.deleted),0);
+ await click('Delete photo');await click('Confirm delete');await page.waitForFunction(()=>window.deleted===1);
+ await page.evaluate(()=>{window.saved=null;HTMLAnchorElement.prototype.click=function(){window.saved={href:this.href,name:this.download};};});
+ await click('Download');await page.waitForFunction(()=>window.saved);assert((await page.evaluate(()=>window.saved.name)).endsWith('.png'));
+ assert.deepEqual(errors,[]);console.log('PASS full-photo fit at desktop, portrait and landscape widths; recipient permissions; owner edit/delete confirmation; original download');
  }finally{await browser.close();}
-})().catch(error=>{console.error(error);process.exit(1)});
+})().catch(e=>{console.error(e);process.exitCode=1});
