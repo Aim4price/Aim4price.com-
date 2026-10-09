@@ -67,10 +67,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  const message=await page.$eval('[aria-label="External asset details message"]',n=>n.value);
  assert(message.includes('SKB 17')&&message.includes('R 404 600'));
  await page.screenshot({path:'/tmp/shared-outside-modal.png'});
- await page.click('input[type="checkbox"]');await page.waitForFunction(()=>document.body.textContent.includes('1 asset card')&&!document.body.textContent.includes('Preparing attachments'));
+ await page.click('input[type="checkbox"]');await page.waitForFunction(()=>document.body.textContent.includes('1 photo')&&!document.body.textContent.includes('Preparing attachments'));
  await click('Add report');await page.waitForSelector('[data-download-dialog]');
  await page.click('[data-download-grid] button');await page.waitForSelector('[data-download-dialog]',{hidden:true});
- await page.waitForFunction(()=>document.body.textContent.includes('1 asset card and 1 Aim4price report'));
+ await page.waitForFunction(()=>document.body.textContent.includes('1 photo and 1 Aim4price report'));
  await page.click('[aria-label="Remove Shared valuation.pdf"]');
  await click('Add report');await page.waitForSelector('[data-download-dialog]');await page.keyboard.press('Escape');await page.waitForSelector('[data-download-dialog]',{hidden:true});
  assert(await page.$('[aria-label="Share outside Aim4price"]'),'Report cancel returns to outside sharing');
@@ -84,9 +84,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shareCalls.push(data);throw new DOMException('Permission denied','NotAllowedError');}});
  });
  const encodes=await page.evaluate(()=>window.encodes);
- await page.evaluate(()=>[...document.querySelectorAll('label')].find(n=>n.textContent.includes('Also include original photos')).querySelector('input').click());
  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='WhatsApp'&&!b.disabled));
- assert.equal(await page.evaluate(()=>window.encodes),encodes,'Original toggle reuses rendered cards');
  await click('WhatsApp');await page.waitForSelector('dialog[open]');
  await page.click('[data-share-consent]');await click('Continue to WhatsApp');
  await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Photo sharing was blocked.'));
@@ -98,7 +96,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.equal(new URL(fallback).searchParams.get('text'),edited,'WhatsApp receives the complete edited message');
  await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shareCalls.push(data);}}));
  await click('Retry photos with WhatsApp');await page.waitForSelector('dialog[open]',{hidden:true});
- assert.equal(await page.evaluate(()=>window.shareCalls.at(-1).files.length),2);
+ assert.equal(await page.evaluate(()=>window.shareCalls.at(-1).files.length),1);
  assert.equal(await page.evaluate(()=>window.shareCalls.at(-1).text),edited,'Native sharing retains the edited message');
  assert.equal(await page.evaluate(()=>window.encodes),encodes,'Retry reuses prepared photos');
  // A long edited message stays intact across the one-at-a-time fallback.

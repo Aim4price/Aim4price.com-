@@ -73,7 +73,7 @@ export function buildExternalAssetShareCopy(
   options: ExternalAssetShareCopyOptions = {},
 ): ExternalAssetShareCopy {
   const safeShareName = cleanText(shareName) || cleanText(assets[0]?.title) || 'Aim4price asset';
-  const shareableAssets = assets.filter((asset) => cleanText(asset.title));
+  const shareableAssets = assets;
   const subject = shareableAssets.length === 1
     ? `${shareableAssets[0].title} asset details`
     : `${safeShareName} asset details`;
@@ -83,7 +83,7 @@ export function buildExternalAssetShareCopy(
     ...(shareableAssets.length > 1 ? [safeShareName, `${shareableAssets.length} assets`] : []),
     '',
     ...shareableAssets.flatMap((asset, index) => [
-      ...buildAssetBlock(asset, index, shareableAssets.length > 1),
+      ...buildAssetBlock(asset, index, true),
       ...(index < shareableAssets.length - 1 ? ['', '------------------------------', ''] : []),
     ]),
     ...(options.shareUrl ? ['', 'View asset details:', options.shareUrl] : []),

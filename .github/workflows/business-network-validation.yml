@@ -86,6 +86,10 @@ on:
       - 'app/asset-share/**'
       - 'components/asset-register/GuestLead*'
       - 'components/asset-register/AssetExternalShare.tsx'
+      - 'lib/asset-share-cards.ts'
+      - 'lib/asset-external-share.ts'
+      - 'scripts/verify-asset-share-cards.cjs'
+      - 'tests/asset-external-share.test.mjs'
       - 'components/asset-register/ShareDisclosure*'
       - 'components/asset-register/ShareDisclaimer*'
       - 'components/asset-register/SharedAssetCards.tsx'
@@ -157,6 +161,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: node --test tests/asset-external-share.test.mjs tests/admin-dashboard-accounts.test.mjs tests/account-directory.test.cjs tests/shared-history-access.test.cjs tests/maintenance-reminders.test.cjs tests/asset-history-report.test.cjs tests/asset-history.test.cjs tests/shared-asset-documents.test.cjs tests/shared-asset-facts.test.cjs tests/approved-value-baseline.test.cjs tests/shared-asset-settings.test.cjs tests/shared-asset-problems.test.cjs tests/shared-asset-work.test.cjs tests/shared-asset-notes.test.cjs tests/shared-cost-capture.test.cjs tests/shared-asset-contributions.test.cjs tests/sharing-admin.test.cjs tests/sharing-foundation.test.cjs tests/share-link-settings.test.cjs tests/business-network.test.mjs tests/workspace-retirement.test.mjs tests/umbrella-lead-unbundling.test.mjs tests/guest-leads.test.cjs tests/guest-enquiry-credits.test.cjs tests/asset-share-links.test.cjs tests/business-acceptance-search.test.cjs tests/public-enquiry-flow.test.cjs tests/external-share-permissions.test.cjs tests/invitation-report-handoff.test.cjs tests/partner-directory.test.cjs tests/business-accounts.test.cjs tests/business-workspaces.test.cjs tests/basic-business-access.test.cjs tests/shared-account-page.test.cjs
+      - run: node scripts/verify-asset-share-cards.cjs
       - run: node scripts/verify-photo-viewer.cjs
       - run: node scripts/verify-shared-asset-export.cjs
       - run: node scripts/verify-business-verification.cjs

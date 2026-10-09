@@ -112,3 +112,9 @@ test('WhatsApp splits long edited text without losing Unicode characters', () =>
     for (const part of parts) assert.doesNotThrow(()=>buildWhatsAppShareUrl({subject:'Test',body:part}));
   }
 });
+
+test('missing asset titles never shift photo numbers', () => {
+  const copy=buildExternalAssetShareCopy('Fleet',[{...asset,title:''},asset]);
+  assert.match(copy.body,/1\. Not saved/);
+  assert.match(copy.body,/2\. 2019 John Deere/);
+});
