@@ -486,8 +486,19 @@ export default function AssetExternalShare({
           </label>
 
           {includePhotos && <div className={styles.photoOptions}>
-            <p>Photos are shared on labelled cards, together with each asset’s details.</p>
-            <label className={styles.originalPhotos}><input type="checkbox" checked={includeOriginals} onChange={event => setIncludeOriginals(event.target.checked)}/><span><strong>Also include original photos</strong><small>Add separate photos without the asset details. More files may take longer to share.</small></span></label>
+            <div className={styles.photoOptionsHeading}>
+              <span aria-hidden="true"><CheckIcon /></span>
+              <p>Asset details stay with each photo</p>
+            </div>
+            <label className={`${styles.originalPhotos} ${includeOriginals ? styles.originalPhotosSelected : ''}`}>
+              <input type="checkbox" checked={includeOriginals} onChange={event => setIncludeOriginals(event.target.checked)} aria-describedby={`${disclosureId}-originals-help`} />
+              <span className={styles.originalPhotosCopy}>
+                <strong>Also include original photos</strong>
+                <small id={`${disclosureId}-originals-help`}>Add separate copies without the asset details.</small>
+              </span>
+              <span className={styles.originalPhotosSwitch} aria-hidden="true"><span /></span>
+            </label>
+            <p className={styles.photoOptionsHint}>{includeOriginals ? 'Originals included · more files may take longer to send.' : 'Optional · asset photo cards are already included.'}</p>
           </div>}
 
           <button type="button" className={styles.addReportButton} onClick={onAddAim4priceReport}>
