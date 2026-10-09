@@ -1,4 +1,5 @@
 'use client';
+import { createAssetSharePdf } from '../../lib/asset-share-pdf';
 import { createAssetShareCards } from '../../lib/asset-share-cards';
 import ShareDisclaimer from './ShareDisclaimer';
 import ShareDisclosureDialog from './ShareDisclosureDialog';
@@ -10,7 +11,6 @@ import {
   buildEmailShareUrl,
   buildExternalAssetShareCopy,
   buildWhatsAppShareUrl,
-  splitWhatsAppMessages,
   type ExternalAssetShareItem,
 } from '../../lib/asset-external-share';
 import {
@@ -228,7 +228,7 @@ export default function AssetExternalShare({
   const [sendingTarget, setSendingTarget] = useState<ShareTarget | null>(null);
   const [shareStatus, setShareStatus] = useState('');
   const [showRecovery, setShowRecovery] = useState(false);
-  const [messagePart, setMessagePart] = useState(0);
+  const [pdfUrl, setPdfUrl] = useState('');
   const cardCache = useRef(new Map<string, Promise<File[]>>());
   const [preparation, setPreparation] = useState<AttachmentPreparation>({
     status: 'idle',
@@ -259,7 +259,6 @@ export default function AssetExternalShare({
     () => [...(includePhotos ? photoFiles : []), ...reportFiles],
     [includePhotos, photoFiles, reportFiles],
   );
-  const selectedSourceSignature = JSON.stringify([selectedSources, includePhotos, assets]);
   const defaultCopy = useMemo(
     () => {
       const generated = buildExternalAssetShareCopy(shareName, assets, {
@@ -272,11 +271,11 @@ export default function AssetExternalShare({
   );
   const copy = { ...defaultCopy, body: editedMessage?.scope === messageScope ? editedMessage.body : defaultCopy.body };
   const whatsappHref = useMemo(() => buildWhatsAppShareUrl(copy, recipient?.phone), [copy, recipient?.phone]);
-  const messageParts = splitWhatsAppMessages(copy.body);
-  const activeMessagePart = Math.min(messagePart, messageParts.length - 1);
-  const messagePartHref = buildWhatsAppShareUrl({ ...copy, body: messageParts[activeMessagePart] }, recipient?.phone);
   const emailHref = useMemo(() => buildEmailShareUrl(copy, recipient?.email), [copy, recipient?.email]);
   const selectedAttachmentCount = selectedPhotoCount + reportFiles.length;
+  const usePdf = selectedAttachmentCount > 10;
+  const selectedSourceSignature = JSON.stringify([selectedSources, includePhotos, assets, usePdf ? copy.body : null]);
+  const outboundCount = usePdf ? 1 : selectedAttachmentCount;
   const consentKey = JSON.stringify([assets, selectedSourceSignature, recipient, copy.body]);
   const [acceptedKey, setAcceptedKey] = useState('');
   const [pendingShare, setPendingShare] = useState<{target: ShareTarget; key: string} | null>(null);
@@ -330,7 +329,9 @@ export default function AssetExternalShare({
         if (totalBytes > MAX_SHARE_TOTAL_BYTES) {
           throw new Error('The selected attachments are larger than 75 MB in total.');
         }
-        setPreparation({ status: 'ready', files, error: '' });
+        const outboundFiles = usePdf ? [await createAssetSharePdf(copy.body, files, shareName)] : files;
+        if (cancelled) return;
+        setPreparation({ status: 'ready', files: outboundFiles, error: '' });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -348,6 +349,13 @@ export default function AssetExternalShare({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attachmentFileCache, preparationAttempt, selectedSourceSignature]);
 
+  useEffect(() => {
+    const file = usePdf && preparation.status === 'ready' ? preparation.files[0] : null;
+    const url = file ? URL.createObjectURL(file) : '';
+    setPdfUrl(url);
+    return () => { if(url) URL.revokeObjectURL(url); };
+  }, [usePdf, preparation]);
+
   function togglePhotos() {
     setIncludePhotos((current) => !current);
     setShareStatus('');
@@ -361,7 +369,6 @@ export default function AssetExternalShare({
   function openDisclosure(target: ShareTarget, trigger: HTMLButtonElement) {
     shareTrigger.current = trigger;
     setShowRecovery(false);
-    setMessagePart(0);
     setShareStatus('');
     setAcceptedKey('');
     setPendingShare({target, key: consentKey});
@@ -381,8 +388,6 @@ export default function AssetExternalShare({
     if (!selectedAttachmentCount) {
       if (target === 'email') {
         window.location.assign(emailHref);
-      } else if (messageParts.length > 1) {
-        setShowRecovery(true);
       } else {
         window.open(whatsappHref, '_blank', 'noopener,noreferrer');
       }
@@ -390,30 +395,25 @@ export default function AssetExternalShare({
     }
 
     if (preparation.status === 'error') {
-      if (target === 'whatsapp') {
-        setShowRecovery(true);
-        setShareStatus('Photos could not be prepared. Your asset details are ready to send as messages.');
-        return;
-      }
       setPreparationAttempt((current) => current + 1);
       setShareStatus('Trying to prepare the attachments again…');
       return;
     }
 
-    if (preparedSignature !== selectedSourceSignature || preparation.status !== 'ready' || preparation.files.length !== selectedAttachmentCount) {
+    if (preparedSignature !== selectedSourceSignature || preparation.status !== 'ready' || preparation.files.length !== outboundCount) {
       setShareStatus('Please wait while the attachments finish preparing.');
       return;
     }
 
     if (typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
       setShowRecovery(true);
-      setShareStatus(target === 'whatsapp' ? 'This browser cannot share attachments. Send your asset details as messages instead.' : 'This browser cannot share attachments. Try another browser or device.');
+      setShareStatus(target === 'whatsapp' ? 'This browser cannot share attachments directly.' : 'This browser cannot share attachments. Try another browser or device.');
       return;
     }
 
     const shareData: ShareData = {
       files: preparation.files,
-      title: copy.subject, text: copy.body,
+      ...(usePdf ? {} : {title: copy.subject, text: copy.body}),
     };
     let canSharePayload = false;
     try {
@@ -425,7 +425,7 @@ export default function AssetExternalShare({
     }
     if (!canSharePayload) {
       setShowRecovery(true);
-      setShareStatus(target === 'whatsapp' ? 'This device cannot share these attachments. Send your asset details as messages instead.' : 'This device cannot share these attachments and message. Try another browser or device.');
+      setShareStatus(target === 'whatsapp' ? 'This device cannot share these attachments directly.' : 'This device cannot share these attachments and message. Try another browser or device.');
       return;
     }
 
@@ -439,7 +439,7 @@ export default function AssetExternalShare({
         setShareStatus('Sharing cancelled. Your message and attachments are still ready.');
       } else {
         setShowRecovery(true);
-        setShareStatus(target === 'whatsapp' ? 'Photo sharing was blocked. Your asset details are ready to send as messages.' : 'Attachment sharing was blocked. Your message and attachments are still here. Try again or use another browser.');
+        setShareStatus(target === 'whatsapp' ? 'Attachment sharing was blocked. Your selection is still here.' : 'Attachment sharing was blocked. Your message and attachments are still here. Try again or use another browser.');
       }
     } finally {
       setSendingTarget(null);
@@ -447,10 +447,10 @@ export default function AssetExternalShare({
   }
 
   const attachmentStatus = preparation.status === 'preparing'
-    ? 'Preparing attachments…'
+    ? usePdf ? 'Preparing one PDF…' : 'Preparing attachments…'
     : preparation.status === 'error'
       ? preparation.error
-      : attachmentSummary(selectedPhotoCount, reportFiles.length);
+      : usePdf ? `1 PDF · ${attachmentSummary(selectedPhotoCount, reportFiles.length)}` : attachmentSummary(selectedPhotoCount, reportFiles.length);
 
   return (
     <section className={styles.externalPanel} aria-label="Share outside Aim4price">
@@ -509,6 +509,7 @@ export default function AssetExternalShare({
             </div>
           ) : null}
 
+          {usePdf && <p className={styles.photoOptions}>Large selection: your complete message, numbered photos and selected PDF reports will be combined into one PDF. No separate batches.</p>}
           <div className={`${styles.attachmentStatus} ${preparation.status === 'error' ? styles.attachmentStatusError : ''}`} role="status" aria-live="polite">
             {attachmentStatus}
           </div>
@@ -535,23 +536,19 @@ export default function AssetExternalShare({
       </footer>
       {pendingShare && <ShareDisclosureDialog title={`Share via ${pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}`} titleId={disclosureId} closeLabel="Close sharing disclosure" onClose={closeDisclosure}>
         <p className={disclosureStyles.description}>Share {assets.length === 1 ? 'this asset' : `${assets.length} assets`} via {pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}.</p>
-        <p className={disclosureStyles.hint}>{attachmentSummary(selectedPhotoCount, reportFiles.length)}. {recipient ? `Recipient: ${recipient.name}.` : 'Choose the recipient in your sharing app.'}</p>
+        <p className={disclosureStyles.hint}>{usePdf ? `One PDF containing ${attachmentSummary(selectedPhotoCount, reportFiles.length)}` : attachmentSummary(selectedPhotoCount, reportFiles.length)}. {recipient ? `Recipient: ${recipient.name}.` : 'Choose the recipient in your sharing app.'}</p>
+        <p className={disclosureStyles.hint}>{pendingShare.target === 'whatsapp'
+          ? 'WhatsApp: choose WhatsApp and your recipient in the device share menu, then press Send. Large selections are shared as one PDF; photos appear inside the document.'
+          : 'Email: attachments use your device’s share menu and a compatible email app. Opening a normal email draft cannot attach files automatically. Your email provider may also limit attachment size.'}</p>
         <ShareDisclaimer accepted={accepted} onChange={value => setAcceptedKey(value ? pendingShare.key : '')} />
         {pendingShare.key !== consentKey && <p role="alert">Your selection changed. Close this dialog and check the details before sharing.</p>}
         {shareStatus && <p role="status" aria-live="polite">{shareStatus}</p>}
-        {showRecovery && pendingShare.target === 'whatsapp' && accepted && pendingShare.key === consentKey && <div className={styles.recovery}>
-          <strong>{messageParts.length > 1 ? `Message ${activeMessagePart + 1} of ${messageParts.length}` : 'Send asset details'}</strong>
-          <p>Open this message in WhatsApp, choose your recipient and press Send.{messageParts.length > 1 ? ' Then return here for the next message.' : ''}</p>
-          {selectedAttachmentCount > 0 && <p>Messages contain your text only. Photos and reports are not attached.</p>}
-          <pre className={styles.messagePartPreview}>{messageParts[activeMessagePart]}</pre>
-          <a className={styles.messagePartLink} href={messagePartHref} target="_blank" rel="noopener noreferrer">Open message in WhatsApp</a>
-          {messageParts.length > 1 && <div className={styles.messagePartNavigation}>
-            <button type="button" disabled={activeMessagePart === 0} onClick={() => setMessagePart(activeMessagePart - 1)}>Previous message</button>
-            <button type="button" disabled={activeMessagePart === messageParts.length - 1} onClick={() => setMessagePart(activeMessagePart + 1)}>Next message</button>
-          </div>}
+        {showRecovery && accepted && pendingShare.key === consentKey && <div className={styles.recovery}>
+          {usePdf && pdfUrl ? <><p>Direct sharing is unavailable on this device. Download the single PDF and attach it in {pendingShare.target === 'email' ? 'your email app' : 'WhatsApp'}.</p><a className={styles.messagePartLink} href={pdfUrl} download={preparation.files[0]?.name}>Download PDF</a></>
+            : <p>Try again or use a browser and app that support file sharing. Your photos have not been replaced with text messages.</p>}
         </div>}
         <div className={disclosureStyles.actions}>
-          <button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>{showRecovery && pendingShare.target === 'whatsapp' ? 'Retry photos with ' : 'Continue to '}{pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>
+          <button type="button" className={disclosureStyles.continue} disabled={!accepted || pendingShare.key !== consentKey || isPreparing || isSending} onClick={() => void sendShare(pendingShare.target)}>{showRecovery ? 'Retry sharing with ' : 'Continue to '}{pendingShare.target === 'email' ? 'Email' : 'WhatsApp'}</button>
         </div>
       </ShareDisclosureDialog>}
     </section>

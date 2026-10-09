@@ -87,41 +87,17 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForFunction(()=>[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='WhatsApp'&&!b.disabled));
  await click('WhatsApp');await page.waitForSelector('dialog[open]');
  await page.click('[data-share-consent]');await click('Continue to WhatsApp');
- await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Photo sharing was blocked.'));
+ await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('Attachment sharing was blocked.'));
  assert.equal(await page.$$eval('dialog a[download]',nodes=>nodes.length),0,'No manual download fallback');
  assert(await page.$('[aria-label="Share outside Aim4price"]'),'Share surface remains open after rejection');
  assert.equal(await page.evaluate(()=>document.body.textContent.includes('Share files only')),false);
- const fallback=await page.$eval('dialog a[href^="https://wa.me/"]',a=>a.href);
  const edited=await page.$eval('[aria-label="External asset details message"]',n=>n.value);
- assert.equal(new URL(fallback).searchParams.get('text'),edited,'WhatsApp receives the complete edited message');
+ assert.equal(await page.$$eval('dialog a[href^="https://wa.me/"]',links=>links.length),0,'Blocked attachment shares do not become text-only shares');
  await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shareCalls.push(data);}}));
- await click('Retry photos with WhatsApp');await page.waitForSelector('dialog[open]',{hidden:true});
+ await click('Retry sharing with WhatsApp');await page.waitForSelector('dialog[open]',{hidden:true});
  assert.equal(await page.evaluate(()=>window.shareCalls.at(-1).files.length),1);
  assert.equal(await page.evaluate(()=>window.shareCalls.at(-1).text),edited,'Native sharing retains the edited message');
  assert.equal(await page.evaluate(()=>window.encodes),encodes,'Retry reuses prepared photos');
- // A long edited message stays intact across the one-at-a-time fallback.
- await page.evaluate(()=>{
-  const input=document.querySelector('[aria-label="External asset details message"]');
-  window.longMessage=Array.from({length:20},(_,i)=>`Asset ${i+1}: tractor VIN-${i+1}\n${'Saved details '.repeat(20)}\n`).join('');
-  Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(input,window.longMessage);
-  input.dispatchEvent(new Event('input',{bubbles:true}));
-  Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false});
- });
- await click('WhatsApp');await page.waitForSelector('dialog[open]');
- await page.click('[data-share-consent]');await click('Continue to WhatsApp');
- await page.waitForSelector('dialog a[href^="https://wa.me/"]');
- let reconstructed='';
- while(true){
-  reconstructed+=new URL(await page.$eval('dialog a[href^="https://wa.me/"]',a=>a.href)).searchParams.get('text');
-  const done=await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.textContent==='Next message').disabled);
-  if(done)break;
-  const previous=await page.$eval('dialog pre',n=>n.textContent);
-  await click('Next message');await page.waitForFunction(previous=>document.querySelector('dialog pre').textContent!==previous,{},previous);
- }
- assert.equal(reconstructed,await page.evaluate(()=>window.longMessage),'Every edited part reaches WhatsApp in order');
- await click('Previous message');
- assert.equal(await page.evaluate(()=>[...document.querySelectorAll('button')].find(b=>b.textContent==='Next message').disabled),false);
- await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog')); 
  await page.setViewport({width:390,height:844});
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Mobile has no horizontal overflow');
  await page.screenshot({path:'/tmp/shared-outside-mobile.png'});

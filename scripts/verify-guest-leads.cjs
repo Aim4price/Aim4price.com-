@@ -392,8 +392,7 @@ export default function Validation(){
    await page.click('dialog [data-share-consent]');await click('Continue to WhatsApp');
    await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('This device cannot share these attachments'));
    assert.equal(await page.$$eval('dialog[open] a[download]',links=>links.length),0,'No manual download fallback');
-   assert.match(await page.$eval('dialog[open] a[href^="https://wa.me/"]',link=>decodeURIComponent(link.href)),/Serial number: TEST-1/,'Message fallback preserves asset details');
-   assert.ok(await page.$eval('dialog[open]',dialog=>dialog.textContent.includes('Photos and reports are not attached.')),'Text fallback clearly identifies omitted attachments');
+   assert.equal(await page.$$eval('dialog[open] a[href^="https://wa.me/"]',links=>links.length),0,'No text-only substitute for blocked attachments');
    assert.equal(await page.$eval('dialog[open] [data-share-consent]',e=>e.checked),true,'Recovery retains consent for the unchanged selection');
    assert.equal(await page.evaluate(()=>window.__nativeShares.length),2,'Unsupported payloads are not sent');
    await page.screenshot({path:path.join(output,`standard-external-${width}.png`),fullPage:true});
