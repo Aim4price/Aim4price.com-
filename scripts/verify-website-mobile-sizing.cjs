@@ -98,7 +98,7 @@ fs.mkdirSync(output, { recursive: true });
     console.log('PASS rotation dismisses entry and refits landscape');
     await setViewport({width:390,height:844,isMobile:false,hasTouch:true});
     await page.waitForSelector('[data-mobile-landscape-entry]');
-    await page.$$eval('button',els=>els.find(e=>e.textContent==='Continue in portrait').click());
+    await page.$$eval('button',els=>els.find(e=>e.textContent==='continue in portrait').click());
     await page.waitForFunction(()=>!document.querySelector('[data-mobile-landscape-entry]'));
     await waitScale(390/1440);
     await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:2});
