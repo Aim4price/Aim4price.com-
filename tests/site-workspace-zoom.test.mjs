@@ -96,8 +96,8 @@ test('portrait phone entry strongly recommends landscape without locking orienta
   assert.match(host, /canvas\?\.setAttribute\('inert', ''\)/);
   assert.match(host, /data-mobile-landscape-entry/);
   assert.match(host, /document\.body/);
-  assert.match(host, /turn your phone sideways/);
-  assert.match(host, /continue in portrait/);
+  assert.match(host, /Turn your phone sideways/);
+  assert.match(host, /Continue in portrait/);
   assert.doesNotMatch(host, /screen\.orientation\.lock|requestFullscreen/);
   assert.match(css, /\.landscapeGate\s*\{[\s\S]*position:\s*fixed;[\s\S]*inset:\s*0;/);
   assert.match(css, /prefers-reduced-motion:[\s]*reduce[\s\S]*\.landscapePhone/);

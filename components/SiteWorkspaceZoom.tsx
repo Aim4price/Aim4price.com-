@@ -251,10 +251,9 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
           priority
           className={styles.landscapeLogo}
         />
-        <p className={styles.landscapeKicker}>your workspace</p>
-        <h2 id="aim4price-landscape-title" className={styles.landscapeTitle}>turn your phone sideways</h2>
+        <h2 id="aim4price-landscape-title" className={styles.landscapeTitle}>Turn your phone sideways</h2>
         <p id="aim4price-landscape-description" className={styles.landscapeDescription}>
-          a little more room to work. turn your phone to the left and the site will open automatically.
+          Aim4price is designed to give you more working space in landscape. Rotate your phone and the site will open automatically.
         </p>
 
         <div className={styles.landscapeRotateStage} aria-hidden="true">
@@ -274,9 +273,9 @@ export default function SiteWorkspaceZoom({ children, footer, operational }: {
           </div>
         </div>
 
-        <p className={styles.landscapeInstruction}>rotate left to continue</p>
+        <p className={styles.landscapeInstruction}>Rotate to continue</p>
         <button type="button" className={styles.portraitBypass} onClick={continueInPortrait}>
-          continue in portrait
+          Continue in portrait
         </button>
       </div>
     </section>,
