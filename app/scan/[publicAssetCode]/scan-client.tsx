@@ -1,4 +1,6 @@
 "use client";
+import type { AssetPart } from '../../../lib/asset-parts';
+import AppAssetPartsButton from "../../../components/AppAssetPartsButton";
 
 import { useMaintenanceChecklist } from '../../../lib/use-maintenance-checklist';
 import { checklistOptions, buildMaintenanceWorkSnapshot, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from '../../../lib/maintenance-catalogue';
@@ -1163,6 +1165,16 @@ export default function ScanClient({
   const [isUnavailable, setIsUnavailable] = useState(false);
   const [assetOpenError, setAssetOpenError] = useState<string | null>(null);
   const [activeEditor, setActiveEditor] = useState<EditorKey | null>(null);
+  const [referenceParts, setReferenceParts] = useState<AssetPart[]>([]);
+  useEffect(() => {
+    setReferenceParts([]);
+    if (!asset || activeEditor !== 'service' || (!ownerAppMode && !fieldManagerMode)) return;
+    const controller = new AbortController();
+    fetch(`/api/${ownerAppMode ? 'owner-app' : 'field-manager'}/assets/${asset.id}/parts`, { cache: 'no-store', signal: controller.signal })
+      .then(async response => { if (response.ok) { const data = await response.json(); if (!controller.signal.aborted) setReferenceParts(data.parts || []); } }).catch(() => {});
+    return () => controller.abort();
+  }, [asset?.id, activeEditor, ownerAppMode, fieldManagerMode]);
+
   const [showLocationReminder, setShowLocationReminder] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [showServiceDetailsStep, setShowServiceDetailsStep] = useState(false);
@@ -3394,6 +3406,13 @@ export default function ScanClient({
                     </button>
                   ) : null}
 
+                  {(ownerAppMode || fieldManagerMode) && <AppAssetPartsButton
+                    endpoint={`/api/${ownerAppMode ? 'owner-app' : 'field-manager'}/assets/${asset.id}/parts`}
+                    assetTitle={asset.title} className={styles.actionCard}>
+                    <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon}/></span>
+                    <span className={styles.actionTextBlock}><strong>Parts</strong><small>Part numbers for maintenance</small></span>
+                  </AppAssetPartsButton>}
+
                   {canUseDealerShare ? (
                     <button type="button" className={styles.actionCard} onClick={handleShareTap}>
                       <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
@@ -3675,7 +3694,7 @@ export default function ScanClient({
                     <span className={styles.shareTrackingChoiceCopy}>
                       <strong>Enable dealer tracking</strong>
                       <small>The dealer can download maintenance reports and create schedules. Enabled schedules take effect immediately.</small>
-                      <em>{shareTrackMaintenance ? "Permissions selected. Tap to review." : "Choose what the dealer can see and update."}</em>
+                      <em>{shareTrackMaintenance ? "Permissions selected. Tap to review." : "Choose access to parts, maintenance and asset updates."}</em>
                     </span>
                   </button>
                 </div>
@@ -3721,7 +3740,7 @@ export default function ScanClient({
                       {sharePhotoUrls.length ? ", attached photos" : ""} and
                       relevant documents will be shared with this dealer.
                     </p>
-                    {shareTrackMaintenance ? <p>This dealer will receive ongoing Maintenance Tracker access with the permissions selected. Enabled maintenance schedules take effect immediately. Serial-number and replacement-price changes still require owner approval.</p> : null}
+                    {shareTrackMaintenance ? <p>This dealer will receive ongoing Maintenance Tracker access with the permissions selected. Enabled maintenance schedules take effect immediately. Value changes follow the asset’s existing approval rules.</p> : null}
                   </div>
 
                   <label className={styles.shareConsentCheck}>
@@ -3791,7 +3810,7 @@ export default function ScanClient({
                 type="button"
                 className={styles.shareTrackingPermissionBackdrop}
                 onClick={cancelShareTrackingPermissions}
-                aria-label="Close Business/Dealer asset settings"
+                aria-label="Close Asset link settings"
               />
               <section
                 className={styles.shareTrackingPermissionModal}
@@ -3801,20 +3820,20 @@ export default function ScanClient({
               >
                 <header className={styles.shareTrackingPermissionHeader}>
                   <div>
-                    <h3 id="share-tracking-permission-title">Business/Dealer asset settings</h3>
+                    <h3 id="share-tracking-permission-title">Asset link settings</h3>
                     <p>{asset.title}</p>
                   </div>
                   <button
                     type="button"
                     onClick={cancelShareTrackingPermissions}
-                    aria-label="Close Business/Dealer asset settings"
+                    aria-label="Close Asset link settings"
                   >
                     <CloseIcon className={styles.closeIcon} />
                   </button>
                 </header>
                 <div className={styles.shareTrackingPermissionBody}>
                   <div className={styles.shareTrackingPermissionIntro}>
-                    <strong>Choose what this business/dealer can access</strong>
+                    <strong>Choose what this recipient can access</strong>
                     <p>Select the permissions to activate as soon as the asset is shared.</p>
                   </div>
                   <DealerMaintenancePermissionPicker
@@ -4372,6 +4391,7 @@ export default function ScanClient({
                                     <span className={styles.listOptionText}>
                                       <strong>{option.label}</strong>
                                       {option.description ? <small>{option.description}</small> : null}
+                                      {referenceParts.filter(part => part.itemLabel === option.label).map(part => <small key={part.id}>Part: {part.partNumber}{part.brand ? ` · ${part.brand}` : ''}</small>)}
                                     </span>
                                     <span className={styles.listOptionCheck}>
                                       {selected ? "✓" : ""}

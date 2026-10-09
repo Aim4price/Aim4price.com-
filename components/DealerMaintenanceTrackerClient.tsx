@@ -1,4 +1,5 @@
 'use client';
+import AppAssetPartsButton from './AppAssetPartsButton';
 import dialogStyles from './AccountDialog.module.css';
 import ProblemCard from './leads/LeadProblemCard';
 import DateInput from './DateInput';
@@ -1847,6 +1848,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     </span>
                   </button>
 
+                  {(managedAsset.permissions.canViewParts || managedAsset.permissions.canAddParts) && <AppAssetPartsButton endpoint={`/api/dealer/maintenance/${managedAsset.accessId}/parts`} assetTitle={managedAsset.assetTitle} className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}><ManageIcon className={assetStyles.buttonIcon}/><span><strong>Parts</strong><small>Part numbers for this asset.</small></span></AppAssetPartsButton>}
+
                   {managedAsset.permissions.canCreateMaintenanceSchedules ? (
                     <button
                       type="button"
@@ -1954,6 +1957,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       {serviceTarget ? (
         <DesktopServiceModal
           askScheduleLink
+          partsEndpoint={serviceTarget.asset.permissions.canViewParts ? `/api/dealer/maintenance/${serviceTarget.asset.accessId}/parts` : undefined}
           dealerAppMode={dealerAppMode}
           record={{
             ...serviceTarget.record,

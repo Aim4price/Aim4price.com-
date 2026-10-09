@@ -37,3 +37,5 @@
 
 /* Parts can open above an existing owner or shared-asset Manage dialog. */
 .overlay { z-index:26000; }
+/* Native app dark mode keeps the empty-state copy readable. */
+.empty { color:var(--app-muted,#607168); }
