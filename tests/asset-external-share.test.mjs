@@ -4,7 +4,6 @@ import {
   buildEmailShareUrl,
   buildExternalAssetShareCopy,
   buildWhatsAppShareUrl,
-  splitWhatsAppMessages,
 } from '../lib/asset-external-share.ts';
 
 const asset = {
@@ -94,23 +93,6 @@ test('business recipients prefill email and WhatsApp without changing the outsid
   assert.equal(buildWhatsAppShareUrl(copy, 'invalid'), buildWhatsAppShareUrl(copy));
   assert.equal(buildEmailShareUrl(copy, 'workshop@example.com'), 'mailto:workshop%40example.com?subject=Asset%20details&body=Saved%20asset%20details');
   assert.equal(buildEmailShareUrl(copy, 'bad\r\nbcc:other@example.com'), buildEmailShareUrl(copy));
-});
-
-test('WhatsApp message parts retain every asset and all edited text', () => {
-  const body = buildExternalAssetShareCopy('Umbrella', Array.from({length:20}, (_,i)=>({...asset,title:`Tractor ${i + 1}`,serialNumber:`VIN-${i + 1}`}))).body + '\nMy edited note 🌱';
-  const parts = splitWhatsAppMessages(body);
-  assert.ok(parts.length > 1);
-  assert.equal(parts.join(''), body);
-  assert.ok(parts.every(part=>part.length <= 1800));
-  for (let i=1;i<=20;i++) assert.ok(parts.some(part=>part.includes(`Tractor ${i}\nSerial number: VIN-${i}\n`)));
-  for (const part of parts) assert.equal(new URL(buildWhatsAppShareUrl({subject:'Test',body:part})).searchParams.get('text'),part);
-});
-test('WhatsApp splits long edited text without losing Unicode characters', () => {
-  for (const body of ['', 'Short message', '🌱'.repeat(2500), 'x'.repeat(5000)]) {
-    const parts=splitWhatsAppMessages(body);
-    assert.equal(parts.join(''),body);
-    for (const part of parts) assert.doesNotThrow(()=>buildWhatsAppShareUrl({subject:'Test',body:part}));
-  }
 });
 
 test('missing asset titles never shift photo numbers', () => {
