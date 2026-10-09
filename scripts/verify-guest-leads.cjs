@@ -370,7 +370,8 @@ export default function Validation(){
     await page.screenshot({path:path.join(output,`external-disclosure-${channel}-${width}.png`),fullPage:true});
     if(width===1440) assert.ok(await page.$eval('dialog',e=>e.scrollHeight<=e.clientHeight+1),'Disclosure fits desktop without scrolling');
     await click('Continue to '+channel);
-    await page.waitForFunction(()=>document.body.textContent.includes('attachment was handed to your phone'));
+    await page.waitForSelector('dialog[open]',{hidden:true});
+    await page.waitForFunction(()=>document.body.textContent.includes('Files handed to your device’s share menu.'));
    }
    const sent=await page.evaluate(()=>({opened:window.__opened,native:window.__nativeShares}));
    assert.equal(sent.native.length,2,'Both actions hand the selected report to the native share menu');
@@ -384,9 +385,12 @@ export default function Validation(){
    await page.evaluate(()=>Object.defineProperty(navigator,'canShare',{configurable:true,value:()=>false}));
    await click('WhatsApp');await page.waitForSelector('dialog[open] [data-share-consent]');
    await page.click('dialog [data-share-consent]');await click('Continue to WhatsApp');
-   await page.waitForFunction(()=>document.body.textContent.includes('Nothing was sent.'));
+   await page.waitForFunction(()=>document.querySelector('dialog[open]')?.textContent.includes('This device cannot share this combination'));
+   assert.equal(await page.$$eval('dialog[open] a[download]',links=>links.length),1,'Unsupported report remains downloadable inside the open confirmation');
+   assert.equal(await page.$eval('dialog[open] [data-share-consent]',e=>e.checked),true,'Recovery retains consent for the unchanged selection');
    assert.equal(await page.evaluate(()=>window.__nativeShares.length),2,'Unsupported payloads are not sent');
    await page.screenshot({path:path.join(output,`standard-external-${width}.png`),fullPage:true});
+   await page.keyboard.press('Escape');await page.waitForSelector('dialog[open]',{hidden:true});
   }
   assert.equal(requests.filter(r=>r.path.startsWith('/api/asset-share-links')).length,linkRequestsBefore,'Standard sharing never calls snapshot or lead APIs');
   assert.equal(requests.filter(r=>r.path==='/api/business-network/accept'&&r.method==='POST').length,2);
