@@ -46,7 +46,7 @@ export async function listAssetChecklistItems(userId: string, assetId: string): 
   return rows;
 }
 
-export async function addAssetChecklistItem(userId: string, assetId: string, input: unknown): Promise<AssetChecklistItem> {
+export async function addAssetChecklistItem(userId: string, assetId: string, input: unknown, checkAccess?: () => Promise<void>): Promise<AssetChecklistItem> {
   const item = validateAssetChecklistItem(input);
   await assertChecklistAssetOwner(userId, assetId);
   await ensureAssetChecklistItems();
@@ -56,6 +56,7 @@ export async function addAssetChecklistItem(userId: string, assetId: string, inp
     // Serialise additions for this asset, including ownership transfers, without a global lock.
     const owned = await client.query('select id from public.asset_register_items where user_id = $1 and id = $2::uuid for update', [userId, assetId]);
     if (!owned.rows.length) throw new Error('ASSET_NOT_FOUND');
+    await checkAccess?.();
     const count = await client.query<{ count: string }>('select count(*) from public.asset_checklist_items where user_id = $1 and asset_id = $2::uuid', [userId, assetId]);
     if (Number(count.rows[0].count) >= 60) throw new Error('This asset already has 60 custom items. Remove an item before adding another.');
     const result = await client.query<AssetChecklistItem>(`insert into public.asset_checklist_items (id, user_id, asset_id, mode, label, description)
@@ -66,9 +67,10 @@ export async function addAssetChecklistItem(userId: string, assetId: string, inp
   finally { client.release(); }
 }
 
-export async function removeAssetChecklistItem(userId: string, assetId: string, itemId: string) {
+export async function removeAssetChecklistItem(userId: string, assetId: string, itemId: string, checkAccess?: () => Promise<void>) {
   await assertChecklistAssetOwner(userId, assetId);
   await ensureAssetChecklistItems();
+  await checkAccess?.();
   const result = await getDb().query(`delete from public.asset_checklist_items c using public.asset_register_items a
     where c.id::text = $3 and c.user_id = $1 and c.asset_id = $2::uuid and a.id = c.asset_id and a.user_id = c.user_id returning c.id`, [userId, assetId, itemId]);
   if (!result.rows.length) throw new Error('ITEM_NOT_FOUND');

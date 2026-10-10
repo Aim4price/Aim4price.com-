@@ -1,6 +1,8 @@
+import { dealerRoleCan } from '../../../../../lib/dealer-app-access';
+import { isTrustedRequestOrigin } from '../../../../../lib/trusted-request-origin';
 import { NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
-import { getServerSession } from '../../../../../lib/auth-session';
+import { getServerSession, isDealerAppSession } from '../../../../../lib/auth-session';
 import {
   completeDealerTrackedMaintenance,
   getDealerTrackedAsset,
@@ -45,6 +47,7 @@ export async function POST(request: Request, { params }: { params: { accessId: s
     return NextResponse.json({ ok: false, error: 'Dealer login is required.' }, { status: 401 });
   }
 
+  if ((isDealerAppSession(session) && !dealerRoleCan(session.dealerApp.role, 'maintenance')) || !isTrustedRequestOrigin(request.headers.get('origin'), new URL(request.url).origin)) return NextResponse.json({ ok: false, error: 'Maintenance access is not available.' }, { status: 403 });
   const profile = await getAccountProfile({
     id: session.user.id,
     name: session.user.name,
@@ -62,7 +65,8 @@ export async function POST(request: Request, { params }: { params: { accessId: s
   }
 
   const maintenanceId = String(body.maintenanceId ?? '').trim();
-  if (!maintenanceId) {
+  const maintenanceType = body.maintenanceType === 'checkup' || body.maintenanceType === 'service' ? body.maintenanceType : undefined;
+  if (!maintenanceId && !(body.linkToScheduledMaintenance === false && maintenanceType)) {
     return NextResponse.json({ ok: false, error: 'Maintenance record id is required.' }, { status: 400 });
   }
   if (body.confirmedComplete !== true) {
@@ -87,6 +91,7 @@ export async function POST(request: Request, { params }: { params: { accessId: s
           dealerUserId: session.user.id,
           accessId: String(params.accessId ?? '').trim(),
           maintenanceId,
+          maintenanceType,
           completion,
           clientEventId: String(body.clientEventId ?? '').trim(),
         })
@@ -99,6 +104,7 @@ export async function POST(request: Request, { params }: { params: { accessId: s
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     const code = error instanceof Error ? error.message : '';
+    if (code === 'MAINTENANCE_ADD_PERMISSION_REQUIRED') return NextResponse.json({ ok: false, error: 'The owner has not allowed recording maintenance.' }, { status: 403 });
     if (code === 'DEALER_MAINTENANCE_ACCESS_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'This tracked asset is no longer available.' }, { status: 404 });
     }

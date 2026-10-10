@@ -84,7 +84,7 @@ test('duplicate Dealer proposals are blocked instead of creating conflicting sch
 });
 
 test('existing schedule actions switch to edit without changing successful completion behavior', () => {
-  assert.match(scanClient, /openMaintenanceOptions\.length > 0 \? <>\s*<span>Edit<\/span><span>Schedule<\/span>/);
+  assert.match(scanClient, /scheduleLabel=\{openMaintenanceOptions\.length > 0 \? 'Edit schedule' : 'Schedule maintenance'\}/);
   assert.match(scanClient, /window\.location\.replace\(assetActionsHref\)/);
   assert.match(scanClient, /Returning to asset actions/);
   assert.match(maintenance, /createNextRecurringRecord\(client, userId, completed\)/);

@@ -12,7 +12,13 @@ import styles from './MaintenanceChecklistBrowser.module.css';
 
 type ChecklistAsset = { id: string; title: string; serialNumber?: string; meta?: string; headerMeta?: string; selectedMethod?: string; maintenanceIdentity?: MaintenanceIdentity };
 
-export default function MaintenanceChecklistBrowser({ assets, initialAssetId, onClose, onStartWork }: {
+export default function MaintenanceChecklistBrowser({ assets, initialAssetId, onClose, onStartWork, endpoint, pdfEndpoint, canEdit = true, canRemove = canEdit, canRecord = true, canSchedule = true }: {
+  endpoint?: string;
+  pdfEndpoint?: string;
+  canEdit?: boolean;
+  canRemove?: boolean;
+  canRecord?: boolean;
+  canSchedule?: boolean;
   assets: ChecklistAsset[];
   initialAssetId: string;
   onClose: () => void;
@@ -26,7 +32,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
   const [mode, setMode] = useState<'checked' | 'serviced' | 'repaired'>('checked');
   const asset = assets.find((item) => item.id === assetId) ?? null;
   const baseChecklist = useMaintenanceChecklist(asset);
-  const saved = useAssetChecklistItems(asset?.id);
+  const saved = useAssetChecklistItems(asset?.id, endpoint);
   const checklist = { ...baseChecklist, customItems: saved.items };
   const [editing, setEditing] = useState(false);
   const [label, setLabel] = useState('');
@@ -46,7 +52,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
     try {
       const input = validateAssetChecklistItem({ mode, label, description });
       setBusy('save');
-      const response = await fetch(`/api/maintenance/checklist?assetId=${encodeURIComponent(asset.id)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
+      const response = await fetch(endpoint || `/api/maintenance/checklist?assetId=${encodeURIComponent(asset.id)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       saved.setItems([...saved.items, data.item]);
@@ -60,7 +66,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
     if (!asset || busy) return;
     setBusy(id); setError(''); setNotice('');
     try {
-      const response = await fetch(`/api/maintenance/checklist?assetId=${encodeURIComponent(asset.id)}&itemId=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const response = await fetch(endpoint ? `${endpoint}?itemId=${encodeURIComponent(id)}` : `/api/maintenance/checklist?assetId=${encodeURIComponent(asset.id)}&itemId=${encodeURIComponent(id)}`, { method: 'DELETE' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       saved.setItems(saved.items.filter(item => item.id !== id));
@@ -75,7 +81,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
     try {
       const params = new URLSearchParams({ assetId: asset.id });
       selectedKeys.forEach(key => params.append('item', key));
-      const response = await fetch(`/api/maintenance/checklist/pdf?${params}`, { cache: 'no-store' });
+      const response = await fetch(pdfEndpoint ? `${pdfEndpoint}&${params}` : `/api/maintenance/checklist/pdf?${params}`, { cache: 'no-store' });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error); }
       const url = URL.createObjectURL(await response.blob());
       const link = document.createElement('a'); link.href = url; link.download = 'maintenance-checklist.pdf';
@@ -129,7 +135,7 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
           <div className={styles.tabs} aria-label="Checklist type">
             {([['checked', 'Checks'], ['serviced', 'Service'], ['repaired', 'Repairs']] as const).map(([value, title]) => <button key={value} type="button" disabled={!!busy || editing} aria-pressed={mode === value} onClick={() => setMode(value)}>{title}</button>)}
           </div>
-          <div className={styles.sectionHeading}><span className={styles.hint} role="status">{selectedKeys.length} selected</span><button className={styles.addButton} type="button" disabled={!!busy || saved.loading || !!saved.error || editing} onClick={() => { setEditing(true); setError(''); }}>+ Add item</button></div>
+          <div className={styles.sectionHeading}><span className={styles.hint} role="status">{selectedKeys.length} selected</span>{canEdit && <button className={styles.addButton} type="button" disabled={!!busy || saved.loading || !!saved.error || editing} onClick={() => { setEditing(true); setError(''); }}>+ Add item</button>}</div>
           {saved.loading ? <p role="status">Loading your saved items…</p> : null}
           {saved.error ? <div role="alert" className={styles.error}>{saved.error} <button type="button" onClick={saved.reload}>Try again</button></div> : null}
           {error ? <p role="alert" className={styles.error}>{error}</p> : null}
@@ -140,11 +146,11 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
             <label htmlFor="checklist-item-instructions"><span>Instructions (optional)</span><textarea id="checklist-item-instructions" value={description} maxLength={500} rows={2} placeholder="Details" disabled={!!busy} onChange={event => setDescription(event.target.value)} /></label>
             <div className={styles.editorActions}><button type="button" disabled={!!busy} onClick={() => setEditing(false)}>Cancel</button><button className={styles.primary} disabled={!!busy} type="submit">{busy === 'save' ? 'Saving…' : 'Save item'}</button></div>
           </form> : null}
-          <ul className={styles.items}>{options.map(item => <li key={item.id} data-selected={selected.has(`${mode}:${item.id}`)}><label className={styles.itemLabel}><input type="checkbox" checked={selected.has(`${mode}:${item.id}`)} disabled={!!busy || editing} onChange={() => toggleItem(`${mode}:${item.id}`)} /><span className={styles.itemCopy}><strong>{item.label}</strong>{item.description ? <span className={styles.itemDescription}>{item.description}</span> : null}</span></label>{item.id.startsWith('asset_custom_') ? <button className={styles.remove} type="button" disabled={!!busy || editing} aria-label={`Remove custom item: ${item.label}`} onClick={() => removeItem(item.id.slice('asset_custom_'.length))}>Remove</button> : null}</li>)}</ul>
+          <ul className={styles.items}>{options.map(item => <li key={item.id} data-selected={selected.has(`${mode}:${item.id}`)}><label className={styles.itemLabel}><input type="checkbox" checked={selected.has(`${mode}:${item.id}`)} disabled={!!busy || editing} onChange={() => toggleItem(`${mode}:${item.id}`)} /><span className={styles.itemCopy}><strong>{item.label}</strong>{item.description ? <span className={styles.itemDescription}>{item.description}</span> : null}</span></label>{canRemove && item.id.startsWith('asset_custom_') ? <button className={styles.remove} type="button" disabled={!!busy || editing} aria-label={`Remove custom item: ${item.label}`} onClick={() => removeItem(item.id.slice('asset_custom_'.length))}>Remove</button> : null}</li>)}</ul>
           {!options.length && !saved.loading ? <p className={styles.empty}>No items yet. Add a task.</p> : null}
         </> : null}
       </div>
-      <footer className={styles.footer}><button type="button" disabled={!asset || !!busy || editing} onClick={() => asset && onStartWork(asset.id, 'upcoming')}>Schedule</button><button type="button" disabled={!asset || !!busy || editing} onClick={() => asset && onStartWork(asset.id, 'done')}>Record work</button><button className={styles.primary} data-primary-action type="button" disabled={!asset || !!busy || editing || saved.loading || !!saved.error || !selectedKeys.length} onClick={downloadPdf}>{busy === 'pdf' ? 'Preparing PDF…' : 'Download PDF'}</button></footer>
+      <footer className={styles.footer}>{canSchedule && <button type="button" disabled={!asset || !!busy || editing} onClick={() => asset && onStartWork(asset.id, 'upcoming')}>Schedule</button>}{canRecord && <button type="button" disabled={!asset || !!busy || editing} onClick={() => asset && onStartWork(asset.id, 'done')}>Record work</button>}<button className={styles.primary} data-primary-action type="button" disabled={!asset || !!busy || editing || saved.loading || !!saved.error || !selectedKeys.length} onClick={downloadPdf}>{busy === 'pdf' ? 'Preparing PDF…' : 'Download PDF'}</button></footer>
       </>}
     </section>
   </div>;

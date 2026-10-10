@@ -1,0 +1,12 @@
+.grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; margin:1rem 0; }
+.card { display:flex; align-items:center; gap:.85rem; width:100%; min-width:0; min-height:5.5rem; padding:1rem; border:1px solid var(--app-line,#d0dfd8); border-radius:1rem; background:var(--app-surface,#fff); color:var(--app-text,#173c30); font:inherit; text-align:left; cursor:pointer; }
+.card:hover { background:var(--app-surface-soft,#eef6f2); }
+.card:focus-visible { outline:3px solid var(--app-accent,#32886b); outline-offset:3px; }
+.card:disabled { opacity:.6; cursor:wait; }
+.card > span:last-child { display:grid; gap:.3rem; min-width:0; }
+.card strong { font-size:1rem; line-height:1.3; }
+.card small { font-size:.85rem; line-height:1.4; color:var(--app-muted,#61746b); }
+.icon { display:grid; place-items:center; flex:none; width:2.6rem; height:2.6rem; border:1px solid var(--app-line,#d0dfd8); border-radius:.75rem; background:var(--app-surface-soft,#eef6f2); }
+.icon svg { width:1.45rem; height:1.45rem; }
+.grid > :last-child:nth-child(odd) { grid-column:1/-1; }
+@media(max-width:600px) { :global(:where(html:not(:has([data-website-canvas])))) .grid { grid-template-columns:minmax(0,1fr); } }

@@ -131,7 +131,7 @@ export default function DesktopServiceModal({
   const copy = serviceCopyForProfile(profile);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const baseChecklist = useMaintenanceChecklist(record, selectedItems.length > 0);
-  const savedChecklist = useAssetChecklistItems(dealerAppMode ? undefined : record.assetId, checklistEndpoint);
+  const savedChecklist = useAssetChecklistItems((dealerAppMode && !checklistEndpoint) ? undefined : record.assetId, checklistEndpoint);
   const checklist = { ...baseChecklist, customItems: savedChecklist.items };
   const repairChecklist = { ...checklist, items: [] };
   const repairOptions = mode === 'serviced' ? checklistOptions(repairChecklist, 'repaired') : [];

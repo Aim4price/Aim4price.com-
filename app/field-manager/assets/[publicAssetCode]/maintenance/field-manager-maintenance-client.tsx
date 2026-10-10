@@ -1,5 +1,5 @@
 'use client';
-import AppAssetPartsButton from '../../../../../components/AppAssetPartsButton';
+import AppMaintenanceActions from '../../../../../components/AppMaintenanceActions';
 import DateInput from '../../../../../components/DateInput';
 
 import { useEffect, useState, type FormEvent } from 'react';
@@ -456,7 +456,7 @@ export default function FieldManagerMaintenanceClient({
               <p>{asset.title}</p>
             </section>
 
-            <div className={styles.maintenanceActions}><AppAssetPartsButton endpoint={`/api/${mode === 'owner' ? 'owner-app' : 'field-manager'}/assets/${asset.id}/parts`} assetTitle={asset.title} className={styles.secondaryButton}>Parts · view and add part numbers</AppAssetPartsButton></div>
+            <AppMaintenanceActions apiBase={`/api/${mode === 'owner' ? 'owner-app' : 'field-manager'}/assets/${asset.id}`} assetTitle={asset.title} onRecord={() => window.location.assign(`${assetHref}${assetHref.includes('?') ? '&' : '?'}action=record`)} />
 
             {upcomingMaintenance ? (
               <section

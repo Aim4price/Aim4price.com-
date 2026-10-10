@@ -15,7 +15,7 @@ async function main() {
   const catalogue = exports.maintenanceCatalogueSeed;
   let server, browser;
   try {
-    await fs.mkdir(fixture); await fs.writeFile(path.join(fixture,'page.tsx'), (await fs.readFile(path.join(root,'tests/fixtures/maintenance-catalogue-page.tsx'),'utf8')).replaceAll("'../../components/", "'../../../components/").replaceAll("'../../lib/", "'../../../lib/").replaceAll("'../../app/", "'../../"));
+    await fs.mkdir(fixture); await fs.writeFile(path.join(fixture,'page.tsx'), (await fs.readFile(path.join(root,'tests/fixtures/maintenance-catalogue-page.tsx'),'utf8')).replaceAll("'../../components/", "'../../../components/").replaceAll("'../../lib/", "'../../../lib/").replaceAll("'../../app/", "'../../").replaceAll("'../../tests/", "'../../../tests/"));
     server = spawn(process.execPath,['node_modules/next/dist/bin/next','dev','-p','3034'],{cwd:root,env:{...process.env,PGHOST:'127.0.0.1',PGPORT:'5432',PGUSER:'maintenance_fixture',PGPASSWORD:'local-fixture-only',PGDATABASE:'maintenance_fixture',BETTER_AUTH_SECRET:'local-maintenance-fixture-secret'},stdio:['ignore','pipe','pipe']});
     await new Promise((resolve,reject)=>{ const timer=setTimeout(()=>reject(Error('Next startup timeout')),90000);server.stdout.on('data',d=>{if(d.toString().includes('Ready')){clearTimeout(timer);resolve();}});server.stderr.on('data',d=>process.stderr.write(d));server.once('exit',code=>{clearTimeout(timer);reject(Error(`Next exited ${code}`));}); });
     await fs.mkdir(output,{recursive:true});
@@ -23,8 +23,9 @@ async function main() {
     const origin='http://127.0.0.1:3034';
     await browser.defaultBrowserContext().overridePermissions(origin,['geolocation']);
     const page=await browser.newPage(); await page.setGeolocation({latitude:-25.7,longitude:28.2,accuracy:10});
-    const errors=[];page.on('pageerror',e=>errors.push(e.message));
-    let submitted=null, savedPart=null;
+    const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error at',page.url(),e.message)});page.on('console',m=>{if(m.type()==='error')console.error('Browser console',m.text())});
+    let submitted=null, savedPart=null, savedDealerWork=null, customItems=[];
+    const trackerFixture=JSON.parse(await fs.readFile(path.join(root,'tests/fixtures/account-dialog-data.json'),'utf8')).asset;
     const asset={id:'11111111-1111-4111-8111-111111111111',userId:'fixture',publicAssetCode:'A4P-TEST',plateLabel:'Test',qrStatus:'active',title:'Test plough',kind:'tractor',equipmentFamilyKey:'tractors',equipmentFamilyLabel:'Plough',maintenanceIdentity:{source:'basic',familyKey:'plough',release:'basic_ballpark_20260907_v1',sector:'agricultural'},serialNumber:'TEST',yearModel:2020,financeStatus:'unknown',insuranceStatus:'unknown',licenseStatus:'not_applicable',licenseRegistrationNumber:'',hours:null,usageMode:'percent',usageMetric:'hours',lifeWorkedPercent:30,isPropelled:false,canUpdateFuel:false,condition:'good',note:'',photos:[],lastScannedAtIso:null,lastKnownLat:null,lastKnownLng:null,lastKnownLocationText:'',createdAtIso:null,updatedAtIso:null};
     await page.setRequestInterception(true);
     page.on('request',r=>{
@@ -32,6 +33,8 @@ async function main() {
       let body={ok:true,items:[],assets:[],notifications:[],partners:[],openMaintenance:[]};
       if(url.pathname.includes('maintenance-catalogue'))body={catalogue};
       if(url.pathname.startsWith('/api/scan/assets/'))body={ok:true,asset,accessMode:'owner_session',ownerAppDisplayName:'Test owner',openMaintenance:[]};
+      if(url.pathname.endsWith('/checklist')) { if(r.method()==='POST') { const item={id:`custom-fixture-${customItems.length}`, ...JSON.parse(r.postData())}; customItems.push(item);body={item}; } else body={asset:{...asset,headerMeta:'Year Model: 2020 · Usage: 30% · Condition: Good'},items:customItems,canEdit:true,canRecord:true,canSchedule:true}; }
+      if(url.pathname===`/api/dealer/maintenance/${trackerFixture.accessId}` && r.method()==='POST') {savedDealerWork=JSON.parse(r.postData());body={ok:true,asset:trackerFixture};}
       if(url.pathname.endsWith('/parts')) { if(r.method()==='POST') { savedPart=JSON.parse(r.postData()); body={ok:true}; } else body={parts:[],suggestions:[{id:'oil_filter',label:'Oil filter'}],family:'Plough',canView:true,canAdd:true,maintenance:[]}; }
       if(url.pathname.endsWith('/event')){submitted=JSON.parse(r.postData());body={ok:true,asset,scheduledMaintenanceCompletion:{completed:true}};}
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
@@ -76,8 +79,8 @@ async function main() {
     }
     console.log('PASS Basic and Advanced desktop selection and completion payloads at 430 and 1280 pixels');
     await page.setViewport({width:430,height:900,isMobile:true,hasTouch:true});await page.goto(url+'?view=app',{waitUntil:'networkidle0',timeout:120000});
-    await page.waitForFunction(()=>[...document.querySelectorAll('button strong')].some(e=>e.textContent==='Maintenance'));
-    await clickText('Maintenance');await clickText('Checked');await page.waitForFunction(()=>document.body.textContent.includes('Frame and welds condition'));
+    await page.waitForFunction(()=>[...document.querySelectorAll('button strong')].some(e=>e.textContent==='Add maintenance'));
+    await clickText('Add maintenance');await clickText('Checked');await page.waitForFunction(()=>document.body.textContent.includes('Frame and welds condition'));
     await clickText('Frame and welds condition');await page.screenshot({path:path.join(output,'owner-app-plough.png')});
     await page.waitForFunction(()=>{const b=document.querySelector('[class*="editorFooter"] button:last-child');return b&&!b.disabled;});
     await page.$eval('[class*="editorFooter"] button:last-child',b=>b.click());
@@ -87,6 +90,19 @@ async function main() {
     for (const view of ['app','field-manager']) {
       await page.goto(url+'?view='+view,{waitUntil:'networkidle0',timeout:120000});
       await page.waitForFunction(()=>[...document.querySelectorAll('button strong')].some(e=>e.textContent==='Parts'));
+      await page.screenshot({path:path.join(output,`${view}-maintenance-actions.png`)});
+      await clickText('Checklists');
+      await page.waitForSelector('[aria-labelledby="maintenance-checklists-title"]');
+      await page.waitForFunction(()=>document.body.textContent.includes('Frame and welds condition'));
+      assert.equal(await page.$eval('[id="maintenance-checklists-title"]',e=>e.textContent),'Test plough');
+      await page.screenshot({path:path.join(output,`${view}-checklists.png`)});
+      await clickText('+ Add item');await page.type('#checklist-item-name',`${view} safety task`);await clickText('Save item');
+      await page.waitForFunction(t=>document.body.textContent.includes(t),{},`${view} safety task`);
+      await page.click('[aria-label="Close maintenance checklists"]');
+      await clickText('Add maintenance');await clickText('Checked');
+      await page.waitForFunction(t=>document.body.textContent.includes(t),{},`${view} safety task`);
+      await page.click('[aria-labelledby="scan-editor-title"] [class*="editorHeader"] button');
+
       await clickText('Parts');await page.waitForSelector('input[type=search]');
       await clickText('+ Add part');await clickText('Oil filter');await clickText('Next');
       await page.type('input[placeholder="Number printed on the part or packaging"]','001-APP');
@@ -97,6 +113,22 @@ async function main() {
       await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[aria-label="Back to maintenance"]'));
     }
     console.log('PASS Owner and Field Manager Parts entry, save and return on mobile');
+    await page.goto(url+'?view=dealer',{waitUntil:'networkidle0',timeout:120000});
+    await page.waitForFunction(()=>[...document.querySelectorAll('button strong')].some(e=>e.textContent==='Add maintenance'));
+    await clickText('Checklists');await page.waitForSelector('[aria-labelledby="maintenance-checklists-title"]');
+    await page.click('[aria-label="Close maintenance checklists"]');
+    await clickText('Parts');await page.waitForSelector('input[type=search]');await page.keyboard.press('Escape');
+    await clickText('Add maintenance');await clickText('Check-up');
+    await page.waitForFunction(()=>document.body.textContent.includes('Record completed check-up'));
+    assert.equal(await page.$('[aria-labelledby="dealer-work-choice-title"]'),null);
+    await page.screenshot({path:path.join(output,'dealer-unscheduled-checkup.png')});
+    await clickText('Visible damage and loose parts');await clickText('Next');
+    await page.waitForSelector('input[aria-label="Completion date"]');await clickText('Next');
+    await page.type('input[placeholder="Name of person who checked the asset"]','Test mechanic');await clickText('Save to history');
+    await page.waitForFunction(()=>document.body.textContent.includes('saved successfully'));
+    assert.equal(savedDealerWork.maintenanceId,'');assert.equal(savedDealerWork.linkToScheduledMaintenance,false);assert.equal(savedDealerWork.maintenanceType,'checkup');
+    assert.ok(savedDealerWork.maintenanceWork[0].items.length);
+    console.log('PASS Dealer has Checklists, Parts and saves unscheduled maintenance');
     await page.goto(url+'?view=admin',{waitUntil:'networkidle0',timeout:120000});await page.type('input[aria-label="Find a family"]','plough');
     await clickText('Plough');await page.waitForFunction(()=>document.body.textContent.includes('Create separate checklist'));
     await clickText('Create separate checklist for this family');await page.waitForFunction(()=>document.body.textContent.includes('Shared by 1 families'));
