@@ -1,11 +1,11 @@
 export type AssetPart = {
   id: string; itemKey: string; itemLabel: string; name: string; partNumber: string;
-  brand: string; notes: string; maintenanceId: string | null; addedBy: string; createdAt: string;
+  revision?: number; canEdit?: boolean; brand: string; notes: string; maintenanceId: string | null; addedBy: string; createdAt: string;
 };
 export type PartSuggestion = { id: string; label: string };
 export type PartsData = {
   parts: AssetPart[]; suggestions: PartSuggestion[]; family: string;
-  canView: boolean; canAdd: boolean;
+  canView: boolean; canAdd: boolean; canManageChoices?: boolean;
   maintenance: { id: string; title: string; status: string }[];
 };
 export function validateAssetPart(value: Record<string, unknown>) {

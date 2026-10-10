@@ -37,9 +37,9 @@ export async function resolveAppPartsAccess(request: NextRequest, app: App, id: 
     return { ownerId: asset.ownerUserId, assetId: asset.assetId, actorId: session.user.id, name: session.user.name || session.user.email, canView: !!asset.permissions.canViewParts, canAdd: !!asset.permissions.canAddParts, canReadMaintenance: !!(asset.permissions.canViewMaintenanceReports || asset.permissions.canAddMaintenance) };
   }
   const access = await read();
-  const scope: AssetPartsScope = { sharingAccountId: app === 'dealer' ? access.actorId : undefined, ownerId: access.ownerId, assetId: access.assetId, user: { id: access.actorId, name: access.name, email: '' }, lock: async client => {
+  const scope: AssetPartsScope = { canManageAllParts: app === 'owner' && access.canAdd, sharingAccountId: app === 'dealer' ? access.actorId : undefined, ownerId: access.ownerId, assetId: access.assetId, user: { id: access.actorId, name: access.name, email: '' }, lock: async client => {
     const fresh = await read();
-    if (fresh.actorId !== access.actorId || fresh.ownerId !== access.ownerId || fresh.assetId !== access.assetId || (writing ? !fresh.canAdd : access.canView ? !fresh.canView : !fresh.canAdd) || (access.canReadMaintenance && !fresh.canReadMaintenance)) throw new ExternalLeadAccessError('Your access has changed. Reopen Parts.', 403);
+    if (fresh.actorId !== access.actorId || fresh.ownerId !== access.ownerId || fresh.assetId !== access.assetId || (writing ? !fresh.canAdd || (access.canView && !fresh.canView) : access.canView ? !fresh.canView : !fresh.canAdd) || (access.canReadMaintenance && !fresh.canReadMaintenance)) throw new ExternalLeadAccessError('Your access has changed. Reopen Parts.', 403);
     if (app === 'dealer') {
       const permission = writing ? 'can_add_parts' : access.canView ? 'can_view_parts' : 'can_add_parts';
       const granted = await client.query(`SELECT id FROM dealer_maintenance_access WHERE id=$1::uuid AND dealer_user_id=$2 AND owner_user_id=$3 AND asset_register_item_id=$4::uuid AND is_active=true AND ${permission}=true ${access.canReadMaintenance ? 'AND (can_view_maintenance_reports=true OR can_add_maintenance=true)' : ''} FOR SHARE`, [id, access.actorId, access.ownerId, access.assetId]);

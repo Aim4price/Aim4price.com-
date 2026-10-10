@@ -55,6 +55,18 @@ test('parts persist against the live asset; permissions, ownership, record links
   assert.equal((await exportPdf({ownerAssetId:asset},[other])).status,400);
   assert.equal((await exportPdf({ownerAssetId:asset},[])).status,400);
   assert.equal((await exportPdf({ownerAssetId:asset},[draft.requestId],'foreign')).status,403);
+  const edit={action:'edit',partId:draft.requestId,revision:0,name:'Updated filter',partNumber:'00012',brand:'New brand',notes:'Fitting note'};
+  assert.equal((await call('POST',edit)).status,200);
+  read=await call('GET');assert.equal(read.data.parts.find(p=>p.id===draft.requestId).name,'Updated filter');assert.equal(read.data.parts.find(p=>p.id===draft.requestId).revision,1);
+  assert.equal(read.data.parts.find(p=>p.id===draft.requestId).canEdit,true);
+  assert.equal((await call('POST',edit)).status,409);
+  assert.equal((await call('POST',{...edit,partId:other})).status,404);
+  assert.equal((await call('POST',{...edit,name:''})).status,400);
+  assert.equal((await call('POST',{action:'renameChoice',itemKey:'oil_filter',name:'Primary oil filter'})).status,200);
+  read=await call('GET');assert.equal(read.data.suggestions.find(i=>i.id==='oil_filter').label,'Primary oil filter');
+  assert.equal((await call('POST',{action:'deleteChoice',itemKey:'oil_filter'})).status,200);
+  read=await call('GET');assert.ok(!read.data.suggestions.some(i=>i.id==='oil_filter'));assert.equal(read.data.parts.length,2);
+  assert.equal((await call('POST',{action:'renameChoice',itemKey:'oil_filter',name:'Oil filter'})).status,200);
   const lead={leadId:'lead'};
   assert.equal((await call('GET',draft,lead)).status,403);
   allowed=new Set(['viewParts']);assert.equal((await exportPdf(lead,[draft.requestId])).data.pdf,true);read=await call('GET',draft,lead);assert.equal(read.data.parts.length,2);assert.equal(read.data.canAdd,false);assert.equal(read.data.maintenance.length,0);
@@ -64,6 +76,12 @@ test('parts persist against the live asset; permissions, ownership, record links
   assert.equal((await call('POST',added,lead,'foreign')).status,403);
   assert.equal((await call('POST',added,lead)).status,200);assert.equal(usage.length,1);
   assert.equal((await call('POST',draft,lead)).status,400); // another actor's request ID
+  allowed.add('viewParts');
+  assert.equal((await call('POST',{...edit,partId:added.requestId,revision:0},lead)).status,200);
+  assert.equal((await call('POST',{...edit,revision:1},lead)).status,403);
+  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:1},lead)).status,403);
+  assert.equal((await call('POST',{action:'renameChoice',itemKey:'oil_filter',name:'No'},lead)).status,403);
+  allowed.delete('addParts');assert.equal((await call('POST',{...edit,partId:added.requestId,revision:1},lead)).status,403);allowed.add('addParts');
   revoked=true;allowed.add('viewParts');assert.equal((await exportPdf(lead,[draft.requestId])).status,403);assert.equal((await call('POST',{...added,requestId:'77777777-7777-4777-8777-777777777777'},lead)).status,403);
   assert.equal((await call('GET',draft,lead)).status,403);
   user={id:'other',email:'other@example.com'};assert.equal((await call('GET')).status,404);
@@ -78,6 +96,13 @@ test('parts persist against the live asset; permissions, ownership, record links
   appCanAdd=false;assert.equal((await call('POST',appDraft,appTarget)).status,403);
   assert.equal((await call('GET',draft,appTarget)).data.canAdd,false);
   appRevoked=true;assert.equal((await call('GET',draft,appTarget)).status,403);
+  user={id:'owner',email:'owner@example.com'};
+  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:0})).status,409);
+  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:1},undefined,'foreign')).status,403);
+  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:1})).status,200);
+  assert.equal((await db.query('SELECT * FROM asset_parts WHERE id=$1',[draft.requestId])).rows.length,0);
+  assert.ok(events.some(e=>e.action==='Part deleted'&&e.before.partNumber==='00012'));
+
 
  } finally {await db.close();}
 });

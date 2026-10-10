@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useLeadDialog } from './leads/useLeadDialog';
 import maintenanceStyles from './MaintenanceDialog.module.css';
 import checklistStyles from './MaintenanceChecklistBrowser.module.css';
-import type { PartsData } from '../lib/asset-parts';
+import type { AssetPart, PartSuggestion, PartsData } from '../lib/asset-parts';
 import styles from './AssetPartsModal.module.css';
 
 type Draft = { requestId: string; itemKey: string; name: string; partNumber: string; brand: string; notes: string };
@@ -20,6 +20,27 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+  const [management, setManagement] = useState<{ part?: AssetPart; item?: PartSuggestion; deleting: boolean } | null>(null);
+  const [editFields, setEditFields] = useState({ name: '', partNumber: '', brand: '', notes: '' });
+  function openManagement(target: { part?: AssetPart; item?: PartSuggestion }, deleting = false) {
+    setManagement({ ...target, deleting });
+    setEditFields({ name: target.part?.name || target.item?.label || '', partNumber: target.part?.partNumber || '', brand: target.part?.brand || '', notes: target.part?.notes || '' });
+    setError(''); setNotice('');
+  }
+  async function saveManagement(event: React.FormEvent) {
+    event.preventDefault(); if (!management || busy) return;
+    setBusy(true); setError('');
+    try {
+      const { part, item, deleting } = management;
+      const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: item ? (deleting ? 'deleteChoice' : 'renameChoice') : (deleting ? 'delete' : 'edit'), itemKey: item?.id, partId: part?.id, revision: part?.revision ?? 0, ...editFields }) });
+      const result = await response.json(); if (!response.ok) { if (response.status === 409 || response.status === 404) await load(); throw new Error(result.error || 'Could not update the part.'); }
+      if (item) setDrafts(current => deleting ? current.filter(draft => draft.itemKey !== item.id) : current.map(draft => draft.itemKey === item.id && draft.name === item.label ? { ...draft, name: editFields.name.trim() } : draft));
+      if (part && deleting) setSelected(current => { const next = new Set(current); next.delete(part.id); return next; });
+      setManagement(null); setNotice(deleting ? (item ? 'Part choice removed.' : 'Part deleted.') : 'Part updated.');
+      await load();
+    } catch (error) { setError(error instanceof Error ? error.message : 'Could not update the part.'); }
+    finally { setBusy(false); }
+  }
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [drafts, setDrafts] = useState<Draft[]>([]);
@@ -63,6 +84,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
     } finally { setBusy(false); }
   }
   const parts = (data?.parts || []).filter(part => `${part.name} ${part.partNumber} ${part.brand} ${part.itemLabel}`.toLowerCase().includes(search.trim().toLowerCase()));
+  useEffect(() => { setPage(current => Math.min(current, Math.max(0, Math.ceil(parts.length / 6) - 1))); }, [parts.length]);
   const selectedParts = (data?.parts || []).filter(part => selected.has(part.id));
   const allPartsSelected = parts.length > 0 && parts.every(part => selected.has(part.id));
   const allSuggestionsSelected = !!data?.suggestions.length && data.suggestions.every(item => drafts.some(draft => draft.itemKey === item.id));
@@ -85,7 +107,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
   const cancel = () => { setError(''); if (data?.canView) { setAdding(false); if (savedRequests.current.size) void load().catch(error => setError(error.message)); } else onClose(); };
   const hasSaved = savedRequests.current.size > 0;
   const footer = data && <footer className={checklistStyles.footer}>
-    {adding && data.canAdd ? <>
+    {management ? <><button type="button" disabled={busy} onClick={() => { setManagement(null); setError(''); }}>Cancel</button><button type="submit" form={`${id}-manage`} data-primary-action disabled={busy}>{busy ? 'Saving…' : management.deleting ? 'Delete' : 'Save changes'}</button></> : adding && data.canAdd ? <>
       <button type="button" disabled={busy || hasSaved} onClick={() => step ? setStep(step - 1) : cancel()}>Back</button>
       <button type="button" disabled={busy} onClick={cancel}>Cancel</button>
       <button type="submit" form={`${id}-form`} data-primary-action disabled={busy || !drafts.length}>{busy ? 'Saving…' : step === 2 ? (hasSaved ? 'Retry remaining' : drafts.length === 1 ? 'Save part' : 'Save parts') : 'Next'}</button>
@@ -97,7 +119,15 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
       <div className={`${maintenanceStyles.body} ${styles.body}`}>
         {error && <p role="alert" className={styles.error}>{error}</p>}
         {notice && <p role="status" className={styles.notice}>{notice}</p>}
-        {!data ? <p>{error ? 'Close and reopen Parts to try again.' : 'Loading parts…'}</p> : adding && data.canAdd ? <form id={`${id}-form`} onSubmit={event => { event.preventDefault(); if (!drafts.length) return; if (step === 1 && drafts.some(draft => !draft.name.trim() || !draft.partNumber.trim())) { setError('Enter a description and part number for each part.'); return; } if (step < 2) { setError(''); setStep(step + 1); } else void save(); }}>
+        {management ? <form id={`${id}-manage`} className={checklistStyles.editor} onSubmit={saveManagement}>
+          <h3 id={`${id}-context`}>{management.deleting ? 'Delete part' : 'Edit part'}</h3>
+          {management.deleting ? <><p>Delete <strong>{editFields.name}</strong>?</p><p className={styles.hint}>{management.item ? 'Removes this choice from this asset. Saved parts stay unchanged.' : 'Removes this saved part from the asset. This cannot be undone.'}</p></> : <>
+            <label>Name<input autoFocus required maxLength={160} disabled={busy} value={editFields.name} onChange={event => setEditFields(current => ({ ...current, name: event.target.value }))}/></label>
+            {management.part && <><label>Part number<input required maxLength={120} disabled={busy} value={editFields.partNumber} onChange={event => setEditFields(current => ({ ...current, partNumber: event.target.value }))}/></label>
+            <label>Brand (optional)<input maxLength={120} disabled={busy} value={editFields.brand} onChange={event => setEditFields(current => ({ ...current, brand: event.target.value }))}/></label>
+            <label>Notes (optional)<textarea maxLength={2000} rows={2} disabled={busy} value={editFields.notes} onChange={event => setEditFields(current => ({ ...current, notes: event.target.value }))}/></label></>}
+          </>}
+        </form> : !data ? <p>{error ? 'Close and reopen Parts to try again.' : 'Loading parts…'}</p> : adding && data.canAdd ? <form id={`${id}-form`} onSubmit={event => { event.preventDefault(); if (!drafts.length) return; if (step === 1 && drafts.some(draft => !draft.name.trim() || !draft.partNumber.trim())) { setError('Enter a description and part number for each part.'); return; } if (step < 2) { setError(''); setStep(step + 1); } else void save(); }}>
           <div className={checklistStyles.sectionHeading}><h3 id={`${id}-context`} ref={stepHeading} tabIndex={-1} className={styles.stepTitle}>{steps[step]}</h3><small>{step + 1} / 3</small></div>
           <fieldset disabled={busy || hasSaved} className={styles.fields}>
             {step === 0 && <>
@@ -105,7 +135,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
                 <button type="button" className={checklistStyles.addButton} disabled={!data.suggestions.length} onClick={() => setDrafts(current => allSuggestionsSelected ? current.filter(draft => !data.suggestions.some(item => item.id === draft.itemKey)) : [...current, ...data.suggestions.filter(item => !current.some(draft => draft.itemKey === item.id)).map(item => newDraft(item.id, item.label))])}>{allSuggestionsSelected ? 'Deselect all' : 'Select all'}</button>
                 <button type="button" className={checklistStyles.addButton} onClick={() => setDrafts(current => [...current, newDraft('other', '')])}>+ Add item</button>
               </div></div>
-              {data.suggestions.map(item => <button type="button" key={item.id} className={styles.choice} aria-pressed={drafts.some(draft => draft.itemKey === item.id)} onClick={() => toggleSuggestion(item)}><span className={styles.tick} aria-hidden="true">{drafts.some(draft => draft.itemKey === item.id) ? '✓' : ''}</span>{item.label}</button>)}
+              {data.suggestions.map(item => <div key={item.id} className={styles.choiceRow}><button type="button" className={styles.choice} aria-pressed={drafts.some(draft => draft.itemKey === item.id)} onClick={() => toggleSuggestion(item)}><span className={styles.tick} aria-hidden="true">{drafts.some(draft => draft.itemKey === item.id) ? '✓' : ''}</span>{item.label}</button>{data.canManageChoices && <div className={styles.rowActions}><button type="button" aria-label={`Edit ${item.label}`} onClick={() => openManagement({ item })}>Edit</button><button type="button" aria-label={`Delete ${item.label}`} onClick={() => openManagement({ item }, true)}>Delete</button></div>}</div>)}
               {drafts.filter(draft => draft.itemKey === 'other').map(draft => <div key={draft.requestId} className={`${checklistStyles.editor} ${styles.full}`}><label>Part description<input autoFocus required maxLength={160} value={draft.name} onChange={event => update(draft.requestId, 'name', event.target.value)} placeholder="e.g. Hydraulic hose"/></label><button type="button" className={checklistStyles.addButton} onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))}>Remove</button></div>)}
             </>}
             {step === 1 && drafts.map(draft => <div key={draft.requestId} className={`${checklistStyles.editor} ${styles.full}`}>
@@ -116,7 +146,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
               <label>Notes <small>(optional)</small><textarea maxLength={2000} rows={2} value={draft.notes} onChange={event => update(draft.requestId, 'notes', event.target.value)}/></label></div>
             </div>)}
             {step === 2 && <>
-              <div className={`${styles.list} ${styles.full}`}>{drafts.map(draft => <article className={styles.part} key={draft.requestId}><div className={styles.partMain}><h3>{draft.name}</h3><span><strong className={styles.number}>{draft.partNumber}</strong>{draft.brand && ` · ${draft.brand}`}</span></div>{draft.notes && <p>{draft.notes}</p>}</article>)}</div>
+              <div className={`${styles.list} ${styles.full}`}>{drafts.map(draft => <article className={styles.part} key={draft.requestId}><div className={styles.partMain}><h3>{draft.name}</h3><span><strong className={styles.number}>{draft.partNumber}</strong>{draft.brand && ` · ${draft.brand}`}</span></div>{draft.notes && <p>{draft.notes}</p>}<div className={styles.rowActions}><button type="button" onClick={() => setStep(1)}>Edit</button><button type="button" onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))}>Delete</button></div></article>)}</div>
               {data.maintenance.length > 0 && <>
                 <p className={styles.full}><strong>Link to maintenance</strong> <small>(optional)</small></p>
                 <button type="button" className={`${styles.choice} ${styles.full}`} aria-pressed={!maintenanceId} onClick={() => setMaintenanceId('')}><span className={styles.tick} aria-hidden="true">{!maintenanceId ? '✓' : ''}</span>No link</button>
@@ -131,10 +161,10 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
           <div className={checklistStyles.sectionHeading}><span className={styles.hint} role="status">{selectedParts.length} selected</span><button type="button" className={checklistStyles.addButton} disabled={busy || !parts.length} onClick={() => setSelected(current => { const next = new Set(current); parts.forEach(part => allPartsSelected ? next.delete(part.id) : next.add(part.id)); return next; })}>{allPartsSelected ? 'Deselect all' : 'Select all'}</button></div>
           {parts.length ? <div className={styles.list}>{parts.slice(page * 6, (page + 1) * 6).map(part => <article className={`${styles.part} ${styles.selectable}`} data-selected={selected.has(part.id)} key={part.id}>
             <input type="checkbox" aria-label={`Select ${part.name}, ${part.partNumber}`} checked={selected.has(part.id)} disabled={busy} onChange={() => setSelected(current => { const next = new Set(current); next.has(part.id) ? next.delete(part.id) : next.add(part.id); return next; })}/>
-            <div className={styles.partContent}><div className={styles.partMain}><div><h3>{part.name}</h3>{part.itemLabel !== part.name && <small>{part.itemLabel}</small>}</div><span><strong className={styles.number}>{part.partNumber}</strong>{part.brand && <small> · {part.brand}</small>}</span></div>
+            <div className={styles.partContent}><div className={styles.partMain}><div><h3>{part.canEdit ? <button type="button" className={styles.partName} disabled={busy} onClick={() => openManagement({ part })}>{part.name}</button> : part.name}</h3>{part.itemLabel !== part.name && <small>{part.itemLabel}</small>}</div><span><strong className={styles.number}>{part.partNumber}</strong>{part.brand && <small> · {part.brand}</small>}</span></div>
             {part.notes && <p>{part.notes}</p>}
             {part.maintenanceId && <small>Linked to {data.maintenance.find(record => record.id === part.maintenanceId)?.title || 'maintenance'}</small>}
-            <small className={styles.audit}>{part.addedBy} · {new Date(part.createdAt).toLocaleDateString('en-ZA')}</small></div>
+            <div className={styles.partBottom}><small className={styles.audit}>{part.addedBy} · {new Date(part.createdAt).toLocaleDateString('en-ZA')}</small>{part.canEdit && <div className={styles.rowActions}><button type="button" disabled={busy} aria-label={`Edit ${part.name}`} onClick={() => openManagement({ part })}>Edit</button><button type="button" disabled={busy} aria-label={`Delete ${part.name}`} onClick={() => openManagement({ part }, true)}>Delete</button></div>}</div></div>
           </article>)}</div> : <p className={styles.empty}>{search ? 'No matching parts.' : 'No parts yet.'}</p>}
           {parts.length > 6 && <div className={styles.actions}><button type="button" className={checklistStyles.addButton} disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><span>{page + 1} / {Math.ceil(parts.length / 6)}</span><button type="button" className={checklistStyles.addButton} disabled={(page + 1) * 6 >= parts.length} onClick={() => setPage(page + 1)}>Next</button></div>}
         </>}
