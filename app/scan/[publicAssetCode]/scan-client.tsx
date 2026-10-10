@@ -1152,6 +1152,10 @@ export default function ScanClient({
     message: string;
   } | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [savedOnPhone, setSavedOnPhone] = useState(false);
+  const savedPhoneEventId = useRef<string | null>(null);
+  const editorNoticeRef = useRef<HTMLDivElement>(null);
+  const editorTitleRef = useRef<HTMLHeadingElement>(null);
   const [doneMessage, setDoneMessage] = useState(
     "The QR update session is closed.",
   );
@@ -1376,7 +1380,25 @@ export default function ScanClient({
   ]);
 
   useEffect(() => {
-    if (!notice) return undefined;
+    if (!activeEditor) return;
+    const frame = window.requestAnimationFrame(() => {
+      editorTitleRef.current?.focus({ preventScroll: true });
+      editorTitleRef.current?.scrollIntoView({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeEditor, draft.serviceMode, showServiceDetailsStep, showServicePhotoStep]);
+
+  useEffect(() => {
+    if (!activeEditor || notice?.tone !== "error") return;
+    const frame = window.requestAnimationFrame(() => {
+      editorNoticeRef.current?.focus({ preventScroll: true });
+      editorNoticeRef.current?.scrollIntoView({ block: "center" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeEditor, notice]);
+
+  useEffect(() => {
+    if (!notice || notice.tone === "error") return undefined;
     const timeout = window.setTimeout(() => setNotice(null), 3600);
     return () => window.clearTimeout(timeout);
   }, [notice]);
@@ -1391,7 +1413,12 @@ export default function ScanClient({
     }
 
     async function syncQueuedUpdates() {
-      const result = await syncOfflineMutations({ kinds });
+      const result = await syncOfflineMutations({ kinds, onSynced: mutation => {
+        if (!isMounted || mutation.id !== savedPhoneEventId.current) return;
+        savedPhoneEventId.current = null;
+        setSavedOnPhone(false);
+        setDoneMessage("Your saved phone update has synced to this asset.");
+      } });
       if (!isMounted) return;
       setPendingSyncCount(result.pendingCount);
       if (result.syncedCount > 0) {
@@ -1480,10 +1507,18 @@ export default function ScanClient({
 
   async function redirectAfterFieldManagerServerSave(
     message = "Update saved successfully.",
+    syncedToServer = true,
   ) {
     setActiveEditor(null);
     setShowLocationReminder(false);
     setNotice(null);
+    setSavedOnPhone(!syncedToServer);
+    if (!syncedToServer) {
+      setDoneMessage("Saved on this phone — waiting to sync. Keep this app available and reconnect to send the update to the asset.");
+      setIsDone(true);
+      window.scrollTo({ top: 0 });
+      return;
+    }
     if (reportProblemMode) {
       setDoneMessage("Problem reported successfully.");
     } else {
@@ -1922,6 +1957,7 @@ export default function ScanClient({
   }, [asset?.id, ownerAppMode, fieldManagerMode]);
 
   function openEditor(nextEditor: EditorKey) {
+    setNotice(null);
     const storedSession = readQrScanSession(normalizedCode);
 
     setDraft((current) => {
@@ -1982,6 +2018,8 @@ export default function ScanClient({
   }
 
   function closeEditor() {
+    if (isSaving || isUploading) return;
+    setNotice(null);
     setDraft((current) =>
       keepCurrentLocation(current, readQrScanSession(normalizedCode)),
     );
@@ -2507,6 +2545,7 @@ export default function ScanClient({
     maintenanceChoice: MaintenanceScheduleChoice | null = null,
   ) {
     if (!asset || !activeEditor) return;
+    setNotice(null);
 
     const validation = validateDraftForSave();
     if (!validation.ok) {
@@ -2676,6 +2715,7 @@ export default function ScanClient({
               ? "Repair saved successfully."
               : "Service saved successfully."
           : "Update saved successfully.",
+        result.syncedToServer,
       );
       return;
     }
@@ -2905,6 +2945,7 @@ export default function ScanClient({
           });
           return null;
         }
+        savedPhoneEventId.current = finalClientEventId;
         const nextCount = await getOfflineMutationCount(["asset-scan-update"]);
         setPendingSyncCount(nextCount);
         setPendingUpdate({
@@ -2945,6 +2986,10 @@ export default function ScanClient({
   }
 
   async function handleDone() {
+    if (isFieldManagerMode && !hasPendingScanUpdate(pendingUpdate)) {
+      window.location.assign(assetActionsHref);
+      return;
+    }
     if (!asset) {
       closeDoneSession();
       return;
@@ -2955,7 +3000,7 @@ export default function ScanClient({
     if (!result) return;
 
     if (isFieldManagerMode) {
-      await redirectAfterFieldManagerServerSave();
+      await redirectAfterFieldManagerServerSave("Update saved successfully.", result.syncedToServer);
       return;
     }
 
@@ -3020,7 +3065,7 @@ export default function ScanClient({
   const saveButtonLabel = isSaving
     ? "Saving…"
     : isServicePhotoStep
-      ? "Done"
+      ? "Use these photos"
       : activeEditor === "photos" && !draft.photoUrls.length
         ? "Add photos"
         : activeEditor === "notes" && !draft.note.trim()
@@ -3044,7 +3089,8 @@ export default function ScanClient({
                       draft.serviceMode === "repaired") &&
                     !showServiceDetailsStep
                   ? "Next"
-                  : reportProblemMode && activeEditor === "notes" ? "Report Problem" : "Add update";
+                  : reportProblemMode && activeEditor === "notes" ? "Report Problem"
+                  : isFieldManagerMode ? (activeEditor === "service" ? "Save maintenance" : activeEditor === "usage" ? "Save reading" : activeEditor === "photos" ? "Save photos" : "Save note") : "Add update";
   const selectedSharePartner = useMemo(
     () =>
       sharePartners.find(
@@ -3110,7 +3156,7 @@ export default function ScanClient({
               ? showServiceDetailsStep
                 ? serviceCopy.detailsSubheader
                 : serviceCopy.repairedPrompt
-              : "Choose update type."
+              : "What work was completed? Choose a check, service or repair."
       : activeEditor === "notes"
         ? "Record any issues, problems or follow-up needed."
         : "Upload existing photos or take new ones.";
@@ -3125,9 +3171,10 @@ export default function ScanClient({
       <main className={pageClassName}>
         <section className={styles.thankYouScreen} role="status" aria-live="polite">
           <span className={styles.thankYouIcon} aria-hidden="true">
-            <svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
+            <svg viewBox="0 0 24 24">{savedOnPhone ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></> : <path d="m5 12.5 4.2 4.2L19 7" />}</svg>
           </span>
-          <h1>Thank you.</h1>
+          <h1>{savedOnPhone ? "Saved on this phone" : isFieldManagerMode ? "Saved to asset" : "Thank you."}</h1>
+          {isFieldManagerMode && asset ? <strong>{asset.title}</strong> : null}
           {doneMessage ? <p>{doneMessage}</p> : null}
           {isFieldManagerMode ? (
             <a className={styles.thankYouReturn} href={assetActionsHref}>
@@ -3151,8 +3198,9 @@ export default function ScanClient({
           </header>
         ) : null}
 
-        {notice ? (
+        {notice && !activeEditor ? (
           <div
+            role={notice.tone === "error" ? "alert" : "status"}
             className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}
           >
             {notice.message}
@@ -3160,7 +3208,7 @@ export default function ScanClient({
         ) : null}
 
         {pendingSyncCount > 0 ? (
-          <div className={`${styles.notice} ${styles.noticeSuccess}`}>
+          <div className={`${styles.notice} ${styles.noticePending}`} role="status">
             {pendingSyncCount === 1
               ? "1 saved phone update will sync when signal returns."
               : `${pendingSyncCount} saved phone updates will sync when signal returns.`}
@@ -3349,11 +3397,12 @@ export default function ScanClient({
             </section>
 
                 {(ownerAppMode || fieldManagerMode) && <AppMaintenanceActions apiBase={`/api/${ownerAppMode ? 'owner-app' : 'field-manager'}/assets/${asset.id}`} assetTitle={asset.title} scheduleLabel={openMaintenanceOptions.length > 0 ? 'Edit schedule' : 'Schedule maintenance'} onRecord={() => openEditor('service')} onSchedule={openSchedulePage} />}
-                <section className={styles.actionGrid}>
+                {(ownerAppMode || fieldManagerMode) && <div className={styles.actionSectionHeading}><h2>Asset updates</h2><p>Keep readings, photos and notes up to date.</p></div>}
+                <section className={styles.actionGrid} aria-label="Asset updates">
                   {showFieldManagerUsageAction ? (
                     <button
                       type="button"
-                      className={styles.actionCard}
+                      className={`${styles.actionCard} ${ownerAppMode || fieldManagerMode ? styles.nativeActionCard : ""}`}
                       onClick={() => openEditor("usage")}
                     >
                       <span className={styles.actionIconWrap}>
@@ -3373,7 +3422,7 @@ export default function ScanClient({
                   {!(ownerAppMode || fieldManagerMode) && (
                   <button
                     type="button"
-                    className={styles.actionCard}
+                    className={`${styles.actionCard} ${ownerAppMode || fieldManagerMode ? styles.nativeActionCard : ""}`}
                     onClick={() => openEditor("service")}
                   >
                     <span className={styles.actionIconWrap}>
@@ -3390,7 +3439,7 @@ export default function ScanClient({
 
                   <button
                     type="button"
-                    className={styles.actionCard}
+                    className={`${styles.actionCard} ${ownerAppMode || fieldManagerMode ? styles.nativeActionCard : ""}`}
                     onClick={() => openEditor("photos")}
                   >
                     <span className={styles.actionIconWrap}>
@@ -3404,7 +3453,7 @@ export default function ScanClient({
 
                   <button
                     type="button"
-                    className={styles.actionCard}
+                    className={`${styles.actionCard} ${ownerAppMode || fieldManagerMode ? styles.nativeActionCard : ""}`}
                     onClick={() => openEditor("notes")}
                   >
                     <span className={styles.actionIconWrap}>
@@ -3421,7 +3470,7 @@ export default function ScanClient({
 
 
                   {canUseDealerShare ? (
-                    <button type="button" className={styles.actionCard} onClick={handleShareTap}>
+                    <button type="button" className={`${styles.actionCard} ${ownerAppMode || fieldManagerMode ? styles.nativeActionCard : ""}`} onClick={handleShareTap}>
                       <span className={styles.actionIconWrap}><ShareIcon className={styles.actionIcon} /></span>
                       <span className={styles.actionTextBlock}><strong>{isFieldManagerMode ? "Contact Dealer" : "Get dealership help"}</strong><small>Send asset and message</small></span>
                     </button>
@@ -3436,7 +3485,7 @@ export default function ScanClient({
                 >
                   {isSaving && hasPendingScanUpdate(pendingUpdate)
                     ? "Saving…"
-                    : "Done"}
+                    : isFieldManagerMode && !hasPendingScanUpdate(pendingUpdate) ? "Back to asset" : "Done"}
                 </button>
           </>
         ) : null}
@@ -3956,7 +4005,7 @@ export default function ScanClient({
             <div className={styles.editorHeader}>
               <div className={styles.editorTitleBlock}>
                 {isFieldManagerMode ? <span className={styles.fieldManagerEditorEyebrow}>{editorEyebrow}</span> : null}
-                <h3 id="scan-editor-title">{editorTitle}</h3>
+                <h3 id="scan-editor-title" ref={editorTitleRef} tabIndex={-1}>{editorTitle}</h3>
                 <p>{isFieldManagerMode ? asset.title : editorDescription}</p>
               </div>
 
@@ -3965,6 +4014,7 @@ export default function ScanClient({
                   type="button"
                   className={styles.fieldManagerPageBackButton}
                   onClick={closeEditor}
+                  disabled={isSaving || isUploading}
                 >
                   <span aria-hidden="true">←</span>
                   <span>Back</span>
@@ -3983,6 +4033,12 @@ export default function ScanClient({
 
             <div className={`${styles.editorContent} ${styles.fieldManagerEditorContent}`}>
             <div className={styles.editorBody}>
+              {activeEditor === "service" && isFieldManagerMode && !showServicePhotoStep ? <ol className={styles.workSteps} aria-label="Maintenance progress">
+                {(draft.serviceMode === "checked" ? ["Work type", "Checks completed"] : ["Work type", "Work completed", "Who completed it"]).map((label, index) => {
+                  const current = !draft.serviceMode ? 0 : showServiceDetailsStep ? 2 : 1;
+                  return <li key={index} aria-current={index === current ? "step" : undefined}><span aria-hidden="true">{index + 1}</span>{label}</li>;
+                })}
+              </ol> : null}
               {isFieldManagerMode ? (
                 <p className={styles.fieldManagerScreenDescription}>{editorDescription}</p>
               ) : null}
@@ -4130,7 +4186,7 @@ export default function ScanClient({
                   </div>
                 ) : (
                   <div className={styles.modalStack}>
-                    {isMeterUsageMode(asset) ? (
+                    {isMeterUsageMode(asset) && draft.serviceMode && !showServiceDetailsStep ? (
                       <div className={styles.servicePanel}>
                         <div className={styles.serviceSectionHeader}>
                           <strong>{usageModalLabel(asset)}</strong>
@@ -4275,6 +4331,8 @@ export default function ScanClient({
                       )}
                     </div>
 
+                    {draft.serviceMode && !showServiceDetailsStep && !normalizedScheduledMaintenanceId ? <button type="button" className={styles.changeWorkType} disabled={isSaving} onClick={() => setDraft(current => ({ ...current, serviceMode: "" }))}>Change work type</button> : null}
+
                     {draft.serviceMode === "checked" ? (
                       <div className={styles.servicePanel}>
                         <div className={styles.serviceSectionHeader}>
@@ -4293,6 +4351,7 @@ export default function ScanClient({
                               <button
                                 type="button"
                                 key={option.label}
+                                aria-pressed={selected}
                                 className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
                                 onClick={() =>
                                   setDraft((current) => ({
@@ -4385,7 +4444,8 @@ export default function ScanClient({
                                   <button
                                     type="button"
                                     key={option.label}
-                                    className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
+                                    aria-pressed={selected}
+                                className={`${styles.listOptionButton} ${selected ? styles.listOptionActive : ""}`}
                                     onClick={() =>
                                       setDraft((current) => ({
                                         ...current,
@@ -4835,6 +4895,7 @@ export default function ScanClient({
               ) : null}
             </div>
 
+            {notice ? <div ref={editorNoticeRef} tabIndex={-1} role={notice.tone === "error" ? "alert" : "status"} className={`${styles.notice} ${notice.tone === "error" ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
             <div className={styles.editorFooter}>
               <button
                 type="button"

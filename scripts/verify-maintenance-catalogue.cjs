@@ -24,13 +24,16 @@ async function main() {
     await browser.defaultBrowserContext().overridePermissions(origin,['geolocation']);
     const page=await browser.newPage(); await page.setGeolocation({latitude:-25.7,longitude:28.2,accuracy:10});
     const errors=[];page.on('pageerror',e=>{errors.push(e.message);console.error('Browser error at',page.url(),e.message)});page.on('console',m=>{if(m.type()==='error')console.error('Browser console',m.text())});
-    let submitted=null, savedPart=null, savedDealerWork=null, customItems=[];
+    let submitted=null, savedPart=null, savedDealerWork=null, customItems=[], eventMode='success';
     const trackerFixture=JSON.parse(await fs.readFile(path.join(root,'tests/fixtures/account-dialog-data.json'),'utf8')).asset;
     const asset={id:'11111111-1111-4111-8111-111111111111',userId:'fixture',publicAssetCode:'A4P-TEST',plateLabel:'Test',qrStatus:'active',title:'Test plough',kind:'tractor',equipmentFamilyKey:'tractors',equipmentFamilyLabel:'Plough',maintenanceIdentity:{source:'basic',familyKey:'plough',release:'basic_ballpark_20260907_v1',sector:'agricultural'},serialNumber:'TEST',yearModel:2020,financeStatus:'unknown',insuranceStatus:'unknown',licenseStatus:'not_applicable',licenseRegistrationNumber:'',hours:null,usageMode:'percent',usageMetric:'hours',lifeWorkedPercent:30,isPropelled:false,canUpdateFuel:false,condition:'good',note:'',photos:[],lastScannedAtIso:null,lastKnownLat:null,lastKnownLng:null,lastKnownLocationText:'',createdAtIso:null,updatedAtIso:null};
     await page.setRequestInterception(true);
     page.on('request',r=>{
       const url=new URL(r.url()); if(!url.pathname.startsWith('/api/'))return r.continue();
       let body={ok:true,items:[],assets:[],notifications:[],partners:[],openMaintenance:[]};
+      if(url.pathname.startsWith('/api/app-offline/')) body={ok:true,identity:'polish-fixture'};
+      if(url.pathname.endsWith('/event') && eventMode==='offline') return r.abort('internetdisconnected');
+      if(url.pathname.endsWith('/event') && eventMode==='rejected') return r.respond({status:400,contentType:'application/json',body:JSON.stringify({error:'This reading needs review. Please check and try again.'})});
       if(url.pathname.includes('maintenance-catalogue'))body={catalogue};
       if(url.pathname.startsWith('/api/scan/assets/'))body={ok:true,asset,accessMode:'owner_session',ownerAppDisplayName:'Test owner',openMaintenance:[]};
       if(url.pathname.endsWith('/checklist')) { if(r.method()==='POST') { const item={id:`custom-fixture-${customItems.length}`, ...JSON.parse(r.postData())}; customItems.push(item);body={item}; } else body={asset:{...asset,headerMeta:'Year Model: 2020 · Usage: 30% · Condition: Good'},items:customItems,canEdit:true,canRecord:true,canSchedule:true}; }
@@ -39,7 +42,11 @@ async function main() {
       if(url.pathname.endsWith('/event')){submitted=JSON.parse(r.postData());body={ok:true,asset,scheduledMaintenanceCompletion:{completed:true}};}
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
     });
-    async function clickText(text) { const found=await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===t || b.querySelector('strong')?.textContent===t);if(b){b.click();return true;}return false;},text);assert.ok(found,`Button ${text}`); }
+    async function clickText(text) {
+      const handle=await page.evaluateHandle(t=>[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===t || b.querySelector('strong')?.textContent===t) || null,text);
+      const button=handle.asElement();assert.ok(button,`Button ${text}`);
+      await button.click();await handle.dispose();
+    }
     const url=origin+'/owner-app/maintenance-validation';
     for(const source of ['basic','advanced'])for(const width of [430,1280]){
       await page.setViewport({width,height:900});await page.goto(`${url}?source=${source}`,{waitUntil:'networkidle0',timeout:120000});
@@ -100,6 +107,8 @@ async function main() {
       await page.waitForFunction(t=>document.body.textContent.includes(t),{},`${view} safety task`);
       await page.click('[aria-label="Close maintenance checklists"]');
       await clickText('Add maintenance');await clickText('Checked');
+      await clickText('Change work type');await clickText('Checked');
+      assert.equal(await page.$eval('[aria-label="Maintenance progress"] [aria-current="step"]', e=>e.textContent), '2Checks completed');
       await page.waitForFunction(t=>document.body.textContent.includes(t),{},`${view} safety task`);
       await page.click('[aria-labelledby="scan-editor-title"] [class*="editorHeader"] button');
 
@@ -113,6 +122,39 @@ async function main() {
       await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[aria-label="Back to maintenance"]'));
     }
     console.log('PASS Owner and Field Manager Parts entry, save and return on mobile');
+    for (const view of ['app','field-manager']) {
+      await page.setViewport({width:360,height:780,isMobile:true,hasTouch:true});
+      await page.goto(url+'?view='+view,{waitUntil:'networkidle0',timeout:120000});
+      await clickText('Add maintenance');await clickText('Checked');
+      await page.waitForFunction(()=>document.body.textContent.includes('Frame and welds condition'));
+      await clickText('Frame and welds condition');
+      eventMode='rejected';await clickText('Save maintenance');
+      await page.waitForSelector('[aria-labelledby="scan-editor-title"] [role="alert"]');
+      await new Promise(resolve=>setTimeout(resolve,4000));
+      assert.match(await page.$eval('[aria-labelledby="scan-editor-title"] [role="alert"]', e=>e.textContent), /reading needs review/);
+      assert.ok(await page.$('[aria-labelledby="scan-editor-title"]'));
+      assert.ok(await page.$eval('[aria-labelledby="scan-editor-title"] [role="alert"]', e=>{const r=e.getBoundingClientRect();return r.top>=0 && r.bottom<=window.innerHeight;}),'Save error is visible without scrolling');
+      await page.screenshot({path:path.join(output,`${view}-save-error-360.png`)});
+      eventMode='offline';await clickText('Save maintenance');
+      await page.waitForFunction(()=>document.querySelector('h1')?.textContent==='Saved on this phone');
+      await new Promise(resolve=>setTimeout(resolve,3000));
+      assert.equal(await page.$eval('h1',e=>e.textContent),'Saved on this phone');
+      assert.match(await page.$eval('[role="status"]',e=>e.textContent), /waiting to sync/);
+      assert.doesNotMatch(await page.$eval('[role="status"]',e=>e.textContent), /saved successfully|Saved to asset/);
+      assert.match(await page.$eval('[role="status"]',e=>e.textContent), /Test plough/);
+      assert.ok(await page.$('a[href*="assets"], a[href*="operations/maintenance"]'));
+      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'No horizontal overflow');
+      await page.screenshot({path:path.join(output,`${view}-saved-on-phone-360.png`)});
+      eventMode='success';
+      await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+      await page.waitForFunction(()=>document.querySelector('h1')?.textContent==='Saved to asset');
+      assert.match(await page.$eval('[role="status"]',e=>e.textContent), /has synced to this asset/);
+      // Clear this isolated fixture queue before the next role so auto-sync cannot affect it.
+      await page.evaluate(()=>new Promise((resolve,reject)=>{const request=indexedDB.open('aim4price-offline-mutation-queue',1);request.onsuccess=()=>{const db=request.result;const transaction=db.transaction('mutations','readwrite');transaction.objectStore('mutations').clear();transaction.oncomplete=()=>{db.close();resolve();};transaction.onerror=()=>reject(transaction.error);};request.onerror=()=>reject(request.error);}));
+      eventMode='success';
+    }
+    console.log('PASS Owner and Field Manager show persistent in-form errors and honest offline confirmation at 360 pixels');
+
     await page.goto(url+'?view=dealer',{waitUntil:'networkidle0',timeout:120000});
     await page.waitForFunction(()=>[...document.querySelectorAll('button strong')].some(e=>e.textContent==='Add maintenance'));
     await clickText('Checklists');await page.waitForSelector('[aria-labelledby="maintenance-checklists-title"]');

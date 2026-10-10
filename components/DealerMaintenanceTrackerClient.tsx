@@ -1,5 +1,6 @@
 'use client';
 import AppMaintenanceActions from './AppMaintenanceActions';
+import maintenanceActionStyles from './AppMaintenanceActions.module.css';
 import { useLeadDialog } from './leads/useLeadDialog';
 import dialogStyles from './AccountDialog.module.css';
 import ProblemCard from './leads/LeadProblemCard';
@@ -1184,7 +1185,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   return (
     <main className={`${assetStyles.page} ${workspaceStyles.page} ${leadStyles.leadsPage} ${leadStyles.dealerOwnerParity} ${styles.trackerPage} ${dealerAppMode ? styles.dealerApp : styles.dealerDesktop}`}>
       <section className={`${assetStyles.shell} ${workspaceStyles.shell}`}>
-        {notice ? <div className={`${assetStyles.notice} ${notice.tone === 'success' ? assetStyles.noticeSuccess : assetStyles.noticeError}`}>{notice.text}</div> : null}
+        {notice ? <div role={notice.tone === 'error' ? 'alert' : 'status'} className={`${assetStyles.notice} ${notice.tone === 'success' ? assetStyles.noticeSuccess : assetStyles.noticeError}`}>{notice.text}</div> : null}
 
         <section className={`${assetStyles.registerPanel} ${leadStyles.leadsRegisterPanel}`}>
           <WorkspaceTitlePanel
@@ -1922,7 +1923,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             <span className={styles.serviceSuccessIcon} aria-hidden="true">
               <svg viewBox="0 0 24 24"><path d="m5 12.5 4.2 4.2L19 7" /></svg>
             </span>
-            <h2 id="dealer-service-success-title">Thank you.</h2>
+            <h2 id="dealer-service-success-title">Saved to asset</h2>
             <p>{serviceSuccess.actionLabel} saved successfully for <strong>{serviceSuccess.assetTitle}</strong>.</p>
             <small>Returning to Maintenance…</small>
             <button type="button" onClick={() => setServiceSuccess(null)}>Back to Maintenance</button>
@@ -2007,7 +2008,7 @@ function DealerWorkChoice({ asset, onClose, onChoose }: { asset: DealerMaintenan
     <section ref={ref} tabIndex={-1} className={`${assetStyles.modalCard} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="dealer-work-choice-title">
       <header className={assetStyles.modalHeader}><div><h3 id="dealer-work-choice-title">Add maintenance</h3><p>{asset.assetTitle}</p></div><button type="button" className={dialogStyles.close} aria-label="Close add maintenance" onClick={onClose}>×</button></header>
       <p>What work was completed?</p>
-      <div className={assetStyles.optionsGrid}>{(['checkup', 'service'] as const).map(type => <button type="button" key={type} className={assetStyles.optionActionButton} onClick={() => onChoose(type)}><ManageIcon className={assetStyles.buttonIcon}/><span><strong>{type === 'checkup' ? 'Check-up' : 'Service or repair'}</strong><small>{type === 'checkup' ? 'Record an inspection and its findings.' : 'Record completed work, parts and notes.'}</small></span></button>)}</div>
+      <div className={maintenanceActionStyles.grid}>{(['checkup', 'service'] as const).map(type => <button type="button" key={type} className={maintenanceActionStyles.card} onClick={() => onChoose(type)}><span className={maintenanceActionStyles.icon}><ManageIcon className={assetStyles.buttonIcon}/></span><span><strong>{type === 'checkup' ? 'Check-up' : 'Service or repair'}</strong><small>{type === 'checkup' ? 'Record an inspection and its findings.' : 'Record completed work, parts and notes.'}</small></span></button>)}</div>
     </section>
   </div>;
 }
