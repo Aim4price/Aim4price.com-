@@ -9,4 +9,4 @@
 .icon { display:grid; place-items:center; flex:none; width:2.6rem; height:2.6rem; border:1px solid var(--app-line,#d0dfd8); border-radius:.75rem; background:var(--app-surface-soft,#eef6f2); }
 .icon svg { width:1.45rem; height:1.45rem; }
 .grid > :last-child:nth-child(odd) { grid-column:1/-1; }
-@media(max-width:600px) { .grid { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { :global(:where(html:not(:has([data-website-canvas])))) .grid { grid-template-columns:minmax(0,1fr); } }
