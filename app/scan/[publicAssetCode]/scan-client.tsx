@@ -4283,6 +4283,7 @@ export default function ScanClient({
                         </div>
 
                         <div className={styles.optionList}>
+                          <button type="button" className={styles.listOptionButton} disabled={isSaving || !checkedOptions.length} onClick={() => setDraft(current => ({ ...current, checkedItems: checkedOptions.every(option => current.checkedItems.includes(option.label)) ? current.checkedItems.filter(label => !checkedOptions.some(option => option.label === label)) : Array.from(new Set([...current.checkedItems, ...checkedOptions.map(option => option.label)])) }))}>{checkedOptions.length > 0 && checkedOptions.every(option => draft.checkedItems.includes(option.label)) ? 'Deselect all' : 'Select all'}</button>
                           {checkedOptions.map((option) => {
                             const selected = draft.checkedItems.includes(
                               option.label,
@@ -4374,7 +4375,8 @@ export default function ScanClient({
                             </div>
 
                             <div className={styles.optionList}>
-                              {servicedOptions.map((option) => {
+                              <button type="button" className={styles.listOptionButton} disabled={isSaving || !servicedOptions.length} onClick={() => setDraft(current => ({ ...current, servicedItems: servicedOptions.every(option => current.servicedItems.includes(option.label)) ? current.servicedItems.filter(label => !servicedOptions.some(option => option.label === label)) : Array.from(new Set([...current.servicedItems, ...servicedOptions.map(option => option.label)])) }))}>{servicedOptions.length > 0 && servicedOptions.every(option => draft.servicedItems.includes(option.label)) ? 'Deselect all' : 'Select all'}</button>
+                          {servicedOptions.map((option) => {
                                 const selected = draft.servicedItems.includes(
                                   option.label,
                                 );
@@ -4553,6 +4555,7 @@ export default function ScanClient({
                               <small>{serviceCopy.repairedSubheader}</small>
                             </div>
                             <div className={styles.optionList}>
+                              <button type="button" className={styles.listOptionButton} disabled={isSaving || !checklistOptions(checklist, 'repaired').length} onClick={() => setDraft(current => { const labels = checklistOptions(checklist, 'repaired').map(option => option.label); return { ...current, repairedItems: labels.every(label => current.repairedItems.includes(label)) ? current.repairedItems.filter(label => !labels.includes(label)) : Array.from(new Set([...current.repairedItems, ...labels])) }; })}>{checklistOptions(checklist, 'repaired').length > 0 && checklistOptions(checklist, 'repaired').every(option => draft.repairedItems.includes(option.label)) ? 'Deselect all' : 'Select all'}</button>
                               {checklistOptions(checklist, 'repaired').map(option => <button key={option.id} type="button" disabled={isSaving}
                                 aria-pressed={draft.repairedItems.includes(option.label)}
                                 className={`${styles.listOptionButton} ${draft.repairedItems.includes(option.label) ? styles.listOptionActive : ''}`}

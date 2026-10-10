@@ -105,7 +105,7 @@ async function main() {
 
       await clickText('Parts');await page.waitForSelector('input[type=search]');
       await clickText('+ Add part');await clickText('Oil filter');await clickText('Next');
-      await page.type('input[placeholder="Number printed on the part or packaging"]','001-APP');
+      await page.type('input[placeholder="e.g. 001-ABC"]','001-APP');
       await clickText('Next');await clickText('Save part');
       await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.includes('Part saved'));
       assert.equal(savedPart.partNumber,'001-APP');assert.equal(savedPart.itemKey,'oil_filter');

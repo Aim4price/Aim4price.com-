@@ -348,6 +348,7 @@ export default function DesktopServiceModal({
                 <button type="button" className={styles.cancelButton} disabled={!ownItem.trim() || customItems.length >= 20 || busy} onClick={() => { setCustomItems((items) => Array.from(new Set([...items, ownItem.trim()]))); setOwnItem(''); }}>+ Add item</button>
                 {customItems.length ? <ul className={styles.customWorkList}>{customItems.map((item) => <li key={item}><span>{item}</span><button type="button" disabled={busy} onClick={() => setCustomItems((items) => items.filter((value) => value !== item))} aria-label={`Remove ${item}`}>×</button></li>)}</ul> : null}
               </div>
+              <button type="button" className={styles.cancelButton} disabled={busy || savedChecklist.loading || !!savedChecklist.error || !options.length} onClick={() => setSelectedItems(current => options.every(option => current.includes(option.label)) ? current.filter(label => !options.some(option => option.label === label)) : Array.from(new Set([...current, ...options.map(option => option.label)])))}>{options.length > 0 && options.every(option => selectedItems.includes(option.label)) ? 'Deselect all' : 'Select all'}</button>
               <div className={styles.checklist}>
                 {options.map((option) => {
                   const selected = selectedItems.includes(option.label);

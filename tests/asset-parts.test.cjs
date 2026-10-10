@@ -29,6 +29,7 @@ test('parts persist against the live asset; permissions, ownership, record links
  const seed=load('lib/maintenance-catalogue-seed.ts');
  const catalogue=load('lib/maintenance-catalogue.ts',{'./maintenance-catalogue-seed':seed});
  const api=load('lib/asset-parts-api.ts',{
+ './asset-parts-pdf':{assetPartsPdfResponse:async(request,ownerId,asset,parts,maintenance)=>({status:200,data:{pdf:true,parts,maintenance}})},
  './db':{getDb:()=>pool},'./auth-session':{getServerSession:async()=>user?{user}:null},
  './asset-register-db':{getAssetRegisterItemById:async(owner,id)=>{const result=await db.query('SELECT * FROM asset_register_items WHERE id=$1 AND user_id=$2',[id,owner]);return result.rows.length?{id,maintenanceIdentity:{source:'advanced',familyId:38,sector:'agricultural'}}:null;}},
  './shared-asset-contributions':{contributionScope:async(target,permission)=>{if(!allowed.has(permission))throw new AccessError('Denied',403);return {ownerId:'owner',assetId:asset,user:{id:'recipient',email:'recipient@example.com'},lock:async()=>{if(revoked)throw new AccessError('Revoked',403);}};}},
@@ -49,16 +50,21 @@ test('parts persist against the live asset; permissions, ownership, record links
   assert.equal((await call('POST',linked)).status,400);
   await db.query('UPDATE asset_maintenance_records SET user_id=$1,asset_register_item_id=$2 WHERE id=$3',['owner',asset,maintenance]);
   assert.equal((await call('POST',linked)).status,200);
+  const exportPdf=(target,partIds,origin='trusted')=>api.assetPartsRequest({method:'POST',nextUrl:new URL('https://example.test/parts?format=pdf'),origin,body:{partIds}},target);
+  assert.equal((await exportPdf({ownerAssetId:asset},[draft.requestId])).data.parts.length,1);
+  assert.equal((await exportPdf({ownerAssetId:asset},[other])).status,400);
+  assert.equal((await exportPdf({ownerAssetId:asset},[])).status,400);
+  assert.equal((await exportPdf({ownerAssetId:asset},[draft.requestId],'foreign')).status,403);
   const lead={leadId:'lead'};
   assert.equal((await call('GET',draft,lead)).status,403);
-  allowed=new Set(['viewParts']);read=await call('GET',draft,lead);assert.equal(read.data.parts.length,2);assert.equal(read.data.canAdd,false);assert.equal(read.data.maintenance.length,0);
+  allowed=new Set(['viewParts']);assert.equal((await exportPdf(lead,[draft.requestId])).data.pdf,true);read=await call('GET',draft,lead);assert.equal(read.data.parts.length,2);assert.equal(read.data.canAdd,false);assert.equal(read.data.maintenance.length,0);
   assert.equal((await call('POST',draft,lead)).status,403);
-  allowed=new Set(['addParts']);read=await call('GET',draft,lead);assert.deepEqual(read.data.parts,[]);assert.equal(read.data.canAdd,true);
+  allowed=new Set(['addParts']);assert.equal((await exportPdf(lead,[draft.requestId])).status,403);read=await call('GET',draft,lead);assert.deepEqual(read.data.parts,[]);assert.equal(read.data.canAdd,true);
   const added={...draft,requestId:'66666666-6666-4666-8666-666666666666'};
   assert.equal((await call('POST',added,lead,'foreign')).status,403);
   assert.equal((await call('POST',added,lead)).status,200);assert.equal(usage.length,1);
   assert.equal((await call('POST',draft,lead)).status,400); // another actor's request ID
-  revoked=true;assert.equal((await call('POST',{...added,requestId:'77777777-7777-4777-8777-777777777777'},lead)).status,403);
+  revoked=true;allowed.add('viewParts');assert.equal((await exportPdf(lead,[draft.requestId])).status,403);assert.equal((await call('POST',{...added,requestId:'77777777-7777-4777-8777-777777777777'},lead)).status,403);
   assert.equal((await call('GET',draft,lead)).status,403);
   user={id:'other',email:'other@example.com'};assert.equal((await call('GET')).status,404);
   user=null;assert.equal((await call('GET')).status,401);

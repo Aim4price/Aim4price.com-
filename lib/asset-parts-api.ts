@@ -35,8 +35,9 @@ async function optionalScope(target: ContributionTarget, permission: 'viewParts'
 }
 export async function assetPartsRequest(request: NextRequest, target: ContributionTarget | { ownerAssetId: string } | { appScope: () => Promise<{ scope: AssetPartsScope; canView: boolean; canAdd: boolean; canReadMaintenance: boolean }> }) {
   try {
-    const writing = request.method === 'POST';
-    if (writing) requireBusinessOrigin(request);
+    const exporting = request.nextUrl?.searchParams.get('format') === 'pdf';
+    const writing = request.method === 'POST' && !exporting;
+    if (request.method === 'POST') requireBusinessOrigin(request);
     let scope: AssetPartsScope;
     let canView = true, canAdd = true, canReadMaintenance = true;
     let maintenanceScope: AssetPartsScope | null = null;
@@ -61,6 +62,7 @@ export async function assetPartsRequest(request: NextRequest, target: Contributi
       maintenanceScope = await optionalScope(target, 'maintenanceReports') || await optionalScope(target, 'addMaintenance');
       canReadMaintenance = !!maintenanceScope;
     }
+    if (exporting && !canView) throw new ExternalLeadAccessError('Parts viewing access is required to download a report.', 403);
     if (!/^[0-9a-f-]{36}$/i.test(scope.assetId)) throw new ExternalLeadAccessError('Asset unavailable.', 404);
     const asset = await getAssetRegisterItemById(scope.ownerId, scope.assetId);
     if (!asset) throw new ExternalLeadAccessError('Asset unavailable.', 404);
@@ -71,6 +73,7 @@ export async function assetPartsRequest(request: NextRequest, target: Contributi
     await ensureAssetParts();
     if (!writing) {
       const client = await getDb().connect();
+      let result;
       try {
         await client.query('BEGIN'); await scope.lock(client);
         if (maintenanceScope) await maintenanceScope.lock(client);
@@ -80,8 +83,19 @@ export async function assetPartsRequest(request: NextRequest, target: Contributi
         const parts = canView ? (await client.query<AssetPart>(`SELECT ${columns} FROM asset_parts WHERE owner_id=$1 AND asset_id=$2::uuid ORDER BY created_at DESC, id`, [scope.ownerId, scope.assetId])).rows : [];
         const maintenance = canReadMaintenance ? (await client.query(`SELECT id::text, coalesce(nullif(title,''),maintenance_type) AS title, status FROM asset_maintenance_records WHERE user_id=$1 AND asset_register_item_id=$2::uuid ORDER BY created_at DESC LIMIT 100`, [scope.ownerId, scope.assetId])).rows : [];
         await client.query('COMMIT');
-        return businessJson({ parts, suggestions, family: checklist.label, canView, canAdd, maintenance });
+        result = { parts, suggestions, family: checklist.label, canView, canAdd, maintenance };
       } catch (error) { await client.query('ROLLBACK'); throw error; } finally { client.release(); }
+      if (exporting) {
+        await limitBusinessAction(`asset-parts-pdf:${scope.user.id}`, 20);
+        const body = await businessBody(request);
+        if (!Array.isArray(body.partIds) || !body.partIds.length || body.partIds.length > 1000 || body.partIds.some(id => typeof id !== 'string')) throw new Error('Choose parts for the report.');
+        const ids = new Set(body.partIds);
+        const selected = result.parts.filter(part => ids.has(part.id));
+        if (!selected.length || selected.length !== ids.size) throw new Error('This selection includes unavailable parts. Reopen Parts and try again.');
+        const { assetPartsPdfResponse } = await import('./asset-parts-pdf');
+        return assetPartsPdfResponse(request, scope.ownerId, asset, selected, result.maintenance);
+      }
+      return businessJson(result);
     }
     await limitBusinessAction(`asset-parts:${scope.user.id}`, 60);
     const input = validateAssetPart(await businessBody(request));
