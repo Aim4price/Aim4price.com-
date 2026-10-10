@@ -12,7 +12,7 @@ import { ExternalLeadAccessError } from './external-lead-access';
 type App = 'owner' | 'field-manager' | 'dealer';
 // Resolve from the current app login, never from client-supplied owner or actor IDs.
 export async function resolveAppPartsAccess(request: NextRequest, app: App, id: string) {
-  const writing = request.method === 'POST';
+  const writing = request.method === 'POST' && request.nextUrl?.searchParams.get('format') !== 'pdf';
   async function read() {
     if (app === 'owner') {
       const access = await getOwnerAppAccess();
