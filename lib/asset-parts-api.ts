@@ -76,7 +76,7 @@ export async function assetPartsRequest(request: NextRequest, target: Contributi
     if (!asset) throw new ExternalLeadAccessError('Asset unavailable.', 404);
     const [catalogue, custom] = await Promise.all([getMaintenanceCatalogue(), listAssetChecklistItems(scope.ownerId, scope.assetId)]);
     const checklist = resolveMaintenanceChecklist(asset, catalogue);
-    const baseSuggestions = [...checklist.items.map(item => ({ id: item.id, label: item.label })), ...custom.map(item => ({ id: `asset_custom_${item.id}`, label: item.label }))];
+    const baseSuggestions = [...checklist.items.map(item => ({ id: item.id, label: item.label })), ...custom.filter(item => !item.sourceId && !item.hidden).map(item => ({ id: `asset_custom_${item.id}`, label: item.label }))];
     await ensureAssetMaintenanceTables();
     await ensureAssetParts();
     if (!writing) {

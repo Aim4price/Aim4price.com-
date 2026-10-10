@@ -7,3 +7,5 @@ export function GET(request: NextRequest, { params }: { params: { accessId: stri
 }
 export const POST = GET;
 export const DELETE = GET;
+
+export const PATCH = GET;

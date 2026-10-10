@@ -44,6 +44,27 @@ test('SQL persists items per user and asset, forbids foreign reads/writes/delete
     const saved = await mod.addAssetChecklistItem('alice', A, item);
     assert.equal((await mod.listAssetChecklistItems('alice', A))[0].label, item.label);
     assert.equal((await mod.listAssetChecklistItems('bob', B)).length, 0);
+    const edit = { ...item, optionId: `asset_custom_${saved.id}`, action: 'edit', revision: 0, label: 'Updated task' };
+    let items = await mod.changeAssetChecklistItem('alice', A, edit);
+    assert.equal(items[0].label, 'Updated task');
+    assert.equal(items[0].revision, 1);
+    await assert.rejects(mod.changeAssetChecklistItem('alice', A, edit), /ITEM_CHANGED/);
+    await assert.rejects(mod.changeAssetChecklistItem('bob', A, {...edit,revision:1}), /ASSET_NOT_FOUND/);
+    await assert.rejects(mod.changeAssetChecklistItem('bob', B, {...edit,revision:1}), /ITEM_NOT_FOUND/);
+    await assert.rejects(mod.changeAssetChecklistItem('alice', A, {...edit,revision:1}, async()=>{throw Error('revoked');}), /revoked/);
+    const base = { ...item, optionId: 'inspection_visible_damage', action: 'edit', revision: 0, label: 'Inspect frame' };
+    items = await mod.changeAssetChecklistItem('alice', A, base);
+    let resolved = {...catalogue.resolveMaintenanceChecklist(null), customItems:items};
+    assert.equal(catalogue.checklistOptions(resolved,'checked').find(i=>i.id===base.optionId).label, 'Inspect frame');
+    const html = report.buildAssetChecklistReportHtml({title:'Test asset'},resolved,['checked:inspection_visible_damage'],{logoUrl:'',generatedDate:'Today'});
+    assert.ok(html.includes('Inspect frame'));
+    items = await mod.changeAssetChecklistItem('alice', A, {...base, action:'delete',revision:1});
+    resolved = {...resolved,customItems:items};
+    assert.ok(!catalogue.checklistOptions(resolved,'checked').some(i=>i.id===base.optionId));
+    assert.ok(catalogue.checklistOptions(catalogue.resolveMaintenanceChecklist(null),'checked').some(i=>i.id===base.optionId));
+    assert.ok(!report.buildAssetChecklistReportHtml({title:'Test asset'},resolved,undefined,{logoUrl:'',generatedDate:'Today'}).includes('Inspect frame'));
+    await pg.query('delete from asset_checklist_items where source_id IS NOT NULL');
+
     await assert.rejects(mod.listAssetChecklistItems('bob', A), /ASSET_NOT_FOUND/);
     await assert.rejects(mod.addAssetChecklistItem('bob', A, item), /ASSET_NOT_FOUND/);
     await assert.rejects(mod.removeAssetChecklistItem('bob', B, saved.id), /ITEM_NOT_FOUND/);
@@ -97,7 +118,7 @@ test('checklist and PDF routes reject unauthenticated callers and never accept a
   const response = await authenticated.GET(new NextRequest(`https://test/api/maintenance/checklist?assetId=${A}&userId=alice`));
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
-  for (const method of ['POST', 'DELETE']) {
+  for (const method of ['POST', 'DELETE', 'PATCH']) {
     const blocked = await authenticated[method](new NextRequest(`https://test/api/maintenance/checklist?assetId=${A}`, { method, headers: { origin: 'https://other.example' } }));
     assert.equal(blocked.status, 403);
   }
@@ -169,27 +190,28 @@ test('checklist mutations accept public origins behind a proxy and reject untrus
     '../../../../lib/auth-session': { getServerSession: async () => ({ user: { id: 'alice' } }) },
     '../../../../lib/asset-checklist-db': {
       addAssetChecklistItem: async (user, asset, input) => { calls.push(['add', user, asset]); return { ...input, id: B }; },
+      changeAssetChecklistItem: async (user, asset) => { calls.push(['change', user, asset]); return []; },
       removeAssetChecklistItem: async (user, asset, id) => { calls.push(['remove', user, asset, id]); },
     },
   });
   for (const origin of ['https://www.aim4price.com', 'https://aim4price.com']) {
-    for (const method of ['POST', 'DELETE']) {
+    for (const method of ['POST', 'DELETE', 'PATCH']) {
       const response = await route[method](new NextRequest(`http://localhost:3000/api/maintenance/checklist?assetId=${A}&itemId=${B}`, {
         method, headers: { origin, 'content-type': 'application/json' },
-        ...(method === 'POST' ? { body: JSON.stringify(item) } : {}),
+        ...(method !== 'DELETE' ? { body: JSON.stringify(item) } : {}),
       }));
       assert.equal(response.status, method === 'POST' ? 201 : 200);
     }
   }
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 6);
   assert.ok(calls.every(call => call[1] === 'alice' && call[2] === A));
   for (const origin of [null, 'null', 'https://evil.example', 'https://www.aim4price.com.evil.example', 'https://www.aim4price.com/path', 'http://www.aim4price.com']) {
-    for (const method of ['POST', 'DELETE']) {
+    for (const method of ['POST', 'DELETE', 'PATCH']) {
       const response = await route[method](new NextRequest(`http://localhost:3000/api/maintenance/checklist?assetId=${A}`, {
         method, headers: { ...(origin ? { origin } : {}), 'x-forwarded-host': 'evil.example', 'x-forwarded-proto': 'https' },
       }));
       assert.equal(response.status, 403, `${method}: ${origin}`);
     }
   }
-  assert.equal(calls.length, 4);
+  assert.equal(calls.length, 6);
 });

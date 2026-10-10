@@ -9,6 +9,7 @@ import { validateAssetChecklistItem } from '../lib/asset-checklist';
 import { useMaintenanceChecklist } from '../lib/use-maintenance-checklist';
 import { checklistOptions, type MaintenanceIdentity } from '../lib/maintenance-catalogue';
 import styles from './MaintenanceChecklistBrowser.module.css';
+import ItemActionButton from './ItemActionButton';
 
 type ChecklistAsset = { id: string; title: string; serialNumber?: string; meta?: string; headerMeta?: string; selectedMethod?: string; maintenanceIdentity?: MaintenanceIdentity };
 
@@ -35,6 +36,12 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
   const saved = useAssetChecklistItems(asset?.id, endpoint);
   const checklist = { ...baseChecklist, customItems: saved.items };
   const [editing, setEditing] = useState(false);
+  const [target, setTarget] = useState<{ id: string; label: string; description: string; revision?: number } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  function openEditor(item: typeof target, remove = false) {
+    setTarget(item); setDeleting(remove); setLabel(item?.label || ''); setDescription(item?.description || ''); setEditing(true); setError(''); setNotice('');
+  }
+  function cancelEditor() { setEditing(false); setTarget(null); setDeleting(false); setError(''); dialogRef.current?.focus(); }
   const [label, setLabel] = useState('');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState('');
@@ -52,27 +59,16 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
     try {
       const input = validateAssetChecklistItem({ mode, label, description });
       setBusy('save');
-      const response = await fetch(endpoint || `/api/maintenance/checklist?assetId=${encodeURIComponent(asset.id)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
+      const response = await fetch(endpoint || `/api/maintenance/checklist?assetId=${encodeURIComponent(asset.id)}`, { method: target ? 'PATCH' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(target ? { ...input, action: deleting ? 'delete' : 'edit', optionId: target.id, revision: target.revision ?? 0 } : input) });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      saved.setItems([...saved.items, data.item]);
+      if (!response.ok) { if (response.status === 409 || response.status === 404) saved.reload(); throw new Error(data.error); }
+      saved.setItems(target ? data.items : [...saved.items, data.item]);
+      if (target && deleting) setSelected(current => { const next = new Set(current); next.delete(`${mode}:${target.id}`); return next; });
       setLabel(''); setDescription(''); setEditing(false);
       dialogRef.current?.focus();
-      setNotice('Item saved.');
+      setNotice(deleting ? 'Item deleted.' : target ? 'Item updated.' : 'Item saved.');
+      setTarget(null); setDeleting(false);
     } catch (error) { setError(error instanceof Error ? error.message : 'Could not save the item.'); }
-    finally { setBusy(''); }
-  }
-  async function removeItem(id: string) {
-    if (!asset || busy) return;
-    setBusy(id); setError(''); setNotice('');
-    try {
-      const response = await fetch(endpoint ? `${endpoint}?itemId=${encodeURIComponent(id)}` : `/api/maintenance/checklist?assetId=${encodeURIComponent(asset.id)}&itemId=${encodeURIComponent(id)}`, { method: 'DELETE' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
-      saved.setItems(saved.items.filter(item => item.id !== id));
-      dialogRef.current?.focus();
-      setNotice('Item removed.');
-    } catch (error) { setError(error instanceof Error ? error.message : 'Could not remove the item.'); }
     finally { setBusy(''); }
   }
   async function downloadPdf() {
@@ -100,16 +96,16 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
   }, []);
   useEffect(() => { dialogRef.current?.focus(); }, [choosingAsset]);
 
-  return <div className={`${styles.overlay} ${choosingAsset ? pickerStyles.overlay : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+  return <div className={`${styles.overlay} ${choosingAsset ? pickerStyles.overlay : ''}`} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) { if (editing) cancelEditor(); else onClose(); } }}>
     <section className={`${styles.dialog} ${choosingAsset ? pickerStyles.modal : dialogStyles.dialog}`} data-asset-choice-surface={choosingAsset ? 'true' : undefined} data-asset-choice-modal={choosingAsset ? 'true' : undefined} ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="maintenance-checklists-title" onKeyDown={(event) => {
-      if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
+      if (event.key === 'Escape') { event.stopPropagation(); if (!busy) { if (editing) cancelEditor(); else onClose(); } }
       if (event.key !== 'Tab') return;
       const controls = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), a[href]') ?? []).filter((element) => element.getClientRects().length > 0);
       const first = controls[0]; const last = controls[controls.length - 1];
       if (event.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { event.preventDefault(); last?.focus(); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     }}>
-      <header className={styles.header} data-asset-choice-header={choosingAsset ? 'true' : undefined}><div><h2 id="maintenance-checklists-title">{choosingAsset ? 'Maintenance checklists' : asset?.title}</h2><p>{choosingAsset ? 'Choose an asset.' : asset?.headerMeta || 'No key details saved yet'}</p></div><button type="button" className={dialogStyles.close} onClick={onClose} aria-label="Close maintenance checklists">×</button></header>
+      <header className={styles.header} data-asset-choice-header={choosingAsset ? 'true' : undefined}><div><h2 id="maintenance-checklists-title">{choosingAsset ? 'Maintenance checklists' : asset?.title}</h2><p>{choosingAsset ? 'Choose an asset.' : asset?.headerMeta || 'No key details saved yet'}</p></div><button type="button" className={dialogStyles.close} disabled={!!busy} onClick={() => editing ? cancelEditor() : onClose()} aria-label="Close maintenance checklists">×</button></header>
       {choosingAsset ? <>
         <div data-asset-choice-toolbar="true">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets..." aria-label="Search assets or serial numbers" />
@@ -132,25 +128,26 @@ export default function MaintenanceChecklistBrowser({ assets, initialAssetId, on
       </> : <>
       <div className={`${styles.body} ${dialogStyles.body}`}>
         {asset ? <>
-          <div className={styles.tabs} aria-label="Checklist type">
+          <div hidden={editing} className={styles.tabs} aria-label="Checklist type">
             {([['checked', 'Checks'], ['serviced', 'Service'], ['repaired', 'Repairs']] as const).map(([value, title]) => <button key={value} type="button" disabled={!!busy || editing} aria-pressed={mode === value} onClick={() => setMode(value)}>{title}</button>)}
           </div>
-          <div className={styles.sectionHeading}><span className={styles.hint} role="status">{selectedKeys.length} selected</span><button className={styles.addButton} type="button" disabled={!!busy || saved.loading || !!saved.error || editing || !options.length} onClick={() => setSelected(current => { const next = new Set(current); const all = options.every(item => current.has(`${mode}:${item.id}`)); options.forEach(item => all ? next.delete(`${mode}:${item.id}`) : next.add(`${mode}:${item.id}`)); return next; })}>{options.length > 0 && options.every(item => selected.has(`${mode}:${item.id}`)) ? 'Deselect all' : 'Select all'}</button>{canEdit && <button className={styles.addButton} type="button" disabled={!!busy || saved.loading || !!saved.error || editing} onClick={() => { setEditing(true); setError(''); }}>+ Add item</button>}</div>
+          <div hidden={editing} className={styles.sectionHeading}><span className={styles.hint} role="status">{selectedKeys.length} selected</span><div className={styles.toolbar}><button className={styles.addButton} type="button" disabled={!!busy || saved.loading || !!saved.error || editing || !options.length} onClick={() => setSelected(current => { const next = new Set(current); const all = options.every(item => current.has(`${mode}:${item.id}`)); options.forEach(item => all ? next.delete(`${mode}:${item.id}`) : next.add(`${mode}:${item.id}`)); return next; })}>{options.length > 0 && options.every(item => selected.has(`${mode}:${item.id}`)) ? 'Deselect all' : 'Select all'}</button>{canEdit && <button className={styles.addButton} type="button" disabled={!!busy || saved.loading || !!saved.error || editing} onClick={() => openEditor(null)}>+ Add item</button>}</div></div>
           {saved.loading ? <p role="status">Loading your saved items…</p> : null}
           {saved.error ? <div role="alert" className={styles.error}>{saved.error} <button type="button" onClick={saved.reload}>Try again</button></div> : null}
           {error ? <p role="alert" className={styles.error}>{error}</p> : null}
           {notice ? <p role="status" className={styles.notice}>{notice}</p> : null}
-          {editing ? <form className={styles.editor} onSubmit={saveItem}>
-            <h3>Add item</h3>
+          {editing ? <form id="checklist-item-editor" className={styles.editor} onSubmit={saveItem}>
+            <h3>{deleting ? 'Delete item' : target ? 'Edit item' : 'Add item'}</h3>
+            {deleting ? <><p>Delete <strong>{target?.label}</strong>?</p><p className={styles.hint}>Removed from this asset’s checklist. Recorded work stays unchanged.</p></> : <>
             <label htmlFor="checklist-item-name">Task<input autoFocus id="checklist-item-name" value={label} maxLength={160} required placeholder="e.g. Inspect belt" disabled={!!busy} onChange={event => setLabel(event.target.value)} /></label>
             <label htmlFor="checklist-item-instructions"><span>Instructions (optional)</span><textarea id="checklist-item-instructions" value={description} maxLength={500} rows={2} placeholder="Details" disabled={!!busy} onChange={event => setDescription(event.target.value)} /></label>
-            <div className={styles.editorActions}><button type="button" disabled={!!busy} onClick={() => setEditing(false)}>Cancel</button><button className={styles.primary} disabled={!!busy} type="submit">{busy === 'save' ? 'Saving…' : 'Save item'}</button></div>
+            </>}
           </form> : null}
-          <ul className={styles.items}>{options.map(item => <li key={item.id} data-selected={selected.has(`${mode}:${item.id}`)}><label className={styles.itemLabel}><input type="checkbox" checked={selected.has(`${mode}:${item.id}`)} disabled={!!busy || editing} onChange={() => toggleItem(`${mode}:${item.id}`)} /><span className={styles.itemCopy}><strong>{item.label}</strong>{item.description ? <span className={styles.itemDescription}>{item.description}</span> : null}</span></label>{canRemove && item.id.startsWith('asset_custom_') ? <button className={styles.remove} type="button" disabled={!!busy || editing} aria-label={`Remove custom item: ${item.label}`} onClick={() => removeItem(item.id.slice('asset_custom_'.length))}>Remove</button> : null}</li>)}</ul>
-          {!options.length && !saved.loading ? <p className={styles.empty}>No items yet. Add a task.</p> : null}
+          <ul hidden={editing} className={styles.items}>{options.map(item => <li key={item.id} data-selected={selected.has(`${mode}:${item.id}`)}><label className={styles.itemLabel}><input type="checkbox" checked={selected.has(`${mode}:${item.id}`)} disabled={!!busy || editing} onChange={() => toggleItem(`${mode}:${item.id}`)} /><span className={styles.itemCopy}><strong>{item.label}</strong>{item.description ? <span className={styles.itemDescription}>{item.description}</span> : null}</span></label>{canRemove ? <div className={styles.rowActions}><ItemActionButton action="edit" name={item.label} disabled={!!busy || editing} onClick={() => openEditor(item)} /><ItemActionButton action="delete" name={item.label} disabled={!!busy || editing} onClick={() => openEditor(item, true)} /></div> : null}</li>)}</ul>
+          {!editing && !options.length && !saved.loading ? <p className={styles.empty}>No items yet. Add a task.</p> : null}
         </> : null}
       </div>
-      <footer className={styles.footer}>{canSchedule && <button type="button" disabled={!asset || !!busy || editing} onClick={() => asset && onStartWork(asset.id, 'upcoming')}>Schedule</button>}{canRecord && <button type="button" disabled={!asset || !!busy || editing} onClick={() => asset && onStartWork(asset.id, 'done')}>Record work</button>}<button className={styles.primary} data-primary-action type="button" disabled={!asset || !!busy || editing || saved.loading || !!saved.error || !selectedKeys.length} onClick={downloadPdf}>{busy === 'pdf' ? 'Preparing PDF…' : 'Download PDF'}</button></footer>
+      <footer className={styles.footer}>{editing ? <><button type="button" disabled={!!busy} onClick={cancelEditor}>Cancel</button><button type="submit" form="checklist-item-editor" data-primary-action className={deleting ? styles.danger : styles.primary} disabled={!!busy}>{busy ? 'Saving…' : deleting ? 'Delete' : target ? 'Save changes' : 'Save item'}</button></> : <>{canSchedule && <button type="button" disabled={!asset || !!busy || editing} onClick={() => asset && onStartWork(asset.id, 'upcoming')}>Schedule</button>}{canRecord && <button type="button" disabled={!asset || !!busy || editing} onClick={() => asset && onStartWork(asset.id, 'done')}>Record work</button>}<button className={styles.primary} data-primary-action type="button" disabled={!asset || !!busy || editing || saved.loading || !!saved.error || !selectedKeys.length} onClick={downloadPdf}>{busy === 'pdf' ? 'Preparing PDF…' : 'Download PDF'}</button></>}</footer>
       </>}
     </section>
   </div>;
