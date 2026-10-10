@@ -6,7 +6,8 @@ import styles from './page.module.css';
 
 type Flow = 'connect' | 'manage';
 
-export default function ConnectionActions({ setup, management, count }: {
+export default function ConnectionActions({ setup, management, count, admin = false }: {
+  admin?: boolean;
   setup: ReactNode;
   management: ReactNode;
   count?: number;
@@ -86,7 +87,7 @@ export default function ConnectionActions({ setup, management, count }: {
         <span className={accessStyles.actionIcon} aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
         </span>
-        <span className={accessStyles.actionCopy}><strong>Connect</strong><small>Set up ChatGPT.</small></span>
+        <span className={accessStyles.actionCopy}><strong>Connect</strong><small>Choose your assistant.</small></span>
       </button>
       <button ref={manageButton} type="button"
         className={`${accessStyles.actionButton} ${accessStyles.actionButtonManage} ${styles.actionButton}`}
@@ -106,8 +107,8 @@ export default function ConnectionActions({ setup, management, count }: {
         role="dialog" aria-modal="true" aria-labelledby={`ai-${flow}-title`}
         aria-describedby={`ai-${flow}-description`}>
         <header className={accessStyles.modalHeader}>
-          <h2 id={`ai-${flow}-title`}>{flow === 'connect' ? 'Connect ChatGPT' : 'Your connections'}</h2>
-          <p id={`ai-${flow}-description`}>{flow === 'connect' ? 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
+          <h2 id={`ai-${flow}-title`}>{flow === 'connect' ? 'Connect your assistant' : 'Your connections'}</h2>
+          <p id={`ai-${flow}-description`}>{flow === 'connect' ? admin ? 'Private, read-only reporting across accounts.' : 'Connect your Owner account with read-only access.' : 'View active connections or stop their access.'}</p>
           <button type="button" data-dialog-close className={accessStyles.closeButton} onClick={close} aria-label={`Close ${flow === 'connect' ? 'connection setup' : 'your connections'}`}>×</button>
         </header>
         <div className={`${accessStyles.modalBody} ${styles.flowPanel}`}>

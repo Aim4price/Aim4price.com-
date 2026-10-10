@@ -1,6 +1,8 @@
-# Read-only Aim4price AI pilot
+# Read-only Aim4price AI connections
 
-An Owner can connect their own account to an AI assistant and ask about saved assets, saved valuations, accepted cost invoices, fuel, current budgets, maintenance and logged problems. The AI cannot add, edit or delete business records. This is a private, explicitly enabled pilot, not a public plugin listing.
+For multi-provider configuration, broad Owner access and the separate private admin resource, see [AI provider and admin rollout](ai-provider-admin-rollout.md). The pilot settings below remain supported for rollback.
+
+An Owner can connect their own account to an AI assistant and ask about saved assets, saved valuations, accepted cost invoices, fuel, current budgets, maintenance and logged problems. The AI cannot add, edit or delete business records. Access is explicitly enabled by deployment configuration; this is not a public plugin listing.
 
 ## What is included
 
@@ -44,7 +46,7 @@ Do not enable the endpoint until its migration and the normal account/ledger mig
 6. Ask: “List my assets”, “What are my recorded costs from 2026-09-01 to 2026-09-30?”, and “Show fuel slips for this asset over that period.” Also ask “How much of my current budget remains?”, “Which saved services are overdue?”, and “Show my logged problems and recorded maintenance activity for September.” Compare with the website, including fuel settings and any duplicated schedule/activity records.
 7. Disconnect under Account → AI connections and verify further tool calls fail. Confirm a second unapproved account cannot connect.
 
-Platform settings and private connector availability depend on the AI product/workspace. This implementation uses a predefined confidential OAuth client, not public dynamic registration. For ChatGPT, use its private MCP setup with predefined OAuth credentials. No directory submission is part of this change.
+Platform settings and private connector availability depend on the AI product/workspace. This implementation uses a predefined confidential OAuth client, not public dynamic registration. Additional predefined clients are supported through the provider registry. For ChatGPT, use its private MCP setup with predefined OAuth credentials. No directory submission is part of this change.
 
 Discovery: `/.well-known/oauth-authorization-server` and `/.well-known/oauth-protected-resource/api/ai/mcp`. A 401 MCP response advertises the protected-resource metadata URL. Supported protocol revisions: 2025-03-26, 2025-06-18 and 2025-11-25; newer clients can negotiate the supported revision. JSON responses only; GET/SSE and legacy SSE transport are not supported.
 

@@ -1,3 +1,4 @@
+import { checkSharedRate } from '../../../../../lib/ai-connection/rate-limit';
 import { getDb } from '../../../../../lib/db';
 import {
   authenticateClient,
@@ -14,7 +15,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   try {
-    const config = connectionConfig();
+    let config = connectionConfig();
+    if (config.sharedLimits) await checkSharedRate(getDb(), 'oauth:token', 1200);
     if (
       !request.headers
         .get('content-type')
@@ -33,7 +35,8 @@ export async function POST(request: Request) {
           'invalid_request',
           'Repeated parameter.',
         );
-    authenticateClient(form, request.headers.get('authorization'), config);
+    if (form.get('resource') === config.origin + '/api/ai/admin/mcp') config = connectionConfig(process.env, 'admin');
+    config = authenticateClient(form, request.headers.get('authorization'), config);
     return json(await exchangeToken(getDb(), form, config));
   } catch (error) {
     return errorResponse(error);

@@ -1,8 +1,11 @@
+import { checkSharedRate } from '../../../../../lib/ai-connection/rate-limit';
 import { getDb } from '../../../../../lib/db';
 import { connectionOwner } from '../../../../../lib/ai-connection/browser';
 import { issueCode } from '../../../../../lib/ai-connection/store';
 import {
   authorizationRequest,
+  authorizationConfig,
+  connectionPage,
   connectionConfig,
   connectionSignInHref,
   ConnectionError,
@@ -16,13 +19,14 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
-    const config = connectionConfig();
     const params = new URL(request.url).searchParams;
+    const config = authorizationConfig(params, connectionConfig());
+    if (config.sharedLimits) await checkSharedRate(getDb(), 'oauth:authorize', 1200);
     authorizationRequest(params, config);
     return new Response(null, {
       status: 302,
       headers: {
-        Location: `${config.origin}/account/ai-connect?${params}`,
+        Location: `${config.origin}${connectionPage(config)}?${params}`,
         'Cache-Control': 'no-store',
         'Referrer-Policy': 'no-referrer',
       },
@@ -33,9 +37,15 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   try {
-    const config = connectionConfig();
+    let config = connectionConfig();
     requireSameOrigin(request, config);
+    if (config.sharedLimits) await checkSharedRate(getDb(), 'oauth:consent', 1200);
     const form = new URLSearchParams(await limitedBody(request));
+    const authorization = new URLSearchParams(form.get('authorization') || '');
+    if (authorization.size) {
+      config = authorizationConfig(authorization, config);
+      authorizationRequest(authorization, config);
+    }
     let owner;
     try {
       owner = await connectionOwner(config);

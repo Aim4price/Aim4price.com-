@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import styles from "./AdminNavigation.module.css";
 
 export type AdminSection =
+  | "ai-connections"
   | "billing"
   | "accounts"
   | "businesses"
@@ -26,6 +27,7 @@ const ADMIN_LINKS: Array<{
   href: string;
   label: string;
 }> = [
+  { href: "/admin/ai-connect", label: "AI connections", key: "ai-connections" },
   {href:"/admin/asset-values",label:"Asset values",key:"asset-values"},
   { href: "/admin/billing", label: "Billing", key: "billing" },
   {
@@ -93,7 +95,7 @@ const ADMIN_LINKS: Array<{
 const ADMIN_GROUPS: Array<{ title: string; keys: AdminSection[] }> = [
   { title: "Accounts & service", keys: ["accounts", "billing", "capture-queue", "work-tracker", "businesses"] },
   { title: "Assets & marketplace", keys: ["discovery", "marketplace", "sold-assets", "asset-map"] },
-  { title: "Insights & tools", keys: ["dashboard", "valuations", "asset-values", "lifecycle", "maintenance-catalogue"] },
+  { title: "Insights & tools", keys: ["ai-connections", "dashboard", "valuations", "asset-values", "lifecycle", "maintenance-catalogue"] },
 ];
 
 export default function AdminNavigation({ active, canGetEstimate = false, businessVerification, initialVerificationOpen = false }: {

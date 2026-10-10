@@ -15,6 +15,8 @@ for (const file of [
   'asset-usage',
   'ai-connection/rate-limit',
   'ai-connection/mcp',
+  'ai-connection/admin-data',
+  'ai-connection/audit',
   'external-share-permissions',
 ]) {
   const destination = path.join(tmp, file + '.js');
@@ -141,6 +143,7 @@ before(async () => {
       'utf8',
     ),
   );
+  await db.exec(fs.readFileSync(path.join(__dirname, '../database/migrations/137-ai-provider-admin-reporting.sql'), 'utf8'));
   for (const id of config.allowedUserIds) {
     await db.query('INSERT INTO "user" VALUES($1,$2,$3)', [
       id,
@@ -759,6 +762,7 @@ test('expired browser login redirects to login without issuing an authorization 
   route.paths = module.paths;
   let writes = 0;
   route.require = id => {
+    if (id.endsWith('/rate-limit')) return { checkSharedRate: async()=>{throw new Error('unexpected rate write');} };
     if (id.endsWith('/security')) return { ...security, connectionConfig: () => config };
     if (id.endsWith('/browser')) return { connectionOwner: async () => { throw new security.ConnectionError(401, 'login_required', 'Sign in first'); } };
     if (id.endsWith('/store')) return { issueCode: async () => { writes++; throw new Error('must not issue a code'); } };
@@ -818,4 +822,168 @@ test('asset summary matches active register counts and umbrella values across pa
     await db.query('DELETE FROM asset_register_items WHERE id=ANY($1::uuid[])',[ids]);
     await db.exec('DROP TABLE asset_group_members; DROP TABLE asset_groups; ALTER TABLE asset_register_items DROP COLUMN lifecycle_state; ALTER TABLE asset_register_items DROP COLUMN value');
   }
+});
+
+const registryEnv = {
+  AIM4PRICE_AI_ENABLED: 'true', AIM4PRICE_AI_ORIGIN: config.origin,
+  BETTER_AUTH_SECRET: config.signingSecret, AIM4PRICE_AI_ACCESS_MODE: 'owners',
+  AIM4PRICE_AI_CLIENT_ID: 'pilot', AIM4PRICE_AI_CLIENT_SECRET: config.clientSecret,
+  AIM4PRICE_AI_REDIRECT_URIS: config.redirectUris[0],
+  AIM4PRICE_AI_ADMIN_ENABLED: 'true', AIM4PRICE_AI_ADMIN_CLIENT_ID: 'admin-client',
+  AIM4PRICE_AI_ADMIN_CLIENT_SECRET: 'a'.repeat(40), AIM4PRICE_AI_ADMIN_REDIRECT_URIS: 'https://chatgpt.com/admin-callback',
+  AIM4PRICE_AI_CLAUDE_SECRET: 'c'.repeat(40),
+  AIM4PRICE_AI_CLIENTS_JSON: JSON.stringify([{ id: 'claude', name: 'Claude', audience: 'owner', secretEnv: 'AIM4PRICE_AI_CLAUDE_SECRET', redirectUris: ['https://claude.ai/callback'], origins: ['https://claude.ai'], launchUrl: 'https://claude.ai/' }]),
+};
+function registryConfig(audience = 'owner') { return security.connectionConfig(registryEnv, audience); }
+async function registryGrant(c, user) {
+  const params = authParams({client_id: c.clientId,redirect_uri:c.redirectUris[0],resource:c.resource,scope:security.connectionScope(c)});
+  const auth = security.authorizationRequest(params,c);
+  const proof = security.consentProof(auth,user,require('node:crypto').randomUUID(),c.signingSecret);
+  const code = await store.issueCode(pool,user,auth,proof,c);
+  const form = new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:auth.redirectUri,code_verifier:'v'.repeat(43),resource:c.resource});
+  return {tokens:await store.exchangeToken(pool,form,c),form,auth};
+}
+async function registryRpc(c, token, name, args = {}, origin) {
+  return handleMcp(new Request(c.resource,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token,...(origin?{Origin:origin}:{})},body:JSON.stringify({jsonrpc:'2.0',id:1,method:name.startsWith('tools/')?name:'tools/call',params:name.startsWith('tools/')?{}:{name,arguments:args}})}),pool,c);
+}
+test('multiple providers use independent exact callbacks, credentials and scopes; invalid registry fails closed', () => {
+  const c = registryConfig();
+  const claude = security.selectClient(c,'claude');
+  assert.equal(claude.clientName,'Claude');
+  assert.equal(store.authenticateClient(new URLSearchParams({client_id:'claude',client_secret:'c'.repeat(40)}),null,c).clientId,'claude');
+  assert.throws(()=>store.authenticateClient(new URLSearchParams({client_id:'claude',client_secret:config.clientSecret}),null,c));
+  assert.throws(()=>security.authorizationRequest(authParams({client_id:'claude'}),claude));
+  assert.throws(()=>security.selectClient(c,'admin-client'));
+  assert.throws(()=>security.connectionConfig({...registryEnv,AIM4PRICE_AI_CLIENTS_JSON:'[{"id":"oops"}]'}));
+  const duplicate=JSON.parse(registryEnv.AIM4PRICE_AI_CLIENTS_JSON);duplicate[0].id='pilot';
+  assert.throws(()=>security.connectionConfig({...registryEnv,AIM4PRICE_AI_CLIENTS_JSON:JSON.stringify(duplicate)}));
+  assert.throws(()=>registryConfig('bad')); // no matching provider
+});
+test('owner product mode admits active Owners outside pilot, but rejects other roles and suspended/free users',async()=>{
+  const c=registryConfig();assert.deepEqual(c.allowedUserIds,[]);
+  assert.equal((await store.eligibleAccount(pool,'owner-b',c)).id,'owner-b');
+  for(const id of ['admin','dealer','free','suspended','aim4price-assistance-any']) await assert.rejects(store.eligibleAccount(pool,id,c));
+  const claude=security.selectClient(c,'claude');const grant=await registryGrant(claude,'owner-b');
+  const response=await registryRpc(c,grant.tokens.access_token,'list_assets');
+  assert.equal(response.status,200);const result=(await response.json()).result.structuredContent;
+  assert.ok(result.records.every(r=>r.id===assetB));
+  assert.equal((await registryRpc(c,grant.tokens.access_token,'list_assets',{},'https://chatgpt.com')).status,403);
+  assert.equal((await registryRpc(c,grant.tokens.access_token,'list_assets',{},'https://claude.ai')).status,200);
+  const removed={...c,clients:c.clients.filter(x=>x.id!=='claude')};
+  assert.notEqual((await registryRpc(removed,grant.tokens.access_token,'list_assets')).status,200);
+  await assert.rejects(store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:grant.tokens.refresh_token,resource:c.resource}),c));
+});
+test('admin requires a real verified admin and is isolated from all owner grants, scopes and endpoints',async()=>{
+  await db.exec('ALTER TABLE "user" ADD COLUMN "emailVerified" boolean DEFAULT false');
+  const c=registryConfig('admin');
+  await assert.rejects(store.eligibleAccount(pool,'admin',c));
+  await db.query('UPDATE "user" SET "emailVerified"=true WHERE id=$1',['admin']);
+  for(const id of ['owner-a','owner-b','dealer','free','suspended','aim4price-assistance-any']) await assert.rejects(store.eligibleAccount(pool,id,c));
+  const admin=await registryGrant(c,'admin');const owner=await registryGrant(registryConfig(),'owner-a');
+  assert.equal(admin.tokens.scope,security.ADMIN_READ_SCOPE);
+  assert.equal((await registryRpc(c,owner.tokens.access_token,'tools/list')).status,401);
+  assert.equal((await registryRpc(registryConfig(),admin.tokens.access_token,'tools/list')).status,401);
+  const tools=(await (await registryRpc(c,admin.tokens.access_token,'tools/list')).json()).result.tools;
+  assert.deepEqual(tools.map(x=>x.name),['admin_asset_summary','admin_list_assets']);
+  assert.ok(tools.every(t=>t.annotations.readOnlyHint && t.securitySchemes[0].scopes[0]===security.ADMIN_READ_SCOPE));
+  assert.equal((await (await registryRpc(registryConfig(),owner.tokens.access_token,'admin_asset_summary')).json()).result.isError,true);
+  const duration=(await db.query('SELECT extract(epoch from(expires_at-created_at)) AS duration FROM ai_connections WHERE access_hash=$1',[security.digest(admin.tokens.access_token)])).rows[0];
+  assert.ok(Number(duration.duration)<=86401);
+  const before=(await db.query('SELECT count(*) FROM ai_connection_codes')).rows[0].count;
+  await assert.rejects(registryGrant(c,'owner-a'));
+  assert.equal((await db.query('SELECT count(*) FROM ai_connection_codes')).rows[0].count,before);
+  await db.query('UPDATE "user" SET email=$1 WHERE id=$2',['former-admin@example.com','admin']);
+  assert.equal((await registryRpc(c,admin.tokens.access_token,'admin_asset_summary')).status,403);
+  await assert.rejects(store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:admin.tokens.refresh_token,resource:c.resource}),c));
+  await db.query('UPDATE "user" SET email=$1 WHERE id=$2',['aim4price@gmail.com','admin']);
+  await db.query("UPDATE account_profiles SET account_status='suspended' WHERE user_id='admin'");
+  assert.equal((await registryRpc(c,admin.tokens.access_token,'tools/list')).status,403);
+  await db.query("UPDATE account_profiles SET account_status='active' WHERE user_id='admin'");
+});
+test('admin summaries cover every matching account/page; selected output excludes sensitive fields; reads are audited',async()=>{
+  const c=registryConfig('admin');const grant=await registryGrant(c,'admin');
+  const call=async(name,args)=>{const r=await registryRpc(c,grant.tokens.access_token,name,args);assert.equal(r.status,200);const body=await r.json();assert.equal(body.result.isError,false);return body.result.structuredContent;};
+  const summary=await call('admin_asset_summary',{groupBy:'account',limit:1});
+  assert.equal(summary.summary.total_assets,2);assert.equal(summary.summary.total_accounts,2);
+  assert.equal(summary.summary.register_value_ex_vat,'1499999');
+  assert.equal(summary.records.length,1);assert.equal(summary.pagination.hasMore,true);
+  assert.deepEqual((await call('admin_asset_summary',{groupBy:'account',offset:1,limit:1})).summary,summary.summary);
+  const filtered=await call('admin_list_assets',{accountId:'owner-a'});
+  assert.equal(filtered.records[0].id,assetA);assert.equal(filtered.summary.total_assets,1);
+  assert.equal((await call('admin_list_assets',{brand:'Other'})).records[0].id,assetB);
+  assert.equal((await call('admin_list_assets',{query:"' OR true --"})).summary.total_assets,0);
+  const all=await call('admin_list_assets',{});
+  for(const row of all.records)for(const field of ['email','password','specs_json','last_known_lat','last_known_lng','photo_urls','user_id']) assert.ok(!(field in row));
+  for(const [name,args] of [['delete_asset',{}],['admin_asset_summary',{sql:'DELETE FROM asset_register_items'}],['admin_list_assets',{limit:101}],['admin_asset_summary',{groupBy:'email'}]]) {
+    const result=await(await registryRpc(c,grant.tokens.access_token,name,args)).json();assert.equal(result.result.isError,true);
+  }
+  const logs=(await db.query('SELECT tool,outcome FROM ai_connection_audit WHERE connection_id=(SELECT id FROM ai_connections WHERE access_hash=$1)',[security.digest(grant.tokens.access_token)])).rows;
+  assert.ok(logs.some(l=>l.outcome==='completed'));assert.ok(logs.some(l=>l.outcome==='denied'));assert.ok(logs.every(l=>['admin_asset_summary','admin_list_assets','unrecognised_tool'].includes(l.tool)));
+  assert.equal((await db.query('SELECT count(*) FROM asset_register_items')).rows[0].count,2);
+  const failingPool={...pool,query:async(sql,args)=>{if(sql.includes('ai_connection_audit'))throw new Error('audit unavailable');return pool.query(sql,args);}};
+  const response=await handleMcp(new Request(c.resource,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+grant.tokens.access_token},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'admin_asset_summary',arguments:{}}})}),failingPool,c);
+  assert.equal(response.status,503);assert.ok(!(await response.text()).includes('Private B'));
+});
+test('admin totals honour umbrella exclusions, missing values and lifecycle independently of grouping',async()=>{
+  const {parseAdminArgs,runAdminTool}=require(path.join(tmp,'ai-connection/admin-data.js'));
+  const id='99999999-1111-4111-8111-111111111111';
+  await db.exec(`ALTER TABLE asset_register_items ADD COLUMN lifecycle_state text;
+    CREATE TABLE asset_groups(id uuid PRIMARY KEY,user_id text,name text,value_mode text);
+    CREATE TABLE asset_group_members(group_id uuid,asset_id uuid UNIQUE,role text,counts_toward_total boolean);
+    INSERT INTO asset_groups VALUES('${id}','owner-a','Umbrella','included_in_primary');
+    INSERT INTO asset_group_members VALUES('${id}','${assetA}','linked',false);`);
+  const read=(args)=>store.readOnly(pool,r=>runAdminTool(r,'admin_asset_summary',parseAdminArgs('admin_asset_summary',args)));
+  try{
+    let data=await read({});assert.equal(data.summary.total_assets,2);assert.equal(data.summary.excluded_from_value_count,1);assert.equal(data.summary.register_value_ex_vat,'999999');
+    await db.query('UPDATE asset_register_items SET selected_value_ex_vat=NULL,lifecycle_state=$1 WHERE id=$2',['disposed',assetB]);
+    data=await read({});assert.equal(data.summary.total_assets,1);
+    data=await read({lifecycle:'all'});assert.equal(data.summary.total_assets,2);assert.equal(data.summary.missing_value_count,1);
+    await db.query('UPDATE asset_groups SET user_id=$1',['owner-b']);
+    data=await read({});assert.equal(data.summary.excluded_from_value_count,0);assert.equal(data.summary.register_value_ex_vat,'500000');
+  } finally {
+    await db.query('UPDATE asset_register_items SET selected_value_ex_vat=999999 WHERE id=$1',[assetB]);
+    await db.exec('DROP TABLE asset_group_members; DROP TABLE asset_groups; ALTER TABLE asset_register_items DROP COLUMN lifecycle_state');
+  }
+});
+test('shared rate limit counts independent server calls and stores hashed bounded identities',async()=>{
+  const {checkSharedRate}=require(path.join(tmp,'ai-connection/rate-limit.js'));
+  await checkSharedRate(pool,'fixture-user',2);await checkSharedRate({...pool},'fixture-user',2);
+  await assert.rejects(checkSharedRate(pool,'fixture-user',2),{status:429});
+  const row=(await db.query('SELECT * FROM ai_connection_rate_limits WHERE bucket=$1',[security.digest('fixture-user')])).rows[0];assert.equal(row.requests,3);assert.notEqual(row.bucket,'fixture-user');
+  await db.query("UPDATE ai_connection_rate_limits SET window_start=now()-interval '2 minutes' WHERE bucket=$1",[security.digest('fixture-user')]);
+  await checkSharedRate(pool,'fixture-user',2);
+  assert.equal((await db.query('SELECT requests FROM ai_connection_rate_limits WHERE bucket=$1',[security.digest('fixture-user')])).rows[0].requests,1);
+});
+
+test('admin refresh remains admin-only, rotates, and disconnect stops reporting; shared limiter is enforced by MCP',async()=>{
+  const c={...registryConfig('admin'),sharedLimits:true};const grant=await registryGrant(c,'admin');
+  const form=new URLSearchParams({grant_type:'refresh_token',refresh_token:grant.tokens.refresh_token,resource:c.resource});
+  const next=await store.exchangeToken(pool,form,c);
+  assert.equal(next.scope,security.ADMIN_READ_SCOPE);
+  assert.equal((await registryRpc(c,grant.tokens.access_token,'tools/list')).status,401);
+  assert.equal((await registryRpc(c,next.access_token,'tools/list')).status,200);
+  const key=security.digest('mcp:admin');
+  await db.query("UPDATE ai_connection_rate_limits SET requests=60,window_start=date_trunc('minute',now()) WHERE bucket=$1",[key]);
+  assert.equal((await registryRpc(c,next.access_token,'tools/list')).status,429);
+  await db.query('DELETE FROM ai_connection_rate_limits WHERE bucket=$1',[key]);
+  await db.query('UPDATE ai_connections SET revoked_at=now() WHERE access_hash=$1',[security.digest(next.access_token)]);
+  assert.equal((await registryRpc(c,next.access_token,'tools/list')).status,401);
+  await assert.rejects(store.exchangeToken(pool,new URLSearchParams({grant_type:'refresh_token',refresh_token:next.refresh_token,resource:c.resource}),c));
+});
+test('provider cannot redeem another provider authorization code; consent cannot change audience or provider',async()=>{
+  const first=registryConfig();const second=security.selectClient(first,'claude');
+  const auth=security.authorizationRequest(authParams(),first);
+  const proof=security.consentProof(auth,'owner-a','another-session',first.signingSecret);
+  const code=await store.issueCode(pool,'owner-a',auth,proof,first);
+  const form=new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:auth.redirectUri,code_verifier:'v'.repeat(43),resource:first.resource});
+  await assert.rejects(store.exchangeToken(pool,form,second));
+  assert.throws(()=>security.verifyConsent(proof,'owner-a','another-session',second));
+  assert.throws(()=>security.verifyConsent(proof,'owner-a','another-session',registryConfig('admin')));
+  assert.ok((await store.exchangeToken(pool,form,first)).access_token);
+});
+test('security metadata migration is repeatable and preserves existing grants',async()=>{
+  const before=(await db.query('SELECT count(*) FROM ai_connections')).rows[0].count;
+  await db.exec(fs.readFileSync(path.join(__dirname,'../database/migrations/137-ai-provider-admin-reporting.sql'),'utf8'));
+  assert.equal((await db.query('SELECT count(*) FROM ai_connections')).rows[0].count,before);
+  await assert.rejects(db.query("UPDATE ai_connections SET scope='aim4price:write'"));
 });

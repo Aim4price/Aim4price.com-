@@ -180,3 +180,7 @@
 .chatgptStart .primary { gap: .75rem; min-height: 48px; }
 .chatgptStart p { flex: 1; min-width: 16rem; margin: 0; font-size: .9rem; color: var(--app-muted, #60746d); line-height: 1.6; }
 .technicalSetup { margin-top: 1rem; padding-top: .75rem; border-top: 1px solid var(--app-line, #dce7e2); }
+
+.providerGrid, .adminPermissions { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 1rem; margin-top: 1.3rem; }
+.providerGrid .permission { display: flex; flex-direction: column; gap: .8rem; }
+.providerGrid .primary { margin-top: auto; }
