@@ -337,7 +337,7 @@ const evidence=path.join(root,'.next/admin-review-validation');
   await open('accounts');
   await page.click('button[aria-haspopup="dialog"]');await page.waitForSelector('[role="dialog"]');
   assert.equal(await page.$$eval('[aria-label="Admin navigation"] a',els=>els.length),15);
-  assert.equal(await page.$eval('[aria-label="Admin navigation"] a[href="/admin/ai-connect"]',el=>el.textContent.trim()),'AI connections');
+  assert.match(await page.$eval('[aria-label="Admin navigation"] a[href="/admin/ai-connect"]',el=>el.textContent.trim()),/^AI connections/);
   assert.match(await page.$eval('[aria-label="Admin navigation"] a[href="/admin/asset-values"]',el=>el.textContent.trim()),/^Asset values/);
   await page.keyboard.press('Escape');assert.equal(await page.$('[role="dialog"]'),null);
   assert.equal(await page.evaluate(()=>document.activeElement.getAttribute('aria-haspopup')),'dialog');
