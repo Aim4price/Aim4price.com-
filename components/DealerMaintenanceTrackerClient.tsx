@@ -1,5 +1,6 @@
 'use client';
-import AppAssetPartsButton from './AppAssetPartsButton';
+import AppMaintenanceActions from './AppMaintenanceActions';
+import { useLeadDialog } from './leads/useLeadDialog';
 import dialogStyles from './AccountDialog.module.css';
 import ProblemCard from './leads/LeadProblemCard';
 import DateInput from './DateInput';
@@ -11,7 +12,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DealerCostOfOwnershipReportModal from './DealerCostOfOwnershipReportModal';
 import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
 import DealerMaintenanceScheduleModal from './DealerMaintenanceScheduleModal';
-import DesktopServiceModal, { type DesktopServiceCompletion } from './DesktopServiceModal';
+import DesktopServiceModal, { type DesktopServiceCompletion, type DesktopServiceRecord } from './DesktopServiceModal';
 import LeadPhotoViewerModal from './LeadPhotoViewerModal';
 import {
   WorkspaceTitlePanel,
@@ -60,7 +61,8 @@ type TrackerCompletionResponse = {
 
 type DealerServiceTarget = {
   asset: DealerMaintenanceTrackedAsset;
-  record: DealerMaintenanceRecordSummary;
+  record: DealerMaintenanceRecordSummary | DesktopServiceRecord;
+  standalone?: boolean;
 };
 
 type DealerServiceSuccess = {
@@ -197,8 +199,8 @@ function HistoryTimelineChoiceIcon({ type, className = '' }: { type: HistoryTime
 
 function formatUsage(value: number | null, metric: string | null): string {
   if (value === null || !Number.isFinite(value)) return 'Not recorded';
-  if (metric === 'percentage') return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}%`;
-  return `${value.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} ${metric === 'km' ? 'km' : 'hours'}`;
+  if (metric === 'percentage') return `${value.toLocaleString('en-US', { maximumFractionDigits: 1 }).replaceAll(',', ' ')}%`;
+  return `${value.toLocaleString('en-US', { maximumFractionDigits: 1 }).replaceAll(',', ' ')} ${metric === 'km' ? 'km' : 'hours'}`;
 }
 
 function trackingAssetMeta(asset: DealerMaintenanceTrackedAsset): string {
@@ -281,7 +283,7 @@ function remainingLabel(record: DealerMaintenanceRecordSummary, fallbackMetric: 
 function recurringLabel(record: DealerMaintenanceRecordSummary): string {
   if (!record.recurringEnabled) return 'Not recurring';
   if (record.recurringIntervalValue === null || !record.recurringIntervalUnit) return 'Recurring';
-  return `Every ${record.recurringIntervalValue.toLocaleString('en-ZA')} ${record.recurringIntervalUnit}`;
+  return `Every ${record.recurringIntervalValue.toLocaleString('en-US').replaceAll(',', ' ')} ${record.recurringIntervalUnit}`;
 }
 
 function needsAttention(status: DealerMaintenanceTrackerStatus): boolean {
@@ -713,6 +715,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
   const [managedAccessId, setManagedAccessId] = useState<string | null>(null);
   const [deleteTrackingTarget, setDeleteTrackingTarget] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [isDeletingTracking, setIsDeletingTracking] = useState(false);
+  const [workChoiceAsset, setWorkChoiceAsset] = useState<DealerMaintenanceTrackedAsset | null>(null);
   const [serviceTarget, setServiceTarget] = useState<DealerServiceTarget | null>(null);
   const [isSavingService, setIsSavingService] = useState(false);
   const [serviceSuccess, setServiceSuccess] = useState<DealerServiceSuccess | null>(null);
@@ -908,6 +911,8 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         body: JSON.stringify({
           maintenanceId: serviceTarget.record.id,
           ...completion,
+          maintenanceType: serviceTarget.record.maintenanceType,
+          ...(serviceTarget.standalone ? { linkToScheduledMaintenance: false } : {}),
           confirmedComplete: true,
         }),
       });
@@ -1293,7 +1298,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                           </div>
 
                           <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions} ${styles.trackerHeaderActions}`}>
-                            {!isCompletedCard && asset.nextMaintenance ? (
+                            {!isCompletedCard && asset.nextMaintenance && asset.permissions.canAddMaintenance ? (
                               <button
                                 type="button"
                                 className={`${assetStyles.optionsButton} ${styles.serviceActionButton}`}
@@ -1424,6 +1429,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                             </div>
 
                             <div className={assetStyles.assetPrimaryDetails}>
+                              {dealerAppMode && <AppMaintenanceActions apiBase={`/api/dealer/maintenance/${asset.accessId}`} assetTitle={asset.assetTitle} scheduleLabel={asset.scheduleProposals.some(p => p.status === 'pending') ? 'Create schedule' : asset.nextMaintenance ? 'Edit schedule' : 'Schedule maintenance'} canViewChecklist={asset.permissions.canAddMaintenance || asset.permissions.canViewMaintenanceReports || asset.permissions.canCreateMaintenanceSchedules} canParts={asset.permissions.canViewParts || asset.permissions.canAddParts} onRecord={asset.permissions.canAddMaintenance ? () => setWorkChoiceAsset(asset) : undefined} onSchedule={asset.permissions.canCreateMaintenanceSchedules ? () => setScheduleAccessId(asset.accessId) : undefined} />}
                               <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Completed work' : 'Next'}</span><strong>{asset.nextMaintenance?.title || 'Nothing currently due'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Completed' : 'Service due'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatDate(asset.nextMaintenance.completedAtIso) : dueLabel(asset.nextMaintenance, asset.usageMetric)) : 'Not scheduled'}</strong></div>
                               <div className={assetStyles.assetDetailRow}><span>{isCompletedCard ? 'Usage at completion' : 'Remaining'}</span><strong>{asset.nextMaintenance ? (isCompletedCard ? formatUsage(asset.nextMaintenance.completedUsage, asset.nextMaintenance.usageMetric || asset.usageMetric) : remainingLabel(asset.nextMaintenance, asset.usageMetric)) : 'No action required'}</strong></div>
@@ -1804,6 +1810,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
             </div>
 
             <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${workspaceStyles.modalBody} ${styles.trackerManageBody} ${dialogStyles.body}`}>
+              <AppMaintenanceActions apiBase={`/api/dealer/maintenance/${managedAsset.accessId}`} assetTitle={managedAsset.assetTitle} scheduleLabel={managedAsset.scheduleProposals.some(p => p.status === 'pending') ? 'Create schedule' : managedAsset.nextMaintenance ? 'Edit schedule' : 'Schedule maintenance'} canViewChecklist={managedAsset.permissions.canAddMaintenance || managedAsset.permissions.canViewMaintenanceReports || managedAsset.permissions.canCreateMaintenanceSchedules} canParts={managedAsset.permissions.canViewParts || managedAsset.permissions.canAddParts} onRecord={managedAsset.permissions.canAddMaintenance ? () => { setManagedAccessId(null); setWorkChoiceAsset(managedAsset); } : undefined} onSchedule={managedAsset.permissions.canCreateMaintenanceSchedules ? () => { setManagedAccessId(null); setScheduleAccessId(managedAsset.accessId); } : undefined} />
               <div className={assetStyles.optionsContent}>
                 <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid} ${dialogStyles.actions}`}>
                   <button
@@ -1847,37 +1854,6 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       <small>{cleanEmail(managedAsset.ownerEmail) ? 'Email the owner.' : 'No owner email saved.'}</small>
                     </span>
                   </button>
-
-                  {(managedAsset.permissions.canViewParts || managedAsset.permissions.canAddParts) && <AppAssetPartsButton endpoint={`/api/dealer/maintenance/${managedAsset.accessId}/parts`} assetTitle={managedAsset.assetTitle} className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}><ManageIcon className={assetStyles.buttonIcon}/><span><strong>Parts</strong><small>Part numbers for this asset.</small></span></AppAssetPartsButton>}
-
-                  {managedAsset.permissions.canCreateMaintenanceSchedules ? (
-                    <button
-                      type="button"
-                      className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
-                      onClick={() => {
-                        setManagedAccessId(null);
-                        setScheduleAccessId(managedAsset.accessId);
-                      }}
-                    >
-                      <ScheduleIcon className={assetStyles.buttonIcon} />
-                      <span>
-                        <strong>
-                          {managedAsset.scheduleProposals.some((proposal) => proposal.status === 'pending')
-                            ? 'Create schedule'
-                            : managedAsset.nextMaintenance
-                              ? 'Edit schedule'
-                              : 'Schedule maintenance'}
-                        </strong>
-                        <small>
-                          {managedAsset.scheduleProposals.some((proposal) => proposal.status === 'pending')
-                            ? 'Activate this maintenance schedule.'
-                            : managedAsset.nextMaintenance
-                              ? 'Update the schedule.'
-                              : 'Create a schedule for this asset.'}
-                        </small>
-                      </span>
-                    </button>
-                  ) : null}
 
                   <button
                     type="button"
@@ -1954,13 +1930,18 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
         </div>
       ) : null}
 
+      {workChoiceAsset && <DealerWorkChoice asset={workChoiceAsset} onClose={() => setWorkChoiceAsset(null)} onChoose={type => { const asset = workChoiceAsset; setWorkChoiceAsset(null); setServiceTarget({ asset, standalone: true, record: { id: '', assetId: asset.assetId, assetTitle: asset.assetTitle, assetKind: asset.assetKind, maintenanceType: type, title: type === 'checkup' ? 'Check-up' : 'Service or repair', currentUsage: asset.currentUsage, usageMetric: asset.usageMetric } }); }} />}
+
       {serviceTarget ? (
         <DesktopServiceModal
-          askScheduleLink
+          askScheduleLink={!serviceTarget.standalone}
+          standalone={serviceTarget.standalone}
+          checklistEndpoint={`/api/dealer/maintenance/${serviceTarget.asset.accessId}/checklist`}
           partsEndpoint={serviceTarget.asset.permissions.canViewParts ? `/api/dealer/maintenance/${serviceTarget.asset.accessId}/parts` : undefined}
           dealerAppMode={dealerAppMode}
           record={{
             ...serviceTarget.record,
+            assetId: serviceTarget.asset.assetId,
             assetTitle: serviceTarget.asset.assetTitle,
             assetKind: serviceTarget.asset.assetKind,
             maintenanceIdentity: serviceTarget.asset.maintenanceIdentity,
@@ -2017,4 +1998,16 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
     </main>
   );
+}
+
+function DealerWorkChoice({ asset, onClose, onChoose }: { asset: DealerMaintenanceTrackedAsset; onClose: () => void; onChoose: (type: 'checkup' | 'service') => void }) {
+  const ref = useLeadDialog(onClose);
+  return <div className={`${assetStyles.modalOverlay} ${styles.trackerManageOverlay}`} data-website-overlay>
+    <div className={assetStyles.modalBackdrop} onClick={onClose} />
+    <section ref={ref} tabIndex={-1} className={`${assetStyles.modalCard} ${dialogStyles.surface}`} role="dialog" aria-modal="true" aria-labelledby="dealer-work-choice-title">
+      <header className={assetStyles.modalHeader}><div><h3 id="dealer-work-choice-title">Add maintenance</h3><p>{asset.assetTitle}</p></div><button type="button" className={dialogStyles.close} aria-label="Close add maintenance" onClick={onClose}>×</button></header>
+      <p>What work was completed?</p>
+      <div className={assetStyles.optionsGrid}>{(['checkup', 'service'] as const).map(type => <button type="button" key={type} className={assetStyles.optionActionButton} onClick={() => onChoose(type)}><ManageIcon className={assetStyles.buttonIcon}/><span><strong>{type === 'checkup' ? 'Check-up' : 'Service or repair'}</strong><small>{type === 'checkup' ? 'Record an inspection and its findings.' : 'Record completed work, parts and notes.'}</small></span></button>)}</div>
+    </section>
+  </div>;
 }

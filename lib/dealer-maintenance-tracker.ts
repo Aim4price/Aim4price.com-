@@ -1716,6 +1716,7 @@ export async function recordDealerStandaloneMaintenance(input: {
   dealerUserId: string;
   accessId: string;
   maintenanceId: string;
+  maintenanceType?: 'checkup' | 'service';
   completion: AssetMaintenanceCompleteInput;
   clientEventId: string;
 }): Promise<{
@@ -1724,17 +1725,19 @@ export async function recordDealerStandaloneMaintenance(input: {
 }> {
   const asset = await getDealerTrackedAsset(input.dealerUserId, input.accessId);
   if (!asset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');
+  if (!asset.permissions.canAddMaintenance) throw new Error('MAINTENANCE_ADD_PERMISSION_REQUIRED');
 
   const referenceRecord = asset.openMaintenanceRecords.find(
     (record) => record.id === input.maintenanceId,
   );
-  if (!referenceRecord) throw new Error('DEALER_MAINTENANCE_RECORD_NOT_FOUND');
+  if (input.maintenanceId && !referenceRecord) throw new Error('DEALER_MAINTENANCE_RECORD_NOT_FOUND');
+  if (!referenceRecord && !input.maintenanceType) throw new Error('MAINTENANCE_TYPE_REQUIRED');
 
   const completed = await recordStandaloneAssetMaintenanceCompletion(
     asset.ownerUserId,
     {
       assetId: asset.assetId,
-      maintenanceType: referenceRecord.maintenanceType,
+      maintenanceType: referenceRecord?.maintenanceType || input.maintenanceType!,
       sourceScanEventId: input.clientEventId,
       completedAt: input.completion.completedAt,
       completedUsage: input.completion.completedUsage,
@@ -1742,6 +1745,10 @@ export async function recordDealerStandaloneMaintenance(input: {
       maintenanceWork: input.completion.maintenanceWork,
       completedBy: input.completion.completedBy,
     },
+    { before: async client => {
+      const access = await client.query(`SELECT id FROM dealer_maintenance_access WHERE id=$1::uuid AND dealer_user_id=$2 AND owner_user_id=$3 AND asset_register_item_id=$4::uuid AND is_active=true AND can_add_maintenance=true FOR SHARE`, [input.accessId, input.dealerUserId, asset.ownerUserId, asset.assetId]);
+      if (!access.rows.length) throw new Error('MAINTENANCE_ADD_PERMISSION_REQUIRED');
+    } },
   );
   const refreshedAsset = await getDealerTrackedAsset(
     input.dealerUserId,
@@ -1798,6 +1805,7 @@ export async function completeDealerTrackedMaintenance(input: {
 }> {
   const asset = await getDealerTrackedAsset(input.dealerUserId, input.accessId);
   if (!asset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');
+  if (!asset.permissions.canAddMaintenance) throw new Error('MAINTENANCE_ADD_PERMISSION_REQUIRED');
 
   const openRecord = asset.openMaintenanceRecords.find((record) => record.id === input.maintenanceId);
   if (!openRecord) throw new Error('DEALER_MAINTENANCE_RECORD_NOT_FOUND');
@@ -1806,7 +1814,10 @@ export async function completeDealerTrackedMaintenance(input: {
     asset.ownerUserId,
     openRecord.id,
     input.completion,
-    { assetId: asset.assetId },
+    { assetId: asset.assetId, before: async client => {
+      const access = await client.query(`SELECT id FROM dealer_maintenance_access WHERE id=$1::uuid AND dealer_user_id=$2 AND owner_user_id=$3 AND asset_register_item_id=$4::uuid AND is_active=true AND can_add_maintenance=true FOR SHARE`, [input.accessId, input.dealerUserId, asset.ownerUserId, asset.assetId]);
+      if (!access.rows.length) throw new Error('MAINTENANCE_ADD_PERMISSION_REQUIRED');
+    } },
   );
   const refreshedAsset = await getDealerTrackedAsset(input.dealerUserId, input.accessId);
   if (!refreshedAsset) throw new Error('DEALER_MAINTENANCE_ACCESS_NOT_FOUND');

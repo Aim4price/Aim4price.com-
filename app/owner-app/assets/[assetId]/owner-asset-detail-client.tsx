@@ -1,5 +1,5 @@
 'use client';
-import AppAssetPartsButton from '../../../../components/AppAssetPartsButton';
+import AppMaintenanceActions from '../../../../components/AppMaintenanceActions';
 import PhotoViewerActions from '../../../../components/PhotoViewerActions';
 import DateInput from '../../../../components/DateInput';
 
@@ -1931,7 +1931,7 @@ function MaintenanceSection({ assetId, assetTitle, records, action, busy }: { as
   }
   return (
     <section className={styles.section}>
-      <div className={styles.actions}><AppAssetPartsButton endpoint={`/api/owner-app/assets/${assetId}/parts`} assetTitle={assetTitle} className={styles.smallButton}>Parts · view and add part numbers</AppAssetPartsButton></div>
+      <AppMaintenanceActions apiBase={`/api/owner-app/assets/${assetId}`} assetTitle={assetTitle} onRecord={() => window.location.assign(`/owner-app/operations/maintenance/${assetId}?action=record&returnTo=${encodeURIComponent(`/owner-app/assets/${assetId}/maintenance`)}`)} />
       <p className={styles.editorIntro}>{upcomingMaintenance
         ? hasRecurringMaintenance(upcomingMaintenance)
           ? 'A recurring schedule is already in place. Complete the physical work below to move to the next schedule.'

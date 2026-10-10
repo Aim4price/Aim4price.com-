@@ -1,8 +1,8 @@
-.overlay { position: fixed; inset: 0; z-index: 1250; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background: var(--modal-backdrop-color); -webkit-backdrop-filter: var(--modal-backdrop-filter); backdrop-filter: var(--modal-backdrop-filter); }
+.overlay { position: fixed; inset: 0; z-index: 26000; display: flex; align-items: center; justify-content: center; padding: 1.25rem; background: var(--modal-backdrop-color); -webkit-backdrop-filter: var(--modal-backdrop-filter); backdrop-filter: var(--modal-backdrop-filter); }
 .dialog { display: flex; flex-direction: column; min-height: 0; color: #17362c; outline: none; }
 .header { display: flex; justify-content: space-between; gap: 1rem; }
 .header h2 { margin: 0; }
-.header p, .hint { color: #607168; font-size: .88rem; line-height: 1.5; }
+.header p, .hint { color: var(--app-muted,#607168); font-size: .88rem; line-height: 1.5; }
 .dialog button { font: inherit; font-weight: 700; cursor: pointer; }
 .body { min-height: 0; overflow-y: auto; }
 .tabs { display: flex; gap: .4rem; padding: .3rem; margin-bottom: .8rem; border: 1px solid #d6e4dd; border-radius: .8rem; background: #f2f6f4; }

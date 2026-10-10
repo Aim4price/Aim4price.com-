@@ -1,6 +1,7 @@
 "use client";
 import type { AssetPart } from '../../../lib/asset-parts';
-import AppAssetPartsButton from "../../../components/AppAssetPartsButton";
+import AppMaintenanceActions from '../../../components/AppMaintenanceActions';
+import { useAssetChecklistItems } from '../../../lib/use-asset-checklist-items';
 
 import { useMaintenanceChecklist } from '../../../lib/use-maintenance-checklist';
 import { checklistOptions, buildMaintenanceWorkSnapshot, type MaintenanceIdentity, type MaintenanceWorkSnapshot } from '../../../lib/maintenance-catalogue';
@@ -1909,6 +1910,17 @@ export default function ScanClient({
     setShowServicePhotoStep(false);
   }
 
+  const openedRequestedWork = useRef(false);
+  useEffect(() => {
+    if (!asset || (!ownerAppMode && !fieldManagerMode) || openedRequestedWork.current) return;
+    if (new URLSearchParams(window.location.search).get('action') === 'record') {
+      openedRequestedWork.current = true;
+      openEditor('service');
+    }
+    // The request is consumed once after the authenticated asset loads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asset?.id, ownerAppMode, fieldManagerMode]);
+
   function openEditor(nextEditor: EditorKey) {
     const storedSession = readQrScanSession(normalizedCode);
 
@@ -2961,13 +2973,15 @@ export default function ScanClient({
     () => resolveAssetServiceProfile(asset),
     [asset],
   );
-  const checklist = useMaintenanceChecklist(asset, draft.checkedItems.length > 0 || draft.servicedItems.length > 0 || draft.repairedItems.length > 0 || pendingUpdate.hasService);
+  const baseChecklist = useMaintenanceChecklist(asset, draft.checkedItems.length > 0 || draft.servicedItems.length > 0 || draft.repairedItems.length > 0 || pendingUpdate.hasService);
+  const savedChecklist = useAssetChecklistItems((ownerAppMode || fieldManagerMode) && activeEditor === 'service' ? asset?.id : undefined, asset ? `/api/${ownerAppMode ? 'owner-app' : 'field-manager'}/assets/${asset.id}/checklist` : undefined);
+  const checklist = { ...baseChecklist, customItems: savedChecklist.items };
   const checkedOptions = useMemo(
-    () => checklist.items.length ? checklistOptions(checklist, "checked") : checkedOptionsForProfile(serviceProfile),
+    () => (checklist.items.length || checklist.customItems.length) ? checklistOptions(checklist, "checked") : checkedOptionsForProfile(serviceProfile),
     [serviceProfile, checklist],
   );
   const servicedOptions = useMemo(
-    () => checklist.items.length ? checklistOptions(checklist, "serviced") : servicedOptionsForProfile(serviceProfile),
+    () => (checklist.items.length || checklist.customItems.length) ? checklistOptions(checklist, "serviced") : servicedOptionsForProfile(serviceProfile),
     [serviceProfile, checklist],
   );
   const serviceCopy = useMemo(
@@ -3334,6 +3348,7 @@ export default function ScanClient({
               </button>
             </section>
 
+                {(ownerAppMode || fieldManagerMode) && <AppMaintenanceActions apiBase={`/api/${ownerAppMode ? 'owner-app' : 'field-manager'}/assets/${asset.id}`} assetTitle={asset.title} scheduleLabel={openMaintenanceOptions.length > 0 ? 'Edit schedule' : 'Schedule maintenance'} onRecord={() => openEditor('service')} onSchedule={openSchedulePage} />}
                 <section className={styles.actionGrid}>
                   {showFieldManagerUsageAction ? (
                     <button
@@ -3355,6 +3370,7 @@ export default function ScanClient({
                     </button>
                   ) : null}
 
+                  {!(ownerAppMode || fieldManagerMode) && (
                   <button
                     type="button"
                     className={styles.actionCard}
@@ -3370,6 +3386,7 @@ export default function ScanClient({
                       </small>
                     </span>
                   </button>
+                  )}
 
                   <button
                     type="button"
@@ -3399,19 +3416,9 @@ export default function ScanClient({
                       </span>
                     </button>
 
-                  {isFieldManagerMode ? (
-                    <button type="button" className={styles.actionCard} onClick={openSchedulePage}>
-                      <span className={styles.actionIconWrap}><ServiceIcon className={styles.actionIcon} /></span>
-                      <span className={styles.actionTextBlock}><strong className={styles.scheduleActionTitle}>{openMaintenanceOptions.length > 0 ? <><span>Edit</span><span>Schedule</span></> : <><span>Schedule</span><span>Maintenance</span></>}</strong><small>{openMaintenanceOptions.length > 0 ? "Review the next service" : "Set the next service"}</small></span>
-                    </button>
-                  ) : null}
 
-                  {(ownerAppMode || fieldManagerMode) && <AppAssetPartsButton
-                    endpoint={`/api/${ownerAppMode ? 'owner-app' : 'field-manager'}/assets/${asset.id}/parts`}
-                    assetTitle={asset.title} className={styles.actionCard}>
-                    <span className={styles.actionIconWrap}><WrenchIcon className={styles.actionIcon}/></span>
-                    <span className={styles.actionTextBlock}><strong>Parts</strong><small>Part numbers for maintenance</small></span>
-                  </AppAssetPartsButton>}
+
+
 
                   {canUseDealerShare ? (
                     <button type="button" className={styles.actionCard} onClick={handleShareTap}>

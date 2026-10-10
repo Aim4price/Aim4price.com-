@@ -81,7 +81,7 @@ test('Dealer completion is owner-asset guarded, audited and refreshes recurring 
   assert.match(dealerRoute, /body\.confirmedComplete !== true/);
   assert.match(dealerRoute, /Dealer entry by \$\{dealerName\}/);
   assert.match(dealerTracker, /asset\.openMaintenanceRecords\.find\(\(record\) => record\.id === input\.maintenanceId\)/);
-  assert.match(dealerTracker, /\{ assetId: asset\.assetId \}/);
+  assert.match(dealerTracker, /\{ assetId: asset\.assetId, before: async client/);
   assert.match(dealerTracker, /const refreshedAsset = await getDealerTrackedAsset/);
   assert.match(dealerClient, /The next recurring maintenance is now being tracked/);
 });
