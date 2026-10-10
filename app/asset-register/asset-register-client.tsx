@@ -19995,7 +19995,7 @@ export default function AssetRegisterClient({
           <div className={styles.modalBackdrop} data-website-overlay onClick={() => setOwnerAssetCommandPanel(null)} />
 
           <div
-            className={`${styles.modalCard} ${styles.ownerCommandChoiceModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`}
+            className={`${styles.modalCard} ${styles.optionsModal} ${styles.ownerCommandModal} ${styles.maintenanceMenuModal} ${styles.managementAccountModal} ${accountStyles.modalTheme}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="owner-command-choice-title"
@@ -20019,36 +20019,38 @@ export default function AssetRegisterClient({
 
             <div className={styles.ownerCommandChoiceBody}>
               {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.error ? <p role="alert">{maintenanceAvailability.error}</p> : null}
-              <div className={`${styles.ownerCommandChoiceGrid} ${actionColours.grid}`} data-manage-actions>
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${styles.maintenanceMenuGrid} ${actionColours.grid}`} data-manage-actions>
                 <Link data-manage-action="addMaintenance"
                   href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
-                  className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction} ${styles.optionFeaturedButton}`}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${styles.optionFeaturedButton}`}
                 >
                   <PlusIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Add maintenance</strong>
+                    <small>Record completed checks, services or repairs.</small>
                   </span>
                 </Link>
 
                 <Link data-manage-action="maintenanceChecklists"
                   href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { checklists: true }, ownerCommandReturnLocation)}
-                  className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                 >
-                  <ManageIcon className={styles.buttonIcon} /><span><strong>Maintenance checklists</strong></span>
+                  <DocumentIcon className={styles.buttonIcon} /><span><strong>Maintenance checklists</strong><small>Choose checks and service tasks for this asset.</small></span>
                 </Link>
 
-                <button data-manage-action="viewParts" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`} onClick={() => setPartsOpen(true)}>
-                  <ManageIcon className={styles.buttonIcon} /><span><strong>Parts</strong></span>
+                <button data-manage-action="viewParts" type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => setPartsOpen(true)}>
+                  <ManageIcon className={styles.buttonIcon} /><span><strong>Parts</strong><small>View and add part numbers linked to maintenance.</small></span>
                 </button>
 
                 {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.hasRecords ? (
                   <Link data-manage-action="maintenanceSchedules"
                     href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, {}, ownerCommandReturnLocation)}
-                    className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                   >
                     <ManageIcon className={styles.buttonIcon} />
                     <span>
-                      <strong>Manage</strong>
+                      <strong>Manage maintenance</strong>
+                      <small>View records and manage scheduled work.</small>
                     </span>
                   </Link>
                 ) : null}
@@ -20056,16 +20058,17 @@ export default function AssetRegisterClient({
                 {activeAsset.kind !== 'property' && activeDealerTrackingByAssetId[activeAsset.id] === true ? (
                   <button data-manage-action="maintenanceSchedules"
                     type="button"
-                    className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                     onClick={() => {
                       const asset = activeAsset;
                       setOwnerAssetCommandPanel(null);
                       void openDealerTrackingSettings(asset);
                     }}
                   >
-                    <ManageIcon className={styles.buttonIcon} />
+                    <ShareIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Shared maintenance</strong>
+                      <small>Manage business and dealer access.</small>
                     </span>
                   </button>
                 ) : null}
