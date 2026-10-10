@@ -3,6 +3,7 @@ import {
   errorResponse,
   json,
   READ_SCOPE,
+  ADMIN_READ_SCOPE,
 } from '../../../lib/ai-connection/security';
 export const dynamic = 'force-dynamic';
 export function GET() {
@@ -13,7 +14,7 @@ export function GET() {
       authorization_endpoint: `${c.origin}/api/ai/oauth/authorize`,
       token_endpoint: `${c.origin}/api/ai/oauth/token`,
       revocation_endpoint: `${c.origin}/api/ai/oauth/revoke`,
-      scopes_supported: [READ_SCOPE],
+      scopes_supported: process.env.AIM4PRICE_AI_ADMIN_ENABLED === 'true' ? [READ_SCOPE, ADMIN_READ_SCOPE] : [READ_SCOPE],
       response_types_supported: ['code'],
       grant_types_supported: ['authorization_code', 'refresh_token'],
       token_endpoint_auth_methods_supported: [

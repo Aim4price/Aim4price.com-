@@ -1,5 +1,5 @@
 import { getDb } from '../../../../lib/db';
-import { connectionOwner } from '../../../../lib/ai-connection/browser';
+import { getAnyServerSession } from '../../../../lib/auth-session';
 import {
   connectionConfig,
   ConnectionError,
@@ -12,9 +12,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function DELETE(request: Request) {
   try {
-    const config = connectionConfig();
+    const config = connectionConfig(process.env, new URL(request.url).searchParams.get('audience') === 'admin' ? 'admin' : 'owner');
     requireSameOrigin(request, config);
-    const owner = await connectionOwner(config);
+    const session = await getAnyServerSession();
+    if (!session?.user?.id) throw new ConnectionError(401, 'login_required', 'Sign in to disconnect.');
     const body = JSON.parse(await limitedBody(request));
     if (
       !body ||
@@ -23,8 +24,8 @@ export async function DELETE(request: Request) {
     )
       throw new ConnectionError(400, 'invalid_request', 'Invalid connection.');
     await getDb().query(
-      'UPDATE public.ai_connections SET revoked_at=now() WHERE id=$1::uuid AND user_id=$2 AND revoked_at IS NULL',
-      [body.id, owner.account.id],
+      'UPDATE public.ai_connections SET revoked_at=now() WHERE id=$1::uuid AND user_id=$2 AND resource=$3 AND revoked_at IS NULL',
+      [body.id, session.user.id, config.resource],
     );
     return json({ ok: true });
   } catch (error) {

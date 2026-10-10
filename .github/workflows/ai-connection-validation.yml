@@ -5,6 +5,12 @@ on:
       - 'lib/ai-connection/**'
       - 'app/api/ai/**'
       - 'app/account/ai-connect/**'
+      - 'app/admin/ai-connect/**'
+      - 'app/auth/auth-client.tsx'
+      - 'components/AdminNavigation.tsx'
+      - 'scripts/migrate-ai-connections.mjs'
+      - 'scripts/verify-ai-connections.cjs'
+      - 'database/migrations/137-ai-provider-admin-reporting.sql'
       - 'app/.well-known/**'
       - 'lib/external-share-permissions.ts'
       - 'lib/account-constants.ts'
@@ -28,3 +34,4 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run test:ai-connection
       - run: npm run typecheck
+      - run: node scripts/verify-ai-connections.cjs

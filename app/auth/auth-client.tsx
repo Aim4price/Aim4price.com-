@@ -1,4 +1,6 @@
 "use client";
+
+import { adminAiReturnTo } from '../../lib/ai-connection/navigation';
 import { sharedEnquiryReturnTo } from '../../lib/external-share-permissions';
 
 import { money, type BillingPlan } from "../../lib/billing-shared";
@@ -567,7 +569,7 @@ function getSafeReturnTo(): string | null {
 function getCallbackUrl(email?: string, preferredPath?: string) {
   return getAbsoluteUrl(
     email && normalizeEmail(email) === ADMIN_EMAIL
-      ? "/admin"
+      ? (adminAiReturnTo(preferredPath ?? getSafeReturnTo()) || "/admin")
       : (preferredPath ?? getSafeReturnTo() ?? POST_LOGIN_REDIRECT),
   );
 }

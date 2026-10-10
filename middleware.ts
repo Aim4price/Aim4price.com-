@@ -36,11 +36,11 @@ export function middleware(request: NextRequest) {
     requestHeaders.set('cookie', isolateAppCookies(cookie, null));
   }
   const response = NextResponse.next({ request: { headers: requestHeaders } });
-  if (request.nextUrl.pathname === '/account/ai-connect' || request.nextUrl.pathname.startsWith('/api/ai/') || request.nextUrl.pathname.startsWith('/.well-known/oauth-')) {
+  if (['/account/ai-connect', '/admin/ai-connect'].includes(request.nextUrl.pathname) || request.nextUrl.pathname.startsWith('/api/ai/') || request.nextUrl.pathname.startsWith('/.well-known/oauth-')) {
     response.headers.set('Cache-Control', 'private, no-store, max-age=0');
     // A no-referrer document makes native form POSTs send Origin: null.
     // Keep the consent form same-origin while hiding referrers from other sites.
-    response.headers.set('Referrer-Policy', request.nextUrl.pathname === '/account/ai-connect' ? 'same-origin' : 'no-referrer');
+    response.headers.set('Referrer-Policy', ['/account/ai-connect', '/admin/ai-connect'].includes(request.nextUrl.pathname) ? 'same-origin' : 'no-referrer');
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
   }

@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-export default function DisconnectButton({ id }: { id: string }) {
+export default function DisconnectButton({ id, audience = 'owner' }: { id: string; audience?: 'owner' | 'admin' }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -14,7 +14,7 @@ export default function DisconnectButton({ id }: { id: string }) {
           setBusy(true);
           setError('');
           try {
-            const response = await fetch('/api/ai/connections', {
+            const response = await fetch('/api/ai/connections?audience=' + audience, {
               method: 'DELETE',
               headers: {
                 'Content-Type': 'application/json',
