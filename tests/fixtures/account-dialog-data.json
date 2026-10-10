@@ -59,6 +59,7 @@
     "scheduleProposals": [],
     "permissions": {
       "canViewLoggedProblems": true,
+      "canAddMaintenance": true,
       "canViewMaintenanceReports": true,
       "canViewCostOfOwnership": true,
       "canCreateMaintenanceSchedules": true,
