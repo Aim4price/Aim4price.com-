@@ -39369,7 +39369,8 @@ button.documentOpenLink {
 }
 
 /* Keep the pricing symbols, with a larger drawing and a quiet, consistent frame. */
-.pricingModal .ownerCommandGrid .ownerCommandAction > .buttonIcon {
+.pricingModal .ownerCommandGrid .ownerCommandAction > .buttonIcon,
+.maintenanceMenuModal .ownerCommandGrid .ownerCommandAction > .buttonIcon {
   box-sizing: border-box;
   width: 3rem !important;
   height: 3rem !important;
@@ -41454,3 +41455,16 @@ button.documentOpenLink {
 
 .photoViewerModal { height:calc(var(--website-visible-height,100dvh) - 2rem) !important; }
 .photoViewerImage { height:100% !important;max-height:100% !important;min-height:0 !important; }
+
+/* Maintenance uses pricing's horizontal action cards in balanced pairs. */
+.managementAccountModal.maintenanceMenuModal .maintenanceMenuGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+.managementAccountModal.maintenanceMenuModal .maintenanceMenuGrid > .ownerCommandAction:last-child:nth-child(odd) {
+  grid-column: 1 / -1 !important;
+}
+@media (max-width: 640px) {
+  :global(html:not(:has([data-website-canvas]))) .managementAccountModal.maintenanceMenuModal .maintenanceMenuGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
