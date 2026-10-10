@@ -1,0 +1,8 @@
+.iconAction.iconAction { display:inline-flex; align-items:center; justify-content:center; flex:0 0 2.75rem; width:2.75rem; height:2.75rem; min-width:0; padding:0; border:1px solid transparent; border-radius:.65rem; cursor:pointer; transition:background .15s,border-color .15s; }
+.iconAction.iconAction[data-action=edit] { color:#2563b9; background:#edf4ff; }
+.iconAction.iconAction[data-action=delete] { color:#c0363d; background:#fff0f0; }
+.iconAction.iconAction[data-action=edit]:hover:not(:disabled) { background:#dceaff; border-color:#b5d0f5; }
+.iconAction.iconAction[data-action=delete]:hover:not(:disabled) { background:#ffe0e1; border-color:#f3bfc2; }
+.iconAction.iconAction:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+.iconAction.iconAction:disabled { opacity:.45; cursor:not-allowed; }
+.iconAction.iconAction svg { display:block; width:1.25rem; height:1.25rem; flex:none; }

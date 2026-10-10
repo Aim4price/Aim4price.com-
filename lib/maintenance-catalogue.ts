@@ -153,7 +153,11 @@ export function checklistOptions(
   checklist: MaintenanceChecklist,
   mode: "checked" | "serviced" | "repaired",
 ) {
-  const custom = (checklist.customItems ?? []).filter(item => item.mode === mode).map(item => ({ ...item, id: `asset_custom_${item.id}` }));
+  const custom = (checklist.customItems ?? []).filter(item => item.mode === mode && !item.sourceId && !item.hidden).map(item => ({ ...item, id: `asset_custom_${item.id}` }));
+  const applyChanges = (items: { id: string; label: string; description: string }[]) => items.flatMap(item => {
+    const override = checklist.customItems?.find(saved => saved.mode === mode && saved.sourceId === item.id);
+    return override?.hidden ? [] : [{ ...item, ...(override ? { label: override.label, description: override.description } : {}), revision: override?.revision ?? 0 }];
+  });
   if (mode === "checked") {
     const safetyItems = checklist.items.filter((item) =>
       /brak|steer|tyre|tire|track|guard|light|reflect|mirror|horn|seat.?belt|hitch|drawbar|coupl|mount|frame|weld|hose|leak|cable|wire|emergency|interlock|control|alarm|stabil|outrigger|handrail|platform|fasten|structure|safety/i.test(item.id),
@@ -170,15 +174,15 @@ export function checklistOptions(
       { id: 'inspection_restraints', label: 'Seat belt and seat mounting, where fitted', description: '' },
     );
     items.push({ id: 'inspection_safe_operation', label: 'Controls and safe operation', description: '' });
-    return [...items, ...custom];
+    return [...applyChanges(items), ...custom];
   }
-  return [...checklist.items
+  return [...applyChanges(checklist.items
     .filter((item) => mode === 'repaired' || !/guard|seat.?belt|reflector|mirror|horn|safety_interlock/.test(item.id))
     .map((item) => ({
       id: item.id,
       label: mode === 'repaired' ? item.label : item.serviceLabel,
       description: item.description,
-    })), ...custom];
+    }))), ...custom];
 }
 
 export function buildMaintenanceWorkSnapshot(

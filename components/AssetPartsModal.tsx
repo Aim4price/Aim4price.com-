@@ -5,20 +5,10 @@ import maintenanceStyles from './MaintenanceDialog.module.css';
 import checklistStyles from './MaintenanceChecklistBrowser.module.css';
 import type { AssetPart, PartSuggestion, PartsData } from '../lib/asset-parts';
 import styles from './AssetPartsModal.module.css';
+import ItemActionButton from './ItemActionButton';
 
 type Draft = { requestId: string; itemKey: string; name: string; partNumber: string; brand: string; notes: string };
 const newDraft = (itemKey: string, name: string): Draft => ({ requestId: crypto.randomUUID(), itemKey, name, partNumber: '', brand: '', notes: '' });
-
-function PartActionButton({ action, name, disabled, onClick }: {
-  action: 'edit' | 'delete'; name: string; disabled?: boolean; onClick: () => void;
-}) {
-  const label = `${action === 'edit' ? 'Edit' : 'Delete'} ${name || 'part'}`;
-  return <button type="button" className={styles.iconAction} data-action={action} aria-label={label} title={label} disabled={disabled} onClick={onClick}>
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      {action === 'edit' ? <><path d="m15 5 4 4M4 20l4.5-1 12-12a2.83 2.83 0 0 0-4-4l-12 12L4 20Z"/><path d="M4 20h7"/></> : <><path d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7"/></>}
-    </svg>
-  </button>;
-}
 
 export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, onClose, initialAdd = false }: {
   endpoint: string; assetTitle: string; assetSubtitle?: string; onClose: () => void; initialAdd?: boolean;
@@ -118,7 +108,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
   const cancel = () => { setError(''); if (data?.canView) { setAdding(false); if (savedRequests.current.size) void load().catch(error => setError(error.message)); } else onClose(); };
   const hasSaved = savedRequests.current.size > 0;
   const footer = data && <footer className={checklistStyles.footer}>
-    {management ? <><button type="button" disabled={busy} onClick={() => { setManagement(null); setError(''); }}>Cancel</button><button type="submit" form={`${id}-manage`} data-primary-action disabled={busy}>{busy ? 'Saving…' : management.deleting ? 'Delete' : 'Save changes'}</button></> : adding && data.canAdd ? <>
+    {management ? <><button type="button" disabled={busy} onClick={() => { setManagement(null); setError(''); }}>Cancel</button><button type="submit" form={`${id}-manage`} className={management.deleting ? checklistStyles.danger : undefined} data-primary-action disabled={busy}>{busy ? 'Saving…' : management.deleting ? 'Delete' : 'Save changes'}</button></> : adding && data.canAdd ? <>
       <button type="button" disabled={busy || hasSaved} onClick={() => step ? setStep(step - 1) : cancel()}>Back</button>
       <button type="button" disabled={busy} onClick={cancel}>Cancel</button>
       <button type="submit" form={`${id}-form`} data-primary-action disabled={busy || !drafts.length}>{busy ? 'Saving…' : step === 2 ? (hasSaved ? 'Retry remaining' : drafts.length === 1 ? 'Save part' : 'Save parts') : 'Next'}</button>
@@ -130,9 +120,9 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
       <div className={`${maintenanceStyles.body} ${styles.body}`}>
         {error && <p role="alert" className={styles.error}>{error}</p>}
         {notice && <p role="status" className={styles.notice}>{notice}</p>}
-        {management ? <form id={`${id}-manage`} className={checklistStyles.editor} onSubmit={saveManagement}>
+        {management ? <form id={`${id}-manage`} className={`${checklistStyles.editor} ${styles.management}`} onSubmit={saveManagement}>
           <h3 id={`${id}-context`}>{management.deleting ? 'Delete part' : 'Edit part'}</h3>
-          {management.deleting ? <><p>Delete <strong>{editFields.name}</strong>?</p><p className={styles.hint}>{management.item ? 'Removes this choice from this asset. Saved parts stay unchanged.' : 'Removes this saved part from the asset. This cannot be undone.'}</p></> : <>
+          {management.deleting ? <><p>Delete <strong>{editFields.name}</strong>?</p><p className={styles.hint}>{management.item ? 'Removed from this asset’s choices. Saved parts stay unchanged.' : 'This cannot be undone.'}</p></> : <>
             <label>Name<input autoFocus required maxLength={160} disabled={busy} value={editFields.name} onChange={event => setEditFields(current => ({ ...current, name: event.target.value }))}/></label>
             {management.part && <><label>Part number<input required maxLength={120} disabled={busy} value={editFields.partNumber} onChange={event => setEditFields(current => ({ ...current, partNumber: event.target.value }))}/></label>
             <label>Brand (optional)<input maxLength={120} disabled={busy} value={editFields.brand} onChange={event => setEditFields(current => ({ ...current, brand: event.target.value }))}/></label>
@@ -146,8 +136,8 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
                 <button type="button" className={checklistStyles.addButton} disabled={!data.suggestions.length} onClick={() => setDrafts(current => allSuggestionsSelected ? current.filter(draft => !data.suggestions.some(item => item.id === draft.itemKey)) : [...current, ...data.suggestions.filter(item => !current.some(draft => draft.itemKey === item.id)).map(item => newDraft(item.id, item.label))])}>{allSuggestionsSelected ? 'Deselect all' : 'Select all'}</button>
                 <button type="button" className={checklistStyles.addButton} onClick={() => setDrafts(current => [...current, newDraft('other', '')])}>+ Add item</button>
               </div></div>
-              {data.suggestions.map(item => <div key={item.id} className={styles.choiceRow}><button type="button" className={styles.choice} aria-pressed={drafts.some(draft => draft.itemKey === item.id)} onClick={() => toggleSuggestion(item)}><span className={styles.tick} aria-hidden="true">{drafts.some(draft => draft.itemKey === item.id) ? '✓' : ''}</span>{item.label}</button>{data.canManageChoices && <div className={styles.rowActions}><PartActionButton action="edit" name={item.label} disabled={busy} onClick={() => openManagement({ item })} /><PartActionButton action="delete" name={item.label} disabled={busy} onClick={() => openManagement({ item }, true)} /></div>}</div>)}
-              {drafts.filter(draft => draft.itemKey === 'other').map(draft => <div key={draft.requestId} className={`${checklistStyles.editor} ${styles.full}`}><label>Part description<input autoFocus required maxLength={160} value={draft.name} onChange={event => update(draft.requestId, 'name', event.target.value)} placeholder="e.g. Hydraulic hose"/></label><div className={styles.rowActions}><PartActionButton action="delete" name={draft.name} onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))} /></div></div>)}
+              {data.suggestions.map(item => <div key={item.id} className={styles.choiceRow} data-selected={drafts.some(draft => draft.itemKey === item.id)}><button type="button" className={styles.choice} aria-pressed={drafts.some(draft => draft.itemKey === item.id)} onClick={() => toggleSuggestion(item)}><span className={styles.tick} aria-hidden="true">{drafts.some(draft => draft.itemKey === item.id) ? '✓' : ''}</span>{item.label}</button>{data.canManageChoices && <div className={styles.rowActions}><ItemActionButton action="edit" name={item.label} disabled={busy} onClick={() => openManagement({ item })} /><ItemActionButton action="delete" name={item.label} disabled={busy} onClick={() => openManagement({ item }, true)} /></div>}</div>)}
+              {drafts.filter(draft => draft.itemKey === 'other').map(draft => <div key={draft.requestId} className={`${checklistStyles.editor} ${styles.full}`}><label>Part description<input autoFocus required maxLength={160} value={draft.name} onChange={event => update(draft.requestId, 'name', event.target.value)} placeholder="e.g. Hydraulic hose"/></label><div className={styles.rowActions}><ItemActionButton action="delete" name={draft.name} onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))} /></div></div>)}
             </>}
             {step === 1 && drafts.map(draft => <div key={draft.requestId} className={`${checklistStyles.editor} ${styles.full}`}>
               <h3>{data.suggestions.find(item => item.id === draft.itemKey)?.label || draft.name || 'New part'}</h3>
@@ -157,7 +147,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
               <label>Notes <small>(optional)</small><textarea maxLength={2000} rows={2} value={draft.notes} onChange={event => update(draft.requestId, 'notes', event.target.value)}/></label></div>
             </div>)}
             {step === 2 && <>
-              <div className={`${styles.list} ${styles.full}`}>{drafts.map(draft => <article className={styles.part} key={draft.requestId}><div className={styles.partMain}><h3>{draft.name}</h3><span><strong className={styles.number}>{draft.partNumber}</strong>{draft.brand && ` · ${draft.brand}`}</span></div>{draft.notes && <p>{draft.notes}</p>}<div className={styles.rowActions}><PartActionButton action="edit" name={draft.name} onClick={() => setStep(1)} /><PartActionButton action="delete" name={draft.name} onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))} /></div></article>)}</div>
+              <div className={`${styles.list} ${styles.full}`}>{drafts.map(draft => <article className={styles.part} key={draft.requestId}><div className={styles.partMain}><h3>{draft.name}</h3><span><strong className={styles.number}>{draft.partNumber}</strong>{draft.brand && ` · ${draft.brand}`}</span></div>{draft.notes && <p>{draft.notes}</p>}<div className={styles.rowActions}><ItemActionButton action="edit" name={draft.name} onClick={() => setStep(1)} /><ItemActionButton action="delete" name={draft.name} onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))} /></div></article>)}</div>
               {data.maintenance.length > 0 && <>
                 <p className={styles.full}><strong>Link to maintenance</strong> <small>(optional)</small></p>
                 <button type="button" className={`${styles.choice} ${styles.full}`} aria-pressed={!maintenanceId} onClick={() => setMaintenanceId('')}><span className={styles.tick} aria-hidden="true">{!maintenanceId ? '✓' : ''}</span>No link</button>
@@ -175,7 +165,7 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
             <div className={styles.partContent}><div className={styles.partMain}><div><h3>{part.canEdit ? <button type="button" className={styles.partName} disabled={busy} onClick={() => openManagement({ part })}>{part.name}</button> : part.name}</h3>{part.itemLabel !== part.name && <small>{part.itemLabel}</small>}</div><span><strong className={styles.number}>{part.partNumber}</strong>{part.brand && <small> · {part.brand}</small>}</span></div>
             {part.notes && <p>{part.notes}</p>}
             {part.maintenanceId && <small>Linked to {data.maintenance.find(record => record.id === part.maintenanceId)?.title || 'maintenance'}</small>}
-            <div className={styles.partBottom}><small className={styles.audit}>{part.addedBy} · {new Date(part.createdAt).toLocaleDateString('en-ZA')}</small>{part.canEdit && <div className={styles.rowActions}><PartActionButton action="edit" name={part.name} disabled={busy} onClick={() => openManagement({ part })} /><PartActionButton action="delete" name={part.name} disabled={busy} onClick={() => openManagement({ part }, true)} /></div>}</div></div>
+            <div className={styles.partBottom}><small className={styles.audit}>{part.addedBy} · {new Date(part.createdAt).toLocaleDateString('en-ZA')}</small>{part.canEdit && <div className={styles.rowActions}><ItemActionButton action="edit" name={part.name} disabled={busy} onClick={() => openManagement({ part })} /><ItemActionButton action="delete" name={part.name} disabled={busy} onClick={() => openManagement({ part }, true)} /></div>}</div></div>
           </article>)}</div> : <p className={styles.empty}>{search ? 'No matching parts.' : 'No parts yet.'}</p>}
           {parts.length > 6 && <div className={styles.actions}><button type="button" className={checklistStyles.addButton} disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><span>{page + 1} / {Math.ceil(parts.length / 6)}</span><button type="button" className={checklistStyles.addButton} disabled={(page + 1) * 6 >= parts.length} onClick={() => setPage(page + 1)}>Next</button></div>}
         </>}

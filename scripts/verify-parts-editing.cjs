@@ -13,7 +13,9 @@ const root = path.resolve(__dirname, '..');
     await fs.mkdir(fixture);
     await fs.writeFile(path.join(fixture, 'page.tsx'), `'use client';
 import AssetPartsModal from '../../../components/AssetPartsModal';
-export default function Page() { return <AssetPartsModal endpoint="/api/parts-fixture" assetTitle="2024 Landini Super 110 + Front Loader" assetSubtitle="Year Model: 2024 · Usage: 20 741 hours · Condition: Good" onClose={() => {}}/>; }`);
+import MaintenanceChecklistBrowser from '../../../components/MaintenanceChecklistBrowser';
+import { useState } from 'react';
+export default function Page() { const [checklist,setChecklist]=useState(false); if(checklist) return <MaintenanceChecklistBrowser endpoint="/api/checklist-fixture" assets={[{id:'asset',title:'2024 Landini Super 110 + Front Loader',headerMeta:'Year Model: 2024 · Usage: 20 741 hours · Condition: Good'}]} initialAssetId="asset" onClose={()=>setChecklist(false)} onStartWork={()=>{}}/>; return <AssetPartsModal endpoint="/api/parts-fixture" assetTitle="2024 Landini Super 110 + Front Loader" assetSubtitle="Year Model: 2024 · Usage: 20 741 hours · Condition: Good" onClose={() => setChecklist(true)}/>; }`);
     server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '3036'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] });
     await new Promise((resolve, reject) => { const timer=setTimeout(()=>reject(Error('Next startup timeout')),90000); server.stdout.on('data',d=>{if(d.toString().includes('Ready')) {clearTimeout(timer);resolve();}}); server.stderr.on('data',d=>process.stderr.write(d)); server.once('exit',()=>{clearTimeout(timer);reject(Error('Next exited'));}); });
     browser = await puppeteer.launch({ executablePath: await chromium.executablePath(), args: chromium.args, headless: true });
@@ -22,6 +24,7 @@ export default function Page() { return <AssetPartsModal endpoint="/api/parts-fi
     const errors=[]; page.on('pageerror',e=>errors.push(e.message));
     let parts=[{id:'part-1',itemKey:'oil_filter',itemLabel:'Oil filter',name:'Oil filter',partNumber:'001-ABC',brand:'Landini',notes:'',addedBy:'Owner',createdAt:'2026-10-10T12:00:00Z',maintenanceId:null,revision:0,canEdit:true}];
     let suggestions=[{id:'oil_filter',label:'Oil filter'},{id:'fuel_filter',label:'Fuel filter'}], actions=[], failEdit=true;
+    let checklistItems=[{id:'custom-1',mode:'checked',label:'Inspect custom belt',description:'Look for wear',revision:0}];
     await page.setRequestInterception(true);
     page.on('request',r=>{
       if(!r.url().includes('/api/'))return r.continue();
@@ -35,6 +38,17 @@ export default function Page() { return <AssetPartsModal endpoint="/api/parts-fi
           else if(d.action==='renameChoice') suggestions=suggestions.map(i=>i.id===d.itemKey?{...i,label:d.name}:i);
           else if(d.action==='deleteChoice') suggestions=suggestions.filter(i=>i.id!==d.itemKey);
         } else body={parts,suggestions,family:'Tractors',canView:true,canAdd:true,canManageChoices:true,maintenance:[]};
+      }
+      if(r.url().includes('/api/checklist-fixture')) {
+        if(r.method()==='PATCH') {
+          const d=JSON.parse(r.postData());
+          const custom=d.optionId.startsWith('asset_custom_');
+          const match=i=>custom?i.id===d.optionId.slice(13):i.sourceId===d.optionId&&i.mode===d.mode;
+          const existing=checklistItems.find(match);
+          if(custom&&d.action==='delete')checklistItems=checklistItems.filter(i=>!match(i));
+          else {const next={...d,id:existing?.id||'override-1',sourceId:custom?null:d.optionId,hidden:d.action==='delete',revision:(existing?.revision||0)+1};checklistItems=[...checklistItems.filter(i=>!match(i)),next];}
+        }
+        body={items:checklistItems};
       }
       return r.respond({status,contentType:'application/json',body:JSON.stringify(body)});
     });
@@ -51,7 +65,22 @@ export default function Page() { return <AssetPartsModal endpoint="/api/parts-fi
     const output=path.join(root,'.next/maintenance-validation');await fs.mkdir(output,{recursive:true});await page.screenshot({path:path.join(output,'parts-edit-choices-mobile.png')});
     await page.click('button[aria-label="Delete Engine filter"]');await click('Delete');await page.waitForFunction(()=>!document.body.innerText.includes('Engine filter'));assert.deepEqual(suggestions.map(i=>i.id),['fuel_filter']);
     await click('Cancel');await click('+ Add part');assert.equal(await page.$('button[aria-label="Edit Engine filter"]'),null);
-    assert.deepEqual(errors,[]);console.log('PASS saved-part edits, stale conflict, confirmed deletion, per-asset choices and mobile layout');
+    await page.click('button[aria-label="Back to maintenance"]');
+    await page.waitForSelector('button[aria-label="Edit Visible damage and loose parts"]');
+    await page.screenshot({path:path.join(output,'checklist-icons-mobile.png')});
+    await page.click('button[aria-label="Edit Visible damage and loose parts"]');await setName('Inspect the frame');await click('Save changes');
+    await page.waitForSelector('button[aria-label="Edit Inspect the frame"]');
+    await page.click('button[aria-label="Delete Inspect the frame"]');
+    await page.screenshot({path:path.join(output,'checklist-delete-mobile.png')});
+    await click('Cancel');assert.ok(checklistItems.some(i=>i.label==='Inspect the frame'&&!i.hidden));
+    await page.click('button[aria-label="Delete Inspect the frame"]');await click('Delete');await page.waitForFunction(()=>!document.body.innerText.includes('Inspect the frame'));
+    await page.click('button[aria-label="Edit Inspect custom belt"]');await setName('Inspect drive belt');await click('Save changes');await page.waitForSelector('button[aria-label="Delete Inspect drive belt"]');
+    await page.click('button[aria-label="Delete Inspect drive belt"]');await click('Delete');await page.waitForFunction(()=>!document.body.innerText.includes('Inspect drive belt'));
+    assert.ok(!checklistItems.some(i=>i.id==='custom-1'));
+    await click('Service');await click('Checks');assert.equal(await page.$('button[aria-label="Edit Inspect the frame"]'),null);
+    await page.setViewport({width:1280,height:1000});await page.screenshot({path:path.join(output,'checklist-icons-desktop.png')});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Checklist overflow');
+    assert.deepEqual(errors,[]);console.log('PASS parts and checklist edits, stale conflict, confirmed deletion, per-asset choices and mobile layout');
   } finally {
     if(browser)await browser.close(); if(server)server.kill();
     await fs.rm(fixture,{recursive:true,force:true});
