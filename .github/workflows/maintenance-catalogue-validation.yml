@@ -29,6 +29,8 @@ on:
       - 'tests/maintenance-catalogue.test.cjs'
       - 'tests/fixtures/maintenance-catalogue-page.tsx'
       - 'scripts/verify-maintenance-catalogue.cjs'
+      - 'scripts/verify-parts-editing.cjs'
+      - 'database/migrations/138-asset-parts-editing.sql'
       - '.github/workflows/maintenance-catalogue-validation.yml'
   workflow_dispatch:
 permissions:
@@ -47,6 +49,7 @@ jobs:
       - run: npm run typecheck
       - run: node --test tests/app-maintenance-access.test.cjs tests/asset-parts.test.cjs tests/asset-parts-report.test.cjs tests/maintenance-completion-stages.test.cjs tests/maintenance-catalogue.test.cjs tests/maintenance-card-refresh.test.cjs tests/desktop-service-modal.test.mjs tests/manual-maintenance-completion.test.mjs tests/maintenance-schedule-linking.test.mjs tests/maintenance-flow-guard.test.mjs tests/field-manager-offline.test.cjs
       - run: node scripts/verify-maintenance-catalogue.cjs
+      - run: node scripts/verify-parts-editing.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

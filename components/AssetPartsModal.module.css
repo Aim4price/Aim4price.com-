@@ -52,3 +52,15 @@
 @media(max-width:640px) {
   :global(:where(html:not(:has([data-website-canvas])))) .partMain { flex-direction:column; gap:.3rem; }
 }
+
+.choiceRow { display:flex; align-items:center; min-width:0; border:1px solid #d6e4dd; border-radius:.8rem; overflow:hidden; }
+.choiceRow .choice { border:0; border-radius:0; align-self:stretch; }
+.rowActions { display:flex; gap:.35rem; flex-wrap:wrap; flex-shrink:0; padding:.25rem; }
+.rowActions button { padding:.4rem .5rem; border:0; border-radius:.4rem; background:transparent; color:var(--app-text,#17362c); font-size:.8rem; }
+.rowActions button:hover { background:var(--app-surface-soft,#f0f8f4); }
+.partName { border:0; background:transparent; color:inherit; padding:0; text-align:left; }
+.partName:hover { text-decoration:underline; }
+.partBottom { display:flex; justify-content:space-between; gap:.5rem; align-items:center; flex-wrap:wrap; }
+@media(max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceRow { flex-wrap:wrap; }
+}
