@@ -17,6 +17,7 @@ for (const file of [
   'ai-connection/mcp',
   'ai-connection/admin-data',
   'ai-connection/audit',
+  'ai-connection/navigation',
   'external-share-permissions',
 ]) {
   const destination = path.join(tmp, file + '.js');
@@ -986,4 +987,18 @@ test('security metadata migration is repeatable and preserves existing grants',a
   await db.exec(fs.readFileSync(path.join(__dirname,'../database/migrations/137-ai-provider-admin-reporting.sql'),'utf8'));
   assert.equal((await db.query('SELECT count(*) FROM ai_connections')).rows[0].count,before);
   await assert.rejects(db.query("UPDATE ai_connections SET scope='aim4price:write'"));
+});
+
+
+test('admin sign-in preserves only a local AI consent continuation',()=>{
+  const {adminAiReturnTo}=require(path.join(tmp,'ai-connection/navigation.js'));
+  const c=registryConfig('admin');
+  const params=authParams({client_id:c.clientId,redirect_uri:c.redirectUris[0],resource:c.resource,scope:security.ADMIN_READ_SCOPE});
+  const login=new URL(security.connectionSignInHref(params,c),c.origin);
+  const next=adminAiReturnTo(login.searchParams.get('returnTo'));
+  assert.equal(new URL(next,c.origin).pathname,'/admin/ai-connect');
+  assert.deepEqual([...new URL(next,c.origin).searchParams],[...params]);
+  for(const value of ['//evil.test/admin/ai-connect','https://evil.test/admin/ai-connect','/admin/ai-connect/../../evil','/admin/ai-connect#bad','/admin/ai-connect-extra','/admin/other',null])assert.equal(adminAiReturnTo(value),null);
+  const source=fs.readFileSync(path.join(__dirname,'../app/auth/auth-client.tsx'),'utf8');
+  assert.ok(source.includes('adminAiReturnTo(preferredPath ?? getSafeReturnTo())'));
 });

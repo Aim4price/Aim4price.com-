@@ -6,6 +6,7 @@ on:
       - 'app/api/ai/**'
       - 'app/account/ai-connect/**'
       - 'app/admin/ai-connect/**'
+      - 'app/auth/auth-client.tsx'
       - 'components/AdminNavigation.tsx'
       - 'scripts/migrate-ai-connections.mjs'
       - 'scripts/verify-ai-connections.cjs'
