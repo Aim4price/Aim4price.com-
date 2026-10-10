@@ -589,7 +589,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
               <span className={styles.ownerTrackingChoiceCopy}>
                 <strong>Enable dealer tracking</strong>
                 <small>The dealer can download maintenance reports and create schedules. Enabled schedules take effect immediately.</small>
-                <em>{trackMaintenance ? 'Permissions selected. Tap to review.' : 'Choose what the dealer can see and update.'}</em>
+                <em>{trackMaintenance ? 'Permissions selected. Tap to review.' : 'Choose access to parts, maintenance and asset updates.'}</em>
               </span>
             </button>
           ) : null}
@@ -616,7 +616,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
               <p>By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with {partnerName(selectedPartner)}.</p>
             )}
             <p>This is a lead request only. It does not create a finance, insurance, licence renewal, valuation or sales agreement. {selectedPartner.isAim4priceManaged ? 'The selected town is a service area, not a physical Aim4price branch.' : 'The selected company may contact you outside Aim4price.'}</p>
-            {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will receive ongoing Maintenance Tracker access with the permissions you selected. Enabled maintenance schedules take effect immediately. Serial-number and replacement-price changes still require your approval.</p> : null}
+            {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will receive ongoing Maintenance Tracker access with the permissions you selected. Enabled maintenance schedules take effect immediately. Value changes follow the asset’s existing approval rules.</p> : null}
           </div>
           <label className={styles.ownerConsentField}>
             <input type="checkbox" checked={consentAccepted} onChange={(event) => setConsentAccepted(event.target.checked)} />
@@ -645,7 +645,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
             type="button"
             className={styles.ownerTrackingPickerBackdrop}
             onClick={cancelTrackingPermissions}
-            aria-label="Close Business/Dealer asset settings"
+            aria-label="Close Asset link settings"
           />
           <section
             className={styles.ownerTrackingPickerModal}
@@ -655,14 +655,14 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, v
           >
             <header className={styles.ownerTrackingPickerHeader}>
               <div>
-                <h2 id="owner-tracking-picker-title">Business/Dealer asset settings</h2>
+                <h2 id="owner-tracking-picker-title">Asset link settings</h2>
                 <p>{assetTitle}</p>
               </div>
-              <button type="button" onClick={cancelTrackingPermissions} aria-label="Close Business/Dealer asset settings">×</button>
+              <button type="button" onClick={cancelTrackingPermissions} aria-label="Close Asset link settings">×</button>
             </header>
             <div className={styles.ownerTrackingPickerBody}>
               <div className={styles.ownerTrackingPickerIntro}>
-                <strong>Choose what this business/dealer can access</strong>
+                <strong>Choose what this recipient can access</strong>
                 <p>Select the permissions to activate as soon as the asset is shared.</p>
               </div>
               <DealerMaintenancePermissionPicker

@@ -5,6 +5,7 @@ on:
       - 'lib/maintenance-catalogue*'
       - 'lib/asset-parts*'
       - 'components/AssetPartsModal*'
+      - 'components/AppAssetPartsButton.tsx'
       - 'app/api/**/parts/**'
       - 'tests/asset-parts.test.cjs'
       - 'lib/use-maintenance-checklist.ts'

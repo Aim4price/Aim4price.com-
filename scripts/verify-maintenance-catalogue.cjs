@@ -24,7 +24,7 @@ async function main() {
     await browser.defaultBrowserContext().overridePermissions(origin,['geolocation']);
     const page=await browser.newPage(); await page.setGeolocation({latitude:-25.7,longitude:28.2,accuracy:10});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
-    let submitted=null;
+    let submitted=null, savedPart=null;
     const asset={id:'11111111-1111-4111-8111-111111111111',userId:'fixture',publicAssetCode:'A4P-TEST',plateLabel:'Test',qrStatus:'active',title:'Test plough',kind:'tractor',equipmentFamilyKey:'tractors',equipmentFamilyLabel:'Plough',maintenanceIdentity:{source:'basic',familyKey:'plough',release:'basic_ballpark_20260907_v1',sector:'agricultural'},serialNumber:'TEST',yearModel:2020,financeStatus:'unknown',insuranceStatus:'unknown',licenseStatus:'not_applicable',licenseRegistrationNumber:'',hours:null,usageMode:'percent',usageMetric:'hours',lifeWorkedPercent:30,isPropelled:false,canUpdateFuel:false,condition:'good',note:'',photos:[],lastScannedAtIso:null,lastKnownLat:null,lastKnownLng:null,lastKnownLocationText:'',createdAtIso:null,updatedAtIso:null};
     await page.setRequestInterception(true);
     page.on('request',r=>{
@@ -32,6 +32,7 @@ async function main() {
       let body={ok:true,items:[],assets:[],notifications:[],partners:[],openMaintenance:[]};
       if(url.pathname.includes('maintenance-catalogue'))body={catalogue};
       if(url.pathname.startsWith('/api/scan/assets/'))body={ok:true,asset,accessMode:'owner_session',ownerAppDisplayName:'Test owner',openMaintenance:[]};
+      if(url.pathname.endsWith('/parts')) { if(r.method()==='POST') { savedPart=JSON.parse(r.postData()); body={ok:true}; } else body={parts:[],suggestions:[{id:'oil_filter',label:'Oil filter'}],family:'Plough',canView:true,canAdd:true,maintenance:[]}; }
       if(url.pathname.endsWith('/event')){submitted=JSON.parse(r.postData());body={ok:true,asset,scheduledMaintenanceCompletion:{completed:true}};}
       return r.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
     });
@@ -83,6 +84,19 @@ async function main() {
     await page.waitForFunction(()=>!document.querySelector('[class*="editorFooter"]'));
     assert.equal(submitted.maintenanceWork[0].family.source,'basic');assert.equal(submitted.maintenanceWork[0].items[0].id,'frame_and_welds');
     console.log('PASS Owner App uses Basic identity over legacy tractor metadata and sends structured work');
+    for (const view of ['app','field-manager']) {
+      await page.goto(url+'?view='+view,{waitUntil:'networkidle0',timeout:120000});
+      await page.waitForFunction(()=>[...document.querySelectorAll('button strong')].some(e=>e.textContent==='Parts'));
+      await clickText('Parts');await page.waitForSelector('input[type=search]');
+      await clickText('+ Add part');await clickText('Oil filter');await clickText('Next');
+      await page.type('input[placeholder="Number printed on the part or packaging"]','001-APP');
+      await clickText('Next');await clickText('Save part');
+      await page.waitForFunction(()=>document.querySelector('[role=status]')?.textContent.includes('Part saved'));
+      assert.equal(savedPart.partNumber,'001-APP');assert.equal(savedPart.itemKey,'oil_filter');
+      await page.screenshot({path:path.join(output,`${view}-parts.png`)});
+      await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('[aria-label="Back to maintenance"]'));
+    }
+    console.log('PASS Owner and Field Manager Parts entry, save and return on mobile');
     await page.goto(url+'?view=admin',{waitUntil:'networkidle0',timeout:120000});await page.type('input[aria-label="Find a family"]','plough');
     await clickText('Plough');await page.waitForFunction(()=>document.body.textContent.includes('Create separate checklist'));
     await clickText('Create separate checklist for this family');await page.waitForFunction(()=>document.body.textContent.includes('Shared by 1 families'));

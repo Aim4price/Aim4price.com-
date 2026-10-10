@@ -1,4 +1,5 @@
 'use client';
+import AppAssetPartsButton from '../../../../components/AppAssetPartsButton';
 import PhotoViewerActions from '../../../../components/PhotoViewerActions';
 import DateInput from '../../../../components/DateInput';
 
@@ -1413,7 +1414,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       </section> : null}
 
       {section === 'marketplace' ? <MarketplaceSection draft={draft} ownerContext={ownerContext} action={action} busy={Boolean(actionBusy)} /> : null}
-      {section === 'maintenance' ? <MaintenanceSection assetId={assetId} records={maintenance} action={action} busy={Boolean(actionBusy)} /> : null}
+      {section === 'maintenance' ? <MaintenanceSection assetTitle={draft.title} assetId={assetId} records={maintenance} action={action} busy={Boolean(actionBusy)} /> : null}
       {section === 'dealer-tracking' ? <section className={`${styles.section} ${styles.editorSection}`}>
         {editorHeader('Dealer tracking', 'Control what each dealer can see or update for this asset.')}
         {dealerTrackingLoading ? <p className={styles.ownerOptionsEmpty}>Loading dealer tracking settings…</p> : dealerTrackingError ? (
@@ -1919,7 +1920,7 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
   );
 }
 
-function MaintenanceSection({ assetId, records, action, busy }: { assetId: string; records: Maintenance[]; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
+function MaintenanceSection({ assetId, assetTitle, records, action, busy }: { assetId: string; assetTitle: string; records: Maintenance[]; action: (body: Record<string, unknown>, message: string) => Promise<void>; busy: boolean }) {
   const upcomingMaintenance = records.find((record) => record.status === 'upcoming') ?? null;
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1930,6 +1931,7 @@ function MaintenanceSection({ assetId, records, action, busy }: { assetId: strin
   }
   return (
     <section className={styles.section}>
+      <div className={styles.actions}><AppAssetPartsButton endpoint={`/api/owner-app/assets/${assetId}/parts`} assetTitle={assetTitle} className={styles.smallButton}>Parts · view and add part numbers</AppAssetPartsButton></div>
       <p className={styles.editorIntro}>{upcomingMaintenance
         ? hasRecurringMaintenance(upcomingMaintenance)
           ? 'A recurring schedule is already in place. Complete the physical work below to move to the next schedule.'

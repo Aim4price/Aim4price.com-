@@ -62,5 +62,45 @@ test('parts persist against the live asset; permissions, ownership, record links
   assert.equal((await call('GET',draft,lead)).status,403);
   user={id:'other',email:'other@example.com'};assert.equal((await call('GET')).status,404);
   user=null;assert.equal((await call('GET')).status,401);
+  let appCanAdd=true, appRevoked=false;
+  const appTarget={appScope:async()=>({scope:{ownerId:'owner',assetId:asset,user:{id:'field-manager:manager',name:'Field operator',email:''},lock:async()=>{if(appRevoked)throw new AccessError('Revoked',403);}},canView:true,canAdd:appCanAdd,canReadMaintenance:true})};
+  const appDraft={...draft,maintenanceId:maintenance,requestId:'88888888-8888-4888-8888-888888888888'};
+  assert.equal((await call('POST',appDraft,appTarget)).status,200);
+  assert.equal((await call('POST',appDraft,appTarget)).status,200);
+  const stored=(await db.query('SELECT actor_id,added_by FROM asset_parts WHERE id=$1',[appDraft.requestId])).rows[0];
+  assert.equal(stored.actor_id,'field-manager:manager');assert.equal(stored.added_by,'Field operator');
+  appCanAdd=false;assert.equal((await call('POST',appDraft,appTarget)).status,403);
+  assert.equal((await call('GET',draft,appTarget)).data.canAdd,false);
+  appRevoked=true;assert.equal((await call('GET',draft,appTarget)).status,403);
+
  } finally {await db.close();}
+});
+
+test('native app parts respect assigned assets, view-only roles, revoked rights and actor identity', async()=>{
+ let owner={ownerUserId:'owner',ownerAppUserId:'operator',displayName:'Owner operator',permissions:['view','operate'],assetScope:'selected',accessibleAssetIds:[asset]};
+ let fieldOK=true,assigned=true,recordWork=true, dealerRole=true;
+ let tracked={ownerUserId:'owner',assetId:asset,permissions:{canViewParts:true,canAddParts:true,canViewMaintenanceReports:true}};
+ const api=load('lib/asset-parts-app-access.ts',{
+  './owner-app-access':{getOwnerAppAccess:async()=>owner,ownerAppCan:(a,p)=>a.permissions.includes(p),ownerAppCanAccessAsset:(a,id)=>a.accessibleAssetIds.includes(id)},
+  './field-manager-session':{requireActiveFieldManagerSession:async()=>fieldOK?{ok:true,session:{ownerUserId:'owner',managerId:'manager',displayName:'Field operator'}}:{ok:false,status:401,error:'Sign in'}},
+  './field-manager':{fieldManagerCan:async()=>recordWork,getFieldManagerAssetForOpen:async args=>assigned&&args.assetId===asset?{id:asset}:null},
+  './auth-session':{getServerSession:async()=>({user:{id:'dealer',email:'dealer@example.test'},dealerApp:{role:'staff'}}),isDealerAppSession:()=>true},
+  './dealer-app-access':{dealerRoleCan:()=>dealerRole},
+  './account-profile':{getAccountProfile:async()=>({accountType:'dealer',accountStatus:'active'})},
+  './dealer-maintenance-tracker':{getDealerTrackedAsset:async()=>tracked},
+  './external-lead-access':{ExternalLeadAccessError:AccessError},
+ });
+ const read=(app,id=asset,method='GET')=>api.resolveAppPartsAccess({method},app,id);
+ const client={query:async()=>({rows:[{id:asset}]})};
+ let result=await read('owner');assert.equal(result.scope.user.id,'owner-app:operator');assert.equal(result.canAdd,true);
+ await assert.rejects(()=>read('owner',other),e=>e.status===403);
+ owner.permissions=['view'];result=await read('owner');assert.equal(result.canAdd,false);assert.equal(result.canView,true);
+ owner.permissions=['view','operate'];result=await read('owner',asset,'POST');owner.permissions=['view'];await assert.rejects(()=>result.scope.lock(client),e=>e.status===403);
+ result=await read('field-manager');assert.equal(result.scope.user.id,'field-manager:manager');assert.equal(result.canAdd,true);
+ assigned=false;await assert.rejects(()=>result.scope.lock(client),e=>e.status===403);assigned=true;
+ recordWork=false;result=await read('field-manager');assert.equal(result.canAdd,false);assert.equal(result.canView,true);
+ fieldOK=false;await assert.rejects(()=>read('field-manager'),e=>e.status===401);
+ result=await read('dealer');assert.equal(result.canReadMaintenance,true);tracked.permissions.canViewParts=false;await assert.rejects(()=>result.scope.lock(client),e=>e.status===403);
+ result=await read('dealer');assert.equal(result.canView,false);assert.equal(result.canAdd,true);
+ dealerRole=false;await assert.rejects(()=>read('dealer'),e=>e.status===403);
 });
