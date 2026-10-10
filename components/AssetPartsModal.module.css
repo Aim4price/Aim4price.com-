@@ -49,4 +49,6 @@
 .partContent { min-width:0; flex:1; }
 .audit { display:block; margin-top:.35rem; font-size:.78rem!important; }
 .srOnly { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
-@media(max-width:640px) { .partMain { flex-direction:column; gap:.3rem; } }
+@media(max-width:640px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .partMain { flex-direction:column; gap:.3rem; }
+}
