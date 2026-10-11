@@ -41461,7 +41461,7 @@ button.documentOpenLink {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 .managementAccountModal.maintenanceMenuModal .maintenanceMenuGrid > .ownerCommandAction:last-child:nth-child(odd) {
-  grid-column: 1 / -1 !important;
+  grid-column: auto !important;
 }
 @media (max-width: 640px) {
   :global(html:not(:has([data-website-canvas]))) .managementAccountModal.maintenanceMenuModal .maintenanceMenuGrid {

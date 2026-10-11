@@ -69,3 +69,6 @@
 .choiceRow[data-selected=true] { border-color:#71ac92; background:var(--app-surface-soft,#f0f8f4); }
 .choiceRow:focus-within { border-color:#71ac92; }
 .rowActions { gap:.3rem; padding:.35rem; flex-wrap:nowrap; }
+
+/* Add and edit share the same full-width, stacked field layout. */
+.detailFields { display:grid; grid-template-columns:minmax(0,1fr); gap:.8rem; min-width:0; }
