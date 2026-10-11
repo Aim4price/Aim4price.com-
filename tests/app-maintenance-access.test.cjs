@@ -26,15 +26,17 @@ test('native checklist scope preserves role, assignment and separate record/sche
  owner=null;await assert.rejects(api.resolveAppMaintenanceAccess({},'owner','asset'),e=>e.status===401);
 });
 test('native checklist mutations require trusted origin, edit permission and a fresh asset scope',async()=>{
- let editable=true, trusted=true, revoked=false, writes=0;
+ let editable=true, trusted=true, revoked=false, writes=0, removable=false;
  const api=load('lib/app-maintenance-checklist-api.ts',{
- './app-maintenance-access':{resolveAppMaintenanceAccess:async()=>({ownerId:revoked?'other':'owner',assetId:'asset',canEdit:editable,canRecord:editable,canSchedule:editable})},
+ './app-maintenance-access':{resolveAppMaintenanceAccess:async()=>({ownerId:revoked?'other':'owner',assetId:'asset',canRemove:removable,canEdit:editable,canRecord:editable,canSchedule:editable})},
  './external-lead-access':{ExternalLeadAccessError:Denied},'./trusted-request-origin':{isTrustedRequestOrigin:()=>trusted},
- './asset-checklist-db':{addAssetChecklistItem:async(owner,id,input,check)=>{assert.equal(owner,'owner');assert.equal(id,'asset');if(input.revoke)revoked=true;await check();writes++;return input;},removeAssetChecklistItem:async()=>{},listAssetChecklistItems:async()=>[]},
+ './asset-checklist-db':{changeAssetChecklistItem:async(owner,id,input,check)=>{await check();return [];},addAssetChecklistItem:async(owner,id,input,check)=>{assert.equal(owner,'owner');assert.equal(id,'asset');if(input.revoke)revoked=true;await check();writes++;return input;},removeAssetChecklistItem:async()=>{},listAssetChecklistItems:async()=>[]},
  './asset-register-db':{},'./maintenance-catalogue-db':{},'./maintenance-catalogue':{},'./asset-checklist-report':{},'./report-pdf':{},'./asset-usage':{}
  });
  const request=input=>({method:'POST',headers:new Headers(),nextUrl:new URL('https://www.aim4price.com/api/native/checklist'),json:async()=>input});
  assert.equal((await api.appMaintenanceChecklist(request({label:'Inspect hose'}),'owner','asset')).status,201);
+ assert.equal((await api.appMaintenanceChecklist({...request({}),method:'PATCH'},'owner','asset')).status,403);
+ removable=true;assert.equal((await api.appMaintenanceChecklist({...request({}),method:'PATCH'},'owner','asset')).status,200);
  editable=false;assert.equal((await api.appMaintenanceChecklist(request({}),'owner','asset')).status,403);
  editable=true;trusted=false;assert.equal((await api.appMaintenanceChecklist(request({}),'owner','asset')).status,403);
  trusted=true;assert.equal((await api.appMaintenanceChecklist(request({revoke:true}),'owner','asset')).status,403);assert.equal(writes,1);

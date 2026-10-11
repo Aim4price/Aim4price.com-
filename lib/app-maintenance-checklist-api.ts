@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveAppMaintenanceAccess, type MaintenanceApp } from './app-maintenance-access';
 import { ExternalLeadAccessError } from './external-lead-access';
 import { isTrustedRequestOrigin } from './trusted-request-origin';
-import { addAssetChecklistItem, listAssetChecklistItems, removeAssetChecklistItem } from './asset-checklist-db';
+import { changeAssetChecklistItem, addAssetChecklistItem, listAssetChecklistItems, removeAssetChecklistItem } from './asset-checklist-db';
 import { getAssetRegisterItemById } from './asset-register-db';
 import { getMaintenanceCatalogue } from './maintenance-catalogue-db';
 import { checklistOptions, resolveMaintenanceChecklist } from './maintenance-catalogue';
@@ -18,8 +18,12 @@ export async function appMaintenanceChecklist(request: NextRequest, app: Mainten
     if (writing && (!access.canEdit || !isTrustedRequestOrigin(request.headers.get('origin'), request.nextUrl.origin))) throw new ExternalLeadAccessError('You do not have permission to change this checklist.', 403);
     const checkAccess = async () => {
       const fresh = await resolveAppMaintenanceAccess(request, app, id);
-      if (!fresh.canEdit || fresh.ownerId !== access.ownerId || fresh.assetId !== access.assetId) throw new ExternalLeadAccessError('Your access has changed. Reopen the checklist.', 403);
+      if (!fresh.canEdit || ((request.method === 'PATCH' || request.method === 'DELETE') && !fresh.canRemove) || fresh.ownerId !== access.ownerId || fresh.assetId !== access.assetId) throw new ExternalLeadAccessError('Your access has changed. Reopen the checklist.', 403);
     };
+    if (request.method === 'PATCH') {
+      if (!access.canRemove) throw new ExternalLeadAccessError('Only the asset owner can edit or delete existing checklist items.', 403);
+      return NextResponse.json({ items: await changeAssetChecklistItem(access.ownerId, access.assetId, await request.json(), checkAccess) }, { headers });
+    }
     if (request.method === 'POST') return NextResponse.json({ item: await addAssetChecklistItem(access.ownerId, access.assetId, await request.json(), checkAccess) }, { status: 201, headers });
     if (request.method === 'DELETE') {
       if (!access.canRemove) throw new ExternalLeadAccessError('Only the asset owner can remove saved checklist items.', 403);
@@ -43,6 +47,7 @@ export async function appMaintenanceChecklist(request: NextRequest, app: Mainten
     if (error instanceof ExternalLeadAccessError) return NextResponse.json({ error: error.message }, { status: error.status, headers });
     const message = error instanceof Error ? error.message : '';
     if (error instanceof SyntaxError || /^(Choose inspection|Enter an item|Keep instructions|This asset already)/.test(message)) return NextResponse.json({ error: error instanceof SyntaxError ? 'Invalid checklist item.' : message }, { status: 400, headers });
+    if (message === 'ITEM_CHANGED') return NextResponse.json({ error: 'This item changed. Cancel and reopen it to try again.' }, { status: 409, headers });
     if (message === 'ASSET_NOT_FOUND' || message === 'ITEM_NOT_FOUND') return NextResponse.json({ error: 'The asset or checklist item is no longer available.' }, { status: 404, headers });
     console.error('App checklist request failed.', error);
     return NextResponse.json({ error: 'Could not load or save this checklist. Please try again.' }, { status: 503, headers });

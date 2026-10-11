@@ -1,5 +1,8 @@
 export type AssetChecklistItem = {
   id: string;
+  sourceId?: string | null;
+  hidden?: boolean;
+  revision?: number;
   mode: 'checked' | 'serviced' | 'repaired';
   label: string;
   description: string;

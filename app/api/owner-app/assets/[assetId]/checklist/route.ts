@@ -7,3 +7,5 @@ export function GET(request: NextRequest, { params }: { params: { assetId: strin
 }
 export const POST = GET;
 export const DELETE = GET;
+
+export const PATCH = GET;
