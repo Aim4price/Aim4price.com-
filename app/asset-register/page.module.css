@@ -41480,3 +41480,8 @@ button.documentOpenLink {
     transform:translate(-50%,0);
   }
 }
+
+/* Keep asset notices together below the expanded details. */
+.assetNoticeStack { display:grid; gap:1rem; margin-top:1rem; min-width:0; }
+.assetNoticeStack:empty { display:none; }
+.assetNoticeStack > * { margin:0; }

@@ -17164,6 +17164,7 @@ export default function AssetRegisterClient({
                             })()}
                           </div>
                         ) : null}
+                        <div className={styles.assetNoticeStack}>
                           {pendingValueAssets.includes(asset.id)&&canUseOwnerOnlyAssetActions&&<div className={styles.partnerNoteBanner}><div className={styles.partnerNoteText}><strong>Value suggestion awaiting review</strong><p>The current asset value has not changed.</p></div><button className={styles.primaryButton} onClick={()=>setValueReviewAsset(asset)}>Review value</button></div>}
                           {dealerAssetCorrection && canUseOwnerOnlyAssetActions ? (
                             <div className={`${styles.dealerCorrectionBanner} ${dealerCorrectionRevaluationAlert ? styles.dealerCorrectionBannerWarning : ''}`} role="status">
@@ -17370,6 +17371,7 @@ export default function AssetRegisterClient({
                             </div>
                             );
                           })}
+                        </div>
                         </article>
                       </div>
                     );

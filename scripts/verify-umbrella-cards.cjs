@@ -44,7 +44,10 @@ async function check(browser, url) {
     await page.click('[aria-label="Edit Asset umbrella"]');
     await page.waitForFunction(()=>document.querySelector('#asset-group-title')?.textContent.includes('Edit umbrella'));
     await page.click('[aria-label="Close umbrella manager"]');
-    await page.click(`[aria-label="${groups[0].isFlagged?'Unflag':'Flag'} Asset umbrella"]`);
+    const flagSelector = `[aria-label="${groups[0].isFlagged?'Unflag':'Flag'} Asset umbrella"]`;
+    await page.$eval(flagSelector,e=>e.scrollIntoView({block:'center'}));
+    await delay(400);
+    await page.click(flagSelector);
     await page.waitForFunction(()=>document.querySelector('[aria-label="Unflag Asset umbrella"]'));
     assert.equal(await page.$eval('#asset-card-normal [class*="assetGroupButton"]',e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
     const groupDetails = '[class*="assetGroupHeaderRow"] [class*="cardViewDetailsButton"]';
