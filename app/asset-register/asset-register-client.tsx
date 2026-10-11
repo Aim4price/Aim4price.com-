@@ -16678,7 +16678,7 @@ export default function AssetRegisterClient({
                               <div className={styles.assetValueVatDisplay}>
                                 <div className={styles.assetValueVatText}>
                                   <div className={styles.assetValueVatAmountRow}>
-                                    <strong role={canUseOwnerOnlyAssetActions?'button':undefined} tabIndex={canUseOwnerOnlyAssetActions?0:undefined} aria-label={canUseOwnerOnlyAssetActions?'Change current value':undefined} onClick={()=>{if(canUseOwnerOnlyAssetActions)openConfirmedValue(asset,'override');}} onKeyDown={event=>{if(canUseOwnerOnlyAssetActions&&(event.key==='Enter'||event.key===' ')){event.preventDefault();openConfirmedValue(asset,'override');}}}>{money(displayedAssetValue)}</strong>
+                                    <strong>{money(displayedAssetValue)}</strong>
                                     <CardVatToggle included={assetValueVatMode === 'included'} onToggle={() => handleAssetValueVatToggle(asset.id)} label={assetValueVatToggleLabel} />
                                   </div>
                                   <span>{assetValueVatLabel}</span>
@@ -16738,212 +16738,6 @@ export default function AssetRegisterClient({
                             </div>
                           </div>
 
-                          {pendingValueAssets.includes(asset.id)&&canUseOwnerOnlyAssetActions&&<div className={styles.partnerNoteBanner}><div className={styles.partnerNoteText}><strong>Value suggestion awaiting review</strong><p>The current asset value has not changed.</p></div><button className={styles.primaryButton} onClick={()=>setValueReviewAsset(asset)}>Review value</button></div>}
-                          {dealerAssetCorrection && canUseOwnerOnlyAssetActions ? (
-                            <div className={`${styles.dealerCorrectionBanner} ${dealerCorrectionRevaluationAlert ? styles.dealerCorrectionBannerWarning : ''}`} role="status">
-                              <div className={styles.dealerCorrectionCopy}>
-                                <span className={styles.dealerCorrectionIcon} aria-hidden="true">{dealerCorrectionRevaluationAlert ? '!' : '✓'}</span>
-                                <div>
-                                  <strong>{dealerCorrectionRevaluationAlert
-                                    ? dealerAssetCorrection.revaluationStatus === 'failed'
-                                      ? 'Replacement price saved — valuation retry needed'
-                                      : 'Replacement price saved — valuation pending'
-                                    : dealerAssetCorrection.licenseRenewalDateChanged
-                                      ? 'Licence renewal awaiting your approval'
-                                      : dealerAssetCorrection.sourceType === 'external' ? 'Business update awaiting your approval' : 'Dealer update awaiting your approval'}</strong>
-                                  <p>{dealerCorrectionRevaluationAlert
-                                    ? dealerAssetCorrection.revaluationStatus === 'failed'
-                                      ? dealerAssetCorrection.revaluationFailureMessage || 'Aim4price could not recalculate this asset automatically.'
-                                      : 'Aim4price is still recalculating this asset. A safe retry becomes available if the attempt is interrupted.'
-                                    : dealerCorrectionDescription(dealerAssetCorrection)}</p>
-                                  <small>{dealerCorrectionRevaluationAlert
-                                    ? 'The accepted replacement price remains saved regardless of the valuation result.'
-                                    : dealerAssetCorrection.licenseRenewalDateChanged
-                                      ? 'Review this date before the licence expert can submit another update.'
-                                      : dealerAssetCorrection.sourceType === 'external' ? 'Review this change before the business can submit another update for this asset.' : 'Review this one change before the dealer can submit another update for this asset.'}</small>
-                                </div>
-                              </div>
-                              <div className={styles.dealerCorrectionActions}>
-                                {dealerCorrectionRevaluationAlert ? (
-                                  <button
-                                    type="button"
-                                    className={styles.dealerCorrectionAcceptButton}
-                                    disabled={isDecidingDealerCorrection || !dealerAssetCorrection.revaluationRetryable}
-                                    onClick={() => void handleDealerCorrectionRevaluationRetry(dealerAssetCorrection)}
-                                  >
-                                    {isDecidingDealerCorrection
-                                      ? 'Retrying…'
-                                      : dealerAssetCorrection.revaluationRetryable
-                                        ? 'Retry valuation'
-                                        : 'Recalculation pending'}
-                                  </button>
-                                ) : (
-                                  <>
-                                    <button
-                                      type="button"
-                                      className={styles.dealerCorrectionDeclineButton}
-                                      disabled={isDecidingDealerCorrection}
-                                      onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'reject')}
-                                    >
-                                      {isDecidingDealerCorrection ? 'Saving…' : 'Decline'}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className={styles.dealerCorrectionAcceptButton}
-                                      disabled={isDecidingDealerCorrection}
-                                      onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'accept')}
-                                    >
-                                      {isDecidingDealerCorrection ? 'Saving…' : 'Accept update'}
-                                    </button>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          ) : null}
-
-                          {outstandingPartnerNotes(asset).map((openPartnerNote) => {
-                            const partnerNoteAuthor = openPartnerNote.partnerBusinessName || openPartnerNote.partnerName || 'Aim4price partner'; const partnerNoteToneClass = quoteToneClassForPartnerType(openPartnerNote.partnerType);
-                            return (
-                            <div key={openPartnerNote.id} className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`}>
-                              <div className={styles.partnerNoteText}>
-                                <strong>Note from {partnerNoteAuthor}</strong>
-                                <p>{openPartnerNote.noteText}</p>
-                                {openPartnerNote.attachment ? (
-                                  <a
-                                    className={styles.partnerNoteAttachmentLink}
-                                    href={openPartnerNote.attachment.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                  >
-                                    <span>Open quote PDF</span>
-                                    <small>{openPartnerNote.attachment.fileName} · {formatByteSize(openPartnerNote.attachment.byteSize)}</small>
-                                  </a>
-                                ) : null}
-                              </div>
-                              {canUseOwnerOnlyAssetActions ? (
-                                <button
-                                  type="button"
-                                  className={styles.partnerNoteButton}
-                                  onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
-                                >
-                                  Noted
-                                </button>
-                              ) : null}
-                            </div>
-                            );
-                          })}
-
-                          {noticeStack(asset.maintenanceAlerts, asset.maintenanceAlert).map((maintenanceAlert) => {
-                            const isMarkingMaintenanceAlertNoted = busyMaintenanceAlertId === maintenanceAlert.id;
-                            return (
-                            <div key={maintenanceAlert.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
-                              <div className={styles.partnerNoteText}>
-                                <strong>{maintenanceAlert.heading || 'Maintenance upcoming'}</strong>
-                                <p>{maintenanceAlert.body}</p>
-                                {maintenanceAlert.computedStatusLabel ? <small className={styles.maintenanceUpcomingMeta}>{maintenanceAlert.computedStatusLabel}</small> : null}
-                              </div>
-                              {canUseOwnerOnlyAssetActions ? (
-                                <button
-                                  type="button"
-                                  className={styles.partnerNoteButton}
-                                  disabled={isMarkingMaintenanceAlertNoted}
-                                  onClick={() => void handleMarkMaintenanceAlertNoted(maintenanceAlert.id, asset.id)}
-                                >
-                                  {isMarkingMaintenanceAlertNoted ? 'Noting...' : 'Noted'}
-                                </button>
-                              ) : null}
-                            </div>
-                            );
-                          })}
-
-                          {licenseRenewalAlert ? (
-                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
-                              <div className={styles.partnerNoteText}>
-                                <strong>{licenseRenewalAlert.heading || 'License renewal upcoming'}</strong>
-                                <p>{licenseRenewalAlert.body}</p>
-                                <small className={styles.maintenanceUpcomingMeta}>{licenseRenewalAlert.computedStatusLabel}</small>
-                              </div>
-                              {canUseOwnerOnlyAssetActions ? (
-                                <button
-                                  type="button"
-                                  className={styles.partnerNoteButton}
-                                  disabled={isMarkingLicenseRenewalAlertNoted}
-                                  onClick={() => void handleMarkLicenseRenewalAlertNoted(asset.id, licenseRenewalAlert.renewalDate)}
-                                >
-                                  {isMarkingLicenseRenewalAlertNoted ? 'Noting...' : 'Noted'}
-                                </button>
-                              ) : null}
-                            </div>
-                          ) : null}
-
-                          {noticeStack(asset.issueNoteStatuses, asset.latestIssueNoteStatus).map((latestIssueNoteStatus) => {
-                            const isMarkingIssueNoteNoted = busyIssueNoteStatusId === latestIssueNoteStatus.id; const issueNoteMeta = [latestIssueNoteStatus.operatorName ? `By ${latestIssueNoteStatus.operatorName}` : '', latestIssueNoteStatus.createdAtIso ? formatDate(latestIssueNoteStatus.createdAtIso) : ''].filter(Boolean).join(' · ');
-                            return (
-                            <div key={latestIssueNoteStatus.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
-                              <div className={styles.partnerNoteText}>
-                                <strong>Open issue reported</strong>
-                                <p>{latestIssueNoteStatus.note}</p>
-                                {issueNoteMeta ? <small className={styles.issueNoteMeta}>{issueNoteMeta}</small> : null}
-                              </div>
-                              {canUseOwnerOnlyAssetActions ? (
-                                <button
-                                  type="button"
-                                  className={styles.partnerNoteButton}
-                                  disabled={isMarkingIssueNoteNoted}
-                                  onClick={() => setResolveIssue({id:latestIssueNoteStatus.id,assetId:asset.id,title:asset.title,note:latestIssueNoteStatus.note})}
-                                >
-                                  {isMarkingIssueNoteNoted ? 'Saving…' : 'Resolved'}
-                                </button>
-                              ) : null}
-                            </div>
-                            );
-                          })}
-
-                          {noticeStack(asset.maintenanceStatuses, asset.latestMaintenanceStatus).map((latestMaintenanceStatus) => {
-                            const isMarkingMaintenanceNoted = busyMaintenanceStatusId === latestMaintenanceStatus.id; const maintenanceDoneMeta = [latestMaintenanceStatus.operatorName ? `By ${latestMaintenanceStatus.operatorName}` : '', latestMaintenanceStatus.createdAtIso ? formatDate(latestMaintenanceStatus.createdAtIso) : ''].filter(Boolean).join(' · '); const maintenancePhotoUrls = uniquePhotoUrls(latestMaintenanceStatus.photoUrls ?? []).slice(0, 6); const maintenancePhotoCount = latestMaintenanceStatus.photoCount ?? maintenancePhotoUrls.length;
-                            return (
-                            <div key={latestMaintenanceStatus.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceDoneBanner}`}>
-                              <div className={styles.partnerNoteText}>
-                                <strong>Maintenance has been done</strong>
-                                <p>{latestMaintenanceStatus.summary}</p>
-                                {latestMaintenanceStatus.note ? <p>Notes/Problems: {latestMaintenanceStatus.note}</p> : null}
-                                {maintenancePhotoUrls.length ? (
-                                  <div className={styles.maintenanceDonePhotoStrip} aria-label="Maintenance photos">
-                                    {maintenancePhotoUrls.map((url, index) => (
-                                      <a
-                                        key={`${latestMaintenanceStatus.id}-maintenance-photo-${index}`}
-                                        href={url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className={styles.maintenanceDonePhotoLink}
-                                      >
-                                        <img src={url} alt={`Maintenance photo ${index + 1}`} />
-                                      </a>
-                                    ))}
-                                  </div>
-                                ) : maintenancePhotoCount > 0 ? (
-                                  <p>{maintenancePhotoCount} maintenance photo{maintenancePhotoCount === 1 ? '' : 's'} saved to this asset.</p>
-                                ) : null}
-                                {maintenancePhotoUrls.length > 0 && maintenancePhotoCount > maintenancePhotoUrls.length ? (
-                                  <small className={styles.maintenanceDoneMeta}>
-                                    Showing {maintenancePhotoUrls.length} of {maintenancePhotoCount} maintenance photos.
-                                  </small>
-                                ) : null}
-                                {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
-                              </div>
-                              {canUseOwnerOnlyAssetActions ? (
-                                <button
-                                  type="button"
-                                  className={styles.partnerNoteButton}
-                                  disabled={isMarkingMaintenanceNoted}
-                                  onClick={() => void handleMarkMaintenanceStatusNoted(latestMaintenanceStatus.id, asset.id)}
-                                >
-                                  {isMarkingMaintenanceNoted ? 'Noting...' : 'Noted'}
-                                </button>
-                              ) : null}
-                            </div>
-                            );
-                          })}
                         </div>
 
                         {isExpanded ? (
@@ -17370,6 +17164,212 @@ export default function AssetRegisterClient({
                             })()}
                           </div>
                         ) : null}
+                          {pendingValueAssets.includes(asset.id)&&canUseOwnerOnlyAssetActions&&<div className={styles.partnerNoteBanner}><div className={styles.partnerNoteText}><strong>Value suggestion awaiting review</strong><p>The current asset value has not changed.</p></div><button className={styles.primaryButton} onClick={()=>setValueReviewAsset(asset)}>Review value</button></div>}
+                          {dealerAssetCorrection && canUseOwnerOnlyAssetActions ? (
+                            <div className={`${styles.dealerCorrectionBanner} ${dealerCorrectionRevaluationAlert ? styles.dealerCorrectionBannerWarning : ''}`} role="status">
+                              <div className={styles.dealerCorrectionCopy}>
+                                <span className={styles.dealerCorrectionIcon} aria-hidden="true">{dealerCorrectionRevaluationAlert ? '!' : '✓'}</span>
+                                <div>
+                                  <strong>{dealerCorrectionRevaluationAlert
+                                    ? dealerAssetCorrection.revaluationStatus === 'failed'
+                                      ? 'Replacement price saved — valuation retry needed'
+                                      : 'Replacement price saved — valuation pending'
+                                    : dealerAssetCorrection.licenseRenewalDateChanged
+                                      ? 'Licence renewal awaiting your approval'
+                                      : dealerAssetCorrection.sourceType === 'external' ? 'Business update awaiting your approval' : 'Dealer update awaiting your approval'}</strong>
+                                  <p>{dealerCorrectionRevaluationAlert
+                                    ? dealerAssetCorrection.revaluationStatus === 'failed'
+                                      ? dealerAssetCorrection.revaluationFailureMessage || 'Aim4price could not recalculate this asset automatically.'
+                                      : 'Aim4price is still recalculating this asset. A safe retry becomes available if the attempt is interrupted.'
+                                    : dealerCorrectionDescription(dealerAssetCorrection)}</p>
+                                  <small>{dealerCorrectionRevaluationAlert
+                                    ? 'The accepted replacement price remains saved regardless of the valuation result.'
+                                    : dealerAssetCorrection.licenseRenewalDateChanged
+                                      ? 'Review this date before the licence expert can submit another update.'
+                                      : dealerAssetCorrection.sourceType === 'external' ? 'Review this change before the business can submit another update for this asset.' : 'Review this one change before the dealer can submit another update for this asset.'}</small>
+                                </div>
+                              </div>
+                              <div className={styles.dealerCorrectionActions}>
+                                {dealerCorrectionRevaluationAlert ? (
+                                  <button
+                                    type="button"
+                                    className={styles.dealerCorrectionAcceptButton}
+                                    disabled={isDecidingDealerCorrection || !dealerAssetCorrection.revaluationRetryable}
+                                    onClick={() => void handleDealerCorrectionRevaluationRetry(dealerAssetCorrection)}
+                                  >
+                                    {isDecidingDealerCorrection
+                                      ? 'Retrying…'
+                                      : dealerAssetCorrection.revaluationRetryable
+                                        ? 'Retry valuation'
+                                        : 'Recalculation pending'}
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className={styles.dealerCorrectionDeclineButton}
+                                      disabled={isDecidingDealerCorrection}
+                                      onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'reject')}
+                                    >
+                                      {isDecidingDealerCorrection ? 'Saving…' : 'Decline'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={styles.dealerCorrectionAcceptButton}
+                                      disabled={isDecidingDealerCorrection}
+                                      onClick={() => void handleDealerCorrectionDecision(dealerAssetCorrection, 'accept')}
+                                    >
+                                      {isDecidingDealerCorrection ? 'Saving…' : 'Accept update'}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {outstandingPartnerNotes(asset).map((openPartnerNote) => {
+                            const partnerNoteAuthor = openPartnerNote.partnerBusinessName || openPartnerNote.partnerName || 'Aim4price partner'; const partnerNoteToneClass = quoteToneClassForPartnerType(openPartnerNote.partnerType);
+                            return (
+                            <div key={openPartnerNote.id} className={`${styles.partnerNoteBanner} ${partnerNoteToneClass}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>Note from {partnerNoteAuthor}</strong>
+                                <p>{openPartnerNote.noteText}</p>
+                                {openPartnerNote.attachment ? (
+                                  <a
+                                    className={styles.partnerNoteAttachmentLink}
+                                    href={openPartnerNote.attachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <span>Open quote PDF</span>
+                                    <small>{openPartnerNote.attachment.fileName} · {formatByteSize(openPartnerNote.attachment.byteSize)}</small>
+                                  </a>
+                                ) : null}
+                              </div>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  onClick={() => void handleMarkPartnerNoteNoted(openPartnerNote.id, asset.id)}
+                                >
+                                  Noted
+                                </button>
+                              ) : null}
+                            </div>
+                            );
+                          })}
+
+                          {noticeStack(asset.maintenanceAlerts, asset.maintenanceAlert).map((maintenanceAlert) => {
+                            const isMarkingMaintenanceAlertNoted = busyMaintenanceAlertId === maintenanceAlert.id;
+                            return (
+                            <div key={maintenanceAlert.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>{maintenanceAlert.heading || 'Maintenance upcoming'}</strong>
+                                <p>{maintenanceAlert.body}</p>
+                                {maintenanceAlert.computedStatusLabel ? <small className={styles.maintenanceUpcomingMeta}>{maintenanceAlert.computedStatusLabel}</small> : null}
+                              </div>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingMaintenanceAlertNoted}
+                                  onClick={() => void handleMarkMaintenanceAlertNoted(maintenanceAlert.id, asset.id)}
+                                >
+                                  {isMarkingMaintenanceAlertNoted ? 'Noting...' : 'Noted'}
+                                </button>
+                              ) : null}
+                            </div>
+                            );
+                          })}
+
+                          {licenseRenewalAlert ? (
+                            <div className={`${styles.partnerNoteBanner} ${styles.maintenanceUpcomingBanner}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>{licenseRenewalAlert.heading || 'License renewal upcoming'}</strong>
+                                <p>{licenseRenewalAlert.body}</p>
+                                <small className={styles.maintenanceUpcomingMeta}>{licenseRenewalAlert.computedStatusLabel}</small>
+                              </div>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingLicenseRenewalAlertNoted}
+                                  onClick={() => void handleMarkLicenseRenewalAlertNoted(asset.id, licenseRenewalAlert.renewalDate)}
+                                >
+                                  {isMarkingLicenseRenewalAlertNoted ? 'Noting...' : 'Noted'}
+                                </button>
+                              ) : null}
+                            </div>
+                          ) : null}
+
+                          {noticeStack(asset.issueNoteStatuses, asset.latestIssueNoteStatus).map((latestIssueNoteStatus) => {
+                            const isMarkingIssueNoteNoted = busyIssueNoteStatusId === latestIssueNoteStatus.id; const issueNoteMeta = [latestIssueNoteStatus.operatorName ? `By ${latestIssueNoteStatus.operatorName}` : '', latestIssueNoteStatus.createdAtIso ? formatDate(latestIssueNoteStatus.createdAtIso) : ''].filter(Boolean).join(' · ');
+                            return (
+                            <div key={latestIssueNoteStatus.id} className={`${styles.partnerNoteBanner} ${styles.issueNoteBanner}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>Open issue reported</strong>
+                                <p>{latestIssueNoteStatus.note}</p>
+                                {issueNoteMeta ? <small className={styles.issueNoteMeta}>{issueNoteMeta}</small> : null}
+                              </div>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingIssueNoteNoted}
+                                  onClick={() => setResolveIssue({id:latestIssueNoteStatus.id,assetId:asset.id,title:asset.title,note:latestIssueNoteStatus.note})}
+                                >
+                                  {isMarkingIssueNoteNoted ? 'Saving…' : 'Resolved'}
+                                </button>
+                              ) : null}
+                            </div>
+                            );
+                          })}
+
+                          {noticeStack(asset.maintenanceStatuses, asset.latestMaintenanceStatus).map((latestMaintenanceStatus) => {
+                            const isMarkingMaintenanceNoted = busyMaintenanceStatusId === latestMaintenanceStatus.id; const maintenanceDoneMeta = [latestMaintenanceStatus.operatorName ? `By ${latestMaintenanceStatus.operatorName}` : '', latestMaintenanceStatus.createdAtIso ? formatDate(latestMaintenanceStatus.createdAtIso) : ''].filter(Boolean).join(' · '); const maintenancePhotoUrls = uniquePhotoUrls(latestMaintenanceStatus.photoUrls ?? []).slice(0, 6); const maintenancePhotoCount = latestMaintenanceStatus.photoCount ?? maintenancePhotoUrls.length;
+                            return (
+                            <div key={latestMaintenanceStatus.id} className={`${styles.partnerNoteBanner} ${styles.maintenanceDoneBanner}`}>
+                              <div className={styles.partnerNoteText}>
+                                <strong>Maintenance has been done</strong>
+                                <p>{latestMaintenanceStatus.summary}</p>
+                                {latestMaintenanceStatus.note ? <p>Notes/Problems: {latestMaintenanceStatus.note}</p> : null}
+                                {maintenancePhotoUrls.length ? (
+                                  <div className={styles.maintenanceDonePhotoStrip} aria-label="Maintenance photos">
+                                    {maintenancePhotoUrls.map((url, index) => (
+                                      <a
+                                        key={`${latestMaintenanceStatus.id}-maintenance-photo-${index}`}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={styles.maintenanceDonePhotoLink}
+                                      >
+                                        <img src={url} alt={`Maintenance photo ${index + 1}`} />
+                                      </a>
+                                    ))}
+                                  </div>
+                                ) : maintenancePhotoCount > 0 ? (
+                                  <p>{maintenancePhotoCount} maintenance photo{maintenancePhotoCount === 1 ? '' : 's'} saved to this asset.</p>
+                                ) : null}
+                                {maintenancePhotoUrls.length > 0 && maintenancePhotoCount > maintenancePhotoUrls.length ? (
+                                  <small className={styles.maintenanceDoneMeta}>
+                                    Showing {maintenancePhotoUrls.length} of {maintenancePhotoCount} maintenance photos.
+                                  </small>
+                                ) : null}
+                                {maintenanceDoneMeta ? <small className={styles.maintenanceDoneMeta}>{maintenanceDoneMeta}</small> : null}
+                              </div>
+                              {canUseOwnerOnlyAssetActions ? (
+                                <button
+                                  type="button"
+                                  className={styles.partnerNoteButton}
+                                  disabled={isMarkingMaintenanceNoted}
+                                  onClick={() => void handleMarkMaintenanceStatusNoted(latestMaintenanceStatus.id, asset.id)}
+                                >
+                                  {isMarkingMaintenanceNoted ? 'Noting...' : 'Noted'}
+                                </button>
+                              ) : null}
+                            </div>
+                            );
+                          })}
                         </article>
                       </div>
                     );

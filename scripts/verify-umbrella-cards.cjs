@@ -15,7 +15,7 @@ const delay = ms => new Promise(resolve=>setTimeout(resolve,ms));
 async function check(browser, url) {
   const page=await browser.newPage(); const errors=[];page.on('pageerror',e=>errors.push(e.message));
   const make=(id,title,value,extra={})=>({id,userId:user.id,registerId:'canvas-register',title,kind:'tractor',value,selectedValueExVat:value,aim4priceValueExVat:value,replacementPriceExVat:500000,selectedMethod:'aim4price',specsJson:{},brandName:'New Holland',modelName:'TT4.90',equipmentFamilyKey:'tractor',equipmentFamilyLabel:'Tractors',yearModel:2022,hours:1276,condition:'good',note:'',serialNumber:'',marketplaceStatus:'draft',photos:[],documents:[],createdAtIso:'2026-09-13T00:00:00Z',updatedAtIso:'2026-09-13T00:00:00Z',...extra});
-  const assets=[make('member','2018 Massey Ferguson 4708',194438),make('member2','Farm trailer',15000,{specsJson:{assetFlagged:true}}),make('normal','2022 New Holland TT4.90 4WD Openstation',327133),make('live','Year Unknown Zimmatic 6-Tower + Overhang',459000,{marketplaceStatus:'live',isPublishedToMarketplace:true})];
+  const assets=[make('member','2018 Massey Ferguson 4708',194438),make('member2','Farm trailer',15000,{specsJson:{assetFlagged:true}}),make('normal','2022 New Holland TT4.90 4WD Openstation',327133,{latestIssueNoteStatus:{id:'issue-1',note:'Rear light needs checking',operatorName:'Test owner',createdAtIso:'2026-09-13T00:00:00Z'},latestMaintenanceStatus:{id:'maintenance-1',summary:'Changed engine oil',operatorName:'Test mechanic',createdAtIso:'2026-09-13T00:00:00Z',photoUrls:[]}}),make('live','Year Unknown Zimmatic 6-Tower + Overhang',459000,{marketplaceStatus:'live',isPublishedToMarketplace:true})];
   let groups=[{id:'umbrella',userId:user.id,registerId:'canvas-register',name:'Asset umbrella',valueMode:'separate',isFlagged:false,members:[{assetId:'member',role:'primary',relationship:'primary',countsTowardTotal:true,sortOrder:0},{assetId:'member2',role:'member',relationship:'works_with',countsTowardTotal:true,sortOrder:1}],createdAtIso:'2026-09-13T00:00:00Z',updatedAtIso:'2026-09-13T00:00:00Z'}];
   await page.evaluateOnNewDocument(()=>{Object.defineProperty(window,'outerWidth',{configurable:true,get:()=>innerWidth}); localStorage.setItem('aim4price.website-canvas.v2',JSON.stringify({mode:'auto'}));});
   await page.setRequestInterception(true);
@@ -102,12 +102,23 @@ async function check(browser, url) {
     assert.equal(await page.$eval('#asset-card-member [class*="assetFlagButton"]',e=>e.getAttribute('aria-pressed')),'false');
     assert.equal(await page.$eval('#asset-card-member2 [class*="assetFlagButton"]',e=>e.getAttribute('aria-pressed')),'true','unflagging umbrella preserves individual flags');
     await outside();
-    await page.click(details('normal'));
+    const value = '#asset-card-normal [class*="assetValueVatAmountRow"] strong';
+    assert.equal(await page.$eval(value,e=>e.hasAttribute('role')||e.hasAttribute('tabindex')),false,'displayed value is not an edit shortcut');
+    await page.click(value);
+    assert.equal(await page.$('[role="dialog"]'),null,'clicking the value does not open a value editor');
     await page.waitForFunction(()=>document.querySelector('#asset-card-normal [aria-expanded="true"]'));
     await page.click('#asset-card-normal h2');
     assert.equal(await isOpen('normal'),false,'card click closes standalone details');
     await page.click('#asset-card-normal h2');
     assert.equal(await isOpen('normal'),true,'card click opens standalone details');
+    const layout = await page.$eval('#asset-card-normal',card=>{
+      const details=card.querySelector('#asset-panel-normal');
+      const notices=[...card.querySelectorAll('[class*="partnerNoteBanner"]')];
+      return {count:notices.length,below:notices.every(n=>(details.compareDocumentPosition(n)&Node.DOCUMENT_POSITION_FOLLOWING)&&n.getBoundingClientRect().top>=details.getBoundingClientRect().bottom)};
+    });
+    assert.equal(layout.count,2,'issue and maintenance notices are present');
+    assert.equal(layout.below,true,'expanded asset details precede every notice visually and in reading order');
+    await page.screenshot({path:path.join(output,`asset-details-before-notices-${width}.png`)});
     await page.click('#asset-card-normal [class*="cardManageButton"]');
     await page.waitForSelector('[role="dialog"]');
     await page.$eval('[role="dialog"]',e=>e.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})));
