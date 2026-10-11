@@ -15,7 +15,7 @@
 .fields p { margin:0; }
 .choice { composes:itemLabel from './MaintenanceChecklistBrowser.module.css'; font-size:.95rem!important; line-height:1.4; font-weight:700; border:1px solid #d6e4dd; border-radius:.8rem; background:var(--app-surface,#fff); color:var(--app-text,#17362c); text-align:left; overflow-wrap:anywhere; }
 .choice[aria-pressed=true] { border-color:#71ac92; background:var(--app-surface-soft,#f0f8f4); }
-.tick { width:1.1rem; height:1.1rem; flex:0 0 1.1rem; margin-top:.15rem; display:grid; place-items:center; border:1px solid #8daf9e; border-radius:3px; font-size:.8rem; }
+.tick { width:1.1rem; height:1.1rem; flex:0 0 1.1rem; margin:0; display:grid; place-items:center; border:1px solid #8daf9e; border-radius:3px; font-size:.8rem; }
 .choice[aria-pressed=true] .tick { background:#14553f; color:#fff; }
 .search { margin-bottom:.8rem; }
 .list { display:grid; grid-template-columns:minmax(0,1fr); border-top:1px solid #d6e4dd; }
@@ -55,7 +55,7 @@
 }
 
 .choiceRow { display:flex; align-items:center; min-width:0; border:1px solid #d6e4dd; border-radius:.8rem; overflow:hidden; }
-.choiceRow .choice { border:0; border-radius:0; align-self:stretch; }
+.choiceRow .choice { border:0; border-radius:0; align-self:stretch; align-items:center; }
 .rowActions { display:flex; gap:.35rem; flex-wrap:wrap; flex-shrink:0; padding:.25rem; }
 .partName { border:0; background:transparent; color:inherit; padding:0; text-align:left; }
 .partName:hover { text-decoration:underline; }
