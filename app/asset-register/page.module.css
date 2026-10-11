@@ -41468,3 +41468,15 @@ button.documentOpenLink {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Card-wide toggles reuse the existing control tooltip's colours and typography. */
+.cardToggleSurface { position:relative; cursor:pointer; }
+.cardToggleHint { position:absolute; top:.45rem; left:50%; width:0; height:0; pointer-events:none; }
+.cardToggleHint.controlTooltip::before { display:none; }
+.cardToggleHint.controlTooltip::after { top:0; bottom:auto; }
+@media (hover: hover) and (pointer: fine) {
+  .cardToggleSurface:hover:not(:has(:is(button, a, input, select, textarea, label, summary, [role="button"], [contenteditable]):hover)) > .cardToggleHint::after {
+    opacity:1;
+    transform:translate(-50%,0);
+  }
+}

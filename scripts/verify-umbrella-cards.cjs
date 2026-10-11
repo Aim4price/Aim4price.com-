@@ -56,7 +56,17 @@ async function check(browser, url) {
       return page.$eval(selector,e=>getComputedStyle(e).borderTopColor);
     };
     assert.equal(await red('[class*="assetGroupHeaderFlagged"]'),'rgb(223, 67, 77)');
-    await page.click(groupDetails);
+    const umbrellaTitle = '[class*="assetGroupHeaderRow"] h2';
+    assert.equal(await page.$eval(groupDetails,e=>e.getAttribute('data-tooltip')),'Open Umbrella');
+    await page.hover(umbrellaTitle);
+    await delay(180);
+    assert.equal(await page.$eval('[class*="assetGroupHeader"] > [class*="cardToggleHint"]',e=>getComputedStyle(e,'::after').opacity),'1');
+    await page.click(umbrellaTitle);
+    await page.waitForSelector('#asset-card-member');
+    assert.equal(await page.$eval(groupDetails,e=>e.getAttribute('data-tooltip')),'Close Umbrella');
+    await page.click(umbrellaTitle);
+    await page.waitForFunction(()=>!document.querySelector('#asset-card-member'));
+    await page.click(umbrellaTitle);
     await page.waitForSelector('#asset-card-member');
     for (const id of ['member','member2']) {
       assert.equal(await page.$eval(`#asset-card-${id} [class*="assetFlagButton"]`, e=>e.getAttribute('aria-pressed')),'true');
@@ -66,16 +76,23 @@ async function check(browser, url) {
     await page.waitForFunction(()=>document.querySelector('#asset-card-member [aria-expanded="true"]'));
     assert.equal(await red('#asset-card-member'),'rgb(223, 67, 77)');
     await page.click('#asset-card-member h2');
-    assert.equal(await isOpen('member'),true,'inside clicks keep details open');
+    assert.equal(await isOpen('member'),false,'card click closes member details');
+    assert.equal(await page.$eval(details('member'),e=>e.getAttribute('data-tooltip')),'Open Asset');
+    await page.click('#asset-card-member h2');
+    assert.equal(await isOpen('member'),true,'card click opens member details');
+    assert.equal(await page.$eval(details('member'),e=>e.getAttribute('data-tooltip')),'Close Asset');
     await page.screenshot({path:path.join(output,`umbrella-red-expanded-${width}.png`)});
     await outside();
-    assert.equal(await page.$('#asset-card-member'),null,'outside closes umbrella and member details');
+    assert.equal(await isOpen('member'),false,'outside closes member details first');
+    await outside();
+    assert.equal(await page.$('#asset-card-member'),null,'next outside click closes umbrella');
     await page.click(groupDetails);
     await page.waitForSelector('#asset-card-member');
     assert.equal(await isOpen('member'),false,'reopening umbrella does not restore stale member details');
     await page.click(details('member'));
     await page.click('#asset-card-member2 h2');
-    assert.equal(await page.$('#asset-card-member'),null,'clicking a muted card outside the active card dismisses the focused group');
+    assert.equal(await isOpen('member'),false,'clicking a muted card dismisses the focused asset');
+    await outside();
     await page.click(groupDetails);
     await page.waitForSelector('#asset-card-member');
     await page.click('#asset-card-member [class*="assetFlagButton"]');
@@ -86,7 +103,9 @@ async function check(browser, url) {
     await page.click(details('normal'));
     await page.waitForFunction(()=>document.querySelector('#asset-card-normal [aria-expanded="true"]'));
     await page.click('#asset-card-normal h2');
-    assert.equal(await isOpen('normal'),true);
+    assert.equal(await isOpen('normal'),false,'card click closes standalone details');
+    await page.click('#asset-card-normal h2');
+    assert.equal(await isOpen('normal'),true,'card click opens standalone details');
     await page.click('#asset-card-normal [class*="cardManageButton"]');
     await page.waitForSelector('[role="dialog"]');
     await page.$eval('[role="dialog"]',e=>e.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})));
@@ -101,7 +120,7 @@ async function check(browser, url) {
     await page.waitForSelector('[aria-label="Unflag Asset umbrella"]');
     groups[0].isFlagged=false;
   }
-  assert.deepEqual(errors,[]);console.log('PASS card layout, inherited red flags, independent flag preservation, outside dismissal and modal/inside-click preservation');await page.close();
+  assert.deepEqual(errors,[]);console.log('PASS card layout, inherited red flags, independent flag preservation, outside dismissal, card toggles, hover labels and modal preservation');await page.close();
 }
 async function main() {
   await fs.mkdir(output,{recursive:true});
