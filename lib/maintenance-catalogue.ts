@@ -53,6 +53,8 @@ export type MaintenanceChecklist = {
   items: MaintenanceItem[];
   matched: boolean;
 };
+export type MaintenanceWorkPart = { name: string; partNumber: string; brand: string };
+
 export type MaintenanceWorkSnapshot = {
   version: number;
   family: MaintenanceIdentity;
@@ -62,6 +64,7 @@ export type MaintenanceWorkSnapshot = {
     id: string;
     label: string;
     action: "checked" | "serviced" | "repaired";
+    parts?: MaintenanceWorkPart[];
   }[];
 };
 
@@ -351,7 +354,15 @@ export function validateMaintenanceWork(
     const items = s.items.map((i) => {
       if (!record(i) || i.action !== mode)
         throw new Error("Invalid maintenance action.");
-      return { id: key(i.id), label: bounded(i.label, 160), action: mode };
+      let parts: MaintenanceWorkPart[] | undefined;
+      if (i.parts != null) {
+        if (!Array.isArray(i.parts) || i.parts.length > 20) throw new Error("Add up to 20 parts per work item.");
+        parts = i.parts.map(part => {
+          if (!record(part)) throw new Error("Invalid maintenance part.");
+          return { name: bounded(part.name, 160), partNumber: bounded(part.partNumber, 120), brand: part.brand === '' || part.brand == null ? '' : bounded(part.brand, 120) };
+        });
+      }
+      return { id: key(i.id), label: bounded(i.label, 160), action: mode, ...(parts?.length ? { parts } : {}) };
     });
     if (new Set(items.map((i) => i.id)).size !== items.length)
       throw new Error("Duplicate maintenance item.");

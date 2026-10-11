@@ -615,3 +615,23 @@
 }
 
 .body[tabindex] { outline: none; }
+
+/* Quick edits share the checklist action icons; details stay beneath the name. */
+.workRow { min-width:0; border:1px solid var(--app-line, #d6e2df); border-radius:14px; background:var(--app-surface, #fff); overflow:hidden; }
+.workRowMain { display:flex; align-items:center; min-width:0; }
+.workRowMain > button { flex:1; min-width:0; border:0; border-radius:0; align-self:stretch; box-shadow:none; }
+.workActions { display:flex; align-items:center; gap:.3rem; padding:.4rem; flex-shrink:0; }
+.partsAction { display:inline-flex; align-items:center; justify-content:center; width:2.75rem; height:2.75rem; padding:0; border:1px solid transparent; border-radius:.65rem; background:#e8f6ee; color:#187348; cursor:pointer; }
+.partsAction:hover { background:#d3eddf; border-color:#9acfb0; }
+.partsAction svg { width:1.25rem; height:1.25rem; }
+.partsAction:focus-visible { outline:2px solid currentColor; outline-offset:2px; }
+.workEditor { display:grid; gap:.8rem; padding:1rem; border-top:1px solid var(--app-line, #d6e2df); background:var(--app-surface-soft, #f5faf7); }
+.workEditor > small { color:var(--app-muted, #607168); }
+.workEditor select { width:100%; min-width:0; padding:.8rem; border:1px solid var(--app-line, #d6e2df); border-radius:.7rem; background:var(--app-surface, #fff); color:var(--app-text, #173f36); }
+.editorActions { display:flex; justify-content:flex-end; gap:.6rem; }
+.partEntry { display:grid; gap:.75rem; }
+.attachedParts { display:grid; gap:.5rem; list-style:none; margin:0; padding:0; }
+.attachedParts li { display:flex; align-items:center; justify-content:space-between; gap:.75rem; min-width:0; }
+.attachedParts li > span { min-width:0; overflow-wrap:anywhere; }
+.attachedParts small { display:block; margin-top:.2rem; color:var(--app-muted, #607168); }
+.checklist:has(.workRow) { grid-template-columns:1fr; }

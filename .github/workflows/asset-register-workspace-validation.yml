@@ -47,6 +47,10 @@ jobs:
           npm run test:owner-app-operations
           npm run test:dealer-fast-loading
           npm run test:app-umbrella-access
+      - name: Maintenance snapshots and parts validation
+        run: node --test tests/asset-checklist.test.cjs tests/asset-parts.test.cjs tests/app-maintenance-access.test.cjs tests/maintenance-catalogue.test.cjs
+      - name: Service quick edits and parts in browser
+        run: node scripts/verify-service-quick-edit.cjs
       - name: Production bundle validation
         shell: bash
         run: |

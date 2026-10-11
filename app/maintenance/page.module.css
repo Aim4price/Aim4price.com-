@@ -5238,3 +5238,10 @@
 .assetReturn { margin: 1.1rem 0 0; }
 .assetReturn .secondaryButton { display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.8rem 1.15rem; }
 .maintenanceChoiceCard:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Keep both maintenance entry steps legible over the asset workspace. */
+.maintenanceChoiceBackdrop.maintenanceChoiceBackdrop.maintenanceChoiceBackdrop {
+  background: rgba(8, 25, 23, .64) !important;
+  -webkit-backdrop-filter: blur(9px) !important;
+  backdrop-filter: blur(9px) !important;
+}
