@@ -58,9 +58,11 @@ async function check(browser, url) {
     assert.equal(await red('[class*="assetGroupHeaderFlagged"]'),'rgb(223, 67, 77)');
     const umbrellaTitle = '[class*="assetGroupHeaderRow"] h2';
     assert.equal(await page.$eval(groupDetails,e=>e.getAttribute('data-tooltip')),'Open Umbrella');
+    await page.$eval(umbrellaTitle,e=>e.scrollIntoView({block:'center'}));
     await page.hover(umbrellaTitle);
     await delay(180);
-    assert.equal(await page.$eval('[class*="assetGroupHeader"] > [class*="cardToggleHint"]',e=>getComputedStyle(e,'::after').opacity),'1');
+    const supportsHover = await page.evaluate(()=>matchMedia('(hover: hover) and (pointer: fine)').matches);
+    assert.equal(await page.$eval('[class*="assetGroupHeader"] > [class*="cardToggleHint"]',e=>getComputedStyle(e,'::after').opacity),supportsHover?'1':'0','hover hints follow device pointer capabilities');
     await page.click(umbrellaTitle);
     await page.waitForSelector('#asset-card-member');
     assert.equal(await page.$eval(groupDetails,e=>e.getAttribute('data-tooltip')),'Close Umbrella');
@@ -132,7 +134,7 @@ async function main() {
       await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error('Next startup timed out')),90000);server.stdout.on('data',data=>{if(data.toString().includes('Ready')){clearTimeout(timer);resolve()}});server.stderr.on('data',data=>process.stderr.write(data));server.once('exit',code=>{clearTimeout(timer);reject(Error(`Next exited ${code}`))})});
     }
     await fs.mkdir(output,{recursive:true});
-    browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:chromium.args,headless:true,pipe:true});
+    browser=await puppeteer.launch({executablePath:process.env.CANVAS_BROWSER_PATH||await chromium.executablePath(),args:process.env.CANVAS_BROWSER_PATH?['--no-sandbox','--disable-dev-shm-usage']:chromium.args,headless:true,pipe:true});
     await check(browser,external||'http://127.0.0.1:3030');
   } finally {
     if(browser) await browser.close();
