@@ -47,7 +47,6 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
   const [drafts, setDrafts] = useState<Draft[]>([]);
   // Successful request IDs remain stable until the whole batch succeeds.
   const savedRequests = useRef(new Set<string>());
-  const [maintenanceId, setMaintenanceId] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const id = useId();
   const dialogRef = useLeadDialog(onClose, busy);
@@ -71,13 +70,13 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
     try {
       for (const draft of drafts) {
         if (savedRequests.current.has(draft.requestId)) continue;
-        const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...draft, maintenanceId }) });
+        const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Could not save the part.');
         savedRequests.current.add(draft.requestId);
       }
       setNotice(drafts.length === 1 ? 'Part saved.' : `${drafts.length} parts saved.`);
-      setDrafts([]); savedRequests.current.clear(); setMaintenanceId(''); setAdding(false); setStep(0); setPage(0);
+      setDrafts([]); savedRequests.current.clear(); setAdding(false); setStep(0); setPage(0);
       await load();
     } catch (error) {
       const count = savedRequests.current.size;
@@ -147,12 +146,12 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
               <label>Notes<textarea placeholder="Optional" maxLength={2000} rows={2} value={draft.notes} onChange={event => update(draft.requestId, 'notes', event.target.value)}/></label></div>
             </div>)}
             {step === 2 && <>
-              <div className={`${styles.list} ${styles.full}`}>{drafts.map(draft => <article className={styles.part} key={draft.requestId}><div className={styles.partMain}><h3>{draft.name}</h3><span><strong className={styles.number}>{draft.partNumber}</strong>{draft.brand && ` · ${draft.brand}`}</span></div>{draft.notes && <p>{draft.notes}</p>}<div className={styles.rowActions}><ItemActionButton action="edit" name={draft.name} onClick={() => setStep(1)} /><ItemActionButton action="delete" name={draft.name} onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))} /></div></article>)}</div>
-              {data.maintenance.length > 0 && <>
-                <p className={styles.full}><strong>Link to maintenance</strong> <small>(optional)</small></p>
-                <button type="button" className={`${styles.choice} ${styles.full}`} aria-pressed={!maintenanceId} onClick={() => setMaintenanceId('')}><span className={styles.tick} aria-hidden="true">{!maintenanceId ? '✓' : ''}</span>No link</button>
-                {data.maintenance.map(record => <button type="button" key={record.id} className={styles.choice} aria-pressed={maintenanceId === record.id} onClick={() => setMaintenanceId(record.id)}><span className={styles.tick} aria-hidden="true">{maintenanceId === record.id ? '✓' : ''}</span><span>{record.title}<small className={styles.recordStatus}>{record.status}</small></span></button>)}
-              </>}
+              <div className={`${styles.list} ${styles.full}`}>{drafts.map(draft => <article className={styles.part} key={draft.requestId}>
+                <div className={styles.partMain}>
+                  <div className={styles.partDetails}><h3>{draft.name}</h3><span><strong className={styles.number}>{draft.partNumber}</strong>{draft.brand && <small> · {draft.brand}</small>}</span>{draft.notes && <p>{draft.notes}</p>}</div>
+                  <div className={styles.rowActions}><ItemActionButton action="edit" name={draft.name} onClick={() => setStep(1)} /><ItemActionButton action="delete" name={draft.name} onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))} /></div>
+                </div>
+              </article>)}</div>
               <p className={`${styles.hint} ${styles.full}`}>Check fitment against the model and serial / VIN. Parts do not record costs or completed work.</p>
             </>}
           </fieldset>
@@ -162,10 +161,16 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
           <div className={checklistStyles.sectionHeading}><span className={styles.hint} role="status">{selectedParts.length} selected</span><button type="button" className={checklistStyles.addButton} disabled={busy || !parts.length} onClick={() => setSelected(current => { const next = new Set(current); parts.forEach(part => allPartsSelected ? next.delete(part.id) : next.add(part.id)); return next; })}>{allPartsSelected ? 'Deselect all' : 'Select all'}</button></div>
           {parts.length ? <div className={styles.list}>{parts.slice(page * 6, (page + 1) * 6).map(part => <article className={`${styles.part} ${styles.selectable}`} data-selected={selected.has(part.id)} key={part.id}>
             <input type="checkbox" aria-label={`Select ${part.name}, ${part.partNumber}`} checked={selected.has(part.id)} disabled={busy} onChange={() => setSelected(current => { const next = new Set(current); next.has(part.id) ? next.delete(part.id) : next.add(part.id); return next; })}/>
-            <div className={styles.partContent}><div className={styles.partMain}><div><h3>{part.canEdit ? <button type="button" className={styles.partName} disabled={busy} onClick={() => openManagement({ part })}>{part.name}</button> : part.name}</h3>{part.itemLabel !== part.name && <small>{part.itemLabel}</small>}</div><span><strong className={styles.number}>{part.partNumber}</strong>{part.brand && <small> · {part.brand}</small>}</span></div>
-            {part.notes && <p>{part.notes}</p>}
-            {part.maintenanceId && <small>Linked to {data.maintenance.find(record => record.id === part.maintenanceId)?.title || 'maintenance'}</small>}
-            <div className={styles.partBottom}><small className={styles.audit}>{part.addedBy} · {new Date(part.createdAt).toLocaleDateString('en-ZA')}</small>{part.canEdit && <div className={styles.rowActions}><ItemActionButton action="edit" name={part.name} disabled={busy} onClick={() => openManagement({ part })} /><ItemActionButton action="delete" name={part.name} disabled={busy} onClick={() => openManagement({ part }, true)} /></div>}</div></div>
+            <div className={`${styles.partContent} ${styles.partMain}`}>
+              <div className={styles.partDetails}>
+                <h3>{part.canEdit ? <button type="button" className={styles.partName} disabled={busy} onClick={() => openManagement({ part })}>{part.name}</button> : part.name}</h3>
+                <span><strong className={styles.number}>{part.partNumber}</strong>{part.brand && <small> · {part.brand}</small>}</span>
+                {part.itemLabel !== part.name && <small>{part.itemLabel}</small>}
+                {part.notes && <p>{part.notes}</p>}
+                <small className={styles.audit}>{part.addedBy} · {new Date(part.createdAt).toLocaleDateString('en-ZA')}</small>
+              </div>
+              {part.canEdit && <div className={styles.rowActions}><ItemActionButton action="edit" name={part.name} disabled={busy} onClick={() => openManagement({ part })} /><ItemActionButton action="delete" name={part.name} disabled={busy} onClick={() => openManagement({ part }, true)} /></div>}
+            </div>
           </article>)}</div> : <p className={styles.empty}>{search ? 'No matching parts.' : 'No parts yet.'}</p>}
           {parts.length > 6 && <div className={styles.actions}><button type="button" className={checklistStyles.addButton} disabled={page === 0} onClick={() => setPage(page - 1)}>Previous</button><span>{page + 1} / {Math.ceil(parts.length / 6)}</span><button type="button" className={checklistStyles.addButton} disabled={(page + 1) * 6 >= parts.length} onClick={() => setPage(page + 1)}>Next</button></div>}
         </>}
