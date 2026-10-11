@@ -31,3 +31,9 @@
 .grid > :is(button, a)[data-manage-action] > svg { color: var(--action-ink) !important; }
 .grid > :is(button, a)[data-manage-action]:hover:not(:disabled) { box-shadow: 0 6px 18px #173b2f12; }
 .grid > :is(button, a)[data-manage-action]:focus-visible { outline: 3px solid var(--action-ink); outline-offset: 3px; }
+
+/* The maintenance chooser uses the same lilac/blue palette as Manage pricing. */
+.grid.pricingMaintenance > :is(button, a)[data-manage-action='addMaintenance'],
+.grid.pricingMaintenance > :is(button, a)[data-manage-action='maintenanceSchedules'] {
+  --action-tint: #f5f0fc; --action-border: #dcd0ed; --action-ink: #695089;
+}

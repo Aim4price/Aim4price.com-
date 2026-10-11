@@ -125,11 +125,11 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
           {management.deleting ? <><p>Delete <strong>{editFields.name}</strong>?</p><p className={styles.hint}>{management.item ? 'Removed from this asset’s choices. Saved parts stay unchanged.' : 'This cannot be undone.'}</p></> : <>
             <label>Name<input autoFocus required maxLength={160} disabled={busy} value={editFields.name} onChange={event => setEditFields(current => ({ ...current, name: event.target.value }))}/></label>
             {management.part && <><label>Part number<input required maxLength={120} disabled={busy} value={editFields.partNumber} onChange={event => setEditFields(current => ({ ...current, partNumber: event.target.value }))}/></label>
-            <label>Brand (optional)<input maxLength={120} disabled={busy} value={editFields.brand} onChange={event => setEditFields(current => ({ ...current, brand: event.target.value }))}/></label>
-            <label>Notes (optional)<textarea maxLength={2000} rows={2} disabled={busy} value={editFields.notes} onChange={event => setEditFields(current => ({ ...current, notes: event.target.value }))}/></label></>}
+            <label>Brand<input placeholder="Optional" maxLength={120} disabled={busy} value={editFields.brand} onChange={event => setEditFields(current => ({ ...current, brand: event.target.value }))}/></label>
+            <label>Notes<textarea placeholder="Optional" maxLength={2000} rows={2} disabled={busy} value={editFields.notes} onChange={event => setEditFields(current => ({ ...current, notes: event.target.value }))}/></label></>}
           </>}
         </form> : !data ? <p>{error ? 'Close and reopen Parts to try again.' : 'Loading parts…'}</p> : adding && data.canAdd ? <form id={`${id}-form`} onSubmit={event => { event.preventDefault(); if (!drafts.length) return; if (step === 1 && drafts.some(draft => !draft.name.trim() || !draft.partNumber.trim())) { setError('Enter a description and part number for each part.'); return; } if (step < 2) { setError(''); setStep(step + 1); } else void save(); }}>
-          <div className={checklistStyles.sectionHeading}><h3 id={`${id}-context`} ref={stepHeading} tabIndex={-1} className={styles.stepTitle}>{steps[step]}</h3><small>{step + 1} / 3</small></div>
+          <div className={checklistStyles.sectionHeading}><h3 id={`${id}-context`} ref={stepHeading} tabIndex={-1} className={styles.stepTitle}>{steps[step]}</h3></div>
           <fieldset disabled={busy || hasSaved} className={styles.fields}>
             {step === 0 && <>
               <div className={`${checklistStyles.sectionHeading} ${styles.full}`}><span className={styles.hint} role="status">{drafts.length} selected</span><div className={styles.toolbar}>
@@ -141,10 +141,10 @@ export default function AssetPartsModal({ endpoint, assetTitle, assetSubtitle, o
             </>}
             {step === 1 && drafts.map(draft => <div key={draft.requestId} className={`${checklistStyles.editor} ${styles.full}`}>
               <h3>{data.suggestions.find(item => item.id === draft.itemKey)?.label || draft.name || 'New part'}</h3>
-              <div className={styles.fields}><label>Description<input required maxLength={160} value={draft.name} onChange={event => update(draft.requestId, 'name', event.target.value)}/></label>
+              <div className={styles.detailFields}><label>Name<input required maxLength={160} value={draft.name} onChange={event => update(draft.requestId, 'name', event.target.value)}/></label>
               <label>Part number<input required maxLength={120} value={draft.partNumber} onChange={event => update(draft.requestId, 'partNumber', event.target.value)} placeholder="e.g. 001-ABC"/></label>
-              <label>Brand <small>(optional)</small><input maxLength={120} value={draft.brand} onChange={event => update(draft.requestId, 'brand', event.target.value)}/></label>
-              <label>Notes <small>(optional)</small><textarea maxLength={2000} rows={2} value={draft.notes} onChange={event => update(draft.requestId, 'notes', event.target.value)}/></label></div>
+              <label>Brand<input placeholder="Optional" maxLength={120} value={draft.brand} onChange={event => update(draft.requestId, 'brand', event.target.value)}/></label>
+              <label>Notes<textarea placeholder="Optional" maxLength={2000} rows={2} value={draft.notes} onChange={event => update(draft.requestId, 'notes', event.target.value)}/></label></div>
             </div>)}
             {step === 2 && <>
               <div className={`${styles.list} ${styles.full}`}>{drafts.map(draft => <article className={styles.part} key={draft.requestId}><div className={styles.partMain}><h3>{draft.name}</h3><span><strong className={styles.number}>{draft.partNumber}</strong>{draft.brand && ` · ${draft.brand}`}</span></div>{draft.notes && <p>{draft.notes}</p>}<div className={styles.rowActions}><ItemActionButton action="edit" name={draft.name} onClick={() => setStep(1)} /><ItemActionButton action="delete" name={draft.name} onClick={() => setDrafts(current => current.filter(item => item.requestId !== draft.requestId))} /></div></article>)}</div>

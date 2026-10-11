@@ -20002,8 +20002,7 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.ownerCommandChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="owner-command-choice-title">Maintenance</h3>
-                <p>{activeAsset.title}</p>
+                <h3 id="owner-command-choice-title">{activeAsset.title}</h3>
                 <p>{buildAssetMeta(activeAsset)}</p>
               </div>
 
@@ -20019,10 +20018,10 @@ export default function AssetRegisterClient({
 
             <div className={styles.ownerCommandChoiceBody}>
               {maintenanceAvailability?.assetId === activeAsset.id && maintenanceAvailability.error ? <p role="alert">{maintenanceAvailability.error}</p> : null}
-              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${styles.maintenanceMenuGrid} ${actionColours.grid}`} data-manage-actions>
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid} ${styles.maintenanceMenuGrid} ${actionColours.grid} ${actionColours.pricingMaintenance}`} data-manage-actions>
                 <Link data-manage-action="addMaintenance"
                   href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
-                  className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${styles.optionFeaturedButton}`}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
                 >
                   <PlusIcon className={styles.buttonIcon} />
                   <span>
