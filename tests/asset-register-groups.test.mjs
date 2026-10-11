@@ -327,7 +327,7 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   assert.match(client, /:\s+'Create umbrella'/);
   assert.match(client, /'Show excl\. VAT' : 'Show incl\. VAT'/);
   assert.match(client, /className=\{`\$\{styles\.assetHeaderActions\} \$\{styles\.assetGroupHeaderActions\}`\}/);
-  assert.match(client, /data-tooltip=\{isCollapsed \? 'View details' : 'Hide details'\}/);
+  assert.match(client, /data-tooltip=\{isCollapsed \? 'Open Umbrella' : 'Close Umbrella'\}/);
   assert.match(client, /styles\.assetDetailsChevron/);
   assert.doesNotMatch(client, /assetGroupCollapseButton|assetGroupCollapseChevron/);
   assert.doesNotMatch(client, /<span aria-hidden="true">\{isCollapsed \? '⌄' : '⌃'\}<\/span>/);
@@ -498,7 +498,7 @@ test('umbrella-aware pagination keeps every umbrella visible and the full header
   assert.match(styles, /\.registerRangeSummary \.registerRangeItem \{[\s\S]*?white-space: nowrap;/);
   assert.doesNotMatch(client, /pageSizeForVisibleCardCount/);
   assert.match(client, /visiblePaginationEntries\.flatMap\(\(entry\) => entry\.assets\)/);
-  assert.match(client, /target\.closest\('button, a, input, select, textarea, \[role="button"\]'\)/);
+  assert.match(client, /target\.closest\('button, a, input, select, textarea, label, summary, \[role="button"\], \[contenteditable\]'\)/);
   assert.match(client, /onClick=\{\(event\) => \{[\s\S]*?toggleAssetGroupCollapsed\(group\.id\);/);
   assert.match(client, /const nextExpandedGroupIds = willExpand \? new Set\(\[groupId\]\) : new Set<string>\(\)/);
   assert.match(client, /compareUmbrellaAssetsByAttention/);

@@ -11,6 +11,7 @@ on:
       - "next.config.mjs"
       - "tests/**"
       - "scripts/verify-website-canvas.cjs"
+      - "scripts/verify-umbrella-cards.cjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
   workflow_dispatch:
 
@@ -67,6 +68,8 @@ jobs:
           exit "$build_status"
       - name: Browser scale, interaction and mobile isolation checks
         run: node scripts/verify-website-canvas.cjs
+      - name: Asset and umbrella card interactions
+        run: node scripts/verify-umbrella-cards.cjs
       - name: Save browser evidence
         if: always()
         uses: actions/upload-artifact@v4

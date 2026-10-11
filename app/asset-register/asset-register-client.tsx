@@ -16329,14 +16329,15 @@ export default function AssetRegisterClient({
                           data-asset-group-drop-target={isAssetGroupDropTarget ? 'true' : undefined}
                         >
                           <section
-                            className={`${styles.assetGroupHeader} ${group.isFlagged ? styles.assetGroupHeaderFlagged : ''} ${attention?.total ? (attention.issues ? styles.umbrellaNeedsAttention : styles.umbrellaHasUpdates) : ''} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
+                            className={`${styles.assetGroupHeader} ${styles.cardToggleSurface} ${group.isFlagged ? styles.assetGroupHeaderFlagged : ''} ${attention?.total ? (attention.issues ? styles.umbrellaNeedsAttention : styles.umbrellaHasUpdates) : ''} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
                             onClick={(event) => {
-                              if (draggingAssetId) return;
+                              if (draggingAssetId || window.getSelection()?.toString()) return;
                               const target = event.target as HTMLElement;
-                              if (target.closest('button, a, input, select, textarea, [role="button"]')) return;
+                              if (target.closest('button, a, input, select, textarea, label, summary, [role="button"], [contenteditable]')) return;
                               toggleAssetGroupCollapsed(group.id);
                             }}
                           >
+                            <span aria-hidden="true" className={`${styles.controlTooltip} ${styles.cardToggleHint}`} data-tooltip={isCollapsed ? 'Open Umbrella' : 'Close Umbrella'} />
                             {isAssetGroupDropTarget ? (
                               <span className={styles.assetGroupDropPrompt} role="status">Drop asset here</span>
                             ) : null}
@@ -16437,7 +16438,8 @@ export default function AssetRegisterClient({
                                   className={`${styles.expandButton} ${styles.cardViewDetailsButton} ${styles.controlTooltip}`}
                                   onClick={() => toggleAssetGroupCollapsed(group.id)}
                                   aria-expanded={!isCollapsed}
-                                  data-tooltip={isCollapsed ? 'View details' : 'Hide details'}
+                                  data-tooltip={isCollapsed ? 'Open Umbrella' : 'Close Umbrella'}
+                                  aria-label={isCollapsed ? 'Open Umbrella' : 'Close Umbrella'}
                                 >
                                   {isCollapsed
                                     ? <ChevronDownIcon className={`${styles.buttonIcon} ${styles.assetDetailsChevron}`} />
@@ -16575,9 +16577,16 @@ export default function AssetRegisterClient({
                       >
                         <article
                           id={`asset-card-${asset.id}`}
-                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${costBudgetStatus ? styles.assetCardBudgetWarning : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
+                          className={`${styles.assetCard} ${styles.cardToggleSurface} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${costBudgetStatus ? styles.assetCardBudgetWarning : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
                           data-cost-budget-status={costBudgetStatus || undefined}
+                          onClick={(event) => {
+                            if (draggingAssetId || window.getSelection()?.toString()) return;
+                            const target = event.target as HTMLElement;
+                            if (target.closest('button, a, input, select, textarea, label, summary, [role="button"], [contenteditable]')) return;
+                            setExpandedAssetId((current) => (current === asset.id ? null : asset.id));
+                          }}
                         >
+                        <span aria-hidden="true" className={`${styles.controlTooltip} ${styles.cardToggleHint}`} data-tooltip={isExpanded ? 'Close Asset' : 'Open Asset'} />
                         {(canUseOwnerOnlyAssetActions) ? (
                           <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${asset.title}`}>
                             <button
@@ -16709,7 +16718,8 @@ export default function AssetRegisterClient({
                                 onClick={() => setExpandedAssetId((current) => (current === asset.id ? null : asset.id))}
                                 aria-expanded={isExpanded}
                                 aria-controls={`asset-panel-${asset.id}`}
-                                data-tooltip={isExpanded ? 'Hide details' : 'View details'}
+                                data-tooltip={isExpanded ? 'Close Asset' : 'Open Asset'}
+                                aria-label={isExpanded ? 'Close Asset' : 'Open Asset'}
                               >
                                 {isExpanded
                                   ? <ChevronUpIcon className={`${styles.buttonIcon} ${styles.assetDetailsChevron}`} />
