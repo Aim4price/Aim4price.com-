@@ -45,9 +45,14 @@ async function check(browser, url) {
     await page.waitForFunction(()=>document.querySelector('#asset-group-title')?.textContent.includes('Edit umbrella'));
     await page.click('[aria-label="Close umbrella manager"]');
     const flagSelector = `[aria-label="${groups[0].isFlagged?'Unflag':'Flag'} Asset umbrella"]`;
-    await page.$eval(flagSelector,e=>e.scrollIntoView({block:'center'}));
-    await delay(400);
-    await page.click(flagSelector);
+    await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
+    await page.$eval(flagSelector,e=>e.scrollIntoView({block:'center',behavior:'instant'}));
+    await page.waitForFunction(selector=>{
+      const button=document.querySelector(selector),r=button.getBoundingClientRect();
+      return button.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));
+    },{},flagSelector);
+    const flagPoint=await page.$eval(flagSelector,e=>{const r=e.getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};});
+    await page.mouse.click(flagPoint.x,flagPoint.y);
     await page.waitForFunction(()=>document.querySelector('[aria-label="Unflag Asset umbrella"]'));
     assert.equal(await page.$eval('#asset-card-normal [class*="assetGroupButton"]',e=>getComputedStyle(e).backgroundColor),'rgb(255, 255, 255)');
     const groupDetails = '[class*="assetGroupHeaderRow"] [class*="cardViewDetailsButton"]';
