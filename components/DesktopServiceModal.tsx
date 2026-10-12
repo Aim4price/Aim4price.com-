@@ -1,6 +1,7 @@
 'use client';
 import type { AssetPart } from '../lib/asset-parts';
 import DateInput from './DateInput';
+import ServiceWorkItem, { type ServiceWorkDetail } from './ServiceWorkItem';
 
 import { useEffect, useRef, useMemo, useState, type KeyboardEvent, type FormEvent } from 'react';
 import {
@@ -87,10 +88,6 @@ function CloseIcon() {
   return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6.5 6.5 11 11m0-11-11 11" /></svg>;
 }
 
-function CheckIcon() {
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" /></svg>;
-}
-
 function serviceAssetDetails(record: DesktopServiceRecord): string {
   if (record.assetMeta) return record.assetMeta;
   const metric = record.assetUsageMetric ?? record.usageMetric;
@@ -114,13 +111,17 @@ export default function DesktopServiceModal({
   onSubmit,
 }: Props) {
   const [referenceParts, setReferenceParts] = useState<AssetPart[]>([]);
+  const [partsError, setPartsError] = useState('');
+  const [partsReload, setPartsReload] = useState(0);
+  const [workDetails, setWorkDetails] = useState<Record<string, ServiceWorkDetail>>({});
+  const [workEditor, setWorkEditor] = useState<string | null>(null);
   const referenceEndpoint = partsEndpoint || (!dealerAppMode && !checklistEndpoint && record.assetId ? `/api/asset-register/${record.assetId}/parts` : undefined);
   useEffect(() => {
-    setReferenceParts([]); if (!referenceEndpoint) return;
+    setReferenceParts([]); setPartsError(''); if (!referenceEndpoint) return;
     const controller = new AbortController();
-    fetch(referenceEndpoint, { cache: 'no-store', signal: controller.signal }).then(async response => { if (response.ok) { const data = await response.json(); setReferenceParts(data.parts || []); } }).catch(() => {});
+    fetch(referenceEndpoint, { cache: 'no-store', signal: controller.signal }).then(async response => { if (!response.ok) throw new Error('Could not load saved parts.'); const data = await response.json(); if (!controller.signal.aborted) setReferenceParts(data.parts || []); }).catch(() => { if (!controller.signal.aborted) setPartsError('Could not load saved parts.'); });
     return () => controller.abort();
-  }, [referenceEndpoint]);
+  }, [referenceEndpoint, partsReload]);
   const mode = record.maintenanceType === 'checkup' ? 'checked' : 'serviced';
   const profile = useMemo(() => resolveAssetServiceProfile({
     title: record.assetTitle,
@@ -198,8 +199,20 @@ export default function DesktopServiceModal({
       : [...current, label]);
   }
 
+  function addWorkItem() {
+    const label = ownItem.trim();
+    if (!label || busy) return;
+    if (!options.some(option => option.label === label) && !customItems.includes(label)) {
+      if (customItems.length >= 20) return;
+      setCustomItems(items => [...items, label]);
+    }
+    setSelectedItems(items => items.includes(label) ? items : [...items, label]);
+    setOwnItem('');
+  }
+
   function stageError(current: number): string {
-    if (current === 1 && !selectedItems.length && !customItems.length && !ownItem.trim() && !notes.trim()) {
+    if (current === 1 && workEditor) return 'Save or close the item editor before continuing.';
+    if (current === 1 && !selectedItems.length && !ownItem.trim() && !notes.trim()) {
       return 'Select completed work or add a note.';
     }
     if (current === 2) {
@@ -229,6 +242,7 @@ export default function DesktopServiceModal({
 
   function previousStage() {
     setError('');
+    if (workEditor) { setWorkEditor(null); return; }
     if (stage > 1) setStage(current => current - 1);
     else if (askScheduleLink && scheduleDecision !== null) setScheduleDecision(null);
     else if (onBack) onBack();
@@ -247,21 +261,33 @@ export default function DesktopServiceModal({
     const usage = completedUsage.trim() === '' ? null : Number(completedUsage);
 
     try {
-      const ownWork = buildCustomMaintenanceWorkSnapshot(checklist, mode, [...customItems, ownItem]);
-      const workLabels = [...selectedItems, ...ownWork.items.map((item) => item.label)];
-      await onSubmit({
-        completedAt,
-        completedUsage: usage,
-        completedNotes: buildMaintenanceCompletionNote({
+      const ownWork = buildCustomMaintenanceWorkSnapshot(checklist, mode, [...customItems.filter(item => selectedItems.includes(item)), ownItem]);
+      // Preserve the catalogue IDs while saving record-specific wording and parts.
+      const snapshots = [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems), ...(mode === 'serviced' && repairOptions.some(item => selectedItems.includes(item.label)) ? [buildMaintenanceWorkSnapshot(repairChecklist, 'repaired', selectedItems)] : []), ...(ownWork.items.length ? [ownWork] : [])];
+      const captured = new Set(snapshots.flatMap(work => work.items.map(item => item.label)));
+      const fallback = options.filter(option => selectedItems.includes(option.label) && !captured.has(option.label));
+      snapshots[0].items.push(...fallback.map(option => ({ id: option.id, label: option.label, action: mode as 'checked' | 'serviced' })));
+      const maintenanceWork = snapshots.map(work => ({ ...work, items: work.items.map(item => {
+        const detail = workDetails[item.label];
+        return { ...item, label: detail?.label || item.label, ...(detail?.parts.length ? { parts: detail.parts } : {}) };
+      }) }));
+      const workLabels = maintenanceWork.flatMap(work => work.items.map(item => item.label));
+      const partNotes = maintenanceWork.flatMap(work => work.items.filter(item => item.parts?.length).map(item => `${item.label} — Parts: ${item.parts!.map(part => `${part.name} (${part.partNumber}${part.brand ? ` · ${part.brand}` : ''})`).join('; ')}`));
+      const completedNotes = buildMaintenanceCompletionNote({
           serviceMode: mode,
           checkedItems: mode === 'checked' ? workLabels : [],
           servicedItems: mode === 'serviced' ? workLabels : [],
           repairDetails: '',
           serviceCompany: inHouse ? 'Owner / in-house' : company,
           mechanicName: mechanic,
-          note: notes,
-        }),
-        maintenanceWork: [buildMaintenanceWorkSnapshot(checklist, mode, selectedItems), ...(mode === 'serviced' && repairOptions.some(item => selectedItems.includes(item.label)) ? [buildMaintenanceWorkSnapshot(repairChecklist, 'repaired', selectedItems)] : []), ...(ownWork.items.length ? [ownWork] : [])],
+          note: [notes.trim(), ...partNotes].filter(Boolean).join('\n'),
+        });
+      if (completedNotes.length > 5000) { setStage(1); setError('This record is too long. Shorten the work notes or split it into separate records.'); return; }
+      await onSubmit({
+        completedAt,
+        completedUsage: usage,
+        completedNotes,
+        maintenanceWork,
         completedBy: mechanic.trim(),
         linkToScheduledMaintenance: !standalone && scheduleDecision !== 'separate',
         ...(asksRecurrence ? { continueSchedule: continueSchedule === true } : {}),
@@ -342,29 +368,27 @@ export default function DesktopServiceModal({
                 <label className={styles.field}>
                   <span>{mode === 'checked' ? 'Add a check completed' : 'Add other work completed'}</span>
                   <input type="text" maxLength={160} value={ownItem} onChange={(event) => setOwnItem(event.target.value)} placeholder={mode === 'checked' ? 'e.g. Checked trailer brake lights' : 'e.g. Replaced hydraulic hose'} onKeyDown={(event) => {
-                    if (event.key === 'Enter') { event.preventDefault(); if (ownItem.trim() && customItems.length < 20) { setCustomItems((items) => Array.from(new Set([...items, ownItem.trim()]))); setOwnItem(''); } }
+                    if (event.key === 'Enter') { event.preventDefault(); addWorkItem(); }
                   }} />
                 </label>
-                <button type="button" className={styles.cancelButton} disabled={!ownItem.trim() || customItems.length >= 20 || busy} onClick={() => { setCustomItems((items) => Array.from(new Set([...items, ownItem.trim()]))); setOwnItem(''); }}>+ Add item</button>
-                {customItems.length ? <ul className={styles.customWorkList}>{customItems.map((item) => <li key={item}><span>{item}</span><button type="button" disabled={busy} onClick={() => setCustomItems((items) => items.filter((value) => value !== item))} aria-label={`Remove ${item}`}>×</button></li>)}</ul> : null}
+                <button type="button" className={styles.cancelButton} disabled={!ownItem.trim() || customItems.length >= 20 || busy} onClick={addWorkItem}>+ Add item</button>
               </div>
-              <button type="button" className={styles.cancelButton} disabled={busy || savedChecklist.loading || !!savedChecklist.error || !options.length} onClick={() => setSelectedItems(current => options.every(option => current.includes(option.label)) ? current.filter(label => !options.some(option => option.label === label)) : Array.from(new Set([...current, ...options.map(option => option.label)])))}>{options.length > 0 && options.every(option => selectedItems.includes(option.label)) ? 'Deselect all' : 'Select all'}</button>
+              <button type="button" className={styles.cancelButton} disabled={busy || savedChecklist.loading || !!savedChecklist.error || (!options.length && !customItems.length)} onClick={() => {
+                const labels = [...options.map(option => option.label), ...customItems];
+                setSelectedItems(current => labels.every(label => current.includes(label)) ? [] : Array.from(new Set(labels)));
+              }}>{[...options.map(option => option.label), ...customItems].every(label => selectedItems.includes(label)) && (options.length > 0 || customItems.length > 0) ? 'Deselect all' : 'Select all'}</button>
               <div className={styles.checklist}>
-                {options.map((option) => {
-                  const selected = selectedItems.includes(option.label);
-                  return (
-                    <button
-                      key={option.id}
-                      type="button"
-                      className={selected ? styles.checkOptionSelected : styles.checkOption}
-                      onClick={() => toggleItem(option.label)}
-                      aria-pressed={selected}
-                      disabled={busy}
-                    >
-                      <span className={styles.checkbox}>{selected ? <CheckIcon /> : null}</span>
-                      <span><strong>{option.label}</strong>{referenceParts.filter(part => part.itemKey === option.id).map(part => <small key={part.id}>Saved part: {part.partNumber}{part.brand ? ` · ${part.brand}` : ''}</small>)}{option.id.startsWith('asset_custom_') ? <small className={styles.customTag}>Your saved checklist item</small> : null}{option.description ? <small>{option.description}</small> : null}</span>
-                    </button>
-                  );
+                {[...options, ...customItems.map((label, index) => ({ id: `custom_${index}`, label, description: '' }))].map(option => {
+                  const custom = customItems.includes(option.label);
+                  return <ServiceWorkItem key={option.id} itemKey={option.id}
+                    value={workDetails[option.label] || { label: option.label, parts: [] }} description={option.description}
+                    selected={selectedItems.includes(option.label)} busy={busy}
+                    referenceParts={referenceParts} partsError={partsError} reloadParts={() => setPartsReload(value => value + 1)}
+                    editor={workEditor} setEditor={setWorkEditor}
+                    onToggle={() => toggleItem(option.label)}
+                    onChange={detail => { setWorkDetails(current => ({ ...current, [option.label]: detail })); setSelectedItems(current => current.includes(option.label) ? current : [...current, option.label]); }}
+                    onRemove={custom ? () => { setCustomItems(items => items.filter(item => item !== option.label)); setSelectedItems(items => items.filter(item => item !== option.label)); setWorkDetails(current => { const next = { ...current }; delete next[option.label]; return next; }); setWorkEditor(null); } : undefined}
+                  />;
                 })}
               </div>
                 <label className={`${styles.field} ${styles.fieldWide}`}>

@@ -31,7 +31,7 @@ export default function MaintenanceEntryChoice(props: Props) {
     { label: 'Service', description: 'Servicing, repairs or maintenance.', icon: <svg className={styles.maintenanceChoiceSvg} viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 .1-1 7.7 7.7 0 0 0-.1-1l2.1-1.6-2-3.4-2.5 1a8.2 8.2 0 0 0-1.7-1L15 3.3h-4L10.6 6a8.2 8.2 0 0 0-1.7 1L6.4 6 4.4 9.4 6.5 11a7.7 7.7 0 0 0-.1 1c0 .3 0 .7.1 1l-2.1 1.6 2 3.4 2.5-1a8.2 8.2 0 0 0 1.7 1l.4 2.7h4l.4-2.7a8.2 8.2 0 0 0 1.7-1l2.5 1 2-3.4-2.2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" /></svg>, onClick: () => props.onType('service') },
     { label: 'Checkup', description: 'Inspection or condition check.', icon: '✓', onClick: () => props.onType('checkup') },
   ];
-  return <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay style={{ zIndex: 26000 }} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby={titleId}>
+  return <div className={`${styles.page} ${styles.modalBackdrop} ${styles.maintenanceChoiceBackdrop}`} data-website-overlay style={{ zIndex: 26000 }} role="dialog" ref={node => { dialogRef.current = node; }} tabIndex={-1} aria-modal="true" aria-labelledby={titleId}>
     <section className={`${styles.formModal} ${styles.maintenanceStepModal} ${styles.schedulingDialog}`}>
       <header className={styles.modalHeader}>
         <div><h2 id={titleId}>{props.step === 'timing' ? 'Already done or upcoming?' : props.timing === 'done' ? 'What was done?' : 'What needs doing?'}</h2><p>{props.assetTitle}</p>{props.assetDetails ? <p>{props.assetDetails}</p> : null}</div>

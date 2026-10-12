@@ -262,3 +262,14 @@ test('manual items save as structured work without requiring preset selections',
   assert.throws(() => shared.buildCustomMaintenanceWorkSnapshot(checklist, 'checked', ['x'.repeat(161)]));
   assert.throws(() => shared.buildCustomMaintenanceWorkSnapshot(checklist, 'checked', ['line\nbreak']));
 });
+
+test('service part snapshots survive validation and reject incomplete or oversized entries', () => {
+  const checklist = get(basic('compact_tractor'));
+  const work = shared.buildMaintenanceWorkSnapshot(checklist, 'serviced', ['Oil filter']);
+  work.items[0].label = 'Changed for this service';
+  work.items[0].parts = [{name:'Oil filter',partNumber:'OF-42',brand:'Toyota'}];
+  assert.deepEqual(shared.validateMaintenanceWork(JSON.parse(JSON.stringify([work]))), JSON.parse(JSON.stringify([work])));
+  for (const parts of [[{name:'Filter',partNumber:'',brand:''}], [{name:'Filter',partNumber:'OF-42',brand:'x'.repeat(121)}], Array(21).fill(work.items[0].parts[0])]) {
+    assert.throws(() => shared.validateMaintenanceWork([{...work,items:[{...work.items[0],parts}]}]));
+  }
+});
