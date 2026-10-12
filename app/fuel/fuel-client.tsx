@@ -1,4 +1,5 @@
 'use client';
+import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import FuelWorkField from '../../components/FuelWorkField';
 import { openAssetQrLabel } from '../../lib/asset-qr-label';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
@@ -3422,7 +3423,7 @@ export default function FuelClient({
                     const detailsId = `fuel-slip-manager-details-${slip.id}`;
 
                     return (
-                      <article
+                      <LedgerDetailsCard expanded={isExpanded} onToggle={() => setExpandedFuelSlipId((current) => current === slip.id ? null : slip.id)}
                         data-ledger-card={`fuel-slip:${slip.id}`}
                         className={`${styles.fuelSlipManagerRow} ${styles.slipLedgerCard} ${focusStyles.card} ${expandedFuelSlipId && !isExpanded ? focusStyles.muted : ''}`}
                         data-needs-review={needsReview ? 'true' : undefined}
@@ -3504,7 +3505,7 @@ export default function FuelClient({
 
                           </div>
                         ) : null}
-                      </article>
+                      </LedgerDetailsCard>
                     );
                   }) : null}
                 </div>
