@@ -17,7 +17,7 @@ function loadReportHelpers() {
   assert.notEqual(start, -1, 'report helper start marker must exist');
   assert.notEqual(end, -1, 'report helper end marker must exist');
 
-  const helperSource = `${reportRoute.slice(start, end)}\nmodule.exports = { buildReportHtml, calculateAssetDieselBeforeFill, eventIssuedDateTime, eventWorkActivityLabel, eventWorkAreaLabel, renderFuelEventTable };`;
+  const helperSource = `${reportRoute.slice(start, end)}\nmodule.exports = { buildReportHtml, calculateAssetDieselBeforeFill, eventIssuedDateTime, eventWorkActivityLabel, eventWorkAreaLabel, renderFuelEventTable, eventGaugeIncrease, assetDieselBeforeFillFormula };`;
   const output = ts.transpileModule(helperSource, {
     compilerOptions: {
       module: ts.ModuleKind.CommonJS,
@@ -134,8 +134,8 @@ test('PDF fuel entries use seven readable columns and preserve every detail unde
   assert.match(html, /Storage balance/);
   assert.match(html, /2[\s,]?108[,.]6 L to 2[\s,]?048[,.]3 L/);
   assert.match(html, /25% to 100%/);
-  assert.match(html, /75 percentage points/);
-  assert.match(html, /Estimated litres before full refill/);
+  assert.match(html, /75% · Filled to full/);
+  assert.match(html, /Estimated fuel remaining before refill/);
   assert.match(html, /Transport workers to town/);
   assert.match(html, /Skimmelkrans Boerdery/);
   assert.match(html, /GPS -34\.024051, 22\.383678/);
@@ -245,4 +245,23 @@ test('each identity stays inside its own entry and escapes missing or unsafe ide
   assert.doesNotMatch(groups[0], /Tractor Two|Spray field/);
   assert.match(groups[1], /Serial \/ VIN: <b>Not recorded/);
   assert.match(groups[1], /Tractor Two/);
+});
+
+
+test('gauge increases use percent labels for full and partial fills and omit invalid readings', () => {
+  assert.equal(helpers.eventGaugeIncrease(fuelEvent()), '75% · Filled to full');
+  assert.equal(helpers.eventGaugeIncrease(fuelEvent({assetFuelPercentBefore: 25, assetFuelPercentAfter: 75})), '50% · Partial fill');
+  for (const values of [{assetFuelPercentBefore: null}, {assetFuelPercentAfter: 101}, {assetFuelPercentBefore: 80, assetFuelPercentAfter: 75}]) {
+    assert.equal(helpers.eventGaugeIncrease(fuelEvent(values)), '');
+  }
+});
+
+test('Excel remaining-fuel estimate uses fractional percentage cells and the same ratio as PDF', () => {
+  const formula = helpers.assetDieselBeforeFillFormula(8);
+  assert.match(formula, /L8<1,M8=1/);
+  assert.doesNotMatch(formula, /[LM]8[<=>]100/);
+  assert.match(formula, /ROUND\(F8\*L8\/\(M8-L8\),3\)/);
+  const litres = 60.3, before = 0.25, after = 1;
+  assert.equal(Math.round(litres * before / (after - before) * 1000) / 1000,
+    helpers.calculateAssetDieselBeforeFill(fuelEvent()));
 });
