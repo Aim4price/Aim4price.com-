@@ -64,17 +64,19 @@ test('Dealer Leads renders the first page before enriching the remaining inbox',
 });
 
 test('Dealer lead actions and report flow match the Owner experience', async () => {
-  const [leadsClient, leadsStyles, costReport, maintenanceReport, ownerRegister] = await Promise.all([
+  const [leadsClient, leadsStyles, costReport, maintenanceReport, ownerRegister, maintenanceMenu] = await Promise.all([
     read('app/leads/leads-client.tsx'),
     read('app/leads/page.module.css'),
     read('components/DealerCostOfOwnershipReportModal.tsx'),
     read('components/DealerMaintenanceReportModal.tsx'),
     read('app/asset-register/asset-register-client.tsx'),
+    read('components/leads/SharedMaintenanceMenu.tsx'),
   ]);
 
   const ownerGear = ownerRegister.match(/<path d="M12\.22 2h-\.44[^\n]+/u)?.[0];
   assert.ok(ownerGear);
-  assert.match(leadsClient, /<strong>Schedule maintenance<\/strong>/);
+  assert.match(leadsClient, /<SharedMaintenanceMenu[\s\S]*?onSchedule=/);
+  assert.match(maintenanceMenu, /<strong>Schedule maintenance<\/strong>/);
   assert.doesNotMatch(leadsClient, /<strong>Call client<\/strong>/);
   assert.ok(leadsClient.includes(ownerGear));
   assert.match(leadsStyles, /\.leadManageModal \{[\s\S]*max-width: 64rem !important/);

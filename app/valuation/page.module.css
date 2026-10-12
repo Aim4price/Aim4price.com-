@@ -14727,3 +14727,9 @@
 .replacementExtrasDisclosure { grid-column: 1 / -1; }
 .replacementExtrasDisclosure summary { cursor: pointer; font-weight: 700; padding: 6px 0; }
 .replacementExtrasDisclosure > div { margin-top: 12px; }
+
+/* Keep the recalculation amount flush with its currency-prefix surface. */
+.replacementPriceDialog .replacementField input[type="text"] {
+  --typing-field-surface: transparent;
+  --typing-field-focus: transparent;
+}

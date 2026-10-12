@@ -9,7 +9,6 @@ import downloadStyles from '../../components/ReportDownload.module.css';
 import Link from 'next/link';
 import BudgetCostDetails from './BudgetCostDetails';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import FilterFlow, { FilterQuestion } from '../../components/FilterFlow';
 import { budgetStatusLabel, filterTrackedBudgets, EMPTY_BUDGET_FILTERS, type TrackedBudget } from '../../lib/budget-tracking';
 import { downloadCanonicalReportFile, openCanonicalReportUrl } from '../../lib/report-open';
 import ledger from '../my-invoices/page.module.css';
@@ -56,8 +55,6 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
   const [query, setQuery] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filters, setFilters] = useState(EMPTY_BUDGET_FILTERS);
-  const [draft, setDraft] = useState(EMPTY_BUDGET_FILTERS);
-  const [filterOpen, setFilterOpen] = useState(false);
   const [manageId, setManageId] = useState<string | null>(null);
   const [downloadOpen, setDownloadOpen] = useState(false);
 
@@ -81,9 +78,8 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready}><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
       <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => setDownloadOpen(true)} disabled={!ready || !budgets.length}><Icon kind="download" />Download</button>
     </section>
-    <div className={`${ledger.invoiceToolbar} ${ledger.ownerInvoiceToolbar}`}>
+    <div className={`${ledger.invoiceToolbar} ${styles.searchToolbar}`}>
       <label className={ledger.searchWrap}><Icon kind="search" /><input className={ledger.searchInput} type="search" placeholder="Search budgets by asset or period..." aria-label="Search budgets" value={query} onChange={e => setQuery(e.target.value)} /></label>
-      <button className={`${ledger.secondaryButton} ${ledger.toolbarButton} ${ledger.toolbarFilterButton} ${ledger.searchFilterButton}`} onClick={() => { setDraft(filters); setFilterOpen(true); }}><Icon kind="filter" />Filter {count ? `(${count})` : ''}</button>
     </div>
     {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span><button onClick={() => { setFilters(EMPTY_BUDGET_FILTERS); setQuery(''); }}>Clear filters</button></div> : null}
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
@@ -117,11 +113,6 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
       onPageChange={setPage}
       onPageSizeChange={size => { setPageSize(size); setPage(1); }}
     /> : null}
-    {filterOpen ? <FilterFlow title="Filter budgets" onClose={() => setFilterOpen(false)} onClear={() => setFilters(EMPTY_BUDGET_FILTERS)} onApply={() => { setFilters(draft); setFilterOpen(false); }}>
-      <FilterQuestion assetPicker={{title: "Choose asset for budget filters", assets: reportAssets}} label="Which asset?" searchable value={draft.asset} onChange={asset => setDraft({ ...draft, asset })} options={[{ value: 'all', label: 'All budget scopes' }, ...Array.from(new Map(budgets.map(b => [b.assetId || 'overall', { value: b.assetId || 'overall', label: b.assetTitle }])).values())]} />
-      <FilterQuestion label="Which period?" value={draft.period} onChange={period => setDraft({ ...draft, period })} options={[{ value: 'all', label: 'Monthly and annual' }, { value: 'monthly', label: 'Monthly' }, { value: 'annual', label: 'Annual' }]} />
-      <FilterQuestion label="Which status?" value={draft.status} onChange={status => setDraft({ ...draft, status })} options={[{ value: 'all', label: 'All statuses' }, { value: 'on_track', label: 'Within budget' }, { value: 'warning', label: 'Approaching limit' }, { value: 'over_budget', label: 'Limit reached or exceeded' }, { value: 'attention', label: 'All alerts' }]} />
-    </FilterFlow> : null}
     {selected ? (
       <Dialog title="Manage budget" subtitle={`${selected.assetTitle} · ${selected.periodLabel}`} onClose={() => setManageId(null)}>
         <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid} ${umbrellaStyles.manageMenuGrid}`}>

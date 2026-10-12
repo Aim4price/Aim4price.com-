@@ -343,7 +343,7 @@ test('middlemen have a focused phone-first workspace and a supported account sub
   assert.match(css, /100dvh/);
 });
 
-test('signup presents Middleman as a separate free account choice', async () => {
+test('signup keeps Middleman distinct and respects the selected access level', async () => {
   const [authClient, authPage, profile, accountClient] = await Promise.all([
     read('app/auth/auth-client.tsx'),
     read('app/auth/page.tsx'),
@@ -354,7 +354,7 @@ test('signup presents Middleman as a separate free account choice', async () => 
   assert.match(authClient, /value: "middleman", label: "Middleman"/);
   assert.match(authClient, /value: "equipment-middleman"/);
   assert.match(authClient, /accountType: signupForm\.accountType === "middleman" \? "dealer"/);
-  assert.match(authClient, /name="accountType"[\s\S]*?options=\{SIGNUP_ACCOUNT_TYPE_OPTIONS\}/);
+  assert.match(authClient, /name="accountType"[\s\S]*?options=\{accountAccess\s*===\s*'free'\s*\?\s*SIGNUP_ACCOUNT_TYPE_OPTIONS\.filter\(option\s*=>\s*option\.value\s*===\s*'dealer'\s*\|\|\s*option\.value\s*===\s*'business'\)\s*:\s*SIGNUP_ACCOUNT_TYPE_OPTIONS\}/);
   assert.match(authClient, /name="accountSubtype"[\s\S]*?options=\{SIGNUP_ACCOUNT_SUBTYPE_OPTIONS\[signupForm\.accountType\]\}/);
   assert.doesNotMatch(authClient, /Free workspace for valuation-backed adverts and your public showroom/);
   assert.doesNotMatch(authClient, /accountTypeGrid|role="radiogroup"/);
@@ -364,7 +364,7 @@ test('signup presents Middleman as a separate free account choice', async () => 
   assert.match(profile, /isMiddlemanAccountSubtype\(initialAccountSubtype\)[\s\S]*?"active"/);
   assert.match(profile, /!isMiddlemanAccountSubtype\(normalizedAccountSubtype\)/);
   assert.match(accountClient, /isMiddlemanAccountSubtype\(normalizedSubtype\).*return 'Middleman'/);
-  assert.match(accountClient, /isPartnerAccount = !isOwnerAccount && !isMiddlemanAccount/);
+  assert.match(accountClient, /isPartnerAccount = !sharedAccount && !isOwnerAccount && !isMiddlemanAccount/);
   assert.match(accountClient, /isDealerAccount && !isMiddlemanAccount/);
 });
 
@@ -424,7 +424,7 @@ test('owners manage a private-by-default showroom from Account without owner nav
 
   const ownerNav = header.match(/const OWNER_NAV_ITEMS: NavItem\[\] = \[[\s\S]*?\n\];/)?.[0] ?? '';
 
-  assert.match(accountClient, /const isOwnerAccount = normalizedAccountType === "owner"/);
+  assert.match(accountClient, /const isOwnerAccount = !sharedAccount && normalizedAccountType === "owner"/);
   assert.match(accountClient, /\{isOwnerAccount \? \([\s\S]*?<Link href="\/my-showroom" className=\{styles\.quickActionButton\}>[\s\S]*?<strong>Manage my showroom<\/strong>/);
   assert.match(accountClient, /QuickActionIcon name="showroom"/);
   assert.match(accountCss, /\.quickActionButton:focus-visible\s*\{/);
