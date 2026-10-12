@@ -10,6 +10,10 @@ on:
       - 'app/fuel-scan/**'
       - 'app/owner-app/operations/fuel/**'
       - 'lib/fuel-ledger.ts'
+      - 'lib/fuel-work-*.ts'
+      - 'components/FuelWorkField*'
+      - 'tests/fuel-work-choices.test.cjs'
+      - 'scripts/verify-fuel-work-choices.cjs'
       - 'database/migrations/**fuel**'
       - 'tests/fuel-*.test.mjs'
       - 'package.json'
@@ -24,6 +28,10 @@ on:
       - 'app/fuel-scan/**'
       - 'app/owner-app/operations/fuel/**'
       - 'lib/fuel-ledger.ts'
+      - 'lib/fuel-work-*.ts'
+      - 'components/FuelWorkField*'
+      - 'tests/fuel-work-choices.test.cjs'
+      - 'scripts/verify-fuel-work-choices.cjs'
       - 'database/migrations/**fuel**'
       - 'tests/fuel-*.test.mjs'
       - 'package.json'
@@ -41,3 +49,5 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:fuel-ledger
+      - run: node --test tests/fuel-work-choices.test.cjs
+      - run: node scripts/verify-fuel-work-choices.cjs

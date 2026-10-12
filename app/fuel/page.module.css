@@ -7683,3 +7683,6 @@
 .fuelSlipFlowBackdrop .accountFuelModal.manualFuelSlipModal .modalFooter .primaryButton {
   background: linear-gradient(180deg, #1a5a45, #124233) !important;
 }
+
+.fuelWorkFieldGroup { display: grid; align-content: start; gap: .55rem; min-width: 0; }
+.fuelWorkFieldGroup > span { color: #263845; font-size: .96rem; font-weight: 700; line-height: 1.2; }

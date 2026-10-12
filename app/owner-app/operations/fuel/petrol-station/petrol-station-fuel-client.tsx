@@ -1,4 +1,6 @@
 'use client';
+import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../../../../../lib/fuel-work-choice-options';
+import FuelWorkField from '../../../../../components/FuelWorkField';
 import DateInput from '../../../../../components/DateInput';
 
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
@@ -25,6 +27,7 @@ type FuelAsset = {
 };
 
 type FuelLedgerResponse = {
+  workChoices?: FuelWorkChoice[];
   ok?: boolean;
   assets?: FuelAsset[];
   error?: string;
@@ -151,6 +154,7 @@ export default function PetrolStationFuelClient({
   const [stationName, setStationName] = useState('');
   const [slipNumber, setSlipNumber] = useState('');
   const [documentDate, setDocumentDate] = useState(todayDate);
+  const [workChoices, setWorkChoices] = useState(DEFAULT_FUEL_WORK_CHOICES);
   const [activityText, setActivityText] = useState('Refuelling at petrol station');
   const [note, setNote] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
@@ -211,6 +215,7 @@ export default function PetrolStationFuelClient({
         }
 
         if (active) {
+          setWorkChoices(payload.workChoices ?? DEFAULT_FUEL_WORK_CHOICES);
           setAssets(payload.assets.filter((asset) => asset.canReceiveFuel && !asset.workUseExcluded));
         }
       } catch (error) {
@@ -538,7 +543,7 @@ export default function PetrolStationFuelClient({
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Petrol station</span><input value={stationName} onChange={(event) => setStationName(event.target.value)} placeholder="Example: Engen George" /></label>
           <label className={styles.field}><span>Slip number (optional)</span><input value={slipNumber} onChange={(event) => setSlipNumber(event.target.value)} placeholder="Receipt or transaction number" /></label>
-          <label className={styles.field}><span>Reason / activity</span><input value={activityText} onChange={(event) => setActivityText(event.target.value)} placeholder="Reason for the fuel" /></label>
+          <div className={styles.field}><span>Reason / activity</span><FuelWorkField value={activityText} onChange={setActivityText} choices={fieldManagerMode ? workChoices : undefined} /></div>
           <label className={styles.field}><span>Note (optional)</span><textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add a short note" /></label>
         </div>
       );
