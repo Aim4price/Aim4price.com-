@@ -53,7 +53,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
     window.saved={choices:[{id:'planting',name:'Planting'},{id:'spraying',name:'Spraying'}],revision:0};
     window.fetch=async(url,options)=>{if(options?.method==='PUT'){const body=JSON.parse(options.body);window.saved={choices:body.choices,revision:body.revision+1};}return {ok:true,json:async()=>window.saved};};
     const Field=require('components/FuelWorkField').default;
-    function Fixture({readonly}){const [value,setValue]=React.useState('Existing historical description');return React.createElement(Field,{value,onChange:setValue,choices:readonly?window.saved.choices:undefined});}
+    function Fixture({readonly}){const [value,setValue]=React.useState('Existing historical description');return React.createElement(Field,{asset:window.activityAsset || {kind:'tractor'},value,onChange:setValue,choices:readonly?window.saved.choices:undefined});}
     const root=ReactDOM.createRoot(document.getElementById('app'));window.render=(readonly=false)=>root.render(React.createElement(Fixture,{key:String(readonly),readonly}));window.render();
   `});
   await page.waitForSelector('button[aria-label="Edit Planting"]');await page.click('summary');
@@ -70,6 +70,10 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   await page.evaluate(()=>window.render(true));await page.waitForFunction(()=>!document.querySelector('[aria-label="Edit Plant maize"]'));await page.click('summary');await click('Plant maize');
   assert.equal(await page.$eval('input[aria-label="Work activity"]',n=>n.value),'Plant maize');
   await fill('[aria-label="Work activity"]','Plant maize in Block 4');assert.equal(await page.$eval('input[aria-label="Work activity"]',n=>n.value),'Plant maize in Block 4');
-  console.log('PASS saved work selection, editing, confirmed deletion, adding, draft preservation and read-only mobile entry');
+  await page.evaluate(()=>{window.activityAsset={kind:'vehicle',equipmentFamilyKey:'sedan_fastback'};window.render(true);});
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Delivery'));
+  assert.ok(!(await page.evaluate(()=>Array.from(document.querySelectorAll('button')).some(b=>b.textContent==='Ploughing'))));
+  await click('Delivery');assert.equal(await page.$eval('input[aria-label="Work activity"]',n=>n.value),'Delivery');
+  console.log('PASS asset-specific suggestions, saved work selection, editing, confirmed deletion, adding, draft preservation and read-only mobile entry');
  } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1);});

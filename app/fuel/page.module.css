@@ -720,7 +720,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
-.unitActions .unitButton:first-child {
+.unitActions .manageUnitButton {
   color: var(--action-mint-text);
   background: linear-gradient(180deg, #ffffff 0%, var(--action-mint-bg) 100%);
   border-color: var(--action-mint-border);
@@ -729,7 +729,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.unitActions .unitButton:first-child:hover:not(:disabled) {
+.unitActions .manageUnitButton:hover:not(:disabled) {
   color: #083f2f;
   background: linear-gradient(180deg, #ffffff 0%, var(--action-mint-bg-hover) 100%);
   border-color: var(--action-mint-border-hover);
@@ -7686,3 +7686,14 @@
 
 .fuelWorkFieldGroup { display: grid; align-content: start; gap: .55rem; min-width: 0; }
 .fuelWorkFieldGroup > span { color: #263845; font-size: .96rem; font-weight: 700; line-height: 1.2; }
+
+/* Leave breathing room between backtrack fields and the scroll rail. */
+.accountFuelModal.missingEntryModal .missingEntryScrollBody {
+  padding: 1.3rem 1rem 1.3rem 0 !important;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #92b2a5 transparent;
+}
+.accountFuelModal.missingEntryModal .missingEntryScrollBody::-webkit-scrollbar { width: 8px; }
+.accountFuelModal.missingEntryModal .missingEntryScrollBody::-webkit-scrollbar-track { background: transparent; margin-block: 16px; }
+.accountFuelModal.missingEntryModal .missingEntryScrollBody::-webkit-scrollbar-thumb { background: #92b2a5; border: 2px solid white; border-radius: 12px; }

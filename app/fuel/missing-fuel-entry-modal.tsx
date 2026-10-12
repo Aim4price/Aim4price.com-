@@ -335,6 +335,13 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
     return eligibleAssets.filter((asset) => [asset.title, asset.brandName, asset.modelName, asset.assetTypeLabel, asset.kind, asset.plateLabel, asset.serialNumber, asset.publicAssetCode].join(' ').toLowerCase().includes(term));
   }, [eligibleAssets, search]);
   const usageOptions = useMemo(() => selectedAsset ? usageOptionsForAsset(selectedAsset) : [], [selectedAsset]);
+  useEffect(() => {
+    const bodyOverflow = document.body.style.overflow;
+    const rootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = bodyOverflow; document.documentElement.style.overflow = rootOverflow; };
+  }, []);
   const selectedUsageOption = usageOptions.find((option) => option.value === draft.usageMetric) ?? usageOptions[0];
   const litres = parseNumber(draft.litres);
   const currentAfterDeduction = treatment === 'not_yet_reflected' && litres !== null ? storage.currentLitres - litres : storage.currentLitres;
@@ -613,7 +620,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
                     <label><span>Litres issued *</span><div className={styles.inputWithSuffix}><input type="number" min="0.001" step="0.001" value={draft.litres} onChange={(event) => setDraft({ ...draft, litres: event.target.value })} /><em>L</em></div></label>
                     <label><span>Fuel percentage after *</span><div className={styles.inputWithSuffix}><input type="number" min="0" max="100" step="1" value={draft.assetFuelPercentAfter} onChange={(event) => setDraft({ ...draft, assetFuelPercentAfter: event.target.value })} /><em>%</em></div></label>
                     <label><span>Operator / manager *</span><input value={draft.operatorName} onChange={(event) => setDraft({ ...draft, operatorName: event.target.value })} placeholder="Name of operator or manager" /></label>
-                    <div className={styles.fuelWorkFieldGroup}><span>Specific activity *</span><FuelWorkField value={draft.activityText} onChange={value => setDraft({ ...draft, activityText: value })} /></div>
+                    <div className={styles.fuelWorkFieldGroup}><span>Specific activity *</span><FuelWorkField asset={selectedAsset} value={draft.activityText} onChange={value => setDraft({ ...draft, activityText: value })} /></div>
                   </div>
                 </section>
               ) : null}
