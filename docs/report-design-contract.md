@@ -77,3 +77,10 @@ This is an intentional fuel-report redesign requested to align the ledger with A
 Gauge increases are percentage points. Estimated litres before filling are shown only for a recorded full refill with a valid starting percentage and positive litres added. These are gauge-based estimates, not measured consumption or a determination of diesel-refund eligibility.
 
 Representative valuation (one page), maintenance (ten pages) and fuel ledger (ten pages) PDFs were rendered and visually checked across every page, alongside desktop, tablet and mobile layout checks. The fuel CSS fingerprint records this deliberate redesign. Keep the pull request in draft pending design approval and authenticated report-opening review before merge.
+
+
+## 12 October 2026 fuel asset identity refinement
+
+The owner requested clearer links between each fuel entry and its asset. This intentional refinement adds a prominent asset heading, Serial / VIN and register / plate ID to each entry, with stronger visual separation. Identifiers come from the current linked register record, including fuel-slip entries; missing serials are explicitly marked Not recorded. Excel includes matching identifier columns without shifting existing formula references.
+
+Representative valuation (1 page), maintenance (10 pages) and fuel ledger (14 pages for 25 detailed entries) PDFs were rendered and visually checked across every page, plus 390px, 768px and 1400px layouts. The updated fuel CSS fingerprint protects this deliberate change. Keep the PR in draft pending visual approval and authenticated opening review before merge.

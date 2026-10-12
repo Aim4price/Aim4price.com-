@@ -77,6 +77,7 @@ export type FuelLedgerEvent = {
   cardNumberMasked: string;
   assetId: string;
   assetTitle: string;
+  assetSerialNumber?: string;
   assetPlateLabel: string;
   litres: number;
   storageLevelBefore: number | null;
@@ -126,6 +127,8 @@ export type FuelSlipTransaction = {
   targetType: FuelSlipTargetType;
   assetId: string;
   assetTitle: string;
+  assetSerialNumber?: string;
+  assetPlateLabel?: string;
   storageId: string;
   storageName: string;
   fuelStorageEventId: string;
@@ -318,6 +321,7 @@ type FuelEventRow = {
   card_number_masked: string | null;
   asset_register_item_id: string | null;
   asset_title: string | null;
+  asset_serial_number?: string | null;
   asset_plate_label: string | null;
   litres: string | number | null;
   storage_level_before_litres: string | number | null;
@@ -393,6 +397,8 @@ type FuelSlipRow = {
   target_type: string | null;
   asset_register_item_id: string | null;
   asset_title: string | null;
+  asset_serial_number?: string | null;
+  asset_plate_label?: string | null;
   storage_id: string | null;
   storage_name: string | null;
   fuel_storage_event_id: string | null;
@@ -1086,6 +1092,7 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     cardNumberMasked: card.masked,
     assetId: asText(row.asset_register_item_id),
     assetTitle: asText(row.asset_title),
+    assetSerialNumber: asText(row.asset_serial_number),
     assetPlateLabel: asText(row.asset_plate_label),
     litres: normalizeOptionalLitres(row.litres) ?? 0,
     storageLevelBefore: normalizeOptionalLitres(row.storage_level_before_litres),
@@ -1161,6 +1168,8 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     targetType: normalizeFuelSlipTargetType(row.target_type),
     assetId: asText(row.asset_register_item_id),
     assetTitle: asText(row.asset_title),
+    assetSerialNumber: asText(row.asset_serial_number),
+    assetPlateLabel: asText(row.asset_plate_label),
     storageId: asText(row.storage_id),
     storageName: asText(row.storage_name),
     fuelStorageEventId: asText(row.fuel_storage_event_id),
@@ -1744,6 +1753,7 @@ function fuelEventSelectSql(): string {
     e.card_number_masked,
     e.asset_register_item_id,
     coalesce(a.title, '') as asset_title,
+    coalesce(nullif(to_jsonb(a)->>'serial_number', ''), to_jsonb(a)->>'serialNumber', '') as asset_serial_number,
     coalesce(to_jsonb(a)->>'plate_label', '') as asset_plate_label,
     e.litres,
     e.storage_level_before_litres,
@@ -1796,6 +1806,8 @@ function fuelSlipSelectSql(): string {
     fs.target_type,
     fs.asset_register_item_id::text as asset_register_item_id,
     coalesce(a.title, '') as asset_title,
+    coalesce(to_jsonb(a)->>'plate_label', '') as asset_plate_label,
+    coalesce(nullif(to_jsonb(a)->>'serial_number', ''), to_jsonb(a)->>'serialNumber', '') as asset_serial_number,
     fs.storage_id::text as storage_id,
     coalesce(s.name, '') as storage_name,
     fs.fuel_storage_event_id::text as fuel_storage_event_id,
@@ -2798,7 +2810,8 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     cardNumberMasked: slip.cardNumberMasked,
     assetId: slip.assetId,
     assetTitle: slip.assetTitle,
-    assetPlateLabel: '',
+    assetSerialNumber: slip.assetSerialNumber,
+    assetPlateLabel: slip.assetPlateLabel || '',
     litres: slip.litres ?? 0,
     storageLevelBefore: null,
     storageLevelAfter: null,

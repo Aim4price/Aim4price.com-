@@ -515,7 +515,6 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
 
     const details = [
       { label: 'Storage', value: event.storageName || '-' },
-      { label: 'Registration / identification', value: event.assetPlateLabel || '' },
       { label: 'Gauge increase', value: eventGaugeIncrease(event) },
       { label: 'Estimated litres before full refill', value: calculateAssetDieselBeforeFill(event) === null ? '' : formatLitres(calculateAssetDieselBeforeFill(event)) },
       { label: 'Operator', value: asText(event.operatorName) || '-' },
@@ -548,6 +547,12 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
 
     return `
       <tbody class="assetReportFuelEventGroup">
+        <tr class="assetReportFuelIdentityRow">
+          <td colspan="7">
+            <strong class="assetReportFuelAssetName">${escapeHtml(eventTargetLabel(event))}</strong>
+            <div class="assetReportFuelIdentifiers">${event.assetId || event.assetTitle ? `<span>Serial / VIN: <b>${escapeHtml(event.assetSerialNumber || 'Not recorded')}</b></span><span>Register / plate ID: <b>${escapeHtml(event.assetPlateLabel || 'Not recorded')}</b></span>` : '<span>Storage movement</span>'}</div>
+          </td>
+        </tr>
         <tr class="assetReportFuelPrimaryRow">
           <td>${escapeHtml(eventIssuedDateTime(event))}</td>
           <td>${activity}</td>
@@ -1291,6 +1296,10 @@ function buildReportHtml(options: FuelReportOptions): string {
       .assetReportFuelLedgerTable th:nth-child(5) { width: 12%; }
       .assetReportFuelLedgerTable th:nth-child(6) { width: 18%; }
       .assetReportFuelLedgerTable th:nth-child(7) { width: 13%; }
+      .assetReportFuelIdentityRow td { padding: 12px 10px; background: #e6f1ec; border-top: 2px solid #7da998; border-left: 4px solid #176345; }
+      .assetReportFuelAssetName { display: block; font-size: 14px; line-height: 1.4; color: var(--ink); }
+      .assetReportFuelIdentifiers { display: flex; flex-wrap: wrap; gap: 6px 24px; margin-top: 4px; font-size: 10px; line-height: 1.5; color: var(--ink); overflow-wrap: anywhere; }
+      .assetReportFuelDetailsRow td { padding-bottom: 24px; border-bottom: 14px solid white; }
       .lateEntryBadge { font-size: 8px; text-transform: none; }
       .assetReportDisclaimer { font-size: 9px; line-height: 1.5; }
       @media screen and (max-width: 700px) { .assetReportContentGrid { grid-template-columns: 1fr; } .assetReportTableWrap { overflow-x: auto; } .assetReportFuelLedgerTable { min-width: 850px; } }
@@ -1371,7 +1380,7 @@ function buildReportHtml(options: FuelReportOptions): string {
             <div class="assetReportSectionHeading">
               <div>
                 <h2>Fuel Movement Records</h2>
-                <p>Recorded movements, work details and supporting evidence. Gauge-based estimates are labelled separately.</p>
+                <p>Each asset heading groups one fuel entry and its supporting details. Asset identifiers reflect current register details.</p>
               </div>
               <strong>${escapeHtml(String(options.eventCount))} ${options.eventCount === 1 ? 'entry' : 'entries'}</strong>
             </div>
@@ -1469,7 +1478,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     'Estimated Litres Before Full Refill', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
     'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On (SAST)', 'Added By', 'Evidence / Review Status',
     'Evidence Type', 'Evidence Reference', 'Tank Balance Treatment', 'Late-entry Reason', 'Notes',
-    'Work-use Status', 'Exclusion Reason', 'Fuel Slip Supplier', 'Total incl. VAT', 'Payment Method', 'Fuel Slip Document', 'Fuel Slip Review Status',
+    'Work-use Status', 'Exclusion Reason', 'Fuel Slip Supplier', 'Total incl. VAT', 'Payment Method', 'Fuel Slip Document', 'Fuel Slip Review Status', 'Serial / VIN', 'Register / plate ID',
   ];
   const movementHeaderRow = 7;
   const movementRows: XlsxCellValue[][] = [
@@ -1520,6 +1529,8 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
         styled(event.sourceType === 'fuel_slip' ? event.paymentMethod || '' : '', 'text'),
         styled(event.sourceType === 'fuel_slip' ? event.documentFileUrl || '' : '', 'text'),
         styled(event.sourceType === 'fuel_slip' ? event.fuelSlipReviewStatus || '' : '', 'text'),
+        styled(event.assetSerialNumber || '', 'text'),
+        styled(event.assetPlateLabel || '', 'text'),
       ];
     }),
   ];
@@ -1538,7 +1549,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     {
       name: 'Fuel Movement Records',
       rows: movementRows,
-      columns: [22, 22, 14, 22, 28, 16, 18, 18, 14, 22, 22, 13, 13, 20, 24, 24, 34, 22, 24, 34, 24, 26, 34, 42, 42, 24, 38, 28, 18, 22, 48, 28],
+      columns: [22, 22, 14, 22, 28, 16, 18, 18, 14, 22, 22, 13, 13, 20, 24, 24, 34, 22, 24, 34, 24, 26, 34, 42, 42, 24, 38, 28, 18, 22, 48, 28, 24, 24],
       merges: [
         { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: movementHeader.length },
         { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: movementHeader.length },
