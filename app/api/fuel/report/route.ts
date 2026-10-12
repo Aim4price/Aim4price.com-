@@ -533,12 +533,12 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
       { label: 'Exclusion Reason', value: event.workUseExcluded ? event.workUseExclusionReason || 'Not used for work purposes' : '', wide: true },
       { label: 'Tank Balance Treatment', value: eventBalanceTreatment(event), wide: true },
       { label: 'Late-entry Reason', value: event.isLateEntry ? event.lateEntryReason || '-' : '', wide: true },
-      { label: 'Notes', value: eventNoteLabel(event), wide: true, full: true },
+      { label: 'Notes', value: eventNoteLabel(event), wide: true },
     ].filter((detail) => asText(detail.value) && detail.value !== '-');
 
     const detailHtml = details.length
       ? details.map((detail) => `
-          <div class="assetReportFuelDetail${detail.wide ? ' assetReportFuelDetailWide' : ''}${'full' in detail && detail.full ? ' assetReportFuelDetailFull' : ''}">
+          <div class="assetReportFuelDetail${detail.wide ? ' assetReportFuelDetailWide' : ''}">
             <span>${escapeHtml(detail.label)}</span>
             <strong>${escapeHtml(detail.value)}</strong>
           </div>
@@ -1289,7 +1289,6 @@ function buildReportHtml(options: FuelReportOptions): string {
       .assetReportFuelDetail span { font-size: 9px; text-transform: none; letter-spacing: 0; line-height: 1.4; font-weight: 500; }
       .assetReportFuelDetail strong { font-size: 10px; line-height: 1.4; color: var(--ink); }
       .assetReportFuelDetailWide { grid-column: span 1; }
-      .assetReportFuelDetailFull { grid-column: 1 / -1; }
       .assetReportFuelLedgerTable th:nth-child(1) { width: 13%; }
       .assetReportFuelLedgerTable th:nth-child(2) { width: 12%; }
       .assetReportFuelLedgerTable th:nth-child(3) { width: 21%; }
