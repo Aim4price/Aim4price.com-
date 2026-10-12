@@ -43,7 +43,7 @@ export default function FuelWorkField({ value, onChange, choices: provided, asse
     <input aria-label="Work activity" aria-describedby={hintId} aria-invalid={invalid} data-fuel-slip-field="activityText" value={value} maxLength={120} onChange={event => onChange(event.target.value)} placeholder="Choose saved work or describe the job" autoFocus={autoFocus} />
     <p id={hintId} className={styles.hint}>Describe the work, for example: {examples}. Add the job or destination if useful.</p>
     <details className={styles.choices}>
-      <summary>Saved work</summary>
+      <summary>Saved Activities</summary>
       <div className={styles.list}>
         {visibleChoices.map(choice => <div className={styles.row} key={choice.id}>
           <button type="button" className={styles.select} onClick={() => onChange(choice.name)}>{choice.name}</button>
