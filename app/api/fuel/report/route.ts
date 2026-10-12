@@ -204,7 +204,7 @@ function calculateAssetDieselBeforeFill(event: FuelLedgerEvent): number | null {
 }
 
 function assetDieselBeforeFillFormula(rowNumber: number): string {
-  return `IF(AND(F${rowNumber}>0,L${rowNumber}<>"",M${rowNumber}<>"",L${rowNumber}>=0,L${rowNumber}<100,M${rowNumber}=100),ROUND(F${rowNumber}*L${rowNumber}/(M${rowNumber}-L${rowNumber}),3),"")`;
+  return `IF(AND(F${rowNumber}>0,L${rowNumber}<>"",M${rowNumber}<>"",L${rowNumber}>=0,L${rowNumber}<1,M${rowNumber}=1),ROUND(F${rowNumber}*L${rowNumber}/(M${rowNumber}-L${rowNumber}),3),"")`;
 }
 
 function formatLocation(event: FuelLedgerEvent): string {
@@ -371,7 +371,7 @@ function eventFuelGaugeLabel(event: FuelLedgerEvent): string {
 function eventGaugeIncrease(event: FuelLedgerEvent): string {
   const before = event.assetFuelPercentBefore, after = event.assetFuelPercentAfter;
   if (typeof before !== 'number' || typeof after !== 'number' || !Number.isFinite(before) || !Number.isFinite(after) || before < 0 || after > 100 || after <= before) return '';
-  return `${formatNumber(after - before)} percentage points${after === 100 ? ' · Filled to full' : ' · Partial fill'}`;
+  return `${formatNumber(after - before)}%${after === 100 ? ' · Filled to full' : ' · Partial fill'}`;
 }
 
 function slugifyFileSegment(value: string): string {
@@ -516,7 +516,7 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
     const details = [
       { label: 'Storage', value: event.storageName || '-' },
       { label: 'Gauge increase', value: eventGaugeIncrease(event) },
-      { label: 'Estimated litres before full refill', value: calculateAssetDieselBeforeFill(event) === null ? '' : formatLitres(calculateAssetDieselBeforeFill(event)) },
+      { label: 'Estimated fuel remaining before refill', value: calculateAssetDieselBeforeFill(event) === null ? '' : formatLitres(calculateAssetDieselBeforeFill(event)) },
       { label: 'Operator', value: asText(event.operatorName) || '-' },
       { label: 'Activity', value: eventWorkActivityLabel(event) },
       { label: 'Work Area', value: eventWorkAreaLabel(event) },
@@ -1368,8 +1368,8 @@ function buildReportHtml(options: FuelReportOptions): string {
 
             <section class="assetReportSideCard fuelReadingGuide">
               <h2>Gauge readings</h2>
-              <p>Before and after percentages are recorded gauge readings. The gap shows the increase during filling.</p>
-              <p>Estimated litres before a full refill use the litres added and the recorded gap to 100%. Gauge accuracy affects this estimate.</p>
+              <p>Before and after values are recorded tank-gauge readings. For example, 50% to 100% shows a 50% fill of the tank.</p>
+              <p>Estimated fuel remaining before refill is shown only when the tank was filled to 100%. It uses the litres added and the starting gauge reading; it is an estimate, not a measured tank balance.</p>
               <p>Fuel issued is not a measurement of fuel consumed on a particular job.</p>
             </section>
           </aside>
@@ -1475,7 +1475,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
 
   const movementHeader = [
     'Issued on (SAST)', 'Activity / Source', 'Direction', 'Storage Unit', 'Asset / Target', 'Litres',
-    'Estimated Litres Before Full Refill', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
+    'Estimated Fuel Remaining Before Refill (L)', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
     'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On (SAST)', 'Added By', 'Evidence / Review Status',
     'Evidence Type', 'Evidence Reference', 'Tank Balance Treatment', 'Late-entry Reason', 'Notes',
     'Work-use Status', 'Exclusion Reason', 'Fuel Slip Supplier', 'Total incl. VAT', 'Payment Method', 'Fuel Slip Document', 'Fuel Slip Review Status', 'Serial / VIN', 'Register / plate ID',
