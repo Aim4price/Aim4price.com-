@@ -1473,7 +1473,7 @@ export default function FuelScanClient({
           </div>
           <div className={styles.field}>
             <span>What activity</span>
-            <FuelWorkField value={activityText} onChange={value => setActivityText(normalizeShortText(value))} choices={workChoices} autoFocus />
+            <FuelWorkField asset={selectedAsset} value={activityText} onChange={value => setActivityText(normalizeShortText(value))} choices={workChoices} autoFocus />
           </div>
           <label className={styles.field}>
             <span>Where</span>

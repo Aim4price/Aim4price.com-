@@ -3315,7 +3315,7 @@ export default function FuelClient({
             <>
               <div className={`${styles.fuelWorkFieldGroup} ${fuelSlipFieldClassName('activityText')}`}>
                 <span>Activity / reason for fuel</span>
-                <FuelWorkField value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} />
+                <FuelWorkField asset={selectedFuelSlipAsset} value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} />
                 {fuelSlipRequiredHint('activityText')}
               </div>
               <label className={fuelSlipFieldClassName('workAreaText')}>
@@ -3555,7 +3555,7 @@ export default function FuelClient({
                     onClick={openExclusionsModal}
                   >
                     <ExclusionIcon className={styles.buttonIcon} />
-                    <span>Exclusions</span>
+                    <span>Asset Exclusions</span>
                   </button>
                   <button
                     type="button"
@@ -3662,13 +3662,13 @@ export default function FuelClient({
 
                     {<div className={styles.storageHeaderAside}>
                       <div className={styles.unitActions}>
-                        <button type="button" className={styles.unitButton} onClick={() => openManageStorageChoice(storage)} disabled={isSaving}>
-                          <GearIcon className={styles.buttonIcon} />
-                          <span>Manage</span>
-                        </button>
                         <button type="button" className={styles.unitButton} onClick={() => openQrModal(storage)} disabled={isSaving}>
                           <QrIcon className={styles.buttonIcon} />
                           <span>QR Code</span>
+                        </button>
+                        <button type="button" className={`${styles.unitButton} ${styles.manageUnitButton}`} onClick={() => openManageStorageChoice(storage)} disabled={isSaving}>
+                          <GearIcon className={styles.buttonIcon} />
+                          <span>Manage</span>
                         </button>
                         <button
                           type="button"
@@ -3677,7 +3677,7 @@ export default function FuelClient({
                           disabled={isSaving}
                         >
                           <LockIcon className={styles.buttonIcon} />
-                          <span>Change PIN</span>
+                          <span>QR PIN</span>
                         </button>
                         <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => setDeleteCandidateStorage(storage)} disabled={isSaving}>
                           <TrashIcon className={styles.buttonIcon} />
@@ -3756,7 +3756,7 @@ export default function FuelClient({
           </button>
           <button type="button" className={styles.mobileQuickButton} onClick={openExclusionsModal}>
             <ExclusionIcon className={styles.buttonIcon} />
-            <span>Exclude</span>
+            <span>Asset Exclusions</span>
           </button>
           <button type="button" className={styles.mobileQuickButton} onClick={isSlipsPage ? openFuelSlipDownloadPanel : openReportModal}>
             <DownloadIcon className={styles.buttonIcon} />

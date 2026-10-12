@@ -545,7 +545,7 @@ export default function PetrolStationFuelClient({
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Petrol station</span><input value={stationName} onChange={(event) => setStationName(event.target.value)} placeholder="Example: Engen George" /></label>
           <label className={styles.field}><span>Slip number (optional)</span><input value={slipNumber} onChange={(event) => setSlipNumber(event.target.value)} placeholder="Receipt or transaction number" /></label>
-          <div className={styles.field}><span>What work is this fuel for?</span><FuelWorkField value={activityText} onChange={setActivityText} choices={fieldManagerMode ? workChoices : undefined} /></div>
+          <div className={styles.field}><span>What work is this fuel for?</span><FuelWorkField asset={selectedAsset} value={activityText} onChange={setActivityText} choices={fieldManagerMode ? workChoices : undefined} /></div>
           <label className={styles.field}><span>Note (optional)</span><textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add a short note" /></label>
         </div>
       );

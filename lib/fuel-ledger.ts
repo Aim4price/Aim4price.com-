@@ -192,6 +192,7 @@ export type FuelSlipTransaction = {
 };
 
 export type FuelLedgerAsset = {
+  equipmentFamilyKey?: string;
   id: string;
   title: string;
   kind: string;
@@ -1450,6 +1451,7 @@ function mapFuelAssetRow(row: FuelAssetRow): FuelLedgerAsset {
     id: String(row.id ?? '').trim(),
     title: asText(row.title) || 'Untitled asset',
     kind,
+    equipmentFamilyKey: asText(asRecord(specs.basic_catalogue).familyKey ?? specs.family_key ?? specs.familyKey ?? row.equipment_family_key),
     assetTypeLabel: familyLabel || titleCase(kind || 'asset'),
     brandName: asText(row.brand_name),
     modelName: asText(row.model_name) || asText(row.typed_model_name),

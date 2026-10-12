@@ -62,3 +62,32 @@ test('work choice routes require access and derive ownership from the session, n
   assert.deepEqual(calls.at(-1),{ledger:'fuel',requireWrite:true});
   assert.equal((await route.PUT({json:async()=>({choices:[],revision:0})})).status,409);
 });
+
+test('every fuel-capable Basic family has relevant activity suggestions', () => {
+  const { BASIC_FUEL_FAMILY_KEYS } = load('lib/basic-fuel-families.ts', {});
+  for (const equipmentFamilyKey of BASIC_FUEL_FAMILY_KEYS) {
+    assert.notEqual(options.fuelActivityProfile({equipmentFamilyKey}), 'general', equipmentFamilyKey);
+    assert.ok(options.fuelActivitySuggestions({equipmentFamilyKey}).length >= 2, equipmentFamilyKey);
+  }
+  assert.ok(options.DEFAULT_FUEL_WORK_CHOICES.length > 20);
+  assert.ok(options.DEFAULT_FUEL_WORK_CHOICES.length <= 100);
+  options.validateFuelWorkChoices(options.DEFAULT_FUEL_WORK_CHOICES);
+});
+test('vehicles never inherit farming defaults and specific machinery wins over broad kinds', () => {
+  const vehicle = {kind:'vehicle',equipmentFamilyKey:'sedan_fastback'};
+  const names = options.fuelActivityChoices(options.DEFAULT_FUEL_WORK_CHOICES, vehicle).map(c=>c.name);
+  assert.ok(names.includes('Delivery')); assert.ok(names.includes('Transporting people')); assert.ok(names.includes('Travel to a meeting'));
+  assert.ok(!names.includes('Ploughing')); assert.ok(!names.includes('Planting'));
+  assert.equal(options.fuelActivityProfile({kind:'tractor',equipmentFamilyKey:'truck_tractor'}),'truck');
+  assert.equal(options.fuelActivityProfile({kind:'vehicle',equipmentFamilyKey:'truck_concrete_boom_pump'}),'concrete-pump');
+  assert.ok(options.fuelActivitySuggestions({kind:'tractor'}).some(c=>c.name==='Ploughing'));
+  assert.ok(!options.fuelActivitySuggestions({kind:'unknown'}).some(c=>c.name==='Ploughing'));
+});
+test('new custom work is scoped by profile and legacy custom descriptions remain available', () => {
+  const saved = options.validateFuelWorkChoices([{id:'custom',name:'School collection',profile:'vehicle'}, {id:'legacy',name:'My recorded job'}]);
+  assert.equal(saved[0].profile,'vehicle');
+  assert.ok(options.fuelActivityChoices(saved,{kind:'vehicle'}).some(c=>c.id==='custom'));
+  assert.ok(!options.fuelActivityChoices(saved,{kind:'tractor'}).some(c=>c.id==='custom'));
+  assert.ok(options.fuelActivityChoices(saved,{kind:'tractor'}).some(c=>c.id==='legacy'));
+  assert.throws(()=>options.validateFuelWorkChoices([{id:'x',name:'Invalid profile',profile:'invalid'}]),/profile/);
+});
