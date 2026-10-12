@@ -56,7 +56,8 @@ function fuelEvent(overrides = {}) {
     cardNumberMasked: '',
     assetId: 'asset-1',
     assetTitle: '2023 Toyota Hilux Single Cab',
-    assetPlateLabel: '',
+    assetPlateLabel: 'A4P-001218',
+    assetSerialNumber: 'VIN-TEST-12345',
     litres: 60.3,
     storageLevelBefore: 2108.6,
     storageLevelAfter: 2048.3,
@@ -126,7 +127,10 @@ test('PDF fuel entries use seven readable columns and preserve every detail unde
 
   assert.equal((html.match(/<th>/g) ?? []).length, 7);
   assert.equal((html.match(/class="assetReportFuelEventGroup"/g) ?? []).length, 2);
-  assert.equal((html.match(/colspan="7"/g) ?? []).length, 2);
+  assert.equal((html.match(/colspan="7"/g) ?? []).length, 4);
+  assert.equal((html.match(/class="assetReportFuelIdentityRow"/g) ?? []).length, 2);
+  assert.match(html, /Serial \/ VIN: <b>VIN-TEST-12345<\/b>/);
+  assert.match(html, /Register \/ plate ID: <b>A4P-001218<\/b>/);
   assert.match(html, /Storage balance/);
   assert.match(html, /2[\s,]?108[,.]6 L to 2[\s,]?048[,.]3 L/);
   assert.match(html, /25% to 100%/);
@@ -226,4 +230,19 @@ test('the printable report does not claim a false one-page count', () => {
   assert.match(html, /page-break-inside: avoid/);
   assert.match(html, /Work-use Recorded/);
   assert.match(html, /not, by itself, a tax determination/);
+});
+
+
+test('each identity stays inside its own entry and escapes missing or unsafe identifiers', () => {
+  const html = helpers.renderFuelEventTable([
+    fuelEvent({assetTitle:'Tractor One',assetSerialNumber:'VIN<one>',activityText:'Plant maize'}),
+    fuelEvent({assetTitle:'Tractor Two',assetSerialNumber:'',activityText:'Spray field'}),
+  ]);
+  const groups = html.match(/<tbody[\s\S]*?<\/tbody>/g);
+  assert.match(groups[0], /Tractor One/);
+  assert.match(groups[0], /VIN&lt;one&gt;/);
+  assert.match(groups[0], /Plant maize/);
+  assert.doesNotMatch(groups[0], /Tractor Two|Spray field/);
+  assert.match(groups[1], /Serial \/ VIN: <b>Not recorded/);
+  assert.match(groups[1], /Tractor Two/);
 });
