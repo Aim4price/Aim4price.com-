@@ -110,3 +110,36 @@ test('asset Add fuel asks for a slip or storage before opening capture', async (
   const scan = await read('app/fuel-scan/[publicFuelStorageCode]/fuel-scan-client.tsx');
   assert.match(scan, /appVisibleAssets.some\(asset => asset.id === initialAssetId\)/);
 });
+
+test('Fuel entry choices keep storage, slips and asset quick-add links distinct', async () => {
+  const runtime = await import('react/jsx-runtime');
+  const FuelClient = () => null;
+  const FuelEntryChoices = () => null;
+  let accountType = 'owner';
+  const mocks = {
+    'react/jsx-runtime': runtime,
+    'next/navigation': { redirect: path => { throw new Error(`redirect:${path}`); } },
+    '../../lib/account-access': { requireActivePageAccess: async () => ({session:{user:{id:'owner'}}}) },
+    '../../lib/account-profile': { getAccountProfile: async () => ({accountType}) },
+    '../../lib/internal-return-path': loadInternalReturnPathHelpers(),
+    './fuel-client': {default:FuelClient},
+    './fuel-entry-choices': {default:FuelEntryChoices},
+  };
+  const output = ts.transpileModule(fuelPage, { compilerOptions: {
+    module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
+  }}).outputText;
+  const loaded = {exports:{}};
+  new Function('require','module','exports',output)(name => {
+    assert.ok(name in mocks, `Unexpected import ${name}`); return mocks[name];
+  },loaded,loaded.exports);
+  const page = loaded.exports.default;
+  assert.equal((await page({})).type,FuelEntryChoices);
+  assert.equal((await page({searchParams:{view:'storage'}})).type,FuelClient);
+  assert.equal((await page({searchParams:{view:'slips'}})).type,FuelClient);
+  const quickAdd = await page({searchParams:{assetId:'asset-1',add:'1',returnTo:'/asset-register'}});
+  assert.equal(quickAdd.type,FuelClient);
+  assert.equal(quickAdd.props.initialOpenAdd,true);
+  assert.equal(quickAdd.props.initialReturnTo,'/asset-register');
+  accountType = 'dealer';
+  await assert.rejects(page({}),/redirect:\/account/);
+});

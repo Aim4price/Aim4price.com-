@@ -1567,8 +1567,7 @@ export default function FuelClient({
 
   function switchFuelView() {
     const url = new URL(window.location.href);
-    if (isSlipsPage) url.searchParams.delete('view');
-    else url.searchParams.set('view', 'slips');
+    url.searchParams.set('view', isSlipsPage ? 'storage' : 'slips');
     window.history.pushState(null, '', `${url.pathname}${url.search}${url.hash}`);
     closeModal();
     window.scrollTo({ top: 0 });
@@ -3562,7 +3561,7 @@ export default function FuelClient({
                     className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topFuelSlipButton}`}
                     onClick={switchFuelView}
                   >
-                    {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}<span>{isSlipsPage ? 'Storage' : 'Fuel Slips'}</span>
+                    {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}<span>{isSlipsPage ? 'Switch to Storage' : 'Switch to Fuel Slips'}</span>
                   </button>
                   <button
                     type="button"
@@ -3752,7 +3751,7 @@ export default function FuelClient({
           )}
           <button type="button" className={styles.mobileQuickButton} onClick={switchFuelView}>
             {isSlipsPage ? <StorageViewIcon className={styles.buttonIcon} /> : <FuelSlipsIcon className={styles.buttonIcon} />}
-            <span>{isSlipsPage ? 'Storage' : 'Slips'}</span>
+            <span>{isSlipsPage ? 'Switch to Storage' : 'Switch to Fuel Slips'}</span>
           </button>
           <button type="button" className={styles.mobileQuickButton} onClick={openExclusionsModal}>
             <ExclusionIcon className={styles.buttonIcon} />
