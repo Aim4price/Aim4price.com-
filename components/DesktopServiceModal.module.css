@@ -319,6 +319,10 @@
   gap: 9px;
 }
 
+.cancelButton + .checklist {
+  margin-top: .75rem;
+}
+
 .checklist + .field {
   margin-top: 1.25rem;
   gap: .6rem;
