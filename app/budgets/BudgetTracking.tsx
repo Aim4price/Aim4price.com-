@@ -1,7 +1,8 @@
 'use client';
 import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import ReportDownloadFlow from '../../components/ReportDownloadFlow';
-import manageStyles from '../../components/LedgerManageActions.module.css';
+import umbrellaStyles from '../../components/asset-register/AssetGroupManagerModal.module.css';
+import registerStyles from '../asset-register/page.module.css';
 import budgetModalStyles from '../../components/BudgetModal.module.css';
 import ListPagination, { type ListPageSize } from '../../components/ListPagination';
 import downloadStyles from '../../components/ReportDownload.module.css';
@@ -18,8 +19,8 @@ import accountStyles from '../account/page.module.css';
 const money = (value: number) => `R ${value.toLocaleString('en-US', { maximumFractionDigits: 2 }).replace(/,/g, ' ').replace('.', ',')}`;
 function Icon({ kind }: { kind: string }) {
   if (kind === 'manage') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" /><circle cx="12" cy="12" r="3" /></svg>;
-  if (kind === 'edit') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m16 3 5 5L9 20H4v-5L16 3ZM14 5l5 5M4 22h17" /></svg>;
-  if (kind === 'delete') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" /></svg>;
+  if (kind === 'edit') return <svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg>;
+  if (kind === 'delete') return <svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" /></svg>;
   if (kind === 'search') return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4 4" /></svg>;
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={kind === 'add' ? 'M12 5v14M5 12h14' : kind === 'download' ? 'M12 3v12m-5-5 5 5 5-5M5 20h14' : kind === 'filter' ? 'M4 6h16M7 12h10M10 18h4' : kind === 'alerts' ? 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4' : kind === 'manage' ? 'M4 7h16M4 17h16M8 4v6M16 14v6' : 'M5 3h14v18H5zM9 7h6M9 12h6M9 17h6'} /></svg>;
 }
@@ -33,7 +34,7 @@ function Dialog({ title, onClose, children, report = false, subtitle }: { subtit
     return () => { document.body.style.overflow = overflow; previous?.focus(); };
   }, []);
   return <div className={subtitle ? `${maintenanceStyles.modalBackdrop} ${maintenanceStyles.ledgerManageBackdrop}` : `${styles.overlay} ${report ? downloadStyles.backdrop : ''}`} data-website-overlay onMouseDown={e => { if (e.target === e.currentTarget) onClose(); }}>
-    <div ref={ref} tabIndex={-1} className={subtitle ? `${maintenanceStyles.schedulingDialog} ${maintenanceStyles.ledgerManageModal}` : `${styles.dialog} ${report ? downloadStyles.dialog : budgetModalStyles.surface}`} data-download-dialog={report ? 'true' : undefined} role="dialog" aria-modal="true" aria-label={title} onKeyDown={e => {
+    <div ref={ref} tabIndex={-1} className={subtitle ? `${umbrellaStyles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${registerStyles.optionsModal} ${umbrellaStyles.manageModal}` : `${styles.dialog} ${report ? downloadStyles.dialog : budgetModalStyles.surface}`} data-download-dialog={report ? 'true' : undefined} role="dialog" aria-modal="true" aria-label={title} onKeyDown={e => {
       if (e.key === 'Escape') { e.stopPropagation(); onClose(); }
       if (e.key === 'Tab') {
         const controls = Array.from(ref.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') || []);
@@ -41,7 +42,7 @@ function Dialog({ title, onClose, children, report = false, subtitle }: { subtit
         if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) { e.preventDefault(); last?.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
       }
-    }}><header className={subtitle ? maintenanceStyles.modalHeader : report ? undefined : budgetModalStyles.header} data-download-header="true"><div className={budgetModalStyles.headerText}><h2>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div><button type="button" className={subtitle ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : report ? undefined : budgetModalStyles.close} onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>{report || subtitle ? <span aria-hidden="true">×</span> : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>}</button></header>{subtitle ? <div className={maintenanceStyles.modalDivider} /> : null}{children}</div>
+    }}><header className={subtitle ? `${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${umbrellaStyles.manageHeader}` : report ? undefined : budgetModalStyles.header} data-download-header="true"><div className={subtitle ? registerStyles.modalHeaderText : budgetModalStyles.headerText}><h2>{title}</h2>{subtitle ? <p>{subtitle}</p> : null}</div><button type="button" className={subtitle ? `${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}` : report ? undefined : budgetModalStyles.close} onClick={onClose} aria-label={`Close ${title.toLowerCase()}`}>{report || subtitle ? <span aria-hidden="true">×</span> : <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>}</button></header>{subtitle ? <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${umbrellaStyles.manageMenuBody}`}><div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>{children}</div></div> : children}</div>
   </div>;
 }
 export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd, onEdit, onDelete, scopeAssetId = '', reportAssets = [] }: {
@@ -123,12 +124,12 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     </FilterFlow> : null}
     {selected ? (
       <Dialog title="Manage budget" subtitle={`${selected.assetTitle} · ${selected.periodLabel}`} onClose={() => setManageId(null)}>
-        <div className={`${maintenanceStyles.ledgerManageActions} ${manageStyles.grid}`}>
-          <button type="button" className={manageStyles.primary} onClick={() => { setManageId(null); onEdit(selected.id); }}>
-            <Icon kind="edit" /><span className={manageStyles.copy}><span>Edit budget &amp; alerts</span><small>Update the limit and reminders.</small></span>
+        <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid} ${umbrellaStyles.manageMenuGrid}`}>
+          <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManageId(null); onEdit(selected.id); }}>
+            <i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><Icon kind="edit" /></i><span><strong>Edit budget &amp; alerts</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update the limit and reminders.</small></span>
           </button>
-          <button type="button" className={manageStyles.danger} onClick={() => { setManageId(null); onDelete(selected.id); }}>
-            <Icon kind="delete" /><span className={manageStyles.copy}><span>Delete budget</span><small>Remove this spending budget.</small></span>
+          <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { setManageId(null); onDelete(selected.id); }}>
+            <i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><Icon kind="delete" /></i><span><strong>Delete budget</strong><small className={umbrellaStyles.menuOptionSubtitle}>Remove this spending budget.</small></span>
           </button>
         </div>
       </Dialog>

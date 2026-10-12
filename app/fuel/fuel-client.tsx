@@ -5,7 +5,8 @@ import { openAssetQrLabel } from '../../lib/asset-qr-label';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
 import { useCaptureAllowance } from '../../lib/use-capture-allowance';
 import DateInput from '../../components/DateInput';
-import manageStyles from '../../components/LedgerManageActions.module.css';
+import umbrellaStyles from '../../components/asset-register/AssetGroupManagerModal.module.css';
+import registerStyles from '../asset-register/page.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
 import focusStyles from '../../components/LedgerCardFocus.module.css';
 import { downloadCanonicalReportFile } from '../../lib/report-open';
@@ -4074,14 +4075,18 @@ export default function FuelClient({
 
       {(modalMode === 'fuel-slip-manager' || isSlipsPage) && managedFuelSlip ? (
         <div className={`${styles.fuelSlipSubModalBackdrop} ${styles.accountFuelBackdrop} ${styles.slipManageBackdrop}`} data-website-overlay onClick={() => setManagedFuelSlip(null)}>
-          <section className={`${styles.accountFuelModal} ${accountStyles.modalTheme} ${styles.slipManageModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manage-title" onClick={(event) => event.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <div><h2 id="fuel-slip-manage-title">Manage fuel slip</h2><p>{managedFuelSlip.supplierName || 'Fuel slip'} · {formatFuelSlipDate(managedFuelSlip.documentDate)}</p></div>
-              <button type="button" className={`${styles.closeButton} ${styles.accountFuelClose} ${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setManagedFuelSlip(null)} aria-label="Close manage fuel slip"><CloseIcon /></button>
-            </div>
-            <div className={`${styles.slipManageOptions} ${manageStyles.grid}`}>
-              {<button type="button" className={manageStyles.primary} onClick={() => { const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipReview(slip); }}><EditIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>{fuelSlipNeedsReview(managedFuelSlip) ? 'Review / complete' : 'Edit'}</span><small>Check and update slip details.</small></span></button>}
-              {<button type="button" className={manageStyles.danger} onClick={() => { const trigger = fuelSlipManagerChildTriggerRef.current; const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipDeleteConfirm(slip); fuelSlipManagerChildTriggerRef.current = trigger; }}><TrashIcon className={styles.buttonIcon} /><span className={manageStyles.copy}><span>Void</span><small>Void this fuel slip.</small></span></button>}
+          <section className={`${umbrellaStyles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${registerStyles.optionsModal} ${umbrellaStyles.manageModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manage-title" onClick={(event) => event.stopPropagation()}>
+            <header className={`${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${umbrellaStyles.manageHeader}`}>
+              <div className={registerStyles.modalHeaderText}><h2 id="fuel-slip-manage-title">Manage fuel slip</h2><p>{managedFuelSlip.supplierName || 'Fuel slip'} · {formatFuelSlipDate(managedFuelSlip.documentDate)}</p></div>
+              <button type="button" className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} onClick={() => setManagedFuelSlip(null)} aria-label="Close manage fuel slip">×</button>
+            </header>
+            <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${umbrellaStyles.manageMenuBody}`}>
+              <div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>
+                <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid} ${umbrellaStyles.manageMenuGrid}`}>
+              {<button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipReview(slip); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg></i><span><strong>{fuelSlipNeedsReview(managedFuelSlip) ? 'Review / complete' : 'Edit'}</strong><small className={umbrellaStyles.menuOptionSubtitle}>Check and update slip details.</small></span></button>}
+              {<button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} onClick={() => { const trigger = fuelSlipManagerChildTriggerRef.current; const slip = managedFuelSlip; setManagedFuelSlip(null); openFuelSlipDeleteConfirm(slip); fuelSlipManagerChildTriggerRef.current = trigger; }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></i><span><strong>Void</strong><small className={umbrellaStyles.menuOptionSubtitle}>Void this fuel slip.</small></span></button>}
+                </div>
+              </div>
             </div>
           </section>
         </div>
