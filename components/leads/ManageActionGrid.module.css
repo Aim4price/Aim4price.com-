@@ -14,6 +14,7 @@
   --action-tint: #edf8f2; --action-border: #c4dfd0; --action-ink: #24614a;
 }
 .grid > :is(button, a)[data-manage-action='fuel'],
+.grid > :is(button, a)[data-manage-action='maintenance'],
 .grid > :is(button, a)[data-manage-action='addMaintenance'],
 .grid > :is(button, a)[data-manage-action='maintenanceSchedules'] {
   --action-tint: #fff7e9; --action-border: #ebd9b8; --action-ink: #826124;

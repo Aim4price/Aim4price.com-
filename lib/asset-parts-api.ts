@@ -69,7 +69,7 @@ export async function assetPartsRequest(request: NextRequest, target: Contributi
       maintenanceScope = await optionalScope(target, 'maintenanceReports') || await optionalScope(target, 'addMaintenance');
       canReadMaintenance = !!maintenanceScope;
     }
-    const canManageAll = canAdd && ('ownerAssetId' in target || scope.canManageAllParts === true);
+    const canManageAll = canAdd && ('ownerAssetId' in target || scope.canManageAllParts === true || (!('appScope' in target) && canView));
     if (exporting && !canView) throw new ExternalLeadAccessError('Parts viewing access is required to download a report.', 403);
     if (!/^[0-9a-f-]{36}$/i.test(scope.assetId)) throw new ExternalLeadAccessError('Asset unavailable.', 404);
     const asset = await getAssetRegisterItemById(scope.ownerId, scope.assetId);
@@ -114,7 +114,7 @@ export async function assetPartsRequest(request: NextRequest, target: Contributi
       const action = body.action;
       if (!['edit', 'delete', 'renameChoice', 'deleteChoice'].includes(String(action))) throw new Error('Choose a valid parts action.');
       const choiceAction = action === 'renameChoice' || action === 'deleteChoice';
-      if (choiceAction && !canManageAll) throw new ExternalLeadAccessError('Only the owner or an authorised Owner App operator can change part choices.', 403);
+      if (choiceAction && !canManageAll) throw new ExternalLeadAccessError('Viewing and parts management access are required to change part choices.', 403);
       const text = (key: string, max: number, required = false) => { const value = body[key]; if (typeof value !== 'string' || value.length > max || (required && !value.trim())) throw new Error(`Enter a valid ${key}.`); return value.trim(); };
       const name = action === 'edit' || action === 'renameChoice' ? text('name', 160, true) : '';
       const details = action === 'edit' ? { name, partNumber: text('partNumber', 120, true), brand: text('brand', 120), notes: text('notes', 2000) } : null;

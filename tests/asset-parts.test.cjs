@@ -69,7 +69,7 @@ test('parts persist against the live asset; permissions, ownership, record links
   assert.equal((await call('POST',{action:'renameChoice',itemKey:'oil_filter',name:'Oil filter'})).status,200);
   const lead={leadId:'lead'};
   assert.equal((await call('GET',draft,lead)).status,403);
-  allowed=new Set(['viewParts']);assert.equal((await exportPdf(lead,[draft.requestId])).data.pdf,true);read=await call('GET',draft,lead);assert.equal(read.data.parts.length,2);assert.equal(read.data.canAdd,false);assert.equal(read.data.maintenance.length,0);
+  allowed=new Set(['viewParts']);assert.equal((await exportPdf(lead,[draft.requestId])).data.pdf,true);read=await call('GET',draft,lead);assert.equal(read.data.parts.length,2);assert.equal(read.data.canAdd,false);assert.equal(read.data.canManageChoices,false);assert.ok(read.data.parts.every(part=>!part.canEdit));assert.equal(read.data.maintenance.length,0);
   assert.equal((await call('POST',draft,lead)).status,403);
   allowed=new Set(['addParts']);assert.equal((await exportPdf(lead,[draft.requestId])).status,403);read=await call('GET',draft,lead);assert.deepEqual(read.data.parts,[]);assert.equal(read.data.canAdd,true);
   const added={...draft,requestId:'66666666-6666-4666-8666-666666666666'};
@@ -78,9 +78,14 @@ test('parts persist against the live asset; permissions, ownership, record links
   assert.equal((await call('POST',draft,lead)).status,400); // another actor's request ID
   allowed.add('viewParts');
   assert.equal((await call('POST',{...edit,partId:added.requestId,revision:0},lead)).status,200);
-  assert.equal((await call('POST',{...edit,revision:1},lead)).status,403);
-  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:1},lead)).status,403);
-  assert.equal((await call('POST',{action:'renameChoice',itemKey:'oil_filter',name:'No'},lead)).status,403);
+  assert.equal((await call('POST',{...edit,revision:1},lead)).status,200);
+  read=await call('GET',draft,lead);assert.equal(read.data.canManageChoices,true);assert.ok(read.data.parts.every(part=>part.canEdit));
+  assert.equal((await call('POST',{action:'delete',partId:linked.requestId,revision:0},lead)).status,200);
+  assert.equal((await call('POST',{action:'renameChoice',itemKey:'oil_filter',name:'Shared filter'},lead)).status,200);
+  assert.equal((await call('POST',{action:'deleteChoice',itemKey:'oil_filter'}, {token:'shared-link',assetId:asset})).status,200);
+  read=await call('GET');assert.ok(!read.data.suggestions.some(item=>item.id==='oil_filter'));
+  assert.equal((await call('POST',{action:'renameChoice',itemKey:'oil_filter',name:'Oil filter'})).status,200);
+  allowed.delete('viewParts');assert.equal((await call('POST',{action:'renameChoice',itemKey:'oil_filter',name:'Denied'},lead)).status,403);allowed.add('viewParts');
   allowed.delete('addParts');assert.equal((await call('POST',{...edit,partId:added.requestId,revision:1},lead)).status,403);allowed.add('addParts');
   revoked=true;allowed.add('viewParts');assert.equal((await exportPdf(lead,[draft.requestId])).status,403);assert.equal((await call('POST',{...added,requestId:'77777777-7777-4777-8777-777777777777'},lead)).status,403);
   assert.equal((await call('GET',draft,lead)).status,403);
@@ -98,8 +103,8 @@ test('parts persist against the live asset; permissions, ownership, record links
   appRevoked=true;assert.equal((await call('GET',draft,appTarget)).status,403);
   user={id:'owner',email:'owner@example.com'};
   assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:0})).status,409);
-  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:1},undefined,'foreign')).status,403);
-  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:1})).status,200);
+  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:2},undefined,'foreign')).status,403);
+  assert.equal((await call('POST',{action:'delete',partId:draft.requestId,revision:2})).status,200);
   assert.equal((await db.query('SELECT * FROM asset_parts WHERE id=$1',[draft.requestId])).rows.length,0);
   assert.ok(events.some(e=>e.action==='Part deleted'&&e.before.partNumber==='00012'));
 
@@ -131,7 +136,7 @@ test('native app parts respect assigned assets, view-only roles, revoked rights 
  assigned=false;await assert.rejects(()=>result.scope.lock(client),e=>e.status===403);assigned=true;
  recordWork=false;result=await read('field-manager');assert.equal(result.canAdd,false);assert.equal(result.canView,true);
  fieldOK=false;await assert.rejects(()=>read('field-manager'),e=>e.status===401);
- result=await read('dealer');assert.equal(result.canReadMaintenance,true);tracked.permissions.canViewParts=false;await assert.rejects(()=>result.scope.lock(client),e=>e.status===403);
- result=await read('dealer');assert.equal(result.canView,false);assert.equal(result.canAdd,true);
+ result=await read('dealer');assert.equal(result.scope.canManageAllParts,true);assert.equal(result.canReadMaintenance,true);tracked.permissions.canViewParts=false;await assert.rejects(()=>result.scope.lock(client),e=>e.status===403);
+ result=await read('dealer');assert.equal(result.scope.canManageAllParts,false);assert.equal(result.canView,false);assert.equal(result.canAdd,true);
  dealerRole=false;await assert.rejects(()=>read('dealer'),e=>e.status===403);
 });
