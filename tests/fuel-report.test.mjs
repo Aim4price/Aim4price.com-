@@ -32,6 +32,12 @@ function loadReportHelpers() {
 
 const helpers = loadReportHelpers();
 
+test('fuel report retains the actual activity and never substitutes the supplier for a missing work area', () => {
+  const event = fuelEvent({ sourceType: 'fuel_slip', fuelSlipSupplierName: 'Engen George', activityText: 'Delivering feed to Farm A', workAreaText: '' });
+  assert.equal(helpers.eventWorkActivityLabel(event), 'Delivering feed to Farm A');
+  assert.equal(helpers.eventWorkAreaLabel(event), '-');
+});
+
 function fuelEvent(overrides = {}) {
   return {
     id: 'event-1',

@@ -247,7 +247,7 @@ test('fuel capture N/A choices suppress hints and satisfy only their matching op
 
   assert.match(operationalValidation, /!captured\.operatorName && !captured\.operatorNotApplicable/);
   assert.match(operationalValidation, /!captured\.activityText && !captured\.activityNotApplicable/);
-  assert.match(operationalValidation, /!captured\.workAreaText && !captured\.workAreaNotApplicable/);
+  assert.doesNotMatch(operationalValidation, /CAPTURE_FUEL_WORK_AREA_REQUIRED/);
   assert.match(operationalValidation, /if \(captured\.usageNotApplicable\) return/);
   assert.ok(
     operationalValidation.indexOf('if (captured.usageNotApplicable) return')

@@ -2820,7 +2820,7 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     assetUsageReading: usageReading,
     operatorName: slip.operatorNotApplicable ? 'N/A' : slip.operatorName || slip.supplierName || 'Fuel Slip',
     activityText: slip.activityNotApplicable ? 'N/A' : slip.activityText || 'Fuel Slip',
-    workAreaText: slip.workAreaNotApplicable ? 'N/A' : slip.workAreaText || (isStorageTarget ? 'Storage tank' : 'External fuel purchase'),
+    workAreaText: slip.workAreaNotApplicable ? 'N/A' : slip.workAreaText || '',
     note: fuelSlipReportNote(slip),
     latitude: slip.latitude,
     longitude: slip.longitude,
@@ -3787,7 +3787,7 @@ export async function recordFuelAssetIssue(
     throw new Error('Enter the operator or manager name.');
   }
 
-  if (actorType === 'scan_pin' && activityText.length < 2) {
+  if (activityText.length < 2) {
     throw new Error('Enter what activity the asset will do.');
   }
 
@@ -4362,7 +4362,7 @@ export async function recordMissingFuelAssetIssue(
     );
     const storage = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
     if (!storage) throw new Error('Fuel storage not found.');
-    const workAreaText = requestedWorkAreaText || 'Main diesel tank';
+    const workAreaText = requestedWorkAreaText || null;
 
     const duplicate = await client.query<{ id: string }>(
       `select id::text from public.fuel_storage_events where user_id = $1 and idempotency_key = $2 limit 1`,
@@ -5387,7 +5387,8 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
 
       if (!operatorName && !operatorNotApplicable) postingMissingReasons.push('Operator / manager name');
       if (!activityText && !activityNotApplicable) postingMissingReasons.push('Activity / reason for fuel');
-      if (!workAreaText && !workAreaNotApplicable) postingMissingReasons.push('Where / direction / work area');
+      // The activity is sufficient for operational capture. An unrecorded work
+      // area stays blank; never substitute the supplier or require invented data.
 
       const currentUsageReading = normalizeUsageReading(assetRow.hours);
       if (updateAssetUsage && usageReading !== null && currentUsageReading !== null && usageReading < currentUsageReading) {
@@ -5655,7 +5656,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         assetUsageReading: null,
         operatorName: operatorNotApplicable ? null : operatorName || supplierName || 'Fuel Slip',
         activityText: activityNotApplicable ? null : activityText || 'Fuel Slip / storage refill',
-        workAreaText: workAreaNotApplicable ? null : workAreaText || storage.name || null,
+        workAreaText: workAreaNotApplicable ? null : workAreaText || null,
         note: [description, note].filter(Boolean).join('\n\n') || null,
         latitude: null,
         longitude: null,

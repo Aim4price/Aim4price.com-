@@ -1,6 +1,7 @@
 .field { display: grid; gap: .5rem; min-width: 0; width: 100%; }
 .field input { width: 100%; box-sizing: border-box; min-height: 44px; border: 1px solid #cbded6; border-radius: 12px; padding: .7rem .85rem; font: inherit; color: #173c32; background: #f4f9f6; }
 .field input[aria-invalid="true"] { border-color: #c23c46; }
+.hint { margin: 0; font-size: .8rem; line-height: 1.4; color: #52695f; }
 .choices { border: 1px solid #cbded6; border-radius: 12px; background: #f6faf8; color: #173c32; overflow: hidden; }
 .choices summary { padding: .7rem .9rem; cursor: pointer; font-size: .875rem; font-weight: 650; }
 .list { max-height: 240px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #83ab98 #f6faf8; padding: 0 .65rem; }

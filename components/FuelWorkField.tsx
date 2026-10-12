@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { appRealmForPath } from '../lib/app-realm';
 import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../lib/fuel-work-choice-options';
 import styles from './FuelWorkField.module.css';
@@ -7,6 +7,7 @@ import styles from './FuelWorkField.module.css';
 export default function FuelWorkField({ value, onChange, choices: provided, invalid, autoFocus = false }: {
   value: string; onChange: (value: string) => void; choices?: FuelWorkChoice[]; invalid?: boolean; autoFocus?: boolean;
 }) {
+  const hintId = useId();
   const [choices, setChoices] = useState(provided ?? DEFAULT_FUEL_WORK_CHOICES);
   const [revision, setRevision] = useState<number | null>(null);
   const [editing, setEditing] = useState<FuelWorkChoice | null>(null);
@@ -37,7 +38,8 @@ export default function FuelWorkField({ value, onChange, choices: provided, inva
   }
   const editable = provided === undefined && revision !== null;
   return <div className={styles.field}>
-    <input aria-label="Work activity" aria-invalid={invalid} data-fuel-slip-field="activityText" value={value} maxLength={120} onChange={event => onChange(event.target.value)} placeholder="Choose saved work or describe the job" autoFocus={autoFocus} />
+    <input aria-label="Work activity" aria-describedby={hintId} aria-invalid={invalid} data-fuel-slip-field="activityText" value={value} maxLength={120} onChange={event => onChange(event.target.value)} placeholder="Choose saved work or describe the job" autoFocus={autoFocus} />
+    <p id={hintId} className={styles.hint}>Describe the work, for example: planting maize or delivering feed to Farm A.</p>
     <details className={styles.choices}>
       <summary>Saved work</summary>
       <div className={styles.list}>

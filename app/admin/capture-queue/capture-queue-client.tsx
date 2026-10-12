@@ -1433,7 +1433,7 @@ export default function CaptureQueueClient({ initialStatus = "open", initialOwne
                       </label>
                     </div>
                     <div className={`${styles.fieldWithNa} ${styles.fullField}`}>
-                      <label><span>Work area</span><input value={draft.workAreaText} onChange={(event) => updateDraft("workAreaText", event.target.value)} disabled={draft.workAreaNotApplicable} /></label>
+                      <label><span>Work area (optional)</span><input value={draft.workAreaText} onChange={(event) => updateDraft("workAreaText", event.target.value)} disabled={draft.workAreaNotApplicable} /></label>
                       <label className={styles.naControl}>
                         <input
                           type="checkbox"
