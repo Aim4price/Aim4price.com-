@@ -4219,7 +4219,7 @@ export default function MyInvoicesClient({
                     >
                       <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><LedgerIcon /></span>
                       <span className={styles.invoiceDropScopeCopy}>
-                        <strong>One asset</strong>
+                        <strong>Specific asset</strong>
                       </span>
                       <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'asset' ? '✓' : ''}</span>
                     </button>
@@ -4289,7 +4289,7 @@ export default function MyInvoicesClient({
                   <div className={styles.invoiceDropSelectionSummary}>
                     <span className={styles.invoiceDropSelectionIcon} aria-hidden="true">{invoiceDropScope === 'all' ? <ContributionIcon /> : <LedgerIcon />}</span>
                     <div>
-                      <strong>{invoiceDropScope === 'all' ? 'All assets' : invoiceDropAsset?.title ?? 'One asset'}</strong>
+                      <strong>{invoiceDropScope === 'all' ? 'All assets' : invoiceDropAsset?.title ?? 'Specific asset'}</strong>
                     </div>
                   </div>
 

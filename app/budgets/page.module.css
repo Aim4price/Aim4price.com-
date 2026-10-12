@@ -87,3 +87,6 @@
   line-height: 1.08;
 }
 .dialog.manageDialog header p { overflow-wrap: anywhere; }
+
+/* Search fills the toolbar now that budgets no longer expose a filter menu. */
+.page .searchToolbar { grid-template-columns: minmax(0, 1fr); }
