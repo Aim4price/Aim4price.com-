@@ -257,11 +257,12 @@ function parseNumber(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMissingEntry }: {
+export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMissingEntry, onReport }: {
   storage: MissingFuelStorage;
   onClose: () => void;
   onManage: () => void;
   onMissingEntry: () => void;
+  onReport: () => void;
 }) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose(); };
@@ -286,6 +287,11 @@ export function ManageFuelStorageChoiceModal({ storage, onClose, onManage, onMis
           <button type="button" className={`${styles.sourceChoiceOption} ${styles.manageChoiceOption} ${styles.desktopMissingEntryChoice}`} onClick={onMissingEntry}>
             <span className={styles.choiceGraphic}><HistoryFuelIcon /></span>
             <span className={styles.choiceTitleBlock}><strong>Back Track Fuel</strong><small>Add fuel that was issued earlier but not recorded.</small></span>
+            <span className={styles.manageChoiceArrow}><ArrowRightIcon /></span>
+          </button>
+          <button type="button" className={`${styles.sourceChoiceOption} ${styles.manageChoiceOption}`} onClick={onReport}>
+            <span className={styles.choiceGraphic}><IconBase><path d="M12 3v12m-4-4 4 4 4-4M5 16v4h14v-4" /></IconBase></span>
+            <span className={styles.choiceTitleBlock}><strong>Download report</strong><small>Export this storage’s fuel records.</small></span>
             <span className={styles.manageChoiceArrow}><ArrowRightIcon /></span>
           </button>
         </div>
