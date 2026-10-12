@@ -1,4 +1,6 @@
 'use client';
+import MaintenanceDetailsCard from '../../components/MaintenanceDetailsCard';
+import { maintenanceLabel } from '../../lib/maintenance-presentation';
 import MaintenanceEntryChoice from '../../components/MaintenanceEntryChoice';
 import manageStyles from '../../components/LedgerManageActions.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
@@ -371,17 +373,17 @@ function assetYearLabelFromCategory(categoryLabel: string | null | undefined): s
 
 function buildMaintenanceAssetMeta(record: MaintenanceRecord, includeFamily = true): string[] {
   const usageLabel = formatAssetUsage(record.assetUsageReading, record.assetUsageMetric);
-  const familyLabel = record.assetCategoryLabel || titleCase(record.assetKind || 'asset');
+  const familyLabel = maintenanceLabel(record.assetCategoryLabel) || titleCase(record.assetKind || 'asset');
   const details = [
     typeof record.assetYearModel === 'number' && Number.isFinite(record.assetYearModel) && record.assetYearModel > 0
       ? `${assetYearLabelFromCategory(record.assetCategoryLabel)}: ${record.assetYearModel}`
       : '',
     usageLabel ? `Usage: ${usageLabel}` : '',
-    record.assetCondition ? `Condition: ${record.assetCondition}` : '',
+    record.assetCondition ? `Condition: ${maintenanceLabel(record.assetCondition)}` : '',
     includeFamily && familyLabel ? `Family: ${familyLabel}` : '',
   ].filter(Boolean);
 
-  return details.length ? details : record.assetMeta ? [record.assetMeta] : [];
+  return details.length ? details : record.assetMeta ? [maintenanceLabel(record.assetMeta)] : [];
 }
 
 function maintenanceDueValue(record: MaintenanceRecord): string {
@@ -1394,7 +1396,9 @@ export default function MaintenanceClient({
                 const statusText = isDone ? 'Completed' : record.status === 'cancelled' ? 'Cancelled' : record.computedStatusLabel || 'Upcoming';
 
                 return (
-                  <article
+                  <MaintenanceDetailsCard
+                    expanded={expanded}
+                    onToggle={() => setExpandedRecordId(current => current === record.id ? null : record.id)}
                     data-ledger-card={`maintenance:${record.id}`}
                     className={`${focusStyles.card} ${expandedRecordId && !expanded ? focusStyles.muted : ''} ${styles.invoiceRow} ${styles.ledgerCard} ${cardStatusClass} ${isUpcomingRecurringFollowUp && isDueSoon && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
                     key={record.id}
@@ -1467,7 +1471,7 @@ export default function MaintenanceClient({
                       {record.notes ? <div className={styles.ledgerNotes}><h4>Notes</h4><p>{record.notes}</p></div> : null}
                       {record.completedNotes ? <div className={styles.ledgerNotes}><h4>Completion notes</h4><p>{record.completedNotes}</p></div> : null}
                     </section>
-                  </article>
+                  </MaintenanceDetailsCard>
                 );
               })}
             </div>

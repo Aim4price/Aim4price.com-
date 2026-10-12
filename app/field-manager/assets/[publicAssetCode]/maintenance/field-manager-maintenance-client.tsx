@@ -1,4 +1,6 @@
 'use client';
+import MaintenanceDetailsCard from '../../../../../components/MaintenanceDetailsCard';
+import { useLedgerCardFocus } from '../../../../../lib/use-ledger-card-focus';
 import AppMaintenanceActions from '../../../../../components/AppMaintenanceActions';
 import DateInput from '../../../../../components/DateInput';
 
@@ -182,6 +184,7 @@ export default function FieldManagerMaintenanceClient({
   const [created, setCreated] = useState(false);
   const [notice, setNotice] = useState('');
   const [maintenanceRecords, setMaintenanceRecords] = useState<OwnerMaintenanceRecord[]>([]);
+  const [expandedRecordId, setExpandedRecordId] = useLedgerCardFocus('app-maintenance');
   const [focusedMaintenanceId, setFocusedMaintenanceId] = useState(highlightMaintenanceId);
   const [actionMaintenanceId, setActionMaintenanceId] = useState<string | null>(null);
   const upcomingMaintenance = maintenanceRecords.find((record) => record.status === 'upcoming') ?? null;
@@ -498,7 +501,10 @@ export default function FieldManagerMaintenanceClient({
                     const isUpcomingRecurringSchedule = isRecurringSchedule && !isDone;
                     const isUpdating = actionMaintenanceId === record.id;
                     return (
-                      <article
+                      <MaintenanceDetailsCard
+                        expanded={expandedRecordId === record.id}
+                        onToggle={() => setExpandedRecordId(current => current === record.id ? null : record.id)}
+                        data-ledger-card={`app-maintenance:${record.id}`}
                         id={`maintenance-${record.id}`}
                         key={record.id}
                         className={`${styles.maintenanceScheduleCard} ${isUpcomingRecurringSchedule ? styles.maintenanceScheduleCardRecurring : ''} ${isDone ? styles.maintenanceScheduleCardDone : ''} ${isFocused ? styles.maintenanceScheduleCardSelected : ''}`}
@@ -511,9 +517,16 @@ export default function FieldManagerMaintenanceClient({
                         </div>
                         {record.title?.trim() ? <h3>{record.title}</h3> : null}
                         <p>{ownerMaintenanceDueLabel(record)}</p>
+                        <div id={`app-maintenance-details-${record.id}`} hidden={expandedRecordId !== record.id}>
+                        <small>Type: {maintenanceTypeLabel(record.maintenanceType)}</small>
+                        {record.completedAtIso ? <small>Completed: {new Date(record.completedAtIso).toLocaleDateString('en-ZA')}</small> : null}
                         {record.assignedName ? <small>Assigned to {record.assignedName}</small> : null}
                         {record.notes ? <small>{record.notes}</small> : null}
+                        </div>
                         <div className={styles.maintenanceScheduleActions}>
+                          <button type="button" aria-expanded={expandedRecordId === record.id} aria-controls={`app-maintenance-details-${record.id}`} onClick={() => setExpandedRecordId(current => current === record.id ? null : record.id)}>
+                            {expandedRecordId === record.id ? 'Hide details' : 'View details'}
+                          </button>
                           {record.status === 'upcoming' ? (
                             <>
                               <button
@@ -543,7 +556,7 @@ export default function FieldManagerMaintenanceClient({
                             </button>
                           ) : null}
                         </div>
-                      </article>
+                      </MaintenanceDetailsCard>
                     );
                   })}
                 </div>

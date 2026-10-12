@@ -1,4 +1,6 @@
 'use client';
+import MaintenanceDetailsCard from './MaintenanceDetailsCard';
+import { maintenanceLabel } from '../lib/maintenance-presentation';
 import AppMaintenanceActions from './AppMaintenanceActions';
 import maintenanceActionStyles from './AppMaintenanceActions.module.css';
 import { useLeadDialog } from './leads/useLeadDialog';
@@ -1248,13 +1250,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               const pendingScheduleProposals = asset.scheduleProposals.filter((proposal) => proposal.status === 'pending');
               const isHistoryChecking = historyAccessCheckId === asset.accessId;
               return (
-                <article key={asset.trackerCardId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${trackerCardStatusClass(asset.status)} ${isOpen ? leadStyles.leadThreadOpen : ''} ${openCardId && !isOpen ? styles.trackerCardMuted : ''}`}>
+                <MaintenanceDetailsCard expanded={isOpen} onToggle={() => isOpen ? closeAsset() : openAsset(asset)} key={asset.trackerCardId} className={`${workspaceStyles.card} ${leadStyles.leadThread} ${trackerCardStatusClass(asset.status)} ${isOpen ? leadStyles.leadThreadOpen : ''} ${openCardId && !isOpen ? styles.trackerCardMuted : ''}`}>
                   <div className={leadStyles.clientPanel}>
                     <div className={leadStyles.clientPanelHeader}>
                       <div className={leadStyles.clientIdentity}>
                         <div className={leadStyles.leadCardTitleRow}><h3>{asset.ownerName}</h3></div>
                         <strong className={leadStyles.leadAssetName}>{asset.assetTitle}</strong>
-                        <span className={leadStyles.clientKicker}>{[asset.brandName, asset.modelName, asset.yearModel].filter(Boolean).join(' · ') || asset.assetKind} · {asset.statusLabel}</span>
+                        <span className={leadStyles.clientKicker}>{[asset.brandName, asset.modelName, asset.yearModel].filter(Boolean).join(' · ') || maintenanceLabel(asset.assetKind)} · {asset.statusLabel}</span>
                         <span className={styles.trackerNextStep}>{maintenanceStatusGuidance(asset.status)}</span>
                       </div>
                       <div className={leadStyles.clientDecisionArea}>
@@ -1386,7 +1388,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                               <div className={`${assetStyles.previewPlaceholder} ${leadStyles.leadPreviewPlaceholder}`}>
                                 <div className={assetStyles.previewPlaceholderBadges}>
                                   <span className={`${assetStyles.badge} ${assetStyles.badgeNeutral} ${assetStyles.previewPlaceholderBadge}`}>
-                                    {asset.assetKind || 'Tracked asset'}
+                                    {maintenanceLabel(asset.assetKind) || 'Tracked asset'}
                                   </span>
                                 </div>
                               </div>
@@ -1504,7 +1506,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                       </div>
                     </div>
                   ) : null}
-                </article>
+                </MaintenanceDetailsCard>
               );
             })}
           </div>
