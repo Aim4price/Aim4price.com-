@@ -24,3 +24,12 @@
 .fields small, .fields > p { margin: 0; color: var(--app-muted, #64746a); font-size: .85rem; font-weight: 650; line-height: 1.5; }
 .timelineMenu { font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif; font-size: 1rem; }
 .timelineMenu button { font-family: inherit; font-size: 1rem; font-weight: 650; }
+
+/* Fuel filters fit in two rows; keep actions visible at zoom and on short screens. */
+.compactFields > div { align-content: start; }
+.compactFields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.surface.surface.surface[data-compact-download="true"][data-download-dialog="true"] { overflow: hidden !important; }
+.surface.surface.surface[data-compact-download="true"] [data-download-body] { flex: 0 1 auto !important; overflow-y: auto !important; scrollbar-width: none; }
+.surface.surface.surface[data-compact-download="true"] [data-download-body]::-webkit-scrollbar { display: none; }
+.surface.surface.surface[data-compact-download="true"] [data-download-footer] { flex-shrink: 0; }
+@media (max-width: 540px) { .compactFields { gap: .7rem; padding: .8rem; } }

@@ -135,7 +135,7 @@ test('fuel slip filters use the Cost Ledger modal language without limiting mont
 
 test('pagination limits rendering while exports send independent filters to the full-history endpoint', () => {
   assert.match(client, /visibleFuelSlipManagerSlips\.slice\(startIndex, startIndex \+ fuelSlipLimit\)/);
-  const downloadHandler = sliceBetween(client, '<ReportDownloadFlow title="Fuel slip reports"', 'historyFuelSlip ?');
+  const downloadHandler = sliceBetween(client, '<ReportDownloadFlow instantDownload compactTimeline title="Fuel slip reports"', 'historyFuelSlip ?');
   assert.match(downloadHandler, /scopedApiUrl\('\/api\/fuel\/slips\/export'\)/);
   assert.match(downloadHandler, /filters:\{assetId:selection\.assetId,year:selection\.year,month:selection\.month/);
   assert.doesNotMatch(downloadHandler, /paginatedFuelSlipManagerSlips|recentFuelSlips|fuelSlipManagerSearchTerm/);

@@ -7,7 +7,7 @@ const { REPORT_THEME_CSS } = reportTheme;
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
-const reportRoute = read('app/api/fuel/report/route.ts');
+const reportRoute = read('lib/fuel-report.ts') + read('app/api/fuel/report/route.ts');
 const fuelLedger = read('lib/fuel-ledger.ts');
 const fuelIssueRoute = read('app/api/fuel-scan/storage/[publicFuelStorageCode]/issue/route.ts');
 
@@ -270,4 +270,13 @@ test('Excel remaining-fuel estimate uses fractional percentage cells and the sam
   const litres = 60.3, before = 0.25, after = 1;
   assert.equal(Math.round(litres * before / (after - before) * 1000) / 1000,
     helpers.calculateAssetDieselBeforeFill(fuelEvent()));
+});
+
+test('recorded issue dates remain distinct without late-entry labels', () => {
+  const html = helpers.renderFuelEventTable([fuelEvent({ isLateEntry: true, latitude: null, longitude: null, issueDate: '2026-07-01', issueTimeRecorded: false, entryAddedAtIso: '2026-08-16T08:15:00.000Z', lateEntryReason: 'Paper log captured later' })]);
+  assert.doesNotMatch(html, /late[ -]entr/i);
+  assert.match(html, /2026-07-01/);
+  assert.match(html, /16 Aug 2026/);
+  assert.match(html, /GPS not recorded/);
+  assert.match(html, /Paper log captured later/);
 });

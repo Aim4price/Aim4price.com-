@@ -9,6 +9,7 @@ const start=fixture.indexOf('function fuelEvent(');
 const event=new Function(fixture.slice(start,fixture.indexOf('\ntest(',start))+';return fuelEvent;')();
 function route(){let sheet,query;const ledger={assets:[{id:'a',title:'Selected tractor'}],summary:{currentLitres:9000,totalStorageUnits:4}};
 const mod=load('app/api/fuel/report/route.ts',{
+  '../../../../lib/fuel-report':load('lib/fuel-report.ts', {'./report-theme.ts':{REPORT_THEME_CSS:''}, './simple-xlsx.ts':{reportExcelDate:()=>null}}),
   'next/server':{NextResponse},'../../../../lib/report-theme.ts':{REPORT_THEME_CSS:''},
   '../../../../lib/account-profile':{getAccountProfile:async()=>({name:'Owner'})},
   '../../../../lib/asset-registers':{getAssetRegisterReportLogoUrl:async()=>''},

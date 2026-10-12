@@ -12,7 +12,7 @@ type Choice = { value: string; label: string };
 type Props = {
   title: string; allLabel: string;
   assets: Array<{ id: string; title: string; serialNumber?: string; meta?: string; selectedMethod?: string; categoryLabel?: string }>;
-  skipTimeline?: boolean; years?: string[]; budgetPeriods?: boolean; lockedAssetId?: string;
+  instantDownload?: boolean; compactTimeline?: boolean; skipTimeline?: boolean; years?: string[]; budgetPeriods?: boolean; lockedAssetId?: string;
   fields?: Array<{ key: string; label: string; initial: string; options: Choice[]; allAssetsOnly?: boolean }>;
   scopes?: Array<{ label: string; description: string; field: string; value: string }>;
   onClose: () => void; onDownload: (selection: ReportSelection) => void | Promise<void>;
@@ -27,7 +27,7 @@ function ScopeIcon({ kind = 'all' }: { kind?: string }) {
   </svg>;
 }
 
-export default function ReportDownloadFlow({ title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
+export default function ReportDownloadFlow({ title, allLabel, assets, years = [], budgetPeriods = false, lockedAssetId, instantDownload = false, compactTimeline = false, skipTimeline = false, fields = [], scopes = [], onClose, onDownload }: Props) {
   const [step, setStep] = useState<'scope' | 'asset' | 'timeline' | 'format'>(lockedAssetId ? (skipTimeline ? 'format' : 'timeline') : 'scope');
   const [selection, setSelection] = useState<ReportSelection>({ assetId: lockedAssetId || 'all', year: 'all', month: 'all', format: 'pdf', fields: Object.fromEntries(fields.map(field => [field.key, field.initial])) });
   const [search, setSearch] = useState('');
@@ -40,9 +40,11 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const overflow = document.body.style.overflow;
+    const rootOverflow = document.documentElement.style.overflow;
+    if (compactTimeline) document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     heading.current?.focus();
-    return () => { document.body.style.overflow = overflow; previous?.focus(); };
+    return () => { document.body.style.overflow = overflow; if (compactTimeline) document.documentElement.style.overflow = rootOverflow; previous?.focus(); };
   }, []);
   useEffect(() => { heading.current?.focus(); setError(''); }, [step]);
   const currentYear = new Date().getFullYear();
@@ -50,6 +52,7 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
   const selectedAsset = assets.find(asset => asset.id === selection.assetId);
   const periodLabel = budgetPeriods ? 'Current budget periods' : selection.year === 'all' ? 'All dates' : `${selection.month === 'all' ? '' : new Date(2000, Number(selection.month)-1).toLocaleString('en-ZA',{month:'long'})+' '}${selection.year}`;
   async function submit(format: 'pdf' | 'xlsx') {
+    if (busy) return;
     setBusy(true); setError('');
     try { await onDownload({ ...selection, format }); closing.current(); }
     catch (e) { setError(e instanceof Error ? e.message : 'Unable to download this report. Please try again.'); }
@@ -64,7 +67,7 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
   }
 
   return <div className={`${styles.overlay} ${report.backdrop}`} data-website-overlay onClick={event => { if (event.target === event.currentTarget) back(); }}>
-    <div ref={dialog} className={`${styles.surface} ${step === 'asset' ? picker.modal : report.dialog}`} data-download-dialog={step !== 'asset' ? 'true' : undefined} data-asset-choice-modal={step === 'asset' ? 'true' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} onKeyDown={event => {
+    <div ref={dialog} className={`${styles.surface} ${step === 'asset' ? picker.modal : report.dialog}`} data-compact-download={compactTimeline ? "true" : undefined} data-download-dialog={step !== 'asset' ? 'true' : undefined} data-asset-choice-modal={step === 'asset' ? 'true' : undefined} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-busy={busy} onKeyDown={event => {
       if (event.key === 'Escape') { event.stopPropagation(); if (!busy) back(); }
       if (event.key !== 'Tab') return;
       const items = Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled),[tabindex="0"]') || []).filter(item => item.getClientRects().length);
@@ -87,7 +90,7 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
             <span data-asset-choice-copy="true"><strong>{asset.title}</strong>{asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}{asset.selectedMethod ? <small data-asset-choice-secondary="true">{asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small> : null}<AssetSerialNumber value={asset.serialNumber} /></span>
             <span data-asset-choice-value="true"><span className={picker.select}><i aria-hidden="true" />Select</span></span>
           </button>)}{!assets.some(asset=>`${asset.title} ${asset.serialNumber || ''}`.toLowerCase().includes(search.trim().toLowerCase())) ? <div className={picker.empty}>No saved assets found.</div> : null}</div>
-        </> : step === 'timeline' ? <div className={styles.fields}>
+        </> : step === 'timeline' ? <div className={`${styles.fields} ${compactTimeline ? styles.compactFields : ''}`}>
           {budgetPeriods ? <p>Budgets show the current month and year. Historical budget snapshots are not available.</p> : <>
             <FilterQuestion menuClassName={styles.timelineMenu} label="Year" value={selection.year} options={[{value:'all',label:'All years'},...availableYears.map(year=>({value:year,label:year}))]} onChange={year=>setSelection(s=>({...s,year,month:'all'}))} />
             <FilterQuestion menuClassName={styles.timelineMenu} label="Month" disabledHint="Choose a year to select a month." value={selection.month} disabled={selection.year === 'all'} options={[{value:'all',label:'All months'},...Array.from({length:12},(_,i)=>({value:String(i+1),label:new Date(2000,i).toLocaleString('en-ZA',{month:'long'})}))]} onChange={month=>setSelection(s=>({...s,month}))} />
@@ -95,11 +98,11 @@ export default function ReportDownloadFlow({ title, allLabel, assets, years = []
           {fields.filter(field=>!field.allAssetsOnly || selection.assetId === 'all').map(field=><FilterQuestion menuClassName={styles.timelineMenu} key={field.key} label={field.label} value={selection.fields[field.key]} options={field.options} onChange={value=>setSelection(s=>({...s,fields:{...s.fields,[field.key]:value}}))} />)}
         </div> : <>
           <div className={styles.formatHeading}><strong>Choose export format</strong><span>Choose PDF or Excel.</span></div>
-          <div data-download-grid="true" aria-label="Report format">{(['pdf','xlsx'] as const).map(format=><button key={format} type="button" disabled={busy} data-download-option="true" aria-pressed={selection.format === format} onClick={()=>setSelection(s=>({...s,format}))}><span data-download-icon="true"><img src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Printable asset report.' : 'Selected records in Excel.'}</small></span></button>)}</div>
+          <div data-download-grid="true" aria-label="Report format">{(['pdf','xlsx'] as const).map(format=><button key={format} type="button" disabled={busy} data-download-option="true" aria-pressed={selection.format === format} onClick={()=>instantDownload ? void submit(format) : setSelection(s=>({...s,format}))}><span data-download-icon="true"><img src={format === 'pdf' ? '/brand/pdf.png' : '/brand/sheet.png'} alt="" /></span><span data-download-copy="true"><strong>{format === 'pdf' ? 'PDF report' : 'XLSX workbook'}</strong><small>{format === 'pdf' ? 'Printable asset report.' : 'Selected records in Excel.'}</small></span></button>)}</div>
         </>}
         {busy ? <p role="status">Preparing report…</p> : null}{error ? <p role="alert" className={styles.error}>{error}</p> : null}
       </div>
-      <footer data-download-footer="true" data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>{step !== 'scope' && !(lockedAssetId && (step === 'timeline' || skipTimeline)) ? <button type="button" disabled={busy} onClick={back}>Back</button> : null}<button type="button" disabled={busy} onClick={back}>Cancel</button>{step === 'timeline' || step === 'format' ? <button type="button" disabled={busy} data-download-primary="true" onClick={()=>step === 'format' ? void submit(selection.format) : setStep('format')}>{busy ? 'Preparing…' : 'Next'}</button> : null}</footer>
+      <footer data-download-footer="true" data-asset-choice-footer={step === 'asset' ? 'true' : undefined}>{step !== 'scope' && !(lockedAssetId && (step === 'timeline' || skipTimeline)) ? <button type="button" disabled={busy} onClick={back}>Back</button> : null}<button type="button" disabled={busy} onClick={back}>Cancel</button>{step === 'timeline' || (step === 'format' && !instantDownload) ? <button type="button" disabled={busy} data-download-primary="true" onClick={()=>step === 'format' ? void submit(selection.format) : setStep('format')}>{busy ? 'Preparing…' : 'Next'}</button> : null}</footer>
     </div>
   </div>;
 }

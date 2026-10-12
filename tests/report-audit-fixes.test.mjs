@@ -13,7 +13,8 @@ function load(path, mocks = {}, extra = []) {
   return module.exports;
 }
 const xlsx = load('lib/simple-xlsx.ts');
-const slips = load('lib/fuel-slip-export.ts', { './simple-xlsx.ts': xlsx, './report-theme.ts': { REPORT_THEME_CSS: '' } });
+const fuelReport = load('lib/fuel-report.ts', { './simple-xlsx.ts': xlsx, './report-theme.ts': { REPORT_THEME_CSS: '' } });
+const slips = load('lib/fuel-slip-export.ts', { './fuel-report.ts': fuelReport, './simple-xlsx.ts': xlsx, './report-theme.ts': { REPORT_THEME_CSS: '' } });
 
 test('Excel preserves cents, GPS precision, reference text and native SAST dates', () => {
   const date = xlsx.reportExcelDate('2026-12-31T22:30:00Z');
