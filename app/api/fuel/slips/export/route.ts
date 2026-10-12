@@ -1,3 +1,4 @@
+import { buildOwnerReportDetails } from '../../../../../lib/fuel-report';
 import { getAssetRegisterReportLogoUrl } from '../../../../../lib/asset-registers';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import { resolveReportLogoUrlForHtml } from '../../../../../lib/report-logo';
@@ -44,10 +45,12 @@ export async function POST(request: Request) {
       )
       : '';
     const context = profile ? {
+      baseUrl: request.url,
+      ownerDetails: buildOwnerReportDetails(profile, { name: workspace.actorName, email: workspace.actorEmail }),
       accountName: profile.businessName || profile.displayName || profile.name,
       logoUrl: await resolveReportLogoUrlForHtml(rawLogoUrl, request.url),
     } : {};
-    const data = payload.format === 'xlsx' ? buildFuelSlipWorkbook(slips) : await renderReportHtmlToPdf(buildFuelSlipReportHtml(slips, context), {
+    const data = payload.format === 'xlsx' ? buildFuelSlipWorkbook(slips, request.url) : await renderReportHtmlToPdf(buildFuelSlipReportHtml(slips, context), {
       baseUrl: request.url,
       cookie: request.headers.get('cookie') ?? '',
     });

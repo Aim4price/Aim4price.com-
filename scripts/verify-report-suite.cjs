@@ -14,7 +14,7 @@ const out = path.resolve(process.env.REPORT_EVIDENCE_DIR || 'report-evidence');
 fs.mkdirSync(out, { recursive: true });
 
 const pure = new Set([
-  'report-theme', 'maintenance-report-style', 'report-print', 'simple-xlsx', 'usage-readings',
+  'fuel-report', 'report-theme', 'maintenance-report-style', 'report-print', 'simple-xlsx', 'usage-readings',
   'asset-groups-shared', 'admin-work-tracker-shared', 'report-chronology',
   'asset-depreciation-timeline', 'depreciation-umbrella-summary',
   'ownership-budget-tracker',
@@ -126,7 +126,7 @@ async function fixtures() {
   assert.ok(reports.ownership.includes('115% used'), 'ownership running budget includes all costs');
   assert.ok(reports.ownership.includes('over budget'), 'ownership reports actual overspend');
   saveWorkbook('ownership', invoices.buildMyInvoicesWorkbook(ownershipOptions));
-  const fuel = load('app/api/fuel/report/route.ts', ['buildReportHtml', 'buildFuelWorkbook']);
+  const fuel = load('lib/fuel-report.ts', ['buildReportHtml', 'buildFuelWorkbook']);
   const fuelTest = fs.readFileSync('tests/fuel-report.test.mjs', 'utf8');
   const fuelEvent = new Function(fuelTest.slice(fuelTest.indexOf('function fuelEvent('), fuelTest.indexOf("\ntest(", fuelTest.indexOf('function fuelEvent('))) + ';return fuelEvent;')();
   const fuelOptions = { ...base, title: 'Fuel Ledger Report',
@@ -210,7 +210,7 @@ async function fixtures() {
   const fuelSlips = load('lib/fuel-slip-export.ts');
   const slipRecords = Array.from({ length: 35 }, (_, i) => ({
     documentDate: '2026-09-14', supplierName: 'Demonstration Supplier', targetType: 'asset',
-    assetTitle: asset.title, slipNumber: '1234567890123456', litres: 12.345,
+    assetTitle: asset.title, latitude: -33.96, longitude: 22.46, documentFileUrl: '/api/capture-requests/demo/files/slip', activityText: 'Delivering feed to Farm A', workAreaText: 'Farm A', assetSerialNumber: 'VIN-DEMO', assetPlateLabel: 'A4P-DEMO', slipNumber: '1234567890123456', litres: 12.345,
     pricePerLitre: 23.67, totalAmount: 292.21, vatAmount: 38.11, fuelType: 'Diesel',
     extractionStatus: 'extracted', reviewRequired: false,
   }));
@@ -230,6 +230,7 @@ async function fixtures() {
   const failures = [];
   try {
     for (const [name, html] of Object.entries(reports)) {
+      if (process.env.REPORT_ONLY && !process.env.REPORT_ONLY.split(',').includes(name)) continue;
       fs.writeFileSync(path.join(out, name+'.html'), html);
       const page = await browser.newPage();
       try {

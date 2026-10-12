@@ -10,6 +10,10 @@ on:
       - 'app/fuel-scan/**'
       - 'app/owner-app/operations/fuel/**'
       - 'lib/fuel-ledger.ts'
+      - 'lib/fuel-report.ts'
+      - 'lib/fuel-slip-export.ts'
+      - 'components/ReportDownloadFlow.*'
+      - 'scripts/verify-fuel-download-flow.cjs'
       - 'lib/fuel-work-*.ts'
       - 'components/FuelWorkField*'
       - 'tests/fuel-work-choices.test.cjs'
@@ -28,6 +32,10 @@ on:
       - 'app/fuel-scan/**'
       - 'app/owner-app/operations/fuel/**'
       - 'lib/fuel-ledger.ts'
+      - 'lib/fuel-report.ts'
+      - 'lib/fuel-slip-export.ts'
+      - 'components/ReportDownloadFlow.*'
+      - 'scripts/verify-fuel-download-flow.cjs'
       - 'lib/fuel-work-*.ts'
       - 'components/FuelWorkField*'
       - 'tests/fuel-work-choices.test.cjs'
@@ -51,3 +59,4 @@ jobs:
       - run: npm run test:fuel-ledger
       - run: node --test tests/fuel-work-choices.test.cjs
       - run: node scripts/verify-fuel-work-choices.cjs
+      - run: node scripts/verify-fuel-download-flow.cjs

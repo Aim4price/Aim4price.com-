@@ -27,7 +27,7 @@ const APPROVED_REPORT_STYLES = [
     fingerprints: ['10928:60fcc592d122a350'],
   },
   {
-    path: '../app/api/fuel/report/route.ts',
+    path: '../lib/fuel-report.ts',
     styleIndexes: [0],
     fingerprints: ['11972:4d97aa3c49f28f6d'],
   },

@@ -84,3 +84,12 @@ Representative valuation (one page), maintenance (ten pages) and fuel ledger (te
 The owner requested clearer links between each fuel entry and its asset. This intentional refinement adds a prominent asset heading, Serial / VIN and register / plate ID to each entry, with stronger visual separation. Identifiers come from the current linked register record, including fuel-slip entries; missing serials are explicitly marked Not recorded. Excel includes matching identifier columns without shifting existing formula references.
 
 Representative valuation (1 page), maintenance (10 pages) and fuel ledger (14 pages for 25 detailed entries) PDFs were rendered and visually checked across every page, plus 390px, 768px and 1400px layouts. The updated fuel CSS fingerprint protects this deliberate change. Keep the PR in draft pending visual approval and authenticated opening review before merge.
+
+
+## 12 October 2026 fuel slip and download refinement
+
+The owner requested the fuel-slip export to use the main fuel report design, clickable source documents and GPS links, immediate format selection, and removal of late-entry wording. The canonical fuel renderer now lives in `lib/fuel-report.ts` and is shared by both export paths. Its existing CSS fingerprint is unchanged; the design lock follows the extracted renderer. Slip reports retain their purchase amounts, identifiers, activity, source documents and GPS rather than substituting storage totals.
+
+Generated report labels use neutral entry wording while retaining the historical issue date, date added, missing-GPS information and original audit data. No database records are rewritten. Relative document links resolve against the request origin; Excel uses native hyperlinks.
+
+Synthetic verification covers multi-page fuel ledger and slip PDFs, actual PDF link annotations, and download dialogs at 390px, 768px and 1280px. Keep the PR in draft for review of the requested slip-report layout; production account downloads have not been exercised.

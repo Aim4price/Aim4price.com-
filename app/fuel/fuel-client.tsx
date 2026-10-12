@@ -4124,7 +4124,7 @@ export default function FuelClient({
         </FilterFlow>
       ) : null}
 
-      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? <ReportDownloadFlow title="Fuel slip reports" allLabel="All fuel slips" assets={reportAssets}
+      {(modalMode === 'fuel-slip-manager' || isSlipsPage) && fuelSlipDownloadOpen ? <ReportDownloadFlow instantDownload compactTimeline title="Fuel slip reports" allLabel="All fuel slips" assets={reportAssets}
         fields={[{key:'capture',label:'Source / status',initial:'all',options:FUEL_SLIP_CAPTURE_FILTER_OPTIONS},{key:'storage',allAssetsOnly:true,label:'Storage tank',initial:'all',options:[{value:'all',label:'All targets'},...storages.map(storage=>({value:storage.id,label:storage.name}))]}]}
         onClose={closeFuelSlipDownloadPanel} onDownload={async selection => {
           const response = await fetch(scopedApiUrl('/api/fuel/slips/export'), {method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-aim4price-client-realm':appRealmForPath(window.location.pathname) ?? 'website'},body:JSON.stringify({format:selection.format,filters:{assetId:selection.assetId,year:selection.year,month:selection.month,capture:selection.fields.capture,storageId:selection.assetId === 'all' ? selection.fields.storage : 'all'}})});
@@ -4628,7 +4628,7 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'report' ? <ReportDownloadFlow title={reportStorage ? `${reportStorage.name} report` : "Fuel reports"} allLabel={reportStorage ? "All storage records" : "All fuel records"} assets={reportAssets} years={yearOptions}
+      {modalMode === 'report' ? <ReportDownloadFlow instantDownload compactTimeline title={reportStorage ? `${reportStorage.name} report` : "Fuel reports"} allLabel={reportStorage ? "All storage records" : "All fuel records"} assets={reportAssets} years={yearOptions}
         fields={reportStorage ? [] : [{key:'source',label:'Fuel source',initial:REPORT_SOURCE_ALL_WITH_SLIPS,options:reportStorageOptions}]}
         onClose={() => reportStorage ? openManageStorageChoice(reportStorage) : dismissModal()} onDownload={async selection => {
           const url = new URL(buildReportUrl(reportStorage?.id ?? selection.fields.source,selection.year,selection.month,selection.format,),window.location.origin);

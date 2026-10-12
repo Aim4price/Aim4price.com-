@@ -5,7 +5,7 @@ function loadBuilder(path) {
   const source = readFileSync(new URL(path, import.meta.url), 'utf8');
   const exports = {};
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, {
-    exports, Buffer, Date, require: (name) => loadBuilder('../lib/' + name.replace('./', '')),
+    exports, Buffer, Date, URL, require: (name) => loadBuilder('../lib/' + name.replace('./', '')),
   });
   return exports;
 }
@@ -16,11 +16,11 @@ const slip = { documentDate: '2026-09-15', supplierName: '<script>alert(1)</scri
 test('PDF escapes slip text, identifies incomplete records and preserves numeric totals', () => {
   const html = buildFuelSlipReportHtml([slip]);
   assert.ok(html.includes('&lt;script&gt;'));
-  assert.ok(!html.includes('<script>'));
-  assert.ok(html.includes('50.125 litres'));
-  assert.ok(html.includes('R 1002.50'));
+  assert.ok(!html.includes('<script>alert(1)</script>'));
+  assert.match(html, /50[,.]125 L/);
+  assert.match(html, /R[\s\u00a0]*1[\s\u00a0]?002[,.]50/);
   assert.ok(html.includes('Not completed'));
-  assert.ok(html.includes('—'));
+  assert.ok(html.includes('assetReportFuelEventGroup'));
 });
 test('Excel is an actual workbook with numeric cells and safely stored free text', () => {
   const workbook = buildFuelSlipWorkbook([slip]);
@@ -49,6 +49,7 @@ function exportRoute({ authorized = true, slips = [] } = {}) {
   class NextResponse extends Response { static json(body, init) { return new Response(JSON.stringify(body), init); } }
   const mocks = {
     'next/server': { NextResponse },
+    '../../../../../lib/fuel-report': loadBuilder('../lib/fuel-report.ts'),
     '../../../../../lib/account-profile': { getAccountProfile: async () => ({ businessName: 'Owner Farm', logoUrl: '' }) },
     '../../../../../lib/asset-registers': { getAssetRegisterReportLogoUrl: async () => '' },
     '../../../../../lib/report-logo': { resolveReportLogoUrlForHtml: async () => '' },
@@ -112,4 +113,18 @@ test('fuel slip export dates, capture status and storage targets are independent
   assert.deepEqual(selectFuelSlipsForReport(records,parseFuelSlipReportFilters({storageId:'tank',capture:'needs_review'})).map(s=>s.id),['s']);
   assert.equal(parseFuelSlipReportFilters({month:'9'}),null);
   assert.equal(parseFuelSlipReportFilters({year:'2026x'}),null);
+});
+
+test('PDF and Excel preserve clickable document/GPS links and reject unsafe link schemes', () => {
+  const record = { ...slip, documentFileUrl: '/api/capture-requests/demo/files/slip', latitude: -33.96, longitude: 22.46 };
+  const html = buildFuelSlipReportHtml([record], { baseUrl: 'https://www.aim4price.com/api/fuel/slips/export' });
+  assert.match(html, /href="https:\/\/www\.aim4price\.com\/api\/capture-requests\/demo\/files\/slip"/);
+  assert.match(html, /href="https:\/\/www\.google\.com\/maps\?q=-33.96,22.46"/);
+  const workbook = buildFuelSlipWorkbook([record], 'https://www.aim4price.com').toString();
+  assert.match(workbook, /relationships\/hyperlink/);
+  assert.match(workbook, /https:\/\/www\.aim4price\.com\/api\/capture-requests\/demo\/files\/slip/);
+  assert.match(workbook, /https:\/\/www\.google\.com\/maps\?q=-33.96,22.46/);
+  const unsafe = { ...record, documentFileUrl: 'javascript:alert(1)', latitude: 100, longitude: 200 };
+  assert.doesNotMatch(buildFuelSlipReportHtml([unsafe]), /href="javascript:|maps\?q=100/);
+  assert.doesNotMatch(buildFuelSlipWorkbook([unsafe]).toString(), /Target="javascript:|maps\?q=100/);
 });
