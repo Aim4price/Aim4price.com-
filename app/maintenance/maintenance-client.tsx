@@ -1,6 +1,7 @@
 'use client';
 import MaintenanceEntryChoice from '../../components/MaintenanceEntryChoice';
-import manageStyles from '../../components/LedgerManageActions.module.css';
+import umbrellaStyles from '../../components/asset-register/AssetGroupManagerModal.module.css';
+import registerStyles from '../asset-register/page.module.css';
 import { useLedgerCardFocus } from '../../lib/use-ledger-card-focus';
 import focusStyles from '../../components/LedgerCardFocus.module.css';
 import { downloadCanonicalReportFile } from '../../lib/report-open';
@@ -1490,17 +1491,20 @@ export default function MaintenanceClient({
 
       {managedRecord ? (
         <div className={`${styles.modalBackdrop} ${styles.ledgerManageBackdrop}`} data-website-overlay onClick={closeManage}>
-          <section ref={manageRef} className={`${styles.schedulingDialog} ${styles.ledgerManageModal}`} role="dialog" aria-modal="true" aria-labelledby="maintenance-manage-title" onClick={(event) => event.stopPropagation()}>
-            <header className={styles.modalHeader}>
-              <div><h2 id="maintenance-manage-title">Manage maintenance</h2><p>{managedRecord.assetTitle}</p></div>
-              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeManage} aria-label="Close manage maintenance"><CloseIcon /></button>
+          <section ref={manageRef} className={`${umbrellaStyles.accountModal} ${accountStyles.modalTheme} ${registerStyles.umbrellaAccountModal} ${registerStyles.optionsModal} ${umbrellaStyles.manageModal}`} role="dialog" aria-modal="true" aria-labelledby="maintenance-manage-title" onClick={(event) => event.stopPropagation()}>
+            <header className={`${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${umbrellaStyles.manageHeader}`}>
+              <div className={registerStyles.modalHeaderText}><h2 id="maintenance-manage-title">Manage maintenance</h2><p>{managedRecord.assetTitle}</p></div>
+              <button className={`${accountStyles.modalCloseButton} ${accountStyles.passwordModalCloseButton}`} type="button" onClick={closeManage} aria-label="Close manage maintenance">×</button>
             </header>
-            <div className={styles.modalDivider} />
-            <div className={`${styles.ledgerManageActions} ${manageStyles.grid}`}>
-              <button className={manageStyles.primary} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><EditIcon /><span className={manageStyles.copy}><span>Edit</span><small>Update maintenance details.</small></span></button>
-              {managedRecord.status === 'upcoming' ? <button className={manageStyles.action} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><CheckIcon /><span className={manageStyles.copy}><span>Clear</span><small>Confirm the work is complete.</small></span></button> : null}
-              <button className={manageStyles.action} type="button" onClick={() => { setChecklistAssetId(managedRecord.assetId); setManagedRecord(null); setModalMode('checklists'); }}><ChecklistIcon /><span className={manageStyles.copy}><span>Download checklist</span><small>Choose PDF checklist items for this asset.</small></span></button>
-              <button className={manageStyles.danger} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><TrashIcon /><span className={manageStyles.copy}><span>Delete</span><small>Remove this maintenance record.</small></span></button>
+            <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${umbrellaStyles.manageMenuBody}`}>
+              <div className={`${registerStyles.optionsContent} ${umbrellaStyles.manageMenuContent}`}>
+                <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid} ${umbrellaStyles.manageMenuGrid}`}>
+              <button className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openEdit(managedRecord); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuEditIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m16 3 5 5M4 20l4-1L20 7a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg></i><span><strong>Edit</strong><small className={umbrellaStyles.menuOptionSubtitle}>Update maintenance details.</small></span></button>
+              {managedRecord.status === 'upcoming' ? <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setManagedRecord(null); openQuickClear(managedRecord); }} disabled={busyCompleteId !== null}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m5 12 4 4L19 6" /></svg></i><span><strong>Clear</strong><small className={umbrellaStyles.menuOptionSubtitle}>Confirm the work is complete.</small></span></button> : null}
+              <button className={`${registerStyles.optionActionButton} ${umbrellaStyles.manageMenuAction} ${umbrellaStyles.manageMenuReport}`} type="button" onClick={() => { setChecklistAssetId(managedRecord.assetId); setManagedRecord(null); setModalMode('checklists'); }}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuReportIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="3" /><path d="m7 8 1 1 2-2m-3 7 1 1 2-2M13 8h4m-4 6h4" /></svg></i><span><strong>Download checklist</strong><small className={umbrellaStyles.menuOptionSubtitle}>Choose PDF checklist items for this asset.</small></span></button>
+              <button className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${umbrellaStyles.manageMenuAction}`} type="button" onClick={() => { setManagedRecord(null); openDelete(managedRecord); }} disabled={deletingRecordId === managedRecord.id}><i className={`${umbrellaStyles.manageMenuIconTile} ${umbrellaStyles.manageMenuRemoveIcon}`} aria-hidden="true"><svg className={umbrellaStyles.manageMenuIconGlyph} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" /></svg></i><span><strong>Delete</strong><small className={umbrellaStyles.menuOptionSubtitle}>Remove this maintenance record.</small></span></button>
+                </div>
+              </div>
             </div>
           </section>
         </div>
