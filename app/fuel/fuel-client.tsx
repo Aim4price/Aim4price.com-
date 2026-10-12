@@ -1587,6 +1587,7 @@ export default function FuelClient({
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
+  const [reportStorage, setReportStorage] = useState<FuelLedgerStorage | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [selectedStorageId, setSelectedStorageId] = useState<string | null>(null);
   const [deleteCandidateStorage, setDeleteCandidateStorage] = useState<FuelLedgerStorage | null>(null);
@@ -2302,7 +2303,14 @@ export default function FuelClient({
     setIsFuelHistoryLoading(false);
   }
 
+  function openStorageReport(storage: FuelLedgerStorage) {
+    setReportStorage(storage);
+    setNotice(null);
+    setModalMode('report');
+  }
+
   function openReportModal() {
+    setReportStorage(null);
 
     setIsStorageFuelSelectOpen(false);
     setNotice(null);
@@ -3762,6 +3770,7 @@ export default function FuelClient({
           onClose={dismissModal}
           onManage={() => openEditStorage(selectedStorage)}
           onMissingEntry={() => openMissingFuelEntry(selectedStorage)}
+          onReport={() => openStorageReport(selectedStorage)}
         />
       ) : null}
 
@@ -4614,10 +4623,10 @@ export default function FuelClient({
         </div>
       ) : null}
 
-      {modalMode === 'report' ? <ReportDownloadFlow title="Fuel reports" allLabel="All fuel records" assets={reportAssets} years={yearOptions}
-        fields={[{key:'source',label:'Fuel source',initial:REPORT_SOURCE_ALL_WITH_SLIPS,options:reportStorageOptions}]}
-        onClose={dismissModal} onDownload={async selection => {
-          const url = new URL(buildReportUrl(selection.fields.source,selection.year,selection.month,selection.format,),window.location.origin);
+      {modalMode === 'report' ? <ReportDownloadFlow title={reportStorage ? `${reportStorage.name} report` : "Fuel reports"} allLabel={reportStorage ? "All storage records" : "All fuel records"} assets={reportAssets} years={yearOptions}
+        fields={reportStorage ? [] : [{key:'source',label:'Fuel source',initial:REPORT_SOURCE_ALL_WITH_SLIPS,options:reportStorageOptions}]}
+        onClose={() => reportStorage ? openManageStorageChoice(reportStorage) : dismissModal()} onDownload={async selection => {
+          const url = new URL(buildReportUrl(reportStorage?.id ?? selection.fields.source,selection.year,selection.month,selection.format,),window.location.origin);
           if(selection.assetId !== 'all') url.searchParams.set('assetId',selection.assetId);
           if(selection.format === 'xlsx') await downloadCanonicalReportFile(url.toString());
           else if(!openCanonicalReportUrl(url.toString())) throw new Error('Allow pop-ups to open your report.');
