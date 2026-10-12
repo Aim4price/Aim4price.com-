@@ -1,4 +1,5 @@
 'use client';
+import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import ReportDownloadFlow from '../../components/ReportDownloadFlow';
 import manageStyles from '../../components/LedgerManageActions.module.css';
 import budgetModalStyles from '../../components/BudgetModal.module.css';
@@ -85,7 +86,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     </div>
     {count || query ? <div className={styles.results}><span>{visible.length} matching budgets{filters.status === 'attention' ? ' · Alerts' : ''}</span><button onClick={() => { setFilters(EMPTY_BUDGET_FILTERS); setQuery(''); }}>Clear filters</button></div> : null}
     {loading ? <p role="status">Loading budgets…</p> : error ? <div role="alert"><p>{error}</p><button onClick={onRetry}>Try again</button></div> : !visible.length ? <div className={ledger.emptyState}>{budgets.length ? 'No budgets match these filters.' : 'No budgets yet. Add a budget to start tracking spending.'}</div> : null}
-    {ready ? pagedBudgets.map(budget => <article id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
+    {ready ? pagedBudgets.map(budget => <LedgerDetailsCard expanded={expandedId === budget.id} onToggle={() => setExpandedId((current) => current === budget.id ? null : budget.id)} id={`cost-budget-${budget.id}`} key={budget.id} className={`${ledger.invoiceRow} ${styles.card}`} data-status={budget.status}>
       <div className={styles.cardHeading}>
         <div><h2 className={ledger.invoiceTitle}>{budget.assetTitle}</h2><p className={ledger.invoiceReference}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel}</p></div>
         <div className={styles.spentBlock}><strong className={ledger.invoicePrice}>{money(budget.spent)}</strong><span className={ledger.invoiceVatLabel}>Spent incl. VAT</span></div>
@@ -106,7 +107,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
       {expandedId === budget.id ? <section id={`budget-details-${budget.id}`} className={ledger.invoiceDetails} aria-label={`Costs allocated to ${budget.assetTitle}`}>
         <h3>Allocated costs</h3><BudgetCostDetails budget={budget} />
       </section> : null}
-    </article>) : null}
+    </LedgerDetailsCard>) : null}
     {ready && visible.length > 0 ? <ListPagination
       label="Budgets pagination"
       page={safePage}

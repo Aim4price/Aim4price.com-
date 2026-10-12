@@ -19,14 +19,18 @@ test('card surface toggles details but preserves actions, dialogs and selected t
   let selected = '', toggles = 0;
   class Element {constructor(interactive = false) {this.interactive = interactive;} closest() {return this.interactive;}}
   const jsx = (type, props) => ({type,props});
-  const {default:Card} = load('components/MaintenanceDetailsCard.tsx', name => name === 'react/jsx-runtime' ? {jsx,jsxs:jsx} : {default:{}}, {Element,window:{getSelection:()=>({toString:()=>selected})}});
+  const {default:Card} = load('components/LedgerDetailsCard.tsx', name => name === 'react/jsx-runtime' ? {jsx,jsxs:jsx} : {default:{}}, {Element,window:{getSelection:()=>({toString:()=>selected})}});
   const card = Card({expanded:false,onToggle:()=>toggles++,children:'Details'});
-  card.props.onClick({target:new Element()});
+  card.props.onClick({target:new Element(),currentTarget:{contains:()=>true}});
   assert.equal(toggles,1);
-  card.props.onClick({target:new Element(true)});
+  card.props.onClick({target:new Element(true),currentTarget:{contains:()=>true}});
   selected = 'Copied serial';
-  card.props.onClick({target:new Element()});
+  card.props.onClick({target:new Element(),currentTarget:{contains:()=>true}});
   assert.equal(toggles,1);
+  selected = '';
+  const dialogCardTarget = new Element(true);
+  card.props.onClick({target:dialogCardTarget,currentTarget:{contains:node=>node === dialogCardTarget}});
+  assert.equal(toggles,2, 'cards inside a manager dialog still toggle');
   assert.equal(card.props.children[0].props['data-tooltip'],'View details');
   assert.equal(Card({expanded:true,onToggle:()=>{}}).props.children[0].props['data-tooltip'],'Hide details');
 });

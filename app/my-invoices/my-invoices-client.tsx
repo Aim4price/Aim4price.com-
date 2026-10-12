@@ -1,4 +1,5 @@
 'use client';
+import LedgerDetailsCard from '../../components/LedgerDetailsCard';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
 import { useCaptureAllowance } from '../../lib/use-capture-allowance';
 import DateInput from '../../components/DateInput';
@@ -3488,7 +3489,7 @@ export default function MyInvoicesClient({
               const expanded = expandedInvoiceId === invoice.id;
               const detailsId = `cost-details-${invoice.id}`;
               return (
-                <article data-ledger-card={`cost:${invoice.id}`} className={`${styles.invoiceRow} ${focusStyles.card} ${expandedInvoiceId && !expanded ? focusStyles.muted : ''}`} key={invoice.id}>
+                <LedgerDetailsCard expanded={expanded} onToggle={() => setExpandedInvoiceId((current) => current === invoice.id ? null : invoice.id)} data-ledger-card={`cost:${invoice.id}`} className={`${styles.invoiceRow} ${focusStyles.card} ${expandedInvoiceId && !expanded ? focusStyles.muted : ''}`} key={invoice.id}>
                   <div className={styles.invoiceHeader}>
                     <div className={styles.invoiceTitleBlock}>
                       <h2 className={styles.invoiceTitle}>{invoice.supplierName || 'Unknown supplier'}</h2>
@@ -3550,7 +3551,7 @@ export default function MyInvoicesClient({
                     </div>}
                     {invoice.notes ? <p className={styles.invoiceNotes}><strong>Notes</strong>{invoice.notes}</p> : null}
                   </div>
-                </article>
+                </LedgerDetailsCard>
               );
             }) : null}
           </div>
