@@ -1,4 +1,5 @@
 'use client';
+import FuelWorkField from '../../components/FuelWorkField';
 import DateInput from '../../components/DateInput';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
@@ -612,7 +613,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, onClose, 
                     <label><span>Litres issued *</span><div className={styles.inputWithSuffix}><input type="number" min="0.001" step="0.001" value={draft.litres} onChange={(event) => setDraft({ ...draft, litres: event.target.value })} /><em>L</em></div></label>
                     <label><span>Fuel percentage after *</span><div className={styles.inputWithSuffix}><input type="number" min="0" max="100" step="1" value={draft.assetFuelPercentAfter} onChange={(event) => setDraft({ ...draft, assetFuelPercentAfter: event.target.value })} /><em>%</em></div></label>
                     <label><span>Operator / manager *</span><input value={draft.operatorName} onChange={(event) => setDraft({ ...draft, operatorName: event.target.value })} placeholder="Name of operator or manager" /></label>
-                    <label><span>Specific activity *</span><input value={draft.activityText} onChange={(event) => setDraft({ ...draft, activityText: event.target.value })} placeholder="e.g. Ploughing field 4" /></label>
+                    <div className={styles.fuelWorkFieldGroup}><span>Specific activity *</span><FuelWorkField value={draft.activityText} onChange={value => setDraft({ ...draft, activityText: value })} /></div>
                   </div>
                 </section>
               ) : null}

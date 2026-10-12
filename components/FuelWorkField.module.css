@@ -1,0 +1,22 @@
+.field { display: grid; gap: .5rem; min-width: 0; width: 100%; }
+.field input { width: 100%; box-sizing: border-box; min-height: 44px; border: 1px solid #cbded6; border-radius: 12px; padding: .7rem .85rem; font: inherit; color: #173c32; background: #f4f9f6; }
+.field input[aria-invalid="true"] { border-color: #c23c46; }
+.choices { border: 1px solid #cbded6; border-radius: 12px; background: #f6faf8; color: #173c32; overflow: hidden; }
+.choices summary { padding: .7rem .9rem; cursor: pointer; font-size: .875rem; font-weight: 650; }
+.list { max-height: 240px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #83ab98 #f6faf8; padding: 0 .65rem; }
+.row { display: flex; align-items: center; gap: .4rem; border-top: 1px solid #dce8e2; }
+.row button, .add, .actions button { border: 0; background: transparent; font: inherit; cursor: pointer; border-radius: 8px; min-height: 40px; }
+.row .select { flex: 1; text-align: left; color: #173c32; padding: .6rem .35rem; font-size: .875rem; }
+.row .edit, .row .delete { flex: 0 0 40px; width: 40px; padding: 10px; }
+.edit { color: #2374c7 !important; }
+.delete { color: #c23c46 !important; }
+.row svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.row button:hover { background: #e7f1ec; }
+.field button:focus-visible, .choices summary:focus-visible { outline: 2px solid #267659; outline-offset: -2px; }
+.add { color: #176345; padding: .5rem .9rem; font-size: .875rem; }
+.editor { padding: .8rem; border-top: 1px solid #dce8e2; }
+.editor p { margin: 0 0 .6rem; font-size: .875rem; }
+.actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .5rem; }
+.actions button { padding: .4rem .85rem; background: #e8f2ed; color: #173c32; }
+.field button:disabled { opacity: .55; cursor: wait; }
+.error { color: #a12b38; font-size: .8rem; margin: 0; }

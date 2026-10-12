@@ -182,11 +182,12 @@ function calculateAssetDieselBeforeFill(event: FuelLedgerEvent): number | null {
   if (
     typeof litresIssued !== 'number' ||
     !Number.isFinite(litresIssued) ||
-    litresIssued < 0 ||
+    litresIssued <= 0 ||
     typeof beforePercent !== 'number' ||
     !Number.isFinite(beforePercent) ||
     typeof afterPercent !== 'number' ||
-    !Number.isFinite(afterPercent)
+    !Number.isFinite(afterPercent) ||
+    beforePercent < 0 || beforePercent >= 100 || afterPercent !== 100
   ) {
     return null;
   }
@@ -203,7 +204,7 @@ function calculateAssetDieselBeforeFill(event: FuelLedgerEvent): number | null {
 }
 
 function assetDieselBeforeFillFormula(rowNumber: number): string {
-  return `IF(AND(F${rowNumber}>0,L${rowNumber}<>"",M${rowNumber}<>"",M${rowNumber}>L${rowNumber}),ROUND(F${rowNumber}*L${rowNumber}/(M${rowNumber}-L${rowNumber}),3),"")`;
+  return `IF(AND(F${rowNumber}>0,L${rowNumber}<>"",M${rowNumber}<>"",L${rowNumber}>=0,L${rowNumber}<100,M${rowNumber}=100),ROUND(F${rowNumber}*L${rowNumber}/(M${rowNumber}-L${rowNumber}),3),"")`;
 }
 
 function formatLocation(event: FuelLedgerEvent): string {
@@ -367,6 +368,12 @@ function eventFuelGaugeLabel(event: FuelLedgerEvent): string {
   return `${before} to ${after}`;
 }
 
+function eventGaugeIncrease(event: FuelLedgerEvent): string {
+  const before = event.assetFuelPercentBefore, after = event.assetFuelPercentAfter;
+  if (typeof before !== 'number' || typeof after !== 'number' || !Number.isFinite(before) || !Number.isFinite(after) || before < 0 || after > 100 || after <= before) return '';
+  return `${formatNumber(after - before)} percentage points${after === 100 ? ' · Filled to full' : ' · Partial fill'}`;
+}
+
 function slugifyFileSegment(value: string): string {
   const normalized = value
     .trim()
@@ -507,6 +514,10 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
       : escapeHtml(eventActivityLabel(event));
 
     const details = [
+      { label: 'Storage', value: event.storageName || '-' },
+      { label: 'Registration / identification', value: event.assetPlateLabel || '' },
+      { label: 'Gauge increase', value: eventGaugeIncrease(event) },
+      { label: 'Estimated litres before full refill', value: calculateAssetDieselBeforeFill(event) === null ? '' : formatLitres(calculateAssetDieselBeforeFill(event)) },
       { label: 'Operator', value: asText(event.operatorName) || '-' },
       { label: 'Activity', value: eventWorkActivityLabel(event) },
       { label: 'Work Area', value: eventWorkAreaLabel(event) },
@@ -540,17 +551,14 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
         <tr class="assetReportFuelPrimaryRow">
           <td>${escapeHtml(eventIssuedDateTime(event))}</td>
           <td>${activity}</td>
-          <td><strong>${escapeHtml(eventDirectionLabel(event))}</strong></td>
-          <td>${escapeHtml(event.storageName || '-')}</td>
           <td>${escapeHtml(eventTargetLabel(event))}</td>
           <td><strong>${escapeHtml(formatLitres(event.litres))}</strong></td>
-          <td><strong>${escapeHtml(formatLitres(calculateAssetDieselBeforeFill(event)))}</strong></td>
           <td>${escapeHtml(eventUsageLabel(event))}</td>
           <td>${escapeHtml(eventStorageBalanceLabel(event))}</td>
           <td>${escapeHtml(eventFuelGaugeLabel(event))}</td>
         </tr>
         <tr class="assetReportFuelDetailsRow">
-          <td colspan="10"><div class="assetReportFuelDetails">${detailHtml}</div></td>
+          <td colspan="7"><div class="assetReportFuelDetails">${detailHtml}</div></td>
         </tr>
       </tbody>
     `;
@@ -561,8 +569,8 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
       <table class="assetReportTable assetReportFuelLedgerTable">
         <thead>
           <tr>
-            <th>Date / Time</th><th>Activity / Source</th><th>Direction</th><th>Storage Unit</th><th>Asset / Target</th>
-            <th>Litres</th><th>Litres Before Fill</th><th>Usage Reading</th><th>Storage Balance</th><th>Fuel Gauge</th>
+            <th>Date / time</th><th>Movement</th><th>Asset / target</th>
+            <th>Litres recorded</th><th>Hours / km</th><th>Storage balance</th><th>Fuel gauge</th>
           </tr>
         </thead>
         ${rowGroups}
@@ -573,11 +581,12 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
 
 function buildReportHtml(options: FuelReportOptions): string {
   const cards: SummaryCard[] = [
-    { label: 'Current Storage', value: options.assetTitle ? 'Not applicable' : formatLitres(options.currentLitres), subtext: 'Current ledger stock' },
+    { label: 'Stock at export', value: options.assetTitle ? 'Not applicable' : formatLitres(options.currentLitres), subtext: 'Current stock, not period closing stock' },
     { label: 'Fuel Issued', value: formatLitres(options.totalIssued), subtext: 'Issued to assets' },
     { label: 'Work-use Recorded', value: formatLitres(options.totalWorkUseIssued), subtext: 'Issued entries not excluded' },
     { label: 'Excluded', value: formatLitres(options.totalExcludedIssued), subtext: 'Marked not for work use' },
-    { label: 'Fuel Filled', value: options.assetTitle ? 'Not applicable' : formatLitres(options.totalStockIn), subtext: 'Opening balance and stock in' },
+    { label: 'Deliveries recorded', value: options.assetTitle ? 'Not applicable' : formatLitres(options.events.filter(e => e.eventType === 'stock_in').reduce((total, e) => total + e.litres, 0)), subtext: 'Stock received in the selected period' },
+    { label: 'Opening entries', value: options.assetTitle ? 'Not applicable' : formatLitres(options.events.filter(e => e.eventType === 'opening_balance').reduce((total, e) => total + e.litres, 0)), subtext: 'Recorded starting balances, not purchases' },
     { label: 'Entries', value: options.eventCount.toLocaleString('en-ZA'), subtext: options.eventCount === 1 ? 'Fuel movement' : 'Fuel movements' },
   ];
 
@@ -589,14 +598,6 @@ function buildReportHtml(options: FuelReportOptions): string {
     { label: 'Storage Code', value: options.storageCode },
   ];
 
-  const summaryRows: KeyValueRow[] = [
-    { label: 'Storage Units', value: options.assetTitle ? 'Not applicable' : options.storageCount.toLocaleString('en-ZA') },
-    { label: 'Fuel Issued', value: formatLitres(options.totalIssued) },
-    { label: 'Work-use Recorded', value: formatLitres(options.totalWorkUseIssued) },
-    { label: 'Excluded from Work Use', value: formatLitres(options.totalExcludedIssued) },
-    { label: 'Fuel Filled', value: options.assetTitle ? 'Not applicable' : formatLitres(options.totalStockIn) },
-    { label: 'Current Stock', value: options.assetTitle ? 'Not applicable' : formatLitres(options.currentLitres) },
-  ];
 
   return `<!doctype html>
 <html lang="en">
@@ -1146,27 +1147,6 @@ function buildReportHtml(options: FuelReportOptions): string {
         font-style: italic;
       }
 
-      .assetReportFuelLedgerTable th:nth-child(1),
-      .assetReportFuelPrimaryRow td:nth-child(1) { width: 9%; }
-      .assetReportFuelLedgerTable th:nth-child(2),
-      .assetReportFuelPrimaryRow td:nth-child(2) { width: 9%; }
-      .assetReportFuelLedgerTable th:nth-child(3),
-      .assetReportFuelPrimaryRow td:nth-child(3) { width: 6%; }
-      .assetReportFuelLedgerTable th:nth-child(4),
-      .assetReportFuelPrimaryRow td:nth-child(4) { width: 10%; }
-      .assetReportFuelLedgerTable th:nth-child(5),
-      .assetReportFuelPrimaryRow td:nth-child(5) { width: 14%; }
-      .assetReportFuelLedgerTable th:nth-child(6),
-      .assetReportFuelPrimaryRow td:nth-child(6) { width: 8%; }
-      .assetReportFuelLedgerTable th:nth-child(7),
-      .assetReportFuelPrimaryRow td:nth-child(7) { width: 9%; }
-      .assetReportFuelLedgerTable th:nth-child(8),
-      .assetReportFuelPrimaryRow td:nth-child(8) { width: 9%; }
-      .assetReportFuelLedgerTable th:nth-child(9),
-      .assetReportFuelPrimaryRow td:nth-child(9) { width: 14%; }
-      .assetReportFuelLedgerTable th:nth-child(10),
-      .assetReportFuelPrimaryRow td:nth-child(10) { width: 12%; }
-
       .assetReportFooter {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto;
@@ -1287,6 +1267,33 @@ function buildReportHtml(options: FuelReportOptions): string {
         }
       }
       ${REPORT_THEME_CSS}
+      /* Fuel rows retain the shared report theme with larger, print-readable detail. */
+      .assetReportOverview { margin-bottom: 12px; }
+      .assetReportIdentity { padding: 14px 16px; }
+      .assetReportTitle { font-size: 22px; line-height: 1.2; }
+      .assetReportValue { font-size: 25px; }
+      .assetReportContentGrid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 12px; margin-bottom: 14px; }
+      .assetReportRow { padding: 5px 0; }
+      .assetReportRow span, .assetReportRow strong { font-size: 10px; line-height: 1.4; }
+      .fuelReadingGuide p { font-size: 10px; line-height: 1.5; margin: 8px 0 0; color: var(--muted); }
+      .assetReportFuelLedgerTable { table-layout: fixed; width: 100%; }
+      .assetReportFuelLedgerTable th { font-size: 10px; letter-spacing: 0; text-transform: none; padding: 9px 7px; }
+      .assetReportFuelPrimaryRow td { font-size: 10.5px; padding: 10px 7px 8px; line-height: 1.4; color: var(--ink); }
+      .assetReportFuelDetailsRow td { padding: 0 7px 10px; }
+      .assetReportFuelDetails { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px 14px; padding-top: 8px; }
+      .assetReportFuelDetail span { font-size: 9px; text-transform: none; letter-spacing: 0; line-height: 1.4; font-weight: 500; }
+      .assetReportFuelDetail strong { font-size: 10px; line-height: 1.4; color: var(--ink); }
+      .assetReportFuelDetailWide { grid-column: span 1; }
+      .assetReportFuelLedgerTable th:nth-child(1) { width: 13%; }
+      .assetReportFuelLedgerTable th:nth-child(2) { width: 12%; }
+      .assetReportFuelLedgerTable th:nth-child(3) { width: 21%; }
+      .assetReportFuelLedgerTable th:nth-child(4) { width: 11%; }
+      .assetReportFuelLedgerTable th:nth-child(5) { width: 12%; }
+      .assetReportFuelLedgerTable th:nth-child(6) { width: 18%; }
+      .assetReportFuelLedgerTable th:nth-child(7) { width: 13%; }
+      .lateEntryBadge { font-size: 8px; text-transform: none; }
+      .assetReportDisclaimer { font-size: 9px; line-height: 1.5; }
+      @media screen and (max-width: 700px) { .assetReportContentGrid { grid-template-columns: 1fr; } .assetReportTableWrap { overflow-x: auto; } .assetReportFuelLedgerTable { min-width: 850px; } }
     </style>
   </head>
   <body>
@@ -1350,9 +1357,11 @@ function buildReportHtml(options: FuelReportOptions): string {
               ${renderRows(reportRows, 'No report filters available.')}
             </section>
 
-            <section class="assetReportSideCard assetReportRecordRows">
-              <h2>Ledger Totals</h2>
-              ${renderRows(summaryRows, 'No ledger totals available.')}
+            <section class="assetReportSideCard fuelReadingGuide">
+              <h2>Gauge readings</h2>
+              <p>Before and after percentages are recorded gauge readings. The gap shows the increase during filling.</p>
+              <p>Estimated litres before a full refill use the litres added and the recorded gap to 100%. Gauge accuracy affects this estimate.</p>
+              <p>Fuel issued is not a measurement of fuel consumed on a particular job.</p>
             </section>
           </aside>
         </div>
@@ -1362,7 +1371,7 @@ function buildReportHtml(options: FuelReportOptions): string {
             <div class="assetReportSectionHeading">
               <div>
                 <h2>Fuel Movement Records</h2>
-                <p>Each entry keeps the movement figures together, including its work-use classification, operator, work area, GPS, audit and Fuel Slip details.</p>
+                <p>Recorded movements, work details and supporting evidence. Gauge-based estimates are labelled separately.</p>
               </div>
               <strong>${escapeHtml(String(options.eventCount))} ${options.eventCount === 1 ? 'entry' : 'entries'}</strong>
             </div>
@@ -1373,7 +1382,7 @@ function buildReportHtml(options: FuelReportOptions): string {
         <footer class="assetReportFooter">
           <div>
             <p class="assetReportPowered">Powered by Aim4price.com</p>
-            <div class="assetReportDisclaimer">Fuel ledger records are operational records. Work-use inclusion or exclusion is an owner/accountant classification and is not, by itself, a tax determination. The litres-before value is calculated from litres issued and the captured fuel-gauge percentage change, and remains subject to physical verification.</div>
+            <div class="assetReportDisclaimer">Fuel ledger records are operational records. Work-use inclusion or exclusion is an owner/accountant classification and is not, by itself, a tax determination. Work descriptions do not establish diesel-refund eligibility. Gauge-based estimates are shown only for recorded full refills and are not measured consumption. Verify figures against source documents and physical readings.</div>
           </div>
           <div class="assetReportPageNumber">Complete fuel ledger</div>
         </footer>
@@ -1457,7 +1466,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
 
   const movementHeader = [
     'Issued on (SAST)', 'Activity / Source', 'Direction', 'Storage Unit', 'Asset / Target', 'Litres',
-    'Litres Before Fill', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
+    'Estimated Litres Before Full Refill', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
     'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On (SAST)', 'Added By', 'Evidence / Review Status',
     'Evidence Type', 'Evidence Reference', 'Tank Balance Treatment', 'Late-entry Reason', 'Notes',
     'Work-use Status', 'Exclusion Reason', 'Fuel Slip Supplier', 'Total incl. VAT', 'Payment Method', 'Fuel Slip Document', 'Fuel Slip Review Status',

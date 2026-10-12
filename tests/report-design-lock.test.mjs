@@ -29,7 +29,7 @@ const APPROVED_REPORT_STYLES = [
   {
     path: '../app/api/fuel/report/route.ts',
     styleIndexes: [0],
-    fingerprints: ['10721:feb1a5ee6aabe566'],
+    fingerprints: ['11517:12ec26518fa309c9'],
   },
   {
     path: '../app/api/asset-map/report/route.ts',

@@ -1,3 +1,4 @@
+import { getFuelWorkChoices } from '../../../../lib/fuel-work-choices';
 import { NextRequest, NextResponse } from 'next/server';
 import { listFuelLedger, saveFuelSlipTransaction } from '../../../../lib/fuel-ledger';
 import {
@@ -47,7 +48,7 @@ export async function GET(request: NextRequest) {
     const availableAssetIds = new Set(availableAssets.map((asset) => asset.id));
     const assets = ledger.assets.filter((asset) => availableAssetIds.has(asset.id));
 
-    return NextResponse.json({ ok: true, assets });
+    return NextResponse.json({ ok: true, assets, workChoices: (await getFuelWorkChoices(access.session.ownerUserId)).choices });
   } catch (error) {
     return NextResponse.json(
       { ok: false, error: errorMessage(error, 'Failed to load fuel assets.') },

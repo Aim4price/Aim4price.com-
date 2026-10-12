@@ -1,4 +1,5 @@
 'use client';
+import FuelWorkField from '../../components/FuelWorkField';
 import { openAssetQrLabel } from '../../lib/asset-qr-label';
 import CaptureAllowanceModal from '../../components/CaptureAllowanceModal';
 import { useCaptureAllowance } from '../../lib/use-capture-allowance';
@@ -3312,11 +3313,11 @@ export default function FuelClient({
           </label>
           {isAssetSlip ? (
             <>
-              <label className={fuelSlipFieldClassName('activityText')}>
+              <div className={`${styles.fuelWorkFieldGroup} ${fuelSlipFieldClassName('activityText')}`}>
                 <span>Activity / reason for fuel</span>
-                <input value={fuelSlipDraft.activityText} onChange={(event) => setFuelSlipField('activityText', event.target.value)} placeholder="Work reason or activity" aria-invalid={fuelSlipAriaInvalid('activityText')} data-fuel-slip-field="activityText" />
+                <FuelWorkField value={fuelSlipDraft.activityText} onChange={value => setFuelSlipField('activityText', value)} invalid={fuelSlipAriaInvalid('activityText')} />
                 {fuelSlipRequiredHint('activityText')}
-              </label>
+              </div>
               <label className={fuelSlipFieldClassName('workAreaText')}>
                 <span>Where / direction / work area</span>
                 <input value={fuelSlipDraft.workAreaText} onChange={(event) => setFuelSlipField('workAreaText', event.target.value)} placeholder="Location, route or work area" aria-invalid={fuelSlipAriaInvalid('workAreaText')} data-fuel-slip-field="workAreaText" />

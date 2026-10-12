@@ -104,9 +104,12 @@ test('litres before fill uses the captured gauge increase', () => {
   assert.equal(helpers.calculateAssetDieselBeforeFill(fuelEvent({ litres: 70, assetFuelPercentBefore: 10 })), 7.778);
   assert.equal(helpers.calculateAssetDieselBeforeFill(fuelEvent({ assetFuelPercentBefore: 100, assetFuelPercentAfter: 100 })), null);
   assert.equal(helpers.calculateAssetDieselBeforeFill(fuelEvent({ assetFuelPercentBefore: null })), null);
+  assert.equal(helpers.calculateAssetDieselBeforeFill(fuelEvent({ assetFuelPercentAfter: 75 })), null);
+  assert.equal(helpers.calculateAssetDieselBeforeFill(fuelEvent({ assetFuelPercentBefore: -10 })), null);
+  assert.equal(helpers.calculateAssetDieselBeforeFill(fuelEvent({ litres: 0 })), null);
 });
 
-test('PDF fuel entries use ten readable columns and preserve every detail underneath', () => {
+test('PDF fuel entries use seven readable columns and preserve every detail underneath', () => {
   const html = helpers.renderFuelEventTable([
     fuelEvent(),
     fuelEvent({
@@ -121,12 +124,14 @@ test('PDF fuel entries use ten readable columns and preserve every detail undern
     }),
   ]);
 
-  assert.equal((html.match(/<th>/g) ?? []).length, 10);
+  assert.equal((html.match(/<th>/g) ?? []).length, 7);
   assert.equal((html.match(/class="assetReportFuelEventGroup"/g) ?? []).length, 2);
-  assert.equal((html.match(/colspan="10"/g) ?? []).length, 2);
-  assert.match(html, /Storage Balance/);
+  assert.equal((html.match(/colspan="7"/g) ?? []).length, 2);
+  assert.match(html, /Storage balance/);
   assert.match(html, /2[\s,]?108[,.]6 L to 2[\s,]?048[,.]3 L/);
   assert.match(html, /25% to 100%/);
+  assert.match(html, /75 percentage points/);
+  assert.match(html, /Estimated litres before full refill/);
   assert.match(html, /Transport workers to town/);
   assert.match(html, /Skimmelkrans Boerdery/);
   assert.match(html, /GPS -34\.024051, 22\.383678/);

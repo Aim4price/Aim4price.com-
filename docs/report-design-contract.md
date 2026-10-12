@@ -68,3 +68,12 @@ The corresponding draft pull request intentionally updates the locked Maintenanc
 - preserve the existing monochrome Montserrat layout, borders, spacing system, logo placement and disclaimer treatment.
 
 The updated fingerprints record this deliberate change and remain subject to visual approval before merge.
+
+
+## 12 October 2026 fuel ledger refinement
+
+This is an intentional fuel-report redesign requested to align the ledger with Aim4price. The canonical report retains the shared pale-green Montserrat theme, with seven readable main columns and supporting details beneath each entry. Delivery totals and opening entries are separate; stock at export is explicitly not a historical closing balance.
+
+Gauge increases are percentage points. Estimated litres before filling are shown only for a recorded full refill with a valid starting percentage and positive litres added. These are gauge-based estimates, not measured consumption or a determination of diesel-refund eligibility.
+
+Representative valuation (one page), maintenance (ten pages) and fuel ledger (ten pages) PDFs were rendered and visually checked across every page, alongside desktop, tablet and mobile layout checks. The fuel CSS fingerprint records this deliberate redesign. Keep the pull request in draft pending design approval and authenticated report-opening review before merge.

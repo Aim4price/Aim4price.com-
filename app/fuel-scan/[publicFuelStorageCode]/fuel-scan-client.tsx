@@ -1,4 +1,6 @@
 'use client';
+import FuelWorkField from '../../../components/FuelWorkField';
+import { DEFAULT_FUEL_WORK_CHOICES, type FuelWorkChoice } from '../../../lib/fuel-work-choice-options';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import FuelLocationModal, { type FuelLocationCoordinates } from '../../../components/FuelLocationModal';
@@ -100,6 +102,7 @@ type PreviewResponse = {
 };
 
 type PayloadResponse = {
+  workChoices?: FuelWorkChoice[];
   ok: boolean;
   storage?: FuelLedgerStorage;
   accountBusinessName?: string;
@@ -285,6 +288,7 @@ export default function FuelScanClient({
   const [assetUsageReading, setAssetUsageReading] = useState('');
   const [usageNotApplicable, setUsageNotApplicable] = useState(false);
   const [activityText, setActivityText] = useState('');
+  const [workChoices, setWorkChoices] = useState(DEFAULT_FUEL_WORK_CHOICES);
   const [workAreaText, setWorkAreaText] = useState('');
   const [note, setNote] = useState('');
   const [scanMode, setScanMode] = useState<ScanMode>('action-choice');
@@ -424,6 +428,7 @@ export default function FuelScanClient({
       if (ownerOperatorName) setOperatorName(ownerOperatorName);
     }
 
+    setWorkChoices(data.workChoices ?? DEFAULT_FUEL_WORK_CHOICES);
     setStorage(data.storage);
     setPreview(data.storage);
     setAccountBusinessName(data.accountBusinessName || data.storage.accountBusinessName || '');
@@ -1466,10 +1471,10 @@ export default function FuelScanClient({
             <h1>Activity</h1>
             <p>What will the asset do, and where?</p>
           </div>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span>What activity</span>
-            <input value={activityText} onChange={(event) => setActivityText(normalizeShortText(event.target.value))} placeholder="Example: Planting, spraying, transport" autoFocus />
-          </label>
+            <FuelWorkField value={activityText} onChange={value => setActivityText(normalizeShortText(value))} choices={workChoices} autoFocus />
+          </div>
           <label className={styles.field}>
             <span>Where</span>
             <input value={workAreaText} onChange={(event) => setWorkAreaText(normalizeShortText(event.target.value))} placeholder="Example: Bashan B6, Shed 2, Road camp" />

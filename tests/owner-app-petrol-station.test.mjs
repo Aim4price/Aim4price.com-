@@ -63,7 +63,7 @@ test('Petrol station flow captures GPS, fuel details and a receipt-backed cost',
   assert.match(client, /capture="environment"/);
   assert.match(client, /fetch\('\/api\/fuel\/slips\/upload'/);
   assert.match(client, /fetch\('\/api\/fuel\/slips'/);
-  assert.match(client, /mode: 'automatic'/);
+  assert.match(client, /mode: upload \? 'automatic' : 'manual'/);
   assert.match(client, /targetType: 'asset'/);
   assert.match(client, /latitude: coordinates\.latitude/);
   assert.match(client, /gpsAccuracyMeters: coordinates\.accuracyMeters/);
