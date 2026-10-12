@@ -577,9 +577,6 @@ async function assertFuelOperationalFields(
   if (!captured.activityText && !captured.activityNotApplicable) {
     throw new Error('CAPTURE_FUEL_ACTIVITY_REQUIRED');
   }
-  if (!captured.workAreaText && !captured.workAreaNotApplicable) {
-    throw new Error('CAPTURE_FUEL_WORK_AREA_REQUIRED');
-  }
   const assets = await listFuelAssetsForUser(request.ownerUserId ?? '');
   const asset = assets.find((entry) => entry.id === request.assetId);
   if (!asset) throw new Error('CAPTURE_ASSET_NOT_FOUND');

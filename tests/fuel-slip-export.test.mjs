@@ -33,6 +33,14 @@ test('Excel is an actual workbook with numeric cells and safely stored free text
   assert.ok(!xml.includes('4111 1111 1111 1111'));
 });
 
+test('Excel keeps the supplier, activity and unrecorded work area in separate columns', () => {
+  const xml = buildFuelSlipWorkbook([{ ...slip, supplierName: 'Engen George', activityText: 'Delivering feed to Farm A', workAreaText: '' }]).toString();
+  assert.match(xml, /<c r="B2"[^>]*>[\s\S]*?<t[^>]*>Engen George<\/t>/);
+  assert.match(xml, /<c r="X2"[^>]*>[\s\S]*?<t[^>]*>Delivering feed to Farm A<\/t>/);
+  const workAreaCell = xml.match(/<c r="Y2"[^>]*>[\s\S]*?<\/c>/)?.[0] ?? '';
+  assert.doesNotMatch(workAreaCell, /Engen|Farm A|N\/A/);
+});
+
 import ts from 'typescript';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';

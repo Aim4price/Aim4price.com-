@@ -540,7 +540,6 @@ function getFuelSlipMissingFields(
 
     if (!draft.operatorName.trim()) missing.push('operatorName');
     if (!draft.activityText.trim()) missing.push('activityText');
-    if (!draft.workAreaText.trim()) missing.push('workAreaText');
   }
 
   return missing;
@@ -3320,7 +3319,7 @@ export default function FuelClient({
                 {fuelSlipRequiredHint('activityText')}
               </div>
               <label className={fuelSlipFieldClassName('workAreaText')}>
-                <span>Where / direction / work area</span>
+                <span>Where / direction / work area (optional)</span>
                 <input value={fuelSlipDraft.workAreaText} onChange={(event) => setFuelSlipField('workAreaText', event.target.value)} placeholder="Location, route or work area" aria-invalid={fuelSlipAriaInvalid('workAreaText')} data-fuel-slip-field="workAreaText" />
                 {fuelSlipRequiredHint('workAreaText')}
               </label>

@@ -196,12 +196,12 @@ test('fuel-slip operational N/A choices are structured, nullable and migration-b
   assert.match(ledger, /slip\.operatorNotApplicable \? 'N\/A'/);
 });
 
-test('fuel-slip posting accepts a value or explicit N/A for every operational field', () => {
+test('fuel-slip posting requires operational details but permits an unrecorded work area', () => {
   const saveFuelSlip = ledger.slice(ledger.indexOf('export async function saveFuelSlipTransaction'));
   assert.match(saveFuelSlip, /if \(usageNotApplicable\) \{\s+usageMetric = 'none';\s+usageReading = null;\s+usageComplete = true;/);
   assert.match(saveFuelSlip, /if \(!operatorName && !operatorNotApplicable\) postingMissingReasons\.push/);
   assert.match(saveFuelSlip, /if \(!activityText && !activityNotApplicable\) postingMissingReasons\.push/);
-  assert.match(saveFuelSlip, /if \(!workAreaText && !workAreaNotApplicable\) postingMissingReasons\.push/);
+  assert.doesNotMatch(saveFuelSlip, /if \(!workAreaText && !workAreaNotApplicable\) postingMissingReasons\.push/);
 });
 
 test('fuel-slip usage updates are explicit, monotonic and stale valuation only after an advance', () => {

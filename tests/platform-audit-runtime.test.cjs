@@ -42,6 +42,17 @@ test('tank creation rejects over-capacity opening stock before reserving a conne
   await assert.rejects(ledger.createFuelStorage('owner', { name: 'Diesel', currentLitres: 101, capacityLitres: 100 }), /cannot exceed/);
   assert.equal(counts().connections, 0);
 });
+test('every fuel-issue login must supply an activity before any database transaction', async () => {
+  const { ledger, counts } = fuelFixture();
+  for (const actorType of ['owner_session', 'field_manager', 'scan_pin']) {
+    await assert.rejects(ledger.recordFuelAssetIssue({
+      userId: 'owner', storageId: 'tank', assetId: 'asset', litres: 10,
+      assetFuelPercentAfter: 100, operatorName: 'Operator', actorType,
+      activityText: ' ', workAreaText: 'Field 7', latitude: -33, longitude: 22,
+    }), /Enter what activity/);
+  }
+  assert.equal(counts().connections, 0);
+});
 test('valid tank creation still rolls back and releases on database failure', async () => {
   const { ledger, counts, statements } = fuelFixture();
   await assert.rejects(ledger.createFuelStorage('owner', { name: 'Diesel', currentLitres: 100, capacityLitres: 100 }), /Database write failed/);

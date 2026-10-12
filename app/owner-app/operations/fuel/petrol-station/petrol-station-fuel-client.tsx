@@ -155,7 +155,7 @@ export default function PetrolStationFuelClient({
   const [slipNumber, setSlipNumber] = useState('');
   const [documentDate, setDocumentDate] = useState(todayDate);
   const [workChoices, setWorkChoices] = useState(DEFAULT_FUEL_WORK_CHOICES);
-  const [activityText, setActivityText] = useState('Refuelling at petrol station');
+  const [activityText, setActivityText] = useState('');
   const [note, setNote] = useState('');
   const [receipt, setReceipt] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState('');
@@ -271,7 +271,7 @@ export default function PetrolStationFuelClient({
     }
     if (step === 'activity') {
       if (stationName.trim().length < 2) return 'Enter the petrol station name.';
-      if (activityText.trim().length < 2) return 'Enter the reason or activity for this fuel.';
+      if (activityText.trim().length < 2) return 'Describe the work this fuel is for.';
     }
     return '';
   }
@@ -370,7 +370,9 @@ export default function PetrolStationFuelClient({
           hourMeterReading: unit === 'hours' ? reading : null,
           operatorName: operatorName.trim() || (fieldManagerMode ? 'Field Manager' : 'Owner'),
           activityText: activityText.trim(),
-          workAreaText: stationName.trim(),
+          // The station is the supplier, not the asset's work area.
+          // Any job location can be included in the activity without another step.
+          workAreaText: '',
           note: note.trim(),
           assetFuelPercentBefore: Number(clampFuel(fuelBefore)),
           assetFuelPercentAfter: Number(clampFuel(fuelAfter)),
@@ -416,7 +418,7 @@ export default function PetrolStationFuelClient({
     setStationName('');
     setSlipNumber('');
     setDocumentDate(todayDate());
-    setActivityText('Refuelling at petrol station');
+    setActivityText('');
     setNote('');
     setReceipt(null);
     setNotice('');
@@ -543,7 +545,7 @@ export default function PetrolStationFuelClient({
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Petrol station</span><input value={stationName} onChange={(event) => setStationName(event.target.value)} placeholder="Example: Engen George" /></label>
           <label className={styles.field}><span>Slip number (optional)</span><input value={slipNumber} onChange={(event) => setSlipNumber(event.target.value)} placeholder="Receipt or transaction number" /></label>
-          <div className={styles.field}><span>Reason / activity</span><FuelWorkField value={activityText} onChange={setActivityText} choices={fieldManagerMode ? workChoices : undefined} /></div>
+          <div className={styles.field}><span>What work is this fuel for?</span><FuelWorkField value={activityText} onChange={setActivityText} choices={fieldManagerMode ? workChoices : undefined} /></div>
           <label className={styles.field}><span>Note (optional)</span><textarea rows={3} value={note} onChange={(event) => setNote(event.target.value)} placeholder="Add a short note" /></label>
         </div>
       );
@@ -607,7 +609,7 @@ export default function PetrolStationFuelClient({
             {step === 'fuel' ? 'Choose the fuel added to the asset.' : null}
             {step === 'amount' ? 'Record the litres and amount paid.' : null}
             {step === 'after' ? 'Set the fuel gauge after filling.' : null}
-            {step === 'activity' ? 'Add the station and reason for the fill.' : null}
+            {step === 'activity' ? 'Add the station and describe the work.' : null}
             {step === 'slip' ? 'Take a photo so the cost keeps its proof.' : null}
           </p>
         </div>
