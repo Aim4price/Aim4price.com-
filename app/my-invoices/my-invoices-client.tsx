@@ -3368,11 +3368,11 @@ export default function MyInvoicesClient({
                 onClick={openBudgetManager}
                 aria-haspopup="dialog"
                 aria-label={budgetAttentionCount
-                  ? `Budgets, ${budgetAttentionCount} ${budgetAttentionCount === 1 ? 'alert' : 'alerts'} need attention`
-                  : 'Budgets'}
+                  ? `Switch to Budgets, ${budgetAttentionCount} ${budgetAttentionCount === 1 ? 'alert' : 'alerts'} need attention`
+                  : 'Switch to Budgets'}
               >
                 <LedgerIcon />
-                <span>Budgets</span>
+                <span>Switch to Budgets</span>
                 {budgetAttentionCount ? (
                   <strong className={styles.costActionAlert} aria-hidden="true">{budgetAttentionCount}</strong>
                 ) : null}

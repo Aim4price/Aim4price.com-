@@ -75,7 +75,7 @@ export default function BudgetTracking({ budgets, loading, error, onRetry, onAdd
     <section className={ledger.pageTitleBlock}><div><h1>BUDGET TRACKING SYSTEM</h1></div></section>
     <section className={ledger.costActionGrid} aria-label="Budget actions">
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionAdd}`} data-budget-trigger="add" onClick={onAdd} disabled={!ready}><Icon kind="add" />Add Budget</button>
-      <Link className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionBudgets}`} href="/my-invoices"><Icon kind="ledger" />Cost Ledger</Link>
+      <Link className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.costActionBudgets}`} href="/my-invoices?view=costs"><Icon kind="ledger" />Switch to Cost Ledger</Link>
       <button className={`${ledger.secondaryButton} ${ledger.costActionButton} ${ledger.toolbarFilterButton} ${styles.alertButton}`} onClick={() => setFilters({ ...EMPTY_BUDGET_FILTERS, status: filters.status === 'attention' ? 'all' : 'attention' })} aria-pressed={filters.status === 'attention'} disabled={!ready}><Icon kind="alerts" />Alerts {attention ? `(${attention})` : ''}</button>
       <button className={`${ledger.primaryButton} ${ledger.costActionButton} ${ledger.costActionDownload}`} onClick={() => setDownloadOpen(true)} disabled={!ready || !budgets.length}><Icon kind="download" />Download</button>
     </section>

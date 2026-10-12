@@ -137,7 +137,7 @@ test('owner Cost Ledger presents the four primary actions in the intended order'
 
   const expectedActions = [
     ['Add Cost', /onClick=\{\(\) => openAddInvoiceModal\(\)\}/],
-    ['Budgets', /onClick=\{openBudgetManager\}/],
+    ['Switch to Budgets', /onClick=\{openBudgetManager\}/],
     ['Invoice Drop', /openInvoiceDropCodeManager\(\)/],
     ['Download', /onClick=\{openDownloadModal\}/],
   ];
@@ -304,4 +304,39 @@ test('warning-level budget cards and notifications use the red priority treatmen
   );
   assert.match(budgetNotificationBuilder, /tone: 'warning'/);
   assert.match(budgetNotificationBuilder, /priority: true/);
+});
+
+test('cost entry chooser preserves record, review and asset deep links behind owner access', async () => {
+  const ts = (await import('typescript')).default;
+  const runtime = await import('react/jsx-runtime');
+  const MyInvoicesClient = () => null;
+  const CostEntryChoices = () => null;
+  let accountType = 'owner';
+  const dependencies = {
+    'react/jsx-runtime': runtime,
+    'next/navigation': {redirect: path => {throw new Error(`redirect:${path}`);}},
+    '../../lib/account-access': {requireActivePageAccess: async () => ({session:{user:{id:'owner'}}})},
+    '../../lib/account-profile': {getAccountProfile: async () => ({accountType})},
+    '../../lib/internal-return-path': {
+      readSingleSearchParam: value => String(Array.isArray(value) ? value[0] ?? '' : value ?? '').trim(),
+      normalizeInternalReturnPath: value => value || '',
+    },
+    './my-invoices-client': {default:MyInvoicesClient},
+    './cost-entry-choices': {default:CostEntryChoices},
+  };
+  const output = ts.transpileModule(read('app/my-invoices/page.tsx'), {compilerOptions:{
+    module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,
+  }}).outputText;
+  const module = {exports:{}};
+  new Function('require','module','exports',output)(name => {
+    assert.ok(name in dependencies); return dependencies[name];
+  },module,module.exports);
+  const page = module.exports.default;
+  assert.equal((await page({})).type,CostEntryChoices);
+  for (const searchParams of [{view:'costs'},{invoiceId:'invoice-1'},{budgetId:'budget-1'},
+    {captureRequestId:'review-1'},{assetId:'asset-1',add:'1'}]) {
+    assert.equal((await page({searchParams})).type,MyInvoicesClient);
+  }
+  accountType = 'dealer';
+  await assert.rejects(page({}),/redirect:\/account/);
 });
