@@ -45,6 +45,7 @@ export default function SharedAssetCards({
   allowBusinessDetails?: boolean;
 }) {
   const router=useRouter();
+  const [manageSuspended, setManageSuspended] = useState(false);
   const [valueAsset,setValueAsset]=useState<{id:string;title:string}|null>(null);
   const [vatIncluded,setVatIncluded]=useState<Record<string,boolean>>({});
   const [opened, setOpened] = useState<number | null>(null);
@@ -259,8 +260,8 @@ export default function SharedAssetCards({
       )}
       {asset &&
         createPortal(
-          <LeadManageDialog title={asset.title} description={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} onClose={() => { setManaged(null); trigger.current?.focus(); }}>
-              {enquiry ? <ExternalLeadActions key={asset.assetId||managed} {...enquiry} assetTitle={asset.title} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
+          <LeadManageDialog suspended={manageSuspended} title={asset.title} description={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} onClose={() => { setManaged(null); trigger.current?.focus(); }}>
+              {enquiry ? <ExternalLeadActions key={asset.assetId||managed} {...enquiry} onDialogChange={setManageSuspended} assetSubtitle={`Year Model: ${asset.yearModel || "Not saved"} • Usage: ${asset.usage || "Not saved"} • Condition: ${asset.condition || "Not saved"}`} assetTitle={asset.title} assetIndex={managed!} assetId={asset.assetId} serialNumber={asset.serialNumber||''} replacementPrice={asset.replacementPriceExVat}/> : actions ? (
                 <section aria-label="Enquiry actions">
                   <p className={styles.note}>
                     These actions apply to the shared enquiry.

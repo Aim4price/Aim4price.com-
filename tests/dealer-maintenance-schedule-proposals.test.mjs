@@ -14,6 +14,7 @@ const accessSettings = read('components/DealerMaintenanceAccessSettings.tsx');
 const ownerShare = read('app/asset-register/asset-register-client.tsx');
 const scheduleModal = read('components/DealerMaintenanceScheduleModal.tsx');
 const trackerClient = read('components/DealerMaintenanceTrackerClient.tsx');
+const maintenanceMenu = read('components/leads/SharedMaintenanceMenu.tsx');
 
 test('new tracking shares keep reports opt-in and allow direct maintenance schedules without an existing schedule', () => {
   assert.match(
@@ -34,13 +35,14 @@ test('new tracking shares keep reports opt-in and allow direct maintenance sched
 test('My Leads exposes the owner-style maintenance report and schedule creation action', () => {
   assert.match(leads, /<strong>Reports<\/strong>/);
   assert.match(leads, /<strong>Maintenance report<\/strong>/);
-  assert.match(leads, /<strong>Schedule maintenance<\/strong>/);
+  assert.match(leads, /<SharedMaintenanceMenu/);
+  assert.match(maintenanceMenu, /<strong>Schedule maintenance<\/strong>/);
   assert.match(leads, /DealerMaintenanceReportModal/);
   assert.match(leads, /DealerMaintenanceScheduleModal/);
 });
 
-test('Tracking uses the same direct schedule helper text as My Leads', () => {
-  assert.match(leads, /Create a schedule for this asset\./);
+test('Tracking and My Leads describe direct schedule creation', () => {
+  assert.match(maintenanceMenu, /Create and manage scheduled work\./);
   assert.match(trackerClient, /AppMaintenanceActions/);
   assert.match(read('components/AppMaintenanceActions.tsx'), /Create a schedule for this asset\./);
   assert.doesNotMatch(trackerClient, /Send a proposed schedule for owner approval\./);
@@ -94,7 +96,9 @@ test('owner tracking settings include the new schedule permission and clear shar
 
 
 test('Manage hides scheduling unless the owner grants maintenance creation permission', () => {
-  assert.match(leads, /isTrackingLead\(managedLead\) && managedLead\.maintenanceAccess\?\.isActive && managedLead\.maintenanceAccess\.permissions\.canCreateMaintenanceSchedules \? \(/);
+  assert.match(leads, /onSchedule=\{maintenanceMenuLead\.maintenanceAccess\?\.permissions\.canCreateMaintenanceSchedules \? \(\) => openMaintenanceSchedule\(maintenanceMenuLead\) : undefined\}/);
+  assert.match(maintenanceMenu, /\{onSchedule && <button/);
+  assert.match(leads, /maintenanceScheduleLead\?\.maintenanceAccess\?\.isActive && maintenanceScheduleLead\.maintenanceAccess\.permissions\.canCreateMaintenanceSchedules \? \(/);
   assert.match(trackerClient, /\{managedAsset\.permissions\.canCreateMaintenanceSchedules \? \(/);
   assert.doesNotMatch(scheduleModal, /'Send proposal'/);
   assert.match(dealerRoute, /createDealerMaintenanceSchedule\(\{ dealerUserId, draft \}\)/);

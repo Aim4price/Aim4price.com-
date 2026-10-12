@@ -113,6 +113,7 @@ on:
       - 'database/migrations/126-shared-details-maintenance.sql'
       - 'tests/shared-asset-work.test.cjs'
       - 'scripts/verify-shared-asset-work.cjs'
+      - 'scripts/verify-shared-maintenance-parity.cjs'
       - 'lib/shared-asset-contributions*'
       - 'lib/shared-cost-capture.ts'
       - 'lib/shared-asset-notes.ts'
@@ -170,6 +171,7 @@ jobs:
       - run: node scripts/verify-business-verification.cjs
       - run: node scripts/verify-business-network.cjs
       - run: node scripts/verify-guest-leads.cjs
+      - run: node scripts/verify-shared-maintenance-parity.cjs
       - run: node scripts/verify-business-admin-entry.cjs
       - run: node scripts/verify-free-business-access.cjs
       - run: node scripts/verify-sharing-usage.cjs

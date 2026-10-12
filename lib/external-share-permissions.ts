@@ -1,6 +1,6 @@
 export const EXTERNAL_SHARE_OPTIONS = [
   {key:'viewParts',label:'View parts',description:'View saved part numbers for this asset.'},
-  {key:'addParts',label:'Add parts',description:'Save part numbers and link them to maintenance.'},
+  {key:'addParts',label:'Manage parts',description:'Add, edit or delete parts.'},
   {key:'history',label:'History',description:'Read permitted asset activity.'},
     {key:'suggestValue',label:'Current value access',description:'Update manual values; suggest Aim4price values for owner approval.'},
     { key: 'updateDetails', label: 'Update details', description: 'Title, asset details, paperwork and documents (no invoices).' },
