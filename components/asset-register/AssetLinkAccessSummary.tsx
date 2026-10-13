@@ -14,7 +14,7 @@ export default function AssetLinkAccessSummary({ permissions }: { permissions: E
       <p>The recipient can view the shared asset information{permissions.reports || permissions.allReports ? ' and general asset reports' : ''}.</p>
       <p>{updates.length ? `Allowed actions: ${updates.map(option => option.label).join(', ')}.` : 'No changes to the asset are allowed.'}</p>
       <p>{extraViews.length ? `Additional viewing access: ${extraViews.map(option => option.label).join(', ')}.` : 'Maintenance reports, ownership costs, history and parts are not included.'}</p>
-      <p>Anyone with the link can sign in and use this access. You can change permissions or revoke the link in Sharing history.</p>
+      <p>Recipients sign in to use the access you allow. You can change permissions or revoke the link in History.</p>
     </div>
   </section>;
 }
