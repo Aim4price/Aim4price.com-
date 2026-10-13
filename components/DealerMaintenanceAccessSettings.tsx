@@ -85,19 +85,6 @@ export function DealerMaintenancePermissionPicker({
   const selectedCount = editableOptions.filter(({key}) => value[key] === true).length;
   return (
     <>
-      <div className={styles.permissionToolbar}>
-        <p>Choose what recipients can do</p>
-        <label className={styles.selectAll}>
-          <input type="checkbox" disabled={disabled || !editableOptions.length}
-            checked={editableOptions.length > 0 && selectedCount === editableOptions.length}
-            ref={input => { if (input) input.indeterminate = selectedCount > 0 && selectedCount < editableOptions.length; }}
-            onChange={event => onChange({ ...value,
-              ...(!lockedPermissions.includes('canUpdateDetails') ? Object.fromEntries(['canUpdateYear', 'canUpdateUsage', 'canUpdateCondition'].filter(key => !lockedPermissions.includes(key as keyof DealerMaintenancePermissions)).map(key => [key, event.target.checked])) : {}),
-              ...Object.fromEntries(editableOptions.map(({key}) => [key, event.target.checked])),
-            })} />
-          <span>Select all permissions</span>
-        </label>
-      </div>
       <div className={styles.permissionGroups} data-permission-groups>
         {dealerMaintenancePermissionGroups.map(group => (
           <fieldset key={group.title} className={styles.permissionGroup}>
@@ -115,6 +102,18 @@ export function DealerMaintenancePermissionPicker({
             {group.note && <p className={styles.permissionNote} data-permission-note>{group.note}</p>}
           </fieldset>
         ))}
+      </div>
+      <div className={styles.permissionToolbar} data-permission-toolbar>
+        <label className={styles.selectAll}>
+          <input type="checkbox" disabled={disabled || !editableOptions.length}
+            checked={editableOptions.length > 0 && selectedCount === editableOptions.length}
+            ref={input => { if (input) input.indeterminate = selectedCount > 0 && selectedCount < editableOptions.length; }}
+            onChange={event => onChange({ ...value,
+              ...(!lockedPermissions.includes('canUpdateDetails') ? Object.fromEntries(['canUpdateYear', 'canUpdateUsage', 'canUpdateCondition'].filter(key => !lockedPermissions.includes(key as keyof DealerMaintenancePermissions)).map(key => [key, event.target.checked])) : {}),
+              ...Object.fromEntries(editableOptions.map(({key}) => [key, event.target.checked])),
+            })} />
+          <span>Select all permissions</span>
+        </label>
       </div>
     </>
   );
