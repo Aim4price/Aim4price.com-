@@ -7,8 +7,8 @@ import layout from './AssetAccessSettingsDialog.module.css';
 import styles from '../../app/asset-register/page.module.css';
 
 /** The same settings surface for inside sharing and asset links. */
-export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,linkSettings=false,onViewOnly}: {
-  title:string;assetTitle:string;onClose:()=>void;children:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;
+export default function AssetAccessSettingsDialog({title,assetTitle,onClose,children,footer,linkSettings=false,onViewOnly}: {
+  title:string;assetTitle:string;onClose:()=>void;children:ReactNode;footer?:ReactNode;linkSettings?:boolean;onViewOnly?:()=>void;
 }) {
   const titleId=useId();
   const [showGuide,setShowGuide]=useState(linkSettings);
@@ -16,11 +16,13 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
   const ref=useLeadDialog(dismiss);
   useEffect(()=>{ref.current?.querySelector<HTMLElement>(showGuide?'[data-access-start]':'input')?.focus();},[showGuide,ref]);
   useEffect(()=>{
-    const bodyOverflow=document.body.style.overflow;
-    const htmlOverflow=document.documentElement.style.overflow;
-    document.body.style.overflow='hidden';
-    document.documentElement.style.overflow='hidden';
-    return()=>{document.body.style.overflow=bodyOverflow;document.documentElement.style.overflow=htmlOverflow;};
+    const bodyOverflow=document.body.style.getPropertyValue('overflow');
+    const bodyPriority=document.body.style.getPropertyPriority('overflow');
+    const htmlOverflow=document.documentElement.style.getPropertyValue('overflow');
+    const htmlPriority=document.documentElement.style.getPropertyPriority('overflow');
+    document.body.style.setProperty('overflow','hidden','important');
+    document.documentElement.style.setProperty('overflow','hidden','important');
+    return()=>{document.body.style.setProperty('overflow',bodyOverflow,bodyPriority);document.documentElement.style.setProperty('overflow',htmlOverflow,htmlPriority);};
   },[]);
   return createPortal(<div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.quoteTrackingSettingsOverlay}`} data-website-overlay>
     <div className={styles.modalBackdrop} data-website-overlay onClick={dismiss}/>
@@ -47,6 +49,7 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
           </button>
         </div>
       </div> : children}</div>
+      {!showGuide && footer && <div className={layout.footer} data-access-footer>{footer}</div>}
     </section>
   </div>,document.body);
 }
