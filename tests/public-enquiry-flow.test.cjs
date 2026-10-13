@@ -76,7 +76,7 @@ test('public enquiry renders an expandable Leads card for every selected asset',
 test('invitation requires consent, freezes all selected assets and handles failures without an empty link',async()=>{
   const previous={window:global.window,document:global.document,fetch:global.fetch};
   const ids=['10000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000003'];
-  const walk=(node,predicate)=>!node||typeof node!=='object'?null:predicate(node)?node:React.Children.toArray(node.props?.children).map(child=>walk(child,predicate)).find(Boolean);
+  const walk=(node,predicate)=>!node||typeof node!=='object'?null:predicate(node)?node:React.Children.toArray([node.props?.children, node.props?.footer]).map(child=>walk(child,predicate)).find(Boolean);
   try{
     global.window={location:{origin:'https://aim4price.test'}};global.document={body:{}};
     for(const failed of [false,true]){
@@ -138,7 +138,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
 
 test('Send link creates protected read-only enquiries, requires consent and handles failure and clipboard denial', async()=>{
  const previous={fetch:global.fetch,window:global.window};
- const walk=(node,predicate)=>!node||typeof node!=='object'?null:predicate(node)?node:React.Children.toArray(node.props?.children).map(child=>walk(child,predicate)).find(Boolean);
+ const walk=(node,predicate)=>!node||typeof node!=='object'?null:predicate(node)?node:React.Children.toArray([node.props?.children, node.props?.footer]).map(child=>walk(child,predicate)).find(Boolean);
  try {
   global.window={location:{origin:'https://aim4price.test'}};
   for(const failed of [false,true]) {
