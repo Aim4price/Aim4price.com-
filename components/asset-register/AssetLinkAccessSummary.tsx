@@ -12,7 +12,7 @@ export default function AssetLinkAccessSummary({ permissions }: { permissions: E
     <summary>
       <strong>{updates.length ? 'Selected permissions' : 'View-only access'}</strong>
       <span className={styles.accessHint}>{updates.length ? 'Review before sharing' : 'No changes allowed'}</span>
-      <span className={styles.accessCount}>{updates.length ? `${updates.length} allowed ${updates.length === 1 ? 'action' : 'actions'}` : 'View access'}</span>
+      <span className={styles.accessCount}>{`${selected.length} ${selected.length === 1 ? 'permission' : 'permissions'} selected`}</span>
       <svg className={styles.chevron} aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 5 7 7-7 7"/></svg>
     </summary>
     <div className={styles.body}>
