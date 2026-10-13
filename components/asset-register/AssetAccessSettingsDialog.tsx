@@ -32,7 +32,7 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
       <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody} ${layout.body}`}>{showGuide ? <div className={layout.guideBody}>
         <span className={layout.guideIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 1.5 1.5L8 5M11 6h9M4 12l1.5 1.5L8 11M11 12h9M4 18l1.5 1.5L8 17M11 18h9"/></svg></span>
         <p className={layout.guideHeading}>How should the recipient use this asset?</p>
-        <div className={layout.guideInstructions}><p><strong>View only:</strong> share information without allowing changes.</p><p><strong>Choose permissions:</strong> allow specific updates or include additional reports.</p></div>
+        <div className={layout.guideInstructions}>{onViewOnly && <p><strong>View only:</strong> share information without allowing changes.</p>}<p><strong>Choose permissions:</strong> allow specific updates or include additional reports.</p></div>
         {onViewOnly && <button type="button" className={styles.primaryButton} onClick={()=>{onViewOnly();setShowGuide(false);}}>View only</button>}
         <button type="button" data-access-start className={styles.primaryButton} onClick={()=>setShowGuide(false)}>Choose permissions</button>
       </div> : children}</div>

@@ -8,3 +8,6 @@
 @media (max-width: 720px) {
   :global(:where(html:not(:has([data-website-canvas])))) .steps { grid-template-columns: 1fr; gap: .8rem; }
 }
+
+.accessSummary .body { padding-top:.5rem; padding-bottom:.5rem; }
+.accessSummary summary { padding:.3rem 0; font-size:.9rem; }

@@ -194,3 +194,18 @@ test('initially open sharing disclosure is safe during server rendering', () => 
     title:'Sign in', titleId:'sign-in', closeLabel:'Close', onClose:()=>{},
   })), '');
 });
+
+test('access summary distinguishes viewing from document submissions and standalone updates',()=>{
+  const permissions=load('lib/external-share-permissions.ts');
+  const Summary=load('components/asset-register/AssetLinkAccessSummary.tsx',{
+    '../../lib/external-share-permissions':permissions,
+  }).default;
+  const render=value=>renderToStaticMarkup(React.createElement(Summary,{permissions:{...permissions.EMPTY_EXTERNAL_PERMISSIONS,...value}}));
+  assert.match(render({history:true}),/View-only access/);
+  assert.match(render({history:true}),/No changes to the asset are allowed/);
+  for(const value of [{documents:true},{usage:true},{yearModel:true}]){
+    assert.doesNotMatch(render(value),/View-only access|No changes to the asset are allowed/);
+    assert.match(render(value),/Allowed actions/);
+  }
+  assert.match(render({documents:true}),/Submit invoices and quotes for review/);
+});

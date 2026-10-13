@@ -62,7 +62,7 @@
 
 .permission:first-child { grid-column:1 / -1; }
 
-.inviteDialog { scrollbar-width:none; }
+.inviteDialog { width:min(1100px,calc(100% - 32px)); scrollbar-width:none; }
 .inviteDialog::-webkit-scrollbar { display:none; }
 .form { margin-top:22px; }
 .form fieldset > div:first-child { margin:0 0 6px; padding:22px; }
