@@ -4,21 +4,19 @@ import styles from './AssetRegisterGuide.module.css';
 export default function AssetRegisterGuide({ empty = false }: { empty?: boolean }) {
   return <details className={`${styles.guide} ${styles.registerGuide}`} open={empty || undefined}>
     <summary className={styles.guideHeader}>
-      <span className={styles.guideMark} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg></span>
-      <span className={styles.headerCopy}><strong>Start here</strong><span>Your asset register in three simple steps</span></span>
+      <span className={styles.headerCopy}><strong>Start here</strong><span>Add an asset. Keep records. See the full picture.</span></span>
       <span className={styles.guideToggle} aria-hidden="true"><span className={styles.showGuide}>Show guide</span><span className={styles.hideGuide}>Hide guide</span></span>
     </summary>
     <div className={styles.body}>
       <ol className={styles.steps}>
-        <li><span className={styles.stepNumber} aria-hidden="true">1</span><div><strong>Add one asset</strong><p>Select <b>Add Asset</b>, get an estimate or enter your own value, then save.</p></div></li>
-        <li><span className={styles.stepNumber} aria-hidden="true">2</span><div><strong>Build its history</strong><p>Select <b>Manage</b> on the asset card to add costs, fuel and maintenance.</p></div></li>
-        <li><span className={styles.stepNumber} aria-hidden="true">3</span><div><strong>See the result</strong><p>Select <b>Reports</b> under <b>Manage</b> to review values, maintenance and ownership costs.</p></div></li>
+        <li><span className={styles.stepNumber} aria-hidden="true">Step 1</span><div><strong>Add one asset</strong><p>Choose <b>Add Asset</b> above. Get an estimate or enter a value you already know.</p></div></li>
+        <li><span className={styles.stepNumber} aria-hidden="true">Step 2</span><div><strong>Build its history</strong><p>Open <b>Manage</b> on the asset card. Add costs, fuel and maintenance as you go.</p></div></li>
+        <li><span className={styles.stepNumber} aria-hidden="true">Step 3</span><div><strong>See the full picture</strong><p>Open <b>Reports</b> in Manage to see its value, maintenance and ownership costs.</p></div></li>
       </ol>
       <div className={styles.definitions}>
-        <p><strong>Register</strong><span>Your list of assets, for example a farm’s equipment.</span></p>
-        <p><strong>Umbrella</strong><span>A group of related assets, such as a tractor and planter. Each keeps its own records.</span></p>
+        <p><strong>Register</strong><span>Your complete list of assets.</span></p>
+        <p><strong>Umbrella</strong><span>An optional group, such as a tractor and planter. Each asset keeps its own records.</span></p>
       </div>
-      <p className={styles.guideFootnote}>Start with one asset. Grouping is optional. Your reports grow as you add records.</p>
     </div>
   </details>;
 }
