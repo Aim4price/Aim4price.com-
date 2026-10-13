@@ -5877,6 +5877,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <span className={styles.sectorBigCardContent}>
                 <span className={styles.sectorLabelWrap}>
                   <strong className={styles.sectorLabel}>Basic</strong>
+                  <span className={styles.estimateModeDescription}>Start here for an indicative value using the asset type, age, usage, condition and replacement price.</span>
                   <span className={styles.sectorCardHint}>Start estimate →</span>
                 </span>
               </span>
@@ -5900,6 +5901,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </span>
                 <span className={styles.sectorLabelWrap}>
                   <strong className={styles.sectorLabel}>Advanced</strong>
+                  <span className={styles.estimateModeDescription}>Use detailed equipment specifications and review the calculation breakdown. {breakdownAccess ? 'Available on your account.' : 'Available to accounts with Aim4price Exclusive access.'}</span>
                   <span className={`${styles.sectorCardHint} ${styles.estimateModeAdvancedHint}`} aria-hidden="true">Start estimate →</span>
                 </span>
               </span>

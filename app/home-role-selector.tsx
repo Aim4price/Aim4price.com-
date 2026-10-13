@@ -50,21 +50,21 @@ export default function HomeRoleSelector() {
         <div className={styles.roleGrid}>
           <article className={styles.roleCard}>
             <h3>Owner</h3>
-            <p>Manage your assets, costs and maintenance.</p>
+            <p>For farms, companies and individuals managing their own assets, costs and maintenance.</p>
             <Link href="/pricing" className={styles.rolePricing} aria-label="See Owner pricing">See pricing</Link>
-            <button type="button" className={styles.roleAction} disabled>See more</button>
+            <Link href="/pricing" className={styles.roleAction}>Find my package</Link>
           </article>
           <article className={styles.roleCard}>
             <h3>Dealer</h3>
-            <p>Manage dealership stock and client registers, get estimates, receive leads and browse the marketplace.</p>
+            <p>For dealerships managing stock, client registers and asset enquiries.</p>
             <Link href="/pricing" className={styles.rolePricing} aria-label="See Dealer pricing">See pricing</Link>
-            <button type="button" className={styles.roleAction} disabled>See more</button>
+            <Link href="/pricing" className={styles.roleAction}>Find my package</Link>
           </article>
           <article className={styles.roleCard}>
             <h3>Business</h3>
-            <p>Get estimates, receive leads and browse the marketplace.</p>
+            <p>For service providers, such as repairers, insurers and financiers, working with assets shared by clients.</p>
             <Link href="/pricing" className={styles.rolePricing} aria-label="See Business pricing">See pricing</Link>
-            <button type="button" className={styles.roleAction} disabled>See more</button>
+            <Link href="/pricing" className={styles.roleAction}>Find my package</Link>
           </article>
         </div>
       </div>

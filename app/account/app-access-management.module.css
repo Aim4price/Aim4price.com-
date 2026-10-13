@@ -69,9 +69,9 @@
   font-size: clamp(0.95rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.08rem);
   font-weight: 600;
   line-height: 1.58;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-wrap: pretty;
 }
 
 .actionGrid {
@@ -178,9 +178,9 @@
   font-size: clamp(0.82rem, calc(var(--website-design-vw, 1vw) * 1.15), 0.94rem);
   font-weight: 650;
   line-height: 1.48;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  text-wrap: pretty;
 }
 
 .actionMeta {

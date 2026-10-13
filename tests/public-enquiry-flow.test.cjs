@@ -90,6 +90,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
         '../asset-register/AssetAccessSettingsDialog':'dialog',
     '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
+    '../asset-register/AssetLinkAccessSummary':()=>null,
         '../../lib/external-file-share':load('lib/external-file-share.ts'),
         '../asset-register/ShareDisclosureDialog':'dialog',
         '../asset-register/ShareModalCloseButton':()=>null,
@@ -103,7 +104,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       walk(view,node=>node.type==='button').props.onClick();render();
       assert.equal(sent,undefined,'Opening the invite does not publish asset data');
       assert.ok(!button('Create invitation link'),'Permission selection comes first');
-      button('Read-only').props.onClick();render();
+      button('Continue view only').props.onClick();render();
       assert.equal(button('Create invitation link').props.disabled,true);
       await walk(view,node=>node.type==='form').props.onSubmit({preventDefault(){}});
       assert.equal(sent,undefined,'Handler also enforces consent');
@@ -116,7 +117,7 @@ test('invitation requires consent, freezes all selected assets and handles failu
       else assert.ok(button('Copy link'));
       walk(view,node=>node.type==='dialog').props.onClose();render();
       walk(view,node=>node.type==='button').props.onClick();render();
-      button('Read-only').props.onClick();render();
+      button('Continue view only').props.onClick();render();
       assert.equal(button('Create invitation link').props.disabled,true,'Reopening requires fresh consent');
     }
   }finally{Object.assign(global,previous);}
@@ -150,6 +151,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
     '../asset-register/AssetAccessSettingsDialog':'dialog',
     '../DealerMaintenanceAccessSettings':{DealerMaintenancePermissionPicker:()=>null},
     '../asset-register/ShareDisclaimer':Disclaimer,
+    '../asset-register/AssetLinkAccessSummary':()=>null,
     '../../lib/external-file-share':load('lib/external-file-share.ts'),
     '../asset-register/ShareDisclosureDialog':'dialog',
     '../../lib/external-share-permissions':load('lib/external-share-permissions.ts'),
@@ -158,7 +160,7 @@ test('Send link creates protected read-only enquiries, requires consent and hand
    const render=()=>{cursor=0;view=Invite({sendLink:true,assetIds:['asset-a'],umbrellaId:'fleet',onDismiss:()=>{closed=true;}});};
    const button=text=>walk(view,n=>n.type==='button'&&React.Children.toArray(n.props.children).includes(text));
    render();assert.equal(sent,undefined);
-   button('Read-only').props.onClick();render();
+   button('Continue view only').props.onClick();render();
    await walk(view,n=>n.type==='form').props.onSubmit({preventDefault(){}});
    assert.equal(sent,undefined);assert.equal(button('Create asset link').props.disabled,true);
    walk(view,n=>n.type===Disclaimer).props.onChange(true);render();
@@ -191,4 +193,19 @@ test('initially open sharing disclosure is safe during server rendering', () => 
   assert.equal(renderToStaticMarkup(React.createElement(Dialog, {
     title:'Sign in', titleId:'sign-in', closeLabel:'Close', onClose:()=>{},
   })), '');
+});
+
+test('access summary distinguishes viewing from document submissions and standalone updates',()=>{
+  const permissions=load('lib/external-share-permissions.ts');
+  const Summary=load('components/asset-register/AssetLinkAccessSummary.tsx',{
+    '../../lib/external-share-permissions':permissions,
+  }).default;
+  const render=value=>renderToStaticMarkup(React.createElement(Summary,{permissions:{...permissions.EMPTY_EXTERNAL_PERMISSIONS,...value}}));
+  assert.match(render({history:true}),/View-only access/);
+  assert.match(render({history:true}),/No changes to the asset are allowed/);
+  for(const value of [{documents:true},{usage:true},{yearModel:true}]){
+    assert.doesNotMatch(render(value),/View-only access|No changes to the asset are allowed/);
+    assert.match(render(value),/Allowed actions/);
+  }
+  assert.match(render({documents:true}),/Submit invoices and quotes for review/);
 });

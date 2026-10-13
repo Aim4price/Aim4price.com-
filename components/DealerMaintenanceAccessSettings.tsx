@@ -78,7 +78,7 @@ export function DealerMaintenancePermissionPicker({
     <>
     <label className={styles.selectAll}>
       <input type="checkbox" disabled={disabled} checked={dealerMaintenancePermissionOptions.every(({key}) => value[key] === true)} onChange={event => onChange({...value,canUpdateYear:event.target.checked,canUpdateUsage:event.target.checked,canUpdateCondition:event.target.checked,...Object.fromEntries(dealerMaintenancePermissionOptions.filter(({key}) => !lockedPermissions.includes(key)).map(({key}) => [key,event.target.checked]))})}/>
-      <span>Select all</span>
+      <span>Select all viewing and update permissions</span>
     </label>
     <div className={styles.permissions} data-permission-grid>
       {dealerMaintenancePermissionOptions.map((option) => (

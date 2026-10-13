@@ -102,7 +102,7 @@ export default function Validation(){
   assert.deepEqual(cards.map(c=>c.text),['Send link','Inside Aim4price','Outside Aim4price']);
   assert.ok(cards.every(c=>Math.abs(c.width-cards[0].width)<1&&Math.abs(c.y-cards[0].y)<1));
   await page.screenshot({path:path.join(output,'send-link-options.png')});
-  await click('Send link');await click('Choose options');await click('Read-only');
+  await click('Send link');await click('Choose permissions');await click('Continue view only');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
   assert.equal(await page.$eval('dialog button[type="submit"], dialog button:not([type])',b=>b.disabled),true);
   await page.click('dialog input[type="checkbox"]');await click('Create asset link');
@@ -200,8 +200,8 @@ export default function Validation(){
    await click('find');
    assert.ok(!(await page.evaluate(()=>document.body.textContent)).includes('Invitations & history'));
    const invitationRequests=requests.filter(r=>r.path.startsWith('/api/business-network/')).length;
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose options');
-   await click('Read-only');
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
+   await click('Continue view only');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
@@ -221,7 +221,7 @@ export default function Validation(){
    await page.evaluate(()=>{window.__escapedToParent=false;document.addEventListener('keydown',event=>{if(event.key==='Escape')window.__escapedToParent=true;},{once:true});});
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
    assert.equal(await page.evaluate(()=>window.__escapedToParent),false,'Escape stays inside the invitation');
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose options');
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
    assert.ok(await page.evaluate(()=>document.querySelector('[data-asset-link-dialog]').textContent.includes('Asset link settings')));
    assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',inputs=>inputs.length),0,'Report permissions are selectable');
    assert.equal(await page.$$eval('[data-permission-grid] input:checked',inputs=>inputs.length),0,'New link permissions start unchecked');
@@ -242,8 +242,8 @@ export default function Validation(){
    await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.querySelector('dialog'));
 
    assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('aria-haspopup')),'dialog','Focus returns to the directory trigger');
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose options');
-   await click('Read-only');
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
+   await click('Continue view only');
    await page.waitForSelector('dialog[open] [data-share-consent]',{visible:true});
    assert.equal(await page.$eval('dialog [data-share-consent]',e=>e.checked),false,'Each invitation requires acknowledgement');
    assert.equal(await page.$$eval('dialog a',els=>els.length),0,'No send links before consent');
@@ -255,7 +255,7 @@ export default function Validation(){
    await click('Copy link');await page.waitForSelector('input[aria-label="Business invitation link"]');
    assert.equal(await page.$eval('input[aria-label="Business invitation link"]',e=>e.value),'http://127.0.0.1:3033/business-network/accept?share='+token);
    await page.click('button[aria-label="Close business invitation"]');await page.waitForFunction(()=>!document.querySelector('dialog'));
-   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose options');
+   await page.click('button[aria-haspopup="dialog"]:has(span)');await page.waitForSelector('[data-asset-link-dialog]');await click('Choose permissions');
    await page.mouse.click(3,3);await page.waitForFunction(()=>!document.querySelector('[data-asset-link-dialog]'));
    assert.equal(requests.filter(r=>r.path.startsWith('/api/business-network/')).length,invitationRequests,'Inviting creates no database record and calls no invitation API');
    for(const kind of ['asset','register','umbrella']){

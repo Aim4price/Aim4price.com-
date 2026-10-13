@@ -2473,7 +2473,7 @@ export default function AppHeader({
                       aria-expanded={menuOpen}
                       aria-haspopup="menu"
                       aria-controls={menuOpen ? 'header-account-menu' : undefined}
-                      aria-label="Open manage menu"
+                      aria-label="Open workspace menu"
                       onClick={handleAccountMenuToggle}
                     >
                       <AccountProfileIcon
@@ -2482,8 +2482,8 @@ export default function AppHeader({
                         fallbackLabel={accountName}
                       />
                       <span className={styles.accountButtonText}>
-                        <span className={styles.accountButtonTextFull}>Manage</span>
-                        <span className={styles.accountButtonTextCompact}>Manage</span>
+                        <span className={styles.accountButtonTextFull}>Menu</span>
+                        <span className={styles.accountButtonTextCompact}>Menu</span>
                       </span>
                       <span className={styles.accountButtonMenuMark} aria-hidden="true">
                         <span className={styles.accountButtonMenuIcon}>
@@ -2493,7 +2493,7 @@ export default function AppHeader({
                     </button>
 
                     {menuOpen ? (
-                      <div id="header-account-menu" className={styles.accountPopover} role="menu">
+                      <div id="header-account-menu" className={styles.accountPopover} role="menu" aria-label="Workspace pages">
                         {(
                           <>
                             {sortAccountMenuItems(isMiddlemanAccount

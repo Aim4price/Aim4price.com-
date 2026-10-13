@@ -12,8 +12,8 @@ test('Owner, Field Manager and Dealer staff access use one clear New and Manage 
     read('app/account/field-manager/field-manager-client.tsx'),
   ]);
 
-  assert.match(shared, /<strong>New<\/strong>/);
-  assert.match(shared, /<strong>Manage<\/strong>/);
+  assert.match(shared, /<strong>Add login<\/strong>/);
+  assert.match(shared, /<strong>Manage logins<\/strong>/);
   assert.match(shared, /onNew=\{\(\) => openFlow\('new'\)\}/);
   assert.match(shared, /onManage=\{\(\) => openFlow\('manage'\)\}/);
   assert.match(shared, /open=\{activeFlow === 'new'\}/);

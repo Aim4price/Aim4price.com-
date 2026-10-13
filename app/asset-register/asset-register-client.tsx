@@ -10,6 +10,7 @@ import AssetActionIcon from '../../components/asset-register/AssetActionIcon';
 import LeadActionDialog from '../../components/leads/LeadActionDialog';
 import SharedAssetWorkDialog from '../../components/leads/SharedAssetWorkDialog';
 import AssetDetailsFields from '../../components/AssetDetailsFields';
+import AssetRegisterGuide from '../../components/asset-register/AssetRegisterGuide';
 import AssetAccessSettingsDialog from '../../components/asset-register/AssetAccessSettingsDialog';
 import LicenceShareReview from '../../components/asset-register/LicenceShareReview';
 import { licenceShareMissingDetails } from '../../lib/licence-share-readiness';
@@ -15604,7 +15605,7 @@ export default function AssetRegisterClient({
                     onClick={openChangeRegisterModal}
                     disabled={isLoading || Boolean(changingRegisterId)}
                     aria-label="Switch Asset Register"
-                    data-tooltip="Switch assets"
+                    data-tooltip="Switch asset register"
                   >
                     <ChangeRegisterIcon className={styles.registerChangeIcon} />
                     {totalRegisterUnnotedAlertCount > 0 ? (
@@ -16289,6 +16290,8 @@ export default function AssetRegisterClient({
               ) : null}
             </div>
           </div>
+
+          {!isLoading && canAddAssetsToActiveRegister ? <AssetRegisterGuide empty={!assets.length} /> : null}
 
           {!isLoading && assets.length ? (
             filteredAssets.length ? (
@@ -17411,7 +17414,7 @@ export default function AssetRegisterClient({
           ) : !isLoading ? (
             <div className={styles.emptyState}>
               <h3>No assets saved yet</h3>
-              <p>Run a valuation or add a manual asset to start building your register.</p>
+              <p>Start with one vehicle, machine or piece of equipment. Choose Add Asset to get an estimate or enter your own value.</p>
               {canAddAssetsToActiveRegister ? (
                 <div className={styles.emptyStateActions}>
                   {isCombinedRegisterView ? (

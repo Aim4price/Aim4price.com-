@@ -321,7 +321,7 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   ]);
   assert.match(client, /data-tooltip=\{isFlagged \? 'Remove flag' : 'Flag asset'\}/);
   assert.match(client, /data-tooltip="Move asset"/);
-  assert.match(client, /data-tooltip="Switch assets"/);
+  assert.match(client, /data-tooltip="Switch asset register"/);
   assert.match(client, /assetGroup\s+\? 'Manage umbrella'/);
   assert.match(client, /isResolvedCombinedGroup\s+\? 'Open combined umbrella'/);
   assert.match(client, /:\s+'Create umbrella'/);
