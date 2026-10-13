@@ -8,16 +8,18 @@ export default function AssetLinkAccessSummary({ permissions }: { permissions: E
   const selected = EXTERNAL_SHARE_OPTIONS.filter(option => permissions[option.key] === true && option.key !== 'reports' && !(permissions.updateDetails && detailFields.has(option.key)));
   const updates = selected.filter(option => !viewing.has(option.key));
   const extraViews = selected.filter(option => viewing.has(option.key));
-  return <section className={`${styles.guide} ${styles.accessSummary}`} aria-label="Selected link access">
+  return <details className={`${styles.guide} ${styles.accessSummary}`} aria-label="Selected link access">
+    <summary>
+      <strong>{updates.length ? 'Selected permissions' : 'View-only access'}</strong>
+      <span className={styles.accessHint}>{updates.length ? 'Review before sharing' : 'No changes allowed'}</span>
+      <span className={styles.accessCount}>{updates.length ? `${updates.length} allowed actions` : 'View access'}</span>
+      <svg className={styles.chevron} aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 5 7 7-7 7"/></svg>
+    </summary>
     <div className={styles.body}>
-      <p><strong>{updates.length ? 'Selected permissions' : 'View-only access'}</strong></p>
       <p>The recipient can view the shared asset information{permissions.reports || permissions.allReports ? ' and included asset reports' : ''}.</p>
-      <details>
-      <summary>Review {updates.length ? `${updates.length} allowed actions and viewing access` : 'viewing access'}</summary>
       <p>{updates.length ? `Allowed actions: ${updates.map(option => option.key === 'documents' ? 'Submit invoices and quotes for review' : option.label).join(', ')}.` : 'No changes to the asset are allowed.'}</p>
       <p>{extraViews.length ? `Additional viewing access: ${extraViews.map(option => option.label).join(', ')}.` : 'Maintenance reports, ownership costs, history and parts are not included.'}</p>
-      </details>
       <p>Recipients sign in to use the access you allow. You can change permissions or revoke the link in History.</p>
     </div>
-  </section>;
+  </details>;
 }

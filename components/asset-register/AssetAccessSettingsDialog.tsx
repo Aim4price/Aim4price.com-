@@ -30,11 +30,22 @@ export default function AssetAccessSettingsDialog({title,assetTitle,onClose,chil
         <ShareModalCloseButton onClick={dismiss} aria-label={`Close ${title}`} />
       </div>
       <div className={`${styles.modalScrollBody} ${styles.pricingModalBody} ${styles.dealerTrackingBody} ${layout.body}`}>{showGuide ? <div className={layout.guideBody}>
-        <span className={layout.guideIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 1.5 1.5L8 5M11 6h9M4 12l1.5 1.5L8 11M11 12h9M4 18l1.5 1.5L8 17M11 18h9"/></svg></span>
-        <p className={layout.guideHeading}>How should the recipient use this asset?</p>
-        <div className={layout.guideInstructions}>{onViewOnly && <p><strong>View only:</strong> share information without allowing changes.</p>}<p><strong>Choose permissions:</strong> allow specific updates or include additional reports.</p></div>
-        {onViewOnly && <button type="button" className={styles.primaryButton} onClick={()=>{onViewOnly();setShowGuide(false);}}>View only</button>}
-        <button type="button" data-access-start className={styles.primaryButton} onClick={()=>setShowGuide(false)}>Choose permissions</button>
+        <p className={layout.guideHeading}>Choose the access you want to share</p>
+        <p className={layout.guideDescription}>The recipient signs in to use your link.</p>
+        <div className={layout.accessChoices}>
+          {onViewOnly && <button type="button" aria-label="View only" className={layout.accessChoice} onClick={()=>{onViewOnly();setShowGuide(false);}}>
+            <span className={layout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span>
+            <span className={layout.choiceTitle}>View only</span>
+            <span className={layout.choiceDescription}>Share asset information without allowing changes.</span>
+            <span className={layout.choiceAction} aria-hidden="true">Continue <span>→</span></span>
+          </button>}
+          <button type="button" aria-label="Choose permissions" data-access-start className={layout.accessChoice} onClick={()=>setShowGuide(false)}>
+            <span className={layout.choiceIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/><circle cx="9" cy="18" r="2" fill="currentColor"/></svg></span>
+            <span className={layout.choiceTitle}>Choose permissions</span>
+            <span className={layout.choiceDescription}>Allow specific updates or include additional reports.</span>
+            <span className={layout.choiceAction} aria-hidden="true">Choose access <span>→</span></span>
+          </button>
+        </div>
       </div> : children}</div>
     </section>
   </div>,document.body);

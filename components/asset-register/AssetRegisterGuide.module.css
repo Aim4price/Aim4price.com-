@@ -1,13 +1,41 @@
-.guide { border: 1px solid #cfdfd6; border-radius: 1rem; background: #f4f9f6; color: #254e3e; }
-.guide summary { padding: 1rem 1.25rem; cursor: pointer; font-weight: 700; font-size: .95rem; }
-.guide summary:focus-visible { outline: 3px solid #287254; outline-offset: 3px; border-radius: 1rem; }
+.guide { border: 1px solid #d5e3dc; border-radius: 1rem; background: #f5faf7; color: #254e3e; }
+.guide summary { cursor: pointer; font-weight: 700; }
+.guide summary:focus-visible { outline: 3px solid #287254; outline-offset: 3px; border-radius: .65rem; }
 .body { padding: 0 1.25rem 1rem; }
-.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; margin: .5rem 0 1rem; padding-left: 1.3rem; }
-.steps li { padding-right: .8rem; }
 .body p { margin: .4rem 0; font-size: .9rem; line-height: 1.6; }
+.registerGuide { margin: .25rem 0 1rem; background: linear-gradient(135deg,#fff,#f3f9f5); box-shadow: 0 5px 16px rgba(22,65,46,.035); }
+.guideHeader { display: flex; align-items: center; gap: .85rem; padding: 1rem 1.25rem; list-style: none; }
+.guideHeader::-webkit-details-marker { display: none; }
+.guideMark { display: grid; place-items: center; width: 2.7rem; height: 2.7rem; flex-shrink: 0; color: #17654c; background: #e9f5ee; border: 1px solid #cee5d8; border-radius: .8rem; }
+.guideMark svg { width: 1.4rem; height: 1.4rem; }
+.headerCopy { display: grid; gap: .2rem; }
+.headerCopy strong { color: #173f32; font-size: 1.05rem; }
+.headerCopy > span { font-size: .85rem; font-weight: 500; color: #657d72; }
+.chevron { width: 1.15rem; height: 1.15rem; margin-left: auto; transition: transform .15s; }
+.registerGuide[open] > summary .chevron { transform: rotate(90deg); }
+.steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .85rem; margin: .25rem 0 1rem; padding: 0; list-style: none; }
+.steps li { display: flex; align-items: flex-start; gap: .8rem; padding: 1rem; background: #fff; border: 1px solid #dde9e2; border-radius: .85rem; }
+.stepNumber { display: grid; place-items: center; width: 1.85rem; height: 1.85rem; flex-shrink: 0; border-radius: 50%; background: #eaf5ee; color: #1c7053; font-size: .85rem; font-weight: 800; }
+.steps strong { display: block; padding-top: .2rem; font-size: .96rem; color: #173f32; }
+.steps p { margin: .5rem 0 0; font-size: .85rem; line-height: 1.6; color: #61766c; }
+.steps b { font-weight: 650; color: #315b48; }
+.definitions { display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.5rem; padding: .8rem 1rem; border-radius: .75rem; background: #eaf3ee; }
+.definitions p { display: flex; gap: .7rem; margin: 0; font-size: .82rem; }
+.definitions strong { flex-shrink: 0; color: #244d3c; }
+.body .guideFootnote { margin: .75rem 0 0; color: #698073; font-size: .8rem; }
+.accessSummary { background: #f3f8f5; }
+.accessSummary > summary { display: flex; align-items: center; gap: .7rem; padding: .8rem 1rem; list-style: none; }
+.accessSummary > summary::-webkit-details-marker { display: none; }
+.accessSummary strong { font-size: .9rem; color: #204b39; }
+.accessSummary .accessHint { font-size: .8rem; font-weight: 500; color: #607a6b; }
+.accessSummary .accessCount { margin-left: auto; white-space: nowrap; font-size: .78rem; color: #286347; }
+.accessSummary[open] > summary .chevron { transform: rotate(90deg); }
+.accessSummary .chevron { margin-left: .2rem; flex-shrink: 0; }
+.accessSummary .body { border-top: 1px solid #dce8e0; padding: .5rem 1rem .75rem; }
+.accessSummary .body p { font-size: .82rem; }
 @media (max-width: 720px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .steps { grid-template-columns: 1fr; gap: .8rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .steps,
+  :global(:where(html:not(:has([data-website-canvas])))) .definitions { grid-template-columns: 1fr; gap: .7rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accessSummary > summary { flex-wrap: wrap; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accessSummary .accessHint { flex-basis: 100%; order: 2; }
 }
-
-.accessSummary .body { padding-top:.5rem; padding-bottom:.5rem; }
-.accessSummary summary { padding:.3rem 0; font-size:.9rem; }
