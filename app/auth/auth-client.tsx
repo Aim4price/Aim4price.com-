@@ -1200,7 +1200,6 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                           </div>
                           <div className={styles.field}>
                             <span className={styles.label}>Account type</span>
-                            <p className={styles.authText}>{signupForm.accountType === 'owner' ? 'For farms, companies and individuals managing their own assets.' : signupForm.accountType === 'dealer' ? 'For dealerships managing stock, client registers and enquiries. Client registers are billed separately.' : signupForm.accountType === 'business' ? 'For service providers working with assets shared by clients, such as repairers, insurers and financiers.' : 'For intermediaries connecting asset owners with buyers and service providers.'}</p>
                             <CustomSelect
                               name="accountType"
                               ariaLabel="What would you like to use Aim4price for?"
@@ -1217,6 +1216,7 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                                 }));
                               }}
                             />
+                            <small>{signupForm.accountType === 'owner' ? 'For farms, companies and individuals managing their own assets.' : signupForm.accountType === 'dealer' ? 'For dealerships managing stock, client registers and enquiries. Client registers are billed separately.' : signupForm.accountType === 'business' ? 'For service providers working with assets shared by clients, such as repairers, insurers and financiers.' : 'For intermediaries connecting asset owners with buyers and service providers.'}</small>
                           </div>
 
                           <div className={styles.field}>
