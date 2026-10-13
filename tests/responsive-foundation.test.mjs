@@ -25,7 +25,7 @@ test('website header keeps desktop navigation while native callers retain compac
   assert.match(header, /window\.matchMedia\('\(max-width: 760px\)'\)/);
   assert.match(header, /NAV_WINDOW_SIZE/);
   assert.match(header, /label: 'Get Estimate'/);
-  assert.match(header, /aria-label="Open workspace menu"/);
+  assert.match(header, /aria-label="Open manage menu"/);
   assert.match(header, /notificationBadgeText/);
   assertNoWebsiteReflow(await read('components/AppHeader.module.css'), 'AppHeader');
 });

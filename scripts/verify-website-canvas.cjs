@@ -289,8 +289,8 @@ async function check(browser, url) {
   console.log('PASS story scroll: Manage at 68.75%, Brand at the top');
   // Header actions, notifications, Manage and the footer use real components.
   signedIn=true;await page.evaluate(()=>sessionStorage.clear());await visit('/canvas-validation?page=account',768);
-  await page.click('[aria-label="Open workspace menu"]');await page.waitForSelector('[class*="accountPopover"]');
-  await page.screenshot({path:path.join(output,'manage-768.png')});await page.click('[aria-label="Open workspace menu"]');
+  await page.click('[aria-label="Open manage menu"]');await page.waitForSelector('[class*="accountPopover"]');
+  await page.screenshot({path:path.join(output,'manage-768.png')});await page.click('[aria-label="Open manage menu"]');
   await page.click('[aria-label^="Notifications"]');await page.waitForSelector('[aria-label="Close notifications"]');
   assert.equal(await page.$eval('[aria-label="Close notifications"]',e=>Boolean(e.closest('#aim4price-website-overlays'))),true);
   await page.screenshot({path:path.join(output,'notifications-768.png')});await page.click('[aria-label="Close notifications"]');

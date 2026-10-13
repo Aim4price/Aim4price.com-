@@ -16,8 +16,8 @@
 .dialog [data-permission-grid] > label:hover { transform: none; border-color: var(--app-accent, #43836d); box-shadow: 0 2px 8px var(--app-shadow-colour, rgba(16, 52, 41, .06)); }
 .dialog [data-permission-grid] > label:has(input:checked) { border-color: var(--app-accent, #43836d); background: var(--app-surface-soft, #edf6f1); box-shadow: inset 3px 0 0 var(--app-accent, #43836d); }
 .dialog [data-permission-grid] > label:has(input:focus-visible) { outline: 2px solid var(--app-accent, #43836d); outline-offset: -3px; }
-.dialog .body > div:last-child { margin: 0; padding: 0.45rem 0 0 !important; flex-shrink: 0; }
-.dialog .body > div:last-child button { min-height: 2.8rem !important; padding: 0.65rem 1.2rem !important; }
+.dialog:not(.guideDialog) .body > div:last-child { margin: 0; padding: 0.45rem 0 0 !important; flex-shrink: 0; }
+.dialog:not(.guideDialog) .body > div:last-child button { min-height: 2.8rem !important; padding: 0.65rem 1.2rem !important; }
 
 /* Standalone screens can reflow; the canonical website canvas stays three-wide. */
 @media (max-width: 720px) {
@@ -48,25 +48,28 @@
   :global(:where(html:not(:has([data-website-canvas])))) .dialog [data-permission-note] { grid-column: auto; }
 }
 
-/* The short guide belongs only to asset-link settings. */
-.dialog.guideDialog {
- width: min(var(--website-dialog-reference-width, 100%), 700px) !important;
- padding: 1.5rem 1.75rem !important;
- background: color-mix(in srgb, var(--app-surface, #fff) 87%, #48715d) !important;
- border: 1px solid var(--app-line, #b6cbbf) !important;
- box-shadow: 0 24px 70px rgba(10, 34, 25, .28) !important;
+/* Access choices use the same quiet cards as the asset Manage flow. */
+.dialog.guideDialog { width: min(var(--website-dialog-reference-width, 100%), 860px) !important; padding: 1.5rem 1.75rem !important; background: linear-gradient(145deg,#fff,#f3f8f5) !important; }
+.dialog.guideDialog .header { padding-bottom: 1rem !important; }
+.dialog.guideDialog .body > .guideBody { padding: 1.2rem 0 .25rem !important; }
+.guideBody { display: block; text-align: left; }
+.guideBody .guideHeading { margin: 0; color: #183f30; font-size: 1.15rem; font-weight: 750; line-height: 1.4; }
+.guideDescription { margin: .4rem 0 1.2rem; color: #668071; font-size: .9rem; line-height: 1.5; }
+.accessChoices { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
+.accessChoices > :only-child { grid-column: 1 / -1; }
+.dialog .accessChoice { display: flex; flex-direction: column; align-items: flex-start; gap: .65rem; padding: 1.25rem !important; min-height: 13rem !important; border: 1px solid #ccded3 !important; border-radius: 1rem !important; background: #fff !important; color: #1c4936 !important; text-align: left; font: inherit; cursor: pointer; box-shadow: 0 4px 12px rgba(24,66,44,.04); }
+.dialog .accessChoice:hover { background: #f0f8f3 !important; border-color: #539678 !important; box-shadow: 0 6px 16px rgba(24,66,44,.08); }
+.dialog .accessChoice:focus-visible { outline: 3px solid #297653; outline-offset: -4px; }
+.choiceIcon { display: grid; place-items: center; width: 2.65rem; height: 2.65rem; border-radius: .8rem; background: #eaf4ee; color: #226a4d; }
+.choiceIcon svg { width: 1.4rem; height: 1.4rem; }
+.choiceTitle { font-size: 1.06rem; font-weight: 800; line-height: 1.35; }
+.choiceDescription { color: #60796c; font-size: .87rem; font-weight: 500; line-height: 1.55; }
+.choiceAction { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; margin-top: auto; padding-top: .6rem; border-top: 1px solid #e3ece6; font-size: .85rem; font-weight: 750; color: #24694c; }
+/* Compact settings preserve room for the access review and action buttons. */
+.dialog [data-permission-grid] { gap: .45rem; }
+.dialog [data-permission-grid] > label { min-height: 3.55rem; padding: .5rem .85rem; }
+.dialog:not(.guideDialog) .body > div:last-child { position: sticky; bottom: 0; background: var(--app-surface,#fff); border-top: 1px solid #dce8e0; padding: .75rem 0 .25rem !important; z-index: 2; }
+@media (max-width: 620px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .accessChoices { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .accessChoice { min-height: 11rem !important; }
 }
-.dialog.guideDialog .header { padding-bottom: 1rem !important; border-bottom-color: var(--app-line, #b6cbbf) !important; }
-.dialog.guideDialog .header p { color: var(--app-text, #244b3e) !important; font-weight: 700 !important; }
-.dialog.guideDialog .body > .guideBody { padding: 1.25rem 0 .25rem !important; }
-.guideBody { display: grid; justify-items: center; gap: 1.1rem; text-align: center; }
-.guideIcon { display: grid; place-items: center; width: 3.6rem; height: 3.6rem; border-radius: 1.1rem; background: #1c6049; border: 1px solid #2c755c; color: #fff; box-shadow: 0 5px 12px rgba(20, 67, 48, .12); }
-.guideIcon svg { width: 1.9rem; height: 1.9rem; color: #fff !important; stroke: #fff !important; }
-.guideBody p { margin: 0; color: var(--app-text, #244b3e); font-size: .95rem; font-weight: 600; line-height: 1.65; }
-.guideBody .guideHeading { color: var(--app-text, #15392f); font-size: 1.1rem; font-weight: 800; line-height: 1.45; text-wrap: balance; }
-.guideInstructions { width: 100%; box-sizing: border-box; padding: 1rem 1.15rem; border-radius: .85rem; border: 1px solid var(--app-line, #bdcfc4); background: color-mix(in srgb, var(--app-surface, #fff) 76%, #48715d); }
-.guideInstructions strong { color: inherit; font-weight: 800; }
-.guideBody button { box-shadow: 0 4px 10px rgba(15, 55, 40, .12); width: 100%; margin-top: .2rem; font-family: var(--font-body, "Inter"), sans-serif; font-weight: 800; }
-.dialog.guideDialog .guideBody button { min-height: 3.2rem !important; background: #18573f !important; color: #fff !important; border: 1px solid #18573f !important; border-radius: .85rem !important; }
-.dialog.guideDialog .guideBody button:hover { background: #124631 !important; }
-.guideBody button:focus-visible { outline: 3px solid var(--app-accent, #43836d); outline-offset: 3px; }

@@ -89,7 +89,7 @@ export default function Validation(){
    }
    return req.respond({status:200,contentType:'application/json',body:JSON.stringify(body)});
   });
-  const click=async text=>assert.ok(await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(e=>(e.textContent.trim()===t||e.querySelector('strong')?.textContent.trim()===t)&&!e.disabled);b?.click();return !!b},text),`Missing button: ${text}`);
+  const click=async text=>assert.ok(await page.evaluate(t=>{const b=[...document.querySelectorAll('button')].find(e=>(e.textContent.trim()===t||e.getAttribute('aria-label')===t||e.querySelector('strong')?.textContent.trim()===t)&&!e.disabled);b?.click();return !!b},text),`Missing button: ${text}`);
   const closeChild=async()=>{await page.keyboard.press('Escape');await page.waitForFunction(()=>document.querySelectorAll('[role="dialog"]').length===1);};
   const fill=async(selector,value)=>{await page.$eval(selector,(e,v)=>{const setter=Object.getOwnPropertyDescriptor(e instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set;setter.call(e,v);e.dispatchEvent(new Event('input',{bubbles:true}));},value);};
   const labelInput=async(label,value)=>{const handle=await page.evaluateHandle(t=>[...document.querySelectorAll('label')].find(e=>e.textContent.trim()===t)?.querySelector('input,textarea'),label);assert.ok(handle.asElement(),`Missing input ${label}`);await handle.asElement().type(value);await handle.dispose();};
