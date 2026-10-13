@@ -3,32 +3,31 @@
 .guide summary:focus-visible { outline: 3px solid #287254; outline-offset: 3px; border-radius: .65rem; }
 .body { padding: .25rem 1.5rem 1.25rem; }
 .body p { margin: .4rem 0; font-size: .9rem; line-height: 1.6; }
-/* The register guide is deliberately lighter than the actionable asset cards. */
-.registerGuide { margin: .25rem 0 1rem; background: #fff; box-shadow: 0 4px 18px rgba(22,65,46,.025); }
-.guideHeader { display: flex; align-items: center; gap: 1.5rem; padding: 1.15rem 1.5rem; list-style: none; }
+.registerGuide { margin: .25rem 0 1rem; background: linear-gradient(135deg,#fff,#f3f9f5); box-shadow: 0 5px 16px rgba(22,65,46,.035); }
+.guideHeader { display: flex; align-items: center; gap: 1rem; padding: 1.25rem 1.5rem; list-style: none; }
 .guideHeader::-webkit-details-marker { display: none; }
+.guideMark { display: grid; place-items: center; width: 2.7rem; height: 2.7rem; flex-shrink: 0; color: #17654c; background: #e9f5ee; border: 1px solid #cee5d8; border-radius: .8rem; }
+.guideMark svg { width: 1.4rem; height: 1.4rem; }
+.headerCopy { display: grid; gap: .3rem; min-width: 0; }
+.headerCopy strong { color: #173f32; font-size: 1.05rem; }
+.headerCopy > span { font-size: .85rem; font-weight: 500; color: #657d72; }
+.chevron { width: 1.15rem; height: 1.15rem; margin-left: auto; transition: transform .15s; }
 .guideHeader::marker { content: ''; }
-.headerCopy { display: flex; flex-wrap: wrap; align-items: baseline; gap: .35rem 1rem; min-width: 0; }
-.headerCopy strong { color: #173f32; font-size: 1.05rem; font-weight: 700; }
-.headerCopy > span { font-size: .85rem; font-weight: 400; color: #61766c; line-height: 1.5; }
-.guideToggle { margin-left: auto; flex-shrink: 0; color: #315b48; font-size: .8rem; font-weight: 600; padding: .5rem 0 .5rem .5rem; }
-.guideHeader:hover .guideToggle { text-decoration: underline; text-underline-offset: .25rem; }
+.guideToggle { margin-left: auto; flex-shrink: 0; padding: .45rem .75rem; border: 1px solid #d5e3dc; border-radius: .6rem; background: #fff; color: #315b48; font-size: .78rem; font-weight: 600; }
+.guideHeader:hover .guideToggle { background: #eaf3ee; border-color: #b5d2c2; }
 .hideGuide { display: none; }
 .registerGuide[open] .showGuide { display: none; }
 .registerGuide[open] .hideGuide { display: inline; }
-.registerGuide .body { padding: .25rem 1.5rem 1.25rem; }
-.steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0; margin: 0; padding: .5rem 0 1.25rem; list-style: none; }
-.steps li { min-width: 0; padding: 0 1.5rem; border-left: 1px solid #e2ebe6; }
-.steps li:first-child { padding-left: 0; border-left: 0; }
-.steps li:last-child { padding-right: 0; }
-.stepNumber { display: block; margin-bottom: .65rem; color: #39725a; font-size: .75rem; font-weight: 600; }
-.steps strong { display: block; font-size: 1rem; line-height: 1.4; font-weight: 650; color: #173f32; }
-.steps p { margin: .5rem 0 0; max-width: 35ch; font-size: .85rem; line-height: 1.65; color: #52695e; }
-.steps b { font-weight: 600; color: #315b48; }
-.definitions { display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; padding: .9rem 1rem; border-radius: .65rem; background: #f3f7f4; }
-.definitions p { margin: 0; font-size: .8rem; line-height: 1.6; color: #52695e; }
-.definitions strong { margin-right: .5rem; color: #315b48; font-weight: 650; }
-.chevron { width: 1.15rem; height: 1.15rem; margin-left: auto; transition: transform .15s; }
+.steps { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 1rem; margin: 0 0 1.25rem; padding: 0; list-style: none; }
+.steps li { display: flex; align-items: flex-start; gap: .85rem; padding: 1.25rem; background: #fff; border: 1px solid #dde9e2; border-radius: .85rem; }
+.stepNumber { display: grid; place-items: center; width: 1.85rem; height: 1.85rem; flex-shrink: 0; border-radius: 50%; background: #eaf5ee; color: #1c7053; font-size: .85rem; font-weight: 800; }
+.steps strong { display: block; padding-top: .15rem; font-size: .96rem; color: #173f32; }
+.steps p { margin: .65rem 0 0; font-size: .85rem; line-height: 1.6; color: #61766c; }
+.steps b { font-weight: 650; color: #315b48; }
+.definitions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+.body .definitions p { display: grid; align-content: start; gap: .4rem; margin: 0; padding: 1rem 1.25rem; min-width: 0; border-radius: .75rem; background: #eaf3ee; font-size: .85rem; line-height: 1.6; color: #52695e; }
+.definitions strong { color: #244d3c; font-size: .9rem; font-weight: 650; }
+.body .guideFootnote { margin: 1rem 0 0; color: #61766c; font-size: .8rem; }
 .accessSummary { background: #f3f8f5; }
 .accessSummary > summary { display: flex; align-items: center; gap: .7rem; padding: .8rem 1rem; list-style: none; }
 .accessSummary > summary::-webkit-details-marker { display: none; }
@@ -40,14 +39,14 @@
 .accessSummary .body { border-top: 1px solid #dce8e0; padding: .5rem 1rem .75rem; }
 .accessSummary .body p { font-size: .82rem; }
 @media (max-width: 720px) {
-  :global(:where(html:not(:has([data-website-canvas])))) .guideHeader { align-items: flex-start; padding: 1rem; gap: .75rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .headerCopy { display: grid; gap: .25rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .guideToggle { padding-top: .2rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .registerGuide .body { padding: 0 1rem 1rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .steps { grid-template-columns: 1fr; padding: 0 0 1rem; }
-  :global(:where(html:not(:has([data-website-canvas])))) .steps li { display: grid; grid-template-columns: 3rem minmax(0,1fr); gap: .75rem; border-left: 0; border-top: 1px solid #e2ebe6; padding: 1rem 0; }
-  :global(:where(html:not(:has([data-website-canvas])))) .stepNumber { padding-top: .2rem; margin: 0; }
-  :global(:where(html:not(:has([data-website-canvas])))) .definitions { grid-template-columns: 1fr; gap: .6rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .guideHeader { display: grid; grid-template-columns: 2.7rem minmax(0, 1fr); padding: 1rem; gap: .75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .headerCopy { flex: 1; }
+  :global(:where(html:not(:has([data-website-canvas])))) .guideToggle { grid-column: 2; justify-self: start; margin-left: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .registerGuide .body { padding: .25rem 1rem 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .steps li { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .body .definitions p { padding: 1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .steps,
+  :global(:where(html:not(:has([data-website-canvas])))) .definitions { grid-template-columns: 1fr; gap: .7rem; }
   :global(:where(html:not(:has([data-website-canvas])))) .accessSummary > summary { flex-wrap: wrap; }
   :global(:where(html:not(:has([data-website-canvas])))) .accessSummary .accessHint { flex-basis: 100%; order: 2; }
 }
