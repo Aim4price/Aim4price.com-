@@ -32,4 +32,4 @@
 .surface.surface.surface[data-compact-download="true"] [data-download-body] { flex: 0 1 auto !important; overflow-y: auto !important; scrollbar-width: none; }
 .surface.surface.surface[data-compact-download="true"] [data-download-body]::-webkit-scrollbar { display: none; }
 .surface.surface.surface[data-compact-download="true"] [data-download-footer] { flex-shrink: 0; }
-@media (max-width: 540px) { .compactFields { gap: .7rem; padding: .8rem; } }
+@media (max-width: 540px) { html:not(:has([data-website-canvas])) .compactFields { gap: .7rem; padding: .8rem; } }
