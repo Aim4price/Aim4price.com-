@@ -50,11 +50,18 @@ export const dealerMaintenancePermissionOptions: Array<{
   {key:'canAddMaintenance', title:'Add maintenance', description:'Record completed work.'},
   {key:'canCreateMaintenanceSchedules', title:'Schedule maintenance', description:'Plan upcoming work.'},
   {key:'canViewHistory', title:'View history', description:'Read permitted asset activity.'},
-  {key:'canSuggestCurrentValue', title:'Current value', description:'Update or suggest a value.'},
-  {key:'canUpdateReplacementPrice', title:'Replacement price', description:'Update or suggest a price.'},
-  {key:'canViewMaintenanceReports', title:'Maintenance reports', description:'View and download reports.'},
-  {key:'canViewCostOfOwnership', title:'Ownership costs', description:'View and download cost reports.'},
+  {key:'canSuggestCurrentValue', title:'Update current value', description:'Update or suggest a value.'},
+  {key:'canUpdateReplacementPrice', title:'Update replacement price', description:'Update or suggest a price.'},
+  {key:'canViewMaintenanceReports', title:'View maintenance reports', description:'View and download reports.'},
+  {key:'canViewCostOfOwnership', title:'View ownership costs', description:'View and download cost reports.'},
 
+];
+
+export const dealerMaintenancePermissionGroups: Array<{ title: string; keys: Array<keyof DealerMaintenancePermissions>; note?: string }> = [
+  { title: 'Asset details', keys: ['canUpdateDetails', 'canUpdateSerial', 'canAccessLocation', 'canAddPhotos'] },
+  { title: 'Costs and values', keys: ['canAddCosts', 'canSuggestCurrentValue', 'canUpdateReplacementPrice'], note: 'Manual values can be updated. Aim4price values require owner approval. Upload invoices through Add costs.' },
+  { title: 'Maintenance and parts', keys: ['canAddMaintenance', 'canCreateMaintenanceSchedules', 'canViewLoggedProblems', 'canViewParts', 'canAddParts'] },
+  { title: 'History and reports', keys: ['canViewHistory', 'canViewMaintenanceReports', 'canViewCostOfOwnership'] },
 ];
 
 function copyPermissions(value: DealerMaintenancePermissions): DealerMaintenancePermissions {
@@ -74,32 +81,41 @@ export function DealerMaintenancePermissionPicker({
   disabled = false,
   lockedPermissions = [],
 }: PermissionPickerProps) {
+  const editableOptions = dealerMaintenancePermissionOptions.filter(({key}) => !lockedPermissions.includes(key));
+  const selectedCount = editableOptions.filter(({key}) => value[key] === true).length;
   return (
     <>
-    <label className={styles.selectAll}>
-      <input type="checkbox" disabled={disabled} checked={dealerMaintenancePermissionOptions.every(({key}) => value[key] === true)} onChange={event => onChange({...value,canUpdateYear:event.target.checked,canUpdateUsage:event.target.checked,canUpdateCondition:event.target.checked,...Object.fromEntries(dealerMaintenancePermissionOptions.filter(({key}) => !lockedPermissions.includes(key)).map(({key}) => [key,event.target.checked]))})}/>
-      <span>Select all viewing and update permissions</span>
-    </label>
-    <div className={styles.permissions} data-permission-grid>
-      {dealerMaintenancePermissionOptions.map((option) => (
-        <label
-          key={option.key}
-          className={`${styles.permission} ${value[option.key] ? styles.permissionEnabled : ''}`}
-        >
-          <input
-            type="checkbox"
-            checked={value[option.key] === true}
-            onChange={(event) => onChange({ ...value, [option.key]: event.target.checked, ...(option.key === 'canUpdateDetails' ? {canUpdateYear:event.target.checked,canUpdateUsage:event.target.checked,canUpdateCondition:event.target.checked} : {}) })}
-            disabled={disabled || lockedPermissions.includes(option.key)}
-          />
-          <span>
-            <strong>{option.title}</strong>
-            <small>{lockedPermissions.includes(option.key) ? 'Always included with this asset link.' : option.description}</small>
-          </span>
+      <div className={styles.permissionToolbar}>
+        <p>Choose what recipients can do</p>
+        <label className={styles.selectAll}>
+          <input type="checkbox" disabled={disabled || !editableOptions.length}
+            checked={editableOptions.length > 0 && selectedCount === editableOptions.length}
+            ref={input => { if (input) input.indeterminate = selectedCount > 0 && selectedCount < editableOptions.length; }}
+            onChange={event => onChange({ ...value,
+              ...(!lockedPermissions.includes('canUpdateDetails') ? Object.fromEntries(['canUpdateYear', 'canUpdateUsage', 'canUpdateCondition'].filter(key => !lockedPermissions.includes(key as keyof DealerMaintenancePermissions)).map(key => [key, event.target.checked])) : {}),
+              ...Object.fromEntries(editableOptions.map(({key}) => [key, event.target.checked])),
+            })} />
+          <span>Select all permissions</span>
         </label>
-      ))}
-    <p className={styles.permissionNote} data-permission-note>Manual values can be updated. Aim4price values require owner approval. Upload invoices through Add costs.</p>
-    </div>
+      </div>
+      <div className={styles.permissionGroups} data-permission-groups>
+        {dealerMaintenancePermissionGroups.map(group => (
+          <fieldset key={group.title} className={styles.permissionGroup}>
+            <legend>{group.title}</legend>
+            <div className={styles.permissions} data-permission-grid>
+              {group.keys.map(key => dealerMaintenancePermissionOptions.find(option => option.key === key)!).map(option => (
+                <label key={option.key} className={`${styles.permission} ${value[option.key] ? styles.permissionEnabled : ''}`}>
+                  <input type="checkbox" checked={value[option.key] === true}
+                    onChange={event => onChange({ ...value, [option.key]: event.target.checked, ...(option.key === 'canUpdateDetails' ? Object.fromEntries(['canUpdateYear', 'canUpdateUsage', 'canUpdateCondition'].filter(key => !lockedPermissions.includes(key as keyof DealerMaintenancePermissions)).map(key => [key,event.target.checked])) : {}) })}
+                    disabled={disabled || lockedPermissions.includes(option.key)} />
+                  <span><strong>{option.title}</strong><small>{lockedPermissions.includes(option.key) ? 'Always included with this asset link.' : option.description}</small></span>
+                </label>
+              ))}
+            </div>
+            {group.note && <p className={styles.permissionNote} data-permission-note>{group.note}</p>}
+          </fieldset>
+        ))}
+      </div>
     </>
   );
 }
