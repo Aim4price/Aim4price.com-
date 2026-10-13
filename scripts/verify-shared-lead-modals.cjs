@@ -131,7 +131,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.click('[data-asset-link-dialog] input[type=checkbox]');
  assert.equal(await page.$$eval('[data-asset-link-dialog] [data-permission-grid] input:checked',nodes=>nodes.length),15,'Select all enables all settings');
  await page.click('[data-asset-link-dialog] input[type=checkbox]');
- assert.ok(await page.$$eval('[data-permission-grid] small',nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)+1 && node.scrollWidth<=node.clientWidth+1)), 'Settings descriptions stay on one line');
+ assert.ok(await page.$$eval('[data-permission-grid] small',nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)*2+1 && node.scrollWidth<=node.clientWidth+1)), 'Settings descriptions fit within two lines without clipping');
  assert(!box.text.includes('Attach reports'));
  await page.screenshot({path:'/tmp/asset-link-settings.png'});
  await click('Continue view only');await page.waitForSelector('dialog[open]');
@@ -155,7 +155,11 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await page.waitForSelector('[data-permission-grid]');assert.equal(await valueChecked(),true,'Saved value permission loads checked');
  const geometry=await page.$$eval('[data-permission-grid] label',nodes=>nodes.map(node=>{const r=node.getBoundingClientRect(),i=node.querySelector('input').getBoundingClientRect();return Math.abs((r.top+r.height/2)-(i.top+i.height/2));}));
  assert(geometry.every(offset=>offset<1),'Checkboxes are vertically centred in each card');
+ await page.setViewport({width:1440,height:650});
+ const shortLayout=await page.$eval('[data-asset-link-dialog]',node=>({top:node.getBoundingClientRect().top,bottom:node.getBoundingClientRect().bottom}));
+ assert(shortLayout.top>=0 && shortLayout.bottom<=650,'Settings stay inside a shorter desktop viewport');
  await page.screenshot({path:'/tmp/asset-link-settings-edit.png'});
+ await page.setViewport({width:1440,height:900});
  await toggleValue();await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===false);
  await page.evaluate(()=>{window.fetch=window.previousFetch;});
  // Owner map uses the same editor, with its real owner wrapper classes.

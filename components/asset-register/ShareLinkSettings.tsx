@@ -31,7 +31,7 @@ export default function ShareLinkSettings({token, subject, initialPermissions, o
           />
     <AssetLinkAccessSummary permissions={permissions} />
     {error && <p role="alert">{error}</p>}
-    <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
+    <div data-access-actions className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
       <button type="button" className={assetStyles.secondaryButton} disabled={busy} onClick={onClose}>Cancel</button>
       <button type="button" className={assetStyles.primaryButton} disabled={busy} onClick={()=>void save()}>{busy ? 'Saving…' : 'Save changes'}</button>
     </div>
