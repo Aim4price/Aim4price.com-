@@ -1,13 +1,17 @@
 .dialog {
   width: min(var(--website-dialog-reference-width, 100%), 1280px) !important;
   padding: 0.85rem 1.5rem !important;
-  max-height: calc(var(--website-visible-height, 100dvh) - 1rem) !important;
+  box-sizing: border-box;
+  max-height: calc(var(--website-visible-height, 100dvh) - 3rem) !important;
+  display: flex !important;
+  flex-direction: column;
+  overflow: hidden;
 }
 .dialog .header { padding: 0 0 0.6rem !important; flex-shrink: 0; }
 .dialog .header h3 { font-size: 1.65rem !important; line-height: 1.18 !important; }
 .dialog .header p { margin: 0.45rem 0 0 !important; line-height: 1.4; }
-.dialog .body { padding: 0.4rem 0 0 !important; gap: 0.4rem !important; scrollbar-gutter: auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--app-accent, #43836d) transparent; }
-.dialog [data-permission-grid] { padding: 0; gap: 0.55rem; background: transparent; grid-template-columns: repeat(3, minmax(0,1fr)); }
+.dialog .body { display: flex !important; flex-direction: column; background: transparent; padding: 0.4rem 0 0 !important; gap: 0.4rem !important; scrollbar-gutter: auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--app-accent, #43836d) transparent; }
+.dialog [data-permission-grid] { padding: 0; gap: 0.55rem; background: transparent; grid-template-columns: repeat(4, minmax(0,1fr)); }
 .dialog [data-permission-grid] > label { min-height: 3.85rem; grid-template-columns: 1.4rem minmax(0, 1fr); align-items: center; padding: 0.6rem 1rem; gap: 0.85rem; border-radius: 0.9rem; }
 .dialog [data-permission-grid] strong { display: block; margin: 0; font-size: 0.95rem; font-weight: 800; line-height: 1.25; }
 .dialog [data-permission-grid] small { display: block; margin: 0; font-size: 0.82rem; line-height: 1.35; }
@@ -16,8 +20,8 @@
 .dialog [data-permission-grid] > label:hover { transform: none; border-color: var(--app-accent, #43836d); box-shadow: 0 2px 8px var(--app-shadow-colour, rgba(16, 52, 41, .06)); }
 .dialog [data-permission-grid] > label:has(input:checked) { border-color: var(--app-accent, #43836d); background: var(--app-surface-soft, #edf6f1); box-shadow: inset 3px 0 0 var(--app-accent, #43836d); }
 .dialog [data-permission-grid] > label:has(input:focus-visible) { outline: 2px solid var(--app-accent, #43836d); outline-offset: -3px; }
-.dialog:not(.guideDialog) .body > div:last-child { margin: 0; padding: 0.45rem 0 0 !important; flex-shrink: 0; }
-.dialog:not(.guideDialog) .body > div:last-child button { min-height: 2.8rem !important; padding: 0.65rem 1.2rem !important; }
+.dialog .body [data-access-actions] { margin: 0; padding: 0.45rem 0 0 !important; flex-shrink: 0; }
+.dialog .body [data-access-actions] button { min-height: 2.8rem !important; padding: 0.65rem 1.2rem !important; }
 
 /* Standalone screens can reflow; the canonical website canvas stays three-wide. */
 @media (max-width: 720px) {
@@ -27,7 +31,7 @@
 }
 
 .dialog [data-permission-note] {
-  grid-column: span 2;
+  grid-column: 1 / -1;
   align-self: center;
   margin: 0;
   padding: 0.4rem 0.85rem;
@@ -68,8 +72,14 @@
 /* Compact settings preserve room for the access review and action buttons. */
 .dialog [data-permission-grid] { gap: .45rem; }
 .dialog [data-permission-grid] > label { min-height: 3.55rem; padding: .5rem .85rem; }
-.dialog:not(.guideDialog) .body > div:last-child { position: sticky; bottom: 0; background: var(--app-surface,#fff); border-top: 1px solid #dce8e0; padding: .75rem 0 .25rem !important; z-index: 2; }
+.dialog .body [data-access-actions] { position: sticky; bottom: 0; background: #f6faf8; border-top: 1px solid #dce8e0; padding: .75rem 0 .25rem !important; z-index: 2; }
 @media (max-width: 620px) {
   :global(:where(html:not(:has([data-website-canvas])))) .accessChoices { grid-template-columns: 1fr; }
   :global(:where(html:not(:has([data-website-canvas])))) .dialog .accessChoice { min-height: 11rem !important; }
 }
+
+/* Keep all permission cards readable while leaving room for the review and actions. */
+.dialog [data-permission-grid] { flex-shrink: 0; }
+.dialog .body > :not([data-permission-grid]) { flex-shrink: 0; }
+.dialog .body [data-access-actions] { border-radius: 0 0 .75rem .75rem; }
+.dialog .body [aria-label="Selected link access"] > summary { padding: .65rem .9rem; }
