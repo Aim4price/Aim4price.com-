@@ -1,5 +1,6 @@
 'use client';
 import { type ExternalShareFileSource } from '../../lib/external-file-share';
+import AssetLinkAccessSummary from '../asset-register/AssetLinkAccessSummary';
 import AssetAccessSettingsDialog from '../asset-register/AssetAccessSettingsDialog';
 import assetStyles from '../../app/asset-register/page.module.css';
 import { DealerMaintenancePermissionPicker } from '../DealerMaintenanceAccessSettings';
@@ -97,7 +98,7 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
       <span>{busy ? 'Preparing enquiry…' : 'Business not listed?'}</span><span aria-hidden="true">+</span>
     </button>}
     {error && !selection && <p role="alert">{error}</p>}
-    {selection && <Dialog linkSettings assetTitle={reportUmbrellaName || (selection.assetIds.length===1 ? reportAssets.find(asset=>asset.id===selection.assetIds[0])?.title || 'Selected asset' : `${selection.assetIds.length} selected assets`)} className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Asset link settings" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close}>
+    {selection && <Dialog linkSettings onViewOnly={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setAccepted(false);setStep('recipient');}} assetTitle={reportUmbrellaName || (selection.assetIds.length===1 ? reportAssets.find(asset=>asset.id===selection.assetIds[0])?.title || 'Selected asset' : `${selection.assetIds.length} selected assets`)} className={styles.inviteDialog} title={link ? (sendLink ? "Send link" : "Invite a business") : step === 'permissions' ? "Asset link settings" : "Before you share"} titleId={titleId} descriptionId={step === 'permissions' || link ? descriptionId : undefined} closeLabel={sendLink ? "Back to share options" : "Close business invitation"} onClose={close}>
         {link && <p id={descriptionId} className={styles.description}>{`${selection.assetIds.length === 1 ? 'The selected asset' : `All ${selection.assetIds.length} selected assets`} will be shared with the same permissions.`}</p>}
         {!link && step === 'permissions' && <>
           <DealerMaintenancePermissionPicker
@@ -105,13 +106,14 @@ export default function BusinessListingInvite({ sendLink = false, onDismiss, ass
             onChange={value=>{setPermissions(assetLinkPermissions({updateDetails:value.canUpdateDetails,location:value.canAccessLocation,history:value.canViewHistory,suggestValue:value.canSuggestCurrentValue,yearModel:value.canUpdateYear,usage:value.canUpdateUsage,condition:value.canUpdateCondition,addMaintenance:value.canAddMaintenance,viewParts:value.canViewParts,addParts:value.canAddParts,addPhotos:value.canAddPhotos,addCosts:value.canAddCosts,loggedProblems:value.canViewLoggedProblems,maintenanceReports:value.canViewMaintenanceReports,costOfOwnership:value.canViewCostOfOwnership,maintenanceSchedules:value.canCreateMaintenanceSchedules,serialNumber:value.canUpdateSerial,replacementPrice:value.canUpdateReplacementPrice}));setAccepted(false);}}
           />
           <div className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
-            <button type="button" className={assetStyles.secondaryButton} onClick={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setStep('recipient');}}>Read-only</button>
+            <button type="button" className={assetStyles.secondaryButton} onClick={()=>{setPermissions(readOnlyAssetLinkPermissions(permissions));setStep('recipient');}}>Continue view only</button>
             <button type="button" className={assetStyles.primaryButton} onClick={()=>setStep('recipient')}>Continue</button>
           </div>
         </>}
         {!link && step === 'recipient' && <form className={styles.form} onSubmit={e=>{e.preventDefault();void prepare();}}>
           <fieldset disabled={busy}>
-            <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink ownerApproval />
+            <AssetLinkAccessSummary permissions={permissions} />
+            <ShareDisclaimer accepted={accepted} onChange={setAccepted} disabled={busy} publicLink />
             <div className={styles.footer}><button type="button" className={styles.copy} onClick={()=>{setStep('permissions');setAccepted(false);}}>Back</button><button className={styles.primary} disabled={!accepted || busy}>{busy ? 'Preparing enquiry…' : sendLink ? 'Create asset link' : 'Create invitation link'}</button></div>
           </fieldset>
         </form>}

@@ -66,10 +66,10 @@ test('account app access headings stay clean and tile copy stays short', async (
 
   assert.doesNotMatch(accessUi, /Dealer account access|Owner account access|Owner operations access/);
   assert.doesNotMatch(accessUi, /modalEyebrow|styles\.eyebrow/);
-  assert.match(accessUi, /newDescription: 'Create a login\.'/);
-  assert.match(accessUi, /manageDescription: 'Edit access\.'/);
-  assert.match(accessStyles, /\.launcherIntro p[\s\S]*white-space: nowrap;/);
-  assert.match(accessStyles, /\.actionCopy small[\s\S]*white-space: nowrap;/);
+  assert.match(accessUi, /newDescription: 'Create a separate app login\.'/);
+  assert.match(accessUi, /manageDescription: 'Review permissions or deactivate a login\.'/);
+  assert.match(accessStyles, /\.launcherIntro p\s*\{[^}]*white-space: normal;/);
+  assert.match(accessStyles, /\.actionCopy small\s*\{[^}]*white-space: normal;/);
 });
 
 test('whole-umbrella access is enforced for Owner App users and Field Managers', async () => {

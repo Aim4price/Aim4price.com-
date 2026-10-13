@@ -163,9 +163,9 @@ function ownerRoleLabel(value: unknown): string {
 const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
   dealer: {
     title: 'Dealer App Staff',
-    description: 'Manage staff access.',
-    newDescription: 'Create a login.',
-    manageDescription: 'Edit access.',
+    description: 'Give your dealership team app access to stock and client work. Choose a role and the assets each login can use.',
+    newDescription: 'Create a separate app login.',
+    manageDescription: 'Review permissions or deactivate a login.',
     loginLinkLabel: 'Dealer App staff login link',
     loginPath: '/dealer/login',
     qrApp: 'dealer',
@@ -198,9 +198,9 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
   },
   owner: {
     title: 'Owner App Users',
-    description: 'Manage user access.',
-    newDescription: 'Create a login.',
-    manageDescription: 'Edit access.',
+    description: 'Manage your assets from your phone. Create a separate app login and choose its role and asset access.',
+    newDescription: 'Create a separate app login.',
+    manageDescription: 'Review permissions or deactivate a login.',
     loginLinkLabel: 'Owner App login link',
     loginPath: '/owner-app/login',
     qrApp: 'owner',
@@ -233,9 +233,9 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
   },
   field: {
     title: 'Field Manager App',
-    description: 'Manage manager access.',
-    newDescription: 'Create a login.',
-    manageDescription: 'Edit access.',
+    description: 'For managers and staff recording fuel, maintenance and problems in the field. You choose the assets, fuel storage and actions each login can access.',
+    newDescription: 'Create a separate app login.',
+    manageDescription: 'Review permissions or deactivate a login.',
     loginLinkLabel: 'Field Manager login link',
     loginPath: '/field-manager/login',
     qrApp: 'field',
@@ -539,7 +539,7 @@ function AccessLauncher({
         <button type="button" className={`${styles.actionButton} ${styles.actionButtonNew}`} onClick={onNew}>
           <span className={styles.actionIcon}><PlusIcon /></span>
           <span className={styles.actionCopy}>
-            <strong>New</strong>
+            <strong>Add login</strong>
             <small>{config.newDescription}</small>
           </span>
           {streamlinedLauncher ? null : (
@@ -552,7 +552,7 @@ function AccessLauncher({
         <button type="button" className={`${styles.actionButton} ${styles.actionButtonManage}`} onClick={onManage}>
           <span className={styles.actionIcon}><UsersIcon /></span>
           <span className={styles.actionCopy}>
-            <strong>Manage</strong>
+            <strong>Manage logins</strong>
             <small>{config.manageDescription}</small>
           </span>
           <span className={styles.actionMeta}>

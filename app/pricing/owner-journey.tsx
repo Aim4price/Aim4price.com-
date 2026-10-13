@@ -8,7 +8,7 @@ import DealerDetails from './dealer-details';
 const plans = [
   { name: 'Essentials', range: '1–25', limit: 25, monthly: 99, yearly: 999 },
   { name: 'Growth', range: '26–100', limit: 100, monthly: 199, yearly: 1999 },
-  { name: 'Business', range: '101–300', limit: 300, monthly: 399, yearly: 3999 },
+  { name: 'Professional', range: '101–300', limit: 300, monthly: 399, yearly: 3999 },
 ];
 const adminPlans = [{ hours: 2, price: 499 }, { hours: 5, price: 999 }, { hours: 10, price: 1799 }];
 const money = (amount: number) => `R${String(amount).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')}`;
@@ -164,21 +164,21 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
         <div className={styles.reviewTotal}>
           <div aria-live="polite">
             <p className={styles.label}>{dealer ? 'Dealer Partner · launch pricing' : plan ? `${plan.name} · up to ${plan.limit} active assets` : 'Enterprise · more than 300 assets'}</p>
-            {plan ? <p className={styles.price}>{money(yearly ? plan.yearly : plan.monthly)}<span>/{yearly ? 'year' : 'month'} hosting</span></p> : <p className={styles.quoteTitle}>Hosting · custom quote</p>}
-            <p className={styles.totalCaption}>Your Aim4price hosting subscription.</p>
+            {plan ? <p className={styles.price}>{money(yearly ? plan.yearly : plan.monthly)}<span>/{yearly ? 'year' : 'month'} subscription</span></p> : <p className={styles.quoteTitle}>Subscription · custom quote</p>}
+            <p className={styles.totalCaption}>Your Aim4price subscription.</p>
             {adminPlan && <p className={styles.totalCaption}><strong>+ {money(adminPlan.price)}/month</strong> admin help</p>}
             {admin === 'custom' && <p className={styles.totalCaption}>+ Admin help · quoted separately</p>}
             {plan && adminPlan && !yearly && <p className={styles.totalCaption}><strong>{money(plan.monthly + adminPlan.price)}/month total</strong> before additional account or setup charges.</p>}
-            {yearly && <p className={styles.totalCaption}>Hosting billed yearly{adminPlan ? '; admin billed monthly.' : '.'}</p>}
+            {yearly && <p className={styles.totalCaption}>Subscription billed yearly{adminPlan ? '; admin billed monthly.' : '.'}</p>}
 
           </div>
-          {plan && <div className={styles.reviewBilling}>{billing}<p className={styles.yearlySaving}><strong>Save {money(plan.monthly * 12 - plan.yearly)}/year</strong><span>{((1 - plan.yearly / (plan.monthly * 12)) * 100).toFixed(1)}% off</span></p><p>Yearly saving on hosting only</p></div>}
+          {plan && <div className={styles.reviewBilling}>{billing}<p className={styles.yearlySaving}><strong>Save {money(plan.monthly * 12 - plan.yearly)}/year</strong><span>{((1 - plan.yearly / (plan.monthly * 12)) * 100).toFixed(1)}% off</span></p><p>Yearly saving on subscription only</p></div>}
         </div>
         {setup !== 'self' && <p className={styles.serviceNote}>+ Setup costs · quoted separately.</p>}
         <div className={styles.reviewRows}>
-          <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Hosting subscription</span><strong>{plan ? plan.name : 'Enterprise'}</strong></div><span>{plan ? `${money(yearly ? plan.yearly : plan.monthly)}/${yearly ? 'year' : 'month'}` : 'Custom quote'}</span>{!dealer && <button type="button" aria-label="Change assets" onClick={() => { setEditing(true); move(0); }}>Edit</button>}</div>
+          <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Subscription</span><strong>{plan ? plan.name : 'Enterprise'}</strong></div><span>{plan ? `${money(yearly ? plan.yearly : plan.monthly)}/${yearly ? 'year' : 'month'}` : 'Custom quote'}</span>{!dealer && <button type="button" aria-label="Change assets" onClick={() => { setEditing(true); move(0); }}>Edit</button>}</div>
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Initial setup</span><strong>{setupLabel}</strong></div><span>{setup === 'self' ? 'No setup fee' : setup === 'assisted' ? '+ Stock capture · separate quote' : setup === 'visit' ? '+ Capture & travel · separate quote' : '+ Separate custom quote'}</span><button type="button" aria-label="Change setup" onClick={() => { setEditing(true); move(dealer ? 7 : 1); }}>Edit</button></div>
-          {dealer && <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Customer registers</span><strong>{customers === 'customers' ? 'Controlled by our dealership' : 'Add customers later'}</strong></div><span>{customers === 'customers' ? '+ Client hosting · billed to you' : 'No client registers selected'}</span><button type="button" aria-label="Change customer registers" onClick={() => { setEditing(true); move(6); }}>Edit</button></div>}
+          {dealer && <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Customer registers</span><strong>{customers === 'customers' ? 'Controlled by our dealership' : 'Add customers later'}</strong></div><span>{customers === 'customers' ? '+ Client subscription · billed to you' : 'No client registers selected'}</span><button type="button" aria-label="Change customer registers" onClick={() => { setEditing(true); move(6); }}>Edit</button></div>}
           <div className={styles.reviewRow}><div><span className={styles.rowLabel}>Admin help</span><strong>{adminLabel}</strong></div><span>{adminPlan ? `+ ${money(adminPlan.price)}/month` : admin === 'self' ? 'No admin fee' : '+ Custom quote'}</span><button type="button" aria-label="Change help" onClick={() => { setEditing(true); move(dealer ? 7 : 2); }}>Edit</button></div>
         </div>
         <div className={styles.detailLinks}>
@@ -186,7 +186,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
           {setup !== 'self' && <button type="button" onClick={() => openDetail('setup')}>View setup details</button>}
           {admin !== 'self' && <button type="button" onClick={() => openDetail('admin')}>View admin details</button>}
         </div>
-        {dealer ? <p className={styles.reviewNote}>Client-register hosting is billed to your dealership and is not included in this preview. Admin confirms charges and the start date. Your clients have no login or access.</p> : <p className={styles.reviewNote}>Unlimited asset registers. Your active-asset limit is shared across the whole account; sold and archived assets are excluded. No per-register fee. Invoices go to your Owner account’s billing email.</p>}
+        {dealer ? <p className={styles.reviewNote}>Client-register subscription is billed to your dealership and is not included in this preview. Admin confirms charges and the start date. Your clients have no login or access.</p> : <p className={styles.reviewNote}>Unlimited asset registers. Your active-asset limit is shared across the whole account; sold and archived assets are excluded. No per-register fee. Invoices go to your Owner account’s billing email.</p>}
         <p className={styles.reviewNote}>Admin help is available anytime. Prices in rand. No payment or booking is made here.</p>
 
       </div>}
@@ -200,13 +200,13 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
             {admin === 'custom' && <p className={styles.totalCaption}>Custom admin help quoted separately.</p>}
             <button type="button" className={styles.restart} onClick={() => { setEditing(true); move(0); }}>Change asset range</button>
           </div>
-          {plan && <div className={styles.reviewBilling}>{billing}<p className={styles.yearlySaving}><strong>Save {money(plan.monthly * 12 - plan.yearly)}/year</strong><span>{((1 - plan.yearly / (plan.monthly * 12)) * 100).toFixed(1)}% off hosting</span></p></div>}
+          {plan && <div className={styles.reviewBilling}>{billing}<p className={styles.yearlySaving}><strong>Save {money(plan.monthly * 12 - plan.yearly)}/year</strong><span>{((1 - plan.yearly / (plan.monthly * 12)) * 100).toFixed(1)}% off subscription</span></p></div>}
         </div>
         <p className={styles.included}>Self-service uploads and unlimited registers included within your asset limit.</p>
         {(setup !== 'self' || admin !== 'self') && <div className={styles.reviewRows} aria-label="Optional services">
           {setup !== 'self' && <div className={styles.reviewRow}><strong>{setupLabel}</strong><span>Separate quote</span><button type="button" onClick={() => setSetup('self')}>Remove</button></div>}
           {admin !== 'self' && <div className={styles.reviewRow}><strong>{adminLabel}</strong><span>{adminPlan ? `${money(adminPlan.price)}/month${plan ? ' included' : ' admin'}` : 'Separate quote'}</span><button type="button" onClick={() => setAdmin('self')}>Remove</button></div>}
-          {plan && adminPlan && <p className={styles.packageTotal}>{yearly ? `${money(plan.yearly)}/year hosting + ${money(adminPlan.price)}/month admin` : `${money(plan.monthly + adminPlan.price)}/month total`}{setup !== 'self' ? ', plus quoted setup costs.' : '.'}</p>}
+          {plan && adminPlan && <p className={styles.packageTotal}>{yearly ? `${money(plan.yearly)}/year subscription + ${money(adminPlan.price)}/month admin` : `${money(plan.monthly + adminPlan.price)}/month total`}{setup !== 'self' ? ', plus quoted setup costs.' : '.'}</p>}
         </div>}
         <div className={styles.optionalHelp} aria-label="Optional help and pricing details">
           <button type="button" onClick={() => openDetail('setup')}>Need help uploading?</button>
@@ -218,7 +218,7 @@ export default function PackageJourney({ onTitleChange, audience = 'owner' }: { 
       {detail && <div className={styles.detailPage}>
         {detail === 'billing' && <dl className={styles.billingNotes}>
           <div><dt>Your asset limit</dt><dd>Only active assets count. Sold and archived assets are excluded.</dd></div>
-          <div><dt>Account billing</dt><dd>Hosting is billed to your Owner account’s email. All prices are in rand.</dd></div>
+          <div><dt>Account billing</dt><dd>Subscription is billed to your Owner account’s email. All prices are in rand.</dd></div>
           <div><dt>Optional services</dt><dd>Extra costs are confirmed before work starts.</dd></div>
           <div><dt>No commitment yet</dt><dd>No payment or booking is made here.</dd></div>
         </dl>}

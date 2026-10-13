@@ -14733,3 +14733,20 @@
   --typing-field-surface: transparent;
   --typing-field-focus: transparent;
 }
+
+/* Estimate choices have no video backdrop: keep their text readable in every state. */
+.estimateModeGrid .sectorBigCard,
+.estimateModeGrid .sectorBigCard:hover,
+.estimateModeGrid .sectorBigCard:focus-visible {
+  background: #174f3d;
+  color: #fff;
+}
+.estimateModeGrid .sectorBigCard .sectorLabel,
+.estimateModeGrid .sectorBigCard .sectorCardHint,
+.estimateModeGrid .sectorBigCard .estimateModeDescription {
+  color: #fff;
+  text-shadow: none;
+}
+.estimateModeGrid .sectorLabelWrap { gap: .55rem; }
+.estimateModeDescription { display: block; max-width: 34rem; font-size: .95rem; font-weight: 500; line-height: 1.5; }
+.estimateModeGrid .sectorBigCardContent { min-height: 15rem; }

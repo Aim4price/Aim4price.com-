@@ -28,15 +28,16 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
   <div className={styles.accessPlans}>
    <section className={styles.accessPlan} aria-labelledby="free-access-title">
     <h2 id="free-access-title">Free access</h2>
-    <p>For assets shared with you.</p>
-    <ul><li>View shared asset details.</li><li>Use the actions allowed by the sender.</li><li>Free usage limits apply. Upgrade when you need more.</li></ul>
+    <p>For service providers working with assets shared by clients.</p>
+    <ul><li>View shared asset details.</li><li>Use the actions allowed by the sender.</li><li>Usage is recorded. Desktop access is a separate, optional upgrade.</li></ul>
     <button type="button" className={styles.button} onClick={()=>setChosen(true)}>Continue with free access</button>
    </section>
    <section className={`${styles.accessPlan} ${styles.fullAccessPlan}`} aria-labelledby="full-access-title">
     <h2 id="full-access-title">Full Aim4price access</h2>
-    <p>For managing your own assets and business.</p>
-    <ul><li>Access your Aim4price Desktop.</li><li>Manage asset registers, costs and maintenance.</li><li>Choose the account and package that suit you.</li></ul>
-    <Link className={styles.secondaryButton} href={`/auth?accountType=dealer&accountAccess=desktop${returnTo?'&returnTo='+encodeURIComponent(returnTo):''}#signup`}>Explore full access</Link>
+    <p>Choose an Owner plan for your own assets, or Dealer access for stock and client registers.</p>
+    <ul><li>Access your Aim4price Desktop.</li><li>Manage asset registers, costs and maintenance.</li><li>Choose the account and package that suit you. Aim4price confirms the subscription and start date before Desktop activation.</li></ul>
+    <Link className={styles.secondaryButton} href={`/auth?accountType=owner&accountAccess=desktop${returnTo?'&returnTo='+encodeURIComponent(returnTo):''}#signup`}>Manage my own assets</Link>
+    <Link className={styles.secondaryButton} href={`/auth?accountType=dealer&accountAccess=desktop${returnTo?'&returnTo='+encodeURIComponent(returnTo):''}#signup`}>Manage stock and client registers</Link>
    </section>
   </div>
  </SignupFlow>;

@@ -1,0 +1,10 @@
+.guide { border: 1px solid #cfdfd6; border-radius: 1rem; background: #f4f9f6; color: #254e3e; }
+.guide summary { padding: 1rem 1.25rem; cursor: pointer; font-weight: 700; font-size: .95rem; }
+.guide summary:focus-visible { outline: 3px solid #287254; outline-offset: 3px; border-radius: 1rem; }
+.body { padding: 0 1.25rem 1rem; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.5rem; margin: .5rem 0 1rem; padding-left: 1.3rem; }
+.steps li { padding-right: .8rem; }
+.body p { margin: .4rem 0; font-size: .9rem; line-height: 1.6; }
+@media (max-width: 720px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .steps { grid-template-columns: 1fr; gap: .8rem; }
+}

@@ -2138,7 +2138,8 @@
   line-height: 1.5;
   text-align: center;
   opacity: 1;
-  cursor: default;
+  cursor: pointer;
+  text-decoration: none;
   transition: background-color 160ms ease;
 }
 

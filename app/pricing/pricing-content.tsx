@@ -18,21 +18,23 @@ export default function PricingContent() {
       <section className={styles.pricingChoices} aria-label="Choose your account">
         <button className={styles.accountCard} type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}>
           <strong className={styles.accountTitle}>Owner</strong>
-          <span className={styles.accountDescription}>Manage your assets, costs and maintenance.</span>
+          <span className={styles.accountDescription}>For farms, companies and individuals managing their own assets, costs and maintenance.</span>
           <span className={styles.cardPrice}>From <strong>R99</strong> / month</span>
           <span className={styles.cardAction}>Explore Owner pricing</span>
         </button>
         <Link href="/auth?accountType=dealer#signup" className={styles.accountCard}>
           <strong className={styles.accountTitle}>Dealer</strong>
-          <span className={styles.accountDescription}>Manage dealership stock and client registers, get estimates, receive leads and browse the marketplace.</span>
+          <span className={styles.accountDescription}>For dealerships managing stock, client registers and asset enquiries.</span>
           <span className={styles.cardPrice}><strong>R199</strong> / month</span>
+          <span className={styles.accountDescription}>Client registers are billed separately.</span>
           <span className={styles.cardAction}>Create Dealer account</span>
         </Link>
         <Link href="/business/join" className={styles.accountCard}>
           <strong className={styles.accountTitle}>Business</strong>
-          <span className={styles.accountDescription}>Get estimates, receive leads and browse the marketplace.</span>
-          <span className={styles.cardPrice}><strong>R199</strong> / month after credits</span>
-          <span className={styles.cardAction}>Create Business account</span>
+          <span className={styles.accountDescription}>For service providers, such as repairers, insurers and financiers, working with assets shared by clients.</span>
+          <span className={styles.cardPrice}><strong>Free</strong> shared access</span>
+          <span className={styles.accountDescription}>Optional Desktop upgrade: R199/month, arranged with Aim4price.</span>
+          <span className={styles.cardAction}>Explore Business access</span>
         </Link>
       </section>
       <p className={styles.signIn}>Already have an account? <Link href="/auth#login">Log in</Link></p>

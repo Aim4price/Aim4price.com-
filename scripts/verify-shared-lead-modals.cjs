@@ -116,7 +116,13 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(!await page.evaluate(()=>document.body.textContent.includes('Choose report timeline')));await page.keyboard.press('Escape');
  await page.setViewport({width:1440,height:900});
  await page.addScriptTag({content:'window.fixtureRoot.render(React.createElement(require("components/business-network/BusinessListingInvite").default,{sendLink:true,assetIds:["10000000-0000-4000-8000-000000000001"],reportAssets:[{id:"10000000-0000-4000-8000-000000000001",title:"2023 Toyota Hilux"}]}));'});
- await page.waitForSelector('[data-asset-link-dialog]');await click('Choose options');
+ await page.waitForSelector('[data-asset-link-dialog]');
+ await page.screenshot({path:'/tmp/asset-link-access-choice.png'});
+ await click('View only');await page.waitForSelector('dialog[open] [aria-label="Selected link access"]');
+ assert.match(await page.$eval('[aria-label="Selected link access"]',node=>node.textContent),/No changes to the asset are allowed/);
+ assert.equal(await page.evaluate(()=>window.requests.filter(request=>String(request.url).includes('/api/asset-share-links/leads')).length),0,'Choosing access must not create a link');
+ await page.screenshot({path:'/tmp/asset-link-access-review.png'});
+ await click('Back');await page.waitForSelector('[data-access-start]');await click('Choose permissions');
  const box=await page.$eval('[data-asset-link-dialog]',node=>({width:node.getBoundingClientRect().width,x:node.getBoundingClientRect().x,scrollHeight:node.scrollHeight,height:node.clientHeight,text:node.textContent}));
  assert.equal(Math.round(box.width),1280);assert.equal(Math.round(box.x),80);assert(box.scrollHeight<=box.height+1,'Settings fit without scrolling');
  assert(box.text.includes('Asset link settings'));assert(box.text.includes('2023 Toyota Hilux'));assert(!box.text.includes('Choose what this business/dealer can access'));
@@ -128,7 +134,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert.ok(await page.$$eval('[data-permission-grid] small',nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)+1 && node.scrollWidth<=node.clientWidth+1)), 'Settings descriptions stay on one line');
  assert(!box.text.includes('Attach reports'));
  await page.screenshot({path:'/tmp/asset-link-settings.png'});
- await click('Read-only');await page.waitForSelector('dialog[open]');
+ await click('Continue view only');await page.waitForSelector('dialog[open]');
  assert(await page.evaluate(()=>document.querySelector('dialog').textContent.includes('Before you share')));
  // Existing link settings must round-trip the current-value permission.
  await page.evaluate(()=>{
@@ -137,7 +143,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
   window.renderLinkSettings=(permissions)=>window.fixtureRoot.render(React.createElement(require('components/asset-register/ShareLinkSettings').default,{key:JSON.stringify(permissions),token:'a'.repeat(43),subject:'2022 New Holland TT4.90 4WD Openstation',initialPermissions:permissions,onClose:()=>{},onSaved:permissions=>{window.savedPermissions=permissions;}}));
   window.renderLinkSettings({suggestValue:false});
  });
- await page.waitForSelector('[data-access-start]');await click('Choose options');
+ await page.waitForSelector('[data-access-start]');await click('Choose permissions');
  await page.waitForFunction(()=>document.querySelector('[data-asset-link-dialog]')?.textContent.includes('Save changes'));
  const toggleValue=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value')).click());
  const valueChecked=()=>page.$$eval('[data-permission-grid] label',nodes=>nodes.find(node=>node.textContent.includes('Current value')).querySelector('input').checked);
@@ -145,7 +151,7 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  await click('Save changes');await page.waitForFunction(()=>window.savedPermissions?.suggestValue===true);
  assert.equal(await page.evaluate(()=>window.savedLink.permissions.suggestValue),true);
  await page.evaluate(()=>window.renderLinkSettings(window.savedPermissions));
- await page.waitForSelector('[data-access-start]');await click('Choose options');
+ await page.waitForSelector('[data-access-start]');await click('Choose permissions');
  await page.waitForSelector('[data-permission-grid]');assert.equal(await valueChecked(),true,'Saved value permission loads checked');
  const geometry=await page.$$eval('[data-permission-grid] label',nodes=>nodes.map(node=>{const r=node.getBoundingClientRect(),i=node.querySelector('input').getBoundingClientRect();return Math.abs((r.top+r.height/2)-(i.top+i.height/2));}));
  assert(geometry.every(offset=>offset<1),'Checkboxes are vertically centred in each card');
