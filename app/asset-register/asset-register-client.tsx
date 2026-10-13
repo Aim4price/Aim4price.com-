@@ -7604,19 +7604,6 @@ export default function AssetRegisterClient({
     ? selectedQuoteOption?.leadType === 'replacement_quote' || selectedQuoteOption?.leadType === 'license_renewal'
       ? selectedDealerShareAssetIds : activeShareAssets.map(asset => asset.id)
     : quoteAsset ? [quoteAsset.id] : [];
-  const quoteTrackingAssetTitle = useMemo(() => {
-    if (!isFullRegisterQuoteLead) return quoteAsset?.title || 'Selected asset';
-    const sharedAssets = activeShareAssets.filter(asset => directoryInvitationAssetIds.includes(asset.id));
-    const count = directoryInvitationAssetIds.length;
-    const kind = sharedAssets.length === count && sharedAssets.every(asset => asset.kind === sharedAssets[0]?.kind)
-      ? sharedAssets[0]?.kind : undefined;
-    const labels: Partial<Record<AssetKind, [string, string]>> = {
-      vehicle: ['vehicle', 'vehicles'], tractor: ['tractor', 'tractors'],
-      property: ['property', 'properties'], tools: ['tool', 'tools'],
-    };
-    const label = (kind && labels[kind]) || ['asset', 'assets'];
-    return `${count} ${label[count === 1 ? 0 : 1]} · ${activeShareName}`;
-  }, [isFullRegisterQuoteLead, quoteAsset, activeShareAssets, directoryInvitationAssetIds, activeShareName]);
   const directoryReportGroup = assetGroupShareTarget
     && assetGroupShareTarget.members.length === directoryInvitationAssetIds.length
     && assetGroupShareTarget.members.every(member => directoryInvitationAssetIds.includes(member.assetId))
@@ -7647,6 +7634,19 @@ export default function AssetRegisterClient({
     ),
     [quoteAsset?.kind],
   );
+  const quoteTrackingAssetTitle = useMemo(() => {
+    if (!isFullRegisterQuoteLead) return quoteAsset?.title || 'Selected asset';
+    const sharedAssets = activeShareAssets.filter(asset => directoryInvitationAssetIds.includes(asset.id));
+    const count = directoryInvitationAssetIds.length;
+    const kind = sharedAssets.length === count && sharedAssets.every(asset => asset.kind === sharedAssets[0]?.kind)
+      ? sharedAssets[0]?.kind : undefined;
+    const labels: Partial<Record<AssetKind, [string, string]>> = {
+      vehicle: ['vehicle', 'vehicles'], tractor: ['tractor', 'tractors'],
+      property: ['property', 'properties'], tools: ['tool', 'tools'],
+    };
+    const label = (kind && labels[kind]) || ['asset', 'assets'];
+    return `${count} ${label[count === 1 ? 0 : 1]} · ${activeShareName}`;
+  }, [isFullRegisterQuoteLead, quoteAsset, activeShareAssets, directoryInvitationAssetIds, activeShareName]);
   const selectedQuotePartners = useMemo(() => {
     const selectedIds = new Set(selectedQuotePartnerIds);
     return quotePartners.filter((partner) => selectedIds.has(partner.userId));
