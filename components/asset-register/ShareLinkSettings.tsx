@@ -23,7 +23,10 @@ export default function ShareLinkSettings({token, subject, initialPermissions, o
     } catch(cause) { setError(cause instanceof Error ? cause.message : 'Unable to update access. Please try again.'); }
     finally { setBusy(false); }
   }
-  return <AssetAccessSettingsDialog title="Asset link settings" assetTitle={subject} linkSettings onViewOnly={permissions.documents ? undefined : ()=>setPermissions({...readOnlyAssetLinkPermissions(permissions), reports:permissions.reports, allReports:permissions.allReports, documents:permissions.documents, directUpdates:permissions.directUpdates})} onClose={()=>{if(!busy) onClose();}}>
+  return <AssetAccessSettingsDialog title="Asset link settings" assetTitle={subject} linkSettings onViewOnly={permissions.documents ? undefined : ()=>setPermissions({...readOnlyAssetLinkPermissions(permissions), reports:permissions.reports, allReports:permissions.allReports, documents:permissions.documents, directUpdates:permissions.directUpdates})} onClose={()=>{if(!busy) onClose();}} footer={<div data-access-actions className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
+      <button type="button" className={assetStyles.secondaryButton} disabled={busy} onClick={onClose}>Cancel</button>
+      <button type="button" className={assetStyles.primaryButton} disabled={busy} onClick={()=>void save()}>{busy ? 'Saving…' : 'Save changes'}</button>
+    </div>}>
           <DealerMaintenancePermissionPicker
             value={{canViewHistory:permissions.history===true,canSuggestCurrentValue:permissions.suggestValue===true,canUpdateDetails:permissions.updateDetails===true,canAccessLocation:permissions.location===true,canUpdateYear:permissions.yearModel===true,canUpdateUsage:permissions.usage===true,canUpdateCondition:permissions.condition===true,canAddMaintenance:permissions.addMaintenance===true,canViewParts:permissions.viewParts===true,canAddParts:permissions.addParts===true,canAddPhotos:permissions.addPhotos===true,canAddCosts:permissions.addCosts===true,canViewLoggedProblems:permissions.loggedProblems===true,canViewMaintenanceReports:permissions.maintenanceReports===true,canViewCostOfOwnership:permissions.costOfOwnership===true,canCreateMaintenanceSchedules:permissions.maintenanceSchedules===true,canUpdateSerial:permissions.serialNumber,canUpdateReplacementPrice:permissions.replacementPrice}}
             disabled={busy}
@@ -31,9 +34,6 @@ export default function ShareLinkSettings({token, subject, initialPermissions, o
           />
     <AssetLinkAccessSummary permissions={permissions} />
     {error && <p role="alert">{error}</p>}
-    <div data-access-actions className={`${assetStyles.formActions} ${assetStyles.exportActions} ${assetStyles.quoteTrackingSettingsActions}`}>
-      <button type="button" className={assetStyles.secondaryButton} disabled={busy} onClick={onClose}>Cancel</button>
-      <button type="button" className={assetStyles.primaryButton} disabled={busy} onClick={()=>void save()}>{busy ? 'Saving…' : 'Save changes'}</button>
-    </div>
+
   </AssetAccessSettingsDialog>;
 }
