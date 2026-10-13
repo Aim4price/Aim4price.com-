@@ -225,7 +225,7 @@ export default function Validation(){
    assert.ok(await page.evaluate(()=>document.querySelector('[data-asset-link-dialog]').textContent.includes('Asset link settings')));
    assert.equal(await page.$$eval('[data-asset-link-dialog] input:checked:disabled',inputs=>inputs.length),0,'Report permissions are selectable');
    assert.equal(await page.$$eval('[data-permission-grid] input:checked',inputs=>inputs.length),0,'New link permissions start unchecked');
-   await page.click('[data-asset-link-dialog] input[type=checkbox]');
+   await page.click('[data-asset-link-dialog] [data-permission-toolbar] input[type=checkbox]');
    await page.waitForFunction(()=>document.querySelectorAll('[data-permission-grid] input:checked').length===15);
    if(width===1440) assert.ok(await page.$eval('[data-asset-link-dialog]',e=>[e,...e.querySelectorAll('div')].every(node=>node.scrollHeight<=node.clientHeight+1||!['auto','scroll'].includes(getComputedStyle(node).overflowY))),'Asset link settings and all option containers fit without scrolling');
    assert.ok(await page.$$eval('[data-permission-grid] small', nodes=>nodes.every(node=>node.offsetHeight<=parseFloat(getComputedStyle(node).lineHeight)+1 && node.scrollWidth<=node.clientWidth+1)), 'Permission descriptions fit one line without clipping');
