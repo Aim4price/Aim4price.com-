@@ -239,7 +239,7 @@ test('homepage plays one slower timed tour, stays on its final feature, then fol
   assert.match(preview, /className=\{styles\.assetHeroStage\}[\s\S]*?data-active-question=\{activeQuestion\}/);
   assert.match(preview, /aria-label=\{showRegister \? 'Asset Register preview' : undefined\}/);
   assert.match(preview, /aria-labelledby=\{showRegister \? undefined : `home-asset-question-/);
-  assert.match(preview, /aria-label=\{question\.label\}/);
+  assert.match(preview, /aria-label=\{labels\?\.\[question\.key\] \?\? question\.label\}/);
   assert.match(preview, /assetQuestionBubble} aria-hidden="true"/);
   assert.match(preview, /assetQuestionBubble[\s\S]*?question\.icon/);
   assert.doesNotMatch(preview, /styles\.assetQuestionLabel/);

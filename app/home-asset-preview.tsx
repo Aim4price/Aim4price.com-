@@ -11,6 +11,7 @@ export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 type PreviewKey = QuestionKey | 'register';
 
 type HomeAssetPreviewProps = {
+  labels?: Partial<Record<QuestionKey, string>>;
   showRegister?: boolean;
   activeQuestion: QuestionKey;
   onQuestionChange: (question: QuestionKey, index: number) => void;
@@ -98,6 +99,7 @@ const QUESTIONS: readonly Question[] = [
 ];
 
 export default function HomeAssetPreview({
+  labels,
   activeQuestion,
   showRegister = false,
   onQuestionChange,
@@ -164,8 +166,8 @@ export default function HomeAssetPreview({
                 isActive ? styles.assetQuestionActive : '',
               ].filter(Boolean).join(' ')}
               aria-selected={isActive}
-              aria-label={question.label}
-              title={question.label}
+              aria-label={labels?.[question.key] ?? question.label}
+              title={labels?.[question.key] ?? question.label}
               aria-controls="home-asset-preview"
               tabIndex={isActive ? 0 : -1}
               onClick={() => selectQuestion(index)}
