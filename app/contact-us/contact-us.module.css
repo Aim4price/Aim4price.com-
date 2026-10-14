@@ -53,6 +53,11 @@
   text-wrap: pretty;
 }
 
+.contactInvitation {
+  display: block;
+  margin-top: 0.25rem;
+}
+
 .contactDetails {
   display: grid;
   gap: 0.75rem;

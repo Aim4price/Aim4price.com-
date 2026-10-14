@@ -7,18 +7,18 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Asset sale fees',
+  title: 'Asset Sale Fees',
   description: 'Agreed flat fees for asset sales. Fair value for owners, a fair deal for buyers and realistic asset values that support fair trade.',
 };
 
 const fees = [
-  ['R50,000', 'R2,500'],
-  ['R100,000', 'R5,000'],
-  ['R300,000', 'R10,000'],
-  ['R500,000', 'R15,000'],
-  ['R1 million', 'R20,000'],
-  ['R5 million', 'R40,000'],
-  ['R10 million', 'R50,000'],
+  ['R0 - R50 000', 'R2 500'],
+  ['R50 001 - R100 000', 'R5 000'],
+  ['R100 001 - R300 000', 'R10 000'],
+  ['R300 001 - R500 000', 'R15 000'],
+  ['R500 001 - R1 000 000', 'R20 000'],
+  ['R1 000 001 - R5 000 000', 'R40 000'],
+  ['R5 000 001 - R10 000 000', 'R50 000'],
 ];
 
 export default function SellingFeesPage() {
@@ -29,21 +29,25 @@ export default function SellingFeesPage() {
         <section className={styles.panel} aria-labelledby="selling-title">
           <header className={styles.introduction}>
             <div>
-              <h1 id="selling-title">Asset sale fees</h1>
-              <p>Fair value for owners. A fair deal for buyers.</p>
+              <p className={styles.eyebrow}>Asset Sale Fees</p>
+              <h1 id="selling-title">Sell with confidence.</h1>
+              <p className={styles.subtitle}>A fair price for your asset. A clear flat fee for our help.</p>
             </div>
-            <Link href="/contact-us" className={styles.primary}>Sell with Aim4price</Link>
-            <p className={styles.purpose}>We charge agreed flat fees instead of percentage commissions. We believe fair trade starts with realistic asset values, helping avoid financial strain and an inflated market.</p>
+            <div className={styles.contactAction}>
+              <Link href="/contact-us" className={styles.primary}>Discuss your asset sale</Link>
+              <span>Agree on the fee before marketing begins.</span>
+            </div>
+            <p className={styles.purpose}>We help owners work towards the best possible selling price while giving buyers a fair deal. Our agreed flat fees cover valuation, marketing and sale coordination, without percentage commissions. We believe realistic asset values support fair trade and help avoid unnecessary financial strain.</p>
           </header>
 
           <div id="fee-guide" className={styles.feeLayout}>
             <section aria-labelledby="fees-title">
-              <h2 id="fees-title">Fee guide</h2>
+              <h2 id="fees-title">Find your selling price range</h2>
               <table className={styles.table} aria-labelledby="fees-title">
                 <thead><tr><th scope="col">Selling price</th><th scope="col">Our fee</th></tr></thead>
                 <tbody>{fees.map(([price, fee]) => <tr key={price}><th scope="row">{price}</th><td>{fee}</td></tr>)}</tbody>
               </table>
-              <p className={styles.note}>Guide amounts. Your exact fee is agreed before marketing.<br />Excludes VAT where applicable; your quote shows the total.</p>
+              <p className={styles.note}>Guide fees, agreed before marketing. For assets above R10 000 000, contact us for a quote. Excludes VAT where applicable; your quote shows the total.</p>
             </section>
 
             <section className={styles.summary} aria-labelledby="included-title">
@@ -56,9 +60,9 @@ export default function SellingFeesPage() {
               <div className={styles.example} aria-labelledby="example-title">
                 <h3 id="example-title">A simple example</h3>
                 <dl>
-                  <div><dt>Selling price</dt><dd>R500,000</dd></div>
-                  <div><dt>Less our fee</dt><dd>R15,000</dd></div>
-                  <div className={styles.total}><dt>You receive</dt><dd>R485,000</dd></div>
+                  <div><dt>Selling price</dt><dd>R500 000</dd></div>
+                  <div><dt>Less our fee</dt><dd>R15 000</dd></div>
+                  <div className={styles.total}><dt>You receive</dt><dd>R485 000</dd></div>
                 </dl>
                 <p>Before applicable VAT and approved extra costs.</p>
               </div>

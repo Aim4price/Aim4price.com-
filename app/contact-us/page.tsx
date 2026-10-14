@@ -48,7 +48,8 @@ export default async function ContactUsPage() {
               </h1>
               <p className={styles.heroText}>
                 Need help getting started, using Aim4price or choosing the right
-                workspace? Get in touch.
+                workspace?
+                <span className={styles.contactInvitation}>Get in touch.</span>
               </p>
 
               <address className={styles.contactDetails}>
