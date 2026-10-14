@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const contactPage = read("app/contact-us/page.tsx");
-const aboutStyles = read("app/about-us/about-us.module.css");
+const contactStyles = read("app/contact-us/contact-us.module.css");
 const rootLayout = read("app/layout.tsx");
 
 test("publishes Contact Us with actionable founder details and the supplied portrait", () => {
@@ -24,11 +24,11 @@ test("keeps contact focused on support and links to About Us for product details
   assert.doesNotMatch(contactPage, />\s*(?:CONTACT AIM4PRICE|FOUNDER|PHONE|EMAIL)\s*</);
 });
 
-test("shares the public styling and exposes keyboard focus for contact actions", () => {
-  assert.match(contactPage, /\.\.\/about-us\/about-us\.module\.css/);
+test("uses dedicated contact styling and exposes keyboard focus for contact actions", () => {
+  assert.match(contactPage, /\.\/contact-us\.module\.css/);
   assert.match(contactPage, /<address className={styles\.contactDetails}>/);
-  assert.match(aboutStyles, /\.contactLink:focus-visible/);
-  assert.match(aboutStyles, /\.textLink:focus-visible/);
+  assert.match(contactStyles, /\.contactLink:focus-visible/);
+  assert.match(contactStyles, /\.textLink:focus-visible/);
 });
 
 test("preserves the public layout and account guard", () => {
