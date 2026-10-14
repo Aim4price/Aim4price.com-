@@ -8,7 +8,7 @@ import TutorialLibrary from './tutorial-library';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const metadata: Metadata = {
-  title: 'Explore Aim4price — private preview',
+  title: 'Owner videos — private preview',
   robots: { index: false, follow: false, nocache: true },
 };
 
