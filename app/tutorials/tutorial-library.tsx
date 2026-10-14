@@ -9,7 +9,7 @@ import styles from './tutorials.module.css';
 export default function TutorialLibrary() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
-  const [activeId, setActiveId] = useState('first-asset');
+  const [activeId, setActiveId] = useState('welcome');
   const [expanded, setExpanded] = useState<'guide' | 'example' | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -19,6 +19,9 @@ export default function TutorialLibrary() {
     return (category === 'all' || item.category === category) && words.every(word => text.includes(word));
   });
   const active = visible.find(item => item.id === activeId) ?? visible[0];
+  const showWelcome = activeId === 'welcome' && !query.trim() && category === 'all';
+  const selectFeature = (id: string) => { setActiveId(id); setExpanded(null); };
+  const welcome = () => { setActiveId('welcome'); setQuery(''); setCategory('all'); setExpanded(null); };
   const resetDetails = () => setExpanded(null);
   const clear = () => { setQuery(''); setCategory('all'); resetDetails(); };
 
@@ -30,12 +33,24 @@ export default function TutorialLibrary() {
     </section>
     {active ? <div className={styles.workspace}>
       <aside className={styles.listCard}><div className={styles.listHeading}><h1>Owner features</h1><span role="status">{visible.length} {visible.length === 1 ? 'feature' : 'features'}</span></div>
-      <nav className={styles.featureList} aria-label="Owner features" tabIndex={0}><div className={styles.groupList}>{visible.map(item => <button type="button" key={item.id} aria-current={active.id === item.id ? 'true' : undefined} aria-controls="owner-feature-panel" onClick={() => { setActiveId(item.id); resetDetails(); }}>{item.title}</button>)}</div></nav></aside>
+      <button className={styles.welcomeLink} type="button" aria-current={showWelcome ? 'true' : undefined} aria-controls="owner-feature-panel" onClick={welcome}>Welcome · Start here</button>
+      <nav className={styles.featureList} aria-label="Owner features" tabIndex={0}><div className={styles.groupList}>{visible.map(item => <button type="button" key={item.id} aria-current={!showWelcome && active.id === item.id ? 'true' : undefined} aria-controls="owner-feature-panel" onClick={() => selectFeature(item.id)}>{item.title}</button>)}</div></nav></aside>
       <article id="owner-feature-panel" className={styles.panel} aria-labelledby="owner-feature-title">
+        {showWelcome ? <div className={styles.welcome}>
+          <header><h2 id="owner-feature-title">Welcome to Aim4price.</h2><p className={styles.description}>Get to know your assets, keep their records up to date and use that information to make better decisions.</p></header>
+          <p className={styles.welcomePrompt}>Start with one asset, then build from there.</p>
+          <div className={styles.welcomeSteps}>
+            <button type="button" onClick={() => selectFeature('first-asset')}><span className={styles.stepNumber}>1</span><span><strong>Add your first asset</strong><small>Start with its details, photos and documents.</small></span><span className={styles.stepAction}>Start</span></button>
+            <button type="button" onClick={() => selectFeature('manual-cost')}><span className={styles.stepNumber}>2</span><span><strong>Record everyday work</strong><small>Build the history with costs, fuel and maintenance.</small></span><span className={styles.stepAction}>Explore</span></button>
+            <button type="button" onClick={() => selectFeature('ownership-report')}><span className={styles.stepNumber}>3</span><span><strong>Use your records</strong><small>Review costs, share information and plan what comes next.</small></span><span className={styles.stepAction}>Explore</span></button>
+          </div>
+          <p className={styles.welcomeHint}>Already know what you need? Choose a feature on the left or use the search above. Each guide explains the feature, with videos added as they become available.</p>
+        </div> : <>
         <header><h2 id="owner-feature-title">{active.question}</h2><p className={styles.description}>{active.description}</p></header>
         <div className={styles.mediaRow}>{active.videoSrc ? <button ref={trigger} type="button" className={styles.videoPreview} aria-haspopup="dialog" onClick={() => dialog.current?.showModal()}><span className={styles.play} aria-hidden="true">▶</span><strong>Watch video</strong></button> : <div className={styles.videoPreview} aria-label="Video not yet available"><span className={styles.film} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg></span><strong>Video coming soon</strong></div>}<div><h3>{active.title}</h3><p>A short walkthrough of this feature.</p><Link className={styles.action} href={active.href}>{active.action}</Link></div></div>
         <div className={styles.disclosures}>{(['guide','example'] as const).map(section => <section key={section}><button type="button" aria-expanded={expanded === section} aria-controls={`feature-${section}`} onClick={() => setExpanded(expanded === section ? null : section)}><span>{section === 'guide' ? 'How to use it' : 'Example'}</span><small>{expanded === section ? 'Hide' : 'Show'}</small></button><div id={`feature-${section}`} hidden={expanded !== section} className={styles.explanation}>{section === 'guide' ? <><p className={styles.where}><strong>Where to find it</strong>{active.where}</p><ol>{active.steps.map(step => <li key={step}>{step}</li>)}</ol>{active.note && <p className={styles.note}>{active.note}</p>}</> : <p>{active.example}</p>}</div></section>)}</div>
         {active.videoSrc && <dialog ref={dialog} className={styles.videoDialog} aria-labelledby="tutorial-video-title" onClose={() => { dialog.current?.querySelector('video')?.pause(); trigger.current?.focus(); }} onClick={event => { if(event.target === dialog.current) { const r=dialog.current.getBoundingClientRect(); if(event.clientX<r.left || event.clientX>r.right || event.clientY<r.top || event.clientY>r.bottom) dialog.current.close(); } }}><header><h2 id="tutorial-video-title">{active.title}</h2><button type="button" onClick={() => dialog.current?.close()}>Close video</button></header><video key={active.id} controls preload="none" aria-label={`${active.title} video`}><source src={active.videoSrc} type="video/mp4" />{active.captionsSrc && <track kind="captions" src={active.captionsSrc} srcLang="en" label="English" default />}</video></dialog>}
+        </>}
       </article>
     </div> : <section className={styles.empty}><h2>No matching owner features</h2><p>Try a shorter search or choose another category.</p><button type="button" onClick={clear}>Show all features</button></section>}
   </div>;

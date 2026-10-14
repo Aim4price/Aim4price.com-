@@ -129,7 +129,15 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='tutorials'){
      const features='nav[aria-label="Owner features"] button';
      assert.equal(await page.$$eval(features,els=>els.length),46);
+     assert.equal(await page.$eval('#owner-feature-title',e=>e.textContent),'Welcome to Aim4price.');
+     if(width>=1000)assert.ok(await page.evaluate(()=>Math.abs(document.querySelector('aside').getBoundingClientRect().height-document.querySelector('#owner-feature-panel').getBoundingClientRect().height)<2),'Welcome and list have equal heights');
+     await page.screenshot({path:path.join(evidence,'owner-welcome-'+width+'.png'),fullPage:false});
+     await page.$$eval('#owner-feature-panel button',els=>els.find(e=>e.textContent.includes('Add your first asset')).click());
      assert.match(await page.$eval('#owner-feature-title',e=>e.textContent),/How do I start/);
+     if(width>=1000)assert.ok(await page.evaluate(()=>Math.abs(document.querySelector('aside').getBoundingClientRect().height-document.querySelector('#owner-feature-panel').getBoundingClientRect().height)<2),'Feature and list have equal heights');
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Welcome · Start here').click());
+     assert.equal(await page.$eval('#owner-feature-title',e=>e.textContent),'Welcome to Aim4price.');
+     await page.$$eval(features,els=>els[0].click());
      assert.ok(await page.$('[aria-label="Video not yet available"]'));
      assert.equal(await page.$('video'),null,'No empty video players');
      const list=await page.$eval('nav[aria-label="Owner features"]',e=>({scrolls:e.scrollHeight>e.clientHeight,overflow:getComputedStyle(e).overflowY}));
