@@ -127,16 +127,26 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,mode+' fits '+width);
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
     if(mode==='tutorials'){
-     assert.equal(await page.$$eval('nav[aria-label="Tutorials"] button',els=>els.length),12);
+     assert.equal(await page.$$eval('[id^="guide-"]',els=>els.length),40);
+     assert.equal(await page.$$eval('[id^="guide-"][open]',els=>els.length),0);
+     await page.click('#guide-first-asset > summary');
+     assert.ok(await page.$('#guide-first-asset[open]'));
+     assert.match(await page.$eval('#guide-first-asset',e=>e.textContent),/Where to find it.*How to use it.*For example/);
+     await page.screenshot({path:path.join(evidence,'explore-open-'+width+'.png'),fullPage:false});
      await page.type('#tutorial-search','maintenance');
-     assert.ok(await page.$$eval('nav[aria-label="Tutorials"] button',els=>els.length)<12);
+     const matches=await page.$$eval('[id^="guide-"]',els=>els.length);
+     assert.ok(matches>0&&matches<40);
      await page.$eval('#tutorial-search',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'no-such-guide-xyz');e.dispatchEvent(new Event('input',{bubbles:true}));});
-     await page.waitForFunction(()=>document.body.textContent.includes('No matching guides'));
-     await page.$$eval('button',els=>els.find(e=>e.textContent==='Show all tutorials').click());
-     await page.$$eval('[aria-label="Tutorial topics"] button',els=>els.find(e=>e.textContent==='AI connections').click());
-     await page.waitForFunction(()=>document.querySelector('#guide-title')?.textContent==='Ask questions about your records');
-     assert.equal(await page.$('video'),null,'Unfilled video slots do not request media');
-     assert.match(await page.$eval('article',e=>e.textContent),/Video coming later/);
+     await page.waitForFunction(()=>document.body.textContent.includes('No matching features'));
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Show all features').click());
+     await page.click('a[href="#feature-connections"]');
+     assert.equal(await page.$$eval('[id^="guide-"]',els=>els.length),40,'Category jumps retain the full list');
+     await page.click('#guide-ai > summary');
+     assert.match(await page.$eval('#guide-ai[open]',e=>e.textContent),/read-only/);
+     assert.equal(await page.$('video'),null,'No empty video players');
+     assert.doesNotMatch(await page.$eval('#app',e=>e.textContent),/Video coming later/);
+     await page.click('#guide-ai > summary');
+     assert.equal(await page.$('#guide-ai[open]'),null);
     }
     if(mode==='pricing'){
      assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent.includes('R199')),true);
