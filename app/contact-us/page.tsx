@@ -92,7 +92,7 @@ export default async function ContactUsPage() {
                   alt="Kuyler Chris Geldenhuys"
                   fill
                   priority
-                  sizes="340px"
+                  sizes="260px"
                   className={styles.portrait}
                 />
               </div>
