@@ -72,6 +72,11 @@ export default async function ContactUsPage() {
                   </span>
                   <span className={styles.contactArrow} aria-hidden="true">↗</span>
                 </a>
+                <a href="https://wa.me/27625721650" className={styles.contactLink} target="_blank" rel="noopener noreferrer">
+                  <span className={styles.contactIcon}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z" /><path d="M8 11h9M8 14h6" /></svg></span>
+                  <span className={styles.contactValue}><span className={styles.contactLabel}>WhatsApp</span>Chat to Aim4price</span>
+                  <span className={styles.contactArrow} aria-hidden="true">↗</span>
+                </a>
               </address>
 
               <p className={styles.contactNote}>

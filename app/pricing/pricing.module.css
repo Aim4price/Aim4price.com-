@@ -207,3 +207,9 @@
 :global(html[data-background='dark']) .hero h1,
 :global(html[data-background='dark']) .photoSurface .signIn,
 :global(html[data-background='dark']) .photoSurface .signIn a { color: #e3eee7; }
+
+.pricingIncluded, .accessExplanation { color: #173f31; background: #f4faf6; border: 1px solid #cce0d3; border-radius: 1.25rem; padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 3), 2rem); line-height: 1.7; }
+.pricingIncluded { margin-top: 2rem; }
+.pricingIncluded h2, .accessExplanation h2 { font-size: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 3), 2.5rem); line-height: 1.15; margin: 0 0 1rem; }
+.accessExplanation h3 { font-size: 1.4rem; }
+.accessExplanation a { margin-top: 1rem; }

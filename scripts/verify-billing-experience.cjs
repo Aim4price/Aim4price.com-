@@ -47,6 +47,7 @@ function add(file){
 
 add('components/GuestEnquiryAccess');
 add('app/pricing/pricing-content');
+add('app/tutorials/tutorial-library');
 add('app/business/join/page');
 add('app/auth/page');
 add('app/account/account-invoices');
@@ -76,7 +77,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
   const font=fs.readFileSync(path.join(root,'public/field-manager/montserrat-latin.woff')).toString('base64');
   for(const width of [390,1440]){
    await page.setViewport({width,height:1000});
-   for(const mode of ['guest','pricing','business-join','business-register','signup-owner','signup-dealer','signup-middleman','switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
+   for(const mode of ['tutorials','guest','pricing','business-join','business-register','signup-owner','signup-dealer','signup-middleman','switch','account','billing','suspended','suspended-unlinked','suspended-void','pending']){
     await page.goto('https://billing.test/');
     await page.setContent('<style>@font-face{font-family:Montserrat;src:url(data:font/woff;base64,'+font+')}*{box-sizing:border-box}body{margin:0;font:16px Montserrat,Arial,sans-serif;background:#f2f6f3;--website-design-vw:1vw;--website-design-vh:12px;--shell-narrow-width:min(calc(100% - 32px),1100px);--website-visible-height:100dvh;--text-strong:#173c32;--modal-backdrop-color:rgba(12,32,26,.58);--modal-backdrop-filter:blur(7px)}button,input,textarea{font:inherit}'+sheets.join('\n')+'</style><div id="app"></div>');
     await page.addScriptTag({content:react});await page.addScriptTag({content:reactDOM});
@@ -86,7 +87,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     const switchPage='require("app/auth/page").default({}).then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));';
     if(mode.startsWith('signup-'))await page.evaluate(type=>history.replaceState(null,'','/auth?accountType='+type+'#signup'),mode.slice(7));
     await page.evaluate(anonymous=>{globalThis.fixtureAnonymous=anonymous;},mode==='business-join'||mode==='business-register');
-    await page.addScriptTag({content:runtime+(mode==='pricing'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/pricing/pricing-content").default));':mode==='business-join'||mode==='business-register'?'require("app/business/join/page").default('+JSON.stringify({searchParams:{mode:mode==='business-register'?'account':undefined,businessType:width===390?'insurance-services':undefined}})+').then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));':mode.startsWith('signup-')?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/auth/auth-client").default));':mode==='guest'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("components/GuestEnquiryAccess").default,{returnTo:"/asset-share/'+ 't'*43 +'"}));':mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
+    await page.addScriptTag({content:runtime+(mode==='tutorials'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/tutorials/tutorial-library").default));':mode==='pricing'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/pricing/pricing-content").default));':mode==='business-join'||mode==='business-register'?'require("app/business/join/page").default('+JSON.stringify({searchParams:{mode:mode==='business-register'?'account':undefined,businessType:width===390?'insurance-services':undefined}})+').then(view=>ReactDOM.createRoot(document.getElementById("app")).render(view));':mode.startsWith('signup-')?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("app/auth/auth-client").default));':mode==='guest'?'ReactDOM.createRoot(document.getElementById("app")).render(React.createElement(require("components/GuestEnquiryAccess").default,{returnTo:"/asset-share/'+ 't'*43 +'"}));':mode==='switch'?switchPage:mode==='account'?account:mode==='billing'?billing:suspended)});
     if(mode==='account'||mode==='suspended')await page.waitForFunction(()=>document.body.textContent.includes('A4P-2026-000001'));else await page.waitForSelector('h1');
     if(mode==='suspended-unlinked'||mode==='suspended-void'){assert.equal(await page.$('button[aria-label="Open invoice"]'),null);assert.equal(await page.$('iframe'),null);assert.match(await page.$eval('h1',e=>e.textContent),/temporarily paused/);}
     if(mode==='pending'){
@@ -125,9 +126,21 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
     if(mode==='pending')assert.notEqual(await page.$eval('footer',e=>getComputedStyle(e).display),'none');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,mode+' fits '+width);
     await page.screenshot({path:path.join(evidence,mode+'-'+width+'.png'),fullPage:true});
+    if(mode==='tutorials'){
+     assert.equal(await page.$$eval('nav[aria-label="Tutorials"] button',els=>els.length),12);
+     await page.type('#tutorial-search','maintenance');
+     assert.ok(await page.$$eval('nav[aria-label="Tutorials"] button',els=>els.length)<12);
+     await page.$eval('#tutorial-search',e=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(e,'no-such-guide-xyz');e.dispatchEvent(new Event('input',{bubbles:true}));});
+     await page.waitForFunction(()=>document.body.textContent.includes('No matching guides'));
+     await page.$$eval('button',els=>els.find(e=>e.textContent==='Show all tutorials').click());
+     await page.$$eval('[aria-label="Tutorial topics"] button',els=>els.find(e=>e.textContent==='AI connections').click());
+     await page.waitForFunction(()=>document.querySelector('#guide-title')?.textContent==='Ask questions about your records');
+     assert.equal(await page.$('video'),null,'Unfilled video slots do not request media');
+     assert.match(await page.$eval('article',e=>e.textContent),/Video coming later/);
+    }
     if(mode==='pricing'){
-     assert.equal(await page.$eval('a[href="/business/join"]',e=>e.textContent.includes('R199')),true);
-     assert.match(await page.$eval('a[href="/business/join"]',e=>e.textContent),/Free.*shared access/);
+     assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent.includes('R199')),true);
+     assert.match(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent),/Free.*shared access/);
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
@@ -155,12 +168,12 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.match(await page.$eval('[aria-label="Optional services"]',e=>e.textContent), /R499\/month included.*R598\/month total/);
      assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R598/month total');
      await clickText('Yearly');
-     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R6 987/year total');
-     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/billed monthly/);
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year subscription');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/R499\/month for admin help, billed separately/);
      await clickText('Remove');
-     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R999/year subscription');
      await clickText('Monthly');
-     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R99/month');
+     assert.equal(await page.$eval('[data-owner-package-price]',e=>e.textContent),'R99/month subscription');
      // Review the same setup-only, combined-service and detail layouts customers see.
      await clickText('Need help uploading?');
      await clickText('Explore visit options');
@@ -231,11 +244,15 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
 
      await page.keyboard.press('Escape');
      await page.waitForFunction(()=>!document.querySelector('[role="dialog"]'));
-     const dealerLink='a[href="/auth?accountType=dealer#signup"]';
-     assert.match(await page.$eval(dealerLink,e=>e.textContent),/R199.*month.*Create Dealer account/);
-     assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.some(e=>e.textContent.startsWith('Dealer'))),false);
-     await page.click(dealerLink);
-     await page.waitForFunction(()=>location.pathname==='/auth'&&location.search==='?accountType=dealer'&&location.hash==='#signup');
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Dealer')).click());
+     await page.waitForSelector('[role="dialog"]');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/customers.*asset registers/);
+     await page.keyboard.press('Escape');
+     await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).click());
+     await page.waitForSelector('[role="dialog"]');
+     assert.match(await page.$eval('[role="dialog"]',e=>e.textContent),/free shared access.*R199\/month/);
+     assert.ok(await page.$('[role="dialog"] a[href="/business/join"]'));
+     await page.keyboard.press('Escape');
     }
     if(['guest','business-join','business-register'].includes(mode)){
      assert.equal(await page.$$eval('main',els=>els.length),1,'Onboarding has one page landmark');

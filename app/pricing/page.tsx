@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import AppHeader from '../../components/AppHeader';
+import { getAnyServerSession } from '../../lib/auth-session';
 import PricingContent from './pricing-content';
 import styles from './pricing.module.css';
 
@@ -14,11 +15,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function PricingPage() {
+export default async function PricingPage({ searchParams }: { searchParams?: { audience?: string } }) {
+  const session = await getAnyServerSession();
+  const audience = searchParams?.audience;
+  const initialAudience = audience === 'owner' || audience === 'dealer' || audience === 'business' ? audience : null;
   return (
     <main className={styles.page}>
       <AppHeader active="none" />
-      <PricingContent />
+      <PricingContent signedIn={Boolean(session?.user?.id)} initialAudience={initialAudience} />
     </main>
   );
 }
