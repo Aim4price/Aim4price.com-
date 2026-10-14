@@ -12,6 +12,7 @@ type PreviewKey = QuestionKey | 'register';
 
 type HomeAssetPreviewProps = {
   labels?: Partial<Record<QuestionKey, string>>;
+  icons?: Partial<Record<QuestionKey, ReactNode>>;
   showRegister?: boolean;
   activeQuestion: QuestionKey;
   onQuestionChange: (question: QuestionKey, index: number) => void;
@@ -100,6 +101,7 @@ const QUESTIONS: readonly Question[] = [
 
 export default function HomeAssetPreview({
   labels,
+  icons,
   activeQuestion,
   showRegister = false,
   onQuestionChange,
@@ -174,7 +176,7 @@ export default function HomeAssetPreview({
               onKeyDown={(event) => handleQuestionKeyDown(event, index)}
             >
               <span className={styles.assetQuestionBubble} aria-hidden="true">
-                <svg viewBox="0 0 24 24">{question.icon}</svg>
+                <svg viewBox="0 0 24 24">{icons?.[question.key] ?? question.icon}</svg>
               </span>
             </button>
           );
