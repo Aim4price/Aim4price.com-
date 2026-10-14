@@ -2,75 +2,116 @@ import type { HomeStoryVariant } from '../home-hero-experience';
 
 export type HomeAudience = 'dealers' | 'businesses';
 export const homeStories: Record<HomeAudience, HomeStoryVariant> = {
-  dealers: {
-    label: 'dealers',
-    promise: ['Know your clients’ assets.', 'Know their value.', 'Help clients buy and sell.'],
-    description: 'Bring stock, client assets and estimated values together. Make every buying and selling conversation better informed.',
-    features: {
-      worth: {
-        title: 'Know what it’s worth.',
-        body: 'Get an indicative estimate for a vehicle, machine or piece of equipment before discussing a sale or trade-in.',
-        detail: 'Review its age, usage and condition to give the price context.',
+  "dealers": {
+    "label": "dealers",
+    "promise": [
+      "Know your clients’ assets.",
+      "Understand their value.",
+      "Bring confidence to every deal."
+    ],
+    "description": "Bring asset values, stock and client records together—so every purchase, trade-in and sale starts with a clearer picture.",
+    "features": {
+      "worth": {
+        "title": "Put every price into perspective.",
+        "titleLines": [
+          "Put every price",
+          "into perspective."
+        ],
+        "body": "Start with an indicative estimate, then consider the asset’s age, usage and condition.",
+        "detail": "Give buying, selling and trade-in discussions a more informed starting point."
       },
-      have: {
-        title: 'Keep every asset organised.',
-        titleLines: ['Keep every asset', 'organised.'],
-        body: 'Manage your stock and client registers with asset details, photos and values together.',
-        detail: 'Keep dealer-held stock distinct from the assets owners share with you.',
+      "have": {
+        "title": "Keep stock and client assets organised.",
+        "titleLines": [
+          "Keep stock and client",
+          "assets organised."
+        ],
+        "body": "Bring details, photos and values together in clear asset registers.",
+        "detail": "Keep your stock distinct from client assets, with the right information ready when they call."
       },
-      manage: {
-        title: 'Prepare assets for sale.',
-        titleLines: ['Prepare assets', 'for sale.'],
-        body: 'Keep photos, details and supporting records ready for the next buyer.',
-        detail: 'Use your showroom and Ad Studio to present your stock professionally.',
+      "manage": {
+        "title": "Give buyers a clearer picture.",
+        "titleLines": [
+          "Give buyers",
+          "a clearer picture."
+        ],
+        "body": "Keep photos and records ready for buyers.",
+        "detail": "Present stock with your showroom and Ad Studio."
       },
-      cost: {
-        title: 'Look beyond the price.',
-        body: 'Review the fuel, maintenance and ownership reports a client shares with you.',
-        detail: 'Understand the asset’s running costs before discussing their next move.',
+      "cost": {
+        "title": "Understand what the price doesn’t show.",
+        "titleLines": [
+          "Understand what",
+          "the price doesn’t show."
+        ],
+        "body": "Review shared fuel, maintenance and ownership reports to understand the costs behind an asset.",
+        "detail": "Bring more context into discussions about keeping, replacing or selling it."
       },
-      attention: {
-        title: 'Stay useful after the sale.',
-        titleLines: ['Stay useful', 'after the sale.'],
-        body: 'Help clients keep maintenance, reported problems and completed work together.',
-        detail: 'With their permission, contribute to a useful history of the asset.',
-      },
-    },
+      "attention": {
+        "title": "Build relationships beyond the sale.",
+        "titleLines": [
+          "Build relationships",
+          "beyond the sale."
+        ],
+        "body": "Keep supporting clients through maintenance updates, reported problems and completed work.",
+        "detail": "With their permission, help build an asset history that remains useful long after the handover."
+      }
+    }
   },
-  businesses: {
-    label: 'businesses',
-    promise: ['Know your clients’ assets.', 'Understand their needs.', 'Deliver better service.'],
-    description: 'Work with the assets and records your clients share. Find the context you need to offer a better service.',
-    features: {
-      worth: {
-        title: 'Start with a clearer value.',
-        titleLines: ['Start with', 'a clearer value.'],
-        body: 'See the asset’s details and indicative estimated value before discussing your client’s needs.',
-        detail: 'Use that context alongside your own professional assessment.',
+  "businesses": {
+    "label": "businesses",
+    "promise": [
+      "Know your clients’ assets.",
+      "Understand their needs.",
+      "Bring insight to every service."
+    ],
+    "description": "Connect the assets your clients share with the service you provide. Use their details, documents and history to understand the need before deciding what comes next.",
+    "features": {
+      "worth": {
+        "title": "Understand the asset behind the request.",
+        "titleLines": [
+          "Understand the asset",
+          "behind the request."
+        ],
+        "body": "Start with the asset’s details, usage and indicative estimated value.",
+        "detail": "Bring useful context into your assessment before discussing the service your client needs."
       },
-      have: {
-        title: 'See what clients share.',
-        body: 'View the vehicles, machinery and equipment your clients share with your business.',
-        detail: 'Keep their asset details, photos and values easy to find.',
+      "have": {
+        "title": "See your clients’ assets more clearly.",
+        "titleLines": [
+          "See your clients’",
+          "assets more clearly."
+        ],
+        "body": "View the individual assets or groups your clients share with your business.",
+        "detail": "Keep the available details, photos and values together for an easier, more informed conversation."
       },
-      manage: {
-        title: 'Find the details you need.',
-        titleLines: ['Find the details', 'you need.'],
-        body: 'Review shared documents, asset information and history in one place.',
-        detail: 'The owner chooses which records and tools your business can access.',
+      "manage": {
+        "title": "Find the information your work depends on.",
+        "titleLines": [
+          "Find the information",
+          "your work depends on."
+        ],
+        "body": "Review shared documents, details and history.",
+        "detail": "Use the records and tools your client allows."
       },
-      cost: {
-        title: 'Understand the running costs.',
-        titleLines: ['Understand', 'the running costs.'],
-        body: 'Use shared fuel, maintenance and ownership reports to understand how the asset is used and maintained.',
-        detail: 'Bring useful context into your next service or advice conversation.',
+      "cost": {
+        "title": "Turn asset records into practical insight.",
+        "titleLines": [
+          "Turn asset records",
+          "into practical insight."
+        ],
+        "body": "Review shared fuel, maintenance and ownership reports to understand running costs and recorded work.",
+        "detail": "Use that context to ask better questions and support your recommendations."
       },
-      attention: {
-        title: 'Keep your work with the asset.',
-        titleLines: ['Keep your work', 'with the asset.'],
-        body: 'Record maintenance, follow reported problems and keep completed work connected to the right asset.',
-        detail: 'Contribute with the owner’s permission, ready for the next visit.',
-      },
-    },
-  },
+      "attention": {
+        "title": "Make your work part of the history.",
+        "titleLines": [
+          "Make your work",
+          "part of the history."
+        ],
+        "body": "With the owner’s permission, record maintenance, updates and completed work against the right asset.",
+        "detail": "Leave a useful record for your client and the next service visit."
+      }
+    }
+  }
 };
