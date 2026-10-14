@@ -12,5 +12,5 @@
 .grid dt { font-weight: 800; }
 .grid dd { margin: 0 0 .7rem; }
 .grid blockquote { margin: 1rem 0; font-size: 1.3rem; }
-:global(html[data-theme="dark"]) .section > header { color: #f0faf3; }
+:global(html[data-background="dark"]) .section > header { color: #f0faf3; }
 @media (max-width: 760px) { :global(html:not(:has([data-website-canvas]))) .grid { grid-template-columns: 1fr; } }
