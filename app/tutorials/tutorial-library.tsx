@@ -9,44 +9,35 @@ export default function TutorialLibrary() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('all');
   const [activeId, setActiveId] = useState('first-asset');
-  const panel = useRef<HTMLElement>(null);
+  const [expanded, setExpanded] = useState<'guide' | 'example' | null>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const visible = tutorials.filter(item => {
     const text = `${item.title} ${item.question} ${item.description} ${item.where} ${item.keywords} ${item.example} ${item.steps.join(' ')}`.toLowerCase();
     return (category === 'all' || item.category === category) && words.every(word => text.includes(word));
   });
   const active = visible.find(item => item.id === activeId) ?? visible[0];
-  const index = active ? visible.indexOf(active) : -1;
-  const select = (id: string) => {
-    setActiveId(id);
-    requestAnimationFrame(() => {
-      const element = panel.current;
-      if (!element) return;
-      const bounds = element.getBoundingClientRect();
-      if (bounds.top < 0 || bounds.top > window.innerHeight * .5) element.scrollIntoView({ block: 'start' });
-    });
-  };
-  const clear = () => { setQuery(''); setCategory('all'); };
+  const resetDetails = () => setExpanded(null);
+  const clear = () => { setQuery(''); setCategory('all'); resetDetails(); };
 
   return <div className={styles.shell}>
-    <header className={styles.hero}><span className={styles.badge}>Private preview · Owners</span><h1>Aim4price for owners.</h1><p>What would you like to know about your assets?</p><p className={styles.intro}>Explore the features below. Video walkthroughs will be added here as they’re ready.</p></header>
+    <header className={styles.hero}><span className={styles.badge}>Private preview · Owners</span><h1>Aim4price for owners.</h1><p>Explore what you can do with your assets, one feature at a time.</p></header>
     <section className={styles.finder} aria-label="Find an owner feature">
-      <label htmlFor="tutorial-search">Find a feature or ask a question</label>
-      <div className={styles.searchField}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg><input id="tutorial-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search fuel, maintenance, sharing, reports…" />{query && <button type="button" onClick={() => setQuery('')} aria-label="Clear search">Clear</button>}</div>
-      <div className={styles.categories} role="group" aria-label="Owner feature categories"><button type="button" aria-pressed={category === 'all'} onClick={() => setCategory('all')}>All features</button>{featureCategories.map(item => <button key={item.id} type="button" aria-pressed={category === item.id} onClick={() => setCategory(item.id)}>{item.title}</button>)}</div>
+      <div className={styles.searchField}><label htmlFor="tutorial-search">Search features</label><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg><input id="tutorial-search" type="search" value={query} onChange={event => { setQuery(event.target.value); resetDetails(); }} placeholder="Try fuel, maintenance or sharing" />{query && <button type="button" onClick={() => { setQuery(''); resetDetails(); }} aria-label="Clear search">Clear</button>}</div></div>
+      <div className={styles.category}><label htmlFor="tutorial-category">Category</label><select id="tutorial-category" value={category} onChange={event => { setCategory(event.target.value); resetDetails(); }}><option value="all">All features</option>{featureCategories.map(item => <option key={item.id} value={item.id}>{item.title}</option>)}</select></div>
     </section>
-    <p className={styles.results} role="status">{visible.length} {visible.length === 1 ? 'owner feature' : 'owner features'}{query || category !== 'all' ? ' found' : ' to explore'}</p>
     {active ? <div className={styles.workspace}>
-      <nav className={styles.featureList} aria-label="Owner features">{featureCategories.map(group => {
+      <aside className={styles.listCard}><div className={styles.listHeading}><h2>Owner features</h2><span role="status">{visible.length} {visible.length === 1 ? 'feature' : 'features'}</span></div>
+      <nav className={styles.featureList} aria-label="Owner features" tabIndex={0}>{featureCategories.map(group => {
         const items = visible.filter(item => item.category === group.id);
-        return items.length ? <section key={group.id} aria-labelledby={`group-${group.id}`}><h2 id={`group-${group.id}`}>{group.title}<span>{items.length}</span></h2><div className={styles.groupList}>{items.map(item => <button type="button" key={item.id} aria-current={active.id === item.id ? 'true' : undefined} aria-controls="owner-feature-panel" onClick={() => select(item.id)}><span className={styles.number}>{String(tutorials.indexOf(item) + 1).padStart(2,'0')}</span><span><strong>{item.title}</strong><small>{group.title}</small></span><span className={styles.arrow} aria-hidden="true">→</span></button>)}</div></section> : null;
-      })}</nav>
-      <article key={active.id} id="owner-feature-panel" ref={panel} className={styles.panel} aria-labelledby="owner-feature-title">
+        return items.length ? <section key={group.id} aria-labelledby={`group-${group.id}`}><h3 id={`group-${group.id}`}>{group.title}</h3><div className={styles.groupList}>{items.map(item => <button type="button" key={item.id} aria-current={active.id === item.id ? 'true' : undefined} aria-controls="owner-feature-panel" onClick={() => { setActiveId(item.id); resetDetails(); }}>{item.title}</button>)}</div></section> : null;
+      })}</nav></aside>
+      <article id="owner-feature-panel" className={styles.panel} aria-labelledby="owner-feature-title">
         <header><p className={styles.topic}>{featureCategories.find(item => item.id === active.category)?.title}</p><h2 id="owner-feature-title">{active.question}</h2><p className={styles.description}>{active.description}</p></header>
-        {active.videoSrc ? <video className={styles.video} controls preload="metadata" aria-label={`${active.title} video`}><source src={active.videoSrc} type="video/mp4" />{active.captionsSrc && <track kind="captions" src={active.captionsSrc} srcLang="en" label="English" default />}Your browser does not support this video.</video> : <div className={styles.videoPlaceholder} aria-label="Video not yet available"><span className={styles.play} aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></svg></span><strong>{active.title}</strong><span>Video coming soon</span></div>}
-        <div className={styles.example}><strong>What this helps you do</strong><p>{active.example}</p></div>
-        <details className={styles.steps} onToggle={event => { if (event.currentTarget.open) requestAnimationFrame(() => panel.current?.scrollIntoView({ block: 'start' })); }}><summary>Read the quick guide <span aria-hidden="true">⌄</span></summary><div><p className={styles.where}><strong>Where to find it</strong>{active.where}</p><ol>{active.steps.map(step => <li key={step}>{step}</li>)}</ol>{active.note && <p className={styles.note}>{active.note}</p>}<Link href={active.href}>{active.action} <span aria-hidden="true">↗</span></Link></div></details>
-        <div className={styles.paging}><button type="button" disabled={index === 0} onClick={() => select(visible[index - 1].id)}>← Previous feature</button><span>{index + 1} of {visible.length}</span><button type="button" disabled={index === visible.length - 1} onClick={() => select(visible[index + 1].id)}>Next feature →</button></div>
+        <div className={styles.mediaRow}>{active.videoSrc ? <button ref={trigger} type="button" className={styles.videoPreview} aria-haspopup="dialog" onClick={() => dialog.current?.showModal()}><span className={styles.play} aria-hidden="true">▶</span><strong>Watch video</strong></button> : <div className={styles.videoPreview} aria-label="Video not yet available"><span className={styles.film} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="5" width="13" height="14" rx="3"/><path d="m16 10 5-3v10l-5-3"/></svg></span><strong>Video coming soon</strong></div>}<div><h3>{active.title}</h3><p>A short walkthrough of this feature.</p><Link className={styles.action} href={active.href}>{active.action}</Link></div></div>
+        <div className={styles.disclosures}>{(['guide','example'] as const).map(section => <section key={section}><button type="button" aria-expanded={expanded === section} aria-controls={`feature-${section}`} onClick={() => setExpanded(expanded === section ? null : section)}><span>{section === 'guide' ? 'How to use it' : 'Example'}</span><small>{expanded === section ? 'Hide' : 'Show'}</small></button><div id={`feature-${section}`} hidden={expanded !== section} className={styles.explanation}>{section === 'guide' ? <><p className={styles.where}><strong>Where to find it</strong>{active.where}</p><ol>{active.steps.map(step => <li key={step}>{step}</li>)}</ol>{active.note && <p className={styles.note}>{active.note}</p>}</> : <p>{active.example}</p>}</div></section>)}</div>
+        {active.videoSrc && <dialog ref={dialog} className={styles.videoDialog} aria-labelledby="tutorial-video-title" onClose={() => { dialog.current?.querySelector('video')?.pause(); trigger.current?.focus(); }} onClick={event => { if(event.target === dialog.current) { const r=dialog.current.getBoundingClientRect(); if(event.clientX<r.left || event.clientX>r.right || event.clientY<r.top || event.clientY>r.bottom) dialog.current.close(); } }}><header><h2 id="tutorial-video-title">{active.title}</h2><button type="button" onClick={() => dialog.current?.close()}>Close video</button></header><video key={active.id} controls preload="none" aria-label={`${active.title} video`}><source src={active.videoSrc} type="video/mp4" />{active.captionsSrc && <track kind="captions" src={active.captionsSrc} srcLang="en" label="English" default />}</video></dialog>}
       </article>
     </div> : <section className={styles.empty}><h2>No matching owner features</h2><p>Try a shorter search or choose another category.</p><button type="button" onClick={clear}>Show all features</button></section>}
   </div>;
