@@ -169,13 +169,18 @@
 .hero { padding:3.5rem 0 2.5rem; }
 .hero h1 { font-size:clamp(2.4rem,calc(var(--website-design-vw,1vw)*4),3.6rem); }
 .pricingChoices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(1rem,calc(var(--website-design-vw,1vw)*1.4),1.2rem); }
-.accountCard { display:flex; flex-direction:column; align-items:stretch; min-width:0; gap:.85rem; padding:1.8rem 2rem; border:1px solid rgba(48,137,104,.16); border-radius:1.35rem; color:#0c4637; background:#f8fcfa; box-shadow:0 3px 8px rgba(20,64,50,.03),0 16px 32px -16px rgba(20,64,50,.18),inset 0 1px 0 rgba(255,255,255,.96); font:inherit; text-align:left; text-decoration:none; cursor:pointer; transition:background-color 160ms ease,border-color 160ms ease,box-shadow 160ms ease; }
-.accountCard:hover, .accountCard:focus-visible { background-color:#eaf4ee; border-color:#82b59f; box-shadow:0 8px 24px rgba(20,64,50,.1); }
-.accountTitle { margin:0; color:#0a4536; font-size:1.65rem; line-height:1.25; letter-spacing:-.035em; font-weight:800; }
-.accountDescription { margin:0; color:#5d6c66; font-size:1rem; line-height:1.6; font-weight:500; flex:1; }
-.cardPrice { display:block; padding-top:1.25rem; margin-top:.5rem; border-top:1px solid #dce8e0; font-size:.85rem; line-height:1.65; color:#486658; }
-.cardPrice strong { font-size:1.25rem; color:#0c4637; font-weight:800; }
-.cardAction { display:block; padding:.85rem .6rem; margin-top:.35rem; border:1px solid #d0e2d7; border-radius:.75rem; background:#eaf3ed; color:#20543e; text-align:center; font-size:.85rem; font-weight:700; line-height:1.5; }
+.accountCard { display:flex; flex-direction:column; align-items:stretch; min-width:0; gap:1.15rem; padding:1.8rem; border:1px solid #d2e4da; border-radius:1.35rem; color:#0c4637; background:#fff; box-shadow:0 8px 24px rgba(20,64,50,.06); font:inherit; text-align:left; text-decoration:none; cursor:pointer; transition:background-color 160ms ease,border-color 160ms ease,box-shadow 160ms ease; }
+.accountCard:hover { background:#fbfdfb; border-color:#82b59f; box-shadow:0 12px 30px rgba(20,64,50,.11); }
+.accountCard:focus-visible { outline:3px solid #438e70; outline-offset:4px; }
+.accountTitle { margin:0; color:#0a4536; font-size:1.7rem; line-height:1.25; letter-spacing:-.035em; font-weight:800; }
+.accountDescription { margin:0; color:#405b4f; font-size:1rem; line-height:1.6; font-weight:500; flex:1; }
+.cardPrice { display:grid; gap:.45rem; padding:1.15rem 1.2rem; margin:0; border:1px solid #dfebe4; border-radius:.95rem; background:#f0f7f3; color:#486658; }
+.priceLabel { font-size:.85rem; line-height:1.4; font-weight:600; }
+.priceLine { display:flex; align-items:baseline; gap:.5rem; min-height:3.35rem; }
+.cardPrice strong { font-size:3rem; line-height:1.1; letter-spacing:-.05em; color:#0c4637; font-weight:850; font-variant-numeric:tabular-nums; }
+.priceLine > span { font-size:.9rem; white-space:nowrap; }
+.cardNote { min-height:3.2em; padding-top:1rem; border-top:1px solid #e0e9e3; color:#526b5f; font-size:.88rem; line-height:1.6; }
+.cardAction { display:flex; align-items:center; justify-content:center; min-height:3.2rem; padding:.8rem .7rem; margin:0; border:1px solid #c7ddd0; border-radius:.85rem; background:#eaf3ed; color:#20543e; text-align:center; font-size:.9rem; font-weight:750; line-height:1.4; }
 .accountCard:hover .cardAction, .accountCard:focus-visible .cardAction { background:#dfeee5; }
 .signIn { text-align:center; font-size:.85rem; color:#61756a; margin:1.4rem 0 2rem; line-height:1.6; }
 .signIn a { color:#24533e; font-weight:700; text-underline-offset:3px; }
@@ -248,7 +253,7 @@
 .closing h2 { color: #173f31; font-size: 1.2rem; letter-spacing: -.025em; }
 .closing p { margin-top: .35rem; }
 .contactButton { display: inline-flex; align-items: center; justify-content: center; gap: .7rem; flex-shrink: 0; min-height: 3.3rem; padding: .85rem 1.4rem; border: 1px solid #1b5944; border-radius: .95rem; background: linear-gradient(180deg, #1c6048, #143f32); color: #fff; font: inherit; font-size: .95rem; font-weight: 750; text-decoration: none; box-shadow: 0 6px 16px rgba(17,63,50,.12); transition: background .15s, box-shadow .15s; }
-.contactButton svg { width: 1.25rem; height: 1.25rem; flex: none; }
+.contactButton svg { display: block; width: 1.3rem; height: 1.3rem; flex: 0 0 1.3rem; align-self: center; }
 .contactButton:hover { background: #174d3b; box-shadow: 0 8px 20px rgba(17,63,50,.2); }
 .contactButton:focus-visible { outline: 3px solid #438e70; outline-offset: 4px; }
 @media(max-width:760px) {
