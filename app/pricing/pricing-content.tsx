@@ -51,8 +51,8 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
           <Link className={styles.button} href={signedIn ? '/contact-us' : '/business/join'}>{signedIn ? 'Discuss Business access' : 'Create free Business account'}</Link>
         </div>
       </PricingModal>
-      <section className={styles.pricingIncluded} aria-labelledby="included-title">
-        <h2 id="included-title">What your subscription covers</h2>
+      <details className={styles.pricingIncluded}>
+        <summary className={styles.coverageSummary}><h2>What your subscription covers</h2><span className={styles.coverageToggle} aria-hidden="true" /></summary>
         <div className={styles.subscriptionDetails}>
           <article className={styles.subscriptionDetail}>
             <h3>Owner</h3>
@@ -80,12 +80,14 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
             </ul>
           </article>
         </div>
-        <div className={styles.subscriptionBilling}>
-          <strong>Monthly or yearly?</strong>
-          <p>Yearly pricing covers your subscription. Optional admin is billed monthly. Your package preview is an estimate.</p>
-        </div>
-      </section>
-      <div className={styles.closing}><div><h2>Still have a question?</h2></div><Link className={styles.button} href="/contact-us">Talk to Aim4price </Link></div>
+      </details>
+      <div className={styles.closing}>
+        <div><h2>Still have a question?</h2><p>We’ll help you find the right subscription.</p></div>
+        <Link className={styles.contactButton} href="/contact-us">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8H5l-4 3v-11a9 9 0 0 1 19 0Z" transform="translate(1 -1) scale(.95)"/><path d="M8 10h8M8 14h5"/></svg>
+          <span>Talk to Aim4price</span>
+        </Link>
+      </div>
     </div>
     </div>
   );

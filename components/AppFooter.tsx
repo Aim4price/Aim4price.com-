@@ -58,7 +58,7 @@ const dealerWorkspace: FooterWorkspace = {
 
 const companyLinks: FooterLink[] = [
   { href: '/pricing', label: 'Subscriptions' },
-  { href: '/selling-fees', label: 'Asset sale fees' },
+  { href: '/selling-fees', label: 'Asset Sale Fees' },
   { href: '/about-us', label: 'About Aim4price' },
   { href: '/contact-us', label: 'Contact Us' },
 ];
