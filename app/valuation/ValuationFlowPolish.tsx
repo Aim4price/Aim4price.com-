@@ -32,6 +32,7 @@ type FamilyOption = {
   label: string;
   meta: string;
   guidance: string;
+  guideNote: string;
   selected: boolean;
   searchText: string;
 };
@@ -102,6 +103,7 @@ function sameOptions(left: FamilyOption[], right: FamilyOption[]): boolean {
       && option.label === candidate.label
       && option.meta === candidate.meta
       && option.guidance === candidate.guidance
+      && option.guideNote === candidate.guideNote
       && option.selected === candidate.selected;
   });
 }
@@ -274,6 +276,7 @@ export default function ValuationFlowPolish() {
       const options = buttons.map((button, index) => {
         const { label, meta } = optionLabelParts(button);
         const guidance = button.dataset.familyGuidance ?? '';
+        const guideNote = button.dataset.familyGuideNote ?? '';
         const id = `family-option-${index}`;
         buttonMap.set(id, button);
         return {
@@ -281,6 +284,7 @@ export default function ValuationFlowPolish() {
           label,
           meta,
           guidance,
+          guideNote,
           selected: button.className.includes('equipmentDropdownOptionActive') || button.getAttribute('aria-pressed') === 'true',
           searchText: `${label} ${meta} ${guidance}`.toLowerCase(),
         } satisfies FamilyOption;
@@ -423,7 +427,6 @@ export default function ValuationFlowPolish() {
   if (!familyModalOpen || !overlayHost) return null;
 
   const modalTitle = `Choose ${familyTypeLabel}`;
-  const itemLabel = familyTypeLabel.toLowerCase().includes('vehicle') ? 'vehicle types' : 'equipment types';
 
   return createPortal(
     <div className={styles.familyOverlay} data-website-overlay data-valuation-family-modal-root="true">
@@ -445,7 +448,7 @@ export default function ValuationFlowPolish() {
         <header className={styles.familyModalHeader}>
           <div className={styles.familyModalHeading}>
             <h2 data-estimate-modal-title id={FAMILY_MODAL_TITLE_ID}>{modalTitle}</h2>
-            <p id={FAMILY_MODAL_DESCRIPTION_ID}>Search or browse the available {itemLabel}.</p>
+            <p id={FAMILY_MODAL_DESCRIPTION_ID}>Choose the closest match. You can adjust its replacement price later.</p>
           </div>
           <button
             type="button"
@@ -495,6 +498,7 @@ export default function ValuationFlowPolish() {
                     <strong>{option.label}</strong>
                     {option.meta ? <small>{option.meta}</small> : null}
                     {option.guidance ? <span className={styles.familyGuidance}>{option.guidance}</span> : null}
+                    {option.guideNote ? <span className={styles.familyGuideNote}>{option.guideNote}</span> : null}
                   </span>
                 </button>
               ))}
@@ -512,4 +516,5 @@ export default function ValuationFlowPolish() {
     overlayHost,
   );
 }
+
 

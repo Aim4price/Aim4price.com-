@@ -3,6 +3,118 @@
  * boundaries that the reviewed catalogue and its price bands do not define.
  */
 const FAMILY_GUIDANCE: Record<string, string> = {
+  self_propelled_windrower: "Cuts crops into windrows. Compare cutting width, crop suitability and fitted header.",
+  plastic_mulch_layer: "Lays plastic mulch over crop beds. Compare bed width and included laying equipment.",
+  land_roller: "Rolls agricultural land. Compare working width, roller design and weight.",
+  rock_picker: "Collects stones from fields. Compare picking width, stone size and hopper capacity.",
+  engine_wood_chipper: "Chips branches and wood. Compare feed opening, output and engine or tractor drive.",
+  pto_wood_chipper: "Chips branches and wood. Compare feed opening, output and engine or tractor drive.",
+  orchard_platform: "Work platform for orchard tasks. Compare platform height, capacity and drive type.",
+  self_loading_forage_wagon: "Collects and carries cut forage. Compare load capacity and pickup equipment.",
+  seed_fertiliser_tender: "Transfers seed or fertiliser to field equipment. Compare storage and transfer capacity.",
+  crop_washer: "Washes harvested produce. Compare crop suitability, handling capacity and cleaning system.",
+  skid_firefighting_unit: "Removable firefighting unit. Compare tank, pump and hose equipment; the carrying vehicle is separate.",
+  crop_application_drone: "Drone for applying crop inputs. Compare payload, application equipment and included batteries.",
+  cane_loader: "Loads harvested cane. Compare lifting capacity, reach and loading attachment.",
+  tracked_dump_carrier: "Tracked carrier for site loads. Compare payload, body capacity and tipping arrangement.",
+  tracked_site_dumper: "Tracked carrier for site loads. Compare payload, body capacity and tipping arrangement.",
+  tracked_asphalt_paver: "Lays asphalt on roads or paved areas. Compare paving width, output and screed equipment.",
+  wheeled_asphalt_paver: "Lays asphalt on roads or paved areas. Compare paving width, output and screed equipment.",
+  road_recycler_stabiliser: "Processes road or soil layers. Compare working width, depth and drive arrangement.",
+  tractor_soil_stabiliser: "Processes road or soil layers. Compare working width, depth and drive arrangement.",
+  asphalt_material_feeder: "Transfers asphalt to a paver. Compare throughput, hopper capacity and conveyor reach.",
+  concrete_kerb_paver: "Forms concrete kerbs or paving. Compare profile, paving width and production capacity.",
+  concrete_road_paver: "Forms concrete kerbs or paving. Compare profile, paving width and production capacity.",
+  walk_behind_line_marker: "Applies surface markings. Compare line width, paint capacity and drive type.",
+  ride_on_line_marker: "Applies surface markings. Compare line width, paint capacity and drive type.",
+  concrete_placing_boom: "Positions pumped concrete. Compare boom reach and mounting arrangement; check what equipment is included.",
+  shotcrete_machine: "Sprays concrete or mortar. Compare output, application system and included equipment.",
+  concrete_poker_vibrator: "Compacts freshly poured concrete. Compare poker size, drive type and included shafts.",
+  powered_concrete_screed: "Levels fresh concrete. Compare working width, controls and drive arrangement.",
+  laser_concrete_screed: "Levels fresh concrete. Compare working width, controls and drive arrangement.",
+  walk_behind_power_float: "Finishes concrete surfaces. Compare finishing width, rotor layout and drive type.",
+  ride_on_power_float: "Finishes concrete surfaces. Compare finishing width, rotor layout and drive type.",
+  vacuum_excavation_unit: "Removes soil using suction. Compare vacuum output, tank capacity and whether a vehicle is included.",
+  truck_vacuum_excavator: "Removes soil using suction. Compare vacuum output, tank capacity and whether a vehicle is included.",
+  mobile_scaffold_tower: "Moveable scaffold for access work. Compare platform height, size and included sections.",
+  concrete_pulveriser: "Demolition attachment. Compare jaw size and host-machine compatibility; the host is separate.",
+  demolition_cutter: "Demolition attachment. Compare jaw size and host-machine compatibility; the host is separate.",
+  mobile_jaw_crusher: "Mobile crushing machine. Compare material type, feed size and processing output.",
+  mobile_cone_crusher: "Mobile crushing machine. Compare material type, feed size and processing output.",
+  mobile_impact_crusher: "Mobile crushing machine. Compare material type, feed size and processing output.",
+  mobile_screen: "Mobile material screening machine. Compare screen size, material suitability and output.",
+  mobile_trommel: "Mobile material screening machine. Compare screen size, material suitability and output.",
+  demolition_robot: "Remote-controlled demolition machine. Compare reach, power and included attachments.",
+  electric_demolition_hammer: "Handheld breaking tool. Compare impact performance, weight, power source and included tools.",
+  pneumatic_breaker: "Handheld breaking tool. Compare impact performance, weight, power source and included tools.",
+  hydraulic_handheld_breaker: "Handheld breaking tool. Compare impact performance, weight, power source and included tools.",
+  petrol_breaker: "Handheld breaking tool. Compare impact performance, weight, power source and included tools.",
+  floor_grinder: "Prepares or removes floor surfaces. Compare working width, removal method and power source.",
+  floor_scarifier: "Prepares or removes floor surfaces. Compare working width, removal method and power source.",
+  floor_shot_blaster: "Prepares or removes floor surfaces. Compare working width, removal method and power source.",
+  walk_behind_floor_scraper: "Prepares or removes floor surfaces. Compare working width, removal method and power source.",
+  ride_on_floor_scraper: "Prepares or removes floor surfaces. Compare working width, removal method and power source.",
+  rebar_bender: "Cuts or bends reinforcing steel. Compare bar diameter, functions and powered or manual operation.",
+  rebar_cutter: "Cuts or bends reinforcing steel. Compare bar diameter, functions and powered or manual operation.",
+  rebar_cutter_bender: "Cuts or bends reinforcing steel. Compare bar diameter, functions and powered or manual operation.",
+  manual_total_station: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  robotic_total_station: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  survey_gnss_rover: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  dumpy_level: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  digital_survey_level: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  construction_laser_level: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  pipe_laser: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  theodolite: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  survey_laser_scanner: "Survey or setting-out equipment. Compare measurement function, accuracy and included accessories.",
+  drum_lifter_tipper: "Lifts or tips drums. Compare drum compatibility, rated load and lifting height.",
+  order_picker: "Warehouse equipment for picking stock. Compare picking height, load capacity and operator position.",
+  pallet_inverter: "Turns palletised loads. Compare load capacity, pallet size and turning arrangement.",
+  warehouse_tow_tractor: "Tows loads within a warehouse or site. Compare towing capacity and battery specification.",
+  dock_leveller: "Bridges loading docks and vehicles. Compare platform dimensions, rated load and operation.",
+  wheelie_bin_compactor: "Compacts waste in bins. Compare bin compatibility, compaction force and power supply.",
+  hydraulic_power_pack: "Supplies hydraulic power. Compare flow, operating pressure and drive type.",
+  water_booster_set: "Boosts water-supply pressure. Compare flow, pressure and included pumps and controls.",
+  carpet_extractor: "Washes and extracts moisture from carpets. Compare tank capacity, extraction performance and accessories.",
+  pipe_threading_machine: "Threads pipes. Compare pipe diameter, thread types and included dies.",
+  plate_roller: "Rolls metal plate or sections. Compare material dimensions, thickness and rolling capacity.",
+  section_roller: "Rolls metal plate or sections. Compare material dimensions, thickness and rolling capacity.",
+  combination_woodworking_machine: "Woodworking equipment. Match its functions, workpiece dimensions and manual or automatic operation.",
+  edgebander: "Woodworking equipment. Match its functions, workpiece dimensions and manual or automatic operation.",
+  wood_morticer: "Woodworking equipment. Match its functions, workpiece dimensions and manual or automatic operation.",
+  wood_tenoner: "Woodworking equipment. Match its functions, workpiece dimensions and manual or automatic operation.",
+  wood_thicknesser: "Woodworking equipment. Match its functions, workpiece dimensions and manual or automatic operation.",
+  wood_dust_extractor: "Collects woodworking dust. Compare airflow, filtration and collection capacity.",
+  vehicle_diagnostic_scanner: "Vehicle diagnostic equipment. Compare vehicle coverage, supported functions and included software.",
+  industrial_coverstitch_machine: "Sews coverstitch seams. Compare stitch configuration, material suitability and automation.",
+  booklet_maker: "Print-finishing equipment. Match the finishing function, sheet or roll size and output.",
+  paper_creaser: "Print-finishing equipment. Match the finishing function, sheet or roll size and output.",
+  roll_laminator: "Print-finishing equipment. Match the finishing function, sheet or roll size and output.",
+  decanter_centrifuge: "Separates materials by spinning. Compare feed material, throughput and separation requirements.",
+  high_speed_disperser: "Disperses materials into a liquid. Compare batch capacity, motor power and mixing equipment.",
+  air_receiver: "Stores compressed air. Compare vessel capacity, pressure rating and included fittings.",
+  industrial_vacuum_pump: "Produces a vacuum. Compare suction flow, vacuum level and process suitability.",
+  liquid_ring_vacuum_pump: "Produces a vacuum. Compare suction flow, vacuum level and process suitability.",
+  cold_water_pressure_washer: "Cleans with pressurised water. Compare flow, pressure, heating and included accessories.",
+  hot_water_pressure_washer: "Cleans with pressurised water. Compare flow, pressure, heating and included accessories.",
+  parts_washer: "Cleans mechanical parts. Compare working space, cleaning method and fluid system.",
+  dry_ice_blaster: "Cleans using dry ice. Compare delivery capacity, air requirements and included equipment.",
+  bread_slicer: "Slices bread loaves. Compare loaf size, slice thickness and output.",
+  coupe: "Passenger car with a coupe body. Compare model, seating and specification.",
+  convertible: "Passenger car with an opening roof. Compare model, roof system and specification.",
+  compact_street_sweeper: "Compact vehicle for sweeping streets. Compare cleaning width, hopper capacity and fitted equipment.",
+  fire_engine: "Specialist firefighting vehicle. Compare chassis, pumping or access equipment and what is included.",
+  bush_fire_vehicle: "Specialist firefighting vehicle. Compare chassis, pumping or access equipment and what is included.",
+  airport_fire_vehicle: "Specialist firefighting vehicle. Compare chassis, pumping or access equipment and what is included.",
+  aerial_fire_appliance: "Specialist firefighting vehicle. Compare chassis, pumping or access equipment and what is included.",
+  refrigerated_van: "Van with insulated load space and cooling equipment. Compare payload, load volume and refrigeration.",
+  ambulance: "Vehicle fitted for patient transport. Compare vehicle specification and included medical equipment.",
+  hearse: "Vehicle adapted for funeral transport. Compare vehicle specification, body conversion and fittings.",
+  golf_cart: "Small passenger or utility cart. Compare seating or payload, power source and battery specification.",
+  passenger_shuttle_cart: "Small passenger or utility cart. Compare seating or payload, power source and battery specification.",
+  utility_cargo_cart: "Small passenger or utility cart. Compare seating or payload, power source and battery specification.",
+  passenger_tuk_tuk: "Three-wheeled transport vehicle. Compare passenger or cargo capacity and power source.",
+  cargo_three_wheeler: "Three-wheeled transport vehicle. Compare passenger or cargo capacity and power source.",
+  game_viewer: "Vehicle adapted for game viewing. Compare seating, drivetrain and included conversion equipment.",
   crop_grader: 'Grades produce by size or quality. Compare crop type, sorting capacity and output.',
   livestock_self_feeder: 'Livestock feed storage and dispensing. Compare animal type and feed capacity.',
   automatic_calf_feeder: 'Automated calf feeding. Compare calf capacity, feeding stations and control equipment.',
@@ -92,6 +204,13 @@ const FAMILY_GUIDANCE: Record<string, string> = {
   wheel_lift_tow_truck: 'Recovery truck that lifts one end of a vehicle for towing.',
 };
 
+const SIZE_CLASS_FAMILIES = new Set([
+  'compact_tractor', 'small_field_tractor', 'big_field_tractor',
+  'small_combine_harvester', 'medium_combine_harvester', 'large_combine_harvester',
+  'mini_excavator', 'compact_wheel_loader', 'wheel_loader', 'stand_on_mini_loader',
+  'compact_panel_van', 'panel_van', 'minibus', 'midibus',
+]);
+
 type Family = { familyKey: string; familyLabel: string; sectorKey?: string | null };
 
 export function getBasicFamilyGuidance(family: Family): string {
@@ -108,6 +227,7 @@ export function getBasicFamilyGuidance(family: Family): string {
   if (/generator/.test(text)) return 'Compare rated output in kVA/kW, fuel type and single- or three-phase supply.';
   if (/compressor/.test(text)) return 'Compare delivered airflow and working pressure, plus portable or fixed installation.';
   if (/pump/.test(text)) return 'Compare flow rate, pressure or head, and the material being pumped.';
+  if (family.sectorKey === 'motor' && /trailer|tow dolly/.test(text)) return 'Trailer only; the towing vehicle is separate. Compare load capacity, body type and fitted equipment.';
   if (/tank|sprayer|spraying|spreader|mixer|blender|agitator/.test(text)) return 'Compare tank or batch capacity, working output and fitted equipment.';
   if (family.sectorKey !== 'construction' && /trailer|tow dolly/.test(text)) return 'Trailer only, not the towing vehicle. Compare payload, deck or body size and axle layout.';
   if (family.sectorKey === 'motor' && /truck/.test(text)) return 'Match the truck body and axle layout. Compare rated payload and body capacity.';
@@ -153,4 +273,12 @@ export function getBasicFamilyGuidance(family: Family): string {
   if (family.sectorKey === 'industrial') return 'Compare working capacity, output and automation level for an equivalent machine.';
   if (family.sectorKey === 'construction') return 'Compare working size, capacity and configuration for an equivalent machine.';
   return 'Compare working size, capacity and fitted equipment for an equivalent asset.';
+}
+
+
+/** Short context beneath each option; does not define price bounds or size cut-offs. */
+export function getBasicFamilyGuideNote(family: Family): string {
+  return SIZE_CLASS_FAMILIES.has(family.familyKey)
+    ? 'Sizes overlap. Adjust the price guide for your asset.'
+    : 'Starting price guide only. Adjust it for your asset.';
 }

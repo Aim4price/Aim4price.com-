@@ -420,3 +420,14 @@
   line-height: 1.4;
   white-space: normal;
 }
+
+
+/* Keep category guidance readable without forcing extra line breaks. */
+.familyGuideNote {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--app-muted, #536d63);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
