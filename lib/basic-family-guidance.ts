@@ -3,6 +3,17 @@
  * boundaries that the reviewed catalogue and its price bands do not define.
  */
 const FAMILY_GUIDANCE: Record<string, string> = {
+  crop_grader: 'Grades produce by size or quality. Compare crop type, sorting capacity and output.',
+  livestock_self_feeder: 'Livestock feed storage and dispensing. Compare animal type and feed capacity.',
+  automatic_calf_feeder: 'Automated calf feeding. Compare calf capacity, feeding stations and control equipment.',
+  nitrogen_generator: 'Produces nitrogen gas. Compare gas purity, flow rate and operating pressure.',
+  oxygen_generator: 'Produces oxygen gas. Compare gas purity, flow rate and operating pressure.',
+  vehicle_aircon_service_machine: 'Vehicle air-conditioning service unit. Compare refrigerant compatibility and service functions.',
+  dough_moulder: 'Shapes dough for bakery production. Compare dough-piece size and hourly output.',
+  extrusion_blow_moulder: 'Blow moulds hollow plastic products. Compare product size, output and tooling.',
+  battery_solar_lighting_tower: 'Battery or solar-powered lighting. Compare mast height, light output and operating duration.',
+  manual_sausage_filler: 'Hand-operated sausage filling. Compare cylinder capacity and product size.',
+  powered_sausage_filler: 'Powered sausage filling. Compare batch capacity and hourly output.',
   compact_tractor: 'Small-frame tractor for light work and tight spaces. Compare engine kW/hp and frame size.',
   orchard_vineyard_tractor: 'Narrow or low-profile tractor for orchard and vineyard rows. Check width and clearance.',
   small_field_tractor: 'General farm tractor for lighter fieldwork, mowing and loader work. Compare engine kW/hp and implement size.',
@@ -88,7 +99,7 @@ export function getBasicFamilyGuidance(family: Family): string {
   if (Object.hasOwn(FAMILY_GUIDANCE, key)) return FAMILY_GUIDANCE[key];
   const text = `${key} ${family.familyLabel}`.toLowerCase().replaceAll('_', ' ');
   // Mounting distinctions take priority over generic machinery wording.
-  if (/attachment|bucket|loader pallet forks|excavator (grab|ripper)|tractor front loader/.test(text)) return 'Attachment only, not the host machine. Match its size, capacity and compatible machine.';
+  if (family.sectorKey !== 'industrial' && /attachment|bucket|loader pallet forks|excavator (grab|ripper)|tractor front loader/.test(text)) return 'Attachment only, not the host machine. Match its size, capacity and compatible machine.';
   if (family.sectorKey === 'agricultural' && /mounted|tractor pto|tractor post.hole/.test(text)) return 'Carried on a tractor or host machine. Compare working width or capacity; the host is separate.';
   if (/trailed|towed/.test(text) && family.sectorKey === 'agricultural') return 'Pulled behind a tractor on its own wheels. Compare working width or capacity; the tractor is separate.';
   if (/header/.test(text)) return 'Harvester attachment only. Compare crop type, working width or row count.';
@@ -100,8 +111,8 @@ export function getBasicFamilyGuidance(family: Family): string {
   if (/tank|sprayer|spraying|spreader|mixer|blender|agitator/.test(text)) return 'Compare tank or batch capacity, working output and fitted equipment.';
   if (family.sectorKey !== 'construction' && /trailer|tow dolly/.test(text)) return 'Trailer only, not the towing vehicle. Compare payload, deck or body size and axle layout.';
   if (family.sectorKey === 'motor' && /truck/.test(text)) return 'Match the truck body and axle layout. Compare rated payload and body capacity.';
-  if (/bus|coach/.test(text)) return 'Compare passenger capacity, body layout and intended route or journey type.';
-  if (/baler|wrapper/.test(text)) return 'Compare bale size, output and whether baling and wrapping are combined or separate.';
+  if (/\bbus\b|coach/.test(text)) return 'Compare passenger capacity, body layout and intended route or journey type.';
+  if (family.sectorKey === 'agricultural' && /baler|wrapper/.test(text)) return 'Compare bale size, output and whether baling and wrapping are combined or separate.';
   if (/planter|seed drill|transplanter/.test(text)) return 'Compare row count, row spacing or working width and planting equipment.';
   if (family.sectorKey === 'agricultural' && /mower|mulcher|slasher|rake|tedder|plough|harrow|cultivator|ripper|tiller/.test(text)) return 'Compare working width, number of working units and tractor power requirements.';
   if (/harvester|combine/.test(text)) return 'Compare crop type, harvesting capacity and working width; distinguish the machine from its header.';
@@ -109,7 +120,7 @@ export function getBasicFamilyGuidance(family: Family): string {
   if (/excavator|loader|dumper|bulldozer|grader/.test(text)) return 'Compare operating weight, load or bucket capacity and the machine configuration.';
   if (/drill|drilling|pile|piling|trencher/.test(text)) return 'Compare working depth, diameter or width and the power or capacity needed for the job.';
   if (/conveyor|elevator/.test(text)) return 'Compare length, lifting height, material capacity and drive type.';
-  if (/printer|printing|press|cutter|cutting|lathe|milling|saw|machining/.test(text)) return 'Compare working size, output and manual or automated operation.';
+  if (/printer|printing|\bpress\b|cutter|cutting|lathe|milling|saw|machining/.test(text)) return 'Compare working size, output and manual or automated operation.';
   if (family.sectorKey === 'agricultural') {
     if (/grain|feed|sheller|thresher|mill|auger/.test(text)) return 'Compare material capacity, throughput and the crop or feed being handled.';
     if (/livestock|cattle|sheep|goat/.test(text)) return 'Compare animal size, handling capacity and manual or powered operation.';
@@ -119,17 +130,17 @@ export function getBasicFamilyGuidance(family: Family): string {
     if (/digger|lifter|topper|puller|weeder|pruner|leveller|scraper|ridger|aerator/.test(text)) return 'Compare working width, depth or crop-row spacing and required tractor power.';
   }
   if (family.sectorKey === 'industrial') {
-    if (/sealer|sealing|packer|packing|filling|filler|bagging|carton|labell|strapping|capping/.test(text)) return 'Compare pack or container size, packs per minute and manual or automatic operation.';
+    if (/wrapper|sealer|sealing|packer|packing|filling|filler|bagging|carton|labell|strapping|capping/.test(text)) return 'Compare pack or container size, packs per minute and manual or automatic operation.';
     if (/weld/.test(text)) return 'Compare welding process, rated amperage, duty cycle and power supply.';
     if (/boiler|chiller|heater|cooling|dehumidifier/.test(text)) return 'Compare heating or cooling capacity, operating temperature and installation type.';
-    if (/washing|laundry|dry.clean|tumble|ironing/.test(text)) return 'Compare load capacity in kg, cycle output and heating or power requirements.';
+    if (/washing|laundry|dry.clean|tumble dryer|ironing/.test(text)) return 'Compare load capacity in kg, cycle output and heating or power requirements.';
     if (/sewing|overlock|embroid/.test(text)) return 'Compare stitch or embroidery function, working area and automation level.';
     if (/tyre changer|wheel balancer|wheel alignment/.test(text)) return 'Compare supported wheel and tyre sizes and passenger or heavy-vehicle capability.';
     if (/scrubber|sweeper|vacuum|cleaner|washer|polisher|blaster/.test(text)) return 'Compare cleaning width or capacity, power source and walk-behind or ride-on operation.';
     if (/grinder|sander|router|planer|moulder|bending|folder|guillotine|boring|edm|ironworker/.test(text)) return 'Compare material type, working dimensions and manual or CNC operation.';
     if (/oven|prover|dough|bakery|bread|pastry/.test(text)) return 'Compare batch size, trays or working width, output and heating requirements.';
-    if (/meat|mincer|sausage|slicer|ice machine/.test(text)) return 'Compare batch or hourly output, product size and food-processing function.';
-    if (/crusher|shredder|granulator|pulveriser|waste compactor/.test(text)) return 'Compare material type, throughput and feed or chamber size.';
+    if (/meat|mincer|sausage|slicer|\bice machine/.test(text)) return 'Compare batch or hourly output, product size and food-processing function.';
+    if (/baler|crusher|shredder|granulator|pulveriser|waste compactor/.test(text)) return 'Compare material type, throughput and feed or chamber size.';
     if (/battery|energy storage/.test(text)) return 'Compare usable storage in kWh, output in kW and included power equipment.';
     if (/lighting/.test(text)) return 'Compare mast height, light output and battery, engine or mains power.';
     if (/air dryer|air blower/.test(text)) return 'Compare airflow, operating pressure and the required air treatment.';

@@ -22,6 +22,10 @@ test('selection help distinguishes similar names without cross-sector keyword co
   assert.match(help('industrial', 'electric_counterbalance_forklift'), /battery specification/);
   assert.match(help('motor', 'double_cab_bakkie'), /Two full seating rows/);
   assert.doesNotMatch(help('industrial', 'press_brake'), /tractor power/);
+  assert.doesNotMatch(help('industrial', 'flow_wrapper'), /bale/);
+  assert.doesNotMatch(help('industrial', 'industrial_bucket_elevator'), /Attachment only/);
+  assert.doesNotMatch(help('industrial', 'nitrogen_generator'), /kVA/);
+  assert.doesNotMatch(help('motor', 'bush_fire_vehicle'), /passenger capacity/);
   assert.doesNotMatch(help('industrial', 'truck_tyre_changer'), /truck body/);
   assert.doesNotMatch(help('industrial', 'powered_roller_conveyor'), /compacts/);
   assert.doesNotMatch(help('construction', 'trailer_boom_lift'), /Trailer only/);
