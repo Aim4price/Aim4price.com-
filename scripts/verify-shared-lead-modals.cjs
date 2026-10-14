@@ -192,8 +192,9 @@ const runtime='const sources='+JSON.stringify(modules)+',cache={};'+
  assert(signInGate.width>=1000,'Sign-in dialog has the wider layout');assert.equal(signInGate.scroll,false);
  await page.screenshot({path:'/tmp/shared-sign-in.png'});
  await page.evaluate(()=>window.fixtureRoot.render(React.createElement(require('app/business/join/business-signup').default,{returnTo:null})));
- await page.waitForFunction(()=>document.body.textContent.includes('Choose your access'));
- await page.screenshot({path:'/tmp/shared-account-choice.png'});
+ await page.waitForFunction(()=>document.querySelector('h1')?.textContent==='Create your free account');
+ await page.waitForSelector('input[name=password]');
+ await page.screenshot({path:'/tmp/shared-account-signup.png'});
  await page.evaluate(()=>{
    function Fixture(){const [value,setValue]=React.useState('good');return React.createElement(require('components/leads/LeadActionDialog').default,{title:'Update asset',assetTitle:'2023 Toyota Hilux',onClose:()=>{window.dropdownDialogClosed=true;}},React.createElement(require('components/AssetConditionPicker').default,{value,onChange:setValue}));}
    window.fixtureRoot.render(React.createElement(Fixture));
