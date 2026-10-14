@@ -13,21 +13,22 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
     <div className={styles.photoSurface}>
     <div className={styles.shell}>
       <header className={styles.hero}>
-        <h1>Let’s find your package.</h1>
+        <h1>Subscriptions</h1>
+        <p className={styles.heroDescription}>Choose the package that fits your work.</p>
       </header>
       <section className={styles.pricingChoices} aria-label="Choose your account">
         <button className={styles.accountCard} type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}>
           <strong className={styles.accountTitle}>Owner</strong>
           <span className={styles.accountDescription}>For farms, companies and individuals managing their own assets, costs and maintenance.</span>
           <span className={styles.cardPrice}>From <strong>R99</strong> / month</span>
-          <span className={styles.cardAction}>Explore Owner pricing</span>
+          <span className={styles.cardAction}>Explore Owner subscriptions</span>
         </button>
         <button type="button" aria-haspopup="dialog" onClick={() => setAudience('dealer')} className={styles.accountCard}>
           <strong className={styles.accountTitle}>Dealer</strong>
           <span className={styles.accountDescription}>For dealerships managing stock, client registers and asset enquiries.</span>
           <span className={styles.cardPrice}><strong>R199</strong> / month</span>
           <span className={styles.accountDescription}>Client registers are billed separately.</span>
-          <span className={styles.cardAction}>Explore Dealer pricing</span>
+          <span className={styles.cardAction}>Explore Dealer subscriptions</span>
         </button>
         <button type="button" aria-haspopup="dialog" onClick={() => setAudience('business')} className={styles.accountCard}>
           <strong className={styles.accountTitle}>Business</strong>
@@ -51,10 +52,38 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
         </div>
       </PricingModal>
       <section className={styles.pricingIncluded} aria-labelledby="included-title">
-        <h2 id="included-title">Know what you’re paying for.</h2>
-        <p>Owner subscriptions cover your asset records, costs, fuel, maintenance, sharing and reports. Choose a plan by the number of active assets across your account. Unlimited registers are included; sold and archived assets don’t count towards your limit.</p>
-        <p>Dealer subscriptions cover your stock workspace. Client registers are billed separately to your dealership. Setup and ongoing administration are optional services, quoted or selected separately.</p>
-        <p>Yearly prices apply to the subscription. Optional administration is still billed monthly. Your package preview is an estimate; Aim4price confirms any additional services and charges before work starts.</p>
+        <h2 id="included-title">What your subscription covers</h2>
+        <div className={styles.subscriptionDetails}>
+          <article className={styles.subscriptionDetail}>
+            <h3>Owner</h3>
+            <p>Manage your assets in one place.</p>
+            <ul>
+              <li>Asset records, costs, fuel, maintenance, sharing and reports.</li>
+              <li>Unlimited registers; your active-asset limit applies across your account.</li>
+              <li>Sold and archived assets don’t count towards your limit.</li>
+            </ul>
+          </article>
+          <article className={styles.subscriptionDetail}>
+            <h3>Dealer</h3>
+            <p>A workspace for your dealership stock.</p>
+            <ul>
+              <li>Your stock workspace is covered by your subscription.</li>
+              <li>Client registers are billed separately to your dealership.</li>
+            </ul>
+          </article>
+          <article className={styles.subscriptionDetail}>
+            <h3>Optional services</h3>
+            <p>Extra help, when you need it.</p>
+            <ul>
+              <li>Setup and ongoing admin are charged separately.</li>
+              <li>Aim4price confirms additional work and charges before starting.</li>
+            </ul>
+          </article>
+        </div>
+        <div className={styles.subscriptionBilling}>
+          <strong>Monthly or yearly?</strong>
+          <p>Yearly pricing covers your subscription. Optional admin is billed monthly. Your package preview is an estimate.</p>
+        </div>
       </section>
       <div className={styles.closing}><div><h2>Still have a question?</h2></div><Link className={styles.button} href="/contact-us">Talk to Aim4price </Link></div>
     </div>

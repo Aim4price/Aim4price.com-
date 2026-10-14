@@ -10,7 +10,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Pricing',
+  title: 'Subscriptions',
   description: 'Explore Aim4price Owner, Dealer and Business accounts, with optional administration services.',
   robots: { index: false, follow: false },
 };
