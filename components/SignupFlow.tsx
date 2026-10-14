@@ -7,7 +7,7 @@ import styles from './SignupFlow.module.css';
 export default function SignupFlow({title,description,children,returnTo,guest=false}:{title:string;description:string;children:ReactNode;returnTo?:string|null;guest?:boolean}) {
  const query=returnTo?'?returnTo='+encodeURIComponent(returnTo):'';
  return <main className={auth.page}>
-  <div className={`${auth.shell} ${auth.signupShell}`}>
+  <div className={auth.shell}>
    <div className={auth.topBar}><Link href="/" className={auth.homeLink}>Back to home</Link></div>
    <section className={auth.frame}><div className={`${auth.authCard} ${styles.content}`}>
     <nav className={auth.modeRail} aria-label="Authentication mode">
