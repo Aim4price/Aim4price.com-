@@ -1,7 +1,6 @@
 import { redirectAdminToAdmin } from '../lib/account-access';
 import AppHeader from '../components/AppHeader';
 import HomeHeroExperience from './home-hero-experience';
-import HomeFeatureGuides from './home-feature-guides';
 import HomeRoleSelector from './home-role-selector';
 import styles from './page.module.css';
 
@@ -18,8 +17,6 @@ export default async function HomePage() {
       <HomeHeroExperience />
 
       <HomeRoleSelector />
-
-      <HomeFeatureGuides />
     </main>
   );
 }
