@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
   type FocusEvent,
+  type ComponentType,
 } from 'react';
 import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
@@ -48,7 +49,7 @@ export const HERO_STORY_STEPS = [
 
 type StoryStep = (typeof HERO_STORY_STEPS)[number];
 
-type FeatureStory = {
+export type FeatureStory = {
   title: string;
   titleLines?: readonly [string, string];
   body: string;
@@ -99,7 +100,23 @@ const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
 const clampStoryIndex = (index: number) =>
   Math.max(0, Math.min(HERO_STORY_STEPS.length - 1, index));
 
-export default function HomeHeroExperience() {
+export type HomePreviewProps = {
+  showRegister?: boolean;
+  activeQuestion: QuestionKey;
+  onQuestionChange: (question: QuestionKey, index: number) => void;
+  onInteraction?: (source: 'pointer' | 'focus') => void;
+};
+export type HomeStoryVariant = {
+  label: string;
+  promise: readonly [string, string, string];
+  description: string;
+  features: Readonly<Record<QuestionKey, FeatureStory>>;
+};
+
+export default function HomeHeroExperience({ variant, Preview = HomeAssetPreview }: {
+  variant?: HomeStoryVariant;
+  Preview?: ComponentType<HomePreviewProps>;
+} = {}) {
   const [storyStepIndex, setStoryStepIndex] = useState(0);
   const [typedCount, setTypedCount] = useState(0);
   const [remainingMs, setRemainingMs] = useState(STORY_DURATIONS.brand);
@@ -520,7 +537,7 @@ export default function HomeHeroExperience() {
       }
     >
       <h1 id="home-hero-title" className={styles.heroA11yTitle}>
-        Aim4price.com asset management software built for South Africa
+        {variant ? `Aim4price.com for ${variant.label}` : 'Aim4price.com asset management software built for South Africa'}
       </h1>
 
       <div className={styles.heroStory}>
@@ -566,24 +583,21 @@ export default function HomeHeroExperience() {
                   aria-hidden={storyStepIndex !== 1 && storyStepIndex !== 2}
                 >
                   <p className={styles.heroPromiseTitle}>
-                    <span>Know what you own.</span>
-                    <span>Know what it’s worth.</span>
-                    <span>Know what it costs.</span>
+                    {(variant?.promise ?? ['Know what you own.', 'Know what it’s worth.', 'Know what it costs.']).map(line => <span key={line}>{line}</span>)}
                   </p>
 
                   <p className={styles.heroPromiseText}>
-                    Manage your vehicles, machinery and equipment in one place. Keep asset details,
-                    estimated values, documents, maintenance, budgets and costs connected to individual assets.
+                    {variant?.description ?? 'Manage your vehicles, machinery and equipment in one place. Keep asset details, estimated values, documents, maintenance, budgets and costs connected to individual assets.'}
                   </p>
 
                   <div className={styles.heroActions}>
-                    <a
+                    {variant ? <button type="button" className={styles.primaryCta} onClick={() => handleQuestionChange('worth', 0)}>Explore features</button> : (<a
                       href="#choose-role"
                       className={styles.primaryCta}
                       onClick={handleRoleSkip}
                     >
                       Get started
-                    </a>
+                    </a>)}
                     <Link href="/valuation" className={styles.secondaryCta}>
                       Get a Free Estimate
                     </Link>
@@ -616,7 +630,7 @@ export default function HomeHeroExperience() {
                     </button>
                   </div>
                 ) : null}
-                <HomeAssetPreview
+                <Preview
                   showRegister={storyStepIndex < FEATURE_START_INDEX}
                   activeQuestion={activeQuestion}
                   onQuestionChange={handleQuestionChange}
@@ -630,7 +644,7 @@ export default function HomeHeroExperience() {
                 aria-label="What Aim4price helps you do"
               >
                 {HERO_STAGES.map((question) => {
-                  const feature = FEATURE_STORIES[question];
+                  const feature = (variant?.features ?? FEATURE_STORIES)[question];
                   const isActive = question === activeQuestion;
 
                   return (
@@ -655,9 +669,9 @@ export default function HomeHeroExperience() {
                       </div>
                       {question === 'attention' && isActive && storyMode === 'features' ? (
                         <div className={styles.featureEndActions}>
-                          <a href="#choose-role" className={styles.primaryCta} onClick={handleRoleSkip}>
+                          {variant ? <button type="button" className={styles.primaryCta} onClick={() => handleQuestionChange('worth', 0)}>Explore features</button> : (<a href="#choose-role" className={styles.primaryCta} onClick={handleRoleSkip}>
                             Get started
-                          </a>
+                          </a>)}
                           {canAutoplay ? (
                             <button type="button" className={styles.secondaryCta} data-story-start onClick={startStory}>
                               Replay tour
@@ -673,13 +687,13 @@ export default function HomeHeroExperience() {
               </aside>
 
               <div className={styles.compactHeroActions}>
-                <a
+                {variant ? <button type="button" className={styles.primaryCta} onClick={() => handleQuestionChange('worth', 0)}>Explore features</button> : (<a
                   href="#choose-role"
                   className={styles.primaryCta}
                   onClick={handleRoleSkip}
                 >
                   Get started
-                </a>
+                </a>)}
                 <Link href="/valuation" className={styles.secondaryCta}>
                   Get a Free Estimate
                 </Link>
