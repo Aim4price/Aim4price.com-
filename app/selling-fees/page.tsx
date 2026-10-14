@@ -7,8 +7,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Selling fees',
-  description: 'A clear fee for selling your machinery. View the Aim4price fee guide, see what we handle and know what you receive before accepting an offer.',
+  title: 'Asset sale fees',
+  description: 'Agreed flat fees for asset sales. Fair value for owners, a fair deal for buyers and realistic asset values that support fair trade.',
 };
 
 const fees = [
@@ -29,10 +29,11 @@ export default function SellingFeesPage() {
         <section className={styles.panel} aria-labelledby="selling-title">
           <header className={styles.introduction}>
             <div>
-              <h1 id="selling-title">Selling fees</h1>
-              <p>One agreed fee. You approve the final deal.</p>
+              <h1 id="selling-title">Asset sale fees</h1>
+              <p>Fair value for owners. A fair deal for buyers.</p>
             </div>
             <Link href="/contact-us" className={styles.primary}>Sell with Aim4price <span aria-hidden="true">↗</span></Link>
+            <p className={styles.purpose}>We charge agreed flat fees instead of percentage commissions. We believe fair trade starts with realistic asset values, helping avoid financial strain and an inflated market.</p>
           </header>
 
           <div id="fee-guide" className={styles.feeLayout}>
