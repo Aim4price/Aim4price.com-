@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Aim4price - Asset Intelligence & Management. From fair agricultural machinery trade-in values to helping owners understand asset values, running costs and maintenance.",
+    "Aim4price - Asset Intelligence & Management. Connecting asset records, trusted businesses, reports and AI to help owners understand costs and protect long-term value.",
 };
 
 export default async function AboutUsPage() {
@@ -32,31 +32,22 @@ export default async function AboutUsPage() {
               </h1>
               <div className={styles.storyText}>
                 <p>
-                  Aim4price was initially built to help agricultural machinery
-                  dealers determine fair trade-in values. Our first tool focused
-                  on second-hand tractors, bringing a more consistent approach
-                  to estimating their worth and giving dealers a clearer starting
-                  point for discussions with owners.
+                  Aim4price began by helping agricultural machinery dealers
+                  determine fair trade-in values. Our first tool focused on
+                  second-hand tractors, giving dealers and owners a clearer
+                  starting point for understanding what an asset could be worth.
                 </p>
                 <p>
-                  As Aim4price developed, we recognised that a valuation was only
-                  one part of a much bigger picture. Owners also needed to know
-                  exactly what they owned, how its value changed with age and
-                  use, and what it really cost to keep it working.
+                  As we developed, we recognised that a valuation was only one
+                  part of a much bigger picture. Owners also needed to know what
+                  they owned, how its value changed over time and what it really
+                  cost to keep it working.
                 </p>
                 <p>
-                  The information needed to answer those questions was often
-                  spread across invoices, service records, spreadsheets and
-                  paperwork. A total expense could tell an owner how much they
-                  had spent, but not always which machine was costing the most,
-                  why costs were rising or what needed attention next.
-                </p>
-                <p>
-                  That led us to connect asset details and values with invoices,
-                  fuel costs, budgets and maintenance in one place. By linking
-                  records to the assets they belong to, Aim4price helps owners
-                  build a useful history and make more informed decisions about
-                  maintaining, repairing or replacing what they own.
+                  Those answers were often scattered across invoices, service
+                  records, spreadsheets and paperwork. We built Aim4price to bring
+                  asset details, values, fuel costs, budgets and maintenance
+                  together, creating a useful history for each asset.
                 </p>
               </div>
             </div>
@@ -79,13 +70,77 @@ export default async function AboutUsPage() {
             </figure>
 
             <p className={styles.storyFocus}>
-              Today, our focus is asset intelligence and management: helping
-              owners understand what they have, what it is worth and what it
-              costs to own, so they can plan ahead and look after it better.
+              Today, our focus is helping people understand, manage and protect
+              the long-term value of what they own.
             </p>
           </div>
         </div>
       </section>
+
+      <div className={`${styles.shell} ${styles.valueSections}`}>
+        <section className={styles.valueCard} aria-labelledby="sharing-title">
+          <h2 id="sharing-title" className={styles.sectionTitle}>
+            Build a clearer picture, together.
+          </h2>
+          <p>
+            An asset’s story involves more than its owner. Dealers, mechanics
+            and other businesses all contribute knowledge that can help complete
+            the picture.
+          </p>
+          <p>
+            Aim4price lets owners share assets with trusted businesses and choose
+            what they can view or update. From adding maintenance records and
+            invoices to updating asset information, those contributions help build
+            a more complete record and support better decisions.
+          </p>
+        </section>
+
+        <section className={styles.valueCard} aria-labelledby="insights-title">
+          <h2 id="insights-title" className={styles.sectionTitle}>
+            Turn your asset records into answers.
+          </h2>
+          <p>
+            Reports bring asset values, running costs, fuel, maintenance and
+            budgets into a clearer view, helping owners review their records,
+            understand costs and share useful information with trusted partners.
+          </p>
+          <p>
+            AI connections offer another way to explore the register, asking
+            questions in everyday language about what is costing more, what needs
+            attention and where to look next. Together, reports and AI make the
+            information easier to understand and use. More complete records
+            provide a stronger foundation for both.
+          </p>
+        </section>
+
+        <section className={`${styles.valueCard} ${styles.lifecycleCard}`} aria-labelledby="value-title">
+          <div>
+            <h2 id="value-title" className={styles.sectionTitle}>
+              Understand value throughout ownership.
+            </h2>
+            <p>
+              Understanding an asset’s value means looking at how it typically
+              depreciates and how age, usage, condition, maintenance and market
+              demand influence what it may be worth.
+            </p>
+          </div>
+          <div className={styles.valuePerspectives}>
+            <p>
+              <strong>For owners,</strong> that helps guide decisions about
+              maintaining, repairing, replacing or selling.
+            </p>
+            <p>
+              <strong>For dealers,</strong> it supports informed trade-ins,
+              buying and pricing.
+            </p>
+            <p>
+              <strong>For businesses that support those assets,</strong> it
+              provides context for recommending work and services that help
+              preserve their useful life and long-term value.
+            </p>
+          </div>
+        </section>
+      </div>
 
       <section className={styles.directionSection} aria-labelledby="direction-title">
         <div className={styles.shell}>
@@ -95,29 +150,23 @@ export default async function AboutUsPage() {
                 Where we’re heading
               </h2>
               <p>
-                We want to help owners understand and manage their assets in
-                every possible way. That means helping them spot problems
-                earlier, reduce avoidable breakdowns, plan maintenance and
-                lower the cost of keeping their equipment working.
+                We’re working towards using better asset information to deliver
+                practical benefits for owners, from supplying the right parts and
+                negotiating with suppliers and service providers to helping
+                owners achieve the best possible price when it is time to sell.
               </p>
               <p>
-                We also want owners to put their asset data to work for them.
-                Reliable records of value, condition, maintenance and running
-                costs could help them present a clearer picture to insurers
-                and lenders, strengthening their position when negotiating
-                competitive insurance premiums and financing rates.
-              </p>
-              <p>
-                Our longer-term goal is to turn better asset information into
-                practical advantages for the people who own and manage it.
-                It starts with keeping those records accurate, organised and
-                up to date.
+                We also believe that reliable asset records can help owners
+                present a clearer picture to insurers and financiers,
+                strengthening their position when seeking suitable cover and
+                competitive terms.
               </p>
             </div>
             <div className={styles.directionClosing}>
               <p>
-                It starts with helping owners understand and manage
-                what they have.
+                Our ambition is simple: help owners get more from their assets,
+                and help the dealers and businesses around them deliver greater
+                value throughout ownership.
               </p>
               <div className={styles.heroActions}>
                 <Link href="/auth#signup" className={styles.primaryAction}>

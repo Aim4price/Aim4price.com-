@@ -204,6 +204,51 @@
   margin: 0 0 0.35rem;
 }
 
+.valueSections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  padding-bottom: 2.5rem;
+}
+
+.valueCard {
+  min-width: 0;
+  padding: 2.5rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.5rem;
+  background: rgba(252, 253, 252, 0.96);
+  box-shadow: 0 8px 24px rgba(16, 42, 34, 0.04);
+}
+
+.valueCard p {
+  margin: 0;
+  color: #44594f;
+  font-size: 1.025rem;
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+.valueCard p + p {
+  margin-top: 1rem;
+}
+
+.lifecycleCard {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 3rem;
+}
+
+.valuePerspectives {
+  padding-left: 2rem;
+  border-left: 1px solid rgba(24, 77, 61, 0.18);
+}
+
+.valuePerspectives strong {
+  color: var(--brand-900);
+  font-weight: 700;
+}
+
 .directionSection {
   padding-bottom: 2.5rem;
 }
