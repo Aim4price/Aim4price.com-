@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import AppHeader from "../../components/AppHeader";
 import { redirectAdminToAdmin } from "../../lib/account-access";
-import styles from "../about-us/about-us.module.css";
+import styles from "./contact-us.module.css";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,7 +60,6 @@ export default async function ContactUsPage() {
                     <span className={styles.contactLabel}>Call</span>
                     062 572 1650
                   </span>
-                  <span className={styles.contactArrow} aria-hidden="true">↗</span>
                 </a>
                 <a href="mailto:aim4price@gmail.com" className={styles.contactLink}>
                   <span className={styles.contactIcon}>
@@ -70,19 +69,17 @@ export default async function ContactUsPage() {
                     <span className={styles.contactLabel}>Email</span>
                     aim4price@gmail.com
                   </span>
-                  <span className={styles.contactArrow} aria-hidden="true">↗</span>
                 </a>
                 <a href="https://wa.me/27625721650" className={styles.contactLink} target="_blank" rel="noopener noreferrer">
                   <span className={styles.contactIcon}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 9 9 0 0 1-4-.9L3 21l1.9-5.5a9 9 0 0 1-.9-4A8.5 8.5 0 0 1 12.5 3 8.5 8.5 0 0 1 21 11.5Z" /><path d="M8 11h9M8 14h6" /></svg></span>
                   <span className={styles.contactValue}><span className={styles.contactLabel}>WhatsApp</span>Chat to Aim4price</span>
-                  <span className={styles.contactArrow} aria-hidden="true">↗</span>
                 </a>
               </address>
 
               <p className={styles.contactNote}>
                 New to Aim4price?{" "}
                 <Link href="/about-us" className={styles.textLink}>
-                  See what it does <span aria-hidden="true">↗</span>
+                  See what it does
                 </Link>
               </p>
             </div>
@@ -94,7 +91,7 @@ export default async function ContactUsPage() {
                   alt="Kuyler Chris Geldenhuys"
                   fill
                   priority
-                  sizes="420px"
+                  sizes="340px"
                   className={styles.portrait}
                 />
               </div>

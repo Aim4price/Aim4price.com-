@@ -1,0 +1,197 @@
+.page {
+  color: var(--text-strong);
+}
+
+.shell {
+  width: var(--shell-width);
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.heroSection {
+  padding: 3rem 0 4rem;
+}
+
+.heroPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  align-items: center;
+  gap: 4rem;
+  padding: 3rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.5rem;
+  background: #fcfdfc;
+  box-shadow: 0 16px 48px rgba(16, 42, 34, 0.08);
+}
+
+.heroCopy {
+  min-width: 0;
+}
+
+.pageLabel {
+  margin: 0 0 0.75rem;
+  color: var(--brand-700);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  font-weight: 650;
+}
+
+.heroTitle {
+  margin: 0;
+  color: var(--brand-900);
+  font-size: 3.25rem;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+  font-weight: 800;
+}
+
+.heroText {
+  max-width: 34rem;
+  margin: 1.1rem 0 0;
+  color: #52645d;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  text-wrap: pretty;
+}
+
+.contactDetails {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.75rem 0 0;
+  font-style: normal;
+}
+
+.contactLink {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+  min-height: 5rem;
+  box-sizing: border-box;
+  padding: 0.9rem 1.2rem;
+  border: 1px solid #dce6df;
+  border-radius: 0.9rem;
+  color: var(--brand-900);
+  background: #f5f8f5;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.contactLink:hover {
+  border-color: #8bb39e;
+  background: #eaf3ed;
+  box-shadow: 0 3px 12px rgba(16, 42, 34, 0.05);
+}
+
+.contactIcon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid #e1e9e3;
+  border-radius: 0.8rem;
+  color: var(--brand-700);
+  background: #ffffff;
+}
+
+.contactIcon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.contactValue {
+  min-width: 0;
+  color: var(--brand-900);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.contactLabel {
+  display: block;
+  margin-bottom: 0.15rem;
+  color: #52645d;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.contactNote {
+  margin: 1.4rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e1e9e3;
+  color: #52645d;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.textLink {
+  color: var(--brand-700);
+  font-weight: 650;
+  text-decoration: underline;
+  text-decoration-color: #9ab9a8;
+  text-underline-offset: 0.25em;
+}
+
+.textLink:hover {
+  text-decoration-color: currentColor;
+}
+
+.contactLink:focus-visible,
+.textLink:focus-visible {
+  outline: 3px solid #398767;
+  outline-offset: 4px;
+}
+
+.founderPanel {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #dce6df;
+  border-radius: 1.1rem;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(16, 42, 34, 0.04);
+}
+
+.portraitFrame {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  background: #e8eee9;
+}
+
+.portrait {
+  object-fit: cover;
+  object-position: center 28%;
+}
+
+.founderCaption {
+  padding: 1.3rem 1.4rem;
+}
+
+.founderName {
+  margin: 0;
+  color: var(--brand-900);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.founderRole {
+  margin: 0.3rem 0 0;
+  color: #52645d;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contactLink {
+    transition: none;
+  }
+}
