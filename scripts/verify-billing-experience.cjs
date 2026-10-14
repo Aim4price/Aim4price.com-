@@ -174,6 +174,16 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
 
     }
     if(mode==='pricing'){
+     assert.equal(await page.$eval('details',e=>e.open),false,'Subscription coverage starts collapsed');
+     await page.focus('summary');await page.keyboard.press('Enter');
+     assert.equal(await page.$eval('details',e=>e.open),true,'Coverage opens from the keyboard');
+     assert.equal(await page.$$eval('details article',els=>els.length),3);
+     assert.equal(await page.evaluate(()=>document.body.textContent.includes('Monthly or yearly?')),false);
+     assert.ok(await page.$('a[href="/contact-us"]'));
+     await page.screenshot({path:path.join(evidence,'subscription-coverage-open-'+width+'.png'),fullPage:true});
+     await page.focus('summary');await page.keyboard.press('Enter');
+     assert.equal(await page.$eval('details',e=>e.open),false,'Coverage closes from the keyboard');
+
      assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent.includes('R199')),true);
      assert.match(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent),/Free.*shared access/);
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
