@@ -56,7 +56,7 @@ export default async function AboutUsPage() {
               <div className={`${styles.portraitFrame} ${styles.storyPortrait}`}>
                 <Image
                   src="/about/kuyler-geldenhuys.jpg"
-                  alt="Kuyler Geldenhuys, founder of Aim4price"
+                  alt="Kuyler Chris Geldenhuys, founder of Aim4price"
                   fill
                   priority
                   sizes="420px"
@@ -65,7 +65,7 @@ export default async function AboutUsPage() {
               </div>
               <figcaption className={styles.founderCaption}>
                 <p className={styles.founderRole}>From our founder</p>
-                <p className={styles.founderName}>Kuyler Geldenhuys</p>
+                <p className={styles.founderName}>Kuyler Chris Geldenhuys</p>
               </figcaption>
             </figure>
 

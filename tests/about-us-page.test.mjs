@@ -18,14 +18,13 @@ test("publishes About Us with the existing public layout and account guard", () 
   assert.match(pageSource, /href="\/contact-us"/);
 });
 
-test("shares the approved origin story and attributes it to Kuyler Geldenhuys", () => {
+test("shares the approved origin story and attributes it to Kuyler Chris Geldenhuys", () => {
   for (const detail of [/trade-in values/, /second-hand tractors/, /invoices/, /a useful history for each asset/, /From our founder/]) {
     assert.match(pageSource, detail);
   }
   assert.match(pageSource, /We’re working towards/);
   assert.match(pageSource, /insurers and financiers/);
-  assert.match(pageSource, /Kuyler Geldenhuys/);
-  assert.doesNotMatch(pageSource, /Kuyler Chris Geldenhuys/);
+  assert.match(pageSource, /Kuyler Chris Geldenhuys/);
   assert.match(pageSource, /\/about\/kuyler-geldenhuys\.jpg/);
   assert.ok(existsSync(new URL("../public/about/kuyler-geldenhuys.jpg", import.meta.url)));
 });
