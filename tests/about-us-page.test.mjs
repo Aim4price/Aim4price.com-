@@ -19,11 +19,11 @@ test("publishes About Us with the existing public layout and account guard", () 
 });
 
 test("shares the approved origin story and attributes it to Kuyler Geldenhuys", () => {
-  for (const detail of [/trade-in values/, /second-hand tractors/, /invoices/, /records to the assets they belong to/, /From our founder/]) {
+  for (const detail of [/trade-in values/, /second-hand tractors/, /invoices/, /a useful history for each asset/, /From our founder/]) {
     assert.match(pageSource, detail);
   }
-  assert.match(pageSource, /Reliable records of value, condition, maintenance and running/);
-  assert.match(pageSource, /Our longer-term goal/);
+  assert.match(pageSource, /We’re working towards/);
+  assert.match(pageSource, /insurers and financiers/);
   assert.match(pageSource, /Kuyler Geldenhuys/);
   assert.doesNotMatch(pageSource, /Kuyler Chris Geldenhuys/);
   assert.match(pageSource, /\/about\/kuyler-geldenhuys\.jpg/);
