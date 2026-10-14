@@ -19,22 +19,23 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
       <section className={styles.pricingChoices} aria-label="Choose your account">
         <button className={styles.accountCard} type="button" aria-haspopup="dialog" onClick={() => setAudience('owner')}>
           <strong className={styles.accountTitle}>Owner</strong>
-          <span className={styles.accountDescription}>For farms, companies and individuals managing their own assets, costs and maintenance.</span>
-          <span className={styles.cardPrice}>From <strong>R99</strong> / month</span>
+          <span className={styles.cardPrice}><span className={styles.priceLabel}>From</span><span className={styles.priceLine}><strong>R99</strong><span>/ month</span></span></span>
+          <span className={styles.accountDescription}>For farms, companies and individuals managing their own assets.</span>
+          <span className={styles.cardNote}>Choose by active asset count. Unlimited registers included.</span>
           <span className={styles.cardAction}>Explore Owner subscriptions</span>
         </button>
         <button type="button" aria-haspopup="dialog" onClick={() => setAudience('dealer')} className={styles.accountCard}>
           <strong className={styles.accountTitle}>Dealer</strong>
+          <span className={styles.cardPrice}><span className={styles.priceLabel}>Subscription</span><span className={styles.priceLine}><strong>R199</strong><span>/ month</span></span></span>
           <span className={styles.accountDescription}>For dealerships managing stock, client registers and asset enquiries.</span>
-          <span className={styles.cardPrice}><strong>R199</strong> / month</span>
-          <span className={styles.accountDescription}>Client registers are billed separately.</span>
+          <span className={styles.cardNote}>Client registers are billed separately to your dealership.</span>
           <span className={styles.cardAction}>Explore Dealer subscriptions</span>
         </button>
         <button type="button" aria-haspopup="dialog" onClick={() => setAudience('business')} className={styles.accountCard}>
           <strong className={styles.accountTitle}>Business</strong>
-          <span className={styles.accountDescription}>For service providers, such as repairers, insurers and financiers, working with assets shared by clients.</span>
-          <span className={styles.cardPrice}><strong>Free</strong> shared access</span>
-          <span className={styles.accountDescription}>Optional Desktop upgrade: R199/month, arranged with Aim4price.</span>
+          <span className={styles.cardPrice}><span className={styles.priceLabel}>Shared access</span><span className={styles.priceLine}><strong>Free</strong></span></span>
+          <span className={styles.accountDescription}>For repairers, insurers and financiers working with assets shared by clients.</span>
+          <span className={styles.cardNote}>Optional Desktop: R199/month, arranged with Aim4price.</span>
           <span className={styles.cardAction}>Explore Business access</span>
         </button>
       </section>
@@ -84,7 +85,7 @@ export default function PricingContent({ signedIn = false, initialAudience = nul
       <div className={styles.closing}>
         <div><h2>Still have a question?</h2><p>We’ll help you find the right subscription.</p></div>
         <Link className={styles.contactButton} href="/contact-us">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8H5l-4 3v-11a9 9 0 0 1 19 0Z" transform="translate(1 -1) scale(.95)"/><path d="M8 10h8M8 14h5"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 18H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-7l-4 3v-3Z"/><path d="M7 9h10M7 13h6"/></svg>
           <span>Talk to Aim4price</span>
         </Link>
       </div>

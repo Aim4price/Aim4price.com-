@@ -176,6 +176,10 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
 
     }
     if(mode==='pricing'){
+     const prices=await page.$$eval('button[aria-haspopup="dialog"]',els=>els.slice(0,3).map(e=>{const amount=[...e.querySelectorAll('strong')].find(n=>/^(R99|R199|Free)$/.test(n.textContent));return {top:amount.getBoundingClientRect().top,size:parseFloat(getComputedStyle(amount).fontSize)};}));
+     assert(prices.every(p=>p.size>=40),'Subscription prices are prominent');
+     if(width===1440)assert(Math.max(...prices.map(p=>p.top))-Math.min(...prices.map(p=>p.top))<2,'Subscription prices align across cards');
+
      assert.equal(await page.$eval('details',e=>e.open),false,'Subscription coverage starts collapsed');
      await page.focus('summary');await page.keyboard.press('Enter');
      assert.equal(await page.$eval('details',e=>e.open),true,'Coverage opens from the keyboard');
@@ -187,7 +191,7 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$eval('details',e=>e.open),false,'Coverage closes from the keyboard');
 
      assert.equal(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent.includes('R199')),true);
-     assert.match(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent),/Free.*shared access/);
+     assert.match(await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Business')).textContent),/Shared access.*Free/);
      await page.$$eval('button[aria-haspopup="dialog"]',els=>els.find(e=>e.textContent.startsWith('Owner')).click());
      await page.waitForSelector('[role="dialog"]');
      assert.match(await page.$eval('[role="dialog"] h2',e=>e.textContent),/How many assets/);
