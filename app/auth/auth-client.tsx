@@ -624,13 +624,13 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
   }, []);
 
   const [mode, setMode] = useState<Mode>("signup");
-  const [accountAccess, setAccountAccess] = useState<'free'|'desktop'>(businessSignup ? 'free' : 'desktop');
   const [signupStep, setSignupStep] = useState<SignupStep>(1);
   const [showDealerRegisterInfo, setShowDealerRegisterInfo] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] =
     useState<SignupFormState>(()=>businessSignup?{...initialSignupState,accountType:'business',accountSubtype:isBusinessService(initialBusinessType)?initialBusinessType:BUSINESS_SERVICE_OPTIONS[0].value,email:initialEmail||'',directoryParticipation:true}:initialSignupState);
+  const accountAccess = signupForm.accountType === 'business' ? 'free' : 'desktop';
   const [loginForm, setLoginForm] = useState<LoginFormState>(initialLoginState);
   const [forgotForm, setForgotForm] =
     useState<ForgotFormState>(initialForgotState);
@@ -1191,22 +1191,14 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
                         </div>
 
                         <div className={`${styles.signupFieldGrid} ${styles.workspaceGrid}`}>
-                          <div className={`${styles.field} ${styles.signupFieldWide}`}>
-                            <span className={styles.label}>Choose your access</span>
-                            <CustomSelect name="accountAccess" ariaLabel="Choose your access" value={accountAccess}
-                              options={[{value:'free',label:'Free sharing account'},{value:'desktop',label:'Full Aim4price Desktop'}]}
-                              onChange={(value) => { setAccountAccess(value as 'free'|'desktop'); if((value==='free' && !['dealer','business'].includes(signupForm.accountType)) || (value==='desktop' && signupForm.accountType==='business')) setSignupForm(current=>({...current,accountType:'dealer',accountSubtype:getDefaultSubtype('dealer')})); }}/>
-                            <small>{accountAccess==='free'?'Receive shared assets. Upgrade this account anytime.':'Full workspace access after subscription activation.'}</small>
-                          </div>
                           <div className={styles.field}>
                             <span className={styles.label}>Account type</span>
                             <CustomSelect
                               name="accountType"
                               ariaLabel="What would you like to use Aim4price for?"
                               value={signupForm.accountType}
-                              options={accountAccess==='free'?SIGNUP_ACCOUNT_TYPE_OPTIONS.filter(option=>option.value==='dealer'||option.value==='business'):SIGNUP_ACCOUNT_TYPE_OPTIONS}
+                              options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
                               onChange={(accountType) => {
-                                if(accountType==='business') setAccountAccess('free');
                                 setSignupForm((current) => ({
                                   ...current,
                                   accountType,
