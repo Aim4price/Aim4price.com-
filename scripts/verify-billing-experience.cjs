@@ -149,11 +149,13 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      await page.waitForFunction(()=>document.body.textContent.includes('No matching owner features'));
      await page.$$eval('button',els=>els.find(e=>e.textContent==='Show all features').click());
      assert.equal(await page.$$eval(features,els=>els.length),46);
-     await page.select('#tutorial-category','start');
+     await page.click('[aria-label="Choose feature category"]');
+     await page.$$eval('[role="option"]',els=>els.find(e=>e.textContent.includes('Getting started')).click());
      assert.equal(await page.$$eval(features,els=>els.length),3);
      await page.$$eval(features,els=>els[1].click());
      assert.equal(await page.$$eval(features,els=>els[1].getAttribute('aria-current')),'true');
-     await page.select('#tutorial-category','all');
+     await page.click('[aria-label="Choose feature category"]');
+     await page.$$eval('[role="option"]',els=>els.find(e=>e.textContent.includes('All features')).click());
      await page.$$eval(features,els=>els[0].click());
      await page.evaluate(()=>scrollTo(0,0));
      assert.doesNotMatch(await page.$eval('#app',e=>e.textContent),/[→↗←]/,'No decorative arrows');
