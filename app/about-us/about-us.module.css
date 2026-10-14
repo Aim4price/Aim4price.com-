@@ -15,8 +15,9 @@
 .heroPanel {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 21rem;
-  align-items: center;
-  gap: 4rem;
+  align-items: start;
+  column-gap: 3rem;
+  row-gap: 2rem;
   padding: 3rem;
   border: 1px solid var(--line-strong);
   border-radius: 1.5rem;
@@ -39,9 +40,9 @@
 .heroTitle {
   margin: 0;
   color: var(--brand-900);
-  font-size: 3.45rem;
-  line-height: 1.06;
-  letter-spacing: -0.055em;
+  font-size: 3.15rem;
+  line-height: 1.12;
+  letter-spacing: -0.04em;
   font-weight: 800;
   text-wrap: balance;
 }
@@ -157,7 +158,7 @@
 
 .storyText {
   margin-top: 1.65rem;
-  color: #52645d;
+  color: #44594f;
   font-size: 1.025rem;
   line-height: 1.75;
   text-wrap: pretty;
@@ -168,18 +169,26 @@
 }
 
 .storyText p + p {
-  margin-top: 1rem;
+  margin-top: 1.25rem;
 }
 
-.storyText .storyFocus {
-  margin-top: 1.5rem;
-  padding-left: 1.1rem;
+.storyFocus {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid rgba(24, 77, 61, 0.1);
   border-left: 3px solid #6caa8e;
+  border-radius: 0.25rem 0.85rem 0.85rem 0.25rem;
+  background: #edf5f0;
   color: var(--brand-900);
+  font-size: 1.075rem;
+  line-height: 1.7;
   font-weight: 600;
+  text-wrap: pretty;
 }
 
 .storyFounder {
+  margin-top: 0.25rem;
   box-shadow: 0 5px 18px rgba(16, 42, 34, 0.04);
 }
 
@@ -201,7 +210,7 @@
 
 .directionPanel {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   align-items: center;
   gap: 3rem;
   padding: 2.5rem 3rem;
@@ -232,8 +241,10 @@
 }
 
 .directionClosing {
-  padding-left: 3rem;
-  border-left: 1px solid rgba(24, 77, 61, 0.18);
+  padding: 1.75rem;
+  border: 1px solid rgba(24, 77, 61, 0.13);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .directionClosing > p {
