@@ -12,7 +12,7 @@ const [client, valuationStyles, appStyles, ownerPage, dealerPage] = await Promis
 ]);
 
 test('Owner and Dealer continue to share one valuation client with app-only presentation', () => {
-  assert.match(ownerPage, /<ValuationClient ownerAppMode \/>/);
+  assert.match(ownerPage, /<ValuationClient ownerAppMode\b[^>]*\/>/);
   assert.match(dealerPage, /<ValuationClient dealerAppMode \/>/);
   assert.match(client, /styles\.appValuation/);
   assert.match(client, /Estimate \{step\} of \{WIZARD_STEPS\.length\}/);
@@ -121,4 +121,5 @@ test('result facts remain visible as a compact two-column mobile summary', () =>
   assert.match(valuationStyles, /\.appValuation \.resultConfidenceNote \+ \.resultConfidenceNote[^\{]*\{[\s\S]*?margin-top: -0\.45rem;/);
   assert.match(valuationStyles, /\.appValuation \.resultAccordionAction[^\{]*\{[\s\S]*?min-height: 2\.75rem;/);
 });
+
 
