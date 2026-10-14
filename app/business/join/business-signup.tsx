@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import SignupFlow from '../../../components/SignupFlow';
 import styles from '../../../components/SignupFlow.module.css';
+import auth from '../../auth/page.module.css';
 
 export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:string|null;initialEmail?:string}) {
- const [chosen,setChosen]=useState(false);
+ const [showPassword,setShowPassword]=useState(false);
  const [busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[createdEmail,setCreatedEmail]=useState('');
  const destination=returnTo||'/business';
  async function verify(email:string) {
@@ -24,31 +25,20 @@ export default function BusinessSignup({returnTo,initialEmail=''}:{returnTo:stri
    setCreatedEmail(email);await verify(email);
   }catch(error){setNotice(error instanceof Error?error.message:'Please try again.');}finally{setBusy(false);}
  }
- if(!chosen)return <SignupFlow title="Choose your access" description="Open shared assets for free, or choose full Aim4price access to manage your own." returnTo={returnTo}>
-  <div className={styles.accessPlans}>
-   <section className={styles.accessPlan} aria-labelledby="free-access-title">
-    <h2 id="free-access-title">Free access</h2>
-    <p>For service providers working with assets shared by clients.</p>
-    <ul><li>View shared asset details.</li><li>Use the actions allowed by the sender.</li><li>Usage is recorded. Desktop access is a separate, optional upgrade.</li></ul>
-    <button type="button" className={styles.button} onClick={()=>setChosen(true)}>Continue with free access</button>
-   </section>
-   <section className={`${styles.accessPlan} ${styles.fullAccessPlan}`} aria-labelledby="full-access-title">
-    <h2 id="full-access-title">Full Aim4price access</h2>
-    <p>Choose an Owner plan for your own assets, or Dealer access for stock and client registers.</p>
-    <ul><li>Access your Aim4price Desktop.</li><li>Manage asset registers, costs and maintenance.</li><li>Choose the account and package that suit you. Aim4price confirms the subscription and start date before Desktop activation.</li></ul>
-    <Link className={styles.secondaryButton} href={`/auth?accountType=owner&accountAccess=desktop${returnTo?'&returnTo='+encodeURIComponent(returnTo):''}#signup`}>Manage my own assets</Link>
-    <Link className={styles.secondaryButton} href={`/auth?accountType=dealer&accountAccess=desktop${returnTo?'&returnTo='+encodeURIComponent(returnTo):''}#signup`}>Manage stock and client registers</Link>
-   </section>
-  </div>
- </SignupFlow>;
- return <SignupFlow title={createdEmail?'Check your email':'Create your free account'} description={createdEmail?`Verify ${createdEmail} to open your shared enquiries.`:'One account for shared assets. Upgrade whenever you need Desktop.'} returnTo={returnTo}>
-  {createdEmail?<div className={styles.accessChoices}><button className={styles.secondaryButton} disabled={busy} onClick={async()=>{setBusy(true);try{await verify(createdEmail);}catch(error){setNotice((error as Error).message);}finally{setBusy(false);}}}>Resend verification email</button><Link className={styles.button} href={destination}>Continue</Link></div>:<form className={styles.form} onSubmit={submit}>
-   <label>Your name<input name="name" autoComplete="name" required maxLength={150}/></label>
-   <label>Business name<input name="businessName" autoComplete="organization" required maxLength={200}/></label>
-   <label>Email<input name="email" type="email" autoComplete="username" required maxLength={254} defaultValue={initialEmail}/></label>
-   <label>Password<input name="password" type="password" autoComplete="new-password" required minLength={8} maxLength={128}/></label>
-   <label className={styles.check}><input name="terms" type="checkbox" required/><span>I accept the <Link href="/terms-of-service" target="_blank">Terms</Link> and <Link href="/privacy-policy" target="_blank">Privacy Policy</Link>.</span></label>
-   <button type="submit" className={styles.button} disabled={busy}>{busy?'Creating account…':'Create free account'}</button>
+ return <SignupFlow title={createdEmail?'Check your email':'Create your free account'} description={createdEmail?`Verify ${createdEmail} to open your shared enquiries.`:'Access your shared enquiries with a free Aim4price account.'} returnTo={returnTo}>
+  {createdEmail?<div className={styles.accessChoices}><button className={styles.secondaryButton} disabled={busy} onClick={async()=>{setBusy(true);try{await verify(createdEmail);}catch(error){setNotice((error as Error).message);}finally{setBusy(false);}}}>Resend verification email</button><Link className={styles.button} href={destination}>Continue</Link></div>:<form className={auth.form} onSubmit={submit}>
+   <label className={auth.field}><span className={auth.label}>Your name</span><input className={auth.input} name="name" autoComplete="name" required maxLength={150}/></label>
+   <label className={auth.field}><span className={auth.label}>Business name</span><input className={auth.input} name="businessName" autoComplete="organization" required maxLength={200}/></label>
+   <label className={auth.field}><span className={auth.label}>Email address</span><input className={auth.input} name="email" type="email" autoComplete="username" required maxLength={254} defaultValue={initialEmail}/></label>
+   <div className={auth.field}>
+    <label className={auth.label} htmlFor="free-account-password">Password</label>
+    <div className={auth.passwordWrap}>
+     <input id="free-account-password" className={`${auth.input} ${auth.passwordInput}`} name="password" type={showPassword?'text':'password'} autoComplete="new-password" required minLength={8} maxLength={128}/>
+     <button type="button" className={auth.passwordToggle} aria-label={showPassword?'Hide password':'Show password'} onClick={()=>setShowPassword(value=>!value)}>{showPassword?'Hide':'Show'}</button>
+    </div>
+   </div>
+   <label className={auth.checkboxRow}><input className={auth.checkbox} name="terms" type="checkbox" required/><span>I accept the <Link href="/terms-of-service" target="_blank">Terms</Link> and <Link href="/privacy-policy" target="_blank">Privacy Policy</Link>.</span></label>
+   <button type="submit" className={auth.primaryButton} disabled={busy}>{busy?'Creating account…':'Create free account'}</button>
    <p className={styles.muted}>Already registered? <Link href={`/auth${returnTo?'?returnTo='+encodeURIComponent(returnTo):''}#login`}>Sign in</Link>.</p>
   </form>}
   {notice&&<p role="status" className={styles.notice}>{notice}</p>}

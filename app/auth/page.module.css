@@ -876,9 +876,13 @@
  :global(html:not(:has([data-website-canvas]))) .switchShell { padding:2rem 0; }
 }
 
-.sharedEntry { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem; margin-top:1.5rem; padding:1rem 1.2rem; border:1px solid #d6e5dc; border-radius:1rem; background:#f1f7f3; color:#24543e; }
-.sharedEntry div { display:grid; gap:.35rem; }.sharedEntry strong { font-size:.85rem; }.sharedEntry span { font-size:.8rem; color:#61756a; line-height:1.6; }
-.sharedEntry a { padding:.75rem 1rem; border:1px solid #cadfd2; border-radius:.7rem; background:#fff; color:#24543e; text-decoration:none; font-size:.85rem; font-weight:700; }
+/* A single, clear route for recipients on both authentication tabs. */
+.sharedEntry { display:grid; gap:1rem; margin-top:.5rem; padding:1.2rem; border:1px solid #c8dfd3; border-radius:1rem; background:#f1f7f3; color:#24543e; }
+.sharedEntry div { display:grid; gap:.35rem; }
+.sharedEntry strong { font-size:1rem; line-height:1.4; }
+.sharedEntry div span { font-size:.85rem; color:#61756a; line-height:1.5; }
+.sharedEntry a { display:flex; align-items:center; justify-content:space-between; gap:1rem; min-height:3rem; padding:.75rem 1rem; border:1px solid #b7d2c3; border-radius:.75rem; background:#fff; color:#174d3e; text-decoration:none; font-size:.9rem; font-weight:800; }
+.sharedEntry a:hover { background:#e7f2ec; border-color:#739e86; }
 .sharedEntry a:focus-visible { outline:3px solid #168a65; outline-offset:3px; }
 
 .dealerRegisterInfo {

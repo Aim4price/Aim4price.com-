@@ -268,11 +268,11 @@ const evidence=path.join(root,'.next/billing-experience-validation');fs.mkdirSyn
      assert.equal(await page.$$eval('main',els=>els.length),1,'Onboarding has one page landmark');
      assert.ok(await page.$('[aria-label="Authentication mode"]'),'Every onboarding screen shares the signup navigation');
      const frame=await page.$eval('h1',e=>e.closest('section').getBoundingClientRect().width);
-     assert.ok(width===390?frame<=390:frame>=800,'Onboarding retains the original signup width');
+     assert.ok(width===390?frame<=390:Math.abs(frame-640)<2,'Shared onboarding matches the login width');
     }
     if(mode==='business-join'||mode==='business-register'){
      assert.equal(await page.$('a[href="/business/guest"]'),null);
-     await page.$$eval('button',els=>els.find(e=>e.textContent==='Continue with free access').click());
+     assert.equal(await page.$eval('h1',e=>e.textContent),'Create your free account');
      await page.waitForSelector('input[name="password"]');
      for(const [name,value] of Object.entries({name:'Test Recipient',businessName:'Test Business',email:'recipient@example.test',password:'Synthetic-password-123'}))await page.type('input[name="'+name+'"]',value);
      await page.click('input[name="terms"]');await page.click('button[type="submit"]');

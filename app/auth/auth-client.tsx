@@ -1695,9 +1695,9 @@ export default function AuthClient({businessSignup=false,initialBusinessType,ini
               </form>
             ) : null}
 
-            {mode === "login" && <aside className={styles.sharedEntry}>
-              <div><strong>Received a shared enquiry?</strong><span>Create a free account to keep your shared enquiries.</span></div>
-              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/join?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/join'}>Create free account</Link>
+            {(mode === "login" || mode === "signup") && <aside className={styles.sharedEntry}>
+              <div><strong>Received a shared enquiry link?</strong><span>Start here to access your shared enquiry.</span></div>
+              <Link href={getSafeReturnTo() && sharedEnquiryReturnTo(getSafeReturnTo()) ? `/business/join?returnTo=${encodeURIComponent(getSafeReturnTo()!)}` : '/business/join'}>Click here to continue <span aria-hidden="true">→</span></Link>
             </aside>}
 
             <p className={styles.footerText}>
