@@ -14155,12 +14155,13 @@
 }
 
 .conditionRouteModal .conditionRouteCard {
+  align-items: start;
   min-height: 104px;
   padding: 1rem 1.05rem;
 }
 
 .conditionRouteModal .conditionRouteCopy {
-  align-self: center;
+  align-self: start;
 }
 
 .conditionRouteModal .conditionRouteCopy strong {

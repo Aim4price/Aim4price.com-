@@ -214,8 +214,8 @@ test('Condition modal explains both routes and shows Advanced questions one at a
   const chooserBlock = conditionBlock.slice(chooserStart, detailStart);
 
   assert.ok(conditionStart >= 0 && popularityStart > conditionStart);
-  assert.match(chooserBlock, /Choose one overall condition rating for a quick assessment/);
-  assert.match(chooserBlock, /Assess working condition, wear, service history and repairs separately for a finer calculation/);
+  assert.match(chooserBlock, /Rate overall condition for a quick estimate/);
+  assert.match(chooserBlock, /Rate condition, wear, service and repairs for a finer calculation/);
   assert.doesNotMatch(conditionBlock, /conditionModalBackButton/);
   assert.match(conditionBlock, /const advancedQuestionIndex = currentDetailedSectionIndex >= 0 \? currentDetailedSectionIndex : 0/);
   assert.match(conditionBlock, /Question \{advancedQuestionIndex \+ 1\} of \{advancedQuestionTotal\}/);
