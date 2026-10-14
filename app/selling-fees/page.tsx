@@ -32,7 +32,7 @@ export default function SellingFeesPage() {
               <h1 id="selling-title">Asset sale fees</h1>
               <p>Fair value for owners. A fair deal for buyers.</p>
             </div>
-            <Link href="/contact-us" className={styles.primary}>Sell with Aim4price <span aria-hidden="true">↗</span></Link>
+            <Link href="/contact-us" className={styles.primary}>Sell with Aim4price</Link>
             <p className={styles.purpose}>We charge agreed flat fees instead of percentage commissions. We believe fair trade starts with realistic asset values, helping avoid financial strain and an inflated market.</p>
           </header>
 
